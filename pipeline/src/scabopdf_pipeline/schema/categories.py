@@ -1,0 +1,74 @@
+"""Closed enum of universal semantic categories.
+
+See ARCHITECTURE.md § 4.2 for the canonical specification.
+"""
+
+from __future__ import annotations
+
+from enum import StrEnum
+
+
+class SemanticCategory(StrEnum):
+    # Structural
+    HEADING_1 = "HEADING_1"
+    HEADING_2 = "HEADING_2"
+    HEADING_3 = "HEADING_3"
+    HEADING_4 = "HEADING_4"
+
+    # Content (legal codes)
+    ARTICLE_HEADER = "ARTICLE_HEADER"
+    ARTICLE_BODY = "ARTICLE_BODY"
+    PROCEDURAL = "PROCEDURAL"
+
+    # Content (general)
+    BODY = "BODY"
+    BODY_CONTINUATION = "BODY_CONTINUATION"
+
+    # Apparatus
+    NOTE = "NOTE"
+    NOTE_CONTINUATION = "NOTE_CONTINUATION"
+    MARGINAL_HEADING = "MARGINAL_HEADING"
+    MARGINAL_GLOSS = "MARGINAL_GLOSS"
+    EXAMPLE_BOX = "EXAMPLE_BOX"
+    CHAPTER_SUMMARY = "CHAPTER_SUMMARY"
+    TOC_GENERAL = "TOC_GENERAL"
+    INDEX_ENTRY = "INDEX_ENTRY"
+    EDITORIAL_NOTE = "EDITORIAL_NOTE"
+
+    # DeJure-specific
+    MASSIMA_LABEL = "MASSIMA_LABEL"
+    REFERRAL = "REFERRAL"
+    TITLE = "TITLE"
+    FONTE_LABEL = "FONTE_LABEL"
+    FONTE_VALUE = "FONTE_VALUE"
+    META_LABEL = "META_LABEL"
+    META_VALUE = "META_VALUE"
+    AUTHORS = "AUTHORS"
+    SECTION_LABEL = "SECTION_LABEL"
+    GENRE_BANNER = "GENRE_BANNER"
+    SUBTITLE = "SUBTITLE"
+
+    # Encyclopedia-specific
+    HEADING_LETTER_INITIAL = "HEADING_LETTER_INITIAL"
+    FONTI = "FONTI"
+    LETTERATURA = "LETTERATURA"
+
+    # Cross-references
+    CROSS_REFERENCE = "CROSS_REFERENCE"
+
+    # Lists
+    LIST_ITEM = "LIST_ITEM"
+
+    # Anchors and metadata-only
+    BOOK_PAGE_ANCHOR = "BOOK_PAGE_ANCHOR"
+
+    # Artifacts (excluded from rendering, kept in JSON for reference)
+    ARTIFACT_RUNNING_HEADER = "ARTIFACT_RUNNING_HEADER"
+    ARTIFACT_FOOTER = "ARTIFACT_FOOTER"
+    ARTIFACT_FILIGREE = "ARTIFACT_FILIGREE"
+    ARTIFACT_STAMP = "ARTIFACT_STAMP"
+    ARTIFACT_PAGE_HEADER = "ARTIFACT_PAGE_HEADER"
+    EMPTY_PAGE = "EMPTY_PAGE"
+
+    # Fallback
+    UNCLASSIFIED = "UNCLASSIFIED"
