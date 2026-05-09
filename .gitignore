@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / React Native
+node_modules/
+.expo/
+*.log
+
+# iOS build
+ios/build/
+ios/Pods/
+*.xcworkspace/xcuserdata/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Project-specific
+*.pdf
+*.scabopdf.json
+docs/analysis/private/
