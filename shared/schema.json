@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scabopdf.local/schema/document.json",
+  "title": "ScaboPDF Document",
+  "description": "Placeholder. Canonical JSON contract between Layer 1 (Python pipeline) and Layer 2 (React Native app). To be defined per docs/ARCHITECTURE.md § 8.",
+  "type": "object"
+}
