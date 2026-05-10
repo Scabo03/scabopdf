@@ -8,7 +8,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import ClassVar
 
-from scabopdf_pipeline.extraction.types import Block
+from scabopdf_pipeline.classification.types import ClassifiedBlock
+from scabopdf_pipeline.extraction.types import Block, ExtractionResult
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.reconstruction.types import Document
@@ -40,3 +41,17 @@ class ProfilePlugin(ABC):
     @abstractmethod
     def parse(self, blocks: list[Block]) -> Document:
         """Profile-specific parsing logic. May call shared utilities."""
+
+    @abstractmethod
+    def refine_classification(
+        self,
+        extraction: ExtractionResult,
+        tier1_results: list[ClassifiedBlock],
+    ) -> list[ClassifiedBlock]:
+        """Tier 2 classification: refine generic verdicts with profile-specific logic.
+
+        See ARCHITECTURE.md § 4.5. The plugin receives the full extraction and
+        the tier 1 verdicts and returns the final list of ``ClassifiedBlock``.
+        It may override categories, set ``subcategory``, or replace ``reason``
+        with a profile-specific identifier.
+        """

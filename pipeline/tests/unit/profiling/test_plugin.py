@@ -2,7 +2,8 @@ from typing import ClassVar
 
 import pytest
 
-from scabopdf_pipeline.extraction.types import Block
+from scabopdf_pipeline.classification.types import ClassifiedBlock
+from scabopdf_pipeline.extraction.types import Block, ExtractionResult
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import (
@@ -37,6 +38,13 @@ class FakePlugin(ProfilePlugin):
 
     def parse(self, blocks: list[Block]) -> Document:
         return Document()
+
+    def refine_classification(
+        self,
+        extraction: ExtractionResult,
+        tier1_results: list[ClassifiedBlock],
+    ) -> list[ClassifiedBlock]:
+        return tier1_results
 
 
 def _signals() -> ProfilingSignals:
