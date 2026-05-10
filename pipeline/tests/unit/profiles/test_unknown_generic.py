@@ -1,3 +1,5 @@
+from scabopdf_pipeline.classification.types import ClassifiedBlock
+from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.profiling.signals import (
     ApparatusPresence,
@@ -7,6 +9,7 @@ from scabopdf_pipeline.profiling.signals import (
     ProfilingSignals,
     TypographicSignature,
 )
+from scabopdf_pipeline.schema.categories import SemanticCategory
 
 
 def _signals() -> ProfilingSignals:
@@ -34,3 +37,31 @@ def test_instance_methods_return_empty() -> None:
     assert plugin.get_categories() == set()
     assert plugin.get_post_processing() == []
     assert plugin.get_layouts_disabled() == []
+
+
+def test_refine_classification_is_passthrough() -> None:
+    plugin = UnknownGenericProfile()
+    extraction = ExtractionResult(
+        spans=[],
+        blocks=[],
+        page_geometries=[],
+        page_images=[],
+        drawings=[],
+        warnings=[],
+        page_count=0,
+        is_encrypted=False,
+        permissions=-4,
+    )
+    tier1 = [
+        ClassifiedBlock(
+            block_index=0,
+            category=SemanticCategory.BODY,
+            reason="example",
+        ),
+        ClassifiedBlock(
+            block_index=1,
+            category=SemanticCategory.UNCLASSIFIED,
+            reason="no_match",
+        ),
+    ]
+    assert plugin.refine_classification(extraction, tier1) == tier1
