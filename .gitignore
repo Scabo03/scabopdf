@@ -34,3 +34,5 @@ Thumbs.db
 *.pdf
 *.scabopdf.json
 docs/analysis/private/
+# Copyright-protected PDF samples for local testing only
+pipeline/tests/fixtures/private/
