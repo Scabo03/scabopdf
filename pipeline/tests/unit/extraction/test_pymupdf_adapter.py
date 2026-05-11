@@ -108,8 +108,8 @@ def test_extract_drawings_keep_only_horizontal_rules() -> None:
     def build(d: fitz.Document) -> None:
         page = d.new_page(width=595, height=842)
         page.draw_line((50, 400), (545, 400), color=(0, 0, 0), width=0.5)  # horizontal rule
-        page.draw_line((300, 600), (300, 700), color=(0, 0, 0))             # vertical
-        page.draw_rect(fitz.Rect(100, 500, 110, 510), color=(0, 0, 0))      # small box
+        page.draw_line((300, 600), (300, 700), color=(0, 0, 0))  # vertical
+        page.draw_rect(fitz.Rect(100, 500, 110, 510), color=(0, 0, 0))  # small box
 
     result = extract(_build_pdf(build))
     assert len(result.drawings) == 1
