@@ -40,3 +40,11 @@ class UnknownGenericProfile(ProfilePlugin):
         tier1_results: list[ClassifiedBlock],
     ) -> list[ClassifiedBlock]:
         return tier1_results
+
+    def refine_reconstruction(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        return document

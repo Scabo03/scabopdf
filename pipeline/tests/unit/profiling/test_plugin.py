@@ -46,6 +46,14 @@ class FakePlugin(ProfilePlugin):
     ) -> list[ClassifiedBlock]:
         return tier1_results
 
+    def refine_reconstruction(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        return document
+
 
 def _signals() -> ProfilingSignals:
     return ProfilingSignals(
