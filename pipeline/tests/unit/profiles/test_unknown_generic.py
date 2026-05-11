@@ -9,6 +9,7 @@ from scabopdf_pipeline.profiling.signals import (
     ProfilingSignals,
     TypographicSignature,
 )
+from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 
@@ -65,3 +66,31 @@ def test_refine_classification_is_passthrough() -> None:
         ),
     ]
     assert plugin.refine_classification(extraction, tier1) == tier1
+
+
+def test_refine_reconstruction_is_passthrough() -> None:
+    plugin = UnknownGenericProfile()
+    extraction = ExtractionResult(
+        spans=[],
+        blocks=[],
+        page_geometries=[],
+        page_images=[],
+        drawings=[],
+        warnings=[],
+        page_count=0,
+        is_encrypted=False,
+        permissions=-4,
+    )
+    document = Document(
+        root=(
+            Node(
+                id="node_0000",
+                category=SemanticCategory.BODY,
+                page_index=0,
+                block_indices=(0,),
+                text="hello",
+            ),
+        ),
+        warnings=(),
+    )
+    assert plugin.refine_reconstruction(document, extraction, []) is document
