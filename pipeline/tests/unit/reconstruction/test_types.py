@@ -38,6 +38,7 @@ def test_node_has_all_expected_fields() -> None:
         "block_indices",
         "text",
         "level",
+        "apparatus_refs",
     }
 
 
@@ -56,6 +57,7 @@ def test_node_defaults() -> None:
     assert node.block_indices == ()
     assert node.text is None
     assert node.level is None
+    assert node.apparatus_refs == ()
 
 
 def test_document_defaults() -> None:

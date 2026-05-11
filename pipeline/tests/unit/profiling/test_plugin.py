@@ -54,6 +54,14 @@ class FakePlugin(ProfilePlugin):
     ) -> Document:
         return document
 
+    def refine_apparatus(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        return document
+
 
 def _signals() -> ProfilingSignals:
     return ProfilingSignals(

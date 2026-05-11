@@ -94,3 +94,31 @@ def test_refine_reconstruction_is_passthrough() -> None:
         warnings=(),
     )
     assert plugin.refine_reconstruction(document, extraction, []) is document
+
+
+def test_refine_apparatus_is_passthrough() -> None:
+    plugin = UnknownGenericProfile()
+    extraction = ExtractionResult(
+        spans=[],
+        blocks=[],
+        page_geometries=[],
+        page_images=[],
+        drawings=[],
+        warnings=[],
+        page_count=0,
+        is_encrypted=False,
+        permissions=-4,
+    )
+    document = Document(
+        root=(
+            Node(
+                id="node_0000",
+                category=SemanticCategory.BODY,
+                page_index=0,
+                block_indices=(0,),
+                text="hello",
+            ),
+        ),
+        warnings=(),
+    )
+    assert plugin.refine_apparatus(document, extraction, []) is document
