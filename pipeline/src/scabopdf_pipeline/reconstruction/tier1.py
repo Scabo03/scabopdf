@@ -136,6 +136,7 @@ class _NodeBuilder:
             block_indices=tuple(self.block_indices),
             text=self.text,
             level=self.level,
+            apparatus_refs=(),
         )
 
 

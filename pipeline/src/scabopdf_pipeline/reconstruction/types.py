@@ -11,8 +11,12 @@ and optionally refined by a profile plugin's tier 2 in
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from scabopdf_pipeline.schema.categories import SemanticCategory
+
+if TYPE_CHECKING:
+    from scabopdf_pipeline.apparatus.types import ApparatusRef
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -42,6 +46,13 @@ class Node:
 
     ``level`` is the heading level (1-4) for ``HEADING_N`` nodes, ``None``
     for every other category.
+
+    ``apparatus_refs`` lists the relationships inferred during apparatus
+    resolution (ARCHITECTURE.md § 6). It is populated by
+    ``apparatus.resolve_apparatus`` and stays empty if that step is not
+    invoked. The tuple is ordered by emission and may contain refs of
+    different kinds on the same node, though tier 1 only produces one ref
+    per node.
     """
 
     id: str
@@ -51,6 +62,7 @@ class Node:
     block_indices: tuple[int, ...] = ()
     text: str | None = None
     level: int | None = None
+    apparatus_refs: tuple[ApparatusRef, ...] = ()
 
 
 @dataclass(frozen=True, kw_only=True)

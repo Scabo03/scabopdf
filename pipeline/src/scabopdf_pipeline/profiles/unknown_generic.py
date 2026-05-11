@@ -48,3 +48,11 @@ class UnknownGenericProfile(ProfilePlugin):
         classified_blocks: list[ClassifiedBlock],
     ) -> Document:
         return document
+
+    def refine_apparatus(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        return document

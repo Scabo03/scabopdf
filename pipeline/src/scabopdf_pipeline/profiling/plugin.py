@@ -73,3 +73,21 @@ class ProfilePlugin(ABC):
         multi-column reordering (Codici Giuffrè, Enciclopedia moderna),
         cross-column article linking and multi-volume BIC handling live here.
         """
+
+    @abstractmethod
+    def refine_apparatus(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        """Tier 2 apparatus resolution: refine generic bindings with profile-specific logic.
+
+        See ARCHITECTURE.md § 6. The plugin receives the ``Document``
+        already enriched by the five tier 1 resolvers (cross-page note
+        merging, cross-references, marginal positions, gloss positions,
+        box associations) and returns a possibly modified ``Document``.
+        Profile-specific behaviours like Mosconi marginal ellipsis
+        recomposition, Marrone book-page anchor extraction or Giuffrè
+        per-article scope refinement of cross-references live here.
+        """
