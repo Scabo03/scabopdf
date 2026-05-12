@@ -1,30 +1,56 @@
 """End-to-end integration test for the Layer 1 pipeline.
 
 Runs ``extract`` → ``classify`` → ``reconstruct`` → ``resolve_apparatus``
-on a real PDF fixture and verifies sanity invariants. Fixtures are private
-(copyright-protected) and gitignored under ``pipeline/tests/fixtures/private/``;
-each test is skipped cleanly if its fixture is not present locally.
+→ ``convert_document`` on a real PDF fixture and verifies sanity
+invariants on both the Python tree and the emitted ``ScabopdfDocument``.
+The two ``test_emit_to_file_*`` cases close the loop by running the
+full § 9 emitter (including UTF-8 disk write) and validating the
+on-disk JSON against the committed ``shared/schema.json``.
+
+Fixtures are private (copyright-protected) and gitignored under
+``pipeline/tests/fixtures/private/``; each test is skipped cleanly if
+its fixture is not present locally.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from scabopdf_pipeline.apparatus import resolve_apparatus
 from scabopdf_pipeline.classification import classify
+from scabopdf_pipeline.emission import convert_document, emit_to_file
 from scabopdf_pipeline.extraction import extract
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.reconstruction import Node, reconstruct
 from scabopdf_pipeline.schema.categories import SemanticCategory
+from scabopdf_pipeline.schema.contract import NodeDict
+from scabopdf_pipeline.schema.validator import validate_against_schema, validate_document
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "private"
 PATRIARCA_FIXTURE = FIXTURES_DIR / "patriarca_benazzo.pdf"
 MOSCONI_FIXTURE = FIXTURES_DIR / "mosconi_campiglio.pdf"
+SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
+
+
+def _load_shared_schema() -> dict[str, Any]:
+    schema: dict[str, Any] = json.loads(SHARED_SCHEMA_PATH.read_text(encoding="utf-8"))
+    return schema
+
+
+def _count_nodes_recursive(structure: list[NodeDict]) -> int:
+    total = 0
+    for node in structure:
+        total += 1
+        total += _count_nodes_recursive(node.children)
+    return total
+
 
 _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     # reconstruction tier 1
@@ -79,6 +105,8 @@ def test_pipeline_runs_on_patriarca() -> None:
     document = reconstruct(extraction, classified, profile, plugin)
     document = resolve_apparatus(document, extraction, classified, plugin)
 
+    scabopdf_document = convert_document(document, extraction, profile, PATRIARCA_FIXTURE)
+
     non_sentinel = [cb for cb in classified if cb.block_index >= 0]
 
     chars_extraction = sum(len(s.text) for s in extraction.spans)
@@ -105,6 +133,8 @@ def test_pipeline_runs_on_patriarca() -> None:
         f"\n  n_nodes_total={n_nodes_total}"
         f"\n  n_warnings={len(document.warnings)}"
         f"\n  n_apparatus_refs_total={n_apparatus_refs_total}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+        f"\n  emitted_structure_len={len(scabopdf_document.structure)}"
     )
 
     assert 400 <= extraction.page_count <= 600
@@ -130,6 +160,15 @@ def test_pipeline_runs_on_patriarca() -> None:
     # apparatus_ref under this configuration.
     assert n_apparatus_refs_total == 0
 
+    # § 9 emission: the converted ScabopdfDocument is valid against both
+    # the Pydantic contract and the committed shared/schema.json.
+    assert scabopdf_document.schema_version == "0.1.0"
+    assert scabopdf_document.metadata.pages_pdf == extraction.page_count
+    assert len(scabopdf_document.structure) == len(document.root)
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
 
 @pytest.mark.slow
 def test_pipeline_runs_on_mosconi() -> None:
@@ -143,6 +182,8 @@ def test_pipeline_runs_on_mosconi() -> None:
     classified = classify(extraction, profile, plugin)
     document = reconstruct(extraction, classified, profile, plugin)
     document = resolve_apparatus(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(document, extraction, profile, MOSCONI_FIXTURE)
 
     n_nodes_total = sum(1 for node in document.root for _ in _iter_nodes(node))
     n_apparatus_refs_total = sum(
@@ -164,6 +205,8 @@ def test_pipeline_runs_on_mosconi() -> None:
         f"\n  n_warnings={n_warnings}"
         f"\n  n_apparatus_refs_total={n_apparatus_refs_total}"
         f"\n  n_unresolved_cross_reference_warnings={n_unresolved_cross_reference}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+        f"\n  emitted_structure_len={len(scabopdf_document.structure)}"
     )
 
     assert extraction.page_count == 613
@@ -212,3 +255,78 @@ def test_pipeline_runs_on_mosconi() -> None:
     assert n_warnings == 0
     assert n_unresolved_cross_reference == 0
     assert n_apparatus_refs_total == 0
+
+    # § 9 emission: same conformance check as Patriarca.
+    assert scabopdf_document.schema_version == "0.1.0"
+    assert scabopdf_document.metadata.pages_pdf == 613
+    assert len(scabopdf_document.structure) == len(document.root)
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_emit_to_file_on_patriarca(tmp_path: Path) -> None:
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE} — see pipeline/tests/fixtures/README.md")
+
+    output_path = tmp_path / "patriarca.scabopdf.json"
+    returned = emit_to_file(PATRIARCA_FIXTURE, output_path)
+
+    assert returned == output_path
+    assert output_path.exists()
+
+    raw = output_path.read_text(encoding="utf-8")
+    payload = json.loads(raw)
+    validate_against_schema(payload, _load_shared_schema())
+
+    file_size_kb = output_path.stat().st_size / 1024.0
+    document = validate_document(payload)
+    n_nodes_total = _count_nodes_recursive(document.structure)
+
+    print(
+        f"\nPatriarca-Benazzo § 9 emit_to_file summary:"
+        f"\n  file_size_kb={file_size_kb:.1f}"
+        f"\n  schema_version={document.schema_version}"
+        f"\n  pages_pdf={document.metadata.pages_pdf}"
+        f"\n  n_nodes_total={n_nodes_total}"
+        f"\n  n_warnings={len(document.warnings)}"
+    )
+
+    assert file_size_kb > 0
+    assert document.schema_version == "0.1.0"
+    assert n_nodes_total > 0
+
+
+@pytest.mark.slow
+def test_emit_to_file_on_mosconi(tmp_path: Path) -> None:
+    if not MOSCONI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MOSCONI_FIXTURE} — see pipeline/tests/fixtures/README.md")
+
+    output_path = tmp_path / "mosconi.scabopdf.json"
+    returned = emit_to_file(MOSCONI_FIXTURE, output_path)
+
+    assert returned == output_path
+    assert output_path.exists()
+
+    raw = output_path.read_text(encoding="utf-8")
+    payload = json.loads(raw)
+    validate_against_schema(payload, _load_shared_schema())
+
+    file_size_kb = output_path.stat().st_size / 1024.0
+    document = validate_document(payload)
+    n_nodes_total = _count_nodes_recursive(document.structure)
+
+    print(
+        f"\nMosconi § 9 emit_to_file summary:"
+        f"\n  file_size_kb={file_size_kb:.1f}"
+        f"\n  schema_version={document.schema_version}"
+        f"\n  pages_pdf={document.metadata.pages_pdf}"
+        f"\n  n_nodes_total={n_nodes_total}"
+        f"\n  n_warnings={len(document.warnings)}"
+    )
+
+    assert file_size_kb > 0
+    assert document.schema_version == "0.1.0"
+    assert document.metadata.pages_pdf == 613
+    assert n_nodes_total > 0
