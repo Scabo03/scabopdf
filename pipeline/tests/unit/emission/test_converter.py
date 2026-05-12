@@ -209,7 +209,7 @@ def test_convert_generates_uuid_document_id() -> None:
 def test_convert_schema_version_is_literal() -> None:
     """``schema_version`` is the v0.1.0 literal on every emission."""
     result = convert_document(Document(root=()), _empty_extraction(), _profile(), "x.pdf")
-    assert result.schema_version == "0.1.0"
+    assert result.schema_version == "0.2.0"
 
 
 def test_convert_extracts_basename_of_source_filename() -> None:

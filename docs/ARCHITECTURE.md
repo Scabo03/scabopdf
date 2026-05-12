@@ -739,16 +739,17 @@ Reversible text transformations applied during processing:
 ```json
 [
   {
-    "step": "dehyphenate",
-    "page": 12,
-    "position": [1234, 1242],
-    "original": "evolu-zione",
+    "step_id": "dehyphenate_with_log",
+    "node_id": "node_0042",
+    "page_index": 12,
+    "position": [1234, 1245],
+    "original": "evolu-\nzione",
     "normalized": "evoluzione"
   }
 ]
 ```
 
-Layer 2 uses this to support "raw mode" reading.
+The `original` field carries the **literal slice** of the node text at indices `position[0]:position[1]` *immediately before* this transformation was applied — including any embedded `\n` or soft hyphen, exactly as it appeared in the source. This is what makes the log reversible byte-for-byte: Layer 2 walks the list in **reverse order** and, for each entry, replaces `text[position[0] : position[0] + len(normalized)]` with `original` on the node identified by `node_id`. When a single step records several transformations on the same node, the step applies the substitutions right-to-left so that the recorded offsets remain valid slices of the pre-step text. Layer 2 uses this to support "raw mode" reading.
 
 ### 8.7 `structure` block
 

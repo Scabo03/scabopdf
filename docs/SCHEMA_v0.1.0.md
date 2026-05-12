@@ -1,5 +1,7 @@
 # ScaboPDF — JSON Schema v0.1.0
 
+> **STORICO.** Versione corrente: **0.2.0**. Vedi [`SCHEMA_v0.2.0.md`](SCHEMA_v0.2.0.md) per la versione attuale e [`SCHEMA_CHANGELOG.md`](SCHEMA_CHANGELOG.md) per il delta tra versioni. Questo file è mantenuto come riferimento storico del bootstrap del contratto.
+
 > Riferimento narrativo dello schema JSON che fa da contratto fra Layer 1 (pipeline Python) e Layer 2 (app React Native).
 > Versione: 0.1.0, instabile (pre-1.0).
 > Stato: bootstrap iniziale del contratto, fissato dopo la chiusura del § 6 di `ARCHITECTURE.md`.

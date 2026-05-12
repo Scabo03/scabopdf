@@ -44,7 +44,7 @@ def test_emit_to_file_writes_non_empty_json(tmp_path: Path) -> None:
     assert output_path.exists()
     text = output_path.read_text(encoding="utf-8")
     assert text  # non-empty
-    assert '"schema_version": "0.1.0"' in text
+    assert '"schema_version": "0.2.0"' in text
 
 
 def test_emit_to_file_json_validates_against_pydantic(tmp_path: Path) -> None:
@@ -57,7 +57,7 @@ def test_emit_to_file_json_validates_against_pydantic(tmp_path: Path) -> None:
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     document = validate_document(payload)
-    assert document.schema_version == "0.1.0"
+    assert document.schema_version == "0.2.0"
 
 
 def test_emit_to_file_no_validate_skips_validation(
@@ -165,4 +165,4 @@ def test_emit_to_file_overwrites_existing(tmp_path: Path) -> None:
     output_path.write_text("stale content", encoding="utf-8")
     emit_to_file(pdf_path, output_path)
     assert output_path.read_text(encoding="utf-8") != "stale content"
-    assert '"schema_version": "0.1.0"' in output_path.read_text(encoding="utf-8")
+    assert '"schema_version": "0.2.0"' in output_path.read_text(encoding="utf-8")

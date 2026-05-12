@@ -3,9 +3,15 @@
 This is the *pure* layer of § 9 emission: it takes the already-processed
 Layer 1 artefacts (``Document``, ``ExtractionResult``, ``DocumentProfile``)
 and returns a fully-populated Pydantic ``ScabopdfDocument`` that conforms
-to schema v0.1.0. No I/O, no orchestration: just a deterministic
+to schema v0.2.0. No I/O, no orchestration: just a deterministic
 mapping with one explicit non-determinism (``document_id`` is a fresh
 ``uuid.uuid4()`` per call — emission is an event, not a content hash).
+
+The ``transformations`` block populated here mirrors
+``Document.transformations`` field-by-field through
+``_convert_transformation``: the post-processing phase is the only
+producer of that field, and the converter never invents or rewrites
+its content.
 
 This module never raises ``EmissionError``: native exceptions
 (``pydantic.ValidationError`` if the contract is violated, ``TypeError``
@@ -20,6 +26,7 @@ from pathlib import Path
 
 from scabopdf_pipeline.apparatus.types import ApparatusRef
 from scabopdf_pipeline.extraction.types import ExtractionResult
+from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.contract import (
@@ -29,6 +36,7 @@ from scabopdf_pipeline.schema.contract import (
     DocumentProfileDict,
     NodeDict,
     ScabopdfDocument,
+    TransformationDict,
 )
 
 
@@ -60,7 +68,7 @@ def convert_document(
     Returns
     -------
     ScabopdfDocument
-        Fully validated Pydantic model conforming to schema v0.1.0.
+        Fully validated Pydantic model conforming to schema v0.2.0.
 
     Notes
     -----
@@ -100,6 +108,9 @@ def convert_document(
     )
 
     warnings: list[str] = list(document.warnings) + list(profile.warnings)
+    transformations: list[TransformationDict] = [
+        _convert_transformation(t) for t in document.transformations
+    ]
     structure: list[NodeDict] = [_convert_node(n) for n in document.root]
 
     return ScabopdfDocument(
@@ -108,6 +119,7 @@ def convert_document(
         metadata=metadata,
         profile=profile_dict,
         warnings=warnings,
+        transformations=transformations,
         structure=structure,
     )
 
@@ -139,4 +151,22 @@ def _convert_apparatus_ref(ref: ApparatusRef) -> ApparatusRefDict:
         kind=ref.kind,
         target_node_id=ref.target_node_id,
         source_marker=ref.source_marker,
+    )
+
+
+def _convert_transformation(t: Transformation) -> TransformationDict:
+    """Map a :class:`Transformation` into a :class:`TransformationDict`.
+
+    Field names and types are identical between the Python dataclass and
+    the Pydantic model; the conversion is therefore field-by-field
+    construction. The ``position`` tuple is preserved (Pydantic
+    serialises it as a JSON array of two integers).
+    """
+    return TransformationDict(
+        step_id=t.step_id,
+        node_id=t.node_id,
+        page_index=t.page_index,
+        position=t.position,
+        original=t.original,
+        normalized=t.normalized,
     )

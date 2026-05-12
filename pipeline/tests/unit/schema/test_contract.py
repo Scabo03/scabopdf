@@ -1,4 +1,4 @@
-"""Unit tests for the v0.1.0 Pydantic contract models."""
+"""Unit tests for the v0.2.0 Pydantic contract models."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from scabopdf_pipeline.schema.contract import (
 
 def _minimal_document() -> ScabopdfDocument:
     return ScabopdfDocument(
-        schema_version="0.1.0",
+        schema_version="0.2.0",
         document_id=uuid4(),
         metadata=DocumentMetadata(
             pages_pdf=10,
@@ -39,7 +39,7 @@ def _minimal_document() -> ScabopdfDocument:
 def test_minimal_document_validates() -> None:
     doc = _minimal_document()
     assert isinstance(doc, ScabopdfDocument)
-    assert doc.schema_version == "0.1.0"
+    assert doc.schema_version == "0.2.0"
     assert doc.warnings == []
     assert doc.structure == []
 
@@ -48,7 +48,7 @@ def test_missing_required_field_raises() -> None:
     with pytest.raises(ValidationError):
         ScabopdfDocument.model_validate(
             {
-                "schema_version": "0.1.0",
+                "schema_version": "0.2.0",
                 "document_id": str(uuid4()),
                 "metadata": {
                     "pages_pdf": 10,
@@ -140,7 +140,7 @@ def test_schema_version_literal_rejects_other_strings() -> None:
     with pytest.raises(ValidationError):
         ScabopdfDocument.model_validate(
             {
-                "schema_version": "0.2.0",
+                "schema_version": "0.3.0",
                 "document_id": str(uuid4()),
                 "metadata": {
                     "pages_pdf": 10,
@@ -168,7 +168,7 @@ def test_extra_fields_forbidden() -> None:
     with pytest.raises(ValidationError):
         ScabopdfDocument.model_validate(
             {
-                "schema_version": "0.1.0",
+                "schema_version": "0.2.0",
                 "document_id": str(uuid4()),
                 "metadata": {
                     "pages_pdf": 10,
@@ -190,7 +190,7 @@ def test_document_id_accepts_uuid_string() -> None:
     raw = str(uuid4())
     doc = ScabopdfDocument.model_validate(
         {
-            "schema_version": "0.1.0",
+            "schema_version": "0.2.0",
             "document_id": raw,
             "metadata": {
                 "pages_pdf": 10,
@@ -213,7 +213,7 @@ def test_document_id_rejects_non_uuid_string() -> None:
     with pytest.raises(ValidationError):
         ScabopdfDocument.model_validate(
             {
-                "schema_version": "0.1.0",
+                "schema_version": "0.2.0",
                 "document_id": "not-a-uuid",
                 "metadata": {
                     "pages_pdf": 10,

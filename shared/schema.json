@@ -228,13 +228,64 @@
       ],
       "title": "SemanticCategory",
       "type": "string"
+    },
+    "TransformationDict": {
+      "additionalProperties": false,
+      "description": "A reversible text substitution recorded by a post-processing step.\n\nMirrors :class:`scabopdf_pipeline.postprocessing.types.Transformation`\nin its JSON form. Layer 2 reads the ``transformations`` list to\nsupport \"raw mode\" reading: walking the list in **reverse** order\nand replacing ``text[position[0] : position[0] + len(normalized)]``\nwith ``original`` on the named node restores the pre-post-processing\ntext byte-for-byte.\n\n``position`` is the half-open ``(start, end)`` offset into the node\ntext **as it was immediately before** this transformation was\napplied. When a single step records several transformations on the\nsame node, the step applies the substitutions right-to-left so the\nrecorded offsets remain valid slices of that pre-step text.\n\n``original`` is the **literal slice** of the pre-transformation\ntext (newlines and soft hyphens included), not a cleaned-up form;\nthis is what makes the log reversible without ambiguity.\n\nThe post-step node text satisfies ``post[position[0] :\nposition[0] + len(normalized)] == normalized``.",
+      "properties": {
+        "step_id": {
+          "title": "Step Id",
+          "type": "string"
+        },
+        "node_id": {
+          "pattern": "^node_\\d+$",
+          "title": "Node Id",
+          "type": "string"
+        },
+        "page_index": {
+          "title": "Page Index",
+          "type": "integer"
+        },
+        "position": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "integer"
+            }
+          ],
+          "title": "Position",
+          "type": "array"
+        },
+        "original": {
+          "title": "Original",
+          "type": "string"
+        },
+        "normalized": {
+          "title": "Normalized",
+          "type": "string"
+        }
+      },
+      "required": [
+        "step_id",
+        "node_id",
+        "page_index",
+        "position",
+        "original",
+        "normalized"
+      ],
+      "title": "TransformationDict",
+      "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.1.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
+  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.2.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
   "properties": {
     "schema_version": {
-      "const": "0.1.0",
+      "const": "0.2.0",
       "title": "Schema Version",
       "type": "string"
     },
@@ -254,6 +305,13 @@
         "type": "string"
       },
       "title": "Warnings",
+      "type": "array"
+    },
+    "transformations": {
+      "items": {
+        "$ref": "#/$defs/TransformationDict"
+      },
+      "title": "Transformations",
       "type": "array"
     },
     "structure": {

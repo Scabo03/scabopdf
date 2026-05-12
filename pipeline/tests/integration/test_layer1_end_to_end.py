@@ -162,7 +162,7 @@ def test_pipeline_runs_on_patriarca() -> None:
 
     # § 9 emission: the converted ScabopdfDocument is valid against both
     # the Pydantic contract and the committed shared/schema.json.
-    assert scabopdf_document.schema_version == "0.1.0"
+    assert scabopdf_document.schema_version == "0.2.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
     assert len(scabopdf_document.structure) == len(document.root)
     payload = scabopdf_document.model_dump(mode="json")
@@ -257,7 +257,7 @@ def test_pipeline_runs_on_mosconi() -> None:
     assert n_apparatus_refs_total == 0
 
     # § 9 emission: same conformance check as Patriarca.
-    assert scabopdf_document.schema_version == "0.1.0"
+    assert scabopdf_document.schema_version == "0.2.0"
     assert scabopdf_document.metadata.pages_pdf == 613
     assert len(scabopdf_document.structure) == len(document.root)
     payload = scabopdf_document.model_dump(mode="json")
@@ -294,7 +294,7 @@ def test_emit_to_file_on_patriarca(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.1.0"
+    assert document.schema_version == "0.2.0"
     assert n_nodes_total > 0
 
 
@@ -327,6 +327,6 @@ def test_emit_to_file_on_mosconi(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.1.0"
+    assert document.schema_version == "0.2.0"
     assert document.metadata.pages_pdf == 613
     assert n_nodes_total > 0
