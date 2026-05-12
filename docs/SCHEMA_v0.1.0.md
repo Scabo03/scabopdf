@@ -48,7 +48,7 @@ Lista degli alberi di nodi che rappresentano la struttura di lettura del documen
 
 Un nodo nell'albero di lettura. I suoi campi:
 
-`id` è una stringa con pattern `^node_\d+$`. La pipeline emette oggi identificatori zero-padded a quattro cifre (`node_0001`, `node_0002`, …); il pattern non impone un upper bound, quindi documenti con più di 9999 nodi resteranno validi quando verranno (per esempio quando un plugin di tier 2 decomporrà i `BODY` in span granulari). Gli `id` sono deterministici sull'ordine di emissione di `reconstruct()`.
+`id` è una stringa con pattern `^node_\d+$`. La pipeline emette oggi identificatori zero-padded a quattro cifre a partire da `node_0000` (`node_0000`, `node_0001`, …); il pattern non impone un upper bound, quindi documenti con più di 9999 nodi resteranno validi quando verranno (per esempio quando un plugin di tier 2 decomporrà i `BODY` in span granulari). Gli `id` sono deterministici sull'ordine di emissione di `reconstruct()`.
 
 `type` è un valore della `SemanticCategory` (enum chiuso di circa quarantuno valori). Tutti i valori dell'enum sono accettati: lo schema descrive cosa la pipeline può emettere quando ogni plugin è attivo, non solo cosa emette il tier 1 generico. Il rinominio rispetto a `Node.category` (Python) è deliberato e segue `ARCHITECTURE.md § 8.7`.
 
@@ -68,87 +68,97 @@ Un nodo nell'albero di lettura. I suoi campi:
 
 Riferimento direzionale dell'apparato. Tre campi: `kind` (un valore dell'enum `ApparatusRefKind`: `CROSS_REF_TARGET`, `BODY_ASSOCIATION`, `GLOSS_TARGET`), `target_node_id` (l'`id` del nodo destinazione, stesso pattern `^node_\d+$`), `source_marker` (stringa con il marcatore testuale per `CROSS_REF_TARGET`, es. `"(1)"`; `None` per gli altri due kind che sono risolti per prossimità spaziale).
 
-## 4. Esempio JSON realistico
+## 4. Esempio JSON reale
 
-L'esempio che segue rappresenta un piccolo documento con un capitolo, una sezione interna, due paragrafi e una nota collegata a un riferimento incrociato. I valori sono coerenti con quello che Patriarca-Benazzo o Mosconi-Campiglio producono oggi.
+L'esempio che segue è una porzione di emissione vera, estratta da Patriarca-Benazzo via `scabopdf-extract`. I primi sei nodi della foresta documentale mostrano le quattro categorie che il tier 1 generico produce oggi su un manuale di cui non esiste ancora un plugin di profilo: `UNCLASSIFIED` (di gran lunga la maggioranza), `ARTIFACT_RUNNING_HEADER`, `ARTIFACT_FOOTER`, `EMPTY_PAGE`. La foresta è piatta — niente `HEADING_1`/`HEADING_2`/`BODY`/`CROSS_REFERENCE`/`NOTE` annidati — perché la gerarchia di lettura, gli apparati e i riferimenti incrociati nascono nel tier 2 dei plugin di corpus, che è ancora da scrivere. L'`EMPTY_PAGE` (qui `node_0020`, pagina 3 del PDF) è l'unico nodo della selezione con `text: null` e `block_indices: []`, e dimostra che i campi nullable vengono emessi come `null` esplicito anziché omessi.
 
 ```json
 {
   "schema_version": "0.1.0",
-  "document_id": "c3f4a8d2-2b6e-5f93-9c47-1e2a8b4d6f10",
+  "document_id": "b3a6813a-9cf3-44b5-8b29-92e8f9f1fd36",
   "metadata": {
-    "pages_pdf": 487,
-    "page_size_pt": [457.2, 684.0],
-    "source_pdf_filename": "mosconi_campiglio_vol_I_2024.pdf"
+    "pages_pdf": 504,
+    "page_size_pt": [
+      481.8897705078125,
+      680.31494140625
+    ],
+    "source_pdf_filename": "patriarca_benazzo.pdf"
   },
   "profile": {
-    "profile_id": "manuale_utet_wolterskluwer",
-    "editorial_family": "utet_wolterskluwer",
-    "genre": "treatise",
-    "confidence": 0.91
+    "profile_id": "unknown_generic",
+    "editorial_family": "unknown",
+    "genre": "unknown",
+    "confidence": 0.0
   },
-  "warnings": [
-    "outline_partial: 12 paragraphs missing from embedded TOC"
-  ],
+  "warnings": [],
   "structure": [
     {
+      "id": "node_0000",
+      "type": "UNCLASSIFIED",
+      "page_index": 0,
+      "text": "Sergio PatriarcaPaolo Benazzo",
+      "level": null,
+      "block_indices": [1],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
       "id": "node_0001",
-      "type": "HEADING_1",
-      "page_index": 34,
-      "text": "Capitolo Primo. Il diritto internazionale privato",
-      "level": 1,
-      "block_indices": [102],
-      "children": [
-        {
-          "id": "node_0002",
-          "type": "HEADING_2",
-          "page_index": 34,
-          "text": "1. Definizioni e ambito",
-          "level": 2,
-          "block_indices": [103],
-          "children": [
-            {
-              "id": "node_0003",
-              "type": "BODY",
-              "page_index": 34,
-              "text": "Il diritto internazionale privato è il ramo del diritto interno che disciplina i rapporti privati con elementi di estraneità.",
-              "block_indices": [104],
-              "children": [],
-              "apparatus_refs": []
-            },
-            {
-              "id": "node_0004",
-              "type": "CROSS_REFERENCE",
-              "page_index": 34,
-              "text": "1",
-              "block_indices": [105],
-              "children": [],
-              "apparatus_refs": [
-                {
-                  "kind": "CROSS_REF_TARGET",
-                  "target_node_id": "node_0005",
-                  "source_marker": "1"
-                }
-              ]
-            },
-            {
-              "id": "node_0005",
-              "type": "NOTE",
-              "page_index": 34,
-              "text": "Sul concetto di estraneità si veda Mosconi, Diritto internazionale privato, p. 14.",
-              "block_indices": [106],
-              "children": [],
-              "apparatus_refs": []
-            }
-          ],
-          "apparatus_refs": []
-        }
-      ],
+      "type": "UNCLASSIFIED",
+      "page_index": 0,
+      "text": "Diritto delle impresee delle società",
+      "level": null,
+      "block_indices": [0],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_0002",
+      "type": "ARTIFACT_RUNNING_HEADER",
+      "page_index": 1,
+      "text": "Copyright © 2022 Zanichelli editore S.p.A., via Irnerio 34, 40126 Bologna [69997]",
+      "level": null,
+      "block_indices": [2],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_0019",
+      "type": "ARTIFACT_FOOTER",
+      "page_index": 2,
+      "text": "ZANICHELLI EDITORE",
+      "level": null,
+      "block_indices": [17],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_0020",
+      "type": "EMPTY_PAGE",
+      "page_index": 3,
+      "text": null,
+      "level": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_0021",
+      "type": "UNCLASSIFIED",
+      "page_index": 4,
+      "text": "Sommario",
+      "level": null,
+      "block_indices": [20],
+      "children": [],
       "apparatus_refs": []
     }
   ]
 }
 ```
+
+<!-- Esempio estratto da Patriarca-Benazzo via scabopdf-extract il 2026-05-12. Selezione di 6 nodi non consecutivi (indici 0, 1, 2, 19, 20, 21 nella foresta originale di 1616 nodi). -->
+
+Quando il primo plugin di tier 2 sarà operativo, l'esempio della sezione 4 verrà ripreso con un sub-tree gerarchico realistico — `HEADING_1` con figli `HEADING_2`, `BODY`, `CROSS_REFERENCE`/`NOTE` collegati da `apparatus_refs` — accanto all'esempio piatto qui sopra, così la disciplina della versione resterà visibile in entrambe le forme.
 
 ## 5. Cosa NON è in v0.1.0
 
@@ -177,6 +187,8 @@ Questa sezione è la più importante del documento. Lo schema v0.1.0 è il **con
 Ogni sessione che tocca codice di produzione capace di cambiare la struttura dell'output del Layer 1 — e questo include estrazione (`extraction/types.py`), classificazione (`classification/types.py`, `schema/categories.py`), ricomposizione (`reconstruction/types.py`), risoluzione apparato (`apparatus/types.py`), profilazione (`profiling/profile.py`), e in futuro post-processing — ha l'obbligo di verificare esplicitamente che l'output emesso resti conforme al `contract.py`. La verifica non è un test indiretto da spegnere in fondo alla sessione: è una decisione cosciente che va presa **mentre** si scrive il codice. Se il cambiamento aggiunge un campo, lo rimuove, lo rinomina, ne cambia il tipo o la cardinalità, il `contract.py` va aggiornato nella **stessa** sessione che cambia il codice di produzione. Non nella sessione successiva. Non "ci penserò dopo". Non in un commit di follow-up rimandato. Stessa sessione.
 
 Il pattern operativo da seguire è chiaro e va memorizzato: prima si modifica il codice di produzione, poi si aggiorna `contract.py` per riflettere la nuova forma dell'output, poi si rigenera `shared/schema.json` con `python pipeline/scripts/generate_schema.py`, poi si aggiorna questo documento (`SCHEMA_v0.1.0.md` o, dopo bump major, il suo successore) per descrivere narrativamente cosa è cambiato, poi si aggiorna `docs/SCHEMA_CHANGELOG.md` (file che nascerà al primo bump) con la motivazione, e infine si verifica che tutti i test passino — incluso il test di drift in `test_generate_schema.py`, che è l'ultima linea di difesa contro un `shared/schema.json` dimenticato. Solo a questo punto il commit è pronto per essere chiuso. Saltare anche solo uno di questi passi vuol dire pubblicare un commit che porta avanti un'incompatibilità silenziosa fra codice e contratto: i test passeranno (perché non c'è nessun test che sappia di una semantica che non hai espresso), il Layer 2 si romperà la prima volta che incontrerà l'output reale, e il debugging sarà difficile perché il punto in cui le strade si sono divaricate sarà sepolto sotto altri commit.
+
+Con l'introduzione del § 9 (commit di emissione) questa disciplina si estende al convertitore `pipeline/src/scabopdf_pipeline/emission/converter.py`. Il convertitore è il "ponte" che traduce la rappresentazione Python interna (`Document`, `Node`, `ApparatusRef`, `ExtractionResult`, `DocumentProfile`) nei modelli del contratto, ed è la sola superficie che vede entrambi i lati. Ogni modifica al codice di produzione che cambi la forma del `Document` o dei suoi sotto-componenti deve essere riflessa simmetricamente nel converter nella stessa sessione che introduce il cambiamento. Il pattern operativo si estende quindi a sei passi: (1) modifica del codice di produzione, (2) aggiornamento di `contract.py` se serve, (3) aggiornamento di `converter.py` per popolare i nuovi campi (o eliminare i campi rimossi), (4) rigenerazione di `shared/schema.json`, (5) aggiornamento di questo documento, (6) suite di test verde inclusi il drift e l'integration end-to-end. Se il convertitore resta indietro rispetto al `Document`, il drift test non se ne accorge — accorge solo della divergenza fra `contract.py` e lo schema generato — ma l'integration test su Patriarca/Mosconi fallirà la prima volta che un nuovo campo emerge senza propagazione attraverso il ponte.
 
 Il bump di versione segue SemVer. Patch (0.1.x) è per fix che non cambiano la struttura: correzioni di docstring, refactor interni di `contract.py` che lasciano invariato l'output di `model_json_schema()`. Minor (0.x.0) è per aggiunte additive backward-compatible: nuovi campi opzionali, nuovi valori enum, nuove categorie semantiche, nuovi `kind` di apparato. In fase 0.x sono ammessi anche breaking change nei bump minor, ma vanno **documentati esplicitamente nel CHANGELOG** con la voce "BREAKING:" all'inizio della riga. Major (1.0.0 e oltre) è per breaking change conclamati: in fase 0.x il bump major è impossibile per definizione, e arriverà solo quando il Layer 1 sarà funzionalmente completo. Da 1.0.0 in poi, il bump major sarà un evento serio: comporterà un nuovo file `SCHEMA_v<X>.md` accanto a questo, e Layer 2 dovrà aggiornare la sua banda di versioni supportate.
 
