@@ -1,7 +1,275 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://scabopdf.local/schema/document.json",
-  "title": "ScaboPDF Document",
-  "description": "Placeholder. Canonical JSON contract between Layer 1 (Python pipeline) and Layer 2 (React Native app). To be defined per docs/ARCHITECTURE.md § 8.",
+  "$comment": "Generated automatically from pipeline/src/scabopdf_pipeline/schema/contract.py via pipeline/scripts/generate_schema.py. Do not edit by hand.",
+  "$defs": {
+    "ApparatusRefDict": {
+      "additionalProperties": false,
+      "description": "A directed apparatus reference attached to a node.\n\nMirrors :class:`scabopdf_pipeline.apparatus.types.ApparatusRef` in its\nJSON form. ``target_node_id`` must match the ``NodeDict.id`` pattern;\n``source_marker`` carries the textual marker for ``CROSS_REF_TARGET``\n(e.g. ``\"(1)\"``) and is ``None`` for the other kinds, which are\nresolved purely from spatial proximity.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/ApparatusRefKind"
+        },
+        "target_node_id": {
+          "pattern": "^node_\\d+$",
+          "title": "Target Node Id",
+          "type": "string"
+        },
+        "source_marker": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Marker"
+        }
+      },
+      "required": [
+        "kind",
+        "target_node_id"
+      ],
+      "title": "ApparatusRefDict",
+      "type": "object"
+    },
+    "ApparatusRefKind": {
+      "description": "Closed enum of relationships produced by tier 1 apparatus resolution.",
+      "enum": [
+        "CROSS_REF_TARGET",
+        "BODY_ASSOCIATION",
+        "GLOSS_TARGET"
+      ],
+      "title": "ApparatusRefKind",
+      "type": "string"
+    },
+    "DocumentMetadata": {
+      "additionalProperties": false,
+      "description": "Editorial metadata extracted from the source PDF.\n\nv0.1.0 carries only the fields the pipeline actually populates today:\npage count, physical page size, and the source filename. Title,\nauthors, ISBN, year, language, edition, publisher and\n``pages_with_content`` are deferred to a later version when a\nmetadata-extraction step is built.\n\n``page_size_pt`` is the size of the **first** PDF page expressed in\nPostScript points ``(width, height)``. Documents with heterogeneous\npage sizes are out of scope for v0.1.0.",
+      "properties": {
+        "pages_pdf": {
+          "title": "Pages Pdf",
+          "type": "integer"
+        },
+        "page_size_pt": {
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Page Size Pt",
+          "type": "array"
+        },
+        "source_pdf_filename": {
+          "title": "Source Pdf Filename",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pages_pdf",
+        "page_size_pt",
+        "source_pdf_filename"
+      ],
+      "title": "DocumentMetadata",
+      "type": "object"
+    },
+    "DocumentProfileDict": {
+      "additionalProperties": false,
+      "description": "Output of the profiling phase, as it appears in the emitted JSON.\n\nA strict subset of\n:class:`scabopdf_pipeline.profiling.profile.DocumentProfile`: only the\nfields that uniquely identify the profile and its confidence are\nemitted today. ``detection_signals``, ``layouts_available``,\n``layouts_disabled``, ``categories_emitted`` and ``post_processing``\nare deferred to later additive versions.\n\nThe profile's own ``warnings`` (DocumentProfile.warnings) are **not**\nrepresented here: at emission time (§ 9) they are merged into the\ntop-level ``ScabopdfDocument.warnings`` list.",
+      "properties": {
+        "profile_id": {
+          "title": "Profile Id",
+          "type": "string"
+        },
+        "editorial_family": {
+          "title": "Editorial Family",
+          "type": "string"
+        },
+        "genre": {
+          "title": "Genre",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "profile_id",
+        "editorial_family",
+        "genre",
+        "confidence"
+      ],
+      "title": "DocumentProfileDict",
+      "type": "object"
+    },
+    "NodeDict": {
+      "additionalProperties": false,
+      "description": "A node in the reading-order tree.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.Node` in its\nJSON form. The Python ``category`` field is renamed to ``type`` here\nto match ``ARCHITECTURE.md § 8.7`` and what Layer 2 expects to read.\n\n``children`` is recursive and produces an arbitrarily deep tree.\n``text`` is ``None`` only for synthetic nodes without an originating\nblock (currently only ``EMPTY_PAGE``). ``level`` is non-null only for\n``HEADING_*`` categories. These semantic cross-field invariants are\nnot enforced by the contract in v0.1.0 to keep the schema additive;\nthey may become validated constraints in a later version.",
+      "properties": {
+        "id": {
+          "pattern": "^node_\\d+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/SemanticCategory"
+        },
+        "page_index": {
+          "title": "Page Index",
+          "type": "integer"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        },
+        "level": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Level"
+        },
+        "block_indices": {
+          "items": {
+            "type": "integer"
+          },
+          "title": "Block Indices",
+          "type": "array"
+        },
+        "children": {
+          "items": {
+            "$ref": "#/$defs/NodeDict"
+          },
+          "title": "Children",
+          "type": "array"
+        },
+        "apparatus_refs": {
+          "items": {
+            "$ref": "#/$defs/ApparatusRefDict"
+          },
+          "title": "Apparatus Refs",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "page_index"
+      ],
+      "title": "NodeDict",
+      "type": "object"
+    },
+    "SemanticCategory": {
+      "enum": [
+        "HEADING_1",
+        "HEADING_2",
+        "HEADING_3",
+        "HEADING_4",
+        "ARTICLE_HEADER",
+        "ARTICLE_BODY",
+        "PROCEDURAL",
+        "BODY",
+        "BODY_CONTINUATION",
+        "NOTE",
+        "NOTE_CONTINUATION",
+        "MARGINAL_HEADING",
+        "MARGINAL_GLOSS",
+        "EXAMPLE_BOX",
+        "CHAPTER_SUMMARY",
+        "TOC_GENERAL",
+        "INDEX_ENTRY",
+        "EDITORIAL_NOTE",
+        "MASSIMA_LABEL",
+        "REFERRAL",
+        "TITLE",
+        "FONTE_LABEL",
+        "FONTE_VALUE",
+        "META_LABEL",
+        "META_VALUE",
+        "AUTHORS",
+        "SECTION_LABEL",
+        "GENRE_BANNER",
+        "SUBTITLE",
+        "HEADING_LETTER_INITIAL",
+        "FONTI",
+        "LETTERATURA",
+        "CROSS_REFERENCE",
+        "LIST_ITEM",
+        "BOOK_PAGE_ANCHOR",
+        "ARTIFACT_RUNNING_HEADER",
+        "ARTIFACT_FOOTER",
+        "ARTIFACT_FILIGREE",
+        "ARTIFACT_STAMP",
+        "ARTIFACT_PAGE_HEADER",
+        "EMPTY_PAGE",
+        "UNCLASSIFIED"
+      ],
+      "title": "SemanticCategory",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.1.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "document_id": {
+      "format": "uuid",
+      "title": "Document Id",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/DocumentMetadata"
+    },
+    "profile": {
+      "$ref": "#/$defs/DocumentProfileDict"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    },
+    "structure": {
+      "items": {
+        "$ref": "#/$defs/NodeDict"
+      },
+      "title": "Structure",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "document_id",
+    "metadata",
+    "profile"
+  ],
+  "title": "ScabopdfDocument",
   "type": "object"
 }
