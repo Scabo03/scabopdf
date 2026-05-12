@@ -32,8 +32,9 @@ NODE_ID_PATTERN = r"^node_\d+$"
 """Regex for the ``id`` of every node in the structure tree.
 
 Variable-length numeric suffix; the pipeline currently emits zero-padded
-4-digit ids (``node_0001``), but no upper bound is enforced so documents
-with more than 9999 nodes remain valid.
+4-digit ids starting at ``node_0000`` (``node_0000``, ``node_0001``, ...),
+but no upper bound is enforced so documents with more than 9999 nodes
+remain valid.
 """
 
 SCHEMA_VERSION: Literal["0.1.0"] = "0.1.0"
