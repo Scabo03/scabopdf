@@ -18,17 +18,29 @@ import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 import pytest
 
 from scabopdf_pipeline.apparatus import resolve_apparatus
 from scabopdf_pipeline.classification import classify
+from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.emission import convert_document, emit_to_file
 from scabopdf_pipeline.extraction import extract
+from scabopdf_pipeline.extraction.types import Block, ExtractionResult
+from scabopdf_pipeline.postprocessing import (
+    PostProcessingRegistry,
+    Transformation,
+    apply_post_processing,
+)
+from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
+from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
-from scabopdf_pipeline.profiling.profile import DocumentProfile
+from scabopdf_pipeline.profiling.plugin import ProfilePlugin
+from scabopdf_pipeline.profiling.profile import DisabledLayout, DocumentProfile
+from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.reconstruction import Node, reconstruct
+from scabopdf_pipeline.reconstruction.types import Document
 from scabopdf_pipeline.schema.categories import SemanticCategory
 from scabopdf_pipeline.schema.contract import NodeDict
 from scabopdf_pipeline.schema.validator import validate_against_schema, validate_document
@@ -104,6 +116,7 @@ def test_pipeline_runs_on_patriarca() -> None:
     classified = classify(extraction, profile, plugin)
     document = reconstruct(extraction, classified, profile, plugin)
     document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
 
     scabopdf_document = convert_document(document, extraction, profile, PATRIARCA_FIXTURE)
 
@@ -133,6 +146,7 @@ def test_pipeline_runs_on_patriarca() -> None:
         f"\n  n_nodes_total={n_nodes_total}"
         f"\n  n_warnings={len(document.warnings)}"
         f"\n  n_apparatus_refs_total={n_apparatus_refs_total}"
+        f"\n  n_transformations={len(document.transformations)}"
         f"\n  schema_version={scabopdf_document.schema_version}"
         f"\n  emitted_structure_len={len(scabopdf_document.structure)}"
     )
@@ -165,6 +179,11 @@ def test_pipeline_runs_on_patriarca() -> None:
     assert scabopdf_document.schema_version == "0.2.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
     assert len(scabopdf_document.structure) == len(document.root)
+    # § 7 post-processing: unknown_generic declares no steps so the
+    # transformations log is empty on this configuration.
+    assert isinstance(scabopdf_document.transformations, list)
+    assert scabopdf_document.transformations == []
+    assert document.transformations == ()
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
     validate_against_schema(payload, _load_shared_schema())
@@ -182,6 +201,7 @@ def test_pipeline_runs_on_mosconi() -> None:
     classified = classify(extraction, profile, plugin)
     document = reconstruct(extraction, classified, profile, plugin)
     document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
 
     scabopdf_document = convert_document(document, extraction, profile, MOSCONI_FIXTURE)
 
@@ -205,6 +225,7 @@ def test_pipeline_runs_on_mosconi() -> None:
         f"\n  n_warnings={n_warnings}"
         f"\n  n_apparatus_refs_total={n_apparatus_refs_total}"
         f"\n  n_unresolved_cross_reference_warnings={n_unresolved_cross_reference}"
+        f"\n  n_transformations={len(document.transformations)}"
         f"\n  schema_version={scabopdf_document.schema_version}"
         f"\n  emitted_structure_len={len(scabopdf_document.structure)}"
     )
@@ -260,6 +281,12 @@ def test_pipeline_runs_on_mosconi() -> None:
     assert scabopdf_document.schema_version == "0.2.0"
     assert scabopdf_document.metadata.pages_pdf == 613
     assert len(scabopdf_document.structure) == len(document.root)
+    # § 7 post-processing: same no-op result as Patriarca under
+    # unknown_generic — the future Mosconi plugin will declare the
+    # post-processing steps it needs.
+    assert isinstance(scabopdf_document.transformations, list)
+    assert scabopdf_document.transformations == []
+    assert document.transformations == ()
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
     validate_against_schema(payload, _load_shared_schema())
@@ -291,11 +318,16 @@ def test_emit_to_file_on_patriarca(tmp_path: Path) -> None:
         f"\n  pages_pdf={document.metadata.pages_pdf}"
         f"\n  n_nodes_total={n_nodes_total}"
         f"\n  n_warnings={len(document.warnings)}"
+        f"\n  n_transformations={len(document.transformations)}"
     )
 
     assert file_size_kb > 0
     assert document.schema_version == "0.2.0"
     assert n_nodes_total > 0
+    # unknown_generic declares no post-processing — the field is present
+    # and empty in the on-disk JSON.
+    assert document.transformations == []
+    assert '"transformations"' in raw
 
 
 @pytest.mark.slow
@@ -324,9 +356,222 @@ def test_emit_to_file_on_mosconi(tmp_path: Path) -> None:
         f"\n  pages_pdf={document.metadata.pages_pdf}"
         f"\n  n_nodes_total={n_nodes_total}"
         f"\n  n_warnings={len(document.warnings)}"
+        f"\n  n_transformations={len(document.transformations)}"
     )
 
     assert file_size_kb > 0
     assert document.schema_version == "0.2.0"
     assert document.metadata.pages_pdf == 613
     assert n_nodes_total > 0
+    assert document.transformations == []
+    assert '"transformations"' in raw
+
+
+class _DehyphenatingProfile(ProfilePlugin):
+    """Test-only profile that declares ``dehyphenate_with_log`` and nothing else.
+
+    Lives in the test file rather than in ``profiles/`` because it is a
+    test artefact: a way to drive ``apply_post_processing`` against a real
+    fixture without depending on a corpus plugin that does not yet exist.
+    """
+
+    profile_id: ClassVar[str] = "dehyphenating_test_profile"
+    editorial_family: ClassVar[str] = "test"
+    genre: ClassVar[str] = "test"
+
+    @classmethod
+    def matches(cls, signals: ProfilingSignals) -> float:
+        del signals
+        return 0.0
+
+    def get_categories(self) -> set[SemanticCategory]:
+        return set()
+
+    def get_post_processing(self) -> list[str]:
+        return ["dehyphenate_with_log"]
+
+    def get_layouts_disabled(self) -> list[DisabledLayout]:
+        return []
+
+    def parse(self, blocks: list[Block]) -> Document:
+        del blocks
+        return Document()
+
+    def refine_classification(
+        self,
+        extraction: ExtractionResult,
+        tier1_results: list[ClassifiedBlock],
+    ) -> list[ClassifiedBlock]:
+        del extraction
+        return tier1_results
+
+    def refine_reconstruction(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        del extraction, classified_blocks
+        return document
+
+    def refine_apparatus(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        del extraction, classified_blocks
+        return document
+
+
+@pytest.mark.slow
+def test_pipeline_with_dehyphenation_on_patriarca_is_a_noop() -> None:
+    """End-to-end gate of the post-processing phase on a real fixture.
+
+    The test runs the full pipeline (extract → classify → reconstruct →
+    resolve_apparatus → apply_post_processing → convert_document) with
+    a profile that declares ``dehyphenate_with_log`` and asserts that
+    **zero** transformations are recorded on Patriarca-Benazzo. The
+    invariant is intentional and worth pinning as a regression test.
+
+    Why zero. ``dehyphenate_with_log`` is designed for OCR-derived
+    output (see ``ARCHITECTURE.md § 7.1`` — the "Used by" column lists
+    only ``enciclopedia_storica``, an OCR corpus). The step matches a
+    literal ``-\\n`` or soft-hyphen-newline pattern in ``Node.text``,
+    which presupposes that line breaks are physically present as ``\\n``
+    characters in the text. On digitally-typeset PDFs like Patriarca,
+    PyMuPDF represents line breaks geometrically: each line is a
+    separate span with its own ``y0`` coordinate, and ``Span.text``
+    never contains ``\\n``. Tier 1's ``_block_text`` then concatenates
+    spans with no separator, so ``Node.text`` likewise carries no
+    newline characters and the regex never fires. The test verifies
+    that this no-op flow still runs cleanly: the orchestrator dispatches
+    the real step without exception, the converter propagates an empty
+    ``transformations`` list, the schema validates.
+
+    The "real step transforms when it matches" coverage lives in the
+    unit test ``test_real_step_runs_via_default_registry`` of
+    ``tests/unit/postprocessing/test_orchestrator.py`` (with a Node
+    whose text literally contains ``evolu-\\nzione``), and in
+    ``test_dehyphenation_end_to_end_synthetic`` below, which builds a
+    synthetic Document and exercises the full conversion path.
+    """
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE} — see pipeline/tests/fixtures/README.md")
+
+    profile = _make_profile()
+    plugin = _DehyphenatingProfile()
+
+    extraction = extract(PATRIARCA_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(document, extraction, profile, PATRIARCA_FIXTURE)
+
+    n_transformations = len(document.transformations)
+    print(
+        f"\nPatriarca-Benazzo § 7 dehyphenation summary (expected no-op):"
+        f"\n  n_transformations={n_transformations} (frozen at 0 by regression test)"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert n_transformations == 0, (
+        "dehyphenate_with_log is OCR-targeted; on digitally-typeset Patriarca "
+        "PyMuPDF emits no \\n in span text so the step has nothing to match"
+    )
+    assert scabopdf_document.transformations == []
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+def test_dehyphenation_end_to_end_synthetic() -> None:
+    """Synthetic end-to-end test of dehyphenate_with_log through the converter.
+
+    Hand-builds a small ``Document`` whose ``Node.text`` carries two
+    real ``-\\n`` hyphenations (mimicking the shape of OCR output),
+    runs ``apply_post_processing`` with a profile that declares
+    ``dehyphenate_with_log``, converts via ``convert_document`` and
+    validates against the committed schema. Verifies that both
+    hyphenations are recorded as ``Transformation``s, propagated to the
+    ``ScabopdfDocument.transformations`` field, and the resulting JSON
+    is schema-valid.
+
+    The test uses a custom :class:`PostProcessingRegistry` with a
+    deterministic ``ItalianLexicon.from_word_set`` so the assertions
+    do not depend on the pyspellchecker dictionary content.
+
+    The test is not marked slow because it does no PDF I/O: it
+    constructs minimal in-memory artefacts and exercises only the
+    post-processing → conversion path.
+    """
+    body_node = Node(
+        id="node_0001",
+        category=SemanticCategory.BODY,
+        page_index=0,
+        text="Il sistema evolu-\nzione del diritto si rinno-\nvellando.",
+    )
+    heading_node = Node(
+        id="node_0000",
+        category=SemanticCategory.HEADING_1,
+        page_index=0,
+        text="Premessa",
+        level=1,
+    )
+    plain_node = Node(
+        id="node_0002",
+        category=SemanticCategory.BODY,
+        page_index=0,
+        text="Frase senza hyphenation.",
+    )
+    document = Document(root=(heading_node, body_node, plain_node))
+
+    extraction = ExtractionResult(
+        spans=[],
+        blocks=[],
+        page_geometries=[],
+        page_images=[],
+        drawings=[],
+        warnings=[],
+        page_count=1,
+        is_encrypted=False,
+        permissions=0,
+    )
+    profile = _make_profile()
+    plugin = _DehyphenatingProfile()
+
+    lexicon = ItalianLexicon.from_word_set({"evoluzione", "rinnovellando"})
+
+    def _bound_dehyphenate(
+        doc: Document,
+        ext: ExtractionResult,
+        cb: list[ClassifiedBlock],
+    ) -> tuple[Document, tuple[Transformation, ...]]:
+        return dehyphenate_with_log(doc, ext, cb, lexicon=lexicon)
+
+    registry = PostProcessingRegistry(steps={"dehyphenate_with_log": _bound_dehyphenate})
+    new_document = apply_post_processing(document, extraction, [], plugin, registry=registry)
+
+    assert len(new_document.transformations) == 2
+    normalized_words = {t.normalized for t in new_document.transformations}
+    assert normalized_words == {"evoluzione", "rinnovellando"}
+    for t in new_document.transformations:
+        assert t.step_id == "dehyphenate_with_log"
+        assert t.position is not None
+        assert "-\n" in t.original
+        assert "-\n" not in t.normalized
+
+    scabopdf_document = convert_document(new_document, extraction, profile, "synthetic.pdf")
+    assert scabopdf_document.schema_version == "0.2.0"
+    assert len(scabopdf_document.transformations) == 2
+    for td in scabopdf_document.transformations:
+        assert td.step_id == "dehyphenate_with_log"
+        assert td.position is not None
+        assert "-\n" in td.original
+        assert "-\n" not in td.normalized
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())

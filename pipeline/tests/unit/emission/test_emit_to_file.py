@@ -34,7 +34,7 @@ def _write_pdf(tmp_path: Path, name: str = "doc.pdf") -> Path:
 
 
 def test_emit_to_file_writes_non_empty_json(tmp_path: Path) -> None:
-    """A successful run writes a JSON file declaring schema_version 0.1.0."""
+    """A successful run writes a JSON file declaring schema_version 0.2.0."""
     pdf_path = _write_pdf(tmp_path)
     output_path = tmp_path / "out.json"
 
@@ -45,6 +45,11 @@ def test_emit_to_file_writes_non_empty_json(tmp_path: Path) -> None:
     text = output_path.read_text(encoding="utf-8")
     assert text  # non-empty
     assert '"schema_version": "0.2.0"' in text
+    # The transformations block is always present, even when empty —
+    # unknown_generic declares no post-processing steps.
+    assert '"transformations"' in text
+    payload = json.loads(text)
+    assert payload["transformations"] == []
 
 
 def test_emit_to_file_json_validates_against_pydantic(tmp_path: Path) -> None:

@@ -15,6 +15,7 @@ from scabopdf_pipeline.schema.contract import (
     DocumentProfileDict,
     NodeDict,
     ScabopdfDocument,
+    TransformationDict,
 )
 
 
@@ -268,3 +269,95 @@ def test_page_size_pt_requires_exactly_two_floats() -> None:
                 "source_pdf_filename": "x.pdf",
             }
         )
+
+
+def test_transformation_dict_round_trip() -> None:
+    t = TransformationDict(
+        step_id="dehyphenate_with_log",
+        node_id="node_0042",
+        page_index=12,
+        position=(1234, 1246),
+        original="evolu-\nzione",
+        normalized="evoluzione",
+    )
+    dumped = t.model_dump(mode="json")
+    assert dumped["step_id"] == "dehyphenate_with_log"
+    assert dumped["node_id"] == "node_0042"
+    assert dumped["page_index"] == 12
+    assert dumped["position"] == [1234, 1246]
+    assert dumped["original"] == "evolu-\nzione"
+    assert dumped["normalized"] == "evoluzione"
+    rebuilt = TransformationDict.model_validate(dumped)
+    assert rebuilt == t
+
+
+def test_transformation_dict_rejects_bad_node_id_pattern() -> None:
+    with pytest.raises(ValidationError):
+        TransformationDict.model_validate(
+            {
+                "step_id": "dehyphenate_with_log",
+                "node_id": "n0042",
+                "page_index": 0,
+                "position": [0, 12],
+                "original": "evolu-\nzione",
+                "normalized": "evoluzione",
+            }
+        )
+
+
+def test_transformation_dict_position_requires_two_ints() -> None:
+    with pytest.raises(ValidationError):
+        TransformationDict.model_validate(
+            {
+                "step_id": "dehyphenate_with_log",
+                "node_id": "node_0042",
+                "page_index": 0,
+                "position": [0],
+                "original": "evolu-\nzione",
+                "normalized": "evoluzione",
+            }
+        )
+    with pytest.raises(ValidationError):
+        TransformationDict.model_validate(
+            {
+                "step_id": "dehyphenate_with_log",
+                "node_id": "node_0042",
+                "page_index": 0,
+                "position": [0, 12, 24],
+                "original": "evolu-\nzione",
+                "normalized": "evoluzione",
+            }
+        )
+
+
+def test_scabopdf_document_transformations_default_is_empty_list() -> None:
+    doc = _minimal_document()
+    assert doc.transformations == []
+
+
+def test_scabopdf_document_accepts_transformations_field() -> None:
+    t = TransformationDict(
+        step_id="dehyphenate_with_log",
+        node_id="node_0001",
+        page_index=0,
+        position=(0, 12),
+        original="evolu-\nzione",
+        normalized="evoluzione",
+    )
+    doc = ScabopdfDocument(
+        schema_version="0.2.0",
+        document_id=uuid4(),
+        metadata=DocumentMetadata(
+            pages_pdf=1,
+            page_size_pt=(457.2, 684.0),
+            source_pdf_filename="sample.pdf",
+        ),
+        profile=DocumentProfileDict(
+            profile_id="p",
+            editorial_family="e",
+            genre="g",
+            confidence=0.5,
+        ),
+        transformations=[t],
+    )
+    assert doc.transformations == [t]

@@ -12,6 +12,7 @@ from scabopdf_pipeline.extraction.types import (
     PageGeometry,
     Span,
 )
+from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
@@ -207,9 +208,49 @@ def test_convert_generates_uuid_document_id() -> None:
 
 
 def test_convert_schema_version_is_literal() -> None:
-    """``schema_version`` is the v0.1.0 literal on every emission."""
+    """``schema_version`` is the v0.2.0 literal on every emission."""
     result = convert_document(Document(root=()), _empty_extraction(), _profile(), "x.pdf")
     assert result.schema_version == "0.2.0"
+
+
+def test_convert_transformations_default_is_empty_list() -> None:
+    """A ``Document`` with no transformations produces an empty list in the JSON."""
+    result = convert_document(Document(root=()), _empty_extraction(), _profile(), "x.pdf")
+    assert result.transformations == []
+
+
+def test_convert_populates_transformations_field_by_field() -> None:
+    """Each :class:`Transformation` is mapped field-by-field to a TransformationDict."""
+    t1 = Transformation(
+        step_id="dehyphenate_with_log",
+        node_id="node_0001",
+        page_index=0,
+        position=(0, 12),
+        original="evolu-\nzione",
+        normalized="evoluzione",
+    )
+    t2 = Transformation(
+        step_id="dehyphenate_with_log",
+        node_id="node_0002",
+        page_index=1,
+        position=(30, 47),
+        original="trasfor-\nmazione",
+        normalized="trasformazione",
+    )
+    document = Document(root=(), transformations=(t1, t2))
+
+    result = convert_document(document, _empty_extraction(), _profile(), "x.pdf")
+
+    assert len(result.transformations) == 2
+    first, second = result.transformations
+    assert first.step_id == t1.step_id
+    assert first.node_id == t1.node_id
+    assert first.page_index == t1.page_index
+    assert first.position == t1.position
+    assert first.original == t1.original
+    assert first.normalized == t1.normalized
+    assert second.node_id == t2.node_id
+    assert second.original == t2.original
 
 
 def test_convert_extracts_basename_of_source_filename() -> None:
