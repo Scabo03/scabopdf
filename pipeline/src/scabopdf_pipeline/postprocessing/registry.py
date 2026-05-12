@@ -22,6 +22,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from types import MappingProxyType
 
+from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.postprocessing.steps.placeholder import _make_placeholder
 from scabopdf_pipeline.postprocessing.types import PostProcessingStep
 
@@ -82,17 +83,17 @@ class PostProcessingRegistry:
 
     @classmethod
     def default(cls) -> PostProcessingRegistry:
-        """Build the standard registry.
+        """Build the standard twelve-step registry.
 
-        The eleven profile-specific step IDs listed in
+        ``dehyphenate_with_log`` is registered as the real generic
+        callable from :mod:`postprocessing.steps.dehyphenate`. The
+        eleven profile-specific step IDs listed in
         :data:`_PROFILE_SPECIFIC_PLACEHOLDERS` are registered as
         placeholders that raise :class:`NotImplementedError` when
         invoked, naming the plugin expected to bring the real
-        implementation. The generic ``dehyphenate_with_log`` step joins
-        the registry as soon as its module is available; see
-        :mod:`postprocessing.steps.dehyphenate`.
+        implementation.
         """
-        steps: dict[str, PostProcessingStep] = {}
+        steps: dict[str, PostProcessingStep] = {"dehyphenate_with_log": dehyphenate_with_log}
         for step_id, profile_name in _PROFILE_SPECIFIC_PLACEHOLDERS:
             steps[step_id] = _make_placeholder(step_id, profile_name)
         return cls(steps=steps)
