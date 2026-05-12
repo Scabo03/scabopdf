@@ -31,6 +31,7 @@ from scabopdf_pipeline.emission.constants import INDENT_JSON
 from scabopdf_pipeline.emission.converter import convert_document
 from scabopdf_pipeline.emission.exceptions import EmissionError
 from scabopdf_pipeline.extraction import extract
+from scabopdf_pipeline.postprocessing import apply_post_processing
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DocumentProfile
@@ -88,6 +89,7 @@ def emit(
     classified = classify(extraction, profile, plugin)
     document = reconstruct(extraction, classified, profile, plugin)
     document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
     return convert_document(document, extraction, profile, pdf_path)
 
 

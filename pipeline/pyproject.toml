@@ -15,6 +15,7 @@ dependencies = [
     "pydantic>=2.7",
     "regex>=2024.4",
     "jsonschema>=4.10",
+    "pyspellchecker>=0.8",
 ]
 
 [project.optional-dependencies]

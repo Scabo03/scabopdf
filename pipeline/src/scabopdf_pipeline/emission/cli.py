@@ -40,6 +40,7 @@ from scabopdf_pipeline.emission.converter import convert_document
 from scabopdf_pipeline.emission.emitter import _build_profile
 from scabopdf_pipeline.emission.exceptions import EmissionError
 from scabopdf_pipeline.extraction import extract
+from scabopdf_pipeline.postprocessing import apply_post_processing
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.reconstruction import reconstruct
 from scabopdf_pipeline.schema.contract import NodeDict, ScabopdfDocument
@@ -166,6 +167,9 @@ def _run_pipeline(
 
         timer.next("resolving apparatus")
         document_tree = resolve_apparatus(document_tree, extraction, classified, plugin)
+
+        timer.next("post-processing")
+        document_tree = apply_post_processing(document_tree, extraction, classified, plugin)
 
         timer.next("converting")
         scabopdf_document = convert_document(document_tree, extraction, profile, pdf_path)

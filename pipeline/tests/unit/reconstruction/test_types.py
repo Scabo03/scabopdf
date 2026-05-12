@@ -44,7 +44,7 @@ def test_node_has_all_expected_fields() -> None:
 
 def test_document_has_all_expected_fields() -> None:
     names = {f.name for f in fields(Document)}
-    assert names == {"root", "warnings"}
+    assert names == {"root", "warnings", "transformations"}
 
 
 def test_node_defaults() -> None:

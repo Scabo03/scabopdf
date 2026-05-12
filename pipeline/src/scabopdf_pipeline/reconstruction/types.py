@@ -5,7 +5,9 @@ See ARCHITECTURE.md § 5 for the canonical specification.
 A ``Document`` is the reading-order tree produced by tier 1 generic logic
 and optionally refined by a profile plugin's tier 2 in
 ``refine_reconstruction``. All dataclasses are frozen: once
-``reconstruct()`` returns, the tree is immutable.
+``reconstruct()`` returns, the tree is immutable. The post-processing
+phase (§ 7) returns a new ``Document`` whose ``transformations`` field
+carries the reversible log of text rewrites it performed.
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ from scabopdf_pipeline.schema.categories import SemanticCategory
 
 if TYPE_CHECKING:
     from scabopdf_pipeline.apparatus.types import ApparatusRef
+    from scabopdf_pipeline.postprocessing.types import Transformation
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -77,7 +80,21 @@ class Document:
     hierarchy assembly. The tier 1 vocabulary is closed (see
     ``reconstruction.tier1.TIER1_WARNING_TEMPLATES``); tier 2 plugins may
     emit any string.
+
+    ``transformations`` is the reversible log of text rewrites the
+    post-processing phase (§ 7) recorded on this document. It is empty
+    before post-processing runs, populated by
+    :func:`scabopdf_pipeline.postprocessing.apply_post_processing` as the
+    plugin's declared steps execute, and surfaces in the emitted JSON
+    (``ARCHITECTURE.md § 8.6``). Each entry pins together the step ID,
+    the node whose text was rewritten, the original substring, the
+    normalized replacement, and the half-open ``(start, end)`` offset
+    into the Node text *as it was immediately before that
+    transformation was applied*. See
+    :class:`scabopdf_pipeline.postprocessing.types.Transformation` for
+    the full reversibility convention.
     """
 
     root: tuple[Node, ...] = ()
     warnings: tuple[str, ...] = ()
+    transformations: tuple[Transformation, ...] = ()
