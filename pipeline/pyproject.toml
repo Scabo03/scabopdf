@@ -26,6 +26,9 @@ dev = [
     "types-jsonschema>=4.10",
 ]
 
+[project.scripts]
+scabopdf-extract = "scabopdf_pipeline.emission.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
