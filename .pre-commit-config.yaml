@@ -1,0 +1,32 @@
+# Local pre-commit hooks. They reuse the Python venv already used by
+# the pipeline, so there is nothing to network-fetch on install. Run
+# ``pre-commit install`` once after cloning to activate them; see
+# ``docs/DEVELOPMENT.md`` for the full bootstrap.
+
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (pipeline)
+        entry: pipeline/.venv/bin/ruff check pipeline/src pipeline/tests
+        language: system
+        pass_filenames: false
+        files: ^pipeline/
+      - id: ruff-format
+        name: ruff format --check (pipeline)
+        entry: pipeline/.venv/bin/ruff format --check pipeline/src pipeline/tests
+        language: system
+        pass_filenames: false
+        files: ^pipeline/
+      - id: mypy-strict
+        name: mypy --strict (pipeline)
+        entry: bash -c 'cd pipeline && .venv/bin/mypy --strict src tests'
+        language: system
+        pass_filenames: false
+        files: ^pipeline/
+      - id: pytest-unit
+        name: pytest tests/unit (pipeline)
+        entry: bash -c 'cd pipeline && .venv/bin/pytest tests/unit -q --no-cov'
+        language: system
+        pass_filenames: false
+        files: ^pipeline/

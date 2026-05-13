@@ -18,6 +18,7 @@ Pre-development. Design phase complete.
 - `docs/SPECS.md` — product specifications
 - `docs/ARCHITECTURE.md` — technical architecture (Layer 1 + Layer 2)
 - `docs/CARRYOVER.md` — project state and session log
+- `docs/DEVELOPMENT.md` — local bootstrap and pre-commit setup
 - `docs/analysis/ANALYSIS_*.md` — typographic analysis of supported document profiles
 
 ## License

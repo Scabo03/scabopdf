@@ -9,18 +9,14 @@ by tier 1 apparatus and stay empty.
 
 from __future__ import annotations
 
-from typing import ClassVar
-
 from scabopdf_pipeline.apparatus.resolver import resolve_apparatus
 from scabopdf_pipeline.apparatus.types import ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import BBox, Block, ExtractionResult
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
-from scabopdf_pipeline.profiling.plugin import ProfilePlugin
-from scabopdf_pipeline.profiling.profile import DisabledLayout
-from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
+from tests.conftest import NoOpProfilePlugin
 
 
 def _block(idx: int, page: int, bbox: BBox = (0.0, 0.0, 0.0, 0.0)) -> Block:
@@ -467,48 +463,14 @@ def test_example_box_is_left_untouched() -> None:
 
 # (l) Tier 2 dispatch: the plugin sees the post-tier-1 Document and may
 # extend it. A sentinel plugin proves the dispatch happens.
-class _SentinelPlugin(ProfilePlugin):
-    profile_id: ClassVar[str] = "sentinel"
-    editorial_family: ClassVar[str] = "test"
-    genre: ClassVar[str] = "test"
-
-    @classmethod
-    def matches(cls, signals: ProfilingSignals) -> float:
-        return 0.0
-
-    def get_categories(self) -> set[SemanticCategory]:
-        return set()
-
-    def get_post_processing(self) -> list[str]:
-        return []
-
-    def get_layouts_disabled(self) -> list[DisabledLayout]:
-        return []
-
-    def parse(self, blocks: list[Block]) -> Document:
-        return Document()
-
-    def refine_classification(
-        self,
-        extraction: ExtractionResult,
-        tier1_results: list[ClassifiedBlock],
-    ) -> list[ClassifiedBlock]:
-        return tier1_results
-
-    def refine_reconstruction(
-        self,
-        document: Document,
-        extraction: ExtractionResult,
-        classified_blocks: list[ClassifiedBlock],
-    ) -> Document:
-        return document
-
+class _SentinelPlugin(NoOpProfilePlugin):
     def refine_apparatus(
         self,
         document: Document,
         extraction: ExtractionResult,
         classified_blocks: list[ClassifiedBlock],
     ) -> Document:
+        del extraction, classified_blocks
         return Document(
             root=document.root,
             warnings=(*document.warnings, "sentinel_refine_apparatus_called"),

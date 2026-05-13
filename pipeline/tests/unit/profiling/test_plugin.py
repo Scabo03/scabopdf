@@ -2,72 +2,39 @@ from typing import ClassVar
 
 import pytest
 
-from scabopdf_pipeline.classification.types import ClassifiedBlock
-from scabopdf_pipeline.extraction.types import Block, ExtractionResult
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import (
     ApparatusPresence,
     OutlineStructure,
-    PageGeometry,
     ProducerCreator,
+    ProfilePageGeometry,
     ProfilingSignals,
     TypographicSignature,
 )
-from scabopdf_pipeline.reconstruction.types import Document
 from scabopdf_pipeline.schema.categories import SemanticCategory
+from tests.conftest import NoOpProfilePlugin
 
 
-class FakePlugin(ProfilePlugin):
+class FakePlugin(NoOpProfilePlugin):
     profile_id: ClassVar[str] = "fake"
     editorial_family: ClassVar[str] = "fake_family"
     genre: ClassVar[str] = "fake_genre"
 
     @classmethod
     def matches(cls, signals: ProfilingSignals) -> float:
+        del signals
         return 0.95
 
     def get_categories(self) -> set[SemanticCategory]:
         return {SemanticCategory.BODY}
-
-    def get_post_processing(self) -> list[str]:
-        return []
-
-    def get_layouts_disabled(self) -> list[DisabledLayout]:
-        return []
-
-    def parse(self, blocks: list[Block]) -> Document:
-        return Document()
-
-    def refine_classification(
-        self,
-        extraction: ExtractionResult,
-        tier1_results: list[ClassifiedBlock],
-    ) -> list[ClassifiedBlock]:
-        return tier1_results
-
-    def refine_reconstruction(
-        self,
-        document: Document,
-        extraction: ExtractionResult,
-        classified_blocks: list[ClassifiedBlock],
-    ) -> Document:
-        return document
-
-    def refine_apparatus(
-        self,
-        document: Document,
-        extraction: ExtractionResult,
-        classified_blocks: list[ClassifiedBlock],
-    ) -> Document:
-        return document
 
 
 def _signals() -> ProfilingSignals:
     return ProfilingSignals(
         typographic_signature=TypographicSignature(),
         apparatus_presence=ApparatusPresence(),
-        page_geometry=PageGeometry(width_pt=595.0, height_pt=842.0),
+        page_geometry=ProfilePageGeometry(width_pt=595.0, height_pt=842.0),
         producer_creator=ProducerCreator(),
         outline_structure=OutlineStructure(),
     )
@@ -93,6 +60,7 @@ def test_incomplete_subclass_raises() -> None:
 
         @classmethod
         def matches(cls, signals: ProfilingSignals) -> float:
+            del signals
             return 0.0
 
         def get_categories(self) -> set[SemanticCategory]:

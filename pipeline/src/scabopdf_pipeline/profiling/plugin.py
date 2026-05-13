@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, ClassVar
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
-from scabopdf_pipeline.extraction.types import Block, ExtractionResult
+from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.schema.categories import SemanticCategory
@@ -26,23 +26,101 @@ class ProfilePlugin(ABC):
     @classmethod
     @abstractmethod
     def matches(cls, signals: ProfilingSignals) -> float:
-        """Return confidence 0-1 that this plugin handles the given signals."""
+        """Return confidence in [0.0, 1.0] that this plugin handles ``signals``.
+
+        See ARCHITECTURE.md § 2.4 and the registry in
+        :mod:`scabopdf_pipeline.profiling.registry`. The plugin with the
+        highest confidence above ``CONFIDENCE_THRESHOLD`` (0.6) is selected;
+        if no plugin clears the threshold the pipeline falls back to
+        :class:`scabopdf_pipeline.profiles.unknown_generic.UnknownGenericProfile`.
+
+        Implementations should combine the most robust signals first
+        (typographic family signature, apparatus presence, then page
+        geometry) and weight corroborating signals lightly. A return of
+        ``0.0`` means "I do not handle this document"; the fallback
+        ``unknown_generic`` always returns ``0.0``.
+
+        Example. A plugin matching Patriarca-Benazzo would build
+        confidence from a Times-New-Roman dominant family at ~81 %, a
+        Zanichelli "Diritto delle imprese" outline and an absent
+        apparatus, and might return ``0.92``.
+        """
 
     @abstractmethod
     def get_categories(self) -> set[SemanticCategory]:
-        """Categories this profile can emit."""
+        """Return the closed set of :class:`SemanticCategory` this profile may emit.
+
+        See ARCHITECTURE.md § 2.4 and the universal taxonomy in
+        ARCHITECTURE.md § 4.2. The set is the **superset** of categories
+        that ``refine_classification`` and ``refine_reconstruction`` can
+        produce for this corpus, including those carried over from tier
+        1 (``UNCLASSIFIED``, the ``ARTIFACT_*`` family, ``EMPTY_PAGE``,
+        ``BOOK_PAGE_ANCHOR``, ``CROSS_REFERENCE``) plus the profile-specific
+        ones the plugin introduces in tier 2.
+
+        The set is consulted by the emission converter to populate
+        ``DocumentProfile.categories_emitted`` and may be used by Layer
+        2 to enable corpus-specific UI affordances. It is **not** used
+        at tier 1 dispatch time, so a plugin advertising a category it
+        never emits is a smell but never a runtime error.
+
+        Example. A ``manuale_zanichelli_giuridica`` plugin for Patriarca
+        would return ``{HEADING_1, HEADING_2, HEADING_3, HEADING_4,
+        BODY, CHAPTER_SUMMARY, UNCLASSIFIED, ARTIFACT_RUNNING_HEADER,
+        ARTIFACT_FOOTER, EMPTY_PAGE}`` — no apparatus categories, since
+        the manual has none.
+        """
 
     @abstractmethod
     def get_post_processing(self) -> list[str]:
-        """Ordered list of post-processing step IDs."""
+        """Return the ordered list of post-processing step IDs to run for this profile.
+
+        See ARCHITECTURE.md § 7.1 for the full registry of step IDs.
+        The orchestrator in
+        :mod:`scabopdf_pipeline.postprocessing.orchestrator` resolves
+        each ID against the
+        :class:`scabopdf_pipeline.postprocessing.registry.PostProcessingRegistry`
+        and runs the corresponding callables on the reconstructed
+        document, in the order returned here. Each step appends its own
+        entries to ``Document.transformations`` for reversibility.
+
+        An empty list (the ``unknown_generic`` default) means no
+        post-processing; the converter then emits ``transformations:
+        []`` in the JSON document.
+
+        Returning a step ID not registered in the default registry
+        raises :class:`KeyError` at run time, never silently. This is
+        intentional fail-loud behaviour: a misconfigured plugin should
+        not silently turn a step into a no-op.
+
+        Example. A ``enciclopedia_storica`` plugin returning
+        ``["dehyphenate_with_log", "tolerant_letteratura_match"]``
+        applies the OCR-aware dehyphenator first, then a tolerant
+        bibliographic matcher on the ``LETTERATURA`` blocks.
+        """
 
     @abstractmethod
     def get_layouts_disabled(self) -> list[DisabledLayout]:
-        """Layouts unavailable for this profile, with reason."""
+        """Return the list of Layer 2 layouts unavailable for this profile, each with a reason.
 
-    @abstractmethod
-    def parse(self, blocks: list[Block]) -> Document:
-        """Profile-specific parsing logic. May call shared utilities."""
+        See ARCHITECTURE.md § 2.4. Each
+        :class:`scabopdf_pipeline.profiling.profile.DisabledLayout`
+        carries a ``layout`` identifier (``"L1"``..``"L4"`` today) and a
+        ``reason`` string the Layer 2 app shows accessibly when the
+        layout is selected. The set of available layouts is implicit:
+        any layout not listed here is enabled for this profile.
+
+        The list is informational only at Layer 1; it is propagated
+        through ``DocumentProfile`` so Layer 2 can grey out the
+        corresponding entries in the accessible UI. Returning an empty
+        list means every layout is enabled.
+
+        Example. A ``manuale_zanichelli_giuridica`` plugin returning
+        ``[DisabledLayout(layout="L4", reason="Document has no inline
+        footnotes")]`` signals to Layer 2 that the L4 layout, which
+        relies on inline footnote markers, is not meaningful for
+        Patriarca-Benazzo.
+        """
 
     @abstractmethod
     def refine_classification(
@@ -56,6 +134,15 @@ class ProfilePlugin(ABC):
         the tier 1 verdicts and returns the final list of ``ClassifiedBlock``.
         It may override categories, set ``subcategory``, or replace ``reason``
         with a profile-specific identifier.
+
+        Signature note. ``refine_classification`` takes ``(extraction,
+        tier1_results)`` while ``refine_reconstruction`` and
+        ``refine_apparatus`` take ``(document, extraction,
+        classified_blocks)``. The parameter order is deliberately
+        different here because classification runs **before** the
+        ``Document`` exists — there is nothing to pass as the first
+        positional argument. The asymmetry is documented in
+        ARCHITECTURE.md § 2.4 and is permanent.
         """
 
     @abstractmethod

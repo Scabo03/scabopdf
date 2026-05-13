@@ -192,7 +192,7 @@ The detection produces a `DocumentProfile` object containing:
 
 ### 2.4 Plugin registry
 
-Every supported profile is implemented as a plugin module in `pipeline/src/scabopdf_pipeline/profiles/`. Each plugin exposes:
+Every supported profile is implemented as a plugin module in `pipeline/src/scabopdf_pipeline/profiles/`. Each plugin subclasses the `ProfilePlugin` ABC in `pipeline/src/scabopdf_pipeline/profiling/plugin.py` and exposes seven abstract methods grouped in two halves: four declarative methods (`matches`, `get_categories`, `get_post_processing`, `get_layouts_disabled`) that describe the profile statically, and three tier-2 refinement hooks (`refine_classification`, `refine_reconstruction`, `refine_apparatus`) that the pipeline calls in sequence after the corresponding tier 1 phase has produced its generic output.
 
 ```python
 class ProfilePlugin(ABC):
@@ -203,26 +203,52 @@ class ProfilePlugin(ABC):
     @classmethod
     @abstractmethod
     def matches(cls, signals: ProfilingSignals) -> float:
-        """Return confidence 0-1 that this plugin handles the given signals."""
+        """Return confidence in [0.0, 1.0] that this plugin handles ``signals``."""
 
     @abstractmethod
     def get_categories(self) -> set[SemanticCategory]:
-        """Categories this profile can emit."""
+        """Closed set of SemanticCategory this profile may emit."""
 
     @abstractmethod
     def get_post_processing(self) -> list[str]:
-        """Ordered list of post-processing step IDs."""
+        """Ordered list of post-processing step IDs (§ 7.1)."""
 
     @abstractmethod
     def get_layouts_disabled(self) -> list[DisabledLayout]:
-        """Layouts unavailable for this profile, with reason."""
+        """Layouts unavailable for this profile, each with a reason."""
 
     @abstractmethod
-    def parse(self, blocks: list[Block]) -> Document:
-        """Profile-specific parsing logic. May call shared utilities."""
+    def refine_classification(
+        self,
+        extraction: ExtractionResult,
+        tier1_results: list[ClassifiedBlock],
+    ) -> list[ClassifiedBlock]:
+        """Tier 2 classification (§ 4.5)."""
+
+    @abstractmethod
+    def refine_reconstruction(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        """Tier 2 reconstruction (§ 5)."""
+
+    @abstractmethod
+    def refine_apparatus(
+        self,
+        document: Document,
+        extraction: ExtractionResult,
+        classified_blocks: list[ClassifiedBlock],
+    ) -> Document:
+        """Tier 2 apparatus resolution (§ 6)."""
 ```
 
-The detector iterates over registered plugins, calls `matches()` on each, and selects the highest-confidence match. If no plugin reaches a confidence threshold (default 0.6), the document is assigned the `unknown_generic` profile, which uses a permissive default parser and emits a warning to the user.
+An earlier draft of this API exposed an additional abstract method `parse(blocks: list[Block]) -> Document` that the plugin was meant to use as its main entry point. The method was never wired into the orchestrator: tier 1 builds the `Document` generically and the three `refine_*` hooks handle every profile-specific extension. `parse` has been removed from the ABC; nothing in the pipeline depended on it.
+
+**Signature asymmetry between the three tier-2 hooks.** `refine_classification` takes `(extraction, tier1_results)` while `refine_reconstruction` and `refine_apparatus` take `(document, extraction, classified_blocks)`. The first parameter differs deliberately: classification runs **before** the structural reconstruction has produced a `Document`, so there is nothing to pass as a first positional argument. The two later hooks are uniform between themselves. Plugin authors should treat this asymmetry as permanent and not try to "harmonise" it: aligning the signatures would require either feeding a fake empty `Document` to `refine_classification` (false symmetry) or rebuilding it after classification (wasted work).
+
+The detector iterates over registered plugins, calls `matches()` on each, and selects the highest-confidence match. If no plugin reaches the confidence threshold (default 0.6), the document is assigned the `unknown_generic` profile, whose three `refine_*` hooks are pass-throughs and whose `get_post_processing()` returns the empty list. The pipeline still runs end-to-end, the JSON document still validates against the contract, and a warning is surfaced to Layer 2.
 
 ### 2.5 Built-in profiles at v1
 

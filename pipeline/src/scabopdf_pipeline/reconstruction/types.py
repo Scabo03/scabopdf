@@ -15,6 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from scabopdf_pipeline.extraction.types import PageIndex
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 if TYPE_CHECKING:
@@ -61,7 +62,7 @@ class Node:
     id: str
     category: SemanticCategory
     children: tuple[Node, ...] = ()
-    page_index: int
+    page_index: PageIndex
     block_indices: tuple[int, ...] = ()
     text: str | None = None
     level: int | None = None

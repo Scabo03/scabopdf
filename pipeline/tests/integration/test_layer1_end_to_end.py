@@ -18,7 +18,7 @@ import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
 import pytest
 
@@ -27,7 +27,7 @@ from scabopdf_pipeline.classification import classify
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.emission import convert_document, emit_to_file
 from scabopdf_pipeline.extraction import extract
-from scabopdf_pipeline.extraction.types import Block, ExtractionResult
+from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing import (
     PostProcessingRegistry,
     Transformation,
@@ -36,14 +36,13 @@ from scabopdf_pipeline.postprocessing import (
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
-from scabopdf_pipeline.profiling.plugin import ProfilePlugin
-from scabopdf_pipeline.profiling.profile import DisabledLayout, DocumentProfile
-from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.reconstruction import Node, reconstruct
 from scabopdf_pipeline.reconstruction.types import Document
 from scabopdf_pipeline.schema.categories import SemanticCategory
 from scabopdf_pipeline.schema.contract import NodeDict
 from scabopdf_pipeline.schema.validator import validate_against_schema, validate_document
+from tests.conftest import NoOpProfilePlugin
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "private"
 PATRIARCA_FIXTURE = FIXTURES_DIR / "patriarca_benazzo.pdf"
@@ -367,7 +366,7 @@ def test_emit_to_file_on_mosconi(tmp_path: Path) -> None:
     assert '"transformations"' in raw
 
 
-class _DehyphenatingProfile(ProfilePlugin):
+class _DehyphenatingProfile(NoOpProfilePlugin):
     """Test-only profile that declares ``dehyphenate_with_log`` and nothing else.
 
     Lives in the test file rather than in ``profiles/`` because it is a
@@ -375,53 +374,8 @@ class _DehyphenatingProfile(ProfilePlugin):
     fixture without depending on a corpus plugin that does not yet exist.
     """
 
-    profile_id: ClassVar[str] = "dehyphenating_test_profile"
-    editorial_family: ClassVar[str] = "test"
-    genre: ClassVar[str] = "test"
-
-    @classmethod
-    def matches(cls, signals: ProfilingSignals) -> float:
-        del signals
-        return 0.0
-
-    def get_categories(self) -> set[SemanticCategory]:
-        return set()
-
     def get_post_processing(self) -> list[str]:
         return ["dehyphenate_with_log"]
-
-    def get_layouts_disabled(self) -> list[DisabledLayout]:
-        return []
-
-    def parse(self, blocks: list[Block]) -> Document:
-        del blocks
-        return Document()
-
-    def refine_classification(
-        self,
-        extraction: ExtractionResult,
-        tier1_results: list[ClassifiedBlock],
-    ) -> list[ClassifiedBlock]:
-        del extraction
-        return tier1_results
-
-    def refine_reconstruction(
-        self,
-        document: Document,
-        extraction: ExtractionResult,
-        classified_blocks: list[ClassifiedBlock],
-    ) -> Document:
-        del extraction, classified_blocks
-        return document
-
-    def refine_apparatus(
-        self,
-        document: Document,
-        extraction: ExtractionResult,
-        classified_blocks: list[ClassifiedBlock],
-    ) -> Document:
-        del extraction, classified_blocks
-        return document
 
 
 @pytest.mark.slow
@@ -466,6 +420,7 @@ def test_pipeline_with_dehyphenation_on_patriarca_is_a_noop() -> None:
     classified = classify(extraction, profile, plugin)
     document = reconstruct(extraction, classified, profile, plugin)
     document = resolve_apparatus(document, extraction, classified, plugin)
+    input_document = document
     document = apply_post_processing(document, extraction, classified, plugin)
 
     scabopdf_document = convert_document(document, extraction, profile, PATRIARCA_FIXTURE)
@@ -477,6 +432,15 @@ def test_pipeline_with_dehyphenation_on_patriarca_is_a_noop() -> None:
         f"\n  schema_version={scabopdf_document.schema_version}"
     )
 
+    # Pin the stronger invariant: when no transformation fires, the
+    # orchestrator returns the input Document **by identity**, not just
+    # an equal copy. Catches regressions where a future refactor would
+    # rebuild the Document with an empty transformations tuple.
+    assert document is input_document, (
+        "apply_post_processing must return the input Document unchanged when "
+        "no step emits a transformation; identity equality is the stronger "
+        "behavioural contract"
+    )
     assert n_transformations == 0, (
         "dehyphenate_with_log is OCR-targeted; on digitally-typeset Patriarca "
         "PyMuPDF emits no \\n in span text so the step has nothing to match"

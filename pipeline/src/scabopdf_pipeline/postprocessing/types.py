@@ -34,6 +34,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from scabopdf_pipeline.extraction.types import PageIndex
+
 if TYPE_CHECKING:
     from scabopdf_pipeline.classification.types import ClassifiedBlock
     from scabopdf_pipeline.extraction.types import ExtractionResult
@@ -79,7 +81,7 @@ class Transformation:
 
     step_id: str
     node_id: str
-    page_index: int
+    page_index: PageIndex
     position: tuple[int, int]
     original: str
     normalized: str

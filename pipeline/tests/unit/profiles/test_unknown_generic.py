@@ -4,8 +4,8 @@ from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.profiling.signals import (
     ApparatusPresence,
     OutlineStructure,
-    PageGeometry,
     ProducerCreator,
+    ProfilePageGeometry,
     ProfilingSignals,
     TypographicSignature,
 )
@@ -17,7 +17,7 @@ def _signals() -> ProfilingSignals:
     return ProfilingSignals(
         typographic_signature=TypographicSignature(),
         apparatus_presence=ApparatusPresence(),
-        page_geometry=PageGeometry(width_pt=595.0, height_pt=842.0),
+        page_geometry=ProfilePageGeometry(width_pt=595.0, height_pt=842.0),
         producer_creator=ProducerCreator(),
         outline_structure=OutlineStructure(),
     )

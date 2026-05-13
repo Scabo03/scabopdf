@@ -29,7 +29,7 @@ class ApparatusPresence:
 
 
 @dataclass(frozen=True)
-class PageGeometry:
+class ProfilePageGeometry:
     width_pt: float
     height_pt: float
 
@@ -59,7 +59,7 @@ class SpecificMarker:
 class ProfilingSignals:
     typographic_signature: TypographicSignature
     apparatus_presence: ApparatusPresence
-    page_geometry: PageGeometry
+    page_geometry: ProfilePageGeometry
     producer_creator: ProducerCreator
     outline_structure: OutlineStructure
     specific_markers: list[SpecificMarker] = field(default_factory=list)

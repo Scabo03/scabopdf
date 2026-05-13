@@ -7,6 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import fitz
+import jsonschema
 import pytest
 
 from scabopdf_pipeline.emission import emitter
@@ -171,3 +172,30 @@ def test_emit_to_file_overwrites_existing(tmp_path: Path) -> None:
     emit_to_file(pdf_path, output_path)
     assert output_path.read_text(encoding="utf-8") != "stale content"
     assert '"schema_version": "0.2.0"' in output_path.read_text(encoding="utf-8")
+
+
+def test_emit_to_file_jsonschema_failure_raises_emission_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A jsonschema failure on the committed schema is wrapped as EmissionError.
+
+    Pins the post-audit decision H: ``emit_to_file`` runs both
+    ``validate_document`` (Pydantic) and ``validate_against_schema``
+    (jsonschema against ``shared/schema.json``) under the same
+    ``validate=True`` flag, and either failure must surface as
+    :class:`EmissionError` with ``__cause__`` preserved.
+    """
+    pdf_path = _write_pdf(tmp_path)
+    output_path = tmp_path / "out.json"
+
+    def _failing_schema_validator(data: dict[str, object], schema: dict[str, object]) -> None:
+        del data, schema
+        raise jsonschema.ValidationError("synthetic schema mismatch (test)")
+
+    monkeypatch.setattr(emitter, "validate_against_schema", _failing_schema_validator)
+
+    with pytest.raises(EmissionError) as info:
+        emit_to_file(pdf_path, output_path)
+
+    assert isinstance(info.value.__cause__, jsonschema.ValidationError)
+    assert "synthetic schema mismatch" in str(info.value.__cause__)

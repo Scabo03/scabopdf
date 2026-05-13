@@ -18,5 +18,12 @@ from __future__ import annotations
 from scabopdf_pipeline.emission.converter import convert_document
 from scabopdf_pipeline.emission.emitter import emit, emit_to_file
 from scabopdf_pipeline.emission.exceptions import EmissionError
+from scabopdf_pipeline.emission.profile_builder import build_default_profile
 
-__all__ = ["EmissionError", "convert_document", "emit", "emit_to_file"]
+__all__ = [
+    "EmissionError",
+    "build_default_profile",
+    "convert_document",
+    "emit",
+    "emit_to_file",
+]

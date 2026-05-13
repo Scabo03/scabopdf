@@ -14,8 +14,16 @@ from scabopdf_pipeline.extraction import flags as flag_bits
 
 BBox = tuple[float, float, float, float]
 
+# PageIndex is a 0-based PDF page index, matching the indexing convention
+# of PyMuPDF (fitz). All Block.page, Span.page, PageGeometry.page,
+# PageImageInfo.page, DrawingInfo.page and Node.page_index fields use
+# this semantic. Layer 1 never stores 1-based "book pages": those live
+# only inside ``BOOK_PAGE_ANCHOR`` nodes and are recovered by the
+# corresponding profile plugin.
+PageIndex = int
 
-@dataclass(frozen=True)
+
+@dataclass(frozen=True, kw_only=True)
 class Span:
     text: str
     font: str
@@ -23,7 +31,7 @@ class Span:
     flags: int
     color: int
     bbox: BBox
-    page: int
+    page: PageIndex
     block_index: int
     line_index: int
     span_index: int
@@ -49,40 +57,40 @@ class Span:
         return flag_bits.has_flag(self.flags, flag_bits.BOLD)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Block:
-    page: int
+    page: PageIndex
     block_index: int
     bbox: BBox
     span_range: tuple[int, int]
     """Half-open [start, end) range into ExtractionResult.spans."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class PageGeometry:
-    page: int
+    page: PageIndex
     width_pt: float
     height_pt: float
     rotation: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class PageImageInfo:
-    page: int
+    page: PageIndex
     count: int
     has_full_page_image: bool
     bboxes: list[BBox] = field(default_factory=list)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class DrawingInfo:
-    page: int
+    page: PageIndex
     bbox: BBox
     kind: str
     """Currently only ``"horizontal_rule"``."""
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class ExtractionResult:
     spans: list[Span]
     blocks: list[Block]

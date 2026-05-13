@@ -37,14 +37,15 @@ from scabopdf_pipeline.apparatus import resolve_apparatus
 from scabopdf_pipeline.classification import classify
 from scabopdf_pipeline.emission.constants import INDENT_JSON
 from scabopdf_pipeline.emission.converter import convert_document
-from scabopdf_pipeline.emission.emitter import _build_profile
+from scabopdf_pipeline.emission.emitter import _load_committed_schema
 from scabopdf_pipeline.emission.exceptions import EmissionError
+from scabopdf_pipeline.emission.profile_builder import build_default_profile
 from scabopdf_pipeline.extraction import extract
 from scabopdf_pipeline.postprocessing import apply_post_processing
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.reconstruction import reconstruct
 from scabopdf_pipeline.schema.contract import SCHEMA_VERSION, NodeDict, ScabopdfDocument
-from scabopdf_pipeline.schema.validator import validate_document
+from scabopdf_pipeline.schema.validator import validate_against_schema, validate_document
 
 PROGRESS_PREFIX = "[scabopdf-extract]"
 """Common prefix for all progress and error messages on stderr."""
@@ -157,7 +158,7 @@ def _run_pipeline(
         extraction = extract(pdf_path)
 
         plugin = UnknownGenericProfile()
-        profile = _build_profile(plugin)
+        profile = build_default_profile(plugin)
 
         timer.next("classifying")
         classified = classify(extraction, profile, plugin)
@@ -176,7 +177,9 @@ def _run_pipeline(
 
         timer.next("validating")
         if validate:
-            validate_document(scabopdf_document.model_dump(mode="json"))
+            dumped = scabopdf_document.model_dump(mode="json")
+            validate_document(dumped)
+            validate_against_schema(dumped, _load_committed_schema())
 
         timer.next(f"writing to {output_path}")
         json_str = scabopdf_document.model_dump_json(indent=INDENT_JSON, exclude_none=False)

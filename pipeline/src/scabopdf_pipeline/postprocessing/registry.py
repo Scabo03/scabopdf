@@ -48,7 +48,7 @@ not semantically meaningful.
 """
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class PostProcessingRegistry:
     """Immutable mapping from step ID to executable post-processing step.
 

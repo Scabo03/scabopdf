@@ -31,6 +31,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from scabopdf_pipeline.apparatus.types import ApparatusRefKind
+from scabopdf_pipeline.extraction.types import PageIndex
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 NODE_ID_PATTERN = r"^node_\d+$"
@@ -86,7 +87,7 @@ class NodeDict(BaseModel):
 
     id: str = Field(pattern=NODE_ID_PATTERN)
     type: SemanticCategory
-    page_index: int
+    page_index: PageIndex
     text: str | None = None
     level: int | None = None
     block_indices: list[int] = Field(default_factory=list)
@@ -143,7 +144,7 @@ class TransformationDict(BaseModel):
 
     step_id: str
     node_id: str = Field(pattern=NODE_ID_PATTERN)
-    page_index: int
+    page_index: PageIndex
     position: tuple[int, int]
     original: str
     normalized: str

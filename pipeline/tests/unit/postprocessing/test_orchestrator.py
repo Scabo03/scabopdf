@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from typing import ClassVar
-
 import pytest
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
-from scabopdf_pipeline.extraction.types import Block, ExtractionResult
+from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing import (
     PostProcessingRegistry,
     Transformation,
@@ -16,11 +14,9 @@ from scabopdf_pipeline.postprocessing import (
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.postprocessing.types import PostProcessingStep
-from scabopdf_pipeline.profiling.plugin import ProfilePlugin
-from scabopdf_pipeline.profiling.profile import DisabledLayout
-from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
+from tests.conftest import NoOpProfilePlugin
 
 
 def _empty_extraction() -> ExtractionResult:
@@ -46,59 +42,14 @@ def _node(node_id: str, text: str | None) -> Node:
     )
 
 
-class _FakeProfile(ProfilePlugin):
-    """Minimal profile plugin under test control."""
-
-    profile_id: ClassVar[str] = "fake_profile"
-    editorial_family: ClassVar[str] = "test"
-    genre: ClassVar[str] = "test"
+class _FakeProfile(NoOpProfilePlugin):
+    """Test plugin that exposes a caller-supplied post-processing list."""
 
     def __init__(self, post_processing: list[str]) -> None:
         self._post_processing = post_processing
 
-    @classmethod
-    def matches(cls, signals: ProfilingSignals) -> float:
-        del signals
-        return 0.0
-
-    def get_categories(self) -> set[SemanticCategory]:
-        return set()
-
     def get_post_processing(self) -> list[str]:
         return list(self._post_processing)
-
-    def get_layouts_disabled(self) -> list[DisabledLayout]:
-        return []
-
-    def parse(self, blocks: list[Block]) -> Document:
-        del blocks
-        return Document()
-
-    def refine_classification(
-        self,
-        extraction: ExtractionResult,
-        tier1_results: list[ClassifiedBlock],
-    ) -> list[ClassifiedBlock]:
-        del extraction
-        return tier1_results
-
-    def refine_reconstruction(
-        self,
-        document: Document,
-        extraction: ExtractionResult,
-        classified_blocks: list[ClassifiedBlock],
-    ) -> Document:
-        del extraction, classified_blocks
-        return document
-
-    def refine_apparatus(
-        self,
-        document: Document,
-        extraction: ExtractionResult,
-        classified_blocks: list[ClassifiedBlock],
-    ) -> Document:
-        del extraction, classified_blocks
-        return document
 
 
 def test_no_steps_returns_document_unchanged() -> None:

@@ -18,6 +18,12 @@ These rules are absolute. They override any other behavior, default, or conventi
 
 **Commit hygiene.** Formatting fixes, cleanups, or any incidental changes not strictly part of the task you're working on go into a **dedicated housekeeping commit**, never bundled with the task commit. If you notice preexisting drift along the way, commit it separately first with a clear message (e.g. "Apply ruff format to file.py (preexisting drift)") so the task commit stays focused and the git log stays readable.
 
+**Pre-commit hook is active.** A local `.pre-commit-config.yaml` runs `ruff check`, `ruff format --check`, `mypy --strict` and `pytest tests/unit` on every `git commit`. Activate it once after cloning with `pipeline/.venv/bin/pre-commit install`; see `docs/DEVELOPMENT.md` for the full bootstrap. Bypassing it with `--no-verify` is reserved for emergencies and must be paired with a follow-up commit that restores the gate.
+
+## Decisioni di design rinviate
+
+**Decisione E — Conversione `ProfilingSignals` da dataclass a Pydantic v2.** Consapevolmente rinviata. Oggi `ProfilingSignals` e i suoi otto sotto-dataclass restano `@dataclass(frozen=True)` mentre `DocumentProfile` è già Pydantic. Quando il bump additivo che emette `detection_signals` nello schema arriverà — atteso non prima della maturazione seria del profiler — `ProfilingSignals` dovrà o diventare Pydantic v2 o passare attraverso un converter dedicato. La scelta è stata rinviata per evitare di pagare il costo della conversione finché il modello non sarà esercitato da almeno un plugin di corpus reale.
+
 ## Architectural notes
 
 **Tier 1 classification is deliberately narrow.** The generic tier 1 in `pipeline/src/scabopdf_pipeline/classification/tier1.py` only emits seven categories: `EMPTY_PAGE`, `ARTIFACT_FILIGREE`, `ARTIFACT_RUNNING_HEADER`, `ARTIFACT_FOOTER`, `BOOK_PAGE_ANCHOR`, `CROSS_REFERENCE`, `UNCLASSIFIED`. Crucially, `CROSS_REFERENCE` is recognised **only when the entire block is a single superscript span of pure digits** (heuristic `superscript_cross_reference`). Inline superscripts embedded inside larger `BODY` blocks are invisible to tier 1 and end up absorbed in `UNCLASSIFIED`. Categories like `NOTE`, `MARGINAL_HEADING`, `MARGINAL_GLOSS`, `EXAMPLE_BOX`, `INDEX_ENTRY`, `CHAPTER_SUMMARY` and the legal-code family (`ARTICLE_HEADER`, `ARTICLE_BODY`, `HEADING_N`, etc.) are **entirely profile-specific** and must be assigned by the plugin's `refine_classification` (tier 2).
