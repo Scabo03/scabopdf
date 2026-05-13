@@ -46,7 +46,7 @@
     },
     "DocumentMetadata": {
       "additionalProperties": false,
-      "description": "Editorial metadata extracted from the source PDF.\n\nv0.1.0 carries only the fields the pipeline actually populates today:\npage count, physical page size, and the source filename. Title,\nauthors, ISBN, year, language, edition, publisher and\n``pages_with_content`` are deferred to a later version when a\nmetadata-extraction step is built.\n\n``page_size_pt`` is the size of the **first** PDF page expressed in\nPostScript points ``(width, height)``. Documents with heterogeneous\npage sizes are out of scope for v0.1.0.",
+      "description": "Editorial metadata extracted from the source PDF.\n\nThe current :data:`SCHEMA_VERSION` carries only the fields the pipeline\nactually populates today: page count, physical page size, and the\nsource filename. Title, authors, ISBN, year, language, edition,\npublisher and ``pages_with_content`` are deferred to a later version\nwhen a metadata-extraction step is built.\n\n``page_size_pt`` is the size of the **first** PDF page expressed in\nPostScript points ``(width, height)``. Documents with heterogeneous\npage sizes are out of scope at this schema version.",
       "properties": {
         "pages_pdf": {
           "title": "Pages Pdf",
@@ -113,7 +113,7 @@
     },
     "NodeDict": {
       "additionalProperties": false,
-      "description": "A node in the reading-order tree.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.Node` in its\nJSON form. The Python ``category`` field is renamed to ``type`` here\nto match ``ARCHITECTURE.md § 8.7`` and what Layer 2 expects to read.\n\n``children`` is recursive and produces an arbitrarily deep tree.\n``text`` is ``None`` only for synthetic nodes without an originating\nblock (currently only ``EMPTY_PAGE``). ``level`` is non-null only for\n``HEADING_*`` categories. These semantic cross-field invariants are\nnot enforced by the contract in v0.1.0 to keep the schema additive;\nthey may become validated constraints in a later version.",
+      "description": "A node in the reading-order tree.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.Node` in its\nJSON form. The Python ``category`` field is renamed to ``type`` here\nto match ``ARCHITECTURE.md § 8.7`` and what Layer 2 expects to read.\n\n``children`` is recursive and produces an arbitrarily deep tree.\n``text`` is ``None`` only for synthetic nodes without an originating\nblock (currently only ``EMPTY_PAGE``). ``level`` is non-null only for\n``HEADING_*`` categories. These semantic cross-field invariants are\nnot enforced by the contract at the current :data:`SCHEMA_VERSION` to\nkeep the schema additive; they may become validated constraints in a\nlater version.",
       "properties": {
         "id": {
           "pattern": "^node_\\d+$",

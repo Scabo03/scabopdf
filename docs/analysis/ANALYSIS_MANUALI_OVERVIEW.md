@@ -246,7 +246,7 @@ Il corpus dei sei manuali ha introdotto **sette categorie semantiche** che si ag
 | `CHAPTER_SUMMARY` | Patriarca | Helvetica 9pt + incipit "Sommario" | Riusato dal Mandrioli (Garamond 9pt) e dal Tesauro (TimesTen 8pt). **Stessa funzione, tipografia diversa per profilo**. |
 | `MARGINAL_GLOSS` | Mandrioli | AGaramondPro-BoldItalic 8.5pt, margine sx, accompagna nota | Esclusivo del Mandrioli |
 | `TOC_GENERAL` | Tesauro | TimesTen-Roman 8.5pt + simbolo `»`, indice apertura volume | Distinto da `CHAPTER_SUMMARY`: uno è apertura volume, l'altro apertura capitolo |
-| `STAMP_ARTIFACT` | Tesauro | Marca tipografica residua di pre-stampa (`261887_Quarta_Bozza.indb`) | Probabilmente non esclusiva del Tesauro: altri PDF UTET potrebbero averla |
+| `ARTIFACT_STAMP` | Tesauro | Marca tipografica residua di pre-stampa (`261887_Quarta_Bozza.indb`) | Probabilmente non esclusiva del Tesauro: altri PDF UTET potrebbero averla |
 | `EMPTY_PAGE` | Tesauro | Pagine bianche di chiusura capitolo + pad-out finale | Estendibile ad altri profili che usano impaginazione fronte/retro |
 
 **Categorie già esistenti** (introdotte da altri profili Codici/DeJure/EdD) confermate o estese dai manuali:
@@ -553,7 +553,7 @@ La struttura si ricostruisce dalla tipografia; l'outline conferma o è ignorato.
 
 ### 11.5 Sette categorie semantiche nuove al modello JSON
 
-`MARGINAL_HEADING`, `EXAMPLE_BOX`, `CHAPTER_SUMMARY`, `MARGINAL_GLOSS`, `TOC_GENERAL`, `STAMP_ARTIFACT`, `EMPTY_PAGE`. Confluite in `ARCHITECTURE.md` § 4.2.
+`MARGINAL_HEADING`, `EXAMPLE_BOX`, `CHAPTER_SUMMARY`, `MARGINAL_GLOSS`, `TOC_GENERAL`, `ARTIFACT_STAMP`, `EMPTY_PAGE`. Confluite in `ARCHITECTURE.md` § 4.2.
 
 **Origine empirica**: ogni categoria è derivata da un profilo specifico (vedi § 5 di questo documento).
 
@@ -583,7 +583,7 @@ I blocchi del front matter (es. INDICE iniziale del Mosconi) usano firme tipogra
 
 ### 11.10 Gestione marche di pre-stampa residue
 
-`STAMP_ARTIFACT` come categoria dedicata per artefatti di workflow editoriale (filename `.indb`, date di compilazione, `_Bozza.indb`). Confluita in `ARCHITECTURE.md` § 4.2.
+`ARTIFACT_STAMP` come categoria dedicata per artefatti di workflow editoriale (filename `.indb`, date di compilazione, `_Bozza.indb`). Confluita in `ARCHITECTURE.md` § 4.2.
 
 **Origine empirica**: Tesauro (`261887_Quarta_Bozza.indb / 05/09/23 3:50 PM` su ogni pagina), Mosconi (filename `.indb` nel front matter).
 

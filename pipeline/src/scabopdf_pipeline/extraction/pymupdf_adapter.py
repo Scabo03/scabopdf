@@ -23,8 +23,16 @@ from scabopdf_pipeline.extraction.types import (
 )
 
 HORIZONTAL_RULE_MAX_HEIGHT_PT = 2.0
+"""Maximum bbox height in points (inclusive) for a drawing to qualify
+as a horizontal rule (ARCHITECTURE.md § 3.4)."""
+
 HORIZONTAL_RULE_MIN_WIDTH_PT = 100.0
+"""Minimum bbox width in points (inclusive) for a drawing to qualify as
+a horizontal rule (ARCHITECTURE.md § 3.4)."""
+
 FULL_PAGE_IMAGE_AREA_RATIO = 0.90
+"""Minimum image-area / page-area ratio (inclusive) above which a page
+image is treated as full-page (ARCHITECTURE.md § 3.4)."""
 
 
 def extract(source: str | Path | bytes) -> ExtractionResult:

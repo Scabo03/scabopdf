@@ -26,7 +26,7 @@ La numerazione segue `MAJOR.MINOR.PATCH` con il significato seguente.
 
 Il salto a 1.0.0 avverrà quando il Layer 1 sarà **funzionalmente completo**:
 
-- Tutti i plugin di corpus implementati e operativi: i sei profili manuali (BIC, Giappichelli, Giuffrè diretto, UTET-Wolters Kluwer, Cedam, Wolters Kluwer Italia), il profilo `dejure_massime`, il profilo `dejure_nota_sentenza`, il profilo `dejure_dottrina`, i due profili codice (`codice_giuffre_penale`, `codice_giuffre_civile`), il profilo `enciclopedia_giuffre`, e `unknown_generic` come fallback.
+- Tutti i plugin di corpus implementati e operativi. I quattordici profili attesi a 1.0.0 sono i sei profili manuali (`manuale_bic`, `manuale_giuffre_diretto`, `manuale_utet_wolterskluwer`, `manuale_zanichelli_giuridica`, `manuale_giappichelli`, `compendio_utet`), i due profili enciclopedia (`enciclopedia_moderna`, `enciclopedia_storica`), i due profili codice (`codice_giuffre_penale`, `codice_giuffre_civile`), i tre profili DeJure (`dejure_massime`, `dejure_nota_sentenza`, `dejure_dottrina`) e il fallback `unknown_generic`.
 - Tutti gli step di post-processing del § 7 di `ARCHITECTURE.md` implementati.
 - Una fixture rappresentativa per ogni profilo, con test end-to-end Layer 1 verde.
 

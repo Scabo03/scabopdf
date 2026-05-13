@@ -43,7 +43,7 @@ from scabopdf_pipeline.extraction import extract
 from scabopdf_pipeline.postprocessing import apply_post_processing
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.reconstruction import reconstruct
-from scabopdf_pipeline.schema.contract import NodeDict, ScabopdfDocument
+from scabopdf_pipeline.schema.contract import SCHEMA_VERSION, NodeDict, ScabopdfDocument
 from scabopdf_pipeline.schema.validator import validate_document
 
 PROGRESS_PREFIX = "[scabopdf-extract]"
@@ -241,7 +241,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="scabopdf-extract",
         description=(
-            "ScaboPDF Layer 1 — extract a PDF into a JSON document conforming to schema v0.1.0."
+            "ScaboPDF Layer 1 — extract a PDF into a JSON document "
+            f"conforming to schema v{SCHEMA_VERSION}."
         ),
     )
     parser.add_argument("pdf_path", help="Path to the source PDF.")

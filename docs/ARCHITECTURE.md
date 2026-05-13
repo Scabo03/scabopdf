@@ -186,9 +186,9 @@ The detection produces a `DocumentProfile` object containing:
 1. **Typographic family signature** (most robust): the dominant font family + size combinations on a sample of pages. Verdana → BIC, MScotchRoman → Giuffrè diretto, TimesTenLTStd → UTET-WK, Times New Roman 81% dominance → Zanichelli minimal, SimonciniGaramondStd no-bold → Giappichelli or EdD modern, etc.
 2. **Apparatus presence** (genre discrimination): count of marginal headings, footnote markers, italic 9pt boxes, summary markers. Distinguishes treatise from compendium when family is identical.
 3. **Page geometry**: A4 vs tascabile vs Letter US vs editorial 481×680. Corroborating signal.
-4. **Producer + creator metadata**: corroborating only. Documented to be unreliable when used alone (EdD § 12.1, BIC § 2 of `ANALYSIS_MANUALI.md`).
+4. **Producer + creator metadata**: corroborating only. Documented to be unreliable when used alone (EdD § 12.1, BIC § 2 of `ANALYSIS_MARRONE.md`).
 5. **Embedded outline presence + structure**: corroborating. Outlines are unreliable when used alone.
-6. **Specific structural markers**: filigree text ("Versione riservata Biblioteca It. Ciechi"), banner BD700x300 (codici), `Pag. N-M` footer (BIC), `STAMP_ARTIFACT` (Tesauro), language metadata.
+6. **Specific structural markers**: filigree text ("Versione riservata Biblioteca It. Ciechi"), banner BD700x300 (codici), `Pag. N-M` footer (BIC), `ARTIFACT_STAMP` (Tesauro), language metadata.
 
 ### 2.4 Plugin registry
 
@@ -226,7 +226,7 @@ The detector iterates over registered plugins, calls `matches()` on each, and se
 
 ### 2.5 Built-in profiles at v1
 
-The pipeline ships with twelve profiles, derived from the corpus:
+The pipeline ships with thirteen corpus profiles plus the `unknown_generic` fallback (fourteen profile plugins total), derived from the corpus:
 
 - `codice_giuffre_penale`, `codice_giuffre_civile`
 - `dejure_massime`, `dejure_nota_sentenza`, `dejure_dottrina`
@@ -250,9 +250,9 @@ The profile is serialized into the output JSON metadata so that Layer 2 can adap
 - [ ] Implement page geometry classifier
 - [ ] Implement metadata reader (producer, creator, language, tagged status)
 - [ ] Implement embedded outline reader
-- [ ] Implement specific marker detectors (filigree, BD700x300, `Pag. N-M`, `STAMP_ARTIFACT`)
+- [ ] Implement specific marker detectors (filigree, BD700x300, `Pag. N-M`, `ARTIFACT_STAMP`)
 - [ ] Implement detector orchestrator with confidence threshold and fallback
-- [ ] Implement each of the twelve built-in profile plugins (skeleton + `matches()` first, full `parse()` later in § 4–7)
+- [ ] Implement each of the thirteen corpus profile plugins plus the `unknown_generic` fallback (skeleton + `matches()` first, refinement hooks later in § 4–7)
 - [ ] Implement `personal_transcription` rejection with accessible message
 - [ ] Unit tests: each plugin's `matches()` returns expected confidence on its fixture PDFs
 - [ ] Integration test: detector correctly assigns profile to each fixture PDF
@@ -647,6 +647,8 @@ See `ANALYSIS_GIUFFRE_CODICI.md` § 4.3. Trigger: span with `flags & 16` (bold),
 ---
 
 ## 8. JSON schema (the contract)
+
+> The examples in this section anticipate the v1.0.0 shape of the contract. For the schema that the pipeline actually emits today see `docs/SCHEMA_v0.2.0.md`.
 
 ### 8.1 Role of the schema
 

@@ -77,8 +77,9 @@ class NodeDict(BaseModel):
     ``text`` is ``None`` only for synthetic nodes without an originating
     block (currently only ``EMPTY_PAGE``). ``level`` is non-null only for
     ``HEADING_*`` categories. These semantic cross-field invariants are
-    not enforced by the contract in v0.1.0 to keep the schema additive;
-    they may become validated constraints in a later version.
+    not enforced by the contract at the current :data:`SCHEMA_VERSION` to
+    keep the schema additive; they may become validated constraints in a
+    later version.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -96,15 +97,15 @@ class NodeDict(BaseModel):
 class DocumentMetadata(BaseModel):
     """Editorial metadata extracted from the source PDF.
 
-    v0.1.0 carries only the fields the pipeline actually populates today:
-    page count, physical page size, and the source filename. Title,
-    authors, ISBN, year, language, edition, publisher and
-    ``pages_with_content`` are deferred to a later version when a
-    metadata-extraction step is built.
+    The current :data:`SCHEMA_VERSION` carries only the fields the pipeline
+    actually populates today: page count, physical page size, and the
+    source filename. Title, authors, ISBN, year, language, edition,
+    publisher and ``pages_with_content`` are deferred to a later version
+    when a metadata-extraction step is built.
 
     ``page_size_pt`` is the size of the **first** PDF page expressed in
     PostScript points ``(width, height)``. Documents with heterogeneous
-    page sizes are out of scope for v0.1.0.
+    page sizes are out of scope at this schema version.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
