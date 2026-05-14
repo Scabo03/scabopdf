@@ -24,6 +24,21 @@ if TYPE_CHECKING:
 
 
 @dataclass(frozen=True, kw_only=True)
+class SummaryItem:
+    """A single parsed entry of a ``CHAPTER_SUMMARY`` node.
+
+    Mirrors :class:`scabopdf_pipeline.schema.contract.ChapterSummaryItem`
+    on the Python side. Produced by a corpus plugin's
+    ``refine_reconstruction`` when it recognises and parses a chapter
+    summary block. See ``ChapterSummaryItem`` for the rationale of
+    ``number`` being a string rather than an integer.
+    """
+
+    number: str
+    title: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class Node:
     """A node in the document reading-order tree.
 
@@ -51,6 +66,13 @@ class Node:
     ``level`` is the heading level (1-4) for ``HEADING_N`` nodes, ``None``
     for every other category.
 
+    ``summary_items`` is the tuple of parsed entries for
+    ``CHAPTER_SUMMARY`` nodes whose textual content a corpus plugin
+    could decompose into structured items, ``None`` for every other
+    node type and for ``CHAPTER_SUMMARY`` nodes the plugin chose not to
+    parse or could not parse. The converter maps it field-by-field to
+    ``NodeDict.items``.
+
     ``apparatus_refs`` lists the relationships inferred during apparatus
     resolution (ARCHITECTURE.md § 6). It is populated by
     ``apparatus.resolve_apparatus`` and stays empty if that step is not
@@ -66,6 +88,7 @@ class Node:
     block_indices: tuple[int, ...] = ()
     text: str | None = None
     level: int | None = None
+    summary_items: tuple[SummaryItem, ...] | None = None
     apparatus_refs: tuple[ApparatusRef, ...] = ()
 
 

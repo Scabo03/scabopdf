@@ -1,4 +1,4 @@
-"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.2.0).
+"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.3.0).
 
 These models are the **authoritative source** for the JSON schema that
 sits between the Python pipeline (Layer 1) and the React Native app
@@ -6,21 +6,26 @@ sits between the Python pipeline (Layer 1) and the React Native app
 module via ``pipeline/scripts/generate_schema.py`` and must never be
 edited by hand.
 
-Schema version ``0.2.0`` is **pre-1.0 unstable**: it describes what the
-pipeline emits after §§ 1-6, § 8, § 9 and the first generic step of § 7
-(``dehyphenate_with_log``). It is additive over 0.1.0: a single new
-top-level field ``transformations`` carrying the reversible
-post-processing log. Fields that the architecture envisions but the
-pipeline does not yet populate (rich editorial metadata, profile
-detection signals, layout-4 acoustic regime, profile-specific
-structures) are intentionally omitted and will land in later additive
-bumps.
+Schema version ``0.3.0`` is **pre-1.0 unstable**: it describes what the
+pipeline emits after §§ 1-6, § 8, § 9, the first generic step of § 7
+(``dehyphenate_with_log``) and the first corpus plugin
+(``manuale_zanichelli_giuridica``). It is additive over 0.2.0: a single
+new field ``items`` on :class:`NodeDict`, carrying the structured
+entries parsed out of a ``CHAPTER_SUMMARY`` block when the corpus
+plugin recognises one. The field is optional (``None`` by default) and
+populated only for nodes whose ``type`` is ``CHAPTER_SUMMARY`` and
+whose textual content the plugin could parse; nodes of other types and
+unparseable summaries keep ``items: null``. Fields that the
+architecture envisions but the pipeline does not yet populate (rich
+editorial metadata, profile detection signals, layout-4 acoustic
+regime, other profile-specific structures) remain intentionally
+omitted and will land in later additive bumps.
 
-See ``docs/SCHEMA_v0.2.0.md`` for the narrative field-by-field
+See ``docs/SCHEMA_v0.3.0.md`` for the narrative field-by-field
 reference and the disciplinary rules that govern modifications,
-``docs/SCHEMA_v0.1.0.md`` for the historic baseline,
-``docs/SCHEMA_CHANGELOG.md`` for the per-version delta, and
-``docs/json-schema-versioning.md`` for the SemVer policy.
+``docs/SCHEMA_v0.2.0.md`` and ``docs/SCHEMA_v0.1.0.md`` for the
+historic baselines, ``docs/SCHEMA_CHANGELOG.md`` for the per-version
+delta, and ``docs/json-schema-versioning.md`` for the SemVer policy.
 """
 
 from __future__ import annotations
@@ -43,7 +48,7 @@ but no upper bound is enforced so documents with more than 9999 nodes
 remain valid.
 """
 
-SCHEMA_VERSION: Literal["0.2.0"] = "0.2.0"
+SCHEMA_VERSION: Literal["0.3.0"] = "0.3.0"
 """Single source of truth for the schema version literal.
 
 Bumping this is a deliberate act: see ``docs/json-schema-versioning.md``.
@@ -67,6 +72,33 @@ class ApparatusRefDict(BaseModel):
     source_marker: str | None = None
 
 
+class ChapterSummaryItem(BaseModel):
+    """One entry parsed out of a ``CHAPTER_SUMMARY`` block.
+
+    Mirrors :class:`scabopdf_pipeline.reconstruction.types.SummaryItem`
+    in its JSON form. Populated by a corpus plugin's
+    ``refine_reconstruction`` when it recognises a chapter summary
+    structure (today only ``manuale_zanichelli_giuridica`` does so).
+
+    ``number`` is a **string**, not an integer. The Patriarca-Benazzo
+    fixture uses only flat integers (``"1"``, ``"2"``, ...) for which
+    ``int`` would have been adequate, but other corpora are expected to
+    use composite numerations (``"1.1"``, ``"2-bis"``, ...) that an
+    ``int`` cannot represent. Keeping the field a string at v0.3.0
+    avoids a later breaking bump when those corpora arrive; Layer 2 can
+    always parse the string back to whatever structure it needs.
+
+    ``title`` is the textual title of the chapter section, with internal
+    whitespace already normalised by the plugin (single spaces, no
+    leading or trailing whitespace, no line breaks).
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    number: str
+    title: str
+
+
 class NodeDict(BaseModel):
     """A node in the reading-order tree.
 
@@ -77,10 +109,14 @@ class NodeDict(BaseModel):
     ``children`` is recursive and produces an arbitrarily deep tree.
     ``text`` is ``None`` only for synthetic nodes without an originating
     block (currently only ``EMPTY_PAGE``). ``level`` is non-null only for
-    ``HEADING_*`` categories. These semantic cross-field invariants are
-    not enforced by the contract at the current :data:`SCHEMA_VERSION` to
-    keep the schema additive; they may become validated constraints in a
-    later version.
+    ``HEADING_*`` categories. ``items`` is non-null only for
+    ``CHAPTER_SUMMARY`` nodes whose textual content a corpus plugin
+    could parse into structured entries; it is ``null`` for every other
+    node type and for ``CHAPTER_SUMMARY`` nodes the plugin chose not to
+    parse or could not parse. These semantic cross-field invariants are
+    not enforced by the contract at the current :data:`SCHEMA_VERSION`
+    to keep the schema additive; they may become validated constraints
+    in a later version.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -90,6 +126,7 @@ class NodeDict(BaseModel):
     page_index: PageIndex
     text: str | None = None
     level: int | None = None
+    items: list[ChapterSummaryItem] | None = None
     block_indices: list[int] = Field(default_factory=list)
     children: list[NodeDict] = Field(default_factory=list)
     apparatus_refs: list[ApparatusRefDict] = Field(default_factory=list)
@@ -174,7 +211,7 @@ class DocumentProfileDict(BaseModel):
 
 
 class ScabopdfDocument(BaseModel):
-    """The Layer 1 → Layer 2 JSON document, schema version 0.2.0.
+    """The Layer 1 → Layer 2 JSON document, schema version 0.3.0.
 
     The emitted JSON conforms to JSON Schema Draft 2020-12 as serialised
     by ``ScabopdfDocument.model_json_schema()`` and committed to
@@ -197,7 +234,7 @@ class ScabopdfDocument(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["0.2.0"]
+    schema_version: Literal["0.3.0"]
     document_id: UUID
     metadata: DocumentMetadata
     profile: DocumentProfileDict

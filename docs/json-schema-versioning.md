@@ -1,16 +1,16 @@
 # Policy di versioning del JSON Schema
 
 > Riferimento per la policy SemVer applicata allo schema JSON del contratto Layer 1 ↔ Layer 2.
-> Versione corrente dello schema: 0.2.0 (instabile, pre-1.0).
+> Versione corrente dello schema: 0.3.0 (instabile, pre-1.0).
 > Riferimento normativo: `ARCHITECTURE.md § 8.13`.
 
 ---
 
 ## 1. Stato corrente
 
-Lo schema è alla versione **0.2.0**, dichiaratamente **instabile**. Il file canonico è `shared/schema.json`, generato dai modelli Pydantic in `pipeline/src/scabopdf_pipeline/schema/contract.py`. La descrizione narrativa campo per campo sta in `docs/SCHEMA_v0.2.0.md`; `docs/SCHEMA_v0.1.0.md` resta in repo come riferimento storico del bootstrap iniziale e `docs/SCHEMA_CHANGELOG.md` riporta il delta per ciascuna versione.
+Lo schema è alla versione **0.3.0**, dichiaratamente **instabile**. Il file canonico è `shared/schema.json`, generato dai modelli Pydantic in `pipeline/src/scabopdf_pipeline/schema/contract.py`. La descrizione narrativa campo per campo sta in `docs/SCHEMA_v0.3.0.md`; `docs/SCHEMA_v0.2.0.md` e `docs/SCHEMA_v0.1.0.md` restano in repo come riferimenti storici del bootstrap e del log di transformations, e `docs/SCHEMA_CHANGELOG.md` riporta il delta per ciascuna versione.
 
-Nessun consumatore in produzione legge ancora lo schema: il Layer 2 (app React Native) non è inizializzato. La 0.2.0 segue la 0.1.0 con un'aggiunta additiva (il blocco `transformations`) introdotta contestualmente alla chiusura del primo step generico del § 7 di post-processing. Le emissioni reali (CLI `scabopdf-extract`) producono documenti conformi a 0.2.0 a partire da oggi.
+Nessun consumatore in produzione legge ancora lo schema: il Layer 2 (app React Native) non è inizializzato. La 0.3.0 segue la 0.2.0 con un'aggiunta additiva (il campo opzionale `items` su `NodeDict`) introdotta contestualmente all'arrivo del primo plugin di corpus, `manuale_zanichelli_giuridica`, che valorizza il campo quando incontra un `CHAPTER_SUMMARY` parsificabile sul Patriarca-Benazzo. Le emissioni reali (CLI `scabopdf-extract`) producono documenti conformi a 0.3.0 a partire da oggi.
 
 ## 2. Schema SemVer
 
@@ -58,4 +58,4 @@ Il `test_committed_schema_matches_contract` in `pipeline/tests/unit/schema/test_
 
 Il `validate_against_schema` in `pipeline/src/scabopdf_pipeline/schema/validator.py` è una **seconda linea di difesa**: usa la libreria `jsonschema` per validare un dict contro lo schema generato, in modo indipendente da Pydantic. Se mai `model_json_schema()` di Pydantic dovesse produrre uno schema sottilmente diverso dalla validazione interna dei modelli, questo validatore lo cattura. È quello che il § 9 di emissione e il Layer 2 di consumo useranno come check finale prima di scrivere o leggere il file.
 
-Il `CHANGELOG` vive in `docs/SCHEMA_CHANGELOG.md`. La sua prima voce è `## 0.1.0 — 2026-05-12 — Initial bootstrap` e la seconda `## 0.2.0 — 2026-05-13 — Transformations log`. Ogni futuro bump aggiunge una voce in testa al file con la motivazione, l'elenco dei campi aggiunti/modificati/rimossi e, se presente, una voce `BREAKING:` evidenziata.
+Il `CHANGELOG` vive in `docs/SCHEMA_CHANGELOG.md`. La sua prima voce è `## 0.1.0 — 2026-05-12 — Initial bootstrap`, la seconda `## 0.2.0 — 2026-05-13 — Transformations log` e la terza `## 0.3.0 — 2026-05-14 — CHAPTER_SUMMARY structured items`. Ogni futuro bump aggiunge una voce in testa al file con la motivazione, l'elenco dei campi aggiunti/modificati/rimossi e, se presente, una voce `BREAKING:` evidenziata.

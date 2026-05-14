@@ -24,7 +24,7 @@ must apply the substitutions **right-to-left** so that the offsets
 remain valid for the slices it has not yet rewritten. Layer 2 reverts
 the log by walking it in reverse order, replacing
 ``text[position[0] : position[0] + len(normalized)]`` with ``original``
-for each ``Transformation``. See ``docs/SCHEMA_v0.2.0.md`` for the same
+for each ``Transformation``. See ``docs/SCHEMA_v0.3.0.md`` for the same
 convention from the schema side.
 """
 

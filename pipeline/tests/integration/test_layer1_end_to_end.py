@@ -175,7 +175,7 @@ def test_pipeline_runs_on_patriarca() -> None:
 
     # § 9 emission: the converted ScabopdfDocument is valid against both
     # the Pydantic contract and the committed shared/schema.json.
-    assert scabopdf_document.schema_version == "0.2.0"
+    assert scabopdf_document.schema_version == "0.3.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
     assert len(scabopdf_document.structure) == len(document.root)
     # § 7 post-processing: unknown_generic declares no steps so the
@@ -277,7 +277,7 @@ def test_pipeline_runs_on_mosconi() -> None:
     assert n_apparatus_refs_total == 0
 
     # § 9 emission: same conformance check as Patriarca.
-    assert scabopdf_document.schema_version == "0.2.0"
+    assert scabopdf_document.schema_version == "0.3.0"
     assert scabopdf_document.metadata.pages_pdf == 613
     assert len(scabopdf_document.structure) == len(document.root)
     # § 7 post-processing: same no-op result as Patriarca under
@@ -321,7 +321,7 @@ def test_emit_to_file_on_patriarca(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.2.0"
+    assert document.schema_version == "0.3.0"
     assert n_nodes_total > 0
     # unknown_generic declares no post-processing — the field is present
     # and empty in the on-disk JSON.
@@ -359,7 +359,7 @@ def test_emit_to_file_on_mosconi(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.2.0"
+    assert document.schema_version == "0.3.0"
     assert document.metadata.pages_pdf == 613
     assert n_nodes_total > 0
     assert document.transformations == []
@@ -528,7 +528,7 @@ def test_dehyphenation_end_to_end_synthetic() -> None:
         assert "-\n" not in t.normalized
 
     scabopdf_document = convert_document(new_document, extraction, profile, "synthetic.pdf")
-    assert scabopdf_document.schema_version == "0.2.0"
+    assert scabopdf_document.schema_version == "0.3.0"
     assert len(scabopdf_document.transformations) == 2
     for td in scabopdf_document.transformations:
         assert td.step_id == "dehyphenate_with_log"

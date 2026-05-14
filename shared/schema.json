@@ -44,6 +44,26 @@
       "title": "ApparatusRefKind",
       "type": "string"
     },
+    "ChapterSummaryItem": {
+      "additionalProperties": false,
+      "description": "One entry parsed out of a ``CHAPTER_SUMMARY`` block.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.SummaryItem`\nin its JSON form. Populated by a corpus plugin's\n``refine_reconstruction`` when it recognises a chapter summary\nstructure (today only ``manuale_zanichelli_giuridica`` does so).\n\n``number`` is a **string**, not an integer. The Patriarca-Benazzo\nfixture uses only flat integers (``\"1\"``, ``\"2\"``, ...) for which\n``int`` would have been adequate, but other corpora are expected to\nuse composite numerations (``\"1.1\"``, ``\"2-bis\"``, ...) that an\n``int`` cannot represent. Keeping the field a string at v0.3.0\navoids a later breaking bump when those corpora arrive; Layer 2 can\nalways parse the string back to whatever structure it needs.\n\n``title`` is the textual title of the chapter section, with internal\nwhitespace already normalised by the plugin (single spaces, no\nleading or trailing whitespace, no line breaks).",
+      "properties": {
+        "number": {
+          "title": "Number",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "number",
+        "title"
+      ],
+      "title": "ChapterSummaryItem",
+      "type": "object"
+    },
     "DocumentMetadata": {
       "additionalProperties": false,
       "description": "Editorial metadata extracted from the source PDF.\n\nThe current :data:`SCHEMA_VERSION` carries only the fields the pipeline\nactually populates today: page count, physical page size, and the\nsource filename. Title, authors, ISBN, year, language, edition,\npublisher and ``pages_with_content`` are deferred to a later version\nwhen a metadata-extraction step is built.\n\n``page_size_pt`` is the size of the **first** PDF page expressed in\nPostScript points ``(width, height)``. Documents with heterogeneous\npage sizes are out of scope at this schema version.",
@@ -113,7 +133,7 @@
     },
     "NodeDict": {
       "additionalProperties": false,
-      "description": "A node in the reading-order tree.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.Node` in its\nJSON form. The Python ``category`` field is renamed to ``type`` here\nto match ``ARCHITECTURE.md § 8.7`` and what Layer 2 expects to read.\n\n``children`` is recursive and produces an arbitrarily deep tree.\n``text`` is ``None`` only for synthetic nodes without an originating\nblock (currently only ``EMPTY_PAGE``). ``level`` is non-null only for\n``HEADING_*`` categories. These semantic cross-field invariants are\nnot enforced by the contract at the current :data:`SCHEMA_VERSION` to\nkeep the schema additive; they may become validated constraints in a\nlater version.",
+      "description": "A node in the reading-order tree.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.Node` in its\nJSON form. The Python ``category`` field is renamed to ``type`` here\nto match ``ARCHITECTURE.md § 8.7`` and what Layer 2 expects to read.\n\n``children`` is recursive and produces an arbitrarily deep tree.\n``text`` is ``None`` only for synthetic nodes without an originating\nblock (currently only ``EMPTY_PAGE``). ``level`` is non-null only for\n``HEADING_*`` categories. ``items`` is non-null only for\n``CHAPTER_SUMMARY`` nodes whose textual content a corpus plugin\ncould parse into structured entries; it is ``null`` for every other\nnode type and for ``CHAPTER_SUMMARY`` nodes the plugin chose not to\nparse or could not parse. These semantic cross-field invariants are\nnot enforced by the contract at the current :data:`SCHEMA_VERSION`\nto keep the schema additive; they may become validated constraints\nin a later version.",
       "properties": {
         "id": {
           "pattern": "^node_\\d+$",
@@ -150,6 +170,21 @@
           ],
           "default": null,
           "title": "Level"
+        },
+        "items": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ChapterSummaryItem"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Items"
         },
         "block_indices": {
           "items": {
@@ -282,10 +317,10 @@
     }
   },
   "additionalProperties": false,
-  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.2.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
+  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.3.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
   "properties": {
     "schema_version": {
-      "const": "0.2.0",
+      "const": "0.3.0",
       "title": "Schema Version",
       "type": "string"
     },
