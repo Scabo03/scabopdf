@@ -1363,6 +1363,11 @@ class ManualeGiappichelliProfile(ProfilePlugin):
             if match is None:
                 return None
             title = _INTERNAL_WHITESPACE.sub(" ", match.group("title")).strip()
+            # Mandrioli summary entries are written as
+            # ``1. Alpha. <en-dash> 2. Beta.`` with a trailing dot at
+            # the end of each entry; strip it so the parsed title is
+            # uniform with the Tesauro convention (no trailing dot).
+            title = title.rstrip(".").strip()
             if not title:
                 return None
             items.append(SummaryItem(number=match.group("num"), title=title))
