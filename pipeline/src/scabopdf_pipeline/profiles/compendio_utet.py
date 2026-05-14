@@ -591,14 +591,30 @@ class CompendioUtetProfile(ProfilePlugin):
             if verdict.block_index < 0:
                 refined.append(verdict)
                 continue
-            if verdict.category is not SemanticCategory.UNCLASSIFIED:
-                refined.append(verdict)
-                continue
             view = self._view(extraction, verdict.block_index)
             if view is None:
                 refined.append(verdict)
                 continue
-            refined.append(self._reclassify(verdict, view))
+            if verdict.category is SemanticCategory.UNCLASSIFIED:
+                refined.append(self._reclassify(verdict, view))
+                continue
+            if verdict.category is SemanticCategory.ARTIFACT_FOOTER and (
+                _STAMP_FILENAME_PATTERN.match(view.text) or _STAMP_DATETIME_PATTERN.match(view.text)
+            ):
+                # The editorial-proof watermark sits in the same vertical
+                # band as the "© Wolters Kluwer Italia" footer, and tier 1
+                # absorbs both into ARTIFACT_FOOTER. Rescue the stamps by
+                # matching the textual signature and promoting them to
+                # ARTIFACT_STAMP; leave the real footer untouched.
+                refined.append(
+                    ClassifiedBlock(
+                        block_index=verdict.block_index,
+                        category=SemanticCategory.ARTIFACT_STAMP,
+                        reason="tesauro_stamp_from_footer",
+                    )
+                )
+                continue
+            refined.append(verdict)
 
         self._register_chapter_pairs(refined, extraction)
         return refined
