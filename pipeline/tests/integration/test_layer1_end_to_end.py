@@ -35,6 +35,9 @@ from scabopdf_pipeline.postprocessing import (
 )
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
+from scabopdf_pipeline.profiles.manuale_zanichelli_giuridica import (
+    ManualeZanichelliGiuridicaProfile,
+)
 from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.reconstruction import Node, reconstruct
@@ -72,6 +75,11 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$"),
     re.compile(r"^marginal_heading_without_body_target_node_\S+_page_\d+$"),
     re.compile(r"^gloss_without_note_target_node_\S+_page_\d+$"),
+    # manuale_zanichelli_giuridica plugin (closed vocabulary, see
+    # docs/SCHEMA_v0.3.0.md § 6 and profiles/manuale_zanichelli_giuridica.py)
+    re.compile(r"^plugin:zanichelli:chapter_summary_unparseable_node_\S+$"),
+    re.compile(r"^plugin:zanichelli:chapter_summary_without_chapter_node_\S+_page_\d+$"),
+    re.compile(r"^plugin:zanichelli:heading_19pt_pattern_unmatched_block_\d+_page_\d+$"),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
@@ -89,6 +97,19 @@ def _iter_nodes(node: Node) -> Iterator[Node]:
         yield from _iter_nodes(child)
 
 
+def _max_depth(roots: tuple[Node, ...]) -> int:
+    """Return the maximum depth of a forest, with depth 1 == a single root."""
+    if not roots:
+        return 0
+
+    def _depth(node: Node) -> int:
+        if not node.children:
+            return 1
+        return 1 + max(_depth(c) for c in node.children)
+
+    return max(_depth(r) for r in roots)
+
+
 def _make_profile() -> DocumentProfile:
     return DocumentProfile(
         profile_id="unknown_generic",
@@ -103,13 +124,47 @@ def _make_profile() -> DocumentProfile:
     )
 
 
+def _make_patriarca_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the Zanichelli plugin's identity.
+
+    The pipeline's `emit` and the CLI still hard-wire UnknownGenericProfile
+    today (no real signal builder yet), so the integration tests below
+    construct the profile by hand and pass it to the manual orchestration.
+    """
+    plugin = ManualeZanichelliGiuridicaProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.85,
+        warnings=[],
+    )
+
+
 @pytest.mark.slow
 def test_pipeline_runs_on_patriarca() -> None:
+    """End-to-end test of the Layer 1 pipeline with the Zanichelli plugin.
+
+    Runs the full pipeline (extract → classify → reconstruct →
+    resolve_apparatus → apply_post_processing → convert) on the
+    Patriarca-Benazzo fixture with the
+    :class:`ManualeZanichelliGiuridicaProfile` plugin active. The
+    assertions are positive: the plugin must recognise chapter
+    headings, section sub-headings, paragraph headings and chapter
+    summaries, parse most summaries into structured items, and emit no
+    apparatus refs (Patriarca has zero apparatus). Tree depth must
+    exceed 1 — proof that the hierarchy is no longer flat as it was
+    under unknown_generic.
+    """
     if not PATRIARCA_FIXTURE.exists():
         pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE} — see pipeline/tests/fixtures/README.md")
 
-    profile = _make_profile()
-    plugin = UnknownGenericProfile()
+    profile = _make_patriarca_profile()
+    plugin = ManualeZanichelliGiuridicaProfile()
 
     extraction = extract(PATRIARCA_FIXTURE)
     classified = classify(extraction, profile, plugin)
@@ -130,13 +185,22 @@ def test_pipeline_runs_on_patriarca() -> None:
 
     tree_indices: set[int] = {idx for node in document.root for idx in _iter_block_indices(node)}
     classified_indices = {cb.block_index for cb in non_sentinel}
-    n_nodes_total = sum(1 for node in document.root for _ in _iter_nodes(node))
-    n_apparatus_refs_total = sum(
-        len(node.apparatus_refs) for root in document.root for node in _iter_nodes(root)
-    )
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    n_nodes_total = len(all_nodes)
+    n_apparatus_refs_total = sum(len(node.apparatus_refs) for node in all_nodes)
+
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    summary_nodes = [n for n in all_nodes if n.category is SemanticCategory.CHAPTER_SUMMARY]
+    parseable_summaries = [n for n in summary_nodes if n.summary_items is not None]
+    parseable_summaries_total_items = sum(len(n.summary_items or ()) for n in parseable_summaries)
+
+    max_depth = _max_depth(document.root)
 
     print(
-        f"\nPatriarca-Benazzo Layer 1 end-to-end summary:"
+        f"\nPatriarca-Benazzo Layer 1 end-to-end summary (zanichelli plugin):"
         f"\n  page_count={extraction.page_count}"
         f"\n  n_blocks={len(extraction.blocks)}"
         f"\n  n_spans={len(extraction.spans)}"
@@ -146,6 +210,14 @@ def test_pipeline_runs_on_patriarca() -> None:
         f"\n  n_warnings={len(document.warnings)}"
         f"\n  n_apparatus_refs_total={n_apparatus_refs_total}"
         f"\n  n_transformations={len(document.transformations)}"
+        f"\n  max_tree_depth={max_depth}"
+        f"\n  n_heading_1={by_category.get(SemanticCategory.HEADING_1, 0)}"
+        f"\n  n_heading_2={by_category.get(SemanticCategory.HEADING_2, 0)}"
+        f"\n  n_heading_3={by_category.get(SemanticCategory.HEADING_3, 0)}"
+        f"\n  n_chapter_summary={len(summary_nodes)}"
+        f"\n  n_chapter_summary_parsed={len(parseable_summaries)}"
+        f"\n  n_chapter_summary_items_total={parseable_summaries_total_items}"
+        f"\n  n_body={by_category.get(SemanticCategory.BODY, 0)}"
         f"\n  schema_version={scabopdf_document.schema_version}"
         f"\n  emitted_structure_len={len(scabopdf_document.structure)}"
     )
@@ -162,24 +234,61 @@ def test_pipeline_runs_on_patriarca() -> None:
 
     assert len(document.root) > 0
     assert tree_indices == classified_indices
+
+    # The plugin recognises the editorial structure of the manual.
+    # Expected by the editorial analysis: 21 chapters, 5 sections,
+    # 279 paragraphs, ~24 chapter summaries. Thresholds are
+    # conservative to survive minor extraction tweaks.
+    n_h1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_h2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_h3 = by_category.get(SemanticCategory.HEADING_3, 0)
+    n_summary = len(summary_nodes)
+    assert n_h1 >= 20, f"expected ≥20 HEADING_1 (21 chapters in ANALYSIS), got {n_h1}"
+    assert n_h2 >= 4, f"expected ≥4 HEADING_2 (5 sections in ANALYSIS), got {n_h2}"
+    assert n_h3 >= 200, f"expected ≥200 HEADING_3 (279 paragraphs in ANALYSIS), got {n_h3}"
+    assert n_summary >= 18, (
+        f"expected ≥18 CHAPTER_SUMMARY blocks (~24 in ANALYSIS), got {n_summary}"
+    )
+
+    # Most summaries are parsed into structured items. The threshold
+    # admits a handful of unparseable summaries because the editorial
+    # corpus is uniform but occasional typographic oddities (a stray
+    # bold span breaking the regex) are not yet handled by the parser.
+    assert len(parseable_summaries) >= int(0.6 * n_summary), (
+        f"expected most CHAPTER_SUMMARY to be parsed into items, "
+        f"got {len(parseable_summaries)} out of {n_summary}"
+    )
+    assert parseable_summaries_total_items > 0
+    for node in parseable_summaries:
+        assert node.summary_items is not None
+        for item in node.summary_items:
+            assert item.number
+            assert item.title
+
+    # The hierarchy is no longer flat. Under unknown_generic the tree
+    # depth was 1 (every block sat at the root); the plugin's
+    # HEADING_1 → CHAPTER_SUMMARY/HEADING_3 → BODY structure produces
+    # at least depth 3 on this fixture.
+    assert max_depth >= 2, f"expected hierarchical tree, got flat tree of depth {max_depth}"
+
     for warning in document.warnings:
         assert any(p.match(warning) for p in _TIER1_WARNING_REGEXES), (
-            f"unexpected tier 1 warning outside closed vocabulary: {warning!r}"
+            f"unexpected warning outside closed vocabulary: {warning!r}"
         )
 
-    # Patriarca has no apparatus the generic tier 1 can classify as NOTE /
-    # MARGINAL_* (the classifier only emits ARTIFACT_*, BOOK_PAGE_ANCHOR,
-    # CROSS_REFERENCE, UNCLASSIFIED, EMPTY_PAGE). No node should carry an
-    # apparatus_ref under this configuration.
+    # Patriarca has no apparatus: zero footnotes, zero marginals, zero
+    # example boxes per the editorial analysis. The plugin's
+    # refine_apparatus is a pure pass-through.
     assert n_apparatus_refs_total == 0
 
     # § 9 emission: the converted ScabopdfDocument is valid against both
     # the Pydantic contract and the committed shared/schema.json.
     assert scabopdf_document.schema_version == "0.3.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
+    assert scabopdf_document.profile.profile_id == "manuale_zanichelli_giuridica"
     assert len(scabopdf_document.structure) == len(document.root)
-    # § 7 post-processing: unknown_generic declares no steps so the
-    # transformations log is empty on this configuration.
+    # § 7 post-processing: the plugin declares no steps so the
+    # transformations log is empty.
     assert isinstance(scabopdf_document.transformations, list)
     assert scabopdf_document.transformations == []
     assert document.transformations == ()

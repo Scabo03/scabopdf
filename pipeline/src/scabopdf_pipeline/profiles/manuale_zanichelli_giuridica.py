@@ -83,19 +83,22 @@ concrete values at emission time. Plugins consuming these warnings
 should match the prefix rather than the exact template.
 """
 
-CHAPTER_HEADING_PATTERN = re.compile(r"^Capitolo\s+[IVXLCDM]+\b")
+CHAPTER_HEADING_PATTERN = re.compile(r"^Capitolo\s+[IVXLCDM]+")
 """Regex for the H1 textual marker on Patriarca-Benazzo.
 
-Roman numerals up to ``MMM…``; the chapter title may follow on the
-same line or on a separate line of the same block (the plugin only
-checks the opening of the concatenated block text).
+Roman numerals up to ``MMM…``; the chapter title that often follows
+on a second physical line is concatenated to the heading by tier 1
+(blocks have no inter-line separator) so the regex deliberately does
+not require a word boundary after the numerals.
 """
 
-SECTION_HEADING_PATTERN = re.compile(r"^Sezione\s+[A-Z]\b")
+SECTION_HEADING_PATTERN = re.compile(r"^Sezione\s+[A-Z]")
 """Regex for the H2 textual marker on Patriarca-Benazzo.
 
 Single capital letter (A, B, C in the fixture; broader range for
-forward compatibility).
+forward compatibility). No word boundary is required after the
+letter because the section title runs into the same block without
+separator and would otherwise defeat ``\\b``.
 """
 
 CHAPTER_HEADING_FONT = "TimesNewRomanPSMT"
@@ -190,12 +193,17 @@ The separator inside Patriarca's typesetting is the en-dash padded by
 single spaces; the regex is tolerant to slightly varying whitespace.
 """
 
-_SUMMARY_ITEM_PATTERN = re.compile(r"^\s*(?P<num>\d+(?:\.\d+)*)\.\s+(?P<title>.+?)\s*$")
+_SUMMARY_ITEM_PATTERN = re.compile(
+    r"^\s*(?P<num>\d+(?:\.\d+)*)\.\s*(?P<title>\S.+?)\s*$", re.DOTALL
+)
 """Regex that parses one ``CHAPTER_SUMMARY`` entry into ``(number, title)``.
 
 ``number`` admits multi-level numerations (``"1.1"``, ``"2.3.4"``) for
 forward compatibility with future Zanichelli manuals, even though
-Patriarca only emits flat integers.
+Patriarca only emits flat integers. ``re.DOTALL`` lets the title span
+across a soft line break that the typesetter occasionally introduces
+inside a long entry; ``_INTERNAL_WHITESPACE`` then normalises it to a
+single space.
 """
 
 _INTERNAL_WHITESPACE = re.compile(r"\s+")
