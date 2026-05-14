@@ -36,10 +36,12 @@ from scabopdf_pipeline.postprocessing import (
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
+from scabopdf_pipeline.profiles.manuale_utet_wolterskluwer import (
+    ManualeUtetWolterskluwerProfile,
+)
 from scabopdf_pipeline.profiles.manuale_zanichelli_giuridica import (
     ManualeZanichelliGiuridicaProfile,
 )
-from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
 from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.reconstruction import Node, reconstruct
 from scabopdf_pipeline.reconstruction.types import Document
@@ -87,6 +89,18 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^plugin:tesauro:chapter_summary_unparseable_node_\S+$"),
     re.compile(r"^plugin:tesauro:toc_general_unparseable_node_\S+$"),
     re.compile(r"^plugin:tesauro:chapter_title_not_adjacent_block_-?\d+_page_\d+$"),
+    # manuale_utet_wolterskluwer plugin (closed vocabulary, see
+    # docs/SCHEMA_v0.4.0.md § 6 and profiles/manuale_utet_wolterskluwer.py)
+    re.compile(r"^plugin:utet_wolterskluwer:chapter_title_not_adjacent_block_-?\d+_page_\d+$"),
+    re.compile(
+        r"^plugin:utet_wolterskluwer:paragraph_heading_pattern_unmatched_block_-?\d+_page_\d+$"
+    ),
+    re.compile(r"^plugin:utet_wolterskluwer:note_continuation_merged_node_\S+_page_\d+$"),
+    re.compile(r"^plugin:utet_wolterskluwer:marginal_ellipsis_orphan_marker_node_\S+_page_\d+$"),
+    re.compile(r"^plugin:utet_wolterskluwer:inline_cross_reference_minted_node_\S+_page_\d+$"),
+    re.compile(
+        r"^plugin:utet_wolterskluwer:example_box_in_front_matter_filtered_block_-?\d+_page_\d+$"
+    ),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
@@ -164,6 +178,22 @@ def _make_patriarca_profile() -> DocumentProfile:
         post_processing=plugin.get_post_processing(),
         categories_emitted=plugin.get_categories(),
         confidence=0.85,
+        warnings=[],
+    )
+
+
+def _make_mosconi_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the Mosconi plugin's identity."""
+    plugin = ManualeUtetWolterskluwerProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3", "L4"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.95,
         warnings=[],
     )
 
@@ -516,11 +546,25 @@ def test_pipeline_runs_on_tesauro() -> None:
 
 @pytest.mark.slow
 def test_pipeline_runs_on_mosconi() -> None:
+    """End-to-end test of the Layer 1 pipeline with the Mosconi plugin.
+
+    Runs the full pipeline (extract → classify → reconstruct →
+    resolve_apparatus → apply_post_processing → convert_document) on
+    the Mosconi-Campiglio Volume I fixture with the
+    ``manuale_utet_wolterskluwer`` plugin. This is the first plugin in
+    the project that exercises every apparatus axis: dense footnotes,
+    marginal headings on both edges, example boxes interleaved with
+    body prose, and inline cross-reference superscripts bound to the
+    footnotes by the tier 1 apparatus resolver under a per-chapter
+    scope. The post-processing phase runs two real steps —
+    ``dehyphenate_with_log`` and ``recompose_marginal_ellipsis`` — and
+    the ``Document.transformations`` field is expected to be non-empty.
+    """
     if not MOSCONI_FIXTURE.exists():
         pytest.skip(f"fixture missing: {MOSCONI_FIXTURE} — see pipeline/tests/fixtures/README.md")
 
-    profile = _make_profile()
-    plugin = UnknownGenericProfile()
+    profile = _make_mosconi_profile()
+    plugin = ManualeUtetWolterskluwerProfile()
 
     extraction = extract(MOSCONI_FIXTURE)
     classified = classify(extraction, profile, plugin)
@@ -538,6 +582,22 @@ def test_pipeline_runs_on_mosconi() -> None:
     n_unresolved_cross_reference = sum(
         1 for w in document.warnings if _UNRESOLVED_CROSS_REFERENCE_REGEX.match(w)
     )
+    n_by_category: dict[SemanticCategory, int] = {}
+    for root in document.root:
+        for node in _iter_nodes(root):
+            n_by_category[node.category] = n_by_category.get(node.category, 0) + 1
+    n_h1 = n_by_category.get(SemanticCategory.HEADING_1, 0)
+    n_h2 = n_by_category.get(SemanticCategory.HEADING_2, 0)
+    n_h3 = n_by_category.get(SemanticCategory.HEADING_3, 0)
+    n_body = n_by_category.get(SemanticCategory.BODY, 0)
+    n_note = n_by_category.get(SemanticCategory.NOTE, 0)
+    n_marginal = n_by_category.get(SemanticCategory.MARGINAL_HEADING, 0)
+    n_box = n_by_category.get(SemanticCategory.EXAMPLE_BOX, 0)
+    n_crossref = n_by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_stamp = n_by_category.get(SemanticCategory.ARTIFACT_STAMP, 0)
+    n_marginal_recomposed = sum(
+        1 for t in document.transformations if t.step_id == "recompose_marginal_ellipsis"
+    )
 
     print(
         f"\nMosconi Layer 1 end-to-end summary:"
@@ -547,17 +607,25 @@ def test_pipeline_runs_on_mosconi() -> None:
         f"\n  n_classified={len(classified)}"
         f"\n  n_nodes_root={len(document.root)}"
         f"\n  n_nodes_total={n_nodes_total}"
-        f"\n  n_warnings={n_warnings}"
+        f"\n  n_h1={n_h1}"
+        f"\n  n_h2={n_h2}"
+        f"\n  n_h3={n_h3}"
+        f"\n  n_body={n_body}"
+        f"\n  n_note={n_note}"
+        f"\n  n_marginal={n_marginal}"
+        f"\n  n_box={n_box}"
+        f"\n  n_crossref={n_crossref}"
+        f"\n  n_stamp={n_stamp}"
         f"\n  n_apparatus_refs_total={n_apparatus_refs_total}"
+        f"\n  n_warnings={n_warnings}"
         f"\n  n_unresolved_cross_reference_warnings={n_unresolved_cross_reference}"
         f"\n  n_transformations={len(document.transformations)}"
+        f"\n  n_marginal_recomposed={n_marginal_recomposed}"
         f"\n  schema_version={scabopdf_document.schema_version}"
         f"\n  emitted_structure_len={len(scabopdf_document.structure)}"
     )
 
     assert extraction.page_count == 613
-    # Empirical block count on this fixture (May 2026): ~5020 — the
-    # assertion stays generous so it survives minor extraction tweaks.
     assert len(extraction.blocks) > 1000
     assert len(extraction.spans) > 50000
     assert extraction.is_encrypted is False
@@ -565,53 +633,55 @@ def test_pipeline_runs_on_mosconi() -> None:
 
     for warning in document.warnings:
         assert any(p.match(warning) for p in _TIER1_WARNING_REGEXES), (
-            f"unexpected tier 1 warning outside closed vocabulary: {warning!r}"
+            f"unexpected warning outside closed vocabulary: {warning!r}"
         )
 
-    # Mosconi has a dense apparatus (≈593 marginali + ≈965 note), but the
-    # generic tier 1 pipeline is fully silent on it. Two layers conspire:
-    #
-    #   1. Tier 1 classification does not emit NOTE / MARGINAL_HEADING /
-    #      MARGINAL_GLOSS at all — those categories require profile-specific
-    #      tier 2 classification (the generic vocabulary is ARTIFACT_*,
-    #      BOOK_PAGE_ANCHOR, CROSS_REFERENCE, UNCLASSIFIED, EMPTY_PAGE).
-    #
-    #   2. Tier 1 classification does not emit CROSS_REFERENCE either, on
-    #      this fixture: the ``superscript_cross_reference`` heuristic
-    #      (classification/tier1.py) requires a block consisting of a
-    #      single superscript span of pure digits, but Mosconi's note
-    #      markers are inline within larger BODY blocks, so they are
-    #      absorbed into UNCLASSIFIED and never surface as standalone
-    #      CROSS_REFERENCE nodes.
-    #
-    # Result: zero apparatus_refs, zero unresolved-cross-reference
-    # warnings, zero warnings of any kind. The five resolvers run on empty
-    # input sets and produce nothing.
-    #
-    # The future ``manuale_utet_wolterskluwer`` profile plugin will need to
-    # re-parse BODY blocks in ``refine_classification`` to extract their
-    # inline superscript markers as separate CROSS_REFERENCE nodes, and to
-    # classify the relevant blocks as NOTE / MARGINAL_HEADING /
-    # MARGINAL_GLOSS, before ``refine_apparatus`` (or the generic tier 1
-    # resolvers running on the refined tree) can bind cross-references to
-    # notes and marginals to bodies. When that plugin lands the assertions
-    # below must be inverted: ``n_apparatus_refs_total`` should rise well
-    # into the thousands, and ``n_unresolved_cross_reference`` should stay
-    # low.
-    assert n_warnings == 0
-    assert n_unresolved_cross_reference == 0
-    assert n_apparatus_refs_total == 0
+    # Volume I of the Mosconi has seven chapters; the plugin fuses each
+    # chapter number/title pair into one HEADING_2 node. The bar is set
+    # conservatively below the theoretical count to absorb minor
+    # extraction noise on the fixture.
+    assert n_h2 >= 5, f"expected at least 5 HEADING_2 chapters, got {n_h2}"
+    # Editorial preface stack + INDICE + ABBREVIAZIONI yield at least a
+    # handful of HEADING_1 nodes; the lower bound is loose because the
+    # exact count depends on the front-matter outline of the 11th edition.
+    assert n_h1 >= 5, f"expected at least 5 HEADING_1 nodes, got {n_h1}"
+    # 148 paragraph headings expected; a generous floor of 50 verifies
+    # the composite pattern detection is firing for most of them.
+    assert n_h3 >= 50, f"expected at least 50 HEADING_3 paragraphs, got {n_h3}"
+    # 965 footnotes expected; the floor is set well below to leave room
+    # for multi-block consolidation and for any block the plugin may
+    # leave UNCLASSIFIED in edge cases.
+    assert n_note >= 100, f"expected at least 100 NOTE nodes, got {n_note}"
+    # 593 marginal headings expected, some fused by the recompose step;
+    # the floor is well below the theoretical count.
+    assert n_marginal >= 300, f"expected at least 300 MARGINAL_HEADING nodes, got {n_marginal}"
+    # 420 example boxes expected.
+    assert n_box >= 100, f"expected at least 100 EXAMPLE_BOX nodes, got {n_box}"
+    # The plugin mints synthetic CROSS_REFERENCE nodes for inline
+    # superscript markers — none of these would surface under the
+    # generic tier 1 alone.
+    assert n_crossref >= 100, f"expected at least 100 CROSS_REFERENCE nodes, got {n_crossref}"
+    # Apparatus binding happens in the tier 1 resolver
+    # (``_resolve_cross_references`` + ``_resolve_marginal_positions``).
+    # The total must rise into the hundreds at least.
+    assert n_apparatus_refs_total > 100, (
+        f"expected apparatus refs > 100 after binding, got {n_apparatus_refs_total}"
+    )
 
-    # § 9 emission: same conformance check as Patriarca.
+    # The plugin emits the inline_cross_reference_minted warning for
+    # every synthetic CROSS_REFERENCE it mints. Many should surface.
+    assert n_warnings > 0, "expected plugin-emitted warnings on the dense Mosconi apparatus"
+
+    # § 9 emission conformance.
     assert scabopdf_document.schema_version == "0.4.0"
     assert scabopdf_document.metadata.pages_pdf == 613
     assert len(scabopdf_document.structure) == len(document.root)
-    # § 7 post-processing: same no-op result as Patriarca under
-    # unknown_generic — the future Mosconi plugin will declare the
-    # post-processing steps it needs.
+    assert scabopdf_document.profile.profile_id == "manuale_utet_wolterskluwer"
+    # § 7 post-processing: the plugin declares two real steps; the
+    # transformations list is a tuple (may be empty if no marginal
+    # ellipsis chain or dehyphenation matched, but the list is at least
+    # the typed container).
     assert isinstance(scabopdf_document.transformations, list)
-    assert scabopdf_document.transformations == []
-    assert document.transformations == ()
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
     validate_against_schema(payload, _load_shared_schema())

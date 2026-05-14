@@ -10,14 +10,22 @@ from scabopdf_pipeline.postprocessing.registry import (
     PostProcessingRegistry,
 )
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
+from scabopdf_pipeline.postprocessing.steps.recompose_marginal_ellipsis import (
+    recompose_marginal_ellipsis,
+)
 from scabopdf_pipeline.postprocessing.types import (
     PostProcessingStep,
     Transformation,
 )
 from scabopdf_pipeline.reconstruction.types import Document
 
+# Two steps are real callables; the rest are placeholders driven by
+# :data:`_PROFILE_SPECIFIC_PLACEHOLDERS`. ``recompose_marginal_ellipsis``
+# was promoted from placeholder to real implementation when the
+# ``manuale_utet_wolterskluwer`` plugin landed.
 ALL_STEP_IDS: tuple[str, ...] = (
     "dehyphenate_with_log",
+    "recompose_marginal_ellipsis",
     *(step_id for step_id, _ in _PROFILE_SPECIFIC_PLACEHOLDERS),
 )
 
@@ -33,15 +41,29 @@ def test_default_registry_dehyphenate_resolves_to_real_callable() -> None:
     assert registry.get("dehyphenate_with_log") is dehyphenate_with_log
 
 
-def test_default_registry_placeholder_resolves_and_raises_on_call() -> None:
+def test_default_registry_recompose_marginal_ellipsis_resolves_to_real_callable() -> None:
+    """The step was promoted from placeholder when the Mosconi plugin landed."""
     registry = PostProcessingRegistry.default()
-    placeholder = registry.get("recompose_marginal_ellipsis")
+    assert registry.get("recompose_marginal_ellipsis") is recompose_marginal_ellipsis
+
+
+def test_default_registry_placeholder_resolves_and_raises_on_call() -> None:
+    """Any remaining placeholder still raises ``NotImplementedError`` on dispatch.
+
+    Exercised on ``merge_cross_page_notes`` (the first surviving entry
+    of :data:`_PROFILE_SPECIFIC_PLACEHOLDERS`); the invariant applies to
+    every remaining placeholder. ``recompose_marginal_ellipsis`` is no
+    longer in that set — see
+    :func:`test_default_registry_recompose_marginal_ellipsis_resolves_to_real_callable`.
+    """
+    registry = PostProcessingRegistry.default()
+    placeholder = registry.get("merge_cross_page_notes")
 
     with pytest.raises(NotImplementedError) as excinfo:
         placeholder(Document(), _empty_extraction(), [])
     msg = str(excinfo.value)
-    assert "recompose_marginal_ellipsis" in msg
-    assert "manuale_utet_wolterskluwer" in msg
+    assert "merge_cross_page_notes" in msg
+    assert "manuale_giappichelli" in msg
 
 
 def test_default_registry_unknown_step_raises_key_error() -> None:

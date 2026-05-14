@@ -24,10 +24,12 @@ from types import MappingProxyType
 
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.postprocessing.steps.placeholder import _make_placeholder
+from scabopdf_pipeline.postprocessing.steps.recompose_marginal_ellipsis import (
+    recompose_marginal_ellipsis,
+)
 from scabopdf_pipeline.postprocessing.types import PostProcessingStep
 
 _PROFILE_SPECIFIC_PLACEHOLDERS: tuple[tuple[str, str], ...] = (
-    ("recompose_marginal_ellipsis", "manuale_utet_wolterskluwer"),
     ("merge_cross_page_notes", "manuale_giappichelli"),
     ("extract_book_page_anchors", "manuale_bic"),
     ("dedup_volume_apparatus", "manuale_bic"),
@@ -39,12 +41,18 @@ _PROFILE_SPECIFIC_PLACEHOLDERS: tuple[tuple[str, str], ...] = (
     ("recompose_letter_initial", "enciclopedia_moderna"),
     ("dedupe_premesse", "manuale_bic"),
 )
-"""Step IDs and owning plugins for the eleven profile-specific placeholders.
+"""Step IDs and owning plugins for the remaining profile-specific placeholders.
 
-The mapping mirrors the table in ``ARCHITECTURE.md § 7.1``: each step ID
-is paired with the profile expected to bring the real implementation.
-Order is preserved for human readability; lookup is by key so order is
-not semantically meaningful.
+The ``recompose_marginal_ellipsis`` step was promoted from placeholder
+to real implementation when the ``manuale_utet_wolterskluwer`` plugin
+landed; it now lives in
+:mod:`postprocessing.steps.recompose_marginal_ellipsis` and is
+registered as a real callable in :meth:`PostProcessingRegistry.default`.
+The mapping above mirrors the residual table in
+``ARCHITECTURE.md § 7.1``: each remaining step ID is paired with the
+profile expected to bring the real implementation. Order is preserved
+for human readability; lookup is by key so order is not semantically
+meaningful.
 """
 
 
@@ -85,15 +93,22 @@ class PostProcessingRegistry:
     def default(cls) -> PostProcessingRegistry:
         """Build the standard twelve-step registry.
 
-        ``dehyphenate_with_log`` is registered as the real generic
-        callable from :mod:`postprocessing.steps.dehyphenate`. The
-        eleven profile-specific step IDs listed in
+        Two steps are registered as real generic callables:
+        ``dehyphenate_with_log`` from
+        :mod:`postprocessing.steps.dehyphenate` and
+        ``recompose_marginal_ellipsis`` from
+        :mod:`postprocessing.steps.recompose_marginal_ellipsis` (real
+        as of the ``manuale_utet_wolterskluwer`` plugin landing). The
+        remaining ten profile-specific step IDs listed in
         :data:`_PROFILE_SPECIFIC_PLACEHOLDERS` are registered as
         placeholders that raise :class:`NotImplementedError` when
         invoked, naming the plugin expected to bring the real
         implementation.
         """
-        steps: dict[str, PostProcessingStep] = {"dehyphenate_with_log": dehyphenate_with_log}
+        steps: dict[str, PostProcessingStep] = {
+            "dehyphenate_with_log": dehyphenate_with_log,
+            "recompose_marginal_ellipsis": recompose_marginal_ellipsis,
+        }
         for step_id, profile_name in _PROFILE_SPECIFIC_PLACEHOLDERS:
             steps[step_id] = _make_placeholder(step_id, profile_name)
         return cls(steps=steps)
