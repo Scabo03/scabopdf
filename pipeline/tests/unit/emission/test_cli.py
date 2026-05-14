@@ -41,7 +41,7 @@ def _minimal_scabopdf_document() -> ScabopdfDocument:
     from uuid import uuid4
 
     return ScabopdfDocument(
-        schema_version="0.3.0",
+        schema_version="0.4.0",
         document_id=uuid4(),
         metadata=DocumentMetadata(
             pages_pdf=42,
@@ -69,7 +69,7 @@ def test_main_writes_file_and_returns_zero(
     assert rc == 0
     assert output_path.exists()
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == "0.3.0"
+    assert payload["schema_version"] == "0.4.0"
 
 
 def test_main_on_missing_pdf_returns_one_and_prints_stderr(
@@ -131,7 +131,7 @@ def test_main_verbose_prints_progress_on_stderr(
     assert "[scabopdf-extract] classifying" in captured.err
     assert "[scabopdf-extract] done" in captured.err
     # stdout still carries the structured summary
-    assert "schema_version: 0.3.0" in captured.out
+    assert "schema_version: 0.4.0" in captured.out
 
 
 def test_main_default_output_uses_pdf_basename_with_json_suffix(

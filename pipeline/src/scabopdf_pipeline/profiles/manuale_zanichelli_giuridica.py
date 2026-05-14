@@ -67,7 +67,7 @@ WARNING_PREFIX = "plugin:zanichelli"
 """Common prefix for every warning string this plugin may emit.
 
 The closed vocabulary lives in :data:`WARNING_TEMPLATES`. See
-``docs/SCHEMA_v0.3.0.md § 6`` for the rationale of the prefix
+``docs/SCHEMA_v0.4.0.md § 6`` for the rationale of the prefix
 convention.
 """
 

@@ -52,7 +52,7 @@ from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import BBox, ExtractionResult
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
-from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem
+from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem, TocGeneralItem
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 TIER1_WARNING_TEMPLATES: tuple[str, ...] = (
@@ -96,6 +96,7 @@ class _NodeBuilder:
     text: str | None
     level: int | None
     summary_items: tuple[SummaryItem, ...] | None = None
+    toc_items: tuple[TocGeneralItem, ...] | None = None
     apparatus_refs: list[ApparatusRef] = field(default_factory=list)
     children: list[_NodeBuilder] = field(default_factory=list)
     parent: _NodeBuilder | None = None
@@ -110,6 +111,7 @@ class _NodeBuilder:
             text=self.text,
             level=self.level,
             summary_items=self.summary_items,
+            toc_items=self.toc_items,
             apparatus_refs=tuple(self.apparatus_refs),
         )
 
@@ -160,6 +162,7 @@ def _thaw(
             text=node.text,
             level=node.level,
             summary_items=node.summary_items,
+            toc_items=node.toc_items,
             apparatus_refs=list(node.apparatus_refs),
             parent=parent,
         )

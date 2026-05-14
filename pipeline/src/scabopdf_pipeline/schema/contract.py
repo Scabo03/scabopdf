@@ -1,4 +1,4 @@
-"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.3.0).
+"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.4.0).
 
 These models are the **authoritative source** for the JSON schema that
 sits between the Python pipeline (Layer 1) and the React Native app
@@ -6,26 +6,28 @@ sits between the Python pipeline (Layer 1) and the React Native app
 module via ``pipeline/scripts/generate_schema.py`` and must never be
 edited by hand.
 
-Schema version ``0.3.0`` is **pre-1.0 unstable**: it describes what the
+Schema version ``0.4.0`` is **pre-1.0 unstable**: it describes what the
 pipeline emits after §§ 1-6, § 8, § 9, the first generic step of § 7
-(``dehyphenate_with_log``) and the first corpus plugin
-(``manuale_zanichelli_giuridica``). It is additive over 0.2.0: a single
-new field ``items`` on :class:`NodeDict`, carrying the structured
-entries parsed out of a ``CHAPTER_SUMMARY`` block when the corpus
-plugin recognises one. The field is optional (``None`` by default) and
-populated only for nodes whose ``type`` is ``CHAPTER_SUMMARY`` and
-whose textual content the plugin could parse; nodes of other types and
-unparseable summaries keep ``items: null``. Fields that the
+(``dehyphenate_with_log``) and the first two corpus plugins
+(``manuale_zanichelli_giuridica`` and ``compendio_utet``). It is
+additive over 0.3.0: a single new field ``toc_items`` on
+:class:`NodeDict`, carrying the structured entries parsed out of a
+``TOC_GENERAL`` block when the corpus plugin recognises one. The field
+is optional (``None`` by default) and populated only for nodes whose
+``type`` is ``TOC_GENERAL`` and whose textual content the plugin could
+parse into ``(number, title, page_number)`` triples; nodes of other
+types and unparseable TOCs keep ``toc_items: null``. Fields that the
 architecture envisions but the pipeline does not yet populate (rich
 editorial metadata, profile detection signals, layout-4 acoustic
 regime, other profile-specific structures) remain intentionally
 omitted and will land in later additive bumps.
 
-See ``docs/SCHEMA_v0.3.0.md`` for the narrative field-by-field
+See ``docs/SCHEMA_v0.4.0.md`` for the narrative field-by-field
 reference and the disciplinary rules that govern modifications,
-``docs/SCHEMA_v0.2.0.md`` and ``docs/SCHEMA_v0.1.0.md`` for the
-historic baselines, ``docs/SCHEMA_CHANGELOG.md`` for the per-version
-delta, and ``docs/json-schema-versioning.md`` for the SemVer policy.
+``docs/SCHEMA_v0.3.0.md``, ``docs/SCHEMA_v0.2.0.md`` and
+``docs/SCHEMA_v0.1.0.md`` for the historic baselines,
+``docs/SCHEMA_CHANGELOG.md`` for the per-version delta, and
+``docs/json-schema-versioning.md`` for the SemVer policy.
 """
 
 from __future__ import annotations
@@ -48,7 +50,7 @@ but no upper bound is enforced so documents with more than 9999 nodes
 remain valid.
 """
 
-SCHEMA_VERSION: Literal["0.3.0"] = "0.3.0"
+SCHEMA_VERSION: Literal["0.4.0"] = "0.4.0"
 """Single source of truth for the schema version literal.
 
 Bumping this is a deliberate act: see ``docs/json-schema-versioning.md``.
@@ -99,6 +101,40 @@ class ChapterSummaryItem(BaseModel):
     title: str
 
 
+class TocGeneralItem(BaseModel):
+    """One entry parsed out of a ``TOC_GENERAL`` block.
+
+    Mirrors :class:`scabopdf_pipeline.reconstruction.types.TocGeneralItem`
+    in its JSON form. Populated by a corpus plugin's
+    ``refine_reconstruction`` when it recognises a document-level table
+    of contents (today only ``compendio_utet`` does so).
+
+    ``number`` and ``title`` follow the same convention as the matching
+    fields on :class:`ChapterSummaryItem`: strings to admit composite
+    numerations, with internal whitespace already normalised by the
+    plugin.
+
+    ``page_number`` is the **1-based book page number** printed on the
+    TOC line. It is deliberately distinct from the 0-based ``PageIndex``
+    used everywhere else in the schema: ``PageIndex`` is the offset
+    PyMuPDF uses for ``Block.page`` and ``NodeDict.page_index``, while
+    ``page_number`` is what the manual advertises to the reader on the
+    physical printed page (and only there). The two coincide
+    accidentally for some manuals and diverge by a constant offset for
+    those with significant front matter; the plugin is responsible for
+    preserving the distinction. ``None`` when the plugin could not parse
+    a page reference from the entry — for instance when the printed
+    pagination is a non-numeric token like ``"III"`` that the plugin
+    elects to leave unparsed rather than encode fragile assumptions.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    number: str
+    title: str
+    page_number: int | None = None
+
+
 class NodeDict(BaseModel):
     """A node in the reading-order tree.
 
@@ -113,7 +149,10 @@ class NodeDict(BaseModel):
     ``CHAPTER_SUMMARY`` nodes whose textual content a corpus plugin
     could parse into structured entries; it is ``null`` for every other
     node type and for ``CHAPTER_SUMMARY`` nodes the plugin chose not to
-    parse or could not parse. These semantic cross-field invariants are
+    parse or could not parse. ``toc_items`` follows the symmetric
+    convention for ``TOC_GENERAL`` nodes: non-null only when the plugin
+    parsed the entries successfully, ``null`` for every other node type
+    and for unparseable TOCs. These semantic cross-field invariants are
     not enforced by the contract at the current :data:`SCHEMA_VERSION`
     to keep the schema additive; they may become validated constraints
     in a later version.
@@ -127,6 +166,7 @@ class NodeDict(BaseModel):
     text: str | None = None
     level: int | None = None
     items: list[ChapterSummaryItem] | None = None
+    toc_items: list[TocGeneralItem] | None = None
     block_indices: list[int] = Field(default_factory=list)
     children: list[NodeDict] = Field(default_factory=list)
     apparatus_refs: list[ApparatusRefDict] = Field(default_factory=list)
@@ -211,7 +251,7 @@ class DocumentProfileDict(BaseModel):
 
 
 class ScabopdfDocument(BaseModel):
-    """The Layer 1 → Layer 2 JSON document, schema version 0.3.0.
+    """The Layer 1 → Layer 2 JSON document, schema version 0.4.0.
 
     The emitted JSON conforms to JSON Schema Draft 2020-12 as serialised
     by ``ScabopdfDocument.model_json_schema()`` and committed to
@@ -234,7 +274,7 @@ class ScabopdfDocument(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["0.3.0"]
+    schema_version: Literal["0.4.0"]
     document_id: UUID
     metadata: DocumentMetadata
     profile: DocumentProfileDict

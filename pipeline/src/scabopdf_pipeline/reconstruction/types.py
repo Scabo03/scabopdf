@@ -39,6 +39,38 @@ class SummaryItem:
 
 
 @dataclass(frozen=True, kw_only=True)
+class TocGeneralItem:
+    """A single parsed entry of a ``TOC_GENERAL`` node.
+
+    Mirrors :class:`scabopdf_pipeline.schema.contract.TocGeneralItem`
+    on the Python side. Produced by a corpus plugin's
+    ``refine_reconstruction`` when it recognises and parses a
+    document-level table of contents block.
+
+    ``number`` is a string for the same reason as
+    :class:`SummaryItem.number`: composite numerations (``"1.1"``,
+    ``"2-bis"``) cannot be represented by an integer.
+
+    ``title`` is the textual title of the TOC entry, with internal
+    whitespace already normalised by the plugin (single spaces, no
+    leading or trailing whitespace, no dotted leader, no line breaks).
+
+    ``page_number`` is the **1-based book page number** printed on the
+    TOC line (typically after a typographic marker such as ``»``).
+    It is deliberately distinct from the 0-based ``PageIndex`` used
+    everywhere else in Layer 1: a book page number is what the manual
+    advertises to the reader, not the PDF page index. ``None`` when the
+    plugin could not parse a page reference from the entry (a few TOC
+    rows may carry a non-numeric pagination such as ``"III"`` that the
+    plugin leaves unparsed rather than encoding fragility).
+    """
+
+    number: str
+    title: str
+    page_number: int | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
 class Node:
     """A node in the document reading-order tree.
 
@@ -73,6 +105,13 @@ class Node:
     parse or could not parse. The converter maps it field-by-field to
     ``NodeDict.items``.
 
+    ``toc_items`` is the symmetric tuple of parsed entries for
+    ``TOC_GENERAL`` nodes whose textual content a corpus plugin could
+    decompose into a structured list of ``(number, title, page_number)``
+    triples. ``None`` for every other node type and for ``TOC_GENERAL``
+    nodes the plugin chose not to parse or could not parse. The
+    converter maps it field-by-field to ``NodeDict.toc_items``.
+
     ``apparatus_refs`` lists the relationships inferred during apparatus
     resolution (ARCHITECTURE.md § 6). It is populated by
     ``apparatus.resolve_apparatus`` and stays empty if that step is not
@@ -89,6 +128,7 @@ class Node:
     text: str | None = None
     level: int | None = None
     summary_items: tuple[SummaryItem, ...] | None = None
+    toc_items: tuple[TocGeneralItem, ...] | None = None
     apparatus_refs: tuple[ApparatusRef, ...] = ()
 
 

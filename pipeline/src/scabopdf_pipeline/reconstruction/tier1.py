@@ -137,6 +137,7 @@ class _NodeBuilder:
             text=self.text,
             level=self.level,
             summary_items=None,
+            toc_items=None,
             apparatus_refs=(),
         )
 

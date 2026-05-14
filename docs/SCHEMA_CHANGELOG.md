@@ -1,11 +1,21 @@
 # ScaboPDF — JSON Schema CHANGELOG
 
 > Log per-versione del contratto JSON fra Layer 1 e Layer 2.
-> Versione corrente: **0.3.0** (instabile, pre-1.0).
+> Versione corrente: **0.4.0** (instabile, pre-1.0).
 > Riferimento normativo: [`docs/json-schema-versioning.md`](json-schema-versioning.md).
 > Le voci marcate `BREAKING:` segnalano cambi non backward-compatible ammessi in fase 0.x ma soggetti a bump major in fase stabile.
 
 ---
+
+## 0.4.0 — 2026-05-14 — TOC_GENERAL structured items
+
+Aggiunto il campo opzionale `toc_items: list[TocGeneralItem] | null` su `NodeDict`, valorizzato dal secondo plugin di corpus (`compendio_utet`) quando incontra un blocco `TOC_GENERAL` parsificabile sul Compendio Tesauro di Diritto Tributario (UTET 9ª ed., 2023). `null` di default per ogni altro nodo e per gli indici che il plugin non riesce a decomporre (nei quali il plugin emette il warning `plugin:tesauro:toc_general_unparseable_node_<id>` invece). Aggiunto contestualmente il modello `TocGeneralItem` in `$defs`, con tre campi: `number: string` obbligatorio, `title: string` obbligatorio, `page_number: integer | null` opzionale.
+
+La scelta di `number` come stringa segue la convenzione già stabilita da `ChapterSummaryItem` in 0.3.0 (anticipa rappresentazioni di numerazioni composite tipo `"1.1"`). La scelta di `page_number` come **intero base-uno** (numero pagina libro stampato) deliberatamente distinto dal `page_index` base-zero degli altri nodi è documentata in `docs/SCHEMA_v0.4.0.md` § 3 (`TocGeneralItem`): `page_index` è l'offset PyMuPDF del blocco sorgente dell'indice, mentre `page_number` è quello che il manuale stampa sulla pagina fisica e che il lettore usa per navigare. Il plugin emette `page_number: null` quando l'entrata TOC reca una paginazione non numerica (es. `"III"` per pagine in romani del front matter), invece di tentare conversioni fragili.
+
+Il `Node` Python ha acquisito simmetricamente il campo `toc_items: tuple[TocGeneralItem, ...] | None = None` in `pipeline/src/scabopdf_pipeline/reconstruction/types.py`, e il nuovo dataclass `TocGeneralItem` con i campi `number: str`, `title: str`, `page_number: int | None = None`. Il convertitore `emission/converter.py` mappa `Node.toc_items` a `NodeDict.toc_items` campo-per-campo via `_convert_toc_item`. La propagazione del nuovo campo nei tre call site canonici (`_NodeBuilder` + `to_frozen` in `reconstruction/tier1.py` e `apparatus/resolver.py`, plus `_thaw_node` nel resolver) è stata aggiunta nello stesso commit. Lo schema `shared/schema.json` è stato rigenerato di conseguenza e include il nuovo `$defs/TocGeneralItem`.
+
+Non ci sono `BREAKING:` in questa versione: l'aggiunta è additiva (campo opzionale a default `null`), i consumatori di 0.3.0 che ignorano i campi sconosciuti continuano a funzionare con un documento 0.4.0 (a parte il `schema_version` literal che andrà aggiornato lato consumer).
 
 ## 0.3.0 — 2026-05-14 — CHAPTER_SUMMARY structured items
 

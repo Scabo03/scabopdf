@@ -39,6 +39,7 @@ def test_node_has_all_expected_fields() -> None:
         "text",
         "level",
         "summary_items",
+        "toc_items",
         "apparatus_refs",
     }
 
@@ -59,6 +60,7 @@ def test_node_defaults() -> None:
     assert node.text is None
     assert node.level is None
     assert node.summary_items is None
+    assert node.toc_items is None
     assert node.apparatus_refs == ()
 
 

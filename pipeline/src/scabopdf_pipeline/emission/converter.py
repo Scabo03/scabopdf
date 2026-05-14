@@ -3,7 +3,7 @@
 This is the *pure* layer of § 9 emission: it takes the already-processed
 Layer 1 artefacts (``Document``, ``ExtractionResult``, ``DocumentProfile``)
 and returns a fully-populated Pydantic ``ScabopdfDocument`` that conforms
-to schema v0.3.0. No I/O, no orchestration: just a deterministic
+to schema v0.4.0. No I/O, no orchestration: just a deterministic
 mapping with one explicit non-determinism (``document_id`` is a fresh
 ``uuid.uuid4()`` per call — emission is an event, not a content hash).
 
@@ -28,7 +28,7 @@ from scabopdf_pipeline.apparatus.types import ApparatusRef
 from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.profile import DocumentProfile
-from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem
+from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem, TocGeneralItem
 from scabopdf_pipeline.schema.contract import (
     SCHEMA_VERSION,
     ApparatusRefDict,
@@ -39,6 +39,7 @@ from scabopdf_pipeline.schema.contract import (
     ScabopdfDocument,
     TransformationDict,
 )
+from scabopdf_pipeline.schema.contract import TocGeneralItem as TocGeneralItemDict
 
 
 def convert_document(
@@ -69,7 +70,7 @@ def convert_document(
     Returns
     -------
     ScabopdfDocument
-        Fully validated Pydantic model conforming to schema v0.3.0.
+        Fully validated Pydantic model conforming to schema v0.4.0.
 
     Notes
     -----
@@ -128,19 +129,23 @@ def convert_document(
 def _convert_node(node: Node) -> NodeDict:
     """Map a Python ``Node`` into a Pydantic ``NodeDict`` recursively.
 
-    The translation has four points worth naming: the Python
+    The translation has five points worth naming: the Python
     ``category`` field is renamed to ``type`` (per ``ARCHITECTURE.md
     § 8.7``), tuples are flattened to lists for JSON-native types, the
     ``summary_items`` tuple (``None`` for every node a corpus plugin
     did not parse, populated for the rest) is mapped to the
-    ``items`` JSON field, and each child / apparatus ref is mapped
-    through the corresponding helper.
+    ``items`` JSON field, the ``toc_items`` tuple is mapped
+    symmetrically to the ``toc_items`` JSON field, and each child /
+    apparatus ref is mapped through the corresponding helper.
     """
-    items: list[ChapterSummaryItem] | None
-    if node.summary_items is None:
-        items = None
-    else:
-        items = [_convert_summary_item(it) for it in node.summary_items]
+    items: list[ChapterSummaryItem] | None = (
+        None
+        if node.summary_items is None
+        else [_convert_summary_item(it) for it in node.summary_items]
+    )
+    toc_items: list[TocGeneralItemDict] | None = (
+        None if node.toc_items is None else [_convert_toc_item(it) for it in node.toc_items]
+    )
     return NodeDict(
         id=node.id,
         type=node.category,
@@ -148,6 +153,7 @@ def _convert_node(node: Node) -> NodeDict:
         text=node.text,
         level=node.level,
         items=items,
+        toc_items=toc_items,
         block_indices=list(node.block_indices),
         children=[_convert_node(c) for c in node.children],
         apparatus_refs=[_convert_apparatus_ref(r) for r in node.apparatus_refs],
@@ -157,6 +163,15 @@ def _convert_node(node: Node) -> NodeDict:
 def _convert_summary_item(item: SummaryItem) -> ChapterSummaryItem:
     """Map a Python ``SummaryItem`` into a ``ChapterSummaryItem``."""
     return ChapterSummaryItem(number=item.number, title=item.title)
+
+
+def _convert_toc_item(item: TocGeneralItem) -> TocGeneralItemDict:
+    """Map a Python ``TocGeneralItem`` into the matching contract type."""
+    return TocGeneralItemDict(
+        number=item.number,
+        title=item.title,
+        page_number=item.page_number,
+    )
 
 
 def _convert_apparatus_ref(ref: ApparatusRef) -> ApparatusRefDict:
