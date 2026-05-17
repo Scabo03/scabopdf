@@ -1,95 +1,100 @@
 """Corpus plugin for the Giappichelli manual series — Mandrioli-Carratta.
 
-Fourth real corpus plugin of the project. Handles the Mandrioli-Carratta
-"Diritto processuale civile — Volume III. Processi speciali e
-procedure alternative" (Giappichelli, 30th edition, 2025/26) — see
-``docs/analysis/ANALYSIS_MANDRIOLI_CARRATTA.md`` for the editorial
-analysis the plugin is built against.
+Fourth real corpus plugin of the project, consolidated on the
+integral Mandrioli-Carratta series. Handles all four volumes of the
+Mandrioli-Carratta "Corso di diritto processuale civile" / "Diritto
+processuale civile" (Giappichelli, 30th edition for Vol. IV, 20th
+edition for Vol. I/II, Vol. III at the 30th edition for processi
+speciali). See ``docs/analysis/ANALYSIS_MANDRIOLI_CARRATTA.md`` for
+the editorial analysis on Vol. III; the consolidation pass on the
+remaining three volumes is empirically driven (no separate analysis
+document).
 
-The manual is the first corpus plugin of the project that exercises:
+The plugin exercises:
 
-- the Giappichelli editorial pipeline (Adobe InDesign 20.2 +
-  Photoshop Image Conversion Plug-in producer), structurally distinct
-  from the Zanichelli, UTET-Giuridica and UTET-Wolters-Kluwer
-  pipelines covered by the three previous plugins;
+- the Giappichelli editorial pipeline in two production regimes:
+  (a) Adobe InDesign 20.0 / 20.2 + Photoshop Image Conversion
+  Plug-in producer (Vol. III, Vol. IV); (b) Adobe Photoshop 26.3 +
+  Photoshop Image Conversion Plug-in producer (Vol. I, Vol. II).
+  The plugin treats the two regimes as one editorial family thanks
+  to the dual creator-fragment match
+  (:data:`GIAPPICHELLI_CREATOR_FRAGMENTS`);
 - the ``SimonciniGaramondStd`` monocomponent typographic system,
   whose hierarchy is expressed via size + italic + maiuscoletto with
-  **no structural bold**. The Sezione/paragrafo title spans are
-  italic at 11.5pt rather than bold at 10.5pt as in Mosconi or bold
-  at 12pt as in Tesauro;
-- the ``MARGINAL_GLOSS`` category, filled in production for the first
-  time: 12 short ``AGaramondPro-BoldItalic`` 8.5pt glosses sit in
-  the left margin against page-edge coordinates and annotate the
-  adjacent NOTE rather than the BODY. The generic tier 1
-  ``_resolve_marginal_glosses`` resolver binds each gloss to the
+  **no structural bold**. The Sezione header span is italic at
+  12.0pt, the paragrafo title span is italic at 11.52pt;
+- the ``MARGINAL_GLOSS`` category, filled in production: short
+  ``AGaramondPro-BoldItalic`` 8.52pt glosses in the left margin
+  annotating the adjacent NOTE. Present on Vol. III (12 glosses) and
+  Vol. IV (14 glosses); absent on Vol. I/II (no AGaramondPro spans).
+  Tier 1 ``_resolve_marginal_glosses`` binds each gloss to the
   vertically closest NOTE on the same page via
   ``ApparatusRef.kind = GLOSS_TARGET``;
 - a four-level heading hierarchy ``PARTE / CAPITOLO / Sezione /
   paragrafo``: the first plugin in the project that emits
-  ``HEADING_4`` in production;
-- 744 dense footnotes (median 388 characters, 6.2 % in regime D
-  ≥ 1500 chars), with cross-page note continuation on 13 % of pages.
-  The tier 1 ``_resolve_cross_page_note_merging`` resolver already
-  handles the marker ``(N)`` correctly because
-  ``NOTE_MARKER_REGEX = r"^\\s*\\(?(\\d+)\\)?[\\.\\s]"`` makes the
-  parentheses optional, so the plugin does **not** declare
-  ``merge_cross_page_notes`` in :meth:`get_post_processing` and the
-  placeholder step remains a placeholder. Intra-page multi-block
-  NOTE consolidation is also unnecessary: PyMuPDF does not split
-  the Mandrioli notes into multiple blocks within a page;
+  ``HEADING_4`` in production. PARTE divisions appear on Vol. III
+  (4 in body) and Vol. IV (2 in body); Vol. I and Vol. II have no
+  PARTE divisions (variazione editoriale legittima);
+- dense apparatus on Vol. III (744 notes) and Vol. IV; lighter
+  apparatus on Vol. I/II. Cross-page note continuation handled by
+  tier 1 ``_resolve_cross_page_note_merging`` (the
+  parentheses-optional ``NOTE_MARKER_REGEX`` covers Mandrioli's
+  ``(N)`` marker without override), so the plugin does **not**
+  declare ``merge_cross_page_notes``;
 - ``CROSS_REFERENCE`` markers ``(N)`` minted from **textual regex**
-  instead of typographic superscript flag. The Mosconi plugin
-  minted synthetic CROSS_REFERENCE nodes from
-  ``span.is_superscript`` spans at 5.2/5.8pt; the Mandrioli
-  inline marker is a parenthesised digit sitting in a normal body
-  span at 11.0pt, so the plugin scans every BODY node's ``text``
-  with a regex and mints siblings at each match;
-- the **small-caps three-span pattern** as a category discriminator.
-  Both the ``SOMMARIO:`` label opening a ``CHAPTER_SUMMARY`` block
-  and the ``CAPITOLO N`` chapter-number heading are rendered as
-  three consecutive spans alternating between the nominal size and
-  a smaller small-caps span carrying the bulk of the word. The
-  predicate is therefore "leading span size X, second span size Y
-  carrying the small-caps middle, third span returning to X".
+  rather than typographic superscript flag. The Mandrioli inline
+  marker is a parenthesised digit sitting in a normal body span at
+  10.98pt, so the plugin scans every BODY node's ``text`` with a
+  regex and mints siblings at each match;
+- the **small-caps three-span pattern** as a category discriminator
+  for SOMMARIO (``CHAPTER_SUMMARY`` label) and the **five-span
+  small-caps composite** for ``PARTE`` divisions. The predicates
+  read the relevant span indices and verify the size pair
+  (leading + middle) jointly with the family check;
+- the **body+note glued blocks splitter** (added in the consolidation
+  session). PyMuPDF occasionally fuses a body block and the
+  immediately following note block into a single block; this
+  affects ~95 % of Vol. III blocks and 6.96 % of Vol. IV. The plugin
+  emits a diagnostic warning during classification and, in
+  ``refine_reconstruction``, mints synthetic NOTE Nodes that recover
+  the embedded apparatus content.
 
 Heading levels.
 
-- **HEADING_1 — PARTE.** Single block ``"PARTE Prima"`` (and
-  ``Seconda``, ``Terza``, ``Quarta``) in ``SimonciniGaramondStd``
-  13.0pt. The Mandrioli vol. III has four parts; the ordinal
-  whitelist is closed on these four entries. Front-matter heading
-  candidates (``Premessa``, ``Indice``, etc.) are intentionally NOT
-  promoted to ``HEADING_1`` in this plugin: the closed-list
-  discriminator on PARTE ordinals avoids cluttering the H1 level
-  with paratext entries whose treatment is the same as in any
-  generic manual front matter.
+- **HEADING_1 — PARTE.** Five-span small-caps composite block whose
+  joined text reads ``"PARTE PRIMA"`` / ``"PARTE SECONDA"`` /
+  ``"PARTE TERZA"`` / ``"PARTE QUARTA"``. Span signature:
+  ``[("P", 13.98pt), ("ARTE ", 10.98pt), ("P", 13.98pt),
+  ("RIMA", 10.98pt), ...]``. Vol. III has 4 PARTE in body (pp. 21,
+  275, 341, 369); Vol. IV has 2 (pp. 16, 284). The text pattern is
+  case-insensitive on the ordinal. Front-matter Indice variants at
+  12.0pt+9.48pt are intentionally NOT classified as HEADING_1.
 - **HEADING_2 — CAPITOLO.** Two consecutive blocks fused in
   :meth:`refine_reconstruction`: the ``"CAPITOLO N"`` chapter-number
-  block (small-caps three-span ``("C", 13.0pt) + ("APITOLO ",
-  10.5pt) + ("I ", 13.0pt)``, total text ``"CAPITOLO I"``) and the
-  immediately-following uppercase title block at 13.0pt. The Roman
-  numeral whitelist is closed at I-X (the vol. III has 10 chapters).
+  block (small-caps three-span ``("C", 13.02pt) + ("APITOLO ",
+  10.5pt) + ("I ", 13.02pt)``, joined text ``"CAPITOLO I"``) and
+  the immediately-following uppercase title block at 13.02pt.
 - **HEADING_3 — Sezione.** Single block ``"Sezione prima"`` (or
   ``seconda``, ``terza``, ...) in ``SimonciniGaramondStd-Italic``
-  11.0pt. The MAIUSCOLETTO 11.5pt title that may follow a Sezione
-  header is left ``UNCLASSIFIED`` by this first plugin generation;
-  a future revision can fuse the pair on the model of CAPITOLO.
+  12.0pt. Uniform across the four volumes for the body-side variant.
+  The MAIUSCOLETTO title that may follow a Sezione header is left
+  ``UNCLASSIFIED``; a future revision can fuse the pair on the
+  model of CAPITOLO.
 - **HEADING_4 — paragrafo numerato.** Composite block with a Roman
-  ``SimonciniGaramondStd`` 11.5pt span carrying ``"<n>. "`` followed
-  by an italic ``SimonciniGaramondStd-Italic`` 11.5pt span carrying
-  the title (no bold structural marker; italic is the emphasis).
-  74 paragrafi total on vol. III.
+  ``SimonciniGaramondStd`` 11.52pt span carrying ``"<n>. "``
+  followed by an italic ``SimonciniGaramondStd-Italic`` 11.52pt
+  span carrying the title (no bold structural marker; italic is
+  the emphasis). Hundreds of paragrafi across the four volumes.
 
 Apparatus.
 
 - **NOTE — footnote.** Block whose leading span is
-  ``SimonciniGaramondStd`` 9.0pt whose text opens with ``(N)``
-  where ``N`` is one or more digits. Body of the note is 9.0pt
-  roman or italic. 744 notes total on vol. III, with markers
-  reset at each chapter (10 known reset points at pp. 114, 127,
-  145, 265, 277, 321, 355, 371, 469, 487).
+  ``SimonciniGaramondStd`` at one of the two NOTE body sizes:
+  9.0pt (Vol. III/IV regime) or 7.98pt (Vol. I/II regime). Text
+  opens with the ``(N)`` parenthesised digit marker. The dual-size
+  predicate is set as a closed tuple in :data:`NOTE_BODY_SIZES`.
 - **CROSS_REFERENCE — inline footnote marker.** A body span at
-  11.0pt that contains the substring ``(N)`` somewhere in its
+  10.98pt that contains the substring ``(N)`` somewhere in its
   text. The plugin scans every BODY node's text with the regex
   :data:`_CROSSREF_INLINE_PATTERN` and mints one synthetic
   ``CROSS_REFERENCE`` ``Node`` per match, as a sibling immediately
@@ -100,19 +105,16 @@ Apparatus.
   target NOTE within the nearest ``HEADING_2`` ancestor scope.
 - **MARGINAL_GLOSS — marginal gloss.** Block whose leading span is
   ``AGaramondPro-BoldItalic`` (or the subset-truncated variants
-  ``AGaramondPro-SemiboldItalic`` / ``AGaramondPro-SemiboldIta``)
-  8.5pt with ``bbox.x0 < 50`` (left margin). 12 glosses total on
-  vol. III. The geometric guard excludes the rare
-  ``AGaramondPro-SemiboldItalic`` 11.5pt fallback that PyMuPDF
-  reports inside the body column (a typesetter glyph-substitution
-  artefact, e.g. at p.170 "cu-/ratore del minore").
+  ``AGaramondPro-SemiboldIta`` / full ``AGaramondPro-SemiboldItalic``)
+  at 8.52pt with ``bbox.x0 < 50`` (left margin). The geometric
+  guard excludes the rare 11.5pt AGaramondPro fallback that
+  PyMuPDF reports inside the body column (e.g. p.170 of Vol. III).
+  Absent on Vol. I/II.
 - **CHAPTER_SUMMARY — sommario di apertura capitolo.** Block at
   9.0pt opening with the small-caps three-span pattern
-  ``("S", 9.0pt) + ("OMMARIO", 7.0pt) + (": ...", 9.0pt)``. 15
-  blocks total on vol. III. Distinguished from a NOTE by the
-  small-caps pattern (notes open with ``"(N) "`` directly in 9.0pt
-  roman); without the discriminator a naive classifier would label
-  the SOMMARIO as a NOTE because both share the body size.
+  ``("S", 9.0pt) + ("OMMARIO", 7.02pt) + (": ...", 9.0pt)``.
+  Distinguished from a NOTE by the small-caps pattern. Uniform
+  across the four volumes.
 
 Artifacts.
 
@@ -231,9 +233,14 @@ at emission time. Consumers should match on the prefix.
 """
 
 PARTE_ORDINALS: tuple[str, ...] = ("Prima", "Seconda", "Terza", "Quarta")
-"""Closed list of Italian ordinals the Mandrioli vol. III uses for
-the four PARTE headings. The vol. III is split into four parts; future
-editions or sibling volumes may extend this whitelist.
+"""Closed list of Italian ordinals used for the PARTE headings of the
+Mandrioli-Carratta series.
+
+Vol. III splits into four parts (Prima/Seconda/Terza/Quarta), Vol. IV
+into two (Prima/Seconda). Vol. I and Vol. II have no PARTE divisions
+and the predicate :meth:`_is_parte_signature` returns False on every
+block of those volumes via the size check. Future Giappichelli volumes
+may extend the ordinals beyond Quarta if needed.
 """
 
 _PARTE_PATTERN = re.compile(
@@ -249,10 +256,9 @@ drift across editions.
 _CHAPTER_NUMBER_PATTERN = re.compile(r"^CAPITOLO\s+([IVX]+)\s*$", re.IGNORECASE)
 """Pattern matching the ``"CAPITOLO N"`` block text exactly.
 
-``N`` is a Roman numeral (I-X for vol. III, 10 chapters). The concatenated
-text comes from the small-caps three-span block ``("C", 13.0pt) +
-("APITOLO ", 10.5pt) + ("I ", 13.0pt)`` whose joined text is
-``"CAPITOLO I"``.
+``N`` is a Roman numeral. The concatenated text comes from the
+small-caps three-span block ``("C", 13.02pt) + ("APITOLO ", 10.5pt) +
+("I ", 13.02pt)`` whose joined text is ``"CAPITOLO I"``.
 """
 
 _SECTION_HEADER_PATTERN = re.compile(
@@ -260,21 +266,20 @@ _SECTION_HEADER_PATTERN = re.compile(
     r"undicesima|dodicesima|tredicesima|quattordicesima|quindicesima)\b",
     re.IGNORECASE,
 )
-"""Pattern matching the ``"Sezione N"`` Section header in italic 11.0pt.
+"""Pattern matching the ``"Sezione N"`` Section header in italic 12.0pt.
 
-The ordinal whitelist covers the first fifteen Italian feminine ordinals,
-which is sufficient for the 50 Sezione of vol. III (the chapter with the
-most sezioni has 12). The trailing word boundary lets the predicate
-match a bare ``"Sezione prima"`` and a longer ``"Sezione prima — Cenni"``
-without anchoring on the end.
+The ordinal whitelist covers the first fifteen Italian feminine
+ordinals. The trailing word boundary lets the predicate match a bare
+``"Sezione prima"`` and a longer ``"Sezione prima — Cenni"`` without
+anchoring on the end.
 """
 
 _PARAGRAPH_HEADING_PATTERN = re.compile(r"^(\d+)\.\s+(.+)$", re.DOTALL)
 """Pattern matching a paragraph heading (HEADING_4): ``<n>. <title>``.
 
-The paragraph heading is a two-span block: a Roman 11.5pt span carrying
-the number ``"<n>. "`` and an italic 11.5pt span carrying the title.
-``re.DOTALL`` lets the title span an embedded line break.
+The paragraph heading is a two-span block: a Roman 11.52pt span
+carrying the number ``"<n>. "`` and an italic 11.52pt span carrying
+the title. ``re.DOTALL`` lets the title span an embedded line break.
 """
 
 _PARAGRAPH_NUMBER_PATTERN = re.compile(r"^\s*\d+\.\s*$")
@@ -300,9 +305,9 @@ _CROSSREF_INLINE_PATTERN = re.compile(r"(?<!p\.\s)(?<!p\.)\((\d+)\)")
 A pair of parentheses around one or more digits. The negative
 look-behinds rule out the citation pattern ``"p. NN"`` (page reference
 with the dot-space variant or just the dot variant) — empirical
-inspection of the fixture confirms ``(p. NN)`` never appears in 11.0pt
-body text, only inside 9.0pt note text, but the look-behinds remain as
-a robustness safety-net. The captured group is the marker number; the
+inspection confirms ``(p. NN)`` never appears in 10.98pt body text,
+only inside 9.0pt note text, but the look-behinds remain as a
+robustness safety-net. The captured group is the marker number; the
 resolver in :mod:`apparatus.resolver` will bind the synthetic
 ``CROSS_REFERENCE`` node to the NOTE whose marker matches.
 """
@@ -311,7 +316,7 @@ _SOMMARIO_HEAD_LETTER = "S"
 """Leading character of the small-caps SOMMARIO label.
 
 The Mandrioli typesetter renders the word as three spans:
-``("S", 9.0pt) + ("OMMARIO", 7.0pt) + (": ...", 9.0pt)``. The plugin
+``("S", 9.0pt) + ("OMMARIO", 7.02pt) + (": ...", 9.0pt)``. The plugin
 checks ``spans[0].text == "S"`` (or starts with ``"S"``) and the small
 size of ``spans[1]`` to identify a SOMMARIO block.
 """
@@ -341,29 +346,105 @@ trailing characters chopped off the canonical
 prefix-agnostic so all three name variants admit the gloss.
 """
 
-BODY_FONT_SIZE = 11.0
-"""Body and Sezione header size, in points."""
+BODY_FONT_SIZE = 10.98
+"""Body and front-matter heading (Indice, Premessa) leading-span size, in points.
+
+PyMuPDF emits the Mandrioli body at 10.98pt across all four volumes
+of the Mandrioli-Carratta series — Vol. I/II (Photoshop-derived
+pipeline), Vol. III/IV (InDesign-derived pipeline). The nominal
+typesetting size is 11pt; the 0.02pt drift is a stable artefact of
+the Adobe Photoshop Image Conversion Plug-in producer that emits
+every Giappichelli fixture (regardless of the upstream InDesign or
+Photoshop creator).
+"""
 
 NOTE_BODY_SIZE = 9.0
-"""Footnote body size, in points. Also the size of the CHAPTER_SUMMARY
-body. Discrimination between the two relies on the small-caps
-SOMMARIO label pattern (see :meth:`_is_chapter_summary`)."""
+"""Footnote body primary size, in points.
 
-PARAGRAPH_HEADING_SIZE = 11.5
-"""Paragraph heading (HEADING_4) and Sezione title (uppercase) size, in points."""
+The Vol. III and Vol. IV typeset notes at 9.0pt. Also the size of
+the CHAPTER_SUMMARY body and the SOMMARIO leading span (uniform
+across all four volumes). Discrimination between NOTE and SOMMARIO
+relies on the small-caps three-span pattern (see
+:meth:`_is_chapter_summary`).
+"""
 
-CHAPTER_HEADING_SIZE = 13.0
-"""Chapter heading (HEADING_2) and PARTE heading (HEADING_1) size, in points."""
+NOTE_ALT_BODY_SIZE = 7.98
+"""Footnote body alternative size, in points.
 
-GLOSS_SIZE = 8.5
-"""Marginal gloss size, in points."""
+The Vol. I and Vol. II (Photoshop-derived pipeline) typeset notes at
+7.98pt rather than 9.0pt — a real editorial difference, not a
+PyMuPDF rounding artefact. The NOTE predicate admits both regimes.
+"""
 
-SOMMARIO_TAIL_SIZE = 7.0
+NOTE_BODY_SIZES: tuple[float, ...] = (NOTE_ALT_BODY_SIZE, NOTE_BODY_SIZE)
+"""Closed tuple of the two NOTE body sizes the Giappichelli pipeline emits.
+
+Order is irrelevant; predicate iterates the tuple.
+"""
+
+PARAGRAPH_HEADING_SIZE = 11.52
+"""Paragraph heading (HEADING_4) number-span and italic title-span size, in points.
+
+PyMuPDF emits the Mandrioli paragrafo numerato at 11.52pt across
+all four volumes (nominal 11.5pt with the same +0.02pt Photoshop
+drift as the body).
+"""
+
+CHAPTER_HEADING_SIZE = 13.02
+"""Chapter heading (HEADING_2) leading-span size, in points.
+
+The CAPITOLO small-caps three-span composite leading span is at
+13.02pt (nominal 13.0pt with the +0.02pt Photoshop drift).
+Uniform across Vol. III and Vol. IV; Vol. I/II at the same size.
+"""
+
+SECTION_HEADER_SIZE = 12.0
+"""Sezione header italic body-span size, in points.
+
+The Sezione single-span header in the BODY (e.g. "Sezione prima")
+is SimonciniGaramondStd-Italic at 12.0pt — uniform across Vol. III
+and Vol. IV (the Vol. I/II body-side Sezione also matches). The
+front-matter Indice variant of Sezione is at 10.02pt roman and is
+intentionally NOT classified as HEADING_3 to keep Indice paratext
+out of the heading hierarchy.
+"""
+
+PARTE_LEADING_SIZE = 13.98
+"""PARTE body small-caps composite leading-span size, in points.
+
+The five-span small-caps composite `[("P", 13.98pt), ("ARTE ",
+10.98pt), ("P", 13.98pt), ("RIMA", 10.98pt), ...]` whose joined
+text reads "PARTE PRIMA" (or SECONDA/TERZA/QUARTA). Vol. III has
+four PARTE divisions in the body; Vol. IV has two; Vol. I and Vol.
+II have none. The 13.98pt nominal is what PyMuPDF reports — there
+is no separate "13pt PARTE" path: every real PARTE on Vol. III/IV
+is the five-span small-caps composite at this size.
+"""
+
+PARTE_MIDDLE_SIZE = 10.98
+"""PARTE body small-caps composite middle-span size, in points.
+
+Coincidentally equal to :data:`BODY_FONT_SIZE` but conceptually
+distinct (it is the small-caps "ARTE" tail of the composite, not a
+body span). Kept as its own constant for documentary clarity.
+"""
+
+GLOSS_SIZE = 8.52
+"""Marginal gloss size, in points.
+
+PyMuPDF emits AGaramondPro-BoldItalic / AGaramondPro-SemiboldIta
+glosses at 8.52pt across Vol. III and Vol. IV (nominal 8.5pt with
+the same +0.02pt drift). Vol. I and Vol. II have no AGaramondPro
+spans at all — no marginal-gloss apparatus in those volumes.
+"""
+
+SOMMARIO_TAIL_SIZE = 7.02
 """Size of the small-caps trailing letters of the SOMMARIO label, in points.
 
-The ``spans[1].text == "OMMARIO"`` portion is typeset at 7.0pt while
-the rest of the block is at 9.0pt. The two-tier small-caps pattern is
-the SOMMARIO discriminator (see :meth:`_is_chapter_summary`).
+The ``spans[1].text == "OMMARIO"`` portion is typeset at 7.02pt
+while the rest of the block is at 9.0pt. The two-tier small-caps
+pattern is the SOMMARIO discriminator (see
+:meth:`_is_chapter_summary`). Uniform across all four volumes.
 """
 
 MARGIN_X_THRESHOLD = 50.0
@@ -380,15 +461,26 @@ just under 60 cannot pass the predicate.
 PARTE_HEADING_TEXT_LIMIT = 60
 """Max text length for a candidate PARTE heading.
 
-``PARTE Quarta`` is 12 characters; the cap leaves substantial margin
-while still rejecting 13.0pt blocks that carry much more text.
+``PARTE QUARTA`` joined from the five-span small-caps composite is
+12 characters; the cap leaves substantial margin while still
+rejecting 13.98pt composite blocks that carry much more text.
+"""
+
+PARTE_MIN_SPANS = 4
+"""Minimum span count for the PARTE five-span small-caps composite.
+
+The Mandrioli typesetter emits PARTE divisions as a composite of
+five spans alternating between :data:`PARTE_LEADING_SIZE` (13.98pt,
+the bracketing capitals) and :data:`PARTE_MIDDLE_SIZE` (10.98pt, the
+small-caps tail). The minimum is set at 4 to admit edge cases where
+PyMuPDF fuses adjacent spans of the same signature.
 """
 
 CHAPTER_HEADING_TEXT_LIMIT = 30
 """Max text length for a candidate CAPITOLO chapter-number block.
 
 ``CAPITOLO XVIII`` is 14 characters; the cap leaves margin while
-rejecting 13.0pt blocks with significantly more text.
+rejecting 13.02pt blocks with significantly more text.
 """
 
 CHAPTER_TITLE_TEXT_LIMIT = 200
@@ -396,11 +488,11 @@ CHAPTER_TITLE_TEXT_LIMIT = 200
 
 Chapter titles are short uppercase phrases (e.g.
 ``"I PROCESSI O PROCEDIMENTI SPECIALI IN GENERALE"``, 47 characters).
-The cap discriminates against 13.0pt blocks that carry more text.
+The cap discriminates against 13.02pt blocks that carry more text.
 """
 
 SECTION_HEADING_TEXT_LIMIT = 200
-"""Max text length for a candidate Sezione header block (italic 11.0pt)."""
+"""Max text length for a candidate Sezione header block (italic 12.0pt)."""
 
 PARAGRAPH_HEADING_TEXT_LIMIT = 300
 """Max text length for a paragraph heading (HEADING_4)."""
@@ -416,23 +508,24 @@ generous margin.
 """
 
 BODY_NOTE_GLUED_RATIO_THRESHOLD = 0.30
-"""Minimum fraction of 9.0pt note-sized spans inside a body 11.0pt
-block to flag the block as a body+note glued artefact.
+"""Minimum fraction of note-sized spans inside a body 10.98pt block
+to flag the block as a body+note glued artefact.
 
-PyMuPDF occasionally fuses a body block (11.0pt) and the immediately
-following note block (9.0pt) into a single block. The plugin
-diagnoses the pattern with this ratio and emits a warning; it does
-not split the block structurally.
+PyMuPDF occasionally fuses a body block (10.98pt) and the
+immediately following note block (9.0pt on Vol. III/IV, 7.98pt on
+Vol. I/II) into a single block. The plugin diagnoses the pattern
+with this ratio. The Vol. III exhibits the pathology on ~95 % of
+its blocks, Vol. IV on 6.96 %, Vol. I and II on 0 %.
 """
 
 CONFIDENCE_BODY_DOMINANT = 0.30
-"""Confidence contribution when SimonciniGaramondStd 11.0pt is present
+"""Confidence contribution when SimonciniGaramondStd 10.98pt is present
 as a dominant signature.
 
 The body dominance threshold is permissive: in apparatus-heavy
-documents like Mandrioli (303 pages with note share > body) the body
-share drops well below the 70 % typical of compendia, so a 25 % floor
-applies here too.
+documents like Mandrioli vol. III (where note bucket exceeds body
+bucket) the body share drops well below the 70 % typical of
+compendia, so a 25 % floor applies here too.
 """
 
 CONFIDENCE_GIAPPICHELLI_FAMILY = 0.20
@@ -447,10 +540,13 @@ apparatus presence threshold. Mandrioli vol. III has 744 markers.
 """
 
 CONFIDENCE_INDESIGN_20 = 0.10
-"""Confidence contribution when the creator string matches
-``Adobe InDesign 20`` (InDesign 2025). Mosconi uses InDesign CS6, the
-two UTET plugins use older InDesign versions, so this fragment is
-specific to recent Giappichelli output.
+"""Confidence contribution when the creator string matches one of
+:data:`GIAPPICHELLI_CREATOR_FRAGMENTS` (currently ``"InDesign 20"``
+for Vol. III/IV and ``"Adobe Photoshop"`` for Vol. I/II).
+
+Mosconi uses InDesign CS6, the two UTET plugins use older InDesign
+versions, none of which contain either fragment. The Mandrioli
+fixtures contain at least one fragment in their creator field.
 """
 
 CONFIDENCE_PAGE_SIZE = 0.05
@@ -495,8 +591,29 @@ discriminate the Giappichelli manual from a compendium.
 """
 
 GIAPPICHELLI_CREATOR_FRAGMENT = "InDesign 20"
-"""Creator-field substring that signals the Giappichelli editorial
-pipeline (InDesign 2025).
+"""Creator-field substring that signals the InDesign-derived
+Giappichelli editorial pipeline (Vol. III/IV, InDesign 20.0 / 20.2).
+
+Kept as a single string for backward compatibility with imports and
+tests that referenced it before the Photoshop variant was added.
+The actual matching logic in :meth:`matches` iterates
+:data:`GIAPPICHELLI_CREATOR_FRAGMENTS`.
+"""
+
+GIAPPICHELLI_CREATOR_FRAGMENTS: tuple[str, ...] = (
+    GIAPPICHELLI_CREATOR_FRAGMENT,
+    "Adobe Photoshop",
+)
+"""Closed tuple of creator-field substrings that signal a Giappichelli
+editorial pipeline.
+
+- ``"InDesign 20"`` — Vol. III (InDesign 20.2) and Vol. IV (InDesign 20.0)
+- ``"Adobe Photoshop"`` — Vol. I and Vol. II (Photoshop 26.3, Photoshop
+  Image Conversion Plug-in producer)
+
+A document credits the bonus if its creator contains any of the
+fragments. Mosconi (InDesign CS6), Tesauro (InDesign older), Patriarca
+(Acrobat Distiller), Marotta (Acrobat Pro 9.4.5) contain none.
 """
 
 GIAPPICHELLI_PAGE_WIDTH = 482.0
@@ -648,7 +765,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
             score += CONFIDENCE_NOTE_APPARATUS
 
         creator = (signals.producer_creator.creator or "").strip()
-        if GIAPPICHELLI_CREATOR_FRAGMENT in creator:
+        if any(fragment in creator for fragment in GIAPPICHELLI_CREATOR_FRAGMENTS):
             score += CONFIDENCE_INDESIGN_20
 
         geometry = signals.page_geometry
@@ -838,7 +955,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                 reason="giappichelli_note",
             )
 
-        if self._is_chapter_heading_signature(view):
+        if self._is_parte_signature(view):
             text = view.text.strip()
             if _PARTE_PATTERN.match(text) and len(text) <= PARTE_HEADING_TEXT_LIMIT:
                 return ClassifiedBlock(
@@ -846,6 +963,9 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                     category=SemanticCategory.HEADING_1,
                     reason="giappichelli_part",
                 )
+
+        if self._is_chapter_heading_signature(view):
+            text = view.text.strip()
             if _CHAPTER_NUMBER_PATTERN.match(text) and len(text) <= CHAPTER_HEADING_TEXT_LIMIT:
                 self._chapter_number_blocks.add(verdict.block_index)
                 return ClassifiedBlock(
@@ -899,7 +1019,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
 
     @staticmethod
     def _is_body_signature(view: _BlockView) -> bool:
-        """A body block opens with SimonciniGaramondStd at 11.0pt."""
+        """A body block opens with SimonciniGaramondStd at 10.98pt."""
         if not view.spans:
             return False
         leading = view.spans[0]
@@ -909,12 +1029,14 @@ class ManualeGiappichelliProfile(ProfilePlugin):
 
     @staticmethod
     def _is_chapter_heading_signature(view: _BlockView) -> bool:
-        """A 13.0pt block in the SimonciniGaramondStd family.
+        """A 13.02pt block in the SimonciniGaramondStd family.
 
-        The signature covers PARTE, CAPITOLO number and CAPITOLO title.
-        Discrimination across the three subcategories is by text
-        pattern (PARTE pattern, CAPITOLO pattern, fallback to title
-        candidate).
+        The signature covers CAPITOLO number and CAPITOLO title only;
+        PARTE divisions are typeset as a five-span small-caps composite
+        at :data:`PARTE_LEADING_SIZE` (13.98pt) and are matched
+        upstream by :meth:`_is_parte_signature` before this predicate
+        runs. Discrimination between chapter-number and chapter-title
+        candidates is by text pattern.
         """
         if not view.spans:
             return False
@@ -922,6 +1044,35 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         family_ok = leading.font.startswith(BODY_FONT_PREFIX)
         size_ok = abs(leading.size - CHAPTER_HEADING_SIZE) < 0.1
         return family_ok and size_ok
+
+    @staticmethod
+    def _is_parte_signature(view: _BlockView) -> bool:
+        """A PARTE block opens with the five-span small-caps composite at 13.98pt.
+
+        The Mandrioli typesetter renders PARTE divisions as a composite
+        of at least four spans alternating between
+        :data:`PARTE_LEADING_SIZE` (13.98pt, the bracketing capitals
+        of "PARTE PRIMA/SECONDA/...") and :data:`PARTE_MIDDLE_SIZE`
+        (10.98pt, the small-caps tail). The predicate checks the
+        family on the first two spans and verifies the size pair
+        ``(13.98pt, 10.98pt)``. Text-pattern discrimination is done
+        downstream against :data:`_PARTE_PATTERN`.
+
+        Vol. III has four PARTE in the body; Vol. IV has two. Vol. I
+        and Vol. II have none, and the predicate returns False on
+        every block of those volumes by virtue of the size check.
+        """
+        if len(view.spans) < PARTE_MIN_SPANS:
+            return False
+        s0 = view.spans[0]
+        s1 = view.spans[1]
+        if not s0.font.startswith(BODY_FONT_PREFIX):
+            return False
+        if not s1.font.startswith(BODY_FONT_PREFIX):
+            return False
+        if abs(s0.size - PARTE_LEADING_SIZE) > 0.1:
+            return False
+        return abs(s1.size - PARTE_MIDDLE_SIZE) < 0.1
 
     @staticmethod
     def _looks_like_chapter_title(text: str) -> bool:
@@ -943,12 +1094,20 @@ class ManualeGiappichelliProfile(ProfilePlugin):
 
     @staticmethod
     def _is_section_header(view: _BlockView) -> bool:
-        """A Sezione header is SimonciniGaramondStd-Italic 11.0pt opening with "Sezione N"."""
+        """A Sezione header is SimonciniGaramondStd-Italic 12.0pt opening with "Sezione N".
+
+        The body-side Sezione header is uniformly typeset at 12.0pt
+        italic across Vol. III and Vol. IV (the prior plugin
+        generation looked for 11.0pt italic and missed every match).
+        Vol. I and Vol. II also use 12.0pt italic for body Sezione.
+        The front-matter Indice variant at 10.02pt roman is NOT
+        classified as HEADING_3 — paratext stays UNCLASSIFIED.
+        """
         if not view.spans:
             return False
         leading = view.spans[0]
         family_ok = leading.font.startswith(BODY_FONT_PREFIX)
-        size_ok = abs(leading.size - BODY_FONT_SIZE) < 0.1
+        size_ok = abs(leading.size - SECTION_HEADER_SIZE) < 0.1
         italic_ok = leading.is_italic
         if not (family_ok and size_ok and italic_ok):
             return False
@@ -1019,18 +1178,21 @@ class ManualeGiappichelliProfile(ProfilePlugin):
 
     @staticmethod
     def _is_note(view: _BlockView) -> bool:
-        """A note block opens with SimonciniGaramondStd 9.0pt text matching ``(N)``.
+        """A note block opens with SimonciniGaramondStd at one of the two NOTE
+        body sizes (9.0pt Vol. III/IV regime, 7.98pt Vol. I/II regime) and
+        text matching ``(N)``.
 
         Both signatures must hold: the leading span's typographic
-        family and size, AND the textual marker pattern. The textual
-        check runs against the lstripped concatenated block text so a
-        leading whitespace span does not defeat the predicate.
+        family and size (in either of :data:`NOTE_BODY_SIZES`), AND
+        the textual marker pattern. The textual check runs against
+        the lstripped concatenated block text so a leading whitespace
+        span does not defeat the predicate.
         """
         if not view.spans:
             return False
         leading = view.spans[0]
         family_ok = leading.font.startswith(BODY_FONT_PREFIX)
-        size_ok = abs(leading.size - NOTE_BODY_SIZE) < 0.3
+        size_ok = any(abs(leading.size - s) < 0.3 for s in NOTE_BODY_SIZES)
         if not (family_ok and size_ok):
             return False
         return bool(_NOTE_MARKER_PATTERN.match(view.text.lstrip()))
@@ -1071,13 +1233,17 @@ class ManualeGiappichelliProfile(ProfilePlugin):
 
     @staticmethod
     def _is_body_note_glued(view: _BlockView) -> bool:
-        """A body 11.0pt block whose internal 9.0pt span share exceeds the threshold.
+        """A body 10.98pt block whose internal note-sized-span share exceeds the threshold.
 
         PyMuPDF occasionally fuses a body block and the immediately
         following note block into a single block. The discriminator
-        is: leading span at 11.0pt body signature AND the fraction of
-        subsequent spans at 9.0pt exceeds
-        :data:`BODY_NOTE_GLUED_RATIO_THRESHOLD`.
+        is: leading span at 10.98pt body signature AND the fraction of
+        subsequent spans at one of :data:`NOTE_BODY_SIZES` exceeds
+        :data:`BODY_NOTE_GLUED_RATIO_THRESHOLD`. The dual-regime size
+        check is required because Vol. I/II use 7.98pt notes and
+        Vol. III/IV use 9.0pt notes — both pipelines can in principle
+        produce glued blocks (in practice Vol. I/II have ~0 % glued
+        rate; the dual check is for robustness).
         """
         if len(view.spans) < 2:
             return False
@@ -1089,7 +1255,8 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         note_spans = sum(
             1
             for span in view.spans
-            if span.font.startswith(BODY_FONT_PREFIX) and abs(span.size - NOTE_BODY_SIZE) < 0.3
+            if span.font.startswith(BODY_FONT_PREFIX)
+            and any(abs(span.size - s) < 0.3 for s in NOTE_BODY_SIZES)
         )
         return (note_spans / len(view.spans)) >= BODY_NOTE_GLUED_RATIO_THRESHOLD
 
@@ -1099,16 +1266,18 @@ class ManualeGiappichelliProfile(ProfilePlugin):
     def _register_chapter_pairs(self, refined: list[ClassifiedBlock]) -> None:
         """Promote provisional chapter-title candidates after each chapter number.
 
-        Two-pass design: :meth:`_reclassify` classifies every 13.0pt
-        non-PARTE, non-CAPITOLO uppercase block as
-        ``HEADING_2 / giappichelli_chapter_title_candidate`` provisional.
-        This pass walks the refined verdicts in extraction order and,
-        for each chapter-number verdict, promotes the next non-stamp
-        chapter-title candidate to a confirmed
+        Two-pass design: :meth:`_reclassify` classifies every 13.02pt
+        non-CAPITOLO uppercase block as
+        ``HEADING_2 / giappichelli_chapter_title_candidate`` provisional
+        (PARTE divisions are intercepted upstream by
+        :meth:`_is_parte_signature` at 13.98pt and never reach this
+        pass). This pass walks the refined verdicts in extraction order
+        and, for each chapter-number verdict, promotes the next
+        non-stamp chapter-title candidate to a confirmed
         ``giappichelli_chapter_title`` and registers its block_index in
         :attr:`_chapter_title_blocks`. Unmatched candidates are demoted
-        back to ``UNCLASSIFIED`` so a stray uppercase 13.0pt block does
-        not pollute the H2 level.
+        back to ``UNCLASSIFIED`` so a stray uppercase 13.02pt block
+        does not pollute the H2 level.
         """
         n = len(refined)
         confirmed_title_indices: set[int] = set()

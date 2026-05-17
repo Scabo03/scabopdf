@@ -10,8 +10,12 @@ from scabopdf_pipeline.profiles.manuale_giappichelli import (
     BODY_FONT_SIZE,
     CHAPTER_HEADING_SIZE,
     GLOSS_SIZE,
+    NOTE_ALT_BODY_SIZE,
     NOTE_BODY_SIZE,
     PARAGRAPH_HEADING_SIZE,
+    PARTE_LEADING_SIZE,
+    PARTE_MIDDLE_SIZE,
+    SECTION_HEADER_SIZE,
     SOMMARIO_TAIL_SIZE,
     WARNING_PREFIX,
     ManualeGiappichelliProfile,
@@ -426,9 +430,24 @@ def test_refine_classification_preserves_tier1_running_header() -> None:
 
 
 def test_refine_classification_promotes_parte_heading_h1() -> None:
-    """A 13.0pt block matching the PARTE pattern becomes HEADING_1."""
-    spans = _SpanBuilder().add("PARTE Prima", size=CHAPTER_HEADING_SIZE).build()
-    block = _make_block(page=10, span_range=(0, 1))
+    """A five-span small-caps composite at 13.98pt+10.98pt becomes HEADING_1.
+
+    The Mandrioli body PARTE divisions are rendered as a five-span
+    composite alternating between :data:`PARTE_LEADING_SIZE` (13.98pt,
+    the bracketing capitals) and :data:`PARTE_MIDDLE_SIZE` (10.98pt,
+    the small-caps tail). The joined text reads "PARTE PRIMA"
+    (case-insensitive on the ordinal).
+    """
+    spans = (
+        _SpanBuilder()
+        .add("P", size=PARTE_LEADING_SIZE)
+        .add("ARTE ", size=PARTE_MIDDLE_SIZE)
+        .add("P", size=PARTE_LEADING_SIZE)
+        .add("RIMA", size=PARTE_MIDDLE_SIZE)
+        .add("", size=PARTE_LEADING_SIZE)
+        .build()
+    )
+    block = _make_block(page=20, span_range=(0, 5))
     extraction = _make_extraction(spans, [block])
     refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
     assert refined[0].category is SemanticCategory.HEADING_1
@@ -475,10 +494,22 @@ def test_refine_classification_orphan_chapter_title_demoted_to_unclassified() ->
 
 
 def test_refine_classification_parte_text_too_long_not_promoted() -> None:
-    """A 13.0pt PARTE-pattern block beyond the cap is not promoted to HEADING_1."""
-    text = "PARTE Prima " + "x" * 100
-    spans = _SpanBuilder().add(text, size=CHAPTER_HEADING_SIZE).build()
-    block = _make_block(page=10, span_range=(0, 1))
+    """A 13.98pt+10.98pt five-span PARTE composite with text beyond the cap stays.
+
+    not promoted to HEADING_1. The cap rejects PARTE candidates whose
+    joined text exceeds :data:`PARTE_HEADING_TEXT_LIMIT`.
+    """
+    overflow = "x" * 100
+    spans = (
+        _SpanBuilder()
+        .add("P", size=PARTE_LEADING_SIZE)
+        .add("ARTE ", size=PARTE_MIDDLE_SIZE)
+        .add("P", size=PARTE_LEADING_SIZE)
+        .add("RIMA " + overflow, size=PARTE_MIDDLE_SIZE)
+        .add("", size=PARTE_LEADING_SIZE)
+        .build()
+    )
+    block = _make_block(page=20, span_range=(0, 5))
     extraction = _make_extraction(spans, [block])
     refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
     assert refined[0].category is not SemanticCategory.HEADING_1
@@ -490,7 +521,48 @@ def test_refine_classification_parte_text_too_long_not_promoted() -> None:
 
 
 def test_refine_classification_promotes_section_header_h3() -> None:
-    """An italic 11.0pt block matching the Sezione pattern becomes HEADING_3."""
+    """An italic 12.0pt block matching the Sezione pattern becomes HEADING_3.
+
+    The body-side Sezione header is uniformly typeset at
+    :data:`SECTION_HEADER_SIZE` (12.0pt) italic across the Mandrioli
+    series. The prior plugin generation incorrectly looked for the
+    BODY_FONT_SIZE (10.98pt) variant and missed every real match.
+    """
+    spans = (
+        _SpanBuilder()
+        .add(
+            "Sezione prima",
+            font="SimonciniGaramondStd-Ita",
+            size=SECTION_HEADER_SIZE,
+            flags=4 | ITALIC_FLAG,
+        )
+        .build()
+    )
+    block = _make_block(page=30, span_range=(0, 1))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is SemanticCategory.HEADING_3
+    assert refined[0].reason == "giappichelli_section_header"
+
+
+def test_refine_classification_non_italic_sezione_block_not_h3() -> None:
+    """A roman 12.0pt 'Sezione prima' block stays UNCLASSIFIED (no italic flag)."""
+    spans = _SpanBuilder().add("Sezione prima", size=SECTION_HEADER_SIZE, flags=4).build()
+    block = _make_block(page=30, span_range=(0, 1))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    # No italic flag: predicate fails, block goes through other branches.
+    assert refined[0].category is not SemanticCategory.HEADING_3
+
+
+def test_refine_classification_section_header_wrong_size_not_h3() -> None:
+    """An italic block at the prior 11.0pt size (BODY_FONT_SIZE) is not HEADING_3.
+
+    Regression protection: the consolidation moved the Sezione header
+    size from BODY_FONT_SIZE (10.98pt) to SECTION_HEADER_SIZE (12.0pt).
+    A future regression that loosened the predicate back to the body
+    italic 10.98pt would be caught here.
+    """
     spans = (
         _SpanBuilder()
         .add(
@@ -504,17 +576,7 @@ def test_refine_classification_promotes_section_header_h3() -> None:
     block = _make_block(page=30, span_range=(0, 1))
     extraction = _make_extraction(spans, [block])
     refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
-    assert refined[0].category is SemanticCategory.HEADING_3
-    assert refined[0].reason == "giappichelli_section_header"
-
-
-def test_refine_classification_non_italic_sezione_block_not_h3() -> None:
-    """A roman 11.0pt 'Sezione prima' block stays UNCLASSIFIED (no italic flag)."""
-    spans = _SpanBuilder().add("Sezione prima", flags=4).build()
-    block = _make_block(page=30, span_range=(0, 1))
-    extraction = _make_extraction(spans, [block])
-    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
-    # No italic flag: predicate fails, block goes through other branches.
+    # 10.98pt italic falls into the BODY branch (italic body) and stays BODY.
     assert refined[0].category is not SemanticCategory.HEADING_3
 
 
@@ -1575,14 +1637,14 @@ def test_paragraph_heading_single_span_returns_false() -> None:
 
 
 def test_section_header_text_too_long_returns_false() -> None:
-    """A 11.0pt italic block whose text is longer than the cap is not Sezione."""
+    """A 12.0pt italic block whose text exceeds the cap is not Sezione."""
     text = "Sezione prima " + "x" * 200
     spans = (
         _SpanBuilder()
         .add(
             text,
             font="SimonciniGaramondStd-Ita",
-            size=BODY_FONT_SIZE,
+            size=SECTION_HEADER_SIZE,
             flags=4 | ITALIC_FLAG,
         )
         .build()
@@ -1591,3 +1653,217 @@ def test_section_header_text_too_long_returns_false() -> None:
     extraction = _make_extraction(spans, [block])
     refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
     assert refined[0].category is not SemanticCategory.HEADING_3
+
+
+# ---------------------------------------------------------------------------
+# Consolidation pass: PARTE five-span discrimination
+# ---------------------------------------------------------------------------
+
+
+def test_refine_classification_promotes_parte_seconda_terza_quarta() -> None:
+    """The PARTE ordinal whitelist covers Prima/Seconda/Terza/Quarta."""
+    for first_letter, tail in (("S", "ECONDA"), ("T", "ERZA"), ("Q", "UARTA")):
+        spans = (
+            _SpanBuilder()
+            .add("P", size=PARTE_LEADING_SIZE)
+            .add("ARTE ", size=PARTE_MIDDLE_SIZE)
+            .add(first_letter, size=PARTE_LEADING_SIZE)
+            .add(tail, size=PARTE_MIDDLE_SIZE)
+            .add("", size=PARTE_LEADING_SIZE)
+            .build()
+        )
+        block = _make_block(page=20, span_range=(0, 5))
+        extraction = _make_extraction(spans, [block])
+        refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+        assert refined[0].category is SemanticCategory.HEADING_1, (
+            f"PARTE {first_letter}{tail} not promoted (got {refined[0].category})"
+        )
+
+
+def test_refine_classification_parte_wrong_size_not_h1() -> None:
+    """A five-span composite at CAPITOLO sizes (13.02pt) is not HEADING_1.
+
+    Regression protection: PARTE requires the 13.98pt+10.98pt regime;
+    a composite at the CAPITOLO size 13.02pt must NOT be promoted to
+    HEADING_1 (which would conflate PARTE with chapter-title candidates).
+    """
+    spans = (
+        _SpanBuilder()
+        .add("P", size=CHAPTER_HEADING_SIZE)
+        .add("ARTE ", size=10.5)
+        .add("P", size=CHAPTER_HEADING_SIZE)
+        .add("RIMA", size=10.5)
+        .build()
+    )
+    block = _make_block(page=20, span_range=(0, 4))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is not SemanticCategory.HEADING_1
+
+
+def test_refine_classification_parte_index_variant_not_h1() -> None:
+    """A five-span PARTE composite at the Indice sizes (12.0pt+9.48pt) is not HEADING_1.
+
+    The front-matter Indice variant of PARTE is intentionally NOT
+    classified as HEADING_1; paratext stays UNCLASSIFIED so the
+    heading hierarchy mirrors the body structure only.
+    """
+    spans = (
+        _SpanBuilder()
+        .add("P", size=12.0)
+        .add("ARTE ", size=9.48)
+        .add("P", size=12.0)
+        .add("RIMA", size=9.48)
+        .add("", size=12.0)
+        .build()
+    )
+    block = _make_block(page=9, span_range=(0, 5))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is not SemanticCategory.HEADING_1
+
+
+def test_refine_classification_parte_too_few_spans_not_h1() -> None:
+    """A composite with fewer than 4 spans at PARTE sizes is not HEADING_1.
+
+    The minimum-span guard (:data:`PARTE_MIN_SPANS` = 4) prevents a
+    stray two-span block at 13.98pt from being mis-classified.
+    """
+    spans = (
+        _SpanBuilder().add("P", size=PARTE_LEADING_SIZE).add("RIMA", size=PARTE_MIDDLE_SIZE).build()
+    )
+    block = _make_block(page=20, span_range=(0, 2))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is not SemanticCategory.HEADING_1
+
+
+# ---------------------------------------------------------------------------
+# Consolidation pass: NOTE dual-size regime (Vol. I/II at 7.98pt)
+# ---------------------------------------------------------------------------
+
+
+def test_refine_classification_promotes_note_at_alt_body_size() -> None:
+    """A note block at NOTE_ALT_BODY_SIZE (7.98pt, Vol. I/II) becomes NOTE.
+
+    The Vol. I and Vol. II Photoshop-derived pipeline typesets notes
+    at 7.98pt rather than the Vol. III/IV 9.0pt regime. The dual-size
+    NOTE predicate admits both.
+    """
+    spans = (
+        _SpanBuilder().add("(12) Note body in the 7.98pt regime.", size=NOTE_ALT_BODY_SIZE).build()
+    )
+    block = _make_block(page=40, span_range=(0, 1))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is SemanticCategory.NOTE
+    assert refined[0].reason == "giappichelli_note"
+
+
+def test_refine_classification_promotes_note_at_alt_size_with_whitespace_marker() -> None:
+    """Leading whitespace + parenthesised marker at 7.98pt still becomes NOTE."""
+    spans = _SpanBuilder().add("  (3) Continuation note.", size=NOTE_ALT_BODY_SIZE).build()
+    block = _make_block(page=40, span_range=(0, 1))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is SemanticCategory.NOTE
+
+
+def test_refine_classification_alt_note_size_without_marker_not_note() -> None:
+    """A 7.98pt block without the (N) marker is not NOTE (text predicate guard)."""
+    spans = _SpanBuilder().add("Prose without marker.", size=NOTE_ALT_BODY_SIZE).build()
+    block = _make_block(page=40, span_range=(0, 1))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeGiappichelliProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is not SemanticCategory.NOTE
+
+
+# ---------------------------------------------------------------------------
+# Consolidation pass: body+note glued detection in both note-size regimes
+# ---------------------------------------------------------------------------
+
+
+def test_refine_classification_body_note_glued_at_alt_size_emits_warning() -> None:
+    """The glued-block warning fires when the note spans are at 7.98pt too."""
+    spans = (
+        _SpanBuilder()
+        .add("Body span at body size ", size=BODY_FONT_SIZE)
+        .add("(7) ", size=NOTE_ALT_BODY_SIZE)
+        .add("note tail ", size=NOTE_ALT_BODY_SIZE)
+        .add("more ", size=NOTE_ALT_BODY_SIZE)
+        .build()
+    )
+    block = _make_block(page=40, span_range=(0, 4))
+    extraction = _make_extraction(spans, [block])
+    plugin = ManualeGiappichelliProfile()
+    refined = plugin.refine_classification(extraction, [_verdict(0)])
+    # The block stays BODY (commit 3 adds the splitter); commit 2 only
+    # verifies the dual-regime detector fires the warning.
+    assert refined[0].category is SemanticCategory.BODY
+    assert any(
+        w.startswith(f"{WARNING_PREFIX}:body_note_block_glued") for w in plugin._pending_warnings
+    )
+
+
+# ---------------------------------------------------------------------------
+# Consolidation pass: matches() — Marotta exclusion + Photoshop creator
+# ---------------------------------------------------------------------------
+
+
+def test_matches_marotta_like_signals_stays_below_threshold() -> None:
+    """A Marotta-like document (TimesNewRomanPSMT body, Acrobat Pro 9.4.5)
+    stays well below 0.6.
+
+    The Marotta corpus is editorially distinct from the Mandrioli
+    series (Roman law monograph, Adobe Acrobat Pro 9.4.5 production
+    pipeline, TimesNewRomanPSMT body at 10.5pt). The plugin must NOT
+    promote on this document; the symmetric family penalty plus the
+    absence of creator/page/outline signals does the work.
+    """
+    signals = _mandrioli_signals(
+        family="TimesNewRomanPSMT",
+        body_size=10.5,
+        creator="Adobe Acrobat Pro 9.4.5",
+        producer="Adobe Acrobat Pro 9.4.5",
+        footnote_markers=0,
+        width_pt=595.0,
+        height_pt=842.0,
+        entries_count=3,
+        has_outline=False,
+    )
+    score = ManualeGiappichelliProfile.matches(signals)
+    # Family penalty -0.30, nothing else fires (creator no match, page
+    # size A4 not 482x680, outline below 100, apparatus zero) → clamped 0.0.
+    assert score == pytest.approx(0.0)
+    assert score < 0.6
+
+
+def test_matches_photoshop_creator_credits_giappichelli_signal() -> None:
+    """A Vol. I/II-like creator "Adobe Photoshop 26.3" credits the InDesign bonus.
+
+    The Vol. I and Vol. II Photoshop-derived pipeline are still
+    Giappichelli editorial: the consolidation extends
+    :data:`GIAPPICHELLI_CREATOR_FRAGMENTS` to include "Adobe
+    Photoshop" so both pipeline regimes credit the same bonus.
+    """
+    signals = _mandrioli_signals(
+        creator="Adobe Photoshop 26.3 (Windows)",
+        producer="Adobe Photoshop for Windows -- Image Conversion Plug-in",
+    )
+    score = ManualeGiappichelliProfile.matches(signals)
+    # 0.30 body + 0.20 family + 0.20 apparatus + 0.10 creator
+    # + 0.05 page + 0.05 outline = 0.90 (same as InDesign 20 creator).
+    assert score == pytest.approx(0.90)
+    assert score >= 0.6
+
+
+def test_matches_acrobat_creator_does_not_credit_signal() -> None:
+    """A creator string that matches neither InDesign 20 nor Photoshop does not credit.
+
+    Regression protection: Acrobat Pro and other non-Giappichelli
+    creators must NOT credit the bonus even if other signals fire.
+    """
+    signals = _mandrioli_signals(creator="Adobe Acrobat Pro 9.4.5")
+    score = ManualeGiappichelliProfile.matches(signals)
+    # 0.30 + 0.20 + 0.20 + 0 + 0.05 + 0.05 = 0.80
+    assert score == pytest.approx(0.80)
