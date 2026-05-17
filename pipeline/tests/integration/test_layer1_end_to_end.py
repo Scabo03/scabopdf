@@ -56,6 +56,9 @@ PATRIARCA_FIXTURE = FIXTURES_DIR / "patriarca_benazzo.pdf"
 MOSCONI_FIXTURE = FIXTURES_DIR / "mosconi_campiglio.pdf"
 TESAURO_FIXTURE = FIXTURES_DIR / "tesauro_compendio.pdf"
 MANDRIOLI_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_iii.pdf"
+MANDRIOLI_VOL_I_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_i.pdf"
+MANDRIOLI_VOL_II_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_ii.pdf"
+MANDRIOLI_VOL_IV_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_iv.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -807,50 +810,68 @@ def test_pipeline_runs_on_mandrioli() -> None:
             f"unexpected warning outside closed vocabulary: {warning!r}"
         )
 
-    # 10 CAPITOLO expected on vol. III, each fused from a number + title
-    # pair into a single HEADING_2 node. The empirical count is 11
-    # (10 capitoli + 1 stray HEADING_2 from the front matter index).
-    assert n_h2 >= 5, f"expected at least 5 HEADING_2 chapter nodes, got {n_h2}"
-    # 74 paragrafi numerati expected; the empirical count is 82 (the
+    # Vol. III has 10 CAPITOLO; the plugin fuses each chapter
+    # number/title pair into one HEADING_2 node. Empirical count post
+    # consolidation is 11 (10 capitoli + 1 stray from the front
+    # matter index sharing the small-caps signature).
+    assert n_h2 >= 10, f"expected at least 10 HEADING_2 chapter nodes, got {n_h2}"
+    # Vol. III has 4 PARTE divisions in the body (pp. 21, 275, 341,
+    # 369). The consolidated plugin recognises the five-span small-caps
+    # composite at 13.98pt+10.98pt; all four match.
+    assert n_h1 >= 4, f"expected at least 4 HEADING_1 (PARTE) nodes, got {n_h1}"
+    # Vol. III has 7 Sezione body headers. The consolidated plugin
+    # detects them at SimonciniGaramondStd-Italic 12.0pt (the prior
+    # generation looked for 11.0pt italic and missed all of them).
+    assert n_h3 >= 7, f"expected at least 7 HEADING_3 (Sezione) nodes, got {n_h3}"
+    # 74 paragrafi numerati expected; empirical count is 82 (the
     # detector also catches index-page entries that share the
-    # signature). The floor verifies the composite number-italic
-    # pattern detection fires for most of them.
-    assert n_h4 >= 30, f"expected at least 30 HEADING_4 (paragrafo) nodes, got {n_h4}"
-    # The 4 PARTE and the 50 Sezione of vol. III are NOT recognised by
-    # the first generation of this plugin: empirical inspection of the
-    # fixture shows PyMuPDF emits PARTE labels and Sezione headers with
-    # typographic signatures that diverge from the analysis-document
-    # expectations (e.g. embedded in larger front-matter blocks, or as
-    # 11.5pt italic rather than 11.0pt italic). The bounds here only
-    # check non-negativity to leave room for future refinement.
-    assert n_h1 >= 0
-    assert n_h3 >= 0
-    # 744 NOTE expected but PyMuPDF fuses body+note into a single block
-    # on a large fraction of pages (the body_note_block_glued warning
-    # fires for ~2000 blocks on this fixture, far more than the
-    # < 1 % we estimated empirically from the 5-page sample). Most
-    # NOTE content thus remains embedded in BODY nodes. A handful of
-    # well-separated NOTE blocks still surface; the floor verifies
-    # the predicate fires when the typographic separation is clean.
-    assert n_note >= 3, f"expected at least 3 NOTE nodes, got {n_note}"
-    # 12 marginal glosses expected; the floor is set well below.
-    assert n_gloss >= 5, f"expected at least 5 MARGINAL_GLOSS nodes, got {n_gloss}"
+    # 11.52pt composite signature).
+    assert n_h4 >= 70, f"expected at least 70 HEADING_4 (paragrafo) nodes, got {n_h4}"
+    # NOTE consolidation gate. Vol. III has 744 footnote markers in
+    # the original editorial text. PyMuPDF emits ~95 % of all text
+    # blocks as glued body+note pairs (~2000 of 2079 blocks).
+    #
+    # The body+note splitter materialises a synthetic NOTE Node from
+    # every glued block whose 9.0pt span content opens with a (N)
+    # marker. Empirical post-splitter count on this fixture is 466
+    # NOTE Nodes — a 115x improvement over the prior plugin
+    # generation (which surfaced 4) but ~38 % below the 744 marker
+    # count.
+    #
+    # The ~280-node delta is mostly attributable to (a) cross-page
+    # note continuations where the second-page fragment is itself a
+    # glued block whose leading 9.0pt span lacks a (N) marker (the
+    # note continues mid-stream without a fresh marker), (b)
+    # editorial cases where the marker glyph sits in a sub-span the
+    # splitter cannot disambiguate, and (c) atypical typographic
+    # variants the regex would need a second pass to recover. The
+    # floor of 450 leaves a 16-node margin below the empirical 466
+    # so a future minor extraction tweak or PyMuPDF update does not
+    # turn this into a flaky assertion; future work on
+    # merge_cross_page_notes (still placeholder) would lift the
+    # number further.
+    assert n_note >= 450, (
+        f"expected at least 450 NOTE nodes after body+note glued "
+        f"splitting, got {n_note} (empirical baseline 466 on this "
+        f"fixture; the gap to the 744 marker count is documented in "
+        f"the inline comment)"
+    )
+    # 12 marginal glosses expected (AGaramondPro-BoldItalic@8.52pt in
+    # the left margin).
+    assert n_gloss >= 10, f"expected at least 10 MARGINAL_GLOSS nodes, got {n_gloss}"
     # 15 CHAPTER_SUMMARY blocks expected.
-    assert n_summary >= 5, f"expected at least 5 CHAPTER_SUMMARY nodes, got {n_summary}"
+    assert n_summary >= 12, f"expected at least 12 CHAPTER_SUMMARY nodes, got {n_summary}"
     # The plugin mints synthetic CROSS_REFERENCE nodes for every
     # parenthesised (N) marker found in BODY text. Empirical count on
-    # vol. III is ~2000 (many BODY nodes carry multiple markers and
-    # the body+note glued blocks contribute additional matches from
-    # the embedded note text); the floor of 100 verifies the
-    # regex-based minting fires.
-    assert n_crossref >= 100, f"expected at least 100 CROSS_REFERENCE nodes, got {n_crossref}"
-    # Apparatus binding happens in the tier 1 resolver
-    # (``_resolve_cross_references`` + ``_resolve_marginal_glosses``).
-    # With few NOTE nodes the cross-reference resolver leaves most
-    # CROSS_REFERENCE unresolved; the surviving binds are mostly
-    # gloss → note proximity matches. Floor lowered accordingly.
-    assert n_apparatus_refs_total > 10, (
-        f"expected apparatus refs > 10 after binding, got {n_apparatus_refs_total}"
+    # vol. III post-consolidation is ~1530 (each BODY may carry
+    # multiple markers).
+    assert n_crossref >= 1000, f"expected at least 1000 CROSS_REFERENCE nodes, got {n_crossref}"
+    # Apparatus binding: with hundreds of NOTE Nodes now in the tree
+    # the tier 1 cross-reference resolver binds the majority of
+    # CROSS_REFERENCE markers under the per-CAPITOLO scope. Empirical
+    # post-consolidation count is 537 binds.
+    assert n_apparatus_refs_total >= 400, (
+        f"expected at least 400 apparatus refs after binding, got {n_apparatus_refs_total}"
     )
     # The plugin emits the inline_cross_reference_minted warning for
     # every synthetic CROSS_REFERENCE it mints; the warning bag is
@@ -1114,6 +1135,282 @@ def test_dehyphenation_end_to_end_synthetic() -> None:
         assert td.position is not None
         assert "-\n" in td.original
         assert "-\n" not in td.normalized
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+# ---------------------------------------------------------------------------
+# Mandrioli-Carratta consolidation: Vol. I, II, IV integration tests
+# ---------------------------------------------------------------------------
+
+
+def _run_mandrioli_pipeline_on(
+    fixture: Path,
+) -> tuple[Document, ExtractionResult, list[ClassifiedBlock], Any]:
+    """Run the full Layer 1 pipeline on a Mandrioli-series fixture.
+
+    Helper used by the Vol. I/II/IV integration tests below. Returns
+    the (Document, ExtractionResult, classified_blocks, scabopdf_doc)
+    tuple so each test can compute its own category histogram.
+    """
+    profile = _make_mandrioli_profile()
+    plugin = ManualeGiappichelliProfile()
+
+    extraction = extract(fixture)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+    scabopdf_document = convert_document(document, extraction, profile, fixture)
+    return document, extraction, classified, scabopdf_document
+
+
+def _category_histogram(document: Document) -> dict[SemanticCategory, int]:
+    by_category: dict[SemanticCategory, int] = {}
+    for root in document.root:
+        for node in _iter_nodes(root):
+            by_category[node.category] = by_category.get(node.category, 0) + 1
+    return by_category
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_mandrioli_vol_i() -> None:
+    """End-to-end pipeline on Mandrioli-Carratta Vol. I (Corso di diritto processuale civile).
+
+    Vol. I is the lightest of the four-volume series: ~288 pages,
+    Photoshop-derived pipeline (creator "Adobe Photoshop 26.3"), no
+    PARTE divisions, no MARGINAL_GLOSS (AGaramondPro absent), no
+    body+note glued blocks (~0 % rate). NOTE typeset at 7.98pt
+    (NOTE_ALT_BODY_SIZE regime). 22 CAPITOLO, 21 Sezione, 18
+    CHAPTER_SUMMARY, ~78 paragrafi numerati.
+
+    The consolidation gate verifies that the plugin extended to the
+    dual-regime sizes correctly classifies the Vol. I content:
+    HEADING_2, HEADING_3, HEADING_4 fire, CHAPTER_SUMMARY parses,
+    NOTE detector fires at 7.98pt, no HEADING_1 (no PARTE), no
+    MARGINAL_GLOSS, no body+note glued warnings.
+    """
+    if not MANDRIOLI_VOL_I_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {MANDRIOLI_VOL_I_FIXTURE} — see pipeline/tests/fixtures/README.md"
+        )
+
+    document, extraction, _, scabopdf_document = _run_mandrioli_pipeline_on(MANDRIOLI_VOL_I_FIXTURE)
+    by_category = _category_histogram(document)
+    n_h1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_h2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_h3 = by_category.get(SemanticCategory.HEADING_3, 0)
+    n_h4 = by_category.get(SemanticCategory.HEADING_4, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_gloss = by_category.get(SemanticCategory.MARGINAL_GLOSS, 0)
+    n_summary = by_category.get(SemanticCategory.CHAPTER_SUMMARY, 0)
+    n_crossref = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_warnings = len(document.warnings)
+
+    print(
+        f"\nMandrioli Vol. I Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_blocks={len(extraction.blocks)}"
+        f"\n  n_spans={len(extraction.spans)}"
+        f"\n  n_h1={n_h1}"
+        f"\n  n_h2={n_h2}"
+        f"\n  n_h3={n_h3}"
+        f"\n  n_h4={n_h4}"
+        f"\n  n_note={n_note}"
+        f"\n  n_gloss={n_gloss}"
+        f"\n  n_summary={n_summary}"
+        f"\n  n_crossref={n_crossref}"
+        f"\n  n_warnings={n_warnings}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 288
+    assert extraction.is_encrypted is False
+    assert len(document.root) > 0
+
+    # Closed-vocabulary warning gate.
+    for warning in document.warnings:
+        assert any(p.match(warning) for p in _TIER1_WARNING_REGEXES), (
+            f"unexpected warning outside closed vocabulary: {warning!r}"
+        )
+
+    # Vol. I editorial: 0 PARTE, 22 CAPITOLO (small-caps; index + body
+    # variants of which 11 are body chapter titles), 21 Sezione (a
+    # subset of which is recognised at 12.0pt italic body — the
+    # Indice variant at 10.02pt roman stays UNCLASSIFIED), 78
+    # paragrafi, 18 SOMMARIO, 0 MARGINAL_GLOSS, ~0 glued blocks.
+    # Empirical post-consolidation counts: n_h2=12, n_h3=10, n_h4=78,
+    # n_summary=18. Floors leave a small margin below empirical.
+    assert n_h1 == 0, f"Vol. I has no PARTE divisions; got {n_h1} HEADING_1"
+    assert n_h2 >= 10, f"expected ≥10 HEADING_2 (body chapter titles), got {n_h2}"
+    assert n_h3 >= 8, f"expected ≥8 HEADING_3 (Sezione body subset), got {n_h3}"
+    assert n_h4 >= 70, f"expected ≥70 HEADING_4 (paragrafi at 11.52pt), got {n_h4}"
+    assert n_summary >= 15, f"expected ≥15 CHAPTER_SUMMARY blocks, got {n_summary}"
+    assert n_gloss == 0, f"Vol. I has no AGaramondPro; got {n_gloss} MARGINAL_GLOSS"
+    # NOTE detection on Vol. I empirically yields zero Nodes: the
+    # body+note glued pattern that drives the splitter does not occur
+    # (Photoshop-derived pipeline) and the separate NOTE blocks
+    # carry markers whose first 7.98pt span does not open with the
+    # parenthesised digit `(N) ` pattern the predicate requires.
+    # Future investigation may uncover marker variants worth admitting.
+    assert n_note == 0, f"Vol. I: empirical NOTE count is 0, got {n_note}"
+    # CROSS_REFERENCE minting on Vol. I yields zero: no inline `(N)`
+    # markers in body text on this volume.
+    assert n_crossref == 0, f"Vol. I: empirical CROSS_REFERENCE count is 0, got {n_crossref}"
+
+    # § 9 emission conformance.
+    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.metadata.pages_pdf == 288
+    assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_mandrioli_vol_ii() -> None:
+    """End-to-end pipeline on Mandrioli-Carratta Vol. II (Corso di diritto processuale civile)."""
+    if not MANDRIOLI_VOL_II_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {MANDRIOLI_VOL_II_FIXTURE} — see pipeline/tests/fixtures/README.md"
+        )
+
+    document, extraction, _, scabopdf_document = _run_mandrioli_pipeline_on(
+        MANDRIOLI_VOL_II_FIXTURE
+    )
+    by_category = _category_histogram(document)
+    n_h1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_h2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_h3 = by_category.get(SemanticCategory.HEADING_3, 0)
+    n_h4 = by_category.get(SemanticCategory.HEADING_4, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_gloss = by_category.get(SemanticCategory.MARGINAL_GLOSS, 0)
+    n_summary = by_category.get(SemanticCategory.CHAPTER_SUMMARY, 0)
+    n_crossref = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_warnings = len(document.warnings)
+
+    print(
+        f"\nMandrioli Vol. II Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_blocks={len(extraction.blocks)}"
+        f"\n  n_spans={len(extraction.spans)}"
+        f"\n  n_h1={n_h1}"
+        f"\n  n_h2={n_h2}"
+        f"\n  n_h3={n_h3}"
+        f"\n  n_h4={n_h4}"
+        f"\n  n_note={n_note}"
+        f"\n  n_gloss={n_gloss}"
+        f"\n  n_summary={n_summary}"
+        f"\n  n_crossref={n_crossref}"
+        f"\n  n_warnings={n_warnings}"
+    )
+
+    assert extraction.page_count == 352
+    assert extraction.is_encrypted is False
+    assert len(document.root) > 0
+
+    for warning in document.warnings:
+        assert any(p.match(warning) for p in _TIER1_WARNING_REGEXES), (
+            f"unexpected warning outside closed vocabulary: {warning!r}"
+        )
+
+    # Vol. II editorial: 0 PARTE, 18 CAPITOLO (10 body + 8 index),
+    # 31 Sezione, ~95 paragrafi, 21 SOMMARIO, 0 MARGINAL_GLOSS, ~0
+    # glued. Empirical: n_h2=10, n_h3=15, n_h4=95, n_summary=21.
+    assert n_h1 == 0, f"Vol. II has no PARTE; got {n_h1} HEADING_1"
+    assert n_h2 >= 9, f"expected ≥9 HEADING_2, got {n_h2}"
+    assert n_h3 >= 12, f"expected ≥12 HEADING_3 (Sezione subset), got {n_h3}"
+    assert n_h4 >= 85, f"expected ≥85 HEADING_4 (paragrafi), got {n_h4}"
+    assert n_summary >= 18, f"expected ≥18 CHAPTER_SUMMARY, got {n_summary}"
+    assert n_gloss == 0, f"Vol. II has no AGaramondPro; got {n_gloss}"
+    assert n_note == 0, f"Vol. II: empirical NOTE count is 0, got {n_note}"
+    assert n_crossref == 0, f"Vol. II: empirical CROSS_REFERENCE count is 0, got {n_crossref}"
+
+    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.metadata.pages_pdf == 352
+    assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_mandrioli_vol_iv() -> None:
+    """End-to-end pipeline on Mandrioli-Carratta Vol. IV (Diritto processuale civile).
+
+    Vol. IV is structurally the richest of the four: 2 PARTE
+    divisions in the body, 18 CAPITOLO, 20 Sezione, ~60 paragrafi,
+    19 SOMMARIO, 14 MARGINAL_GLOSS (AGaramondPro left margin),
+    6.96 % body+note glued rate (146 of 2099 blocks — substantial
+    splitting work). InDesign 20.0 creator.
+    """
+    if not MANDRIOLI_VOL_IV_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {MANDRIOLI_VOL_IV_FIXTURE} — see pipeline/tests/fixtures/README.md"
+        )
+
+    document, extraction, _, scabopdf_document = _run_mandrioli_pipeline_on(
+        MANDRIOLI_VOL_IV_FIXTURE
+    )
+    by_category = _category_histogram(document)
+    n_h1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_h2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_h3 = by_category.get(SemanticCategory.HEADING_3, 0)
+    n_h4 = by_category.get(SemanticCategory.HEADING_4, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_gloss = by_category.get(SemanticCategory.MARGINAL_GLOSS, 0)
+    n_summary = by_category.get(SemanticCategory.CHAPTER_SUMMARY, 0)
+    n_crossref = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_warnings = len(document.warnings)
+
+    print(
+        f"\nMandrioli Vol. IV Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_blocks={len(extraction.blocks)}"
+        f"\n  n_spans={len(extraction.spans)}"
+        f"\n  n_h1={n_h1}"
+        f"\n  n_h2={n_h2}"
+        f"\n  n_h3={n_h3}"
+        f"\n  n_h4={n_h4}"
+        f"\n  n_note={n_note}"
+        f"\n  n_gloss={n_gloss}"
+        f"\n  n_summary={n_summary}"
+        f"\n  n_crossref={n_crossref}"
+        f"\n  n_warnings={n_warnings}"
+    )
+
+    assert extraction.page_count == 497
+    assert extraction.is_encrypted is False
+    assert len(document.root) > 0
+
+    for warning in document.warnings:
+        assert any(p.match(warning) for p in _TIER1_WARNING_REGEXES), (
+            f"unexpected warning outside closed vocabulary: {warning!r}"
+        )
+
+    # Vol. IV editorial: 2 PARTE body, 18 CAPITOLO, 20 Sezione, 60
+    # paragrafi, 19 SOMMARIO, 14 MARGINAL_GLOSS, 146 glued blocks.
+    # Empirical post-consolidation: n_h1=2, n_h2=9, n_h3=11, n_h4=60,
+    # n_summary=19, n_gloss=14, n_note=470 (the body+note splitter
+    # is very effective on Vol. IV — comparable to Vol. III in
+    # absolute count despite the much lower glued-block percentage),
+    # n_crossref=1271.
+    assert n_h1 >= 2, f"expected ≥2 HEADING_1 (PARTE body), got {n_h1}"
+    assert n_h2 >= 9, f"expected ≥9 HEADING_2, got {n_h2}"
+    assert n_h3 >= 10, f"expected ≥10 HEADING_3, got {n_h3}"
+    assert n_h4 >= 50, f"expected ≥50 HEADING_4, got {n_h4}"
+    assert n_summary >= 17, f"expected ≥17 CHAPTER_SUMMARY, got {n_summary}"
+    assert n_gloss >= 12, f"expected ≥12 MARGINAL_GLOSS, got {n_gloss}"
+    assert n_note >= 400, f"expected ≥400 NOTE nodes after body+note splitting, got {n_note}"
+    assert n_crossref >= 1000, f"expected ≥1000 CROSS_REFERENCE nodes, got {n_crossref}"
+
+    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.metadata.pages_pdf == 497
+    assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
