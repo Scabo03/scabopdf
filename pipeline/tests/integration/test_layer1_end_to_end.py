@@ -55,7 +55,7 @@ FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "private"
 PATRIARCA_FIXTURE = FIXTURES_DIR / "patriarca_benazzo.pdf"
 MOSCONI_FIXTURE = FIXTURES_DIR / "mosconi_campiglio.pdf"
 TESAURO_FIXTURE = FIXTURES_DIR / "tesauro_compendio.pdf"
-MANDRIOLI_FIXTURE = FIXTURES_DIR / "mandrioli_carratta.pdf"
+MANDRIOLI_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_iii.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
