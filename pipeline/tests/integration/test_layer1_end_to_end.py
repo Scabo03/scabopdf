@@ -111,6 +111,7 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^plugin:giappichelli:inline_cross_reference_minted_node_\S+_page_\d+$"),
     re.compile(r"^plugin:giappichelli:marginal_gloss_outside_margin_block_-?\d+_page_\d+$"),
     re.compile(r"^plugin:giappichelli:body_note_block_glued_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:giappichelli:body_note_split_minted_node_\S+_page_\d+$"),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")

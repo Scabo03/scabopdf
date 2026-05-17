@@ -1867,3 +1867,463 @@ def test_matches_acrobat_creator_does_not_credit_signal() -> None:
     score = ManualeGiappichelliProfile.matches(signals)
     # 0.30 + 0.20 + 0.20 + 0 + 0.05 + 0.05 = 0.80
     assert score == pytest.approx(0.80)
+
+
+# ---------------------------------------------------------------------------
+# Body+note glued splitter (refine_reconstruction)
+# ---------------------------------------------------------------------------
+
+
+def _make_glued_block_extraction(
+    body_text: str,
+    note_text: str,
+    *,
+    page: int = 30,
+    block_index: int = 0,
+    note_size: float = NOTE_BODY_SIZE,
+) -> tuple[ExtractionResult, Node]:
+    """Build an extraction with one glued BODY+NOTE block plus a BODY Node.
+
+    The glued block has one body-size span carrying ``body_text``
+    plus several note-size spans whose first one opens with ``"(1) "``
+    and whose remainder carries the rest of the note text. The note
+    size is parametrised to test both the 9.0pt and 7.98pt regimes.
+    """
+    body_span = Span(
+        text=body_text,
+        font="SimonciniGaramondStd",
+        size=BODY_FONT_SIZE,
+        flags=4,
+        color=0,
+        bbox=(60.0, 100.0, 420.0, 110.0),
+        page=page,
+        block_index=block_index,
+        line_index=0,
+        span_index=0,
+    )
+    marker_span = Span(
+        text="(1) ",
+        font="SimonciniGaramondStd",
+        size=note_size,
+        flags=4,
+        color=0,
+        bbox=(60.0, 120.0, 80.0, 128.0),
+        page=page,
+        block_index=block_index,
+        line_index=1,
+        span_index=1,
+    )
+    note_body_span = Span(
+        text=note_text,
+        font="SimonciniGaramondStd",
+        size=note_size,
+        flags=4,
+        color=0,
+        bbox=(80.0, 120.0, 420.0, 128.0),
+        page=page,
+        block_index=block_index,
+        line_index=1,
+        span_index=2,
+    )
+    note_filler1 = Span(
+        text=" extra ",
+        font="SimonciniGaramondStd",
+        size=note_size,
+        flags=4,
+        color=0,
+        bbox=(60.0, 130.0, 420.0, 138.0),
+        page=page,
+        block_index=block_index,
+        line_index=2,
+        span_index=3,
+    )
+    note_filler2 = Span(
+        text=" more.",
+        font="SimonciniGaramondStd",
+        size=note_size,
+        flags=4,
+        color=0,
+        bbox=(60.0, 140.0, 420.0, 148.0),
+        page=page,
+        block_index=block_index,
+        line_index=3,
+        span_index=4,
+    )
+    spans = [body_span, marker_span, note_body_span, note_filler1, note_filler2]
+    block = Block(
+        page=page,
+        block_index=block_index,
+        bbox=(60.0, 100.0, 420.0, 150.0),
+        span_range=(0, 5),
+    )
+    extraction = _make_extraction(spans, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        body_text + "(1) " + note_text + " extra  more.",
+        page_index=page,
+        block_indices=(block_index,),
+    )
+    return extraction, body_node
+
+
+def test_split_body_note_glued_produces_synthetic_note_sibling() -> None:
+    """A glued BODY block at 9.0pt note regime yields BODY + 1 synthetic NOTE sibling."""
+    extraction, body_node = _make_glued_block_extraction(
+        "Body prose at 10.98pt before the marker.",
+        "Note body content following the marker.",
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    assert len(result.root) == 2
+    assert result.root[0].id == "node_0001"
+    assert result.root[0].category is SemanticCategory.BODY
+    assert result.root[1].category is SemanticCategory.NOTE
+    assert result.root[1].block_indices == (0,)
+
+
+def test_split_body_note_glued_at_alt_note_size() -> None:
+    """The splitter works in the 7.98pt note regime (Vol. I/II) too."""
+    extraction, body_node = _make_glued_block_extraction(
+        "Body text before marker.",
+        "Note body in alt regime.",
+        note_size=NOTE_ALT_BODY_SIZE,
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    assert len(result.root) == 2
+    assert result.root[1].category is SemanticCategory.NOTE
+
+
+def test_split_body_note_glued_truncates_body_text() -> None:
+    """The surviving BODY text contains only body span content, not the note."""
+    extraction, body_node = _make_glued_block_extraction(
+        "Body prose only.",
+        "Note tail to absorb.",
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    body_truncated = result.root[0]
+    assert body_truncated.text == "Body prose only."
+
+
+def test_split_body_note_glued_note_text_contains_marker() -> None:
+    """The synthetic NOTE text preserves the (N) marker prefix."""
+    extraction, body_node = _make_glued_block_extraction(
+        "Body before.",
+        "After the marker.",
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    note_node = result.root[1]
+    assert note_node.text is not None
+    assert note_node.text.startswith("(1)")
+    assert "After the marker." in note_node.text
+
+
+def test_split_body_note_glued_emits_split_minted_warning() -> None:
+    """Each minted NOTE is accompanied by a body_note_split_minted_node warning."""
+    extraction, body_node = _make_glued_block_extraction("Body.", "Note.")
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    assert any(
+        w.startswith(f"{WARNING_PREFIX}:body_note_split_minted_node") for w in result.warnings
+    )
+
+
+def test_split_body_note_glued_id_follows_minter_counter() -> None:
+    """The minted NOTE id is one past the highest counter already in the tree."""
+    extraction, body_node = _make_glued_block_extraction("Body.", "Note.")
+    other_node = _node("node_0099", SemanticCategory.HEADING_2, "Heading", block_indices=(99,))
+    document = Document(root=(body_node, other_node))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    note_node = next(n for n in result.root if n.category is SemanticCategory.NOTE)
+    assert note_node.id == "node_0100"
+
+
+def test_split_body_note_glued_non_glued_block_passes_through() -> None:
+    """A BODY node whose block is not glued is left intact."""
+    spans = (
+        _SpanBuilder().add("Pure body prose with no notes embedded.", size=BODY_FONT_SIZE).build()
+    )
+    block = _make_block(page=30, span_range=(0, 1))
+    extraction = _make_extraction(spans, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "Pure body prose with no notes embedded.",
+        page_index=30,
+        block_indices=(0,),
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    assert len(result.root) == 1
+    assert result.root[0].category is SemanticCategory.BODY
+
+
+def test_split_body_note_glued_without_marker_passes_through() -> None:
+    """A glued block whose note-size spans do NOT open with (N) is not split."""
+    spans_list = [
+        Span(
+            text="Body prose.",
+            font="SimonciniGaramondStd",
+            size=BODY_FONT_SIZE,
+            flags=4,
+            color=0,
+            bbox=(60.0, 100.0, 420.0, 110.0),
+            page=30,
+            block_index=0,
+            line_index=0,
+            span_index=0,
+        ),
+        Span(
+            text="Note without a leading (N) marker.",
+            font="SimonciniGaramondStd",
+            size=NOTE_BODY_SIZE,
+            flags=4,
+            color=0,
+            bbox=(60.0, 120.0, 420.0, 128.0),
+            page=30,
+            block_index=0,
+            line_index=1,
+            span_index=1,
+        ),
+        Span(
+            text=" tail.",
+            font="SimonciniGaramondStd",
+            size=NOTE_BODY_SIZE,
+            flags=4,
+            color=0,
+            bbox=(60.0, 130.0, 420.0, 138.0),
+            page=30,
+            block_index=0,
+            line_index=2,
+            span_index=2,
+        ),
+    ]
+    block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 3))
+    extraction = _make_extraction(spans_list, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "Body prose.Note without a leading (N) marker. tail.",
+        page_index=30,
+        block_indices=(0,),
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    assert len(result.root) == 1
+    assert result.root[0].category is SemanticCategory.BODY
+
+
+def test_split_body_note_glued_multiple_markers_yield_multiple_notes() -> None:
+    """A glued block with two (N) markers produces two synthetic NOTE siblings."""
+
+    def _span(text: str, size: float, line_idx: int, span_idx: int) -> Span:
+        return Span(
+            text=text,
+            font="SimonciniGaramondStd",
+            size=size,
+            flags=4,
+            color=0,
+            bbox=(60.0, 100.0 + line_idx * 10, 420.0, 108.0 + line_idx * 10),
+            page=30,
+            block_index=0,
+            line_index=line_idx,
+            span_index=span_idx,
+        )
+
+    spans_list = [
+        _span("Body before.", BODY_FONT_SIZE, 0, 0),
+        _span("(5) First note text.", NOTE_BODY_SIZE, 1, 1),
+        _span(" continuation. ", NOTE_BODY_SIZE, 2, 2),
+        _span("(6) Second note text.", NOTE_BODY_SIZE, 3, 3),
+        _span(" tail.", NOTE_BODY_SIZE, 4, 4),
+    ]
+    block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 5))
+    extraction = _make_extraction(spans_list, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "joined text (ignored for split purposes)",
+        page_index=30,
+        block_indices=(0,),
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    note_nodes = [n for n in result.root if n.category is SemanticCategory.NOTE]
+    assert len(note_nodes) == 2
+    assert note_nodes[0].text is not None and note_nodes[0].text.startswith("(5)")
+    assert note_nodes[1].text is not None and note_nodes[1].text.startswith("(6)")
+
+
+def test_split_body_note_glued_sentinel_block_passes_through() -> None:
+    """A BODY node with block_index < 0 is not touched by the splitter."""
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "Sentinel body.",
+        page_index=0,
+        block_indices=(-1,),
+    )
+    document = Document(root=(body_node,))
+    extraction = _make_extraction([], [])
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    assert len(result.root) == 1
+    assert result.root[0].category is SemanticCategory.BODY
+
+
+def test_split_body_note_glued_multi_block_node_passes_through() -> None:
+    """A BODY node with multiple block_indices is not split by the body+note splitter.
+
+    The splitter operates per-block; cross-page merged BODY nodes
+    stay unmodified (the tier 1 cross-page merge resolver already
+    handled them upstream). The body text is deliberately written
+    without any inline ``(N)`` marker so the cross-reference minter
+    does not produce side effects we would have to filter for.
+    """
+    spans = (
+        _SpanBuilder()
+        .add("Body prose.", size=BODY_FONT_SIZE)
+        .add("Marker without parens 1 ", size=NOTE_BODY_SIZE)
+        .add("Note tail.", size=NOTE_BODY_SIZE)
+        .build()
+    )
+    block = _make_block(page=30, span_range=(0, 3))
+    extraction = _make_extraction(spans, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "Body prose. some inline text without paren markers.",
+        page_index=30,
+        block_indices=(0, 5),
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    # The splitter does NOT mint a NOTE; the cross-ref minter does NOT
+    # mint a CROSS_REFERENCE (no `(N)` in the text). Single-node forest.
+    assert len(result.root) == 1
+    assert result.root[0].category is SemanticCategory.BODY
+    assert result.root[0].block_indices == (0, 5)
+
+
+def test_split_body_note_glued_non_body_node_passes_through() -> None:
+    """A non-BODY node is never touched by the splitter."""
+    extraction, _ = _make_glued_block_extraction("Body content.", "Note content.")
+    heading_node = _node(
+        "node_0001",
+        SemanticCategory.HEADING_2,
+        "A heading carrying glued-looking text",
+        page_index=30,
+        block_indices=(0,),
+    )
+    document = Document(root=(heading_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    note_count = sum(1 for n in result.root if n.category is SemanticCategory.NOTE)
+    assert note_count == 0
+
+
+def test_split_body_note_glued_warning_count_matches_synthetic_notes() -> None:
+    """Number of split_minted warnings equals number of synthetic NOTE Nodes."""
+
+    def _span(text: str, size: float, line_idx: int, span_idx: int) -> Span:
+        return Span(
+            text=text,
+            font="SimonciniGaramondStd",
+            size=size,
+            flags=4,
+            color=0,
+            bbox=(60.0, 100.0 + line_idx * 10, 420.0, 108.0 + line_idx * 10),
+            page=30,
+            block_index=0,
+            line_index=line_idx,
+            span_index=span_idx,
+        )
+
+    spans_list = [
+        _span("Body.", BODY_FONT_SIZE, 0, 0),
+        _span("(1) text", NOTE_BODY_SIZE, 1, 1),
+        _span("(2) more", NOTE_BODY_SIZE, 2, 2),
+    ]
+    block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 3))
+    extraction = _make_extraction(spans_list, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "Body.(1) text(2) more",
+        page_index=30,
+        block_indices=(0,),
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    n_notes = sum(1 for n in result.root if n.category is SemanticCategory.NOTE)
+    n_warnings = sum(
+        1 for w in result.warnings if w.startswith(f"{WARNING_PREFIX}:body_note_split_minted_node")
+    )
+    assert n_notes == n_warnings
+
+
+def test_split_body_note_glued_then_cross_reference_minting_on_truncated_body() -> None:
+    """Cross-reference minting runs AFTER the splitter on the truncated BODY text.
+
+    Integration test: a glued block "see note (3) above" + split note
+    produces BODY (truncated) + CROSS_REFERENCE ("3") + synthetic NOTE.
+    """
+
+    def _span(text: str, size: float, line_idx: int, span_idx: int) -> Span:
+        return Span(
+            text=text,
+            font="SimonciniGaramondStd",
+            size=size,
+            flags=4,
+            color=0,
+            bbox=(60.0, 100.0 + line_idx * 10, 420.0, 108.0 + line_idx * 10),
+            page=30,
+            block_index=0,
+            line_index=line_idx,
+            span_index=span_idx,
+        )
+
+    spans_list = [
+        _span("See note (3) above.", BODY_FONT_SIZE, 0, 0),
+        _span("(3) Note that wraps. ", NOTE_BODY_SIZE, 1, 1),
+        _span(" continuation.", NOTE_BODY_SIZE, 2, 2),
+    ]
+    block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 3))
+    extraction = _make_extraction(spans_list, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "See note (3) above.(3) Note that wraps.  continuation.",
+        page_index=30,
+        block_indices=(0,),
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    categories = [n.category for n in result.root]
+    assert SemanticCategory.BODY in categories
+    assert SemanticCategory.CROSS_REFERENCE in categories
+    assert SemanticCategory.NOTE in categories
+    body_truncated = next(n for n in result.root if n.category is SemanticCategory.BODY)
+    assert body_truncated.text == "See note (3) above."
+
+
+def test_split_body_note_glued_warning_template_in_closed_vocabulary() -> None:
+    """The new body_note_split_minted_node template is in WARNING_TEMPLATES."""
+    from scabopdf_pipeline.profiles.manuale_giappichelli import WARNING_TEMPLATES
+
+    assert any("body_note_split_minted_node" in template for template in WARNING_TEMPLATES)

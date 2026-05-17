@@ -226,10 +226,28 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:giappichelli:inline_cross_reference_minted_node_<id>_page_<p>",
     "plugin:giappichelli:marginal_gloss_outside_margin_block_<idx>_page_<p>",
     "plugin:giappichelli:body_note_block_glued_block_<idx>_page_<p>",
+    "plugin:giappichelli:body_note_split_minted_node_<id>_page_<p>",
 )
 """Closed vocabulary of warnings the plugin may emit on
 ``Document.warnings``. Placeholders are replaced with concrete values
 at emission time. Consumers should match on the prefix.
+
+The ``body_note_block_glued_block_*`` and ``body_note_split_minted_*``
+templates document two distinct aspects of the same glued unit:
+
+- ``body_note_block_glued_block_<idx>_page_<p>`` is emitted by
+  :meth:`refine_classification` when a BODY 10.98pt block contains
+  the diagnostic share of NOTE-sized spans. It documents the upstream
+  problem (PyMuPDF fused two structural blocks into one) regardless
+  of whether the plugin can later split the fused block.
+- ``body_note_split_minted_node_<id>_page_<p>`` is emitted by
+  :meth:`refine_reconstruction` when the splitter materialises a
+  synthetic NOTE Node from inside a glued BODY block. It documents
+  the downstream recovery (the embedded apparatus content is now an
+  addressable Node, no longer lost inside a body).
+
+The two warnings coexist by design: the delta between their counts is
+the diagnostic for "glued blocks the splitter could not recover".
 """
 
 PARTE_ORDINALS: tuple[str, ...] = ("Prima", "Seconda", "Terza", "Quarta")
@@ -866,20 +884,28 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         extraction: ExtractionResult,
         classified_blocks: list[ClassifiedBlock],
     ) -> Document:
-        """Fuse chapter pairs, mint inline cross-references, parse summaries.
+        """Fuse chapter pairs, split glued body+note blocks, mint inline cross-references.
 
-        Three responsibilities:
+        Four responsibilities, applied in order at each sibling level:
 
         1. Fuse adjacent ``HEADING_2`` siblings registered as a chapter
            number / title pair into a single node carrying the
            concatenated text and both ``block_indices`` (same pattern
            as the Mosconi and Tesauro plugins).
-        2. Mint synthetic ``CROSS_REFERENCE`` nodes as siblings after
-           every BODY node whose ``text`` carries one or more inline
-           ``(N)`` markers. The synthetic node IDs follow the tier 1
-           ``node_NNNN`` convention starting one past the maximum
-           counter already assigned by tier 1.
-        3. Parse every ``CHAPTER_SUMMARY`` node's text into
+        2. **Split glued body+note BODY nodes** into a truncated BODY
+           plus one or more synthetic NOTE siblings, each carrying the
+           note text segmented at the ``(N)`` markers in the spans of
+           the original block. See :meth:`_split_body_note_glued` for
+           the splitter detail and the explicit codification of the
+           three limitations of the :class:`Transformation` model that
+           this structural transformation does NOT record.
+        3. Mint synthetic ``CROSS_REFERENCE`` nodes as siblings after
+           every (now-truncated) BODY node whose ``text`` carries one
+           or more inline ``(N)`` markers. The synthetic node IDs
+           follow the tier 1 ``node_NNNN`` convention starting one past
+           the maximum counter already assigned by tier 1 (and one past
+           the highest counter minted by the body+note splitter above).
+        4. Parse every ``CHAPTER_SUMMARY`` node's text into
            ``SummaryItem`` tuples using the en-dash splitter and the
            ``<num>. <title>`` regex.
 
@@ -892,7 +918,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         self._pending_warnings = []
 
         next_id = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
-        new_roots = self._fuse_and_refine(document.root, new_warnings, next_id)
+        new_roots = self._fuse_and_refine(document.root, extraction, new_warnings, next_id)
 
         return Document(
             root=new_roots,
@@ -1323,21 +1349,28 @@ class ManualeGiappichelliProfile(ProfilePlugin):
     def _fuse_and_refine(
         self,
         roots: tuple[Node, ...],
+        extraction: ExtractionResult,
         warnings: list[str],
         next_id: _NodeIdMinter,
     ) -> tuple[Node, ...]:
-        """Return a new forest with chapter pairs fused, cross-refs minted,
-        chapter summaries parsed and the descendants recursively refined.
+        """Return a new forest with chapter pairs fused, glued body+note
+        blocks split, cross-refs minted, chapter summaries parsed and
+        the descendants recursively refined.
         """
         # Step 1: fuse chapter pairs at this sibling level and recurse into descendants.
-        fused = self._fuse_chapters_recursive(roots, warnings, next_id)
-        # Step 2: at this sibling level, mint cross-refs from BODY nodes.
-        with_crossrefs = self._mint_cross_references(list(fused), warnings, next_id)
+        fused = self._fuse_chapters_recursive(roots, extraction, warnings, next_id)
+        # Step 2: split body+note glued blocks at this sibling level
+        # (must precede cross-reference minting so the truncated BODY
+        # carries only body-side text when scanned for (N) markers).
+        with_notes = self._split_body_note_glued(list(fused), extraction, warnings, next_id)
+        # Step 3: mint cross-refs from BODY nodes (now post-split).
+        with_crossrefs = self._mint_cross_references(list(with_notes), warnings, next_id)
         return tuple(with_crossrefs)
 
     def _fuse_chapters_recursive(
         self,
         roots: tuple[Node, ...],
+        extraction: ExtractionResult,
         warnings: list[str],
         next_id: _NodeIdMinter,
     ) -> tuple[Node, ...]:
@@ -1351,7 +1384,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                 if self._is_chapter_title_node(candidate):
                     partner = candidate
             if partner is not None:
-                fused = self._fuse_chapter_pair(node, partner, warnings, next_id)
+                fused = self._fuse_chapter_pair(node, partner, extraction, warnings, next_id)
                 new_nodes.append(fused)
                 i += 2
                 continue
@@ -1361,7 +1394,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                     f"{node.block_indices[0] if node.block_indices else -1}_"
                     f"page_{node.page_index}"
                 )
-            refined = self._refine_node(node, warnings, next_id)
+            refined = self._refine_node(node, extraction, warnings, next_id)
             new_nodes.append(refined)
             i += 1
         return tuple(new_nodes)
@@ -1384,6 +1417,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         self,
         number_node: Node,
         title_node: Node,
+        extraction: ExtractionResult,
         warnings: list[str],
         next_id: _NodeIdMinter,
     ) -> Node:
@@ -1397,7 +1431,10 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         else:
             merged_text = title_text or None
         merged_children = self._fuse_chapters_recursive(
-            tuple((*number_node.children, *title_node.children)), warnings, next_id
+            tuple((*number_node.children, *title_node.children)),
+            extraction,
+            warnings,
+            next_id,
         )
         return Node(
             id=number_node.id,
@@ -1415,6 +1452,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
     def _refine_node(
         self,
         node: Node,
+        extraction: ExtractionResult,
         warnings: list[str],
         next_id: _NodeIdMinter,
     ) -> Node:
@@ -1424,7 +1462,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         by parsing the text with the en-dash splitter; all other nodes
         get their descendants recursively refined.
         """
-        new_children = self._fuse_and_refine(node.children, warnings, next_id)
+        new_children = self._fuse_and_refine(node.children, extraction, warnings, next_id)
         if node.category is SemanticCategory.CHAPTER_SUMMARY:
             items = self._parse_chapter_summary(node.text)
             if items is None:
@@ -1455,6 +1493,189 @@ class ManualeGiappichelliProfile(ProfilePlugin):
             toc_items=node.toc_items,
             apparatus_refs=node.apparatus_refs,
         )
+
+    def _split_body_note_glued(
+        self,
+        nodes: list[Node],
+        extraction: ExtractionResult,
+        warnings: list[str],
+        next_id: _NodeIdMinter,
+    ) -> list[Node]:
+        """Split BODY nodes that fuse body + note(s) into a BODY + synthetic NOTE siblings.
+
+        PyMuPDF occasionally emits a body block and the immediately
+        following note block as a single block whose spans alternate
+        between :data:`BODY_FONT_SIZE` (10.98pt, body) and one of
+        :data:`NOTE_BODY_SIZES` (9.0pt on Vol. III/IV, 7.98pt on
+        Vol. I/II). Tier 1 reconstruction materialises such a fused
+        block as a single BODY ``Node`` whose ``text`` concatenates
+        body and note span text indiscriminately. The Vol. III is
+        especially affected: ~95 % of all text blocks present the
+        glued pattern, which would leave ~700 NOTE blocks invisible
+        without this splitter.
+
+        Algorithm. For every BODY Node with exactly one block_index:
+
+        - Recover the original spans via
+          ``extraction.spans[block.span_range[0]:block.span_range[1]]``.
+        - Verify the glued predicate on these spans: leading span at
+          BODY_FONT_SIZE plus a NOTE-share ratio above
+          :data:`BODY_NOTE_GLUED_RATIO_THRESHOLD`.
+        - Identify every span at NOTE_BODY_SIZES whose stripped text
+          opens with the ``(N)`` parenthesised digit marker. Each such
+          span is a transition point that opens a new NOTE chunk.
+        - If no transition is found, the block is glued but the
+          marker is missing or atypical: emit no synthetic NOTE and
+          leave the BODY unchanged (the upstream
+          ``body_note_block_glued`` warning already documents the
+          unrecovered loss; the delta count is the QA gauge).
+        - Otherwise: the BODY survives with its text truncated to the
+          spans before the first transition; one synthetic NOTE Node
+          is minted per transition, carrying the concatenated text of
+          the spans from that transition to the next (or to the end).
+          The synthetic NOTE Nodes are inserted as siblings
+          immediately after the truncated BODY in the result list,
+          using the same ``_NodeIdMinter`` that the cross-reference
+          minting later consumes; their ``block_indices`` reuse the
+          BODY's block_index (the NOTE conceptually originates from
+          the same source block).
+        - Each minted NOTE emits a
+          ``body_note_split_minted_node_<id>_page_<p>`` warning.
+
+        Three limitations of the :class:`Transformation` model that
+        this structural split does NOT record (codified here for
+        future maintenance):
+
+        1. The decomposition of a single BODY Node into a truncated
+           BODY + one or more synthetic NOTE siblings is a
+           **structural** transformation of the document tree, NOT
+           a textual intra-Node substitution like the rewrites
+           recorded by ``dehyphenate_with_log`` or
+           ``recompose_marginal_ellipsis``.
+        2. The current ``Transformation`` model (``step_id``,
+           ``node_id``, ``page_index``, ``position``, ``original``,
+           ``normalized``) preserves the textual reversibility of the
+           BODY that survives the split — the truncated text is
+           byte-recoverable by concatenating the original BODY text
+           with the texts of the minted NOTE siblings — but the
+           materialisation of each synthetic NOTE Node is **implicit
+           in the post-step tree** and is not separately reversible
+           from the log.
+        3. An eventual future extension of ``Transformation`` with a
+           ``split_into`` field (a list of node ids generated by the
+           split) would be an additive 0.5.0 schema bump to plan in
+           a dedicated session, not in this one. The same pattern
+           applies to the Mosconi marginal-ellipsis structural merge
+           that already left its own reversibility gap on the same
+           Transformation model.
+        """
+        result: list[Node] = []
+        for node in nodes:
+            if node.category is not SemanticCategory.BODY:
+                result.append(node)
+                continue
+            if len(node.block_indices) != 1:
+                result.append(node)
+                continue
+            block_index = node.block_indices[0]
+            if block_index < 0 or block_index >= len(extraction.blocks):
+                result.append(node)
+                continue
+            block = extraction.blocks[block_index]
+            start, end = block.span_range
+            spans = tuple(extraction.spans[start:end])
+            if not self._is_glued_spans(spans):
+                result.append(node)
+                continue
+            transitions = self._find_note_transitions(spans)
+            if not transitions:
+                # Glued but no recoverable marker — leave BODY as is.
+                # The upstream ``body_note_block_glued`` warning still
+                # tracks the lost apparatus.
+                result.append(node)
+                continue
+            # Truncate BODY text to the spans preceding the first transition.
+            body_spans = spans[: transitions[0]]
+            body_text = "".join(s.text for s in body_spans).rstrip() or None
+            result.append(
+                Node(
+                    id=node.id,
+                    category=SemanticCategory.BODY,
+                    children=node.children,
+                    page_index=node.page_index,
+                    block_indices=node.block_indices,
+                    text=body_text,
+                    level=node.level,
+                    summary_items=node.summary_items,
+                    toc_items=node.toc_items,
+                    apparatus_refs=node.apparatus_refs,
+                )
+            )
+            # Mint one synthetic NOTE per transition, chunked at the next transition.
+            for k, t_start in enumerate(transitions):
+                t_end = transitions[k + 1] if k + 1 < len(transitions) else len(spans)
+                note_text = "".join(s.text for s in spans[t_start:t_end]).strip()
+                if not note_text:
+                    continue
+                synthetic_id = next_id.mint()
+                result.append(
+                    Node(
+                        id=synthetic_id,
+                        category=SemanticCategory.NOTE,
+                        page_index=node.page_index,
+                        block_indices=(block_index,),
+                        text=note_text,
+                    )
+                )
+                warnings.append(
+                    f"{WARNING_PREFIX}:body_note_split_minted_node_"
+                    f"{synthetic_id}_page_{node.page_index}"
+                )
+        return result
+
+    @staticmethod
+    def _is_glued_spans(spans: tuple[Span, ...]) -> bool:
+        """Re-evaluate the glued predicate on the original block spans.
+
+        Mirror of :meth:`_is_body_note_glued` but operates on the
+        ``ExtractionResult.spans`` slice rather than on a ``_BlockView``.
+        Used by :meth:`_split_body_note_glued` to confirm the structural
+        condition on the source spans before splitting.
+        """
+        if len(spans) < 2:
+            return False
+        leading = spans[0]
+        if not leading.font.startswith(BODY_FONT_PREFIX):
+            return False
+        if abs(leading.size - BODY_FONT_SIZE) > 0.1:
+            return False
+        note_spans = sum(
+            1
+            for span in spans
+            if span.font.startswith(BODY_FONT_PREFIX)
+            and any(abs(span.size - s) < 0.3 for s in NOTE_BODY_SIZES)
+        )
+        return (note_spans / len(spans)) >= BODY_NOTE_GLUED_RATIO_THRESHOLD
+
+    @staticmethod
+    def _find_note_transitions(spans: tuple[Span, ...]) -> list[int]:
+        """Indices of spans that mark a new NOTE chunk inside a glued block.
+
+        A transition is a span whose size matches one of
+        :data:`NOTE_BODY_SIZES` and whose lstripped text opens with a
+        parenthesised digit marker (the Mandrioli ``(N)`` note marker).
+        Multiple transitions inside a single glued block produce
+        multiple synthetic NOTE Nodes, one per chunk.
+        """
+        transitions: list[int] = []
+        for i, span in enumerate(spans):
+            if not any(abs(span.size - s) < 0.3 for s in NOTE_BODY_SIZES):
+                continue
+            if not span.font.startswith(BODY_FONT_PREFIX):
+                continue
+            if _NOTE_MARKER_PATTERN.match(span.text.lstrip()):
+                transitions.append(i)
+        return transitions
 
     def _mint_cross_references(
         self,
