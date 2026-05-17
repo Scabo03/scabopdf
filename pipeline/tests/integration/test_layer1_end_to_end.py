@@ -44,6 +44,15 @@ from scabopdf_pipeline.profiles.manuale_zanichelli_giuridica import (
     ManualeZanichelliGiuridicaProfile,
 )
 from scabopdf_pipeline.profiling.profile import DocumentProfile
+from scabopdf_pipeline.profiling.signals import (
+    ApparatusPresence,
+    FontDominance,
+    OutlineStructure,
+    ProducerCreator,
+    ProfilePageGeometry,
+    ProfilingSignals,
+    TypographicSignature,
+)
 from scabopdf_pipeline.reconstruction import Node, reconstruct
 from scabopdf_pipeline.reconstruction.types import Document
 from scabopdf_pipeline.schema.categories import SemanticCategory
@@ -59,6 +68,7 @@ MANDRIOLI_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_iii.pdf"
 MANDRIOLI_VOL_I_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_i.pdf"
 MANDRIOLI_VOL_II_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_ii.pdf"
 MANDRIOLI_VOL_IV_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_iv.pdf"
+MAROTTA_FIXTURE = FIXTURES_DIR / "marotta_cittadinanza_romana.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -1411,6 +1421,195 @@ def test_pipeline_runs_on_mandrioli_vol_iv() -> None:
     assert scabopdf_document.schema_version == "0.4.0"
     assert scabopdf_document.metadata.pages_pdf == 497
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+# ---------------------------------------------------------------------------
+# Marotta — regression protection on matches() non-promotion
+# ---------------------------------------------------------------------------
+#
+# V. Marotta, "La cittadinanza romana in età imperiale" is published
+# by Giappichelli — the same editor as the Mandrioli series — but is
+# editorially a different book: a Roman-law monograph rather than a
+# civil-procedure manual, with the body typeset in TimesNewRomanPSMT
+# (not SimonciniGaramondStd), produced by Adobe Acrobat Pro 9.4.5
+# (not InDesign 20.x or Photoshop 26.3), on A4. The plugin must NOT
+# promote on this document; the dispatcher falls back to
+# unknown_generic, which produces a flat tree.
+#
+# The two tests below protect against future regressions of the
+# manuale_giappichelli plugin's matches() that would erroneously
+# extend its scope to non-Mandrioli Giappichelli corpora.
+
+
+def _build_marotta_signals_from_fixture(fixture: Path) -> ProfilingSignals:
+    """Build a ProfilingSignals instance from real Marotta fixture data.
+
+    Reads the fixture with PyMuPDF, walks every span on every page to
+    build the (font, size) dominance histogram, reads metadata for
+    creator/producer/outline, and reports apparatus_presence as
+    empty (the production signal builder is still a stub and
+    Marotta footnote markers are bare 6pt-superscript digits the
+    future builder may or may not detect; for non-promotion testing
+    this conservatism is fine because matches() does not need the
+    apparatus signal to correctly stay below threshold).
+    """
+    import fitz
+
+    doc = fitz.open(str(fixture))
+    try:
+        creator = (doc.metadata.get("creator") or "").strip()
+        producer = (doc.metadata.get("producer") or "").strip()
+        font_char_count: dict[tuple[str, float], int] = {}
+        for page_idx in range(doc.page_count):
+            page = doc[page_idx]
+            for block in page.get_text("dict")["blocks"]:
+                if block.get("type", 0) != 0:
+                    continue
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        key = (span["font"], round(span["size"], 2))
+                        font_char_count[key] = font_char_count.get(key, 0) + len(span["text"])
+        total_chars = sum(font_char_count.values()) or 1
+        fonts = [
+            FontDominance(
+                family=family,
+                size=size,
+                dominance_percent=100.0 * count / total_chars,
+            )
+            for (family, size), count in sorted(font_char_count.items(), key=lambda kv: -kv[1])[:20]
+        ]
+        toc = doc.get_toc()
+        page = doc[0]
+        width = float(page.mediabox.width)
+        height = float(page.mediabox.height)
+    finally:
+        doc.close()
+
+    return ProfilingSignals(
+        typographic_signature=TypographicSignature(fonts=fonts),
+        apparatus_presence=ApparatusPresence(
+            footnote_markers=0,
+            marginal_headings=0,
+            italic_9pt_blocks=0,
+        ),
+        page_geometry=ProfilePageGeometry(width_pt=width, height_pt=height),
+        producer_creator=ProducerCreator(producer=producer, creator=creator),
+        outline_structure=OutlineStructure(has_outline=bool(toc), entries_count=len(toc)),
+    )
+
+
+def _make_unknown_generic_profile() -> DocumentProfile:
+    """Build the fallback DocumentProfile the dispatcher uses on no-match documents."""
+    return DocumentProfile(
+        profile_id="unknown_generic",
+        editorial_family="unknown",
+        genre="unknown",
+        layouts_available=[],
+        layouts_disabled=[],
+        post_processing=[],
+        categories_emitted=set(),
+        confidence=0.0,
+        warnings=[],
+    )
+
+
+@pytest.mark.slow
+def test_manuale_giappichelli_does_not_promote_on_marotta_fixture() -> None:
+    """The plugin's matches() stays below 0.6 on real Marotta signals.
+
+    Builds ProfilingSignals from the real Marotta fixture and
+    asserts that ManualeGiappichelliProfile.matches() returns a
+    score strictly below 0.6. The symmetric family penalty (-0.30)
+    plus the failure of every positive signal (no Giappichelli
+    creator fragment, page geometry far from Mandrioli, outline
+    below 100 entries, zero apparatus markers from the stub builder)
+    drives the score to the clamped 0.0 floor.
+
+    Should a future change loosen any branch of matches(), this test
+    catches the over-extension before the plugin starts promoting
+    on Roman-law monographs and other unrelated Giappichelli output.
+    """
+    if not MAROTTA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MAROTTA_FIXTURE} — see pipeline/tests/fixtures/README.md")
+
+    signals = _build_marotta_signals_from_fixture(MAROTTA_FIXTURE)
+    score = ManualeGiappichelliProfile.matches(signals)
+
+    print(
+        f"\nMarotta non-promotion summary:"
+        f"\n  primary_font={signals.typographic_signature.fonts[0].family!r}"
+        f"\n  primary_size={signals.typographic_signature.fonts[0].size}"
+        f"\n  creator={signals.producer_creator.creator!r}"
+        f"\n  page_geometry=({signals.page_geometry.width_pt},"
+        f" {signals.page_geometry.height_pt})"
+        f"\n  outline_entries={signals.outline_structure.entries_count}"
+        f"\n  matches_score={score}"
+    )
+
+    assert score < 0.6, (
+        f"matches() promoted manuale_giappichelli on Marotta: score {score} "
+        f"clears the 0.6 threshold; the plugin must NOT extend to Roman-law "
+        f"monographs"
+    )
+    # The empirical clamped-to-zero is the documented baseline; a
+    # positive but sub-threshold score would still be a regression
+    # worth surfacing as a failure.
+    assert score == pytest.approx(0.0), (
+        f"matches() on Marotta should clamp to 0.0; got {score} — a positive "
+        f"but sub-threshold score is suspicious"
+    )
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_marotta_with_unknown_generic_fallback() -> None:
+    """Full pipeline on the Marotta fixture with unknown_generic produces a flat tree.
+
+    Companion test: verifies that when the plugin correctly declines
+    to promote, the dispatcher fallback (unknown_generic) processes
+    the Marotta cleanly and the resulting document tree is flat
+    (max depth 1).
+    """
+    if not MAROTTA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MAROTTA_FIXTURE} — see pipeline/tests/fixtures/README.md")
+
+    from scabopdf_pipeline.profiles.unknown_generic import UnknownGenericProfile
+
+    profile = _make_unknown_generic_profile()
+    plugin = UnknownGenericProfile()
+
+    extraction = extract(MAROTTA_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+    scabopdf_document = convert_document(document, extraction, profile, MAROTTA_FIXTURE)
+
+    max_depth = _max_depth(document.root)
+    n_nodes_total = sum(1 for node in document.root for _ in _iter_nodes(node))
+
+    print(
+        f"\nMarotta unknown_generic fallback summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_nodes_root={len(document.root)}"
+        f"\n  n_nodes_total={n_nodes_total}"
+        f"\n  max_tree_depth={max_depth}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 206
+    assert extraction.is_encrypted is False
+    assert len(document.root) > 0
+    # unknown_generic produces a flat tree by design.
+    assert max_depth == 1, (
+        f"unknown_generic must produce a flat tree (depth 1); got depth {max_depth}"
+    )
+    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.metadata.pages_pdf == 206
+    assert scabopdf_document.profile.profile_id == "unknown_generic"
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
