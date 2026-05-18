@@ -1,16 +1,16 @@
 # Policy di versioning del JSON Schema
 
 > Riferimento per la policy SemVer applicata allo schema JSON del contratto Layer 1 ↔ Layer 2.
-> Versione corrente dello schema: 0.4.0 (instabile, pre-1.0).
+> Versione corrente dello schema: 0.5.0 (instabile, pre-1.0).
 > Riferimento normativo: `ARCHITECTURE.md § 8.13`.
 
 ---
 
 ## 1. Stato corrente
 
-Lo schema è alla versione **0.4.0**, dichiaratamente **instabile**. Il file canonico è `shared/schema.json`, generato dai modelli Pydantic in `pipeline/src/scabopdf_pipeline/schema/contract.py`. La descrizione narrativa campo per campo sta in `docs/SCHEMA_v0.4.0.md`; `docs/SCHEMA_v0.3.0.md`, `docs/SCHEMA_v0.2.0.md` e `docs/SCHEMA_v0.1.0.md` restano in repo come riferimenti storici, e `docs/SCHEMA_CHANGELOG.md` riporta il delta per ciascuna versione.
+Lo schema è alla versione **0.5.0**, dichiaratamente **instabile**. Il file canonico è `shared/schema.json`, generato dai modelli Pydantic in `pipeline/src/scabopdf_pipeline/schema/contract.py`. La descrizione narrativa campo per campo sta in `docs/SCHEMA_v0.5.0.md`; `docs/SCHEMA_v0.4.0.md`, `docs/SCHEMA_v0.3.0.md`, `docs/SCHEMA_v0.2.0.md` e `docs/SCHEMA_v0.1.0.md` restano in repo come riferimenti storici, e `docs/SCHEMA_CHANGELOG.md` riporta il delta per ciascuna versione.
 
-Nessun consumatore in produzione legge ancora lo schema: il Layer 2 (app React Native) non è inizializzato. La 0.4.0 segue la 0.3.0 con un'aggiunta additiva (il campo opzionale `toc_items` su `NodeDict`) introdotta contestualmente all'arrivo del secondo plugin di corpus, `compendio_utet`, che valorizza il campo quando incontra un `TOC_GENERAL` parsificabile sul Compendio Tesauro. Le emissioni reali (CLI `scabopdf-extract`) producono documenti conformi a 0.4.0 a partire da oggi.
+Nessun consumatore in produzione legge ancora lo schema: il Layer 2 (app React Native) non è inizializzato. La 0.5.0 segue la 0.4.0 con un'aggiunta additiva (i campi opzionali `split_into` e `merged_from` su `TransformationDict`) introdotta contestualmente alla promozione del terzo step di post-processing reale `merge_cross_page_notes` e al consolidamento del plugin `manuale_giappichelli` sulla serie Mandrioli-Carratta integrale. La 0.5.0 colma la limitazione di reversibilità strutturale che la 0.4.0 aveva registrato esplicitamente per lo split body+note di Giappichelli e per il merge marginal-ellipsis di Mosconi: a partire dalla 0.5.0 il log Transformation è strutturalmente reversibile. Le emissioni reali (CLI `scabopdf-extract`) producono documenti conformi a 0.5.0 a partire da oggi.
 
 ## 2. Schema SemVer
 
@@ -58,4 +58,4 @@ Il `test_committed_schema_matches_contract` in `pipeline/tests/unit/schema/test_
 
 Il `validate_against_schema` in `pipeline/src/scabopdf_pipeline/schema/validator.py` è una **seconda linea di difesa**: usa la libreria `jsonschema` per validare un dict contro lo schema generato, in modo indipendente da Pydantic. Se mai `model_json_schema()` di Pydantic dovesse produrre uno schema sottilmente diverso dalla validazione interna dei modelli, questo validatore lo cattura. È quello che il § 9 di emissione e il Layer 2 di consumo useranno come check finale prima di scrivere o leggere il file.
 
-Il `CHANGELOG` vive in `docs/SCHEMA_CHANGELOG.md`. La sua prima voce è `## 0.1.0 — 2026-05-12 — Initial bootstrap`, la seconda `## 0.2.0 — 2026-05-13 — Transformations log`, la terza `## 0.3.0 — 2026-05-14 — CHAPTER_SUMMARY structured items` e la quarta `## 0.4.0 — 2026-05-14 — TOC_GENERAL structured items`. Ogni futuro bump aggiunge una voce in testa al file con la motivazione, l'elenco dei campi aggiunti/modificati/rimossi e, se presente, una voce `BREAKING:` evidenziata.
+Il `CHANGELOG` vive in `docs/SCHEMA_CHANGELOG.md`. La sua prima voce è `## 0.1.0 — 2026-05-12 — Initial bootstrap`, la seconda `## 0.2.0 — 2026-05-13 — Transformations log`, la terza `## 0.3.0 — 2026-05-14 — CHAPTER_SUMMARY structured items`, la quarta `## 0.4.0 — 2026-05-14 — TOC_GENERAL structured items`, e la quinta `## 0.5.0 — 2026-05-18 — Structural reversibility of transformations`. Ogni futuro bump aggiunge una voce in testa al file con la motivazione, l'elenco dei campi aggiunti/modificati/rimossi e, se presente, una voce `BREAKING:` evidenziata.

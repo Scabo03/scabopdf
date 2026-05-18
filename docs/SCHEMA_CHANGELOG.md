@@ -1,11 +1,29 @@
 # ScaboPDF — JSON Schema CHANGELOG
 
 > Log per-versione del contratto JSON fra Layer 1 e Layer 2.
-> Versione corrente: **0.4.0** (instabile, pre-1.0).
+> Versione corrente: **0.5.0** (instabile, pre-1.0).
 > Riferimento normativo: [`docs/json-schema-versioning.md`](json-schema-versioning.md).
 > Le voci marcate `BREAKING:` segnalano cambi non backward-compatible ammessi in fase 0.x ma soggetti a bump major in fase stabile.
 
 ---
+
+## 0.5.0 — 2026-05-18 — Structural reversibility of transformations
+
+Aggiunti due campi opzionali `split_into: list[string] | null` e `merged_from: list[string] | null` su `TransformationDict`, entrambi a default `null` per le trasformazioni puramente testuali (`dehyphenate_with_log`). I due campi colmano la limitazione che la 0.4.0 aveva registrato esplicitamente: il modello `Transformation` precedente codificava solo sostituzioni intra-Node, lasciando implicite nel solo albero post-step le trasformazioni strutturali (lo split body+note del plugin Giappichelli, il merge marginal-ellipsis del plugin Mosconi). A partire dalla 0.5.0 il log è strutturalmente reversibile: Layer 2 che cammina il log in ordine inverso può sia ripristinare il testo originario via `(position, original, normalized)` sia rimaterializzare i Node assorbiti (via `merged_from`) o eliminare i Node generati (via `split_into`).
+
+I produttori dei due campi nella sessione di promozione:
+
+- `recompose_marginal_ellipsis` (post-processing step, plugin `manuale_utet_wolterskluwer`): popola `merged_from` con la tupla degli id dei segmenti assorbiti per ogni catena di frammenti marginal-ellipsis fusi.
+- `giappichelli_body_note_splitter` (tier 2 plugin `manuale_giappichelli`, nuovo `step_id` distinto dai post-processing step della registry): popola `split_into` con la tupla degli id dei NOTE sintetici minted da ogni BODY o NOTE block sorgente. Il `Transformation` viene registrato in `refine_reconstruction` e flow attraverso `apparatus.resolve_apparatus` (che ora preserva `document.transformations` invece di azzerarlo) fino alla concatenazione del post-processing orchestrator.
+- `merge_cross_page_notes` (post-processing step **promosso da placeholder** alla 0.5.0, plugin `manuale_giappichelli`): popola `merged_from` con la tupla `(continuation_id,)` per ogni NOTE marker-less continuazione assorbita nella head NOTE della pagina precedente. La promozione è accompagnata da una modifica al tier 1 generic resolver `_resolve_cross_page_note_merging` in `apparatus/resolver.py`: il resolver salta la propria passata sui documenti il cui plugin dichiara `merge_cross_page_notes` in `get_post_processing()`, evitando double-merging. I tre plugin esistenti (Patriarca/Zanichelli, Tesauro/Compendio UTET, Mosconi/UTET Wolters Kluwer) non dichiarano lo step e mantengono il comportamento storico (merging via tier 1 senza log Transformation).
+
+Il `Transformation` dataclass Python ha acquisito simmetricamente i due campi `split_into: tuple[str, ...] | None = None` e `merged_from: tuple[str, ...] | None = None` in `pipeline/src/scabopdf_pipeline/postprocessing/types.py`. Il convertitore `emission/converter.py` mappa entrambi a list-or-null JSON-nativi via `_convert_transformation`; lo schema `shared/schema.json` è stato rigenerato di conseguenza e l'entry `$defs/TransformationDict` riflette i due campi opzionali. Il `Document.transformations` ora viene preservato attraverso `resolve_apparatus` (era azzerato).
+
+Aggiunto contestualmente il plugin Giappichelli un nuovo predicato `_is_marginal_heading` che intercetta i blocchi SimonciniGaramondStd 7.98pt nel margine sinistro (`x1 < 110pt`) o destro (`x0 > 370pt`) e li classifica come `MARGINAL_HEADING`, prima che `_is_note` li assorba. Vol. I e Vol. II del Mandrioli-Carratta sono i primi due fixture su cui il plugin emette `MARGINAL_HEADING` in produzione (le note dei due volumi sono editorialmente assenti, e i blocchi 7.98pt nel margine sono headings).
+
+Empiricamente, la 0.5.0 porta il count NOTE del Vol. III da 466 (baseline 0.4.0) a ~1161 (+149 %) e quello del Vol. IV da 470 a ~964 (+105 %), sopra il quality gate del 94 % di recovery (700 attesi minimo) fissato dalla sessione. La crescita è dovuta a tre miglioramenti combinati: (a) lo splitter ora processa anche blocchi NOTE multi-marker (non solo BODY glued), (b) `_find_note_transitions` discrimina via `line_index` + `span_index` i marker fresh-note dalle cross-reference inline che capitano a inizio riga wrappata, (c) il merge step di cross-page fonde le continuazioni standalone con la testa via `merged_from`.
+
+Non ci sono `BREAKING:` in questa versione: l'aggiunta è additiva (campi opzionali a default `null`), i consumatori di 0.4.0 che ignorano i campi sconosciuti continuano a funzionare con un documento 0.5.0 (a parte il `schema_version` literal che andrà aggiornato lato consumer).
 
 ## 0.4.0 — 2026-05-14 — TOC_GENERAL structured items
 
