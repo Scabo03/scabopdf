@@ -85,22 +85,23 @@ def test_unknown_step_id_raises_key_error() -> None:
 def test_placeholder_step_raises_not_implemented() -> None:
     """A still-placeholder step dispatched by the orchestrator raises loudly.
 
-    ``recompose_marginal_ellipsis`` is no longer a placeholder — it was
-    promoted to a real callable when the ``manuale_utet_wolterskluwer``
-    plugin landed. The invariant "dispatch of a placeholder raises
+    ``recompose_marginal_ellipsis`` was promoted with the
+    ``manuale_utet_wolterskluwer`` plugin and ``merge_cross_page_notes``
+    with the consolidation of ``manuale_giappichelli`` at schema 0.5.0.
+    The invariant "dispatch of a placeholder raises
     ``NotImplementedError``" still applies to every remaining
-    placeholder; the test exercises ``merge_cross_page_notes``, the
+    placeholder; the test exercises ``extract_book_page_anchors``, the
     first surviving entry of
     :data:`postprocessing.registry._PROFILE_SPECIFIC_PLACEHOLDERS`.
     """
     document = Document()
-    plugin = _FakeProfile(post_processing=["merge_cross_page_notes"])
+    plugin = _FakeProfile(post_processing=["extract_book_page_anchors"])
 
     with pytest.raises(NotImplementedError) as excinfo:
         apply_post_processing(document, _empty_extraction(), [], plugin)
     msg = str(excinfo.value)
-    assert "merge_cross_page_notes" in msg
-    assert "manuale_giappichelli" in msg
+    assert "extract_book_page_anchors" in msg
+    assert "manuale_bic" in msg
 
 
 def test_custom_registry_overrides_default() -> None:

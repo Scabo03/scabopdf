@@ -116,6 +116,22 @@ class _NodeBuilder:
         )
 
 
+_CROSS_PAGE_NOTE_MERGE_STEP_ID = "merge_cross_page_notes"
+"""Post-processing step id the plugin can declare to take ownership of
+cross-page note merging.
+
+When the plugin lists this step in its ``get_post_processing()``, the
+tier 1 ``_resolve_cross_page_note_merging`` resolver below skips its
+own pass to avoid double-merging: the structurally-equivalent post-
+processing step (see :mod:`postprocessing.steps.merge_cross_page_notes`)
+will run after this resolver and produce the reversible
+:class:`Transformation` log per schema 0.5.0. Plugins that do not
+declare the step (Patriarca, Tesauro, Mosconi today) keep getting
+their cross-page continuations merged here, without a Transformation
+record — historical behaviour preserved.
+"""
+
+
 def resolve_apparatus(
     document: Document,
     extraction: ExtractionResult,
@@ -129,13 +145,24 @@ def resolve_apparatus(
     tree, freezes the result, and calls ``plugin.refine_apparatus`` for
     tier 2 (profile-specific refinement).
 
+    The ``Document.transformations`` field of the input is preserved on
+    the output: any :class:`Transformation` recorded earlier in the
+    pipeline (e.g. by a tier 2 ``refine_reconstruction`` structural
+    splitter, schema 0.5.0) flows through this resolver into the
+    post-processing phase. The five resolvers themselves never produce
+    transformations — they are tier 1 generic structure-resolution
+    passes whose effects are encoded directly in the tree shape, not in
+    the log.
+
     See ARCHITECTURE.md § 6 for the canonical specification.
     """
     root_builders, builders_by_id = _thaw(document.root)
     bbox_by_node_id = _bbox_by_node_id(builders_by_id, extraction)
     warnings: list[str] = []
 
-    _resolve_cross_page_note_merging(root_builders, builders_by_id, warnings)
+    plugin_steps = plugin.get_post_processing()
+    if _CROSS_PAGE_NOTE_MERGE_STEP_ID not in plugin_steps:
+        _resolve_cross_page_note_merging(root_builders, builders_by_id, warnings)
     _resolve_cross_references(root_builders, warnings)
     _resolve_marginal_positions(root_builders, bbox_by_node_id, warnings)
     _resolve_marginal_glosses(root_builders, bbox_by_node_id, warnings)
@@ -144,6 +171,7 @@ def resolve_apparatus(
     new_document = Document(
         root=tuple(b.to_frozen() for b in root_builders),
         warnings=document.warnings + tuple(warnings),
+        transformations=document.transformations,
     )
     return plugin.refine_apparatus(new_document, extraction, classified_blocks)
 

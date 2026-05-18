@@ -208,9 +208,9 @@ def test_convert_generates_uuid_document_id() -> None:
 
 
 def test_convert_schema_version_is_literal() -> None:
-    """``schema_version`` is the v0.2.0 literal on every emission."""
+    """``schema_version`` is the v0.5.0 literal on every emission."""
     result = convert_document(Document(root=()), _empty_extraction(), _profile(), "x.pdf")
-    assert result.schema_version == "0.4.0"
+    assert result.schema_version == "0.5.0"
 
 
 def test_convert_transformations_default_is_empty_list() -> None:
@@ -249,8 +249,48 @@ def test_convert_populates_transformations_field_by_field() -> None:
     assert first.position == t1.position
     assert first.original == t1.original
     assert first.normalized == t1.normalized
+    assert first.split_into is None
+    assert first.merged_from is None
     assert second.node_id == t2.node_id
     assert second.original == t2.original
+    assert second.split_into is None
+    assert second.merged_from is None
+
+
+def test_convert_propagates_split_into_tuple_to_list() -> None:
+    """The structural ``split_into`` tuple becomes a JSON-native list."""
+    t = Transformation(
+        step_id="giappichelli_body_note_splitter",
+        node_id="node_0100",
+        page_index=42,
+        position=(120, 280),
+        original="...embedded note text...",
+        normalized="",
+        split_into=("node_2000", "node_2001"),
+    )
+    document = Document(root=(), transformations=(t,))
+    result = convert_document(document, _empty_extraction(), _profile(), "x.pdf")
+    converted = result.transformations[0]
+    assert converted.split_into == ["node_2000", "node_2001"]
+    assert converted.merged_from is None
+
+
+def test_convert_propagates_merged_from_tuple_to_list() -> None:
+    """The structural ``merged_from`` tuple becomes a JSON-native list."""
+    t = Transformation(
+        step_id="merge_cross_page_notes",
+        node_id="node_0050",
+        page_index=10,
+        position=(80, 80),
+        original="",
+        normalized=" continuation",
+        merged_from=("node_0080",),
+    )
+    document = Document(root=(), transformations=(t,))
+    result = convert_document(document, _empty_extraction(), _profile(), "x.pdf")
+    converted = result.transformations[0]
+    assert converted.merged_from == ["node_0080"]
+    assert converted.split_into is None
 
 
 def test_convert_extracts_basename_of_source_filename() -> None:

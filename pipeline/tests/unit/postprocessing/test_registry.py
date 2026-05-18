@@ -10,6 +10,9 @@ from scabopdf_pipeline.postprocessing.registry import (
     PostProcessingRegistry,
 )
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
+from scabopdf_pipeline.postprocessing.steps.merge_cross_page_notes import (
+    merge_cross_page_notes,
+)
 from scabopdf_pipeline.postprocessing.steps.recompose_marginal_ellipsis import (
     recompose_marginal_ellipsis,
 )
@@ -19,13 +22,15 @@ from scabopdf_pipeline.postprocessing.types import (
 )
 from scabopdf_pipeline.reconstruction.types import Document
 
-# Two steps are real callables; the rest are placeholders driven by
+# Three steps are real callables; the rest are placeholders driven by
 # :data:`_PROFILE_SPECIFIC_PLACEHOLDERS`. ``recompose_marginal_ellipsis``
-# was promoted from placeholder to real implementation when the
-# ``manuale_utet_wolterskluwer`` plugin landed.
+# was promoted from placeholder when the ``manuale_utet_wolterskluwer``
+# plugin landed; ``merge_cross_page_notes`` was promoted alongside the
+# consolidation of ``manuale_giappichelli`` at schema 0.5.0.
 ALL_STEP_IDS: tuple[str, ...] = (
     "dehyphenate_with_log",
     "recompose_marginal_ellipsis",
+    "merge_cross_page_notes",
     *(step_id for step_id, _ in _PROFILE_SPECIFIC_PLACEHOLDERS),
 )
 
@@ -47,23 +52,29 @@ def test_default_registry_recompose_marginal_ellipsis_resolves_to_real_callable(
     assert registry.get("recompose_marginal_ellipsis") is recompose_marginal_ellipsis
 
 
+def test_default_registry_merge_cross_page_notes_resolves_to_real_callable() -> None:
+    """The step was promoted from placeholder with the Giappichelli plugin at 0.5.0."""
+    registry = PostProcessingRegistry.default()
+    assert registry.get("merge_cross_page_notes") is merge_cross_page_notes
+
+
 def test_default_registry_placeholder_resolves_and_raises_on_call() -> None:
     """Any remaining placeholder still raises ``NotImplementedError`` on dispatch.
 
-    Exercised on ``merge_cross_page_notes`` (the first surviving entry
-    of :data:`_PROFILE_SPECIFIC_PLACEHOLDERS`); the invariant applies to
-    every remaining placeholder. ``recompose_marginal_ellipsis`` is no
-    longer in that set — see
-    :func:`test_default_registry_recompose_marginal_ellipsis_resolves_to_real_callable`.
+    Exercised on ``extract_book_page_anchors`` (the first surviving
+    entry of :data:`_PROFILE_SPECIFIC_PLACEHOLDERS`); the invariant
+    applies to every remaining placeholder. Both
+    ``recompose_marginal_ellipsis`` and ``merge_cross_page_notes`` are
+    no longer in the placeholder set.
     """
     registry = PostProcessingRegistry.default()
-    placeholder = registry.get("merge_cross_page_notes")
+    placeholder = registry.get("extract_book_page_anchors")
 
     with pytest.raises(NotImplementedError) as excinfo:
         placeholder(Document(), _empty_extraction(), [])
     msg = str(excinfo.value)
-    assert "merge_cross_page_notes" in msg
-    assert "manuale_giappichelli" in msg
+    assert "extract_book_page_anchors" in msg
+    assert "manuale_bic" in msg
 
 
 def test_default_registry_unknown_step_raises_key_error() -> None:

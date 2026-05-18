@@ -1,4 +1,4 @@
-"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.4.0).
+"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.5.0).
 
 These models are the **authoritative source** for the JSON schema that
 sits between the Python pipeline (Layer 1) and the React Native app
@@ -6,28 +6,32 @@ sits between the Python pipeline (Layer 1) and the React Native app
 module via ``pipeline/scripts/generate_schema.py`` and must never be
 edited by hand.
 
-Schema version ``0.4.0`` is **pre-1.0 unstable**: it describes what the
-pipeline emits after §§ 1-6, § 8, § 9, the first generic step of § 7
-(``dehyphenate_with_log``) and the first two corpus plugins
-(``manuale_zanichelli_giuridica`` and ``compendio_utet``). It is
-additive over 0.3.0: a single new field ``toc_items`` on
-:class:`NodeDict`, carrying the structured entries parsed out of a
-``TOC_GENERAL`` block when the corpus plugin recognises one. The field
-is optional (``None`` by default) and populated only for nodes whose
-``type`` is ``TOC_GENERAL`` and whose textual content the plugin could
-parse into ``(number, title, page_number)`` triples; nodes of other
-types and unparseable TOCs keep ``toc_items: null``. Fields that the
-architecture envisions but the pipeline does not yet populate (rich
-editorial metadata, profile detection signals, layout-4 acoustic
+Schema version ``0.5.0`` is **pre-1.0 unstable**: it describes what the
+pipeline emits after §§ 1-6, § 8, § 9, the first two generic steps of
+§ 7 (``dehyphenate_with_log`` and ``recompose_marginal_ellipsis``),
+the third step ``merge_cross_page_notes`` promoted from placeholder to
+real implementation alongside the Giappichelli plugin, and the four
+corpus plugins (``manuale_zanichelli_giuridica``, ``compendio_utet``,
+``manuale_utet_wolterskluwer``, ``manuale_giappichelli``). It is
+additive over 0.4.0: two new optional fields on
+:class:`TransformationDict` (``split_into`` and ``merged_from``) that
+record the previously-implicit structural side of a Transformation —
+the synthetic Node ids minted from the host (Giappichelli body+note
+splitter) and the sibling Node ids absorbed into the host
+(Mosconi marginal-ellipsis merger, Giappichelli cross-page note
+merger). Both fields default to ``None`` for steps whose
+transformations are purely textual (``dehyphenate_with_log``). Fields
+that the architecture envisions but the pipeline does not yet populate
+(rich editorial metadata, profile detection signals, layout-4 acoustic
 regime, other profile-specific structures) remain intentionally
 omitted and will land in later additive bumps.
 
-See ``docs/SCHEMA_v0.4.0.md`` for the narrative field-by-field
+See ``docs/SCHEMA_v0.5.0.md`` for the narrative field-by-field
 reference and the disciplinary rules that govern modifications,
-``docs/SCHEMA_v0.3.0.md``, ``docs/SCHEMA_v0.2.0.md`` and
-``docs/SCHEMA_v0.1.0.md`` for the historic baselines,
-``docs/SCHEMA_CHANGELOG.md`` for the per-version delta, and
-``docs/json-schema-versioning.md`` for the SemVer policy.
+``docs/SCHEMA_v0.4.0.md``, ``docs/SCHEMA_v0.3.0.md``,
+``docs/SCHEMA_v0.2.0.md`` and ``docs/SCHEMA_v0.1.0.md`` for the
+historic baselines, ``docs/SCHEMA_CHANGELOG.md`` for the per-version
+delta, and ``docs/json-schema-versioning.md`` for the SemVer policy.
 """
 
 from __future__ import annotations
@@ -50,7 +54,7 @@ but no upper bound is enforced so documents with more than 9999 nodes
 remain valid.
 """
 
-SCHEMA_VERSION: Literal["0.4.0"] = "0.4.0"
+SCHEMA_VERSION: Literal["0.5.0"] = "0.5.0"
 """Single source of truth for the schema version literal.
 
 Bumping this is a deliberate act: see ``docs/json-schema-versioning.md``.
@@ -194,7 +198,7 @@ class DocumentMetadata(BaseModel):
 
 
 class TransformationDict(BaseModel):
-    """A reversible text substitution recorded by a post-processing step.
+    """A reversible operation recorded by a post-processing or tier 2 step.
 
     Mirrors :class:`scabopdf_pipeline.postprocessing.types.Transformation`
     in its JSON form. Layer 2 reads the ``transformations`` list to
@@ -215,6 +219,28 @@ class TransformationDict(BaseModel):
 
     The post-step node text satisfies ``post[position[0] :
     position[0] + len(normalized)] == normalized``.
+
+    ``split_into`` and ``merged_from`` (both added in schema 0.5.0,
+    both optional and ``None`` by default) extend the model from
+    purely-textual reversibility to structural reversibility:
+
+    - ``split_into`` lists the ids of synthetic sibling Nodes a step
+      minted from the host Node (the Giappichelli body+note splitter
+      decomposes a glued BODY into BODY + N synthetic NOTE siblings,
+      each id appears here on the surviving BODY's transformation).
+    - ``merged_from`` lists the ids of sibling Nodes a step absorbed
+      into the host Node (the Mosconi marginal-ellipsis merger fuses
+      a chain of fragments into one head; the Giappichelli
+      cross-page note merger fuses a continuation NOTE into its
+      head NOTE; each absorbed id appears here on the surviving
+      head's transformation).
+
+    Both fields stay ``None`` for purely textual transformations
+    (``dehyphenate_with_log``). Layer 2 can walk the 0.5.0 log in
+    reverse and rematerialise either the consumed siblings (by
+    reading ``merged_from``) or drop the produced siblings (by
+    reading ``split_into``) in addition to the existing textual
+    reversal.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -225,6 +251,8 @@ class TransformationDict(BaseModel):
     position: tuple[int, int]
     original: str
     normalized: str
+    split_into: list[str] | None = None
+    merged_from: list[str] | None = None
 
 
 class DocumentProfileDict(BaseModel):
@@ -251,7 +279,7 @@ class DocumentProfileDict(BaseModel):
 
 
 class ScabopdfDocument(BaseModel):
-    """The Layer 1 → Layer 2 JSON document, schema version 0.4.0.
+    """The Layer 1 → Layer 2 JSON document, schema version 0.5.0.
 
     The emitted JSON conforms to JSON Schema Draft 2020-12 as serialised
     by ``ScabopdfDocument.model_json_schema()`` and committed to
@@ -274,7 +302,7 @@ class ScabopdfDocument(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["0.4.0"]
+    schema_version: Literal["0.5.0"]
     document_id: UUID
     metadata: DocumentMetadata
     profile: DocumentProfileDict

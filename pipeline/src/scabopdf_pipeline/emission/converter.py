@@ -3,7 +3,7 @@
 This is the *pure* layer of § 9 emission: it takes the already-processed
 Layer 1 artefacts (``Document``, ``ExtractionResult``, ``DocumentProfile``)
 and returns a fully-populated Pydantic ``ScabopdfDocument`` that conforms
-to schema v0.4.0. No I/O, no orchestration: just a deterministic
+to schema v0.5.0. No I/O, no orchestration: just a deterministic
 mapping with one explicit non-determinism (``document_id`` is a fresh
 ``uuid.uuid4()`` per call — emission is an event, not a content hash).
 
@@ -70,7 +70,7 @@ def convert_document(
     Returns
     -------
     ScabopdfDocument
-        Fully validated Pydantic model conforming to schema v0.4.0.
+        Fully validated Pydantic model conforming to schema v0.5.0.
 
     Notes
     -----
@@ -190,6 +190,12 @@ def _convert_transformation(t: Transformation) -> TransformationDict:
     the Pydantic model; the conversion is therefore field-by-field
     construction. The ``position`` tuple is preserved (Pydantic
     serialises it as a JSON array of two integers).
+
+    Schema 0.5.0 added two optional fields ``split_into`` and
+    ``merged_from``: tuples of Node ids on the Python side, lists on
+    the JSON side. When the Python field is ``None`` the converter
+    forwards ``None`` so the JSON serialises as ``null``; when the
+    field carries ids they are flattened into a JSON-native list.
     """
     return TransformationDict(
         step_id=t.step_id,
@@ -198,4 +204,6 @@ def _convert_transformation(t: Transformation) -> TransformationDict:
         position=t.position,
         original=t.original,
         normalized=t.normalized,
+        split_into=None if t.split_into is None else list(t.split_into),
+        merged_from=None if t.merged_from is None else list(t.merged_from),
     )

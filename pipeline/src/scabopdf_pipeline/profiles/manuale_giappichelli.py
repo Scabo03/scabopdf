@@ -35,12 +35,17 @@ The plugin exercises:
   ``HEADING_4`` in production. PARTE divisions appear on Vol. III
   (4 in body) and Vol. IV (2 in body); Vol. I and Vol. II have no
   PARTE divisions (variazione editoriale legittima);
-- dense apparatus on Vol. III (744 notes) and Vol. IV; lighter
-  apparatus on Vol. I/II. Cross-page note continuation handled by
-  tier 1 ``_resolve_cross_page_note_merging`` (the
-  parentheses-optional ``NOTE_MARKER_REGEX`` covers Mandrioli's
-  ``(N)`` marker without override), so the plugin does **not**
-  declare ``merge_cross_page_notes``;
+- dense apparatus on Vol. III (~744 notes) and Vol. IV (~744 notes);
+  lighter apparatus on Vol. I/II. Cross-page note continuation is
+  recovered by the promoted ``merge_cross_page_notes`` post-processing
+  step declared in :meth:`get_post_processing` (real as of schema
+  0.5.0); the tier 1 generic resolver
+  ``_resolve_cross_page_note_merging`` skips its own pass on this
+  plugin's documents to avoid double-merging. The combination of
+  marker-less NOTE classification (see :meth:`_is_note`), continuation
+  recovery inside glued blocks (see :meth:`_find_note_transitions`)
+  and the post-processing merge yields ≥ 700 NOTE Nodes on both
+  Vol. III and Vol. IV;
 - ``CROSS_REFERENCE`` markers ``(N)`` minted from **textual regex**
   rather than typographic superscript flag. The Mandrioli inline
   marker is a parenthesised digit sitting in a normal body span at
@@ -161,23 +166,23 @@ See :data:`WARNING_TEMPLATES` for the six entries:
 
 Pipeline integration.
 
-- :meth:`get_post_processing` returns ``["dehyphenate_with_log"]``.
-  The cross-page note merging is performed by the tier 1 resolver;
-  the ``merge_cross_page_notes`` placeholder is **not** promoted in
-  this session — empirical inspection on the fixture confirms the
-  tier 1 regex matches the Mandrioli marker ``(N)`` and merges
-  continuations correctly. The placeholder remains for a future
-  plugin (likely ``enciclopedia_storica`` with OCR-derived
-  cross-page note artefacts).
+- :meth:`get_post_processing` returns
+  ``["dehyphenate_with_log", "merge_cross_page_notes"]``. The
+  ``merge_cross_page_notes`` step was promoted from placeholder to
+  real implementation alongside this consolidation (schema 0.5.0)
+  and produces a reversible :class:`Transformation` log with
+  ``merged_from`` populated. Declaring it here also causes the
+  tier 1 ``_resolve_cross_page_note_merging`` resolver to skip its
+  own pass to avoid double-merging.
 - :meth:`get_layouts_disabled` returns the empty list. Mandrioli
   exercises every Layer 2 layout: linear prose (Layout 1), pinned
   notes (Layout 2), marginal columns via marginal glosses (Layout
   3), and inline footnote markers via the synthetic
   ``CROSS_REFERENCE`` nodes (Layout 4).
-- :meth:`refine_apparatus` is pass-through. The five tier 1
-  resolvers cover every Mandrioli case: cross-page NOTE merging,
-  inline cross-reference binding to NOTE within HEADING_2 scope,
-  marginal gloss binding to the closest NOTE on the same page.
+- :meth:`refine_apparatus` is pass-through. The four remaining
+  tier 1 resolvers (cross-reference binding, marginal position,
+  marginal gloss, box association) cover every Mandrioli case after
+  cross-page note merging is delegated to the post-processing step.
 
 Instance state.
 
@@ -206,11 +211,24 @@ from typing import ClassVar
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem
 from scabopdf_pipeline.schema.categories import SemanticCategory
+
+SPLITTER_STEP_ID = "giappichelli_body_note_splitter"
+"""Identifier carried on every :class:`Transformation` the body+note
+splitter records.
+
+Not a key in :class:`postprocessing.registry.PostProcessingRegistry`:
+the splitter runs in tier 2 ``refine_reconstruction`` rather than as a
+post-processing step. The id is recorded on the resulting
+:class:`Transformation` so Layer 2 can recognise the producing step
+when reading the reversibility log, and so test code can filter the
+log to a specific tier-2 source.
+"""
 
 WARNING_PREFIX = "plugin:giappichelli"
 """Common prefix for every warning string this plugin may emit.
@@ -476,6 +494,29 @@ of the fixture reports gloss x0 values in the range 37.7-43.1 pt; the
 just under 60 cannot pass the predicate.
 """
 
+MARGINAL_HEADING_LEFT_X1_MAX = 110.0
+"""``bbox.x1`` upper bound for a Vol. I/II **left-margin**
+MARGINAL_HEADING block, in points.
+
+Vol. I and Vol. II of the Mandrioli series (Photoshop-derived
+pipeline) typeset their marginal headings in SimonciniGaramondStd at
+7.98pt within both the left and the right margin columns.
+Empirical inspection of Vol. I reports left-margin marginal-heading
+bbox.x1 values up to 101pt. The body column starts at x ≈ 107pt;
+the 110pt threshold therefore admits every left-margin heading while
+keeping the body column outside the predicate.
+"""
+
+MARGINAL_HEADING_RIGHT_X0_MIN = 370.0
+"""``bbox.x0`` lower bound for a Vol. I/II **right-margin**
+MARGINAL_HEADING block, in points.
+
+Empirical inspection of Vol. I reports right-margin marginal-heading
+bbox.x0 values starting at 382pt. The body column ends near x = 380pt;
+the 370pt threshold leaves a 10pt cushion and admits every
+right-margin heading observed in the fixture.
+"""
+
 PARTE_HEADING_TEXT_LIMIT = 60
 """Max text length for a candidate PARTE heading.
 
@@ -534,6 +575,31 @@ immediately following note block (9.0pt on Vol. III/IV, 7.98pt on
 Vol. I/II) into a single block. The plugin diagnoses the pattern
 with this ratio. The Vol. III exhibits the pathology on ~95 % of
 its blocks, Vol. IV on 6.96 %, Vol. I and II on 0 %.
+"""
+
+NOTE_CONTINUATION_MIN_TEXT_LENGTH = 30
+"""Minimum text length of a marker-less NOTE continuation candidate.
+
+The marker-less branch of :meth:`ManualeGiappichelliProfile._is_note`
+is permissive enough that, without a length guard, it absorbs short
+all-uppercase fragments from the front matter (CAPITOLO drop-cap
+tails like ``"APITOLO I"``, author-name fragments like
+``"NTONIO CARRATTA"``) that PyMuPDF emits as separate blocks. A
+real continuation note carries running prose with substantially more
+than 30 characters; the threshold filters the false positives
+without affecting any genuine continuation observed in the corpus.
+"""
+
+NOTE_CONTINUATION_MAX_UPPER_RATIO = 0.7
+"""Maximum uppercase-letter ratio of a marker-less NOTE continuation.
+
+Real note continuations are running prose in mixed case (lowercase
+dominant, with occasional uppercase for proper names and
+abbreviations). Front-matter CAPITOLO and author-name fragments are
+predominantly uppercase (small-caps tails after a drop cap). The
+threshold rejects blocks whose letters are more than 70% uppercase,
+keeping the genuine continuations and excluding the front-matter
+artefacts.
 """
 
 CONFIDENCE_BODY_DOMINANT = 0.30
@@ -809,6 +875,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
             SemanticCategory.BODY,
             SemanticCategory.NOTE,
             SemanticCategory.MARGINAL_GLOSS,
+            SemanticCategory.MARGINAL_HEADING,
             SemanticCategory.CHAPTER_SUMMARY,
             SemanticCategory.CROSS_REFERENCE,
             SemanticCategory.ARTIFACT_FOOTER,
@@ -822,15 +889,37 @@ class ManualeGiappichelliProfile(ProfilePlugin):
     def get_post_processing(self) -> list[str]:
         """Return the ordered list of post-processing step IDs for Mandrioli.
 
-        Only the generic dehyphenator. The cross-page note merging is
-        performed by the tier 1 resolver in
-        :mod:`scabopdf_pipeline.apparatus.resolver` and the
-        ``merge_cross_page_notes`` placeholder is **not** promoted in
-        this plugin: empirical inspection of the fixture confirms the
-        tier 1 regex matches the Mandrioli ``(N)`` marker correctly and
-        merges cross-page continuations without override.
+        Two steps are declared, in this order:
+
+        1. ``dehyphenate_with_log`` — the generic end-of-line
+           de-hyphenator. Effectively a no-op on the Mandrioli
+           digitally-typeset PDFs (no hyphenated line breaks in the
+           extracted text layer) but kept for symmetry with the other
+           plugins and as defence against future fixtures with hard
+           hyphens.
+        2. ``merge_cross_page_notes`` — promoted from placeholder to
+           real implementation alongside this consolidation. Walks
+           NOTE Nodes in DFS pre-order; for each marker-less NOTE
+           that is the first NOTE of its page and sits exactly one
+           page after the preceding NOTE, fuses the continuation
+           text into the head NOTE and records the merge as a
+           :class:`Transformation` with ``merged_from`` populated.
+           Operates on the post-splitter NOTE set materialised by
+           :meth:`refine_reconstruction` (so synthetic NOTEs minted
+           by the body+note splitter are available for merging on
+           the same equal footing as the marker-bearing NOTEs of
+           the tier 1 path).
+
+        Declaring ``merge_cross_page_notes`` here also causes the
+        tier 1 ``_resolve_cross_page_note_merging`` resolver in
+        :mod:`scabopdf_pipeline.apparatus.resolver` to skip its own
+        pass on this plugin's documents, avoiding double-merging.
+        Patriarca, Tesauro and Mosconi do not declare the step and
+        therefore keep their cross-page merging at tier 1 (which has
+        no Transformation log but produces the same final tree
+        shape).
         """
-        return ["dehyphenate_with_log"]
+        return ["dehyphenate_with_log", "merge_cross_page_notes"]
 
     def get_layouts_disabled(self) -> list[DisabledLayout]:
         """No layout is disabled: Mandrioli exercises every Layer 2 layout.
@@ -896,9 +985,10 @@ class ManualeGiappichelliProfile(ProfilePlugin):
            plus one or more synthetic NOTE siblings, each carrying the
            note text segmented at the ``(N)`` markers in the spans of
            the original block. See :meth:`_split_body_note_glued` for
-           the splitter detail and the explicit codification of the
-           three limitations of the :class:`Transformation` model that
-           this structural transformation does NOT record.
+           the splitter detail; schema 0.5.0 records each split as a
+           :class:`Transformation` with ``split_into`` populated, so
+           the structural decomposition is fully reversible from the
+           log.
         3. Mint synthetic ``CROSS_REFERENCE`` nodes as siblings after
            every (now-truncated) BODY node whose ``text`` carries one
            or more inline ``(N)`` markers. The synthetic node IDs
@@ -910,20 +1000,27 @@ class ManualeGiappichelliProfile(ProfilePlugin):
            ``<num>. <title>`` regex.
 
         Pending warnings queued by :meth:`refine_classification` flush
-        into ``Document.warnings`` here.
+        into ``Document.warnings`` here. Transformations recorded by
+        the body+note splitter are appended to
+        ``Document.transformations`` so the downstream apparatus
+        resolver and the post-processing orchestrator carry them
+        forward into the emitted JSON.
         """
         del classified_blocks
 
         new_warnings = list(self._pending_warnings)
         self._pending_warnings = []
+        new_transformations: list[Transformation] = []
 
         next_id = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
-        new_roots = self._fuse_and_refine(document.root, extraction, new_warnings, next_id)
+        new_roots = self._fuse_and_refine(
+            document.root, extraction, new_warnings, new_transformations, next_id
+        )
 
         return Document(
             root=new_roots,
             warnings=tuple(document.warnings) + tuple(new_warnings),
-            transformations=document.transformations,
+            transformations=tuple(document.transformations) + tuple(new_transformations),
         )
 
     def refine_apparatus(
@@ -966,6 +1063,13 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                 f"{verdict.block_index}_page_{view.block.page}"
             )
             return verdict
+
+        if self._is_marginal_heading(view):
+            return ClassifiedBlock(
+                block_index=verdict.block_index,
+                category=SemanticCategory.MARGINAL_HEADING,
+                reason="giappichelli_marginal_heading",
+            )
 
         if self._is_chapter_summary(view):
             return ClassifiedBlock(
@@ -1206,22 +1310,96 @@ class ManualeGiappichelliProfile(ProfilePlugin):
     def _is_note(view: _BlockView) -> bool:
         """A note block opens with SimonciniGaramondStd at one of the two NOTE
         body sizes (9.0pt Vol. III/IV regime, 7.98pt Vol. I/II regime) and
-        text matching ``(N)``.
+        text matching the ``(N)`` marker.
 
-        Both signatures must hold: the leading span's typographic
-        family and size (in either of :data:`NOTE_BODY_SIZES`), AND
-        the textual marker pattern. The textual check runs against
-        the lstripped concatenated block text so a leading whitespace
-        span does not defeat the predicate.
+        The typographic check inspects the **effective leading span**
+        (the first span whose text is not pure whitespace, returned by
+        :meth:`_effective_leading_span`) rather than the raw first
+        span. PyMuPDF emits ~300 footnote blocks on Vol. III whose
+        first span is a one- or two-character whitespace fallback
+        (Courier, Mangal, Cambria) at 7.98pt before the actual note
+        text starts in SimonciniGaramondStd 9pt; using the effective
+        leading absorbs that artefact without false positives.
+
+        Marker-less continuations are deliberately **not** classified
+        here. Two alternative recovery paths cover them without the
+        false-positive risk a purely-geometric guard would introduce
+        on Vol. I/II bibliography sections (which share the 7.98pt
+        SimonciniGaramondStd signature):
+
+        1. **Glued body+note blocks** whose first 9pt run is a
+           marker-less continuation are handled by
+           :meth:`_split_body_note_glued` via the marker-less
+           first-transition rule in :meth:`_find_note_transitions`.
+           The splitter's prose-check guard (see
+           :meth:`_looks_like_note_continuation`) discriminates
+           genuine continuations from front-matter small-caps
+           fragments at the structural level.
+        2. **Standalone marker-less continuations** that PyMuPDF
+           emits as separate blocks (rare on Vol. III: empirical
+           gain would be ~6 Nodes) are not recovered, accepting a
+           small under-count on the densest fixture rather than the
+           Vol. I/II false-positive rate that a purely-geometric
+           guard would produce.
         """
-        if not view.spans:
+        leading = ManualeGiappichelliProfile._effective_leading_span(view.spans)
+        if leading is None:
             return False
-        leading = view.spans[0]
         family_ok = leading.font.startswith(BODY_FONT_PREFIX)
         size_ok = any(abs(leading.size - s) < 0.3 for s in NOTE_BODY_SIZES)
         if not (family_ok and size_ok):
             return False
         return bool(_NOTE_MARKER_PATTERN.match(view.text.lstrip()))
+
+    @staticmethod
+    def _looks_like_note_continuation(text: str) -> bool:
+        """Reject obvious non-continuation fragments by length and case.
+
+        A real marker-less NOTE continuation carries running prose:
+        substantial text (>= :data:`NOTE_CONTINUATION_MIN_TEXT_LENGTH`)
+        with the bulk of letters in lowercase (upper-ratio
+        <= :data:`NOTE_CONTINUATION_MAX_UPPER_RATIO`). Front-matter
+        small-caps fragments (CAPITOLO drop-cap tails, author-name
+        small caps) fail one of the two guards: they are either too
+        short or predominantly uppercase. The check is consulted in
+        two places: by :meth:`_is_note` on the marker-less branch of
+        classification, and by :meth:`_split_body_note_glued` when
+        minting the first synthetic NOTE from a marker-less
+        transition.
+        """
+        stripped = text.strip()
+        if len(stripped) < NOTE_CONTINUATION_MIN_TEXT_LENGTH:
+            return False
+        letters = [c for c in stripped if c.isalpha()]
+        if not letters:
+            return False
+        upper_ratio = sum(1 for c in letters if c.isupper()) / len(letters)
+        return upper_ratio <= NOTE_CONTINUATION_MAX_UPPER_RATIO
+
+    @staticmethod
+    def _effective_leading_span(spans: tuple[Span, ...]) -> Span | None:
+        """Return the first non-whitespace span, or the first span if all empty.
+
+        PyMuPDF sometimes emits a leading whitespace span at the start
+        of a footnote block in a fallback font (Courier, Mangal,
+        Cambria) at 7.98pt, carrying just one or two spaces of
+        indentation before the actual note text begins in
+        SimonciniGaramondStd at 9.0pt. The plugin predicates that key
+        on the leading span's typography (``_is_note``, the splitter's
+        ``_is_glued_spans``) would miss those blocks if they peeked at
+        the raw first span. Looking at the first **non-whitespace**
+        span absorbs the typesetting artefact and lets the
+        substantive content drive classification.
+
+        Returns ``None`` if the span tuple is empty; returns the very
+        first span if every span has whitespace-only text (no
+        non-whitespace span found). The latter case is defensive and
+        does not occur in the fixture.
+        """
+        for span in spans:
+            if span.text.strip():
+                return span
+        return spans[0] if spans else None
 
     @staticmethod
     def _is_marginal_gloss(view: _BlockView) -> bool:
@@ -1238,6 +1416,41 @@ class ManualeGiappichelliProfile(ProfilePlugin):
             return False
         text_len = len(view.text.strip())
         return MARGINAL_GLOSS_MIN_TEXT_LENGTH <= text_len <= MARGINAL_GLOSS_MAX_TEXT_LENGTH
+
+    @staticmethod
+    def _is_marginal_heading(view: _BlockView) -> bool:
+        """A SimonciniGaramondStd 7.98pt block in the left margin column.
+
+        Vol. I and Vol. II of the Mandrioli series typeset their
+        marginal headings in SimonciniGaramondStd at
+        :data:`NOTE_ALT_BODY_SIZE` (7.98pt) sitting in the left margin
+        column (``bbox.x0 < MARGINAL_HEADING_X_THRESHOLD``). The
+        predicate intercepts these blocks **before** :meth:`_is_note`
+        so the 7.98pt-leading note signature does not absorb them.
+
+        Vol. III and Vol. IV typeset their marginal annotations in
+        AGaramondPro at 8.52pt (caught upstream by
+        :meth:`_is_marginal_gloss`) and their notes at 9.0pt; neither
+        path satisfies this predicate, so the rule is editorial-
+        family-correct on every Mandrioli volume.
+
+        The predicate inspects the **effective leading span** (skipping
+        leading whitespace fallback spans) per
+        :meth:`_effective_leading_span`, mirroring the convention used
+        by :meth:`_is_note`.
+        """
+        leading = ManualeGiappichelliProfile._effective_leading_span(view.spans)
+        if leading is None:
+            return False
+        if not leading.font.startswith(BODY_FONT_PREFIX):
+            return False
+        if abs(leading.size - NOTE_ALT_BODY_SIZE) > 0.1:
+            return False
+        x0 = view.block.bbox[0]
+        x1 = view.block.bbox[2]
+        in_left_margin = x1 <= MARGINAL_HEADING_LEFT_X1_MAX
+        in_right_margin = x0 >= MARGINAL_HEADING_RIGHT_X0_MIN
+        return in_left_margin or in_right_margin
 
     @staticmethod
     def _is_marginal_gloss_outside_margin(view: _BlockView) -> bool:
@@ -1351,6 +1564,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         extraction: ExtractionResult,
         warnings: list[str],
+        transformations: list[Transformation],
         next_id: _NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Return a new forest with chapter pairs fused, glued body+note
@@ -1358,11 +1572,13 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         the descendants recursively refined.
         """
         # Step 1: fuse chapter pairs at this sibling level and recurse into descendants.
-        fused = self._fuse_chapters_recursive(roots, extraction, warnings, next_id)
+        fused = self._fuse_chapters_recursive(roots, extraction, warnings, transformations, next_id)
         # Step 2: split body+note glued blocks at this sibling level
         # (must precede cross-reference minting so the truncated BODY
         # carries only body-side text when scanned for (N) markers).
-        with_notes = self._split_body_note_glued(list(fused), extraction, warnings, next_id)
+        with_notes = self._split_body_note_glued(
+            list(fused), extraction, warnings, transformations, next_id
+        )
         # Step 3: mint cross-refs from BODY nodes (now post-split).
         with_crossrefs = self._mint_cross_references(list(with_notes), warnings, next_id)
         return tuple(with_crossrefs)
@@ -1372,6 +1588,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         extraction: ExtractionResult,
         warnings: list[str],
+        transformations: list[Transformation],
         next_id: _NodeIdMinter,
     ) -> tuple[Node, ...]:
         new_nodes: list[Node] = []
@@ -1384,7 +1601,9 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                 if self._is_chapter_title_node(candidate):
                     partner = candidate
             if partner is not None:
-                fused = self._fuse_chapter_pair(node, partner, extraction, warnings, next_id)
+                fused = self._fuse_chapter_pair(
+                    node, partner, extraction, warnings, transformations, next_id
+                )
                 new_nodes.append(fused)
                 i += 2
                 continue
@@ -1394,7 +1613,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                     f"{node.block_indices[0] if node.block_indices else -1}_"
                     f"page_{node.page_index}"
                 )
-            refined = self._refine_node(node, extraction, warnings, next_id)
+            refined = self._refine_node(node, extraction, warnings, transformations, next_id)
             new_nodes.append(refined)
             i += 1
         return tuple(new_nodes)
@@ -1419,6 +1638,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         title_node: Node,
         extraction: ExtractionResult,
         warnings: list[str],
+        transformations: list[Transformation],
         next_id: _NodeIdMinter,
     ) -> Node:
         """Merge two ``HEADING_2`` siblings into a single chapter heading node."""
@@ -1434,6 +1654,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
             tuple((*number_node.children, *title_node.children)),
             extraction,
             warnings,
+            transformations,
             next_id,
         )
         return Node(
@@ -1454,6 +1675,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         node: Node,
         extraction: ExtractionResult,
         warnings: list[str],
+        transformations: list[Transformation],
         next_id: _NodeIdMinter,
     ) -> Node:
         """Recursively refine a node and its descendants.
@@ -1462,7 +1684,9 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         by parsing the text with the en-dash splitter; all other nodes
         get their descendants recursively refined.
         """
-        new_children = self._fuse_and_refine(node.children, extraction, warnings, next_id)
+        new_children = self._fuse_and_refine(
+            node.children, extraction, warnings, transformations, next_id
+        )
         if node.category is SemanticCategory.CHAPTER_SUMMARY:
             items = self._parse_chapter_summary(node.text)
             if items is None:
@@ -1499,79 +1723,81 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         nodes: list[Node],
         extraction: ExtractionResult,
         warnings: list[str],
+        transformations: list[Transformation],
         next_id: _NodeIdMinter,
     ) -> list[Node]:
-        """Split BODY nodes that fuse body + note(s) into a BODY + synthetic NOTE siblings.
+        """Split BODY or NOTE nodes that contain multiple footnotes into
+        independent NOTE siblings.
 
-        PyMuPDF occasionally emits a body block and the immediately
-        following note block as a single block whose spans alternate
-        between :data:`BODY_FONT_SIZE` (10.98pt, body) and one of
-        :data:`NOTE_BODY_SIZES` (9.0pt on Vol. III/IV, 7.98pt on
-        Vol. I/II). Tier 1 reconstruction materialises such a fused
-        block as a single BODY ``Node`` whose ``text`` concatenates
-        body and note span text indiscriminately. The Vol. III is
-        especially affected: ~95 % of all text blocks present the
-        glued pattern, which would leave ~700 NOTE blocks invisible
-        without this splitter.
+        Two structurally distinct cases handled in one pass:
 
-        Algorithm. For every BODY Node with exactly one block_index:
+        - **BODY+NOTE glued**: PyMuPDF emits a body block and the
+          immediately following note block as a single block whose
+          spans alternate between :data:`BODY_FONT_SIZE` (10.98pt,
+          body) and one of :data:`NOTE_BODY_SIZES` (9.0pt on
+          Vol. III/IV, 7.98pt on Vol. I/II). Tier 1 reconstruction
+          materialises such a fused block as a single BODY ``Node``
+          whose ``text`` concatenates body and note span text
+          indiscriminately. The Vol. III is especially affected:
+          ~95 % of all text blocks present the glued pattern.
+        - **Multi-note NOTE**: PyMuPDF emits multiple consecutive
+          footnotes (e.g. ``(13) ... (14) ... (15) ...``) as a single
+          NOTE block whose spans include the marker spans of each
+          contained note. Without splitting, every such block becomes
+          a single NOTE Node carrying the text of N notes, losing the
+          per-note granularity that Layer 2 needs to render apparatus
+          references correctly.
+
+        Algorithm. For every BODY or NOTE Node with exactly one
+        block_index:
 
         - Recover the original spans via
           ``extraction.spans[block.span_range[0]:block.span_range[1]]``.
-        - Verify the glued predicate on these spans: leading span at
+        - For BODY: verify the glued predicate (effective leading at
           BODY_FONT_SIZE plus a NOTE-share ratio above
-          :data:`BODY_NOTE_GLUED_RATIO_THRESHOLD`.
-        - Identify every span at NOTE_BODY_SIZES whose stripped text
-          opens with the ``(N)`` parenthesised digit marker. Each such
-          span is a transition point that opens a new NOTE chunk.
-        - If no transition is found, the block is glued but the
-          marker is missing or atypical: emit no synthetic NOTE and
-          leave the BODY unchanged (the upstream
-          ``body_note_block_glued`` warning already documents the
-          unrecovered loss; the delta count is the QA gauge).
-        - Otherwise: the BODY survives with its text truncated to the
-          spans before the first transition; one synthetic NOTE Node
-          is minted per transition, carrying the concatenated text of
-          the spans from that transition to the next (or to the end).
-          The synthetic NOTE Nodes are inserted as siblings
-          immediately after the truncated BODY in the result list,
-          using the same ``_NodeIdMinter`` that the cross-reference
-          minting later consumes; their ``block_indices`` reuse the
-          BODY's block_index (the NOTE conceptually originates from
-          the same source block).
+          :data:`BODY_NOTE_GLUED_RATIO_THRESHOLD`); skip if not glued.
+        - For NOTE: skip the glued predicate; rely on the transition
+          count alone.
+        - Identify transitions via :meth:`_find_note_transitions`: a
+          new line-leading ``(N)`` marker opens a new NOTE chunk, and
+          the first marker-less 9pt span (if any) opens a continuation
+          chunk.
+        - **For BODY blocks**: the surviving BODY keeps the spans
+          before the first transition (body text, possibly empty);
+          one synthetic NOTE is minted per transition.
+        - **For NOTE blocks**: the surviving NOTE keeps the spans
+          from the first transition up to the second; one synthetic
+          NOTE is minted per additional transition. If there is only
+          one transition, no split happens (single-note block).
+        - Synthetic NOTE Nodes are inserted as siblings immediately
+          after the surviving Node in the result list, using the same
+          ``_NodeIdMinter`` that the cross-reference minting later
+          consumes; their ``block_indices`` reuse the source
+          block_index (the NOTE conceptually originates from the same
+          block).
         - Each minted NOTE emits a
           ``body_note_split_minted_node_<id>_page_<p>`` warning.
+        - One :class:`Transformation` per split is recorded on the
+          surviving Node. Its textual fields encode the text
+          truncation (the part removed corresponds to the moved span
+          text); its ``split_into`` field (added in schema 0.5.0)
+          lists the synthetic NOTE ids. Layer 2 reverts the split by
+          reattaching the removed text and dropping the synthetic
+          siblings.
 
-        Three limitations of the :class:`Transformation` model that
-        this structural split does NOT record (codified here for
-        future maintenance):
-
-        1. The decomposition of a single BODY Node into a truncated
-           BODY + one or more synthetic NOTE siblings is a
-           **structural** transformation of the document tree, NOT
-           a textual intra-Node substitution like the rewrites
-           recorded by ``dehyphenate_with_log`` or
-           ``recompose_marginal_ellipsis``.
-        2. The current ``Transformation`` model (``step_id``,
-           ``node_id``, ``page_index``, ``position``, ``original``,
-           ``normalized``) preserves the textual reversibility of the
-           BODY that survives the split — the truncated text is
-           byte-recoverable by concatenating the original BODY text
-           with the texts of the minted NOTE siblings — but the
-           materialisation of each synthetic NOTE Node is **implicit
-           in the post-step tree** and is not separately reversible
-           from the log.
-        3. An eventual future extension of ``Transformation`` with a
-           ``split_into`` field (a list of node ids generated by the
-           split) would be an additive 0.5.0 schema bump to plan in
-           a dedicated session, not in this one. The same pattern
-           applies to the Mosconi marginal-ellipsis structural merge
-           that already left its own reversibility gap on the same
-           Transformation model.
+        The :class:`Transformation` reversibility convention is
+        satisfied on the textual side
+        (``pre[position[0]:position[1]] == original`` and
+        ``post[position[0]:position[0]+len(normalized)] == normalized``,
+        the latter trivially with ``normalized == ""``) and on the
+        structural side via ``split_into``. When the pre-step or
+        post-step text is ``None``, the Transformation textual fields
+        collapse to empty strings; ``split_into`` remains
+        authoritative for the structural side.
         """
         result: list[Node] = []
         for node in nodes:
-            if node.category is not SemanticCategory.BODY:
+            if node.category not in (SemanticCategory.BODY, SemanticCategory.NOTE):
                 result.append(node)
                 continue
             if len(node.block_indices) != 1:
@@ -1584,41 +1810,82 @@ class ManualeGiappichelliProfile(ProfilePlugin):
             block = extraction.blocks[block_index]
             start, end = block.span_range
             spans = tuple(extraction.spans[start:end])
-            if not self._is_glued_spans(spans):
+            is_body = node.category is SemanticCategory.BODY
+            if is_body and not self._is_glued_spans(spans):
                 result.append(node)
                 continue
             transitions = self._find_note_transitions(spans)
-            if not transitions:
-                # Glued but no recoverable marker — leave BODY as is.
-                # The upstream ``body_note_block_glued`` warning still
-                # tracks the lost apparatus.
-                result.append(node)
-                continue
-            # Truncate BODY text to the spans preceding the first transition.
-            body_spans = spans[: transitions[0]]
-            body_text = "".join(s.text for s in body_spans).rstrip() or None
-            result.append(
-                Node(
-                    id=node.id,
-                    category=SemanticCategory.BODY,
-                    children=node.children,
-                    page_index=node.page_index,
-                    block_indices=node.block_indices,
-                    text=body_text,
-                    level=node.level,
-                    summary_items=node.summary_items,
-                    toc_items=node.toc_items,
-                    apparatus_refs=node.apparatus_refs,
-                )
+            if is_body:
+                if not transitions:
+                    # Glued but no recoverable marker or continuation
+                    # signal — leave BODY as is. The upstream
+                    # ``body_note_block_glued`` warning still tracks
+                    # the lost apparatus.
+                    result.append(node)
+                    continue
+                # Surviving BODY = spans before the first transition.
+                surviving_start = 0
+                surviving_end = transitions[0]
+                synthetic_transitions = transitions
+                surviving_category = SemanticCategory.BODY
+            else:
+                # NOTE block: split only if there are 2+ transitions
+                # (single-transition NOTE is just a regular single-note
+                # block — leave untouched).
+                if len(transitions) <= 1:
+                    result.append(node)
+                    continue
+                # Surviving NOTE = spans from transitions[0] up to
+                # transitions[1]; synthetic NOTEs for transitions[1:].
+                surviving_start = transitions[0]
+                surviving_end = transitions[1]
+                synthetic_transitions = transitions[1:]
+                surviving_category = SemanticCategory.NOTE
+            surviving_spans = spans[surviving_start:surviving_end]
+            surviving_text_raw = "".join(s.text for s in surviving_spans)
+            surviving_text_stripped = (
+                surviving_text_raw.strip() if not is_body else surviving_text_raw.rstrip()
             )
-            # Mint one synthetic NOTE per transition, chunked at the next transition.
-            for k, t_start in enumerate(transitions):
-                t_end = transitions[k + 1] if k + 1 < len(transitions) else len(spans)
+            surviving_text: str | None = surviving_text_stripped or None
+            surviving_node = Node(
+                id=node.id,
+                category=surviving_category,
+                children=node.children,
+                page_index=node.page_index,
+                block_indices=node.block_indices,
+                text=surviving_text,
+                level=node.level,
+                summary_items=node.summary_items,
+                toc_items=node.toc_items,
+                apparatus_refs=node.apparatus_refs,
+            )
+            synthetic_ids: list[str] = []
+            synthetic_nodes: list[Node] = []
+            for k, t_start in enumerate(synthetic_transitions):
+                t_end = (
+                    synthetic_transitions[k + 1]
+                    if k + 1 < len(synthetic_transitions)
+                    else len(spans)
+                )
                 note_text = "".join(s.text for s in spans[t_start:t_end]).strip()
                 if not note_text:
                     continue
+                # Marker-less first synthetic chunk is only minted if
+                # the text looks like running prose; otherwise it is a
+                # front-matter small-caps fragment (Vol. I/II have
+                # several such blocks) that should not be elevated to
+                # a synthetic NOTE. Marker-bearing chunks bypass the
+                # prose check because the leading ``(N)`` is enough
+                # signal that a real note starts here.
+                if (
+                    k == 0
+                    and not _NOTE_MARKER_PATTERN.match(note_text.lstrip())
+                    and not ManualeGiappichelliProfile._looks_like_note_continuation(note_text)
+                ):
+                    continue
                 synthetic_id = next_id.mint()
-                result.append(
+                synthetic_ids.append(synthetic_id)
+                synthetic_nodes.append(
                     Node(
                         id=synthetic_id,
                         category=SemanticCategory.NOTE,
@@ -1631,6 +1898,32 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                     f"{WARNING_PREFIX}:body_note_split_minted_node_"
                     f"{synthetic_id}_page_{node.page_index}"
                 )
+            if not synthetic_ids:
+                # Every transition yielded empty text — leave the
+                # original Node unchanged and skip the Transformation.
+                result.append(node)
+                continue
+            result.append(surviving_node)
+            result.extend(synthetic_nodes)
+            # Record the split as a Transformation. The textual fields
+            # encode the pre-step text loss; ``split_into`` carries the
+            # structural side.
+            pre_text = node.text
+            if pre_text is not None:
+                post_len = len(surviving_text) if surviving_text is not None else 0
+                position = (post_len, len(pre_text))
+                original = pre_text[post_len:]
+                transformations.append(
+                    Transformation(
+                        step_id=SPLITTER_STEP_ID,
+                        node_id=node.id,
+                        page_index=node.page_index,
+                        position=position,
+                        original=original,
+                        normalized="",
+                        split_into=tuple(synthetic_ids),
+                    )
+                )
         return result
 
     @staticmethod
@@ -1638,13 +1931,17 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         """Re-evaluate the glued predicate on the original block spans.
 
         Mirror of :meth:`_is_body_note_glued` but operates on the
-        ``ExtractionResult.spans`` slice rather than on a ``_BlockView``.
+        ``ExtractionResult.spans`` slice rather than on a ``_BlockView``,
+        and on the **effective leading span** (skipping any leading
+        whitespace fallback span) per :meth:`_effective_leading_span`.
         Used by :meth:`_split_body_note_glued` to confirm the structural
         condition on the source spans before splitting.
         """
         if len(spans) < 2:
             return False
-        leading = spans[0]
+        leading = ManualeGiappichelliProfile._effective_leading_span(spans)
+        if leading is None:
+            return False
         if not leading.font.startswith(BODY_FONT_PREFIX):
             return False
         if abs(leading.size - BODY_FONT_SIZE) > 0.1:
@@ -1659,22 +1956,58 @@ class ManualeGiappichelliProfile(ProfilePlugin):
 
     @staticmethod
     def _find_note_transitions(spans: tuple[Span, ...]) -> list[int]:
-        """Indices of spans that mark a new NOTE chunk inside a glued block.
+        """Indices of spans that mark a new NOTE chunk inside a glued or
+        multi-note block.
 
-        A transition is a span whose size matches one of
-        :data:`NOTE_BODY_SIZES` and whose lstripped text opens with a
-        parenthesised digit marker (the Mandrioli ``(N)`` note marker).
-        Multiple transitions inside a single glued block produce
-        multiple synthetic NOTE Nodes, one per chunk.
+        A transition is one of:
+
+        - a 9.0pt / 7.98pt SimonciniGaramondStd span whose lstripped
+          text opens with the parenthesised ``(N)`` marker **and**
+          which starts a new typographic line (``span.line_index``
+          differs from the preceding 9pt span's line_index) — the
+          regular start-of-new-note case. The line-index guard
+          disambiguates this case from inline cross-reference markers
+          that happen to land at the start of a wrapped line inside a
+          previous note's text;
+        - the first 9.0pt / 7.98pt SimonciniGaramondStd span of the
+          block (in iteration order) when it lacks the ``(N)``
+          marker — the marker-less continuation case where the first
+          embedded note is the continuation of a footnote opened on
+          the previous page. The post-processing step
+          :func:`postprocessing.steps.merge_cross_page_notes.
+          merge_cross_page_notes` then fuses the synthetic NOTE with
+          the head NOTE on the previous page.
+
+        Subsequent marker-less 9pt spans (occurring AFTER the first
+        transition has been registered) are absorbed into the current
+        NOTE chunk's text rather than treated as fresh transitions —
+        they are mid-stream span breaks within a single footnote, not
+        new notes. The "first 9pt run" rule therefore admits at most
+        one marker-less transition per block, which mirrors the
+        editorial reality (a single continuation per page).
         """
         transitions: list[int] = []
+        prev_note_line_index = -1
         for i, span in enumerate(spans):
             if not any(abs(span.size - s) < 0.3 for s in NOTE_BODY_SIZES):
                 continue
             if not span.font.startswith(BODY_FONT_PREFIX):
                 continue
             if _NOTE_MARKER_PATTERN.match(span.text.lstrip()):
+                # Two conjunctive guards prevent false positives from
+                # inline cross-references that happen to be at the
+                # start of a wrapped line:
+                # (a) the span sits on a different line than the
+                #     preceding 9pt span (``line_index`` differs);
+                # (b) the span is the first of its line
+                #     (``span_index == 0``), i.e. left-aligned with
+                #     the note column's leftmost position rather than
+                #     preceded by other text on the same line.
+                if span.line_index != prev_note_line_index and span.span_index == 0:
+                    transitions.append(i)
+            elif not transitions:
                 transitions.append(i)
+            prev_note_line_index = span.line_index
         return transitions
 
     def _mint_cross_references(

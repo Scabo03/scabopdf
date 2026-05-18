@@ -19,6 +19,8 @@ def test_transformation_has_all_expected_fields() -> None:
         "position",
         "original",
         "normalized",
+        "split_into",
+        "merged_from",
     }
 
 
@@ -87,3 +89,53 @@ def test_document_is_frozen_on_transformations_too() -> None:
     document = Document()
     with pytest.raises(FrozenInstanceError):
         document.transformations = ()  # type: ignore[misc]
+
+
+def test_transformation_structural_fields_default_to_none() -> None:
+    """Schema 0.5.0 added ``split_into`` and ``merged_from`` as optional.
+
+    Steps performing purely textual rewrites (``dehyphenate_with_log``)
+    construct ``Transformation`` without naming the structural fields;
+    both default to ``None`` so downstream consumers can branch on
+    presence without writing default-handling boilerplate.
+    """
+    t = Transformation(
+        step_id="dehyphenate_with_log",
+        node_id="node_0001",
+        page_index=0,
+        position=(0, 12),
+        original="evolu-\nzione",
+        normalized="evoluzione",
+    )
+    assert t.split_into is None
+    assert t.merged_from is None
+
+
+def test_transformation_accepts_split_into_tuple() -> None:
+    """Structural transformations populate ``split_into`` with synthetic ids."""
+    t = Transformation(
+        step_id="giappichelli_body_note_splitter",
+        node_id="node_0100",
+        page_index=42,
+        position=(120, 280),
+        original="...embedded note text...",
+        normalized="",
+        split_into=("node_2000", "node_2001"),
+    )
+    assert t.split_into == ("node_2000", "node_2001")
+    assert t.merged_from is None
+
+
+def test_transformation_accepts_merged_from_tuple() -> None:
+    """Structural transformations populate ``merged_from`` with absorbed ids."""
+    t = Transformation(
+        step_id="merge_cross_page_notes",
+        node_id="node_0050",
+        page_index=10,
+        position=(80, 80),
+        original="",
+        normalized=" continuation text",
+        merged_from=("node_0080",),
+    )
+    assert t.merged_from == ("node_0080",)
+    assert t.split_into is None

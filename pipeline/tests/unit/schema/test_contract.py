@@ -1,4 +1,4 @@
-"""Unit tests for the v0.3.0 Pydantic contract models."""
+"""Unit tests for the v0.5.0 Pydantic contract models."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from scabopdf_pipeline.schema.contract import (
 
 def _minimal_document() -> ScabopdfDocument:
     return ScabopdfDocument(
-        schema_version="0.4.0",
+        schema_version="0.5.0",
         document_id=uuid4(),
         metadata=DocumentMetadata(
             pages_pdf=10,
@@ -40,7 +40,7 @@ def _minimal_document() -> ScabopdfDocument:
 def test_minimal_document_validates() -> None:
     doc = _minimal_document()
     assert isinstance(doc, ScabopdfDocument)
-    assert doc.schema_version == "0.4.0"
+    assert doc.schema_version == "0.5.0"
     assert doc.warnings == []
     assert doc.structure == []
 
@@ -49,7 +49,7 @@ def test_missing_required_field_raises() -> None:
     with pytest.raises(ValidationError):
         ScabopdfDocument.model_validate(
             {
-                "schema_version": "0.4.0",
+                "schema_version": "0.5.0",
                 "document_id": str(uuid4()),
                 "metadata": {
                     "pages_pdf": 10,
@@ -169,7 +169,7 @@ def test_extra_fields_forbidden() -> None:
     with pytest.raises(ValidationError):
         ScabopdfDocument.model_validate(
             {
-                "schema_version": "0.4.0",
+                "schema_version": "0.5.0",
                 "document_id": str(uuid4()),
                 "metadata": {
                     "pages_pdf": 10,
@@ -191,7 +191,7 @@ def test_document_id_accepts_uuid_string() -> None:
     raw = str(uuid4())
     doc = ScabopdfDocument.model_validate(
         {
-            "schema_version": "0.4.0",
+            "schema_version": "0.5.0",
             "document_id": raw,
             "metadata": {
                 "pages_pdf": 10,
@@ -214,7 +214,7 @@ def test_document_id_rejects_non_uuid_string() -> None:
     with pytest.raises(ValidationError):
         ScabopdfDocument.model_validate(
             {
-                "schema_version": "0.4.0",
+                "schema_version": "0.5.0",
                 "document_id": "not-a-uuid",
                 "metadata": {
                     "pages_pdf": 10,
@@ -345,7 +345,7 @@ def test_scabopdf_document_accepts_transformations_field() -> None:
         normalized="evoluzione",
     )
     doc = ScabopdfDocument(
-        schema_version="0.4.0",
+        schema_version="0.5.0",
         document_id=uuid4(),
         metadata=DocumentMetadata(
             pages_pdf=1,
@@ -361,3 +361,78 @@ def test_scabopdf_document_accepts_transformations_field() -> None:
         transformations=[t],
     )
     assert doc.transformations == [t]
+
+
+def test_transformation_dict_default_structural_fields_are_none() -> None:
+    """Schema 0.5.0 fields default to ``None`` for purely textual transformations."""
+    t = TransformationDict(
+        step_id="dehyphenate_with_log",
+        node_id="node_0042",
+        page_index=12,
+        position=(1234, 1246),
+        original="evolu-\nzione",
+        normalized="evoluzione",
+    )
+    assert t.split_into is None
+    assert t.merged_from is None
+    dumped = t.model_dump(mode="json")
+    assert dumped["split_into"] is None
+    assert dumped["merged_from"] is None
+
+
+def test_transformation_dict_accepts_split_into_field() -> None:
+    """Structural transformation that mints sibling Nodes populates split_into."""
+    t = TransformationDict(
+        step_id="giappichelli_body_note_splitter",
+        node_id="node_0100",
+        page_index=42,
+        position=(120, 280),
+        original="...embedded note text...",
+        normalized="",
+        split_into=["node_2000", "node_2001"],
+    )
+    assert t.split_into == ["node_2000", "node_2001"]
+    assert t.merged_from is None
+    rebuilt = TransformationDict.model_validate(t.model_dump(mode="json"))
+    assert rebuilt == t
+
+
+def test_transformation_dict_accepts_merged_from_field() -> None:
+    """Structural transformation that absorbs sibling Nodes populates merged_from."""
+    t = TransformationDict(
+        step_id="merge_cross_page_notes",
+        node_id="node_0050",
+        page_index=10,
+        position=(80, 80),
+        original="",
+        normalized=" continuation text",
+        merged_from=["node_0080"],
+    )
+    assert t.merged_from == ["node_0080"]
+    assert t.split_into is None
+    rebuilt = TransformationDict.model_validate(t.model_dump(mode="json"))
+    assert rebuilt == t
+
+
+def test_transformation_dict_rejects_bad_split_into_pattern() -> None:
+    """``split_into`` is a free list of strings without per-id pattern.
+
+    The contract intentionally leaves the per-id format unconstrained
+    on the structural fields so a step minting synthetic ids with a
+    non-``node_NNNN`` shape stays representable. Reusing
+    ``NODE_ID_PATTERN`` everywhere would entangle the contract with a
+    convention that no schema-side consumer needs.
+
+    This test pins the lenient behaviour so future "tightening" of the
+    field does not happen by accident.
+    """
+    t = TransformationDict(
+        step_id="custom_step",
+        node_id="node_0001",
+        page_index=0,
+        position=(0, 5),
+        original="abcde",
+        normalized="xyz",
+        split_into=["any_string", "another_id"],
+    )
+    assert t.split_into == ["any_string", "another_id"]

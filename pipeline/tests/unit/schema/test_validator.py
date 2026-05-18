@@ -19,7 +19,7 @@ SHARED_SCHEMA_PATH = REPO_ROOT / "shared" / "schema.json"
 
 def _valid_payload() -> dict[str, object]:
     return {
-        "schema_version": "0.4.0",
+        "schema_version": "0.5.0",
         "document_id": str(uuid4()),
         "metadata": {
             "pages_pdf": 10,
@@ -40,7 +40,7 @@ def _valid_payload() -> dict[str, object]:
 def test_validate_document_returns_pydantic_instance() -> None:
     instance = validate_document(_valid_payload())
     assert isinstance(instance, ScabopdfDocument)
-    assert instance.schema_version == "0.4.0"
+    assert instance.schema_version == "0.5.0"
 
 
 def test_validate_document_raises_on_invalid() -> None:

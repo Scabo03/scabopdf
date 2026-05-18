@@ -59,18 +59,20 @@ Algorithm.
 
 Reversibility scope.
 
-The current :class:`Transformation` model records intra-Node text
-substitutions. The marginal-ellipsis merge is structurally inter-Node:
-the absorbed segments are removed from the tree, and their ``id``,
-``page_index`` and tree position are not encoded in the log. The
-recorded transformation lets Layer 2 restore the head node's text to
-its pre-step value but does not let it rebuild the absorbed segments
-as separate nodes. This is acceptable because the two-segment state
-was a typographic layout artefact of cross-page continuation; the
-fused single-Node state is the semantically correct representation
-the editorial analysis confirms. A future schema bump extending
-``Transformation`` with optional ``merged_from`` fields could provide
-full structural reversibility; the current 0.4.0 schema does not.
+Schema 0.5.0 extends :class:`Transformation` with two optional
+structural fields (``split_into`` for synthetic Nodes minted by the
+step, ``merged_from`` for sibling Nodes absorbed by the step). This
+step populates ``merged_from`` on the recorded transformation with
+the tuple of ids of the absorbed segments (every chain element after
+the head). The recorded transformation therefore lets Layer 2 not
+only restore the head node's text to its pre-step value but also
+identify which sibling Nodes were consumed by the merge — enough to
+rematerialise them at the same parent and tree position if "raw
+mode" requests the pre-step layout. The textual rewrite on the head
+remains byte-for-byte reversible via the ``position`` + ``original`` +
+``normalized`` triple, exactly as in 0.4.0. Pre-0.5.0 consumers that
+ignore the new fields keep seeing the same textual transformation
+they always have.
 
 Documented limitations.
 
@@ -256,6 +258,8 @@ def _build_merged_head(chain: list[Node], transformations: list[Transformation])
     original = trailing_match.group(0)
     normalized = merged_text[position[0] :]
 
+    absorbed_ids = tuple(segment.id for segment in chain[1:])
+
     transformations.append(
         Transformation(
             step_id=STEP_ID,
@@ -264,6 +268,7 @@ def _build_merged_head(chain: list[Node], transformations: list[Transformation])
             position=position,
             original=original,
             normalized=normalized,
+            merged_from=absorbed_ids,
         )
     )
 

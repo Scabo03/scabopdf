@@ -171,6 +171,10 @@ def test_simple_pair_merges_and_logs_transformation() -> None:
     assert transformation.position == (7, 10)
     assert transformation.original == "..."
     assert transformation.normalized == " baz qux"
+    # Schema 0.5.0 structural reversibility: the absorbed segment id is
+    # recorded on ``merged_from`` so Layer 2 can rematerialise it.
+    assert transformation.merged_from == ("node_0002",)
+    assert transformation.split_into is None
 
 
 def test_pair_merge_reversibility_property() -> None:
@@ -238,6 +242,9 @@ def test_chain_of_three_merges_into_one_node() -> None:
     assert transformation.position == (12, 15)
     assert transformation.original == "..."
     assert transformation.normalized == " metà frase fine frase"
+    # Schema 0.5.0: the two absorbed segment ids appear in chain order.
+    assert transformation.merged_from == ("node_0002", "node_0003")
+    assert transformation.split_into is None
 
 
 def test_chain_of_four_merges_into_one_node() -> None:

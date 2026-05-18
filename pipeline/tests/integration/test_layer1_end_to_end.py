@@ -376,7 +376,7 @@ def test_pipeline_runs_on_patriarca() -> None:
 
     # § 9 emission: the converted ScabopdfDocument is valid against both
     # the Pydantic contract and the committed shared/schema.json.
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
     assert scabopdf_document.profile.profile_id == "manuale_zanichelli_giuridica"
     assert len(scabopdf_document.structure) == len(document.root)
@@ -571,7 +571,7 @@ def test_pipeline_runs_on_tesauro() -> None:
 
     # § 9 emission: the converted ScabopdfDocument is valid against
     # both the Pydantic contract and the committed shared/schema.json.
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
     assert scabopdf_document.profile.profile_id == "compendio_utet"
     assert len(scabopdf_document.structure) == len(document.root)
@@ -713,7 +713,7 @@ def test_pipeline_runs_on_mosconi() -> None:
     assert n_warnings > 0, "expected plugin-emitted warnings on the dense Mosconi apparatus"
 
     # § 9 emission conformance.
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == 613
     assert len(scabopdf_document.structure) == len(document.root)
     assert scabopdf_document.profile.profile_id == "manuale_utet_wolterskluwer"
@@ -837,34 +837,36 @@ def test_pipeline_runs_on_mandrioli() -> None:
     # detector also catches index-page entries that share the
     # 11.52pt composite signature).
     assert n_h4 >= 70, f"expected at least 70 HEADING_4 (paragrafo) nodes, got {n_h4}"
-    # NOTE consolidation gate. Vol. III has 744 footnote markers in
-    # the original editorial text. PyMuPDF emits ~95 % of all text
-    # blocks as glued body+note pairs (~2000 of 2079 blocks).
+    # NOTE consolidation gate (schema 0.5.0). Vol. III contains 1506
+    # span-leading ``(N)`` markers in 9pt SimonciniGaramondStd spans
+    # (the upper bound on distinct footnotes plus a small share of
+    # inline cross-references promoted to span-leading position by line
+    # wrapping). The combined pipeline now recovers ~1161 NOTE Nodes:
     #
-    # The body+note splitter materialises a synthetic NOTE Node from
-    # every glued block whose 9.0pt span content opens with a (N)
-    # marker. Empirical post-splitter count on this fixture is 466
-    # NOTE Nodes — a 115x improvement over the prior plugin
-    # generation (which surfaced 4) but ~38 % below the 744 marker
-    # count.
+    # 1. The body+note splitter (now operating on both BODY and NOTE
+    #    blocks, with the line-leading marker discriminator added in
+    #    :meth:`_find_note_transitions`) materialises a synthetic NOTE
+    #    Node per marker-bearing transition inside a glued or multi-
+    #    note block.
+    # 2. The marker-less first-transition rule recovers cross-page
+    #    note continuations whose second-page fragment lacks a fresh
+    #    marker; the splitter's prose-likeness guard
+    #    (:meth:`_looks_like_note_continuation`) keeps front-matter
+    #    small-caps fragments out of the synthetic-NOTE flow.
+    # 3. The promoted ``merge_cross_page_notes`` post-processing step
+    #    fuses each marker-less continuation into its head NOTE on the
+    #    previous page, producing the reversible :class:`Transformation`
+    #    log per schema 0.5.0 ``merged_from`` field.
     #
-    # The ~280-node delta is mostly attributable to (a) cross-page
-    # note continuations where the second-page fragment is itself a
-    # glued block whose leading 9.0pt span lacks a (N) marker (the
-    # note continues mid-stream without a fresh marker), (b)
-    # editorial cases where the marker glyph sits in a sub-span the
-    # splitter cannot disambiguate, and (c) atypical typographic
-    # variants the regex would need a second pass to recover. The
-    # floor of 450 leaves a 16-node margin below the empirical 466
-    # so a future minor extraction tweak or PyMuPDF update does not
-    # turn this into a flaky assertion; future work on
-    # merge_cross_page_notes (still placeholder) would lift the
-    # number further.
-    assert n_note >= 450, (
-        f"expected at least 450 NOTE nodes after body+note glued "
-        f"splitting, got {n_note} (empirical baseline 466 on this "
-        f"fixture; the gap to the 744 marker count is documented in "
-        f"the inline comment)"
+    # The floor of 700 enforces the user-stated 94 % recovery target
+    # against the historic 744 estimate; the empirical 1161 sits well
+    # above the floor and leaves substantial margin for PyMuPDF or
+    # extraction tweaks.
+    assert n_note >= 700, (
+        f"expected at least 700 NOTE nodes after schema 0.5.0 "
+        f"consolidation, got {n_note} (empirical baseline 1161 on "
+        f"this fixture; the recovery pipeline is documented in the "
+        f"inline comment)"
     )
     # 12 marginal glosses expected (AGaramondPro-BoldItalic@8.52pt in
     # the left margin).
@@ -889,13 +891,33 @@ def test_pipeline_runs_on_mandrioli() -> None:
     assert n_warnings > 0, "expected plugin-emitted warnings on the dense Mandrioli apparatus"
 
     # § 9 emission conformance.
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == 498
     assert len(scabopdf_document.structure) == len(document.root)
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
-    # § 7 post-processing: the plugin declares only dehyphenate_with_log
-    # which is a no-op on digitally-typeset PDFs.
+    # § 7 post-processing (schema 0.5.0): the plugin declares
+    # ``dehyphenate_with_log`` (no-op on digitally-typeset PDFs) and
+    # the promoted ``merge_cross_page_notes`` (real). The body+note
+    # splitter (tier 2) also records :class:`Transformation` entries
+    # with ``split_into`` populated. The transformations list is
+    # therefore non-empty on this fixture.
     assert isinstance(scabopdf_document.transformations, list)
+    assert len(scabopdf_document.transformations) > 0, (
+        "Mandrioli Vol. III: expected non-empty transformations log "
+        "from body+note splitter + merge_cross_page_notes"
+    )
+    n_split = sum(
+        1
+        for t in scabopdf_document.transformations
+        if t.step_id == "giappichelli_body_note_splitter"
+    )
+    n_merge = sum(
+        1 for t in scabopdf_document.transformations if t.step_id == "merge_cross_page_notes"
+    )
+    assert n_split > 0, "Mandrioli Vol. III: expected at least one splitter Transformation"
+    assert n_merge > 0, (
+        "Mandrioli Vol. III: expected at least one merge_cross_page_notes Transformation"
+    )
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
     validate_against_schema(payload, _load_shared_schema())
@@ -931,7 +953,7 @@ def test_emit_to_file_on_patriarca(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.4.0"
+    assert document.schema_version == "0.5.0"
     assert n_nodes_total > 0
     # unknown_generic declares no post-processing — the field is present
     # and empty in the on-disk JSON.
@@ -969,7 +991,7 @@ def test_emit_to_file_on_mosconi(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.4.0"
+    assert document.schema_version == "0.5.0"
     assert document.metadata.pages_pdf == 613
     assert n_nodes_total > 0
     assert document.transformations == []
@@ -1138,7 +1160,7 @@ def test_dehyphenation_end_to_end_synthetic() -> None:
         assert "-\n" not in t.normalized
 
     scabopdf_document = convert_document(new_document, extraction, profile, "synthetic.pdf")
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert len(scabopdf_document.transformations) == 2
     for td in scabopdf_document.transformations:
         assert td.step_id == "dehyphenate_with_log"
@@ -1271,7 +1293,7 @@ def test_pipeline_runs_on_mandrioli_vol_i() -> None:
     assert n_crossref == 0, f"Vol. I: empirical CROSS_REFERENCE count is 0, got {n_crossref}"
 
     # § 9 emission conformance.
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == 288
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
 
@@ -1339,7 +1361,7 @@ def test_pipeline_runs_on_mandrioli_vol_ii() -> None:
     assert n_note == 0, f"Vol. II: empirical NOTE count is 0, got {n_note}"
     assert n_crossref == 0, f"Vol. II: empirical CROSS_REFERENCE count is 0, got {n_crossref}"
 
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == 352
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
 
@@ -1404,23 +1426,37 @@ def test_pipeline_runs_on_mandrioli_vol_iv() -> None:
 
     # Vol. IV editorial: 2 PARTE body, 18 CAPITOLO, 20 Sezione, 60
     # paragrafi, 19 SOMMARIO, 14 MARGINAL_GLOSS, 146 glued blocks.
-    # Empirical post-consolidation: n_h1=2, n_h2=9, n_h3=11, n_h4=60,
-    # n_summary=19, n_gloss=14, n_note=470 (the body+note splitter
-    # is very effective on Vol. IV — comparable to Vol. III in
-    # absolute count despite the much lower glued-block percentage),
-    # n_crossref=1271.
+    # Empirical post-0.5.0-consolidation: n_h1=2, n_h2=9, n_h3=11,
+    # n_h4=60, n_summary=19, n_gloss=14, n_note=964 (the multi-note
+    # splitter promoted alongside ``merge_cross_page_notes`` lifts the
+    # count from ~470 to ~964 by decomposing multi-note NOTE blocks
+    # into per-marker synthetic siblings), n_crossref=1271.
     assert n_h1 >= 2, f"expected ≥2 HEADING_1 (PARTE body), got {n_h1}"
     assert n_h2 >= 9, f"expected ≥9 HEADING_2, got {n_h2}"
     assert n_h3 >= 10, f"expected ≥10 HEADING_3, got {n_h3}"
     assert n_h4 >= 50, f"expected ≥50 HEADING_4, got {n_h4}"
     assert n_summary >= 17, f"expected ≥17 CHAPTER_SUMMARY, got {n_summary}"
     assert n_gloss >= 12, f"expected ≥12 MARGINAL_GLOSS, got {n_gloss}"
-    assert n_note >= 400, f"expected ≥400 NOTE nodes after body+note splitting, got {n_note}"
+    # Same 94 % recovery quality gate as Vol. III, against the same
+    # historic 744 estimate. Empirical 964 leaves substantial margin
+    # above the 700 floor.
+    assert n_note >= 700, (
+        f"expected ≥700 NOTE nodes after schema 0.5.0 consolidation, "
+        f"got {n_note} (empirical baseline 964 on this fixture)"
+    )
     assert n_crossref >= 1000, f"expected ≥1000 CROSS_REFERENCE nodes, got {n_crossref}"
 
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == 497
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
+    # § 7 post-processing: same shape as Vol. III, fewer events
+    # because Vol. IV has a much lower glued-block rate.
+    assert isinstance(scabopdf_document.transformations, list)
+    assert len(scabopdf_document.transformations) > 0
+    assert any(
+        t.step_id == "giappichelli_body_note_splitter" for t in scabopdf_document.transformations
+    )
+    assert any(t.step_id == "merge_cross_page_notes" for t in scabopdf_document.transformations)
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
@@ -1607,7 +1643,7 @@ def test_pipeline_runs_on_marotta_with_unknown_generic_fallback() -> None:
     assert max_depth == 1, (
         f"unknown_generic must produce a flat tree (depth 1); got depth {max_depth}"
     )
-    assert scabopdf_document.schema_version == "0.4.0"
+    assert scabopdf_document.schema_version == "0.5.0"
     assert scabopdf_document.metadata.pages_pdf == 206
     assert scabopdf_document.profile.profile_id == "unknown_generic"
 

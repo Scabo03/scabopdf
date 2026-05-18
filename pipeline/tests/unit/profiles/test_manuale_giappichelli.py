@@ -339,6 +339,7 @@ def test_get_categories_includes_apparatus_and_heading_categories() -> None:
         SemanticCategory.BODY,
         SemanticCategory.NOTE,
         SemanticCategory.MARGINAL_GLOSS,
+        SemanticCategory.MARGINAL_HEADING,
         SemanticCategory.CHAPTER_SUMMARY,
         SemanticCategory.CROSS_REFERENCE,
     }
@@ -346,29 +347,48 @@ def test_get_categories_includes_apparatus_and_heading_categories() -> None:
 
 
 def test_get_categories_excludes_legal_code_specific_categories() -> None:
-    """Mandrioli is a treatise; categories specific to legal codes must not appear."""
+    """Mandrioli is a treatise; categories specific to legal codes must not appear.
+
+    ``MARGINAL_HEADING`` is intentionally **included** as of the
+    schema 0.5.0 consolidation: Vol. I and Vol. II of the
+    Mandrioli-Carratta series typeset their marginal annotations in
+    SimonciniGaramondStd 7.98pt (not AGaramondPro 8.52pt like Vol.
+    III/IV); the plugin's :meth:`_is_marginal_heading` predicate
+    intercepts them before :meth:`_is_note` so the 7.98pt note
+    signature does not absorb them.
+    """
     plugin = ManualeGiappichelliProfile()
     categories = plugin.get_categories()
     forbidden = {
         SemanticCategory.ARTICLE_HEADER,
         SemanticCategory.ARTICLE_BODY,
         SemanticCategory.MASSIMA_LABEL,
-        SemanticCategory.MARGINAL_HEADING,  # Mandrioli has gloss, not heading
         SemanticCategory.EXAMPLE_BOX,
     }
     assert categories.isdisjoint(forbidden)
 
 
-def test_get_post_processing_declares_only_dehyphenate() -> None:
-    """merge_cross_page_notes is intentionally NOT declared — tier 1 suffices."""
+def test_get_post_processing_declares_dehyphenate_and_merge_cross_page_notes() -> None:
+    """The schema 0.5.0 consolidation declares both generic steps.
+
+    ``merge_cross_page_notes`` was promoted from placeholder to real
+    implementation alongside the Giappichelli plugin consolidation
+    (schema 0.5.0). The plugin declares it so the tier 1 resolver
+    skips its own cross-page merging pass and the post-processing
+    step takes ownership with a reversible :class:`Transformation`
+    log.
+    """
     plugin = ManualeGiappichelliProfile()
-    assert plugin.get_post_processing() == ["dehyphenate_with_log"]
+    assert plugin.get_post_processing() == [
+        "dehyphenate_with_log",
+        "merge_cross_page_notes",
+    ]
 
 
-def test_get_post_processing_does_not_declare_merge_cross_page_notes() -> None:
-    """Empirical evidence: the tier 1 resolver already handles (N) markers."""
+def test_get_post_processing_declares_merge_cross_page_notes() -> None:
+    """The promoted step is part of the declared sequence."""
     plugin = ManualeGiappichelliProfile()
-    assert "merge_cross_page_notes" not in plugin.get_post_processing()
+    assert "merge_cross_page_notes" in plugin.get_post_processing()
 
 
 def test_get_layouts_disabled_returns_empty() -> None:
@@ -1901,6 +1921,9 @@ def _make_glued_block_extraction(
         line_index=0,
         span_index=0,
     )
+    # PyMuPDF span_index is per-line; the first span on each line has
+    # span_index=0. The marker span is the first of its line so the
+    # splitter recognises it as a fresh-note transition.
     marker_span = Span(
         text="(1) ",
         font="SimonciniGaramondStd",
@@ -1911,7 +1934,7 @@ def _make_glued_block_extraction(
         page=page,
         block_index=block_index,
         line_index=1,
-        span_index=1,
+        span_index=0,
     )
     note_body_span = Span(
         text=note_text,
@@ -1923,7 +1946,7 @@ def _make_glued_block_extraction(
         page=page,
         block_index=block_index,
         line_index=1,
-        span_index=2,
+        span_index=1,
     )
     note_filler1 = Span(
         text=" extra ",
@@ -1935,7 +1958,7 @@ def _make_glued_block_extraction(
         page=page,
         block_index=block_index,
         line_index=2,
-        span_index=3,
+        span_index=0,
     )
     note_filler2 = Span(
         text=" more.",
@@ -1947,7 +1970,7 @@ def _make_glued_block_extraction(
         page=page,
         block_index=block_index,
         line_index=3,
-        span_index=4,
+        span_index=0,
     )
     spans = [body_span, marker_span, note_body_span, note_filler1, note_filler2]
     block = Block(
@@ -2068,8 +2091,17 @@ def test_split_body_note_glued_non_glued_block_passes_through() -> None:
     assert result.root[0].category is SemanticCategory.BODY
 
 
-def test_split_body_note_glued_without_marker_passes_through() -> None:
-    """A glued block whose note-size spans do NOT open with (N) is not split."""
+def test_split_body_note_glued_marker_less_continuation_yields_synthetic_note() -> None:
+    """A glued block whose note-size spans lack a (N) marker but carry
+    prose-like text yields a marker-less continuation synthetic NOTE.
+
+    This is the schema 0.5.0 ``merge_cross_page_notes`` recovery path:
+    the splitter mints one synthetic NOTE from the first 9pt run even
+    without a marker, and the post-processing step then fuses it with
+    the head NOTE on the previous page. The prose-likeness guard
+    (see :meth:`ManualeGiappichelliProfile._looks_like_note_continuation`)
+    keeps short or all-caps fragments out of the synthetic-NOTE flow.
+    """
     spans_list = [
         Span(
             text="Body prose.",
@@ -2084,7 +2116,7 @@ def test_split_body_note_glued_without_marker_passes_through() -> None:
             span_index=0,
         ),
         Span(
-            text="Note without a leading (N) marker.",
+            text="continuation of a previous-page note that carries prose-like body text.",
             font="SimonciniGaramondStd",
             size=NOTE_BODY_SIZE,
             flags=4,
@@ -2093,10 +2125,10 @@ def test_split_body_note_glued_without_marker_passes_through() -> None:
             page=30,
             block_index=0,
             line_index=1,
-            span_index=1,
+            span_index=0,
         ),
         Span(
-            text=" tail.",
+            text=" tail with more lowercase running text.",
             font="SimonciniGaramondStd",
             size=NOTE_BODY_SIZE,
             flags=4,
@@ -2105,7 +2137,7 @@ def test_split_body_note_glued_without_marker_passes_through() -> None:
             page=30,
             block_index=0,
             line_index=2,
-            span_index=2,
+            span_index=0,
         ),
     ]
     block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 3))
@@ -2113,15 +2145,84 @@ def test_split_body_note_glued_without_marker_passes_through() -> None:
     body_node = _node(
         "node_0001",
         SemanticCategory.BODY,
-        "Body prose.Note without a leading (N) marker. tail.",
+        (
+            "Body prose."
+            "continuation of a previous-page note that carries prose-like body text."
+            " tail with more lowercase running text."
+        ),
         page_index=30,
         block_indices=(0,),
     )
     document = Document(root=(body_node,))
     plugin = ManualeGiappichelliProfile()
     result = plugin.refine_reconstruction(document, extraction, [])
-    assert len(result.root) == 1
-    assert result.root[0].category is SemanticCategory.BODY
+    categories = [n.category for n in result.root]
+    assert SemanticCategory.BODY in categories
+    assert SemanticCategory.NOTE in categories
+    note_node = next(n for n in result.root if n.category is SemanticCategory.NOTE)
+    assert note_node.text is not None
+    assert "continuation of a previous-page note" in note_node.text
+
+
+def test_split_body_note_glued_short_uppercase_continuation_rejected() -> None:
+    """A glued block whose first 9pt run is short uppercase (front-matter
+    CAPITOLO fragment) is NOT split into a synthetic NOTE.
+
+    The prose-likeness guard in
+    :meth:`ManualeGiappichelliProfile._looks_like_note_continuation`
+    filters this case. The block stays unchanged as a BODY node.
+    """
+    spans_list = [
+        Span(
+            text="A drop cap or other prefix.",
+            font="SimonciniGaramondStd",
+            size=BODY_FONT_SIZE,
+            flags=4,
+            color=0,
+            bbox=(60.0, 100.0, 420.0, 110.0),
+            page=30,
+            block_index=0,
+            line_index=0,
+            span_index=0,
+        ),
+        Span(
+            text="APITOLO I",
+            font="SimonciniGaramondStd",
+            size=NOTE_ALT_BODY_SIZE,
+            flags=4,
+            color=0,
+            bbox=(60.0, 120.0, 420.0, 128.0),
+            page=30,
+            block_index=0,
+            line_index=1,
+            span_index=0,
+        ),
+        Span(
+            text=" tail",
+            font="SimonciniGaramondStd",
+            size=NOTE_ALT_BODY_SIZE,
+            flags=4,
+            color=0,
+            bbox=(60.0, 130.0, 420.0, 138.0),
+            page=30,
+            block_index=0,
+            line_index=2,
+            span_index=0,
+        ),
+    ]
+    block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 3))
+    extraction = _make_extraction(spans_list, [block])
+    body_node = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "A drop cap or other prefix.APITOLO I tail",
+        page_index=30,
+        block_indices=(0,),
+    )
+    document = Document(root=(body_node,))
+    plugin = ManualeGiappichelliProfile()
+    result = plugin.refine_reconstruction(document, extraction, [])
+    assert all(n.category is not SemanticCategory.NOTE for n in result.root)
 
 
 def test_split_body_note_glued_multiple_markers_yield_multiple_notes() -> None:
@@ -2141,12 +2242,16 @@ def test_split_body_note_glued_multiple_markers_yield_multiple_notes() -> None:
             span_index=span_idx,
         )
 
+    # PyMuPDF span_index is per-line; each fresh note marker is at
+    # span_index=0 of its line. The continuation span on line 2 lives
+    # on the same line as the second marker (logical continuity of
+    # note 5) so it carries span_index=0 as well.
     spans_list = [
         _span("Body before.", BODY_FONT_SIZE, 0, 0),
-        _span("(5) First note text.", NOTE_BODY_SIZE, 1, 1),
-        _span(" continuation. ", NOTE_BODY_SIZE, 2, 2),
-        _span("(6) Second note text.", NOTE_BODY_SIZE, 3, 3),
-        _span(" tail.", NOTE_BODY_SIZE, 4, 4),
+        _span("(5) First note text.", NOTE_BODY_SIZE, 1, 0),
+        _span(" continuation. ", NOTE_BODY_SIZE, 2, 0),
+        _span("(6) Second note text.", NOTE_BODY_SIZE, 3, 0),
+        _span(" tail.", NOTE_BODY_SIZE, 4, 0),
     ]
     block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 5))
     extraction = _make_extraction(spans_list, [block])
@@ -2254,8 +2359,8 @@ def test_split_body_note_glued_warning_count_matches_synthetic_notes() -> None:
 
     spans_list = [
         _span("Body.", BODY_FONT_SIZE, 0, 0),
-        _span("(1) text", NOTE_BODY_SIZE, 1, 1),
-        _span("(2) more", NOTE_BODY_SIZE, 2, 2),
+        _span("(1) text", NOTE_BODY_SIZE, 1, 0),
+        _span("(2) more", NOTE_BODY_SIZE, 2, 0),
     ]
     block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 3))
     extraction = _make_extraction(spans_list, [block])
@@ -2299,8 +2404,8 @@ def test_split_body_note_glued_then_cross_reference_minting_on_truncated_body() 
 
     spans_list = [
         _span("See note (3) above.", BODY_FONT_SIZE, 0, 0),
-        _span("(3) Note that wraps. ", NOTE_BODY_SIZE, 1, 1),
-        _span(" continuation.", NOTE_BODY_SIZE, 2, 2),
+        _span("(3) Note that wraps. ", NOTE_BODY_SIZE, 1, 0),
+        _span(" continuation.", NOTE_BODY_SIZE, 2, 0),
     ]
     block = Block(page=30, block_index=0, bbox=(60.0, 100.0, 420.0, 150.0), span_range=(0, 3))
     extraction = _make_extraction(spans_list, [block])

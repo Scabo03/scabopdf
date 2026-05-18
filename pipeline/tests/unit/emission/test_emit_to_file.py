@@ -45,7 +45,7 @@ def test_emit_to_file_writes_non_empty_json(tmp_path: Path) -> None:
     assert output_path.exists()
     text = output_path.read_text(encoding="utf-8")
     assert text  # non-empty
-    assert '"schema_version": "0.4.0"' in text
+    assert '"schema_version": "0.5.0"' in text
     # The transformations block is always present, even when empty —
     # unknown_generic declares no post-processing steps.
     assert '"transformations"' in text
@@ -63,7 +63,7 @@ def test_emit_to_file_json_validates_against_pydantic(tmp_path: Path) -> None:
 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     document = validate_document(payload)
-    assert document.schema_version == "0.4.0"
+    assert document.schema_version == "0.5.0"
 
 
 def test_emit_to_file_no_validate_skips_validation(
@@ -171,7 +171,7 @@ def test_emit_to_file_overwrites_existing(tmp_path: Path) -> None:
     output_path.write_text("stale content", encoding="utf-8")
     emit_to_file(pdf_path, output_path)
     assert output_path.read_text(encoding="utf-8") != "stale content"
-    assert '"schema_version": "0.4.0"' in output_path.read_text(encoding="utf-8")
+    assert '"schema_version": "0.5.0"' in output_path.read_text(encoding="utf-8")
 
 
 def test_emit_to_file_jsonschema_failure_raises_emission_error(

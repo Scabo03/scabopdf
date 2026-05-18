@@ -313,7 +313,7 @@
     },
     "TransformationDict": {
       "additionalProperties": false,
-      "description": "A reversible text substitution recorded by a post-processing step.\n\nMirrors :class:`scabopdf_pipeline.postprocessing.types.Transformation`\nin its JSON form. Layer 2 reads the ``transformations`` list to\nsupport \"raw mode\" reading: walking the list in **reverse** order\nand replacing ``text[position[0] : position[0] + len(normalized)]``\nwith ``original`` on the named node restores the pre-post-processing\ntext byte-for-byte.\n\n``position`` is the half-open ``(start, end)`` offset into the node\ntext **as it was immediately before** this transformation was\napplied. When a single step records several transformations on the\nsame node, the step applies the substitutions right-to-left so the\nrecorded offsets remain valid slices of that pre-step text.\n\n``original`` is the **literal slice** of the pre-transformation\ntext (newlines and soft hyphens included), not a cleaned-up form;\nthis is what makes the log reversible without ambiguity.\n\nThe post-step node text satisfies ``post[position[0] :\nposition[0] + len(normalized)] == normalized``.",
+      "description": "A reversible operation recorded by a post-processing or tier 2 step.\n\nMirrors :class:`scabopdf_pipeline.postprocessing.types.Transformation`\nin its JSON form. Layer 2 reads the ``transformations`` list to\nsupport \"raw mode\" reading: walking the list in **reverse** order\nand replacing ``text[position[0] : position[0] + len(normalized)]``\nwith ``original`` on the named node restores the pre-post-processing\ntext byte-for-byte.\n\n``position`` is the half-open ``(start, end)`` offset into the node\ntext **as it was immediately before** this transformation was\napplied. When a single step records several transformations on the\nsame node, the step applies the substitutions right-to-left so the\nrecorded offsets remain valid slices of that pre-step text.\n\n``original`` is the **literal slice** of the pre-transformation\ntext (newlines and soft hyphens included), not a cleaned-up form;\nthis is what makes the log reversible without ambiguity.\n\nThe post-step node text satisfies ``post[position[0] :\nposition[0] + len(normalized)] == normalized``.\n\n``split_into`` and ``merged_from`` (both added in schema 0.5.0,\nboth optional and ``None`` by default) extend the model from\npurely-textual reversibility to structural reversibility:\n\n- ``split_into`` lists the ids of synthetic sibling Nodes a step\n  minted from the host Node (the Giappichelli body+note splitter\n  decomposes a glued BODY into BODY + N synthetic NOTE siblings,\n  each id appears here on the surviving BODY's transformation).\n- ``merged_from`` lists the ids of sibling Nodes a step absorbed\n  into the host Node (the Mosconi marginal-ellipsis merger fuses\n  a chain of fragments into one head; the Giappichelli\n  cross-page note merger fuses a continuation NOTE into its\n  head NOTE; each absorbed id appears here on the surviving\n  head's transformation).\n\nBoth fields stay ``None`` for purely textual transformations\n(``dehyphenate_with_log``). Layer 2 can walk the 0.5.0 log in\nreverse and rematerialise either the consumed siblings (by\nreading ``merged_from``) or drop the produced siblings (by\nreading ``split_into``) in addition to the existing textual\nreversal.",
       "properties": {
         "step_id": {
           "title": "Step Id",
@@ -349,6 +349,36 @@
         "normalized": {
           "title": "Normalized",
           "type": "string"
+        },
+        "split_into": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Split Into"
+        },
+        "merged_from": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Merged From"
         }
       },
       "required": [
@@ -364,10 +394,10 @@
     }
   },
   "additionalProperties": false,
-  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.4.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
+  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.5.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
   "properties": {
     "schema_version": {
-      "const": "0.4.0",
+      "const": "0.5.0",
       "title": "Schema Version",
       "type": "string"
     },
