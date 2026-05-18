@@ -37,6 +37,9 @@ from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
 from scabopdf_pipeline.profiles.manuale_giappichelli import ManualeGiappichelliProfile
+from scabopdf_pipeline.profiles.manuale_giuffre_diretto import (
+    ManualeGiuffreDirectoProfile,
+)
 from scabopdf_pipeline.profiles.manuale_utet_wolterskluwer import (
     ManualeUtetWolterskluwerProfile,
 )
@@ -69,6 +72,7 @@ MANDRIOLI_VOL_I_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_i.pdf"
 MANDRIOLI_VOL_II_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_ii.pdf"
 MANDRIOLI_VOL_IV_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_iv.pdf"
 MAROTTA_FIXTURE = FIXTURES_DIR / "marotta_cittadinanza_romana.pdf"
+TORRENTE_FIXTURE = FIXTURES_DIR / "torrente_schlesinger.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -125,6 +129,20 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^plugin:giappichelli:marginal_gloss_outside_margin_block_-?\d+_page_\d+$"),
     re.compile(r"^plugin:giappichelli:body_note_block_glued_block_-?\d+_page_\d+$"),
     re.compile(r"^plugin:giappichelli:body_note_split_minted_node_\S+_page_\d+$"),
+    # manuale_giuffre_diretto plugin (closed vocabulary, see
+    # docs/SCHEMA_v0.5.0.md § 6 and profiles/manuale_giuffre_diretto.py)
+    re.compile(r"^plugin:giuffre_diretto:cross_reference_paragraph_minted_node_\S+_page_\d+$"),
+    re.compile(r"^plugin:giuffre_diretto:cross_reference_article_minted_node_\S+_page_\d+$"),
+    re.compile(r"^plugin:giuffre_diretto:cross_reference_sentence_minted_node_\S+_page_\d+$"),
+    re.compile(
+        r"^plugin:giuffre_diretto:cross_reference_paragraph_unresolved_node_\S+_marker_\S+$"
+    ),
+    re.compile(r"^plugin:giuffre_diretto:asterisk_footnote_isolated_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:giuffre_diretto:index_analitico_double_column_unordered_page_\d+$"),
+    re.compile(r"^plugin:giuffre_diretto:capitolo_signature_unmatched_block_-?\d+_page_\d+$"),
+    re.compile(
+        r"^plugin:giuffre_diretto:paragraph_heading_pattern_unmatched_block_-?\d+_page_\d+$"
+    ),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
@@ -230,6 +248,22 @@ def _make_mandrioli_profile() -> DocumentProfile:
         editorial_family=plugin.editorial_family,
         genre=plugin.genre,
         layouts_available=["L1", "L2", "L3", "L4"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.90,
+        warnings=[],
+    )
+
+
+def _make_torrente_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the manuale_giuffre_diretto plugin's identity."""
+    plugin = ManualeGiuffreDirectoProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3"],
         layouts_disabled=plugin.get_layouts_disabled(),
         post_processing=plugin.get_post_processing(),
         categories_emitted=plugin.get_categories(),
@@ -1650,3 +1684,268 @@ def test_pipeline_runs_on_marotta_with_unknown_generic_fallback() -> None:
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
     validate_against_schema(payload, _load_shared_schema())
+
+
+# ---------------------------------------------------------------------------
+# manuale_giuffre_diretto plugin — full pipeline + non-promotion regression
+# tests on the four prior plugins' fixtures.
+#
+# The plugin is calibrated on the integral Torrente-Schlesinger 25th edition
+# fixture (1559 pages). Quality gates from the session briefing:
+#
+#   - HEADING_1 >= 13 (PARTE TEMATICA + front/back matter sections)
+#   - HEADING_2 >= 80 (82 capitoli numerati I...LXXXI + LXXII-BIS)
+#   - HEADING_3 >= 55 (sotto-sezioni letter-keyed and roman)
+#   - HEADING_4 >= 700 (710 paragraphs continuative)
+#   - MARGINAL_HEADING >= 3500 (4051 marginal mini-titoletti)
+#   - ARTIFACT_FILIGREE >= 1500 (1558 BIC copyright filigrane)
+#   - CROSS_REFERENCE >= 7000 (synthetic ~8000 across three sub-types)
+#
+# The non-promotion tests assert that ManualeGiuffreDirectoProfile.matches()
+# stays below the 0.6 dispatcher threshold on Patriarca, Tesauro, Mosconi,
+# Mandrioli Vol. III, and Marotta.
+
+
+def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
+    """Build a ProfilingSignals instance from a real PDF fixture."""
+    import fitz
+
+    doc = fitz.open(str(fixture))
+    try:
+        creator = (doc.metadata.get("creator") or "").strip()
+        producer = (doc.metadata.get("producer") or "").strip()
+        font_char_count: dict[tuple[str, float], int] = {}
+        marginal_count = 0
+        footnote_marker_count = 0
+        italic_9pt_count = 0
+        for page_idx in range(doc.page_count):
+            page = doc[page_idx]
+            page_width = float(page.rect.width)
+            for block in page.get_text("dict")["blocks"]:
+                if block.get("type", 0) != 0:
+                    continue
+                bbox = block.get("bbox") or (0.0, 0.0, 0.0, 0.0)
+                block_x0 = float(bbox[0])
+                leading: dict[str, Any] | None = None
+                for line in block["lines"]:
+                    for span in line["spans"]:
+                        if leading is None:
+                            leading = span
+                        key = (str(span["font"]), round(float(span["size"]), 2))
+                        font_char_count[key] = font_char_count.get(key, 0) + len(span["text"])
+                        if int(span.get("flags", 0)) & 0x01:
+                            footnote_marker_count += 1
+                if leading is None:
+                    continue
+                size = round(float(leading["size"]), 2)
+                if 7.0 <= size <= 8.1 and (block_x0 < 80 or block_x0 > page_width - 100):
+                    marginal_count += 1
+                if 8.8 <= size <= 9.2 and int(leading.get("flags", 0)) & 0x02:
+                    italic_9pt_count += 1
+        total_chars = sum(font_char_count.values()) or 1
+        fonts = [
+            FontDominance(
+                family=family,
+                size=size,
+                dominance_percent=100.0 * count / total_chars,
+            )
+            for (family, size), count in sorted(font_char_count.items(), key=lambda kv: -kv[1])[:25]
+        ]
+        toc = doc.get_toc()
+        page0 = doc[0]
+        width = float(page0.mediabox.width)
+        height = float(page0.mediabox.height)
+    finally:
+        doc.close()
+
+    return ProfilingSignals(
+        typographic_signature=TypographicSignature(fonts=fonts),
+        apparatus_presence=ApparatusPresence(
+            footnote_markers=footnote_marker_count,
+            marginal_headings=marginal_count,
+            italic_9pt_blocks=italic_9pt_count,
+        ),
+        page_geometry=ProfilePageGeometry(width_pt=width, height_pt=height),
+        producer_creator=ProducerCreator(producer=producer, creator=creator),
+        outline_structure=OutlineStructure(has_outline=bool(toc), entries_count=len(toc)),
+    )
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_matches_torrente_fixture() -> None:
+    """ManualeGiuffreDirectoProfile.matches() clears 0.6 on the real Torrente fixture."""
+    if not TORRENTE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TORRENTE_FIXTURE} - see pipeline/tests/fixtures/README.md")
+
+    signals = _build_signals_from_fixture(TORRENTE_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+
+    print(
+        f"\nTorrente matches() summary:"
+        f"\n  primary_font={signals.typographic_signature.fonts[0].family!r}"
+        f"\n  primary_size={signals.typographic_signature.fonts[0].size}"
+        f"\n  primary_dominance={signals.typographic_signature.fonts[0].dominance_percent:.1f}%"
+        f"\n  marginal_headings={signals.apparatus_presence.marginal_headings}"
+        f"\n  footnote_markers={signals.apparatus_presence.footnote_markers}"
+        f"\n  producer={signals.producer_creator.producer!r}"
+        f"\n  matches_score={score}"
+    )
+
+    assert score >= 0.6, (
+        f"matches() failed to promote manuale_giuffre_diretto on the Torrente "
+        f"fixture: score {score} below 0.6 threshold"
+    )
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_torrente_schlesinger() -> None:
+    """End-to-end Layer 1 pipeline test on the Torrente-Schlesinger fixture."""
+    if not TORRENTE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TORRENTE_FIXTURE} - see pipeline/tests/fixtures/README.md")
+
+    profile = _make_torrente_profile()
+    plugin = ManualeGiuffreDirectoProfile()
+
+    extraction = extract(TORRENTE_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(document, extraction, profile, TORRENTE_FIXTURE)
+
+    non_sentinel = [cb for cb in classified if cb.block_index >= 0]
+    chars_extraction = sum(len(s.text) for s in extraction.spans)
+    chars_classified = 0
+    for cb in non_sentinel:
+        block = extraction.blocks[cb.block_index]
+        start, end = block.span_range
+        chars_classified += sum(len(s.text) for s in extraction.spans[start:end])
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    n_apparatus_refs_total = sum(len(node.apparatus_refs) for node in all_nodes)
+
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    n_h1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_h2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_h3 = by_category.get(SemanticCategory.HEADING_3, 0)
+    n_h4 = by_category.get(SemanticCategory.HEADING_4, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_marginal = by_category.get(SemanticCategory.MARGINAL_HEADING, 0)
+    n_crossref = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_filigree = by_category.get(SemanticCategory.ARTIFACT_FILIGREE, 0)
+    n_index_entry = by_category.get(SemanticCategory.INDEX_ENTRY, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+
+    cross_refs_bound = sum(
+        1 for n in all_nodes if n.category is SemanticCategory.CROSS_REFERENCE and n.apparatus_refs
+    )
+
+    max_depth = _max_depth(document.root)
+
+    print(
+        f"\nTorrente-Schlesinger Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_blocks={len(extraction.blocks)}"
+        f"\n  n_spans={len(extraction.spans)}"
+        f"\n  n_classified={len(classified)}"
+        f"\n  n_nodes_root={len(document.root)}"
+        f"\n  n_nodes_total={len(all_nodes)}"
+        f"\n  n_warnings={len(document.warnings)}"
+        f"\n  n_apparatus_refs_total={n_apparatus_refs_total}"
+        f"\n  n_transformations={len(document.transformations)}"
+        f"\n  max_tree_depth={max_depth}"
+        f"\n  n_heading_1={n_h1}  n_heading_2={n_h2}  n_heading_3={n_h3}  n_heading_4={n_h4}"
+        f"\n  n_body={n_body}"
+        f"\n  n_marginal_heading={n_marginal}"
+        f"\n  n_cross_reference_total={n_crossref}"
+        f"\n  n_cross_reference_bound={cross_refs_bound}"
+        f"\n  n_artifact_filigree={n_filigree}"
+        f"\n  n_index_entry={n_index_entry}"
+        f"\n  n_note={n_note}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 1559
+    assert extraction.is_encrypted is False
+    assert chars_extraction == chars_classified
+
+    assert n_h1 >= 13, f"expected >=13 HEADING_1, got {n_h1}"
+    assert n_h2 >= 80, f"expected >=80 HEADING_2, got {n_h2}"
+    assert n_h3 >= 55, f"expected >=55 HEADING_3, got {n_h3}"
+    assert n_h4 >= 700, f"expected >=700 HEADING_4, got {n_h4}"
+    assert n_marginal >= 3500, f"expected >=3500 MARGINAL_HEADING, got {n_marginal}"
+    assert n_filigree >= 1500, f"expected >=1500 ARTIFACT_FILIGREE, got {n_filigree}"
+    assert n_crossref >= 7000, f"expected >=7000 CROSS_REFERENCE, got {n_crossref}"
+    assert cross_refs_bound >= 2500, (
+        f"expected >=2500 paragraph CROSS_REFERENCE bound, got {cross_refs_bound}"
+    )
+    assert n_note == 1, f"expected exactly 1 NOTE (asterisk footnote), got {n_note}"
+    assert max_depth >= 3, f"expected tree depth >=3, got {max_depth}"
+
+    assert scabopdf_document.profile.profile_id == "manuale_giuffre_diretto"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    unknown_warnings = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown_warnings, (
+        f"unknown warnings emitted: {unknown_warnings[:5]} ({len(unknown_warnings)} total)"
+    )
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_does_not_promote_on_patriarca_fixture() -> None:
+    """matches() stays below 0.6 on the Patriarca-Benazzo fixture."""
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(PATRIARCA_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+    assert score < 0.6, f"promoted on Patriarca: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_does_not_promote_on_tesauro_fixture() -> None:
+    """matches() stays below 0.6 on the Tesauro Compendio fixture."""
+    if not TESAURO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TESAURO_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(TESAURO_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+    assert score < 0.6, f"promoted on Tesauro: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_does_not_promote_on_mosconi_fixture() -> None:
+    """matches() stays below 0.6 on the Mosconi-Campiglio fixture."""
+    if not MOSCONI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MOSCONI_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MOSCONI_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+    assert score < 0.6, f"promoted on Mosconi: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_does_not_promote_on_mandrioli_fixture() -> None:
+    """matches() stays below 0.6 on Mandrioli Vol. III (Giappichelli)."""
+    if not MANDRIOLI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MANDRIOLI_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MANDRIOLI_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+    assert score < 0.6, f"promoted on Mandrioli Vol. III: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_does_not_promote_on_marotta_fixture() -> None:
+    """matches() stays below 0.6 on the Marotta control sample."""
+    if not MAROTTA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MAROTTA_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+    assert score < 0.6, f"promoted on Marotta: score {score}"
