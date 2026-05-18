@@ -36,6 +36,7 @@ from scabopdf_pipeline.postprocessing import (
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
+from scabopdf_pipeline.profiles.dejure_nota_sentenza import DejureNotaSentenzaProfile
 from scabopdf_pipeline.profiles.manuale_bic import ManualeBicProfile
 from scabopdf_pipeline.profiles.manuale_giappichelli import ManualeGiappichelliProfile
 from scabopdf_pipeline.profiles.manuale_giuffre_diretto import (
@@ -75,6 +76,9 @@ MANDRIOLI_VOL_IV_FIXTURE = FIXTURES_DIR / "mandrioli_carratta_vol_iv.pdf"
 MAROTTA_FIXTURE = FIXTURES_DIR / "marotta_cittadinanza_romana.pdf"
 TORRENTE_FIXTURE = FIXTURES_DIR / "torrente_schlesinger.pdf"
 MARRONE_FIXTURE = FIXTURES_DIR / "marrone_istituzioni.pdf"
+DEJURE_NS_RECISIONE_FIXTURE = FIXTURES_DIR / "dejure_ns_recisione_nesso_causale.pdf"
+DEJURE_NS_GIUDIZIO_FIXTURE = FIXTURES_DIR / "dejure_ns_giudizio_universale.pdf"
+DEJURE_NS_STELLA_FIXTURE = FIXTURES_DIR / "dejure_ns_stella_raccolta.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -157,6 +161,23 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^plugin:bic:book_page_anchor_minted_node_\S+_page_\d+_marker_\S+$"),
     re.compile(r"^plugin:bic:language_metadata_mismatch_lang_\S+$"),
     re.compile(r"^plugin:bic:heading_pattern_unmatched_block_-?\d+_page_\d+$"),
+    # dejure_nota_sentenza plugin (closed vocabulary, see
+    # docs/SCHEMA_v0.5.0.md § 6 and profiles/dejure_nota_sentenza.py)
+    re.compile(r"^plugin:dejure_nota_sentenza:metadata_block_unparseable_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:dejure_nota_sentenza:metadata_field_minted_node_\S+_field_\S+$"),
+    re.compile(r"^plugin:dejure_nota_sentenza:toc_general_parsed_node_\S+_items_\d+$"),
+    re.compile(r"^plugin:dejure_nota_sentenza:toc_general_unparseable_node_\S+$"),
+    re.compile(
+        r"^plugin:dejure_nota_sentenza:section_heading_pattern_unmatched_block_-?\d+_page_\d+$"
+    ),
+    re.compile(
+        r"^plugin:dejure_nota_sentenza:note_section_split_minted_node_\S+_page_\d+_marker_\d+$"
+    ),
+    re.compile(r"^plugin:dejure_nota_sentenza:note_section_unparseable_node_\S+$"),
+    re.compile(
+        r"^plugin:dejure_nota_sentenza:cross_reference_minted_node_\S+_page_\d+_marker_\d+$"
+    ),
+    re.compile(r"^plugin:dejure_nota_sentenza:cross_reference_unresolved_node_\S+_marker_\S+$"),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
@@ -282,6 +303,22 @@ def _make_torrente_profile() -> DocumentProfile:
         post_processing=plugin.get_post_processing(),
         categories_emitted=plugin.get_categories(),
         confidence=0.90,
+        warnings=[],
+    )
+
+
+def _make_dejure_ns_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the dejure_nota_sentenza plugin's identity."""
+    plugin = DejureNotaSentenzaProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3", "L4"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.85,
         warnings=[],
     )
 
@@ -2172,4 +2209,307 @@ def test_manuale_bic_does_not_promote_on_marotta_fixture() -> None:
         pytest.skip(f"fixture missing: {MAROTTA_FIXTURE} - see pipeline/tests/fixtures/README.md")
     signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
     score = ManualeBicProfile.matches(signals)
+    assert score < 0.6, f"promoted on Marotta: score {score}"
+
+
+# ---------------------------------------------------------------------------
+# DeJure Nota a Sentenza plugin tests
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_matches_recisione_fixture() -> None:
+    """DejureNotaSentenzaProfile.matches() clears 0.6 on the short narrative fixture."""
+    if not DEJURE_NS_RECISIONE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_RECISIONE_FIXTURE} "
+            "- see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_NS_RECISIONE_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score >= 0.6, (
+        f"matches() failed to promote dejure_nota_sentenza on the recisione "
+        f"fixture: score {score} below 0.6 threshold"
+    )
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_matches_giudizio_fixture() -> None:
+    """DejureNotaSentenzaProfile.matches() clears 0.6 on the long academic fixture."""
+    if not DEJURE_NS_GIUDIZIO_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_GIUDIZIO_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_NS_GIUDIZIO_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score >= 0.6, (
+        f"matches() failed to promote dejure_nota_sentenza on the giudizio_universale "
+        f"fixture: score {score} below 0.6 threshold"
+    )
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_stella_fixture() -> None:
+    """matches() stays below 0.6 on the Stella raccolta (Skia/PDF, OpenSans, A4) — non-DeJure."""
+    if not DEJURE_NS_STELLA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_STELLA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_NS_STELLA_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"promoted on Stella raccolta (not a DeJure NS document): score {score}"
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_ns_recisione() -> None:
+    """End-to-end Layer 1 pipeline test on the DeJure NS short narrative fixture."""
+    if not DEJURE_NS_RECISIONE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_RECISIONE_FIXTURE} "
+            "- see pipeline/tests/fixtures/README.md"
+        )
+
+    profile = _make_dejure_ns_profile()
+    plugin = DejureNotaSentenzaProfile()
+
+    extraction = extract(DEJURE_NS_RECISIONE_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(document, extraction, profile, DEJURE_NS_RECISIONE_FIXTURE)
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    n_banner = by_category.get(SemanticCategory.GENRE_BANNER, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_fonte = by_category.get(SemanticCategory.FONTE_VALUE, 0)
+    n_referral = by_category.get(SemanticCategory.REFERRAL, 0)
+    n_authors = by_category.get(SemanticCategory.AUTHORS, 0)
+    n_subtitle = by_category.get(SemanticCategory.SUBTITLE, 0)
+    n_toc = by_category.get(SemanticCategory.TOC_GENERAL, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_section_label = by_category.get(SemanticCategory.SECTION_LABEL, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+    n_stamp = by_category.get(SemanticCategory.ARTIFACT_STAMP, 0)
+    n_unclassified = by_category.get(SemanticCategory.UNCLASSIFIED, 0)
+
+    print(
+        f"\nDeJure NS recisione_nesso_causale Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_genre_banner={n_banner}  n_title={n_title}"
+        f"\n  n_fonte={n_fonte}  n_referral={n_referral}  n_authors={n_authors}"
+        f"\n  n_subtitle={n_subtitle}  n_toc_general={n_toc}"
+        f"\n  n_heading_1={n_heading_1}  n_section_label={n_section_label}"
+        f"\n  n_note={n_note}  n_cross_reference={n_cross_reference}"
+        f"\n  n_body={n_body}  n_artifact_footer={n_footer}  n_artifact_stamp={n_stamp}"
+        f"\n  n_unclassified={n_unclassified}"
+        f"\n  n_transformations={len(document.transformations)}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 3
+    assert n_banner == 1
+    assert n_title == 1
+    assert n_fonte == 1
+    assert n_referral == 1
+    assert n_authors == 1
+    assert n_subtitle == 1
+    # Short narrative archetype: no TOC, no headings, no notes.
+    assert n_toc == 0
+    assert n_heading_1 == 0
+    assert n_section_label == 0
+    assert n_note == 0
+    assert n_cross_reference == 0
+    assert n_body >= 5
+    assert n_footer == 3
+    assert n_stamp >= 1
+    assert n_unclassified == 0
+    assert len(document.transformations) >= 1  # metadata decomposition
+
+    assert scabopdf_document.profile.profile_id == "dejure_nota_sentenza"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    unknown_warnings = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown_warnings, (
+        f"unknown warnings emitted: {unknown_warnings[:5]} ({len(unknown_warnings)} total)"
+    )
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_ns_giudizio() -> None:
+    """End-to-end Layer 1 pipeline test on the DeJure NS long academic fixture."""
+    if not DEJURE_NS_GIUDIZIO_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_GIUDIZIO_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+
+    profile = _make_dejure_ns_profile()
+    plugin = DejureNotaSentenzaProfile()
+
+    extraction = extract(DEJURE_NS_GIUDIZIO_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(document, extraction, profile, DEJURE_NS_GIUDIZIO_FIXTURE)
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    n_banner = by_category.get(SemanticCategory.GENRE_BANNER, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_fonte = by_category.get(SemanticCategory.FONTE_VALUE, 0)
+    n_referral = by_category.get(SemanticCategory.REFERRAL, 0)
+    n_authors = by_category.get(SemanticCategory.AUTHORS, 0)
+    n_toc = by_category.get(SemanticCategory.TOC_GENERAL, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_section_label = by_category.get(SemanticCategory.SECTION_LABEL, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+    n_unclassified = by_category.get(SemanticCategory.UNCLASSIFIED, 0)
+
+    cross_refs_bound = sum(
+        1 for n in all_nodes if n.category is SemanticCategory.CROSS_REFERENCE and n.apparatus_refs
+    )
+
+    toc_nodes = [n for n in all_nodes if n.category is SemanticCategory.TOC_GENERAL]
+    toc_items_count = sum(len(n.toc_items or ()) for n in toc_nodes)
+
+    print(
+        f"\nDeJure NS giudizio_universale Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_genre_banner={n_banner}  n_title={n_title}"
+        f"\n  n_fonte={n_fonte}  n_referral={n_referral}  n_authors={n_authors}"
+        f"\n  n_toc_general={n_toc}  n_toc_items_total={toc_items_count}"
+        f"\n  n_heading_1={n_heading_1}  n_section_label={n_section_label}"
+        f"\n  n_note={n_note}  n_cross_reference={n_cross_reference}"
+        f"\n  n_cross_reference_bound={cross_refs_bound}"
+        f"\n  n_body={n_body}  n_artifact_footer={n_footer}"
+        f"\n  n_unclassified={n_unclassified}"
+        f"\n  n_transformations={len(document.transformations)}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 22
+    assert n_banner == 1
+    assert n_title == 1
+    assert n_fonte == 1
+    assert n_referral == 1
+    assert n_authors == 1
+    assert n_toc == 1
+    assert toc_items_count == 5
+    assert n_heading_1 == 5, f"expected 5 numbered sections, got {n_heading_1}"
+    assert n_section_label == 1
+    assert n_note == 54, f"expected 54 NOTE, got {n_note}"
+    assert n_cross_reference >= 50, (
+        f"expected at least 50 inline cross-references, got {n_cross_reference}"
+    )
+    assert cross_refs_bound == n_cross_reference, (
+        f"every cross-reference must bind to a NOTE: "
+        f"bound {cross_refs_bound} of {n_cross_reference}"
+    )
+    assert n_footer == 22
+    assert n_unclassified == 0
+    assert len(document.transformations) >= 2  # metadata + notes consolidation
+
+    assert scabopdf_document.profile.profile_id == "dejure_nota_sentenza"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    unknown_warnings = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown_warnings, (
+        f"unknown warnings emitted: {unknown_warnings[:5]} ({len(unknown_warnings)} total)"
+    )
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_patriarca_fixture() -> None:
+    """matches() stays below 0.6 on the Patriarca-Benazzo fixture."""
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(PATRIARCA_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"promoted on Patriarca: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_tesauro_fixture() -> None:
+    """matches() stays below 0.6 on the Tesauro Compendio fixture."""
+    if not TESAURO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TESAURO_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(TESAURO_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"promoted on Tesauro: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_mosconi_fixture() -> None:
+    """matches() stays below 0.6 on the Mosconi-Campiglio fixture."""
+    if not MOSCONI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MOSCONI_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MOSCONI_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"promoted on Mosconi: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_mandrioli_vol_iii_fixture() -> None:
+    """matches() stays below 0.6 on Mandrioli Vol. III (Giappichelli)."""
+    if not MANDRIOLI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MANDRIOLI_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MANDRIOLI_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"promoted on Mandrioli Vol. III: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_torrente_fixture() -> None:
+    """matches() stays below 0.6 on the Torrente-Schlesinger fixture."""
+    if not TORRENTE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TORRENTE_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(TORRENTE_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"promoted on Torrente: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_marrone_fixture() -> None:
+    """matches() stays below 0.6 on the Marrone Istituzioni (BIC) fixture."""
+    if not MARRONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MARRONE_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MARRONE_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"promoted on Marrone: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_marotta_fixture() -> None:
+    """matches() stays below 0.6 on the Marotta control sample."""
+    if not MAROTTA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MAROTTA_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
     assert score < 0.6, f"promoted on Marotta: score {score}"
