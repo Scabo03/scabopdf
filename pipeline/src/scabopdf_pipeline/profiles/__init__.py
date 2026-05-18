@@ -1,4 +1,5 @@
 from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
+from scabopdf_pipeline.profiles.manuale_bic import ManualeBicProfile
 from scabopdf_pipeline.profiles.manuale_giappichelli import ManualeGiappichelliProfile
 from scabopdf_pipeline.profiles.manuale_giuffre_diretto import (
     ManualeGiuffreDirectoProfile,
@@ -14,6 +15,7 @@ from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 
 BUILTIN_PLUGINS: list[type[ProfilePlugin]] = [
     CompendioUtetProfile,
+    ManualeBicProfile,
     ManualeGiappichelliProfile,
     ManualeGiuffreDirectoProfile,
     ManualeUtetWolterskluwerProfile,
@@ -24,6 +26,7 @@ BUILTIN_PLUGINS: list[type[ProfilePlugin]] = [
 __all__ = [
     "BUILTIN_PLUGINS",
     "CompendioUtetProfile",
+    "ManualeBicProfile",
     "ManualeGiappichelliProfile",
     "ManualeGiuffreDirectoProfile",
     "ManualeUtetWolterskluwerProfile",
