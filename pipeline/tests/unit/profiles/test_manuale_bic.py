@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import re
 
+from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiles.manuale_bic import (
+    ANCHOR_MAX_SIZE,
     BODY_SIZE,
     COLOR_GREEN_H1,
     COLOR_INDIGO_H2,
@@ -17,10 +19,12 @@ from scabopdf_pipeline.profiles.manuale_bic import (
     HEADING_1_SIZE,
     HEADING_2_SIZE,
     HEADING_3_SIZE,
+    NOTE_MARKER_MAX_VALUE,
     NOTE_MARKER_SIZE,
     WARNING_PREFIX,
     ManualeBicProfile,
     _BlockView,
+    _is_back_matter_heading,
     _max_existing_node_counter,
     _NodeIdMinter,
 )
@@ -158,6 +162,7 @@ def _node(
     block_indices: tuple[int, ...] = (0,),
     children: tuple[Node, ...] = (),
     level: int | None = None,
+    apparatus_refs: tuple[ApparatusRef, ...] = (),
 ) -> Node:
     return Node(
         id=node_id,
@@ -167,6 +172,7 @@ def _node(
         text=text,
         level=level,
         children=children,
+        apparatus_refs=apparatus_refs,
     )
 
 
@@ -1156,9 +1162,9 @@ def test_refine_reconstruction_body_with_three_notes_mints_three() -> None:
             line_index=1,
             span_index=1,
         ),
-        _make_span("1. nota uno.", font="Verdana", size=BODY_SIZE, line_index=2, span_index=2),
-        _make_span("2. nota due.", font="Verdana", size=BODY_SIZE, line_index=3, span_index=3),
-        _make_span("3. nota tre.", font="Verdana", size=BODY_SIZE, line_index=4, span_index=4),
+        _make_span("1. nota uno.", font="Verdana", size=BODY_SIZE, line_index=2, span_index=0),
+        _make_span("2. nota due.", font="Verdana", size=BODY_SIZE, line_index=3, span_index=0),
+        _make_span("3. nota tre.", font="Verdana", size=BODY_SIZE, line_index=4, span_index=0),
     ]
     blocks = [_make_block(span_range=(0, 5), block_index=0)]
     ext = _make_extraction(spans, blocks)
@@ -1709,3 +1715,569 @@ def test_refine_apparatus_preserves_prior_warnings() -> None:
     assert "prior_warning_one" in out.warnings
     assert "prior_warning_two" in out.warnings
     assert f"{WARNING_PREFIX}:language_metadata_mismatch_lang_en-US" in out.warnings
+
+
+# ---------------------------------------------------------------------------
+# Consolidation: note continuation rescue (residuo 2)
+
+
+def test_note_continuation_rescue_preceded_by_note_promotes_to_note() -> None:
+    """A BODY whose text starts with ``N. `` and whose preceding sibling
+    is a NOTE is converted to one synthetic NOTE Node.
+    """
+    spans = [_make_span("13. nota tredici.", font="Verdana", size=BODY_SIZE, span_index=0)]
+    blocks = [_make_block(span_range=(0, 1), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    note = _node("node_0001", SemanticCategory.NOTE, "12. nota dodici.")
+    body = _node(
+        "node_0002",
+        SemanticCategory.BODY,
+        "13. nota tredici.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(note, body),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    children = new_doc.root[0].children
+    notes = [c for c in children if c.category is SemanticCategory.NOTE]
+    bodies = [c for c in children if c.category is SemanticCategory.BODY]
+    assert len(notes) == 2
+    assert not bodies
+
+
+def test_note_continuation_rescue_preceded_by_body_not_rescued() -> None:
+    """A BODY starting with ``N. `` whose preceding sibling is a BODY (not
+    NOTE, not artifact) stays a BODY — the structural guard rejects.
+    """
+    spans = [_make_span("200. anno fondamentale.", font="Verdana", size=BODY_SIZE, span_index=0)]
+    blocks = [_make_block(span_range=(0, 1), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    body_a = _node("node_0001", SemanticCategory.BODY, "Previous body sentence.")
+    body_b = _node(
+        "node_0002",
+        SemanticCategory.BODY,
+        "200. anno fondamentale.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(body_a, body_b),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    children = new_doc.root[0].children
+    notes = [c for c in children if c.category is SemanticCategory.NOTE]
+    assert not notes
+
+
+def test_note_continuation_rescue_skips_artifact_between_note_and_body() -> None:
+    """When ARTIFACT_FOOTER sits between the preceding NOTE and the
+    BODY note-continuation, the rescuer still fires.
+    """
+    spans = [_make_span("13. nota tredici.", font="Verdana", size=BODY_SIZE, span_index=0)]
+    blocks = [_make_block(span_range=(0, 1), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    note = _node("node_0001", SemanticCategory.NOTE, "12. nota dodici.")
+    footer = _node("node_0002", SemanticCategory.ARTIFACT_FOOTER, "Pag. 5 6")
+    body = _node(
+        "node_0003",
+        SemanticCategory.BODY,
+        "13. nota tredici.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(note, footer, body),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    children = new_doc.root[0].children
+    notes = [c for c in children if c.category is SemanticCategory.NOTE]
+    assert len(notes) == 2
+
+
+def test_note_continuation_rescue_rejects_year_like_marker() -> None:
+    """A BODY whose text starts with ``1927. ...`` (a year, above
+    NOTE_MARKER_MAX_VALUE) is NOT promoted, even with a NOTE preceding sibling.
+    """
+    spans = [_make_span("1927. anno cruciale.", font="Verdana", size=BODY_SIZE, span_index=0)]
+    blocks = [_make_block(span_range=(0, 1), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    note = _node("node_0001", SemanticCategory.NOTE, "12. nota dodici.")
+    body = _node(
+        "node_0002",
+        SemanticCategory.BODY,
+        "1927. anno cruciale.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(note, body),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    children = new_doc.root[0].children
+    notes = [c for c in children if c.category is SemanticCategory.NOTE]
+    assert len(notes) == 1  # only the pre-existing NOTE survives
+
+
+def test_note_continuation_rescue_splits_multi_note_body() -> None:
+    """A BODY containing multiple ``N. `` markers gets split into one
+    synthetic NOTE per marker via the multi-note splitter.
+    """
+    spans = [
+        _make_span("13. nota tre.", font="Verdana", size=BODY_SIZE, line_index=0, span_index=0),
+        _make_span("14. nota qua.", font="Verdana", size=BODY_SIZE, line_index=1, span_index=0),
+        _make_span("15. nota cin.", font="Verdana", size=BODY_SIZE, line_index=2, span_index=0),
+    ]
+    blocks = [_make_block(span_range=(0, 3), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    note = _node("node_0001", SemanticCategory.NOTE, "12. nota dodici.")
+    body = _node(
+        "node_0002",
+        SemanticCategory.BODY,
+        "13. nota tre.14. nota qua.15. nota cin.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(note, body),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    children = new_doc.root[0].children
+    notes = [c for c in children if c.category is SemanticCategory.NOTE]
+    # 1 original NOTE + 3 synthetic NOTEs from the rescuer
+    assert len(notes) == 4
+
+
+def test_is_back_matter_heading_recognises_bibliografia() -> None:
+    bibliografia = _node("node_0000", SemanticCategory.HEADING_1, "Bibliografia")
+    assert _is_back_matter_heading(bibliografia) is True
+
+
+def test_is_back_matter_heading_recognises_indice_analitico() -> None:
+    indice = _node("node_0001", SemanticCategory.HEADING_1, "Indice analitico")
+    assert _is_back_matter_heading(indice) is True
+
+
+def test_is_back_matter_heading_rejects_chapter() -> None:
+    chapter = _node("node_0002", SemanticCategory.HEADING_1, "Capitolo I - Ius")
+    assert _is_back_matter_heading(chapter) is False
+
+
+def test_is_back_matter_heading_rejects_text_none() -> None:
+    blank = _node("node_0003", SemanticCategory.HEADING_1, None)
+    assert _is_back_matter_heading(blank) is False
+
+
+# ---------------------------------------------------------------------------
+# Consolidation: book_page_anchor inline minting (residuo 1)
+
+
+def test_anchor_minting_mixed_block_emits_synthetic_anchor() -> None:
+    """A BODY block containing a 0.96pt numeric Verdana span (anchor)
+    plus the 12pt body spans yields one synthetic BOOK_PAGE_ANCHOR Node.
+    """
+    spans = [
+        _make_span("3", font="Verdana", size=0.96, bbox=(56.0, 80.0, 60.0, 81.0), span_index=0),
+        _make_span("Body sentence here.", font="Verdana", size=BODY_SIZE, span_index=1),
+    ]
+    blocks = [_make_block(span_range=(0, 2), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "3Body sentence here.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(body,),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    children = new_doc.root[0].children
+    anchors = [c for c in children if c.category is SemanticCategory.BOOK_PAGE_ANCHOR]
+    assert len(anchors) == 1
+    assert anchors[0].text == "3"
+
+
+def test_anchor_minting_skips_all_1pt_block() -> None:
+    """A block where every span is < 2pt is left to tier 1
+    ``tiny_font_anchor``; the plugin walker does NOT re-mint anchors
+    inside an already-anchor Node.
+    """
+    spans = [_make_span("3", font="Verdana", size=0.96, span_index=0)]
+    blocks = [_make_block(span_range=(0, 1), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    anchor = _node(
+        "node_0001",
+        SemanticCategory.BOOK_PAGE_ANCHOR,
+        "3",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(anchor,),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    anchors = [
+        c for c in new_doc.root[0].children if c.category is SemanticCategory.BOOK_PAGE_ANCHOR
+    ]
+    assert len(anchors) == 1  # the pre-existing tier 1 anchor stays, no re-minting
+
+
+def test_anchor_minting_rejects_non_numeric_1pt() -> None:
+    """A 0.96pt Verdana span with non-digit text does not mint an anchor."""
+    spans = [
+        _make_span("v", font="Verdana", size=0.96, span_index=0),
+        _make_span("Body sentence.", font="Verdana", size=BODY_SIZE, span_index=1),
+    ]
+    blocks = [_make_block(span_range=(0, 2), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "vBody sentence.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(body,),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    anchors = [
+        c for c in new_doc.root[0].children if c.category is SemanticCategory.BOOK_PAGE_ANCHOR
+    ]
+    assert not anchors
+
+
+def test_anchor_minting_recognises_arial_anchor() -> None:
+    """An Arial 0.96pt numeric span is also recognised as an anchor."""
+    spans = [
+        _make_span("12", font="Arial", size=0.96, span_index=0),
+        _make_span("Body sentence.", font="Verdana", size=BODY_SIZE, span_index=1),
+    ]
+    blocks = [_make_block(span_range=(0, 2), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "12Body sentence.",
+        block_indices=(0,),
+    )
+    parent = _node(
+        "node_0000",
+        SemanticCategory.HEADING_3,
+        "§ 1",
+        children=(body,),
+    )
+    new_doc, _ = _reconstruct(Document(root=(parent,)), ext)
+    anchors = [
+        c for c in new_doc.root[0].children if c.category is SemanticCategory.BOOK_PAGE_ANCHOR
+    ]
+    assert len(anchors) == 1
+    assert anchors[0].text == "12"
+
+
+# ---------------------------------------------------------------------------
+# Consolidation: refine_apparatus profile-specific CR -> NOTE binding
+# (residuo 3)
+
+
+def test_refine_apparatus_binds_cr_forward_to_note_in_same_chapter() -> None:
+    """A plugin-minted CR with marker N binds to a NOTE Node with text
+    ``"N. ..."`` that appears AFTER it in pre-order DFS within the same
+    HEADING_1 chapter (forward scan, not the tier 1 backward scan).
+    """
+    plugin = ManualeBicProfile()
+    cr = _node("node_0002", SemanticCategory.CROSS_REFERENCE, "12")
+    plugin._minted_crossref_ids = {"node_0002"}
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "body referring to 12.",
+        children=(cr,),
+    )
+    note = _node("node_0003", SemanticCategory.NOTE, "12. nota dodici.")
+    chapter = _node(
+        "node_0000",
+        SemanticCategory.HEADING_1,
+        "Capitolo I",
+        children=(body, note),
+    )
+    doc = Document(root=(chapter,))
+    ext = _make_extraction([], [])
+    out = plugin.refine_apparatus(doc, ext, [])
+
+    def find(roots: tuple[Node, ...], node_id: str) -> Node | None:
+        for r in roots:
+            if r.id == node_id:
+                return r
+            found = find(r.children, node_id)
+            if found is not None:
+                return found
+        return None
+
+    bound = find(out.root, "node_0002")
+    assert bound is not None
+    assert len(bound.apparatus_refs) == 1
+    assert bound.apparatus_refs[0].kind is ApparatusRefKind.CROSS_REF_TARGET
+    assert bound.apparatus_refs[0].target_node_id == "node_0003"
+
+
+def test_refine_apparatus_unbound_cr_emits_unresolved_warning() -> None:
+    """A plugin-minted CR with marker N whose chapter contains no NOTE
+    with that marker stays unbound and emits the closed-vocabulary
+    ``cross_reference_unresolved_node_<id>_marker_<N>`` warning.
+    """
+    plugin = ManualeBicProfile()
+    cr = _node("node_0002", SemanticCategory.CROSS_REFERENCE, "99")
+    plugin._minted_crossref_ids = {"node_0002"}
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "body with crossref 99.",
+        children=(cr,),
+    )
+    chapter = _node(
+        "node_0000",
+        SemanticCategory.HEADING_1,
+        "Capitolo I",
+        children=(body,),
+    )
+    doc = Document(root=(chapter,))
+    ext = _make_extraction([], [])
+    out = plugin.refine_apparatus(doc, ext, [])
+    assert any(
+        w == f"{WARNING_PREFIX}:cross_reference_unresolved_node_node_0002_marker_99"
+        for w in out.warnings
+    )
+
+
+def test_refine_apparatus_filters_tier1_unresolved_warning_for_minted_cr() -> None:
+    """Tier 1 ``unresolved_cross_reference_node_<id>_n_<N>`` warnings
+    whose Node id belongs to a plugin-minted CR are dropped (the
+    plugin's forward-scan override resolved them).
+    """
+    plugin = ManualeBicProfile()
+    plugin._minted_crossref_ids = {"node_0002"}
+    cr = _node("node_0002", SemanticCategory.CROSS_REFERENCE, "12")
+    note = _node("node_0003", SemanticCategory.NOTE, "12. nota.")
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "body referring to 12.",
+        children=(cr,),
+    )
+    chapter = _node(
+        "node_0000",
+        SemanticCategory.HEADING_1,
+        "Capitolo I",
+        children=(body, note),
+    )
+    doc = Document(
+        root=(chapter,),
+        warnings=(
+            "unresolved_cross_reference_node_node_0002_n_12",
+            "unresolved_cross_reference_node_node_0099_n_5",  # foreign — keep
+        ),
+    )
+    ext = _make_extraction([], [])
+    out = plugin.refine_apparatus(doc, ext, [])
+    assert "unresolved_cross_reference_node_node_0002_n_12" not in out.warnings
+    assert "unresolved_cross_reference_node_node_0099_n_5" in out.warnings
+
+
+def test_refine_apparatus_chapter_separation_independent_bindings() -> None:
+    """A CR with marker N in chapter A binds only to chapter A's NOTE N,
+    even if chapter B has a NOTE with the same marker preceding the CR
+    in DFS order. The chapter-scope guard prevents cross-chapter
+    bindings.
+    """
+    plugin = ManualeBicProfile()
+    plugin._minted_crossref_ids = {"node_0006"}
+    note_a = _node("node_0002", SemanticCategory.NOTE, "5. nota cap A.")
+    body_a = _node("node_0001", SemanticCategory.BODY, "body cap A.")
+    chap_a = _node(
+        "node_0000",
+        SemanticCategory.HEADING_1,
+        "Capitolo I",
+        children=(body_a, note_a),
+    )
+    cr_b = _node("node_0006", SemanticCategory.CROSS_REFERENCE, "5")
+    body_b = _node(
+        "node_0005",
+        SemanticCategory.BODY,
+        "body cap B with 5.",
+        children=(cr_b,),
+    )
+    note_b = _node("node_0007", SemanticCategory.NOTE, "5. nota cap B.")
+    chap_b = _node(
+        "node_0004",
+        SemanticCategory.HEADING_1,
+        "Capitolo II",
+        children=(body_b, note_b),
+    )
+    doc = Document(root=(chap_a, chap_b))
+    ext = _make_extraction([], [])
+    out = plugin.refine_apparatus(doc, ext, [])
+
+    def find(roots: tuple[Node, ...], node_id: str) -> Node | None:
+        for r in roots:
+            if r.id == node_id:
+                return r
+            found = find(r.children, node_id)
+            if found is not None:
+                return found
+        return None
+
+    bound = find(out.root, "node_0006")
+    assert bound is not None
+    assert len(bound.apparatus_refs) == 1
+    # Must bind to chapter B's note, not chapter A's
+    assert bound.apparatus_refs[0].target_node_id == "node_0007"
+
+
+def test_refine_apparatus_non_minted_cr_apparatus_refs_preserved() -> None:
+    """A CR Node NOT minted by the plugin (e.g. tier 1's
+    standalone-superscript-digit emission) keeps its existing
+    apparatus_refs.
+    """
+    plugin = ManualeBicProfile()
+    plugin._minted_crossref_ids = set()  # nothing minted
+    tier1_ref = ApparatusRef(kind=ApparatusRefKind.CROSS_REF_TARGET, target_node_id="node_external")
+    cr = _node(
+        "node_0002",
+        SemanticCategory.CROSS_REFERENCE,
+        "12",
+        apparatus_refs=(tier1_ref,),
+    )
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "body.",
+        children=(cr,),
+    )
+    chapter = _node(
+        "node_0000",
+        SemanticCategory.HEADING_1,
+        "Capitolo I",
+        children=(body,),
+    )
+    doc = Document(root=(chapter,))
+    ext = _make_extraction([], [])
+    out = plugin.refine_apparatus(doc, ext, [])
+
+    def find(roots: tuple[Node, ...], node_id: str) -> Node | None:
+        for r in roots:
+            if r.id == node_id:
+                return r
+            found = find(r.children, node_id)
+            if found is not None:
+                return found
+        return None
+
+    untouched = find(out.root, "node_0002")
+    assert untouched is not None
+    assert len(untouched.apparatus_refs) == 1
+    assert untouched.apparatus_refs[0].target_node_id == "node_external"
+
+
+# ---------------------------------------------------------------------------
+# Cross-reference minting under back-matter (Bibliografia) is suppressed
+
+
+def test_crossref_minting_skipped_under_bibliografia_heading() -> None:
+    """Inline cross-references inside a Bibliografia HEADING_1 subtree
+    are NOT minted (those references point to bibliography entries, not
+    NOTE Nodes).
+    """
+    spans = [
+        _make_span(
+            "12",
+            font="Verdana,Bold",
+            size=CROSSREF_SIZE,
+            flags=CROSSREF_FLAG_BITS,
+            span_index=0,
+        ),
+    ]
+    blocks = [_make_block(span_range=(0, 1), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "body with crossref 12.",
+        block_indices=(0,),
+    )
+    bibliografia = _node(
+        "node_0000",
+        SemanticCategory.HEADING_1,
+        "Bibliografia",
+        children=(body,),
+    )
+    new_doc, _ = _reconstruct(Document(root=(bibliografia,)), ext)
+    crs = [c for c in new_doc.root[0].children if c.category is SemanticCategory.CROSS_REFERENCE]
+    assert not crs
+
+
+def test_crossref_minting_runs_under_chapter_heading() -> None:
+    """Inline cross-references inside a regular chapter HEADING_1 subtree
+    ARE minted.
+    """
+    spans = [
+        _make_span(
+            "12",
+            font="Verdana,Bold",
+            size=CROSSREF_SIZE,
+            flags=CROSSREF_FLAG_BITS,
+            span_index=0,
+        ),
+    ]
+    blocks = [_make_block(span_range=(0, 1), block_index=0)]
+    ext = _make_extraction(spans, blocks)
+    body = _node(
+        "node_0001",
+        SemanticCategory.BODY,
+        "body with crossref 12.",
+        block_indices=(0,),
+    )
+    chapter = _node(
+        "node_0000",
+        SemanticCategory.HEADING_1,
+        "Capitolo I - Ius",
+        children=(body,),
+    )
+    new_doc, _ = _reconstruct(Document(root=(chapter,)), ext)
+    crs = [c for c in new_doc.root[0].children if c.category is SemanticCategory.CROSS_REFERENCE]
+    assert len(crs) == 1
+
+
+# ---------------------------------------------------------------------------
+# Module-level constants
+
+
+def test_note_marker_max_value_above_observed_chapter_max() -> None:
+    """NOTE_MARKER_MAX_VALUE is comfortably above the densest Marrone
+    chapter's max marker (395 in Capitolo VII).
+    """
+    assert NOTE_MARKER_MAX_VALUE > 395
+
+
+def test_anchor_max_size_matches_tier1_threshold() -> None:
+    """ANCHOR_MAX_SIZE mirrors the tier 1 tiny_font_anchor threshold."""
+    assert ANCHOR_MAX_SIZE == 2.0

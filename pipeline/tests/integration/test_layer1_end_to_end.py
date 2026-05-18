@@ -151,7 +151,10 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^plugin:bic:volume_frontispiece_block_-?\d+_page_\d+_marker_\S+$"),
     re.compile(r"^plugin:bic:volume_end_block_-?\d+_page_\d+_marker_\S+$"),
     re.compile(r"^plugin:bic:note_section_split_minted_node_\S+_page_\d+_marker_\S+$"),
+    re.compile(r"^plugin:bic:note_continuation_rescued_node_\S+_page_\d+(?:_marker_\S+)?$"),
     re.compile(r"^plugin:bic:cross_reference_minted_node_\S+_page_\d+_marker_\S+$"),
+    re.compile(r"^plugin:bic:cross_reference_unresolved_node_\S+_marker_\S+$"),
+    re.compile(r"^plugin:bic:book_page_anchor_minted_node_\S+_page_\d+_marker_\S+$"),
     re.compile(r"^plugin:bic:language_metadata_mismatch_lang_\S+$"),
     re.compile(r"^plugin:bic:heading_pattern_unmatched_block_-?\d+_page_\d+$"),
 )
@@ -2083,12 +2086,15 @@ def test_pipeline_runs_on_marrone() -> None:
     assert n_h2 >= 1, f"expected >=1 HEADING_2, got {n_h2}"
     assert n_h3 >= 200, f"expected >=200 HEADING_3, got {n_h3}"
     assert n_body >= 2000, f"expected >=2000 BODY, got {n_body}"
-    assert n_note >= 1200, f"expected >=1200 NOTE, got {n_note}"
-    assert n_crossref >= 1500, f"expected >=1500 CROSS_REFERENCE, got {n_crossref}"
-    assert n_book_page_anchor >= 550, f"expected >=550 BOOK_PAGE_ANCHOR, got {n_book_page_anchor}"
+    assert n_note >= 1450, f"expected >=1450 NOTE, got {n_note}"
+    assert n_crossref >= 1480, f"expected >=1480 CROSS_REFERENCE, got {n_crossref}"
+    assert n_book_page_anchor >= 1300, f"expected >=1300 BOOK_PAGE_ANCHOR, got {n_book_page_anchor}"
     assert n_artifact_footer >= 670, f"expected >=670 ARTIFACT_FOOTER, got {n_artifact_footer}"
     assert n_artifact_stamp == 5, f"expected exactly 5 ARTIFACT_STAMP, got {n_artifact_stamp}"
-    assert cross_refs_bound >= 900, f"expected >=900 CROSS_REFERENCE bound, got {cross_refs_bound}"
+    assert cross_refs_bound / n_crossref >= 0.95, (
+        f"expected >=95% CROSS_REFERENCE bound, got {cross_refs_bound}/{n_crossref} "
+        f"({100 * cross_refs_bound / n_crossref:.1f}%)"
+    )
     assert len(document.transformations) >= 170, (
         f"expected >=170 transformations, got {len(document.transformations)}"
     )

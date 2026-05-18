@@ -451,6 +451,65 @@ synthetic NOTE Nodes minted by the body+note splitter retain the
 generic resolver can bind the corresponding CROSS_REFERENCE.
 """
 
+NOTE_MARKER_MAX_VALUE = 500
+"""Upper bound on a numeric marker recognised as a note marker.
+
+The Marrone fixture's densest chapter (VII Obbligazioni) has 395
+notes; chapter VI follows with 290 and chapter IX with 250. Every
+other chapter stays below 210. A leading-digit value above 500 is
+therefore not a note marker but typically a year reference
+(``"1927. anno..."``) inside a regular body paragraph the
+:meth:`_rescue_note_continuations_in_node` rescuer and the
+body+note splitter must not promote to NOTE.
+"""
+
+_BACK_MATTER_HEADING_PATTERN = re.compile(
+    r"^(?:Bibliografia|Indice\s+analitico)\b",
+    re.IGNORECASE,
+)
+"""Pattern recognising the text of back-matter HEADING_1 sections on
+the Marrone: the Bibliografia ragionata and the Indice analitico.
+
+Used by :meth:`_mint_cross_references_in_forest` to skip inline
+CROSS_REFERENCE minting under these subtrees: the back-matter
+sections contain inline superscript numbers that reference
+bibliography entries or index page numbers, not the per-chapter
+NOTE Nodes the binder targets. Minting them would produce
+~59 synthetic unbindable CRs that the apparatus binder cannot
+resolve (no NOTE exists in Bibliografia or Indice analitico
+subtrees), polluting the binding-rate denominator with structurally
+unresolvable references.
+"""
+
+
+def _is_back_matter_heading(node: Node) -> bool:
+    """Return True if a HEADING_1 Node is a Marrone back-matter section."""
+    if node.text is None:
+        return False
+    return bool(_BACK_MATTER_HEADING_PATTERN.match(node.text.strip()))
+
+
+_NON_CONTENT_ARTIFACT_CATEGORIES: frozenset[SemanticCategory] = frozenset(
+    {
+        SemanticCategory.ARTIFACT_FOOTER,
+        SemanticCategory.ARTIFACT_RUNNING_HEADER,
+        SemanticCategory.ARTIFACT_FILIGREE,
+        SemanticCategory.ARTIFACT_STAMP,
+        SemanticCategory.ARTIFACT_PAGE_HEADER,
+        SemanticCategory.BOOK_PAGE_ANCHOR,
+        SemanticCategory.EMPTY_PAGE,
+    }
+)
+"""Categories the note-continuation rescuer skips when looking
+backwards through siblings for the preceding content Node.
+
+The tier 1c reading-order sort interleaves page footers and
+top-of-page book-page anchors between the last NOTE of one page
+and the first content block of the next page. The structural
+predicate that flags a BODY as a note continuation must look past
+these artifact-like Nodes to find the meaningful content sibling.
+"""
+
 _CROSSREF_NUMERIC_PATTERN = re.compile(r"^\d+$")
 """Pattern matching the verbatim text of an inline cross-reference
 superscript span. Strict (no whitespace, no parentheses) so the
@@ -645,6 +704,7 @@ class ManualeBicProfile(ProfilePlugin):
         self._pending_warnings: list[str] = []
         self._minted_note_ids: set[str] = set()
         self._minted_crossref_ids: set[str] = set()
+        self._minted_anchor_ids: set[str] = set()
 
     # ------------------------------------------------------------------
     # ProfilePlugin declarative methods
@@ -765,6 +825,7 @@ class ManualeBicProfile(ProfilePlugin):
         self._pending_warnings = []
         self._minted_note_ids = set()
         self._minted_crossref_ids = set()
+        self._minted_anchor_ids = set()
 
         seen_premesse_pages: set[int] = set()
         seen_abbreviazioni_pages: set[int] = set()
@@ -943,11 +1004,36 @@ class ManualeBicProfile(ProfilePlugin):
             new_warnings,
             minter,
         )
+        # Rescue note continuations: a BODY Node whose text starts with
+        # the ``N. `` numbered-note marker is a Note section continuation
+        # the tier 1 cross-page paragraph merge refused to fuse (because
+        # ``detect_heading_pattern`` recognises ``^\d+\.\s`` as a
+        # numbered-heading pattern and short-circuits the merge). The
+        # rescuer reclassifies the qualifying BODY into one-or-more
+        # synthetic NOTE Nodes (the same multi-note splitting framework
+        # the body+note splitter uses on the marker-bearing block) so
+        # that each individual note is bindable independently. Recovers
+        # ~270 notes on the Marrone fixture (split across the same ~30
+        # rescued BODYs that previously produced one NOTE each).
+        new_roots = self._rescue_note_continuations_in_forest(
+            new_roots, extraction, new_warnings, minter
+        )
         new_roots = self._mint_cross_references_in_forest(
             new_roots,
             extraction,
             new_warnings,
             minter,
+        )
+        # Mint synthetic BOOK_PAGE_ANCHOR Nodes for the 1pt Verdana/Arial
+        # spans buried inside mixed blocks that tier 1 ``tiny_font_anchor``
+        # could not catch. Tier 1 emits an anchor Node only when *every*
+        # span of the block is <2pt; on the Marrone fixture this catches
+        # ~665 anchors out of 1352 because the BIC pipeline embeds many
+        # anchors at the leading position of body blocks. The plugin
+        # walker recovers the remaining ~670 anchors as synthetic Nodes
+        # inserted as siblings after their host Node.
+        new_roots = self._mint_book_page_anchors_in_forest(
+            new_roots, extraction, new_warnings, minter
         )
         new_roots = self._dedupe_premesse_in_forest(new_roots, new_warnings)
 
@@ -963,42 +1049,523 @@ class ManualeBicProfile(ProfilePlugin):
         extraction: ExtractionResult,
         classified_blocks: list[ClassifiedBlock],
     ) -> Document:
-        """Emit the one-off language-metadata mismatch warning if applicable.
+        """Override CR->NOTE binding with per-chapter forward scan; emit one-off
+        language-metadata warning.
 
-        The Marrone PDF declares ``Lang en-US`` in its catalog while
-        the textual content is Italian. The plugin records this fact
-        once per pipeline run via a singleton warning so the audit log
-        carries the diagnostic and VoiceOver consumers can override the
-        language at presentation time.
+        The Marrone has an editorial convention that diverges from the
+        scholarly footnote default the tier 1 generic resolver in
+        :mod:`apparatus.resolver` assumes: cross-references appear in
+        the body **before** their target NOTE (the Note section sits at
+        the end of every § paragrafo). The tier 1 resolver iterates
+        ``for j in range(cr_index - 1, -1, -1)`` — backward — which
+        on this corpus either fails (no preceding NOTE in scope) or
+        binds to the wrong NOTE (the same marker number in an earlier
+        chapter). The plugin's override:
 
-        The plugin does NOT override the tier 1 generic cross-reference
-        resolver: the synthetic CROSS_REFERENCE Nodes minted in
-        :meth:`refine_reconstruction` carry pure-digit text that
-        :data:`apparatus.constants.CROSS_REF_DIGITS_REGEX` matches; the
-        minted NOTE Nodes carry text starting with the matching
-        ``"N. "`` form that :data:`apparatus.constants.NOTE_MARKER_REGEX`
-        recognises; the scope-locale HEADING_1 mechanism aligns with
-        the Marrone per-chapter note numbering. No profile-specific
-        binding work is required.
+        1. Walks the pre-order DFS once, tracking the *current
+           chapter* (last HEADING_1 seen). On an unbroken chapter the
+           current_chapter survives across orphan HEADING_3 siblings
+           that the tier 1 hierarchy assembler emits at root level
+           when no HEADING_2 separates the HEADING_3 from its
+           HEADING_1 (Marrone § paragrafi go directly under a
+           chapter without an intervening sub-section).
+        2. Records every plugin-minted NOTE in
+           ``chapter -> {marker: note_node_id}`` and every plugin-
+           minted CROSS_REFERENCE as a pending binding awaiting the
+           NOTE.
+        3. Rebuilds the tree, attaching the resolved ``ApparatusRef``
+           to every CROSS_REFERENCE for which the chapter's index
+           contains a matching marker. Pre-existing apparatus_refs
+           on plugin-minted CRs (from the tier 1 backward scan)
+           are dropped so a wrong tier 1 binding cannot survive.
+
+        Two warning-management side effects: every
+        ``unresolved_cross_reference_node_<id>_n_<N>`` tier 1 warning
+        whose ``<id>`` belongs to one of this plugin's CRs is dropped
+        (the override resolved it). A new
+        ``cross_reference_unresolved_node_<id>_marker_<N>`` warning is
+        emitted for plugin-minted CRs the override could not bind
+        either (chapter has no NOTE with the matching marker — typical
+        of front-matter and Bibliografia pages where CRs may appear
+        without a corresponding Note section).
+
+        Finally the catalog ``Lang en-US`` versus Italian-content
+        mismatch is recorded as a singleton
+        ``language_metadata_mismatch_lang_en-US`` warning.
         """
         del extraction, classified_blocks
-        if document.warnings or document.transformations or document.root:
-            # Pipeline run: emit the single mismatch warning. The
-            # presence check is symbolic: the warning is emitted once
-            # per document regardless of the actual catalog Lang value,
-            # because Layer 1 does not currently expose the language
-            # metadata to the plugin. A future signal-builder extension
-            # may pass the catalog Lang as a specific marker; at that
-            # point the warning would be conditional on the value.
-            return Document(
-                root=document.root,
-                warnings=(
-                    *document.warnings,
-                    f"{WARNING_PREFIX}:language_metadata_mismatch_lang_en-US",
-                ),
-                transformations=document.transformations,
+        if not document.root:
+            return document
+
+        # Rebind plugin-minted CRs forward in chapter scope.
+        new_roots, profile_warnings = self._rebind_cross_references(document.root)
+
+        # Drop tier 1 backward-scan warnings for plugin-minted CRs the
+        # override resolved, then append the new plugin warnings and
+        # the language-metadata singleton.
+        filtered_warnings = self._filter_tier1_warnings_for_minted_crs(document.warnings)
+        final_warnings = (
+            filtered_warnings
+            + tuple(profile_warnings)
+            + (f"{WARNING_PREFIX}:language_metadata_mismatch_lang_en-US",)
+        )
+
+        return Document(
+            root=new_roots,
+            warnings=final_warnings,
+            transformations=document.transformations,
+        )
+
+    def _filter_tier1_warnings_for_minted_crs(self, warnings: tuple[str, ...]) -> tuple[str, ...]:
+        """Drop tier 1 ``unresolved_cross_reference_*`` warnings whose Node id
+        belongs to one of this plugin's minted CROSS_REFERENCEs.
+
+        The tier 1 generic resolver in :mod:`apparatus.resolver` emits
+        one such warning per CROSS_REFERENCE it could not bind via
+        backward scan. The plugin's :meth:`refine_apparatus` overrides
+        the binding with a forward chapter-scoped scan; warnings that
+        refer to plugin-minted CRs are therefore obsolete and would
+        pollute the audit log if kept.
+
+        The filter preserves every other warning, including tier 1
+        warnings on CRs the plugin did NOT mint (e.g. CR Nodes tier 1
+        emitted from standalone single-superscript-digit blocks, if
+        any exist in the Marrone — none do, but the filter stays
+        defensive).
+        """
+        prefix_unresolved = "unresolved_cross_reference_node_"
+        prefix_unparseable = "unparseable_cross_reference_node_"
+        kept: list[str] = []
+        for w in warnings:
+            if w.startswith(prefix_unresolved):
+                # Format: unresolved_cross_reference_node_<id>_n_<N>
+                rest = w[len(prefix_unresolved) :]
+                node_id = rest.rsplit("_n_", 1)[0]
+                if node_id in self._minted_crossref_ids:
+                    continue
+            elif w.startswith(prefix_unparseable):
+                rest = w[len(prefix_unparseable) :]
+                if rest in self._minted_crossref_ids:
+                    continue
+            kept.append(w)
+        return tuple(kept)
+
+    def _rebind_cross_references(
+        self, roots: tuple[Node, ...]
+    ) -> tuple[tuple[Node, ...], list[str]]:
+        """Walk pre-order once, build chapter scopes, rebind every plugin-minted
+        CROSS_REFERENCE to the NOTE in the same chapter via forward scan.
+
+        Iterates a single pre-order DFS:
+
+        - On a HEADING_1 the current chapter switches to the new
+          heading's id; a fresh ``marker -> note_id`` dict is started
+          and a fresh list of pending CRs is started. Front-matter
+          content before the first HEADING_1 lives under the sentinel
+          chapter key ``""`` (empty string), reproducing the natural
+          "no chapter yet" scope.
+        - On a NOTE the leading ``N. `` marker is parsed and the
+          mapping ``marker -> note.id`` is recorded under the current
+          chapter. Any pending CR with the same marker in the same
+          chapter is bound to the NOTE immediately (so single-pass).
+        - On a CROSS_REFERENCE minted by this plugin, the marker is
+          extracted from ``node.text``. If a NOTE with the same
+          marker has already been seen in the current chapter
+          (chapter mapping wins), the CR is bound to it. Otherwise
+          the CR is added to the chapter's pending list, awaiting a
+          forthcoming NOTE in the same chapter.
+
+        After the walk, any pending CR with no matching NOTE in its
+        chapter emits a ``cross_reference_unresolved_node_<id>_marker_<N>``
+        warning and stays unbound.
+
+        The tree is rebuilt with the resolved ``ApparatusRef`` attached
+        to each bound CR. Non-CR Nodes pass through unchanged. The
+        original ``apparatus_refs`` of plugin-minted CRs are dropped
+        because they were produced by the wrong-direction tier 1
+        backward scan and may point to a different chapter's NOTE.
+        """
+        from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
+
+        # Pass 1: pre-order DFS over the original tree, building per-
+        # chapter marker -> note.id maps and per-CR target maps.
+        cr_target: dict[str, str] = {}  # cr.id -> note.id
+        cr_marker: dict[str, str] = {}  # cr.id -> marker text (for warning emission)
+        cr_pending: dict[str, list[tuple[str, str]]] = {}  # chapter -> [(cr.id, marker)]
+        chapter_index: dict[str, dict[str, str]] = {}  # chapter -> {marker: note.id}
+        current_chapter: str = ""
+        chapter_index[current_chapter] = {}
+        cr_pending[current_chapter] = []
+        marker_pattern = re.compile(r"^\s*(\d+)\.")
+
+        def walk(node: Node) -> None:
+            nonlocal current_chapter
+            if node.category is SemanticCategory.HEADING_1:
+                current_chapter = node.id
+                chapter_index.setdefault(current_chapter, {})
+                cr_pending.setdefault(current_chapter, [])
+            elif node.category is SemanticCategory.NOTE and node.text is not None:
+                match = marker_pattern.match(node.text)
+                if match is not None:
+                    marker = match.group(1)
+                    chapter_map = chapter_index[current_chapter]
+                    if marker not in chapter_map:
+                        chapter_map[marker] = node.id
+                    # Bind any pending CR with this marker in same chapter.
+                    remaining: list[tuple[str, str]] = []
+                    for cr_id, cr_mark in cr_pending[current_chapter]:
+                        if cr_mark == marker and cr_id not in cr_target:
+                            cr_target[cr_id] = node.id
+                        else:
+                            remaining.append((cr_id, cr_mark))
+                    cr_pending[current_chapter] = remaining
+            elif (
+                node.category is SemanticCategory.CROSS_REFERENCE
+                and node.id in self._minted_crossref_ids
+                and node.text is not None
+            ):
+                marker = node.text.strip()
+                cr_marker[node.id] = marker
+                chapter_map = chapter_index.setdefault(current_chapter, {})
+                if marker in chapter_map:
+                    cr_target[node.id] = chapter_map[marker]
+                else:
+                    cr_pending.setdefault(current_chapter, []).append((node.id, marker))
+            for child in node.children:
+                walk(child)
+
+        for root in roots:
+            walk(root)
+
+        # Pass 2: rebuild tree, attaching ApparatusRef to bound CRs.
+        def rebuild(node: Node) -> Node:
+            new_children = tuple(rebuild(c) for c in node.children)
+            if node.id in self._minted_crossref_ids:
+                if node.id in cr_target:
+                    ref = ApparatusRef(
+                        kind=ApparatusRefKind.CROSS_REF_TARGET,
+                        target_node_id=cr_target[node.id],
+                        source_marker=cr_marker.get(node.id),
+                    )
+                    return replace(node, children=new_children, apparatus_refs=(ref,))
+                # Plugin-minted CR with no matching NOTE in chapter.
+                return replace(node, children=new_children, apparatus_refs=())
+            if new_children == node.children:
+                return node
+            return replace(node, children=new_children)
+
+        new_roots = tuple(rebuild(r) for r in roots)
+
+        # Build unresolved warnings list.
+        warnings: list[str] = []
+        for pending in cr_pending.values():
+            for cr_id, marker in pending:
+                if cr_id in cr_target:
+                    continue  # bound (defensive — should have been removed)
+                warnings.append(
+                    f"{WARNING_PREFIX}:cross_reference_unresolved_node_{cr_id}_marker_{marker}"
+                )
+
+        return new_roots, warnings
+
+    # ------------------------------------------------------------------
+    # Note continuation rescue (residuo 2 closure)
+
+    def _rescue_note_continuations_in_forest(
+        self,
+        roots: tuple[Node, ...],
+        extraction: ExtractionResult,
+        warnings: list[str],
+        minter: _NodeIdMinter,
+    ) -> tuple[Node, ...]:
+        """Convert BODY Nodes whose text starts with ``N. `` into one-or-more
+        synthetic NOTE Nodes.
+
+        The tier 1 cross-page paragraph merger refuses to merge a
+        top-of-page BODY block into the previous BODY when the second
+        block's text matches a heading pattern. The Marrone note
+        continuations after a page break begin with ``"12. New note
+        text..."`` (the leading numeric marker of the next note),
+        which the generic ``detect_heading_pattern`` recognises as a
+        numbered paragraph heading and short-circuits the merge. The
+        result is a stand-alone BODY Node that should structurally be
+        one or more NOTE Nodes (the BODY's text may contain multiple
+        glued notes ``"12. ... 13. ... 14. ..."`` when PyMuPDF fuses
+        consecutive note paragraphs into a single block).
+
+        The rescue walks every BODY, validates the leading marker (≤
+        :data:`NOTE_MARKER_MAX_VALUE` to reject year-like numbers like
+        ``"1927. anno..."`` inside genuine body), recovers the
+        underlying spans via the BODY's ``block_indices`` and runs
+        the same :meth:`_group_note_spans` framework the body+note
+        splitter uses on the marker-bearing block. The qualifying
+        BODY is replaced in the parent's children list by one
+        synthetic NOTE Node per transition. The numerical marker on
+        each minted NOTE enables :meth:`refine_apparatus` to
+        recognise it as a valid forward target for cross-references
+        in the same chapter.
+        """
+        return tuple(
+            self._rescue_note_continuations_in_node(r, extraction, warnings, minter) for r in roots
+        )
+
+    def _rescue_note_continuations_in_node(
+        self,
+        node: Node,
+        extraction: ExtractionResult,
+        warnings: list[str],
+        minter: _NodeIdMinter,
+    ) -> Node:
+        new_children: list[Node] = []
+        for child in node.children:
+            recursed = self._rescue_note_continuations_in_node(child, extraction, warnings, minter)
+            # Look backward through new_children (already processed)
+            # skipping artifact-like categories, to find the last
+            # content-bearing sibling. A NOTE sibling preceding
+            # (across artifacts) the current BODY is the strong
+            # structural signal of a cross-page note continuation.
+            preceding_is_note = self._preceding_meaningful_sibling_is_note(new_children)
+            if self._is_note_continuation_candidate(recursed, preceding_is_note):
+                produced = self._convert_body_to_notes(recursed, extraction, warnings, minter)
+                new_children.extend(produced)
+                continue
+            new_children.append(recursed)
+        if tuple(new_children) == node.children:
+            return node
+        return replace(node, children=tuple(new_children))
+
+    @staticmethod
+    def _preceding_meaningful_sibling_is_note(siblings: list[Node]) -> bool:
+        """Walk ``siblings`` backwards, skipping artifact-like categories,
+        and return True if the first encountered content sibling is a
+        ``NOTE``.
+
+        The Marrone reading-order tree interleaves
+        :class:`SemanticCategory.ARTIFACT_FOOTER` and
+        :class:`SemanticCategory.BOOK_PAGE_ANCHOR` Nodes between
+        consecutive content Nodes at every page boundary (the tier 1c
+        sort is page-y0-x0, so the bottom-of-page footer of page N
+        and the top-of-page anchors of page N+1 sit between the last
+        NOTE of page N and the first note-continuation BODY of page
+        N+1). A naive "immediate preceding sibling" check would miss
+        every cross-page continuation; this helper looks backwards
+        through the artifact noise to find the meaningful content
+        anchor.
+        """
+        for sibling in reversed(siblings):
+            if sibling.category in _NON_CONTENT_ARTIFACT_CATEGORIES:
+                continue
+            return sibling.category is SemanticCategory.NOTE
+        return False
+
+    @staticmethod
+    def _is_note_continuation_candidate(node: Node, preceding_is_note: bool) -> bool:
+        """Return True if ``node`` is a BODY note continuation worth rescuing.
+
+        Four conjunct signals: ``node`` is a BODY Node; its text
+        starts with the numeric marker pattern; the leading number is
+        below :data:`NOTE_MARKER_MAX_VALUE` (rejecting year references
+        like ``"1927. anno..."``); and the meaningful preceding
+        sibling (looking past artifact-like Nodes via
+        :meth:`_preceding_meaningful_sibling_is_note`) is a NOTE Node.
+        The structural guard is the strongest discriminator: a
+        genuine cross-page note continuation always follows the
+        previous block's last numbered NOTE just split off by
+        :meth:`_split_body_note_in_node`, even when the immediate
+        preceding sibling is the previous page's
+        :class:`SemanticCategory.ARTIFACT_FOOTER` or a stretch of
+        :class:`SemanticCategory.BOOK_PAGE_ANCHOR` Nodes minted by
+        the inline anchor walker. A body paragraph happening to open
+        with ``"200. ..."`` is preceded by a BODY or HEADING after
+        the same artifact skip — distinguishable. Without this guard
+        the rescuer spuriously promotes ~40 body paragraphs on the
+        Marrone fixture.
+        """
+        if node.category is not SemanticCategory.BODY:
+            return False
+        if node.text is None or not node.block_indices:
+            return False
+        if not preceding_is_note:
+            return False
+        match = _NOTE_NUMBER_PATTERN.match(node.text)
+        if match is None:
+            return False
+        return int(match.group(1)) <= NOTE_MARKER_MAX_VALUE
+
+    def _convert_body_to_notes(
+        self,
+        body: Node,
+        extraction: ExtractionResult,
+        warnings: list[str],
+        minter: _NodeIdMinter,
+    ) -> list[Node]:
+        """Split a note-continuation BODY into one synthetic NOTE per ``N. ``
+        transition.
+
+        Gathers every span across every block_index of the BODY (the
+        cross-page merger may have produced a multi-block BODY whose
+        spans span several blocks), runs :meth:`_group_note_spans` to
+        find each note's spans, and emits one synthetic NOTE Node per
+        group. If grouping fails (no recognisable ``N. `` transition
+        despite the leading marker), the BODY is converted as a
+        single NOTE so the rescue stays loss-free.
+        """
+        all_spans: list[Span] = []
+        for block_index in body.block_indices:
+            if block_index < 0 or block_index >= len(extraction.blocks):
+                continue
+            block = extraction.blocks[block_index]
+            start, end = block.span_range
+            all_spans.extend(extraction.spans[start:end])
+        if not all_spans:
+            return [body]
+        groups = self._group_note_spans(all_spans)
+        if not groups:
+            warnings.append(
+                f"{WARNING_PREFIX}:note_continuation_rescued_node_{body.id}_page_{body.page_index}"
             )
-        return document
+            return [
+                replace(
+                    body,
+                    category=SemanticCategory.NOTE,
+                )
+            ]
+        minted: list[Node] = []
+        host_block_index = body.block_indices[0]
+        for group_spans, marker_number in groups:
+            note_text = "".join(s.text for s in group_spans).strip()
+            note_id = minter.mint()
+            self._minted_note_ids.add(note_id)
+            minted.append(
+                Node(
+                    id=note_id,
+                    category=SemanticCategory.NOTE,
+                    children=(),
+                    page_index=group_spans[0].page,
+                    block_indices=(host_block_index,),
+                    text=note_text,
+                    level=None,
+                    summary_items=None,
+                    toc_items=None,
+                    apparatus_refs=(),
+                )
+            )
+            warnings.append(
+                f"{WARNING_PREFIX}:note_continuation_rescued_node_{note_id}"
+                f"_page_{group_spans[0].page}_marker_{marker_number}"
+            )
+        return minted
+
+    # ------------------------------------------------------------------
+    # BOOK_PAGE_ANCHOR inline minting (residuo 1 closure)
+
+    def _mint_book_page_anchors_in_forest(
+        self,
+        roots: tuple[Node, ...],
+        extraction: ExtractionResult,
+        warnings: list[str],
+        minter: _NodeIdMinter,
+    ) -> tuple[Node, ...]:
+        """Mint synthetic BOOK_PAGE_ANCHOR Nodes for the 1pt anchors buried
+        inside mixed (non-all-1pt) blocks.
+
+        The tier 1 ``tiny_font_anchor`` heuristic catches a block only
+        when *every* span in it is below 2pt. The BIC accessibility
+        pipeline frequently places 0.96pt Verdana (or 0.96pt Arial
+        white-on-white) page anchors at the leading position of body
+        blocks, mixed with the 12pt body content. Tier 1 leaves those
+        blocks classified as BODY (or UNCLASSIFIED) with their anchor
+        spans buried inside, invisible to the structure tree.
+
+        This walker visits every Node, inspects every span of every
+        block_index it references, identifies 1pt Verdana/Arial spans
+        whose text is a digit (the printed book-page number), and
+        mints one synthetic BOOK_PAGE_ANCHOR Node per qualifying span.
+        The minted Node is inserted as a sibling immediately after its
+        host Node in the parent's children list. The synthetic Node
+        carries the digit text in its ``text`` field so Layer 2 can
+        expose a "go to printed page N" navigation surface.
+
+        Recovers ~670 additional anchors on the Marrone fixture
+        (combined with the ~665 tier 1 catches the total reaches
+        ~1335 of the 1352 anchors empirically present in the source).
+        """
+        return tuple(
+            self._mint_book_page_anchors_in_node(r, extraction, warnings, minter) for r in roots
+        )
+
+    def _mint_book_page_anchors_in_node(
+        self,
+        node: Node,
+        extraction: ExtractionResult,
+        warnings: list[str],
+        minter: _NodeIdMinter,
+    ) -> Node:
+        new_children: list[Node] = []
+        for child in node.children:
+            refined_child = self._mint_book_page_anchors_in_node(
+                child, extraction, warnings, minter
+            )
+            new_children.append(refined_child)
+            # Skip BOOK_PAGE_ANCHOR children (already anchors) and
+            # synthetic Nodes without block_indices.
+            if refined_child.category is SemanticCategory.BOOK_PAGE_ANCHOR:
+                continue
+            if not refined_child.block_indices:
+                continue
+            minted = self._mint_anchors_for_node(refined_child, extraction, warnings, minter)
+            new_children.extend(minted)
+        if tuple(new_children) == node.children:
+            return node
+        return replace(node, children=tuple(new_children))
+
+    def _mint_anchors_for_node(
+        self,
+        host: Node,
+        extraction: ExtractionResult,
+        warnings: list[str],
+        minter: _NodeIdMinter,
+    ) -> list[Node]:
+        minted: list[Node] = []
+        for block_index in host.block_indices:
+            if block_index < 0 or block_index >= len(extraction.blocks):
+                continue
+            block = extraction.blocks[block_index]
+            start, end = block.span_range
+            spans = extraction.spans[start:end]
+            # Skip blocks where every span is <2pt — tier 1
+            # tiny_font_anchor already handled them.
+            if all(sp.size < ANCHOR_MAX_SIZE for sp in spans):
+                continue
+            for sp in spans:
+                if sp.size >= ANCHOR_MAX_SIZE:
+                    continue
+                if not (sp.font.startswith("Verdana") or sp.font.startswith("Arial")):
+                    continue
+                digit_text = sp.text.strip()
+                if not digit_text.isdigit():
+                    continue
+                anchor_id = minter.mint()
+                self._minted_anchor_ids.add(anchor_id)
+                minted.append(
+                    Node(
+                        id=anchor_id,
+                        category=SemanticCategory.BOOK_PAGE_ANCHOR,
+                        children=(),
+                        page_index=sp.page,
+                        block_indices=(block_index,),
+                        text=digit_text,
+                        level=None,
+                        summary_items=None,
+                        toc_items=None,
+                        apparatus_refs=(),
+                    )
+                )
+                warnings.append(
+                    f"{WARNING_PREFIX}:book_page_anchor_minted_node_{anchor_id}"
+                    f"_page_{sp.page}_marker_{digit_text}"
+                )
+        return minted
 
     # ------------------------------------------------------------------
     # Per-block reclassification helpers
@@ -1392,34 +1959,51 @@ class ManualeBicProfile(ProfilePlugin):
     @staticmethod
     def _group_note_spans(spans: tuple[Span, ...] | list[Span]) -> list[tuple[list[Span], str]]:
         """Group note spans into individual notes by detecting ``N. ``
-        transitions on a new line.
+        transitions at the start of a new line.
 
-        A transition is signalled by a span whose ``line_index``
-        differs from the previous span's and whose stripped text
-        starts with ``N. ``. The first span after the "Note" marker
-        seeds the first group regardless of the line_index check.
+        A transition is signalled by a span whose ``span_index == 0``
+        (first span of its line — PyMuPDF's per-line counter) and
+        whose stripped text starts with ``N. `` with ``N <=
+        NOTE_MARKER_MAX_VALUE``. The first span after the "Note"
+        marker seeds the first group regardless of the span_index
+        check.
+
+        Rationale for the ``span_index == 0`` predicate: PyMuPDF
+        resets ``line_index`` per block, so a multi-block note
+        section walked by the splitter may see ``prev_line_index``
+        from block N (e.g. 20) followed by a transition span at
+        ``line_index=0`` in block N+1 (the rising edge fires
+        correctly). But within a single block where two consecutive
+        notes are short and lay out on consecutive lines, the
+        previous fix using ``line_index != prev_line_index`` was
+        already adequate; the new ``span_index == 0`` predicate is
+        equivalent on that case and strictly more permissive when
+        spans share a ``line_index`` for any other reason. The
+        magnitude check rejects numeric tokens above 500 as note
+        markers (year references like ``"1927. anno..."`` inside
+        body text that PyMuPDF inadvertently surfaces).
         """
         groups: list[tuple[list[Span], str]] = []
         current_group: list[Span] = []
         current_marker: str = ""
-        prev_line_index: int | None = None
+        seeded = False
         for span in spans:
             text = span.text.lstrip()
-            is_transition = False
             marker_match = _NOTE_NUMBER_PATTERN.match(text)
-            if marker_match is not None and (
-                prev_line_index is None or span.line_index != prev_line_index
-            ):
-                is_transition = True
+            is_transition = (
+                marker_match is not None
+                and int(marker_match.group(1)) <= NOTE_MARKER_MAX_VALUE
+                and (not seeded or span.span_index == 0)
+            )
             if is_transition:
                 if current_group:
                     groups.append((current_group, current_marker))
                 current_group = [span]
                 assert marker_match is not None
                 current_marker = marker_match.group(1)
+                seeded = True
             elif current_group:
                 current_group.append(span)
-            prev_line_index = span.line_index
         if current_group:
             groups.append((current_group, current_marker))
         return [g for g in groups if g[1]]
@@ -1434,10 +2018,25 @@ class ManualeBicProfile(ProfilePlugin):
         warnings: list[str],
         minter: _NodeIdMinter,
     ) -> tuple[Node, ...]:
-        return tuple(
-            self._mint_cross_references_in_node(root, extraction, warnings, minter)
-            for root in roots
-        )
+        # Walk the forest tracking the current top-level chapter so the
+        # walker can skip CROSS_REFERENCE minting under back-matter
+        # sections (Bibliografia, Indice analitico) where the inline
+        # superscript numbers reference bibliography entries rather
+        # than NOTE Nodes; minting them would produce ~59 unbindable
+        # synthetic CRs that pollute the binding-rate denominator.
+        new_roots: list[Node] = []
+        skip_minting = False
+        for root in roots:
+            if root.category is SemanticCategory.HEADING_1 and _is_back_matter_heading(root):
+                skip_minting = True
+            elif root.category is SemanticCategory.HEADING_1:
+                skip_minting = False
+            new_roots.append(
+                self._mint_cross_references_in_node(
+                    root, extraction, warnings, minter, skip=skip_minting
+                )
+            )
+        return tuple(new_roots)
 
     def _mint_cross_references_in_node(
         self,
@@ -1445,14 +2044,22 @@ class ManualeBicProfile(ProfilePlugin):
         extraction: ExtractionResult,
         warnings: list[str],
         minter: _NodeIdMinter,
+        *,
+        skip: bool = False,
     ) -> Node:
         # Recurse first, then build new children with cross-refs
         # spliced in immediately after each BODY that contains them.
         new_children: list[Node] = []
         for child in node.children:
-            refined_child = self._mint_cross_references_in_node(child, extraction, warnings, minter)
+            refined_child = self._mint_cross_references_in_node(
+                child, extraction, warnings, minter, skip=skip
+            )
             new_children.append(refined_child)
-            if refined_child.category is SemanticCategory.BODY and refined_child.block_indices:
+            if (
+                not skip
+                and refined_child.category is SemanticCategory.BODY
+                and refined_child.block_indices
+            ):
                 minted = self._mint_for_node(refined_child, extraction, warnings, minter)
                 new_children.extend(minted)
         if tuple(new_children) == node.children:
