@@ -281,6 +281,7 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:dejure_nota_sentenza:toc_general_unparseable_node_<id>",
     "plugin:dejure_nota_sentenza:section_heading_pattern_unmatched_block_<idx>_page_<p>",
     "plugin:dejure_nota_sentenza:note_section_split_minted_node_<id>_page_<p>_marker_<n>",
+    "plugin:dejure_nota_sentenza:note_section_unparseable_node_<id>",
     "plugin:dejure_nota_sentenza:cross_reference_minted_node_<id>_page_<p>_marker_<n>",
     "plugin:dejure_nota_sentenza:cross_reference_unresolved_node_<id>_marker_<n>",
 )
