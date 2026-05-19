@@ -36,6 +36,7 @@ from scabopdf_pipeline.postprocessing import (
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
+from scabopdf_pipeline.profiles.dejure_dottrina import DejureDottrinaProfile
 from scabopdf_pipeline.profiles.dejure_massime import DejureMassimeProfile
 from scabopdf_pipeline.profiles.dejure_nota_sentenza import DejureNotaSentenzaProfile
 from scabopdf_pipeline.profiles.manuale_bic import ManualeBicProfile
@@ -84,6 +85,9 @@ DEJURE_NS_STELLA_FIXTURE = FIXTURES_DIR / "dejure_ns_stella_raccolta.pdf"
 DEJURE_MM_PROCEDURA_FIXTURE = FIXTURES_DIR / "dejure_mm_procedura_civile.pdf"
 DEJURE_MM_CONCAUSE_FIXTURE = FIXTURES_DIR / "dejure_mm_concause_naturali.pdf"
 DEJURE_MM_MASSIVO_FIXTURE = FIXTURES_DIR / "dejure_mm_responsabilita_civile_massivo.pdf"
+DEJURE_DT_NOTIZIA_FIXTURE = FIXTURES_DIR / "dejure_dt_notizia_reato.pdf"
+DEJURE_DT_CONCAUSE_FIXTURE = FIXTURES_DIR / "dejure_dt_concause_causalita.pdf"
+DEJURE_DT_CARTABIA_FIXTURE = FIXTURES_DIR / "dejure_dt_riforma_cartabia.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -193,6 +197,17 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
         r"^plugin:dejure_massime:fonte_value_orphan_no_preceding_label_block_-?\d+_page_\d+$"
     ),
     re.compile(r"^plugin:dejure_massime:title_orphan_no_preceding_referral_block_-?\d+_page_\d+$"),
+    # dejure_dottrina plugin (closed vocabulary, see profiles/dejure_dottrina.py)
+    re.compile(r"^plugin:dejure_dottrina:metadata_block_unparseable_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:dejure_dottrina:metadata_field_minted_node_\S+_field_\S+$"),
+    re.compile(r"^plugin:dejure_dottrina:toc_general_parsed_node_\S+_items_\d+$"),
+    re.compile(r"^plugin:dejure_dottrina:toc_general_unparseable_node_\S+$"),
+    re.compile(r"^plugin:dejure_dottrina:section_heading_pattern_unmatched_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:dejure_dottrina:note_section_split_minted_node_\S+_page_\d+_marker_\d+$"),
+    re.compile(r"^plugin:dejure_dottrina:note_section_unparseable_node_\S+$"),
+    re.compile(r"^plugin:dejure_dottrina:editorial_note_minted_node_\S+_page_\d+$"),
+    re.compile(r"^plugin:dejure_dottrina:cross_reference_minted_node_\S+_page_\d+_marker_\d+$"),
+    re.compile(r"^plugin:dejure_dottrina:cross_reference_unresolved_node_\S+_marker_\S+$"),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
@@ -1794,11 +1809,12 @@ def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
     The helper additionally probes page 1 for a DeJure editorial banner
     (Arial-BoldMT 9pt block whose text is either "DOTTRINA" or
     "NOTE E DOTTRINA") and emits a SpecificMarker named
-    "dejure_banner_text" carrying the verbatim value. The DeJure sister
-    plugins consume this marker to discriminate symmetrically between
-    sibling genres on the Aspose-Arial-Letter pipeline. When no banner
-    is detected, the marker is emitted with value None and the plugins
-    fall back to their pure-typographic signals.
+    "dejure_banner_text" carrying the verbatim value. The three DeJure
+    sister plugins (dejure_dottrina, dejure_nota_sentenza,
+    dejure_massime) consume this marker to discriminate symmetrically
+    between the three genres (pattern (vv) in CLAUDE.md). When no
+    banner is detected, the marker is emitted with value None and the
+    plugins fall back to their pure-typographic signals.
     """
     import fitz
 
@@ -1876,11 +1892,11 @@ def _scan_dejure_banner(doc: Any) -> str | None:
 
     Looks for an Arial-BoldMT 9pt block whose stripped text is either
     "DOTTRINA" or "NOTE E DOTTRINA". Returns the first match found or
-    ``None`` if no banner is detected. The scan is restricted to page 1
-    because DeJure banners always appear at the top of the first page
-    of every article; additional banners within a bundle PDF sit at
-    arbitrary y-positions and are not relevant to the genre-detection
-    signal.
+    ``None`` if no banner is detected. The scan is restricted to page
+    1 because DeJure banners always appear at the top of the first
+    page of every article (additional banners within a bundle PDF sit
+    at arbitrary y-positions and are not relevant to the
+    genre-detection signal).
     """
     page = doc[0]
     for block in page.get_text("dict")["blocks"]:
@@ -2968,3 +2984,454 @@ def test_dejure_massime_does_not_promote_on_marotta_fixture() -> None:
     signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
     score = DejureMassimeProfile.matches(signals)
     assert score < 0.6, f"MM promoted on Marotta: score {score}"
+
+
+# ---------------------------------------------------------------------------
+# dejure_dottrina plugin — full pipeline + three-way non-promotion regression
+
+
+def _make_dejure_dt_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the dejure_dottrina plugin's identity."""
+    plugin = DejureDottrinaProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3", "L4"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.80,
+        warnings=[],
+    )
+
+
+def _run_dt_pipeline(fixture: Path) -> tuple[Any, Any, Any, dict[SemanticCategory, int]]:
+    """Run the full Layer 1 pipeline with the DT plugin and return key results."""
+    profile = _make_dejure_dt_profile()
+    plugin = DejureDottrinaProfile()
+    extraction = extract(fixture)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+    scabopdf_document = convert_document(document, extraction, profile, fixture)
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+    return extraction, document, scabopdf_document, by_category
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_matches_notizia_reato_fixture() -> None:
+    """DejureDottrinaProfile.matches() clears 0.6 on the notizia_reato bundle."""
+    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score >= 0.6, (
+        f"matches() failed to promote dejure_dottrina on the notizia_reato "
+        f"fixture: score {score} below 0.6 threshold"
+    )
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_matches_concause_causalita_fixture() -> None:
+    """DejureDottrinaProfile.matches() clears 0.6 on the single-article concause fixture."""
+    if not DEJURE_DT_CONCAUSE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_DT_CONCAUSE_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_DT_CONCAUSE_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score >= 0.6, (
+        f"matches() failed to promote dejure_dottrina on the concause_causalita "
+        f"fixture: score {score} below 0.6 threshold"
+    )
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_matches_riforma_cartabia_fixture() -> None:
+    """DejureDottrinaProfile.matches() clears 0.6 on the cartabia massive bundle."""
+    if not DEJURE_DT_CARTABIA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_DT_CARTABIA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_DT_CARTABIA_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score >= 0.6, (
+        f"matches() failed to promote dejure_dottrina on the riforma_cartabia "
+        f"fixture: score {score} below 0.6 threshold"
+    )
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_dt_notizia_reato() -> None:
+    """End-to-end Layer 1 pipeline test on the notizia_reato 3-article bundle (56 pp).
+
+    Asserts the empirical metrics: 3 GENRE_BANNER (3 sub-articles), 3 TITLE,
+    3 FONTE_VALUE + 3 AUTHORS (meta decomposition x 3), 3 TOC_GENERAL,
+    3 SECTION_LABEL ``"Note:"``, at least 100 synthetic NOTE Nodes
+    (article 1 alone has ~60+), 100% CR binding rate, no UNCLASSIFIED.
+    """
+    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    extraction, document, scabopdf_document, by_category = _run_dt_pipeline(
+        DEJURE_DT_NOTIZIA_FIXTURE
+    )
+
+    n_banner = by_category.get(SemanticCategory.GENRE_BANNER, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_fonte = by_category.get(SemanticCategory.FONTE_VALUE, 0)
+    n_authors = by_category.get(SemanticCategory.AUTHORS, 0)
+    n_toc = by_category.get(SemanticCategory.TOC_GENERAL, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_section_label = by_category.get(SemanticCategory.SECTION_LABEL, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_editorial = by_category.get(SemanticCategory.EDITORIAL_NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    cross_refs_bound = sum(
+        1 for n in all_nodes if n.category is SemanticCategory.CROSS_REFERENCE and n.apparatus_refs
+    )
+
+    print(
+        f"\nDeJure DT notizia_reato Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_genre_banner={n_banner}  n_title={n_title}"
+        f"\n  n_fonte={n_fonte}  n_authors={n_authors}  n_toc={n_toc}"
+        f"\n  n_heading_1={n_heading_1}  n_section_label={n_section_label}"
+        f"\n  n_note={n_note}  n_editorial_note={n_editorial}"
+        f"\n  n_cross_reference={n_cross_reference}  n_cr_bound={cross_refs_bound}"
+        f"\n  n_body={n_body}  n_artifact_footer={n_footer}"
+        f"\n  n_transformations={len(document.transformations)}"
+    )
+
+    assert extraction.page_count == 56
+    assert n_banner == 3, f"expected 3 article banners, got {n_banner}"
+    assert n_title == 3
+    assert n_fonte == 3
+    assert n_authors == 3
+    assert n_toc == 3
+    assert n_section_label == 3
+    assert n_note >= 100, f"expected at least 100 numbered NOTE, got {n_note}"
+    assert n_editorial >= 1, f"expected at least 1 EDITORIAL_NOTE, got {n_editorial}"
+    assert cross_refs_bound == n_cross_reference, (
+        f"every CR must bind: bound {cross_refs_bound} of {n_cross_reference}"
+    )
+    assert n_footer == 56
+    assert scabopdf_document.profile.profile_id == "dejure_dottrina"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    unknown_warnings = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown_warnings, (
+        f"unknown warnings: {unknown_warnings[:5]} ({len(unknown_warnings)} total)"
+    )
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_dt_concause_causalita() -> None:
+    """End-to-end Layer 1 pipeline test on the concause single-article fixture (59 pp, 96 notes)."""
+    if not DEJURE_DT_CONCAUSE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_DT_CONCAUSE_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    extraction, document, scabopdf_document, by_category = _run_dt_pipeline(
+        DEJURE_DT_CONCAUSE_FIXTURE
+    )
+
+    n_banner = by_category.get(SemanticCategory.GENRE_BANNER, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_fonte = by_category.get(SemanticCategory.FONTE_VALUE, 0)
+    n_authors = by_category.get(SemanticCategory.AUTHORS, 0)
+    n_toc = by_category.get(SemanticCategory.TOC_GENERAL, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_heading_2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_section_label = by_category.get(SemanticCategory.SECTION_LABEL, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_editorial = by_category.get(SemanticCategory.EDITORIAL_NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    cross_refs_bound = sum(
+        1 for n in all_nodes if n.category is SemanticCategory.CROSS_REFERENCE and n.apparatus_refs
+    )
+
+    print(
+        f"\nDeJure DT concause_causalita Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_genre_banner={n_banner}  n_title={n_title}"
+        f"\n  n_fonte={n_fonte}  n_authors={n_authors}  n_toc={n_toc}"
+        f"\n  n_heading_1={n_heading_1}  n_heading_2={n_heading_2}"
+        f"\n  n_section_label={n_section_label}"
+        f"\n  n_note={n_note}  n_editorial_note={n_editorial}"
+        f"\n  n_cross_reference={n_cross_reference}  n_cr_bound={cross_refs_bound}"
+        f"\n  n_body={n_body}  n_artifact_footer={n_footer}"
+        f"\n  n_transformations={len(document.transformations)}"
+    )
+
+    assert extraction.page_count == 59
+    assert n_banner == 1
+    assert n_title == 1
+    assert n_fonte == 1
+    assert n_authors == 1
+    assert n_toc == 1
+    assert n_heading_1 == 8, f"expected 8 numbered sections, got {n_heading_1}"
+    assert n_heading_2 == 2, f"expected 2 sub-sections (4.1, 4.2), got {n_heading_2}"
+    assert n_section_label == 1
+    assert n_note == 96, f"expected 96 NOTE, got {n_note}"
+    assert n_editorial == 1, f"expected 1 EDITORIAL_NOTE, got {n_editorial}"
+    assert n_cross_reference >= 90, (
+        f"expected at least 90 inline cross-references, got {n_cross_reference}"
+    )
+    assert cross_refs_bound == n_cross_reference, (
+        f"every CR must bind: bound {cross_refs_bound} of {n_cross_reference}"
+    )
+    assert n_footer == 59
+    assert scabopdf_document.profile.profile_id == "dejure_dottrina"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    unknown_warnings = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown_warnings, (
+        f"unknown warnings: {unknown_warnings[:5]} ({len(unknown_warnings)} total)"
+    )
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_dt_riforma_cartabia() -> None:
+    """End-to-end Layer 1 pipeline test on the cartabia 7-article bundle (184 pp)."""
+    if not DEJURE_DT_CARTABIA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_DT_CARTABIA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    extraction, document, scabopdf_document, by_category = _run_dt_pipeline(
+        DEJURE_DT_CARTABIA_FIXTURE
+    )
+
+    n_banner = by_category.get(SemanticCategory.GENRE_BANNER, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_fonte = by_category.get(SemanticCategory.FONTE_VALUE, 0)
+    n_authors = by_category.get(SemanticCategory.AUTHORS, 0)
+    n_toc = by_category.get(SemanticCategory.TOC_GENERAL, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_section_label = by_category.get(SemanticCategory.SECTION_LABEL, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_editorial = by_category.get(SemanticCategory.EDITORIAL_NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    cross_refs_bound = sum(
+        1 for n in all_nodes if n.category is SemanticCategory.CROSS_REFERENCE and n.apparatus_refs
+    )
+
+    print(
+        f"\nDeJure DT riforma_cartabia Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_genre_banner={n_banner}  n_title={n_title}"
+        f"\n  n_fonte={n_fonte}  n_authors={n_authors}  n_toc={n_toc}"
+        f"\n  n_heading_1={n_heading_1}  n_section_label={n_section_label}"
+        f"\n  n_note={n_note}  n_editorial_note={n_editorial}"
+        f"\n  n_cross_reference={n_cross_reference}  n_cr_bound={cross_refs_bound}"
+        f"\n  n_body={n_body}  n_artifact_footer={n_footer}"
+        f"\n  n_transformations={len(document.transformations)}"
+    )
+
+    assert extraction.page_count == 184
+    assert n_banner == 7, f"expected 7 article banners, got {n_banner}"
+    assert n_title == 7
+    assert n_fonte == 7
+    assert n_authors == 7
+    assert n_toc == 7
+    assert n_section_label == 7
+    assert n_heading_1 >= 20, f"expected at least 20 HEADING_1, got {n_heading_1}"
+    assert n_note >= 400, f"expected at least 400 NOTE, got {n_note}"
+    assert n_editorial >= 2, f"expected at least 2 EDITORIAL_NOTE, got {n_editorial}"
+    assert cross_refs_bound == n_cross_reference, (
+        f"every CR must bind: bound {cross_refs_bound} of {n_cross_reference}"
+    )
+    assert n_footer == 184
+    assert scabopdf_document.profile.profile_id == "dejure_dottrina"
+
+    unknown_warnings = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown_warnings, (
+        f"unknown warnings: {unknown_warnings[:5]} ({len(unknown_warnings)} total)"
+    )
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+# Non-promotion of DT on sister DeJure plugins (NS, MM) — three-way symmetry
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_ns_recisione_fixture() -> None:
+    if not DEJURE_NS_RECISIONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_NS_RECISIONE_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_NS_RECISIONE_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on NS recisione: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_ns_giudizio_fixture() -> None:
+    if not DEJURE_NS_GIUDIZIO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_NS_GIUDIZIO_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_NS_GIUDIZIO_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on NS giudizio: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_ns_stella_fixture() -> None:
+    if not DEJURE_NS_STELLA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_NS_STELLA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_NS_STELLA_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on Stella raccolta: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_mm_procedura_fixture() -> None:
+    if not DEJURE_MM_PROCEDURA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_MM_PROCEDURA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_MM_PROCEDURA_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on MM procedura: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_mm_concause_fixture() -> None:
+    if not DEJURE_MM_CONCAUSE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_MM_CONCAUSE_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_MM_CONCAUSE_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on MM concause: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_mm_massivo_fixture() -> None:
+    if not DEJURE_MM_MASSIVO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_MM_MASSIVO_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_MM_MASSIVO_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on MM massivo: score {score}"
+
+
+# Non-promotion of DT on representative non-DeJure manual fixtures
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_patriarca_fixture() -> None:
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE}")
+    signals = _build_signals_from_fixture(PATRIARCA_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on Patriarca: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_torrente_fixture() -> None:
+    if not TORRENTE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TORRENTE_FIXTURE}")
+    signals = _build_signals_from_fixture(TORRENTE_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on Torrente: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_marrone_fixture() -> None:
+    if not MARRONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MARRONE_FIXTURE}")
+    signals = _build_signals_from_fixture(MARRONE_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on Marrone: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_marotta_fixture() -> None:
+    if not MAROTTA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MAROTTA_FIXTURE}")
+    signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DT promoted on Marotta: score {score}"
+
+
+# Non-promotion of NS on DT fixtures (three-way symmetry)
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_dt_notizia_fixture() -> None:
+    """The NS plugin must not promote on a DeJure Dottrina fixture (pattern (vv))."""
+    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on DT notizia: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_dt_concause_fixture() -> None:
+    if not DEJURE_DT_CONCAUSE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_CONCAUSE_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_CONCAUSE_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on DT concause: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_dt_cartabia_fixture() -> None:
+    if not DEJURE_DT_CARTABIA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_CARTABIA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_CARTABIA_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on DT cartabia: score {score}"
+
+
+# Non-promotion of MM on DT fixtures
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_dt_notizia_fixture() -> None:
+    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on DT notizia: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_dt_concause_fixture() -> None:
+    if not DEJURE_DT_CONCAUSE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_CONCAUSE_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_CONCAUSE_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on DT concause: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_dt_cartabia_fixture() -> None:
+    if not DEJURE_DT_CARTABIA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_CARTABIA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_CARTABIA_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on DT cartabia: score {score}"
