@@ -1,4 +1,5 @@
 from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
+from scabopdf_pipeline.profiles.dejure_dottrina import DejureDottrinaProfile
 from scabopdf_pipeline.profiles.dejure_massime import DejureMassimeProfile
 from scabopdf_pipeline.profiles.dejure_nota_sentenza import (
     DejureNotaSentenzaProfile,
@@ -19,6 +20,7 @@ from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 
 BUILTIN_PLUGINS: list[type[ProfilePlugin]] = [
     CompendioUtetProfile,
+    DejureDottrinaProfile,
     DejureMassimeProfile,
     DejureNotaSentenzaProfile,
     ManualeBicProfile,
@@ -32,6 +34,7 @@ BUILTIN_PLUGINS: list[type[ProfilePlugin]] = [
 __all__ = [
     "BUILTIN_PLUGINS",
     "CompendioUtetProfile",
+    "DejureDottrinaProfile",
     "DejureMassimeProfile",
     "DejureNotaSentenzaProfile",
     "ManualeBicProfile",
