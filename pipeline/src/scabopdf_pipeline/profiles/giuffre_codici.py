@@ -307,7 +307,6 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:giuffre_codici:abrogated_article_detected_block_<idx>_page_<p>",
     "plugin:giuffre_codici:range_abrogated_article_detected_block_<idx>_page_<p>",
     "plugin:giuffre_codici:omissis_article_detected_block_<idx>_page_<p>",
-    "plugin:giuffre_codici:heading_with_inline_article_split_block_<idx>_page_<p>",
     "plugin:giuffre_codici:cross_reference_minted_node_<id>_page_<p>_marker_<m>",
     "plugin:giuffre_codici:cross_reference_unresolved_node_<id>_marker_<m>",
     "plugin:giuffre_codici:multi_note_split_minted_node_<id>_page_<p>_marker_<m>",
@@ -711,21 +710,6 @@ The detector requires the leading span to be italic
 PalatinoLinotype at body size and the text to contain this marker.
 """
 
-_HEADING_WITH_INLINE_ARTICLE_PATTERN = re.compile(
-    r"^(LIBRO|PARTE|TITOLO|CAPO|SEZIONE)\b.{10,}?(\d+)\.\s*[A-Z]",
-    re.IGNORECASE | re.DOTALL,
-)
-"""Pattern matching a civile block opening with a hierarchy keyword and
-containing an inline article number after the heading text.
-
-``CAPO I – Delle fonti del diritto1. Indicazione delle fonti. – [I]
-Sono fonti...``. The pattern looks for a number followed by a dot and
-an uppercase letter as the typical opening of an article rubric;
-matches inside the heading text after at least 10 characters of
-leading content. The detector is used by the heading-with-inline-article
-splitter in :meth:`refine_reconstruction`.
-"""
-
 _CROSSREF_SIMPLE_PATTERN = re.compile(r"\[(\d+(?:-bis|-ter)?)\]")
 """Pattern matching a simple penale cross-reference ``[N]`` or ``[N-bis]``.
 
@@ -1121,26 +1105,21 @@ class GiuffreCodiciProfile(ProfilePlugin):
 
         minter = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
 
-        # Pass 1: intra-block article splitter.
+        # Pass 1: generic article splitter (handles multi-article fused
+        # blocks, NOTE-glue-ARTICLE blocks, and HEADING-with-inline-
+        # article blocks — all in one signal-agnostic pass).
         roots_after_pass_1 = self._split_intra_block_articles(
             document.root, extraction, new_warnings, minter
         )
-        # Pass 2: heading-with-inline-article splitter (civile only).
-        if self._code_type is CodeType.CIVILE:
-            roots_after_pass_2 = self._split_heading_inline_article(
-                roots_after_pass_1, extraction, new_warnings, minter
-            )
-        else:
-            roots_after_pass_2 = roots_after_pass_1
-        # Pass 3: body+notes splitter.
-        roots_after_pass_3 = self._split_multi_note_blocks(roots_after_pass_2, new_warnings, minter)
-        # Pass 4: cross-reference minting.
-        roots_after_pass_4 = self._mint_cross_references_in_forest(
-            roots_after_pass_3, new_warnings, minter
+        # Pass 2: body+notes splitter.
+        roots_after_pass_2 = self._split_multi_note_blocks(roots_after_pass_1, new_warnings, minter)
+        # Pass 3: cross-reference minting.
+        roots_after_pass_3 = self._mint_cross_references_in_forest(
+            roots_after_pass_2, new_warnings, minter
         )
 
         return Document(
-            root=roots_after_pass_4,
+            root=roots_after_pass_3,
             warnings=tuple(document.warnings) + tuple(new_warnings),
             transformations=document.transformations,
         )
@@ -1469,54 +1448,59 @@ class GiuffreCodiciProfile(ProfilePlugin):
         warnings: list[str],
         minter: _NodeIdMinter,
     ) -> tuple[Node, ...]:
-        """Walk every ARTICLE_HEADER Node whose underlying block carries
-        2+ article-number trigger spans and split it into one
-        ARTICLE_HEADER + ARTICLE_BODY pair per article past the first.
+        """Walk every Node and split at each article-number trigger span found.
 
         The trigger predicate is "a bold PalatinoLinotype span of size
         >= INTRA_BLOCK_ARTICLE_TRIGGER_MIN_SIZE with text matching
-        ``_ARTICLE_NUMBER_OR_RANGE_PATTERN``". The first trigger span
-        is the host article's number (which already has its
-        ARTICLE_HEADER Node); subsequent triggers each mint a synthetic
-        ARTICLE_HEADER Node carrying the text from that trigger to the
-        next trigger or the end of the block, followed by a synthetic
-        ARTICLE_BODY Node if the post-trigger text is long enough to
-        be a body.
+        ``_ARTICLE_NUMBER_OR_RANGE_PATTERN``". The splitter is **signal-
+        agnostic on the host category**: it applies to ARTICLE_HEADER
+        Nodes (multi-article case, common on the civile), NOTE Nodes
+        (PyMuPDF often glues the previous article's notes with the next
+        article's header — common on the penale), HEADING_N Nodes
+        (CAPO/SEZIONE block with article inline — both codes), and any
+        other category that happens to contain a trigger.
 
-        Both code types use this splitter (the analysis § 4.1 claim
-        that the penale has "one article = one block" was empirically
-        falsified; ~10 % of header-bearing blocks on the penale have
-        2-6 articles glued in a single block).
+        Logic:
+
+        - If the host's leading span is a trigger, the host keeps spans
+          up to the SECOND trigger (or end of block if only one); each
+          subsequent trigger mints a synthetic ARTICLE_HEADER + body
+          pair. This is the original "multi-article ARTICLE_HEADER" case.
+        - If the host's leading span is NOT a trigger, the host's text
+          is truncated to spans BEFORE the first trigger (preserving
+          its original category — NOTE stays NOTE, HEADING stays
+          HEADING), and every trigger mints a synthetic ARTICLE_HEADER +
+          body pair.
+
+        Empirically falsified analysis § 4.1: ~90% of penale article
+        headers are buried as non-leading triggers inside NOTE-glue
+        blocks. Without this generalised splitter the plugin recovers
+        only ~10% of articles on the penale.
         """
         return self._walk_and_transform(
             roots,
-            lambda n: self._maybe_split_article_header(n, extraction, warnings, minter),
+            lambda n: self._maybe_split_block_at_triggers(n, extraction, warnings, minter),
         )
 
-    def _maybe_split_article_header(
+    def _maybe_split_block_at_triggers(
         self,
         node: Node,
         extraction: ExtractionResult,
         warnings: list[str],
         minter: _NodeIdMinter,
     ) -> list[Node]:
-        """Examine a single ARTICLE_HEADER Node for intra-block splitting.
+        """Examine a Node for article-number triggers and split if needed.
 
-        Returns a list of Nodes: a singleton ``[node]`` when no
-        splitting is needed, or ``[node, synth_header_1, synth_body_1,
-        synth_header_2, synth_body_2, ...]`` when the block carries
-        multiple articles. The host node's text is also truncated to
-        the first article's portion.
+        Returns ``[node]`` unchanged when the node has no trigger or
+        when it has exactly one leading trigger (= already a single
+        well-formed ARTICLE_HEADER). Otherwise returns the host (with
+        truncated text) plus one synthetic ``(ARTICLE_HEADER,
+        ARTICLE_BODY)`` pair per trigger past the host portion.
         """
-        if node.category is not SemanticCategory.ARTICLE_HEADER:
-            return [node]
         if not node.block_indices:
             return [node]
-        # Walk the spans of every block_index of the host Node and find
-        # the trigger spans. A multi-block ARTICLE_HEADER (rare but
-        # possible after tier 1 cross-page paragraph merging) is handled
-        # by iterating the spans of every block.
-        triggers: list[tuple[int, Span]] = []  # (cumulative_span_index, span)
+
+        triggers: list[int] = []
         flat_spans: list[Span] = []
         for block_index in node.block_indices:
             if block_index < 0 or block_index >= len(extraction.blocks):
@@ -1526,34 +1510,44 @@ class GiuffreCodiciProfile(ProfilePlugin):
             for span in extraction.spans[start:end]:
                 flat_spans.append(span)
                 if self._is_article_number_trigger(span):
-                    triggers.append((len(flat_spans) - 1, span))
-        if len(triggers) <= 1:
+                    triggers.append(len(flat_spans) - 1)
+        if not triggers:
             return [node]
-        # Emit one synthetic (ARTICLE_HEADER + ARTICLE_BODY) pair per
-        # trigger past the first. The host node keeps the text up to
-        # the second trigger.
+
+        leading_is_trigger = triggers[0] == 0
+        if leading_is_trigger and len(triggers) == 1:
+            # Single well-formed ARTICLE_HEADER, no split needed.
+            return [node]
+
+        if leading_is_trigger:
+            # Host already holds the first article; its text spans 0
+            # up to the second trigger. Synthetic pairs are minted for
+            # triggers 1, 2, ... (zero-indexed).
+            host_end = triggers[1]
+            first_mint_idx = 1
+        else:
+            # Host has non-article leading content (NOTE-glue or HEADING-
+            # glue case); its text is truncated to spans before the
+            # first trigger. Every trigger mints a synthetic pair.
+            host_end = triggers[0]
+            first_mint_idx = 0
+
         warnings.append(
             f"{WARNING_PREFIX}:intra_block_article_split_block_"
             f"{node.block_indices[0]}_count_{len(triggers)}"
         )
         result: list[Node] = []
-        # Compute the per-trigger spans slices.
-        slice_starts = [t[0] for t in triggers] + [len(flat_spans)]
-        host_spans = flat_spans[: slice_starts[1]]
+        host_spans = flat_spans[:host_end]
         host_text = "".join(s.text for s in host_spans)
         result.append(replace(node, text=host_text))
-        for article_idx in range(1, len(triggers)):
+
+        slice_starts = [*triggers[first_mint_idx:], len(flat_spans)]
+        for article_idx in range(len(slice_starts) - 1):
             sub_start = slice_starts[article_idx]
             sub_end = slice_starts[article_idx + 1]
             sub_spans = flat_spans[sub_start:sub_end]
             if not sub_spans:
                 continue
-            # The synthetic ARTICLE_HEADER carries the leading bold
-            # trigger span's text and any immediately following text
-            # up to the first non-bold non-italic span. Conservative:
-            # we emit a single ARTICLE_HEADER Node carrying the trigger
-            # span's text and a single ARTICLE_BODY Node carrying the
-            # remainder of the sub-spans.
             header_text = sub_spans[0].text
             body_spans = sub_spans[1:]
             body_text = "".join(s.text for s in body_spans)
@@ -1561,7 +1555,7 @@ class GiuffreCodiciProfile(ProfilePlugin):
             self._minted_split_article_ids.add(header_id)
             warnings.append(
                 f"{WARNING_PREFIX}:intra_block_article_split_minted_node_"
-                f"{header_id}_page_{node.page_index}_article_{article_idx}"
+                f"{header_id}_page_{node.page_index}_article_{article_idx + first_mint_idx}"
             )
             result.append(
                 Node(
@@ -1601,105 +1595,6 @@ class GiuffreCodiciProfile(ProfilePlugin):
             return False
         text = span.text.strip().rstrip(".")
         return bool(_ARTICLE_NUMBER_OR_RANGE_PATTERN.match(text))
-
-    # ------------------------------------------------------------------
-    # Heading-with-inline-article splitter (civile only)
-
-    def _split_heading_inline_article(
-        self,
-        roots: tuple[Node, ...],
-        extraction: ExtractionResult,
-        warnings: list[str],
-        minter: _NodeIdMinter,
-    ) -> tuple[Node, ...]:
-        """For every HEADING_N Node whose underlying block contains an
-        inline article-number trigger after the heading text, split the
-        block into a heading-only HEADING_N Node followed by a synthetic
-        ARTICLE_HEADER + ARTICLE_BODY pair.
-
-        The detection uses :data:`_HEADING_WITH_INLINE_ARTICLE_PATTERN`
-        plus a typographic verification on the block spans (the inline
-        article trigger must be a bold PalatinoLinotype span at the
-        article-number size). The HEADING_N Node's text is truncated
-        to the portion before the trigger; the synthetic
-        ARTICLE_HEADER Node carries the trigger span's text and the
-        synthetic ARTICLE_BODY Node carries the post-trigger text.
-        """
-        return self._walk_and_transform(
-            roots,
-            lambda n: self._maybe_split_heading_inline_article(n, extraction, warnings, minter),
-        )
-
-    def _maybe_split_heading_inline_article(
-        self,
-        node: Node,
-        extraction: ExtractionResult,
-        warnings: list[str],
-        minter: _NodeIdMinter,
-    ) -> list[Node]:
-        if node.category not in {
-            SemanticCategory.HEADING_2,
-            SemanticCategory.HEADING_3,
-            SemanticCategory.HEADING_4,
-        }:
-            return [node]
-        if not node.block_indices or node.text is None:
-            return [node]
-        # Quick text-pattern probe.
-        if not _HEADING_WITH_INLINE_ARTICLE_PATTERN.match(node.text):
-            return [node]
-        # Typographic verification: scan the spans for an article-number
-        # trigger that sits after the heading text.
-        flat_spans: list[Span] = []
-        for block_index in node.block_indices:
-            if block_index < 0 or block_index >= len(extraction.blocks):
-                continue
-            block = extraction.blocks[block_index]
-            start, end = block.span_range
-            flat_spans.extend(extraction.spans[start:end])
-        trigger_idx = None
-        for idx, span in enumerate(flat_spans):
-            # The trigger must not be the very first span (which is
-            # the heading keyword glyph).
-            if idx == 0:
-                continue
-            if self._is_article_number_trigger(span):
-                trigger_idx = idx
-                break
-        if trigger_idx is None:
-            return [node]
-        warnings.append(
-            f"{WARNING_PREFIX}:heading_with_inline_article_split_block_"
-            f"{node.block_indices[0]}_page_{node.page_index}"
-        )
-        heading_text = "".join(s.text for s in flat_spans[:trigger_idx])
-        header_text = flat_spans[trigger_idx].text
-        body_spans = flat_spans[trigger_idx + 1 :]
-        body_text = "".join(s.text for s in body_spans)
-        result: list[Node] = [replace(node, text=heading_text)]
-        header_id = minter.mint()
-        self._minted_split_article_ids.add(header_id)
-        result.append(
-            Node(
-                id=header_id,
-                category=SemanticCategory.ARTICLE_HEADER,
-                page_index=node.page_index,
-                block_indices=node.block_indices,
-                text=header_text,
-            )
-        )
-        if body_text.strip():
-            body_id = minter.mint()
-            result.append(
-                Node(
-                    id=body_id,
-                    category=SemanticCategory.ARTICLE_BODY,
-                    page_index=node.page_index,
-                    block_indices=node.block_indices,
-                    text=body_text,
-                )
-            )
-        return result
 
     # ------------------------------------------------------------------
     # Body+notes splitter

@@ -1361,9 +1361,21 @@ def test_intra_block_splitter_skips_node_without_block_indices() -> None:
     assert len(new_doc.root) == 1
 
 
-def test_intra_block_splitter_does_not_split_non_article_header() -> None:
-    """A BODY Node with the same span configuration is not split."""
+def test_intra_block_splitter_runs_on_non_article_header_too() -> None:
+    """The splitter is signal-agnostic on host category: a NOTE Node
+    carrying article-number triggers gets its host text truncated and
+    one synthetic ARTICLE_HEADER minted per trigger (regression: the
+    original splitter only ran on ARTICLE_HEADER Nodes and missed
+    ~90% of penale articles glued inside NOTE-continuation blocks)."""
     banner = _make_span("CODICE PENALE", font="BD700x300", size=BANNER_SIZE, page=100)
+    leading_note = _make_span(
+        "(1) Prior note.",
+        font="MyriadPro-Regular",
+        size=NOTE_SIZE,
+        page=100,
+        block_index=1,
+        span_index=0,
+    )
     trig1 = _make_span(
         "89",
         font="PalatinoLinotype-Bold",
@@ -1371,6 +1383,7 @@ def test_intra_block_splitter_does_not_split_non_article_header() -> None:
         flags=BOLD_FLAG,
         page=100,
         block_index=1,
+        span_index=1,
     )
     trig2 = _make_span(
         "90",
@@ -1379,18 +1392,22 @@ def test_intra_block_splitter_does_not_split_non_article_header() -> None:
         flags=BOLD_FLAG,
         page=100,
         block_index=1,
-        span_index=1,
+        span_index=2,
     )
     blocks = [
         _make_block(span_range=(0, 1), block_index=0, page=100),
-        _make_block(span_range=(1, 3), block_index=1, page=100),
+        _make_block(span_range=(1, 4), block_index=1, page=100),
     ]
-    extraction = _make_extraction([banner, trig1, trig2], blocks)
+    extraction = _make_extraction([banner, leading_note, trig1, trig2], blocks)
     plugin = GiuffreCodiciProfile()
     plugin.refine_classification(extraction, [_verdict(0), _verdict(1)])
-    body = _node("node_0000", SemanticCategory.ARTICLE_BODY, "8990", block_indices=(1,))
-    new_doc = plugin.refine_reconstruction(Document(root=(body,)), extraction, [])
-    assert len(new_doc.root) == 1
+    note = _node("node_0000", SemanticCategory.NOTE, "(1) Prior note.8990", block_indices=(1,))
+    new_doc = plugin.refine_reconstruction(Document(root=(note,)), extraction, [])
+    note_nodes = [n for n in new_doc.root if n.category is SemanticCategory.NOTE]
+    article_headers = [n for n in new_doc.root if n.category is SemanticCategory.ARTICLE_HEADER]
+    assert len(note_nodes) == 1
+    assert note_nodes[0].text == "(1) Prior note."  # truncated to pre-trigger
+    assert len(article_headers) == 2
 
 
 # ---------------------------------------------------------------------------
@@ -1450,8 +1467,11 @@ def test_heading_inline_article_splits_on_civile() -> None:
     assert "1" in article_headers[0].text  # type: ignore[operator]
 
 
-def test_heading_inline_article_skipped_on_penale() -> None:
-    """On the penale branch the heading-with-inline-article splitter does not run."""
+def test_heading_inline_article_also_splits_on_penale() -> None:
+    """The generic splitter runs on both code types, so a HEADING_3
+    CAPO block with an inline article trigger gets split on the penale
+    too (CAPO+article inline observed empirically on penale p101 with
+    arts. 71/72/73)."""
     banner = _make_span("CODICE PENALE", font="BD700x300", size=BANNER_SIZE, page=100)
     head_kw = _make_span(
         "CAPO I",
@@ -1481,13 +1501,16 @@ def test_heading_inline_article_skipped_on_penale() -> None:
     heading = _node(
         "node_0000",
         SemanticCategory.HEADING_3,
-        "CAPO I delle fonti — testo lungo a sufficienza per il regex.1. Indicazione.",
+        "CAPO I delle fonti.1",
         page_index=100,
         block_indices=(1,),
     )
     new_doc = plugin.refine_reconstruction(Document(root=(heading,)), extraction, [])
-    # On penale, no split — only the original heading remains.
-    assert len(new_doc.root) == 1
+    # Heading host truncated + 1 synthetic ARTICLE_HEADER minted.
+    headings = [n for n in new_doc.root if n.category is SemanticCategory.HEADING_3]
+    article_headers = [n for n in new_doc.root if n.category is SemanticCategory.ARTICLE_HEADER]
+    assert len(headings) == 1
+    assert len(article_headers) == 1
 
 
 def test_heading_inline_article_skipped_when_pattern_does_not_match() -> None:
