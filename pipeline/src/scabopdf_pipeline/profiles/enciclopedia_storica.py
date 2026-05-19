@@ -263,13 +263,16 @@ _LETTERATURA_LABEL_PATTERN = re.compile(r"^\s*LETTERATURA\s*\.\s*[—\-]?")
 """Pattern matching the LETTERATURA section opening label, canonical form."""
 
 _LETTERATURA_OCR_TOLERANT_PATTERN = re.compile(
-    r"^\s*L[a-zA-Z]{6,11}T[a-zA-Z]{0,4}\s*\.?\s*[—\-]?",
+    r"^\s*L[a-zA-Z]{6,12}[Aa](?=[\s\.,—\-]|$)",
 )
-"""Tolerant pattern that accepts OCR-fossilised LETTERATURA variants
-(``LnTEHATURA``, ``LETTEHATURA``, ``Letterallml``, etc.).
+"""Tolerant pattern that accepts OCR-fossilised LETTERATURA variants.
 
-Cf. pattern (ccc). The scaffold ``L...T...`` is the most stable
-sub-string across the observed OCR fossilisations.
+Cf. pattern (ccc). The scaffold ``L...A`` (initial L, 6-12 internal
+letters, final A) is the most stable invariant across the observed
+OCR fossilisations: ``LnTEHATURA``, ``LETTEHATURA``, ``Letterallml``
+deviations preserve the L-...-A shape. The lookahead anchors the
+final A to a word boundary (whitespace, period, dash) so the
+pattern does not match mid-word.
 """
 
 _SOMMARIO_PATTERN = re.compile(r"^\s*SOMMARIO\s*:?", re.IGNORECASE)
@@ -307,14 +310,15 @@ captured marker filters out year references like ``(1965)``.
 """
 
 _CROSSREF_INLINE_VOCE_PATTERN = re.compile(
-    r"v\.\s+([A-ZÀÈÉÌÒÓÙ][A-ZÀÈÉÌÒÓÙ\s()/,'`’\.\-]{2,}?)(?=[.;,)]|\s+(?:e|o|ed|od)\s|\Z|\s*$)"
+    r"v\.\s+([A-ZÀÈÉÌÒÓÙ][A-ZÀÈÉÌÒÓÙ\s()/,'`’\.\-]{2,}?)(?=[.;,)]|\s+[a-z]|\Z|\s*$)"
 )
 """Pattern matching every inline ``v. NOMEVOCE[, ANNO]`` intra-EdD
 voice reference.
 
-Same shape as the moderna sister plugin. Empirically robust against
-the OCR noise (the ``v.`` literal and the all-caps voice name survive
-Paper Capture).
+Same shape as the moderna sister plugin. The lookahead admits any
+lowercase-character continuation (Italian prose resumes lowercase
+after an all-caps voice name) plus the canonical punctuation
+terminators and the end-of-string sentinel.
 """
 
 _CROSSREF_MAX_MARKER_VALUE = 500
@@ -771,12 +775,21 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
     ) -> ClassifiedBlock:
         """Apply the predicate cascade to a single tier 1 verdict.
 
-        Ordering matters: variant opening (page 1 only) fires first;
-        footer ente, FONTI/LETTERATURA labels fire next; sezione and
-        paragrafo headings fire before body/note to avoid the body
-        absorbing them; note size band is checked before body size
-        band so a note-size leading span does not get absorbed as body.
+        Ordering matters: footer ente fires first (it can appear on
+        page 1 too and must not be absorbed by the variant detector);
+        variant opening (page 1 only) fires next; FONTI/LETTERATURA
+        labels fire next; sezione and paragrafo headings fire before
+        body/note to avoid the body absorbing them; note size band is
+        checked before body size band so a note-size leading span does
+        not get absorbed as body.
         """
+        if self._is_footer_ente(view):
+            return ClassifiedBlock(
+                block_index=verdict.block_index,
+                category=SemanticCategory.ARTIFACT_FOOTER,
+                reason="enciclopedia_storica_footer_ente",
+            )
+
         # Variant opening only fires on the first significant block of page 1.
         if not self._variant_emitted and view.block.page == 0:
             variant = self._detect_variant_opening(view)
@@ -790,13 +803,6 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
                     category=SemanticCategory.TITLE,
                     reason=f"enciclopedia_storica_variant_{variant}_opening",
                 )
-
-        if self._is_footer_ente(view):
-            return ClassifiedBlock(
-                block_index=verdict.block_index,
-                category=SemanticCategory.ARTIFACT_FOOTER,
-                reason="enciclopedia_storica_footer_ente",
-            )
         if self._is_fonti_label(view):
             return ClassifiedBlock(
                 block_index=verdict.block_index,

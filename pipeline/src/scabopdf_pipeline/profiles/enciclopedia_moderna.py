@@ -324,14 +324,15 @@ references like ``(2024)``.
 """
 
 _CROSSREF_INLINE_VOCE_PATTERN = re.compile(
-    r"v\.\s+([A-ZÀÈÉÌÒÓÙ][A-ZÀÈÉÌÒÓÙ\s()/,'`’\.\-]{2,}?)(?=[.;,)]|\s+(?:e|o|ed|od)\s|\Z|\s*$)"
+    r"v\.\s+([A-ZÀÈÉÌÒÓÙ][A-ZÀÈÉÌÒÓÙ\s()/,'`’\.\-]{2,}?)(?=[.;,)]|\s+[a-z]|\Z|\s*$)"
 )
 """Pattern matching every inline ``v. NOMEVOCE[, ANNO]`` intra-EdD
 voice reference.
 
 The voce name may carry parentheticals, slashes, apostrophes, commas
-and hyphens; the lookahead caps the match before structural
-punctuation so the regex does not over-consume the surrounding prose.
+and hyphens; the lookahead caps the match before any lowercase
+continuation (Italian prose resumes lowercase after an all-caps
+voice name), before structural punctuation, or at end-of-string.
 The optional year (e.g. ``", 2021"``) introduced by the Tematici
 post-2021 is captured inside the voce name and preserved in the
 synthetic Node text verbatim.
