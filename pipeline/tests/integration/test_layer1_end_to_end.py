@@ -57,6 +57,7 @@ from scabopdf_pipeline.profiling.signals import (
     ProducerCreator,
     ProfilePageGeometry,
     ProfilingSignals,
+    SpecificMarker,
     TypographicSignature,
 )
 from scabopdf_pipeline.reconstruction import Node, reconstruct
@@ -1788,7 +1789,17 @@ def test_pipeline_runs_on_marotta_with_unknown_generic_fallback() -> None:
 
 
 def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
-    """Build a ProfilingSignals instance from a real PDF fixture."""
+    """Build a ProfilingSignals instance from a real PDF fixture.
+
+    The helper additionally probes page 1 for a DeJure editorial banner
+    (Arial-BoldMT 9pt block whose text is either "DOTTRINA" or
+    "NOTE E DOTTRINA") and emits a SpecificMarker named
+    "dejure_banner_text" carrying the verbatim value. The DeJure sister
+    plugins consume this marker to discriminate symmetrically between
+    sibling genres on the Aspose-Arial-Letter pipeline. When no banner
+    is detected, the marker is emitted with value None and the plugins
+    fall back to their pure-typographic signals.
+    """
     import fitz
 
     doc = fitz.open(str(fixture))
@@ -1836,6 +1847,7 @@ def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
         page0 = doc[0]
         width = float(page0.mediabox.width)
         height = float(page0.mediabox.height)
+        banner_text: str | None = _scan_dejure_banner(doc)
     finally:
         doc.close()
 
@@ -1849,7 +1861,43 @@ def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
         page_geometry=ProfilePageGeometry(width_pt=width, height_pt=height),
         producer_creator=ProducerCreator(producer=producer, creator=creator),
         outline_structure=OutlineStructure(has_outline=bool(toc), entries_count=len(toc)),
+        specific_markers=[
+            SpecificMarker(
+                name="dejure_banner_text",
+                present=banner_text is not None,
+                value=banner_text,
+            ),
+        ],
     )
+
+
+def _scan_dejure_banner(doc: Any) -> str | None:
+    """Scan page 1 for the DeJure editorial banner text.
+
+    Looks for an Arial-BoldMT 9pt block whose stripped text is either
+    "DOTTRINA" or "NOTE E DOTTRINA". Returns the first match found or
+    ``None`` if no banner is detected. The scan is restricted to page 1
+    because DeJure banners always appear at the top of the first page
+    of every article; additional banners within a bundle PDF sit at
+    arbitrary y-positions and are not relevant to the genre-detection
+    signal.
+    """
+    page = doc[0]
+    for block in page.get_text("dict")["blocks"]:
+        if block.get("type", 0) != 0:
+            continue
+        for line in block["lines"]:
+            for span in line["spans"]:
+                if str(span["font"]) != "Arial-BoldMT":
+                    continue
+                if abs(float(span["size"]) - 9.0) >= 0.2:
+                    continue
+                stripped = str(span["text"]).strip()
+                if stripped == "DOTTRINA":
+                    return "DOTTRINA"
+                if stripped == "NOTE E DOTTRINA":
+                    return "NOTE E DOTTRINA"
+    return None
 
 
 @pytest.mark.slow
