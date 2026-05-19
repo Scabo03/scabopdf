@@ -41,6 +41,7 @@ from scabopdf_pipeline.profiles.dejure_massime import DejureMassimeProfile
 from scabopdf_pipeline.profiles.dejure_nota_sentenza import DejureNotaSentenzaProfile
 from scabopdf_pipeline.profiles.enciclopedia_moderna import EnciclopediaModernaProfile
 from scabopdf_pipeline.profiles.enciclopedia_storica import EnciclopediaStoricaProfile
+from scabopdf_pipeline.profiles.giuffre_codici import GiuffreCodiciProfile
 from scabopdf_pipeline.profiles.manuale_bic import ManualeBicProfile
 from scabopdf_pipeline.profiles.manuale_giappichelli import ManualeGiappichelliProfile
 from scabopdf_pipeline.profiles.manuale_giuffre_diretto import (
@@ -97,6 +98,8 @@ EDD_ECCESSO_FIXTURE = FIXTURES_DIR / "edd_eccesso_potere.pdf"
 EDD_LAVORO_FIXTURE = FIXTURES_DIR / "edd_lavoro.pdf"
 EDD_PAGAMENTO_FIXTURE = FIXTURES_DIR / "edd_pagamento.pdf"
 EDD_AZIENDA_FIXTURE = FIXTURES_DIR / "edd_azienda.pdf"
+GIUFFRE_CODICE_PENALE_FIXTURE = FIXTURES_DIR / "giuffre_codice_penale.pdf"
+GIUFFRE_CODICE_CIVILE_FIXTURE = FIXTURES_DIR / "giuffre_codice_civile.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -1873,6 +1876,7 @@ def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
         width = float(page0.mediabox.width)
         height = float(page0.mediabox.height)
         banner_text: str | None = _scan_dejure_banner(doc)
+        codici_banner_text: str | None = _scan_giuffre_codici_banner(doc)
     finally:
         doc.close()
 
@@ -1891,6 +1895,11 @@ def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
                 name="dejure_banner_text",
                 present=banner_text is not None,
                 value=banner_text,
+            ),
+            SpecificMarker(
+                name="giuffre_codici_banner_text",
+                present=codici_banner_text is not None,
+                value=codici_banner_text,
             ),
         ],
     )
@@ -1923,6 +1932,50 @@ def _scan_dejure_banner(doc: Any) -> str | None:
                 if stripped == "NOTE E DOTTRINA":
                     return "NOTE E DOTTRINA"
     return None
+
+
+def _scan_giuffre_codici_banner(doc: Any) -> str | None:
+    """Scan the first 300 pages for the Giuffrè codici BD700x300 banner glyph.
+
+    Returns the dominant banner text observed (``"CODICE PENALE"``,
+    ``"CODICE DI PROCEDURA PENALE"``, ``"CODICE CIVILE"``,
+    ``"PROCEDURA CIVILE"``, ``"LEGGI"``, etc.) or ``None`` if no banner
+    glyph is found. The banner is absent from front-matter pages
+    (pp. 0-80 of the penale, pp. 0-107 of the civile) so the scan
+    must extend deep into the document.
+
+    Counts the PENALE-flavoured and CIVILE-flavoured occurrences and
+    returns the one with the higher count. Returns the literal
+    ``"CODICE PENALE"`` or ``"CODICE CIVILE"`` rather than the verbatim
+    text for stability — the plugin's matcher accepts both fixed forms.
+    """
+    penale_count = 0
+    civile_count = 0
+    last_text: str | None = None
+    max_page = min(300, doc.page_count)
+    for page_idx in range(max_page):
+        page = doc[page_idx]
+        for block in page.get_text("dict")["blocks"]:
+            if block.get("type", 0) != 0:
+                continue
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    if not str(span["font"]).startswith("BD700x300"):
+                        continue
+                    text = str(span["text"]).upper()
+                    if "PENALE" in text:
+                        penale_count += 1
+                        last_text = text
+                    elif "CIVILE" in text:
+                        civile_count += 1
+                        last_text = text
+    if penale_count == 0 and civile_count == 0:
+        return None
+    if penale_count >= civile_count:
+        return "CODICE PENALE"
+    if last_text and "PROCEDURA" in last_text:
+        return "PROCEDURA CIVILE"
+    return "CODICE CIVILE"
 
 
 @pytest.mark.slow
@@ -3845,3 +3898,396 @@ def test_dejure_nota_sentenza_does_not_promote_on_edd_pagamento() -> None:
     signals = _build_signals_from_fixture(EDD_PAGAMENTO_FIXTURE)
     score = DejureNotaSentenzaProfile.matches(signals)
     assert score < 0.6, f"NS promoted on EdD storica pagamento: score {score}"
+
+
+# ===========================================================================
+# Giuffrè codici (Codice Penale + Codice Civile)
+# ===========================================================================
+
+
+def _make_giuffre_codici_profile() -> DocumentProfile:
+    plugin = GiuffreCodiciProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L4"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.95,
+        warnings=[],
+    )
+
+
+# matches() positive tests — codici
+
+
+@pytest.mark.slow
+def test_giuffre_codici_matches_codice_penale_fixture() -> None:
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score >= 0.7, f"codici failed to promote on penale: score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_matches_codice_civile_fixture() -> None:
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score >= 0.7, f"codici failed to promote on civile: score {score}"
+
+
+# End-to-end pipeline tests (sampled — full document scan is ~30-60s per fixture)
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_giuffre_codice_penale() -> None:
+    """End-to-end Layer 1 on the full Codice Penale fixture (2640 pp).
+
+    Full document scan to validate the intra-block article splitter,
+    cross-reference minting, hierarchy detection, and PROCEDURAL
+    classification on a real codici document.
+    """
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE} - see fixtures/README.md")
+
+    profile = _make_giuffre_codici_profile()
+    plugin = GiuffreCodiciProfile()
+
+    extraction = extract(GIUFFRE_CODICE_PENALE_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(
+        document, extraction, profile, GIUFFRE_CODICE_PENALE_FIXTURE
+    )
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    n_article_header = by_category.get(SemanticCategory.ARTICLE_HEADER, 0)
+    n_article_body = by_category.get(SemanticCategory.ARTICLE_BODY, 0)
+    n_procedural = by_category.get(SemanticCategory.PROCEDURAL, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_heading_2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_heading_3 = by_category.get(SemanticCategory.HEADING_3, 0)
+    n_heading_4 = by_category.get(SemanticCategory.HEADING_4, 0)
+    n_filigree = by_category.get(SemanticCategory.ARTIFACT_FILIGREE, 0)
+
+    code_type_warnings = [w for w in document.warnings if "code_type_detected_penale" in w]
+    print(
+        f"\nCodice Penale Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_article_header={n_article_header}  n_article_body={n_article_body}"
+        f"\n  n_procedural={n_procedural}  n_note={n_note}"
+        f"\n  n_cross_reference={n_cross_reference}"
+        f"\n  n_heading_1={n_heading_1}  n_heading_2={n_heading_2}"
+        f"\n  n_heading_3={n_heading_3}  n_heading_4={n_heading_4}"
+        f"\n  n_filigree={n_filigree}"
+        f"\n  code_type_warnings={len(code_type_warnings)}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 2640
+    assert n_article_header >= 1000, (
+        f"too few articles recovered on c.p./c.p.p.: {n_article_header}"
+    )
+    assert n_procedural >= 100, f"PROCEDURAL blocks missing on penale: {n_procedural}"
+    assert len(code_type_warnings) == 1, "code_type detection should fire once"
+    assert scabopdf_document.profile.profile_id == "giuffre_codici"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_giuffre_codice_civile() -> None:
+    """End-to-end Layer 1 on the full Codice Civile fixture (2697 pp).
+
+    Verifies the intra-block article splitter (mission-critical on the
+    civile where ~45% of header-bearing blocks carry 2-7 fused articles)
+    and the heading-with-inline-article splitter (~148 occurrences on
+    pp. 100-300 in the sampling).
+    """
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE} - see fixtures/README.md")
+
+    profile = _make_giuffre_codici_profile()
+    plugin = GiuffreCodiciProfile()
+
+    extraction = extract(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(
+        document, extraction, profile, GIUFFRE_CODICE_CIVILE_FIXTURE
+    )
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    n_article_header = by_category.get(SemanticCategory.ARTICLE_HEADER, 0)
+    n_article_body = by_category.get(SemanticCategory.ARTICLE_BODY, 0)
+    n_procedural = by_category.get(SemanticCategory.PROCEDURAL, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_heading_2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_heading_3 = by_category.get(SemanticCategory.HEADING_3, 0)
+    n_heading_4 = by_category.get(SemanticCategory.HEADING_4, 0)
+
+    code_type_warnings = [w for w in document.warnings if "code_type_detected_civile" in w]
+    split_warnings = [w for w in document.warnings if "intra_block_article_split" in w]
+
+    print(
+        f"\nCodice Civile Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_article_header={n_article_header}  n_article_body={n_article_body}"
+        f"\n  n_procedural={n_procedural}  n_note={n_note}"
+        f"\n  n_cross_reference={n_cross_reference}"
+        f"\n  n_heading_1={n_heading_1}  n_heading_2={n_heading_2}"
+        f"\n  n_heading_3={n_heading_3}  n_heading_4={n_heading_4}"
+        f"\n  intra_block_split_warnings={len(split_warnings)}"
+        f"\n  code_type_warnings={len(code_type_warnings)}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 2697
+    assert n_article_header >= 1000, (
+        f"too few articles recovered on c.c./c.p.c.: {n_article_header}"
+    )
+    # Civile has NO procedural blocks — analysis § 7 exclusive to penale.
+    assert n_procedural == 0, f"civile should not produce PROCEDURAL: {n_procedural}"
+    assert len(code_type_warnings) == 1
+    assert scabopdf_document.profile.profile_id == "giuffre_codici"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+# Bidirectional non-promotion: codici plugin must not promote on the other 11
+# corpora, and the other 11 plugins must not promote on the codici fixtures.
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_torrente() -> None:
+    """Torrente uses MScotchRoman + 481.9 width — must stay below threshold."""
+    if not TORRENTE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TORRENTE_FIXTURE}")
+    signals = _build_signals_from_fixture(TORRENTE_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on Torrente (MScotchRoman): score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_patriarca() -> None:
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE}")
+    signals = _build_signals_from_fixture(PATRIARCA_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on Patriarca: score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_mandrioli() -> None:
+    if not MANDRIOLI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MANDRIOLI_FIXTURE}")
+    signals = _build_signals_from_fixture(MANDRIOLI_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on Mandrioli: score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_marrone() -> None:
+    if not MARRONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MARRONE_FIXTURE}")
+    signals = _build_signals_from_fixture(MARRONE_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on Marrone (Verdana BIC): score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_dejure_ns_recisione() -> None:
+    if not DEJURE_NS_RECISIONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_NS_RECISIONE_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_NS_RECISIONE_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on DeJure NS (ArialMT): score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_dejure_mm_procedura() -> None:
+    if not DEJURE_MM_PROCEDURA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_MM_PROCEDURA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_MM_PROCEDURA_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on DeJure MM: score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_dejure_dt_notizia() -> None:
+    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on DeJure DT: score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_edd_factoring() -> None:
+    """EdD moderna shares PDFsharp + Giuffrè but uses SimonciniGaramond."""
+    if not EDD_FACTORING_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_FACTORING_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_FACTORING_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on EdD moderna (SimonciniGaramond): score {score}"
+
+
+@pytest.mark.slow
+def test_giuffre_codici_does_not_promote_on_edd_pagamento() -> None:
+    """EdD storica is Times-Roman OCR — must not be confused with codici."""
+    if not EDD_PAGAMENTO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_PAGAMENTO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_PAGAMENTO_FIXTURE)
+    score = GiuffreCodiciProfile.matches(signals)
+    assert score < 0.6, f"codici promoted on EdD storica: score {score}"
+
+
+# Reverse non-promotion: sister plugins on codici fixtures
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_does_not_promote_on_codice_penale() -> None:
+    """Torrente plugin (PDFsharp Giuffrè manuali) must not promote on codici."""
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+    assert score < 0.6, f"Torrente plugin promoted on Codice Penale: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_giuffre_diretto_does_not_promote_on_codice_civile() -> None:
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    score = ManualeGiuffreDirectoProfile.matches(signals)
+    assert score < 0.6, f"Torrente plugin promoted on Codice Civile: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_codice_penale() -> None:
+    """EdD moderna (Giuffrè PDFsharp sister) must not promote on codici."""
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"EdD moderna promoted on Codice Penale: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_codice_civile() -> None:
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"EdD moderna promoted on Codice Civile: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_codice_penale() -> None:
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"DeJure NS promoted on Codice Penale: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_zanichelli_giuridica_does_not_promote_on_codice_penale() -> None:
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = ManualeZanichelliGiuridicaProfile.matches(signals)
+    assert score < 0.6, f"Patriarca plugin promoted on Codice Penale: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_giappichelli_does_not_promote_on_codice_civile() -> None:
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    score = ManualeGiappichelliProfile.matches(signals)
+    assert score < 0.6, f"Giappichelli promoted on Codice Civile: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_bic_does_not_promote_on_codice_penale() -> None:
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = ManualeBicProfile.matches(signals)
+    assert score < 0.6, f"BIC plugin promoted on Codice Penale: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_codice_civile() -> None:
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"EdD storica promoted on Codice Civile: score {score}"
+
+
+@pytest.mark.slow
+def test_compendio_utet_does_not_promote_on_codice_penale() -> None:
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = CompendioUtetProfile.matches(signals)
+    assert score < 0.6, f"Tesauro promoted on Codice Penale: score {score}"
+
+
+@pytest.mark.slow
+def test_manuale_utet_wolterskluwer_does_not_promote_on_codice_civile() -> None:
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    score = ManualeUtetWolterskluwerProfile.matches(signals)
+    assert score < 0.6, f"Mosconi promoted on Codice Civile: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_dottrina_does_not_promote_on_codice_civile() -> None:
+    if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_CIVILE_FIXTURE)
+    score = DejureDottrinaProfile.matches(signals)
+    assert score < 0.6, f"DeJure DT promoted on Codice Civile: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_codice_penale() -> None:
+    if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE}")
+    signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"DeJure MM promoted on Codice Penale: score {score}"
