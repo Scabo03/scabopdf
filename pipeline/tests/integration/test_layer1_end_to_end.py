@@ -88,7 +88,7 @@ DEJURE_NS_STELLA_FIXTURE = FIXTURES_DIR / "dejure_ns_stella_raccolta.pdf"
 DEJURE_MM_PROCEDURA_FIXTURE = FIXTURES_DIR / "dejure_mm_procedura_civile.pdf"
 DEJURE_MM_CONCAUSE_FIXTURE = FIXTURES_DIR / "dejure_mm_concause_naturali.pdf"
 DEJURE_MM_MASSIVO_FIXTURE = FIXTURES_DIR / "dejure_mm_responsabilita_civile_massivo.pdf"
-DEJURE_DT_NOTIZIA_FIXTURE = FIXTURES_DIR / "dejure_dt_notizia_reato.pdf"
+DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE = FIXTURES_DIR / "dejure_dt_bundle_procedura_civile.pdf"
 DEJURE_DT_CONCAUSE_FIXTURE = FIXTURES_DIR / "dejure_dt_concause_causalita.pdf"
 DEJURE_DT_CARTABIA_FIXTURE = FIXTURES_DIR / "dejure_dt_riforma_cartabia.pdf"
 EDD_ABUSO_FIXTURE = FIXTURES_DIR / "edd_abuso_posizione_dominante.pdf"
@@ -3086,16 +3086,16 @@ def _run_dt_pipeline(fixture: Path) -> tuple[Any, Any, Any, dict[SemanticCategor
 
 
 @pytest.mark.slow
-def test_dejure_dottrina_matches_notizia_reato_fixture() -> None:
-    """DejureDottrinaProfile.matches() clears 0.6 on the notizia_reato bundle."""
-    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
+def test_dejure_dottrina_matches_bundle_procedura_fixture() -> None:
+    """DejureDottrinaProfile.matches() clears 0.6 on the bundle_procedura_civile bundle."""
+    if not DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE.exists():
         pytest.skip(
-            f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+            f"fixture missing: {DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE} - see fixtures/README.md"
         )
-    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+    signals = _build_signals_from_fixture(DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE)
     score = DejureDottrinaProfile.matches(signals)
     assert score >= 0.6, (
-        f"matches() failed to promote dejure_dottrina on the notizia_reato "
+        f"matches() failed to promote dejure_dottrina on the bundle_procedura "
         f"fixture: score {score} below 0.6 threshold"
     )
 
@@ -3131,20 +3131,20 @@ def test_dejure_dottrina_matches_riforma_cartabia_fixture() -> None:
 
 
 @pytest.mark.slow
-def test_pipeline_runs_on_dejure_dt_notizia_reato() -> None:
-    """End-to-end Layer 1 pipeline test on the notizia_reato 3-article bundle (56 pp).
+def test_pipeline_runs_on_dejure_dt_bundle_procedura() -> None:
+    """End-to-end Layer 1 pipeline test on the bundle_procedura_civile 3-article bundle (56 pp).
 
     Asserts the empirical metrics: 3 GENRE_BANNER (3 sub-articles), 3 TITLE,
     3 FONTE_VALUE + 3 AUTHORS (meta decomposition x 3), 3 TOC_GENERAL,
     3 SECTION_LABEL ``"Note:"``, at least 100 synthetic NOTE Nodes
     (article 1 alone has ~60+), 100% CR binding rate, no UNCLASSIFIED.
     """
-    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
+    if not DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE.exists():
         pytest.skip(
-            f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+            f"fixture missing: {DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE} - see fixtures/README.md"
         )
     extraction, document, scabopdf_document, by_category = _run_dt_pipeline(
-        DEJURE_DT_NOTIZIA_FIXTURE
+        DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE
     )
 
     n_banner = by_category.get(SemanticCategory.GENRE_BANNER, 0)
@@ -3166,7 +3166,7 @@ def test_pipeline_runs_on_dejure_dt_notizia_reato() -> None:
     )
 
     print(
-        f"\nDeJure DT notizia_reato Layer 1 end-to-end summary:"
+        f"\nDeJure DT bundle_procedura_civile Layer 1 end-to-end summary:"
         f"\n  page_count={extraction.page_count}"
         f"\n  n_genre_banner={n_banner}  n_title={n_title}"
         f"\n  n_fonte={n_fonte}  n_authors={n_authors}  n_toc={n_toc}"
@@ -3444,13 +3444,13 @@ def test_dejure_dottrina_does_not_promote_on_marotta_fixture() -> None:
 
 # Non-promotion of NS on DT fixtures (three-way symmetry)
 @pytest.mark.slow
-def test_dejure_nota_sentenza_does_not_promote_on_dt_notizia_fixture() -> None:
+def test_dejure_nota_sentenza_does_not_promote_on_dt_bundle_fixture() -> None:
     """The NS plugin must not promote on a DeJure Dottrina fixture (pattern (vv))."""
-    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
-        pytest.skip(f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE}")
-    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+    if not DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE)
     score = DejureNotaSentenzaProfile.matches(signals)
-    assert score < 0.6, f"NS promoted on DT notizia: score {score}"
+    assert score < 0.6, f"NS promoted on DT bundle_procedura: score {score}"
 
 
 @pytest.mark.slow
@@ -3473,12 +3473,12 @@ def test_dejure_nota_sentenza_does_not_promote_on_dt_cartabia_fixture() -> None:
 
 # Non-promotion of MM on DT fixtures
 @pytest.mark.slow
-def test_dejure_massime_does_not_promote_on_dt_notizia_fixture() -> None:
-    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
-        pytest.skip(f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE}")
-    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+def test_dejure_massime_does_not_promote_on_dt_bundle_fixture() -> None:
+    if not DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE)
     score = DejureMassimeProfile.matches(signals)
-    assert score < 0.6, f"MM promoted on DT notizia: score {score}"
+    assert score < 0.6, f"MM promoted on DT bundle_procedura: score {score}"
 
 
 @pytest.mark.slow
@@ -4143,10 +4143,10 @@ def test_giuffre_codici_does_not_promote_on_dejure_mm_procedura() -> None:
 
 
 @pytest.mark.slow
-def test_giuffre_codici_does_not_promote_on_dejure_dt_notizia() -> None:
-    if not DEJURE_DT_NOTIZIA_FIXTURE.exists():
-        pytest.skip(f"fixture missing: {DEJURE_DT_NOTIZIA_FIXTURE}")
-    signals = _build_signals_from_fixture(DEJURE_DT_NOTIZIA_FIXTURE)
+def test_giuffre_codici_does_not_promote_on_dejure_dt_bundle() -> None:
+    if not DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_DT_BUNDLE_PROCEDURA_FIXTURE)
     score = GiuffreCodiciProfile.matches(signals)
     assert score < 0.6, f"codici promoted on DeJure DT: score {score}"
 

@@ -19,10 +19,12 @@ The plugin is calibrated on three private fixtures that span the
 continuum of the genre, including a **multi-article bundle** archetype
 not anticipated by the analysis:
 
-- ``pipeline/tests/fixtures/private/dejure_dt_notizia_reato.pdf`` —
+- ``pipeline/tests/fixtures/private/dejure_dt_bundle_procedura_civile.pdf`` —
   56-page export packaging **three** independent articles back-to-back
-  in a single PDF, each delimited by its own ``DOTTRINA`` banner and
-  ``Note:`` section. The articles are short-to-medium narrative pieces
+  in a single PDF (Gabellini, Carosi, Capasso, all from the Rivista
+  Trimestrale di Diritto e Procedura Civile fasc. 2/2025, on civil
+  procedure reform topics), each delimited by its own ``DOTTRINA``
+  banner and ``Note:`` section. The articles are short-to-medium narrative pieces
   whose section headings are typeset **inline at body weight**
   (``ArialMT`` 12pt regular, format ``"N. — text"`` opening
   a body paragraph). This corpus exercises the multi-article bundle
@@ -167,7 +169,7 @@ and revising the visually-estimated values of the analysis:
   the concause and cartabia fixtures.
 - **Section heading Style B** is **not classified** by this plugin:
   inline ``"N. — text"`` headings at ``ArialMT`` 12pt regular
-  open a body paragraph in the notizia_reato fixture and have no
+  open a body paragraph in the bundle_procedura_civile fixture and have no
   separate block. The plugin leaves them inside BODY Nodes; Layer 2
   may detect the textual pattern at presentation time. Documented as
   a v1 limitation; a future enhancement could split the body Node and
@@ -195,7 +197,7 @@ and revising the visually-estimated values of the analysis:
 
 The empirical structural metrics on the three fixtures, post-tier-2:
 
-- ``dejure_dt_notizia_reato`` (56 pp, 3-article bundle): 3
+- ``dejure_dt_bundle_procedura_civile`` (56 pp, 3-article bundle): 3
   GENRE_BANNER, 3 TITLE, 3 META_VALUE umbrellas decomposed into
   3 × (FONTE_VALUE + AUTHORS) = 6 sibling Nodes (no REFERRAL), 3
   TOC_GENERAL (per-article sommario), 0 HEADING_1 (Style B inline,
