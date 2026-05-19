@@ -36,6 +36,7 @@ from scabopdf_pipeline.postprocessing import (
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
 from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
+from scabopdf_pipeline.profiles.dejure_massime import DejureMassimeProfile
 from scabopdf_pipeline.profiles.dejure_nota_sentenza import DejureNotaSentenzaProfile
 from scabopdf_pipeline.profiles.manuale_bic import ManualeBicProfile
 from scabopdf_pipeline.profiles.manuale_giappichelli import ManualeGiappichelliProfile
@@ -79,6 +80,9 @@ MARRONE_FIXTURE = FIXTURES_DIR / "marrone_istituzioni.pdf"
 DEJURE_NS_RECISIONE_FIXTURE = FIXTURES_DIR / "dejure_ns_recisione_nesso_causale.pdf"
 DEJURE_NS_GIUDIZIO_FIXTURE = FIXTURES_DIR / "dejure_ns_giudizio_universale.pdf"
 DEJURE_NS_STELLA_FIXTURE = FIXTURES_DIR / "dejure_ns_stella_raccolta.pdf"
+DEJURE_MM_PROCEDURA_FIXTURE = FIXTURES_DIR / "dejure_mm_procedura_civile.pdf"
+DEJURE_MM_CONCAUSE_FIXTURE = FIXTURES_DIR / "dejure_mm_concause_naturali.pdf"
+DEJURE_MM_MASSIVO_FIXTURE = FIXTURES_DIR / "dejure_mm_responsabilita_civile_massivo.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -178,6 +182,16 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
         r"^plugin:dejure_nota_sentenza:cross_reference_minted_node_\S+_page_\d+_marker_\d+$"
     ),
     re.compile(r"^plugin:dejure_nota_sentenza:cross_reference_unresolved_node_\S+_marker_\S+$"),
+    # dejure_massime plugin (closed vocabulary, see profiles/dejure_massime.py)
+    re.compile(r"^plugin:dejure_massime:referral_reclassified_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:dejure_massime:referral_pattern_unmatched_block_-?\d+_page_\d+$"),
+    re.compile(
+        r"^plugin:dejure_massime:referral_orphan_no_preceding_massima_block_-?\d+_page_\d+$"
+    ),
+    re.compile(
+        r"^plugin:dejure_massime:fonte_value_orphan_no_preceding_label_block_-?\d+_page_\d+$"
+    ),
+    re.compile(r"^plugin:dejure_massime:title_orphan_no_preceding_referral_block_-?\d+_page_\d+$"),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
@@ -2513,3 +2527,396 @@ def test_dejure_nota_sentenza_does_not_promote_on_marotta_fixture() -> None:
     signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
     score = DejureNotaSentenzaProfile.matches(signals)
     assert score < 0.6, f"promoted on Marotta: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_mm_procedura_fixture() -> None:
+    """The NS plugin must not promote on a DeJure Massime fixture.
+
+    Bidirectional non-promotion regression: the housekeeping fix to
+    NS.matches() (CONFIDENCE_TITLE_BOLD_ABSENT_PENALTY) ensures that
+    the absence of the 13pt bold Arial title (unique to NS) drops the
+    NS score below the 0.6 dispatcher threshold on Massime fixtures.
+    Without this guard, the symmetric Aspose-Arial-Letter signals
+    would mis-route every Massime fixture to the NS plugin.
+    """
+    if not DEJURE_MM_PROCEDURA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_PROCEDURA_FIXTURE} - "
+            f"see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_MM_PROCEDURA_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on MM procedura: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_mm_concause_fixture() -> None:
+    """The NS plugin must not promote on the Massime minimal fixture."""
+    if not DEJURE_MM_CONCAUSE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_CONCAUSE_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_MM_CONCAUSE_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on MM concause: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_mm_massivo_fixture() -> None:
+    """The NS plugin must not promote on the Massime massive fixture."""
+    if not DEJURE_MM_MASSIVO_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_MASSIVO_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_MM_MASSIVO_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on MM massivo: score {score}"
+
+
+# ---------------------------------------------------------------------------
+# dejure_massime plugin — full pipeline + bidirectional non-promotion regression
+
+
+def _make_dejure_mm_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the dejure_massime plugin's identity."""
+    plugin = DejureMassimeProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3", "L4"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.80,
+        warnings=[],
+    )
+
+
+@pytest.mark.slow
+def test_dejure_massime_matches_procedura_civile_fixture() -> None:
+    """DejureMassimeProfile.matches() clears 0.6 on the procedura civile fixture."""
+    if not DEJURE_MM_PROCEDURA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_PROCEDURA_FIXTURE} - "
+            f"see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_MM_PROCEDURA_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score >= 0.6, f"matches() failed to promote MM on procedura civile: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_matches_concause_naturali_fixture() -> None:
+    """DejureMassimeProfile.matches() clears 0.6 on the concause minimal fixture."""
+    if not DEJURE_MM_CONCAUSE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_CONCAUSE_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_MM_CONCAUSE_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score >= 0.6, f"matches() failed to promote MM on concause: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_matches_responsabilita_civile_massivo_fixture() -> None:
+    """DejureMassimeProfile.matches() clears 0.6 on the massivo fixture."""
+    if not DEJURE_MM_MASSIVO_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_MASSIVO_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_MM_MASSIVO_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score >= 0.6, f"matches() failed to promote MM on massivo: score {score}"
+
+
+def _run_mm_pipeline(fixture: Path) -> tuple[Any, Any, Any, dict[SemanticCategory, int]]:
+    """Run the full Layer 1 pipeline with the MM plugin and return key results."""
+    profile = _make_dejure_mm_profile()
+    plugin = DejureMassimeProfile()
+    extraction = extract(fixture)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+    scabopdf_document = convert_document(document, extraction, profile, fixture)
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+    return extraction, document, scabopdf_document, by_category
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_mm_procedura_civile() -> None:
+    """End-to-end Layer 1 pipeline test on the procedura civile fixture.
+
+    Asserts the empirical structural metrics documented in the
+    module docstring: 29 MASSIMA_LABEL, 29 REFERRAL, 29 TITLE, 29
+    FONTE_LABEL, 29 FONTE_VALUE (single-line on this fixture), and
+    15 ARTIFACT_FOOTER (one per page).
+    """
+    if not DEJURE_MM_PROCEDURA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_PROCEDURA_FIXTURE} - "
+            f"see pipeline/tests/fixtures/README.md"
+        )
+
+    extraction, document, scabopdf_document, by_category = _run_mm_pipeline(
+        DEJURE_MM_PROCEDURA_FIXTURE
+    )
+
+    n_massima = by_category.get(SemanticCategory.MASSIMA_LABEL, 0)
+    n_referral = by_category.get(SemanticCategory.REFERRAL, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_fonte_label = by_category.get(SemanticCategory.FONTE_LABEL, 0)
+    n_fonte_value = by_category.get(SemanticCategory.FONTE_VALUE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+    n_stamp = by_category.get(SemanticCategory.ARTIFACT_STAMP, 0)
+
+    print(
+        f"\nDeJure MM procedura civile summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_massima_label={n_massima} n_referral={n_referral} n_title={n_title}"
+        f"\n  n_fonte_label={n_fonte_label} n_fonte_value={n_fonte_value} n_body={n_body}"
+        f"\n  n_footer={n_footer} n_stamp={n_stamp}"
+    )
+
+    assert extraction.page_count == 15
+    assert n_massima == 29, f"expected 29 MASSIMA_LABEL, got {n_massima}"
+    assert n_referral == 29, f"expected 29 REFERRAL, got {n_referral}"
+    assert n_title == 29, f"expected 29 TITLE, got {n_title}"
+    assert n_fonte_label == 29, f"expected 29 FONTE_LABEL, got {n_fonte_label}"
+    assert n_fonte_value == 29, f"expected 29 FONTE_VALUE, got {n_fonte_value}"
+    # Empirically 28 BODY on this fixture: the tier 1 paragraph merger fuses
+    # cross-page BODY siblings, reducing the per-massima count by ~7 cross-
+    # page cases. The floor of 20 leaves headroom for future merger changes.
+    assert n_body >= 20, f"expected >=20 BODY, got {n_body}"
+    assert n_footer == 15, f"expected 15 ARTIFACT_FOOTER, got {n_footer}"
+    assert n_stamp >= 2, f"expected >=2 ARTIFACT_STAMP, got {n_stamp}"
+
+    assert scabopdf_document.profile.profile_id == "dejure_massime"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    unknown_warnings = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown_warnings, (
+        f"unknown warnings emitted: {unknown_warnings[:5]} ({len(unknown_warnings)} total)"
+    )
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_mm_concause_naturali() -> None:
+    """End-to-end Layer 1 pipeline test on the concause minimal fixture.
+
+    Exercises the edge case "1 massima, 1 page, copyright immediately
+    after FONTE_VALUE". Asserts exactly one of each MASSIMA-record
+    Node category.
+    """
+    if not DEJURE_MM_CONCAUSE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_CONCAUSE_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+
+    extraction, _document, scabopdf_document, by_category = _run_mm_pipeline(
+        DEJURE_MM_CONCAUSE_FIXTURE
+    )
+
+    print(
+        f"\nDeJure MM concause naturali summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  by_category={dict((k.value, v) for k, v in by_category.items())}"
+    )
+
+    assert extraction.page_count == 1
+    assert by_category.get(SemanticCategory.MASSIMA_LABEL, 0) == 1
+    assert by_category.get(SemanticCategory.REFERRAL, 0) == 1
+    assert by_category.get(SemanticCategory.TITLE, 0) == 1
+    assert by_category.get(SemanticCategory.FONTE_LABEL, 0) == 1
+    assert by_category.get(SemanticCategory.FONTE_VALUE, 0) == 1
+    assert by_category.get(SemanticCategory.BODY, 0) >= 1
+    assert by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0) >= 1
+    assert by_category.get(SemanticCategory.ARTIFACT_STAMP, 0) >= 1
+
+    assert scabopdf_document.profile.profile_id == "dejure_massime"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_dejure_mm_responsabilita_civile_massivo() -> None:
+    """End-to-end Layer 1 pipeline test on the massivo fixture.
+
+    Asserts the massive structural metrics: ~104 MASSIMA_LABEL,
+    104 REFERRAL, 104 TITLE, 104 FONTE_LABEL, >= 104 FONTE_VALUE
+    (multi-line in ~12 cases), and 57 ARTIFACT_FOOTER.
+    """
+    if not DEJURE_MM_MASSIVO_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_MM_MASSIVO_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+
+    extraction, _document, scabopdf_document, by_category = _run_mm_pipeline(
+        DEJURE_MM_MASSIVO_FIXTURE
+    )
+
+    n_massima = by_category.get(SemanticCategory.MASSIMA_LABEL, 0)
+    n_referral = by_category.get(SemanticCategory.REFERRAL, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_fonte_label = by_category.get(SemanticCategory.FONTE_LABEL, 0)
+    n_fonte_value = by_category.get(SemanticCategory.FONTE_VALUE, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+
+    print(
+        f"\nDeJure MM massivo summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_massima_label={n_massima} n_referral={n_referral} n_title={n_title}"
+        f"\n  n_fonte_label={n_fonte_label} n_fonte_value={n_fonte_value} n_footer={n_footer}"
+    )
+
+    assert extraction.page_count == 57
+    assert n_massima >= 100, f"expected >=100 MASSIMA_LABEL, got {n_massima}"
+    assert n_referral == n_massima, (
+        f"expected REFERRAL == MASSIMA_LABEL, got {n_referral} vs {n_massima}"
+    )
+    assert n_title == n_massima, f"expected TITLE == MASSIMA_LABEL, got {n_title} vs {n_massima}"
+    assert n_fonte_label == n_massima, (
+        f"expected FONTE_LABEL == MASSIMA_LABEL, got {n_fonte_label} vs {n_massima}"
+    )
+    # Multi-line Fonte: at least as many FONTE_VALUE as labels, with
+    # a few extras for the analysis § 14.2 cases.
+    assert n_fonte_value >= n_fonte_label, (
+        f"expected FONTE_VALUE >= FONTE_LABEL, got {n_fonte_value} vs {n_fonte_label}"
+    )
+    assert n_footer == 57, f"expected 57 ARTIFACT_FOOTER, got {n_footer}"
+
+    assert scabopdf_document.profile.profile_id == "dejure_massime"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+# ---------------------------------------------------------------------------
+# Non-promotion regression: MM does not promote on NS fixtures
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_ns_recisione_fixture() -> None:
+    """matches() stays below 0.6 on the DeJure NS short narrative fixture."""
+    if not DEJURE_NS_RECISIONE_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_RECISIONE_FIXTURE} - "
+            f"see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_NS_RECISIONE_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on NS recisione: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_ns_giudizio_fixture() -> None:
+    """matches() stays below 0.6 on the DeJure NS long academic fixture."""
+    if not DEJURE_NS_GIUDIZIO_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_GIUDIZIO_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_NS_GIUDIZIO_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on NS giudizio: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_ns_stella_fixture() -> None:
+    """matches() stays below 0.6 on the Stella raccolta (OpenSans, A4)."""
+    if not DEJURE_NS_STELLA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {DEJURE_NS_STELLA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(DEJURE_NS_STELLA_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Stella: score {score}"
+
+
+# ---------------------------------------------------------------------------
+# Non-promotion regression: MM does not promote on manuali fixtures
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_patriarca_fixture() -> None:
+    """matches() stays below 0.6 on the Patriarca-Benazzo fixture."""
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(PATRIARCA_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Patriarca: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_tesauro_fixture() -> None:
+    """matches() stays below 0.6 on the Tesauro Compendio fixture."""
+    if not TESAURO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TESAURO_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(TESAURO_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Tesauro: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_mosconi_fixture() -> None:
+    """matches() stays below 0.6 on the Mosconi-Campiglio fixture."""
+    if not MOSCONI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MOSCONI_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MOSCONI_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Mosconi: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_mandrioli_fixture() -> None:
+    """matches() stays below 0.6 on Mandrioli Vol. III (Giappichelli)."""
+    if not MANDRIOLI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MANDRIOLI_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MANDRIOLI_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Mandrioli Vol. III: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_torrente_fixture() -> None:
+    """matches() stays below 0.6 on the Torrente-Schlesinger fixture."""
+    if not TORRENTE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TORRENTE_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(TORRENTE_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Torrente: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_marrone_fixture() -> None:
+    """matches() stays below 0.6 on the Marrone Istituzioni (BIC) fixture."""
+    if not MARRONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MARRONE_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MARRONE_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Marrone: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_massime_does_not_promote_on_marotta_fixture() -> None:
+    """matches() stays below 0.6 on the Marotta control sample."""
+    if not MAROTTA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MAROTTA_FIXTURE} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
+    score = DejureMassimeProfile.matches(signals)
+    assert score < 0.6, f"MM promoted on Marotta: score {score}"
