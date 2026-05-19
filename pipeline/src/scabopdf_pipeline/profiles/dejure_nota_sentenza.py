@@ -599,6 +599,33 @@ APPARATUS_PRESENCE_THRESHOLD = 50
 are considered "present", triggering the corresponding penalty.
 """
 
+CONFIDENCE_DT_BANNER_PRESENT_PENALTY = -0.25
+"""Penalty when the ``"dejure_banner_text"`` SpecificMarker carries
+the value ``"DOTTRINA"``.
+
+The discriminator versus the sister DT plugin (pattern (vv)
+introduced by ``dejure_dottrina``). DT documents share every
+typographic signal with NS (13pt bold title, 9pt bold banner, 12pt
+regular body, Letter geometry, Aspose producer) but their banner
+text is ``"DOTTRINA"`` (rather than ``"NOTE E DOTTRINA"``); without
+this penalty NS would clear 0.80 on real DT fixtures and mis-route
+them. The signal builder emits the marker on real fixtures; unit-test
+signals built by hand without the marker keep the full score, since
+the symmetry is only enforced at the dispatcher level on real PDFs.
+"""
+
+SPECIFIC_MARKER_BANNER_TEXT_NAME = "dejure_banner_text"
+"""Name of the SpecificMarker that carries the verbatim banner text
+scanned from page 1 by the real-fixture signal builder. Symmetric
+with the homonymous constant in :mod:`dejure_dottrina`.
+"""
+
+DT_BANNER_TEXT_DOTTRINA = "DOTTRINA"
+"""Literal value that the banner-text SpecificMarker carries on a DT
+fixture; used **only** to detect the DT case and apply
+:data:`CONFIDENCE_DT_BANNER_PRESENT_PENALTY`.
+"""
+
 # ---------------------------------------------------------------------------
 # Notes-section boundary tables.
 
@@ -826,6 +853,17 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
 
         if signals.apparatus_presence.marginal_headings >= APPARATUS_PRESENCE_THRESHOLD:
             score += CONFIDENCE_MARGINAL_APPARATUS_PENALTY
+
+        # Pattern (vv) — discriminator vs sister DT plugin via banner text.
+        # When the real-fixture signal builder reports the banner text
+        # SpecificMarker carrying "DOTTRINA", this is a DT fixture and
+        # the NS plugin must step back so the DT plugin can take over.
+        for marker in signals.specific_markers:
+            if marker.name != SPECIFIC_MARKER_BANNER_TEXT_NAME:
+                continue
+            if marker.value == DT_BANNER_TEXT_DOTTRINA:
+                score += CONFIDENCE_DT_BANNER_PRESENT_PENALTY
+            break
 
         return max(0.0, score)
 
