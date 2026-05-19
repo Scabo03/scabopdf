@@ -39,6 +39,8 @@ from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
 from scabopdf_pipeline.profiles.dejure_dottrina import DejureDottrinaProfile
 from scabopdf_pipeline.profiles.dejure_massime import DejureMassimeProfile
 from scabopdf_pipeline.profiles.dejure_nota_sentenza import DejureNotaSentenzaProfile
+from scabopdf_pipeline.profiles.enciclopedia_moderna import EnciclopediaModernaProfile
+from scabopdf_pipeline.profiles.enciclopedia_storica import EnciclopediaStoricaProfile
 from scabopdf_pipeline.profiles.manuale_bic import ManualeBicProfile
 from scabopdf_pipeline.profiles.manuale_giappichelli import ManualeGiappichelliProfile
 from scabopdf_pipeline.profiles.manuale_giuffre_diretto import (
@@ -88,6 +90,13 @@ DEJURE_MM_MASSIVO_FIXTURE = FIXTURES_DIR / "dejure_mm_responsabilita_civile_mass
 DEJURE_DT_NOTIZIA_FIXTURE = FIXTURES_DIR / "dejure_dt_notizia_reato.pdf"
 DEJURE_DT_CONCAUSE_FIXTURE = FIXTURES_DIR / "dejure_dt_concause_causalita.pdf"
 DEJURE_DT_CARTABIA_FIXTURE = FIXTURES_DIR / "dejure_dt_riforma_cartabia.pdf"
+EDD_ABUSO_FIXTURE = FIXTURES_DIR / "edd_abuso_posizione_dominante.pdf"
+EDD_FACTORING_FIXTURE = FIXTURES_DIR / "edd_factoring.pdf"
+EDD_GIUDIZIO_FIXTURE = FIXTURES_DIR / "edd_giudizio_legittimita_costituzionale.pdf"
+EDD_ECCESSO_FIXTURE = FIXTURES_DIR / "edd_eccesso_potere.pdf"
+EDD_LAVORO_FIXTURE = FIXTURES_DIR / "edd_lavoro.pdf"
+EDD_PAGAMENTO_FIXTURE = FIXTURES_DIR / "edd_pagamento.pdf"
+EDD_AZIENDA_FIXTURE = FIXTURES_DIR / "edd_azienda.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -3435,3 +3444,404 @@ def test_dejure_massime_does_not_promote_on_dt_cartabia_fixture() -> None:
     signals = _build_signals_from_fixture(DEJURE_DT_CARTABIA_FIXTURE)
     score = DejureMassimeProfile.matches(signals)
     assert score < 0.6, f"MM promoted on DT cartabia: score {score}"
+
+
+# ===========================================================================
+# EdD (Enciclopedia del Diritto Giuffrè) — moderna + storica
+# ===========================================================================
+
+
+def _make_enciclopedia_moderna_profile() -> DocumentProfile:
+    plugin = EnciclopediaModernaProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3", "L4"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.85,
+        warnings=[],
+    )
+
+
+def _make_enciclopedia_storica_profile() -> DocumentProfile:
+    plugin = EnciclopediaStoricaProfile()
+    return DocumentProfile(
+        profile_id=plugin.profile_id,
+        editorial_family=plugin.editorial_family,
+        genre=plugin.genre,
+        layouts_available=["L1", "L2", "L3"],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.85,
+        warnings=[],
+    )
+
+
+# matches() positive tests — moderna
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_matches_abuso_fixture() -> None:
+    if not EDD_ABUSO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_ABUSO_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(EDD_ABUSO_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score >= 0.6, f"moderna failed to promote on abuso: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_matches_factoring_fixture() -> None:
+    if not EDD_FACTORING_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_FACTORING_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(EDD_FACTORING_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score >= 0.6, f"moderna failed to promote on factoring: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_matches_giudizio_fixture() -> None:
+    if not EDD_GIUDIZIO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_GIUDIZIO_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(EDD_GIUDIZIO_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score >= 0.6, f"moderna failed to promote on giudizio_legittimita: score {score}"
+
+
+# matches() positive tests — storica
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_matches_eccesso_fixture() -> None:
+    if not EDD_ECCESSO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_ECCESSO_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(EDD_ECCESSO_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score >= 0.6, f"storica failed to promote on eccesso_potere: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_matches_lavoro_fixture() -> None:
+    if not EDD_LAVORO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_LAVORO_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(EDD_LAVORO_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score >= 0.6, f"storica failed to promote on lavoro: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_matches_pagamento_fixture() -> None:
+    if not EDD_PAGAMENTO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_PAGAMENTO_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(EDD_PAGAMENTO_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score >= 0.6, f"storica failed to promote on pagamento: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_matches_azienda_fixture() -> None:
+    if not EDD_AZIENDA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_AZIENDA_FIXTURE} - see fixtures/README.md")
+    signals = _build_signals_from_fixture(EDD_AZIENDA_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score >= 0.6, f"storica failed to promote on azienda: score {score}"
+
+
+# End-to-end pipeline tests
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_enciclopedia_moderna_factoring() -> None:
+    """End-to-end Layer 1 on the small Factoring fixture (14 pp)."""
+    if not EDD_FACTORING_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_FACTORING_FIXTURE} - see fixtures/README.md")
+
+    profile = _make_enciclopedia_moderna_profile()
+    plugin = EnciclopediaModernaProfile()
+
+    extraction = extract(EDD_FACTORING_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(document, extraction, profile, EDD_FACTORING_FIXTURE)
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    n_letter_initial = by_category.get(SemanticCategory.HEADING_LETTER_INITIAL, 0)
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_toc = by_category.get(SemanticCategory.TOC_GENERAL, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_heading_2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_section_label = by_category.get(SemanticCategory.SECTION_LABEL, 0)
+    n_fonti = by_category.get(SemanticCategory.FONTI, 0)
+    n_letteratura = by_category.get(SemanticCategory.LETTERATURA, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+    n_stamp = by_category.get(SemanticCategory.ARTIFACT_STAMP, 0)
+
+    print(
+        f"\nEdD moderna factoring Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_letter_initial={n_letter_initial}  n_title={n_title}  n_toc={n_toc}"
+        f"\n  n_heading_1={n_heading_1}  n_heading_2={n_heading_2}"
+        f"\n  n_section_label={n_section_label}  n_fonti={n_fonti}  n_letteratura={n_letteratura}"
+        f"\n  n_note={n_note}  n_cross_reference={n_cross_reference}  n_body={n_body}"
+        f"\n  n_footer={n_footer}  n_stamp={n_stamp}"
+        f"\n  n_transformations={len(document.transformations)}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 14
+    assert n_letter_initial >= 1, f"drop-cap not detected: {n_letter_initial}"
+    assert n_footer >= 14
+    assert n_body >= 1
+    assert scabopdf_document.profile.profile_id == "enciclopedia_moderna"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+@pytest.mark.slow
+def test_pipeline_runs_on_enciclopedia_storica_pagamento() -> None:
+    """End-to-end Layer 1 on the medium Pagamento fixture (23 pp, variante C)."""
+    if not EDD_PAGAMENTO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_PAGAMENTO_FIXTURE} - see fixtures/README.md")
+
+    profile = _make_enciclopedia_storica_profile()
+    plugin = EnciclopediaStoricaProfile()
+
+    extraction = extract(EDD_PAGAMENTO_FIXTURE)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+
+    scabopdf_document = convert_document(document, extraction, profile, EDD_PAGAMENTO_FIXTURE)
+
+    all_nodes = [node for root in document.root for node in _iter_nodes(root)]
+    by_category: dict[SemanticCategory, int] = {}
+    for node in all_nodes:
+        by_category[node.category] = by_category.get(node.category, 0) + 1
+
+    n_title = by_category.get(SemanticCategory.TITLE, 0)
+    n_heading_1 = by_category.get(SemanticCategory.HEADING_1, 0)
+    n_heading_2 = by_category.get(SemanticCategory.HEADING_2, 0)
+    n_section_label = by_category.get(SemanticCategory.SECTION_LABEL, 0)
+    n_fonti = by_category.get(SemanticCategory.FONTI, 0)
+    n_letteratura = by_category.get(SemanticCategory.LETTERATURA, 0)
+    n_note = by_category.get(SemanticCategory.NOTE, 0)
+    n_cross_reference = by_category.get(SemanticCategory.CROSS_REFERENCE, 0)
+    n_body = by_category.get(SemanticCategory.BODY, 0)
+    n_footer = by_category.get(SemanticCategory.ARTIFACT_FOOTER, 0)
+
+    print(
+        f"\nEdD storica pagamento Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_title={n_title}  n_heading_1={n_heading_1}  n_heading_2={n_heading_2}"
+        f"\n  n_section_label={n_section_label}  n_fonti={n_fonti}  n_letteratura={n_letteratura}"
+        f"\n  n_note={n_note}  n_cross_reference={n_cross_reference}  n_body={n_body}"
+        f"\n  n_footer={n_footer}"
+        f"\n  schema_version={scabopdf_document.schema_version}"
+    )
+
+    assert extraction.page_count == 23
+    # The variant_c opening is detected and emits a TITLE node.
+    assert n_title >= 1, f"variant opening not detected on page 1: {n_title}"
+    assert n_footer >= 23
+    assert n_body >= 1
+    # Pagamento has (N) markers → cross-references should be minted.
+    assert n_cross_reference >= 1
+    # FONTI + LETTERATURA both present and clearly recoverable on Pagamento.
+    assert n_section_label >= 2, f"expected FONTI + LETTERATURA labels: {n_section_label}"
+    assert scabopdf_document.profile.profile_id == "enciclopedia_storica"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+# Non-promotion bidirectional moderna <-> storica
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_eccesso_fixture() -> None:
+    if not EDD_ECCESSO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_ECCESSO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_ECCESSO_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on storica eccesso: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_lavoro_fixture() -> None:
+    if not EDD_LAVORO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_LAVORO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_LAVORO_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on storica lavoro: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_pagamento_fixture() -> None:
+    if not EDD_PAGAMENTO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_PAGAMENTO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_PAGAMENTO_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on storica pagamento: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_azienda_fixture() -> None:
+    if not EDD_AZIENDA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_AZIENDA_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_AZIENDA_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on storica azienda: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_abuso_fixture() -> None:
+    if not EDD_ABUSO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_ABUSO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_ABUSO_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"storica promoted on moderna abuso: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_factoring_fixture() -> None:
+    if not EDD_FACTORING_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_FACTORING_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_FACTORING_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"storica promoted on moderna factoring: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_giudizio_fixture() -> None:
+    if not EDD_GIUDIZIO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_GIUDIZIO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_GIUDIZIO_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"storica promoted on moderna giudizio: score {score}"
+
+
+# Non-promotion vs sister plugins on representative fixtures
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_patriarca_fixture() -> None:
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE}")
+    signals = _build_signals_from_fixture(PATRIARCA_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on Patriarca (Times-NR manuali): score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_mandrioli_fixture() -> None:
+    """Critical: Mandrioli uses SimonciniGaramondStd (close family name)."""
+    if not MANDRIOLI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MANDRIOLI_FIXTURE}")
+    signals = _build_signals_from_fixture(MANDRIOLI_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on Mandrioli (SimonciniGaramondStd): score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_dejure_ns_recisione() -> None:
+    if not DEJURE_NS_RECISIONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_NS_RECISIONE_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_NS_RECISIONE_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on DeJure NS (ArialMT): score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_moderna_does_not_promote_on_torrente_fixture() -> None:
+    if not TORRENTE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {TORRENTE_FIXTURE}")
+    signals = _build_signals_from_fixture(TORRENTE_FIXTURE)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score < 0.6, f"moderna promoted on Torrente (MScotchRoman): score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_patriarca_fixture() -> None:
+    if not PATRIARCA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {PATRIARCA_FIXTURE}")
+    signals = _build_signals_from_fixture(PATRIARCA_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"storica promoted on Patriarca: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_mandrioli_fixture() -> None:
+    if not MANDRIOLI_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MANDRIOLI_FIXTURE}")
+    signals = _build_signals_from_fixture(MANDRIOLI_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"storica promoted on Mandrioli: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_dejure_ns_recisione() -> None:
+    if not DEJURE_NS_RECISIONE_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {DEJURE_NS_RECISIONE_FIXTURE}")
+    signals = _build_signals_from_fixture(DEJURE_NS_RECISIONE_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"storica promoted on DeJure NS: score {score}"
+
+
+@pytest.mark.slow
+def test_enciclopedia_storica_does_not_promote_on_marotta_fixture() -> None:
+    """Marotta is TimesNewRomanPSMT — but no Paper Capture producer."""
+    if not MAROTTA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MAROTTA_FIXTURE}")
+    signals = _build_signals_from_fixture(MAROTTA_FIXTURE)
+    score = EnciclopediaStoricaProfile.matches(signals)
+    assert score < 0.6, f"storica promoted on Marotta (TimesNewRomanPSMT): score {score}"
+
+
+# Reverse non-promotion: sister plugins do NOT promote on EdD fixtures
+
+
+@pytest.mark.slow
+def test_manuale_giappichelli_does_not_promote_on_edd_abuso() -> None:
+    """Giappichelli SimonciniGaramondStd plugin must not collide with EdD moderna."""
+    if not EDD_ABUSO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_ABUSO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_ABUSO_FIXTURE)
+    score = ManualeGiappichelliProfile.matches(signals)
+    assert score < 0.6, f"Giappichelli promoted on EdD moderna abuso: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_edd_abuso() -> None:
+    if not EDD_ABUSO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_ABUSO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_ABUSO_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on EdD moderna abuso: score {score}"
+
+
+@pytest.mark.slow
+def test_dejure_nota_sentenza_does_not_promote_on_edd_pagamento() -> None:
+    if not EDD_PAGAMENTO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {EDD_PAGAMENTO_FIXTURE}")
+    signals = _build_signals_from_fixture(EDD_PAGAMENTO_FIXTURE)
+    score = DejureNotaSentenzaProfile.matches(signals)
+    assert score < 0.6, f"NS promoted on EdD storica pagamento: score {score}"

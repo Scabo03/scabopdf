@@ -495,13 +495,19 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
         ):
             score += CONFIDENCE_PAPER_CAPTURE_PRODUCER
 
-        body_present = any(
-            font.family.startswith(TIMES_FAMILY_PREFIX)
-            and BODY_SIZE_MIN <= font.size <= BODY_SIZE_MAX
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
+        # Band-summed dominance — OCR baseline noise splits the same
+        # logical body size across dozens of fractional sizes (the
+        # pagamento fixture alone exhibits 50+ distinct Times-Roman
+        # fractional sizes); the body signal must aggregate them rather
+        # than require a single ``font.size`` combo to clear the
+        # threshold.
+        body_total_dominance = sum(
+            font.dominance_percent
             for font in signals.typographic_signature.fonts
+            if font.family.startswith(TIMES_FAMILY_PREFIX)
+            and BODY_SIZE_MIN <= font.size <= BODY_SIZE_MAX
         )
-        if body_present:
+        if body_total_dominance >= BODY_DOMINANCE_MIN_PERCENT:
             score += CONFIDENCE_TIMES_BODY_DOMINANT
         else:
             arial_or_simoncini = any(

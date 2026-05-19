@@ -244,9 +244,13 @@ value is the same compromise Torrente landed on for the
 # geometry; tighter checks risk false negatives on legitimate variants.
 
 PAGE_WIDTH_MIN = 475.0
-PAGE_WIDTH_MAX = 510.0
+PAGE_WIDTH_MAX = 580.0
 PAGE_HEIGHT_MIN = 670.0
 PAGE_HEIGHT_MAX = 730.0
+
+# The 580pt upper bound on width covers the Acrobat Distiller 4.0 (2001)
+# pipeline whose mediabox declares 567pt while the rendered page rect is
+# ~482pt; both are legitimate EdD moderna geometries.
 
 # ---------------------------------------------------------------------------
 # Closed text predicates.
@@ -404,8 +408,18 @@ note spans + remainder. With 40% the body sometimes falls just below
 threshold on dense fixtures.
 """
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold above which marginal-heading counts trigger the penalty."""
+APPARATUS_PRESENCE_THRESHOLD = 200
+"""Threshold above which marginal-heading counts trigger the penalty.
+
+The signal builder's marginal-heading heuristic counts every block
+with a 7-8pt leading span and a left/right margin position. On EdD
+moderna two-column fixtures this includes the legitimate 7.5pt note
+blocks in the LEFT column (which legitimately sit at ``block_x0 ~ 50``),
+producing counts of 30-60 on dense fixtures. The 200 threshold keeps
+the penalty effective for Mosconi/Mandrioli/Torrente (which have
+hundreds-to-thousands of genuine marginal headings) while leaving
+the EdD moderna note column unaffected.
+"""
 
 
 # ---------------------------------------------------------------------------

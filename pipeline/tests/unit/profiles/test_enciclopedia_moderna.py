@@ -346,13 +346,23 @@ def test_matches_drops_below_threshold_on_low_body_dominance() -> None:
 
 
 def test_matches_drops_below_threshold_on_marginal_apparatus() -> None:
-    """Mosconi/Mandrioli/Torrente/BIC carry substantial marginal apparatus."""
-    signals = _moderna_signals(marginal_headings=100)
+    """Mosconi/Mandrioli/Torrente/BIC carry substantial marginal apparatus
+    (hundreds to thousands of marginal headings).
+    """
+    signals = _moderna_signals(marginal_headings=500)
     score = EnciclopediaModernaProfile.matches(signals)
-    # Even with all other signals positive, the -0.20 marginal penalty drops
-    # the score to 0.85 - 0.20 = 0.65, still above threshold; check that the
-    # penalty has been applied.
+    # 500 marginal headings is well above the 200 threshold; penalty fires.
     assert score < 0.85
+
+
+def test_matches_no_marginal_penalty_on_edd_apparatus_density() -> None:
+    """An EdD moderna fixture with ~60 marginal-like blocks (two-column
+    note layout) must NOT trigger the marginal penalty; the threshold is
+    set high enough (200) to exclude legitimate note columns.
+    """
+    signals = _moderna_signals(marginal_headings=60)
+    score = EnciclopediaModernaProfile.matches(signals)
+    assert score == pytest.approx(0.85)
 
 
 def test_matches_credits_note_family_present() -> None:
