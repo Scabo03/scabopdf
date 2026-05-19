@@ -542,6 +542,22 @@ absent it, the document may still be a DeJure Massime or another
 short Aspose-Arial document.
 """
 
+CONFIDENCE_TITLE_BOLD_ABSENT_PENALTY = -0.20
+"""Penalty when ``Arial-BoldMT`` 13pt is absent from the typographic
+signature.
+
+Symmetric counterpart of :data:`CONFIDENCE_TITLE_BOLD_PRESENT`.
+Without this penalty an Aspose-Arial-Letter document with only the
+9pt and 12pt bold sizes (a DeJure Massime export) would clear the
+0.6 dispatcher threshold on the sister NS plugin at score 0.70 and
+mis-route every Massime fixture to the NS plugin. The penalty drops
+the score to 0.50 on Massime, comfortably below threshold, while
+leaving the genuine NS fixtures (which carry the 13pt bold title
+size) at their 0.80 baseline. The :class:`DejureMassimeProfile`
+sister plugin applies a symmetric ``-0.30`` penalty when the 13pt
+bold is **present** to keep Massime below threshold on NS fixtures.
+"""
+
 CONFIDENCE_BANNER_BOLD_PRESENT = 0.10
 """Confidence contribution when an ``Arial-BoldMT`` 9pt size is
 present in the typographic signature.
@@ -797,6 +813,8 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         )
         if title_bold_present:
             score += CONFIDENCE_TITLE_BOLD_PRESENT
+        else:
+            score += CONFIDENCE_TITLE_BOLD_ABSENT_PENALTY
 
         banner_bold_present = any(
             font.family.startswith(ARIAL_BOLD_FAMILY)
