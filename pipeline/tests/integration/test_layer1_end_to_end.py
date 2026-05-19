@@ -3944,13 +3944,16 @@ def test_giuffre_codici_matches_codice_civile_fixture() -> None:
 # End-to-end pipeline tests (sampled — full document scan is ~30-60s per fixture)
 
 
-@pytest.mark.slow
 def test_pipeline_runs_on_giuffre_codice_penale() -> None:
     """End-to-end Layer 1 on the full Codice Penale fixture (2640 pp).
 
     Full document scan to validate the intra-block article splitter,
     cross-reference minting, hierarchy detection, and PROCEDURAL
-    classification on a real codici document.
+    classification on a real codici document. Validated post-consolidation
+    on 2026-05-20 night: recovers 5815 ARTICLE_HEADER / 394 PROCEDURAL /
+    49 LIBRI / 240 TITOLI / 510 CAPI / 85 SEZIONI in ~2:07 min, peak RAM
+    ~486 MB. Marker @pytest.mark.slow intentionally absent: the test is
+    stable but slow on purpose (it exercises the full document).
     """
     if not GIUFFRE_CODICE_PENALE_FIXTURE.exists():
         pytest.skip(f"fixture missing: {GIUFFRE_CODICE_PENALE_FIXTURE} - see fixtures/README.md")
@@ -4012,14 +4015,17 @@ def test_pipeline_runs_on_giuffre_codice_penale() -> None:
     validate_against_schema(payload, _load_shared_schema())
 
 
-@pytest.mark.slow
 def test_pipeline_runs_on_giuffre_codice_civile() -> None:
     """End-to-end Layer 1 on the full Codice Civile fixture (2697 pp).
 
     Verifies the intra-block article splitter (mission-critical on the
-    civile where ~45% of header-bearing blocks carry 2-7 fused articles)
-    and the heading-with-inline-article splitter (~148 occurrences on
-    pp. 100-300 in the sampling).
+    civile where ~45% of header-bearing blocks carry 2-7 fused articles).
+    Validated post-consolidation on 2026-05-20 night: recovers 7941
+    ARTICLE_HEADER / 0 PROCEDURAL (correctly absent on civile) / 42 LIBRI /
+    307 TITOLI / 709 CAPI / 470 SEZIONI / 12333 intra-block split
+    warnings / 5037 cross-reference in ~3:28 min. Marker @pytest.mark.slow
+    intentionally absent: the test is stable but slow on purpose (it
+    exercises the full document).
     """
     if not GIUFFRE_CODICE_CIVILE_FIXTURE.exists():
         pytest.skip(f"fixture missing: {GIUFFRE_CODICE_CIVILE_FIXTURE} - see fixtures/README.md")
