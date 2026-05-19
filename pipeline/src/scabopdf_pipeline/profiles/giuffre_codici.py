@@ -712,17 +712,18 @@ PalatinoLinotype at body size and the text to contain this marker.
 """
 
 _HEADING_WITH_INLINE_ARTICLE_PATTERN = re.compile(
-    r"^(LIBRO|PARTE|TITOLO|CAPO|SEZIONE)\b.{10,}\b(\d+)\.\s",
+    r"^(LIBRO|PARTE|TITOLO|CAPO|SEZIONE)\b.{10,}?(\d+)\.\s*[A-Z]",
     re.IGNORECASE | re.DOTALL,
 )
 """Pattern matching a civile block opening with a hierarchy keyword and
 containing an inline article number after the heading text.
 
 ``CAPO I – Delle fonti del diritto1. Indicazione delle fonti. – [I]
-Sono fonti...``. The article-number trigger span is at position
-``match.end(2) - len(match.group(2))`` inside the joined block text.
-The detector is used by the heading-with-inline-article splitter
-in :meth:`refine_reconstruction`.
+Sono fonti...``. The pattern looks for a number followed by a dot and
+an uppercase letter as the typical opening of an article rubric;
+matches inside the heading text after at least 10 characters of
+leading content. The detector is used by the heading-with-inline-article
+splitter in :meth:`refine_reconstruction`.
 """
 
 _CROSSREF_SIMPLE_PATTERN = re.compile(r"\[(\d+(?:-bis|-ter)?)\]")
