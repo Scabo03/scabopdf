@@ -217,11 +217,22 @@ See :data:`WARNING_TEMPLATES` for the closed list.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from typing import ClassVar
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
-from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.extraction.types import ExtractionResult
+from scabopdf_pipeline.profiles._dejure_shared import (
+    ARIAL_BOLD_FAMILY,
+    ARIAL_FAMILY_PREFIX,
+    ARIAL_REGULAR_FAMILY,
+    ASPOSE_PRODUCER_FRAGMENT,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    FOOTER_PATTERN as _FOOTER_PATTERN,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    BlockView as _BlockView,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -254,24 +265,12 @@ on the prefix.
 # ---------------------------------------------------------------------------
 # Typographic family fragments and empirical sizes.
 
-ARIAL_FAMILY_PREFIX = "Arial"
-"""Family prefix shared by every Arial variant the plugin recognises.
-
-PyMuPDF emits ``ArialMT`` (regular), ``Arial-BoldMT`` (bold),
-``Arial-ItalicMT`` (italic) and ``ArialItalic`` (italic, no Arial-
-prefix, used by the footer); the ``startswith("Arial")`` check
-admits every one of them.
-"""
-
-ARIAL_REGULAR_FAMILY = "ArialMT"
-"""Exact family of the regular Arial spans (body, referral, fonte value,
-copyright stamp).
-"""
-
-ARIAL_BOLD_FAMILY = "Arial-BoldMT"
-"""Exact family of the bold Arial spans (MASSIMA label, Fonte label,
-title, classificatory title).
-"""
+# ``ARIAL_FAMILY_PREFIX``, ``ARIAL_REGULAR_FAMILY``, ``ARIAL_BOLD_FAMILY``
+# were promoted to :mod:`profiles._dejure_shared` (P-010 of the
+# Promotion Analysis Fase 1). The three constants are re-exported here
+# at the bottom of the module via ``from ._dejure_shared import``
+# statements so unit tests that imported them from the plugin module
+# continue to work.
 
 LABEL_SIZE = 9.0
 """Size in points of the MASSIMA and Fonte: labels and of the
@@ -332,14 +331,9 @@ MASSIMA_LABEL_TEXT = "MASSIMA"
 FONTE_LABEL_TEXT = "Fonte:"
 """The literal Fonte label text the plugin discriminates."""
 
-ASPOSE_PRODUCER_FRAGMENT = "Aspose.PDF"
-"""Producer/creator substring signalling the Aspose.PDF for .NET
-editorial pipeline.
-
-Shared verbatim with the DeJure NS plugin: every DeJure Aspose
-fixture inspected carries either ``"Aspose.PDF for .NET 18.4"`` or
-a close variant in the PDF metadata.
-"""
+# ``ASPOSE_PRODUCER_FRAGMENT`` was promoted to
+# :mod:`profiles._dejure_shared` (P-011). Re-exported at the bottom of
+# the module for test backward-compatibility.
 
 COPYRIGHT_STAMP_TEXT_FRAGMENTS: tuple[str, ...] = (
     "SERVIZIO GESTIONE RISORSE",
@@ -356,11 +350,9 @@ right column with the ``"© Copyright Giuffrè Francis Lefebvre S.p.A.
 # ---------------------------------------------------------------------------
 # Regular expressions.
 
-_FOOTER_PATTERN = re.compile(r"^Pagina\s+\d+\s+di\s+\d+\s*$")
-"""Pattern matching the page footer text ``"Pagina N di M"`` with
-flexible whitespace. The footer text predicate is applied jointly
-with the italic typographic signature.
-"""
+# ``_FOOTER_PATTERN`` was promoted to :data:`profiles._dejure_shared.FOOTER_PATTERN`
+# (P-009). Re-exported at the bottom of the module for test
+# backward-compatibility.
 
 _REFERRAL_PATTERN = re.compile(
     r"^(?P<organo>[\w\s\.\'\-]+?)"
@@ -491,21 +483,8 @@ floor leaves headroom for short fixtures.
 # Helpers — block view.
 
 
-@dataclass(frozen=True)
-class _BlockView:
-    """Pre-computed view of a block exposed to the plugin's tier 2 logic.
-
-    Same convention as the sister DeJure NS plugin and the prior corpus
-    plugins: ``block_index`` + ``block`` + ``spans`` + joined ``text``.
-    The plugin's predicates inspect the leading span via ``view.spans[0]``
-    and the joined block text via ``view.text``.
-    """
-
-    block_index: int
-    block: Block
-    spans: tuple[Span, ...]
-    text: str
-
+# ``_BlockView`` was promoted to :class:`profiles._dejure_shared.BlockView`
+# (P-013). Re-exported below.
 
 # ---------------------------------------------------------------------------
 # Main class.

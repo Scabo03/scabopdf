@@ -250,13 +250,30 @@ See :data:`WARNING_TEMPLATES` for the closed list.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from typing import ClassVar
 
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
-from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing.types import Transformation
+from scabopdf_pipeline.profiles._dejure_shared import (
+    ARIAL_BOLD_FAMILY,
+    ARIAL_FAMILY_PREFIX,
+    ARIAL_REGULAR_FAMILY,
+    ASPOSE_PRODUCER_FRAGMENT,
+    BANNER_TEXT_NOTE_E_DOTTRINA,
+    SPECIFIC_MARKER_BANNER_TEXT_NAME,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    BANNER_TEXT_DOTTRINA as DT_BANNER_TEXT_DOTTRINA,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    FOOTER_PATTERN as _FOOTER_PATTERN,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    BlockView as _BlockView,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -303,24 +320,9 @@ on the prefix.
 # ---------------------------------------------------------------------------
 # Typographic family fragments and empirical sizes.
 
-ARIAL_FAMILY_PREFIX = "Arial"
-"""Family prefix shared by every Arial variant the plugin recognises.
-
-PyMuPDF emits ``ArialMT`` (regular), ``Arial-BoldMT`` (bold),
-``Arial-ItalicMT`` (italic) and ``ArialItalic`` (italic, no Arial-
-prefix, used by the footer); the ``startswith("Arial")`` check
-admits every one of them.
-"""
-
-ARIAL_REGULAR_FAMILY = "ArialMT"
-"""Exact family of the regular Arial spans (body, sommario, subtitle,
-copyright stamp).
-"""
-
-ARIAL_BOLD_FAMILY = "Arial-BoldMT"
-"""Exact family of the bold Arial spans (banner, title, metadata
-values, section headings, notes marker).
-"""
+# ``ARIAL_FAMILY_PREFIX``, ``ARIAL_REGULAR_FAMILY``, ``ARIAL_BOLD_FAMILY``
+# were promoted to :mod:`profiles._dejure_shared` (P-010). Re-imported
+# at the top of this module and re-exported below.
 
 ARIAL_ITALIC_FAMILY_PREFIX = "Arial"
 """Italic family prefix admitted by the italic predicates. PyMuPDF
@@ -374,8 +376,8 @@ the 1.0-pt tolerance is comfortable.
 # ---------------------------------------------------------------------------
 # Closed text predicates.
 
-BANNER_TEXT_NOTE_E_DOTTRINA = "NOTE E DOTTRINA"
-"""The literal banner text the plugin discriminates as ``GENRE_BANNER``."""
+# ``BANNER_TEXT_NOTE_E_DOTTRINA`` was promoted to
+# :mod:`profiles._dejure_shared` (P-012). Re-imported and re-exported.
 
 SUBTITLE_TEXT_PREFIX = "Quotidiano"
 """Text-prefix discriminator for the optional editorial subtitle line
@@ -406,13 +408,8 @@ METADATA_LABEL_NOTA_A = "Nota a:"
 METADATA_LABEL_AUTORI = "Autori:"
 """Literal label prefix of the ``AUTHORS`` metadata line."""
 
-ASPOSE_PRODUCER_FRAGMENT = "Aspose.PDF"
-"""Producer/creator substring signalling the Aspose.PDF for .NET
-editorial pipeline.
-
-Both the recisione (3 pp) and giudizio_universale (22 pp) fixtures
-carry the literal ``"Aspose.PDF for .NET 18.4"`` producer.
-"""
+# ``ASPOSE_PRODUCER_FRAGMENT`` was promoted to
+# :mod:`profiles._dejure_shared` (P-011). Re-imported and re-exported.
 
 COPYRIGHT_STAMP_TEXT_FRAGMENTS: tuple[str, ...] = (
     "SERVIZIO GESTIONE RISORSE",
@@ -434,11 +431,8 @@ sits below the DeJure logo. Classified as ARTIFACT_PAGE_HEADER.
 # ---------------------------------------------------------------------------
 # Regular expressions.
 
-_FOOTER_PATTERN = re.compile(r"^Pagina\s+\d+\s+di\s+\d+\s*$")
-"""Pattern matching the page footer text ``"Pagina N di M"`` with
-flexible whitespace. The footer text predicate is applied jointly
-with the italic typographic signature.
-"""
+# ``_FOOTER_PATTERN`` was promoted to :data:`profiles._dejure_shared.FOOTER_PATTERN`
+# (P-009). Re-imported and re-exported.
 
 _SECTION_HEADING_PATTERN = re.compile(r"^(\d+)\.\s+[A-ZÀÈÉÌÒÓÙÚ]")
 """Pattern matching a numbered section heading. Capture group 1 is
@@ -619,17 +613,10 @@ signals built by hand without the marker keep the full score, since
 the symmetry is only enforced at the dispatcher level on real PDFs.
 """
 
-SPECIFIC_MARKER_BANNER_TEXT_NAME = "dejure_banner_text"
-"""Name of the SpecificMarker that carries the verbatim banner text
-scanned from page 1 by the real-fixture signal builder. Symmetric
-with the homonymous constant in :mod:`dejure_dottrina`.
-"""
-
-DT_BANNER_TEXT_DOTTRINA = "DOTTRINA"
-"""Literal value that the banner-text SpecificMarker carries on a DT
-fixture; used **only** to detect the DT case and apply
-:data:`CONFIDENCE_DT_BANNER_PRESENT_PENALTY`.
-"""
+# ``SPECIFIC_MARKER_BANNER_TEXT_NAME`` and ``DT_BANNER_TEXT_DOTTRINA``
+# were promoted to :mod:`profiles._dejure_shared` as
+# ``SPECIFIC_MARKER_BANNER_TEXT_NAME`` and ``BANNER_TEXT_DOTTRINA``
+# (P-012). Re-imported and re-exported.
 
 # ---------------------------------------------------------------------------
 # Notes-section boundary tables.
@@ -684,20 +671,8 @@ order after the synthetic ``NOTE`` Nodes have been emitted.
 # Helpers — block view, node-id minter, max-existing-counter walker.
 
 
-@dataclass(frozen=True)
-class _BlockView:
-    """Pre-computed view of a block exposed to the plugin's tier 2 logic.
-
-    Same convention as the prior plugins: ``block_index`` + ``block``
-    + ``spans`` + joined ``text``. The plugin's predicates inspect the
-    leading span via ``view.spans[0]`` and the joined block text via
-    ``view.text``.
-    """
-
-    block_index: int
-    block: Block
-    spans: tuple[Span, ...]
-    text: str
+# ``_BlockView`` was promoted to :class:`profiles._dejure_shared.BlockView`
+# (P-013). Re-imported and re-exported.
 
 
 def _strip_label(text: str, label: str) -> str:

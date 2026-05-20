@@ -7,9 +7,14 @@ import pytest
 from scabopdf_pipeline.apparatus.types import ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiles._dejure_shared import (
+    FOOTER_PATTERN as _FOOTER_PATTERN,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    BlockView as _BlockView,
+)
 from scabopdf_pipeline.profiles.dejure_nota_sentenza import (
     _CROSSREF_INLINE_PATTERN,
-    _FOOTER_PATTERN,
     _NOTE_MARKER_PATTERN,
     _SECTION_HEADING_PATTERN,
     BANNER_SIZE,
@@ -18,7 +23,6 @@ from scabopdf_pipeline.profiles.dejure_nota_sentenza import (
     TITLE_SIZE,
     WARNING_PREFIX,
     DejureNotaSentenzaProfile,
-    _BlockView,
     _strip_label,
 )
 from scabopdf_pipeline.profiling.signals import (

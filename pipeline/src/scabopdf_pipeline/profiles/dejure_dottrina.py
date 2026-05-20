@@ -274,13 +274,29 @@ See :data:`WARNING_TEMPLATES` for the closed list.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, replace
+from dataclasses import replace
 from typing import ClassVar
 
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
-from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing.types import Transformation
+from scabopdf_pipeline.profiles._dejure_shared import (
+    ARIAL_BOLD_FAMILY,
+    ARIAL_FAMILY_PREFIX,
+    ARIAL_REGULAR_FAMILY,
+    ASPOSE_PRODUCER_FRAGMENT,
+    SPECIFIC_MARKER_BANNER_TEXT_NAME,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    BANNER_TEXT_NOTE_E_DOTTRINA as BANNER_TEXT_NS_NOTE_E_DOTTRINA,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    FOOTER_PATTERN as _FOOTER_PATTERN,
+)
+from scabopdf_pipeline.profiles._dejure_shared import (
+    BlockView as _BlockView,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -324,18 +340,8 @@ match on the prefix.
 # ---------------------------------------------------------------------------
 # Typographic family fragments and empirical sizes.
 
-ARIAL_FAMILY_PREFIX = "Arial"
-"""Family prefix shared by every Arial variant the plugin recognises."""
-
-ARIAL_REGULAR_FAMILY = "ArialMT"
-"""Exact family of the regular Arial spans (body, sommario, copyright
-stamp, notes, fonte value, page-1 tagline).
-"""
-
-ARIAL_BOLD_FAMILY = "Arial-BoldMT"
-"""Exact family of the bold Arial spans (banner, title, metadata value
-when emitted bold, section headings, ``Note:`` marker).
-"""
+# ``ARIAL_FAMILY_PREFIX``, ``ARIAL_REGULAR_FAMILY``, ``ARIAL_BOLD_FAMILY``
+# were promoted to :mod:`profiles._dejure_shared` (P-010).
 
 BANNER_SIZE = 9.0
 """Size in points of the ``"DOTTRINA"`` banner and of the meta block
@@ -380,15 +386,9 @@ PAGE_GEOMETRY_TOLERANCE = 1.0
 BANNER_TEXT_DOTTRINA = "DOTTRINA"
 """The literal banner text the plugin discriminates as ``GENRE_BANNER``."""
 
-BANNER_TEXT_NS_NOTE_E_DOTTRINA = "NOTE E DOTTRINA"
-"""The literal banner text of the **sister** NS plugin.
-
-Used **only** in :meth:`matches` via the
-:data:`SPECIFIC_MARKER_BANNER_TEXT_NAME` SpecificMarker to apply the
-:data:`CONFIDENCE_NS_BANNER_PRESENT_PENALTY` when a real fixture
-carries the NS banner; the DT plugin must step back to let the NS
-sister plugin take over.
-"""
+# ``BANNER_TEXT_NS_NOTE_E_DOTTRINA`` was promoted to
+# :data:`profiles._dejure_shared.BANNER_TEXT_NOTE_E_DOTTRINA` (P-012);
+# DT re-imports it under the legacy alias.
 
 SOMMARIO_TEXT_PREFIX = "Sommario"
 """Text-prefix discriminator for the sommario block. Aspose may emit
@@ -426,10 +426,8 @@ step back; the meta block predicate :meth:`_is_metadata_block`
 matches the block as DT only if Nota a: is absent.
 """
 
-ASPOSE_PRODUCER_FRAGMENT = "Aspose.PDF"
-"""Producer/creator substring signalling the Aspose.PDF for .NET
-editorial pipeline. Shared verbatim with NS and MM.
-"""
+# ``ASPOSE_PRODUCER_FRAGMENT`` was promoted to
+# :mod:`profiles._dejure_shared` (P-011). Re-imported and re-exported.
 
 COPYRIGHT_STAMP_TEXT_FRAGMENTS: tuple[str, ...] = (
     "SERVIZIO GESTIONE RISORSE",
@@ -447,24 +445,14 @@ below the DeJure logo. Classified as ``ARTIFACT_PAGE_HEADER``.
 # ---------------------------------------------------------------------------
 # SpecificMarker conventions for matches() discrimination.
 
-SPECIFIC_MARKER_BANNER_TEXT_NAME = "dejure_banner_text"
-"""Name of the :class:`~scabopdf_pipeline.profiling.signals.SpecificMarker`
-that carries the verbatim banner text scanned from page 1 by the
-real-fixture signal builder. Consumed symmetrically by DT, NS and MM
-to discriminate the three sister plugins on the basis of the editorial
-banner content (``"DOTTRINA"`` for DT, ``"NOTE E DOTTRINA"`` for NS,
-absent or ``None`` for MM). When the marker is missing from the
-signals (unit-test signals built by hand do not bother to set it),
-each plugin falls back to its full positive-signals score and the
-symmetry is not enforced; on real fixtures the signal builder always
-emits the marker.
-"""
+# ``SPECIFIC_MARKER_BANNER_TEXT_NAME`` was promoted to
+# :mod:`profiles._dejure_shared` (P-012).
 
 # ---------------------------------------------------------------------------
 # Regular expressions.
 
-_FOOTER_PATTERN = re.compile(r"^Pagina\s+\d+\s+di\s+\d+\s*$")
-"""Pattern matching the page footer text ``"Pagina N di M"``."""
+# ``_FOOTER_PATTERN`` was promoted to :data:`profiles._dejure_shared.FOOTER_PATTERN`
+# (P-009).
 
 _SECTION_HEADING_STYLE_A_PATTERN = re.compile(r"^(\d+)\.\s+[A-ZÀÈÉÌÒÓÙÚ«»]")
 """Pattern matching a Style-A numbered section heading at body weight.
@@ -659,14 +647,8 @@ Nodes).
 # Helpers — block view, node-id minter, max-existing-counter walker.
 
 
-@dataclass(frozen=True)
-class _BlockView:
-    """Pre-computed view of a block exposed to the plugin's tier 2 logic."""
-
-    block_index: int
-    block: Block
-    spans: tuple[Span, ...]
-    text: str
+# ``_BlockView`` was promoted to :class:`profiles._dejure_shared.BlockView`
+# (P-013).
 
 
 # ---------------------------------------------------------------------------

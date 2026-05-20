@@ -6,6 +6,7 @@ import pytest
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiles._dejure_shared import BlockView as _BlockView
 from scabopdf_pipeline.profiles.dejure_massime import (
     _REFERRAL_PATTERN,
     BODY_SIZE,
@@ -14,7 +15,6 @@ from scabopdf_pipeline.profiles.dejure_massime import (
     NS_TITLE_SIZE,
     WARNING_PREFIX,
     DejureMassimeProfile,
-    _BlockView,
 )
 from scabopdf_pipeline.profiles.dejure_nota_sentenza import DejureNotaSentenzaProfile
 from scabopdf_pipeline.profiling.signals import (
