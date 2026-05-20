@@ -277,6 +277,13 @@ import re
 from dataclasses import replace
 from typing import ClassVar
 
+from scabopdf_pipeline.apparatus.constants import (
+    INLINE_PARENTHESISED_CROSSREF_REGEX as _CROSSREF_INLINE_PATTERN,
+)
+from scabopdf_pipeline.apparatus.constants import (
+    LEADING_PARENTHESISED_NOTE_MARKER_REGEX as _NOTE_MARKER_PATTERN,
+)
+from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import ExtractionResult
@@ -476,12 +483,9 @@ optional editorial-note marker that Aspose may fuse into the same
 block.
 """
 
-_NOTE_MARKER_PATTERN = re.compile(r"^\((\d+)\)")
-"""Pattern matching the leading ``(N)`` marker of a NOTE Node text.
-
-Used in :meth:`refine_apparatus` to build the per-article marker →
-NOTE node_id index.
-"""
+# ``_NOTE_MARKER_PATTERN`` was promoted to
+# :data:`apparatus.constants.LEADING_PARENTHESISED_NOTE_MARKER_REGEX`
+# (P-014).
 
 _NOTE_SPLIT_PATTERN = re.compile(r"(?=\(\d+\)\s|\(\*\)\s|\(\*\) )")
 """Pattern used to split a concatenated notes block into individual
@@ -502,16 +506,11 @@ Capture-less because the chunk text is preserved verbatim on the
 minted Node.
 """
 
-_CROSSREF_INLINE_PATTERN = re.compile(r"(?<![(\d])\((\d+)\)")
-"""Pattern matching every inline ``(N)`` cross-reference inside a body
-Node's text.
-
-Same shape as the NS plugin's pattern: admits any ``(N)`` not preceded
-by an open paren (filters nested parenthetical expressions) or by a
-digit (filters trailing-digit run-ons). Magnitude cap on the captured
-marker (:data:`_CROSSREF_MAX_MARKER_VALUE`) filters out year references
-and other large numbers.
-"""
+# ``_CROSSREF_INLINE_PATTERN`` was promoted to
+# :data:`apparatus.constants.INLINE_PARENTHESISED_CROSSREF_REGEX` (P-014).
+# Same shape as the NS plugin: any ``(N)`` not preceded by an open paren
+# or by a digit. Magnitude cap remains plugin-local via
+# :data:`_CROSSREF_MAX_MARKER_VALUE`.
 
 _CROSSREF_MAX_MARKER_VALUE = 500
 """Magnitude cap on inline cross-reference markers.
@@ -1659,19 +1658,12 @@ class DejureDottrinaProfile(ProfilePlugin):
         return tuple(_walk(r) for r in roots), warnings
 
     def _filter_tier1_crossref_warnings(self, warnings: tuple[str, ...]) -> tuple[str, ...]:
-        """Drop tier 1 cross-reference warnings on plugin synthetic Nodes."""
-        kept: list[str] = []
-        for warning in warnings:
-            drop = False
-            for node_id in self._minted_crossref_ids:
-                if warning == f"unparseable_cross_reference_node_{node_id}" or warning.startswith(
-                    f"unresolved_cross_reference_node_{node_id}_"
-                ):
-                    drop = True
-                    break
-            if not drop:
-                kept.append(warning)
-        return tuple(kept)
+        """Drop tier 1 cross-reference warnings on plugin synthetic Nodes.
+
+        Thin wrapper over
+        :func:`apparatus.resolver.filter_tier1_crossref_warnings` (P-020).
+        """
+        return filter_tier1_crossref_warnings(warnings, set(self._minted_crossref_ids))
 
     # ------------------------------------------------------------------
     # Block view helper

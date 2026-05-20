@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import pytest
 
+from scabopdf_pipeline.apparatus.constants import (
+    INLINE_PARENTHESISED_CROSSREF_REGEX as _CROSSREF_INLINE_NOTE_PATTERN,
+)
+from scabopdf_pipeline.apparatus.constants import (
+    LEADING_PARENTHESISED_NOTE_MARKER_REGEX as _NOTE_LEADING_MARKER_PATTERN,
+)
 from scabopdf_pipeline.apparatus.types import ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiles.enciclopedia_moderna import (
-    _CROSSREF_INLINE_NOTE_PATTERN,
     _CROSSREF_INLINE_VOCE_PATTERN,
     _CROSSREF_MAX_MARKER_VALUE,
     _FONTI_LABEL_PATTERN,
     _LETTERATURA_LABEL_PATTERN,
-    _NOTE_LEADING_MARKER_PATTERN,
     _PARAGRAPH_HEADING_PATTERN,
     _SEZIONE_HEADING_PATTERN,
     _SOMMARIO_TRIM_PATTERN,

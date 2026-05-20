@@ -127,6 +127,13 @@ import re
 from dataclasses import dataclass, replace
 from typing import ClassVar
 
+from scabopdf_pipeline.apparatus.constants import (
+    INLINE_PARENTHESISED_CROSSREF_REGEX as _CROSSREF_INLINE_NOTE_PATTERN,
+)
+from scabopdf_pipeline.apparatus.constants import (
+    LEADING_PARENTHESISED_NOTE_MARKER_REGEX as _NOTE_LEADING_MARKER_PATTERN,
+)
+from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
@@ -316,18 +323,10 @@ trim. Capture groups: the number (which may be composite like
 ``"1.1"``) and the title.
 """
 
-_NOTE_LEADING_MARKER_PATTERN = re.compile(r"^\((\d+)\)")
-"""Pattern matching the leading ``(N)`` marker of a NOTE Node text."""
-
-_CROSSREF_INLINE_NOTE_PATTERN = re.compile(r"(?<![(\d])\((\d+)\)")
-"""Pattern matching every inline ``(N)`` cross-reference inside a body
-Node text.
-
-Same shape as the NS/DT plugins: admits any ``(N)`` not preceded by
-an open paren (filters nested parens) or by a digit (filters trailing
-run-ons). Magnitude cap on the captured marker filters out year
-references like ``(2024)``.
-"""
+# ``_NOTE_LEADING_MARKER_PATTERN`` and ``_CROSSREF_INLINE_NOTE_PATTERN``
+# were promoted to :mod:`apparatus.constants` (P-014). The plugin
+# imports them at the top of the module under the legacy
+# underscore-prefixed aliases.
 
 _CROSSREF_INLINE_VOCE_PATTERN = re.compile(
     r"v\.\s+([A-ZÀÈÉÌÒÓÙ][A-ZÀÈÉÌÒÓÙ\s()/,'`’\.\-]{2,}?)(?=[.;,)]|\s+[a-z]|\Z|\s*$)"
@@ -1232,29 +1231,17 @@ class EnciclopediaModernaProfile(ProfilePlugin):
     def _filter_tier1_crossref_warnings(self, warnings: tuple[str, ...]) -> tuple[str, ...]:
         """Drop tier 1 cross-reference warnings on plugin synthetic Nodes.
 
-        The tier 1 generic resolver emits
-        ``unparseable_cross_reference_node_<id>`` on every synthetic CR
-        whose text is not purely numeric digit (the ``v. NOMEVOCE``
-        markers fail the digit regex universally), and
-        ``unresolved_cross_reference_node_<id>_n_<N>`` on every minted
-        numeric CR that the resolver could not bind (because the
-        resolver's scoping rule differs from the plugin's global scope).
-        Both classes of warnings are filtered out; the plugin's own
+        Both ``unparseable_cross_reference_node_<id>`` (text not pure-digit)
+        and ``unresolved_cross_reference_node_<id>_n_<N>`` (resolver scope
+        differs from plugin global scope) are filtered out for plugin-
+        minted CR Nodes. The plugin's own
         ``cross_reference_note_unresolved_*`` warnings stay.
+
+        Thin wrapper over
+        :func:`apparatus.resolver.filter_tier1_crossref_warnings` (P-020).
         """
         all_synthetic = self._minted_crossref_note_ids | self._minted_crossref_voce_ids
-        kept: list[str] = []
-        for warning in warnings:
-            drop = False
-            for node_id in all_synthetic:
-                if warning == f"unparseable_cross_reference_node_{node_id}" or warning.startswith(
-                    f"unresolved_cross_reference_node_{node_id}_"
-                ):
-                    drop = True
-                    break
-            if not drop:
-                kept.append(warning)
-        return tuple(kept)
+        return filter_tier1_crossref_warnings(warnings, all_synthetic)
 
     # ------------------------------------------------------------------
     # Block view helper

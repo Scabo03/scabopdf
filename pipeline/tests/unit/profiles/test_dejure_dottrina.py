@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from scabopdf_pipeline.apparatus.constants import (
+    INLINE_PARENTHESISED_CROSSREF_REGEX as _CROSSREF_INLINE_PATTERN,
+)
+from scabopdf_pipeline.apparatus.constants import (
+    LEADING_PARENTHESISED_NOTE_MARKER_REGEX as _NOTE_MARKER_PATTERN,
+)
 from scabopdf_pipeline.apparatus.types import ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
@@ -17,10 +23,8 @@ from scabopdf_pipeline.profiles._dejure_shared import (
     BlockView as _BlockView,
 )
 from scabopdf_pipeline.profiles.dejure_dottrina import (
-    _CROSSREF_INLINE_PATTERN,
     _CROSSREF_MAX_MARKER_VALUE,
     _EDITORIAL_NOTE_PREFIX_PATTERN,
-    _NOTE_MARKER_PATTERN,
     _NOTE_SPLIT_PATTERN,
     _SECTION_HEADING_STYLE_A_PATTERN,
     _SOMMARIO_TRIM_PATTERN,

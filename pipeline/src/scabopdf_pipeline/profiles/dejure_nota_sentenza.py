@@ -253,6 +253,13 @@ import re
 from dataclasses import replace
 from typing import ClassVar
 
+from scabopdf_pipeline.apparatus.constants import (
+    INLINE_PARENTHESISED_CROSSREF_REGEX as _CROSSREF_INLINE_PATTERN,
+)
+from scabopdf_pipeline.apparatus.constants import (
+    LEADING_PARENTHESISED_NOTE_MARKER_REGEX as _NOTE_MARKER_PATTERN,
+)
+from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import ExtractionResult
@@ -461,12 +468,10 @@ depending on the font. The look-ahead at the end terminates each
 entry before the next ``—`` separator or the end of string.
 """
 
-_NOTE_MARKER_PATTERN = re.compile(r"^\((\d+)\)")
-"""Pattern matching the leading ``(N)`` marker of a NOTE Node text.
-
-Used in :meth:`refine_apparatus` to build the marker → NOTE node_id
-index. The capture group is the marker digit sequence.
-"""
+# ``_NOTE_MARKER_PATTERN`` was promoted to
+# :data:`apparatus.constants.LEADING_PARENTHESISED_NOTE_MARKER_REGEX`
+# (P-014). The plugin imports it at the top of the module under the
+# legacy underscore-prefixed alias.
 
 _NOTE_SPLIT_PATTERN = re.compile(r"(?=\(\d+\)\s)")
 """Pattern used to split a concatenated notes block into individual
@@ -475,22 +480,17 @@ marker without consuming it, so ``re.split`` returns chunks each
 starting with its own ``(N) `` marker.
 """
 
-_CROSSREF_INLINE_PATTERN = re.compile(r"(?<![(\d])\((\d+)\)")
-"""Pattern matching every inline ``(N)`` cross-reference inside a
-body Node's text.
-
-The empirical inspection of the long-academic fixture reports 53
-inline ``(N)`` markers in body text, mostly preceded by a single
-space rather than a word character (Aspose typesets the marker after
-a space gap: ``"come ha notato la dottrina (4),"``). A strict
-look-behind on ``\\w`` would miss ~80% of them. The current pattern
-admits any ``(N)`` not preceded by an open paren (filters out
-nested parenthetical expressions) or by a digit (filters out
-trailing-digit run-ons like ``"(123)"`` inside larger numeric
-expressions). The magnitude check on the captured marker value
-(``<= _CROSSREF_MAX_MARKER_VALUE``) filters out year references
-``(2024)`` and similar.
-"""
+# ``_CROSSREF_INLINE_PATTERN`` was promoted to
+# :data:`apparatus.constants.INLINE_PARENTHESISED_CROSSREF_REGEX`
+# (P-014). The plugin imports it under the legacy alias. The empirical
+# inspection of the long-academic fixture reports 53 inline ``(N)``
+# markers in body text, mostly preceded by a single space rather than
+# a word character (Aspose typesets the marker after a space gap:
+# ``"come ha notato la dottrina (4),"``). A strict look-behind on
+# ``\\w`` would miss ~80% of them. The promoted regex admits any
+# ``(N)`` not preceded by an open paren or by a digit; the magnitude
+# check on the captured marker value (``<= _CROSSREF_MAX_MARKER_VALUE``)
+# remains plugin-local and filters out year references.
 
 _CROSSREF_MAX_MARKER_VALUE = 99
 """Magnitude cap on inline cross-reference markers.
@@ -1862,26 +1862,11 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         ``unresolved_cross_reference_*`` strings that belong to this
         plugin's synthetic CROSS_REFERENCE Nodes.
 
-        The tier 1 generic resolver scans every CROSS_REFERENCE Node
-        in the tree and emits a warning if it cannot bind it to a NOTE
-        within the HEADING ancestor scope. The plugin owns its
-        synthetic Nodes and resolves them globally in
-        :meth:`_bind_cross_references_globally`; the tier 1 warnings
-        are uninformative noise for those Nodes and are filtered out
-        here.
+        Thin wrapper over
+        :func:`apparatus.resolver.filter_tier1_crossref_warnings`
+        (Layer 1 promoted helper, P-020 of the Promotion Analysis Fase 1).
         """
-        kept: list[str] = []
-        for warning in warnings:
-            drop = False
-            for node_id in self._minted_crossref_ids:
-                if warning == f"unparseable_cross_reference_node_{node_id}" or warning.startswith(
-                    f"unresolved_cross_reference_node_{node_id}_"
-                ):
-                    drop = True
-                    break
-            if not drop:
-                kept.append(warning)
-        return tuple(kept)
+        return filter_tier1_crossref_warnings(warnings, set(self._minted_crossref_ids))
 
     # ------------------------------------------------------------------
     # Block view helper

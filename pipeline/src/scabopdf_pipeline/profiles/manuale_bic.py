@@ -242,6 +242,7 @@ import re
 from dataclasses import dataclass, replace
 from typing import ClassVar
 
+from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.postprocessing.types import Transformation
@@ -1064,38 +1065,19 @@ class ManualeBicProfile(ProfilePlugin):
         )
 
     def _filter_tier1_warnings_for_minted_crs(self, warnings: tuple[str, ...]) -> tuple[str, ...]:
-        """Drop tier 1 ``unresolved_cross_reference_*`` warnings whose Node id
-        belongs to one of this plugin's minted CROSS_REFERENCEs.
+        """Drop tier 1 cross-reference warnings on plugin-minted Nodes.
 
-        The tier 1 generic resolver in :mod:`apparatus.resolver` emits
-        one such warning per CROSS_REFERENCE it could not bind via
-        backward scan. The plugin's :meth:`refine_apparatus` overrides
-        the binding with a forward chapter-scoped scan; warnings that
-        refer to plugin-minted CRs are therefore obsolete and would
-        pollute the audit log if kept.
+        The plugin's :meth:`refine_apparatus` overrides tier 1's backward
+        scan with a forward chapter-scoped scan; tier 1 warnings on
+        plugin-minted CR Nodes are therefore obsolete and would pollute
+        the audit log if kept. Warnings on CR Nodes the plugin did NOT
+        mint (none exist on the Marrone fixture, but the filter stays
+        defensive) are preserved.
 
-        The filter preserves every other warning, including tier 1
-        warnings on CRs the plugin did NOT mint (e.g. CR Nodes tier 1
-        emitted from standalone single-superscript-digit blocks, if
-        any exist in the Marrone — none do, but the filter stays
-        defensive).
+        Thin wrapper over
+        :func:`apparatus.resolver.filter_tier1_crossref_warnings` (P-020).
         """
-        prefix_unresolved = "unresolved_cross_reference_node_"
-        prefix_unparseable = "unparseable_cross_reference_node_"
-        kept: list[str] = []
-        for w in warnings:
-            if w.startswith(prefix_unresolved):
-                # Format: unresolved_cross_reference_node_<id>_n_<N>
-                rest = w[len(prefix_unresolved) :]
-                node_id = rest.rsplit("_n_", 1)[0]
-                if node_id in self._minted_crossref_ids:
-                    continue
-            elif w.startswith(prefix_unparseable):
-                rest = w[len(prefix_unparseable) :]
-                if rest in self._minted_crossref_ids:
-                    continue
-            kept.append(w)
-        return tuple(kept)
+        return filter_tier1_crossref_warnings(warnings, set(self._minted_crossref_ids))
 
     def _rebind_cross_references(
         self, roots: tuple[Node, ...]

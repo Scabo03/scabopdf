@@ -281,6 +281,7 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import ClassVar
 
+from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
@@ -1791,21 +1792,12 @@ class GiuffreCodiciProfile(ProfilePlugin):
         return tuple(_walk(r) for r in roots), warnings
 
     def _filter_tier1_crossref_warnings(self, warnings: tuple[str, ...]) -> tuple[str, ...]:
-        """Drop tier 1 ``unparseable_cross_reference_*`` and
-        ``unresolved_cross_reference_*`` strings that belong to this
-        plugin's synthetic Nodes."""
-        kept: list[str] = []
-        for warning in warnings:
-            drop = False
-            for node_id in self._minted_crossref_ids:
-                if warning == f"unparseable_cross_reference_node_{node_id}" or warning.startswith(
-                    f"unresolved_cross_reference_node_{node_id}_"
-                ):
-                    drop = True
-                    break
-            if not drop:
-                kept.append(warning)
-        return tuple(kept)
+        """Drop tier 1 cross-reference warnings on plugin synthetic Nodes.
+
+        Thin wrapper over
+        :func:`apparatus.resolver.filter_tier1_crossref_warnings` (P-020).
+        """
+        return filter_tier1_crossref_warnings(warnings, set(self._minted_crossref_ids))
 
     # ------------------------------------------------------------------
     # Tree-walk helper

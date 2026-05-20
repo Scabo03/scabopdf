@@ -379,6 +379,40 @@ def _resolve_cross_references(
         )
 
 
+def filter_tier1_crossref_warnings(
+    warnings: tuple[str, ...],
+    minted_node_ids: frozenset[str] | set[str],
+) -> tuple[str, ...]:
+    """Drop tier 1 ``unparseable_cross_reference_*`` and
+    ``unresolved_cross_reference_*`` strings whose Node id belongs to
+    ``minted_node_ids``.
+
+    Plugins that mint synthetic CROSS_REFERENCE Nodes in
+    :meth:`refine_reconstruction` and resolve them with custom logic in
+    :meth:`refine_apparatus` (BIC per-chapter, DT per-article, Torrente /
+    NS / codici global) own those Nodes. The tier 1 generic resolver's
+    warnings on those Nodes are uninformative noise that must be filtered
+    out at the end of :meth:`refine_apparatus`. Promoted to Layer 1 from
+    the six byte-equivalent ``_filter_tier1_crossref_warnings``
+    implementations in those plugins by the Promotion Analysis Fase 1
+    (P-020).
+    """
+    if not minted_node_ids:
+        return warnings
+    kept: list[str] = []
+    for warning in warnings:
+        drop = False
+        for node_id in minted_node_ids:
+            if warning == f"unparseable_cross_reference_node_{node_id}" or warning.startswith(
+                f"unresolved_cross_reference_node_{node_id}_"
+            ):
+                drop = True
+                break
+        if not drop:
+            kept.append(warning)
+    return tuple(kept)
+
+
 def _find_scope_root(builder: _NodeBuilder) -> _NodeBuilder | None:
     current = builder.parent
     while current is not None:
