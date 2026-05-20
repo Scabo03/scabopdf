@@ -93,10 +93,12 @@ class ProfilePlugin(ABC):
         intentional fail-loud behaviour: a misconfigured plugin should
         not silently turn a step into a no-op.
 
-        Example. A ``enciclopedia_storica`` plugin returning
-        ``["dehyphenate_with_log", "tolerant_letteratura_match"]``
-        applies the OCR-aware dehyphenator first, then a tolerant
-        bibliographic matcher on the ``LETTERATURA`` blocks.
+        Example. The ``enciclopedia_storica`` plugin returns
+        ``["dehyphenate_with_log", "dehyphenate_ocr_aggressive",
+        "normalize_ocr_with_dictionary", "merge_cross_page_notes"]``,
+        chaining the conservative dehyphenator, the OCR-aware
+        dehyphenator, the OCR glyph normaliser and the cross-page
+        note merger.
         """
 
     @abstractmethod

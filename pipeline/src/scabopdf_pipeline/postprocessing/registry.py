@@ -23,8 +23,14 @@ from dataclasses import dataclass, field
 from types import MappingProxyType
 
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
+from scabopdf_pipeline.postprocessing.steps.dehyphenate_ocr_aggressive import (
+    dehyphenate_ocr_aggressive,
+)
 from scabopdf_pipeline.postprocessing.steps.merge_cross_page_notes import (
     merge_cross_page_notes,
+)
+from scabopdf_pipeline.postprocessing.steps.normalize_ocr_with_dictionary import (
+    normalize_ocr_with_dictionary,
 )
 from scabopdf_pipeline.postprocessing.steps.placeholder import _make_placeholder
 from scabopdf_pipeline.postprocessing.steps.recompose_marginal_ellipsis import (
@@ -37,7 +43,6 @@ _PROFILE_SPECIFIC_PLACEHOLDERS: tuple[tuple[str, str], ...] = (
     ("dedup_volume_apparatus", "manuale_bic"),
     ("parse_procedural_block", "codice_giuffre_penale"),
     ("split_intra_block_articles", "codice_giuffre_civile"),
-    ("tolerant_letteratura_match", "enciclopedia_storica"),
     ("strip_pre_print_stamp", "compendio_utet"),
     ("skip_empty_pages", "compendio_utet"),
     ("recompose_letter_initial", "enciclopedia_moderna"),
@@ -99,18 +104,24 @@ class PostProcessingRegistry:
 
     @classmethod
     def default(cls) -> PostProcessingRegistry:
-        """Build the standard twelve-step registry.
+        """Build the standard registry of post-processing steps.
 
-        Three steps are registered as real generic callables:
+        Five steps are registered as real generic callables:
         ``dehyphenate_with_log`` from
         :mod:`postprocessing.steps.dehyphenate`,
+        ``dehyphenate_ocr_aggressive`` from
+        :mod:`postprocessing.steps.dehyphenate_ocr_aggressive` (real
+        as of the ``enciclopedia_storica`` OCR-normalisation landing),
+        ``normalize_ocr_with_dictionary`` from
+        :mod:`postprocessing.steps.normalize_ocr_with_dictionary` (real
+        as of the same landing),
         ``recompose_marginal_ellipsis`` from
         :mod:`postprocessing.steps.recompose_marginal_ellipsis` (real
         as of the ``manuale_utet_wolterskluwer`` plugin landing), and
         ``merge_cross_page_notes`` from
         :mod:`postprocessing.steps.merge_cross_page_notes` (real as of
         the ``manuale_giappichelli`` plugin consolidation at schema
-        0.5.0). The remaining nine profile-specific step IDs listed in
+        0.5.0). The remaining profile-specific step IDs listed in
         :data:`_PROFILE_SPECIFIC_PLACEHOLDERS` are registered as
         placeholders that raise :class:`NotImplementedError` when
         invoked, naming the plugin expected to bring the real
@@ -118,6 +129,8 @@ class PostProcessingRegistry:
         """
         steps: dict[str, PostProcessingStep] = {
             "dehyphenate_with_log": dehyphenate_with_log,
+            "dehyphenate_ocr_aggressive": dehyphenate_ocr_aggressive,
+            "normalize_ocr_with_dictionary": normalize_ocr_with_dictionary,
             "recompose_marginal_ellipsis": recompose_marginal_ellipsis,
             "merge_cross_page_notes": merge_cross_page_notes,
         }

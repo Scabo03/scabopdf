@@ -10,8 +10,14 @@ from scabopdf_pipeline.postprocessing.registry import (
     PostProcessingRegistry,
 )
 from scabopdf_pipeline.postprocessing.steps.dehyphenate import dehyphenate_with_log
+from scabopdf_pipeline.postprocessing.steps.dehyphenate_ocr_aggressive import (
+    dehyphenate_ocr_aggressive,
+)
 from scabopdf_pipeline.postprocessing.steps.merge_cross_page_notes import (
     merge_cross_page_notes,
+)
+from scabopdf_pipeline.postprocessing.steps.normalize_ocr_with_dictionary import (
+    normalize_ocr_with_dictionary,
 )
 from scabopdf_pipeline.postprocessing.steps.recompose_marginal_ellipsis import (
     recompose_marginal_ellipsis,
@@ -22,23 +28,40 @@ from scabopdf_pipeline.postprocessing.types import (
 )
 from scabopdf_pipeline.reconstruction.types import Document
 
-# Three steps are real callables; the rest are placeholders driven by
+# Five steps are real callables; the rest are placeholders driven by
 # :data:`_PROFILE_SPECIFIC_PLACEHOLDERS`. ``recompose_marginal_ellipsis``
 # was promoted from placeholder when the ``manuale_utet_wolterskluwer``
 # plugin landed; ``merge_cross_page_notes`` was promoted alongside the
-# consolidation of ``manuale_giappichelli`` at schema 0.5.0.
+# consolidation of ``manuale_giappichelli`` at schema 0.5.0;
+# ``dehyphenate_ocr_aggressive`` and ``normalize_ocr_with_dictionary``
+# were promoted alongside the ``enciclopedia_storica`` OCR-normalisation
+# landing.
 ALL_STEP_IDS: tuple[str, ...] = (
     "dehyphenate_with_log",
+    "dehyphenate_ocr_aggressive",
+    "normalize_ocr_with_dictionary",
     "recompose_marginal_ellipsis",
     "merge_cross_page_notes",
     *(step_id for step_id, _ in _PROFILE_SPECIFIC_PLACEHOLDERS),
 )
 
 
-def test_default_registry_has_all_twelve_steps() -> None:
+def test_default_registry_has_all_thirteen_steps() -> None:
     registry = PostProcessingRegistry.default()
     assert set(registry.steps.keys()) == set(ALL_STEP_IDS)
-    assert len(registry.steps) == 12
+    assert len(registry.steps) == 13
+
+
+def test_default_registry_dehyphenate_ocr_aggressive_resolves_to_real_callable() -> None:
+    """The step was promoted from absent with the EdD storica OCR normalisation."""
+    registry = PostProcessingRegistry.default()
+    assert registry.get("dehyphenate_ocr_aggressive") is dehyphenate_ocr_aggressive
+
+
+def test_default_registry_normalize_ocr_with_dictionary_resolves_to_real_callable() -> None:
+    """The step was added alongside the EdD storica OCR normalisation."""
+    registry = PostProcessingRegistry.default()
+    assert registry.get("normalize_ocr_with_dictionary") is normalize_ocr_with_dictionary
 
 
 def test_default_registry_dehyphenate_resolves_to_real_callable() -> None:

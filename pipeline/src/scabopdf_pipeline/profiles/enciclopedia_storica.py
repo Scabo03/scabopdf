@@ -566,8 +566,38 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
         }
 
     def get_post_processing(self) -> list[str]:
-        """Return the post-processing step list."""
-        return ["dehyphenate_with_log", "merge_cross_page_notes"]
+        """Return the post-processing step list.
+
+        Four real steps in declared order:
+
+        - ``dehyphenate_with_log`` — conservative end-of-line
+          de-hyphenation with strict lexicon validation. Catches the
+          majority of clean hyphenations (970-1881 across the
+          calibrating fixtures).
+        - ``dehyphenate_ocr_aggressive`` — OCR-aware second pass that
+          rescues the joins whose combined form fails the strict
+          lexicon check because of OCR glyph noise inside one of the
+          fragments (``paga-\\n1nenlo`` → ``pagamento``,
+          ``giusti-\\n11ia`` → ``giustizia``). Skips legal-compound
+          preservative pairs (``decreto-legge`` &c.) and pure-digit
+          ranges (``113-330``).
+        - ``normalize_ocr_with_dictionary`` — closed structural-marker
+          dictionary (``LrnaRATURA`` → ``LETTERATURA`` and a small
+          set of FONTI fossilisations) plus lexicon-validated per-token
+          OCR substitution (``giusti11ia`` → ``giustizia``,
+          ``Bccesso`` → ``Eccesso``).
+        - ``merge_cross_page_notes`` — multi-page note merging.
+
+        Each substitution is recorded as a :class:`Transformation` in
+        ``Document.transformations`` so Layer 2 can reveal the literal
+        OCR source on request.
+        """
+        return [
+            "dehyphenate_with_log",
+            "dehyphenate_ocr_aggressive",
+            "normalize_ocr_with_dictionary",
+            "merge_cross_page_notes",
+        ]
 
     def get_layouts_disabled(self) -> list[DisabledLayout]:
         """L4 disabled: inline note binding is unreliable under OCR noise."""
