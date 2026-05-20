@@ -141,6 +141,34 @@ Quasi identico all'elenco di [`SCHEMA_v0.5.0.md`](SCHEMA_v0.5.0.md) § 5, ridott
 - **Acoustic regime di `EDITORIAL_NOTE`**: il sibling editoriale dichiarativo (oggi solo in DejureDottrina con 3 occorrenze totali) resta `null` su `length_category`. La sua regolamentazione acustica andrà gestita separatamente in una versione successiva, probabilmente con un campo distinto perché il marker `(*)` e la natura strutturale di una "nota dell'editore" giustifica una linea acustica diversa da `Nota breve N` / `Nota N` / `Nota lunga N`.
 - **Strutture profile-specific**: i campi che i futuri plugin di corpus introdurranno (massima, rubrica, comma marker, etc.) non sono ancora qui.
 
+### 5.1 Scope formalmente chiuso per `length_category` (decisione 2026-05-20)
+
+La domanda "altre categorie testualmente lunghe oltre a `NOTE` beneficerebbero di un proprio `length_category`?" è stata esaminata empiricamente nella sessione del 20 maggio 2026 tarda sera (CARRYOVER v2.18.x post-igiene Mosconi). Lo script `pipeline/scripts/analyze_cross_category_length_distribution.py` raccoglie la distribuzione di lunghezza per ogni `SemanticCategory` cross-corpus (22 fixture, 13 plugin). I numeri aggregati sulle categorie potenzialmente "interruzione del flusso" sono:
+
+- `NOTE` — n=22 294, distribuzione 9 % <50 / 19 % 50-99 / 50 % 100-499 / 14 % 500-999 / 7 % 1000-2999 / 1 % >=3000. **Già coperta a 0.6.0**, l'intero schema field esiste per questa categoria.
+- `BODY` — n=11 947, distribuzione 5 % <50 / 5 % 50-99 / 35 % 100-499 / 24 % 500-999 / 23 % 1000-2999 / 8 % 3000-9999 / 1 % >=10000.
+- `ARTICLE_BODY` — n=15 754, distribuzione 5 % <50 / 3 % 50-99 / 45 % 100-499 / 25 % 500-999 / 18 % 1000-2999 / 3 % 3000-9999 / 1 % >=10000.
+- `MARGINAL_GLOSS` — n=26 (solo Giappichelli), distribuzione 38 % <50 / 62 % 50-99. Massimo 98 char, **tutti sotto la fascia MEDIUM** della NOTE.
+- `EXAMPLE_BOX` — n=414 (solo Mosconi), distribuzione 21 % 100-499 / 36 % 500-999 / 39 % 1000-2999 / 4 % 3000-9999. Massimo 4 103 char.
+- `CHAPTER_SUMMARY` — n=124, distribuzione 1 % <50 / 6 % 50-99 / 56 % 100-499 / 24 % 500-999 / 14 % 1000-2999. Massimo 2 560 char.
+- `EDITORIAL_NOTE` — n=4 (solo DejureDottrina), distribuzione 25 % 50-99 / 75 % 100-499. Già deferred in 0.6.0 per ragioni acustiche (marker `(*)` distinto).
+
+**Classificazione semantica (flusso vs interruzione) e decisione formale per ciascuna categoria:**
+
+- `BODY` e `ARTICLE_BODY` sono **flusso**: l'utente cieco li ascolta in lettura sequenziale, come il testo principale del libro/articolo. Non c'è una decisione "vale la pena ascoltare questo" — è il contenuto. Non è prevista un'intestazione acustica differenziata. Aggiungere `length_category` produrrebbe dato derivato che Layer 2 non consuma. **Decisione: NON estendere**. Layer 2 può sempre calcolare `len(text)` al momento della presentazione se serve.
+
+- `MARGINAL_GLOSS` è **interruzione strutturalmente breve**: tutti i 26 Node osservati stanno sotto 100 char, distribuzione bimodale solo `<50` e `50-99`, nessuno raggiunge la fascia `MEDIUM` della NOTE. L'intestazione acustica può essere piatta (`"Glossa: ..."`) senza varianti di lunghezza. **Decisione: NON estendere**. Se in futuro un corpus emette glosse marginali lunghe (>500 char), la decisione andrà rivisitata, ma sui 13 plugin attuali la distribuzione è strutturalmente uniforme nella fascia breve.
+
+- `EXAMPLE_BOX` ha **forte varianza di lunghezza** (100-2999 char dominante, max 4 103 char) e semantica di interruzione: l'utente cieco *decide* se aprire un example box prima di ascoltarlo. Una distinzione acustica `"Esempio breve"` / `"Esempio"` / `"Esempio lungo"` sarebbe utile. **Decisione: DIFFERIRE al bump 0.7.0** quando il Layer 2 acoustic design per `EXAMPLE_BOX` sarà specificato. Estendere il contratto adesso significherebbe esporre una superficie che il Layer 2 non consuma ancora; preferiamo aggiungere il campo quando la specifica acustica scenderà dal Layer 2 al Layer 1.
+
+- `CHAPTER_SUMMARY` ha **varianza simile a EXAMPLE_BOX** (50-2999 char, max 2 560 char) e semantica di intro sezionale. Strutturalmente però è già differenziato dalla coesistenza del campo `items: list[ChapterSummaryItem]` quando il sommario è parsato come lista TOC-like, vs `text` quando è prosa. Layer 2 può già decidere l'intestazione acustica leggendo `items is None` vs `items != None`. **Decisione: DIFFERIRE al bump 0.7.0** insieme a EXAMPLE_BOX se la specifica Layer 2 acoustic la giustificherà.
+
+- `EDITORIAL_NOTE` resta deferred per le ragioni già documentate nel bullet precedente di § 5 (marker `(*)` distintivo, semantica di "nota dell'editore" diversa da una NOTE numerata). **Decisione: confermata deferred**.
+
+- Tutte le altre categorie del `SemanticCategory` enum (HEADING_1/2/3/4, TITLE, SUBTITLE, GENRE_BANNER, SECTION_LABEL, MASSIMA_LABEL, REFERRAL, FONTE_LABEL, FONTE_VALUE, META_*, AUTHORS, ARTICLE_HEADER, PROCEDURAL, HEADING_LETTER_INITIAL, FONTI, LETTERATURA, LIST_ITEM, INDEX_ENTRY, TOC_GENERAL, BODY_CONTINUATION, NOTE_CONTINUATION, MARGINAL_HEADING, CROSS_REFERENCE, BOOK_PAGE_ANCHOR, ARTIFACT_*, EMPTY_PAGE, UNCLASSIFIED) sono **strutturalmente brevi** o **derivate** (CROSS_REFERENCE è un marker; BOOK_PAGE_ANCHOR un numero) o **artefatti scartati acusticamente** (ARTIFACT_*, EMPTY_PAGE). Nessuna ha varianza di lunghezza che giustifichi un bucket acustico. **Decisione: NON estendere a nessuna di queste**.
+
+**Sintesi.** A 0.6.0 il contratto `length_category` resta `NOTE`-only. La scelta è additiva-friendly: un futuro bump 0.7.0 può estendere il campo o introdurne uno parallelo per `EXAMPLE_BOX` + `CHAPTER_SUMMARY` + `EDITORIAL_NOTE` senza rompere la 0.6.0 (i Node di tutte le altre categorie continuerebbero ad avere `length_category: null`). La decisione è stata presa con delega totale dell'utente Scabo (la prosa del task brief della sessione 2026-05-20 esplicita "Costi accettati senza riserva, NON FERMARTI per chiedere approvazione, decisione delegata"). Lo script empirico è preservato in `pipeline/scripts/analyze_cross_category_length_distribution.py` per futura riferibilità.
+
 ## 6. Disciplina di lavoro sullo schema
 
 La regola d'oro è la stessa di sempre, con un'aggiunta operativa alla 0.6.0. Vedi [`SCHEMA_v0.5.0.md`](SCHEMA_v0.5.0.md) § 6 e [`SCHEMA_v0.4.0.md`](SCHEMA_v0.4.0.md) § 6 per il riferimento normativo completo.
