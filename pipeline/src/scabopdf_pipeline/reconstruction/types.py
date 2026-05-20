@@ -12,15 +12,64 @@ carries the reversible log of text rewrites it performed.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from scabopdf_pipeline.extraction.types import PageIndex
-from scabopdf_pipeline.schema.categories import SemanticCategory
+from scabopdf_pipeline.schema.categories import NoteLengthCategory, SemanticCategory
 
 if TYPE_CHECKING:
     from scabopdf_pipeline.apparatus.types import ApparatusRef
     from scabopdf_pipeline.postprocessing.types import Transformation
+
+
+_NOTE_MARKER_STRIP_REGEX = re.compile(r"^\s*\(?\d+\)\s*")
+"""Strip the leading numeric marker before measuring NOTE text length.
+
+Matches both the parenthesised form ``(N)`` (Mandrioli, BIC, NS, DT,
+EM, ES, codici) and the bare form ``N`` followed by whitespace
+(Mosconi, Torrente asterisk-footnote-after-stripping). Identical in
+shape to the marker regex used by the empirical analyser
+``pipeline/scripts/analyze_note_length_distribution.py`` that decided
+the six thresholds.
+"""
+
+
+def compute_note_length_category(text: str | None) -> NoteLengthCategory | None:
+    """Compute the acoustic regime of a NOTE Node from its text.
+
+    Strips the leading numeric marker via :data:`_NOTE_MARKER_STRIP_REGEX`
+    before measuring ``len()``. Returns ``None`` for ``text is None`` and
+    for empty strings, otherwise one of the six closed values of
+    :data:`scabopdf_pipeline.schema.contract.NoteLengthCategory`.
+
+    The thresholds are the empirically-decided 50 / 100 / 500 / 1000 /
+    3000 boundaries (see ``docs/SCHEMA_v0.6.0.md`` § 3 for the
+    motivation): they partition the cross-corpus distribution into
+    proportions ~10 % / ~19 % / ~50 % / ~14 % / ~7 % / ~1 % so that
+    Layer 2's verbal intro lands at sensible frequencies and never feels
+    like a constant warning. ``None`` is reserved for the absence of a
+    measurable text (synthetic ``EMPTY_PAGE`` carries ``text=None``);
+    every other NOTE Node receives a categorical value.
+    """
+    if text is None:
+        return None
+    stripped = _NOTE_MARKER_STRIP_REGEX.sub("", text)
+    n = len(stripped)
+    if n == 0:
+        return None
+    if n < 50:
+        return "MICRO"
+    if n < 100:
+        return "SHORT"
+    if n < 500:
+        return "MEDIUM"
+    if n < 1000:
+        return "LONG"
+    if n < 3000:
+        return "VERY_LONG"
+    return "MEGA"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -118,6 +167,25 @@ class Node:
     invoked. The tuple is ordered by emission and may contain refs of
     different kinds on the same node, though tier 1 only produces one ref
     per node.
+
+    ``length_category`` (added at schema 0.6.0) is the acoustic regime
+    of a ``NOTE`` Node, one of ``MICRO`` / ``SHORT`` / ``MEDIUM`` /
+    ``LONG`` / ``VERY_LONG`` / ``MEGA``. It is computed via
+    :func:`compute_note_length_category` from the stripped textual
+    content (marker ``(N)`` removed) and serves Layer 2's choice of
+    verbal intro before reading the note text aloud. ``None`` for every
+    category that is not ``NOTE``, including the sibling
+    ``EDITORIAL_NOTE`` whose acoustic regime is deferred to a future
+    schema version. The field is populated at minting time by tier 1
+    reconstruction (for ``NOTE`` Nodes materialised from a
+    ``ClassifiedBlock``) and by each corpus plugin's helper that mints
+    synthetic ``NOTE`` Nodes (Mandrioli body+note splitter, BIC
+    multi-block splitter and continuation rescuer, NS / DT
+    multi-sibling notes consolidator, codici multi-note splitter,
+    Mosconi cross-page consolidator); the apparatus resolver preserves
+    the value through its mutable / immutable round-trip, and the
+    post-processing ``merge_cross_page_notes`` step recomputes it on
+    the surviving head when a continuation extends the text.
     """
 
     id: str
@@ -129,6 +197,7 @@ class Node:
     level: int | None = None
     summary_items: tuple[SummaryItem, ...] | None = None
     toc_items: tuple[TocGeneralItem, ...] | None = None
+    length_category: NoteLengthCategory | None = None
     apparatus_refs: tuple[ApparatusRef, ...] = ()
 
 

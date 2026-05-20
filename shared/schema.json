@@ -133,7 +133,7 @@
     },
     "NodeDict": {
       "additionalProperties": false,
-      "description": "A node in the reading-order tree.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.Node` in its\nJSON form. The Python ``category`` field is renamed to ``type`` here\nto match ``ARCHITECTURE.md § 8.7`` and what Layer 2 expects to read.\n\n``children`` is recursive and produces an arbitrarily deep tree.\n``text`` is ``None`` only for synthetic nodes without an originating\nblock (currently only ``EMPTY_PAGE``). ``level`` is non-null only for\n``HEADING_*`` categories. ``items`` is non-null only for\n``CHAPTER_SUMMARY`` nodes whose textual content a corpus plugin\ncould parse into structured entries; it is ``null`` for every other\nnode type and for ``CHAPTER_SUMMARY`` nodes the plugin chose not to\nparse or could not parse. ``toc_items`` follows the symmetric\nconvention for ``TOC_GENERAL`` nodes: non-null only when the plugin\nparsed the entries successfully, ``null`` for every other node type\nand for unparseable TOCs. These semantic cross-field invariants are\nnot enforced by the contract at the current :data:`SCHEMA_VERSION`\nto keep the schema additive; they may become validated constraints\nin a later version.",
+      "description": "A node in the reading-order tree.\n\nMirrors :class:`scabopdf_pipeline.reconstruction.types.Node` in its\nJSON form. The Python ``category`` field is renamed to ``type`` here\nto match ``ARCHITECTURE.md § 8.7`` and what Layer 2 expects to read.\n\n``children`` is recursive and produces an arbitrarily deep tree.\n``text`` is ``None`` only for synthetic nodes without an originating\nblock (currently only ``EMPTY_PAGE``). ``level`` is non-null only for\n``HEADING_*`` categories. ``items`` is non-null only for\n``CHAPTER_SUMMARY`` nodes whose textual content a corpus plugin\ncould parse into structured entries; it is ``null`` for every other\nnode type and for ``CHAPTER_SUMMARY`` nodes the plugin chose not to\nparse or could not parse. ``toc_items`` follows the symmetric\nconvention for ``TOC_GENERAL`` nodes: non-null only when the plugin\nparsed the entries successfully, ``null`` for every other node type\nand for unparseable TOCs. ``length_category`` is non-null only for\n``NOTE`` Nodes (added in 0.6.0): the six closed acoustic regimes\n(``MICRO`` / ``SHORT`` / ``MEDIUM`` / ``LONG`` / ``VERY_LONG`` /\n``MEGA``) that Layer 2 consumes to choose the verbal intro before\nreading the note aloud; ``None`` for every other category, including\nthe sibling ``EDITORIAL_NOTE`` (whose acoustic regime is deferred to\na future version). These semantic cross-field invariants are not\nenforced by the contract at the current :data:`SCHEMA_VERSION` to\nkeep the schema additive; they may become validated constraints in\na later version.",
       "properties": {
         "id": {
           "pattern": "^node_\\d+$",
@@ -200,6 +200,26 @@
           ],
           "default": null,
           "title": "Toc Items"
+        },
+        "length_category": {
+          "anyOf": [
+            {
+              "enum": [
+                "MICRO",
+                "SHORT",
+                "MEDIUM",
+                "LONG",
+                "VERY_LONG",
+                "MEGA"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Length Category"
         },
         "block_indices": {
           "items": {
@@ -394,10 +414,10 @@
     }
   },
   "additionalProperties": false,
-  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.5.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
+  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.6.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
   "properties": {
     "schema_version": {
-      "const": "0.5.0",
+      "const": "0.6.0",
       "title": "Schema Version",
       "type": "string"
     },

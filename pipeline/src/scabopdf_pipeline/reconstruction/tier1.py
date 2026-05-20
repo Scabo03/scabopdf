@@ -61,7 +61,7 @@ from scabopdf_pipeline.extraction.types import (
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.reconstruction.constants import CROSS_PAGE_TOP_FRACTION
-from scabopdf_pipeline.reconstruction.types import Document, Node
+from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 TIER1_WARNING_TEMPLATES: tuple[str, ...] = (
@@ -128,6 +128,11 @@ class _NodeBuilder:
     children: list[_NodeBuilder] = field(default_factory=list)
 
     def to_frozen(self) -> Node:
+        length_category = (
+            compute_note_length_category(self.text)
+            if self.category is SemanticCategory.NOTE
+            else None
+        )
         return Node(
             id=self.id,
             category=self.category,
@@ -138,6 +143,7 @@ class _NodeBuilder:
             level=self.level,
             summary_items=None,
             toc_items=None,
+            length_category=length_category,
             apparatus_refs=(),
         )
 

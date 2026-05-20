@@ -2,7 +2,11 @@ from dataclasses import FrozenInstanceError, fields
 
 import pytest
 
-from scabopdf_pipeline.reconstruction.types import Document, Node
+from scabopdf_pipeline.reconstruction.types import (
+    Document,
+    Node,
+    compute_note_length_category,
+)
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 
@@ -40,6 +44,7 @@ def test_node_has_all_expected_fields() -> None:
         "level",
         "summary_items",
         "toc_items",
+        "length_category",
         "apparatus_refs",
     }
 
@@ -61,6 +66,7 @@ def test_node_defaults() -> None:
     assert node.level is None
     assert node.summary_items is None
     assert node.toc_items is None
+    assert node.length_category is None
     assert node.apparatus_refs == ()
 
 
@@ -103,3 +109,73 @@ def test_text_none_is_allowed_for_synthetic_nodes() -> None:
     )
     assert node.text is None
     assert node.block_indices == ()
+
+
+class TestComputeNoteLengthCategory:
+    """Exhaustive coverage of the schema 0.6.0 helper.
+
+    The thresholds are documented in
+    :func:`compute_note_length_category` and in ``docs/SCHEMA_v0.6.0.md``:
+
+    - ``MICRO``      —   0 ≤ n <   50
+    - ``SHORT``      —  50 ≤ n <  100
+    - ``MEDIUM``     — 100 ≤ n <  500
+    - ``LONG``       — 500 ≤ n < 1000
+    - ``VERY_LONG``  — 1000 ≤ n < 3000
+    - ``MEGA``       — n ≥ 3000
+
+    The helper strips the leading ``(N)`` or ``N`` marker before
+    measuring, so a "(42) " prefix does not inflate the bucket choice.
+    """
+
+    def test_none_returns_none(self) -> None:
+        assert compute_note_length_category(None) is None
+
+    def test_empty_string_returns_none(self) -> None:
+        assert compute_note_length_category("") is None
+
+    def test_pure_marker_returns_none(self) -> None:
+        # Just "(1) " gets stripped to empty, hence None.
+        assert compute_note_length_category("(1) ") is None
+
+    def test_marker_with_one_char_is_micro(self) -> None:
+        assert compute_note_length_category("(1) X") == "MICRO"
+
+    @pytest.mark.parametrize("text_length", [1, 25, 49])
+    def test_micro_boundaries(self, text_length: int) -> None:
+        assert compute_note_length_category("a" * text_length) == "MICRO"
+
+    @pytest.mark.parametrize("text_length", [50, 75, 99])
+    def test_short_boundaries(self, text_length: int) -> None:
+        assert compute_note_length_category("a" * text_length) == "SHORT"
+
+    @pytest.mark.parametrize("text_length", [100, 250, 499])
+    def test_medium_boundaries(self, text_length: int) -> None:
+        assert compute_note_length_category("a" * text_length) == "MEDIUM"
+
+    @pytest.mark.parametrize("text_length", [500, 750, 999])
+    def test_long_boundaries(self, text_length: int) -> None:
+        assert compute_note_length_category("a" * text_length) == "LONG"
+
+    @pytest.mark.parametrize("text_length", [1000, 2000, 2999])
+    def test_very_long_boundaries(self, text_length: int) -> None:
+        assert compute_note_length_category("a" * text_length) == "VERY_LONG"
+
+    @pytest.mark.parametrize("text_length", [3000, 5000, 121399])
+    def test_mega_boundaries(self, text_length: int) -> None:
+        assert compute_note_length_category("a" * text_length) == "MEGA"
+
+    def test_marker_strip_preserves_post_marker_length(self) -> None:
+        # "(99) " is 5 chars; the 50-char body must be measured at 50.
+        body = "x" * 50
+        assert compute_note_length_category("(99) " + body) == "SHORT"
+
+    def test_bare_marker_form_stripped(self) -> None:
+        # The bare "1 " form (Mosconi pattern after marker stripping)
+        # is also recognised by the strip regex.
+        body = "y" * 50
+        assert compute_note_length_category("1 " + body) == "SHORT"
+
+    def test_no_marker_text_not_stripped(self) -> None:
+        # Plain text without a leading marker is measured as-is.
+        assert compute_note_length_category("plain text without marker") == "MICRO"

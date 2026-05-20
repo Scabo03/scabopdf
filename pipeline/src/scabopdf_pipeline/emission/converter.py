@@ -154,6 +154,7 @@ def _convert_node(node: Node) -> NodeDict:
         level=node.level,
         items=items,
         toc_items=toc_items,
+        length_category=node.length_category,
         block_indices=list(node.block_indices),
         children=[_convert_node(c) for c in node.children],
         apparatus_refs=[_convert_apparatus_ref(r) for r in node.apparatus_refs],

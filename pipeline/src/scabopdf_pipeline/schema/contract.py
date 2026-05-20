@@ -1,4 +1,4 @@
-"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.5.0).
+"""Pydantic v2 models for the Layer 1 → Layer 2 JSON contract (v0.6.0).
 
 These models are the **authoritative source** for the JSON schema that
 sits between the Python pipeline (Layer 1) and the React Native app
@@ -6,32 +6,37 @@ sits between the Python pipeline (Layer 1) and the React Native app
 module via ``pipeline/scripts/generate_schema.py`` and must never be
 edited by hand.
 
-Schema version ``0.5.0`` is **pre-1.0 unstable**: it describes what the
-pipeline emits after §§ 1-6, § 8, § 9, the first two generic steps of
-§ 7 (``dehyphenate_with_log`` and ``recompose_marginal_ellipsis``),
-the third step ``merge_cross_page_notes`` promoted from placeholder to
-real implementation alongside the Giappichelli plugin, and the four
-corpus plugins (``manuale_zanichelli_giuridica``, ``compendio_utet``,
-``manuale_utet_wolterskluwer``, ``manuale_giappichelli``). It is
-additive over 0.4.0: two new optional fields on
-:class:`TransformationDict` (``split_into`` and ``merged_from``) that
-record the previously-implicit structural side of a Transformation —
-the synthetic Node ids minted from the host (Giappichelli body+note
-splitter) and the sibling Node ids absorbed into the host
-(Mosconi marginal-ellipsis merger, Giappichelli cross-page note
-merger). Both fields default to ``None`` for steps whose
-transformations are purely textual (``dehyphenate_with_log``). Fields
-that the architecture envisions but the pipeline does not yet populate
-(rich editorial metadata, profile detection signals, layout-4 acoustic
-regime, other profile-specific structures) remain intentionally
+Schema version ``0.6.0`` is **pre-1.0 unstable**: it describes what the
+pipeline emits after §§ 1-6, § 8, § 9, the three real generic steps of
+§ 7 (``dehyphenate_with_log``, ``recompose_marginal_ellipsis``,
+``merge_cross_page_notes``), and the thirteen corpus plugins active at
+2026-05-20 (the twelve editorial plugins plus the first user-generated
+plugin ``materiali_studio``). It is **additive over 0.5.0**: one new
+optional field on :class:`NodeDict` — ``length_category`` — that
+classifies the textual length of ``NOTE`` Nodes into six closed
+acoustic regimes (``MICRO`` < 50 char, ``SHORT`` 50-99, ``MEDIUM``
+100-499, ``LONG`` 500-999, ``VERY_LONG`` 1000-2999, ``MEGA`` >= 3000).
+The thresholds are universal cross-corpus, decided after empirical
+inspection of the distribution of 22 294 ``NOTE`` Nodes across all
+fixtures of the nine plugins that emit notes. ``length_category``
+populates **only on ``NOTE`` Nodes**; every other category, including
+``EDITORIAL_NOTE``, leaves it ``None``. The field is the contract
+surface of the Layout 4 acoustic regime that the analysis EdD § 12.8
+and the analysis Dottrina dichiarated as a six-way partition; Layer 2
+consumes it to choose the verbal intro (``Nota breve N``, ``Nota N``,
+``Nota estesa N``, ``Nota lunga N``, etc.) before reading the note
+text aloud. Fields that the architecture envisions but the pipeline
+does not yet populate (rich editorial metadata, profile detection
+signals, other profile-specific structures) remain intentionally
 omitted and will land in later additive bumps.
 
-See ``docs/SCHEMA_v0.5.0.md`` for the narrative field-by-field
+See ``docs/SCHEMA_v0.6.0.md`` for the narrative field-by-field
 reference and the disciplinary rules that govern modifications,
-``docs/SCHEMA_v0.4.0.md``, ``docs/SCHEMA_v0.3.0.md``,
-``docs/SCHEMA_v0.2.0.md`` and ``docs/SCHEMA_v0.1.0.md`` for the
-historic baselines, ``docs/SCHEMA_CHANGELOG.md`` for the per-version
-delta, and ``docs/json-schema-versioning.md`` for the SemVer policy.
+``docs/SCHEMA_v0.5.0.md``, ``docs/SCHEMA_v0.4.0.md``,
+``docs/SCHEMA_v0.3.0.md``, ``docs/SCHEMA_v0.2.0.md`` and
+``docs/SCHEMA_v0.1.0.md`` for the historic baselines,
+``docs/SCHEMA_CHANGELOG.md`` for the per-version delta, and
+``docs/json-schema-versioning.md`` for the SemVer policy.
 """
 
 from __future__ import annotations
@@ -43,7 +48,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from scabopdf_pipeline.apparatus.types import ApparatusRefKind
 from scabopdf_pipeline.extraction.types import PageIndex
-from scabopdf_pipeline.schema.categories import SemanticCategory
+from scabopdf_pipeline.schema.categories import NoteLengthCategory, SemanticCategory
 
 NODE_ID_PATTERN = r"^node_\d+$"
 """Regex for the ``id`` of every node in the structure tree.
@@ -54,7 +59,7 @@ but no upper bound is enforced so documents with more than 9999 nodes
 remain valid.
 """
 
-SCHEMA_VERSION: Literal["0.5.0"] = "0.5.0"
+SCHEMA_VERSION: Literal["0.6.0"] = "0.6.0"
 """Single source of truth for the schema version literal.
 
 Bumping this is a deliberate act: see ``docs/json-schema-versioning.md``.
@@ -156,10 +161,16 @@ class NodeDict(BaseModel):
     parse or could not parse. ``toc_items`` follows the symmetric
     convention for ``TOC_GENERAL`` nodes: non-null only when the plugin
     parsed the entries successfully, ``null`` for every other node type
-    and for unparseable TOCs. These semantic cross-field invariants are
-    not enforced by the contract at the current :data:`SCHEMA_VERSION`
-    to keep the schema additive; they may become validated constraints
-    in a later version.
+    and for unparseable TOCs. ``length_category`` is non-null only for
+    ``NOTE`` Nodes (added in 0.6.0): the six closed acoustic regimes
+    (``MICRO`` / ``SHORT`` / ``MEDIUM`` / ``LONG`` / ``VERY_LONG`` /
+    ``MEGA``) that Layer 2 consumes to choose the verbal intro before
+    reading the note aloud; ``None`` for every other category, including
+    the sibling ``EDITORIAL_NOTE`` (whose acoustic regime is deferred to
+    a future version). These semantic cross-field invariants are not
+    enforced by the contract at the current :data:`SCHEMA_VERSION` to
+    keep the schema additive; they may become validated constraints in
+    a later version.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -171,6 +182,7 @@ class NodeDict(BaseModel):
     level: int | None = None
     items: list[ChapterSummaryItem] | None = None
     toc_items: list[TocGeneralItem] | None = None
+    length_category: NoteLengthCategory | None = None
     block_indices: list[int] = Field(default_factory=list)
     children: list[NodeDict] = Field(default_factory=list)
     apparatus_refs: list[ApparatusRefDict] = Field(default_factory=list)
@@ -279,7 +291,7 @@ class DocumentProfileDict(BaseModel):
 
 
 class ScabopdfDocument(BaseModel):
-    """The Layer 1 → Layer 2 JSON document, schema version 0.5.0.
+    """The Layer 1 → Layer 2 JSON document, schema version 0.6.0.
 
     The emitted JSON conforms to JSON Schema Draft 2020-12 as serialised
     by ``ScabopdfDocument.model_json_schema()`` and committed to
@@ -302,7 +314,7 @@ class ScabopdfDocument(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["0.5.0"]
+    schema_version: Literal["0.6.0"]
     document_id: UUID
     metadata: DocumentMetadata
     profile: DocumentProfileDict

@@ -53,7 +53,7 @@ from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import BBox, ExtractionResult
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem, TocGeneralItem
-from scabopdf_pipeline.schema.categories import SemanticCategory
+from scabopdf_pipeline.schema.categories import NoteLengthCategory, SemanticCategory
 
 TIER1_WARNING_TEMPLATES: tuple[str, ...] = (
     "unparseable_cross_reference_node_<id>",
@@ -97,6 +97,7 @@ class _NodeBuilder:
     level: int | None
     summary_items: tuple[SummaryItem, ...] | None = None
     toc_items: tuple[TocGeneralItem, ...] | None = None
+    length_category: NoteLengthCategory | None = None
     apparatus_refs: list[ApparatusRef] = field(default_factory=list)
     children: list[_NodeBuilder] = field(default_factory=list)
     parent: _NodeBuilder | None = None
@@ -112,6 +113,7 @@ class _NodeBuilder:
             level=self.level,
             summary_items=self.summary_items,
             toc_items=self.toc_items,
+            length_category=self.length_category,
             apparatus_refs=tuple(self.apparatus_refs),
         )
 
@@ -191,6 +193,7 @@ def _thaw(
             level=node.level,
             summary_items=node.summary_items,
             toc_items=node.toc_items,
+            length_category=node.length_category,
             apparatus_refs=list(node.apparatus_refs),
             parent=parent,
         )

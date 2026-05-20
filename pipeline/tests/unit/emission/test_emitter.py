@@ -51,7 +51,7 @@ def test_emit_on_synthetic_pdf_returns_valid_document(tmp_path: Path) -> None:
     document = emit(pdf_path)
 
     assert isinstance(document, ScabopdfDocument)
-    assert document.schema_version == "0.5.0"
+    assert document.schema_version == "0.6.0"
     assert document.metadata.pages_pdf == 1
     assert document.metadata.source_pdf_filename == "doc.pdf"
     assert document.profile.profile_id == "unknown_generic"

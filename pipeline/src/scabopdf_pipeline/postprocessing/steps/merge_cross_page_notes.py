@@ -106,7 +106,7 @@ import re
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing.types import Transformation
-from scabopdf_pipeline.reconstruction.types import Document, Node
+from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 STEP_ID = "merge_cross_page_notes"
@@ -268,16 +268,23 @@ def _plan_merges(notes: list[Node]) -> _MergePlan:
 
     replacements: dict[str, Node] = {}
     for anchor_id, template in head_template.items():
+        merged_text = head_text[anchor_id]
+        # length_category MUST be recomputed: the text grew by appending
+        # one or more continuations, so a SHORT head may now be MEDIUM
+        # and a LONG one may shift to VERY_LONG. The other length fields
+        # (summary_items, toc_items) stay invariant — they belong to
+        # CHAPTER_SUMMARY / TOC_GENERAL, not NOTE.
         replacements[anchor_id] = Node(
             id=template.id,
             category=template.category,
             children=template.children,
             page_index=template.page_index,
             block_indices=head_block_indices[anchor_id],
-            text=head_text[anchor_id],
+            text=merged_text,
             level=template.level,
             summary_items=template.summary_items,
             toc_items=template.toc_items,
+            length_category=compute_note_length_category(merged_text),
             apparatus_refs=template.apparatus_refs,
         )
 
@@ -322,6 +329,7 @@ def _apply_merges(roots: tuple[Node, ...], plan: _MergePlan) -> tuple[Node, ...]
                 level=replacement.level,
                 summary_items=replacement.summary_items,
                 toc_items=replacement.toc_items,
+                length_category=replacement.length_category,
                 apparatus_refs=replacement.apparatus_refs,
             )
         if new_children is node.children:

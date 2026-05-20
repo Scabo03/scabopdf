@@ -6,6 +6,22 @@ See ARCHITECTURE.md § 4.2 for the canonical specification.
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
+
+NoteLengthCategory = Literal["MICRO", "SHORT", "MEDIUM", "LONG", "VERY_LONG", "MEGA"]
+"""Closed enum of the six acoustic regimes for ``NOTE`` Node lengths (schema 0.6.0).
+
+Defined here (rather than in ``schema.contract``) to break the import
+cycle ``reconstruction.types`` → ``schema.contract`` → ``apparatus.*`` →
+``reconstruction.types``. Both ``schema.contract.NodeDict`` and
+``reconstruction.types.Node`` import the alias from this dependency-free
+module.
+
+The thresholds and the helper that produces a value of this type live in
+:mod:`scabopdf_pipeline.reconstruction.types`
+(``compute_note_length_category``); see ``docs/SCHEMA_v0.6.0.md`` § 3
+for the rationale of the six boundaries (50 / 100 / 500 / 1000 / 3000).
+"""
 
 
 class SemanticCategory(StrEnum):

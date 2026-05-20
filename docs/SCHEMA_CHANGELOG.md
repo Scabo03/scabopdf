@@ -1,11 +1,34 @@
 # ScaboPDF — JSON Schema CHANGELOG
 
 > Log per-versione del contratto JSON fra Layer 1 e Layer 2.
-> Versione corrente: **0.5.0** (instabile, pre-1.0).
+> Versione corrente: **0.6.0** (instabile, pre-1.0).
 > Riferimento normativo: [`docs/json-schema-versioning.md`](json-schema-versioning.md).
 > Le voci marcate `BREAKING:` segnalano cambi non backward-compatible ammessi in fase 0.x ma soggetti a bump major in fase stabile.
 
 ---
+
+## 0.6.0 — 2026-05-20 — `length_category` su NOTE Node (Layout 4 acoustic regime)
+
+Aggiunto il campo opzionale `length_category: NoteLengthCategory | null` su `NodeDict`, valorizzato **solo** sui Node di category `NOTE` con uno dei sei valori chiusi del nuovo `Literal["MICRO", "SHORT", "MEDIUM", "LONG", "VERY_LONG", "MEGA"]` definito in `pipeline/src/scabopdf_pipeline/schema/categories.py`. `null` di default per ogni altra categoria, incluso il sibling `EDITORIAL_NOTE` la cui regolamentazione acustica resta differita. Il campo è il contract surface dello **Layout 4 acoustic regime** che la analysis EdD § 12.8 e la analysis Dottrina avevano dichiarato come partizione multi-vie e che la 0.5.0 § 5 elencava esplicitamente fra i "non c'è ancora" dello schema; Layer 2 lo consuma per scegliere l'intestazione vocale (`"Nota breve N"` / `"Nota N"` / `"Nota estesa N"` / `"Nota lunga N"` / `"Nota molto lunga N"` / `"Nota gigantesca N"`) prima di leggere a voce il testo della nota.
+
+Le **sei soglie** che partizionano `len(stripped_text)` — dove `stripped_text` è il testo della nota dopo aver tolto il marker iniziale `(N)` o `N` via regex `r"^\s*\(?\d+\)\s*"` — sono:
+
+- `MICRO`      —   0 ≤ n <   50 char (~10,0 % globale)
+- `SHORT`      —  50 ≤ n <  100 char (~18,7 %)
+- `MEDIUM`     — 100 ≤ n <  500 char (~49,6 %)
+- `LONG`       — 500 ≤ n < 1000 char (~13,6 %)
+- `VERY_LONG`  — 1000 ≤ n < 3000 char (~7,3 %)
+- `MEGA`       — n ≥ 3000 char (~0,7 %)
+
+Le percentuali sono empiriche, misurate sui **22 294 Node `NOTE`** emessi dalla pipeline su tutti i 22 fixture privati dei nove plugin che producono note (Mosconi 941, Mandrioli Vol III 1161, Mandrioli Vol IV 964, Torrente 1, Marrone 1454, NS giudizio 54, DT bundle 181, DT concause 96, DT cartabia 459, EM abuso 79, EM factoring 22, EM giudizio 102, ES eccesso 4, ES lavoro 18, ES pagamento 100, ES azienda 148, codice civile 8627, codice penale 7883). I tagli sono **universali cross-corpus**: non sono stratificati per plugin, perché l'esperienza acustica dell'utente VoiceOver è universale (1500 char restano 1500 char qualunque sia la provenienza del testo, e il tempo di lettura è lo stesso).
+
+La scelta delle **sei** fasce (anziché le quattro che la sessione 2026-05-20 aveva inizialmente raccomandato come A/B/C/D) è esplicita decisione utente in sessione dopo l'analisi: le sei fasce mappano in modo proporzionato sulla coda reale della distribuzione (la fascia `MICRO` cattura i rinvii secchi tipo `1, 2,` di Mosconi; la fascia `MEGA` cattura le mega-note di EM giudizio_legittimita che arrivano a 6 418 char e la nota Rizzo da 11 198 char della concause causalita di DT; le fasce intermedie raffinano la zona dominante `100-2999` su quattro varianti acustiche distinguibili dall'utente).
+
+Il `Node` Python ha acquisito simmetricamente il campo `length_category: NoteLengthCategory | None = None` in `pipeline/src/scabopdf_pipeline/reconstruction/types.py`. La definizione del `NoteLengthCategory` Literal vive in `pipeline/src/scabopdf_pipeline/schema/categories.py` (modulo dependency-free) per evitare l'**import cycle** `reconstruction.types` → `schema.contract` → `apparatus.*` → `reconstruction.types`: sia `schema.contract.NodeDict` sia `reconstruction.types.Node` lo importano da `schema.categories`. Future aggiunte di nuovi enum del contratto che devono essere visti da `reconstruction.types` devono seguire la stessa convenzione.
+
+La funzione `compute_note_length_category(text: str | None) -> NoteLengthCategory | None` è il single point of truth del calcolo; vive in `reconstruction/types.py` accanto al dataclass `Node`. Casi limite: `text is None` → `None`; `text` vuoto dopo lo strip del marker (es. `"(1) "` da solo) → `None`. La propagazione del nuovo campo attraversa i cinque call site canonici: `_NodeBuilder.to_frozen()` in `reconstruction/tier1.py` (popola automaticamente per Node materializzati da `ClassifiedBlock` di category `NOTE`), `_NodeBuilder` + `_thaw_node` + `to_frozen()` in `apparatus/resolver.py` (preserva attraverso thaw/freeze), i due siti di `Node(...)` in `postprocessing/steps/merge_cross_page_notes.py` (**ricalcola** sulla head merged perché il testo cresce), e `_convert_node` in `emission/converter.py` (propaga al `NodeDict`). I plugin che mintano synthetic NOTE Node nel proprio `refine_reconstruction` (Mandrioli body+note splitter, BIC multi-block splitter e continuation rescuer, NS / DT multi-sibling notes consolidator, codici multi-note splitter, Mosconi cross-page consolidator) passano `length_category=compute_note_length_category(text)` al costruttore di `Node` al momento del minting.
+
+Lo schema `shared/schema.json` è stato rigenerato di conseguenza e il `$defs/NodeDict` include il nuovo campo opzionale con il `Literal` di sei valori. Non ci sono `BREAKING:` in questa versione: l'aggiunta è additiva (campo opzionale a default `null`), i consumatori di 0.5.0 che ignorano i campi sconosciuti continuano a funzionare con un documento 0.6.0 (a parte il `schema_version` literal che andrà aggiornato lato consumer). Vedi [`SCHEMA_v0.6.0.md`](SCHEMA_v0.6.0.md) per il riferimento narrativo completo.
 
 ## 0.5.0 — 2026-05-18 — Structural reversibility of transformations
 
