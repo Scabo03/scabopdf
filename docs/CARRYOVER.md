@@ -256,7 +256,66 @@ Da discutere con l'utente quali altri tipi di documento sono rilevanti per il su
 
 ## Cronologia delle sessioni
 
-### Sessione corrente (19 maggio 2026 notte, ventottesimo aggiornamento — versione 2.13, landing dei plugin decimo `enciclopedia_moderna` e undicesimo `enciclopedia_storica` per le voci EdD Giuffrè)
+### Sessione corrente (20 maggio 2026, trentesimo aggiornamento — versione 2.16, landing del **tredicesimo plugin di corpus `materiali_studio`** per i materiali di studio user-generated Microsoft Word + Google Docs)
+
+- **Apertura**: stato post-consolidamento codici (versione 2.15), Layer 1 + **dodici plugin di corpus operativi** (Patriarca, Tesauro, Mosconi, Mandrioli I-IV, Torrente, Marrone, NS, MM, DT, EdD moderna, EdD storica, codici), suite **1654 unit + ~24 integration test** a 96% coverage complessivo, schema 0.5.0 stabile. L'utente carica quattro fixture private user-generated (`materiali_teoria_generale.pdf` 407 KB 200 pp Skia/m116 GDocs, `materiali_diritto_tributario.pdf` 582 KB 222 pp Microsoft Word per Microsoft 365, `materiali_diritto_privato_i.pdf` 1.3 MB 552 pp Skia/m115 GDocs, `materiali_diritto_privato_ii.pdf` 1.9 MB 857 pp Skia/m132 GDocs) e apre la sessione con un briefing operativo aggressivo che dichiara il vincolo CLAUDE.md "no decisioni autonome su design" sospeso senza riserva per tutto il perimetro del tredicesimo plugin, con criteri di preferenza ordinati (1) resilienza, (2) robustezza alla varietà cross-utente, (3) completezza, (4) efficienza, (5) flessibilità per Layer 2. Sospensione esplicita del marker `@pytest.mark.slow` per i test end-to-end ("lezione codici").
+
+- **Fase 0 ispezione PyMuPDF in parallelo con quattro subagenti dedicati** (uno per fixture): produce quattro dossier empirici da cui viene composto `docs/analysis/ANALYSIS_MATERIALI_STUDIO.md`. Risultati: tre dei quattro fixture sono **monoculture tipografiche** (un singolo `(Arial-BoldMT, size, flags=16, color=0)` al 98-100% di dominanza — teoria 25pt 100%, tributario 20.04pt 98.88%, privato_i 22pt 100%); il quarto (privato_ii 25pt 99.22%) è l'unico a portare il **discriminator color-driven** (ArialMT regular a tre colori distinti grigi RGB(102,102,102) banner di parte + RGB(0,0,0) CAP. + RGB(67,67,67) sub-titoli — l'inverse-rendering quirk di Skia/PDF Google Docs che inverte semanticamente il flag bold tra sorgente e PDF). Tutti A4 single column con margini 1 pollice, zero immagini, zero footer, zero numero di pagina, zero ToC.
+
+- **Decisione architetturale**: **singolo plugin con dispatch interno Word/GDocs + color/mono-mode** anziché due plugin distinti. Motivazione: overlap del 95% (geometria A4, assenza apparato editoriale, strategia heading-inference, gestione bullet `x0 ∈ {90, 108, 126, ...}`, pass-through di refine_reconstruction/refine_apparatus); divergenza localizzata a refine_classification gestibile con branche condizionali al primo passo del classifier; rule of three non triggera su un solo plugin. Pattern coerente con `(ggg)` Giuffrè codici.
+
+- **Schema invariato a 0.5.0**: ogni categoria emessa (`HEADING_1`/`2`/`3`/`4`, `BODY`, `LIST_ITEM`, `EMPTY_PAGE`, `ARTIFACT_FILIGREE`, `UNCLASSIFIED`) era già dichiarata nell'enum `SemanticCategory` dalle versioni precedenti. Nessun bump, nessun contract.py update, nessun converter.py change, nessun docs/SCHEMA_v0.5.0.md update. Drift test verde byte-for-byte.
+
+- **Plugin di produzione** `pipeline/src/scabopdf_pipeline/profiles/materiali_studio.py` ~1100 righe (incluso il long docstring), registrato in `BUILTIN_PLUGINS`. `matches()` con producer short-circuit a 0.0 sui producer non-user-generated (Aspose, PDFsharp, Acrobat Distiller, Paper Capture, iLovePDF, PScript5, Adobe-family editorial) garantendo non-promozione su ogni fixture editoriale del corpus. Sul producer match (Skia+GDocs o Microsoft Word), score = 0.40 + 0.20 (Arial dominante) + 0.15 (A4 o Letter) - 0.25 (editorial-marker co-present penalty) - 0.20 (apparatus penalty) - 0.10 (non-A4-non-Letter penalty). Empirico sui quattro fixture reali: **0.75 su tutti e quattro** (sopra target 0.70).
+
+- **refine_classification** con `_detect_color_mode(extraction)` che scanna i primi 500 blocchi per ≥2 distinct (ArialMT non-bold, color) tuples e cachea su `_color_mode`. Mono-mode cascade: separator em-dash → ARTIFACT_FILIGREE; PARTE allcaps short line → HEADING_1; `(?i)^Cap\.\s*\d+` regex → HEADING_2; `^[A-Z]\.\s+[A-Z]` section letter → HEADING_3; `^[A-Z][^.]{4,80}(?<![.!?])[.:]$` colon-or-dot label → HEADING_4; `^-\s+\S` at `x0 > 80` → LIST_ITEM; else BODY. Color-mode cascade: grey-light RGB(102,102,102) → HEADING_1; grey-medium RGB(67,67,67) → HEADING_3; black + matches CAP. regex → HEADING_2; fallback al mono cascade. Vocabolario warning chiuso `plugin:materiali_studio:` con 10 voci (color_mode_detected, mono_mode_no_color_signal, heading_1_text_pattern, heading_2_capitolo, heading_3_section_letter, heading_4_label, list_item_dash_bullet, em_dash_separator, decimal_hierarchical_pattern_unsupported, roman_hierarchical_pattern_unsupported). `refine_reconstruction` e `refine_apparatus` pass-through.
+
+- **Tre pattern strutturali nuovi documentati in CLAUDE.md (iii)/(jjj)/(kkk)**: (iii) heading inference via text+geometry on mono-typographic user-generated content; (jjj) color-driven dispatch from Google Docs Skia inverse-rendering quirk; (kkk) two-mode classification cascade selected by cached `_detect_*` flag.
+
+- **Test e qualità**: 132 unit test al **100% coverage** sul plugin (sopra target 95%) + 32 integration test (4 matches() positive, 4 end-to-end pipeline full-scan SENZA `@pytest.mark.slow` per "lezione codici", 12 parametrici non-promotion di materiali_studio sui dodici fixture editoriali rappresentativi, 12 parametrici reverse non-promotion dei dodici plugin editoriali sul fixture più stressante materiali_privato_ii). Suite totale post-landing **1786 unit test + ~56 integration** (era 1654 + ~24, +132 unit + 32 integration delta). Pre-commit hook verde su tutti e quattro gli step (ruff check + ruff format + mypy strict + pytest tests/unit) e drift test contro `shared/schema.json` v0.5.0 verde byte-for-byte.
+
+- **Numeri reali emessi per ciascun fixture (end-to-end Layer 1 pipeline)**:
+  - `materiali_teoria_generale` (200pp Skia/m116 mono-mode): n_h1=0 n_h2=0 n_h3=0 n_h4=13 n_body=285 n_list_item=21 n_artifact_filigree=2 n_warnings=38
+  - `materiali_diritto_tributario` (222pp Word 365 mono-mode): n_h1=0 n_h2=0 n_h3=0 n_h4=1 n_body=41 n_list_item=15 n_artifact_filigree=0 n_warnings=18
+  - `materiali_diritto_privato_i` (552pp Skia/m115 mono-mode): n_h1=2 n_h2=20 n_h3=11 n_h4=27 n_body=753 n_list_item=111 n_artifact_filigree=9 n_warnings=182
+  - `materiali_diritto_privato_ii` (857pp Skia/m132 **color-mode active**): n_h1=23 n_h2=35 n_h3=68 n_h4=21 n_body=832 n_list_item=17 n_artifact_filigree=6 n_warnings=59
+
+- **Limiti di scope rispettati**: schema invariato 0.5.0, nessuna modifica all'API a 7 metodi di `ProfilePlugin`, nessuna modifica strutturale a `ClassifiedBlock`/`Node`/`Document`/`ApparatusRef`/`Transformation`, nessuna modifica al tier 1 generico, nessuna modifica ad altri plugin esistenti, **`_dejure_shared/` / `_edd_shared/` / `_giuffre_shared/` non estratti** (decisione consapevole rinviata, strategia "Extract After Consume" — la sessione "promotion analysis" è rimandata a una sessione dedicata futura).
+
+- **Decisioni autonome motivate** (delegate dal briefing):
+  - (a) singolo plugin vs split Word/GDocs: motivazione overlap 95%, costo manutenzione doppio senza beneficio strutturale;
+  - (b) no schema bump 0.6.0: tutte le categorie necessarie già esistenti a 0.5.0;
+  - (c) producer short-circuit a 0.0 come primary discriminator: garantisce 13-way symmetry senza dipendere da signature tipografica fragile;
+  - (d) accettazione di A4 + Letter come geometrie valide (permissivo per utenti US-locale futuri);
+  - (e) em-dash separator → ARTIFACT_FILIGREE uniforme (scelta conservativa v1, evita falsi positivi heading);
+  - (f) `_DOT_LABEL_PATTERN` con negative lookbehind `(?<![.!?])` per rifiutare ellipsis body sentences mantenendo abbreviazioni come `"Corte Cost. 1963."`;
+  - (g) `_PARTE_ALLCAPS_PATTERN` con negative lookahead `(?!\.)` per impedire conflict con section-letter `"A. NOZIONI..."`;
+  - (h) bullet `^-\s+\S` at `x0 > 80` come unica forma di lista riconosciuta (no `*`, no `•`, no `[a-z]\.`).
+
+- **Residui debt v1 accettati** (documentati nel module docstring + ANALYSIS § 13):
+  - (i) pattern numerazione decimale gerarchica `1.1.1` non riconosciuto come HEADING — warning diagnostico emesso;
+  - (ii) pattern numerazione romana `I. II. III.` non riconosciuto — warning diagnostico emesso;
+  - (iii) tabelle Word (`block.type=1`) non gestite (zero osservazioni sul training set);
+  - (iv) immagini Word/GDocs non gestite (zero osservazioni);
+  - (v) ToC auto-generato Word con dotted leader non riconosciuto (zero osservazioni);
+  - (vi) separatori em-dash classificati come `ARTIFACT_FILIGREE` uniforme, non promossi a HEADING_1 anche quando precedono una macro-sezione (scelta v1);
+  - (vii) sotto-titoli su 2 righe (es. banner `LE OBBLIGAZIONI NASCENTI DALLA / LEGGE`) non fusi in un singolo HEADING_1 (limitazione strutturale tier 1).
+
+- **Sequenza commit della sessione**:
+  - A `e055041` Add ANALYSIS_MATERIALI_STUDIO.md after PyMuPDF inspection of four fixtures
+  - B `d38c727` Land materiali_studio v1 plugin (user-generated study notes)
+  - C `e8f610a` Add 132 unit tests for materiali_studio at 100% coverage (incluso fix `_PARTE_ALLCAPS_PATTERN` lookahead + `_DOT_LABEL_PATTERN` lookbehind rivelati dai test)
+  - D `4b66c27` Add 32 integration tests for materiali_studio (full e2e + 13-way symmetry)
+  - E `<TBD>` Update CARRYOVER v2.16 + CLAUDE.md patterns (iii)/(jjj)/(kkk)
+
+- **Domande critiche per la sessione successiva**:
+  - (a) **sessione "promotion analysis"** dedicata a identificare con un audit cross-plugin cosa promuovere in `_giuffre_shared/`, `_dejure_shared/`, `_edd_shared/` ora che il corpus a tredici plugin è chiuso;
+  - (b) **decisione finale sui quattro regimi acustici Layout 4 A/B/C/D** per le note (analysis EdD § 12.8) — applicabile in particolare ai DeJure DT/NS che hanno apparato note denso, irrilevante per materiali_studio che ha apparato vuoto;
+  - (c) **normalizzazione OCR aggressiva** per `enciclopedia_storica` (residuo v2.13);
+  - (d) **eventuale plugin di nuovo dominio** se l'utente lo richiede (es. dispense scansionate OCR di altri studenti, materiali in formato Markdown convertiti via Pandoc, eBooks Kindle/EPUB resi via Calibre, etc.); analogo materiali_studio ma con discriminator differenti;
+  - (e) **eventuale upgrade del plugin materiali_studio** per gestire numerazione decimale/romana o ToC Word auto-generato se un utente futuro carica materiali con quei pattern.
+
+### Sessione precedente (19 maggio 2026 notte, ventottesimo aggiornamento — versione 2.13, landing dei plugin decimo `enciclopedia_moderna` e undicesimo `enciclopedia_storica` per le voci EdD Giuffrè)
 - **Apertura**: stato post-landing DT (versione 2.12), Layer 1 + nove plugin di corpus operativi, suite 1186 test, schema 0.5.0 stabile. L'utente ha caricato sette fixture private EdD (`edd_abuso_posizione_dominante.pdf` 949 KB, `edd_azienda.pdf` 39 MB il massivo, `edd_eccesso_potere.pdf` 5.0 MB, `edd_factoring.pdf` 891 KB, `edd_giudizio_legittimita_costituzionale.pdf` 1.1 MB, `edd_lavoro.pdf` 4.3 MB, `edd_pagamento.pdf` 8.1 MB) e apre la sessione con un briefing operativo che dichiara il vincolo CLAUDE.md "no decisioni autonome su design" sospeso senza riserva per tutto il perimetro plugin EdD; criteri di preferenza ordinati (1) resilienza, (2) robustezza, (3) completezza nel perimetro plugin, (4) efficienza, (5) flessibilità per Layer 2.
 - **Fase 1 in parallelo con quattro subagent PyMuPDF**: ispezione empirica dei sette fixture. Risultati: tre fixture (abuso 52pp, factoring 14pp, giudizio 69pp) sono `enciclopedia_moderna` nativa SimonciniGaramond pulita (13-18 firme uniche, doppia colonna, FONTI+LETTERATURA puliti, drift -0.02pt sui size); quattro fixture (eccesso 12pp Vol XIV 1965, lavoro 13pp Vol XXIII 1973, pagamento 23pp Vol XXXI 1981, azienda 62pp Vol IV 1959) sono `enciclopedia_storica` OCR Acrobat Paper Capture (200-901 firme uniche, image-blocks 1/pagina, Times-Roman frazionario 7.4-9.7pt, OCR fossilizzato sui marker `SolUlAJUO`/`LnTEHATURA`/`Il .` per `II.`, mega-note fino a 22342 caratteri sull'azienda).
 - **Decisione architetturale**: **due plugin distinti** `enciclopedia_moderna` + `enciclopedia_storica`. Motivazione: firma `matches()` radicalmente diversa (Simoncini exact-family vs Times-Roman size-banded), strategia `refine_classification` opposta (firma tipografica vs regex testuali tolleranti), gerarchia output diversa, overlap codice limitato. **No `_edd_shared/`** — rule of three non triggera su due plugin, overlap troppo specifico (footer ente, regex FONTI/LETTERATURA, regex `v. NOMEVOCE`); l'estrazione resta nella stessa lista di refactor strategici futuri insieme a `_dejure_shared/`.
