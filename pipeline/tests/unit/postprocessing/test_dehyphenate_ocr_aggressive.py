@@ -109,6 +109,26 @@ def test_ocr_corrected_join_handles_depth_two_substitutions() -> None:
     assert len(transformations) == 1
 
 
+def test_inline_hyphenation_without_newline_is_accepted() -> None:
+    """The tier 1 reconstructor flattens newlines; the step must still merge.
+
+    On the ``enciclopedia_storica`` corpus the reconstructor emits
+    ``ordina-mento`` (no embedded newline) for what PyMuPDF reported
+    as ``ordina-\\nmento``. The step's regex accepts both shapes.
+    """
+    document = Document(root=(_node("node_0001", "il ordina-mento giuridico."),))
+    lexicon = ItalianLexicon.from_word_set({"ordinamento"})
+
+    new_document, transformations = dehyphenate_ocr_aggressive(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert new_document.root[0].text == "il ordinamento giuridico."
+    assert len(transformations) == 1
+    assert transformations[0].original == "ordina-mento"
+    assert transformations[0].normalized == "ordinamento"
+
+
 # ---------------------------------------------------------------------------
 # Skip cases
 

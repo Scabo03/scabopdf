@@ -70,13 +70,30 @@ STEP_ID = "dehyphenate_ocr_aggressive"
 """Registry key under which :func:`dehyphenate_ocr_aggressive` is registered."""
 
 _HYPHENATION_REGEX = re.compile(
-    "([a-zA-Zàèéìòù0-9]+)[-­]\n([a-zA-Zàèéìòù0-9]+)",
+    "([a-zA-Zàèéìòù0-9]+)[-­]\n?([a-zA-Zàèéìòù0-9]+)",
 )
 """End-of-line hyphenation regex.
 
 The letter classes are wider than the strict step's: digits are
 admitted so OCR-corrupted fragments like ``paga`` followed by
 ``1nenlo`` get captured as candidates for further inspection.
+
+The optional ``\\n`` after the hyphen is the crucial difference
+against :data:`postprocessing.steps.dehyphenate._HYPHENATION_END_REGEX`:
+the tier 1 reconstructor on the ``enciclopedia_storica`` corpus (and
+on the moderna sister) flattens end-of-line line breaks into the
+running text, so a hyphenation that PyMuPDF originally reported as
+``ordina-\\nmento`` arrives at the post-processing pipeline as
+``ordina-mento`` with the newline already absorbed. Matching both
+shapes keeps the step useful on EdD storica without breaking the
+synthetic-fixture cases that still embed ``\\n``.
+
+The lexicon-validation gate filters legitimate compounds
+(``decreto-legge`` &c.) automatically: their joined form is not in
+the Italian wordlist, so no correction is offered. The
+:func:`ocr_substitutions.is_hyphen_preservative` predicate is a
+secondary safety net for compounds whose joined form *might* live
+in the lexicon.
 """
 
 _MIN_POST_HYPHEN_LEN = 2
