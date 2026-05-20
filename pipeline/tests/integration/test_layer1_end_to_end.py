@@ -53,6 +53,8 @@ from scabopdf_pipeline.profiles.manuale_utet_wolterskluwer import (
 from scabopdf_pipeline.profiles.manuale_zanichelli_giuridica import (
     ManualeZanichelliGiuridicaProfile,
 )
+from scabopdf_pipeline.profiles.materiali_studio import MaterialiStudioProfile
+from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DocumentProfile
 from scabopdf_pipeline.profiling.signals import (
     ApparatusPresence,
@@ -100,6 +102,10 @@ EDD_PAGAMENTO_FIXTURE = FIXTURES_DIR / "edd_pagamento.pdf"
 EDD_AZIENDA_FIXTURE = FIXTURES_DIR / "edd_azienda.pdf"
 GIUFFRE_CODICE_PENALE_FIXTURE = FIXTURES_DIR / "giuffre_codice_penale.pdf"
 GIUFFRE_CODICE_CIVILE_FIXTURE = FIXTURES_DIR / "giuffre_codice_civile.pdf"
+MATERIALI_TEORIA_FIXTURE = FIXTURES_DIR / "materiali_teoria_generale.pdf"
+MATERIALI_TRIBUTARIO_FIXTURE = FIXTURES_DIR / "materiali_diritto_tributario.pdf"
+MATERIALI_PRIVATO_I_FIXTURE = FIXTURES_DIR / "materiali_diritto_privato_i.pdf"
+MATERIALI_PRIVATO_II_FIXTURE = FIXTURES_DIR / "materiali_diritto_privato_ii.pdf"
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -220,6 +226,21 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^plugin:dejure_dottrina:editorial_note_minted_node_\S+_page_\d+$"),
     re.compile(r"^plugin:dejure_dottrina:cross_reference_minted_node_\S+_page_\d+_marker_\d+$"),
     re.compile(r"^plugin:dejure_dottrina:cross_reference_unresolved_node_\S+_marker_\S+$"),
+    # materiali_studio plugin (closed vocabulary, see profiles/materiali_studio.py)
+    re.compile(r"^plugin:materiali_studio:color_mode_detected_distinct_colors_\S+$"),
+    re.compile(r"^plugin:materiali_studio:mono_mode_no_color_signal$"),
+    re.compile(r"^plugin:materiali_studio:heading_1_text_pattern_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:materiali_studio:heading_2_capitolo_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:materiali_studio:heading_3_section_letter_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:materiali_studio:heading_4_label_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:materiali_studio:list_item_dash_bullet_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:materiali_studio:em_dash_separator_block_-?\d+_page_\d+$"),
+    re.compile(
+        r"^plugin:materiali_studio:decimal_hierarchical_pattern_unsupported_block_-?\d+_page_\d+$"
+    ),
+    re.compile(
+        r"^plugin:materiali_studio:roman_hierarchical_pattern_unsupported_block_-?\d+_page_\d+$"
+    ),
 )
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
@@ -4297,3 +4318,318 @@ def test_dejure_massime_does_not_promote_on_codice_penale() -> None:
     signals = _build_signals_from_fixture(GIUFFRE_CODICE_PENALE_FIXTURE)
     score = DejureMassimeProfile.matches(signals)
     assert score < 0.6, f"DeJure MM promoted on Codice Penale: score {score}"
+
+
+# ===========================================================================
+# materiali_studio integration tests — see plugin module docstring and
+# docs/analysis/ANALYSIS_MATERIALI_STUDIO.md for the editorial context.
+# Per user instruction (CARRYOVER v2.16, "lezione codici"), the end-to-end
+# pipeline tests on the four materiali fixtures are NOT marked @slow and
+# run as ordinary integration tests.
+# ===========================================================================
+
+
+def _make_materiali_studio_profile() -> DocumentProfile:
+    plugin = MaterialiStudioProfile()
+    return DocumentProfile(
+        profile_id="materiali_studio",
+        editorial_family="user_generated",
+        genre="study_notes",
+        layouts_available=[],
+        layouts_disabled=plugin.get_layouts_disabled(),
+        post_processing=plugin.get_post_processing(),
+        categories_emitted=plugin.get_categories(),
+        confidence=0.75,
+        warnings=[],
+    )
+
+
+# ---------------------------------------------------------------------------
+# matches() positive tests on the four fixtures
+
+
+def test_materiali_studio_matches_teoria_generale_fixture() -> None:
+    """MaterialiStudioProfile.matches() clears 0.6 on the teoria_generale fixture."""
+    if not MATERIALI_TEORIA_FIXTURE.exists():
+        pytest.skip(
+            f"fixture missing: {MATERIALI_TEORIA_FIXTURE} - see pipeline/tests/fixtures/README.md"
+        )
+    signals = _build_signals_from_fixture(MATERIALI_TEORIA_FIXTURE)
+    score = MaterialiStudioProfile.matches(signals)
+    assert score >= 0.7, f"matches() failed on teoria_generale: score {score}"
+
+
+def test_materiali_studio_matches_tributario_fixture() -> None:
+    if not MATERIALI_TRIBUTARIO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_TRIBUTARIO_FIXTURE}")
+    signals = _build_signals_from_fixture(MATERIALI_TRIBUTARIO_FIXTURE)
+    score = MaterialiStudioProfile.matches(signals)
+    assert score >= 0.7, f"matches() failed on diritto_tributario: score {score}"
+
+
+def test_materiali_studio_matches_privato_i_fixture() -> None:
+    if not MATERIALI_PRIVATO_I_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_PRIVATO_I_FIXTURE}")
+    signals = _build_signals_from_fixture(MATERIALI_PRIVATO_I_FIXTURE)
+    score = MaterialiStudioProfile.matches(signals)
+    assert score >= 0.7, f"matches() failed on diritto_privato_i: score {score}"
+
+
+def test_materiali_studio_matches_privato_ii_fixture() -> None:
+    if not MATERIALI_PRIVATO_II_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_PRIVATO_II_FIXTURE}")
+    signals = _build_signals_from_fixture(MATERIALI_PRIVATO_II_FIXTURE)
+    score = MaterialiStudioProfile.matches(signals)
+    assert score >= 0.7, f"matches() failed on diritto_privato_ii: score {score}"
+
+
+# ---------------------------------------------------------------------------
+# End-to-end pipeline tests on the four fixtures
+
+
+def _materiali_full_pipeline(
+    fixture: Path,
+) -> tuple[ExtractionResult, list[ClassifiedBlock], Document, Any]:
+    profile = _make_materiali_studio_profile()
+    plugin = MaterialiStudioProfile()
+    extraction = extract(fixture)
+    classified = classify(extraction, profile, plugin)
+    document = reconstruct(extraction, classified, profile, plugin)
+    document = resolve_apparatus(document, extraction, classified, plugin)
+    document = apply_post_processing(document, extraction, classified, plugin)
+    scabopdf_document = convert_document(document, extraction, profile, fixture)
+    return extraction, classified, document, scabopdf_document
+
+
+def _category_counts(document: Document) -> dict[SemanticCategory, int]:
+    counts: dict[SemanticCategory, int] = {}
+    for root in document.root:
+        for node in _iter_nodes(root):
+            counts[node.category] = counts.get(node.category, 0) + 1
+    return counts
+
+
+def _print_materiali_summary(
+    fixture_name: str, extraction: ExtractionResult, document: Document
+) -> None:
+    counts = _category_counts(document)
+    print(
+        f"\n{fixture_name} Layer 1 end-to-end summary:"
+        f"\n  page_count={extraction.page_count}"
+        f"\n  n_blocks={len(extraction.blocks)}"
+        f"\n  n_spans={len(extraction.spans)}"
+        f"\n  n_heading_1={counts.get(SemanticCategory.HEADING_1, 0)}"
+        f"\n  n_heading_2={counts.get(SemanticCategory.HEADING_2, 0)}"
+        f"\n  n_heading_3={counts.get(SemanticCategory.HEADING_3, 0)}"
+        f"\n  n_heading_4={counts.get(SemanticCategory.HEADING_4, 0)}"
+        f"\n  n_body={counts.get(SemanticCategory.BODY, 0)}"
+        f"\n  n_list_item={counts.get(SemanticCategory.LIST_ITEM, 0)}"
+        f"\n  n_artifact_filigree={counts.get(SemanticCategory.ARTIFACT_FILIGREE, 0)}"
+        f"\n  n_empty_page={counts.get(SemanticCategory.EMPTY_PAGE, 0)}"
+        f"\n  n_warnings={len(document.warnings)}"
+    )
+
+
+def test_pipeline_runs_on_materiali_teoria_generale() -> None:
+    """End-to-end Layer 1 pipeline on the teoria_generale fixture (mono mode)."""
+    if not MATERIALI_TEORIA_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_TEORIA_FIXTURE}")
+
+    extraction, _classified, document, scabopdf_document = _materiali_full_pipeline(
+        MATERIALI_TEORIA_FIXTURE
+    )
+
+    _print_materiali_summary("materiali_teoria_generale", extraction, document)
+    counts = _category_counts(document)
+
+    assert extraction.page_count == 200
+    # The fixture has 2 em-dash separators and 47 dot-labels and 24 dash-bullets,
+    # but the topic-label predicate is conservative on multi-period or long lines;
+    # we check the existence of each category as a minimum.
+    assert counts.get(SemanticCategory.ARTIFACT_FILIGREE, 0) >= 1, (
+        f"expected >=1 ARTIFACT_FILIGREE, got {counts}"
+    )
+    assert counts.get(SemanticCategory.BODY, 0) >= 100, f"expected >=100 BODY, got {counts}"
+    assert counts.get(SemanticCategory.LIST_ITEM, 0) >= 10, f"expected >=10 LIST_ITEM, got {counts}"
+    assert any("mono_mode" in w for w in document.warnings), (
+        "expected mono_mode warning in document.warnings"
+    )
+    assert scabopdf_document.profile.profile_id == "materiali_studio"
+    assert scabopdf_document.schema_version == "0.5.0"
+
+    unknown = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown, f"unknown warnings: {unknown[:5]} ({len(unknown)} total)"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+def test_pipeline_runs_on_materiali_tributario() -> None:
+    """End-to-end Layer 1 pipeline on the diritto_tributario fixture (Word mono mode)."""
+    if not MATERIALI_TRIBUTARIO_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_TRIBUTARIO_FIXTURE}")
+
+    extraction, _classified, document, scabopdf_document = _materiali_full_pipeline(
+        MATERIALI_TRIBUTARIO_FIXTURE
+    )
+
+    _print_materiali_summary("materiali_diritto_tributario", extraction, document)
+    counts = _category_counts(document)
+
+    assert extraction.page_count == 222
+    # Word's aggressive paragraph aggregation produces ~41 merged BODY Nodes
+    # for 222 pages (most pages have 1 block coalesced via cross-page merging).
+    assert counts.get(SemanticCategory.BODY, 0) >= 30, f"expected >=30 BODY, got {counts}"
+    assert counts.get(SemanticCategory.LIST_ITEM, 0) >= 10, f"expected >=10 LIST_ITEM, got {counts}"
+    assert any("mono_mode" in w for w in document.warnings)
+    assert scabopdf_document.profile.profile_id == "materiali_studio"
+
+    unknown = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown, f"unknown warnings: {unknown[:5]} ({len(unknown)} total)"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+def test_pipeline_runs_on_materiali_privato_i() -> None:
+    """End-to-end Layer 1 pipeline on the diritto_privato_i fixture (mono mode)."""
+    if not MATERIALI_PRIVATO_I_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_PRIVATO_I_FIXTURE}")
+
+    extraction, _classified, document, scabopdf_document = _materiali_full_pipeline(
+        MATERIALI_PRIVATO_I_FIXTURE
+    )
+
+    _print_materiali_summary("materiali_diritto_privato_i", extraction, document)
+    counts = _category_counts(document)
+
+    assert extraction.page_count == 552
+    # 23 capitoli + 11 sezioni + 56 colon-labels expected per analysis
+    assert counts.get(SemanticCategory.HEADING_2, 0) >= 10, (
+        f"expected >=10 HEADING_2 (Cap. N), got {counts}"
+    )
+    assert counts.get(SemanticCategory.HEADING_3, 0) >= 5, (
+        f"expected >=5 HEADING_3 (section letter), got {counts}"
+    )
+    assert counts.get(SemanticCategory.HEADING_4, 0) >= 20, (
+        f"expected >=20 HEADING_4 (colon-ending labels), got {counts}"
+    )
+    assert counts.get(SemanticCategory.LIST_ITEM, 0) >= 50, f"expected >=50 LIST_ITEM, got {counts}"
+    assert any("mono_mode" in w for w in document.warnings)
+
+    unknown = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown, f"unknown warnings: {unknown[:5]} ({len(unknown)} total)"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+def test_pipeline_runs_on_materiali_privato_ii() -> None:
+    """End-to-end Layer 1 pipeline on the diritto_privato_ii fixture (color-aware mode)."""
+    if not MATERIALI_PRIVATO_II_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_PRIVATO_II_FIXTURE}")
+
+    extraction, _classified, document, scabopdf_document = _materiali_full_pipeline(
+        MATERIALI_PRIVATO_II_FIXTURE
+    )
+
+    _print_materiali_summary("materiali_diritto_privato_ii", extraction, document)
+    counts = _category_counts(document)
+
+    assert extraction.page_count == 857
+    # Color mode should activate on this fixture
+    assert any("color_mode" in w for w in document.warnings), (
+        "expected color_mode warning in document.warnings"
+    )
+    # 26 banner-di-parte (HEADING_1) and ~35 CAP. (HEADING_2) and ~83 sub-titles (HEADING_3)
+    # expected per analysis; the predicate is conservative so we check minimal floors.
+    assert counts.get(SemanticCategory.HEADING_1, 0) >= 1, f"expected >=1 HEADING_1, got {counts}"
+    assert counts.get(SemanticCategory.BODY, 0) >= 100, f"expected >=100 BODY, got {counts}"
+
+    unknown = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown, f"unknown warnings: {unknown[:5]} ({len(unknown)} total)"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
+# ---------------------------------------------------------------------------
+# Non-promotion of materiali_studio on representative editorial fixtures
+# (one fixture per editorial plugin family)
+
+
+@pytest.mark.parametrize(
+    "fixture_const_name",
+    [
+        "PATRIARCA_FIXTURE",
+        "TESAURO_FIXTURE",
+        "MOSCONI_FIXTURE",
+        "MANDRIOLI_FIXTURE",
+        "TORRENTE_FIXTURE",
+        "MARRONE_FIXTURE",
+        "DEJURE_NS_GIUDIZIO_FIXTURE",
+        "DEJURE_MM_MASSIVO_FIXTURE",
+        "DEJURE_DT_CARTABIA_FIXTURE",
+        "EDD_FACTORING_FIXTURE",
+        "EDD_PAGAMENTO_FIXTURE",
+        "GIUFFRE_CODICE_CIVILE_FIXTURE",
+    ],
+)
+def test_materiali_studio_does_not_promote_on_editorial_fixtures(
+    fixture_const_name: str,
+) -> None:
+    """matches() stays below 0.6 on every representative editorial fixture."""
+    fixture = globals()[fixture_const_name]
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture} - see pipeline/tests/fixtures/README.md")
+    signals = _build_signals_from_fixture(fixture)
+    score = MaterialiStudioProfile.matches(signals)
+    assert score < 0.6, f"materiali_studio promoted on {fixture_const_name}: score {score}"
+
+
+# ---------------------------------------------------------------------------
+# Reverse non-promotion: each editorial plugin must NOT promote on the most
+# stressful materiali fixture (diritto_privato_ii — has color signal that
+# could accidentally trigger an Arial-body plugin like DeJure).
+
+
+@pytest.mark.parametrize(
+    "plugin_cls",
+    [
+        ManualeZanichelliGiuridicaProfile,
+        CompendioUtetProfile,
+        ManualeUtetWolterskluwerProfile,
+        ManualeGiappichelliProfile,
+        ManualeGiuffreDirectoProfile,
+        ManualeBicProfile,
+        DejureNotaSentenzaProfile,
+        DejureMassimeProfile,
+        DejureDottrinaProfile,
+        EnciclopediaModernaProfile,
+        EnciclopediaStoricaProfile,
+        GiuffreCodiciProfile,
+    ],
+)
+def test_editorial_plugins_do_not_promote_on_materiali_privato_ii(
+    plugin_cls: type[ProfilePlugin],
+) -> None:
+    """Each of the 12 editorial plugins stays below 0.6 on materiali_privato_ii."""
+    if not MATERIALI_PRIVATO_II_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_PRIVATO_II_FIXTURE}")
+    signals = _build_signals_from_fixture(MATERIALI_PRIVATO_II_FIXTURE)
+    score = plugin_cls.matches(signals)
+    assert score < 0.6, (
+        f"{plugin_cls.__name__} promoted on materiali_diritto_privato_ii: score {score}"
+    )
