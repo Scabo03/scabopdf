@@ -304,120 +304,91 @@ def _make_profile() -> DocumentProfile:
     )
 
 
-def _make_tesauro_profile() -> DocumentProfile:
-    """Build a DocumentProfile pinned to the compendio_utet plugin identity."""
-    plugin = CompendioUtetProfile()
+def _make_profile_for_plugin(
+    plugin: ProfilePlugin,
+    *,
+    confidence: float,
+    layouts_available: list[str],
+) -> DocumentProfile:
+    """Build a DocumentProfile pinned to ``plugin``'s identity.
+
+    Canonical helper that replaces the 13 byte-equivalent
+    ``_make_<plugin>_profile`` builders previously sprinkled across this
+    file (P-033 of the Promotion Analysis Fase 1). Each named builder
+    is now a one-liner that supplies the plugin's per-fixture
+    ``confidence`` and ``layouts_available`` literals to this helper.
+    """
     return DocumentProfile(
         profile_id=plugin.profile_id,
         editorial_family=plugin.editorial_family,
         genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3"],
+        layouts_available=layouts_available,
         layouts_disabled=plugin.get_layouts_disabled(),
         post_processing=plugin.get_post_processing(),
         categories_emitted=plugin.get_categories(),
-        confidence=0.95,
+        confidence=confidence,
         warnings=[],
     )
 
 
-def _make_patriarca_profile() -> DocumentProfile:
-    """Build a DocumentProfile pinned to the Zanichelli plugin's identity.
+def _make_tesauro_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the compendio_utet plugin identity."""
+    return _make_profile_for_plugin(
+        CompendioUtetProfile(), confidence=0.95, layouts_available=["L1", "L2", "L3"]
+    )
 
-    The pipeline's `emit` and the CLI still hard-wire UnknownGenericProfile
-    today (no real signal builder yet), so the integration tests below
-    construct the profile by hand and pass it to the manual orchestration.
-    """
-    plugin = ManualeZanichelliGiuridicaProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+
+def _make_patriarca_profile() -> DocumentProfile:
+    """Build a DocumentProfile pinned to the Zanichelli plugin's identity."""
+    return _make_profile_for_plugin(
+        ManualeZanichelliGiuridicaProfile(),
         confidence=0.85,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3"],
     )
 
 
 def _make_mosconi_profile() -> DocumentProfile:
     """Build a DocumentProfile pinned to the Mosconi plugin's identity."""
-    plugin = ManualeUtetWolterskluwerProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        ManualeUtetWolterskluwerProfile(),
         confidence=0.95,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3", "L4"],
     )
 
 
 def _make_mandrioli_profile() -> DocumentProfile:
     """Build a DocumentProfile pinned to the Mandrioli/Giappichelli plugin's identity."""
-    plugin = ManualeGiappichelliProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        ManualeGiappichelliProfile(),
         confidence=0.90,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3", "L4"],
     )
 
 
 def _make_torrente_profile() -> DocumentProfile:
     """Build a DocumentProfile pinned to the manuale_giuffre_diretto plugin's identity."""
-    plugin = ManualeGiuffreDirectoProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        ManualeGiuffreDirectoProfile(),
         confidence=0.90,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3"],
     )
 
 
 def _make_dejure_ns_profile() -> DocumentProfile:
     """Build a DocumentProfile pinned to the dejure_nota_sentenza plugin's identity."""
-    plugin = DejureNotaSentenzaProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        DejureNotaSentenzaProfile(),
         confidence=0.85,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3", "L4"],
     )
 
 
 def _make_marrone_profile() -> DocumentProfile:
     """Build a DocumentProfile pinned to the manuale_bic plugin's identity."""
-    plugin = ManualeBicProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        ManualeBicProfile(),
         confidence=0.90,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3", "L4"],
     )
 
 
@@ -1987,70 +1958,76 @@ def _build_signals_from_fixture(fixture: Path) -> ProfilingSignals:
     )
 
 
-def _scan_dejure_banner(doc: Any) -> str | None:
-    """Scan page 1 for the DeJure editorial banner text.
+def _iter_pdf_text_spans(
+    doc: Any, *, max_pages: int | None = None
+) -> Iterator[tuple[str, str, float]]:
+    """Iterate ``(text, font, size)`` tuples over PDF text spans.
 
-    Looks for an Arial-BoldMT 9pt block whose stripped text is either
-    "DOTTRINA" or "NOTE E DOTTRINA". Returns the first match found or
-    ``None`` if no banner is detected. The scan is restricted to page
-    1 because DeJure banners always appear at the top of the first
-    page of every article (additional banners within a bundle PDF sit
-    at arbitrary y-positions and are not relevant to the
-    genre-detection signal).
+    Shared scaffolding promoted from the two byte-equivalent
+    block/line/span triple-loops that the DeJure and Giuffrè codici
+    banner scanners used (P-034 of the Promotion Analysis Fase 1).
+    ``max_pages`` caps the scan depth — pass ``1`` for "first page only"
+    or ``300`` for "deep front-matter excluded" scans. ``None`` walks
+    every page.
     """
-    page = doc[0]
-    for block in page.get_text("dict")["blocks"]:
-        if block.get("type", 0) != 0:
-            continue
-        for line in block["lines"]:
-            for span in line["spans"]:
-                if str(span["font"]) != "Arial-BoldMT":
-                    continue
-                if abs(float(span["size"]) - 9.0) >= 0.2:
-                    continue
-                stripped = str(span["text"]).strip()
-                if stripped == "DOTTRINA":
-                    return "DOTTRINA"
-                if stripped == "NOTE E DOTTRINA":
-                    return "NOTE E DOTTRINA"
-    return None
-
-
-def _scan_giuffre_codici_banner(doc: Any) -> str | None:
-    """Scan the first 300 pages for the Giuffrè codici BD700x300 banner glyph.
-
-    Returns the dominant banner text observed (``"CODICE PENALE"``,
-    ``"CODICE DI PROCEDURA PENALE"``, ``"CODICE CIVILE"``,
-    ``"PROCEDURA CIVILE"``, ``"LEGGI"``, etc.) or ``None`` if no banner
-    glyph is found. The banner is absent from front-matter pages
-    (pp. 0-80 of the penale, pp. 0-107 of the civile) so the scan
-    must extend deep into the document.
-
-    Counts the PENALE-flavoured and CIVILE-flavoured occurrences and
-    returns the one with the higher count. Returns the literal
-    ``"CODICE PENALE"`` or ``"CODICE CIVILE"`` rather than the verbatim
-    text for stability — the plugin's matcher accepts both fixed forms.
-    """
-    penale_count = 0
-    civile_count = 0
-    last_text: str | None = None
-    max_page = min(300, doc.page_count)
-    for page_idx in range(max_page):
+    page_count = doc.page_count
+    last = page_count if max_pages is None else min(max_pages, page_count)
+    for page_idx in range(last):
         page = doc[page_idx]
         for block in page.get_text("dict")["blocks"]:
             if block.get("type", 0) != 0:
                 continue
             for line in block["lines"]:
                 for span in line["spans"]:
-                    if not str(span["font"]).startswith("BD700x300"):
-                        continue
-                    text = str(span["text"]).upper()
-                    if "PENALE" in text:
-                        penale_count += 1
-                        last_text = text
-                    elif "CIVILE" in text:
-                        civile_count += 1
-                        last_text = text
+                    yield (
+                        str(span["text"]),
+                        str(span["font"]),
+                        float(span["size"]),
+                    )
+
+
+def _scan_dejure_banner(doc: Any) -> str | None:
+    """Scan page 1 for the DeJure editorial banner text.
+
+    Looks for an Arial-BoldMT 9pt span whose stripped text is either
+    "DOTTRINA" or "NOTE E DOTTRINA". Returns the first match or ``None``.
+    Restricted to page 1 because DeJure banners always appear at the
+    top of the first page of every article. Built on
+    :func:`_iter_pdf_text_spans` per P-034.
+    """
+    for text, font, size in _iter_pdf_text_spans(doc, max_pages=1):
+        if font != "Arial-BoldMT" or abs(size - 9.0) >= 0.2:
+            continue
+        stripped = text.strip()
+        if stripped == "DOTTRINA":
+            return "DOTTRINA"
+        if stripped == "NOTE E DOTTRINA":
+            return "NOTE E DOTTRINA"
+    return None
+
+
+def _scan_giuffre_codici_banner(doc: Any) -> str | None:
+    """Scan the first 300 pages for the Giuffrè codici BD700x300 banner glyph.
+
+    Returns ``"CODICE PENALE"`` or ``"CODICE CIVILE"`` (or
+    ``"PROCEDURA CIVILE"``) by counting span occurrences whose font
+    starts with ``BD700x300`` and text contains ``PENALE``/``CIVILE``.
+    The banner is absent from front-matter pages so the scan extends
+    to page 300. Built on :func:`_iter_pdf_text_spans` per P-034.
+    """
+    penale_count = 0
+    civile_count = 0
+    last_text: str | None = None
+    for text, font, _size in _iter_pdf_text_spans(doc, max_pages=300):
+        if not font.startswith("BD700x300"):
+            continue
+        upper = text.upper()
+        if "PENALE" in upper:
+            penale_count += 1
+            last_text = upper
+        elif "CIVILE" in upper:
+            civile_count += 1
+            last_text = upper
     if penale_count == 0 and civile_count == 0:
         return None
     if penale_count >= civile_count:
@@ -2788,17 +2765,10 @@ def test_dejure_nota_sentenza_does_not_promote_on_mm_massivo_fixture() -> None:
 
 def _make_dejure_mm_profile() -> DocumentProfile:
     """Build a DocumentProfile pinned to the dejure_massime plugin's identity."""
-    plugin = DejureMassimeProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        DejureMassimeProfile(),
         confidence=0.80,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3", "L4"],
     )
 
 
@@ -3136,17 +3106,10 @@ def test_dejure_massime_does_not_promote_on_marotta_fixture() -> None:
 
 def _make_dejure_dt_profile() -> DocumentProfile:
     """Build a DocumentProfile pinned to the dejure_dottrina plugin's identity."""
-    plugin = DejureDottrinaProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        DejureDottrinaProfile(),
         confidence=0.80,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3", "L4"],
     )
 
 
@@ -3587,32 +3550,18 @@ def test_dejure_massime_does_not_promote_on_dt_cartabia_fixture() -> None:
 
 
 def _make_enciclopedia_moderna_profile() -> DocumentProfile:
-    plugin = EnciclopediaModernaProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        EnciclopediaModernaProfile(),
         confidence=0.85,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3", "L4"],
     )
 
 
 def _make_enciclopedia_storica_profile() -> DocumentProfile:
-    plugin = EnciclopediaStoricaProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L3"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        EnciclopediaStoricaProfile(),
         confidence=0.85,
-        warnings=[],
+        layouts_available=["L1", "L2", "L3"],
     )
 
 
@@ -3988,17 +3937,10 @@ def test_dejure_nota_sentenza_does_not_promote_on_edd_pagamento() -> None:
 
 
 def _make_giuffre_codici_profile() -> DocumentProfile:
-    plugin = GiuffreCodiciProfile()
-    return DocumentProfile(
-        profile_id=plugin.profile_id,
-        editorial_family=plugin.editorial_family,
-        genre=plugin.genre,
-        layouts_available=["L1", "L2", "L4"],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        GiuffreCodiciProfile(),
         confidence=0.95,
-        warnings=[],
+        layouts_available=["L1", "L2", "L4"],
     )
 
 
@@ -4391,17 +4333,10 @@ def test_dejure_massime_does_not_promote_on_codice_penale() -> None:
 
 
 def _make_materiali_studio_profile() -> DocumentProfile:
-    plugin = MaterialiStudioProfile()
-    return DocumentProfile(
-        profile_id="materiali_studio",
-        editorial_family="user_generated",
-        genre="study_notes",
-        layouts_available=[],
-        layouts_disabled=plugin.get_layouts_disabled(),
-        post_processing=plugin.get_post_processing(),
-        categories_emitted=plugin.get_categories(),
+    return _make_profile_for_plugin(
+        MaterialiStudioProfile(),
         confidence=0.75,
-        warnings=[],
+        layouts_available=[],
     )
 
 
