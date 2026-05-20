@@ -698,6 +698,226 @@ class TestDashBullet:
 # ===========================================================================
 
 
+# ===========================================================================
+# Predicates — _classify_decimal_heading
+# ===========================================================================
+
+
+class TestDecimalHeading:
+    def test_depth_2_returns_heading_2(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("1.1 Introduzione")])
+        result = plugin._classify_decimal_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_2
+
+    def test_depth_3_returns_heading_3(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("1.1.1 Sotto-paragrafo")])
+        result = plugin._classify_decimal_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_3
+
+    def test_depth_4_returns_heading_4(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("1.1.1.1 Quarto livello")])
+        result = plugin._classify_decimal_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_4
+
+    def test_multi_digit_numbers(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("12.34 Numerazione a due cifre")])
+        result = plugin._classify_decimal_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_2
+
+    def test_depth_5_returns_none_with_warning(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("1.2.3.4.5 Profondità eccessiva")])
+        result = plugin._classify_decimal_heading(view)
+        assert result is None
+        assert any("depth_exceeded" in w for w in plugin._pending_warnings)
+
+    def test_no_match_no_decimal(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("Plain body text without numbering")])
+        assert plugin._classify_decimal_heading(view) is None
+
+    def test_no_match_single_int(self) -> None:
+        plugin = MaterialiStudioProfile()
+        # Single integer like "1. Foo" is not a hierarchical decimal — it's
+        # an enumeration; the decimal predicate requires at least two
+        # dot-separated digits.
+        view = _view([_span("1. Foo")])
+        assert plugin._classify_decimal_heading(view) is None
+
+    def test_no_match_lowercase_after_dot(self) -> None:
+        plugin = MaterialiStudioProfile()
+        # Lowercase after the numbering rejects the match (body sentence).
+        view = _view([_span("1.1 introduzione minuscola")])
+        assert plugin._classify_decimal_heading(view) is None
+
+    def test_no_match_too_long(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("1.1 " + "Y" * HEADING_LINE_MAX_CHARS)])
+        assert plugin._classify_decimal_heading(view) is None
+
+    def test_no_match_multi_line(self) -> None:
+        plugin = MaterialiStudioProfile()
+        spans = [
+            _span("1.1 Titolo", line_index=0),
+            _span("continuation", line_index=1),
+            _span("third line", line_index=2),
+        ]
+        view = _view(spans)
+        assert plugin._classify_decimal_heading(view) is None
+
+    def test_no_match_cross_reference_inline(self) -> None:
+        plugin = MaterialiStudioProfile()
+        # A cross-reference like "art. 1.1 c.c." does not start with the
+        # digit (block opens with "art.") so the anchor fails.
+        view = _view([_span("art. 1.1 c.c. è applicabile")])
+        assert plugin._classify_decimal_heading(view) is None
+
+    def test_no_match_date_pattern(self) -> None:
+        plugin = MaterialiStudioProfile()
+        # Date "25.12.2023" lacks an uppercase letter after the numeral.
+        view = _view([_span("25.12.2023 questo è il body con la data")])
+        # The "questo" lowercase q after 2023 prevents match.
+        assert plugin._classify_decimal_heading(view) is None
+
+    def test_match_with_dot_after_numbering(self) -> None:
+        # Allows the pattern "1.1. Title" with a trailing dot after the
+        # numbering before the space.
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("1.1. Titolo con punto dopo numerazione")])
+        result = plugin._classify_decimal_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_2
+
+
+# ===========================================================================
+# Predicates — _classify_roman_heading + _is_valid_roman_numeral
+# ===========================================================================
+
+
+class TestRomanHeading:
+    def test_ii_returns_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("II. STORIA")])
+        result = plugin._classify_roman_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_1
+
+    def test_iii_returns_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("III. CARATTERI GENERALI")])
+        result = plugin._classify_roman_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_1
+
+    def test_iv_returns_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("IV. DOTTRINA E GIURISPRUDENZA")])
+        result = plugin._classify_roman_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_1
+
+    def test_ix_returns_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("IX. CONCLUSIONI")])
+        result = plugin._classify_roman_heading(view)
+        assert result is not None
+
+    def test_xiv_returns_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("XIV. APPENDICE")])
+        result = plugin._classify_roman_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_1
+
+    def test_single_letter_i_returns_none(self) -> None:
+        # "I." as single letter is deliberately handled by section_letter,
+        # not by the roman predicate.
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("I. Foo")])
+        assert plugin._classify_roman_heading(view) is None
+
+    def test_single_letter_v_returns_none(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("V. Roma")])
+        assert plugin._classify_roman_heading(view) is None
+
+    def test_single_letter_c_returns_none(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("C. USUFRUTTO")])
+        assert plugin._classify_roman_heading(view) is None
+
+    def test_invalid_roman_iiiiii_returns_none(self) -> None:
+        plugin = MaterialiStudioProfile()
+        # Eight Is in a row is not a canonical roman numeral.
+        view = _view([_span("IIIIIIII. INVALID")])
+        assert plugin._classify_roman_heading(view) is None
+
+    def test_lowercase_after_dot_returns_none(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("II. introduzione minuscola")])
+        assert plugin._classify_roman_heading(view) is None
+
+    def test_too_long_returns_none(self) -> None:
+        plugin = MaterialiStudioProfile()
+        view = _view([_span("II. " + "Y" * HEADING_LINE_MAX_CHARS)])
+        assert plugin._classify_roman_heading(view) is None
+
+    def test_multi_line_returns_none(self) -> None:
+        plugin = MaterialiStudioProfile()
+        spans = [
+            _span("II. STORIA", line_index=0),
+            _span("CONT", line_index=1),
+            _span("MORE", line_index=2),
+        ]
+        view = _view(spans)
+        assert plugin._classify_roman_heading(view) is None
+
+    def test_valid_roman_basic(self) -> None:
+        assert MaterialiStudioProfile._is_valid_roman_numeral("II") is True
+        assert MaterialiStudioProfile._is_valid_roman_numeral("III") is True
+        assert MaterialiStudioProfile._is_valid_roman_numeral("IV") is True
+        assert MaterialiStudioProfile._is_valid_roman_numeral("IX") is True
+        assert MaterialiStudioProfile._is_valid_roman_numeral("XX") is True
+        assert MaterialiStudioProfile._is_valid_roman_numeral("XXXVIII") is True
+
+    def test_invalid_roman_too_short(self) -> None:
+        assert MaterialiStudioProfile._is_valid_roman_numeral("I") is False
+        assert MaterialiStudioProfile._is_valid_roman_numeral("") is False
+
+    def test_invalid_roman_too_long(self) -> None:
+        assert MaterialiStudioProfile._is_valid_roman_numeral("X" * 9) is False
+
+    def test_invalid_roman_garbage(self) -> None:
+        assert MaterialiStudioProfile._is_valid_roman_numeral("IIIIII") is False
+        assert MaterialiStudioProfile._is_valid_roman_numeral("XVIIII") is False
+
+
+# ===========================================================================
+# Section letter still wins over roman on single letters like "C."
+# ===========================================================================
+
+
+class TestRomanVsSectionLetterDispatch:
+    def test_single_c_goes_through_section_letter(self) -> None:
+        # End-to-end: "C. USUFRUTTO" must end up as HEADING_3 via the
+        # section-letter predicate, not as HEADING_1 via the roman.
+        plugin = MaterialiStudioProfile()
+        ext = _extraction(
+            [_span("C. USUFRUTTO, USO E ABITAZIONE")],
+            [_block(span_range=(0, 1))],
+        )
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        assert out[0].category is SemanticCategory.HEADING_3
+
+
 class TestColorAwarePredicate:
     def test_bold_leading_returns_none(self) -> None:
         plugin = MaterialiStudioProfile()
@@ -871,23 +1091,82 @@ class TestRefineClassificationMono:
         out = plugin.refine_classification(ext, [_verdict(0)])
         assert out[0].category is SemanticCategory.BODY
 
-    def test_decimal_pattern_warning_queued(self) -> None:
+    def test_decimal_n_m_promoted_heading_2(self) -> None:
         plugin = MaterialiStudioProfile()
         ext = _extraction(
-            [_span("1.1 introduzione")],
+            [_span("1.1 Introduzione")],
             [_block(span_range=(0, 1))],
         )
-        plugin.refine_classification(ext, [_verdict(0)])
-        assert any("decimal_hierarchical" in w for w in plugin._pending_warnings)
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        assert out[0].category is SemanticCategory.HEADING_2
+        assert any(
+            "heading_2_decimal" in w and "numbering_1.1" in w for w in plugin._pending_warnings
+        )
 
-    def test_roman_pattern_warning_queued(self) -> None:
+    def test_decimal_n_m_k_promoted_heading_3(self) -> None:
         plugin = MaterialiStudioProfile()
         ext = _extraction(
-            [_span("III. introduzione")],
+            [_span("2.3.4 Argomento specifico")],
             [_block(span_range=(0, 1))],
         )
-        plugin.refine_classification(ext, [_verdict(0)])
-        assert any("roman_hierarchical" in w for w in plugin._pending_warnings)
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        assert out[0].category is SemanticCategory.HEADING_3
+        assert any(
+            "heading_3_decimal" in w and "numbering_2.3.4" in w for w in plugin._pending_warnings
+        )
+
+    def test_decimal_n_m_k_l_promoted_heading_4(self) -> None:
+        plugin = MaterialiStudioProfile()
+        ext = _extraction(
+            [_span("4.1.2.3 Sotto-sotto-paragrafo")],
+            [_block(span_range=(0, 1))],
+        )
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        assert out[0].category is SemanticCategory.HEADING_4
+        assert any(
+            "heading_4_decimal" in w and "numbering_4.1.2.3" in w for w in plugin._pending_warnings
+        )
+
+    def test_decimal_depth_5_unsupported_warning(self) -> None:
+        plugin = MaterialiStudioProfile()
+        ext = _extraction(
+            [_span("1.2.3.4.5 Profondità eccessiva")],
+            [_block(span_range=(0, 1))],
+        )
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        # Depth 5: not promoted, falls through to BODY
+        assert out[0].category is SemanticCategory.BODY
+        assert any("decimal_hierarchical_depth_exceeded" in w for w in plugin._pending_warnings)
+
+    def test_roman_ii_promoted_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        ext = _extraction(
+            [_span("II. STORIA")],
+            [_block(span_range=(0, 1))],
+        )
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        assert out[0].category is SemanticCategory.HEADING_1
+        assert any("heading_1_roman" in w and "numeral_II" in w for w in plugin._pending_warnings)
+
+    def test_roman_iii_promoted_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        ext = _extraction(
+            [_span("III. CARATTERI GENERALI")],
+            [_block(span_range=(0, 1))],
+        )
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        assert out[0].category is SemanticCategory.HEADING_1
+        assert any("numeral_III" in w for w in plugin._pending_warnings)
+
+    def test_roman_ix_promoted_heading_1(self) -> None:
+        plugin = MaterialiStudioProfile()
+        ext = _extraction(
+            [_span("IX. CONCLUSIONI")],
+            [_block(span_range=(0, 1))],
+        )
+        out = plugin.refine_classification(ext, [_verdict(0)])
+        assert out[0].category is SemanticCategory.HEADING_1
+        assert any("numeral_IX" in w for w in plugin._pending_warnings)
 
 
 # ===========================================================================

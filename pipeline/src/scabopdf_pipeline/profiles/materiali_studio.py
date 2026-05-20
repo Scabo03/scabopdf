@@ -123,6 +123,54 @@ convention):
   GDocs-export sources rather than between PENALE and CIVILE code
   types.
 
+Forward-looking numbering patterns (added in v1.1, debt closure of
+items (i) and (ii) from the v1 landing). The plugin recognises two
+additional heading numbering conventions that the v1 left as v1
+limitations with diagnostic warnings:
+
+- **Decimal hierarchical numbering** (``N.M``, ``N.M.K``, ``N.M.K.L``).
+  The :meth:`_classify_decimal_heading` predicate matches the regex
+  :data:`_DECIMAL_HEADING_PATTERN` at start of stripped block text
+  and maps the depth (count of dots + 1) to the heading level: depth
+  2 → HEADING_2, depth 3 → HEADING_3, depth 4 → HEADING_4. Depth 5+
+  is unsupported and emits a ``decimal_hierarchical_depth_exceeded``
+  diagnostic warning, falling through to BODY. The pattern is anchored
+  to start of block and requires an uppercase letter (Latin Extended)
+  after the numbering, which empirically rules out cross-references
+  (``art. 1.1`` does not start with a digit), dates (``25.12.2023``
+  lacks an uppercase letter after the numeral) and page references
+  (``p. 1.1`` does not start with a digit).
+
+- **Roman uppercase numbering** (``II.``, ``III.``, ``IV.``, etc., up
+  to ``MMMCMXCIX``). The :meth:`_classify_roman_heading` predicate
+  matches :data:`_ROMAN_HEADING_PATTERN_CANDIDATE` and validates the
+  captured numeral via :meth:`_is_valid_roman_numeral` (a strict
+  canonical roman validator that rejects single characters and non-
+  canonical sequences like ``IIIIIIII``). Single-character roman
+  numerals (``I.``, ``V.``, ``X.``, ``L.``, ``C.``, ``D.``, ``M.``)
+  are deliberately left to the section-letter predicate
+  (:data:`_SECTION_LETTER_PATTERN` → HEADING_3) dispatched after the
+  roman one. The cascade order places the roman predicate **before**
+  the :meth:`_is_parte_allcaps` predicate because a roman heading
+  like ``II. CONCLUSIONI`` would otherwise be intercepted by the
+  parte-allcaps pattern (the roman digit characters ``I, V, X, L, C,
+  D, M`` are members of the allcaps character class); the roman
+  predicate fires first and emits the more specific
+  ``heading_1_roman`` warning.
+
+Empirical falsification of the v1 limitation: a diagnostic PyMuPDF
+scan of the four calibrating fixtures reveals **zero legitimate
+matches** of either pattern. The four documents follow ``Cap. N`` and
+``A./B./C.`` conventions exclusively; the only roman-shaped
+candidates are the three ``C. USUFRUTTO/MULTIPROPRIETA'/PEGNO``
+section letters from diritto_privato_i, which are correctly handled
+by the section-letter predicate (HEADING_3) thanks to the
+single-character rejection guard. The two predicates are thus
+purely **forward-looking** on the current training set; unit tests
+exercise them via synthetic block fixtures. A future user who uploads
+a Word/GDocs document with decimal or roman numbering will benefit
+from automatic HEADING promotion without any plugin modification.
+
 Pipeline integration.
 
 - :meth:`get_post_processing` returns ``["dehyphenate_with_log"]``.
@@ -183,13 +231,17 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:materiali_studio:color_mode_detected_distinct_colors_<n>",
     "plugin:materiali_studio:mono_mode_no_color_signal",
     "plugin:materiali_studio:heading_1_text_pattern_block_<idx>_page_<p>",
+    "plugin:materiali_studio:heading_1_roman_block_<idx>_page_<p>_numeral_<roman>",
     "plugin:materiali_studio:heading_2_capitolo_block_<idx>_page_<p>",
+    "plugin:materiali_studio:heading_2_decimal_block_<idx>_page_<p>_numbering_<n>",
     "plugin:materiali_studio:heading_3_section_letter_block_<idx>_page_<p>",
+    "plugin:materiali_studio:heading_3_decimal_block_<idx>_page_<p>_numbering_<n>",
     "plugin:materiali_studio:heading_4_label_block_<idx>_page_<p>",
+    "plugin:materiali_studio:heading_4_decimal_block_<idx>_page_<p>_numbering_<n>",
     "plugin:materiali_studio:list_item_dash_bullet_block_<idx>_page_<p>",
     "plugin:materiali_studio:em_dash_separator_block_<idx>_page_<p>",
-    "plugin:materiali_studio:decimal_hierarchical_pattern_unsupported_block_<idx>_page_<p>",
-    "plugin:materiali_studio:roman_hierarchical_pattern_unsupported_block_<idx>_page_<p>",
+    "plugin:materiali_studio:decimal_hierarchical_depth_exceeded_block_<idx>_page_<p>_numbering_<n>",
+    "plugin:materiali_studio:roman_lowercase_pattern_unsupported_block_<idx>_page_<p>",
 )
 """Closed vocabulary of warnings the plugin may emit. Placeholders are
 replaced with concrete values at emission time. Consumers should match
@@ -544,23 +596,69 @@ diritto_privato_ii fixture contains decorative lines like
 hand-typed horizontal rules.
 """
 
-_DECIMAL_HIERARCHICAL_PATTERN = re.compile(r"^\s*\d+\.\d+(?:\.\d+)?\s+\S")
-"""Diagnostic pattern for decimal-hierarchical numbering (``1.1``,
-``1.1.1``).
+_DECIMAL_HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)+)[\.\s]+[A-ZÀ-ſ]")
+r"""HEADING_2/3/4 decimal hierarchical heading pattern.
 
-Not exercised by the four fixtures. When matched, the plugin emits a
-``decimal_hierarchical_pattern_unsupported`` warning so the audit log
-records the absence of HEADING promotion for the block; the block
-falls through to BODY by default. A future plugin upgrade may add
-HEADING_4/HEADING_5 promotion on this pattern.
+Matches a block opening with a decimal numbering of depth 2 to 4
+(``N.M``, ``N.M.K``, ``N.M.K.L``) followed by a dot or space and then
+an uppercase letter, anchored to the start of the stripped block text.
+Examples that match: ``"1.1 Introduzione"`` (depth 2 → HEADING_2),
+``"2.3.4 Argomento specifico"`` (depth 3 → HEADING_3),
+``"4.1.2.3 Sotto-sotto-paragrafo"`` (depth 4 → HEADING_4).
+
+Heading level is determined by the depth (count of dots + 1):
+``N.M`` → HEADING_2, ``N.M.K`` → HEADING_3, ``N.M.K.L`` → HEADING_4.
+Depth 5+ is not supported in v1 and falls through to BODY with a
+diagnostic ``decimal_hierarchical_depth_exceeded`` warning.
+
+Empirical falsification on the four calibrating fixtures: the pattern
+is **not exercised** by any of teoria_generale, diritto_tributario,
+diritto_privato_i or diritto_privato_ii — the four documents follow
+``Cap. N`` and ``A./B./C.`` conventions, not decimal hierarchical
+numbering. The pattern is included for forward-looking robustness on
+future user uploads (different authors may use decimal numbering on
+Word/GDocs export); unit tests exercise the pattern via synthetic
+fixtures.
+
+The anchor + uppercase-after-dot/space guard rules out the principal
+edge cases empirically: cross-reference inline like ``art. 1.1`` does
+not start with the digit (the block begins with ``art.``), dates like
+``25.12.2023`` lack an uppercase letter after the numeral, page
+references like ``p. 1.1`` do not start with the digit either.
 """
 
-_ROMAN_HIERARCHICAL_PATTERN = re.compile(r"^\s*[IVX]+\.\s+\S")
-"""Diagnostic pattern for roman-hierarchical numbering (``I.``, ``II.``,
-``III.``).
+_ROMAN_HEADING_PATTERN_CANDIDATE = re.compile(r"^([IVXLCDM]+)\.\s+[A-ZÀ-ſ]")
+r"""HEADING_1 roman heading candidate pattern (validated by :func:`_is_valid_roman_numeral`).
 
-Symmetric counterpart of :data:`_DECIMAL_HIERARCHICAL_PATTERN`. Same
-diagnostic-warning + body fall-through behaviour.
+Matches a block opening with a roman-numeral-shaped sequence followed
+by a dot and a space and then an uppercase letter, anchored to start.
+The captured group is validated against a strict roman-numeral regex
+(:data:`_VALID_ROMAN_RE`) to reject garbage like ``IIIIIIII`` (not a
+canonical roman numeral). Examples accepted: ``II. INTRODUZIONE``,
+``III. STORIA``, ``IV. DOTTRINA``, ``IX. CONCLUSIONI``. The single-
+character roman case (``I.``, ``V.``, ``X.``, ``L.``, ``C.``, ``D.``,
+``M.``) is **deliberately not handled here** — those go through the
+``_is_section_letter`` predicate dispatched after the roman one
+(the section-letter regex catches any single uppercase letter +
+period + space + capital).
+
+Empirical falsification on the four calibrating fixtures: zero
+legitimate roman matches; the only matches of the loose regex
+``[IVXLC]+\.\s+`` are the three ``C. USUFRUTTO/MULTIPROPRIETA'/PEGNO``
+section letters from diritto_privato_i, which are correctly handled
+by :data:`_SECTION_LETTER_PATTERN` (HEADING_3) thanks to the
+candidate-validation guard that rejects single-letter ``C``.
+"""
+
+_VALID_ROMAN_RE = re.compile(r"^M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})$")
+"""Canonical roman numeral validator (1-3999).
+
+Used by :func:`_is_valid_roman_numeral` to filter out
+``[IVXLCDM]+`` sequences that match
+:data:`_ROMAN_HEADING_PATTERN_CANDIDATE` but are not actual roman
+numerals (e.g. the decorative ``IIIIIIIIIIIIIIIIIIIIIIII`` line on
+the diritto_privato_ii fixture; the empty string, also matched by
+``[IVXLCDM]+`` if quantifier were ``*``).
 """
 
 # ---------------------------------------------------------------------------
@@ -874,6 +972,10 @@ class MaterialiStudioProfile(ProfilePlugin):
             if verdict_color is not None:
                 return verdict_color
 
+        roman_verdict = self._classify_roman_heading(view)
+        if roman_verdict is not None:
+            return roman_verdict
+
         if self._is_parte_allcaps(view):
             self._pending_warnings.append(
                 f"{WARNING_PREFIX}:heading_1_text_pattern_block_"
@@ -891,6 +993,10 @@ class MaterialiStudioProfile(ProfilePlugin):
             return self._make_verdict(
                 view, SemanticCategory.HEADING_2, "materiali_studio_heading_2_capitolo"
             )
+
+        decimal_verdict = self._classify_decimal_heading(view)
+        if decimal_verdict is not None:
+            return decimal_verdict
 
         if self._is_section_letter(view):
             self._pending_warnings.append(
@@ -917,8 +1023,6 @@ class MaterialiStudioProfile(ProfilePlugin):
             return self._make_verdict(
                 view, SemanticCategory.LIST_ITEM, "materiali_studio_list_item_dash"
             )
-
-        self._maybe_diagnose_unsupported_pattern(view)
 
         return self._make_verdict(view, SemanticCategory.BODY, "materiali_studio_body")
 
@@ -1058,28 +1162,98 @@ class MaterialiStudioProfile(ProfilePlugin):
             return False
         return bool(_DASH_BULLET_PATTERN.match(stripped))
 
-    def _maybe_diagnose_unsupported_pattern(self, view: _BlockView) -> None:
-        """Queue diagnostic warnings for hierarchical numbering patterns
-        not supported by v1.
+    @staticmethod
+    def _is_valid_roman_numeral(s: str) -> bool:
+        """Validate ``s`` as a canonical roman numeral in 2-8 chars (II - MMMCMXCIX).
 
-        The plugin v1 does not promote decimal-hierarchical (``1.1``,
-        ``1.1.1``) or roman-hierarchical (``I.``, ``II.``, ``III.``)
-        leading patterns to HEADING. When observed, a per-occurrence
-        diagnostic warning is queued for audit-log surfacing; the
-        block falls through to BODY classification.
+        Rejects single-character roman numerals (``I``, ``V``, ``X``,
+        ``L``, ``C``, ``D``, ``M``) — those are deliberately handled by
+        :data:`_SECTION_LETTER_PATTERN` (HEADING_3) when followed by a
+        period and an uppercase title, not by the roman-heading
+        predicate. Rejects non-canonical sequences like ``IIIIIIII``
+        (8 ``I``s, not a valid roman numeral) and empty strings.
+        """
+        if len(s) < 2 or len(s) > 8:
+            return False
+        return bool(_VALID_ROMAN_RE.fullmatch(s))
+
+    def _classify_decimal_heading(self, view: _BlockView) -> ClassifiedBlock | None:
+        """HEADING_2/3/4 decimal heading classifier with depth-driven level.
+
+        Matches :data:`_DECIMAL_HEADING_PATTERN` at start of stripped
+        block text and maps depth (count of dot-separated digits) to
+        the heading level: depth 2 → HEADING_2, depth 3 → HEADING_3,
+        depth 4 → HEADING_4. Depth 5+ is unsupported in v1 and emits a
+        ``decimal_hierarchical_depth_exceeded_*`` diagnostic warning;
+        the block falls through to BODY.
+
+        Returns the promoted ClassifiedBlock on success, ``None`` on
+        no match or on depth 5+. Length and line-count envelope
+        identical to the other heading predicates.
         """
         stripped = view.text.strip()
-        if view.line_count == 1 and len(stripped) <= HEADING_LINE_MAX_CHARS:
-            if _DECIMAL_HIERARCHICAL_PATTERN.match(stripped):
-                self._pending_warnings.append(
-                    f"{WARNING_PREFIX}:decimal_hierarchical_pattern_unsupported_block_"
-                    f"{view.block_index}_page_{view.block.page}"
-                )
-            elif _ROMAN_HIERARCHICAL_PATTERN.match(stripped):
-                self._pending_warnings.append(
-                    f"{WARNING_PREFIX}:roman_hierarchical_pattern_unsupported_block_"
-                    f"{view.block_index}_page_{view.block.page}"
-                )
+        if len(stripped) > HEADING_LINE_MAX_CHARS:
+            return None
+        if view.line_count > HEADING_LINE_MAX_LINES:
+            return None
+        m = _DECIMAL_HEADING_PATTERN.match(stripped)
+        if m is None:
+            return None
+        numbering = m.group(1)
+        depth = numbering.count(".") + 1
+        if depth == 2:
+            level = SemanticCategory.HEADING_2
+            template = "heading_2_decimal"
+            reason = "materiali_studio_heading_2_decimal"
+        elif depth == 3:
+            level = SemanticCategory.HEADING_3
+            template = "heading_3_decimal"
+            reason = "materiali_studio_heading_3_decimal"
+        elif depth == 4:
+            level = SemanticCategory.HEADING_4
+            template = "heading_4_decimal"
+            reason = "materiali_studio_heading_4_decimal"
+        else:
+            self._pending_warnings.append(
+                f"{WARNING_PREFIX}:decimal_hierarchical_depth_exceeded_block_"
+                f"{view.block_index}_page_{view.block.page}_numbering_{numbering}"
+            )
+            return None
+        self._pending_warnings.append(
+            f"{WARNING_PREFIX}:{template}_block_"
+            f"{view.block_index}_page_{view.block.page}_numbering_{numbering}"
+        )
+        return self._make_verdict(view, level, reason)
+
+    def _classify_roman_heading(self, view: _BlockView) -> ClassifiedBlock | None:
+        """HEADING_1 roman heading classifier.
+
+        Matches :data:`_ROMAN_HEADING_PATTERN_CANDIDATE` at start of
+        stripped block text and validates the captured numeral via
+        :meth:`_is_valid_roman_numeral`. Returns the promoted
+        HEADING_1 ClassifiedBlock on success, ``None`` otherwise. The
+        validation guard discards the single-letter case (handled by
+        the section-letter predicate dispatched next) and the
+        non-canonical garbage case (e.g. ``IIIIIIII``).
+        """
+        stripped = view.text.strip()
+        if len(stripped) > HEADING_LINE_MAX_CHARS:
+            return None
+        if view.line_count > HEADING_LINE_MAX_LINES:
+            return None
+        m = _ROMAN_HEADING_PATTERN_CANDIDATE.match(stripped)
+        if m is None:
+            return None
+        numeral = m.group(1)
+        if not self._is_valid_roman_numeral(numeral):
+            return None
+        self._pending_warnings.append(
+            f"{WARNING_PREFIX}:heading_1_roman_block_"
+            f"{view.block_index}_page_{view.block.page}_numeral_{numeral}"
+        )
+        return self._make_verdict(
+            view, SemanticCategory.HEADING_1, "materiali_studio_heading_1_roman"
+        )
 
     # ------------------------------------------------------------------
     # Verdict helper
