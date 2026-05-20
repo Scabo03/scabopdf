@@ -30,6 +30,34 @@ Three entry points are exposed:
   of Node roots; previously duplicated in every plugin under the name
   ``_iter_nodes``.
 
+Sibling-insertion convention (P-008 of the Promotion Analysis Fase 1).
+Every plugin that mints synthetic Nodes inserts them as siblings
+immediately after their host Node, following an intentional convention
+the project has converged on across nine plugins:
+
+1. The plugin walks the children of a parent left-to-right with a
+   ``result: list[Node] = []`` accumulator.
+2. For each child the walker first appends the (possibly transformed)
+   child to ``result``, then evaluates the per-plugin trigger (a regex
+   on the child's text, a typographic span match, a position predicate,
+   etc.) and mints zero or more synthetic Nodes via :class:`NodeIdMinter`.
+3. Each synthetic Node is ``result.append``-ed immediately after the
+   host child, in match order.
+4. The walker recurses into ``child.children`` and replaces the host's
+   ``children`` field with the recursive result (using
+   :func:`dataclasses.replace` or an equivalent immutable rebuild).
+5. The top-level ``Document`` is rebuilt with the new ``root`` tuple via
+   :class:`Document` constructor.
+
+The convention preserves the JSON schema's ``Node`` immutability,
+respects the ``node_NNNN`` id pattern, and produces a tree whose
+synthetic Nodes are positionally adjacent to their source — a property
+that the apparatus resolver and the emission converter rely on. No
+helper function abstracts the walker because the trigger and the
+transformation are plugin-specific; only the minting primitive and the
+DFS walker are shared (see above). New plugins materialising synthetic
+Nodes should replicate this convention literally.
+
 The pattern (mmm) of CLAUDE.md ("length-category emission framework
 for NOTE Nodes") relies on synthetic Nodes minted by these helpers; the
 five-call-site propagation convention documented there is now anchored
