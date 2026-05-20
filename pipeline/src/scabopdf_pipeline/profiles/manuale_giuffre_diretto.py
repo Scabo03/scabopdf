@@ -307,6 +307,7 @@ from scabopdf_pipeline.profiling.typography_constants import (
     APPARATUS_PRESENCE_THRESHOLD,
     SIZE_TOLERANCE,
 )
+from scabopdf_pipeline.reconstruction.geometry_helpers import is_centered_x
 from scabopdf_pipeline.reconstruction.minting import (
     NodeIdMinter,
     iter_nodes_pre_order,
@@ -1309,8 +1310,11 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
             return False
         if not (_SUBSECTION_LETTER_PATTERN.match(text) or _SUBSECTION_ROMAN_PATTERN.match(text)):
             return False
-        bbox_mid_x = (view.block.bbox[0] + view.block.bbox[2]) / 2.0
-        return abs(bbox_mid_x - SUBSECTION_PAGE_CENTER_X) < SUBSECTION_CENTER_TOLERANCE
+        return is_centered_x(
+            view.block.bbox,
+            page_center_x=SUBSECTION_PAGE_CENTER_X,
+            tolerance=SUBSECTION_CENTER_TOLERANCE,
+        )
 
     @staticmethod
     def _is_front_back_matter_heading(view: _BlockView) -> bool:

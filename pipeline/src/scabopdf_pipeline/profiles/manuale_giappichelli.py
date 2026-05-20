@@ -217,6 +217,7 @@ from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.profiling.typography_constants import APPARATUS_PRESENCE_THRESHOLD
 from scabopdf_pipeline.reconstruction.minting import NodeIdMinter, max_existing_node_counter
+from scabopdf_pipeline.reconstruction.span_helpers import effective_leading_span
 from scabopdf_pipeline.reconstruction.types import (
     Document,
     Node,
@@ -1298,7 +1299,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
            Vol. I/II false-positive rate that a purely-geometric
            guard would produce.
         """
-        leading = ManualeGiappichelliProfile._effective_leading_span(view.spans)
+        leading = effective_leading_span(view.spans)
         if leading is None:
             return False
         family_ok = leading.font.startswith(BODY_FONT_PREFIX)
@@ -1332,30 +1333,10 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         upper_ratio = sum(1 for c in letters if c.isupper()) / len(letters)
         return upper_ratio <= NOTE_CONTINUATION_MAX_UPPER_RATIO
 
-    @staticmethod
-    def _effective_leading_span(spans: tuple[Span, ...]) -> Span | None:
-        """Return the first non-whitespace span, or the first span if all empty.
-
-        PyMuPDF sometimes emits a leading whitespace span at the start
-        of a footnote block in a fallback font (Courier, Mangal,
-        Cambria) at 7.98pt, carrying just one or two spaces of
-        indentation before the actual note text begins in
-        SimonciniGaramondStd at 9.0pt. The plugin predicates that key
-        on the leading span's typography (``_is_note``, the splitter's
-        ``_is_glued_spans``) would miss those blocks if they peeked at
-        the raw first span. Looking at the first **non-whitespace**
-        span absorbs the typesetting artefact and lets the
-        substantive content drive classification.
-
-        Returns ``None`` if the span tuple is empty; returns the very
-        first span if every span has whitespace-only text (no
-        non-whitespace span found). The latter case is defensive and
-        does not occur in the fixture.
-        """
-        for span in spans:
-            if span.text.strip():
-                return span
-        return spans[0] if spans else None
+    # ``_effective_leading_span`` was promoted to Layer 1 by the
+    # Promotion Analysis Fase 1 (P-025). The Giappichelli plugin
+    # consumes it from
+    # :func:`scabopdf_pipeline.reconstruction.span_helpers.effective_leading_span`.
 
     @staticmethod
     def _is_marginal_gloss(view: _BlockView) -> bool:
@@ -1395,7 +1376,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         :meth:`_effective_leading_span`, mirroring the convention used
         by :meth:`_is_note`.
         """
-        leading = ManualeGiappichelliProfile._effective_leading_span(view.spans)
+        leading = effective_leading_span(view.spans)
         if leading is None:
             return False
         if not leading.font.startswith(BODY_FONT_PREFIX):
@@ -1902,7 +1883,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         """
         if len(spans) < 2:
             return False
-        leading = ManualeGiappichelliProfile._effective_leading_span(spans)
+        leading = effective_leading_span(spans)
         if leading is None:
             return False
         if not leading.font.startswith(BODY_FONT_PREFIX):
