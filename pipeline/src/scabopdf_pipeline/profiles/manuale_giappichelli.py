@@ -215,6 +215,7 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import APPARATUS_PRESENCE_THRESHOLD
 from scabopdf_pipeline.reconstruction.minting import NodeIdMinter, max_existing_node_counter
 from scabopdf_pipeline.reconstruction.types import (
     Document,
@@ -672,13 +673,10 @@ many signatures; the threshold leaves room while still excluding
 documents where SimonciniGaramondStd is a minor incidental face.
 """
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold for the apparatus-presence signal.
-
-A document with at least this many footnote markers carries dense
-apparatus. Mandrioli has 744; any value between 10 and 200 would
-discriminate the Giappichelli manual from a compendium.
-"""
+# ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035).
+# Mandrioli carries 744 footnote markers; the 50 floor leaves headroom
+# to discriminate the Giappichelli manual from a compendium.
 
 GIAPPICHELLI_CREATOR_FRAGMENT = "InDesign 20"
 """Creator-field substring that signals the InDesign-derived

@@ -100,6 +100,7 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import APPARATUS_PRESENCE_THRESHOLD
 from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem, TocGeneralItem
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -310,17 +311,10 @@ Tesauro measures 88.7 %; the threshold leaves headroom for editorial
 variants of the same pipeline.
 """
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold for the treatise-vs-compendium discrimination.
-
-A document with at least ``APPARATUS_PRESENCE_THRESHOLD`` apparatus
-markers of either kind is treated as a treatise candidate and the
-compendium penalty kicks in. The threshold is conservative: Mosconi
-has ~965 footnotes and ~593 marginal headings, so any sensible value
-between 10 and 200 would discriminate the two profiles in practice.
-50 leaves room for rare "compendium with a handful of stray
-references" cases the editorial corpus may surface.
-"""
+# ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035 of the
+# Promotion Analysis Fase 1). It is now imported at the top of this
+# module from ``profiling.typography_constants``.
 
 UTET_PRODUCER_FRAGMENT = "PDF Library"
 """Producer-field substring that signals the UTET editorial pipeline."""

@@ -284,6 +284,10 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import (
+    APPARATUS_PRESENCE_THRESHOLD,
+    SIZE_TOLERANCE,
+)
 from scabopdf_pipeline.reconstruction.minting import (
     NodeIdMinter,
     iter_nodes_pre_order,
@@ -355,14 +359,11 @@ COPYRIGHT_SIZE = 10.5
 Shared verbatim with the NS and MM plugins.
 """
 
-SIZE_TOLERANCE = 0.15
-"""Tolerance in points for every size predicate.
-
-The Aspose pipeline emits sizes with no measurable drift below the
-analysis-estimated round values (9.0, 10.5, 12.0, 13.0); the 0.15
-cushion absorbs PyMuPDF measurement noise while staying below the
-0.5pt inter-category gap.
-"""
+# ``SIZE_TOLERANCE`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-036). The
+# Aspose pipeline emits no measurable drift below the analysis-estimated
+# round values (9.0, 10.5, 12.0, 13.0); the 0.15 cushion absorbs PyMuPDF
+# noise while staying below the 0.5pt inter-category gap.
 
 PAGE_WIDTH_LETTER = 612.0
 """Letter page width in points."""
@@ -606,10 +607,8 @@ reports ``"DOTTRINA"``.
 BODY_DOMINANCE_MIN_PERCENT = 40.0
 """Minimum body-family dominance percent to credit the body signal."""
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold above which marginal-heading counts trigger the
-corresponding penalty.
-"""
+# ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035).
 
 # ---------------------------------------------------------------------------
 # Notes-section boundary tables.

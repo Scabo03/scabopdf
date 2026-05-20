@@ -248,6 +248,7 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import SIZE_TOLERANCE
 from scabopdf_pipeline.reconstruction.minting import NodeIdMinter, max_existing_node_counter
 from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
@@ -339,15 +340,11 @@ driven by the text-prefix predicate of
 :func:`_is_volume_marker_text`, not by this size alone.
 """
 
-SIZE_TOLERANCE = 0.15
-"""Tolerance in points for every size predicate.
-
-Same value as Torrente (commit ``022357a``). The Marrone has tightly
-clustered sizes between 7.9pt (rare apex) and 24pt (frontispiece) with
-the body at 12pt, the cross-reference at 10.56pt and the apparatus
-sizes at 13.92/16.08/18pt. The 0.15pt cushion absorbs the empirical
--0.05..-0.08pt drift without overlapping adjacent categories.
-"""
+# ``SIZE_TOLERANCE`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-036). The
+# Marrone has tightly clustered sizes between 7.9pt and 24pt with the
+# body at 12pt; the 0.15pt cushion absorbs the empirical
+# -0.05..-0.08pt drift without overlapping adjacent categories.
 
 # ---------------------------------------------------------------------------
 # Color constants (RGB packed into a single int the way PyMuPDF exposes

@@ -303,6 +303,10 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import (
+    APPARATUS_PRESENCE_THRESHOLD,
+    SIZE_TOLERANCE,
+)
 from scabopdf_pipeline.reconstruction.minting import (
     NodeIdMinter,
     iter_nodes_pre_order,
@@ -433,14 +437,11 @@ with the Indice Analitico subtitle (also 7.98pt). The text prefix
 check on ``(*)`` disambiguates.
 """
 
-SIZE_TOLERANCE = 0.15
-"""Tolerance in points for every size predicate.
-
-Slightly looser than the 0.1pt used by the prior plugins because the
-Torrente has tightly-clustered sizes (11.47 body, 10.98 § glyph, 12.97
-PARTE, 13.02 etc. in adjacent categories) and the 0.15 cushion avoids
-edge misses without overlapping categories.
-"""
+# ``SIZE_TOLERANCE`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-036). The
+# Torrente has tightly-clustered sizes (11.47 body, 10.98 § glyph, 12.97
+# PARTE, 13.02 in adjacent categories) and the 0.15 cushion avoids edge
+# misses without overlapping categories.
 
 # ---------------------------------------------------------------------------
 # Geometric thresholds.
@@ -731,15 +732,11 @@ Verdana or Times-New-Roman cannot be the Torrente. The penalty is
 applied when no MScotchRoman size clears the body-dominance floor.
 """
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold for the marginal-apparatus signal.
-
-The Torrente reports 4051 marginal headings; any document above this
-threshold is a candidate. Patriarca, Tesauro, Mandrioli Vol. I/II
-report zero; Mosconi reports ~593, Mandrioli Vol. III/IV report
-hundreds — none of those are Torrente because they fail one of the
-other contributions.
-"""
+# ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035). The
+# Torrente reports 4051 marginal headings; any document above the 50
+# floor is a candidate. Patriarca / Tesauro / Mandrioli Vol. I-II report
+# zero; the rest fail the contributions for other reasons.
 
 NOTES_PRESENCE_THRESHOLD = 50
 """Threshold above which traditional footnote markers are considered

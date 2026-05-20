@@ -8,7 +8,6 @@ import pytest
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiles.materiali_studio import (
-    APPARATUS_PRESENCE_THRESHOLD,
     BODY_DOMINANCE_MIN_PERCENT,
     COLOR_GREY_LIGHT_CENTER,
     COLOR_GREY_MEDIUM_CENTER,
@@ -27,6 +26,7 @@ from scabopdf_pipeline.profiling.signals import (
     ProfilingSignals,
     TypographicSignature,
 )
+from scabopdf_pipeline.profiling.typography_constants import APPARATUS_PRESENCE_THRESHOLD
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
 

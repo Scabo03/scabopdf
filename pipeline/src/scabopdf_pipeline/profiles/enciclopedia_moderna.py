@@ -134,6 +134,7 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import SIZE_TOLERANCE
 from scabopdf_pipeline.reconstruction.minting import (
     NodeIdMinter,
     iter_nodes_pre_order,
@@ -227,16 +228,12 @@ floor leaves head-room for future variants while remaining well above
 any text body size in the typographic system.
 """
 
-SIZE_TOLERANCE = 0.15
-"""Tolerance in points for every size predicate.
-
-Wider than the 0.1pt cushion used by older plugins, narrower than the
-0.5pt inter-category gap of the EdD typographic system. The 0.15pt
-value is the same compromise Torrente landed on for the
-``SimonciniGaramondStd`` system, and is appropriate for the
-``SimonciniGaramond`` system too (which exhibits the same uniform
--0.02pt drift below nominal).
-"""
+# ``SIZE_TOLERANCE`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-036). The
+# 0.15pt cushion is appropriate for ``SimonciniGaramond`` and
+# ``SimonciniGaramondStd`` (uniform -0.02pt drift below nominal), and
+# remains below the 0.5pt inter-category gap of the EdD typographic
+# system.
 
 # ---------------------------------------------------------------------------
 # Page geometry tolerance.

@@ -225,6 +225,10 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import (
+    APPARATUS_PRESENCE_THRESHOLD,
+    SIZE_TOLERANCE,
+)
 from scabopdf_pipeline.reconstruction.types import Document
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -299,14 +303,11 @@ Inside the predicate cascade, the constant is not consulted; titles
 in MM are 12pt bold.
 """
 
-SIZE_TOLERANCE = 0.15
-"""Tolerance in points for every size predicate.
-
-The Aspose pipeline emits sizes with no measurable drift below the
-analysis-estimated round values (9.0, 10.5, 12.0); the 0.15 cushion
-absorbs PyMuPDF measurement noise while staying below the 1.5pt
-inter-category gap (9.0 label vs 10.5 copyright vs 12.0 body).
-"""
+# ``SIZE_TOLERANCE`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-036). The
+# Aspose pipeline emits no measurable drift below the analysis-estimated
+# round values (9.0, 10.5, 12.0); the 0.15 cushion absorbs PyMuPDF
+# noise while staying below the 1.5pt inter-category gap.
 
 PAGE_WIDTH_LETTER = 612.0
 """Letter page width in points. The DeJure Aspose pipeline emits
@@ -483,10 +484,8 @@ fixtures (procedura 78 %, concause 88 %, massivo 80 %); the 40 %
 floor leaves headroom for short fixtures.
 """
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold above which marginal-heading or footnote-marker counts
-are considered "present", triggering the corresponding penalty.
-"""
+# ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035).
 
 # ---------------------------------------------------------------------------
 # Helpers — block view.

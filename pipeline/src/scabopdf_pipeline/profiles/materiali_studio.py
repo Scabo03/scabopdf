@@ -217,6 +217,7 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import APPARATUS_PRESENCE_THRESHOLD
 from scabopdf_pipeline.reconstruction.types import Document
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -410,10 +411,8 @@ substantial apparatus signal is an editorial corpus and the plugin
 must step back to let the editorial plugin take over.
 """
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold above which marginal-heading or footnote-marker counts
-trigger the apparatus penalty.
-"""
+# ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035).
 
 # ---------------------------------------------------------------------------
 # Color-driven detection (color-aware mode).

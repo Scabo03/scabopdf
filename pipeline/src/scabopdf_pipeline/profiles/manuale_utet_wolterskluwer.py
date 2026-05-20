@@ -149,6 +149,7 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.profiling.typography_constants import APPARATUS_PRESENCE_THRESHOLD
 from scabopdf_pipeline.reconstruction.minting import NodeIdMinter, max_existing_node_counter
 from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
@@ -438,14 +439,10 @@ single most dominant signature on Mosconi is the body at roughly
 where ``TimesTenLTStd`` is a minor incidental face.
 """
 
-APPARATUS_PRESENCE_THRESHOLD = 50
-"""Threshold for the treatise-vs-compendium discrimination.
-
-A document with at least this many apparatus markers of any kind is
-considered a treatise candidate. Mosconi has 965/593/420; any value
-between 10 and 200 would discriminate the two profiles in practice.
-50 leaves room for residual outliers.
-"""
+# ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
+# :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035).
+# Mosconi has 965/593/420 apparatus markers; the 50 floor leaves room
+# for the treatise-vs-compendium discrimination on residual outliers.
 
 UTET_PRODUCER_FRAGMENT = "PDF Library"
 """Producer-field substring signalling the UTET / Wolters Kluwer pipeline."""
