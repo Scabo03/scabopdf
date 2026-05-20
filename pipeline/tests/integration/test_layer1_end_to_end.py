@@ -235,11 +235,15 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(r"^plugin:materiali_studio:heading_4_label_block_-?\d+_page_\d+$"),
     re.compile(r"^plugin:materiali_studio:list_item_dash_bullet_block_-?\d+_page_\d+$"),
     re.compile(r"^plugin:materiali_studio:em_dash_separator_block_-?\d+_page_\d+$"),
+    re.compile(r"^plugin:materiali_studio:heading_1_roman_block_-?\d+_page_\d+_numeral_\S+$"),
+    re.compile(r"^plugin:materiali_studio:heading_2_decimal_block_-?\d+_page_\d+_numbering_\S+$"),
+    re.compile(r"^plugin:materiali_studio:heading_3_decimal_block_-?\d+_page_\d+_numbering_\S+$"),
+    re.compile(r"^plugin:materiali_studio:heading_4_decimal_block_-?\d+_page_\d+_numbering_\S+$"),
     re.compile(
-        r"^plugin:materiali_studio:decimal_hierarchical_pattern_unsupported_block_-?\d+_page_\d+$"
+        r"^plugin:materiali_studio:decimal_hierarchical_depth_exceeded_block_-?\d+_page_\d+_numbering_\S+$"
     ),
     re.compile(
-        r"^plugin:materiali_studio:roman_hierarchical_pattern_unsupported_block_-?\d+_page_\d+$"
+        r"^plugin:materiali_studio:roman_lowercase_pattern_unsupported_block_-?\d+_page_\d+$"
     ),
 )
 
