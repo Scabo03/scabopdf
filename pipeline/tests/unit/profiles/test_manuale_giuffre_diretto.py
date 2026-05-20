@@ -1340,7 +1340,7 @@ def test_refine_classification_unrecognised_block_stays_unclassified() -> None:
 
 
 def test_refine_reconstruction_walks_arbitrary_depth() -> None:
-    """``_iter_nodes`` (used by the marker-index builder) recurses into deep children."""
+    """``iter_nodes_pre_order`` (used by the marker-index builder) recurses into deep children."""
     # Build a 3-level tree: HEADING_1 → HEADING_2 → HEADING_4
     h4 = _node(
         "node_0010",
@@ -1364,18 +1364,8 @@ def test_refine_reconstruction_walks_arbitrary_depth() -> None:
     assert crossrefs[0].apparatus_refs[0].target_node_id == "node_0010"
 
 
-def test_max_existing_node_counter_handles_non_pattern_ids() -> None:
-    """The counter walker ignores synthetic ids that do not match ``node_NNNN``."""
-    from scabopdf_pipeline.profiles.manuale_giuffre_diretto import _max_existing_node_counter
-
-    # Mix of valid and "alien" ids
-    a = _node("alien-id", SemanticCategory.BODY, "ignored")
-    b = _node("node_0050", SemanticCategory.BODY, "kept")
-    counter = _max_existing_node_counter((a, b))
-    assert counter == 50
-
-
-def test_max_existing_node_counter_empty_returns_minus_one() -> None:
-    from scabopdf_pipeline.profiles.manuale_giuffre_diretto import _max_existing_node_counter
-
-    assert _max_existing_node_counter(()) == -1
+# The two former tests `test_max_existing_node_counter_handles_non_pattern_ids`
+# and `test_max_existing_node_counter_empty_returns_minus_one` were removed
+# during the Promotion Analysis Fase 1: the equivalent behaviour is now
+# covered cross-plugin by tests/unit/reconstruction/test_minting.py against
+# the canonical helper in scabopdf_pipeline.reconstruction.minting.

@@ -260,6 +260,11 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter,
+    iter_nodes_pre_order,
+    max_existing_node_counter,
+)
 from scabopdf_pipeline.reconstruction.types import (
     Document,
     Node,
@@ -696,66 +701,6 @@ class _BlockView:
     text: str
 
 
-_NODE_ID_PATTERN = re.compile(r"^node_(\d+)$")
-"""Pattern that decodes a tier 1 node id into its numeric counter.
-
-Same convention as in the Mosconi, Mandrioli, Torrente and BIC plugins;
-the schema's ``NodeDict.id`` validator enforces ``^node_\\d+$``.
-"""
-
-
-class _NodeIdMinter:
-    """Stateful node-id minter that follows the tier 1 ``node_NNNN``
-    convention.
-
-    Synthetic nodes minted by the plugin respect the JSON schema's
-    pattern on ``NodeDict.id``. The minter starts one past the maximum
-    counter already used by tier 1 and emits monotonically increasing
-    ids zero-padded to four digits.
-    """
-
-    def __init__(self, *, start: int) -> None:
-        self._counter = start
-
-    def mint(self) -> str:
-        node_id = f"node_{self._counter:04d}"
-        self._counter += 1
-        return node_id
-
-
-def _max_existing_node_counter(roots: tuple[Node, ...]) -> int:
-    """Return the highest numeric counter already used by a tier 1 node id."""
-    best = -1
-
-    def _visit(node: Node) -> None:
-        nonlocal best
-        match = _NODE_ID_PATTERN.match(node.id)
-        if match is not None:
-            value = int(match.group(1))
-            if value > best:
-                best = value
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return best
-
-
-def _iter_nodes(roots: tuple[Node, ...]) -> list[Node]:
-    """Pre-order DFS walk over the forest, returning every Node."""
-    out: list[Node] = []
-
-    def _visit(node: Node) -> None:
-        out.append(node)
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return out
-
-
 def _strip_label(text: str, label: str) -> str:
     """Strip a leading label from a metadata line, normalising whitespace."""
     stripped = text.strip()
@@ -1049,7 +994,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
            sibling immediately after it. The synthetic Node's text is
            the verbatim ``"(N)"`` marker.
 
-        The four transformations share a single ``_NodeIdMinter`` that
+        The four transformations share a single ``NodeIdMinter`` that
         seeds at one past the maximum tier 1 counter. Pending warnings
         from :meth:`refine_classification` are flushed into
         ``Document.warnings`` here together with the per-transformation
@@ -1061,7 +1006,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         self._pending_warnings = []
         new_transformations: list[Transformation] = []
 
-        minter = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
+        minter = NodeIdMinter(start=max_existing_node_counter(document.root) + 1)
 
         new_roots = self._refine_forest(document.root, new_warnings, new_transformations, minter)
 
@@ -1384,7 +1329,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Walk the forest level by level, refining descendants first then
         applying sibling-aware transformations to each children list.
@@ -1424,7 +1369,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         children: tuple[Node, ...],
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Apply the three refinement passes to a parent's children list."""
         # PASS 1: per-Node refinement (META + TOC).
@@ -1463,7 +1408,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         host: Node,
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Split a META_VALUE Node into FONTE_VALUE + REFERRAL + AUTHORS siblings.
 
@@ -1546,7 +1491,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         self,
         node: Node,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Parse a TOC_GENERAL Node into ``toc_items`` + (optionally) a trailing HEADING_1.
 
@@ -1635,7 +1580,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         children: tuple[Node, ...],
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Find the SECTION_LABEL ``"Note:"`` and consolidate the following siblings.
 
@@ -1783,7 +1728,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         page_index: int,
         block_indices: tuple[int, ...],
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Split a notes-section text into one synthetic NOTE Node per ``(N) ...`` chunk."""
         # Confirm the text contains at least the ``(1)`` opening marker.
@@ -1824,7 +1769,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         self,
         node: Node,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Mint synthetic CROSS_REFERENCE siblings for inline ``\\w+(N)`` matches.
 
@@ -1878,7 +1823,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         wins.
         """
         index: dict[str, str] = {}
-        for node in _iter_nodes(roots):
+        for node in iter_nodes_pre_order(roots):
             if node.id not in self._minted_note_ids:
                 continue
             if node.text is None:

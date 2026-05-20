@@ -134,6 +134,11 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter,
+    iter_nodes_pre_order,
+    max_existing_node_counter,
+)
 from scabopdf_pipeline.reconstruction.types import (
     Document,
     Node,
@@ -458,54 +463,6 @@ class _BlockView:
     text: str
 
 
-_NODE_ID_PATTERN = re.compile(r"^node_(\d+)$")
-
-
-class _NodeIdMinter:
-    """Stateful node-id minter following the tier 1 ``node_NNNN`` convention."""
-
-    def __init__(self, *, start: int) -> None:
-        self._counter = start
-
-    def mint(self) -> str:
-        node_id = f"node_{self._counter:04d}"
-        self._counter += 1
-        return node_id
-
-
-def _max_existing_node_counter(roots: tuple[Node, ...]) -> int:
-    """Return the highest numeric counter already used by a tier 1 node id."""
-    best = -1
-
-    def _visit(node: Node) -> None:
-        nonlocal best
-        match = _NODE_ID_PATTERN.match(node.id)
-        if match is not None:
-            value = int(match.group(1))
-            if value > best:
-                best = value
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return best
-
-
-def _iter_nodes(roots: tuple[Node, ...]) -> list[Node]:
-    """Pre-order DFS walk over the forest, returning every Node."""
-    out: list[Node] = []
-
-    def _visit(node: Node) -> None:
-        out.append(node)
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return out
-
-
 # ---------------------------------------------------------------------------
 # Main class.
 
@@ -755,7 +712,7 @@ class EnciclopediaModernaProfile(ProfilePlugin):
         self._pending_warnings = []
         new_transformations: list[Transformation] = []
 
-        minter = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
+        minter = NodeIdMinter(start=max_existing_node_counter(document.root) + 1)
 
         new_roots = self._refine_forest(document.root, new_warnings, new_transformations, minter)
 
@@ -786,7 +743,7 @@ class EnciclopediaModernaProfile(ProfilePlugin):
 
         # Build the global marker → NOTE node_id index.
         note_index: dict[str, str] = {}
-        for node in _iter_nodes(document.root):
+        for node in iter_nodes_pre_order(document.root):
             if node.category is not SemanticCategory.NOTE:
                 continue
             if node.text is None:
@@ -1132,7 +1089,7 @@ class EnciclopediaModernaProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Walk the forest level by level, refining descendants first,
         then applying sibling-aware transformations to each children list.
@@ -1150,7 +1107,7 @@ class EnciclopediaModernaProfile(ProfilePlugin):
         self,
         children: tuple[Node, ...],
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Apply the per-Node refinements to a parent's children list."""
         out: list[Node] = []
@@ -1210,7 +1167,7 @@ class EnciclopediaModernaProfile(ProfilePlugin):
         self,
         node: Node,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Mint synthetic CROSS_REFERENCE siblings for inline ``(N)`` and
         ``v. NOMEVOCE`` matches.

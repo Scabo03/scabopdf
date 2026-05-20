@@ -12,7 +12,6 @@ from scabopdf_pipeline.profiles.dejure_dottrina import (
     _CROSSREF_MAX_MARKER_VALUE,
     _EDITORIAL_NOTE_PREFIX_PATTERN,
     _FOOTER_PATTERN,
-    _NODE_ID_PATTERN,
     _NOTE_MARKER_PATTERN,
     _NOTE_SPLIT_PATTERN,
     _SECTION_HEADING_STYLE_A_PATTERN,
@@ -34,9 +33,6 @@ from scabopdf_pipeline.profiles.dejure_dottrina import (
     WARNING_TEMPLATES,
     DejureDottrinaProfile,
     _BlockView,
-    _iter_nodes,
-    _max_existing_node_counter,
-    _NodeIdMinter,
 )
 from scabopdf_pipeline.profiling.signals import (
     ApparatusPresence,
@@ -47,6 +43,18 @@ from scabopdf_pipeline.profiling.signals import (
     ProfilingSignals,
     SpecificMarker,
     TypographicSignature,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    _NODE_ID_PATTERN,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter as _NodeIdMinter,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    iter_nodes_pre_order as _iter_nodes,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    max_existing_node_counter as _max_existing_node_counter,
 )
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory

@@ -303,6 +303,11 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter,
+    iter_nodes_pre_order,
+    max_existing_node_counter,
+)
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -783,58 +788,6 @@ class _BlockView:
     text: str
 
 
-_NODE_ID_PATTERN = re.compile(r"^node_(\d+)$")
-"""Pattern that decodes a tier 1 node id into its numeric counter.
-
-Same convention as in the Mosconi and Mandrioli plugins; the schema's
-``NodeDict.id`` validator enforces ``^node_\\d+$``.
-"""
-
-
-class _NodeIdMinter:
-    """Stateful node-id minter that follows the tier 1 ``node_NNNN``
-    convention.
-
-    Synthetic nodes minted by the plugin (the CROSS_REFERENCE nodes
-    materialised in :meth:`refine_reconstruction`) respect the JSON
-    schema's pattern on ``NodeDict.id``. The minter starts one past the
-    maximum counter already used by tier 1 and emits monotonically
-    increasing ids zero-padded to four digits.
-    """
-
-    def __init__(self, *, start: int) -> None:
-        self._counter = start
-
-    def mint(self) -> str:
-        node_id = f"node_{self._counter:04d}"
-        self._counter += 1
-        return node_id
-
-
-def _max_existing_node_counter(roots: tuple[Node, ...]) -> int:
-    """Return the highest numeric counter already used by a tier 1 node id.
-
-    Walks the forest, decodes every ``node_NNNN`` id and returns the
-    maximum. A document with no tier 1 nodes returns ``-1`` so the
-    caller can start minting at ``0``.
-    """
-    best = -1
-
-    def _visit(node: Node) -> None:
-        nonlocal best
-        match = _NODE_ID_PATTERN.match(node.id)
-        if match is not None:
-            value = int(match.group(1))
-            if value > best:
-                best = value
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return best
-
-
 def _normalise_marker(raw: str) -> str:
     """Normalise a paragraph-marker text into a canonical form.
 
@@ -855,20 +808,6 @@ def _normalise_marker(raw: str) -> str:
     cleaned = re.sub(r"\s+", "-", cleaned)
     cleaned = re.sub(r"(\d)(bis|ter|quater)", r"\1-\2", cleaned)
     return cleaned
-
-
-def _iter_nodes(roots: tuple[Node, ...]) -> list[Node]:
-    """Pre-order DFS walk over the forest, returning every Node."""
-    out: list[Node] = []
-
-    def _visit(node: Node) -> None:
-        out.append(node)
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return out
 
 
 def _is_index_analitico_page(page_index: int) -> bool:
@@ -1117,7 +1056,7 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         new_warnings = list(self._pending_warnings)
         self._pending_warnings = []
 
-        minter = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
+        minter = NodeIdMinter(start=max_existing_node_counter(document.root) + 1)
         new_roots = self._mint_cross_references_in_forest(document.root, new_warnings, minter)
 
         return Document(
@@ -1463,7 +1402,7 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         self,
         roots: tuple[Node, ...],
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Walk the forest pre-order, minting CROSS_REFERENCE siblings
         after every BODY Node with inline rinvii in its text.
@@ -1482,7 +1421,7 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         self,
         body: Node,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Mint synthetic CROSS_REFERENCE nodes for every inline rinvio
         match inside ``body.text``.
@@ -1542,7 +1481,7 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         wins.
         """
         index: dict[str, str] = {}
-        for node in _iter_nodes(roots):
+        for node in iter_nodes_pre_order(roots):
             if node.category is not SemanticCategory.HEADING_4:
                 continue
             if node.text is None:

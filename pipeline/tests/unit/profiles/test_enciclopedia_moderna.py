@@ -13,7 +13,6 @@ from scabopdf_pipeline.profiles.enciclopedia_moderna import (
     _CROSSREF_MAX_MARKER_VALUE,
     _FONTI_LABEL_PATTERN,
     _LETTERATURA_LABEL_PATTERN,
-    _NODE_ID_PATTERN,
     _NOTE_LEADING_MARKER_PATTERN,
     _PARAGRAPH_HEADING_PATTERN,
     _SEZIONE_HEADING_PATTERN,
@@ -39,9 +38,6 @@ from scabopdf_pipeline.profiles.enciclopedia_moderna import (
     WARNING_TEMPLATES,
     EnciclopediaModernaProfile,
     _BlockView,
-    _iter_nodes,
-    _max_existing_node_counter,
-    _NodeIdMinter,
 )
 from scabopdf_pipeline.profiling.signals import (
     ApparatusPresence,
@@ -51,6 +47,18 @@ from scabopdf_pipeline.profiling.signals import (
     ProfilePageGeometry,
     ProfilingSignals,
     TypographicSignature,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    _NODE_ID_PATTERN,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter as _NodeIdMinter,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    iter_nodes_pre_order as _iter_nodes,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    max_existing_node_counter as _max_existing_node_counter,
 )
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory

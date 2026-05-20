@@ -149,6 +149,7 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.reconstruction.minting import NodeIdMinter, max_existing_node_counter
 from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -503,61 +504,6 @@ class _BlockView:
     text: str
 
 
-_NODE_ID_PATTERN = re.compile(r"^node_(\d+)$")
-"""Pattern that decodes a tier 1 node id into its numeric counter."""
-
-
-class _NodeIdMinter:
-    """Stateful node-id minter that follows the tier 1 ``node_NNNN`` convention.
-
-    Synthetic nodes minted by the plugin (currently only the inline
-    ``CROSS_REFERENCE`` nodes) must respect the JSON schema's pattern
-    constraint on ``NodeDict.id`` (``^node_\\d+$``, four-digit
-    zero-padded by tier 1, see ``schema.contract.NODE_ID_PATTERN``).
-    The minter starts one past the highest counter already assigned
-    by tier 1 and emits monotonically increasing ids that match the
-    schema pattern.
-
-    Counters are zero-padded to four digits to match the tier 1
-    cosmetic convention; once the document has more than 9999 nodes
-    the padding overflows naturally, which is still a valid match
-    against the schema pattern (the pattern accepts arbitrary-length
-    digit runs).
-    """
-
-    def __init__(self, *, start: int) -> None:
-        self._counter = start
-
-    def mint(self) -> str:
-        node_id = f"node_{self._counter:04d}"
-        self._counter += 1
-        return node_id
-
-
-def _max_existing_node_counter(roots: tuple[Node, ...]) -> int:
-    """Return the highest numeric counter already used by a tier 1 node id.
-
-    Walks the forest, decodes every ``node_NNNN`` id and returns the
-    maximum. A document with no tier 1 nodes returns ``-1`` so the
-    caller can start minting at ``0``.
-    """
-    best = -1
-
-    def _visit(node: Node) -> None:
-        nonlocal best
-        match = _NODE_ID_PATTERN.match(node.id)
-        if match is not None:
-            value = int(match.group(1))
-            if value > best:
-                best = value
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return best
-
-
 class ManualeUtetWolterskluwerProfile(ProfilePlugin):
     """Corpus plugin for the UTET / Wolters Kluwer treatise series — Mosconi-Campiglio 11th ed."""
 
@@ -750,7 +696,7 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         new_warnings = list(self._pending_warnings)
         self._pending_warnings = []
 
-        next_id = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
+        next_id = NodeIdMinter(start=max_existing_node_counter(document.root) + 1)
         new_roots = self._fuse_and_refine(document.root, new_warnings, extraction, next_id)
 
         return Document(
@@ -1123,7 +1069,7 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         warnings: list[str],
         extraction: ExtractionResult,
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Return a new forest with chapter pairs fused, cross-refs minted,
         notes consolidated, and orphan marginal markers diagnosed.
@@ -1231,7 +1177,7 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         nodes: tuple[Node, ...],
         warnings: list[str],
         extraction: ExtractionResult,
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Mint inline cross-references, consolidate adjacent notes, recurse."""
         # First recurse into descendants so that the children's own
@@ -1268,7 +1214,7 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         nodes: list[Node],
         warnings: list[str],
         extraction: ExtractionResult,
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> list[Node]:
         """Insert synthetic CROSS_REFERENCE nodes after BODY nodes with inline superscripts."""
         result: list[Node] = []

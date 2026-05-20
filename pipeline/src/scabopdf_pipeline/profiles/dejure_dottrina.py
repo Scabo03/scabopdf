@@ -284,6 +284,11 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter,
+    iter_nodes_pre_order,
+    max_existing_node_counter,
+)
 from scabopdf_pipeline.reconstruction.types import (
     Document,
     Node,
@@ -665,57 +670,6 @@ class _BlockView:
     text: str
 
 
-_NODE_ID_PATTERN = re.compile(r"^node_(\d+)$")
-"""Pattern that decodes a tier 1 node id into its numeric counter."""
-
-
-class _NodeIdMinter:
-    """Stateful node-id minter that follows the tier 1 ``node_NNNN``
-    convention.
-    """
-
-    def __init__(self, *, start: int) -> None:
-        self._counter = start
-
-    def mint(self) -> str:
-        node_id = f"node_{self._counter:04d}"
-        self._counter += 1
-        return node_id
-
-
-def _max_existing_node_counter(roots: tuple[Node, ...]) -> int:
-    """Return the highest numeric counter already used by a tier 1 node id."""
-    best = -1
-
-    def _visit(node: Node) -> None:
-        nonlocal best
-        match = _NODE_ID_PATTERN.match(node.id)
-        if match is not None:
-            value = int(match.group(1))
-            if value > best:
-                best = value
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return best
-
-
-def _iter_nodes(roots: tuple[Node, ...]) -> list[Node]:
-    """Pre-order DFS walk over the forest, returning every Node."""
-    out: list[Node] = []
-
-    def _visit(node: Node) -> None:
-        out.append(node)
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return out
-
-
 # ---------------------------------------------------------------------------
 # Main class.
 
@@ -945,7 +899,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         self._pending_warnings = []
         new_transformations: list[Transformation] = []
 
-        minter = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
+        minter = NodeIdMinter(start=max_existing_node_counter(document.root) + 1)
 
         new_roots = self._refine_forest(document.root, new_warnings, new_transformations, minter)
 
@@ -977,7 +931,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         """
         del extraction, classified_blocks
 
-        all_nodes = _iter_nodes(document.root)
+        all_nodes = iter_nodes_pre_order(document.root)
         article_boundaries = self._compute_article_boundaries(all_nodes)
         new_root, new_warnings = self._bind_cross_references_per_article(
             document.root, all_nodes, article_boundaries
@@ -1240,7 +1194,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Walk the forest level by level, refining descendants first,
         then applying sibling-aware transformations to each children list.
@@ -1258,7 +1212,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         children: tuple[Node, ...],
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Apply the three refinement passes to a parent's children list."""
         # PASS 1: per-Node refinement (META + TOC).
@@ -1296,7 +1250,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         host: Node,
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Split a META_VALUE Node into FONTE_VALUE + AUTHORS siblings.
 
@@ -1406,7 +1360,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         children: tuple[Node, ...],
         warnings: list[str],
         transformations: list[Transformation],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Find every SECTION_LABEL ``"Note:"`` and consolidate the following siblings.
 
@@ -1526,7 +1480,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         page_index: int,
         block_indices: tuple[int, ...],
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Split notes text into NOTE and EDITORIAL_NOTE chunks.
 
@@ -1593,7 +1547,7 @@ class DejureDottrinaProfile(ProfilePlugin):
         self,
         node: Node,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Mint synthetic CROSS_REFERENCE siblings for inline ``(N)`` matches."""
         if node.text is None:

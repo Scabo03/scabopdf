@@ -25,8 +25,6 @@ from scabopdf_pipeline.profiles.manuale_bic import (
     ManualeBicProfile,
     _BlockView,
     _is_back_matter_heading,
-    _max_existing_node_counter,
-    _NodeIdMinter,
 )
 from scabopdf_pipeline.profiling.signals import (
     ApparatusPresence,
@@ -36,6 +34,12 @@ from scabopdf_pipeline.profiling.signals import (
     ProfilePageGeometry,
     ProfilingSignals,
     TypographicSignature,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter as _NodeIdMinter,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    max_existing_node_counter as _max_existing_node_counter,
 )
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory

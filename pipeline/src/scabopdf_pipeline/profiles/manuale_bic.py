@@ -80,8 +80,8 @@ ScaboPDF profile vocabulary along five new structural dimensions:
   Giappichelli plugin (commit ``c01661e``) and adapts it: the
   splitter signal is line-level on a color-specific marker rather
   than the typographic 9pt size signature of Giappichelli, but the
-  minting machinery (``_NodeIdMinter`` seeded by
-  ``_max_existing_node_counter``, sibling-insertion after the BODY
+  minting machinery (``NodeIdMinter`` seeded by
+  ``max_existing_node_counter``, sibling-insertion after the BODY
   parent, ``Transformation`` recording with ``split_into`` populated
   with the minted ids, schema 0.5.0 structural reversibility) is
   identical. Across the 684 pages the splitter mints one
@@ -248,6 +248,7 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.reconstruction.minting import NodeIdMinter, max_existing_node_counter
 from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -638,57 +639,6 @@ class _BlockView:
         return self.spans[0].color if self.spans else 0
 
 
-_NODE_ID_PATTERN = re.compile(r"^node_(\d+)$")
-"""Pattern decoding a tier 1 node id into its numeric counter.
-
-Same convention used by Mosconi, Mandrioli, Torrente: the schema's
-``NodeDict.id`` validator enforces ``^node_\\d+$`` and the plugin
-mints synthetic ids ``node_NNNN`` zero-padded to four digits.
-"""
-
-
-class _NodeIdMinter:
-    """Stateful node-id minter that follows the tier 1 ``node_NNNN``
-    convention.
-
-    The minter starts one past the maximum counter already used by
-    tier 1 (and any earlier minting in the same plugin pass) and
-    emits monotonically increasing ids.
-    """
-
-    def __init__(self, *, start: int) -> None:
-        self._counter = start
-
-    def mint(self) -> str:
-        node_id = f"node_{self._counter:04d}"
-        self._counter += 1
-        return node_id
-
-
-def _max_existing_node_counter(roots: tuple[Node, ...]) -> int:
-    """Return the highest numeric counter already used by a tier 1 node id.
-
-    Walks the forest, decodes every ``node_NNNN`` id and returns the
-    maximum. A document with no tier 1 nodes returns ``-1`` so the
-    caller can start minting at ``0``.
-    """
-    best = -1
-
-    def _visit(node: Node) -> None:
-        nonlocal best
-        match = _NODE_ID_PATTERN.match(node.id)
-        if match is not None:
-            value = int(match.group(1))
-            if value > best:
-                best = value
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return best
-
-
 # ---------------------------------------------------------------------------
 # Main class.
 
@@ -996,7 +946,7 @@ class ManualeBicProfile(ProfilePlugin):
         new_warnings = list(self._pending_warnings)
         self._pending_warnings = []
 
-        minter = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
+        minter = NodeIdMinter(start=max_existing_node_counter(document.root) + 1)
 
         new_roots, transformations = self._split_body_note_in_forest(
             document.root,
@@ -1276,7 +1226,7 @@ class ManualeBicProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Convert BODY Nodes whose text starts with ``N. `` into one-or-more
         synthetic NOTE Nodes.
@@ -1314,7 +1264,7 @@ class ManualeBicProfile(ProfilePlugin):
         node: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> Node:
         new_children: list[Node] = []
         for child in node.children:
@@ -1397,7 +1347,7 @@ class ManualeBicProfile(ProfilePlugin):
         body: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Split a note-continuation BODY into one synthetic NOTE per ``N. ``
         transition.
@@ -1466,7 +1416,7 @@ class ManualeBicProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Mint synthetic BOOK_PAGE_ANCHOR Nodes for the 1pt anchors buried
         inside mixed (non-all-1pt) blocks.
@@ -1501,7 +1451,7 @@ class ManualeBicProfile(ProfilePlugin):
         node: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> Node:
         new_children: list[Node] = []
         for child in node.children:
@@ -1526,7 +1476,7 @@ class ManualeBicProfile(ProfilePlugin):
         host: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         minted: list[Node] = []
         for block_index in host.block_indices:
@@ -1768,7 +1718,7 @@ class ManualeBicProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[tuple[Node, ...], list[Transformation]]:
         transformations: list[Transformation] = []
         new_roots = tuple(
@@ -1782,7 +1732,7 @@ class ManualeBicProfile(ProfilePlugin):
         node: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
         transformations: list[Transformation],
     ) -> Node:
         # First, recurse into children so the operation reaches every
@@ -1808,7 +1758,7 @@ class ManualeBicProfile(ProfilePlugin):
         body: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
         transformations: list[Transformation],
     ) -> list[Node]:
         """Walk every block of the (possibly multi-block) BODY Node and
@@ -2019,7 +1969,7 @@ class ManualeBicProfile(ProfilePlugin):
         roots: tuple[Node, ...],
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> tuple[Node, ...]:
         # Walk the forest tracking the current top-level chapter so the
         # walker can skip CROSS_REFERENCE minting under back-matter
@@ -2046,7 +1996,7 @@ class ManualeBicProfile(ProfilePlugin):
         node: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
         *,
         skip: bool = False,
     ) -> Node:
@@ -2074,7 +2024,7 @@ class ManualeBicProfile(ProfilePlugin):
         body: Node,
         extraction: ExtractionResult,
         warnings: list[str],
-        minter: _NodeIdMinter,
+        minter: NodeIdMinter,
     ) -> list[Node]:
         """Mint a synthetic CROSS_REFERENCE Node per inline superscript span.
 

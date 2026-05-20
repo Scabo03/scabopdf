@@ -215,6 +215,7 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
+from scabopdf_pipeline.reconstruction.minting import NodeIdMinter, max_existing_node_counter
 from scabopdf_pipeline.reconstruction.types import (
     Document,
     Node,
@@ -758,54 +759,6 @@ class _BlockView:
     text: str
 
 
-_NODE_ID_PATTERN = re.compile(r"^node_(\d+)$")
-"""Pattern that decodes a tier 1 node id into its numeric counter."""
-
-
-class _NodeIdMinter:
-    """Stateful node-id minter that follows the tier 1 ``node_NNNN`` convention.
-
-    Synthetic nodes minted by the plugin (currently only the inline
-    ``CROSS_REFERENCE`` nodes) must respect the JSON schema's pattern
-    constraint on ``NodeDict.id`` (``^node_\\d+$``, four-digit
-    zero-padded by tier 1). The minter starts one past the highest
-    counter already assigned by tier 1 and emits monotonically
-    increasing ids matching the schema pattern.
-    """
-
-    def __init__(self, *, start: int) -> None:
-        self._counter = start
-
-    def mint(self) -> str:
-        node_id = f"node_{self._counter:04d}"
-        self._counter += 1
-        return node_id
-
-
-def _max_existing_node_counter(roots: tuple[Node, ...]) -> int:
-    """Return the highest numeric counter already used by a tier 1 node id.
-
-    Walks the forest, decodes every ``node_NNNN`` id and returns the
-    maximum. A document with no tier 1 nodes returns ``-1`` so the
-    caller can start minting at ``0``.
-    """
-    best = -1
-
-    def _visit(node: Node) -> None:
-        nonlocal best
-        match = _NODE_ID_PATTERN.match(node.id)
-        if match is not None:
-            value = int(match.group(1))
-            if value > best:
-                best = value
-        for child in node.children:
-            _visit(child)
-
-    for root in roots:
-        _visit(root)
-    return best
-
-
 class ManualeGiappichelliProfile(ProfilePlugin):
     """Corpus plugin for the Giappichelli manual series — Mandrioli-Carratta vol. III."""
 
@@ -1017,7 +970,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         self._pending_warnings = []
         new_transformations: list[Transformation] = []
 
-        next_id = _NodeIdMinter(start=_max_existing_node_counter(document.root) + 1)
+        next_id = NodeIdMinter(start=max_existing_node_counter(document.root) + 1)
         new_roots = self._fuse_and_refine(
             document.root, extraction, new_warnings, new_transformations, next_id
         )
@@ -1570,7 +1523,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         extraction: ExtractionResult,
         warnings: list[str],
         transformations: list[Transformation],
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> tuple[Node, ...]:
         """Return a new forest with chapter pairs fused, glued body+note
         blocks split, cross-refs minted, chapter summaries parsed and
@@ -1594,7 +1547,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         extraction: ExtractionResult,
         warnings: list[str],
         transformations: list[Transformation],
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> tuple[Node, ...]:
         new_nodes: list[Node] = []
         i = 0
@@ -1644,7 +1597,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         extraction: ExtractionResult,
         warnings: list[str],
         transformations: list[Transformation],
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> Node:
         """Merge two ``HEADING_2`` siblings into a single chapter heading node."""
         number_text = (number_node.text or "").strip()
@@ -1681,7 +1634,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         extraction: ExtractionResult,
         warnings: list[str],
         transformations: list[Transformation],
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> Node:
         """Recursively refine a node and its descendants.
 
@@ -1729,7 +1682,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         extraction: ExtractionResult,
         warnings: list[str],
         transformations: list[Transformation],
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> list[Node]:
         """Split BODY or NOTE nodes that contain multiple footnotes into
         independent NOTE siblings.
@@ -1776,7 +1729,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
           one transition, no split happens (single-note block).
         - Synthetic NOTE Nodes are inserted as siblings immediately
           after the surviving Node in the result list, using the same
-          ``_NodeIdMinter`` that the cross-reference minting later
+          ``NodeIdMinter`` that the cross-reference minting later
           consumes; their ``block_indices`` reuse the source
           block_index (the NOTE conceptually originates from the same
           block).
@@ -2026,7 +1979,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         self,
         nodes: list[Node],
         warnings: list[str],
-        next_id: _NodeIdMinter,
+        next_id: NodeIdMinter,
     ) -> list[Node]:
         """Insert synthetic CROSS_REFERENCE nodes after BODY nodes with inline ``(N)``.
 

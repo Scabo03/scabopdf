@@ -24,8 +24,6 @@ from scabopdf_pipeline.profiles.giuffre_codici import (
     GiuffreCodiciProfile,
     _BlockView,
     _code_type_from_banner_text,
-    _max_existing_node_counter,
-    _NodeIdMinter,
     _warning_safe,
 )
 from scabopdf_pipeline.profiling.profile import DisabledLayout
@@ -38,6 +36,12 @@ from scabopdf_pipeline.profiling.signals import (
     ProfilingSignals,
     SpecificMarker,
     TypographicSignature,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    NodeIdMinter as _NodeIdMinter,
+)
+from scabopdf_pipeline.reconstruction.minting import (
+    max_existing_node_counter as _max_existing_node_counter,
 )
 from scabopdf_pipeline.reconstruction.types import Document, Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
