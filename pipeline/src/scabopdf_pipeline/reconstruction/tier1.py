@@ -22,6 +22,19 @@ across all profiles:
    ARTICLE_HEADER): a heading between two body blocks signals a new
    section, not a continuation.
 
+2b. ``tier 1b.5`` — adjacent multi-line heading consolidation (added in
+   the 20 May 2026 session that closed the materiali_studio debt vii).
+   See :func:`_consolidate_adjacent_headings`. Conservative: only
+   fuses pairs of adjacent same-page items whose post-classification
+   verdict is the same HEADING_N category, whose typographic signature
+   is identical across every span of both blocks, whose bbox.x0 agree
+   within ±2pt, whose vertical gap sits in [0, 8pt], and whose
+   combined length stays under 500 chars. Skipped if the prior item
+   ends with a sentence terminator. Plugin-specific fusion patterns
+   (Tesauro chapter pair, Mandrioli CAPITOLO composite) have
+   heterogeneous signatures across halves and are therefore not
+   touched by this generic pass.
+
 3. ``tier 1c`` — hierarchy assembly (§ 5.3). Blocks are folded into a tree
    guided by their semantic category, a running heading stack
    (``heading_stack[i-1]`` = current ``HEADING_i`` builder when present)
@@ -170,7 +183,8 @@ def reconstruct(
 
     sorted_items = _sort_mono_column(classified_blocks, extraction)
     merged_items = _merge_cross_page(sorted_items, geometries_by_page)
-    root, warnings = _assemble_hierarchy(merged_items)
+    consolidated_items = _consolidate_adjacent_headings(merged_items, extraction)
+    root, warnings = _assemble_hierarchy(consolidated_items)
 
     document = Document(root=root, warnings=warnings)
     return plugin.refine_reconstruction(document, extraction, classified_blocks)
@@ -262,6 +276,166 @@ def _find_merge_target(output: list[_Item]) -> _Item | None:
         if cat in _HEADING_BARRIERS:
             return None
     return None
+
+
+_HEADING_FUSION_CATEGORIES: frozenset[SemanticCategory] = frozenset(
+    {
+        SemanticCategory.HEADING_1,
+        SemanticCategory.HEADING_2,
+        SemanticCategory.HEADING_3,
+        SemanticCategory.HEADING_4,
+    }
+)
+
+_HEADING_FUSION_X0_TOLERANCE_PT: float = 2.0
+"""Maximum permitted difference in ``bbox.x0`` between two adjacent
+heading fragments for them to be considered the same logical heading.
+Two points of slack absorbs PyMuPDF's typical sub-pixel jitter on the
+horizontal axis without admitting blocks aligned to different columns.
+"""
+
+_HEADING_FUSION_VERTICAL_GAP_MAX_PT: float = 8.0
+"""Maximum permitted vertical gap between two adjacent heading fragments.
+8pt accommodates the typical line-leading of body and heading sizes
+without admitting blocks separated by a full empty line. The gap is
+measured as ``current.bbox_y0 - prev.bbox_y1``; negative gaps
+(overlapping blocks) are rejected.
+"""
+
+_HEADING_FUSION_COMBINED_TEXT_MAX_CHARS: int = 500
+"""Maximum permitted combined text length of two fused heading fragments.
+Headings are short by convention; 500 chars is well above any natural
+heading and well below a body paragraph. Prevents pathological fusion
+chains on misclassified blocks.
+"""
+
+_HEADING_FUSION_SENTENCE_TERMINATORS: frozenset[str] = frozenset({".", "!", "?", ":"})
+"""Trailing characters on the prior fragment that block fusion. A
+heading fragment whose text ends with sentence punctuation is by
+construction a self-contained heading; the next adjacent block is a
+new logical unit, not a continuation of the same heading.
+"""
+
+
+def _consolidate_adjacent_headings(items: list[_Item], extraction: ExtractionResult) -> list[_Item]:
+    """Fuse pairs of adjacent ``_Item`` that form a single wrapped heading.
+
+    Tier 1b.5 — a conservative post-classification pass that closes the
+    "multi-line subtitle not fused into a single HEADING" debt (vii) of
+    the materiali_studio plugin (CARRYOVER v2.16.1) and the analogous
+    case in any future plugin or corpus.
+
+    PyMuPDF normally emits a multi-line heading as a single ``Block``
+    with multiple line-indexed ``Span``s (the typical case), but
+    occasionally a typographic discontinuity (an extra vertical gap, a
+    subtle baseline shift) breaks its intra-block grouping and produces
+    two separate ``Block``s for the two halves of the same logical
+    heading. The plugin's heading-recognition predicate may then match
+    only the first half, missing the continuation, or both halves with
+    the second being a small fragment that does not naturally form a
+    heading on its own.
+
+    The fusion predicate is deliberately strict to stay corpus-agnostic
+    and avoid interfering with the plugin-specific fusion patterns
+    already established (Tesauro chapter heading "Capitolo N" + title,
+    Mosconi chapter pair, Mandrioli CAPITOLO small-caps composite —
+    these typically have *different* typographic signatures between
+    halves and are therefore skipped by this generic pass). Two adjacent
+    ``_Item``s are fused into one only when *all* of the following hold:
+
+    - both items have a real ``Block`` (no sentinel ``EMPTY_PAGE``);
+    - both items share the same ``page``;
+    - both items have already been classified as the *same* category,
+      and that category is one of ``HEADING_1`` / ``HEADING_2`` /
+      ``HEADING_3`` / ``HEADING_4`` (the fusion is opt-out for BODY,
+      NOTE, ARTIFACT_*, CROSS_REFERENCE, etc. so it cannot accidentally
+      glue paragraphs);
+    - their ``bbox.x0`` values are within
+      :data:`_HEADING_FUSION_X0_TOLERANCE_PT` of each other (same
+      left-aligned or same centered column);
+    - their vertical gap is in ``[0, _HEADING_FUSION_VERTICAL_GAP_MAX_PT]``
+      (typical line-leading, not a full empty line);
+    - all spans of *both* blocks share an identical typographic
+      signature ``(size, font, flags, color)`` reduced to **a single
+      distinct value** across the two blocks (a wrapped heading is by
+      construction homogeneous);
+    - the prior item's text does not end with a sentence-terminator
+      (``.``, ``!``, ``?``, ``:``) that would mark a self-contained
+      heading;
+    - the combined text length stays under
+      :data:`_HEADING_FUSION_COMBINED_TEXT_MAX_CHARS`.
+
+    When fusion happens the prior item absorbs the current item: text is
+    concatenated with a single space, ``block_indices`` are extended,
+    and the bbox anchor is left at the prior's coordinates (sorting has
+    already happened, so the bbox does not influence downstream order).
+    """
+    if not items:
+        return items
+    output: list[_Item] = [items[0]]
+    for current in items[1:]:
+        prev = output[-1]
+        if _can_fuse_heading_fragments(prev, current, extraction):
+            assert prev.text is not None and current.text is not None
+            prev.text = prev.text + " " + current.text
+            prev.block_indices.extend(current.block_indices)
+            # Re-anchor ``prev.block`` to the just-absorbed block so the
+            # next iteration's vertical-gap check is measured against the
+            # latest absorbed y1 rather than against the original first
+            # block's y1. Without this, a chain of three same-style
+            # fragments collapses only the first two when the third's
+            # gap from the first's y1 exceeds the threshold.
+            prev.block = current.block
+        else:
+            output.append(current)
+    return output
+
+
+def _can_fuse_heading_fragments(prev: _Item, current: _Item, extraction: ExtractionResult) -> bool:
+    """Predicate for :func:`_consolidate_adjacent_headings` — see docstring."""
+    if prev.block is None or current.block is None:
+        return False
+    if prev.text is None or current.text is None:
+        return False
+    if prev.classified.category not in _HEADING_FUSION_CATEGORIES:
+        return False
+    if prev.classified.category is not current.classified.category:
+        return False
+    if prev.page != current.page:
+        return False
+    if abs(prev.bbox_x0 - current.bbox_x0) > _HEADING_FUSION_X0_TOLERANCE_PT:
+        return False
+    vertical_gap = current.bbox_y0 - prev.block.bbox[3]
+    if vertical_gap < 0.0 or vertical_gap > _HEADING_FUSION_VERTICAL_GAP_MAX_PT:
+        return False
+    prev_trimmed = prev.text.rstrip()
+    if prev_trimmed and prev_trimmed[-1] in _HEADING_FUSION_SENTENCE_TERMINATORS:
+        return False
+    combined_len = len(prev.text) + 1 + len(current.text)
+    if combined_len > _HEADING_FUSION_COMBINED_TEXT_MAX_CHARS:
+        return False
+    return _share_single_typographic_signature(prev.block, current.block, extraction)
+
+
+def _share_single_typographic_signature(b1: Block, b2: Block, extraction: ExtractionResult) -> bool:
+    """Return ``True`` iff every span of both blocks has the same
+    ``(size, font, flags, color)`` tuple — a single signature shared
+    across the two blocks.
+
+    The "single signature" condition is the heading-wrap invariant: a
+    multi-line heading is typographically homogeneous, while a chapter
+    pair "Capitolo N" + title or a small-caps composite "CAPITOLO" +
+    title is by construction heterogeneous and will be skipped.
+    """
+    s1, e1 = b1.span_range
+    s2, e2 = b2.span_range
+    spans1 = extraction.spans[s1:e1]
+    spans2 = extraction.spans[s2:e2]
+    if not spans1 or not spans2:
+        return False
+    signatures = {(s.size, s.font, s.flags, s.color) for s in spans1}
+    signatures.update((s.size, s.font, s.flags, s.color) for s in spans2)
+    return len(signatures) == 1
 
 
 def _assemble_hierarchy(

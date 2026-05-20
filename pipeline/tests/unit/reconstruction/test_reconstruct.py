@@ -420,3 +420,314 @@ def test_node_ids_are_zero_padded_and_deterministic() -> None:
     assert ids_a == ids_b
     assert all(node_id.startswith("node_") for node_id in ids_a)
     assert all(len(node_id) == len("node_0000") for node_id in ids_a)
+
+
+# ---------------------------------------------------------------------------
+# (b.5) tier 1b.5 — consolidation of adjacent multi-line heading fragments
+# Closes debt (vii) of the materiali_studio plugin (CARRYOVER v2.16.1).
+# ---------------------------------------------------------------------------
+
+
+def _build_heading_pair_inputs(
+    *,
+    text1: str,
+    text2: str,
+    y0_1: float = 50.0,
+    height_1: float = 28.0,
+    y0_2: float = 80.0,
+    height_2: float = 28.0,
+    x0_1: float = 100.0,
+    x0_2: float = 100.0,
+    font_1: str = "Arial-BoldMT",
+    font_2: str = "Arial-BoldMT",
+    size_1: float = 25.0,
+    size_2: float = 25.0,
+    flags_1: int = 16,
+    flags_2: int = 16,
+    color_1: int = 0,
+    color_2: int = 0,
+    category_1: SemanticCategory = SemanticCategory.HEADING_1,
+    category_2: SemanticCategory = SemanticCategory.HEADING_1,
+    page: int = 0,
+) -> tuple[ExtractionResult, list[ClassifiedBlock]]:
+    """Build a two-block extraction tailored to exercise the adjacent-heading
+    consolidation predicate. All knobs default to a "should fuse" configuration
+    that the tests then perturb to verify the predicate's rejection paths.
+    """
+    spans = [
+        Span(
+            text=text1,
+            font=font_1,
+            size=size_1,
+            flags=flags_1,
+            color=color_1,
+            bbox=(x0_1, y0_1, x0_1 + 200.0, y0_1 + height_1),
+            page=page,
+            block_index=0,
+            line_index=0,
+            span_index=0,
+        ),
+        Span(
+            text=text2,
+            font=font_2,
+            size=size_2,
+            flags=flags_2,
+            color=color_2,
+            bbox=(x0_2, y0_2, x0_2 + 200.0, y0_2 + height_2),
+            page=page,
+            block_index=1,
+            line_index=0,
+            span_index=0,
+        ),
+    ]
+    blocks = [
+        Block(
+            page=page,
+            block_index=0,
+            bbox=(x0_1, y0_1, x0_1 + 200.0, y0_1 + height_1),
+            span_range=(0, 1),
+        ),
+        Block(
+            page=page,
+            block_index=1,
+            bbox=(x0_2, y0_2, x0_2 + 200.0, y0_2 + height_2),
+            span_range=(1, 2),
+        ),
+    ]
+    classified = [
+        ClassifiedBlock(block_index=0, category=category_1, reason="test"),
+        ClassifiedBlock(block_index=1, category=category_2, reason="test"),
+    ]
+    extraction = ExtractionResult(
+        spans=spans,
+        blocks=blocks,
+        page_geometries=[PageGeometry(page=page, width_pt=PAGE_W, height_pt=PAGE_H, rotation=0)],
+        page_images=[],
+        drawings=[],
+        warnings=[],
+        page_count=1,
+        is_encrypted=False,
+        permissions=-4,
+    )
+    return extraction, classified
+
+
+def test_consolidation_fuses_two_adjacent_heading_fragments() -> None:
+    """The canonical case: two same-page HEADING_1 fragments, same x0,
+    typical vertical leading, identical typography → fused into one Node.
+    """
+    extraction, classified = _build_heading_pair_inputs(
+        text1="LE OBBLIGAZIONI NASCENTI DALLA",
+        text2="LEGGE",
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 1
+    head = document.root[0]
+    assert head.category is SemanticCategory.HEADING_1
+    assert head.text == "LE OBBLIGAZIONI NASCENTI DALLA LEGGE"
+    assert sorted(head.block_indices) == [0, 1]
+
+
+def test_consolidation_skipped_when_x0_differs_beyond_tolerance() -> None:
+    extraction, classified = _build_heading_pair_inputs(
+        text1="FRAGMENT ONE",
+        text2="FRAGMENT TWO",
+        x0_1=100.0,
+        x0_2=110.0,
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+
+
+def test_consolidation_skipped_when_vertical_gap_exceeds_threshold() -> None:
+    extraction, classified = _build_heading_pair_inputs(
+        text1="FIRST",
+        text2="SECOND",
+        y0_1=50.0,
+        height_1=28.0,
+        y0_2=120.0,
+        height_2=28.0,
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+
+
+def test_consolidation_skipped_when_vertical_gap_is_negative() -> None:
+    extraction, classified = _build_heading_pair_inputs(
+        text1="FIRST",
+        text2="OVERLAPPING",
+        y0_1=50.0,
+        height_1=28.0,
+        y0_2=60.0,
+        height_2=28.0,
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+
+
+def test_consolidation_skipped_when_first_ends_with_terminator() -> None:
+    extraction, classified = _build_heading_pair_inputs(
+        text1="FIRST SENTENCE.",
+        text2="SECOND SENTENCE",
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+
+
+def test_consolidation_skipped_when_typographic_signatures_differ() -> None:
+    extraction, classified = _build_heading_pair_inputs(
+        text1="FIRST",
+        text2="SECOND",
+        size_2=22.0,
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+
+
+def test_consolidation_skipped_when_fonts_differ() -> None:
+    extraction, classified = _build_heading_pair_inputs(
+        text1="FIRST",
+        text2="SECOND",
+        font_2="TimesNewRomanPS-BoldMT",
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+
+
+def test_consolidation_skipped_when_categories_differ() -> None:
+    """HEADING_1 + HEADING_2 must NOT be fused. The pair survives as two
+    distinct Nodes; the hierarchy-assembly phase then nests the HEADING_2
+    under the HEADING_1, so ``document.root`` carries a single HEADING_1
+    with one HEADING_2 child rather than the two flat siblings the fusion
+    would have produced.
+    """
+    extraction, classified = _build_heading_pair_inputs(
+        text1="HEADING TEXT",
+        text2="SUBHEAD TEXT",
+        category_2=SemanticCategory.HEADING_2,
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 1
+    parent = document.root[0]
+    assert parent.category is SemanticCategory.HEADING_1
+    assert parent.text == "HEADING TEXT"
+    assert len(parent.children) == 1
+    child = parent.children[0]
+    assert child.category is SemanticCategory.HEADING_2
+    assert child.text == "SUBHEAD TEXT"
+
+
+def test_consolidation_skipped_when_categories_are_not_headings() -> None:
+    """Adjacent BODY blocks with identical typographic signature must NEVER
+    be fused by tier 1b.5 — the predicate is gated on HEADING_N categories
+    specifically. The y0 values are chosen well below the cross-page-top
+    fraction so the unrelated tier 1b cross-page BODY merge does not fire
+    either (which would also collapse them, but for a different reason).
+    """
+    extraction, classified = _build_heading_pair_inputs(
+        text1="First body paragraph",
+        text2="Second body paragraph",
+        category_1=SemanticCategory.BODY,
+        category_2=SemanticCategory.BODY,
+        y0_1=400.0,
+        y0_2=430.0,
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+    assert document.root[0].text == "First body paragraph"
+    assert document.root[1].text == "Second body paragraph"
+
+
+def test_consolidation_skipped_when_pages_differ() -> None:
+    """The fusion never crosses a page boundary — that is handled by the
+    upstream tier 1b cross-page BODY merge, not by this heading-fusion.
+    """
+    extraction, classified = _build_heading_pair_inputs(
+        text1="FIRST",
+        text2="SECOND",
+        page=0,
+    )
+    extraction.blocks[1] = Block(
+        page=1,
+        block_index=1,
+        bbox=extraction.blocks[1].bbox,
+        span_range=extraction.blocks[1].span_range,
+    )
+    extraction.spans[1] = Span(
+        text=extraction.spans[1].text,
+        font=extraction.spans[1].font,
+        size=extraction.spans[1].size,
+        flags=extraction.spans[1].flags,
+        color=extraction.spans[1].color,
+        bbox=extraction.spans[1].bbox,
+        page=1,
+        block_index=1,
+        line_index=0,
+        span_index=0,
+    )
+    extraction.page_geometries.append(
+        PageGeometry(page=1, width_pt=PAGE_W, height_pt=PAGE_H, rotation=0)
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
+
+
+def test_consolidation_chain_fuses_three_fragments() -> None:
+    """Three adjacent HEADING_1 with identical style and uniform gap should
+    all collapse into one Node via the sequential fold over output[-1].
+    """
+    spans = []
+    blocks = []
+    classified = []
+    for i, (y0, text) in enumerate(((50.0, "A"), (80.0, "B"), (110.0, "C"))):
+        spans.append(
+            Span(
+                text=text,
+                font="Arial-BoldMT",
+                size=25.0,
+                flags=16,
+                color=0,
+                bbox=(100.0, y0, 300.0, y0 + 28.0),
+                page=0,
+                block_index=i,
+                line_index=0,
+                span_index=0,
+            )
+        )
+        blocks.append(
+            Block(
+                page=0,
+                block_index=i,
+                bbox=(100.0, y0, 300.0, y0 + 28.0),
+                span_range=(i, i + 1),
+            )
+        )
+        classified.append(
+            ClassifiedBlock(block_index=i, category=SemanticCategory.HEADING_1, reason="test")
+        )
+    extraction = ExtractionResult(
+        spans=spans,
+        blocks=blocks,
+        page_geometries=[PageGeometry(page=0, width_pt=PAGE_W, height_pt=PAGE_H, rotation=0)],
+        page_images=[],
+        drawings=[],
+        warnings=[],
+        page_count=1,
+        is_encrypted=False,
+        permissions=-4,
+    )
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 1
+    assert document.root[0].text == "A B C"
+    assert sorted(document.root[0].block_indices) == [0, 1, 2]
+
+
+def test_consolidation_skipped_when_combined_length_exceeds_cap() -> None:
+    """The cap (500 chars) blocks pathological fusion. Two synthetic
+    HEADING_1 of 300 chars each (legitimate by signature/geometry) are
+    NOT fused because 300 + 300 > 500."""
+    long_a = "A" * 300
+    long_b = "B" * 300
+    extraction, classified = _build_heading_pair_inputs(text1=long_a, text2=long_b)
+    document = reconstruct(extraction, classified, _profile(), _plugin())
+    assert len(document.root) == 2
