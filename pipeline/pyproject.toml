@@ -34,6 +34,9 @@ scabopdf-extract = "scabopdf_pipeline.emission.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"scabopdf_pipeline.resources.lexicon" = ["*.txt.gz", "README.md"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
