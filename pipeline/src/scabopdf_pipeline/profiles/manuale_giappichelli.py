@@ -215,7 +215,12 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
-from scabopdf_pipeline.reconstruction.types import Document, Node, SummaryItem
+from scabopdf_pipeline.reconstruction.types import (
+    Document,
+    Node,
+    SummaryItem,
+    compute_note_length_category,
+)
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 SPLITTER_STEP_ID = "giappichelli_body_note_splitter"
@@ -1892,6 +1897,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                         page_index=node.page_index,
                         block_indices=(block_index,),
                         text=note_text,
+                        length_category=compute_note_length_category(note_text),
                     )
                 )
                 warnings.append(

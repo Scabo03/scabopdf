@@ -287,7 +287,7 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
-from scabopdf_pipeline.reconstruction.types import Document, Node
+from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 WARNING_PREFIX = "plugin:giuffre_codici"
@@ -1659,6 +1659,7 @@ class GiuffreCodiciProfile(ProfilePlugin):
                     page_index=node.page_index,
                     block_indices=node.block_indices,
                     text=chunk,
+                    length_category=compute_note_length_category(chunk),
                 )
             )
         return result

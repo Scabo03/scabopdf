@@ -248,7 +248,7 @@ from scabopdf_pipeline.postprocessing.types import Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
-from scabopdf_pipeline.reconstruction.types import Document, Node
+from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 WARNING_PREFIX = "plugin:bic"
@@ -1428,6 +1428,7 @@ class ManualeBicProfile(ProfilePlugin):
                 replace(
                     body,
                     category=SemanticCategory.NOTE,
+                    length_category=compute_note_length_category(body.text),
                 )
             ]
         minted: list[Node] = []
@@ -1447,6 +1448,7 @@ class ManualeBicProfile(ProfilePlugin):
                     level=None,
                     summary_items=None,
                     toc_items=None,
+                    length_category=compute_note_length_category(note_text),
                     apparatus_refs=(),
                 )
             )
@@ -1903,6 +1905,7 @@ class ManualeBicProfile(ProfilePlugin):
                     level=None,
                     summary_items=None,
                     toc_items=None,
+                    length_category=compute_note_length_category(note_text),
                     apparatus_refs=(),
                 )
             )

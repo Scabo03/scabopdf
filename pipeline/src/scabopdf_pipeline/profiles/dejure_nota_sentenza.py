@@ -264,6 +264,7 @@ from scabopdf_pipeline.reconstruction.types import (
     Document,
     Node,
     TocGeneralItem,
+    compute_note_length_category,
 )
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -1806,6 +1807,7 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
                 page_index=page_index,
                 block_indices=block_indices,
                 text=chunk,
+                length_category=compute_note_length_category(chunk),
             )
             minted.append(note_node)
             self._minted_note_ids.add(new_id)

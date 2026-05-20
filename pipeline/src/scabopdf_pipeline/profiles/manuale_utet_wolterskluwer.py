@@ -149,7 +149,7 @@ from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
-from scabopdf_pipeline.reconstruction.types import Document, Node
+from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_length_category
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 WARNING_PREFIX = "plugin:utet_wolterskluwer"
@@ -1248,6 +1248,7 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
                     level=previous.level,
                     summary_items=previous.summary_items,
                     toc_items=previous.toc_items,
+                    length_category=compute_note_length_category(merged_text),
                     apparatus_refs=previous.apparatus_refs,
                 )
                 result[-1] = merged
