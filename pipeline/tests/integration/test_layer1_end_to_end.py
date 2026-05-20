@@ -262,6 +262,18 @@ def _iter_nodes(node: Node) -> Iterator[Node]:
         yield from _iter_nodes(child)
 
 
+def _iter_emitted_nodes(node: NodeDict) -> Iterator[NodeDict]:
+    """Pre-order DFS over the emitted Pydantic NodeDict tree.
+
+    Mirror of :func:`_iter_nodes` for the contract-side tree, used by
+    schema 0.6.0 assertions that check the ``length_category`` value
+    surfaces on the emitted JSON.
+    """
+    yield node
+    for child in node.children:
+        yield from _iter_emitted_nodes(child)
+
+
 def _max_depth(roots: tuple[Node, ...]) -> int:
     """Return the maximum depth of a forest, with depth 1 == a single root."""
     if not roots:
@@ -1058,8 +1070,50 @@ def test_pipeline_runs_on_mandrioli() -> None:
     # therefore large on this dense-apparatus corpus.
     assert n_warnings > 0, "expected plugin-emitted warnings on the dense Mandrioli apparatus"
 
+    # Schema 0.6.0: every NOTE Node carries a length_category from the
+    # closed enum of six values. Tier 1 reconstruction populates the
+    # ClassifiedBlock-based NOTEs; the plugin's body+note splitter
+    # populates the synthetic ones (manuale_giappichelli.py:1888).
+    # The empirical distribution on Vol. III (~1161 NOTE) is heavily
+    # MEDIUM-dominated with a non-trivial LONG / VERY_LONG tail; we
+    # assert the presence of every NOTE Node having a valid value and
+    # that VERY_LONG is exercised (its ~17 % empirical share would only
+    # fall to zero on a substantial extraction regression).
+    note_nodes = [
+        n
+        for root in document.root
+        for n in _iter_nodes(root)
+        if n.category is SemanticCategory.NOTE
+    ]
+    assert len(note_nodes) == n_note
+    length_distribution: dict[str, int] = {}
+    for n in note_nodes:
+        assert n.length_category is not None, (
+            f"NOTE Node {n.id} on page {n.page_index} has no length_category — "
+            f"schema 0.6.0 requires it on every NOTE"
+        )
+        assert n.length_category in {"MICRO", "SHORT", "MEDIUM", "LONG", "VERY_LONG", "MEGA"}
+        length_distribution[n.length_category] = length_distribution.get(n.length_category, 0) + 1
+    # MEDIUM is the dominant regime on every plugin-emitted corpus.
+    assert length_distribution.get("MEDIUM", 0) > length_distribution.get("MICRO", 0)
+    # Vol. III is known to exercise the long-tail regimes (the analysis
+    # documented mega-notes up to 4 073 char).
+    assert length_distribution.get("VERY_LONG", 0) > 0, (
+        f"expected VERY_LONG NOTEs on Mandrioli Vol. III (~17 % share empirically), "
+        f"got distribution {length_distribution}"
+    )
+
     # § 9 emission conformance.
     assert scabopdf_document.schema_version == "0.6.0"
+    # The length_category surfaces verbatim in the emitted NodeDict.
+    emitted_note_length_categories = [
+        node.length_category
+        for root in scabopdf_document.structure
+        for node in _iter_emitted_nodes(root)
+        if node.type is SemanticCategory.NOTE
+    ]
+    assert all(lc is not None for lc in emitted_note_length_categories)
+    assert len(emitted_note_length_categories) == n_note
     assert scabopdf_document.metadata.pages_pdf == 498
     assert len(scabopdf_document.structure) == len(document.root)
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"

@@ -1852,6 +1852,11 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                 surviving_text_raw.strip() if not is_body else surviving_text_raw.rstrip()
             )
             surviving_text: str | None = surviving_text_stripped or None
+            surviving_length_category = (
+                compute_note_length_category(surviving_text)
+                if surviving_category is SemanticCategory.NOTE
+                else None
+            )
             surviving_node = Node(
                 id=node.id,
                 category=surviving_category,
@@ -1862,6 +1867,7 @@ class ManualeGiappichelliProfile(ProfilePlugin):
                 level=node.level,
                 summary_items=node.summary_items,
                 toc_items=node.toc_items,
+                length_category=surviving_length_category,
                 apparatus_refs=node.apparatus_refs,
             )
             synthetic_ids: list[str] = []
