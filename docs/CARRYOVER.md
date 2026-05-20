@@ -256,7 +256,48 @@ Da discutere con l'utente quali altri tipi di documento sono rilevanti per il su
 
 ## Cronologia delle sessioni
 
-### Sessione corrente (20 maggio 2026, trentesimo aggiornamento — versione 2.16, landing del **tredicesimo plugin di corpus `materiali_studio`** per i materiali di studio user-generated Microsoft Word + Google Docs)
+### Sessione corrente (20 maggio 2026 tarda sera, trentunesimo aggiornamento — versione 2.16.1, chiusura dei debt (i) e (ii) del plugin `materiali_studio` su numerazione decimale e numerazione romana)
+
+- **Apertura**: stato post-landing materiali_studio v1 (versione 2.16) con 13 plugin di corpus operativi e suite 1786 unit + ~56 integration a 97% coverage complessivo, schema 0.5.0 stabile, working tree pulito. L'utente apre una sessione di consolidamento immediato chiedendo la chiusura dei debt (i) e (ii) del report finale di v2.16: riconoscimento numerazione decimale (`N.M`, `N.M.K`, `N.M.K.L`) come HEADING_2/3/4 e numerazione romana maiuscola (`I.`, `II.`, `III.`) come HEADING_1. Briefing operativo dichiara scope ristretto ai soli debt (i) e (ii); gli altri cinque (iii tabelle, iv immagini, v ToC Word, vi em-dash come ARTIFACT_FILIGREE design choice, vii sotto-titoli multi-riga limitazione tier 1) restano residui dichiarati per motivazioni esplicitate.
+
+- **Fase 0 diagnostica PyMuPDF**: subagent dedicato scansiona i quattro fixture privati cercando empiricamente occorrenze di pattern decimale gerarchico e romano. **Risultato sorprendente — la premessa del task viene falsificata**: tutti e quattro i fixture restituiscono **zero match** sulla regex decimale `^(\d+)(\.\d+){1,3}[\.\s]+[A-ZÀ-ſ]` e tre match falsi positivi sulla regex romana, tutti riconducibili al pattern section-letter `C. USUFRUTTO/MULTIPROPRIETA'/PEGNO` del fixture diritto_privato_i (`C` appartiene alla classe `[IVXLC]`). Il corpus reale segue **esclusivamente** le convenzioni `Cap. N` (23 + 35 capitoli) e `^[A-Z]\.` (3 + 11 section letters) già riconosciute dal plugin v1. La diagnosi rivela quindi che la premessa "le dispense Torrente seguono numerazioni gerarchiche" è errata empiricamente: gli appunti dello studente seguono la numerazione editoriale del manuale Torrente (`Cap. N`), non una sua reinterpretazione decimale o romana.
+
+- **Decisione operativa autonoma**: l'utente aveva accettato senza riserva costi addizionali, ma la premessa del task è falsificata. Decisione: implementare comunque il feature come **forward-looking**, perché (a) un utente futuro che carichi appunti con numerazione decimale o romana avrà comunque benefit, (b) il costo di implementazione è basso, (c) la robustezza del plugin migliora senza regressioni sui fixture reali (zero falsi positivi confermati dai test integration), (d) la modifica del codice è già contenuta nel modulo plugin senza toccare aree chiuse. Il fallout di onestà rispetto alla diagnosi viene tracciato nel docstring del plugin e in questa entry CARRYOVER.
+
+- **Implementazione del riconoscimento decimale** (`_DECIMAL_HEADING_PATTERN = r"^(\d+(?:\.\d+)+)[\.\s]+[A-ZÀ-ſ]"`): regex anchorata a inizio blocco, cattura tutta la sequenza dot-separated digits, requires uppercase letter dopo. Mapping per profondità: depth 2 (`N.M`) → HEADING_2, depth 3 (`N.M.K`) → HEADING_3, depth 4 (`N.M.K.L`) → HEADING_4, depth 5+ → diagnostic warning `decimal_hierarchical_depth_exceeded_*` + fall-through a BODY. Edge case empiricamente irrilevanti sui fixture reali (zero cross-reference `art. 1.1`, zero date `25.12.2023` come leading di blocco, zero page reference `p. 1.1`) ma logicamente coperti dal requirement uppercase-after-numbering.
+
+- **Implementazione del riconoscimento romano** (`_ROMAN_HEADING_PATTERN_CANDIDATE = r"^([IVXLCDM]+)\.\s+[A-ZÀ-ſ]"` + validator `_is_valid_roman_numeral` su `_VALID_ROMAN_RE = r"^M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})$"`): regex candidato + validator canonico per filtrare garbage come `IIIIIIII`. Single-character roman (`I.`, `V.`, `X.`, `L.`, `C.`, `D.`, `M.`) è **deliberatamente** rifiutato dal validator (lunghezza ≥ 2) per lasciarli al predicate `_is_section_letter` (HEADING_3) — questa è la chiave per non rompere il caso `C. USUFRUTTO` del fixture privato_i. Mapping: roman valido depth ≥ 2 → HEADING_1.
+
+- **Cascade reorder**: il predicate roman è dispatchato **prima** di `_is_parte_allcaps` perché un heading `II. CONCLUSIONI` matcherebbe anche `_PARTE_ALLCAPS_PATTERN` (la I/V/X/L/C/D/M sono uppercase letters); roman fires prima ed emette il warning più specifico `heading_1_roman`. Test end-to-end `test_roman_vs_section_letter_dispatch::test_single_c_goes_through_section_letter` valida che `C. USUFRUTTO` resta HEADING_3 (via section-letter) dopo il refactor cascade.
+
+- **Closed warning vocabulary aggiornato**: rimossi `decimal_hierarchical_pattern_unsupported_*` e `roman_hierarchical_pattern_unsupported_*` (warning diagnostici v1); aggiunti `heading_2_decimal_block_*_numbering_*`, `heading_3_decimal_block_*_numbering_*`, `heading_4_decimal_block_*_numbering_*`, `heading_1_roman_block_*_numeral_*` come positive recognition warnings; aggiunto `decimal_hierarchical_depth_exceeded_block_*_numbering_*` per depth 5+ fall-through; aggiunto `roman_lowercase_pattern_unsupported_block_*` come reserved per future upgrade (sub-livello `i)`, `ii)` minuscolo).
+
+- **Test unit + integration**: **33 nuovi unit test** (167 total, era 132) in due nuove classi `TestDecimalHeading` (13 test) e `TestRomanHeading` (18 test) più `TestRomanVsSectionLetterDispatch` (1 test end-to-end). I 2 obsolete diagnostic test sostituiti con 8 nuovi positive-recognition test in `TestRefineClassificationMono`. **Coverage del plugin: 100%** mantenuto (353 statements, era 307). Regex closed-warning vocabulary aggiornato in `_TIER1_WARNING_REGEXES` dell'integration test (commit G separato). Tutti i 4 end-to-end pipeline test sui fixture reali continuano a passare con **numeri empirici identici** pre/post fix (zero falsi positivi confermati): teoria 0/0/0/13 H, tributario 0/0/0/1 H, privato_i 2/20/11/27 H, privato_ii 23/35/68/21 H. **Suite totale post-fix: ~1819 unit + 56 integration**, pre-commit verde su tutti gli step, drift test verde byte-for-byte.
+
+- **Pattern strutturale (lll) "Forward-looking heading recognition with empirical falsification documentation"**: documentato in CLAUDE.md come la convenzione operativa quando una sessione di consolidamento dichiara la chiusura di un debt che si rivela empiricamente non-esercitato sul training set corrente. La risposta corretta non è abbandonare il task ma implementare con guard-rail di forward-look: regex robuste con anchor + capitalised-after, validazione canonica per filtrare garbage (vedi il caso `IIIIIIII`), unit test via fixture sintetici, test integration che verificano zero falsi positivi sui fixture reali, docstring esplicito sulla falsificazione empirica.
+
+- **Sequenza commit della sessione**:
+  - F `038be26` Add decimal and roman numbering heading recognition to materiali_studio (plugin + 33 unit test, +200 righe plugin, +295 righe test)
+  - G `5971fa0` Update integration test closed-warning regex for new materiali_studio vocabulary
+  - H `<TBD>` Update CARRYOVER v2.16.1 + CLAUDE.md pattern (lll)
+
+- **Debt residui post-fix** (5 rimasti, era 7):
+  - (i) ~~numerazione decimale gerarchica~~ **CHIUSO** in questa sessione
+  - (ii) ~~numerazione romana maiuscola~~ **CHIUSO** in questa sessione
+  - (iii) tabelle Word non gestite (zero osservazioni sul training set)
+  - (iv) immagini Word/GDocs non gestite (zero osservazioni)
+  - (v) ToC auto-generato Word con dotted leader non riconosciuto (zero osservazioni)
+  - (vi) separatori em-dash classificati come ARTIFACT_FILIGREE uniforme (scelta v1 deliberata, non bug)
+  - (vii) sotto-titoli su 2 righe non fusi in HEADING_1 (limitazione strutturale tier 1, fuori scope plugin-specifico)
+
+- **Domande critiche per la sessione successiva** (invariate rispetto a v2.16):
+  - (a) sessione promotion analysis cross-plugin per `_giuffre_shared/`, `_dejure_shared/`, `_edd_shared/`
+  - (b) decisione finale sui quattro regimi acustici Layout 4 A/B/C/D
+  - (c) normalizzazione OCR aggressiva per `enciclopedia_storica` (residuo v2.13)
+  - (d) eventuale plugin di nuovo dominio
+  - (e) eventuale upgrade `materiali_studio` per ToC Word auto-generato o pattern hybrid se un utente futuro carica materiali con quei pattern.
+
+### Sessione precedente (20 maggio 2026, trentesimo aggiornamento — versione 2.16, landing del **tredicesimo plugin di corpus `materiali_studio`** per i materiali di studio user-generated Microsoft Word + Google Docs)
 
 - **Apertura**: stato post-consolidamento codici (versione 2.15), Layer 1 + **dodici plugin di corpus operativi** (Patriarca, Tesauro, Mosconi, Mandrioli I-IV, Torrente, Marrone, NS, MM, DT, EdD moderna, EdD storica, codici), suite **1654 unit + ~24 integration test** a 96% coverage complessivo, schema 0.5.0 stabile. L'utente carica quattro fixture private user-generated (`materiali_teoria_generale.pdf` 407 KB 200 pp Skia/m116 GDocs, `materiali_diritto_tributario.pdf` 582 KB 222 pp Microsoft Word per Microsoft 365, `materiali_diritto_privato_i.pdf` 1.3 MB 552 pp Skia/m115 GDocs, `materiali_diritto_privato_ii.pdf` 1.9 MB 857 pp Skia/m132 GDocs) e apre la sessione con un briefing operativo aggressivo che dichiara il vincolo CLAUDE.md "no decisioni autonome su design" sospeso senza riserva per tutto il perimetro del tredicesimo plugin, con criteri di preferenza ordinati (1) resilienza, (2) robustezza alla varietà cross-utente, (3) completezza, (4) efficienza, (5) flessibilità per Layer 2. Sospensione esplicita del marker `@pytest.mark.slow` per i test end-to-end ("lezione codici").
 
