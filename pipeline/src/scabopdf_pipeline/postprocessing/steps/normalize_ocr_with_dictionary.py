@@ -59,6 +59,7 @@ from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.ocr_substitutions import (
     apply_case_preserving,
+    collect_contextual_rewrite_matches,
     get_structural_marker_dictionary,
     memoised_find_correction,
 )
@@ -210,6 +211,18 @@ def _normalize_text(
 ) -> tuple[str, list[Transformation]]:
     """Apply OCR normalisation to a single string and return its log."""
     accepted: list[tuple[int, int, str, str]] = []
+
+    # Pass 0 — contextual regex rewrites (unconditional, position-sensitive
+    # numeric and typographic patterns: ``\d+o`` → ``\d+0`` (year/citation
+    # closing zero confusion), trailing ``\d+·`` → ``\d+.`` (middle-dot
+    # confusion in citation lists), ``art. ll<NN>`` → ``art. 11<NN>``
+    # (roman-numeral-for-digit-pair confusion), ``•·`` ornament removal
+    # at small-caps quoted-phrase boundaries, line-leading ``·`` strip
+    # before uppercase). These patterns lie outside the per-token
+    # lexicon-validated model of Pass 2 because the source tokens are
+    # numeric or punctuation and never enter the Italian lexicon.
+    for start, end, original, replaced, _description in collect_contextual_rewrite_matches(text):
+        accepted.append((start, end, original, replaced))
 
     # Pass 1 — structural marker dictionary (unconditional).
     for corrupted, canonical in marker_dict:

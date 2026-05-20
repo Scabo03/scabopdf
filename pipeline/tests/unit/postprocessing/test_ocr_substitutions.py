@@ -13,8 +13,10 @@ from scabopdf_pipeline.postprocessing.ocr_substitutions import (
     _layered_substitution_variants,
     apply_case_preserving,
     clear_correction_cache,
+    collect_contextual_rewrite_matches,
     find_lexicon_corrected_form,
     generate_substitution_variants,
+    get_contextual_rewrites,
     get_structural_marker_dictionary,
     is_hyphen_preservative,
     iter_substitutions,
@@ -160,10 +162,26 @@ def test_apply_case_preserving_handles_length_mismatch() -> None:
 # Structural-marker dictionary
 
 
-def test_structural_marker_dictionary_is_non_empty_and_uppercase_canonical() -> None:
+def test_structural_marker_dictionary_is_non_empty_and_canonical() -> None:
     md = get_structural_marker_dictionary()
     assert len(md) > 0
+    for corrupted, canonical in md:
+        assert corrupted, "non-empty corrupted form"
+        assert canonical, "non-empty canonical form"
+        assert corrupted != canonical, f"no-op entry {corrupted!r}"
+
+
+def test_structural_marker_dictionary_letteratura_and_fonti_canonical_uppercase() -> None:
+    """LETTERATURA / FONTI label families canonical forms are all-uppercase
+    by editorial convention. The Sez. <roman> family added in v2.20 is
+    mixed-case (the publisher renders the section label with the
+    ``Sez.`` prefix in title-case) and is exempted from the uppercase
+    check.
+    """
+    md = get_structural_marker_dictionary()
     for _corrupted, canonical in md:
+        if canonical.startswith("Sez."):
+            continue
         assert canonical.isupper(), f"canonical {canonical!r} must be uppercase"
 
 
@@ -171,6 +189,21 @@ def test_structural_marker_dictionary_contains_letteratura_variants() -> None:
     md = dict(get_structural_marker_dictionary())
     assert "LrnaRATURA" in md
     assert md["LrnaRATURA"] == "LETTERATURA"
+
+
+def test_structural_marker_dictionary_contains_sez_roman_variants() -> None:
+    """Sez. <roman> corruption variants added in v2.20 cover the genuine
+    OCR fossilisations recorded by the debt (ix) diagnostic: 9 genuine
+    occurrences on ``edd_pagamento`` and ``edd_azienda`` of forms like
+    ``Sez. Il`` and ``Sez. lll`` that anchor structural hierarchy in
+    HEADING_2 and TOC_GENERAL nodes.
+    """
+    md = dict(get_structural_marker_dictionary())
+    assert md["Sez. lll"] == "Sez. III"
+    assert md["Sez. lI"] == "Sez. II"
+    assert md["Sez. Il"] == "Sez. II"
+    assert md["Sez. ll"] == "Sez. II"
+    assert md["Sez. lV"] == "Sez. IV"
 
 
 # ---------------------------------------------------------------------------
@@ -241,3 +274,122 @@ def test_iter_substitutions_yields_table_entries() -> None:
         assert isinstance(src, str)
         assert isinstance(replacements, tuple)
         assert all(isinstance(r, str) for r in replacements)
+
+
+def test_one_to_r_substitution_is_in_table() -> None:
+    """Debt (x) Tier-1 fix: ``1`` is misread for ``r`` in Paper Capture
+    output on serif typefaces. The empirical token ``valo1e`` →
+    ``valore`` on ``edd_pagamento`` confirms the substitution. The
+    addition is precedent-setting on a single calibrating-fixture
+    occurrence; the depth-preferred single-unambiguous-candidate gate
+    of :func:`find_lexicon_corrected_form` already rejects ambiguous
+    candidates so the wider substitution set does not weaken precision.
+    """
+    one_replacements = next(
+        replacements for src, replacements in iter_substitutions() if src == "1"
+    )
+    assert "r" in one_replacements
+
+
+# ---------------------------------------------------------------------------
+# Contextual rewrites — debt (ix) closure
+
+
+def test_get_contextual_rewrites_returns_closed_list() -> None:
+    rewrites = get_contextual_rewrites()
+    assert len(rewrites) > 0
+    for pattern, replacement, description in rewrites:
+        assert hasattr(pattern, "finditer"), "pattern must be a compiled regex"
+        assert isinstance(replacement, str)
+        assert isinstance(description, str) and description, "non-empty description slug"
+
+
+def test_collect_contextual_rewrite_matches_returns_empty_on_clean_text() -> None:
+    matches = collect_contextual_rewrite_matches("Un testo italiano pulito senza corruzione OCR.")
+    assert matches == []
+
+
+def test_collect_contextual_rewrite_matches_returns_empty_on_empty_input() -> None:
+    assert collect_contextual_rewrite_matches("") == []
+
+
+def test_collect_contextual_rewrite_matches_normalises_year_o_to_zero() -> None:
+    """``196o`` (1960) → ``1960`` on year/citation closing zero confusion."""
+    matches = collect_contextual_rewrite_matches("Padova, 196o, 332 ss.")
+    assert len(matches) == 1
+    start, end, original, replaced, description = matches[0]
+    assert original == "196o"
+    assert replaced == "1960"
+    assert description == "digit_o_to_digit_zero"
+    assert start == 8 and end == 12
+
+
+def test_collect_contextual_rewrite_matches_normalises_digit_middle_dot() -> None:
+    """``1954·`` → ``1954.`` on year/citation middle-dot confusion."""
+    matches = collect_contextual_rewrite_matches("Mannheim, 1954· Si veda inoltre Tizio.")
+    assert any(
+        original == "1954·" and replaced == "1954."
+        for *_, original, replaced, _ in ((m[0], m[1], m[2], m[3], m[4]) for m in matches)
+    )
+
+
+def test_collect_contextual_rewrite_matches_skips_short_digit_dot() -> None:
+    """Short digit + middle-dot (``1·``, ``12·``, ``99·``) is not rewritten:
+    the trailing middle-dot in these short cases is more likely a
+    paragraph-bullet ornament than a citation period.
+    """
+    matches = collect_contextual_rewrite_matches("Sezione 12· Premessa")
+    for _start, _end, _orig, _repl, description in matches:
+        assert description != "digit_middle_dot_to_period"
+
+
+def test_collect_contextual_rewrite_matches_normalises_art_ll_to_11() -> None:
+    """``art. ll81`` → ``art. 1181`` on roman-numeral-for-digit-pair confusion."""
+    matches = collect_contextual_rewrite_matches("V. art. ll81 e art. ll97 c.c.")
+    descriptions = [m[4] for m in matches]
+    assert "art_ll_to_art_11" in descriptions
+    art_matches = [m for m in matches if m[4] == "art_ll_to_art_11"]
+    assert len(art_matches) >= 1
+    _start, _end, original, replaced, _ = art_matches[0]
+    assert "ll" in original
+    assert "11" in replaced
+
+
+def test_collect_contextual_rewrite_matches_strips_bullet_dot_ornament() -> None:
+    """``solvens •·`` → ``solvens `` on typographic ornament removal."""
+    matches = collect_contextual_rewrite_matches("Il solvens •· è quindi il debitore.")
+    bullets = [m for m in matches if m[4] == "bullet_dot_ornament_removed"]
+    assert len(bullets) == 1
+
+
+def test_collect_contextual_rewrite_matches_strips_leading_middle_dot() -> None:
+    """``\\s·Un esempio`` strips the line-leading middle-dot before uppercase."""
+    matches = collect_contextual_rewrite_matches("Premessa. ·Un esempio del secondo tipo.")
+    leadings = [m for m in matches if m[4] == "leading_middle_dot_stripped"]
+    assert len(leadings) == 1
+
+
+def test_collect_contextual_rewrite_matches_does_not_strip_foreign_compound_middle_dot() -> None:
+    """``Esser·Schmidt`` foreign-surname compound preserves the middle-dot
+    (the leading-middle-dot rule requires whitespace before the dot
+    and uppercase after; this case has lowercase before).
+    """
+    matches = collect_contextual_rewrite_matches("Esser·Schmidt 1968· cit.")
+    leadings = [m for m in matches if m[4] == "leading_middle_dot_stripped"]
+    assert leadings == []
+
+
+def test_collect_contextual_rewrite_matches_sorts_left_to_right() -> None:
+    """Mixed rewrites in the same string are returned sorted by start position."""
+    matches = collect_contextual_rewrite_matches("Padova, 196o ss.; 1968·, in cit.")
+    starts = [m[0] for m in matches]
+    assert starts == sorted(starts)
+
+
+def test_collect_contextual_rewrite_matches_handles_no_op() -> None:
+    """A regex that matches but produces identical replacement is not recorded."""
+    # The 5 closed rewrites in production never produce no-op replacements,
+    # but the helper's contract is that no-ops are filtered. This test
+    # protects the contract.
+    matches = collect_contextual_rewrite_matches("Solo testo pulito.")
+    assert matches == []

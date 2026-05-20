@@ -372,3 +372,123 @@ def test_marker_dictionary_position_is_not_re_processed_by_token_pass() -> None:
     # must not duplicate the work on the inner tokens of LrnaRATURA.
     assert len(transformations) == 1
     assert new_document.root[0].text == "vedi LETTERATURA dopo."
+
+
+# ---------------------------------------------------------------------------
+# Pass 0 — contextual regex rewrites (debt ix closure)
+
+
+def test_contextual_rewrite_digit_o_to_zero_is_applied() -> None:
+    """``196o`` (1960 misread) → ``1960``: year/citation closing zero fix."""
+    document = Document(root=(_node("node_0001", "Padova, 196o, p. 332."),))
+    lexicon = ItalianLexicon.from_word_set(set())
+
+    new_document, transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert new_document.root[0].text == "Padova, 1960, p. 332."
+    assert len(transformations) == 1
+    t = transformations[0]
+    assert t.original == "196o"
+    assert t.normalized == "1960"
+
+
+def test_contextual_rewrite_digit_middle_dot_to_period_is_applied() -> None:
+    """``1954·`` → ``1954.``: citation middle-dot confusion fix."""
+    document = Document(root=(_node("node_0001", "Mannheim, 1954· Si veda altresì."),))
+    lexicon = ItalianLexicon.from_word_set(set())
+
+    new_document, _transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert "1954." in (new_document.root[0].text or "")
+    assert "1954·" not in (new_document.root[0].text or "")
+
+
+def test_contextual_rewrite_art_ll_to_11_is_applied() -> None:
+    """``art. ll81`` → ``art. 1181``: roman-numeral for digit-pair fix."""
+    document = Document(root=(_node("node_0001", "Cfr. art. ll81 c.c."),))
+    lexicon = ItalianLexicon.from_word_set(set())
+
+    new_document, _transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert "art. 1181" in (new_document.root[0].text or "")
+
+
+def test_contextual_rewrite_bullet_dot_ornament_is_stripped() -> None:
+    """``solvens •·`` → ``solvens``: typographic ornament removal."""
+    document = Document(root=(_node("node_0001", "Il solvens •· è quindi il debitore."),))
+    lexicon = ItalianLexicon.from_word_set(set())
+
+    new_document, transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert "•·" not in (new_document.root[0].text or "")
+    assert any(t.normalized == " " and t.original.strip() == "•·" for t in transformations) or any(
+        " " in t.normalized and "•·" in t.original for t in transformations
+    )
+
+
+def test_contextual_rewrite_leading_middle_dot_is_stripped() -> None:
+    """``\\s·Un esempio`` → ``\\sUn esempio``: line-leading middle-dot strip."""
+    document = Document(root=(_node("node_0001", "Premessa. ·Un esempio del secondo tipo."),))
+    lexicon = ItalianLexicon.from_word_set(set())
+
+    new_document, transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert new_document.root[0].text == "Premessa. Un esempio del secondo tipo."
+    assert any(t.original == "·" and t.normalized == "" for t in transformations)
+
+
+def test_contextual_rewrite_sez_marker_dictionary_corrects_section() -> None:
+    """Structural marker dictionary covers ``Sez. lll`` → ``Sez. III``."""
+    document = Document(root=(_node("node_0001", "Vedi Sez. lll. Premessa."),))
+    lexicon = ItalianLexicon.from_word_set(set())
+
+    new_document, _transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert "Sez. III" in (new_document.root[0].text or "")
+    assert "Sez. lll" not in (new_document.root[0].text or "")
+
+
+def test_contextual_rewrite_does_not_touch_clean_text() -> None:
+    """A clean text produces no Pass 0 transformations."""
+    clean = "Un testo italiano pulito con citazione anno 1960 e art. 1181 c.c."
+    document = Document(root=(_node("node_0001", clean),))
+    lexicon = ItalianLexicon.from_word_set({"testo", "italiano", "pulito"})
+
+    new_document, transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert new_document.root[0].text == clean
+    assert transformations == ()
+
+
+def test_contextual_rewrite_combined_with_marker_dict_left_to_right() -> None:
+    """When both Pass 0 contextual and Pass 1 marker rewrites apply,
+    transformations are recorded with valid pre-step positions and
+    final text reflects every change.
+    """
+    text = "Vedi LrnaRATURA, Sez. lll, 196o."
+    document = Document(root=(_node("node_0001", text),))
+    lexicon = ItalianLexicon.from_word_set(set())
+
+    new_document, transformations = normalize_ocr_with_dictionary(
+        document, _empty_extraction(), [], lexicon=lexicon
+    )
+
+    assert new_document.root[0].text == "Vedi LETTERATURA, Sez. III, 1960."
+    assert len(transformations) >= 3
+    for t in transformations:
+        start, end = t.position
+        assert text[start:end] == t.original
