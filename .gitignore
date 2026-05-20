@@ -30,6 +30,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# Claude Code local state (per-session scheduled tasks, etc.)
+.claude/
+
 # Project-specific
 *.pdf
 *.scabopdf.json
