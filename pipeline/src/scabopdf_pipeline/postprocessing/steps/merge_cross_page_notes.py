@@ -69,13 +69,14 @@ Algorithm.
    counterpart of the text append). Subtrees that did not change keep
    their identity, mirroring the convention of the existing steps.
 
-Marker pattern is configurable through the module-level
-:data:`_CONTINUATION_MARKER_REGEX`. The default
-``r"^\\s*\\(\\d+\\)"`` matches the Mandrioli parenthesised
-``(N)`` form. A future plugin whose marker is differently shaped
-(e.g. bare digit with trailing dot, OCR-derived variants) can either
-patch the constant at import time or, preferably, the step can be
-generalised in a future schema-additive bump that lets a plugin
+Marker pattern is the canonical
+:data:`apparatus.constants.NOTE_MARKER_REGEX` shared with the tier 1
+generic resolver (post P-005 promotion). The default
+``r"^\\s*\\(?\\d+\\)?[\\.\\s]"`` matches both the Mandrioli
+parenthesised ``(N)`` form and the bare ``N.`` form. A future plugin
+whose marker is differently shaped (e.g. OCR-derived variants) can
+either patch the constant at import time or, preferably, the step can
+be generalised in a future schema-additive bump that lets a plugin
 declare its marker shape in
 :meth:`ProfilePlugin.get_post_processing_options` (does not exist yet).
 
@@ -101,8 +102,8 @@ did not change keep their identity.
 from __future__ import annotations
 
 import dataclasses
-import re
 
+from scabopdf_pipeline.apparatus.constants import NOTE_MARKER_REGEX
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import ExtractionResult
 from scabopdf_pipeline.postprocessing.types import Transformation
@@ -112,18 +113,14 @@ from scabopdf_pipeline.schema.categories import SemanticCategory
 STEP_ID = "merge_cross_page_notes"
 """Registry key under which :func:`merge_cross_page_notes` is registered."""
 
-_CONTINUATION_MARKER_REGEX = re.compile(r"^\s*\(?(\d+)\)?[\.\s]")
-"""Regex that recognises the leading numeric marker of a fresh NOTE.
-
-Matches the Mandrioli parenthesised form ``(N)`` and the bare digit
-form ``N.`` that the prior three plugins (Patriarca, Tesauro,
-Mosconi) exhibit. Equivalent in shape to
-:data:`apparatus.constants.NOTE_MARKER_REGEX` — kept private to this
-module to underline that the post-processing predicate is a
-self-contained policy and is not coupled to the tier 1 resolver's
-copy. A future schema-additive bump that lets a plugin override the
-marker shape would replace both copies with a per-plugin lookup.
-"""
+# The previously-duplicated ``_CONTINUATION_MARKER_REGEX`` was promoted
+# to :data:`apparatus.constants.NOTE_MARKER_REGEX` during the Promotion
+# Analysis Fase 1 (P-005). The two copies were byte-equivalent: the
+# original docstring claimed independence between the post-processing
+# policy and the tier 1 resolver but no real divergence ever
+# materialised. A future schema-additive bump that lets a plugin
+# override the marker shape would replace the now-canonical copy with a
+# per-plugin lookup.
 
 
 def merge_cross_page_notes(
@@ -221,7 +218,7 @@ def _plan_merges(notes: list[Node]) -> _MergePlan:
             continue
         if not curr.text:
             continue
-        if _CONTINUATION_MARKER_REGEX.match(curr.text):
+        if NOTE_MARKER_REGEX.match(curr.text):
             continue
         if curr.page_index - prev.page_index != 1:
             # Larger gaps are suspicious — leave the continuation alone
