@@ -153,6 +153,9 @@ _TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
     re.compile(
         r"^plugin:utet_wolterskluwer:example_box_in_front_matter_filtered_block_-?\d+_page_\d+$"
     ),
+    re.compile(
+        r"^plugin:utet_wolterskluwer:back_matter_index_column_rejected_block_-?\d+_page_\d+$"
+    ),
     # manuale_giappichelli plugin (closed vocabulary, see
     # docs/SCHEMA_v0.4.0.md § 6 and profiles/manuale_giappichelli.py)
     re.compile(r"^plugin:giappichelli:outline_paragraph_mismatch_node_\S+$"),

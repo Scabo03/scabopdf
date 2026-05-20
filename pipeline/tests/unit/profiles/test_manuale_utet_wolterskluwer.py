@@ -621,6 +621,104 @@ def test_refine_classification_promotes_note_continuation_block() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Back-matter index column rejection (debt viii closure, 2026-05-20)
+
+
+def test_refine_classification_rejects_back_matter_index_column() -> None:
+    """A narrow + full-page-height 8.0pt block (back-matter index column)
+    must NOT be classified as NOTE: the geometric guard in
+    :meth:`_is_note_continuation` rejects it and ``_reclassify`` emits
+    the diagnostic warning. The block falls through to UNCLASSIFIED.
+    """
+    spans = (
+        _SpanBuilder()
+        .add(
+            "Cass. , sez. un. , 1 gennaio 2020, n. 1, Tizio c. Caio (RDIPP, 2021, 1), I, 1.",
+            font="TimesTenLTStd-Roman",
+            size=NOTE_BODY_SIZE,
+            # Narrow column bbox: width=159pt (column), height=568pt (full page).
+            bbox=(64.0, 67.0, 223.0, 635.0),
+        )
+        .build()
+    )
+    block = _make_block(page=586, span_range=(0, 1), bbox=(64.0, 67.0, 223.0, 635.0))
+    extraction = _make_extraction(spans, [block])
+    plugin = ManualeUtetWolterskluwerProfile()
+    refined = plugin.refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is SemanticCategory.UNCLASSIFIED
+    # The diagnostic warning is queued on ``_pending_warnings`` until
+    # ``refine_reconstruction`` flushes it to ``Document.warnings``; at
+    # this point in the test the queue still has it.
+    assert any(
+        w == (f"{WARNING_PREFIX}:back_matter_index_column_rejected_block_0_page_586")
+        for w in plugin._pending_warnings
+    )
+
+
+def test_refine_classification_admits_narrow_short_note_continuation() -> None:
+    """A narrow but SHORT 8.0pt block is still a legitimate note (short
+    footnote that fits in a partial body-column width). Only the
+    combination narrow + full-page-height triggers rejection.
+    """
+    spans = (
+        _SpanBuilder()
+        .add(
+            "Breve continuazione.",
+            font="TimesTenLTStd-Roman",
+            size=NOTE_BODY_SIZE,
+            # Narrow width but short height: 150pt wide, 20pt tall.
+            bbox=(64.0, 600.0, 214.0, 620.0),
+        )
+        .build()
+    )
+    block = _make_block(page=55, span_range=(0, 1), bbox=(64.0, 600.0, 214.0, 620.0))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeUtetWolterskluwerProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is SemanticCategory.NOTE
+    assert refined[0].reason == "utet_wolterskluwer_note_continuation"
+
+
+def test_refine_classification_admits_wide_tall_note_block() -> None:
+    """A wide (body-column) AND tall 8.0pt block remains a legitimate
+    note: only narrow+tall blocks are rejected. Defensive against a
+    pathologically long single-block note that fills a large vertical
+    region of the body column.
+    """
+    spans = (
+        _SpanBuilder()
+        .add(
+            "Una nota molto lunga su una sola colonna che riempie più di metà della pagina.",
+            font="TimesTenLTStd-Roman",
+            size=NOTE_BODY_SIZE,
+            # Wide body-column bbox (325pt wide) and very tall (400pt).
+            bbox=(50.0, 200.0, 375.0, 600.0),
+        )
+        .build()
+    )
+    block = _make_block(page=55, span_range=(0, 1), bbox=(50.0, 200.0, 375.0, 600.0))
+    extraction = _make_extraction(spans, [block])
+    refined = ManualeUtetWolterskluwerProfile().refine_classification(extraction, [_verdict(0)])
+    assert refined[0].category is SemanticCategory.NOTE
+    assert refined[0].reason == "utet_wolterskluwer_note_continuation"
+
+
+def test_back_matter_index_column_thresholds_are_consistent() -> None:
+    """Boundary check on the two empirical thresholds: a block exactly at
+    the (width, height) threshold sits at the edge of the rejection
+    region. Width=250 is the upper bound (>= passes the geometric
+    guard), height=300 is the lower bound (<= passes the guard).
+    """
+    from scabopdf_pipeline.profiles.manuale_utet_wolterskluwer import (
+        _BACK_MATTER_INDEX_COLUMN_MAX_WIDTH_PT,
+        _BACK_MATTER_INDEX_COLUMN_MIN_HEIGHT_PT,
+    )
+
+    assert _BACK_MATTER_INDEX_COLUMN_MAX_WIDTH_PT == 250.0
+    assert _BACK_MATTER_INDEX_COLUMN_MIN_HEIGHT_PT == 300.0
+    assert _BACK_MATTER_INDEX_COLUMN_MIN_HEIGHT_PT > _BACK_MATTER_INDEX_COLUMN_MAX_WIDTH_PT
+
+
+# ---------------------------------------------------------------------------
 # refine_classification — artifact stamp
 
 

@@ -166,6 +166,7 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:utet_wolterskluwer:marginal_ellipsis_orphan_marker_node_<id>_page_<p>",
     "plugin:utet_wolterskluwer:inline_cross_reference_minted_node_<id>_page_<p>",
     "plugin:utet_wolterskluwer:example_box_in_front_matter_filtered_block_<idx>_page_<p>",
+    "plugin:utet_wolterskluwer:back_matter_index_column_rejected_block_<idx>_page_<p>",
 )
 """Closed vocabulary of warnings the plugin may emit on
 ``Document.warnings``. Placeholders are replaced with concrete values
@@ -456,6 +457,30 @@ _NOTE_BLOCK_SIZE_TOLERANCE = 0.3
 
 PyMuPDF's text-extraction size can drift by up to ~0.2pt across
 editions of the same font; 0.3 is a conservative cushion.
+"""
+
+_BACK_MATTER_INDEX_COLUMN_MAX_WIDTH_PT = 250.0
+"""Upper bound on the bbox width of a back-matter index column.
+
+The Mosconi 11th edition closes Vol. I with an ``Indice della
+giurisprudenza`` typeset in two columns on pp.586-611. Each column
+measures ~159pt wide (left column ``x0=64``, right column ``x0=237``,
+both ending at the body-column right edge), well below the ~325pt of
+the single-column body in which legitimate footnotes sit. Combined
+with :data:`_BACK_MATTER_INDEX_COLUMN_MIN_HEIGHT_PT` this discriminates
+the index from any footnote without false positives on the empirical
+calibrating fixture (52 blocks matched, 0 legitimate notes affected).
+"""
+
+_BACK_MATTER_INDEX_COLUMN_MIN_HEIGHT_PT = 300.0
+"""Lower bound on the bbox height of a back-matter index column.
+
+Legitimate Mosconi footnotes sit at the bottom of a page above the
+``ARTIFACT_FOOTER``: the empirical maximum height across all 1038
+NOTE-classified blocks of the calibrating fixture is well below 300pt
+(q3=49.5pt, max~250pt on the longest single-block legitimate note).
+The Indice della giurisprudenza columns span the full page height
+(~568pt on every page pp.586-611). The threshold sits in the gap.
 """
 
 
@@ -798,6 +823,18 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
                 reason="utet_wolterskluwer_note_continuation",
             )
 
+        # The continuation predicate above has already rejected the
+        # back-matter index columns via _is_back_matter_index_column.
+        # Surface that decision in the audit log so it does not look
+        # like a silent loss of a NOTE-typographic block.
+        if self._looks_like_continuation_signature(view) and self._is_back_matter_index_column(
+            view
+        ):
+            self._pending_warnings.append(
+                f"{WARNING_PREFIX}:back_matter_index_column_rejected_block_"
+                f"{verdict.block_index}_page_{view.block.page}"
+            )
+
         if self._is_chapter_or_front_matter_signature(view):
             text = view.text.strip()
             if _CHAPTER_NUMBER_PATTERN.match(text) and len(text) <= CHAPTER_HEADING_TEXT_LIMIT:
@@ -970,6 +1007,19 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         which checks the spatial / sibling context; this predicate
         only signals "the typographic signature is compatible with a
         continuation".
+
+        A geometric guard rejects narrow full-column-height blocks
+        that share the 8.0pt TimesTenLTStd-Roman signature but are
+        structurally distinct from footnotes — namely the
+        back-matter ``Indice della giurisprudenza`` columns on
+        pp.586-611 of the calibrating fixture. Without the guard the
+        downstream cross-page note merging resolver in
+        :mod:`apparatus.resolver` chains every index column back to
+        the most recent legitimate footnote, producing a single NOTE
+        Node of >100k chars (Mosconi outlier ``node_3479`` on the
+        2026-05-19 panoramica). Detection is delegated to
+        :meth:`_is_back_matter_index_column`; the guarded blocks fall
+        through ``_reclassify`` to UNCLASSIFIED.
         """
         if not view.spans:
             return False
@@ -978,9 +1028,49 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         size_ok = abs(leading.size - NOTE_BODY_SIZE) < _NOTE_BLOCK_SIZE_TOLERANCE
         if not (family_ok and size_ok):
             return False
+        if ManualeUtetWolterskluwerProfile._is_back_matter_index_column(view):
+            return False
         # A continuation must not open with the numeric marker pattern;
         # if it does it is the start of a new note, not a continuation.
         return not _NOTE_MARKER_PATTERN.match(view.text.lstrip())
+
+    @staticmethod
+    def _looks_like_continuation_signature(view: _BlockView) -> bool:
+        """Return True when the leading span carries the 8.0pt body
+        TimesTenLTStd-Roman signature that a note continuation would
+        match. Companion predicate of :meth:`_is_back_matter_index_column`
+        used by ``_reclassify`` to surface a per-block warning when a
+        back-matter index column is rejected on geometric grounds.
+        """
+        if not view.spans:
+            return False
+        leading = view.spans[0]
+        return leading.font.startswith(BODY_FONT_PREFIX) and (
+            abs(leading.size - NOTE_BODY_SIZE) < _NOTE_BLOCK_SIZE_TOLERANCE
+        )
+
+    @staticmethod
+    def _is_back_matter_index_column(view: _BlockView) -> bool:
+        """Recognise a back-matter index column by geometry.
+
+        See the geometric-guard rationale on
+        :meth:`_is_note_continuation`. The predicate is intentionally
+        signal-redundant: it requires both a narrow width
+        (``< _BACK_MATTER_INDEX_COLUMN_MAX_WIDTH_PT``, ruling out the
+        single-column body) and a tall height
+        (``> _BACK_MATTER_INDEX_COLUMN_MIN_HEIGHT_PT``, ruling out
+        any short legitimate footnote that happens to fit in a narrow
+        bbox). On the calibrating fixture exactly 52 blocks match,
+        all on pp.586-611, with zero false positives among the
+        legitimate notes.
+        """
+        bbox = view.block.bbox
+        width = bbox[2] - bbox[0]
+        height = bbox[3] - bbox[1]
+        return (
+            width < _BACK_MATTER_INDEX_COLUMN_MAX_WIDTH_PT
+            and height > _BACK_MATTER_INDEX_COLUMN_MIN_HEIGHT_PT
+        )
 
     @staticmethod
     def _looks_like_index_residue(text: str) -> bool:
