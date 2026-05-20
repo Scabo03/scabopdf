@@ -1,0 +1,19 @@
+{
+  "category_counts": {
+    "ARTICLE_BODY": 6843,
+    "ARTICLE_HEADER": 5815,
+    "ARTIFACT_FILIGREE": 1213,
+    "ARTIFACT_FOOTER": 2703,
+    "ARTIFACT_RUNNING_HEADER": 2336,
+    "CROSS_REFERENCE": 2259,
+    "HEADING_1": 49,
+    "HEADING_2": 240,
+    "HEADING_3": 510,
+    "HEADING_4": 85,
+    "NOTE": 7883,
+    "PROCEDURAL": 394,
+    "UNCLASSIFIED": 2222
+  },
+  "n_transformations": 0,
+  "n_warnings": 18592
+}

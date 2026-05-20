@@ -1,0 +1,19 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 462,
+    "BODY": 563,
+    "BOOK_PAGE_ANCHOR": 4,
+    "CHAPTER_SUMMARY": 15,
+    "CROSS_REFERENCE": 1531,
+    "EMPTY_PAGE": 5,
+    "HEADING_1": 4,
+    "HEADING_2": 11,
+    "HEADING_3": 7,
+    "HEADING_4": 82,
+    "MARGINAL_GLOSS": 12,
+    "NOTE": 1161,
+    "UNCLASSIFIED": 700
+  },
+  "n_transformations": 360,
+  "n_warnings": 3294
+}

@@ -1,0 +1,14 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 13,
+    "BODY": 49,
+    "CROSS_REFERENCE": 18,
+    "HEADING_1": 16,
+    "NOTE": 18,
+    "SECTION_LABEL": 1,
+    "TITLE": 1,
+    "UNCLASSIFIED": 34
+  },
+  "n_transformations": 347,
+  "n_warnings": 28
+}
