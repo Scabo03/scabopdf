@@ -457,7 +457,7 @@ lowercase) and the second half (Cap.8-Cap.24 uppercase) is the
 empirical motivation for the case-insensitive variant.
 """
 
-_PARTE_ALLCAPS_PATTERN = re.compile(r"^[A-ZÀ-ſ][A-ZÀ-ſ\s\'’–—\-,\.]{4,}$")
+_PARTE_ALLCAPS_PATTERN = re.compile(r"^[A-ZÀ-ſ](?!\.)[A-ZÀ-ſ\s\'’–—\-,\.]{4,}$")
 r"""HEADING_1 PARTE/Libro pattern.
 
 Matches an allcaps line of length ≥ 5 made of Latin uppercase letters
@@ -494,7 +494,7 @@ fondamentali:"``. The 4-80 middle character cap admits short topic
 labels but rejects long enumerative body phrases.
 """
 
-_DOT_LABEL_PATTERN = re.compile(r"^[A-ZÀ-ſ].{4,80}\.\s*$")
+_DOT_LABEL_PATTERN = re.compile(r"^[A-ZÀ-ſ].{4,80}(?<![.!?])\.\s*$")
 r"""HEADING_4 dot-ending topic label pattern.
 
 Matches a single line of length 6-82 chars starting with an uppercase
