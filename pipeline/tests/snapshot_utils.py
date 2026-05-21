@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -170,6 +171,157 @@ def cross_ref_binding_digest(document: Document) -> str:
     return hashlib.sha256(serial.encode("utf-8")).hexdigest()
 
 
+_BODY_NOTE_SPLITTER_WARNING_PATTERN = re.compile(
+    r":(?P<kind>body_note_split|note_section_split|editorial_note|"
+    r"multi_note_split|intra_block_article_split|note_continuation)"
+    r"_(?:minted|rescued)_node_(?P<node_id>node_\d+)"
+)
+"""Closed-vocabulary regex over warnings that signal a synthetic-Node mint.
+
+The body+note glued splitter family of pattern P-018 (CARRYOVER v2.23
+and CLAUDE.md pattern ``(www)``) covers six emission templates across
+the five span-level + text-level splitters: ``body_note_split_minted``
+(Mandrioli), ``note_section_split_minted`` (BIC, NS, DT),
+``editorial_note_minted`` (DT), ``multi_note_split_minted`` (codici
+body+notes), ``intra_block_article_split_minted`` (codici intra-block),
+plus the BIC ``note_continuation_rescued`` rescuer. The pattern is
+intentionally narrow: CROSS_REFERENCE mints, BOOK_PAGE_ANCHOR mints
+and METADATA field mints are out of P-018 scope and do not match.
+"""
+
+
+def _iter_body_note_split_warnings(document: Document) -> list[tuple[str, str, str]]:
+    """Return sorted ``(warning, kind, node_id)`` triples for P-018 mints."""
+    matches: list[tuple[str, str, str]] = []
+    for warning in document.warnings:
+        match = _BODY_NOTE_SPLITTER_WARNING_PATTERN.search(warning)
+        if match is None:
+            continue
+        matches.append((warning, match.group("kind"), match.group("node_id")))
+    matches.sort()
+    return matches
+
+
+def _build_node_index(document: Document) -> dict[str, Node]:
+    return {node.id: node for node in _iter_nodes(document.root)}
+
+
+def _synthetic_node_fingerprint(node_index: dict[str, Node], node_id: str) -> str:
+    node = node_index.get(node_id)
+    if node is None:
+        return f"{node_id}|<missing>"
+    text_len = len(node.text) if node.text is not None else 0
+    return f"{node_id}|{node.category.value}|{node.page_index}|{len(node.block_indices)}|{text_len}"
+
+
+def body_note_splitter_digest(document: Document) -> str:
+    """Return a SHA-256 hex digest of every body+note splitter mint event.
+
+    The digest combines two independent sources of mint provenance so
+    that the P-018 family of splitters (Mandrioli body+note glued, BIC
+    multi-block body+note + continuation rescuer, NS / DT multi-sibling
+    notes consolidator, codici signal-agnostic intra-block article
+    splitter and multi-note splitter) is uniformly protected against
+    silent drift:
+
+    1. ``document.transformations``: every Transformation with non-None
+       ``split_into`` records a structural decomposition. For each, the
+       digest encodes ``(step_id, node_id, split_into)`` plus a content
+       fingerprint of each minted synthetic Node (its category,
+       page_index, len(text), len(block_indices)).
+
+    2. ``document.warnings`` matching :data:`_BODY_NOTE_SPLITTER_WARNING_PATTERN`:
+       the codici intra-block and multi-note splitters and the BIC
+       continuation rescuer emit warnings rather than Transformations
+       (a documented gap closed in this digest, not by retrofit). The
+       digest encodes the sorted ``(kind, node_id)`` pairs plus the
+       same content fingerprint.
+
+    Two documents whose ``category_counts`` and ``n_transformations``
+    are numerically identical but whose synthetic-mint provenance
+    diverges (different mint order, different host truncation,
+    different page allocation, different text length) produce
+    different digests. This catches the silent-rebind regression that
+    pattern ``(vvv)`` of CLAUDE.md formalises for P-021 and that
+    pattern ``(www)`` extends to the P-018 splitter family.
+
+    Returns the empty-input digest when the document carries neither
+    ``split_into`` transformations nor matching warnings.
+    """
+    node_index = _build_node_index(document)
+    parts: list[str] = []
+
+    tx_entries: list[tuple[str, str, tuple[str, ...]]] = []
+    for transformation in document.transformations:
+        if transformation.split_into is None:
+            continue
+        tx_entries.append(
+            (transformation.step_id, transformation.node_id, transformation.split_into)
+        )
+    tx_entries.sort()
+    for step_id, node_id, split_into in tx_entries:
+        synthetic = "|".join(_synthetic_node_fingerprint(node_index, sid) for sid in split_into)
+        parts.append(f"TX::{step_id}::{node_id}::{synthetic}")
+
+    for _warning, kind, synthetic_id in _iter_body_note_split_warnings(document):
+        parts.append(f"WN::{kind}::{_synthetic_node_fingerprint(node_index, synthetic_id)}")
+
+    serial = "\n".join(parts)
+    return hashlib.sha256(serial.encode("utf-8")).hexdigest()
+
+
+def body_note_splitter_summary(document: Document) -> dict[str, Any]:
+    """Return a compact body+note splitter summary for P-018 baselines.
+
+    Combines :func:`document_structural_summary` with the per-mint
+    digest produced by :func:`body_note_splitter_digest` plus explicit
+    counts of split-into Transformations, warning-based mints and the
+    minted synthetic Nodes broken down by category.
+
+    Used by the P-018 mitigation baselines for fixtures whose plugins
+    implement the body+note glued splitter family (Mandrioli, BIC,
+    NS / DT, codici) to catch silent regressions in mint provenance
+    that ``category_counts`` and ``n_transformations`` alone cannot
+    detect — see CLAUDE.md pattern ``(www)``.
+    """
+    summary = document_structural_summary(document)
+    node_index = _build_node_index(document)
+
+    n_tx_splits = 0
+    minted_ids: set[str] = set()
+    by_category: dict[str, int] = {}
+
+    for transformation in document.transformations:
+        if transformation.split_into is None:
+            continue
+        n_tx_splits += 1
+        for synthetic_id in transformation.split_into:
+            if synthetic_id in minted_ids:
+                continue
+            minted_ids.add(synthetic_id)
+            node = node_index.get(synthetic_id)
+            if node is not None:
+                key = node.category.value
+                by_category[key] = by_category.get(key, 0) + 1
+
+    warning_entries = _iter_body_note_split_warnings(document)
+    for _warning, _kind, synthetic_id in warning_entries:
+        if synthetic_id in minted_ids:
+            continue
+        minted_ids.add(synthetic_id)
+        node = node_index.get(synthetic_id)
+        if node is not None:
+            key = node.category.value
+            by_category[key] = by_category.get(key, 0) + 1
+
+    summary["n_body_note_split_transformations"] = n_tx_splits
+    summary["n_body_note_split_minted_warnings"] = len(warning_entries)
+    summary["n_synthetic_body_note_nodes"] = len(minted_ids)
+    summary["synthetic_body_note_nodes_by_category"] = dict(sorted(by_category.items()))
+    summary["body_note_splitter_digest"] = body_note_splitter_digest(document)
+    return summary
+
+
 def apparatus_binding_summary(document: Document) -> dict[str, Any]:
     """Return a compact apparatus-binding summary for snapshot baselines.
 
@@ -205,6 +357,8 @@ __all__ = [
     "SNAPSHOTS_ROOT",
     "apparatus_binding_summary",
     "assert_snapshot_matches",
+    "body_note_splitter_digest",
+    "body_note_splitter_summary",
     "category_counts",
     "cross_ref_binding_digest",
     "diff_dicts",
