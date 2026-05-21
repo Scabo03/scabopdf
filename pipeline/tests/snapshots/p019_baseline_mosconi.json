@@ -1,0 +1,24 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 619,
+    "ARTIFACT_RUNNING_HEADER": 573,
+    "BODY": 1112,
+    "CROSS_REFERENCE": 527,
+    "EMPTY_PAGE": 15,
+    "EXAMPLE_BOX": 414,
+    "HEADING_1": 16,
+    "HEADING_2": 7,
+    "HEADING_3": 148,
+    "MARGINAL_HEADING": 586,
+    "NOTE": 941,
+    "UNCLASSIFIED": 123
+  },
+  "cross_ref_minting_digest": "6e0e4c02b668da64ffc0e61bbbe3bbfe1c6a6a662ec762c1cbddb59b91424eca",
+  "cross_reference_minted_warnings_by_subtype": {
+    "default": 527
+  },
+  "n_cross_reference": 527,
+  "n_cross_reference_minted_warnings": 527,
+  "n_transformations": 29,
+  "n_warnings": 1010
+}

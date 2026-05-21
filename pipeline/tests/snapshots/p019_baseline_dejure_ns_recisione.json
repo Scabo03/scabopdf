@@ -1,0 +1,19 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 3,
+    "ARTIFACT_STAMP": 2,
+    "AUTHORS": 1,
+    "BODY": 9,
+    "FONTE_VALUE": 1,
+    "GENRE_BANNER": 1,
+    "REFERRAL": 1,
+    "SUBTITLE": 1,
+    "TITLE": 1
+  },
+  "cross_ref_minting_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "cross_reference_minted_warnings_by_subtype": {},
+  "n_cross_reference": 0,
+  "n_cross_reference_minted_warnings": 0,
+  "n_transformations": 1,
+  "n_warnings": 3
+}

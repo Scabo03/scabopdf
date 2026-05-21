@@ -1,0 +1,20 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 13,
+    "BODY": 49,
+    "CROSS_REFERENCE": 18,
+    "HEADING_1": 16,
+    "NOTE": 18,
+    "SECTION_LABEL": 1,
+    "TITLE": 1,
+    "UNCLASSIFIED": 34
+  },
+  "cross_ref_minting_digest": "68cbbf8b75a34710cb881ed48c60019e314c5e187f6f3943ca5fdc93d9a6228c",
+  "cross_reference_minted_warnings_by_subtype": {
+    "note": 18
+  },
+  "n_cross_reference": 18,
+  "n_cross_reference_minted_warnings": 18,
+  "n_transformations": 347,
+  "n_warnings": 28
+}

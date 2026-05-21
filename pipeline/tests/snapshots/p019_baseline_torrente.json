@@ -1,0 +1,26 @@
+{
+  "category_counts": {
+    "ARTIFACT_FILIGREE": 1559,
+    "ARTIFACT_RUNNING_HEADER": 1,
+    "BODY": 719,
+    "CROSS_REFERENCE": 7408,
+    "HEADING_1": 17,
+    "HEADING_2": 82,
+    "HEADING_3": 56,
+    "HEADING_4": 710,
+    "INDEX_ENTRY": 430,
+    "MARGINAL_HEADING": 4051,
+    "NOTE": 1,
+    "UNCLASSIFIED": 60
+  },
+  "cross_ref_minting_digest": "909c82510c8824a3a0349b697504c4da6bc1cfdb2540aafb2e6128dc7e56e60a",
+  "cross_reference_minted_warnings_by_subtype": {
+    "article": 2434,
+    "paragraph": 2803,
+    "sentence": 2171
+  },
+  "n_cross_reference": 7408,
+  "n_cross_reference_minted_warnings": 7408,
+  "n_transformations": 0,
+  "n_warnings": 9576
+}

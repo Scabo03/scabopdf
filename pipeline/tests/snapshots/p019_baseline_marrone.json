@@ -1,0 +1,23 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 693,
+    "ARTIFACT_RUNNING_HEADER": 95,
+    "ARTIFACT_STAMP": 5,
+    "BODY": 2261,
+    "BOOK_PAGE_ANCHOR": 1473,
+    "CROSS_REFERENCE": 1489,
+    "HEADING_1": 13,
+    "HEADING_2": 1,
+    "HEADING_3": 208,
+    "NOTE": 1454,
+    "UNCLASSIFIED": 25
+  },
+  "cross_ref_minting_digest": "69f7fff96223f0377a53a0795574c1eb5f3bd9517c9197535055bc17fcb27dd5",
+  "cross_reference_minted_warnings_by_subtype": {
+    "default": 1491
+  },
+  "n_cross_reference": 1489,
+  "n_cross_reference_minted_warnings": 1491,
+  "n_transformations": 179,
+  "n_warnings": 3920
+}

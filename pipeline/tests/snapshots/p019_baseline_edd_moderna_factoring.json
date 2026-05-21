@@ -1,0 +1,22 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 14,
+    "ARTIFACT_RUNNING_HEADER": 13,
+    "BODY": 2,
+    "CROSS_REFERENCE": 73,
+    "HEADING_LETTER_INITIAL": 1,
+    "NOTE": 22,
+    "TITLE": 1,
+    "TOC_GENERAL": 1,
+    "UNCLASSIFIED": 34
+  },
+  "cross_ref_minting_digest": "93a17d25c525e5a958aeda938514686b361b1362930f8498598fad8739a9c298",
+  "cross_reference_minted_warnings_by_subtype": {
+    "note": 72,
+    "voce": 1
+  },
+  "n_cross_reference": 73,
+  "n_cross_reference_minted_warnings": 73,
+  "n_transformations": 6,
+  "n_warnings": 132
+}
