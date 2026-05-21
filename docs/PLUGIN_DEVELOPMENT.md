@@ -256,6 +256,108 @@ above the `0.6` dispatcher threshold (most plugins clear `0.85` to
 `1.00`) and below it on every sibling-corpus fixture. Verify with the
 non-promotion integration tests (§ 9).
 
+### 4.1. Composable predicates from `profiling/match_helpers.py`
+
+The recurring predicates inside `matches()` are factored out into six
+composable helpers in `profiling/match_helpers.py` (Fase 6 P-040,
+pattern `(yyy)` of CLAUDE.md). Use them instead of inlining the
+`any(font.family.startswith(P) and abs(font.size - S) < tol and
+font.dominance_percent >= D)` pattern by hand:
+
+- `has_font_signature(signals, *, family_predicate, size, tolerance,
+  min_dominance=None)` — the workhorse covering ~95 % of font checks.
+  The `family_predicate` accepts either a verbatim `str` prefix
+  (interpreted as `startswith`) or a `Callable[[str], bool]` for the
+  exact-match (`lambda f: f == EXACT`), set-membership (`lambda f: f
+  in {A, B}`) or compound (`lambda f: f.startswith("Times-") and
+  "Italic" in f`) variants. `min_dominance` is optional.
+- `has_font_size_band_dominance(signals, *, family_predicate,
+  size_min, size_max, min_total_dominance)` — band-summed dominance
+  over a size range, for OCR-noisy corpora whose body family splits
+  across dozens of fractional sizes (single use case so far: EdD
+  storica on the Acrobat Paper Capture pipeline).
+- `is_geometry_close(signals, *, width, height, tolerance,
+  strict=False)` — point ± tolerance on
+  `signals.page_geometry`. The `strict` keyword preserves the
+  per-plugin `<` vs `<=` boundary convention (Zanichelli /
+  Giappichelli / Torrente use `<=` via `strict=False`; the DeJure
+  trio and Giuffrè codici use `<` via `strict=True`).
+- `is_geometry_in_range(signals, *, width_min, width_max,
+  height_min, height_max)` — inclusive range box, for multi-pipeline
+  corpora whose mediabox varies across editions (EM, ES).
+- `producer_or_creator_contains(signals, fragment)` — substring
+  match on the stripped producer OR creator fields (the cross-field
+  case). Use `producer_contains(signals, fragment)` instead when
+  the plugin only inspects the producer field (BIC iLovePDF).
+- `find_specific_marker(signals, name) -> SpecificMarker | None` —
+  the iteration helper for `dejure_banner_text` (NS, DT),
+  `giuffre_codici_banner_text` (codici), and any future SpecificMarker
+  consumed by a plugin. The caller inspects `marker.present` and
+  `marker.value` to drive its conditional logic.
+
+The reference plugin `manuale_zanichelli_giuridica` shows the canonical
+usage of `has_font_signature` and `is_geometry_close`; the DeJure trio
+(`dejure_nota_sentenza`, `dejure_massime`, `dejure_dottrina`) shows
+`find_specific_marker` with `strict=True` geometry; `enciclopedia_moderna`
+shows the callable family predicate; `enciclopedia_storica` shows the
+band-summed dominance variant. The five Family-A additive accumulators
+(Zanichelli, Tesauro, UWK, Giappichelli, Torrente) and the DeJure trio
+were refactored in commits `af8ec6a` and the remaining benefiting plugins
+(EM, ES, BIC, codici) in commit `eaea7f6` — 12 of 13 corpus plugins now
+consume the primitives. The materiali_studio plugin keeps its custom
+joined-string producer short-circuit inline because no primitive captures
+its AND/OR cross-fragment shape and the body predicate has no size
+constraint.
+
+**Asymmetric predicates** that the primitives do not capture stay inline
+with a one-line comment that explains the asymmetry, so future readers
+do not mistakenly "consolidate" them into a primitive call that would
+silently relax the semantics:
+
+- Per-field producer/creator (e.g. `UTET_PRODUCER_FRAGMENT in producer
+  OR UTET_CREATOR_FRAGMENT in creator` — Tesauro / UWK — never the
+  cross-field combination, the two fragments name two different
+  InDesign signatures unique to producer and creator respectively).
+- Family-only fallback predicate without a size constraint (DeJure
+  trio's `ARIAL_FAMILY_PREFIX` check, Giappichelli's
+  `BODY_FONT_PREFIX` family-only check, EM/ES family-negation
+  predicates).
+- Composite predicates that combine the typographic check with a
+  textual or geometric check on the same condition (Torrente's
+  filigree dual-path: typographic OR `BIC_FILIGREE_FRAGMENT_PATTERN`
+  regex match on `marker.value`).
+
+### 4.2. Regression protection for matches() refactors
+
+Two safety nets enforce the "Score magnitudes intangibili" project
+vincolo for any future change to `matches()`:
+
+- **Real-fixture digest baselines** under `pipeline/tests/snapshots/
+  p040_baseline_*.json` capture the score of every plugin on 14
+  representative real fixtures plus the SHA-256 digest produced by
+  `matches_score_digest` (in `pipeline/tests/snapshot_utils.py`). The
+  parametrised integration test `test_p040_matches_score_baseline_holds`
+  asserts byte-equivalence at every run. To regenerate after an
+  intentional score change, run `pipeline/scripts/capture_p040_baseline.py
+  --mode write`. Add a new plugin: include it in the `_PLUGIN_CLASSES`
+  tuple of both the capture script and the integration test, then
+  regenerate.
+
+- **Property-based equivalence tests** at
+  `pipeline/tests/unit/profiling/test_matches_property.py` assert that
+  the production `matches()` agrees byte-for-byte with the frozen
+  pre-refactor snapshot in `_matches_snapshots.py` on at least 1000
+  synthetic `ProfilingSignals` per plugin generated by hypothesis. The
+  strategies in `_matches_strategies.py` exercise the discriminator
+  surface (known family prefixes, sizes 4-36 pt, dominances 0-100 %,
+  producer / creator fragments, A4 / Letter / tascabile geometries,
+  SpecificMarker with and without known names). Add a new plugin: add
+  its frozen snapshot to `_matches_snapshots.py`, then the entry to
+  `_PRODUCTION_VS_SNAPSHOT` in `test_matches_property.py`. Any future
+  refactor that diverges from the snapshot on a reachable input
+  surfaces as a hypothesis-shrunk failure with the minimal-falsifying
+  input.
+
 ## 5. Writing `refine_classification`
 
 Tier 1 emits at most one verdict per block. Tier 2 has freedom to
