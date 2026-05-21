@@ -1,0 +1,21 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 184,
+    "ARTIFACT_STAMP": 2,
+    "AUTHORS": 7,
+    "BODY": 685,
+    "CROSS_REFERENCE": 460,
+    "EDITORIAL_NOTE": 2,
+    "FONTE_VALUE": 7,
+    "GENRE_BANNER": 7,
+    "HEADING_1": 32,
+    "HEADING_2": 1,
+    "NOTE": 459,
+    "SECTION_LABEL": 7,
+    "TITLE": 7,
+    "TOC_GENERAL": 7,
+    "UNCLASSIFIED": 5
+  },
+  "n_transformations": 14,
+  "n_warnings": 945
+}
