@@ -295,6 +295,7 @@ from scabopdf_pipeline.profiles._dejure_shared import (
     ASPOSE_PRODUCER_FRAGMENT,
     NOTES_MARKER_TEXT_VARIANTS,
     SPECIFIC_MARKER_BANNER_TEXT_NAME,
+    consolidate_notes_section_children,
     match_notes_marker,
     retag_notes_region_continuation,
     starts_with_notes_marker,
@@ -600,50 +601,13 @@ BODY_DOMINANCE_MIN_PERCENT = 40.0
 # ``APPARATUS_PRESENCE_THRESHOLD`` was promoted to
 # :mod:`scabopdf_pipeline.profiling.typography_constants` (P-035).
 
-# ---------------------------------------------------------------------------
-# Notes-section boundary tables.
-
-_NOTES_SECTION_BOUNDARY_CATEGORIES: frozenset[SemanticCategory] = frozenset(
-    {
-        SemanticCategory.HEADING_1,
-        SemanticCategory.HEADING_2,
-        SemanticCategory.HEADING_3,
-        SemanticCategory.HEADING_4,
-        SemanticCategory.SECTION_LABEL,
-        SemanticCategory.TITLE,
-        SemanticCategory.GENRE_BANNER,
-        SemanticCategory.META_VALUE,
-        SemanticCategory.FONTE_VALUE,
-        SemanticCategory.REFERRAL,
-        SemanticCategory.AUTHORS,
-        SemanticCategory.SUBTITLE,
-        SemanticCategory.TOC_GENERAL,
-    }
-)
-"""Categories that terminate the notes-section absorption walker.
-
-Same convention as the NS plugin: anything structurally significant
-ends the notes section. In particular, the appearance of another
-``GENRE_BANNER`` marks the start of the next article in a bundle and
-stops absorption of the current article's notes.
-"""
-
-_NOTES_SECTION_PASSTHROUGH_CATEGORIES: frozenset[SemanticCategory] = frozenset(
-    {
-        SemanticCategory.ARTIFACT_FOOTER,
-        SemanticCategory.ARTIFACT_RUNNING_HEADER,
-        SemanticCategory.ARTIFACT_PAGE_HEADER,
-        SemanticCategory.ARTIFACT_STAMP,
-        SemanticCategory.ARTIFACT_FILIGREE,
-        SemanticCategory.BOOK_PAGE_ANCHOR,
-        SemanticCategory.EMPTY_PAGE,
-        SemanticCategory.UNCLASSIFIED,
-    }
-)
-"""Categories that the notes-section absorption walker passes through
-(kept in reading order after the synthetic NOTE / EDITORIAL_NOTE
-Nodes).
-"""
+# ``_NOTES_SECTION_BOUNDARY_CATEGORIES`` and
+# ``_NOTES_SECTION_PASSTHROUGH_CATEGORIES`` were promoted to
+# :mod:`profiles._dejure_shared` (P-017, Promotion Fase 3) as
+# ``NOTES_SECTION_BOUNDARY_CATEGORIES`` and
+# ``NOTES_SECTION_PASSTHROUGH_CATEGORIES`` respectively. The DT
+# convention is identical to NS: GENRE_BANNER closes the absorption
+# at the next article boundary inside a multi-article bundle.
 
 # ---------------------------------------------------------------------------
 # Helpers — block view, node-id minter, max-existing-counter walker.
@@ -1343,99 +1307,36 @@ class DejureDottrinaProfile(ProfilePlugin):
     ) -> tuple[Node, ...]:
         """Find every SECTION_LABEL ``"Note:"`` and consolidate the following siblings.
 
-        For each ``"Note:"`` marker, absorbs subsequent BODY/NOTE
-        siblings up to the next structural boundary (HEADING_N,
-        SECTION_LABEL, TITLE, GENRE_BANNER, META_VALUE, etc.) and
-        splits the consolidated text into one synthetic NOTE per
-        ``(N) ...`` chunk plus one synthetic EDITORIAL_NOTE per
-        ``(*) ...`` chunk.
+        Delegates the walker to the shared
+        :func:`consolidate_notes_section_children` helper (P-017,
+        Promotion Fase 3). The plugin-specific split logic that mints
+        ``NOTE`` and ``EDITORIAL_NOTE`` Nodes (pattern (ww)) lives in
+        :meth:`_split_notes_text` and is passed as a closure.
+
+        Returns the rebuilt children tuple. If no ``"Note:"``
+        SECTION_LABEL is present in the list, the original tuple is
+        returned unchanged.
         """
-        out: list[Node] = []
-        i = 0
-        n = len(children)
-        while i < n:
-            child = children[i]
-            if not (
-                child.category is SemanticCategory.SECTION_LABEL
-                and child.text is not None
-                and self._starts_with_notes_marker(child.text)
-            ):
-                out.append(child)
-                i += 1
-                continue
 
-            marker_match = self._match_notes_marker(child.text)
-            assert marker_match is not None
-            marker_end = marker_match.end()
-            host_post_text = child.text[marker_end:].strip()
-
-            absorbed_block_indices: list[int] = list(child.block_indices)
-            absorbed_text_parts: list[str] = []
-            if host_post_text:
-                absorbed_text_parts.append(host_post_text)
-
-            j = i + 1
-            absorbed_ids: list[str] = []
-            passthrough: list[Node] = []
-            while j < n:
-                sibling = children[j]
-                if sibling.category in _NOTES_SECTION_BOUNDARY_CATEGORIES:
-                    break
-                if (
-                    sibling.category in {SemanticCategory.BODY, SemanticCategory.NOTE}
-                    and sibling.text is not None
-                ):
-                    absorbed_text_parts.append(sibling.text)
-                    absorbed_block_indices.extend(sibling.block_indices)
-                    absorbed_ids.append(sibling.id)
-                    j += 1
-                    continue
-                if sibling.category in _NOTES_SECTION_PASSTHROUGH_CATEGORIES:
-                    passthrough.append(sibling)
-                    j += 1
-                    continue
-                break
-
-            if not absorbed_text_parts:
-                out.append(child)
-                i += 1
-                continue
-
-            joined_notes_text = " ".join(absorbed_text_parts)
-            split_result = self._split_notes_text(
-                joined_notes_text,
-                page_index=child.page_index,
-                block_indices=tuple(absorbed_block_indices),
+        def split_fn(text: str, page_index: int, block_indices: tuple[int, ...]) -> list[Node]:
+            return self._split_notes_text(
+                text,
+                page_index=page_index,
+                block_indices=block_indices,
                 warnings=warnings,
                 minter=minter,
             )
-            if not split_result:
-                warnings.append(f"{WARNING_PREFIX}:note_section_unparseable_node_{child.id}")
-                out.append(child)
-                i += 1
-                continue
 
-            marker_literal = child.text[:marker_end].strip() or "Note:"
-            survivor = replace(child, text=marker_literal)
-
-            transformations.append(
-                Transformation(
-                    step_id="dejure_dottrina_notes_section_consolidate",
-                    node_id=child.id,
-                    page_index=child.page_index,
-                    position=(marker_end, len(child.text)),
-                    original=child.text[marker_end:],
-                    normalized="",
-                    split_into=tuple(n.id for n in split_result),
-                    merged_from=tuple(absorbed_ids) or None,
-                )
-            )
-
-            out.append(survivor)
-            out.extend(split_result)
-            out.extend(passthrough)
-            i = j
-        return tuple(out)
+        return consolidate_notes_section_children(
+            children,
+            split_notes_text_fn=split_fn,
+            transformation_step_id="dejure_dottrina_notes_section_consolidate",
+            unparseable_warning=lambda node_id: (
+                f"{WARNING_PREFIX}:note_section_unparseable_node_{node_id}"
+            ),
+            warnings=warnings,
+            transformations=transformations,
+        )
 
     # Thin delegations to the shared helpers (P-016, Promotion Fase 3).
     # Existing unit tests address these via ``DejureDottrinaProfile.

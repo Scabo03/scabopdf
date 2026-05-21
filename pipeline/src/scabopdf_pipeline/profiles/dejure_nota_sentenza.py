@@ -272,6 +272,7 @@ from scabopdf_pipeline.profiles._dejure_shared import (
     BANNER_TEXT_NOTE_E_DOTTRINA,
     NOTES_MARKER_TEXT_VARIANTS,
     SPECIFIC_MARKER_BANNER_TEXT_NAME,
+    consolidate_notes_section_children,
     match_notes_marker,
     retag_notes_region_continuation,
     starts_with_notes_marker,
@@ -622,51 +623,11 @@ the symmetry is only enforced at the dispatcher level on real PDFs.
 # ---------------------------------------------------------------------------
 # Notes-section boundary tables.
 
-_NOTES_SECTION_BOUNDARY_CATEGORIES: frozenset[SemanticCategory] = frozenset(
-    {
-        SemanticCategory.HEADING_1,
-        SemanticCategory.HEADING_2,
-        SemanticCategory.HEADING_3,
-        SemanticCategory.HEADING_4,
-        SemanticCategory.SECTION_LABEL,
-        SemanticCategory.TITLE,
-        SemanticCategory.GENRE_BANNER,
-        SemanticCategory.META_VALUE,
-        SemanticCategory.FONTE_VALUE,
-        SemanticCategory.REFERRAL,
-        SemanticCategory.AUTHORS,
-        SemanticCategory.SUBTITLE,
-        SemanticCategory.TOC_GENERAL,
-    }
-)
-"""Categories that terminate the notes-section absorption walker.
-
-When the consolidator scans siblings after a ``SECTION_LABEL`` ``Note:``
-marker and encounters one of these categories, the walker stops and
-the absorbed body Nodes are split into synthetic ``NOTE`` Nodes. The
-boundary is conservative on purpose: anything structurally significant
-(another heading, label, metadata block) ends the notes section.
-"""
-
-_NOTES_SECTION_PASSTHROUGH_CATEGORIES: frozenset[SemanticCategory] = frozenset(
-    {
-        SemanticCategory.ARTIFACT_FOOTER,
-        SemanticCategory.ARTIFACT_RUNNING_HEADER,
-        SemanticCategory.ARTIFACT_PAGE_HEADER,
-        SemanticCategory.ARTIFACT_STAMP,
-        SemanticCategory.ARTIFACT_FILIGREE,
-        SemanticCategory.BOOK_PAGE_ANCHOR,
-        SemanticCategory.EMPTY_PAGE,
-        SemanticCategory.UNCLASSIFIED,
-    }
-)
-"""Categories that the notes-section absorption walker passes through.
-
-These are non-structural categories that may interleave with BODY
-Nodes in the original tree (e.g. ARTIFACT_FOOTER blocks between body
-paragraphs on consecutive pages). The walker keeps them in reading
-order after the synthetic ``NOTE`` Nodes have been emitted.
-"""
+# ``_NOTES_SECTION_BOUNDARY_CATEGORIES`` and
+# ``_NOTES_SECTION_PASSTHROUGH_CATEGORIES`` were promoted to
+# :mod:`profiles._dejure_shared` (P-017, Promotion Fase 3) as
+# ``NOTES_SECTION_BOUNDARY_CATEGORIES`` and
+# ``NOTES_SECTION_PASSTHROUGH_CATEGORIES`` respectively.
 
 # ---------------------------------------------------------------------------
 # Helpers — block view, node-id minter, max-existing-counter walker.
@@ -1560,127 +1521,36 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
     ) -> tuple[Node, ...]:
         """Find the SECTION_LABEL ``"Note:"`` and consolidate the following siblings.
 
-        Walks the children list looking for a ``SECTION_LABEL`` Node
-        whose text starts with the ``"Note:"`` marker. When found, the
-        Node itself (which may already carry the concatenated
-        ``(1) ... (2) ...`` notes prose glued by Aspose) and every
-        subsequent ``BODY`` sibling up to the next ``HEADING_N`` /
-        ``SECTION_LABEL`` / end-of-list boundary are absorbed into a
-        single notes-section text. The concatenated text is split on
-        the regex :data:`_NOTE_SPLIT_PATTERN` and one synthetic
-        ``NOTE`` Node is minted per ``(N) ...`` chunk. The original
-        SECTION_LABEL Node is kept as the surviving marker (with its
-        text reduced to just ``"Note:"``); the absorbed BODY siblings
-        are removed and the synthetic NOTE Nodes are inserted in
-        their place.
+        Delegates the walker to the shared
+        :func:`consolidate_notes_section_children` helper (P-017,
+        Promotion Fase 3); the plugin-specific split logic lives in
+        :meth:`_split_notes_text` and is passed as a closure that
+        captures the ``warnings`` list and the :class:`NodeIdMinter`.
 
         Returns the rebuilt children tuple. If no ``"Note:"``
         SECTION_LABEL is present in the list, the original tuple is
         returned unchanged.
         """
-        out: list[Node] = []
-        i = 0
-        n = len(children)
-        while i < n:
-            child = children[i]
-            if not (
-                child.category is SemanticCategory.SECTION_LABEL
-                and child.text is not None
-                and self._starts_with_notes_marker(child.text)
-            ):
-                out.append(child)
-                i += 1
-                continue
 
-            # Found the SECTION_LABEL marker. Determine the post-marker
-            # body of this Node and the contiguous BODY siblings that
-            # follow it in the list.
-            marker_match = self._match_notes_marker(child.text)
-            assert marker_match is not None
-            marker_end = marker_match.end()
-            host_post_text = child.text[marker_end:].strip()
-
-            absorbed_block_indices: list[int] = list(child.block_indices)
-            absorbed_text_parts: list[str] = []
-            if host_post_text:
-                absorbed_text_parts.append(host_post_text)
-
-            # Walk subsequent siblings. ARTIFACT_FOOTER and similar
-            # interleaving artifacts are kept aside (passed through in
-            # order after the synthetic NOTE Nodes); BODY Nodes are
-            # absorbed into the consolidated notes text; HEADING /
-            # SECTION_LABEL / other structural categories end the
-            # absorption.
-            j = i + 1
-            absorbed_ids: list[str] = []
-            passthrough: list[Node] = []
-            while j < n:
-                sibling = children[j]
-                if sibling.category in _NOTES_SECTION_BOUNDARY_CATEGORIES:
-                    break
-                if (
-                    sibling.category in {SemanticCategory.BODY, SemanticCategory.NOTE}
-                    and sibling.text is not None
-                ):
-                    absorbed_text_parts.append(sibling.text)
-                    absorbed_block_indices.extend(sibling.block_indices)
-                    absorbed_ids.append(sibling.id)
-                    j += 1
-                    continue
-                if sibling.category in _NOTES_SECTION_PASSTHROUGH_CATEGORIES:
-                    passthrough.append(sibling)
-                    j += 1
-                    continue
-                # Unknown category — stop absorption to be safe.
-                break
-
-            if not absorbed_text_parts:
-                # Standalone "Note:" marker with no glued notes and no
-                # following BODY siblings — nothing to consolidate.
-                out.append(child)
-                i += 1
-                continue
-
-            joined_notes_text = " ".join(absorbed_text_parts)
-            split_result = self._split_notes_text(
-                joined_notes_text,
-                page_index=child.page_index,
-                block_indices=tuple(absorbed_block_indices),
+        def split_fn(text: str, page_index: int, block_indices: tuple[int, ...]) -> list[Node]:
+            return self._split_notes_text(
+                text,
+                page_index=page_index,
+                block_indices=block_indices,
                 warnings=warnings,
                 minter=minter,
             )
-            if not split_result:
-                # Could not parse the notes text — leave the children
-                # list intact and emit a diagnostic warning.
-                warnings.append(f"{WARNING_PREFIX}:note_section_unparseable_node_{child.id}")
-                out.append(child)
-                i += 1
-                continue
 
-            # Surviving SECTION_LABEL keeps just the "Note:" marker text.
-            marker_literal = child.text[:marker_end].strip() or "Note:"
-            survivor = replace(child, text=marker_literal)
-
-            # Record a single Transformation that documents the
-            # multi-sibling absorption.
-            transformations.append(
-                Transformation(
-                    step_id="dejure_nota_sentenza_notes_section_consolidate",
-                    node_id=child.id,
-                    page_index=child.page_index,
-                    position=(marker_end, len(child.text)),
-                    original=child.text[marker_end:],
-                    normalized="",
-                    split_into=tuple(n.id for n in split_result),
-                    merged_from=tuple(absorbed_ids) or None,
-                )
-            )
-
-            out.append(survivor)
-            out.extend(split_result)
-            out.extend(passthrough)
-            i = j
-        return tuple(out)
+        return consolidate_notes_section_children(
+            children,
+            split_notes_text_fn=split_fn,
+            transformation_step_id="dejure_nota_sentenza_notes_section_consolidate",
+            unparseable_warning=lambda node_id: (
+                f"{WARNING_PREFIX}:note_section_unparseable_node_{node_id}"
+            ),
+            warnings=warnings,
+            transformations=transformations,
+        )
 
     # Thin delegations to the shared helpers (P-016, Promotion Fase 3).
     # Existing unit tests address these via ``DejureNotaSentenzaProfile.
