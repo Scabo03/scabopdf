@@ -295,7 +295,7 @@ Le tre esclusioni di scope sopra **NON vanno rivisitate** in sessioni future. Se
 
 - **Numeri reali post-refactor**:
   - Unit suite: **2056 test verdi** (era 1991 pre-sessione, +34 framework + 31 integration framework = +65 nuovi).
-  - Integration suite: 166 test invariata, derivata automaticamente.
+  - Integration suite: **166 test verdi**, derivata automaticamente dai template dei 13 plugin e dei due moduli tier 1. Validazione completata in tre run: 29 BIC+materiali_studio in 5:11, 105 EM/ES/codici/dejure/EM-storica in 11:06, 58 sui plugin con vocabulary invariato (zanichelli, tesauro, utet_wolterskluwer, giappichelli, giuffre_diretto, mosconi, plus subset overlap) in 14:09.
   - Coverage framework: 100% sui 63 statement di `warning_framework.py`.
   - Coverage aggregata complessiva: **96% mantenuto**.
   - Pre-commit verde su ogni commit.
@@ -305,8 +305,9 @@ Le tre esclusioni di scope sopra **NON vanno rivisitate** in sessioni future. Se
   - A `a79b5ed` Add warning_framework module (Fase 2 P-007, Stage 1) — modulo + 36 unit test, +426 inserzioni
   - B `3c7b0c7` Normalize tier 1 warning templates to canonical placeholder syntax (Fase 2 P-007) — 2 file, +22 inserzioni
   - C `c211af9` Expose plugin warning vocabulary via classmethod (Fase 2 P-007, Stage 2) — 15 file, +202 inserzioni
-  - D `<TBD>` Derive _TIER1_WARNING_REGEXES whitelist from warning framework (Fase 2 P-032) — refactor test registry, 110 regex (era 51 hand-curated)
-  - E `<TBD>` Fase 2 close: CARRYOVER v2.21 + CLAUDE.md (sss)(ttt) + PLUGIN_DEVELOPMENT § 8 — docs
+  - D `894cf6c` Derive _TIER1_WARNING_REGEXES whitelist from warning framework + close BIC/materiali gaps (Fase 2 P-032) — refactor test registry, 114 regex (era 51 hand-curated), gap-closure
+  - E `742ed0d` Document warning framework consolidation (Fase 2 close) — docs CARRYOVER v2.21 + CLAUDE.md (sss)(ttt) + PLUGIN_DEVELOPMENT § 8
+  - F `<TBD>` Housekeeping: integration suite 166/166 verde — CARRYOVER aggiornato dopo completamento validazione
 
 - **Residui debt aggiornati post-sessione** (invariati dalla v2.20, fase post-corpus chiusa strategicamente):
   - (v) ToC Word con dotted leader — rinviato a futuro caso d'uso
