@@ -1,0 +1,22 @@
+{
+  "category_counts": {
+    "ARTIFACT_FILIGREE": 1559,
+    "ARTIFACT_RUNNING_HEADER": 1,
+    "BODY": 719,
+    "CROSS_REFERENCE": 7408,
+    "HEADING_1": 17,
+    "HEADING_2": 82,
+    "HEADING_3": 56,
+    "HEADING_4": 710,
+    "INDEX_ENTRY": 430,
+    "MARGINAL_HEADING": 4051,
+    "NOTE": 1,
+    "UNCLASSIFIED": 60
+  },
+  "cross_ref_binding_digest": "9a90213ff594ef8d07e27e335124cca7a49bd4034e0875c1f5b8a39b3b0b3504",
+  "n_cross_ref_target_bound": 2802,
+  "n_cross_ref_unbound": 4606,
+  "n_cross_reference": 7408,
+  "n_transformations": 0,
+  "n_warnings": 9576
+}

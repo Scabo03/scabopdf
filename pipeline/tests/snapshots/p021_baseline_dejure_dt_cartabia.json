@@ -1,0 +1,25 @@
+{
+  "category_counts": {
+    "ARTIFACT_FOOTER": 184,
+    "ARTIFACT_STAMP": 2,
+    "AUTHORS": 7,
+    "BODY": 685,
+    "CROSS_REFERENCE": 460,
+    "EDITORIAL_NOTE": 2,
+    "FONTE_VALUE": 7,
+    "GENRE_BANNER": 7,
+    "HEADING_1": 32,
+    "HEADING_2": 1,
+    "NOTE": 459,
+    "SECTION_LABEL": 7,
+    "TITLE": 7,
+    "TOC_GENERAL": 7,
+    "UNCLASSIFIED": 5
+  },
+  "cross_ref_binding_digest": "00039a5bc93ceb1207b53a33c9394d6155dde53e5d66ac089aeeb14276b3ba4c",
+  "n_cross_ref_target_bound": 460,
+  "n_cross_ref_unbound": 0,
+  "n_cross_reference": 460,
+  "n_transformations": 14,
+  "n_warnings": 945
+}

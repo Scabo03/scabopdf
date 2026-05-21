@@ -26,12 +26,15 @@ fast equivalence check against a structural baseline.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from scabopdf_pipeline.apparatus.types import ApparatusRefKind
 from scabopdf_pipeline.reconstruction.types import Document, Node
+from scabopdf_pipeline.schema.categories import SemanticCategory
 
 SNAPSHOTS_ROOT = Path(__file__).parent / "snapshots"
 """Filesystem root for committed JSON snapshot baselines."""
@@ -138,10 +141,72 @@ def document_structural_summary(document: Document) -> dict[str, Any]:
     return summary
 
 
+def cross_ref_binding_digest(document: Document) -> str:
+    """Return a SHA-256 hex digest of every ``CROSS_REF_TARGET`` binding.
+
+    Walks the document tree, collects every
+    :class:`apparatus.types.ApparatusRef` of kind ``CROSS_REF_TARGET``
+    attached to a ``CROSS_REFERENCE`` Node, and computes a stable
+    digest over the sorted ``(source_node_id, source_marker,
+    target_node_id)`` triples. Two documents whose binding rate is
+    numerically identical but whose per-binding targets diverge
+    produce different digests, catching the silent-rebind regression
+    of pattern (ll) of CLAUDE.md and the related risk-A=H exposure
+    documented in the P-021 diagnostic.
+
+    Returns the empty-digest of an empty triple list when the document
+    has no ``CROSS_REF_TARGET`` bindings.
+    """
+    triples: list[tuple[str, str, str]] = []
+    for node in _iter_nodes(document.root):
+        if node.category is not SemanticCategory.CROSS_REFERENCE:
+            continue
+        for ref in node.apparatus_refs:
+            if ref.kind is not ApparatusRefKind.CROSS_REF_TARGET:
+                continue
+            triples.append((node.id, ref.source_marker or "", ref.target_node_id))
+    triples.sort()
+    serial = "\n".join(f"{src}|{mark}|{tgt}" for src, mark, tgt in triples)
+    return hashlib.sha256(serial.encode("utf-8")).hexdigest()
+
+
+def apparatus_binding_summary(document: Document) -> dict[str, Any]:
+    """Return a compact apparatus-binding summary for snapshot baselines.
+
+    Combines :func:`document_structural_summary` with the per-binding
+    digest produced by :func:`cross_ref_binding_digest` plus the
+    explicit counts of bound and unbound ``CROSS_REFERENCE`` Nodes.
+
+    Used by the P-021 mitigation baselines for fixtures whose plugins
+    override the tier 1 generic apparatus binding (BIC per-chapter
+    scope, DT per-article scope, Torrente global scope) to catch
+    silent rebind regressions that a category-count check cannot
+    detect on its own.
+    """
+    summary = document_structural_summary(document)
+    n_cross_ref_target = 0
+    n_cross_reference = 0
+    for node in _iter_nodes(document.root):
+        if node.category is not SemanticCategory.CROSS_REFERENCE:
+            continue
+        n_cross_reference += 1
+        for ref in node.apparatus_refs:
+            if ref.kind is ApparatusRefKind.CROSS_REF_TARGET:
+                n_cross_ref_target += 1
+                break
+    summary["n_cross_reference"] = n_cross_reference
+    summary["n_cross_ref_target_bound"] = n_cross_ref_target
+    summary["n_cross_ref_unbound"] = n_cross_reference - n_cross_ref_target
+    summary["cross_ref_binding_digest"] = cross_ref_binding_digest(document)
+    return summary
+
+
 __all__ = [
     "SNAPSHOTS_ROOT",
+    "apparatus_binding_summary",
     "assert_snapshot_matches",
     "category_counts",
+    "cross_ref_binding_digest",
     "diff_dicts",
     "document_structural_summary",
     "load_snapshot",
