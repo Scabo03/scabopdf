@@ -268,7 +268,57 @@ Le tre esclusioni di scope sopra **NON vanno rivisitate** in sessioni future. Se
 
 ## Cronologia delle sessioni
 
-### Sessione corrente (21 maggio 2026 sera, trentasettesimo aggiornamento — versione 2.22, **Fase 3 P-016 + P-017 + P-021 chiusa: notes-section consolidator promosso a `_dejure_shared`, apparatus CR binding override blindato da digest baseline**)
+### Sessione corrente (21 maggio 2026 notte, trentottesimo aggiornamento — versione 2.23, **Fase 4 P-018 chiusa: body+note glued splitter framework lasciato as-is con synthetic-Node mint-trail digest baseline su 5 fixture**)
+
+- **Apertura**: stato post-v2.22 (Phase 3 P-016 + P-017 promossi a `_dejure_shared.py`, P-021 protetto da `cross_ref_binding_digest`, 2056 unit + 166 integration verdi a 96 % coverage, 13 baseline byte-for-byte (7 P-014 + 3 Phase 3 + 3 P-021), working tree pulito tranne `docs/EXPLORATORY_LENER_BIN_PITRUZZELLA.md` untracked pre-esistente). L'utente apre una sessione "ultrathink" end-to-end con delega totale per chiudere la **Fase 4 del Piano Ambizioso**: body+note glued splitter framework P-018, il task più complesso del piano con cinque implementazioni divergenti su quattro assi ortogonali. Cinque sub-decisioni autonome delegate (astrarre vs leave-as-is, snapshot baseline, gap-closure vocabulary, Mosconi unification, WarningEmitter).
+
+- **Fase 0 — Diagnostica empirica via tre subagent Explore paralleli**: scansione delle cinque implementazioni P-018 (Mandrioli `_split_body_note_glued`, BIC `_split_body_note_multi_block` + `_convert_body_to_notes`, NS `_split_notes_text`, DT `_split_notes_text`, codici `_split_intra_block_articles` + `_split_multi_note_blocks`). Risultati cumulativi: le 5 implementazioni si dividono in **2 famiglie strutturalmente disgiunte sull'input shape**:
+  - **Famiglia A (span-level, 3 plugin, ~953 LOC cumulative)**: Mandrioli (350 LOC, size-band trigger `SimonciniGaramondStd 10.98pt` body + ≥30 % NOTE-sized spans 9.0/7.98 pt, single-block scope), BIC (425 LOC, line-marker trigger `Verdana,Bold 12pt color #ff0000 "Note"` exact, multi-block + rescue layer per cross-page continuations), Codici (178 LOC, signal-agnostic trigger `PalatinoLinotype-Bold ≥8.5pt` + article-number regex, walk universale con flat_spans accumulator su block_indices).
+  - **Famiglia B (text-level, 2 plugin, ~106 LOC cumulative)**: NS (40 LOC), DT (66 LOC, NOTE / EDITORIAL_NOTE dispatch). **Già astratte via P-017** (Fase 3) in `_dejure_shared.consolidate_notes_section_children` + `SplitNotesTextFn` callable. Operano su text string concatenato.
+  Divergenze sui 4 assi (Famiglia A): trigger (size-band / colour-line / typographic+regex), host (skip-multi / multi-aware / signal-agnostic preserve-cat), mint (NOTE single / NOTE single / (ARTICLE_HEADER, ARTICLE_BODY) pair), transizione (line+span guards / line-marker + per-line N. / trigger list). Helper convergenti già condivisi (`NodeIdMinter`, `compute_note_length_category`, `effective_leading_span`) in `reconstruction.*`.
+
+- **Fase 1 — Cinque sub-decisioni autonome motivate**:
+  - **(1) Astrarre P-018?** **NO** — leave-as-is su Famiglia A, già astratte su Famiglia B. La diagnostica conferma 4 assi ortogonali di divergenza che richiederebbero ≥4 callable parametri ciascuno per il 90 % plugin-specifici; il body comune sarebbe un orchestrator outer ~30 LOC mentre i callable plugin-locali sarebbero ~200 LOC per plugin. Pattern (vvv) P-021 si applica esattamente — la promozione è over-engineering. **Mitigazione**: digest baseline esteso al pattern P-018.
+  - **(2) Mosconi `recompose_marginal_ellipsis` unification?** **NO** — la semantica è marginal annotations (categoria diversa dal body+note splitter), `merge_cross_page_notes` è specifico NOTE. Le due semantiche sono disgiunte e un'unificazione sarebbe artificiosa.
+  - **(3) Snapshot baseline?** **SÌ** con design esteso. Nuovo `body_note_splitter_digest()` in `snapshot_utils.py` combina due fonti di mint provenance: (a) `document.transformations` con `split_into` (Mandrioli, BIC, NS / DT), (b) `document.warnings` matching un closed-vocabulary regex sui 6 template `_minted_node_` / `_rescued_node_` (codici intra-block che non logga Transformation è coperto via warning trail senza retrofit). Cinque nuove baseline P-018 (Mandrioli Vol. I + Vol. III, Marrone, Codici Penale + Civile) per coprire le 3 varianti strutturali + il dual-regime Mandrioli.
+  - **(4) Gap-closure vocabulary?** **NO** — la Fase 2 ha già coperto tutti i 13 plugin via classmethod + framework. Verificato durante diagnostica: nessun gap aperto sui body+note splitter di Famiglia A.
+  - **(5) WarningEmitter opzionale?** **NO** — nessun nuovo helper estratto (leave-as-is), nessuna modifica f-string. Convenzione consolidata mantenuta.
+
+- **Fase 2 — Estensione `snapshot_utils.py`** (commit `bc875c1`): aggiunti `_BODY_NOTE_SPLITTER_WARNING_PATTERN` (closed-vocabulary regex sui 6 kind), `body_note_splitter_digest(document)` che combina TX `split_into` + warning trail in una stringa serializzata, e `body_note_splitter_summary(document)` che estende `document_structural_summary` con `n_body_note_split_transformations`, `n_body_note_split_minted_warnings`, `n_synthetic_body_note_nodes`, `synthetic_body_note_nodes_by_category` (decomposizione per categoria mintata), `body_note_splitter_digest`. Nove nuovi unit test al 100 % sulle nuove funzioni: empty case, transformation-only mints, warning-only mints, six-kind alternation, deduplica nodi across tx+warning, order-sensitivity su synthetic text length, missing-node guard, summary keys.
+
+- **Fase 3 — Capture P-018 baselines** (commit `4c7490e`): nuovo `pipeline/scripts/capture_p018_baseline.py` (~200 LL inclusa docstring lunga) modellato su `capture_p021_baseline.py`. Cinque baseline JSON catturate con numeri empirici:
+  - `p018_baseline_mandrioli_vol_i`: 7.98 pt NOTE regime, Photoshop pipeline, clean block boundaries (basso glued rate).
+  - `p018_baseline_mandrioli_vol_iii`: 9.0 pt NOTE regime, InDesign, 95 % glued, 360 transformations.
+  - `p018_baseline_marrone`: BIC line-marker + multi-block + rescue, 179 TX + 1456 minted warnings (1454 NOTE).
+  - `p018_baseline_codici_penale`: 0 TX (codici non logga Transformation per intra-block) ma 10772 minted warnings (5519 ARTICLE_HEADER + 5253 NOTE).
+  - `p018_baseline_codici_civile`: peak-density intra-block.
+  Tutte e 18 baseline byte-for-byte verdi post-capture (7 P-014 + 3 Phase 3 + 3 P-021 + 5 P-018).
+
+- **Pattern strutturali documentati in CLAUDE.md** (numerazione che prosegue da (vvv) di Fase 3):
+  - **(www) Family-level body+note glued splitter divergence — synthetic-Node mint-trail digest baseline** generalizza pattern (vvv) al caso "famiglie strutturalmente disgiunte sull'input shape": quando un pattern logico (decomposizione di un host Node in synthetic siblings via trigger editorial-pipeline-specifico) è implementato in N plugin che si dividono in 2+ famiglie incompatibili sull'input shape (span-level walk di `Node.block_indices` vs text-level walk di una stringa pre-consolidata vs signal-agnostic universal traversal), la promozione a singola factory è **impossibile per costruzione**. La mitigazione è un digest baseline esteso che combina due fonti di mint provenance — Transformation `split_into` (per plugin che loggano) + warning trail matching closed-vocabulary regex (per plugin che usano warning-only mint tracking) — così la silent-rebind/silent-shift regression è coperta uniformemente attraverso le famiglie. Il pattern è reusable per qualunque futuro framework cross-plugin dove la dispersione su forme di input incompatibili rende la factory artificiosa ma la regression protection resta critica.
+
+- **Numeri reali post-sessione**:
+  - Unit suite: **2065 test verdi** (era 2056 pre-sessione, +9 nuovi unit test su snapshot_utils).
+  - Integration suite: **166 test verdi al 100 %** (invariato vs v2.22).
+  - Coverage aggregata: **96 % mantenuto**.
+  - Pre-commit verde su ogni commit (3/3).
+  - Baseline check post-sessione: 7 P-014 + 3 Phase 3 + 3 P-021 + **5 P-018 nuove** = **18 baseline byte-for-byte verdi**.
+  - Drift schema test: verde, schema **0.6.0 invariato** (nessun bump in Fase 4 per costruzione — P-018 è regression protection only).
+  - Nessun refactor del codice plugin (Mandrioli, BIC, NS, DT, codici tutti invariati — leave-as-is per costruzione).
+
+- **Sequenza commit della sessione**:
+  - A `bc875c1` Add body+note splitter mint-trail digest to snapshot_utils (Fase 4 P-018) — extends snapshot_utils + 9 unit tests, +372 inserzioni
+  - B `4c7490e` Add P-018 regression-protection baselines (Fase 4) — capture script + 5 JSON baseline, +323 inserzioni
+  - C `<TBD>` Document Fase 4 close: CARRYOVER v2.23 + CLAUDE.md (www)
+
+- **Residui debt aggiornati post-sessione** (invariati vs v2.22):
+  - (v) ToC Word con dotted leader — rinviato a futuro caso d'uso
+  - (xi) Lexicon coverage gap unaccented-only — richiede sessione futura dedicata
+  - Le tre esclusioni di scope strategiche permanenti (iii)(iv)(vi) restano fuori dalla lista debt
+
+- **Domande critiche per la Fase 5** (CR minting framework P-019, Risk-A=H Risk-B=H, 9 implementazioni divergenti): pre-analisi indica tre assi di divergenza: (a) regex pattern (sempre plugin-locale, dal `(?<!p\.\s)(?<!p\.)\((\d+)\)` di Mandrioli al multi-pattern di Torrente `(§|art\.|Cass\.)`), (b) minted category (CROSS_REFERENCE single sempre, ma multi-subtype tracking via leading-char encoding in Torrente §/art./Cass., EM moderna `(`/`v.`, ES storica `(`/`v.`), (c) global vs per-chapter vs per-article scope (interagisce con P-021 già protetto da digest). (1) La decomposizione per famiglia (span-level vs text-level vs signal-agnostic) della Fase 4 è probabilmente un precedente per la Fase 5 — il CR minting attraversa BIC `_mint_cross_references_in_forest`, Torrente `_mint_for_body`, EM / ES `_maybe_mint_cross_references`, Mandrioli inline mint — tutti signal-agnostic e probabilmente ammettono astrazione comune. (2) `NodeIdMinter` + `max_existing_node_counter` sono già condivisi via `reconstruction.minting` (P-001 / P-002 / P-003 Fase 1), quindi la factory CR è più libera del body+note splitter. (3) Le baseline P-018 di questa sessione coprono i mint trails dei body+note splitter ma NON i CR minting trails specifici — quello è gap da risolvere con un eventuale `cross_ref_minting_digest()` se la Fase 5 decide leave-as-is su parti del CR minting; il regex pattern P-018 attualmente esclude `cross_reference_minted_node_*` perché lo scope strategico è body+note, non CR.
+
+### Sessione precedente (21 maggio 2026 sera, trentasettesimo aggiornamento — versione 2.22, **Fase 3 P-016 + P-017 + P-021 chiusa: notes-section consolidator promosso a `_dejure_shared`, apparatus CR binding override blindato da digest baseline**)
 
 - **Apertura**: stato post-v2.21 (warning framework consolidato a `warning_framework.py`, ABC `ProfilePlugin` esteso con `get_warning_templates()` non-astratto, test registry `_TIER1_WARNING_REGEXES` derivato automaticamente dai template dei 13 plugin, suite 2056 unit + 166 integration a 96% coverage, working tree pulito). L'utente apre una sessione "ultrathink" end-to-end con delega totale per chiudere la **Fase 3 del Piano Ambizioso**: consolidamento del pattern multi-sibling notes consolidator dei plugin DeJure (P-016 stateful notes-region walk + P-017 multi-sibling notes-section consolidator) e del binding override delle cross-reference (P-021 apparatus CR binding override su scope variabili). Quattro sub-decisioni autonome delegate (estrazione P-017 sì/no, P-021 sì/no, snapshot baseline sì/no, WarningEmitter sì/no).
 
