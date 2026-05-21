@@ -57,14 +57,16 @@ from scabopdf_pipeline.schema.categories import NoteLengthCategory, SemanticCate
 
 TIER1_WARNING_TEMPLATES: tuple[str, ...] = (
     "unparseable_cross_reference_node_<id>",
-    "unresolved_cross_reference_node_<id>_n_<N>",
-    "marginal_heading_without_body_target_node_<id>_page_<P>",
-    "gloss_without_note_target_node_<id>_page_<P>",
+    "unresolved_cross_reference_node_<id>_n_<n>",
+    "marginal_heading_without_body_target_node_<id>_page_<p>",
+    "gloss_without_note_target_node_<id>_page_<p>",
 )
 """Templates of the closed warning vocabulary tier 1 apparatus may emit.
 
-The placeholders ``<id>``, ``<N>``, ``<P>`` are replaced with concrete
-values. Tier 2 plugins are free to emit any string.
+The placeholders use the canonical ``<placeholder>`` syntax shared with
+tier 1 reconstruction and the corpus plugins; see
+:mod:`scabopdf_pipeline.warning_framework` for the vocabulary. Tier 2
+plugins are free to emit any string.
 """
 
 _BODY_TARGET_CATEGORIES: frozenset[SemanticCategory] = frozenset(

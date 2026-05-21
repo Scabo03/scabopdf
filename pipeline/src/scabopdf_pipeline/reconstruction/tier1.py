@@ -52,11 +52,15 @@ for tier 2 (profile-specific refinement).
 
 The tier 1 warning vocabulary is closed:
 
-- ``orphan_heading_level_N_page_M`` — HEADING_N without HEADING_(N-1)
-  ancestor on the stack.
-- ``article_body_without_header_page_M`` — ARTICLE_BODY without an open
-  ARTICLE_HEADER.
+- ``orphan_heading_level_<level>_page_<p>`` — HEADING_N without
+  HEADING_(N-1) ancestor on the stack (``<level>`` constrained to
+  ``[1-4]``).
+- ``article_body_without_header_page_<p>`` — ARTICLE_BODY without an
+  open ARTICLE_HEADER.
 
+Templates use the canonical ``<placeholder>`` syntax shared with the
+apparatus resolver and the corpus plugins; see
+:mod:`scabopdf_pipeline.warning_framework` for the closed vocabulary.
 Plugins are free to emit any warning string in tier 2.
 """
 
@@ -78,12 +82,15 @@ from scabopdf_pipeline.reconstruction.types import Document, Node, compute_note_
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 TIER1_WARNING_TEMPLATES: tuple[str, ...] = (
-    "orphan_heading_level_N_page_M",
-    "article_body_without_header_page_M",
+    "orphan_heading_level_<level>_page_<p>",
+    "article_body_without_header_page_<p>",
 )
 """Templates of the closed warning vocabulary tier 1 may emit.
 
-The placeholders ``N`` and ``M`` are replaced with concrete values. Tier 2
+The placeholders use the canonical ``<placeholder>`` syntax shared with
+the apparatus resolver and the corpus plugins; see
+:mod:`scabopdf_pipeline.warning_framework` for the vocabulary
+(``<level>`` is constrained to ``[1-4]``, ``<p>`` to ``\\d+``). Tier 2
 plugins are free to emit any string.
 """
 
