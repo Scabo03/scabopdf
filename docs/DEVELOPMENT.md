@@ -18,7 +18,18 @@ python3 -m venv .venv
 
 This installs the pipeline package in editable mode together with the
 `dev` extras (`pytest`, `pytest-cov`, `ruff`, `mypy`,
-`types-jsonschema`, `pre-commit`).
+`types-jsonschema`, `pre-commit`, `hypothesis`).
+
+`hypothesis>=6.100` is used by the property-based equivalence test
+suite for the corpus plugins' `matches()` method (Fase 6 of the
+Piano Ambizioso): it generates synthetic ``ProfilingSignals``
+instances that exercise the scoring logic across the discriminator
+space, so any future refactor of `matches()` that shifts the score
+magnitude on any reachable input lights up a failure rather than
+silently drifting from the calibrating fixtures. The
+property-based tests live under
+`pipeline/tests/unit/profiling/test_matches_property.py` and run in
+the ordinary unit suite — no separate group.
 
 ## Activating the pre-commit hook
 
