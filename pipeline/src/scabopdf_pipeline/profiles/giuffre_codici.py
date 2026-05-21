@@ -285,6 +285,11 @@ from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_signature,
+    is_geometry_close,
+    producer_or_creator_contains,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -857,27 +862,27 @@ class GiuffreCodiciProfile(ProfilePlugin):
         elif banner_text is not None and "LEGGI" in banner_text.upper():
             score += CONFIDENCE_BANNER_LEGGI_PRIMARY
 
-        body_present = any(
-            font.family.startswith(BODY_FONT_PREFIX)
-            and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_present:
+        if has_font_signature(
+            signals,
+            family_predicate=BODY_FONT_PREFIX,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_BODY_DOMINANT
         else:
             score += CONFIDENCE_OTHER_BODY_FAMILY_PENALTY
 
-        if (
-            abs(signals.page_geometry.width_pt - PAGE_GEOMETRY_WIDTH) < PAGE_GEOMETRY_TOLERANCE
-            and abs(signals.page_geometry.height_pt - PAGE_GEOMETRY_HEIGHT)
-            < PAGE_GEOMETRY_TOLERANCE
+        if is_geometry_close(
+            signals,
+            width=PAGE_GEOMETRY_WIDTH,
+            height=PAGE_GEOMETRY_HEIGHT,
+            tolerance=PAGE_GEOMETRY_TOLERANCE,
+            strict=True,
         ):
             score += CONFIDENCE_PAGE_GEOMETRY
 
-        producer = (signals.producer_creator.producer or "").strip()
-        creator = (signals.producer_creator.creator or "").strip()
-        if PDFSHARP_PRODUCER_FRAGMENT in producer or PDFSHARP_PRODUCER_FRAGMENT in creator:
+        if producer_or_creator_contains(signals, PDFSHARP_PRODUCER_FRAGMENT):
             score += CONFIDENCE_PDFSHARP_PRODUCER
 
         if signals.apparatus_presence.footnote_markers >= 50:

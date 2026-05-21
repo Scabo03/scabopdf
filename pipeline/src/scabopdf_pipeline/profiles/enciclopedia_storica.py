@@ -139,6 +139,11 @@ from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_size_band_dominance,
+    is_geometry_in_range,
+    producer_or_creator_contains,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -448,12 +453,7 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
         """
         score = 0.0
 
-        producer = (signals.producer_creator.producer or "").strip()
-        creator = (signals.producer_creator.creator or "").strip()
-        if (
-            PAPER_CAPTURE_PRODUCER_FRAGMENT in producer
-            or PAPER_CAPTURE_PRODUCER_FRAGMENT in creator
-        ):
+        if producer_or_creator_contains(signals, PAPER_CAPTURE_PRODUCER_FRAGMENT):
             score += CONFIDENCE_PAPER_CAPTURE_PRODUCER
 
         # Band-summed dominance — OCR baseline noise splits the same
@@ -462,15 +462,18 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
         # fractional sizes); the body signal must aggregate them rather
         # than require a single ``font.size`` combo to clear the
         # threshold.
-        body_total_dominance = sum(
-            font.dominance_percent
-            for font in signals.typographic_signature.fonts
-            if font.family.startswith(TIMES_FAMILY_PREFIX)
-            and BODY_SIZE_MIN <= font.size <= BODY_SIZE_MAX
-        )
-        if body_total_dominance >= BODY_DOMINANCE_MIN_PERCENT:
+        if has_font_size_band_dominance(
+            signals,
+            family_predicate=TIMES_FAMILY_PREFIX,
+            size_min=BODY_SIZE_MIN,
+            size_max=BODY_SIZE_MAX,
+            min_total_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_TIMES_BODY_DOMINANT
         else:
+            # Fallback predicate is family-negation + dominance with no
+            # size constraint, kept inline (no primitive for the negated
+            # family case).
             arial_or_simoncini = any(
                 font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
                 and not font.family.startswith(TIMES_FAMILY_PREFIX)
@@ -479,6 +482,9 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
             if arial_or_simoncini:
                 score += CONFIDENCE_NON_OCR_BODY_FAMILY_PENALTY
 
+        # Italic note family — exact-family match with a size band; the
+        # callable predicate enforces equality and has_font_signature's
+        # tolerance argument is replaced by the band check below.
         italic_note_present = any(
             font.family == TIMES_ITALIC_FAMILY and NOTE_SIZE_MIN <= font.size <= NOTE_SIZE_MAX
             for font in signals.typographic_signature.fonts
@@ -486,16 +492,18 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
         if italic_note_present:
             score += CONFIDENCE_TIMES_ITALIC_PRESENT
 
-        width = signals.page_geometry.width_pt
-        height = signals.page_geometry.height_pt
-        if (
-            PAGE_WIDTH_MIN <= width <= PAGE_WIDTH_MAX
-            and PAGE_HEIGHT_MIN <= height <= PAGE_HEIGHT_MAX
+        if is_geometry_in_range(
+            signals,
+            width_min=PAGE_WIDTH_MIN,
+            width_max=PAGE_WIDTH_MAX,
+            height_min=PAGE_HEIGHT_MIN,
+            height_max=PAGE_HEIGHT_MAX,
         ):
             score += CONFIDENCE_GEOMETRY_OK
 
         # Penalty if any SimonciniGaramond span is present — discriminator
-        # versus the moderna sister.
+        # versus the moderna sister. Family-only predicate with no size
+        # or dominance constraint, kept inline.
         simoncini_present = any(
             font.family.startswith("SimonciniGaramond")
             for font in signals.typographic_signature.fonts

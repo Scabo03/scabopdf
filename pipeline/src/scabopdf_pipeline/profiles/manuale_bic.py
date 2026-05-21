@@ -246,6 +246,10 @@ from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.postprocessing.types import Transformation
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_signature,
+    producer_contains,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -677,19 +681,18 @@ class ManualeBicProfile(ProfilePlugin):
         the five prior plugins' fixtures (none of which use Verdana
         as the dominant body family) — they short-circuit to 0.0.
         """
-        verdana_dominant = any(
-            font.family.startswith(BODY_FONT_PREFIX)
-            and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            and font.dominance_percent >= VERDANA_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if not verdana_dominant:
+        if not has_font_signature(
+            signals,
+            family_predicate=BODY_FONT_PREFIX,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+            min_dominance=VERDANA_DOMINANCE_MIN_PERCENT,
+        ):
             return 0.0
 
         score = CONFIDENCE_VERDANA_BODY_DOMINANT
 
-        producer = (signals.producer_creator.producer or "").strip()
-        if ILOVEPDF_PRODUCER_FRAGMENT in producer:
+        if producer_contains(signals, ILOVEPDF_PRODUCER_FRAGMENT):
             score += CONFIDENCE_ILOVEPDF_PRODUCER
 
         outline = signals.outline_structure

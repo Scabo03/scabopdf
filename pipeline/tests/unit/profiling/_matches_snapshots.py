@@ -563,7 +563,7 @@ def _snapshot_giuffre_codici_matches(signals: ProfilingSignals) -> float:
         value = marker.value
         if isinstance(value, str):
             banner_text = value
-        break
+            break
 
     banner_code_type = m._code_type_from_banner_text(banner_text)
     if banner_code_type is m.CodeType.PENALE:

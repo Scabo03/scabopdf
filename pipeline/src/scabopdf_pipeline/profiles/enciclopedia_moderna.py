@@ -138,6 +138,10 @@ from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.postprocessing.types import Transformation
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_signature,
+    is_geometry_in_range,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -502,55 +506,57 @@ class EnciclopediaModernaProfile(ProfilePlugin):
 
         # Body family — EXACT match, not prefix, to discriminate from
         # ``SimonciniGaramondStd`` (Giappichelli) and other prefix-similar
-        # families.
-        body_present = any(
-            font.family == SIMONCINI_REGULAR_FAMILY
-            and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_present:
+        # families. The callable family_predicate enforces equality.
+        if has_font_signature(
+            signals,
+            family_predicate=lambda f: f == SIMONCINI_REGULAR_FAMILY,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_SIMONCINI_BODY_DOMINANT
         else:
             # No SimonciniGaramond body at all → not EdD moderna.
             score += CONFIDENCE_NON_EDD_BODY_FAMILY_PENALTY
 
-        note_family_present = any(
-            font.family in {SIMONCINI_REGULAR_FAMILY, SIMONCINI_ITALIC_FAMILY}
-            and abs(font.size - NOTE_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if note_family_present:
+        if has_font_signature(
+            signals,
+            family_predicate=lambda f: f in {SIMONCINI_REGULAR_FAMILY, SIMONCINI_ITALIC_FAMILY},
+            size=NOTE_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_NOTE_FAMILY_PRESENT
 
-        bold_heading_present = any(
-            font.family == SIMONCINI_BOLD_FAMILY and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if bold_heading_present:
+        if has_font_signature(
+            signals,
+            family_predicate=lambda f: f == SIMONCINI_BOLD_FAMILY,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_BOLD_HEADING_PRESENT
 
-        times_footer_present = any(
-            font.family == TIMES_NEW_ROMAN_FAMILY
-            and abs(font.size - FOOTER_ENTE_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if times_footer_present:
+        if has_font_signature(
+            signals,
+            family_predicate=lambda f: f == TIMES_NEW_ROMAN_FAMILY,
+            size=FOOTER_ENTE_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_TIMES_FOOTER_PRESENT
 
-        helvetica_copyright_present = any(
-            font.family.startswith(HELVETICA_BOLD_FAMILY_FRAGMENT)
-            and abs(font.size - COPYRIGHT_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if helvetica_copyright_present:
+        if has_font_signature(
+            signals,
+            family_predicate=HELVETICA_BOLD_FAMILY_FRAGMENT,
+            size=COPYRIGHT_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_HELVETICA_COPYRIGHT_PRESENT
 
-        width = signals.page_geometry.width_pt
-        height = signals.page_geometry.height_pt
-        if (
-            PAGE_WIDTH_MIN <= width <= PAGE_WIDTH_MAX
-            and PAGE_HEIGHT_MIN <= height <= PAGE_HEIGHT_MAX
+        if is_geometry_in_range(
+            signals,
+            width_min=PAGE_WIDTH_MIN,
+            width_max=PAGE_WIDTH_MAX,
+            height_min=PAGE_HEIGHT_MIN,
+            height_max=PAGE_HEIGHT_MAX,
         ):
             score += CONFIDENCE_PAGE_GEOMETRY_OK
 

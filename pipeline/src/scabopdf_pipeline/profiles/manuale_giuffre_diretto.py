@@ -301,6 +301,10 @@ from scabopdf_pipeline.apparatus.resolver import filter_tier1_crossref_warnings
 from scabopdf_pipeline.apparatus.types import ApparatusRef, ApparatusRefKind
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_signature,
+    producer_or_creator_contains,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -857,13 +861,13 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         """
         score = 0.0
 
-        body_present = any(
-            font.family.startswith(BODY_FONT_PREFIX)
-            and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_present:
+        if has_font_signature(
+            signals,
+            family_predicate=BODY_FONT_PREFIX,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_BODY_DOMINANT
         else:
             score += CONFIDENCE_OTHER_BODY_FAMILY_PENALTY
@@ -871,9 +875,16 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         if signals.apparatus_presence.marginal_headings >= APPARATUS_PRESENCE_THRESHOLD:
             score += CONFIDENCE_MARGINAL_APPARATUS
 
-        filigree_present = any(
-            font.family.startswith(FILIGREE_FONT_PREFIX) and abs(font.size - 15.35) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
+        # Filigree presence has two acquisition paths: typographic signature
+        # of the BIC filigrana font, or a regex match on a SpecificMarker's
+        # value. The second path consumes the verbatim marker.value via
+        # ``str()`` and ``regex.search``, which is too plugin-specific to
+        # benefit from a primitive — kept inline.
+        filigree_present = has_font_signature(
+            signals,
+            family_predicate=FILIGREE_FONT_PREFIX,
+            size=15.35,
+            tolerance=SIZE_TOLERANCE,
         )
         if not filigree_present:
             filigree_present = any(
@@ -883,17 +894,15 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         if filigree_present:
             score += CONFIDENCE_FILIGREE_BIC
 
-        parte_family_present = any(
-            font.family.startswith(HEADING_FONT_PREFIX)
-            and abs(font.size - PARTE_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if parte_family_present:
+        if has_font_signature(
+            signals,
+            family_predicate=HEADING_FONT_PREFIX,
+            size=PARTE_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_PARTE_HEADING
 
-        producer = (signals.producer_creator.producer or "").strip()
-        creator = (signals.producer_creator.creator or "").strip()
-        if PDFSHARP_PRODUCER_FRAGMENT in producer or PDFSHARP_PRODUCER_FRAGMENT in creator:
+        if producer_or_creator_contains(signals, PDFSHARP_PRODUCER_FRAGMENT):
             score += CONFIDENCE_PDFSHARP_PRODUCER
 
         if signals.apparatus_presence.footnote_markers >= NOTES_PRESENCE_THRESHOLD:
