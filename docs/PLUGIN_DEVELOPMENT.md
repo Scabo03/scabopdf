@@ -171,10 +171,26 @@ Layer 1 and replace duplicated per-plugin implementations.
   per-plugin method that tracks the minted ids on instance state.
 
 - **`scabopdf_pipeline.profiles._dejure_shared`** — DeJure-family
-  constants and helpers (`ARIAL_*_FAMILY`, `ASPOSE_PRODUCER_FRAGMENT`,
+  constants and helpers consumed by NS / MM / DT plugins. Beyond the
+  Fase 1 surface (`ARIAL_*_FAMILY`, `ASPOSE_PRODUCER_FRAGMENT`,
   `FOOTER_PATTERN`, `BANNER_TEXT_*`, `SPECIFIC_MARKER_BANNER_TEXT_NAME`,
-  `BlockView` dataclass). Only DeJure NS / MM / DT plugins consume
-  this module.
+  `BlockView` dataclass), Fase 3 promoted the notes-section
+  consolidator: closed-set `NOTES_MARKER_TEXT_VARIANTS`, the
+  predicates `starts_with_notes_marker(text)` and
+  `match_notes_marker(text)`, the stateful tier-2 retag walker
+  `retag_notes_region_continuation(classified_blocks, *,
+  is_notes_section_label, reason, article_boundary_categories)`
+  (pattern (pp) of CLAUDE.md), the three category sets
+  `NOTES_SECTION_BOUNDARY_CATEGORIES`,
+  `NOTES_SECTION_PASSTHROUGH_CATEGORIES`,
+  `NOTES_SECTION_ABSORBABLE_CATEGORIES`, and the multi-sibling
+  consolidator factory `consolidate_notes_section_children(children,
+  *, split_notes_text_fn, transformation_step_id,
+  unparseable_warning, warnings, transformations)` parameterised on a
+  `SplitNotesTextFn` callable (pattern (uuu) of CLAUDE.md, generalises
+  (qq)+(uu)+(ww)). New DeJure-family plugins consume these helpers
+  via a small closure that wraps the plugin's `_split_notes_text`
+  method to capture warnings and the `NodeIdMinter`.
 
 - **`scabopdf_pipeline.reconstruction.types.compute_note_length_category`**
   — emits the `length_category` field (schema 0.6.0) on synthetic
@@ -411,7 +427,17 @@ Three test layers:
   baselines (category counts, transformation counts, warning counts)
   on representative fixtures before the refactor, then assert
   byte-equivalence post-refactor. See `scripts/capture_p014_baseline.py`
-  as a worked example.
+  as a worked example, and `scripts/capture_phase3_baseline.py` for the
+  supplemental Phase 3 baselines (NS giudizio, DT bundle, DT cartabia).
+  For refactors that target the apparatus binding resolver (where a
+  silent rebind regression leaves the global counters identical),
+  pair `document_structural_summary` with
+  `apparatus_binding_summary(document)` from `snapshot_utils.py`: the
+  latter computes a SHA-256 digest of every sorted
+  `(source_id, marker, target_id)` triple via
+  `cross_ref_binding_digest`, catching per-binding regressions that
+  the structural summary cannot detect (pattern (vvv) of CLAUDE.md).
+  See `scripts/capture_p021_baseline.py` as the worked example.
 
 ## 10. Schema discipline
 
