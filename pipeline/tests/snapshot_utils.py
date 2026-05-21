@@ -29,7 +29,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
@@ -512,6 +512,62 @@ def apparatus_binding_summary(document: Document) -> dict[str, Any]:
     return summary
 
 
+def matches_score_digest(plugin_scores: Mapping[str, float], *, decimals: int = 6) -> str:
+    """Return a SHA-256 hex digest of plugin → matches() score pairs.
+
+    Built for the P-040 mitigation baselines that protect the
+    cross-plugin ``matches()`` refactor (Fase 6 of the Piano
+    Ambizioso) against silent score drift on the real corpus.
+
+    The digest combines, for every plugin name in ``plugin_scores``,
+    the verbatim plugin class name and its score rounded to
+    ``decimals`` decimals (default ``6``) joined by ``"|"``, with
+    one line per plugin sorted alphabetically by name. The
+    SHA-256 of the resulting string is returned as a hex digest.
+
+    Two score maps whose values diverge on any plugin by even
+    a single rounded decimal produce different digests; the
+    sorting on the input dict makes the digest order-insensitive
+    on the caller side.
+
+    Used as the regression-protection counterpart of the property-
+    based equivalence test suite at
+    ``pipeline/tests/unit/profiling/test_matches_property.py``:
+    the property-based tests catch drift on synthetic signals, the
+    digest baseline catches drift on the real calibrating fixtures
+    of the corpus. Together they form the safety net referenced by
+    CLAUDE.md pattern ``(yyy)``.
+    """
+    items = sorted(plugin_scores.items())
+    parts = [f"{name}|{round(float(score), decimals):.{decimals}f}" for name, score in items]
+    serial = "\n".join(parts)
+    return hashlib.sha256(serial.encode("utf-8")).hexdigest()
+
+
+def matches_score_summary(
+    plugin_scores: Mapping[str, float], *, decimals: int = 6
+) -> dict[str, Any]:
+    """Return a compact matches() score summary for P-040 baselines.
+
+    Combines the per-plugin scores (rounded to ``decimals`` decimals)
+    with the :func:`matches_score_digest` over the same scores so
+    that the baseline JSON is both human-readable (the rounded
+    scores) and protected against silent drift (the digest).
+
+    The output dict has three keys: ``n_plugins`` (the count of
+    plugins in the score map), ``scores`` (sorted dict mapping
+    plugin name to its rounded score) and ``matches_score_digest``
+    (the SHA-256 of the rounded scores). Round-trip safe across
+    JSON serialisation.
+    """
+    rounded = {name: round(float(score), decimals) for name, score in sorted(plugin_scores.items())}
+    return {
+        "n_plugins": len(rounded),
+        "scores": rounded,
+        "matches_score_digest": matches_score_digest(plugin_scores, decimals=decimals),
+    }
+
+
 __all__ = [
     "SNAPSHOTS_ROOT",
     "apparatus_binding_summary",
@@ -525,6 +581,8 @@ __all__ = [
     "diff_dicts",
     "document_structural_summary",
     "load_snapshot",
+    "matches_score_digest",
+    "matches_score_summary",
     "save_snapshot",
     "snapshot_path",
 ]

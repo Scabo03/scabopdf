@@ -466,3 +466,73 @@ def test_cross_ref_minting_digest_is_order_insensitive_on_input() -> None:
     assert snapshot_utils.cross_ref_minting_digest(
         doc_ab
     ) == snapshot_utils.cross_ref_minting_digest(doc_ba)
+
+
+# ---------------------------------------------------------------------------
+# matches_score_digest / matches_score_summary (P-040, Fase 6)
+# ---------------------------------------------------------------------------
+
+
+def test_matches_score_digest_empty_map_is_stable() -> None:
+    assert snapshot_utils.matches_score_digest({}) == snapshot_utils.matches_score_digest({})
+
+
+def test_matches_score_digest_changes_with_value_drift() -> None:
+    base = {"PluginA": 0.50, "PluginB": 0.75}
+    drifted = {"PluginA": 0.50, "PluginB": 0.76}
+    assert snapshot_utils.matches_score_digest(base) != snapshot_utils.matches_score_digest(drifted)
+
+
+def test_matches_score_digest_is_order_insensitive_on_input() -> None:
+    in_order = {"PluginA": 0.50, "PluginB": 0.75}
+    reversed_order = {"PluginB": 0.75, "PluginA": 0.50}
+    assert snapshot_utils.matches_score_digest(in_order) == snapshot_utils.matches_score_digest(
+        reversed_order
+    )
+
+
+def test_matches_score_digest_handles_int_scores() -> None:
+    int_score = {"PluginA": 1}
+    float_score = {"PluginA": 1.0}
+    assert snapshot_utils.matches_score_digest(int_score) == snapshot_utils.matches_score_digest(
+        float_score
+    )
+
+
+def test_matches_score_digest_rounds_to_decimals_argument() -> None:
+    base = {"PluginA": 0.5000001, "PluginB": 0.6000001}
+    same_under_default = {"PluginA": 0.5000003, "PluginB": 0.6000004}
+    assert snapshot_utils.matches_score_digest(base) == snapshot_utils.matches_score_digest(
+        same_under_default
+    )
+
+
+def test_matches_score_digest_distinguishes_when_decimals_increased() -> None:
+    base = {"PluginA": 0.5000001}
+    drifted = {"PluginA": 0.5000003}
+    assert snapshot_utils.matches_score_digest(
+        base, decimals=10
+    ) != snapshot_utils.matches_score_digest(drifted, decimals=10)
+
+
+def test_matches_score_summary_returns_sorted_scores_and_digest() -> None:
+    summary = snapshot_utils.matches_score_summary({"Zeta": 0.30, "Alpha": 0.90})
+    assert summary["n_plugins"] == 2
+    assert list(summary["scores"].keys()) == ["Alpha", "Zeta"]
+    assert summary["scores"]["Alpha"] == 0.9
+    assert summary["scores"]["Zeta"] == 0.3
+    assert summary["matches_score_digest"] == snapshot_utils.matches_score_digest(
+        {"Alpha": 0.90, "Zeta": 0.30}
+    )
+
+
+def test_matches_score_summary_rounds_scores() -> None:
+    summary = snapshot_utils.matches_score_summary({"Plugin": 0.1234567890123})
+    assert summary["scores"]["Plugin"] == 0.123457
+
+
+def test_matches_score_summary_empty_map_returns_empty_scores() -> None:
+    summary = snapshot_utils.matches_score_summary({})
+    assert summary["n_plugins"] == 0
+    assert summary["scores"] == {}
+    assert summary["matches_score_digest"] == snapshot_utils.matches_score_digest({})
