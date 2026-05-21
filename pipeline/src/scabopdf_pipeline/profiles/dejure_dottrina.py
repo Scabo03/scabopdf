@@ -310,6 +310,12 @@ from scabopdf_pipeline.profiles._dejure_shared import (
 from scabopdf_pipeline.profiles._dejure_shared import (
     BlockView as _BlockView,
 )
+from scabopdf_pipeline.profiling.match_helpers import (
+    find_specific_marker,
+    has_font_signature,
+    is_geometry_close,
+    producer_or_creator_contains,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -662,13 +668,13 @@ class DejureDottrinaProfile(ProfilePlugin):
         """
         score = 0.0
 
-        body_present = any(
-            font.family.startswith(ARIAL_REGULAR_FAMILY)
-            and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_present:
+        if has_font_signature(
+            signals,
+            family_predicate=ARIAL_REGULAR_FAMILY,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_ARIAL_BODY_DOMINANT
         else:
             arial_family_dominant = any(
@@ -679,47 +685,44 @@ class DejureDottrinaProfile(ProfilePlugin):
             if not arial_family_dominant:
                 score += CONFIDENCE_OTHER_BODY_FAMILY_PENALTY
 
-        producer = (signals.producer_creator.producer or "").strip()
-        creator = (signals.producer_creator.creator or "").strip()
-        if ASPOSE_PRODUCER_FRAGMENT in producer or ASPOSE_PRODUCER_FRAGMENT in creator:
+        if producer_or_creator_contains(signals, ASPOSE_PRODUCER_FRAGMENT):
             score += CONFIDENCE_ASPOSE_PRODUCER
 
-        width = signals.page_geometry.width_pt
-        height = signals.page_geometry.height_pt
-        if (
-            abs(width - PAGE_WIDTH_LETTER) < PAGE_GEOMETRY_TOLERANCE
-            and abs(height - PAGE_HEIGHT_LETTER) < PAGE_GEOMETRY_TOLERANCE
+        if is_geometry_close(
+            signals,
+            width=PAGE_WIDTH_LETTER,
+            height=PAGE_HEIGHT_LETTER,
+            tolerance=PAGE_GEOMETRY_TOLERANCE,
+            strict=True,
         ):
             score += CONFIDENCE_LETTER_GEOMETRY
 
-        title_bold_present = any(
-            font.family.startswith(ARIAL_BOLD_FAMILY)
-            and abs(font.size - TITLE_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
+        title_bold_present = has_font_signature(
+            signals,
+            family_predicate=ARIAL_BOLD_FAMILY,
+            size=TITLE_SIZE,
+            tolerance=SIZE_TOLERANCE,
         )
         if title_bold_present:
             score += CONFIDENCE_TITLE_BOLD_PRESENT
         else:
             score += CONFIDENCE_TITLE_BOLD_ABSENT_PENALTY
 
-        banner_bold_present = any(
-            font.family.startswith(ARIAL_BOLD_FAMILY)
-            and abs(font.size - BANNER_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if banner_bold_present:
+        if has_font_signature(
+            signals,
+            family_predicate=ARIAL_BOLD_FAMILY,
+            size=BANNER_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_BANNER_BOLD_PRESENT
 
         if signals.apparatus_presence.marginal_headings >= APPARATUS_PRESENCE_THRESHOLD:
             score += CONFIDENCE_MARGINAL_APPARATUS_PENALTY
 
         # Pattern (vv) — discriminator vs sister NS plugin via banner text.
-        for marker in signals.specific_markers:
-            if marker.name != SPECIFIC_MARKER_BANNER_TEXT_NAME:
-                continue
-            if marker.value == BANNER_TEXT_NS_NOTE_E_DOTTRINA:
-                score += CONFIDENCE_NS_BANNER_PRESENT_PENALTY
-            break
+        marker = find_specific_marker(signals, SPECIFIC_MARKER_BANNER_TEXT_NAME)
+        if marker is not None and marker.value == BANNER_TEXT_NS_NOTE_E_DOTTRINA:
+            score += CONFIDENCE_NS_BANNER_PRESENT_PENALTY
 
         return max(0.0, score)
 

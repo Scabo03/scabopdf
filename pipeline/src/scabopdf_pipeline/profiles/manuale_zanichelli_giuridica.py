@@ -57,6 +57,10 @@ from typing import ClassVar
 from scabopdf_pipeline.classification.headings import HeadingKind, detect_heading_pattern
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_signature,
+    is_geometry_close,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -259,20 +263,21 @@ class ManualeZanichelliGiuridicaProfile(ProfilePlugin):
         """
         score = 0.0
 
-        body_dominant = any(
-            font.family.startswith(BODY_FONT_PREFIX)
-            and abs(font.size - BODY_FONT_SIZE) < 0.1
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_dominant:
+        if has_font_signature(
+            signals,
+            family_predicate=BODY_FONT_PREFIX,
+            size=BODY_FONT_SIZE,
+            tolerance=0.1,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_BODY_DOMINANT
 
-        summary_font_present = any(
-            font.family.startswith(SUMMARY_FONT_PREFIX) and abs(font.size - SUMMARY_FONT_SIZE) < 0.1
-            for font in signals.typographic_signature.fonts
-        )
-        if summary_font_present:
+        if has_font_signature(
+            signals,
+            family_predicate=SUMMARY_FONT_PREFIX,
+            size=SUMMARY_FONT_SIZE,
+            tolerance=0.1,
+        ):
             score += CONFIDENCE_SUMMARY_FONT
 
         producer = (signals.producer_creator.producer or "").strip()
@@ -280,10 +285,11 @@ class ManualeZanichelliGiuridicaProfile(ProfilePlugin):
         if not producer and not creator:
             score += CONFIDENCE_STRIPPED_METADATA
 
-        geom = signals.page_geometry
-        if (
-            abs(geom.width_pt - EXPECTED_PAGE_WIDTH) <= PAGE_SIZE_TOLERANCE
-            and abs(geom.height_pt - EXPECTED_PAGE_HEIGHT) <= PAGE_SIZE_TOLERANCE
+        if is_geometry_close(
+            signals,
+            width=EXPECTED_PAGE_WIDTH,
+            height=EXPECTED_PAGE_HEIGHT,
+            tolerance=PAGE_SIZE_TOLERANCE,
         ):
             score += CONFIDENCE_PAGE_SIZE
 

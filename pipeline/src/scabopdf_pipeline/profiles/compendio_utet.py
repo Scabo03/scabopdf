@@ -97,6 +97,7 @@ from typing import ClassVar
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiling.match_helpers import has_font_signature
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -477,13 +478,13 @@ class CompendioUtetProfile(ProfilePlugin):
         """
         score = 0.0
 
-        body_dominant = any(
-            font.family.startswith(BODY_FONT_PREFIX_LT)
-            and abs(font.size - BODY_FONT_SIZE) < 0.1
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_dominant:
+        if has_font_signature(
+            signals,
+            family_predicate=BODY_FONT_PREFIX_LT,
+            size=BODY_FONT_SIZE,
+            tolerance=0.1,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_BODY_DOMINANT
 
         sc_font_present = any(
@@ -492,14 +493,19 @@ class CompendioUtetProfile(ProfilePlugin):
         if sc_font_present:
             score += CONFIDENCE_SUMMARY_SC_FONT
 
-        toc_font_present = any(
-            _font_family(font.family) == BODY_FONT_PREFIX_NON_LT
-            and abs(font.size - TOC_GENERAL_SIZE) < 0.1
-            for font in signals.typographic_signature.fonts
-        )
-        if toc_font_present:
+        if has_font_signature(
+            signals,
+            family_predicate=lambda f: _font_family(f) == BODY_FONT_PREFIX_NON_LT,
+            size=TOC_GENERAL_SIZE,
+            tolerance=0.1,
+        ):
             score += CONFIDENCE_TOC_FONT
 
+        # Asymmetric per-field substring match: UTET_PRODUCER_FRAGMENT is
+        # the InDesign CS3 distiller signature unique to producer, and
+        # UTET_CREATOR_FRAGMENT is the InDesign CS3 designer signature
+        # unique to creator. The asymmetry is deliberate and not covered
+        # by the cross-field producer_or_creator_contains helper.
         producer = (signals.producer_creator.producer or "").strip()
         creator = (signals.producer_creator.creator or "").strip()
         if UTET_PRODUCER_FRAGMENT in producer or UTET_CREATOR_FRAGMENT in creator:

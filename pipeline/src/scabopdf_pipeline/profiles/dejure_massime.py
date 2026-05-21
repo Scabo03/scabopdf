@@ -233,6 +233,11 @@ from scabopdf_pipeline.profiles._dejure_shared import (
 from scabopdf_pipeline.profiles._dejure_shared import (
     BlockView as _BlockView,
 )
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_signature,
+    is_geometry_close,
+    producer_or_creator_contains,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -532,15 +537,18 @@ class DejureMassimeProfile(ProfilePlugin):
         """
         score = 0.0
 
-        body_present = any(
-            font.family.startswith(ARIAL_REGULAR_FAMILY)
-            and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_present:
+        if has_font_signature(
+            signals,
+            family_predicate=ARIAL_REGULAR_FAMILY,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_ARIAL_BODY_DOMINANT
         else:
+            # Fallback predicate is family-only (no size constraint) so
+            # it stays inline; the family prefix matches every Arial
+            # variant including the bold and italic faces.
             arial_family_dominant = any(
                 font.family.startswith(ARIAL_FAMILY_PREFIX)
                 and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
@@ -549,41 +557,40 @@ class DejureMassimeProfile(ProfilePlugin):
             if not arial_family_dominant:
                 score += CONFIDENCE_OTHER_BODY_FAMILY_PENALTY
 
-        producer = (signals.producer_creator.producer or "").strip()
-        creator = (signals.producer_creator.creator or "").strip()
-        if ASPOSE_PRODUCER_FRAGMENT in producer or ASPOSE_PRODUCER_FRAGMENT in creator:
+        if producer_or_creator_contains(signals, ASPOSE_PRODUCER_FRAGMENT):
             score += CONFIDENCE_ASPOSE_PRODUCER
 
-        width = signals.page_geometry.width_pt
-        height = signals.page_geometry.height_pt
-        if (
-            abs(width - PAGE_WIDTH_LETTER) < PAGE_GEOMETRY_TOLERANCE
-            and abs(height - PAGE_HEIGHT_LETTER) < PAGE_GEOMETRY_TOLERANCE
+        if is_geometry_close(
+            signals,
+            width=PAGE_WIDTH_LETTER,
+            height=PAGE_HEIGHT_LETTER,
+            tolerance=PAGE_GEOMETRY_TOLERANCE,
+            strict=True,
         ):
             score += CONFIDENCE_LETTER_GEOMETRY
 
-        title_bold_present = any(
-            font.family.startswith(ARIAL_BOLD_FAMILY)
-            and abs(font.size - BODY_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if title_bold_present:
+        if has_font_signature(
+            signals,
+            family_predicate=ARIAL_BOLD_FAMILY,
+            size=BODY_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_TITLE_BOLD_PRESENT
 
-        label_bold_present = any(
-            font.family.startswith(ARIAL_BOLD_FAMILY)
-            and abs(font.size - LABEL_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if label_bold_present:
+        if has_font_signature(
+            signals,
+            family_predicate=ARIAL_BOLD_FAMILY,
+            size=LABEL_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_LABEL_BOLD_PRESENT
 
-        ns_title_bold_present = any(
-            font.family.startswith(ARIAL_BOLD_FAMILY)
-            and abs(font.size - NS_TITLE_SIZE) < SIZE_TOLERANCE
-            for font in signals.typographic_signature.fonts
-        )
-        if ns_title_bold_present:
+        if has_font_signature(
+            signals,
+            family_predicate=ARIAL_BOLD_FAMILY,
+            size=NS_TITLE_SIZE,
+            tolerance=SIZE_TOLERANCE,
+        ):
             score += CONFIDENCE_NS_TITLE_PRESENT_PENALTY
 
         if signals.apparatus_presence.marginal_headings >= APPARATUS_PRESENCE_THRESHOLD:

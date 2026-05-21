@@ -146,6 +146,7 @@ from typing import ClassVar
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
+from scabopdf_pipeline.profiling.match_helpers import has_font_signature
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -531,13 +532,13 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         """
         score = 0.0
 
-        body_present = any(
-            font.family.startswith(BODY_FONT_PREFIX)
-            and abs(font.size - BODY_FONT_SIZE) < 0.1
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_present:
+        if has_font_signature(
+            signals,
+            family_predicate=BODY_FONT_PREFIX,
+            size=BODY_FONT_SIZE,
+            tolerance=0.1,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_BODY_DOMINANT
 
         apparatus = signals.apparatus_presence
@@ -548,6 +549,11 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
         if apparatus.italic_9pt_blocks >= APPARATUS_PRESENCE_THRESHOLD:
             score += CONFIDENCE_BOX_APPARATUS
 
+        # Asymmetric per-field UTET pipeline match (see compendio_utet for
+        # the same convention): producer fragment is the InDesign CS
+        # distiller signature, creator fragment is the designer signature;
+        # the cross-field producer_or_creator_contains helper would relax
+        # the predicate beyond the original semantics.
         producer = (signals.producer_creator.producer or "").strip()
         creator = (signals.producer_creator.creator or "").strip()
         if UTET_PRODUCER_FRAGMENT in producer or UTET_CREATOR_FRAGMENT in creator:

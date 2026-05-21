@@ -212,6 +212,10 @@ from typing import ClassVar
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, ExtractionResult, Span
 from scabopdf_pipeline.postprocessing.types import Transformation
+from scabopdf_pipeline.profiling.match_helpers import (
+    has_font_signature,
+    is_geometry_close,
+)
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
@@ -788,15 +792,18 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         """
         score = 0.0
 
-        body_dominant = any(
-            font.family.startswith(BODY_FONT_PREFIX)
-            and abs(font.size - BODY_FONT_SIZE) < 0.1
-            and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
-            for font in signals.typographic_signature.fonts
-        )
-        if body_dominant:
+        if has_font_signature(
+            signals,
+            family_predicate=BODY_FONT_PREFIX,
+            size=BODY_FONT_SIZE,
+            tolerance=0.1,
+            min_dominance=BODY_DOMINANCE_MIN_PERCENT,
+        ):
             score += CONFIDENCE_BODY_DOMINANT
 
+        # Family-only presence (no size / dominance constraint) — could be
+        # generalised to a primitive but the call site is unique to this
+        # plugin and the inline ``any`` stays readable.
         family_present = any(
             font.family.startswith(BODY_FONT_PREFIX) for font in signals.typographic_signature.fonts
         )
@@ -813,11 +820,11 @@ class ManualeGiappichelliProfile(ProfilePlugin):
         if any(fragment in creator for fragment in GIAPPICHELLI_CREATOR_FRAGMENTS):
             score += CONFIDENCE_INDESIGN_20
 
-        geometry = signals.page_geometry
-        if (
-            abs(geometry.width_pt - GIAPPICHELLI_PAGE_WIDTH) <= GIAPPICHELLI_PAGE_SIZE_TOLERANCE
-            and abs(geometry.height_pt - GIAPPICHELLI_PAGE_HEIGHT)
-            <= GIAPPICHELLI_PAGE_SIZE_TOLERANCE
+        if is_geometry_close(
+            signals,
+            width=GIAPPICHELLI_PAGE_WIDTH,
+            height=GIAPPICHELLI_PAGE_HEIGHT,
+            tolerance=GIAPPICHELLI_PAGE_SIZE_TOLERANCE,
         ):
             score += CONFIDENCE_PAGE_SIZE
 
