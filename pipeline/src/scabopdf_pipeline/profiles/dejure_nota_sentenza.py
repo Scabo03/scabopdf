@@ -270,7 +270,11 @@ from scabopdf_pipeline.profiles._dejure_shared import (
     ARIAL_REGULAR_FAMILY,
     ASPOSE_PRODUCER_FRAGMENT,
     BANNER_TEXT_NOTE_E_DOTTRINA,
+    NOTES_MARKER_TEXT_VARIANTS,
     SPECIFIC_MARKER_BANNER_TEXT_NAME,
+    match_notes_marker,
+    retag_notes_region_continuation,
+    starts_with_notes_marker,
 )
 from scabopdf_pipeline.profiles._dejure_shared import (
     BANNER_TEXT_DOTTRINA as DT_BANNER_TEXT_DOTTRINA,
@@ -398,13 +402,10 @@ the long academic archetype. The block starts with ``"Sommario   "``
 em-dash-separated entries.
 """
 
-NOTES_MARKER_TEXT_VARIANTS: tuple[str, ...] = ("Note:", "Note :")
-"""Closed set of accepted ``"Note:"`` marker variants.
-
-Aspose has been observed to emit either ``Note:`` (compact) or
-``Note :`` (space before the colon) depending on the editorial
-template; both variants are admitted.
-"""
+# ``NOTES_MARKER_TEXT_VARIANTS`` was promoted to
+# :mod:`profiles._dejure_shared` (P-016, Promotion Fase 3). Re-imported
+# and re-exported under the legacy alias for tests that read the
+# module-level name.
 
 METADATA_LABEL_FONTE = "Fonte:"
 """Literal label prefix of the ``FONTE`` metadata line."""
@@ -913,30 +914,27 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
         # paragraphs of the enclosing section. The reading order is
         # block_index order on the assumption that tier 1 emits blocks
         # in document reading order (page, y0, x0) — the convention
-        # of every prior plugin.
-        in_notes_region = False
-        retagged: list[ClassifiedBlock] = []
-        for verdict in refined:
-            if verdict.block_index < 0:
-                retagged.append(verdict)
-                continue
-            if verdict.category is SemanticCategory.SECTION_LABEL:
-                view = self._view(extraction, verdict.block_index)
-                if view is not None and self._starts_with_notes_marker(view.text):
-                    in_notes_region = True
-                retagged.append(verdict)
-                continue
-            if in_notes_region and verdict.category is SemanticCategory.BODY:
-                retagged.append(
-                    ClassifiedBlock(
-                        block_index=verdict.block_index,
-                        category=SemanticCategory.NOTE,
-                        reason="dejure_nota_sentenza_notes_region_continuation",
-                    )
-                )
-                continue
-            retagged.append(verdict)
-        return retagged
+        # of every prior plugin. NS carries a single notes region per
+        # document, so no per-article boundary closure is needed (the
+        # DT sister plugin closes on ``GENRE_BANNER`` instead).
+        return retag_notes_region_continuation(
+            refined,
+            is_notes_section_label=lambda v: self._is_notes_section_label(extraction, v),
+            reason="dejure_nota_sentenza_notes_region_continuation",
+        )
+
+    def _is_notes_section_label(
+        self, extraction: ExtractionResult, verdict: ClassifiedBlock
+    ) -> bool:
+        """Predicate consumed by :func:`retag_notes_region_continuation`.
+
+        Returns ``True`` when ``verdict`` (already known to be a
+        ``SECTION_LABEL``) carries one of the closed-set notes marker
+        variants. The shared helper invokes this lambda only on
+        ``SECTION_LABEL`` verdicts, so the category check is implicit.
+        """
+        view = self._view(extraction, verdict.block_index)
+        return view is not None and starts_with_notes_marker(view.text)
 
     def refine_reconstruction(
         self,
@@ -1684,20 +1682,13 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
             i = j
         return tuple(out)
 
-    @staticmethod
-    def _starts_with_notes_marker(text: str) -> bool:
-        stripped = text.lstrip()
-        return any(stripped.startswith(marker) for marker in NOTES_MARKER_TEXT_VARIANTS)
-
-    @staticmethod
-    def _match_notes_marker(text: str) -> re.Match[str] | None:
-        stripped = text.lstrip()
-        prefix_skip = len(text) - len(stripped)
-        for marker in NOTES_MARKER_TEXT_VARIANTS:
-            if stripped.startswith(marker):
-                pattern = re.compile(re.escape(marker))
-                return pattern.match(text, prefix_skip)
-        return None
+    # Thin delegations to the shared helpers (P-016, Promotion Fase 3).
+    # Existing unit tests address these via ``DejureNotaSentenzaProfile.
+    # _starts_with_notes_marker`` / ``_match_notes_marker``; keeping the
+    # static method aliases preserves the test surface without touching
+    # the test files.
+    _starts_with_notes_marker = staticmethod(starts_with_notes_marker)
+    _match_notes_marker = staticmethod(match_notes_marker)
 
     def _split_notes_text(
         self,

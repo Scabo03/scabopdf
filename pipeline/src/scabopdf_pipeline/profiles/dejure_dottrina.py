@@ -293,7 +293,11 @@ from scabopdf_pipeline.profiles._dejure_shared import (
     ARIAL_FAMILY_PREFIX,
     ARIAL_REGULAR_FAMILY,
     ASPOSE_PRODUCER_FRAGMENT,
+    NOTES_MARKER_TEXT_VARIANTS,
     SPECIFIC_MARKER_BANNER_TEXT_NAME,
+    match_notes_marker,
+    retag_notes_region_continuation,
+    starts_with_notes_marker,
 )
 from scabopdf_pipeline.profiles._dejure_shared import (
     BANNER_TEXT_NOTE_E_DOTTRINA as BANNER_TEXT_NS_NOTE_E_DOTTRINA,
@@ -410,12 +414,11 @@ EDITORIAL_NOTE_PREFIX = "(*)"
 or the U+2003 em-space character.
 """
 
-NOTES_MARKER_TEXT_VARIANTS: tuple[str, ...] = ("Note:", "Note :")
-"""Closed set of accepted ``"Note:"`` marker variants.
-
-Same convention as the NS plugin: Aspose has been observed to emit
-either ``Note:`` (compact) or ``Note :`` (space before the colon).
-"""
+# ``NOTES_MARKER_TEXT_VARIANTS`` was promoted to
+# :mod:`profiles._dejure_shared` (P-016, Promotion Fase 3). Re-imported
+# at the top of the module under the public name. The variants are
+# shared with the NS sister plugin: Aspose has been observed to emit
+# either ``Note:`` (compact) or ``Note :`` (space before the colon).
 
 METADATA_LABEL_FONTE = "Fonte:"
 """Literal label prefix of the ``FONTE`` metadata line."""
@@ -832,37 +835,29 @@ class DejureDottrinaProfile(ProfilePlugin):
         # Pass 2: stateful retagging — every BODY inside a notes region
         # becomes NOTE so the tier 1 cross-page paragraph merger does
         # not fuse it with the body paragraphs of the enclosing section.
-        # The notes region opens at each "Note:" SECTION_LABEL and closes
-        # at the next GENRE_BANNER (article boundary) or any other
-        # structural boundary category.
-        in_notes_region = False
-        retagged: list[ClassifiedBlock] = []
-        for verdict in refined:
-            if verdict.block_index < 0:
-                retagged.append(verdict)
-                continue
-            if verdict.category is SemanticCategory.GENRE_BANNER:
-                # New article boundary — close any open notes region.
-                in_notes_region = False
-                retagged.append(verdict)
-                continue
-            if verdict.category is SemanticCategory.SECTION_LABEL:
-                view = self._view(extraction, verdict.block_index)
-                if view is not None and self._starts_with_notes_marker(view.text):
-                    in_notes_region = True
-                retagged.append(verdict)
-                continue
-            if in_notes_region and verdict.category is SemanticCategory.BODY:
-                retagged.append(
-                    ClassifiedBlock(
-                        block_index=verdict.block_index,
-                        category=SemanticCategory.NOTE,
-                        reason="dejure_dottrina_notes_region_continuation",
-                    )
-                )
-                continue
-            retagged.append(verdict)
-        return retagged
+        # The notes region opens at each ``"Note:"`` SECTION_LABEL and
+        # closes at the next ``GENRE_BANNER`` (article boundary), to
+        # scope the region per-article inside a multi-article bundle —
+        # this is the only structural difference vs the NS sister plugin,
+        # which carries a single notes region per document.
+        return retag_notes_region_continuation(
+            refined,
+            is_notes_section_label=lambda v: self._is_notes_section_label(extraction, v),
+            reason="dejure_dottrina_notes_region_continuation",
+            article_boundary_categories=frozenset({SemanticCategory.GENRE_BANNER}),
+        )
+
+    def _is_notes_section_label(
+        self, extraction: ExtractionResult, verdict: ClassifiedBlock
+    ) -> bool:
+        """Predicate consumed by :func:`retag_notes_region_continuation`.
+
+        Returns ``True`` when ``verdict`` (already known to be a
+        ``SECTION_LABEL``) carries one of the closed-set notes marker
+        variants.
+        """
+        view = self._view(extraction, verdict.block_index)
+        return view is not None and starts_with_notes_marker(view.text)
 
     def refine_reconstruction(
         self,
@@ -1442,20 +1437,13 @@ class DejureDottrinaProfile(ProfilePlugin):
             i = j
         return tuple(out)
 
-    @staticmethod
-    def _starts_with_notes_marker(text: str) -> bool:
-        stripped = text.lstrip()
-        return any(stripped.startswith(marker) for marker in NOTES_MARKER_TEXT_VARIANTS)
-
-    @staticmethod
-    def _match_notes_marker(text: str) -> re.Match[str] | None:
-        stripped = text.lstrip()
-        prefix_skip = len(text) - len(stripped)
-        for marker in NOTES_MARKER_TEXT_VARIANTS:
-            if stripped.startswith(marker):
-                pattern = re.compile(re.escape(marker))
-                return pattern.match(text, prefix_skip)
-        return None
+    # Thin delegations to the shared helpers (P-016, Promotion Fase 3).
+    # Existing unit tests address these via ``DejureDottrinaProfile.
+    # _starts_with_notes_marker`` / ``_match_notes_marker``; keeping
+    # the static method aliases preserves the test surface without
+    # touching the test files.
+    _starts_with_notes_marker = staticmethod(starts_with_notes_marker)
+    _match_notes_marker = staticmethod(match_notes_marker)
 
     def _split_notes_text(
         self,
