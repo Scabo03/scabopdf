@@ -181,6 +181,15 @@ Layer 1 and replace duplicated per-plugin implementations.
   NOTE Nodes. Pattern (mmm) of CLAUDE.md documents the five call
   sites that must propagate the field.
 
+- **`scabopdf_pipeline.warning_framework`** — canonical placeholder
+  vocabulary (`PLACEHOLDER_REGEX`) and deterministic
+  `template_to_regex` parser shared by tier 1 generic emitters and
+  the 13 corpus plugins. The opt-in `WarningEmitter` dataclass
+  validates emission at construction time. See § 8 below for the
+  plugin-author perspective; the test infrastructure derives the
+  closed-vocabulary regex whitelist automatically via the framework's
+  `templates_to_regexes`.
+
 ## 4. Writing `matches()`
 
 The `matches()` arithmetic is plugin-specific, but every plugin follows
@@ -320,20 +329,60 @@ convention diverges:
 
 ## 8. Warning vocabulary convention
 
-Every plugin maintains a closed list of warning templates with prefix
-`plugin:<editorial_family>:`. The closed list lives in a module-level
-`WARNING_TEMPLATES: dict[str, str]` mapping a slug to a `<...>`-templated
-string (e.g. `"cross_reference_minted_node_<id>_page_<p>_marker_<n>"`).
+Every plugin declares two module-level constants. The first is
+`WARNING_PREFIX: str`, the common namespace prefix for every warning
+the plugin may emit (e.g. `"plugin:bic"`, `"plugin:tesauro"`,
+`"plugin:dejure_dottrina"`). The second is `WARNING_TEMPLATES:
+tuple[str, ...]`, the closed list of warning templates the plugin
+may emit on `Document.warnings`. Each template uses the canonical
+`<placeholder>` syntax shared with the tier 1 generic emitters and
+documented in `scabopdf_pipeline.warning_framework.PLACEHOLDER_REGEX`.
+Typical placeholders are `<id>` (node id, `\S+`), `<p>` (page index,
+`\d+`), `<idx>` (block index, `-?\d+`), `<n>` (numeric marker, `\d+`),
+`<marker>` (textual marker, `\S+`), `<name>` (field name, `\S+`),
+`<value>` (generic value, `\S+`), `<level>` (heading level, `[1-4]`),
+`<lang>` (language code, `\S+`). Adding a new placeholder requires
+extending the closed `PLACEHOLDER_REGEX` mapping in the framework
+module first; templates referencing an unknown placeholder fail at
+import time via `KeyError`.
+
+Concrete example: the BIC plugin declares
+`WARNING_PREFIX = "plugin:bic"` and templates including
+`"plugin:bic:note_section_split_minted_node_<id>_page_<p>_marker_<n>"`.
+
+The plugin class **must** override the non-abstract classmethod
+`get_warning_templates(cls)` of `ProfilePlugin` to return the
+module-level `WARNING_TEMPLATES` tuple, so the test infrastructure
+can discover and validate the closed vocabulary automatically:
+
+```python
+class MyCorpusProfile(ProfilePlugin):
+    @classmethod
+    def get_warning_templates(cls) -> tuple[str, ...]:
+        return WARNING_TEMPLATES
+```
 
 Emit each warning at the point of structural occurrence (one warning
 per minted Node, one warning per fused chapter pair, one warning per
 diagnostic detection). Accumulate warnings in instance state during
-`refine_classification` (which has no Document to attach to) and flush
-them into `Document.warnings` at the start of `refine_reconstruction`.
+`refine_classification` (which has no Document to attach to) and
+flush them into `Document.warnings` at the start of
+`refine_reconstruction`. Inline `f"{WARNING_PREFIX}:<slug>_..."` is
+the established emission style; the framework also ships an opt-in
+`WarningEmitter` helper in `scabopdf_pipeline.warning_framework` for
+plugins that want explicit validation at emission time (it constructs
+the warning string from the template and validates that every
+placeholder receives a value).
 
-The test infrastructure validates warning strings against a registry
-of accepted regex patterns (`_TIER1_WARNING_REGEXES` in
-`test_layer1_end_to_end.py`); add the plugin's regexes to the registry.
+The test infrastructure derives the closed-vocabulary regex
+whitelist (`_TIER1_WARNING_REGEXES` in `test_layer1_end_to_end.py`)
+automatically from the union of every plugin's
+`get_warning_templates()` plus the tier 1 generic templates in
+`reconstruction/tier1.py` and `apparatus/resolver.py`. **No manual
+registry entry is needed**: a new warning template lands in the
+whitelist the moment it appears in the plugin's `WARNING_TEMPLATES`
+tuple, provided every placeholder is declared in
+`PLACEHOLDER_REGEX`.
 
 ## 9. Testing conventions
 
