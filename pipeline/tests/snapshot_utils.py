@@ -322,6 +322,165 @@ def body_note_splitter_summary(document: Document) -> dict[str, Any]:
     return summary
 
 
+_CROSS_REF_MINTING_WARNING_PATTERN = re.compile(
+    r":(?:inline_)?cross_reference"
+    r"(?:_(?P<subtype>note|voce|paragraph|article|sentence))?"
+    r"_minted_node_(?P<node_id>node_\d+)"
+)
+"""Closed-vocabulary regex over warnings that signal a synthetic CR mint.
+
+The cross-reference minting framework of pattern P-019 (CARRYOVER v2.24
+and CLAUDE.md pattern ``(xxx)``) covers seven emission templates across
+the nine plugin implementations that mint synthetic ``CROSS_REFERENCE``
+Nodes:
+
+- ``inline_cross_reference_minted`` (Mosconi span-level superscript,
+  Mandrioli textual ``(N)`` regex with negative lookaround)
+- ``cross_reference_minted`` (BIC span-level superscript per-chapter,
+  NS / DT textual ``(N)`` regex via the shared
+  ``_dejure_shared`` helper, codici dual-mode ``[N]`` / ``[N c.c.]``)
+- ``cross_reference_note_minted`` and ``cross_reference_voce_minted``
+  (EM / ES two-subtype ``(N)`` numeric + ``v. NOMEVOCE`` voice)
+- ``cross_reference_paragraph_minted``, ``cross_reference_article_minted``
+  and ``cross_reference_sentence_minted`` (Torrente three-subtype
+  ``§ N`` paragrafo + ``art. N c.c.`` codice civile + ``Cass. <date>``
+  sentence)
+
+The regex is intentionally narrow: NOTE mints, EDITORIAL_NOTE mints,
+BOOK_PAGE_ANCHOR mints, ARTICLE_HEADER / ARTICLE_BODY mints and any
+``*_unresolved_*`` diagnostic warning are out of P-019 scope and do
+not match.
+"""
+
+
+def _iter_cross_ref_minting_warnings(document: Document) -> list[tuple[str, str, str]]:
+    """Return sorted ``(warning, subtype, node_id)`` triples for P-019 mints.
+
+    The ``subtype`` field is the literal regex capture (``note``,
+    ``voce``, ``paragraph``, ``article``, ``sentence``) for the
+    multi-subtype emitters (EM / ES / Torrente) and the empty string
+    for the single-subtype emitters (Mosconi, Mandrioli, BIC, NS, DT,
+    codici).
+    """
+    matches: list[tuple[str, str, str]] = []
+    for warning in document.warnings:
+        match = _CROSS_REF_MINTING_WARNING_PATTERN.search(warning)
+        if match is None:
+            continue
+        subtype = match.group("subtype") or ""
+        matches.append((warning, subtype, match.group("node_id")))
+    matches.sort()
+    return matches
+
+
+def _cross_ref_fingerprint(node: Node) -> str:
+    """Return a content fingerprint for a ``CROSS_REFERENCE`` Node.
+
+    Encodes ``id|page_index|len(block_indices)|len(text)|text``. The
+    full ``text`` is included because it is typically a short marker
+    (``(1)``, ``§ 217``, ``art. 1414 c.c.``, ``Cass. 12 marzo 2024 n.
+    1234``) whose verbatim content is the structural signal the digest
+    must protect — a silent shift in the marker text without a
+    category-count drift would otherwise be invisible.
+    """
+    text = node.text if node.text is not None else ""
+    return f"{node.id}|{node.page_index}|{len(node.block_indices)}|{len(text)}|{text}"
+
+
+def cross_ref_minting_digest(document: Document) -> str:
+    """Return a SHA-256 hex digest of every cross-reference mint event.
+
+    The digest combines two independent sources of mint provenance so
+    that the P-019 family of CR minters (Mosconi inline superscript,
+    Mandrioli textual ``(N)``, BIC per-chapter forward-scan, Torrente
+    three-subtype global, NS / DT shared ``(N)`` via ``_dejure_shared``,
+    EM / ES two-subtype ``(N)`` + ``v. NOMEVOCE``, codici dual-mode
+    ``[N]`` / ``[N c.c.]``) is uniformly protected against silent
+    drift:
+
+    1. Every Node with ``category == CROSS_REFERENCE`` contributes a
+       fingerprint that encodes ``id``, ``page_index``, ``len(block_indices)``,
+       ``len(text)`` and the verbatim ``text`` (the marker is short
+       and structurally meaningful — see :func:`_cross_ref_fingerprint`).
+       This catches both plugin-minted synthetic CR and tier 1
+       ``superscript_cross_reference`` mints uniformly.
+
+    2. ``document.warnings`` matching
+       :data:`_CROSS_REF_MINTING_WARNING_PATTERN`: every plugin emits
+       a per-mint warning that encodes the subtype (where applicable).
+       The digest encodes the sorted ``(subtype, node_id)`` pairs plus
+       the same content fingerprint.
+
+    Two documents whose ``category_counts['CROSS_REFERENCE']`` is
+    numerically identical but whose per-mint provenance diverges
+    (different mint order, different host allocation, different
+    marker text, different subtype distribution) produce different
+    digests. This catches the silent-mint-regression that pattern
+    ``(vvv)`` of CLAUDE.md formalises for P-021 and that pattern
+    ``(www)`` extends to the P-018 splitter family — pattern ``(xxx)``
+    closes the corresponding gap on the CR minting family.
+
+    Returns the empty-input digest when the document carries neither
+    ``CROSS_REFERENCE`` Nodes nor matching warnings.
+    """
+    node_index = _build_node_index(document)
+    parts: list[str] = []
+
+    cr_fingerprints: list[str] = []
+    for node in _iter_nodes(document.root):
+        if node.category is not SemanticCategory.CROSS_REFERENCE:
+            continue
+        cr_fingerprints.append(_cross_ref_fingerprint(node))
+    cr_fingerprints.sort()
+    for fingerprint in cr_fingerprints:
+        parts.append(f"CR::{fingerprint}")
+
+    for _warning, subtype, synthetic_id in _iter_cross_ref_minting_warnings(document):
+        target_node = node_index.get(synthetic_id)
+        fingerprint = (
+            f"{synthetic_id}|<missing>"
+            if target_node is None
+            else _cross_ref_fingerprint(target_node)
+        )
+        parts.append(f"WN::{subtype}::{fingerprint}")
+
+    serial = "\n".join(parts)
+    return hashlib.sha256(serial.encode("utf-8")).hexdigest()
+
+
+def cross_ref_minting_summary(document: Document) -> dict[str, Any]:
+    """Return a compact cross-reference minting summary for P-019 baselines.
+
+    Combines :func:`document_structural_summary` with the per-mint
+    digest produced by :func:`cross_ref_minting_digest` plus explicit
+    counts of warning-trail mints decomposed by subtype.
+
+    Used by the P-019 mitigation baselines for fixtures whose plugins
+    mint synthetic ``CROSS_REFERENCE`` Nodes (Mosconi, Mandrioli, BIC,
+    Torrente, NS, DT, EM, ES, codici) to catch silent regressions in
+    mint provenance that ``category_counts`` and ``n_warnings`` alone
+    cannot detect — see CLAUDE.md pattern ``(xxx)``.
+    """
+    summary = document_structural_summary(document)
+
+    n_cross_reference = 0
+    for node in _iter_nodes(document.root):
+        if node.category is SemanticCategory.CROSS_REFERENCE:
+            n_cross_reference += 1
+
+    warning_entries = _iter_cross_ref_minting_warnings(document)
+    by_subtype: dict[str, int] = {}
+    for _warning, subtype, _node_id in warning_entries:
+        key = subtype if subtype else "default"
+        by_subtype[key] = by_subtype.get(key, 0) + 1
+
+    summary["n_cross_reference"] = n_cross_reference
+    summary["n_cross_reference_minted_warnings"] = len(warning_entries)
+    summary["cross_reference_minted_warnings_by_subtype"] = dict(sorted(by_subtype.items()))
+    summary["cross_ref_minting_digest"] = cross_ref_minting_digest(document)
+    return summary
+
+
 def apparatus_binding_summary(document: Document) -> dict[str, Any]:
     """Return a compact apparatus-binding summary for snapshot baselines.
 
@@ -361,6 +520,8 @@ __all__ = [
     "body_note_splitter_summary",
     "category_counts",
     "cross_ref_binding_digest",
+    "cross_ref_minting_digest",
+    "cross_ref_minting_summary",
     "diff_dicts",
     "document_structural_summary",
     "load_snapshot",

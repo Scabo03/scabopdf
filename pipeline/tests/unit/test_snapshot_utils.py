@@ -354,3 +354,115 @@ def test_body_note_splitter_digest_handles_missing_synthetic_node() -> None:
 
     assert isinstance(digest, str)
     assert len(digest) == 64
+
+
+# ---------------------------------------------------------------------------
+# CR minting digest tests (P-019)
+
+
+_EMPTY_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+
+def test_cross_ref_minting_digest_empty_on_document_without_cr() -> None:
+    doc = _make_document_with_mints()
+
+    digest = snapshot_utils.cross_ref_minting_digest(doc)
+
+    assert digest == _EMPTY_SHA256
+
+
+def test_cross_ref_minting_digest_captures_cross_reference_nodes() -> None:
+    cr = _make_text_node("node_0042", SemanticCategory.CROSS_REFERENCE, text="(1)", page=3)
+    doc = _make_document_with_mints(extra_nodes=(cr,))
+
+    digest = snapshot_utils.cross_ref_minting_digest(doc)
+
+    assert digest != _EMPTY_SHA256
+
+
+def test_cross_ref_minting_digest_is_text_sensitive() -> None:
+    cr_a = _make_text_node("node_0042", SemanticCategory.CROSS_REFERENCE, text="(1)", page=3)
+    cr_b = _make_text_node("node_0042", SemanticCategory.CROSS_REFERENCE, text="(2)", page=3)
+    doc_a = _make_document_with_mints(extra_nodes=(cr_a,))
+    doc_b = _make_document_with_mints(extra_nodes=(cr_b,))
+
+    assert snapshot_utils.cross_ref_minting_digest(
+        doc_a
+    ) != snapshot_utils.cross_ref_minting_digest(doc_b)
+
+
+def test_cross_ref_minting_digest_recognises_warning_subtypes() -> None:
+    template_keys = (
+        "cross_reference_minted",
+        "inline_cross_reference_minted",
+        "cross_reference_note_minted",
+        "cross_reference_voce_minted",
+        "cross_reference_paragraph_minted",
+        "cross_reference_article_minted",
+        "cross_reference_sentence_minted",
+    )
+    for template in template_keys:
+        warnings = (f"plugin:demo:{template}_node_node_0099_page_2",)
+        doc = _make_document_with_mints(warnings=warnings)
+        digest = snapshot_utils.cross_ref_minting_digest(doc)
+        assert digest != _EMPTY_SHA256, f"template {template!r} should match the CR minting pattern"
+
+
+def test_cross_ref_minting_digest_ignores_unresolved_and_split_warnings() -> None:
+    warnings = (
+        "plugin:demo:cross_reference_unresolved_node_node_0099_marker_1",
+        "plugin:demo:note_section_split_minted_node_node_0099_page_2_marker_1",
+        "plugin:demo:book_page_anchor_minted_node_node_0099_page_2",
+    )
+    doc = _make_document_with_mints(warnings=warnings)
+
+    digest = snapshot_utils.cross_ref_minting_digest(doc)
+
+    assert digest == _EMPTY_SHA256
+
+
+def test_cross_ref_minting_summary_combines_structural_and_mint_signals() -> None:
+    cr_note = _make_text_node("node_0042", SemanticCategory.CROSS_REFERENCE, text="(1)")
+    cr_voce = _make_text_node(
+        "node_0043", SemanticCategory.CROSS_REFERENCE, text="v. CONTRATTO", page=4
+    )
+    warnings = (
+        "plugin:enciclopedia_moderna:cross_reference_note_minted_node_node_0042_page_0_marker_1",
+        "plugin:enciclopedia_moderna:cross_reference_voce_minted_node_node_0043_page_4_voce_CONTRATTO",
+        "plugin:enciclopedia_moderna:cross_reference_unresolved_node_node_0042_marker_1",
+    )
+    doc = _make_document_with_mints(warnings=warnings, extra_nodes=(cr_note, cr_voce))
+
+    summary = snapshot_utils.cross_ref_minting_summary(doc)
+
+    assert summary["n_cross_reference"] == 2
+    assert summary["n_cross_reference_minted_warnings"] == 2
+    assert summary["cross_reference_minted_warnings_by_subtype"] == {
+        "note": 1,
+        "voce": 1,
+    }
+    assert isinstance(summary["cross_ref_minting_digest"], str)
+    assert len(summary["cross_ref_minting_digest"]) == 64
+
+
+def test_cross_ref_minting_summary_default_subtype_for_single_subtype_emitters() -> None:
+    cr = _make_text_node("node_0042", SemanticCategory.CROSS_REFERENCE, text="(1)")
+    warnings = (
+        "plugin:dejure_nota_sentenza:cross_reference_minted_node_node_0042_page_0_marker_1",
+    )
+    doc = _make_document_with_mints(warnings=warnings, extra_nodes=(cr,))
+
+    summary = snapshot_utils.cross_ref_minting_summary(doc)
+
+    assert summary["cross_reference_minted_warnings_by_subtype"] == {"default": 1}
+
+
+def test_cross_ref_minting_digest_is_order_insensitive_on_input() -> None:
+    cr_a = _make_text_node("node_0042", SemanticCategory.CROSS_REFERENCE, text="(1)")
+    cr_b = _make_text_node("node_0043", SemanticCategory.CROSS_REFERENCE, text="(2)")
+    doc_ab = _make_document_with_mints(extra_nodes=(cr_a, cr_b))
+    doc_ba = _make_document_with_mints(extra_nodes=(cr_b, cr_a))
+
+    assert snapshot_utils.cross_ref_minting_digest(
+        doc_ab
+    ) == snapshot_utils.cross_ref_minting_digest(doc_ba)
