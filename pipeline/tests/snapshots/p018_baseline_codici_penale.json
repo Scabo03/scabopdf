@@ -1,0 +1,27 @@
+{
+  "body_note_splitter_digest": "95b7256307ae854ee583391b24dc8457bb527c8a13b86d2047172914e7005bc2",
+  "category_counts": {
+    "ARTICLE_BODY": 6843,
+    "ARTICLE_HEADER": 5815,
+    "ARTIFACT_FILIGREE": 1213,
+    "ARTIFACT_FOOTER": 2703,
+    "ARTIFACT_RUNNING_HEADER": 2336,
+    "CROSS_REFERENCE": 2259,
+    "HEADING_1": 49,
+    "HEADING_2": 240,
+    "HEADING_3": 510,
+    "HEADING_4": 85,
+    "NOTE": 7883,
+    "PROCEDURAL": 394,
+    "UNCLASSIFIED": 2222
+  },
+  "n_body_note_split_minted_warnings": 10772,
+  "n_body_note_split_transformations": 0,
+  "n_synthetic_body_note_nodes": 10772,
+  "n_transformations": 0,
+  "n_warnings": 18592,
+  "synthetic_body_note_nodes_by_category": {
+    "ARTICLE_HEADER": 5519,
+    "NOTE": 5253
+  }
+}

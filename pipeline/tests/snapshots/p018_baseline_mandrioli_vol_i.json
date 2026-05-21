@@ -1,0 +1,22 @@
+{
+  "body_note_splitter_digest": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "category_counts": {
+    "ARTIFACT_FOOTER": 1,
+    "ARTIFACT_RUNNING_HEADER": 280,
+    "BODY": 147,
+    "BOOK_PAGE_ANCHOR": 1,
+    "CHAPTER_SUMMARY": 18,
+    "EMPTY_PAGE": 3,
+    "HEADING_2": 12,
+    "HEADING_3": 10,
+    "HEADING_4": 78,
+    "MARGINAL_HEADING": 539,
+    "UNCLASSIFIED": 242
+  },
+  "n_body_note_split_minted_warnings": 0,
+  "n_body_note_split_transformations": 0,
+  "n_synthetic_body_note_nodes": 0,
+  "n_transformations": 0,
+  "n_warnings": 342,
+  "synthetic_body_note_nodes_by_category": {}
+}
