@@ -301,6 +301,24 @@ This is where most tree-mutation work happens. Common patterns:
   minting, EM / ES dual-subtype CROSS_REFERENCE minting, codici
   intra-block ARTICLE_HEADER / ARTICLE_BODY pair minting).
 
+- **Inline CROSS_REFERENCE minting for the DeJure family**. Plugins
+  on the Aspose-Arial-Letter editorial pipeline that mint a single
+  ``CROSS_REFERENCE`` subtype from a textual regex on `node.text`
+  (NS and DT today) consume the shared helper
+  `maybe_mint_inline_cross_references` from `_dejure_shared`. Pass
+  `pattern=INLINE_PARENTHESISED_CROSSREF_REGEX` (or the plugin's own
+  regex if it differs), `max_marker_value` (NS: 99, DT: 500),
+  `warning_prefix` (`plugin:dejure_<plugin>`), the plugin's
+  `NodeIdMinter`, the `warnings` list, and the plugin's
+  `_minted_crossref_ids: set[str]` instance state. The helper is the
+  partial-abstraction half of pattern (xxx) of CLAUDE.md; the seven
+  remaining CR-minting plugins (Mosconi span-level, BIC span-level
+  with per-chapter override, Mandrioli textual single-pattern with
+  negative lookaround, Torrente textual three-subtype global, EM /
+  ES textual two-subtype, codici dual-mode `_code_type` dispatch)
+  diverge across orthogonal axes and remain plugin-local, protected
+  by the universal `cross_ref_minting_digest` baseline.
+
 - **Length category propagation**. Every synthetic NOTE Node must
   carry the `length_category` field. Compute it at minting time via
   `compute_note_length_category(text)`. See pattern (mmm) and the
