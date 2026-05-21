@@ -274,6 +274,7 @@ from scabopdf_pipeline.profiles._dejure_shared import (
     SPECIFIC_MARKER_BANNER_TEXT_NAME,
     consolidate_notes_section_children,
     match_notes_marker,
+    maybe_mint_inline_cross_references,
     retag_notes_region_continuation,
     starts_with_notes_marker,
 )
@@ -1332,7 +1333,17 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
                 and child.category in {SemanticCategory.BODY, SemanticCategory.HEADING_1}
                 and child.id not in self._minted_note_ids
             ):
-                pass3.extend(self._maybe_mint_cross_references(child, warnings, minter))
+                pass3.extend(
+                    maybe_mint_inline_cross_references(
+                        child,
+                        pattern=_CROSSREF_INLINE_PATTERN,
+                        max_marker_value=_CROSSREF_MAX_MARKER_VALUE,
+                        warning_prefix=WARNING_PREFIX,
+                        minter=minter,
+                        warnings=warnings,
+                        minted_crossref_ids=self._minted_crossref_ids,
+                    )
+                )
             else:
                 pass3.append(child)
         return tuple(pass3)
@@ -1603,51 +1614,12 @@ class DejureNotaSentenzaProfile(ProfilePlugin):
 
     # ------------------------------------------------------------------
     # Inline cross-reference minting
-
-    def _maybe_mint_cross_references(
-        self,
-        node: Node,
-        warnings: list[str],
-        minter: NodeIdMinter,
-    ) -> list[Node]:
-        """Mint synthetic CROSS_REFERENCE siblings for inline ``\\w+(N)`` matches.
-
-        Returns ``[node, *minted_crossrefs]``. If no inline matches are
-        found, returns ``[node]`` unchanged.
-
-        The host Node's text is NOT modified — the inline ``(N)``
-        markers stay embedded in the body prose, exactly as Aspose
-        emitted them. Layer 2 will use the synthetic CROSS_REFERENCE
-        Nodes to render the inline anchors (Layout 4) and the body
-        prose verbatim (Layouts 1-3).
-        """
-        if node.text is None:
-            return [node]
-        matches = list(_CROSSREF_INLINE_PATTERN.finditer(node.text))
-        if not matches:
-            return [node]
-
-        out: list[Node] = [node]
-        for match in matches:
-            marker_value = match.group(1)
-            if int(marker_value) > _CROSSREF_MAX_MARKER_VALUE:
-                continue
-            marker_text = match.group(0)  # ``(N)`` verbatim
-            new_id = minter.mint()
-            crossref = Node(
-                id=new_id,
-                category=SemanticCategory.CROSS_REFERENCE,
-                page_index=node.page_index,
-                block_indices=node.block_indices,
-                text=marker_text,
-            )
-            out.append(crossref)
-            self._minted_crossref_ids.add(new_id)
-            warnings.append(
-                f"{WARNING_PREFIX}:cross_reference_minted_node_"
-                f"{new_id}_page_{node.page_index}_marker_{marker_value}"
-            )
-        return out
+    #
+    # The legacy ``_maybe_mint_cross_references`` method (P-019, Fase 5)
+    # was promoted to :func:`_dejure_shared.maybe_mint_inline_cross_references`
+    # together with the byte-equivalent DT counterpart. Plugin-specific
+    # ``_CROSSREF_MAX_MARKER_VALUE`` and ``WARNING_PREFIX`` are passed
+    # explicitly at the call site in :meth:`_refine_children_list`.
 
     # ------------------------------------------------------------------
     # Apparatus: binding + warning filtering

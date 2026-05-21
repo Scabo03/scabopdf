@@ -33,6 +33,7 @@ from dataclasses import replace as dc_replace
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import Block, Span
 from scabopdf_pipeline.postprocessing.types import Transformation
+from scabopdf_pipeline.reconstruction.minting import NodeIdMinter
 from scabopdf_pipeline.reconstruction.types import Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
@@ -427,6 +428,102 @@ def consolidate_notes_section_children(
 
 
 # ---------------------------------------------------------------------------
+# Inline cross-reference minting (P-019, Promotion Fase 5)
+
+
+def maybe_mint_inline_cross_references(
+    node: Node,
+    *,
+    pattern: re.Pattern[str],
+    max_marker_value: int,
+    warning_prefix: str,
+    minter: NodeIdMinter,
+    warnings: list[str],
+    minted_crossref_ids: set[str],
+) -> list[Node]:
+    """Mint synthetic CROSS_REFERENCE siblings for inline ``(N)`` matches.
+
+    Returns ``[node, *minted_crossrefs]``. If ``node.text`` is ``None``
+    or carries no matches, returns ``[node]`` unchanged. The host
+    Node's text is NOT modified — the inline markers stay embedded in
+    the body prose, exactly as the editorial pipeline emitted them.
+    Layer 2 uses the synthetic CROSS_REFERENCE Nodes to render inline
+    anchors (Layout 4) and the body prose verbatim (Layouts 1-3).
+
+    Promoted from the byte-equivalent ``_maybe_mint_cross_references``
+    method that the NS and DT plugins shipped privately. The
+    two implementations differed only on two scalar constants
+    (``_CROSSREF_MAX_MARKER_VALUE`` 99 vs 500, and ``WARNING_PREFIX``
+    ``"plugin:dejure_nota_sentenza"`` vs ``"plugin:dejure_dottrina"``);
+    both are now plugin-provided parameters of this helper. The
+    sibling-insertion convention follows pattern P-008 of CLAUDE.md
+    and the minting framework documented at
+    :mod:`scabopdf_pipeline.reconstruction.minting`.
+
+    Parameters
+    ----------
+    node
+        The BODY Node to scan. The Node is returned verbatim at index
+        0 of the result list; its text is not mutated.
+    pattern
+        Compiled regex with one numeric capture group. Typically
+        :data:`scabopdf_pipeline.apparatus.constants.INLINE_PARENTHESISED_CROSSREF_REGEX`
+        (the ``(?<![(\\d])\\((\\d+)\\)`` regex shared via
+        ``apparatus.constants`` since the NS landing).
+    max_marker_value
+        Inclusive upper bound on the numeric marker captured by the
+        regex's group(1). Markers exceeding this value are silently
+        skipped — used to filter year references (``(2024)``) and
+        other large numbers that are not note markers. NS calibrates
+        at 99 (small case-note apparatus); DT calibrates at 500
+        (Cartabia mega-bundle with 250+ notes per article).
+    warning_prefix
+        Plugin warning prefix. Typically
+        ``"plugin:dejure_nota_sentenza"`` for NS,
+        ``"plugin:dejure_dottrina"`` for DT, ending without trailing
+        ``:`` (the helper appends the colon).
+    minter
+        The plugin's :class:`NodeIdMinter` instance. The helper calls
+        :meth:`NodeIdMinter.mint` once per minted CROSS_REFERENCE.
+    warnings
+        The plugin's warning list. Appended in place per mint.
+    minted_crossref_ids
+        The plugin's tracker of minted CR ids. The helper inserts
+        every new CR's id into this set so :meth:`refine_apparatus`
+        can selectively bind only the plugin-minted CRs (and skip
+        any CR Node minted by the tier 1 generic resolver or by
+        another tier 2 pass).
+    """
+    if node.text is None:
+        return [node]
+    matches = list(pattern.finditer(node.text))
+    if not matches:
+        return [node]
+
+    out: list[Node] = [node]
+    for match in matches:
+        marker_value = match.group(1)
+        if int(marker_value) > max_marker_value:
+            continue
+        marker_text = match.group(0)
+        new_id = minter.mint()
+        crossref = Node(
+            id=new_id,
+            category=SemanticCategory.CROSS_REFERENCE,
+            page_index=node.page_index,
+            block_indices=node.block_indices,
+            text=marker_text,
+        )
+        out.append(crossref)
+        minted_crossref_ids.add(new_id)
+        warnings.append(
+            f"{warning_prefix}:cross_reference_minted_node_"
+            f"{new_id}_page_{node.page_index}_marker_{marker_value}"
+        )
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Helper dataclasses (P-013)
 
 
@@ -468,6 +565,7 @@ __all__ = [
     "SplitNotesTextFn",
     "consolidate_notes_section_children",
     "match_notes_marker",
+    "maybe_mint_inline_cross_references",
     "retag_notes_region_continuation",
     "starts_with_notes_marker",
 ]
