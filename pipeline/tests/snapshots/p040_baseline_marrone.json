@@ -1,0 +1,19 @@
+{
+  "matches_score_digest": "c05bd4180086539da9df24a8cbc87dfc32a329bae68a4058fd622c630b833cee",
+  "n_plugins": 13,
+  "scores": {
+    "CompendioUtetProfile": 0.0,
+    "DejureDottrinaProfile": 0.0,
+    "DejureMassimeProfile": 0.0,
+    "DejureNotaSentenzaProfile": 0.0,
+    "EnciclopediaModernaProfile": 0.0,
+    "EnciclopediaStoricaProfile": 0.0,
+    "GiuffreCodiciProfile": 0.0,
+    "ManualeBicProfile": 0.75,
+    "ManualeGiappichelliProfile": 0.0,
+    "ManualeGiuffreDirectoProfile": 0.0,
+    "ManualeUtetWolterskluwerProfile": 0.25,
+    "ManualeZanichelliGiuridicaProfile": 0.0,
+    "MaterialiStudioProfile": 0.0
+  }
+}

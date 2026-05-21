@@ -71,6 +71,7 @@ from scabopdf_pipeline.reconstruction.types import Document
 from scabopdf_pipeline.schema.categories import SemanticCategory
 from scabopdf_pipeline.schema.contract import NodeDict
 from scabopdf_pipeline.schema.validator import validate_against_schema, validate_document
+from tests import snapshot_utils
 from tests.conftest import NoOpProfilePlugin
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "private"
@@ -4579,3 +4580,72 @@ def test_editorial_plugins_do_not_promote_on_materiali_privato_ii(
     assert score < 0.6, (
         f"{plugin_cls.__name__} promoted on materiali_diritto_privato_ii: score {score}"
     )
+
+
+# ---------------------------------------------------------------------------
+# P-040 matches() score baselines (Fase 6 of the Piano Ambizioso)
+#
+# Cross-plugin regression protection: every committed baseline JSON under
+# pipeline/tests/snapshots/p040_baseline_*.json captures the matches() score
+# of every plugin on a representative fixture. The digest catches silent
+# drift on any (plugin, fixture) pair even when no count or warning has
+# changed. Pair this with the property-based equivalence test suite at
+# tests/unit/profiling/test_matches_property.py (Fase 6 P-040, pattern
+# (yyy) in CLAUDE.md).
+# ---------------------------------------------------------------------------
+
+_P040_PLUGIN_CLASSES: tuple[type[ProfilePlugin], ...] = (
+    ManualeZanichelliGiuridicaProfile,
+    CompendioUtetProfile,
+    ManualeUtetWolterskluwerProfile,
+    ManualeGiappichelliProfile,
+    ManualeGiuffreDirectoProfile,
+    ManualeBicProfile,
+    DejureNotaSentenzaProfile,
+    DejureMassimeProfile,
+    DejureDottrinaProfile,
+    EnciclopediaModernaProfile,
+    EnciclopediaStoricaProfile,
+    GiuffreCodiciProfile,
+    MaterialiStudioProfile,
+)
+
+
+_P040_BASELINES: tuple[tuple[str, Path], ...] = (
+    ("p040_baseline_patriarca", PATRIARCA_FIXTURE),
+    ("p040_baseline_tesauro", TESAURO_FIXTURE),
+    ("p040_baseline_mosconi", MOSCONI_FIXTURE),
+    ("p040_baseline_mandrioli_vol_iii", MANDRIOLI_FIXTURE),
+    ("p040_baseline_marotta", MAROTTA_FIXTURE),
+    ("p040_baseline_torrente", TORRENTE_FIXTURE),
+    ("p040_baseline_marrone", MARRONE_FIXTURE),
+    ("p040_baseline_dejure_ns_recisione", DEJURE_NS_RECISIONE_FIXTURE),
+    ("p040_baseline_dejure_ns_giudizio", DEJURE_NS_GIUDIZIO_FIXTURE),
+    ("p040_baseline_dejure_mm_concause", DEJURE_MM_CONCAUSE_FIXTURE),
+    ("p040_baseline_dejure_dt_concause", DEJURE_DT_CONCAUSE_FIXTURE),
+    ("p040_baseline_edd_factoring", EDD_FACTORING_FIXTURE),
+    ("p040_baseline_edd_lavoro", EDD_LAVORO_FIXTURE),
+    ("p040_baseline_materiali_tributario", MATERIALI_TRIBUTARIO_FIXTURE),
+)
+
+
+@pytest.mark.parametrize(
+    ("snapshot_name", "fixture"),
+    _P040_BASELINES,
+    ids=[name for name, _ in _P040_BASELINES],
+)
+def test_p040_matches_score_baseline_holds(snapshot_name: str, fixture: Path) -> None:
+    """The committed P-040 matches() baseline must hold byte-for-byte.
+
+    Builds ProfilingSignals from the real fixture, runs ``matches()``
+    on every registered plugin class, and asserts the resulting
+    score map against the committed snapshot baseline. Any future
+    refactor that shifts a single rounded score on any plugin / any
+    fixture lights up a failure here.
+    """
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    signals = _build_signals_from_fixture(fixture)
+    scores = {cls.__name__: cls.matches(signals) for cls in _P040_PLUGIN_CLASSES}
+    summary = snapshot_utils.matches_score_summary(scores)
+    snapshot_utils.assert_snapshot_matches(snapshot_name, summary)
