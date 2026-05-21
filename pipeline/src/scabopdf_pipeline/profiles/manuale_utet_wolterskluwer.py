@@ -517,6 +517,10 @@ class ManualeUtetWolterskluwerProfile(ProfilePlugin):
     # ProfilePlugin declarative methods
 
     @classmethod
+    def get_warning_templates(cls) -> tuple[str, ...]:
+        return WARNING_TEMPLATES
+
+    @classmethod
     def matches(cls, signals: ProfilingSignals) -> float:
         """Score the document against the Mosconi-Campiglio fingerprint.
 

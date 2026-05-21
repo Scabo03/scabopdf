@@ -462,6 +462,10 @@ class CompendioUtetProfile(ProfilePlugin):
         self._chapter_title_blocks: set[int] = set()
 
     @classmethod
+    def get_warning_templates(cls) -> tuple[str, ...]:
+        return WARNING_TEMPLATES
+
+    @classmethod
     def matches(cls, signals: ProfilingSignals) -> float:
         """Score the document against the Tesauro compendium fingerprint.
 

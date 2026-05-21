@@ -180,3 +180,28 @@ class ProfilePlugin(ABC):
         recomposition, Marrone book-page anchor extraction or Giuffrè
         per-article scope refinement of cross-references live here.
         """
+
+    @classmethod
+    def get_warning_templates(cls) -> tuple[str, ...]:
+        """Return the closed vocabulary of warning templates this plugin may emit.
+
+        This classmethod is opt-in and non-abstract. It exists to let the
+        test infrastructure derive the closed-vocabulary regex whitelist
+        automatically from the union of all plugins' templates plus the
+        tier 1 generic templates, instead of maintaining a hand-curated
+        registry that drifts away from the plugins. The default returns
+        ``()``; concrete plugins typically return their module-level
+        ``WARNING_TEMPLATES`` tuple.
+
+        The ABC's count of *abstract* methods stays at seven — this
+        classmethod is additive and non-binding. A plugin that emits no
+        warnings (the ``unknown_generic`` fallback) inherits the empty
+        default and the test infrastructure simply finds no entries to
+        add for it.
+
+        Templates use the canonical ``<placeholder>`` syntax shared
+        with tier 1 generic emitters; see
+        :mod:`scabopdf_pipeline.warning_framework` for the placeholder
+        vocabulary and the deterministic template-to-regex conversion.
+        """
+        return ()
