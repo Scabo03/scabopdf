@@ -229,19 +229,19 @@ convention and :data:`WARNING_TEMPLATES` for the closed vocabulary.
 """
 
 WARNING_TEMPLATES: tuple[str, ...] = (
-    "plugin:materiali_studio:color_mode_detected_distinct_colors_<n>",
+    "plugin:materiali_studio:color_mode_detected_distinct_colors_2_or_more",
     "plugin:materiali_studio:mono_mode_no_color_signal",
     "plugin:materiali_studio:heading_1_text_pattern_block_<idx>_page_<p>",
     "plugin:materiali_studio:heading_1_roman_block_<idx>_page_<p>_numeral_<roman>",
     "plugin:materiali_studio:heading_2_capitolo_block_<idx>_page_<p>",
-    "plugin:materiali_studio:heading_2_decimal_block_<idx>_page_<p>_numbering_<n>",
+    "plugin:materiali_studio:heading_2_decimal_block_<idx>_page_<p>_numbering_<value>",
     "plugin:materiali_studio:heading_3_section_letter_block_<idx>_page_<p>",
-    "plugin:materiali_studio:heading_3_decimal_block_<idx>_page_<p>_numbering_<n>",
+    "plugin:materiali_studio:heading_3_decimal_block_<idx>_page_<p>_numbering_<value>",
     "plugin:materiali_studio:heading_4_label_block_<idx>_page_<p>",
-    "plugin:materiali_studio:heading_4_decimal_block_<idx>_page_<p>_numbering_<n>",
+    "plugin:materiali_studio:heading_4_decimal_block_<idx>_page_<p>_numbering_<value>",
     "plugin:materiali_studio:list_item_dash_bullet_block_<idx>_page_<p>",
     "plugin:materiali_studio:em_dash_separator_block_<idx>_page_<p>",
-    "plugin:materiali_studio:decimal_hierarchical_depth_exceeded_block_<idx>_page_<p>_numbering_<n>",
+    "plugin:materiali_studio:decimal_hierarchical_depth_exceeded_block_<idx>_page_<p>_numbering_<value>",
     "plugin:materiali_studio:roman_lowercase_pattern_unsupported_block_<idx>_page_<p>",
 )
 """Closed vocabulary of warnings the plugin may emit. Placeholders are

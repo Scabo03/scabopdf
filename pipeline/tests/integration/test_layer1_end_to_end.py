@@ -122,133 +122,83 @@ def _count_nodes_recursive(structure: list[NodeDict]) -> int:
     return total
 
 
-_TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = (
-    # reconstruction tier 1
-    re.compile(r"^orphan_heading_level_[1-4]_page_\d+$"),
-    re.compile(r"^article_body_without_header_page_\d+$"),
-    # apparatus tier 1
-    re.compile(r"^unparseable_cross_reference_node_\S+$"),
-    re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$"),
-    re.compile(r"^marginal_heading_without_body_target_node_\S+_page_\d+$"),
-    re.compile(r"^gloss_without_note_target_node_\S+_page_\d+$"),
-    # manuale_zanichelli_giuridica plugin (closed vocabulary, see
-    # docs/SCHEMA_v0.4.0.md § 6 and profiles/manuale_zanichelli_giuridica.py)
-    re.compile(r"^plugin:zanichelli:chapter_summary_unparseable_node_\S+$"),
-    re.compile(r"^plugin:zanichelli:chapter_summary_without_chapter_node_\S+_page_\d+$"),
-    re.compile(r"^plugin:zanichelli:heading_19pt_pattern_unmatched_block_\d+_page_\d+$"),
-    # compendio_utet plugin (closed vocabulary, see docs/SCHEMA_v0.4.0.md § 6
-    # and profiles/compendio_utet.py)
-    re.compile(r"^plugin:tesauro:chapter_summary_unparseable_node_\S+$"),
-    re.compile(r"^plugin:tesauro:toc_general_unparseable_node_\S+$"),
-    re.compile(r"^plugin:tesauro:chapter_title_not_adjacent_block_-?\d+_page_\d+$"),
-    # manuale_utet_wolterskluwer plugin (closed vocabulary, see
-    # docs/SCHEMA_v0.4.0.md § 6 and profiles/manuale_utet_wolterskluwer.py)
-    re.compile(r"^plugin:utet_wolterskluwer:chapter_title_not_adjacent_block_-?\d+_page_\d+$"),
-    re.compile(
-        r"^plugin:utet_wolterskluwer:paragraph_heading_pattern_unmatched_block_-?\d+_page_\d+$"
-    ),
-    re.compile(r"^plugin:utet_wolterskluwer:note_continuation_merged_node_\S+_page_\d+$"),
-    re.compile(r"^plugin:utet_wolterskluwer:marginal_ellipsis_orphan_marker_node_\S+_page_\d+$"),
-    re.compile(r"^plugin:utet_wolterskluwer:inline_cross_reference_minted_node_\S+_page_\d+$"),
-    re.compile(
-        r"^plugin:utet_wolterskluwer:example_box_in_front_matter_filtered_block_-?\d+_page_\d+$"
-    ),
-    re.compile(
-        r"^plugin:utet_wolterskluwer:back_matter_index_column_rejected_block_-?\d+_page_\d+$"
-    ),
-    # manuale_giappichelli plugin (closed vocabulary, see
-    # docs/SCHEMA_v0.4.0.md § 6 and profiles/manuale_giappichelli.py)
-    re.compile(r"^plugin:giappichelli:outline_paragraph_mismatch_node_\S+$"),
-    re.compile(r"^plugin:giappichelli:chapter_summary_unparseable_node_\S+$"),
-    re.compile(r"^plugin:giappichelli:chapter_title_not_adjacent_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:giappichelli:inline_cross_reference_minted_node_\S+_page_\d+$"),
-    re.compile(r"^plugin:giappichelli:marginal_gloss_outside_margin_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:giappichelli:body_note_block_glued_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:giappichelli:body_note_split_minted_node_\S+_page_\d+$"),
-    # manuale_giuffre_diretto plugin (closed vocabulary, see
-    # docs/SCHEMA_v0.5.0.md § 6 and profiles/manuale_giuffre_diretto.py)
-    re.compile(r"^plugin:giuffre_diretto:cross_reference_paragraph_minted_node_\S+_page_\d+$"),
-    re.compile(r"^plugin:giuffre_diretto:cross_reference_article_minted_node_\S+_page_\d+$"),
-    re.compile(r"^plugin:giuffre_diretto:cross_reference_sentence_minted_node_\S+_page_\d+$"),
-    re.compile(
-        r"^plugin:giuffre_diretto:cross_reference_paragraph_unresolved_node_\S+_marker_\S+$"
-    ),
-    re.compile(r"^plugin:giuffre_diretto:asterisk_footnote_isolated_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:giuffre_diretto:index_analitico_double_column_unordered_page_\d+$"),
-    re.compile(r"^plugin:giuffre_diretto:capitolo_signature_unmatched_block_-?\d+_page_\d+$"),
-    re.compile(
-        r"^plugin:giuffre_diretto:paragraph_heading_pattern_unmatched_block_-?\d+_page_\d+$"
-    ),
-    # manuale_bic plugin (closed vocabulary, see profiles/manuale_bic.py)
-    re.compile(r"^plugin:bic:premesse_duplicate_page_\d+_block_\d+$"),
-    re.compile(r"^plugin:bic:abbreviazioni_duplicate_page_\d+_block_\d+$"),
-    re.compile(r"^plugin:bic:volume_frontispiece_block_-?\d+_page_\d+_marker_\S+$"),
-    re.compile(r"^plugin:bic:volume_end_block_-?\d+_page_\d+_marker_\S+$"),
-    re.compile(r"^plugin:bic:note_section_split_minted_node_\S+_page_\d+_marker_\S+$"),
-    re.compile(r"^plugin:bic:note_continuation_rescued_node_\S+_page_\d+(?:_marker_\S+)?$"),
-    re.compile(r"^plugin:bic:cross_reference_minted_node_\S+_page_\d+_marker_\S+$"),
-    re.compile(r"^plugin:bic:cross_reference_unresolved_node_\S+_marker_\S+$"),
-    re.compile(r"^plugin:bic:book_page_anchor_minted_node_\S+_page_\d+_marker_\S+$"),
-    re.compile(r"^plugin:bic:language_metadata_mismatch_lang_\S+$"),
-    re.compile(r"^plugin:bic:heading_pattern_unmatched_block_-?\d+_page_\d+$"),
-    # dejure_nota_sentenza plugin (closed vocabulary, see
-    # docs/SCHEMA_v0.5.0.md § 6 and profiles/dejure_nota_sentenza.py)
-    re.compile(r"^plugin:dejure_nota_sentenza:metadata_block_unparseable_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:dejure_nota_sentenza:metadata_field_minted_node_\S+_field_\S+$"),
-    re.compile(r"^plugin:dejure_nota_sentenza:toc_general_parsed_node_\S+_items_\d+$"),
-    re.compile(r"^plugin:dejure_nota_sentenza:toc_general_unparseable_node_\S+$"),
-    re.compile(
-        r"^plugin:dejure_nota_sentenza:section_heading_pattern_unmatched_block_-?\d+_page_\d+$"
-    ),
-    re.compile(
-        r"^plugin:dejure_nota_sentenza:note_section_split_minted_node_\S+_page_\d+_marker_\d+$"
-    ),
-    re.compile(r"^plugin:dejure_nota_sentenza:note_section_unparseable_node_\S+$"),
-    re.compile(
-        r"^plugin:dejure_nota_sentenza:cross_reference_minted_node_\S+_page_\d+_marker_\d+$"
-    ),
-    re.compile(r"^plugin:dejure_nota_sentenza:cross_reference_unresolved_node_\S+_marker_\S+$"),
-    # dejure_massime plugin (closed vocabulary, see profiles/dejure_massime.py)
-    re.compile(r"^plugin:dejure_massime:referral_reclassified_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:dejure_massime:referral_pattern_unmatched_block_-?\d+_page_\d+$"),
-    re.compile(
-        r"^plugin:dejure_massime:referral_orphan_no_preceding_massima_block_-?\d+_page_\d+$"
-    ),
-    re.compile(
-        r"^plugin:dejure_massime:fonte_value_orphan_no_preceding_label_block_-?\d+_page_\d+$"
-    ),
-    re.compile(r"^plugin:dejure_massime:title_orphan_no_preceding_referral_block_-?\d+_page_\d+$"),
-    # dejure_dottrina plugin (closed vocabulary, see profiles/dejure_dottrina.py)
-    re.compile(r"^plugin:dejure_dottrina:metadata_block_unparseable_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:dejure_dottrina:metadata_field_minted_node_\S+_field_\S+$"),
-    re.compile(r"^plugin:dejure_dottrina:toc_general_parsed_node_\S+_items_\d+$"),
-    re.compile(r"^plugin:dejure_dottrina:toc_general_unparseable_node_\S+$"),
-    re.compile(r"^plugin:dejure_dottrina:section_heading_pattern_unmatched_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:dejure_dottrina:note_section_split_minted_node_\S+_page_\d+_marker_\d+$"),
-    re.compile(r"^plugin:dejure_dottrina:note_section_unparseable_node_\S+$"),
-    re.compile(r"^plugin:dejure_dottrina:editorial_note_minted_node_\S+_page_\d+$"),
-    re.compile(r"^plugin:dejure_dottrina:cross_reference_minted_node_\S+_page_\d+_marker_\d+$"),
-    re.compile(r"^plugin:dejure_dottrina:cross_reference_unresolved_node_\S+_marker_\S+$"),
-    # materiali_studio plugin (closed vocabulary, see profiles/materiali_studio.py)
-    re.compile(r"^plugin:materiali_studio:color_mode_detected_distinct_colors_\S+$"),
-    re.compile(r"^plugin:materiali_studio:mono_mode_no_color_signal$"),
-    re.compile(r"^plugin:materiali_studio:heading_1_text_pattern_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:materiali_studio:heading_2_capitolo_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:materiali_studio:heading_3_section_letter_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:materiali_studio:heading_4_label_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:materiali_studio:list_item_dash_bullet_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:materiali_studio:em_dash_separator_block_-?\d+_page_\d+$"),
-    re.compile(r"^plugin:materiali_studio:heading_1_roman_block_-?\d+_page_\d+_numeral_\S+$"),
-    re.compile(r"^plugin:materiali_studio:heading_2_decimal_block_-?\d+_page_\d+_numbering_\S+$"),
-    re.compile(r"^plugin:materiali_studio:heading_3_decimal_block_-?\d+_page_\d+_numbering_\S+$"),
-    re.compile(r"^plugin:materiali_studio:heading_4_decimal_block_-?\d+_page_\d+_numbering_\S+$"),
-    re.compile(
-        r"^plugin:materiali_studio:decimal_hierarchical_depth_exceeded_block_-?\d+_page_\d+_numbering_\S+$"
-    ),
-    re.compile(
-        r"^plugin:materiali_studio:roman_lowercase_pattern_unsupported_block_-?\d+_page_\d+$"
-    ),
-)
+def _build_tier1_warning_regexes() -> tuple[re.Pattern[str], ...]:
+    """Derive the closed-vocabulary warning regex whitelist from the framework.
+
+    The whitelist is the union of (a) the tier 1 reconstruction templates
+    declared in :data:`reconstruction.tier1.TIER1_WARNING_TEMPLATES`,
+    (b) the tier 1 apparatus templates declared in
+    :data:`apparatus.resolver.TIER1_WARNING_TEMPLATES`, and (c) every
+    corpus plugin's ``get_warning_templates()`` exposed by the
+    ``ProfilePlugin`` classmethod. Each template is converted to a
+    compiled anchored regex via
+    :func:`scabopdf_pipeline.warning_framework.template_to_regex`,
+    consuming the canonical placeholder vocabulary defined in the same
+    module.
+
+    Imports are deferred to the body so the test module can be imported
+    by tooling (coverage, mypy) without pulling in every plugin at
+    collection time.
+    """
+    from scabopdf_pipeline.apparatus.resolver import (
+        TIER1_WARNING_TEMPLATES as _TIER1_APPARATUS_TEMPLATES,
+    )
+    from scabopdf_pipeline.profiles.compendio_utet import CompendioUtetProfile
+    from scabopdf_pipeline.profiles.dejure_dottrina import DejureDottrinaProfile
+    from scabopdf_pipeline.profiles.dejure_massime import DejureMassimeProfile
+    from scabopdf_pipeline.profiles.dejure_nota_sentenza import DejureNotaSentenzaProfile
+    from scabopdf_pipeline.profiles.enciclopedia_moderna import EnciclopediaModernaProfile
+    from scabopdf_pipeline.profiles.enciclopedia_storica import EnciclopediaStoricaProfile
+    from scabopdf_pipeline.profiles.giuffre_codici import GiuffreCodiciProfile
+    from scabopdf_pipeline.profiles.manuale_bic import ManualeBicProfile
+    from scabopdf_pipeline.profiles.manuale_giappichelli import ManualeGiappichelliProfile
+    from scabopdf_pipeline.profiles.manuale_giuffre_diretto import ManualeGiuffreDirectoProfile
+    from scabopdf_pipeline.profiles.manuale_utet_wolterskluwer import (
+        ManualeUtetWolterskluwerProfile,
+    )
+    from scabopdf_pipeline.profiles.manuale_zanichelli_giuridica import (
+        ManualeZanichelliGiuridicaProfile,
+    )
+    from scabopdf_pipeline.profiles.materiali_studio import MaterialiStudioProfile
+    from scabopdf_pipeline.reconstruction.tier1 import (
+        TIER1_WARNING_TEMPLATES as _TIER1_RECONSTRUCTION_TEMPLATES,
+    )
+    from scabopdf_pipeline.warning_framework import templates_to_regexes
+
+    plugin_classes = (
+        CompendioUtetProfile,
+        DejureDottrinaProfile,
+        DejureMassimeProfile,
+        DejureNotaSentenzaProfile,
+        EnciclopediaModernaProfile,
+        EnciclopediaStoricaProfile,
+        GiuffreCodiciProfile,
+        ManualeBicProfile,
+        ManualeGiappichelliProfile,
+        ManualeGiuffreDirectoProfile,
+        ManualeUtetWolterskluwerProfile,
+        ManualeZanichelliGiuridicaProfile,
+        MaterialiStudioProfile,
+    )
+    aggregated: list[str] = []
+    aggregated.extend(_TIER1_RECONSTRUCTION_TEMPLATES)
+    aggregated.extend(_TIER1_APPARATUS_TEMPLATES)
+    for plugin_cls in plugin_classes:
+        aggregated.extend(plugin_cls.get_warning_templates())
+    return templates_to_regexes(aggregated)
+
+
+_TIER1_WARNING_REGEXES: tuple[re.Pattern[str], ...] = _build_tier1_warning_regexes()
+"""Closed-vocabulary warning whitelist derived from ``warning_framework``.
+
+Plugins that add a new warning template to their module-level
+``WARNING_TEMPLATES`` tuple automatically extend this whitelist via the
+``get_warning_templates`` classmethod; the test infrastructure no
+longer requires a parallel manual registry to be kept in sync. See
+``CARRYOVER v2.21`` § "Fase 2 P-007 / P-032" and
+:mod:`scabopdf_pipeline.warning_framework` for the architectural
+rationale.
+"""
 
 _UNRESOLVED_CROSS_REFERENCE_REGEX = re.compile(r"^unresolved_cross_reference_node_\S+_n_\d+$")
 

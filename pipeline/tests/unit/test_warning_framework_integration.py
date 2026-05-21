@@ -120,6 +120,8 @@ def test_aggregate_template_count() -> None:
         len(profile_cls.get_warning_templates()) for _, profile_cls, _ in ALL_PROFILE_PLUGINS
     )
     tier1_total = len(TIER1_RECONSTRUCTION_TEMPLATES) + len(TIER1_APPARATUS_TEMPLATES)
-    # Empirical baseline at Fase 2 landing: 104 plugin templates + 6 tier 1.
-    assert plugin_total == 104, f"plugin template count drift: {plugin_total} != 104"
+    # Empirical baseline at Fase 2 landing: 108 plugin templates + 6 tier 1.
+    # (BIC declares 12 templates after the gap-closure for the 4 warnings
+    # the v1 vocabulary missed; every other plugin keeps its v1 count.)
+    assert plugin_total == 108, f"plugin template count drift: {plugin_total} != 108"
     assert tier1_total == 6, f"tier 1 template count drift: {tier1_total} != 6"

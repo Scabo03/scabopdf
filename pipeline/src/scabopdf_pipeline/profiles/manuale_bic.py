@@ -267,7 +267,11 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:bic:volume_frontispiece_block_<idx>_page_<p>_marker_<marker>",
     "plugin:bic:volume_end_block_<idx>_page_<p>_marker_<marker>",
     "plugin:bic:note_section_split_minted_node_<id>_page_<p>_marker_<n>",
+    "plugin:bic:note_continuation_rescued_node_<id>_page_<p>",
+    "plugin:bic:note_continuation_rescued_node_<id>_page_<p>_marker_<n>",
     "plugin:bic:cross_reference_minted_node_<id>_page_<p>_marker_<n>",
+    "plugin:bic:cross_reference_unresolved_node_<id>_marker_<n>",
+    "plugin:bic:book_page_anchor_minted_node_<id>_page_<p>_marker_<n>",
     "plugin:bic:language_metadata_mismatch_lang_<value>",
     "plugin:bic:heading_pattern_unmatched_block_<idx>_page_<p>",
 )
