@@ -8,9 +8,13 @@ same XML file always yields the same structural summary and the same
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from scabopdf_pipeline.reconstruction.types import Document
 
 
 class XmlHealthVerdict(StrEnum):
@@ -132,3 +136,74 @@ class XmlHealthReport:
     error_detail: str | None
     """Short text of the underlying XML parse error when the verdict is
     INVALID_XML. ``None`` otherwise."""
+
+
+@dataclass(frozen=True, kw_only=True)
+class XmlAknDocumentMeta:
+    """FRBR-aligned metadata extracted from a Normattiva AKN ``<meta>``.
+
+    Captures the canonical identification of the act for downstream
+    consumers that need to display authority data (URN NIR, ELI URI,
+    act title, publication date) without re-parsing the source XML.
+    Every field is best-effort: when an element is missing in the source
+    XML the field is ``None`` rather than raising.
+
+    The v1 parser populates a minimal subset; later sessions may extend
+    with publication, lifecycle, references and active/passive
+    modifications.
+    """
+
+    work_uri: str | None
+    """The ``<FRBRWork>/<FRBRuri>`` slash-path identifier (e.g.
+    ``/akn/it/act/legge/stato/2007-05-04/56``). Canonical AKN
+    identifier for the work-level FRBR entity."""
+
+    work_alias_urn: str | None
+    """The ``<FRBRWork>/<FRBRalias>`` URN NIR value (e.g.
+    ``urn:nir:stato:legge:2007-05-04;56``). The Normattiva URN scheme
+    is deterministic and machine-friendly; consumers can resolve this
+    back to the source via the official ``N2Ls`` endpoint."""
+
+    work_alias_eli: str | None
+    """The ``<FRBRWork>/<FRBRalias>`` ELI URI value (e.g.
+    ``eli/id/2007/05/05/007G0075/ORIGINAL``). European Legislation
+    Identifier alias of the same work."""
+
+    act_name_attribute: str | None
+    """The ``<act name="...">`` attribute (typically ``"monovigente"``
+    on Normattiva exports). Distinguishes mono-vigent from multi-vigent
+    acts; the latter is not observed on the calibration corpus."""
+
+    title: str | None
+    """Free-text title of the act, drawn from
+    ``<preface>/<p[class='Titolo del documento']>`` if present, or the
+    first ``<preface>/<p>`` otherwise. ``None`` when neither is
+    available."""
+
+
+@dataclass(frozen=True, kw_only=True)
+class XmlAknParseResult:
+    """Bundle returned by :func:`scabopdf_pipeline.xml_akn.parser.parse`.
+
+    Contains the produced ``Document`` (the reading-order tree), the
+    extracted FRBR-aligned metadata, the health verdict from the
+    detector pass, and the closed list of diagnostic warnings the
+    parser accumulated during its walk. The health report is bundled
+    here so callers (CLI, Layer 2) can reason about the source
+    document's quality without re-running the detector.
+    """
+
+    document: Document
+    """The reading-order tree produced from the AKN source. Layer 2
+    consumes this through the standard JSON emission contract."""
+
+    metadata: XmlAknDocumentMeta
+    """FRBR-aligned metadata extracted from the AKN ``<meta>``."""
+
+    health_report: XmlHealthReport
+    """The detector's verdict on the source file. Always present;
+    callers can re-display it without re-parsing."""
+
+    warnings: tuple[str, ...] = field(default_factory=tuple)
+    """Closed-vocabulary diagnostic warnings emitted during the parse.
+    Empty tuple when the parser had nothing to flag."""

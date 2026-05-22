@@ -22,15 +22,22 @@ deliberately deferred to a future session (see ``CARRYOVER.md``).
 """
 
 from scabopdf_pipeline.xml_akn.detector import detect_health
+from scabopdf_pipeline.xml_akn.parser import XmlAknParseError, parse
 from scabopdf_pipeline.xml_akn.types import (
+    XmlAknDocumentMeta,
+    XmlAknParseResult,
     XmlHealthReport,
     XmlHealthVerdict,
     XmlStructuralSummary,
 )
 
 __all__ = [
+    "XmlAknDocumentMeta",
+    "XmlAknParseError",
+    "XmlAknParseResult",
     "XmlHealthReport",
     "XmlHealthVerdict",
     "XmlStructuralSummary",
     "detect_health",
+    "parse",
 ]

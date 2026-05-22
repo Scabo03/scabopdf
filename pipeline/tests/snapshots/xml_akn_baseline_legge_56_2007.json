@@ -1,0 +1,95 @@
+{
+  "schema_version": "0.6.0",
+  "metadata": {
+    "pages_pdf": 0,
+    "page_size_pt": [
+      0.0,
+      0.0
+    ],
+    "source_pdf_filename": "legge_56_2007.xml"
+  },
+  "profile": {
+    "profile_id": "normattiva_xml_akn",
+    "editorial_family": "normattiva",
+    "genre": "legal_text_xml_akn",
+    "confidence": 1.0
+  },
+  "warnings": [],
+  "transformations": [],
+  "structure": [
+    {
+      "id": "node_0",
+      "type": "ARTICLE_HEADER",
+      "page_index": 0,
+      "text": "Art. 1.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_1",
+      "type": "ARTICLE_BODY",
+      "page_index": 0,
+      "text": "1. La Repubblica riconosce il 9 maggio, anniversario dell'uccisione di Aldo Moro, quale «Giorno della memoria», al fine di ricordare tutte le vittime del terrorismo, interno e internazionale, e delle stragi di tale matrice.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_2",
+      "type": "ARTICLE_BODY",
+      "page_index": 0,
+      "text": "2. In occasione del «Giorno della memoria» di cui al comma 1, possono essere organizzate, senza nuovi o maggiori oneri a carico della finanza pubblica, manifestazioni pubbliche, cerimonie, incontri, momenti comuni di ricordo dei fatti e di riflessione, anche nelle scuole di ogni ordine e grado, al fine di conservare, rinnovare e costruire una memoria storica condivisa in difesa delle istituzioni democratiche.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_3",
+      "type": "ARTICLE_HEADER",
+      "page_index": 0,
+      "text": "Art. 2.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_4",
+      "type": "ARTICLE_BODY",
+      "page_index": 0,
+      "text": "1. La presente legge entra in vigore il giorno successivo a quello della sua pubblicazione nella Gazzetta Ufficiale.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    }
+  ],
+  "_baseline_id": "N-001",
+  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_56_2007/legge_56_2007.xml",
+  "_baseline_xml_akn_metadata": {
+    "work_uri": "/akn/it/act/legge/stato/2007-05-04/56",
+    "work_alias_urn": "urn:nir:stato:legge:2007-05-04;56",
+    "work_alias_eli": "eli/id/2007/05/05/007G0075/ORIGINAL",
+    "act_name_attribute": "monovigente",
+    "title": "Istituzione del «Giorno della memoria» dedicato alle vittime del terrorismo e delle stragi di tale matrice."
+  }
+}
