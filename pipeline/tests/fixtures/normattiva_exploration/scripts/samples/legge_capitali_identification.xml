@@ -1,0 +1,51 @@
+<identification source="">
+                <FRBRWork>
+                    <FRBRthis value="/akn/it/act/legge/stato/2024-03-05/21/!main"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2024-03-05/21"/>
+                    <FRBRalias name="urn:nir" value="urn:nir:stato:legge:2024-03-05;21"/>
+                    <FRBRalias name="eli" value="eli/id/2024/03/12/24G00041/CONSOLIDATED/20250321"/>
+                    <FRBRdate date="2024-03-05" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2024/03/12/24G00041/CONSOLIDATED/20250321" aknrelname="eli/id/2024/03/12/24G00041/CONSOLIDATED/20250321">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalResource"/>
+                            <nrdfa:span content="Interventi a sostegno della competitivita' dei capitali e delega al Governo per la riforma organica delle disposizioni in materia di mercati dei capitali recate dal testo unico di cui al decreto legislativo 24 febbraio 1998, n. 58, e delle disposizioni in materia di societa' di capitali contenute nel codice civile ((, per la modifica delle disposizioni del codice di procedura civile in materia di arbitrato societario, nonché per la modifica di ulteriori disposizioni vigenti al fine di assicurarne il miglior coordinamento, nonché delega al Governo per la riforma organica e il riordino del sistema sanzionatorio e di tutte le procedure sanzionatorie recati dal medesimo testo unico di cui al decreto legislativo n. 58 del 1998)). (24G00041)" lang="it" property="eli:title" xml:lang="it"/>
+                            <nrdfa:span content="http://www.normattiva.it/eli/id/{yyyy}/{mm}/{dd}/{codiceRedazionale}/{tipoVersione}" property="eli:uri_schema"/>
+                            <nrdfa:span content="24G00041" property="eli:id_local"/>
+                            <nrdfa:span property="eli:type_document" resource="gu:tables/resource-type#LEGGE"/>
+                            <nrdfa:span content="2024-03-05" datatype="xsd:date" property="eli:date_document"/>
+                            <nrdfa:span property="eli:version" resource="gu:tables/versions#ORIGINAL"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRcountry value="it"/>
+                </FRBRWork>
+                <FRBRExpression>
+                    <FRBRthis value="/akn/it/act/legge/stato/2024-03-05/21/ita@2025-03-21/!main"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2024-03-05/21/ita@2025-03-21"/>
+                    <FRBRdate date="2025-03-21" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2024/03/12/24G00041/CONSOLIDATED/20250321/ita">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalExpression"/>
+                            <nrdfa:span property="eli:realizes" resource="na:id/2024/03/12/24G00041/CONSOLIDATED/20250321"/>
+                            <nrdfa:span property="eli:is_embodied_by" resource="na:id/2024/03/12/24G00041/CONSOLIDATED/20250321/ita/akn"/>
+                            <nrdfa:span property="eli:language" resource="http://publications.europa.eu/resource/authority/language/ITA"/>
+                            <nrdfa:span property="eli:publisher_agent" resource="http://www.ipzs.it"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRlanguage language="ita"/>
+                </FRBRExpression>
+                <FRBRManifestation>
+                    <FRBRthis value="/akn/it/act/legge/stato/2024-03-05/21/ita@2025-03-21/!main.xml"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2024-03-05/21/ita@2025-03-21.xml"/>
+                    <FRBRdate date="2024-03-05" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2024/03/12/24G00041/CONSOLIDATED/20250321/ita/akn">
+                            <nrdfa:span property="rdf:type" resource="eli:Format"/>
+                            <nrdfa:span property="eli:format" resource="http://www.iana.org/assignments/media-types/xml"/>
+                        </nrdfa:eli>
+                    </preservation>
+                </FRBRManifestation>
+            </identification>
+            

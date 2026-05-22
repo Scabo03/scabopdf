@@ -1,0 +1,496 @@
+{
+  "path": "/home/scabo/projects/ScaboPDF/pipeline/tests/fixtures/normattiva_exploration/legge_capitali/legge_capitali.pdf",
+  "pages_scanned": 33,
+  "structural_markers_count": 8,
+  "art_count": 29,
+  "isolated_bold_block_count": 100,
+  "bold_block_size_distribution": {
+    "12.0": 100
+  },
+  "structural_markers_sample": [
+    {
+      "page": 0,
+      "block": 10,
+      "text": "Capo I",
+      "bbox": [
+        282.21,
+        420.33,
+        315.43,
+        438.59
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo I "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 2,
+      "text": "sezione I del capo IV del titolo II-bis della parte III del testo unico di cui al decreto legislativo 24",
+      "bbox": [
+        43.5,
+        97.22,
+        512.3,
+        115.48
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "sezione I del capo IV del titolo II-bis della parte III del testo unico di cui a"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 7,
+      "text": "libro dei soci, distintamente per ogni categoria, il nome dei soci, la partecipazione di spettanza di",
+      "bbox": [
+        43.5,
+        228.64,
+        521.89,
+        246.9
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "libro dei soci, distintamente per ogni categoria, il nome dei soci, la partecipa"
+        }
+      ]
+    },
+    {
+      "page": 13,
+      "block": 9,
+      "text": "sezione II, della presente parte. Restano fermi gli obblighi di comunicazione previsti in capo ai titolari di",
+      "bbox": [
+        43.5,
+        281.2,
+        553.52,
+        299.46
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "sezione II, della presente parte. Restano fermi gli obblighi di comunicazione pr"
+        }
+      ]
+    },
+    {
+      "page": 25,
+      "block": 4,
+      "text": "Capo II",
+      "bbox": [
+        280.79,
+        173.04,
+        316.85,
+        191.3
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo II "
+        }
+      ]
+    },
+    {
+      "page": 29,
+      "block": 7,
+      "text": "Capo III",
+      "bbox": [
+        279.37,
+        244.39,
+        318.27,
+        262.65
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo III "
+        }
+      ]
+    },
+    {
+      "page": 30,
+      "block": 26,
+      "text": "Capo IV",
+      "bbox": [
+        278.74,
+        751.26,
+        318.9,
+        769.52
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo IV "
+        }
+      ]
+    },
+    {
+      "page": 31,
+      "block": 16,
+      "text": "Capo V",
+      "bbox": [
+        280.16,
+        602.31,
+        317.48,
+        620.57
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo V "
+        }
+      ]
+    }
+  ],
+  "bold_blocks_sample": [
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "LEGGE 5 marzo 2024 , n. 21",
+      "bbox": [
+        226.57,
+        101.29,
+        368.43,
+        119.55
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "modifica delle disposizioni del codice di procedura civile in materia di arbitrato societario, nonché per",
+      "bbox": [
+        36.58,
+        218.42,
+        561.06,
+        236.68
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "la modifica di ulteriori disposizioni vigenti al fine di assicurarne il miglior coordinamento, nonché",
+      "bbox": [
+        47.6,
+        244.7,
+        550.04,
+        262.96
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "delega al Governo per la riforma organica e il riordino del sistema sanzionatorio e di tutte le",
+      "bbox": [
+        61.51,
+        270.98,
+        536.12,
+        289.24
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "IL PRESIDENTE DELLA REPUBBLICA",
+      "bbox": [
+        205.99,
+        562.42,
+        389.01,
+        580.68
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "Promulga",
+      "bbox": [
+        272.3,
+        628.67,
+        322.7,
+        646.93
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        720.23,
+        311.75,
+        738.49
+      ]
+    },
+    {
+      "page": 1,
+      "size": 12.0,
+      "text": "Art. 2",
+      "bbox": [
+        283.26,
+        374.83,
+        311.75,
+        393.09
+      ]
+    },
+    {
+      "page": 1,
+      "size": 12.0,
+      "text": "Art. 3",
+      "bbox": [
+        283.26,
+        621.09,
+        311.75,
+        639.35
+      ]
+    },
+    {
+      "page": 2,
+      "size": 12.0,
+      "text": "Art. 4",
+      "bbox": [
+        283.26,
+        618.88,
+        311.75,
+        637.14
+      ]
+    },
+    {
+      "page": 5,
+      "size": 12.0,
+      "text": "Art. 5",
+      "bbox": [
+        283.26,
+        750.29,
+        311.75,
+        768.55
+      ]
+    },
+    {
+      "page": 6,
+      "size": 12.0,
+      "text": "Art. 6",
+      "bbox": [
+        283.26,
+        374.83,
+        311.75,
+        393.09
+      ]
+    },
+    {
+      "page": 6,
+      "size": 12.0,
+      "text": "Art. 7",
+      "bbox": [
+        283.26,
+        647.37,
+        311.75,
+        665.63
+      ]
+    },
+    {
+      "page": 7,
+      "size": 12.0,
+      "text": "Art. 8",
+      "bbox": [
+        283.26,
+        374.83,
+        311.75,
+        393.09
+      ]
+    },
+    {
+      "page": 7,
+      "size": 12.0,
+      "text": "Art. 9",
+      "bbox": [
+        283.26,
+        726.22,
+        311.75,
+        744.48
+      ]
+    },
+    {
+      "page": 8,
+      "size": 12.0,
+      "text": "Art. 10",
+      "bbox": [
+        279.9,
+        461.18,
+        315.11,
+        479.44
+      ]
+    },
+    {
+      "page": 8,
+      "size": 12.0,
+      "text": "Art. 11",
+      "bbox": [
+        279.9,
+        681.15,
+        315.11,
+        699.41
+      ]
+    },
+    {
+      "page": 9,
+      "size": 12.0,
+      "text": "Art. 12",
+      "bbox": [
+        279.9,
+        671.44,
+        315.11,
+        689.7
+      ]
+    },
+    {
+      "page": 12,
+      "size": 12.0,
+      "text": "Art. 13",
+      "bbox": [
+        279.9,
+        50.87,
+        315.11,
+        69.13
+      ]
+    },
+    {
+      "page": 12,
+      "size": 12.0,
+      "text": "Art. 14",
+      "bbox": [
+        279.9,
+        270.84,
+        315.11,
+        289.1
+      ]
+    },
+    {
+      "page": 14,
+      "size": 12.0,
+      "text": "Art. 15",
+      "bbox": [
+        279.9,
+        663.94,
+        315.11,
+        682.2
+      ]
+    },
+    {
+      "page": 15,
+      "size": 12.0,
+      "text": "Art. 16",
+      "bbox": [
+        279.9,
+        190.85,
+        315.11,
+        209.11
+      ]
+    },
+    {
+      "page": 19,
+      "size": 12.0,
+      "text": "Art. 17",
+      "bbox": [
+        279.9,
+        476.18,
+        315.11,
+        494.44
+      ]
+    },
+    {
+      "page": 19,
+      "size": 12.0,
+      "text": "Art. 18",
+      "bbox": [
+        279.9,
+        775.0,
+        315.11,
+        793.26
+      ]
+    },
+    {
+      "page": 20,
+      "size": 12.0,
+      "text": "Art. 19",
+      "bbox": [
+        279.9,
+        250.92,
+        315.11,
+        269.18
+      ]
+    },
+    {
+      "page": 20,
+      "size": 12.0,
+      "text": "civile in materia di arbitrato societario, nonché per la modifica di ulteriori disposizioni vigenti al fine",
+      "bbox": [
+        39.75,
+        418.57,
+        556.51,
+        436.83
+      ]
+    },
+    {
+      "page": 20,
+      "size": 12.0,
+      "text": "((, per la modifica delle disposizioni del codice di procedura civile in materia di arbitrato societario",
+      "bbox": [
+        39.75,
+        628.84,
+        545.87,
+        647.1
+      ]
+    },
+    {
+      "page": 20,
+      "size": 12.0,
+      "text": "nonché per la modifica di ulteriori disposizioni vigenti al fine di assicurarne il miglior",
+      "bbox": [
+        39.75,
+        655.12,
+        477.53,
+        673.38
+      ]
+    },
+    {
+      "page": 20,
+      "size": 12.0,
+      "text": "coordinamento e la coerenza con le disposizioni previste dalla presente legge e con le disposizioni",
+      "bbox": [
+        39.75,
+        681.4,
+        547.04,
+        699.66
+      ]
+    },
+    {
+      "page": 21,
+      "size": 12.0,
+      "text": "((anche ampliando il novero delle forme societarie ammissibili ai fini del servizio di gestione",
+      "bbox": [
+        39.75,
+        435.15,
+        516.27,
+        453.41
+      ]
+    }
+  ]
+}

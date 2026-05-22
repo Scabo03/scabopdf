@@ -1,0 +1,2634 @@
+{
+  "path": "legge_capitali/legge_capitali.pdf",
+  "metadata": {
+    "format": "PDF 1.7",
+    "title": "",
+    "author": "",
+    "subject": "",
+    "keywords": "",
+    "creator": "",
+    "producer": "iText® 7.1.9 ©2000-2019 iText Group NV (AGPL-version)",
+    "creationDate": "D:20260522000604+02'00'",
+    "modDate": "D:20260522000604+02'00'",
+    "trapped": "",
+    "encryption": null
+  },
+  "page_count": 33,
+  "is_pdf": true,
+  "is_encrypted": false,
+  "needs_pass": 0,
+  "pdf_version": null,
+  "page_size_pt": [
+    595.0,
+    842.0
+  ],
+  "toc_entry_count": 0,
+  "toc_levels": {},
+  "toc_sample_head": [],
+  "toc_sample_tail": [],
+  "has_struct_tree_root": false,
+  "has_mark_info": false,
+  "has_lang": false,
+  "catalog_excerpt": "<<\n  /Pages 77 0 R\n  /Type /Catalog\n>>",
+  "font_sample_pages": 33,
+  "total_spans": 890,
+  "total_chars_sampled": 63684,
+  "top_fonts": [
+    {
+      "font": "TitilliumWeb-Light",
+      "size": 12.0,
+      "flags": 4,
+      "chars": 55760,
+      "dominance_pct": 87.56
+    },
+    {
+      "font": "TitilliumWeb-Bold",
+      "size": 12.0,
+      "flags": 20,
+      "chars": 7902,
+      "dominance_pct": 12.41
+    },
+    {
+      "font": "Courier",
+      "size": 12.0,
+      "flags": 8,
+      "chars": 22,
+      "dominance_pct": 0.03
+    }
+  ],
+  "structural_sample_first_5_pages": [
+    {
+      "page": 0,
+      "block": 0,
+      "bbox": [
+        226.57,
+        101.29,
+        368.43,
+        119.55
+      ],
+      "n_spans": 1,
+      "text_head": "LEGGE 5 marzo 2024 , n. 21",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "LEGGE 5 marzo 2024 , n. 21"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 1,
+      "bbox": [
+        48.5,
+        139.57,
+        549.14,
+        157.83
+      ],
+      "n_spans": 1,
+      "text_head": "Interventi a sostegno della competitività dei capitali e delega al Governo per la riforma organica delle ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Interventi a sostegno della competitività dei capitali e delega al Governo per l"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 2,
+      "bbox": [
+        36.67,
+        165.85,
+        560.97,
+        184.11
+      ],
+      "n_spans": 1,
+      "text_head": "disposizioni in materia di mercati dei capitali recate dal testo unico di cui al decreto legislativo 24 febbraio ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "disposizioni in materia di mercati dei capitali recate dal testo unico di cui al"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 3,
+      "bbox": [
+        54.78,
+        192.13,
+        542.86,
+        210.39
+      ],
+      "n_spans": 2,
+      "text_head": "1998, n. 58, e delle disposizioni in materia di società di capitali contenute nel codice civile ((, per la ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1998, n. 58, e delle disposizioni in materia di società di capitali contenute ne"
+        },
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "((, per la "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 4,
+      "bbox": [
+        36.58,
+        218.42,
+        561.06,
+        236.68
+      ],
+      "n_spans": 1,
+      "text_head": "modifica delle disposizioni del codice di procedura civile in materia di arbitrato societario, nonché per ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "modifica delle disposizioni del codice di procedura civile in materia di arbitra"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 5,
+      "bbox": [
+        47.6,
+        244.7,
+        550.04,
+        262.96
+      ],
+      "n_spans": 1,
+      "text_head": "la modifica di ulteriori disposizioni vigenti al fine di assicurarne il miglior coordinamento, nonché ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "la modifica di ulteriori disposizioni vigenti al fine di assicurarne il miglior "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 6,
+      "bbox": [
+        61.51,
+        270.98,
+        536.12,
+        289.24
+      ],
+      "n_spans": 1,
+      "text_head": "delega al Governo per la riforma organica e il riordino del sistema sanzionatorio e di tutte le ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "delega al Governo per la riforma organica e il riordino del sistema sanzionatori"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 7,
+      "bbox": [
+        37.24,
+        297.27,
+        560.4,
+        315.53
+      ],
+      "n_spans": 2,
+      "text_head": "procedure sanzionatorie recati dal medesimo testo unico di cui al decreto legislativo n. 58 del 1998)). ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "procedure sanzionatorie recati dal medesimo testo unico di cui al decreto legisl"
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": ". "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 8,
+      "bbox": [
+        267.25,
+        323.55,
+        327.74,
+        341.81
+      ],
+      "n_spans": 1,
+      "text_head": "(24G00041)",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "(24G00041)"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 9,
+      "bbox": [
+        218.3,
+        355.14,
+        376.7,
+        370.12
+      ],
+      "n_spans": 1,
+      "text_head": "Vigente al : 22-5-2026",
+      "spans": [
+        {
+          "font": "Courier",
+          "size": 12.0,
+          "flags": 8,
+          "text": "Vigente al : 22-5-2026"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 10,
+      "bbox": [
+        282.21,
+        420.33,
+        315.43,
+        438.59
+      ],
+      "n_spans": 1,
+      "text_head": "Capo I ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo I "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 11,
+      "bbox": [
+        297.5,
+        446.61,
+        300.14,
+        464.87
+      ],
+      "n_spans": 1,
+      "text_head": " ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": " "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 12,
+      "bbox": [
+        100.23,
+        472.9,
+        494.78,
+        491.16
+      ],
+      "n_spans": 1,
+      "text_head": "Semplificazione in materia di accesso e regolamentazione dei mercati di capitali",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Semplificazione in materia di accesso e regolamentazione dei mercati di capitali"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 13,
+      "bbox": [
+        39.75,
+        511.18,
+        389.98,
+        529.44
+      ],
+      "n_spans": 1,
+      "text_head": "La Camera dei deputati ed il Senato della Repubblica hanno approvato;",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "La Camera dei deputati ed il Senato della Repubblica hanno approvato;"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 14,
+      "bbox": [
+        205.99,
+        562.42,
+        389.01,
+        580.68
+      ],
+      "n_spans": 1,
+      "text_head": "IL PRESIDENTE DELLA REPUBBLICA",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "IL PRESIDENTE DELLA REPUBBLICA"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 15,
+      "bbox": [
+        272.3,
+        628.67,
+        322.7,
+        646.93
+      ],
+      "n_spans": 1,
+      "text_head": "Promulga",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "Promulga"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 16,
+      "bbox": [
+        252.48,
+        681.95,
+        342.53,
+        700.21
+      ],
+      "n_spans": 1,
+      "text_head": "la seguente legge:",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "la seguente legge:"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 17,
+      "bbox": [
+        283.26,
+        720.23,
+        311.75,
+        738.49
+      ],
+      "n_spans": 1,
+      "text_head": "Art. 1",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "Art. 1"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 18,
+      "bbox": [
+        190.8,
+        756.47,
+        404.21,
+        774.73
+      ],
+      "n_spans": 1,
+      "text_head": "Disposizioni in materia di offerta fuori sede",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Disposizioni in materia di offerta fuori sede"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        549.12,
+        62.92
+      ],
+      "n_spans": 2,
+      "text_head": "1. All'articolo 30, comma 2, del testo unico delle disposizioni in materia di intermediazione finanziaria, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "1. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "All'articolo 30, comma 2, del testo unico delle disposizioni in materia di inter"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 1,
+      "bbox": [
+        43.5,
+        70.94,
+        506.18,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "di cui al decreto legislativo 24 febbraio 1998, n. 58, dopo la lettera b) è aggiunta la seguente:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "di cui al decreto legislativo 24 febbraio 1998, n. 58, dopo la lettera b) è aggi"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        515.32,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "«b-bis) le offerte di vendita o di sottoscrizione di azioni di propria emissione o di altri strumenti ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "«b-bis) le offerte di vendita o di sottoscrizione di azioni di propria emissione"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 3,
+      "bbox": [
+        43.5,
+        123.5,
+        541.0,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "finanziari di propria emissione che permettano di acquisire o sottoscrivere tali azioni, purché emessi ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "finanziari di propria emissione che permettano di acquisire o sottoscrivere tali"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 4,
+      "bbox": [
+        43.5,
+        149.79,
+        526.39,
+        168.05
+      ],
+      "n_spans": 1,
+      "text_head": "da emittenti con azioni negoziate in mercati regolamentati o sistemi multilaterali di negoziazione ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "da emittenti con azioni negoziate in mercati regolamentati o sistemi multilatera"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 5,
+      "bbox": [
+        43.5,
+        176.07,
+        532.37,
+        194.33
+      ],
+      "n_spans": 1,
+      "text_head": "italiani o di paesi dell'Unione europea, a condizione che siano effettuate dall'emittente attraverso i ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "italiani o di paesi dell'Unione europea, a condizione che siano effettuate dall'"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 6,
+      "bbox": [
+        43.5,
+        202.35,
+        518.16,
+        220.61
+      ],
+      "n_spans": 1,
+      "text_head": "propri amministratori o il proprio personale con funzioni direttive per importi di sottoscrizione o ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "propri amministratori o il proprio personale con funzioni direttive per importi "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 7,
+      "bbox": [
+        43.5,
+        228.64,
+        534.18,
+        246.9
+      ],
+      "n_spans": 1,
+      "text_head": "acquisto superiori o uguali a euro 250.000. La presente lettera non si applica alle azioni emesse da ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "acquisto superiori o uguali a euro 250.000. La presente lettera non si applica a"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 8,
+      "bbox": [
+        43.5,
+        254.92,
+        133.74,
+        273.18
+      ],
+      "n_spans": 1,
+      "text_head": "Sicav e da Sicaf».  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Sicav e da Sicaf».  "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 9,
+      "bbox": [
+        283.26,
+        374.83,
+        311.75,
+        393.09
+      ],
+      "n_spans": 1,
+      "text_head": "Art. 2",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "Art. 2"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 10,
+      "bbox": [
+        164.95,
+        411.07,
+        432.69,
+        429.33
+      ],
+      "n_spans": 1,
+      "text_head": "Estensione della definizione della categoria di piccole  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Estensione della definizione della categoria di piccole  "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 11,
+      "bbox": [
+        194.94,
+        437.36,
+        400.07,
+        455.62
+      ],
+      "n_spans": 1,
+      "text_head": "e medie imprese emittenti azioni quotate",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "e medie imprese emittenti azioni quotate"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 12,
+      "bbox": [
+        43.5,
+        474.89,
+        544.04,
+        493.15
+      ],
+      "n_spans": 2,
+      "text_head": "1. All'articolo 1, comma 1, lettera w-quater.1), del testo unico di cui al decreto legislativo 24 febbraio ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "1. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "All'articolo 1, comma 1, lettera w-quater.1), del testo unico di cui al decreto "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 13,
+      "bbox": [
+        43.5,
+        501.17,
+        539.56,
+        519.43
+      ],
+      "n_spans": 1,
+      "text_head": "1998, n. 58, le parole: «ai 500 milioni di euro» sono sostituite dalle seguenti: «a 1 miliardo di euro».  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1998, n. 58, le parole: «ai 500 milioni di euro» sono sostituite dalle seguenti:"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 14,
+      "bbox": [
+        283.26,
+        621.09,
+        311.75,
+        639.35
+      ],
+      "n_spans": 1,
+      "text_head": "Art. 3",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "Art. 3"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 15,
+      "bbox": [
+        150.95,
+        657.33,
+        444.05,
+        675.59
+      ],
+      "n_spans": 1,
+      "text_head": "Dematerializzazione delle quote di piccole e medie imprese",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Dematerializzazione delle quote di piccole e medie imprese"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 16,
+      "bbox": [
+        43.5,
+        694.86,
+        545.96,
+        713.12
+      ],
+      "n_spans": 2,
+      "text_head": "1. All'articolo 26 del decreto-legge 18 ottobre 2012, n. 179, convertito, con modificazioni, dalla legge ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "1. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "All'articolo 26 del decreto-legge 18 ottobre 2012, n. 179, convertito, con modif"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 17,
+      "bbox": [
+        43.5,
+        721.14,
+        382.48,
+        739.4
+      ],
+      "n_spans": 1,
+      "text_head": "17 dicembre 2012, n. 221, dopo il comma 2 sono inseriti i seguenti:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "17 dicembre 2012, n. 221, dopo il comma 2 sono inseriti i seguenti:  "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 18,
+      "bbox": [
+        43.5,
+        747.43,
+        530.51,
+        765.69
+      ],
+      "n_spans": 1,
+      "text_head": "«2-bis. Le quote appartenenti alle categorie del comma 2, aventi eguale valore e conferenti eguali ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "«2-bis. Le quote appartenenti alle categorie del comma 2, aventi eguale valore e"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 19,
+      "bbox": [
+        43.5,
+        773.71,
+        549.9,
+        791.97
+      ],
+      "n_spans": 1,
+      "text_head": "diritti, delle società di cui al medesimo comma possono esistere in forma scritturale ai sensi di quanto ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "diritti, delle società di cui al medesimo comma possono esistere in forma scritt"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        516.11,
+        62.92
+      ],
+      "n_spans": 1,
+      "text_head": "previsto dall'articolo 83-bis del testo unico di cui al decreto legislativo 24 febbraio 1998, n. 58.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "previsto dall'articolo 83-bis del testo unico di cui al decreto legislativo 24 f"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 1,
+      "bbox": [
+        43.5,
+        70.94,
+        550.3,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "2-ter. Alle quote emesse in forma scritturale ai sensi del comma 2-bis si applica la disciplina di cui alla ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2-ter. Alle quote emesse in forma scritturale ai sensi del comma 2-bis si applic"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        512.3,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "sezione I del capo IV del titolo II-bis della parte III del testo unico di cui al decreto legislativo 24 ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "sezione I del capo IV del titolo II-bis della parte III del testo unico di cui a"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 3,
+      "bbox": [
+        43.5,
+        123.5,
+        152.24,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "febbraio 1998, n. 58.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "febbraio 1998, n. 58.  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 4,
+      "bbox": [
+        43.5,
+        149.79,
+        506.86,
+        168.05
+      ],
+      "n_spans": 1,
+      "text_head": "2-quater. Per le società di cui al comma 2 che si avvalgano della disciplina del comma 2-bis è ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2-quater. Per le società di cui al comma 2 che si avvalgano della disciplina del"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 5,
+      "bbox": [
+        43.5,
+        176.07,
+        215.45,
+        194.33
+      ],
+      "n_spans": 1,
+      "text_head": "obbligatorio tenere il libro dei soci. ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "obbligatorio tenere il libro dei soci. "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 6,
+      "bbox": [
+        43.5,
+        202.35,
+        553.98,
+        220.61
+      ],
+      "n_spans": 1,
+      "text_head": "Per le quote di partecipazione emesse in forma diversa da quella scritturale, devono essere indicati nel ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Per le quote di partecipazione emesse in forma diversa da quella scritturale, de"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 7,
+      "bbox": [
+        43.5,
+        228.64,
+        521.89,
+        246.9
+      ],
+      "n_spans": 1,
+      "text_head": "libro dei soci, distintamente per ogni categoria, il nome dei soci, la partecipazione di spettanza di ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "libro dei soci, distintamente per ogni categoria, il nome dei soci, la partecipa"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 8,
+      "bbox": [
+        43.5,
+        254.92,
+        553.82,
+        273.18
+      ],
+      "n_spans": 1,
+      "text_head": "ciascuno, i versamenti fatti sulle partecipazioni nonché le variazioni nelle persone dei soci. Per le quote ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "ciascuno, i versamenti fatti sulle partecipazioni nonché le variazioni nelle per"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 9,
+      "bbox": [
+        43.5,
+        281.2,
+        553.31,
+        299.46
+      ],
+      "n_spans": 1,
+      "text_head": "emesse in forma scritturale, la società è tenuta ad aggiornare il libro dei soci conformemente a quanto ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "emesse in forma scritturale, la società è tenuta ad aggiornare il libro dei soci"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 10,
+      "bbox": [
+        43.5,
+        307.48,
+        538.15,
+        325.74
+      ],
+      "n_spans": 1,
+      "text_head": "previsto per le azioni dall'articolo 83-undecies, comma 1, del testo unico di cui al decreto legislativo ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "previsto per le azioni dall'articolo 83-undecies, comma 1, del testo unico di cu"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 11,
+      "bbox": [
+        43.5,
+        333.77,
+        530.7,
+        352.03
+      ],
+      "n_spans": 1,
+      "text_head": "24 febbraio 1998, n. 58. Le risultanze del libro sono messe a disposizione dei soci, a loro richiesta, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "24 febbraio 1998, n. 58. Le risultanze del libro sono messe a disposizione dei s"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 12,
+      "bbox": [
+        43.5,
+        360.05,
+        404.09,
+        378.31
+      ],
+      "n_spans": 1,
+      "text_head": "anche su supporto informatico in un formato comunemente utilizzato».  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "anche su supporto informatico in un formato comunemente utilizzato».  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 13,
+      "bbox": [
+        43.5,
+        393.83,
+        543.49,
+        412.09
+      ],
+      "n_spans": 2,
+      "text_head": "2. All'articolo 100-ter, comma 2, alinea, del testo unico di cui al decreto legislativo 24 febbraio 1998, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "2. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "All'articolo 100-ter, comma 2, alinea, del testo unico di cui al decreto legisla"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 14,
+      "bbox": [
+        43.5,
+        420.12,
+        508.1,
+        438.38
+      ],
+      "n_spans": 1,
+      "text_head": "n. 58, dopo le parole: «dalla legge 6 agosto 2008, n. 133,» sono inserite le seguenti: «nonché, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "n. 58, dopo le parole: «dalla legge 6 agosto 2008, n. 133,» sono inserite le seg"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 15,
+      "bbox": [
+        43.5,
+        446.4,
+        524.26,
+        464.66
+      ],
+      "n_spans": 1,
+      "text_head": "limitatamente alle quote rappresentative del capitale di piccole e medie imprese, dall'articolo 26, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "limitatamente alle quote rappresentative del capitale di piccole e medie imprese"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 16,
+      "bbox": [
+        43.5,
+        472.68,
+        550.61,
+        490.94
+      ],
+      "n_spans": 1,
+      "text_head": "comma 2-bis, del decreto-legge 18 ottobre 2012, n. 179, convertito, con modificazioni, dalla legge 17 ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "comma 2-bis, del decreto-legge 18 ottobre 2012, n. 179, convertito, con modifica"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 17,
+      "bbox": [
+        43.5,
+        498.96,
+        172.88,
+        517.22
+      ],
+      "n_spans": 1,
+      "text_head": "dicembre 2012, n. 221,».  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "dicembre 2012, n. 221,».  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 18,
+      "bbox": [
+        283.26,
+        618.88,
+        311.75,
+        637.14
+      ],
+      "n_spans": 1,
+      "text_head": "Art. 4",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "Art. 4"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 19,
+      "bbox": [
+        135.68,
+        655.12,
+        459.32,
+        673.38
+      ],
+      "n_spans": 1,
+      "text_head": "Riforma della disciplina degli emittenti strumenti finanziari diffusi",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Riforma della disciplina degli emittenti strumenti finanziari diffusi"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 20,
+      "bbox": [
+        43.5,
+        692.65,
+        518.19,
+        710.91
+      ],
+      "n_spans": 2,
+      "text_head": "1. Al testo unico di cui al decreto legislativo 24 febbraio 1998, n. 58, sono apportate le seguenti ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "1. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Al testo unico di cui al decreto legislativo 24 febbraio 1998, n. 58, sono appor"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 21,
+      "bbox": [
+        43.5,
+        718.94,
+        117.17,
+        737.2
+      ],
+      "n_spans": 1,
+      "text_head": "modificazioni:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "modificazioni:  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 22,
+      "bbox": [
+        51.0,
+        745.22,
+        542.1,
+        763.48
+      ],
+      "n_spans": 1,
+      "text_head": "a) all'articolo 83-sexies, comma 3, le parole: «Con riferimento alle assemblee dei portatori di azioni ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "a) all'articolo 83-sexies, comma 3, le parole: «Con riferimento alle assemblee d"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 23,
+      "bbox": [
+        43.5,
+        771.5,
+        547.37,
+        789.76
+      ],
+      "n_spans": 1,
+      "text_head": "diffuse tra il pubblico in misura rilevante il termine non può essere superiore a due giorni non festivi.» ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "diffuse tra il pubblico in misura rilevante il termine non può essere superiore "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        130.67,
+        62.92
+      ],
+      "n_spans": 1,
+      "text_head": "sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "sono soppresse;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 1,
+      "bbox": [
+        51.0,
+        70.94,
+        515.71,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "b) all'articolo 102, comma 4, le parole: «o diffusi tra il pubblico ai sensi dell'articolo 116» sono ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "b) all'articolo 102, comma 4, le parole: «o diffusi tra il pubblico ai sensi del"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        435.72,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "sostituite dalle seguenti: «o negoziati in sistemi multilaterali di negoziazione»;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "sostituite dalle seguenti: «o negoziati in sistemi multilaterali di negoziazione"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 3,
+      "bbox": [
+        51.0,
+        123.5,
+        163.01,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "c) all'articolo 114-bis:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "c) all'articolo 114-bis:  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 4,
+      "bbox": [
+        43.5,
+        149.79,
+        543.29,
+        168.05
+      ],
+      "n_spans": 1,
+      "text_head": "1) al comma 1, alinea, le parole: «I piani di compensi» sono sostituite dalle seguenti: «Negli emittenti ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1) al comma 1, alinea, le parole: «I piani di compensi» sono sostituite dalle se"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 5,
+      "bbox": [
+        43.5,
+        176.07,
+        190.07,
+        194.33
+      ],
+      "n_spans": 1,
+      "text_head": "quotati, i piani di compensi»;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "quotati, i piani di compensi»;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 6,
+      "bbox": [
+        43.5,
+        202.35,
+        175.31,
+        220.61
+      ],
+      "n_spans": 1,
+      "text_head": "2) il comma 2 è abrogato;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2) il comma 2 è abrogato;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 7,
+      "bbox": [
+        51.0,
+        228.64,
+        192.73,
+        246.9
+      ],
+      "n_spans": 1,
+      "text_head": "d) l'articolo 116 è abrogato;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "d) l'articolo 116 è abrogato;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 8,
+      "bbox": [
+        51.0,
+        254.92,
+        261.05,
+        273.18
+      ],
+      "n_spans": 1,
+      "text_head": "e) all'articolo 118, il comma 2 è abrogato;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "e) all'articolo 118, il comma 2 è abrogato;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 9,
+      "bbox": [
+        51.0,
+        281.2,
+        161.7,
+        299.46
+      ],
+      "n_spans": 1,
+      "text_head": "f) all'articolo 148-bis:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "f) all'articolo 148-bis:  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 10,
+      "bbox": [
+        43.5,
+        307.48,
+        545.5,
+        325.74
+      ],
+      "n_spans": 1,
+      "text_head": "1) al comma 1, le parole: «, nonché delle società emittenti strumenti finanziari diffusi fra il pubblico in ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1) al comma 1, le parole: «, nonché delle società emittenti strumenti finanziari"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 11,
+      "bbox": [
+        43.5,
+        333.77,
+        345.38,
+        352.03
+      ],
+      "n_spans": 1,
+      "text_head": "misura rilevante ai sensi dell'articolo 116,» sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "misura rilevante ai sensi dell'articolo 116,» sono soppresse;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 12,
+      "bbox": [
+        43.5,
+        360.05,
+        545.5,
+        378.31
+      ],
+      "n_spans": 1,
+      "text_head": "2) al comma 2, le parole: «, nonché delle società emittenti strumenti finanziari diffusi fra il pubblico in ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2) al comma 2, le parole: «, nonché delle società emittenti strumenti finanziari"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 13,
+      "bbox": [
+        43.5,
+        386.33,
+        345.38,
+        404.59
+      ],
+      "n_spans": 1,
+      "text_head": "misura rilevante ai sensi dell'articolo 116,» sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "misura rilevante ai sensi dell'articolo 116,» sono soppresse;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 14,
+      "bbox": [
+        51.0,
+        412.62,
+        163.87,
+        430.88
+      ],
+      "n_spans": 1,
+      "text_head": "g) all'articolo 165-ter:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "g) all'articolo 165-ter:  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 15,
+      "bbox": [
+        43.5,
+        438.9,
+        244.15,
+        457.16
+      ],
+      "n_spans": 1,
+      "text_head": "1) il comma 1 è sostituito dal seguente:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1) il comma 1 è sostituito dal seguente:  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 16,
+      "bbox": [
+        43.5,
+        465.18,
+        527.15,
+        483.44
+      ],
+      "n_spans": 1,
+      "text_head": "«1. Sono soggette alle disposizioni contenute nella presente sezione le società italiane con azioni ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "«1. Sono soggette alle disposizioni contenute nella presente sezione le società "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 17,
+      "bbox": [
+        43.5,
+        491.46,
+        544.15,
+        509.72
+      ],
+      "n_spans": 1,
+      "text_head": "quotate in mercati regolamentati, di cui all'articolo 119, le quali controllino società aventi sede legale ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "quotate in mercati regolamentati, di cui all'articolo 119, le quali controllino "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 18,
+      "bbox": [
+        43.5,
+        517.75,
+        502.06,
+        536.01
+      ],
+      "n_spans": 1,
+      "text_head": "in Stati i cui ordinamenti non garantiscono la trasparenza della costituzione, della situazione ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "in Stati i cui ordinamenti non garantiscono la trasparenza della costituzione, d"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 19,
+      "bbox": [
+        43.5,
+        544.03,
+        554.03,
+        562.29
+      ],
+      "n_spans": 1,
+      "text_head": "patrimoniale e finanziaria e della gestione delle società, nonché le società italiane con azioni quotate in ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "patrimoniale e finanziaria e della gestione delle società, nonché le società ita"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 20,
+      "bbox": [
+        43.5,
+        570.31,
+        502.97,
+        588.57
+      ],
+      "n_spans": 1,
+      "text_head": "mercati regolamentati le quali siano collegate alle suddette società estere o siano da queste ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "mercati regolamentati le quali siano collegate alle suddette società estere o si"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 21,
+      "bbox": [
+        43.5,
+        596.6,
+        111.92,
+        614.86
+      ],
+      "n_spans": 1,
+      "text_head": "controllate»;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "controllate»;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 22,
+      "bbox": [
+        43.5,
+        622.88,
+        542.15,
+        641.14
+      ],
+      "n_spans": 1,
+      "text_head": "2) al comma 6, le parole: «e alle società italiane emittenti strumenti finanziari diffusi fra il pubblico in ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2) al comma 6, le parole: «e alle società italiane emittenti strumenti finanziar"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 23,
+      "bbox": [
+        43.5,
+        649.16,
+        342.83,
+        667.42
+      ],
+      "n_spans": 1,
+      "text_head": "misura rilevante ai sensi dell'articolo 116» sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "misura rilevante ai sensi dell'articolo 116» sono soppresse;  "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 24,
+      "bbox": [
+        51.0,
+        675.44,
+        532.57,
+        693.7
+      ],
+      "n_spans": 1,
+      "text_head": "h) all'articolo 165-quater, comma 1, le parole: «e le società italiane emittenti strumenti finanziari ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "h) all'articolo 165-quater, comma 1, le parole: «e le società italiane emittenti"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 25,
+      "bbox": [
+        43.5,
+        701.73,
+        461.84,
+        719.99
+      ],
+      "n_spans": 1,
+      "text_head": "diffusi fra il pubblico in misura rilevante, ai sensi dell'articolo 116,» sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "diffusi fra il pubblico in misura rilevante, ai sensi dell'articolo 116,» sono s"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 26,
+      "bbox": [
+        51.0,
+        728.01,
+        510.62,
+        746.27
+      ],
+      "n_spans": 1,
+      "text_head": "i) all'articolo 165-quinquies, comma 1, le parole: «e delle società italiane emittenti strumenti ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "i) all'articolo 165-quinquies, comma 1, le parole: «e delle società italiane emi"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 27,
+      "bbox": [
+        43.5,
+        754.29,
+        510.19,
+        772.55
+      ],
+      "n_spans": 1,
+      "text_head": "finanziari diffusi fra il pubblico in misura rilevante, ai sensi dell'articolo 116,» sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "finanziari diffusi fra il pubblico in misura rilevante, ai sensi dell'articolo 1"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 28,
+      "bbox": [
+        51.0,
+        780.58,
+        542.08,
+        798.84
+      ],
+      "n_spans": 1,
+      "text_head": "l) all'articolo 165-sexies, comma 1, le parole: «e delle società italiane emittenti strumenti finanziari ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "l) all'articolo 165-sexies, comma 1, le parole: «e delle società italiane emitte"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        461.84,
+        62.92
+      ],
+      "n_spans": 1,
+      "text_head": "diffusi fra il pubblico in misura rilevante, ai sensi dell'articolo 116,» sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "diffusi fra il pubblico in misura rilevante, ai sensi dell'articolo 116,» sono s"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 1,
+      "bbox": [
+        51.0,
+        70.94,
+        517.98,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "m) all'articolo 191-ter, comma 6, le parole: «o diffusi tra il pubblico in maniera rilevante» sono ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "m) all'articolo 191-ter, comma 6, le parole: «o diffusi tra il pubblico in manie"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        103.42,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "soppresse;  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 3,
+      "bbox": [
+        51.0,
+        123.5,
+        438.32,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "n) all'articolo 193, comma 1, le parole: «116, comma 1-bis,» sono soppresse.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "n) all'articolo 193, comma 1, le parole: «116, comma 1-bis,» sono soppresse.  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 4,
+      "bbox": [
+        43.5,
+        157.29,
+        553.03,
+        175.55
+      ],
+      "n_spans": 2,
+      "text_head": "2. All'articolo 19-bis, comma 1, del decreto legislativo 27 gennaio 2010, n. 39, la lettera a) è abrogata.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "2. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "All'articolo 19-bis, comma 1, del decreto legislativo 27 gennaio 2010, n. 39, la"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 5,
+      "bbox": [
+        43.5,
+        191.07,
+        339.79,
+        209.33
+      ],
+      "n_spans": 2,
+      "text_head": "3. Al codice civile sono apportate le seguenti modificazioni:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "3. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Al codice civile sono apportate le seguenti modificazioni:  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 6,
+      "bbox": [
+        51.0,
+        217.35,
+        295.75,
+        235.61
+      ],
+      "n_spans": 1,
+      "text_head": "a) dopo l'articolo 2325-bis è inserito il seguente:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "a) dopo l'articolo 2325-bis è inserito il seguente:  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 7,
+      "bbox": [
+        43.5,
+        243.64,
+        548.54,
+        261.9
+      ],
+      "n_spans": 1,
+      "text_head": "«Art. 2325-ter (Società emittenti strumenti finanziari diffusi). - Ai fini di cui all'articolo 2325-bis, sono ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "«Art. 2325-ter (Società emittenti strumenti finanziari diffusi). - Ai fini di cu"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 8,
+      "bbox": [
+        43.5,
+        269.92,
+        534.95,
+        288.18
+      ],
+      "n_spans": 1,
+      "text_head": "emittenti azioni diffuse fra il pubblico in misura rilevante gli emittenti italiani non quotati in mercati ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "emittenti azioni diffuse fra il pubblico in misura rilevante gli emittenti itali"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 9,
+      "bbox": [
+        43.5,
+        296.2,
+        548.69,
+        314.46
+      ],
+      "n_spans": 1,
+      "text_head": "regolamentati italiani i quali abbiano azionisti, diversi dai soci che partecipano in misura superiore al 3 ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "regolamentati italiani i quali abbiano azionisti, diversi dai soci che partecipa"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 10,
+      "bbox": [
+        43.5,
+        322.48,
+        525.4,
+        340.74
+      ],
+      "n_spans": 1,
+      "text_head": "per cento del capitale, in numero superiore a cinquecento che detengano complessivamente una ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "per cento del capitale, in numero superiore a cinquecento che detengano compless"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 11,
+      "bbox": [
+        43.5,
+        348.77,
+        502.78,
+        367.03
+      ],
+      "n_spans": 1,
+      "text_head": "percentuale di capitale sociale almeno pari al 5 per cento e superino due dei tre limiti indicati ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "percentuale di capitale sociale almeno pari al 5 per cento e superino due dei tr"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 12,
+      "bbox": [
+        43.5,
+        375.05,
+        232.21,
+        393.31
+      ],
+      "n_spans": 1,
+      "text_head": "dall'articolo 2435-bis, primo comma.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "dall'articolo 2435-bis, primo comma.  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 13,
+      "bbox": [
+        43.5,
+        401.33,
+        523.15,
+        419.59
+      ],
+      "n_spans": 1,
+      "text_head": "Non si considerano emittenti diffusi quegli emittenti le cui azioni sono soggette a limiti legali alla ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Non si considerano emittenti diffusi quegli emittenti le cui azioni sono soggett"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 14,
+      "bbox": [
+        43.5,
+        427.62,
+        550.94,
+        445.88
+      ],
+      "n_spans": 1,
+      "text_head": "circolazione riguardanti anche l'esercizio dei diritti aventi contenuto patrimoniale, ovvero il cui oggetto ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "circolazione riguardanti anche l'esercizio dei diritti aventi contenuto patrimon"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 15,
+      "bbox": [
+        43.5,
+        453.9,
+        523.9,
+        472.16
+      ],
+      "n_spans": 1,
+      "text_head": "sociale prevede esclusivamente lo svolgimento di attività non lucrative di utilità sociale o volte al ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "sociale prevede esclusivamente lo svolgimento di attività non lucrative di utili"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 16,
+      "bbox": [
+        43.5,
+        480.18,
+        319.93,
+        498.44
+      ],
+      "n_spans": 1,
+      "text_head": "godimento da parte dei soci di un bene o di un servizio.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "godimento da parte dei soci di un bene o di un servizio.  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 17,
+      "bbox": [
+        43.5,
+        506.46,
+        228.73,
+        524.72
+      ],
+      "n_spans": 1,
+      "text_head": "Non si considerano emittenti diffusi:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Non si considerano emittenti diffusi:  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 18,
+      "bbox": [
+        43.5,
+        532.75,
+        541.62,
+        551.01
+      ],
+      "n_spans": 1,
+      "text_head": "1) gli emittenti in amministrazione straordinaria dalla data di emanazione del decreto che dispone la ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1) gli emittenti in amministrazione straordinaria dalla data di emanazione del d"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 19,
+      "bbox": [
+        43.5,
+        559.03,
+        219.19,
+        577.29
+      ],
+      "n_spans": 1,
+      "text_head": "cessazione dell'attività di impresa;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "cessazione dell'attività di impresa;  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 20,
+      "bbox": [
+        43.5,
+        585.31,
+        483.85,
+        603.57
+      ],
+      "n_spans": 1,
+      "text_head": "2) gli emittenti in concordato preventivo liquidatorio o in continuità indiretta dalla data di ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2) gli emittenti in concordato preventivo liquidatorio o in continuità indiretta"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 21,
+      "bbox": [
+        43.5,
+        611.6,
+        281.27,
+        629.86
+      ],
+      "n_spans": 1,
+      "text_head": "omologazione da parte dell'autorità giudiziaria;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "omologazione da parte dell'autorità giudiziaria;  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 22,
+      "bbox": [
+        43.5,
+        637.88,
+        527.45,
+        656.14
+      ],
+      "n_spans": 1,
+      "text_head": "3) gli emittenti nei cui confronti è dichiarata la liquidazione giudiziale o posti in liquidazione coatta ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "3) gli emittenti nei cui confronti è dichiarata la liquidazione giudiziale o pos"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 23,
+      "bbox": [
+        43.5,
+        664.16,
+        538.13,
+        682.42
+      ],
+      "n_spans": 1,
+      "text_head": "amministrativa a norma del codice della crisi d'impresa e dell'insolvenza, di cui al decreto legislativo ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "amministrativa a norma del codice della crisi d'impresa e dell'insolvenza, di cu"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 24,
+      "bbox": [
+        43.5,
+        690.44,
+        270.47,
+        708.7
+      ],
+      "n_spans": 1,
+      "text_head": "12 gennaio 2019, n. 14, o delle leggi speciali;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "12 gennaio 2019, n. 14, o delle leggi speciali;  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 25,
+      "bbox": [
+        43.5,
+        716.73,
+        519.37,
+        734.99
+      ],
+      "n_spans": 1,
+      "text_head": "4) gli emittenti nei cui confronti è stata disposta la totale riduzione delle azioni o del valore delle ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "4) gli emittenti nei cui confronti è stata disposta la totale riduzione delle az"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 26,
+      "bbox": [
+        43.5,
+        743.01,
+        545.8,
+        761.27
+      ],
+      "n_spans": 1,
+      "text_head": "obbligazioni dalla data di pubblicazione del provvedimento di cui all'articolo 32, comma 3, del decreto ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "obbligazioni dalla data di pubblicazione del provvedimento di cui all'articolo 3"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 27,
+      "bbox": [
+        43.5,
+        769.29,
+        237.48,
+        787.55
+      ],
+      "n_spans": 1,
+      "text_head": "legislativo 16 novembre 2015, n. 180.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "legislativo 16 novembre 2015, n. 180.  "
+        }
+      ]
+    }
+  ],
+  "art_headers_sample": [
+    [
+      0,
+      "Art. 1"
+    ],
+    [
+      1,
+      "Art. 2"
+    ],
+    [
+      1,
+      "Art. 3"
+    ],
+    [
+      2,
+      "Art. 4"
+    ],
+    [
+      5,
+      "Art. 5"
+    ],
+    [
+      6,
+      "Art. 6"
+    ],
+    [
+      6,
+      "Art. 7"
+    ],
+    [
+      7,
+      "Art. 8"
+    ],
+    [
+      7,
+      "Art. 9"
+    ],
+    [
+      8,
+      "Art. 10"
+    ],
+    [
+      8,
+      "Art. 11"
+    ],
+    [
+      9,
+      "Art. 12"
+    ],
+    [
+      12,
+      "Art. 13"
+    ],
+    [
+      12,
+      "Art. 14"
+    ],
+    [
+      14,
+      "Art. 15"
+    ],
+    [
+      15,
+      "Art. 16"
+    ],
+    [
+      19,
+      "Art. 17"
+    ],
+    [
+      19,
+      "Art. 18"
+    ],
+    [
+      20,
+      "Art. 19"
+    ],
+    [
+      23,
+      "Art. 19-bis"
+    ],
+    [
+      25,
+      "Art. 20"
+    ],
+    [
+      25,
+      "Art. 21"
+    ],
+    [
+      27,
+      "Art. 22"
+    ],
+    [
+      27,
+      "Art. 23"
+    ],
+    [
+      28,
+      "Art. 196-ter (Impegni). - 1. Per le violazioni di competenza della Consob, entro trenta giorni dalla"
+    ],
+    [
+      28,
+      "Art. 24"
+    ],
+    [
+      29,
+      "Art. 25"
+    ],
+    [
+      31,
+      "Art. 26"
+    ],
+    [
+      31,
+      "Art. 27"
+    ]
+  ],
+  "art_headers_truncated": false
+}

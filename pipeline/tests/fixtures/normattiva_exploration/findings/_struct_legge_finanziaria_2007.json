@@ -1,0 +1,972 @@
+{
+  "path": "/home/scabo/projects/ScaboPDF/pipeline/tests/fixtures/normattiva_exploration/legge_finanziaria_2007/legge_finanziaria_2007.pdf",
+  "pages_scanned": 492,
+  "structural_markers_count": 33,
+  "art_count": 19,
+  "isolated_bold_block_count": 33,
+  "bold_block_size_distribution": {
+    "12.0": 22,
+    "10.5": 11
+  },
+  "structural_markers_sample": [
+    {
+      "page": 3,
+      "block": 10,
+      "text": "parte corrispondente al rapporto tra l'importo di 95.000 euro, diminuito del reddito complessivo, e",
+      "bbox": [
+        43.5,
+        307.48,
+        532.36,
+        325.74
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte corrispondente al rapporto tra l'importo di 95.000 euro, diminuito del red"
+        }
+      ]
+    },
+    {
+      "page": 17,
+      "block": 26,
+      "text": "capo ai singoli prestatori di lavoro autonomo tutti gli obblighi formali e sostanziali previsti per lo",
+      "bbox": [
+        43.5,
+        765.51,
+        519.38,
+        783.77
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "capo ai singoli prestatori di lavoro autonomo tutti gli obblighi formali e sosta"
+        }
+      ]
+    },
+    {
+      "page": 22,
+      "block": 17,
+      "text": "parte delle pubbliche amministrazioni abilitate nonché i servizi di natura amministrativa e tecnica che",
+      "bbox": [
+        43.5,
+        513.96,
+        546.89,
+        532.22
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte delle pubbliche amministrazioni abilitate nonché i servizi di natura ammin"
+        }
+      ]
+    },
+    {
+      "page": 34,
+      "block": 17,
+      "text": "titolo principale.",
+      "bbox": [
+        43.5,
+        491.46,
+        127.94,
+        509.72
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "titolo principale.  "
+        }
+      ]
+    },
+    {
+      "page": 48,
+      "block": 2,
+      "text": "titolo di proprietà o di altro diritto reale ad essa destinati rappresentano almeno 1'80 per cento",
+      "bbox": [
+        43.5,
+        104.72,
+        516.67,
+        122.98
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "titolo di proprietà o di altro diritto reale ad essa destinati rappresentano alm"
+        }
+      ]
+    },
+    {
+      "page": 55,
+      "block": 17,
+      "text": "capo al quotista e alle azioni della SIIQ ricevute dagli stessi quotisti è attribuito il medesimo valore",
+      "bbox": [
+        43.5,
+        506.46,
+        530.42,
+        524.72
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "capo al quotista e alle azioni della SIIQ ricevute dagli stessi quotisti è attri"
+        }
+      ]
+    },
+    {
+      "page": 84,
+      "block": 0,
+      "text": "parte del centro autorizzato per la demolizione;",
+      "bbox": [
+        43.5,
+        44.66,
+        283.57,
+        62.92
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte del centro autorizzato per la demolizione;  "
+        }
+      ]
+    },
+    {
+      "page": 87,
+      "block": 12,
+      "text": "parte dello stesso gruppo societario. Sono in ogni caso esclusi i soggetti legati tra loro da un rapporto",
+      "bbox": [
+        43.5,
+        375.05,
+        546.97,
+        393.31
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte dello stesso gruppo societario. Sono in ogni caso esclusi i soggetti legat"
+        }
+      ]
+    },
+    {
+      "page": 154,
+      "block": 23,
+      "text": "Titolo V del decreto legislativo 30 marzo 2001, n. 165.",
+      "bbox": [
+        43.5,
+        671.66,
+        317.33,
+        689.92
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Titolo V del decreto legislativo 30 marzo 2001, n. 165.  "
+        }
+      ]
+    },
+    {
+      "page": 201,
+      "block": 22,
+      "text": "titolo di abilitazione, per i docenti che frequentano, alla data di entrata in vigore della presente legge, i",
+      "bbox": [
+        43.5,
+        622.88,
+        548.41,
+        641.14
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "titolo di abilitazione, per i docenti che frequentano, alla data di entrata in v"
+        }
+      ]
+    },
+    {
+      "page": 229,
+      "block": 9,
+      "text": "parte del Ministero dell'economia e delle finanze secondo modalità e con contenuti individuati tramite",
+      "bbox": [
+        43.5,
+        296.2,
+        550.45,
+        314.46
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte del Ministero dell'economia e delle finanze secondo modalità e con contenu"
+        }
+      ]
+    },
+    {
+      "page": 245,
+      "block": 18,
+      "text": "parte rimanente resta a carico del datore di lavoro. Al contributo di cui al presente comma si applicano",
+      "bbox": [
+        43.5,
+        525.25,
+        551.23,
+        543.51
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte rimanente resta a carico del datore di lavoro. Al contributo di cui al pre"
+        }
+      ]
+    },
+    {
+      "page": 246,
+      "block": 14,
+      "text": "parte integrativa della retribuzione. La predetta parte integrativa della retribuzione è assoggettata a",
+      "bbox": [
+        43.5,
+        420.12,
+        541.22,
+        438.38
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte integrativa della retribuzione. La predetta parte integrativa della retrib"
+        }
+      ]
+    },
+    {
+      "page": 312,
+      "block": 7,
+      "text": "parte delle imprese attraverso l'adozione di strumenti di marchio consortili, aventi natura privatistica,",
+      "bbox": [
+        43.5,
+        236.14,
+        547.57,
+        254.4
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte delle imprese attraverso l'adozione di strumenti di marchio consortili, av"
+        }
+      ]
+    },
+    {
+      "page": 331,
+      "block": 7,
+      "text": "parte II, titolo I, capo N, sezione II, del codice dei contratti pubblici relativi a lavori, servizi e forniture, di",
+      "bbox": [
+        43.5,
+        236.14,
+        548.34,
+        254.4
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte II, titolo I, capo N, sezione II, del codice dei contratti pubblici relati"
+        }
+      ]
+    },
+    {
+      "page": 332,
+      "block": 16,
+      "text": "titolo di capitale, al netto dei versamenti già eseguiti a titolo di capitale ed interessi, diminuito al 50 per",
+      "bbox": [
+        43.5,
+        480.18,
+        553.87,
+        498.44
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "titolo di capitale, al netto dei versamenti già eseguiti a titolo di capitale ed"
+        }
+      ]
+    },
+    {
+      "page": 347,
+      "block": 6,
+      "text": "Capo provvisorio dello Stato 18 marzo 1947, n. 281, ratificato, con modificazioni, dalla legge 11 luglio",
+      "bbox": [
+        43.5,
+        209.85,
+        547.91,
+        228.11
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo provvisorio dello Stato 18 marzo 1947, n. 281, ratificato, con modificazion"
+        }
+      ]
+    },
+    {
+      "page": 368,
+      "block": 17,
+      "text": "parte degli ipovedenti e non vedenti, alla creazione di prodotti editoriali nuovi e specifici, nonché alla",
+      "bbox": [
+        43.5,
+        513.96,
+        539.87,
+        532.22
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte degli ipovedenti e non vedenti, alla creazione di prodotti editoriali nuov"
+        }
+      ]
+    },
+    {
+      "page": 452,
+      "block": 24,
+      "text": "titolo universale al predetto ente e le risorse strumentali e di personale ivi in servizio sono trasferite al",
+      "bbox": [
+        39.75,
+        671.69,
+        547.96,
+        689.95
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "titolo universale al predetto ente e le risorse strumentali e di personale ivi i"
+        }
+      ]
+    },
+    {
+      "page": 461,
+      "block": 0,
+      "text": "parte in cui, con riferimento alle medesime obbligazioni, priva di efficacia nei confronti dell'azienda",
+      "bbox": [
+        39.75,
+        40.91,
+        527.85,
+        59.17
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte in cui, con riferimento alle medesime obbligazioni, priva di efficacia nei"
+        }
+      ]
+    },
+    {
+      "page": 475,
+      "block": 15,
+      "text": "Capo del Dipartimento della protezione civile n. 539 del 20 agosto 2018, possono assumere,",
+      "bbox": [
+        39.75,
+        435.15,
+        501.19,
+        453.41
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Capo del Dipartimento della protezione civile n. 539 del 20 agosto 2018, possono"
+        }
+      ]
+    },
+    {
+      "page": 486,
+      "block": 5,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        262.2,
+        248.78,
+        280.46
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 486,
+      "block": 13,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        472.46,
+        248.78,
+        490.72
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 487,
+      "block": 18,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        603.88,
+        248.78,
+        622.14
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 488,
+      "block": 1,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        67.19,
+        248.78,
+        85.45
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 488,
+      "block": 6,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        288.48,
+        248.78,
+        306.74
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 488,
+      "block": 11,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        509.78,
+        248.78,
+        528.04
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 488,
+      "block": 16,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        731.07,
+        248.78,
+        749.33
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 489,
+      "block": 6,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        198.6,
+        248.78,
+        216.86
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 489,
+      "block": 14,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        408.87,
+        248.78,
+        427.13
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 489,
+      "block": 23,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        645.41,
+        248.78,
+        663.67
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 490,
+      "block": 2,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        93.47,
+        248.78,
+        111.73
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    },
+    {
+      "page": 490,
+      "block": 10,
+      "text": "Parte di provvedimento in formato grafico",
+      "bbox": [
+        39.75,
+        303.73,
+        248.78,
+        321.99
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Parte di provvedimento in formato grafico"
+        }
+      ]
+    }
+  ],
+  "bold_blocks_sample": [
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "LEGGE 27 dicembre 2006 , n. 296",
+      "bbox": [
+        211.93,
+        101.29,
+        383.07,
+        119.55
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "IL PRESIDENTE DELLA REPUBBLICA",
+      "bbox": [
+        205.99,
+        275.59,
+        389.01,
+        293.85
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "Promulga",
+      "bbox": [
+        272.3,
+        341.84,
+        322.7,
+        360.1
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        433.4,
+        311.75,
+        451.66
+      ]
+    },
+    {
+      "page": 41,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        416.11,
+        311.75,
+        434.37
+      ]
+    },
+    {
+      "page": 74,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        408.61,
+        311.75,
+        426.87
+      ]
+    },
+    {
+      "page": 107,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        190.85,
+        311.75,
+        209.11
+      ]
+    },
+    {
+      "page": 142,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        393.61,
+        311.75,
+        411.87
+      ]
+    },
+    {
+      "page": 171,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        731.51,
+        311.75,
+        749.77
+      ]
+    },
+    {
+      "page": 199,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        217.13,
+        311.75,
+        235.39
+      ]
+    },
+    {
+      "page": 231,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        389.83,
+        311.75,
+        408.09
+      ]
+    },
+    {
+      "page": 274,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        468.68,
+        311.75,
+        486.94
+      ]
+    },
+    {
+      "page": 305,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        50.87,
+        311.75,
+        69.13
+      ]
+    },
+    {
+      "page": 329,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        633.88,
+        311.75,
+        652.14
+      ]
+    },
+    {
+      "page": 358,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        468.68,
+        311.75,
+        486.94
+      ]
+    },
+    {
+      "page": 390,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        547.53,
+        311.75,
+        565.79
+      ]
+    },
+    {
+      "page": 401,
+      "size": 12.0,
+      "text": "denominati, sulle comunità di tipo familiare e sulle famiglie affidatarie e il registro di cui",
+      "bbox": [
+        43.5,
+        254.92,
+        502.0,
+        273.18
+      ]
+    },
+    {
+      "page": 415,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        50.87,
+        311.75,
+        69.13
+      ]
+    },
+    {
+      "page": 486,
+      "size": 12.0,
+      "text": "(( (Art. 1, comma 345)",
+      "bbox": [
+        39.75,
+        630.16,
+        157.54,
+        648.42
+      ]
+    },
+    {
+      "page": 486,
+      "size": 12.0,
+      "text": "",
+      "bbox": [
+        39.75,
+        656.44,
+        42.39,
+        674.7
+      ]
+    },
+    {
+      "page": 486,
+      "size": 12.0,
+      "text": "",
+      "bbox": [
+        39.75,
+        682.73,
+        42.39,
+        700.99
+      ]
+    },
+    {
+      "page": 486,
+      "size": 12.0,
+      "text": "",
+      "bbox": [
+        39.75,
+        709.01,
+        42.39,
+        727.27
+      ]
+    },
+    {
+      "page": 486,
+      "size": 10.5,
+      "text": "---------------------------------------------------------------------",
+      "bbox": [
+        39.75,
+        735.29,
+        479.73,
+        753.55
+      ]
+    },
+    {
+      "page": 486,
+      "size": 10.5,
+      "text": "Zona    | Strutture | Strutture opache orizzontali |  Finestre",
+      "bbox": [
+        39.75,
+        761.57,
+        454.53,
+        779.83
+      ]
+    },
+    {
+      "page": 487,
+      "size": 10.5,
+      "text": "Climatica |  opache   |------------------------------| comprensive",
+      "bbox": [
+        39.75,
+        40.91,
+        467.13,
+        59.17
+      ]
+    },
+    {
+      "page": 487,
+      "size": 10.5,
+      "text": "| verticali |   Coperture  |   Pavimenti   |  di infissi",
+      "bbox": [
+        39.75,
+        67.19,
+        467.13,
+        85.45
+      ]
+    },
+    {
+      "page": 487,
+      "size": 10.5,
+      "text": "---------------------------------------------------------------------",
+      "bbox": [
+        39.75,
+        93.47,
+        479.73,
+        111.73
+      ]
+    },
+    {
+      "page": 487,
+      "size": 10.5,
+      "text": "A     |    0,72   |     0,42     |     0,74      |     5,0",
+      "bbox": [
+        39.75,
+        119.75,
+        441.93,
+        138.01
+      ]
+    },
+    {
+      "page": 487,
+      "size": 10.5,
+      "text": "B     |    0,54   |     0,42     |     0,55      |     3,6",
+      "bbox": [
+        39.75,
+        146.04,
+        441.93,
+        164.3
+      ]
+    },
+    {
+      "page": 487,
+      "size": 10.5,
+      "text": "C     |    0,46   |     0,42     |     0,49      |     3,0",
+      "bbox": [
+        39.75,
+        172.32,
+        441.93,
+        190.58
+      ]
+    }
+  ]
+}

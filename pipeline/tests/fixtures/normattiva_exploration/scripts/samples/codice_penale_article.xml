@@ -1,0 +1,64 @@
+<attachment>
+                <doc name="Codice Penale-art. 575">
+                    <meta>
+                        <identification source="">
+                            <FRBRWork>
+                                <FRBRthis value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/!main/annesso_731"/>
+                                <FRBRuri value="/akn/it/act/regio_decreto/stato/1930-10-19/1398"/>
+                                <FRBRalias name="urn:nir" value="urn:nir:stato:regio.decreto:1930-10-19;1398"/>
+                                <FRBRalias name="eli" value="eli/id/1930/10/26/030U1398/CONSOLIDATED/20260507"/>
+                                <FRBRdate date="2011-10-13" name=""/>
+                                <FRBRauthor as="#author" href=""/>
+                                <FRBRcountry value="it"/>
+                            </FRBRWork>
+                            <FRBRExpression>
+                                <FRBRthis value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01/!main/annesso_731"/>
+                                <FRBRuri value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01"/>
+                                <FRBRdate date="1931-07-01" name=""/>
+                                <FRBRauthor as="#author" href=""/>
+                                <FRBRlanguage language="ita"/>
+                            </FRBRExpression>
+                            <FRBRManifestation>
+                                <FRBRthis value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01/!main/annesso_731.xml"/>
+                                <FRBRuri value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01.xml"/>
+                                <FRBRdate date="1930-10-19" name=""/>
+                                <FRBRauthor as="#author" href=""/>
+                            </FRBRManifestation>
+                        </identification>
+                    </meta>
+                    <mainBody>
+                        <paragraph>
+                            <content>
+                                <p> Art. 575. 
+ 
+ (Omicidio) 
+ 
+ Chiunque cagiona la morte di un uomo e' punito con la reclusione non inferiore ad anni ventuno. 
+ (96) (125) <ins eId="ins_746">((233))</ins>
+                                </p>
+                            </content>
+                        </paragraph>
+                        <paragraph>
+                            <content>
+                                <p>-----------</p>
+                                <p>AGGIORNAMENTO (96)</p>
+                                <p>
+ La <ref eId="1155" href="/akn/it/act/legge/stato/1965-05-31/575/!main">L. 31 maggio 1965, n. 575</ref>, come modificata dalla <ref eId="1156" href="/akn/it/act/legge/stato/1982-09-13/646/!main">L. 13 settembre 1982, n. 646</ref>, ha disposto: 
+ - (con l'art. 7, comma 1) che la pena stabilita per il delitto previsto nel presente articolo e' aumentata se il fatto e' commesso da persona gia' sottoposta con provvedimento definitivo a misura di prevenzione; 
+ -(con l'art. 7, comma 3) che alla pena e' aggiunta una misura di sicurezza detentiva. </p>
+                                <p>-----------</p>
+                                <p>AGGIORNAMENTO (125)</p>
+                                <p>
+ La <ref eId="1157" href="/akn/it/act/legge/stato/1965-05-31/575/!main">L. 31 maggio 1965, n. 575</ref>, come modificata dal <ref eId="1158" href="/akn/it/act/decretoLegge/stato/1991-05-13/152/!main">D.L. 13 maggio 1991, n. 152</ref>, convertito, con modificazioni, dalla <ref eId="1159" href="/akn/it/act/legge/stato/1991-07-12/203/!main">L. 12 luglio 1991, n. 203</ref>, ha disposto (con l'art. 7, comma 1) che la pena stabilita per il delitto previsto nel presente articolo e' aumentata da un terzo alla meta' se il fatto e' commesso da persona sottoposta con provvedimento definitivo ad una misura di prevenzione durante il periodo previsto di applicazione e sino a tre anni dal momento in cui ne e' cessata l'esecuzione. </p>
+                                <p>-----------</p>
+                                <p>AGGIORNAMENTO (233)</p>
+                                <p>
+ Il <ref eId="1160" href="/akn/it/act/decretoLegislativo/stato/2011-09-06/159/!main">D.Lgs. 6 settembre 2011, n. 159</ref> ha disposto: 
+ - (con l'art. 71, comma 1) che la pena stabilita per il delitto previsto dal presente articolo e' aumentata da un terzo alla meta' se il fatto e' commesso da persona sottoposta con provvedimento definitivo ad una misura di prevenzione personale durante il periodo previsto di applicazione e sino a tre anni dal momento in cui ne e' cessata l'esecuzione; 
+ - (con l'art. 71, comma 3) che alla pena e' aggiunta una misura di sicurezza detentiva. </p>
+                            </content>
+                        </paragraph>
+                    </mainBody>
+                </doc>
+            </attachment>
+            

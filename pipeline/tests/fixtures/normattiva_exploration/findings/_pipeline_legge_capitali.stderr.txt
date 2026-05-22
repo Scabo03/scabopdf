@@ -1,0 +1,9 @@
+[scabopdf-extract] extracting...
+[scabopdf-extract] classifying... [0.5s]
+[scabopdf-extract] reconstructing... [0.0s]
+[scabopdf-extract] resolving apparatus... [0.0s]
+[scabopdf-extract] post-processing... [0.0s]
+[scabopdf-extract] converting... [0.0s]
+[scabopdf-extract] validating... [0.1s]
+[scabopdf-extract] writing to findings/_pipeline_legge_capitali.json... [0.7s]
+[scabopdf-extract] done [1.4s total]

@@ -1,0 +1,1104 @@
+{
+  "path": "codice_penale/codice_penale.pdf",
+  "pages_scanned": 832,
+  "structural_markers_count": 138,
+  "art_count": 968,
+  "isolated_bold_block_count": 1920,
+  "bold_block_size_distribution": {
+    "12.0": 1920
+  },
+  "structural_markers_sample": [
+    {
+      "page": 2,
+      "block": 3,
+      "text": "LIBRO PRIMO",
+      "bbox": [
+        262.87,
+        131.75,
+        334.77,
+        150.01
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "LIBRO PRIMO "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 5,
+      "text": "TITOLO PRIMO",
+      "bbox": [
+        259.98,
+        184.32,
+        337.66,
+        202.58
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO PRIMO "
+        }
+      ]
+    },
+    {
+      "page": 15,
+      "block": 5,
+      "text": "TITOLO SECONDO",
+      "bbox": [
+        251.95,
+        184.32,
+        345.69,
+        202.58
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO SECONDO "
+        }
+      ]
+    },
+    {
+      "page": 15,
+      "block": 7,
+      "text": "CAPO I",
+      "bbox": [
+        280.41,
+        236.89,
+        317.23,
+        255.15
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO I "
+        }
+      ]
+    },
+    {
+      "page": 19,
+      "block": 8,
+      "text": "CAPO II",
+      "bbox": [
+        278.99,
+        263.17,
+        318.65,
+        281.43
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO II "
+        }
+      ]
+    },
+    {
+      "page": 23,
+      "block": 5,
+      "text": "CAPO III",
+      "bbox": [
+        277.57,
+        184.32,
+        320.07,
+        202.58
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO III "
+        }
+      ]
+    },
+    {
+      "page": 30,
+      "block": 24,
+      "text": "titolo IX del libro I del codice civile.",
+      "bbox": [
+        39.75,
+        761.57,
+        212.38,
+        779.83
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "titolo IX del libro I del codice civile.  "
+        }
+      ]
+    },
+    {
+      "page": 35,
+      "block": 6,
+      "text": "TITOLO TERZO",
+      "bbox": [
+        260.28,
+        210.6,
+        337.36,
+        228.86
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO TERZO "
+        }
+      ]
+    },
+    {
+      "page": 35,
+      "block": 8,
+      "text": "CAPO I",
+      "bbox": [
+        280.41,
+        263.17,
+        317.23,
+        281.43
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO I "
+        }
+      ]
+    },
+    {
+      "page": 50,
+      "block": 11,
+      "text": "CAPO II",
+      "bbox": [
+        278.99,
+        342.02,
+        318.65,
+        360.28
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO II "
+        }
+      ]
+    },
+    {
+      "page": 70,
+      "block": 23,
+      "text": "CAPO III",
+      "bbox": [
+        277.57,
+        657.41,
+        320.07,
+        675.67
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO III "
+        }
+      ]
+    },
+    {
+      "page": 79,
+      "block": 21,
+      "text": "TITOLO QUARTO",
+      "bbox": [
+        255.42,
+        694.73,
+        342.22,
+        712.99
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO QUARTO "
+        }
+      ]
+    },
+    {
+      "page": 79,
+      "block": 23,
+      "text": "CAPO I",
+      "bbox": [
+        280.41,
+        747.29,
+        317.23,
+        765.55
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO I "
+        }
+      ]
+    },
+    {
+      "page": 86,
+      "block": 6,
+      "text": "CAPO II",
+      "bbox": [
+        278.99,
+        210.6,
+        318.65,
+        228.86
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO II "
+        }
+      ]
+    },
+    {
+      "page": 93,
+      "block": 4,
+      "text": "CAPO III",
+      "bbox": [
+        277.57,
+        158.04,
+        320.07,
+        176.3
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO III "
+        }
+      ]
+    },
+    {
+      "page": 98,
+      "block": 16,
+      "text": "titolo del reato per taluno di coloro che vi sono concorsi, anche gli altri rispondono dello stesso reato.",
+      "bbox": [
+        39.75,
+        551.31,
+        540.87,
+        569.57
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "titolo del reato per taluno di coloro che vi sono concorsi, anche gli altri risp"
+        }
+      ]
+    },
+    {
+      "page": 100,
+      "block": 12,
+      "text": "CAPO IV",
+      "bbox": [
+        276.94,
+        368.3,
+        320.7,
+        386.56
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO IV "
+        }
+      ]
+    },
+    {
+      "page": 106,
+      "block": 14,
+      "text": "TITOLO QUINTO",
+      "bbox": [
+        257.23,
+        510.75,
+        340.41,
+        529.01
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO QUINTO "
+        }
+      ]
+    },
+    {
+      "page": 106,
+      "block": 18,
+      "text": "CAPO I",
+      "bbox": [
+        280.41,
+        615.88,
+        317.23,
+        634.14
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO I "
+        }
+      ]
+    },
+    {
+      "page": 116,
+      "block": 11,
+      "text": "CAPO II",
+      "bbox": [
+        278.99,
+        431.9,
+        318.65,
+        450.16
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO II "
+        }
+      ]
+    },
+    {
+      "page": 119,
+      "block": 15,
+      "text": "parte in cui prevede che il differimento ha luogo anche quando l'espiazione della pena possa avvenire",
+      "bbox": [
+        39.75,
+        435.15,
+        543.25,
+        453.41
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte in cui prevede che il differimento ha luogo anche quando l'espiazione dell"
+        }
+      ]
+    },
+    {
+      "page": 123,
+      "block": 0,
+      "text": "TITOLO SESTO",
+      "bbox": [
+        260.7,
+        52.91,
+        336.94,
+        71.17
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO SESTO "
+        }
+      ]
+    },
+    {
+      "page": 123,
+      "block": 2,
+      "text": "CAPO I",
+      "bbox": [
+        280.41,
+        105.47,
+        317.23,
+        123.73
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO I "
+        }
+      ]
+    },
+    {
+      "page": 152,
+      "block": 9,
+      "text": "parte in cui non prevede che l'imputato possa essere ammesso alla sospensione del procedimento con",
+      "bbox": [
+        39.75,
+        277.45,
+        552.29,
+        295.71
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte in cui non prevede che l'imputato possa essere ammesso alla sospensione de"
+        }
+      ]
+    },
+    {
+      "page": 155,
+      "block": 23,
+      "text": "CAPO II",
+      "bbox": [
+        278.99,
+        747.29,
+        318.65,
+        765.55
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO II "
+        }
+      ]
+    },
+    {
+      "page": 163,
+      "block": 9,
+      "text": "parte in cui non prevede che il condannato alla pena dell'ergastolo, cui sia stata revocata la liberazione",
+      "bbox": [
+        39.75,
+        277.45,
+        548.08,
+        295.71
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte in cui non prevede che il condannato alla pena dell'ergastolo, cui sia sta"
+        }
+      ]
+    },
+    {
+      "page": 166,
+      "block": 14,
+      "text": "CAPO III",
+      "bbox": [
+        277.57,
+        420.87,
+        320.07,
+        439.13
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO III "
+        }
+      ]
+    },
+    {
+      "page": 168,
+      "block": 22,
+      "text": "TITOLO SETTIMO",
+      "bbox": [
+        254.36,
+        631.13,
+        343.28,
+        649.39
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO SETTIMO "
+        }
+      ]
+    },
+    {
+      "page": 177,
+      "block": 13,
+      "text": "TITOLO OTTAVO",
+      "bbox": [
+        256.35,
+        484.46,
+        341.29,
+        502.72
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO OTTAVO "
+        }
+      ]
+    },
+    {
+      "page": 177,
+      "block": 15,
+      "text": "CAPO I",
+      "bbox": [
+        280.41,
+        537.03,
+        317.23,
+        555.29
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO I "
+        }
+      ]
+    },
+    {
+      "page": 177,
+      "block": 17,
+      "text": "Sezione I",
+      "bbox": [
+        275.13,
+        589.59,
+        322.51,
+        607.85
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Sezione I "
+        }
+      ]
+    },
+    {
+      "page": 189,
+      "block": 15,
+      "text": "Sezione II",
+      "bbox": [
+        273.71,
+        447.15,
+        323.93,
+        465.41
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Sezione II "
+        }
+      ]
+    },
+    {
+      "page": 200,
+      "block": 3,
+      "text": "parte dell'articolo precedente.",
+      "bbox": [
+        39.75,
+        119.75,
+        193.15,
+        138.01
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte dell'articolo precedente.  "
+        }
+      ]
+    },
+    {
+      "page": 207,
+      "block": 0,
+      "text": "CAPO II",
+      "bbox": [
+        278.99,
+        52.91,
+        318.65,
+        71.17
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO II "
+        }
+      ]
+    },
+    {
+      "page": 207,
+      "block": 14,
+      "text": "parte, 201, prima parte, 205, prima parte e numero 3° del capoverso, e, salvo che si tratti di confisca, le",
+      "bbox": [
+        39.75,
+        512.79,
+        554.87,
+        531.05
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte, 201, prima parte, 205, prima parte e numero 3° del capoverso, e, salvo ch"
+        }
+      ]
+    },
+    {
+      "page": 207,
+      "block": 18,
+      "text": "parte, e 207.",
+      "bbox": [
+        39.75,
+        617.92,
+        108.09,
+        636.18
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte, e 207.  "
+        }
+      ]
+    },
+    {
+      "page": 211,
+      "block": 25,
+      "text": "LIBRO SECONDO",
+      "bbox": [
+        254.85,
+        709.98,
+        342.79,
+        728.24
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "LIBRO SECONDO "
+        }
+      ]
+    },
+    {
+      "page": 211,
+      "block": 27,
+      "text": "TITOLO PRIMO",
+      "bbox": [
+        259.98,
+        762.54,
+        337.66,
+        780.8
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "TITOLO PRIMO "
+        }
+      ]
+    },
+    {
+      "page": 212,
+      "block": 1,
+      "text": "CAPO I",
+      "bbox": [
+        280.41,
+        79.19,
+        317.23,
+        97.45
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO I "
+        }
+      ]
+    },
+    {
+      "page": 246,
+      "block": 15,
+      "text": "CAPO IBIS",
+      "bbox": [
+        272.04,
+        537.03,
+        325.6,
+        555.29
+      ],
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "CAPO IBIS "
+        }
+      ]
+    }
+  ],
+  "bold_blocks_sample": [
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "REGIO DECRETO 19 ottobre 1930 , n. 1398",
+      "bbox": [
+        188.06,
+        101.29,
+        406.94,
+        119.55
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "VITTORIO EMANUELE III",
+      "bbox": [
+        235.16,
+        249.31,
+        359.84,
+        267.57
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "Sulla",
+      "bbox": [
+        284.61,
+        528.21,
+        310.39,
+        546.47
+      ]
+    },
+    {
+      "page": 0,
+      "size": 12.0,
+      "text": "Art. 1",
+      "bbox": [
+        283.26,
+        646.06,
+        311.75,
+        664.32
+      ]
+    },
+    {
+      "page": 1,
+      "size": 12.0,
+      "text": "Art. 2",
+      "bbox": [
+        283.26,
+        50.87,
+        311.75,
+        69.13
+      ]
+    },
+    {
+      "page": 1,
+      "size": 12.0,
+      "text": "Art. 3",
+      "bbox": [
+        283.26,
+        308.4,
+        311.75,
+        326.66
+      ]
+    },
+    {
+      "page": 3,
+      "size": 12.0,
+      "text": "((Se vi è stata condanna a pena detentiva e la legge posteriore prevede esclusivamente la pena",
+      "bbox": [
+        39.75,
+        224.89,
+        530.61,
+        243.15
+      ]
+    },
+    {
+      "page": 3,
+      "size": 12.0,
+      "text": "pecuniaria, la pena detentiva inflitta si converte immediatamente nella corrispondente pena",
+      "bbox": [
+        39.75,
+        251.17,
+        518.3,
+        269.43
+      ]
+    },
+    {
+      "page": 4,
+      "size": 12.0,
+      "text": "introdotte nell'ordinamento solo se modificano il codice penale ovvero sono inserite in leggi che",
+      "bbox": [
+        39.75,
+        525.03,
+        536.99,
+        543.29
+      ]
+    },
+    {
+      "page": 10,
+      "size": 12.0,
+      "text": "((352))",
+      "bbox": [
+        39.75,
+        697.98,
+        74.69,
+        716.24
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "di legge, le pene sostitutive della reclusione e dell'arresto sono disciplinate dal Capo III della legge",
+      "bbox": [
+        39.75,
+        446.18,
+        548.85,
+        464.44
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "24 novembre 1981, n. 689, e sono le seguenti:",
+      "bbox": [
+        39.75,
+        472.46,
+        283.61,
+        490.72
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "1) la semilibertà sostitutiva;",
+      "bbox": [
+        39.75,
+        498.75,
+        190.73,
+        517.01
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "2) la detenzione domiciliare sostitutiva;",
+      "bbox": [
+        39.75,
+        525.03,
+        249.63,
+        543.29
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "3) il lavoro di pubblica utilità sostitutivo;",
+      "bbox": [
+        39.75,
+        551.31,
+        254.21,
+        569.57
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "4) la pena pecuniaria sostitutiva.",
+      "bbox": [
+        39.75,
+        577.59,
+        213.81,
+        595.85
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "",
+      "bbox": [
+        39.75,
+        603.88,
+        42.39,
+        622.14
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "La semilibertà sostitutiva e la detenzione domiciliare sostitutiva possono essere applicate dal",
+      "bbox": [
+        39.75,
+        630.16,
+        525.52,
+        648.42
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "giudice in caso di condanna alla reclusione o all'arresto non superiori a quattro anni.",
+      "bbox": [
+        39.75,
+        656.44,
+        478.69,
+        674.7
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "",
+      "bbox": [
+        39.75,
+        682.73,
+        42.39,
+        700.99
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "Il lavoro di pubblica utilità sostitutivo può essere applicato dal giudice in caso di condanna alla",
+      "bbox": [
+        39.75,
+        709.01,
+        528.81,
+        727.27
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "reclusione o all'arresto non superiori a tre anni.",
+      "bbox": [
+        39.75,
+        735.29,
+        289.45,
+        753.55
+      ]
+    },
+    {
+      "page": 18,
+      "size": 12.0,
+      "text": "",
+      "bbox": [
+        39.75,
+        761.57,
+        42.39,
+        779.83
+      ]
+    },
+    {
+      "page": 19,
+      "size": 12.0,
+      "text": "La pena pecuniaria sostitutiva può essere applicata dal giudice in caso di condanna alla reclusione o",
+      "bbox": [
+        39.75,
+        40.91,
+        555.89,
+        59.17
+      ]
+    },
+    {
+      "page": 19,
+      "size": 12.0,
+      "text": "((ARTICOLO DA RITENERSI SOPPRESSO A SEGUITO DELL'ABOLIZIONE DELLA PENA DI MORTE",
+      "bbox": [
+        39.75,
+        486.5,
+        520.37,
+        504.76
+      ]
+    },
+    {
+      "page": 20,
+      "size": 12.0,
+      "text": "((139))",
+      "bbox": [
+        39.75,
+        198.6,
+        74.69,
+        216.86
+      ]
+    },
+    {
+      "page": 30,
+      "size": 12.0,
+      "text": "((Le disposizioni dell'articolo 29 e del secondo capoverso dell'articolo 32 non si applicano nel caso",
+      "bbox": [
+        39.75,
+        93.47,
+        546.21,
+        111.73
+      ]
+    },
+    {
+      "page": 34,
+      "size": 12.0,
+      "text": "((5))",
+      "bbox": [
+        39.75,
+        603.88,
+        61.25,
+        622.14
+      ]
+    },
+    {
+      "page": 43,
+      "size": 12.0,
+      "text": "((Nei casi di cui al secondo e al terzo comma agisce sempre in stato di legittima difesa colui che",
+      "bbox": [
+        39.75,
+        277.45,
+        532.29,
+        295.71
+      ]
+    },
+    {
+      "page": 43,
+      "size": 12.0,
+      "text": "compie un atto per respingere l'intrusione posta in essere, con violenza o minaccia di uso di armi o",
+      "bbox": [
+        39.75,
+        303.73,
+        549.25,
+        321.99
+      ]
+    }
+  ]
+}

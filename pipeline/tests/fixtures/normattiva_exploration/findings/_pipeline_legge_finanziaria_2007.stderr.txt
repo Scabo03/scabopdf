@@ -1,0 +1,9 @@
+[scabopdf-extract] extracting...
+[scabopdf-extract] classifying... [6.5s]
+[scabopdf-extract] reconstructing... [0.1s]
+[scabopdf-extract] resolving apparatus... [0.5s]
+[scabopdf-extract] post-processing... [0.3s]
+[scabopdf-extract] converting... [0.0s]
+[scabopdf-extract] validating... [0.4s]
+[scabopdf-extract] writing to findings/_pipeline_legge_finanziaria_2007.json... [10.9s]
+[scabopdf-extract] done [18.8s total]

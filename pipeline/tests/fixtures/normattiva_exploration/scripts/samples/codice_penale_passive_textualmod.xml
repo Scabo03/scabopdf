@@ -1,0 +1,8 @@
+<textualMod eId="pmod_0" type="insertion">
+                        <source href="#"/>
+                        <destination href="#ins_1"/>
+                        <new>
+                            <nakn:text>((Se vi e' stata condanna a pena detentiva e la legge posteriore prevede esclusivamente la pena pecuniaria, la pena detentiva inflitta si converte immediatamente nella corrispondente pena pecuniaria, ai sensi dell'articolo 135))</nakn:text>
+                        </new>
+                    </textualMod>
+                    

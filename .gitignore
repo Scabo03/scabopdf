@@ -39,3 +39,4 @@ Thumbs.db
 docs/analysis/private/
 # Copyright-protected PDF samples for local testing only
 pipeline/tests/fixtures/private/
+.venv-exploration/

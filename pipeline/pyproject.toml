@@ -42,6 +42,7 @@ where = ["src"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
+extend-exclude = ["tests/fixtures/normattiva_exploration"]
 
 [tool.ruff.lint]
 select = [
@@ -65,6 +66,7 @@ strict = true
 warn_unused_configs = true
 warn_unreachable = true
 files = ["src", "tests"]
+exclude = "tests/fixtures/normattiva_exploration/"
 
 [[tool.mypy.overrides]]
 module = ["fitz"]

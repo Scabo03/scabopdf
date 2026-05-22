@@ -1,0 +1,51 @@
+<identification source="">
+                <FRBRWork>
+                    <FRBRthis value="/akn/it/act/legge/stato/2006-12-27/296/!main"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2006-12-27/296"/>
+                    <FRBRalias name="urn:nir" value="urn:nir:stato:legge:2006-12-27;296"/>
+                    <FRBRalias name="eli" value="eli/id/2006/12/27/006G0318/CONSOLIDATED/20260411"/>
+                    <FRBRdate date="2006-12-27" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2006/12/27/006G0318/CONSOLIDATED/20260411" aknrelname="eli/id/2006/12/27/006G0318/CONSOLIDATED/20260411">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalResource"/>
+                            <nrdfa:span content="Disposizioni per la formazione del bilancio annuale e pluriennale dello Stato (legge finanziaria 2007). " lang="it" property="eli:title" xml:lang="it"/>
+                            <nrdfa:span content="http://www.normattiva.it/eli/id/{yyyy}/{mm}/{dd}/{codiceRedazionale}/{tipoVersione}" property="eli:uri_schema"/>
+                            <nrdfa:span content="006G0318" property="eli:id_local"/>
+                            <nrdfa:span property="eli:type_document" resource="gu:tables/resource-type#LEGGE"/>
+                            <nrdfa:span content="2006-12-27" datatype="xsd:date" property="eli:date_document"/>
+                            <nrdfa:span property="eli:version" resource="gu:tables/versions#ORIGINAL"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRcountry value="it"/>
+                </FRBRWork>
+                <FRBRExpression>
+                    <FRBRthis value="/akn/it/act/legge/stato/2006-12-27/296/ita@2026-04-11/!main"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2006-12-27/296/ita@2026-04-11"/>
+                    <FRBRdate date="2026-04-11" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2006/12/27/006G0318/CONSOLIDATED/20260411/ita">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalExpression"/>
+                            <nrdfa:span property="eli:realizes" resource="na:id/2006/12/27/006G0318/CONSOLIDATED/20260411"/>
+                            <nrdfa:span property="eli:is_embodied_by" resource="na:id/2006/12/27/006G0318/CONSOLIDATED/20260411/ita/akn"/>
+                            <nrdfa:span property="eli:language" resource="http://publications.europa.eu/resource/authority/language/ITA"/>
+                            <nrdfa:span property="eli:publisher_agent" resource="http://www.ipzs.it"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRlanguage language="ita"/>
+                </FRBRExpression>
+                <FRBRManifestation>
+                    <FRBRthis value="/akn/it/act/legge/stato/2006-12-27/296/ita@2026-04-11/!main.xml"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2006-12-27/296/ita@2026-04-11.xml"/>
+                    <FRBRdate date="2006-12-27" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2006/12/27/006G0318/CONSOLIDATED/20260411/ita/akn">
+                            <nrdfa:span property="rdf:type" resource="eli:Format"/>
+                            <nrdfa:span property="eli:format" resource="http://www.iana.org/assignments/media-types/xml"/>
+                        </nrdfa:eli>
+                    </preservation>
+                </FRBRManifestation>
+            </identification>
+            

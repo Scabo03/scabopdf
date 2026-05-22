@@ -1,0 +1,9 @@
+[scabopdf-extract] extracting...
+[scabopdf-extract] classifying... [6.9s]
+[scabopdf-extract] reconstructing... [0.3s]
+[scabopdf-extract] resolving apparatus... [0.8s]
+[scabopdf-extract] post-processing... [0.5s]
+[scabopdf-extract] converting... [0.0s]
+[scabopdf-extract] validating... [0.5s]
+[scabopdf-extract] writing to findings/_pipeline_codice_penale.json... [17.0s]
+[scabopdf-extract] done [26.3s total]

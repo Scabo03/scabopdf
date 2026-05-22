@@ -1,0 +1,51 @@
+<identification source="">
+                <FRBRWork>
+                    <FRBRthis value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/!main"/>
+                    <FRBRuri value="/akn/it/act/regio_decreto/stato/1930-10-19/1398"/>
+                    <FRBRalias name="urn:nir" value="urn:nir:stato:regio.decreto:1930-10-19;1398"/>
+                    <FRBRalias name="eli" value="eli/id/1930/10/26/030U1398/CONSOLIDATED/20260507"/>
+                    <FRBRdate date="1930-10-19" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/1930/10/26/030U1398/CONSOLIDATED/20260507" aknrelname="eli/id/1930/10/26/030U1398/CONSOLIDATED/20260507">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalResource"/>
+                            <nrdfa:span content="Approvazione del testo definitivo del Codice Penale. (030U1398)  " lang="it" property="eli:title" xml:lang="it"/>
+                            <nrdfa:span content="http://www.normattiva.it/eli/id/{yyyy}/{mm}/{dd}/{codiceRedazionale}/{tipoVersione}" property="eli:uri_schema"/>
+                            <nrdfa:span content="030U1398" property="eli:id_local"/>
+                            <nrdfa:span property="eli:type_document" resource="gu:tables/resource-type#REGIO DECRETO"/>
+                            <nrdfa:span content="1930-10-19" datatype="xsd:date" property="eli:date_document"/>
+                            <nrdfa:span property="eli:version" resource="gu:tables/versions#ORIGINAL"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRcountry value="it"/>
+                </FRBRWork>
+                <FRBRExpression>
+                    <FRBRthis value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01/!main"/>
+                    <FRBRuri value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01"/>
+                    <FRBRdate date="1931-07-01" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/1930/10/26/030U1398/CONSOLIDATED/20260507/ita">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalExpression"/>
+                            <nrdfa:span property="eli:realizes" resource="na:id/1930/10/26/030U1398/CONSOLIDATED/20260507"/>
+                            <nrdfa:span property="eli:is_embodied_by" resource="na:id/1930/10/26/030U1398/CONSOLIDATED/20260507/ita/akn"/>
+                            <nrdfa:span property="eli:language" resource="http://publications.europa.eu/resource/authority/language/ITA"/>
+                            <nrdfa:span property="eli:publisher_agent" resource="http://www.ipzs.it"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRlanguage language="ita"/>
+                </FRBRExpression>
+                <FRBRManifestation>
+                    <FRBRthis value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01/!main.xml"/>
+                    <FRBRuri value="/akn/it/act/regio_decreto/stato/1930-10-19/1398/ita@1931-07-01.xml"/>
+                    <FRBRdate date="1930-10-19" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/1930/10/26/030U1398/CONSOLIDATED/20260507/ita/akn">
+                            <nrdfa:span property="rdf:type" resource="eli:Format"/>
+                            <nrdfa:span property="eli:format" resource="http://www.iana.org/assignments/media-types/xml"/>
+                        </nrdfa:eli>
+                    </preservation>
+                </FRBRManifestation>
+            </identification>
+            

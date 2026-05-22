@@ -1,0 +1,2849 @@
+{
+  "path": "legge_finanziaria_2007/legge_finanziaria_2007.pdf",
+  "metadata": {
+    "format": "PDF 1.7",
+    "title": "",
+    "author": "",
+    "subject": "",
+    "keywords": "",
+    "creator": "",
+    "producer": "iText® 7.1.9 ©2000-2019 iText Group NV (AGPL-version)",
+    "creationDate": "D:20260522001324+02'00'",
+    "modDate": "D:20260522001324+02'00'",
+    "trapped": "",
+    "encryption": null
+  },
+  "page_count": 492,
+  "is_pdf": true,
+  "is_encrypted": false,
+  "needs_pass": 0,
+  "pdf_version": null,
+  "page_size_pt": [
+    595.0,
+    842.0
+  ],
+  "toc_entry_count": 0,
+  "toc_levels": {},
+  "toc_sample_head": [],
+  "toc_sample_tail": [],
+  "has_struct_tree_root": false,
+  "has_mark_info": false,
+  "has_lang": false,
+  "catalog_excerpt": "<<\n  /Pages 1067 0 R\n  /Type /Catalog\n>>",
+  "font_sample_pages": 50,
+  "total_spans": 1538,
+  "total_chars_sampled": 108804,
+  "top_fonts": [
+    {
+      "font": "TitilliumWeb-Light",
+      "size": 12.0,
+      "flags": 4,
+      "chars": 108016,
+      "dominance_pct": 99.28
+    },
+    {
+      "font": "TitilliumWeb-Bold",
+      "size": 12.0,
+      "flags": 20,
+      "chars": 788,
+      "dominance_pct": 0.72
+    }
+  ],
+  "structural_sample_first_5_pages": [
+    {
+      "page": 0,
+      "block": 0,
+      "bbox": [
+        211.93,
+        101.29,
+        383.07,
+        119.55
+      ],
+      "n_spans": 1,
+      "text_head": "LEGGE 27 dicembre 2006 , n. 296",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "LEGGE 27 dicembre 2006 , n. 296"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 1,
+      "bbox": [
+        49.92,
+        139.57,
+        545.09,
+        157.83
+      ],
+      "n_spans": 1,
+      "text_head": "Disposizioni per la formazione del bilancio annuale e pluriennale dello Stato (legge finanziaria 2007).",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Disposizioni per la formazione del bilancio annuale e pluriennale dello Stato (l"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 2,
+      "bbox": [
+        218.3,
+        171.16,
+        376.7,
+        186.14
+      ],
+      "n_spans": 1,
+      "text_head": "Vigente al : 22-5-2026",
+      "spans": [
+        {
+          "font": "Courier",
+          "size": 12.0,
+          "flags": 8,
+          "text": "Vigente al : 22-5-2026"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 3,
+      "bbox": [
+        39.75,
+        224.35,
+        389.98,
+        242.61
+      ],
+      "n_spans": 1,
+      "text_head": "La Camera dei deputati ed il Senato della Repubblica hanno approvato;",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "La Camera dei deputati ed il Senato della Repubblica hanno approvato;"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 4,
+      "bbox": [
+        205.99,
+        275.59,
+        389.01,
+        293.85
+      ],
+      "n_spans": 1,
+      "text_head": "IL PRESIDENTE DELLA REPUBBLICA",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "IL PRESIDENTE DELLA REPUBBLICA"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 5,
+      "bbox": [
+        272.3,
+        341.84,
+        322.7,
+        360.1
+      ],
+      "n_spans": 1,
+      "text_head": "Promulga",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "Promulga"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 6,
+      "bbox": [
+        252.48,
+        395.12,
+        342.53,
+        413.38
+      ],
+      "n_spans": 1,
+      "text_head": "la seguente legge:",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "la seguente legge:"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 7,
+      "bbox": [
+        283.26,
+        433.4,
+        311.75,
+        451.66
+      ],
+      "n_spans": 1,
+      "text_head": "Art. 1",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "Art. 1"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 8,
+      "bbox": [
+        43.5,
+        473.4,
+        506.55,
+        491.66
+      ],
+      "n_spans": 2,
+      "text_head": "1. Per l'anno 2007, il livello massimo del saldo netto da finanziare è determinato in termini di ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "1. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Per l'anno 2007, il livello massimo del saldo netto da finanziare è determinato "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 9,
+      "bbox": [
+        43.5,
+        499.68,
+        522.11,
+        517.94
+      ],
+      "n_spans": 1,
+      "text_head": "competenza in 29.000 milioni di euro, al netto di 12.520 milioni di euro per regolazioni debitorie. ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "competenza in 29.000 milioni di euro, al netto di 12.520 milioni di euro per reg"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 10,
+      "bbox": [
+        43.5,
+        525.96,
+        502.38,
+        544.22
+      ],
+      "n_spans": 1,
+      "text_head": "Tenuto conto delle operazioni di rimborso di prestiti, il livello massimo del ricorso al mercato ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Tenuto conto delle operazioni di rimborso di prestiti, il livello massimo del ri"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 11,
+      "bbox": [
+        43.5,
+        552.24,
+        516.68,
+        570.5
+      ],
+      "n_spans": 1,
+      "text_head": "finanziario di cui all'articolo 11 della legge 5 agosto 1978, n. 468, e successive modificazioni, ivi ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "finanziario di cui all'articolo 11 della legge 5 agosto 1978, n. 468, e successi"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 12,
+      "bbox": [
+        43.5,
+        578.53,
+        551.42,
+        596.79
+      ],
+      "n_spans": 1,
+      "text_head": "compreso l'indebitamento all'estero per un importo complessivo non superiore a 4.000 milioni di euro ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "compreso l'indebitamento all'estero per un importo complessivo non superiore a 4"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 13,
+      "bbox": [
+        43.5,
+        604.81,
+        520.48,
+        623.07
+      ],
+      "n_spans": 1,
+      "text_head": "relativo ad interventi non considerati nel bilancio di previsione per il 2007, è fissato, in termini di ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "relativo ad interventi non considerati nel bilancio di previsione per il 2007, è"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 14,
+      "bbox": [
+        43.5,
+        631.09,
+        381.08,
+        649.35
+      ],
+      "n_spans": 1,
+      "text_head": "competenza, in 240.500 milioni di euro per l'anno finanziario 2007.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "competenza, in 240.500 milioni di euro per l'anno finanziario 2007.  "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 15,
+      "bbox": [
+        43.5,
+        657.38,
+        46.14,
+        675.64
+      ],
+      "n_spans": 1,
+      "text_head": " ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": " "
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 16,
+      "bbox": [
+        43.5,
+        691.16,
+        539.83,
+        709.42
+      ],
+      "n_spans": 2,
+      "text_head": "2. Per gli anni 2008 e 2009, il livello massimo del saldo netto da finanziare del bilancio pluriennale a ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "2. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Per gli anni 2008 e 2009, il livello massimo del saldo netto da finanziare del b"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 17,
+      "bbox": [
+        43.5,
+        717.44,
+        551.24,
+        735.7
+      ],
+      "n_spans": 1,
+      "text_head": "legislazione vigente, tenuto conto degli effetti della presente legge, è determinato, rispettivamente, in ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "legislazione vigente, tenuto conto degli effetti della presente legge, è determi"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 18,
+      "bbox": [
+        43.5,
+        743.72,
+        546.58,
+        761.98
+      ],
+      "n_spans": 1,
+      "text_head": "26.000 milioni di euro ed in 18.000 milioni di euro, al netto di 8.850 milioni di euro per gli anni 2008 e ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "26.000 milioni di euro ed in 18.000 milioni di euro, al netto di 8.850 milioni d"
+        }
+      ]
+    },
+    {
+      "page": 0,
+      "block": 19,
+      "bbox": [
+        43.5,
+        770.01,
+        486.26,
+        788.27
+      ],
+      "n_spans": 1,
+      "text_head": "2009, per le regolazioni debitorie; il livello massimo del ricorso al mercato è determinato, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2009, per le regolazioni debitorie; il livello massimo del ricorso al mercato è "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        552.32,
+        62.92
+      ],
+      "n_spans": 1,
+      "text_head": "rispettivamente, in 214.000 milioni di euro ed in 208.000 milioni di euro. Per il bilancio programmatico ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "rispettivamente, in 214.000 milioni di euro ed in 208.000 milioni di euro. Per i"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 1,
+      "bbox": [
+        43.5,
+        70.94,
+        471.06,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "degli anni 2008 e 2009, il livello massimo del saldo netto da finanziare è determinato, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "degli anni 2008 e 2009, il livello massimo del saldo netto da finanziare è deter"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        545.5,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "rispettivamente, in 19.500 milioni di euro ed in 10.500 milioni di euro ed il livello massimo del ricorso ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "rispettivamente, in 19.500 milioni di euro ed in 10.500 milioni di euro ed il li"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 3,
+      "bbox": [
+        43.5,
+        123.5,
+        538.75,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "al mercato è determinato, rispettivamente, in 208.000 milioni di euro ed in 200.000 milioni di euro.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "al mercato è determinato, rispettivamente, in 208.000 milioni di euro ed in 200."
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 4,
+      "bbox": [
+        43.5,
+        149.79,
+        46.14,
+        168.05
+      ],
+      "n_spans": 1,
+      "text_head": " ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": " "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 5,
+      "bbox": [
+        43.5,
+        183.57,
+        552.83,
+        201.83
+      ],
+      "n_spans": 2,
+      "text_head": "3. I livelli del ricorso al mercato di cui ai commi 1 e 2 si intendono al netto delle operazioni effettuate al ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "3. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "I livelli del ricorso al mercato di cui ai commi 1 e 2 si intendono al netto del"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 6,
+      "bbox": [
+        43.5,
+        209.85,
+        534.64,
+        228.11
+      ],
+      "n_spans": 1,
+      "text_head": "fine di rimborsare prima della scadenza o ristrutturare passività preesistenti con ammortamento a ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "fine di rimborsare prima della scadenza o ristrutturare passività preesistenti c"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 7,
+      "bbox": [
+        43.5,
+        236.14,
+        136.9,
+        254.4
+      ],
+      "n_spans": 1,
+      "text_head": "carico dello Stato.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "carico dello Stato.  "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 8,
+      "bbox": [
+        43.5,
+        262.42,
+        46.14,
+        280.68
+      ],
+      "n_spans": 1,
+      "text_head": " ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": " "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 9,
+      "bbox": [
+        43.5,
+        296.2,
+        491.07,
+        314.46
+      ],
+      "n_spans": 2,
+      "text_head": "4. Le maggiori entrate tributarie che si realizzassero nel 2007 rispetto alle previsioni sono ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "4. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Le maggiori entrate tributarie che si realizzassero nel 2007 rispetto alle previ"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 10,
+      "bbox": [
+        43.5,
+        322.48,
+        487.12,
+        340.74
+      ],
+      "n_spans": 1,
+      "text_head": "prioritariamente destinate a realizzare gli obiettivi di indebitamento netto delle pubbliche ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "prioritariamente destinate a realizzare gli obiettivi di indebitamento netto del"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 11,
+      "bbox": [
+        43.5,
+        348.77,
+        547.64,
+        367.03
+      ],
+      "n_spans": 1,
+      "text_head": "amministrazioni e sui saldi di finanza pubblica definiti dal Documento di programmazione economico-",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "amministrazioni e sui saldi di finanza pubblica definiti dal Documento di progra"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 12,
+      "bbox": [
+        43.5,
+        375.05,
+        521.83,
+        393.31
+      ],
+      "n_spans": 1,
+      "text_head": "finanziaria 2007-2011. In quanto eccedenti rispetto a tali obiettivi, le eventuali maggiori entrate ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "finanziaria 2007-2011. In quanto eccedenti rispetto a tali obiettivi, le eventua"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 13,
+      "bbox": [
+        43.5,
+        401.33,
+        551.62,
+        419.59
+      ],
+      "n_spans": 1,
+      "text_head": "derivanti dalla lotta all'evasione fiscale sono destinate, qualora permanenti, a riduzioni della pressione ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "derivanti dalla lotta all'evasione fiscale sono destinate, qualora permanenti, a"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 14,
+      "bbox": [
+        43.5,
+        427.62,
+        517.13,
+        445.88
+      ],
+      "n_spans": 1,
+      "text_head": "fiscale finalizzata al conseguimento degli obiettivi di sviluppo ed equità sociale, dando priorità a ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "fiscale finalizzata al conseguimento degli obiettivi di sviluppo ed equità socia"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 15,
+      "bbox": [
+        43.5,
+        453.9,
+        523.39,
+        472.16
+      ],
+      "n_spans": 1,
+      "text_head": "misure di sostegno del reddito di soggetti incapienti ovvero appartenenti alle fasce di reddito più ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "misure di sostegno del reddito di soggetti incapienti ovvero appartenenti alle f"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 16,
+      "bbox": [
+        43.5,
+        480.18,
+        511.69,
+        498.44
+      ],
+      "n_spans": 1,
+      "text_head": "basse, salvo che si renda necessario assicurare la copertura finanziaria di interventi urgenti ed ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "basse, salvo che si renda necessario assicurare la copertura finanziaria di inte"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 17,
+      "bbox": [
+        43.5,
+        506.46,
+        548.74,
+        524.72
+      ],
+      "n_spans": 1,
+      "text_head": "imprevisti necessari per fronteggiare calamità naturali ovvero improrogabili esigenze connesse con la ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "imprevisti necessari per fronteggiare calamità naturali ovvero improrogabili esi"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 18,
+      "bbox": [
+        43.5,
+        532.75,
+        207.08,
+        551.01
+      ],
+      "n_spans": 1,
+      "text_head": "tutela della sicurezza del Paese.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "tutela della sicurezza del Paese.  "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 19,
+      "bbox": [
+        43.5,
+        559.03,
+        46.14,
+        577.29
+      ],
+      "n_spans": 1,
+      "text_head": " ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": " "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 20,
+      "bbox": [
+        43.5,
+        592.81,
+        355.58,
+        611.07
+      ],
+      "n_spans": 2,
+      "text_head": "5. COMMA ABROGATO DALLA L. 24 DICEMBRE 2012, N. 228.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "5. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "COMMA ABROGATO DALLA L. 24 DICEMBRE 2012, N. 228.  "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 21,
+      "bbox": [
+        43.5,
+        619.1,
+        46.14,
+        637.36
+      ],
+      "n_spans": 1,
+      "text_head": " ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": " "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 22,
+      "bbox": [
+        43.5,
+        652.88,
+        554.04,
+        671.14
+      ],
+      "n_spans": 2,
+      "text_head": "6. Al testo unico delle imposte sui redditi, di cui al decreto del Presidente della Repubblica 22 dicembre ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Bold",
+          "size": 12.0,
+          "flags": 20,
+          "text": "6. "
+        },
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Al testo unico delle imposte sui redditi, di cui al decreto del Presidente della"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 23,
+      "bbox": [
+        43.5,
+        679.16,
+        458.57,
+        697.42
+      ],
+      "n_spans": 1,
+      "text_head": "1986, n. 917, e successive modificazioni, sono apportate le seguenti modificazioni:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1986, n. 917, e successive modificazioni, sono apportate le seguenti modificazio"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 24,
+      "bbox": [
+        51.0,
+        705.44,
+        508.56,
+        723.7
+      ],
+      "n_spans": 1,
+      "text_head": "a) all'articolo 3, relativo alla base imponibile, al comma 1, le parole: \", nonché delle deduzioni ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "a) all'articolo 3, relativo alla base imponibile, al comma 1, le parole: \", nonc"
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 25,
+      "bbox": [
+        43.5,
+        731.73,
+        406.24,
+        749.99
+      ],
+      "n_spans": 1,
+      "text_head": "effettivamente spettanti ai sensi degli articoli 11 e 12,\" sono soppresse;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "effettivamente spettanti ai sensi degli articoli 11 e 12,\" sono soppresse;  "
+        }
+      ]
+    },
+    {
+      "page": 1,
+      "block": 26,
+      "bbox": [
+        51.0,
+        758.01,
+        254.83,
+        776.27
+      ],
+      "n_spans": 1,
+      "text_head": "b) l'articolo 11 è sostituito dal seguente:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "b) l'articolo 11 è sostituito dal seguente:  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        527.78,
+        62.92
+      ],
+      "n_spans": 1,
+      "text_head": "\"Art. 11. - (Determinazione dell'imposta). - 1. L'imposta lorda è determinata applicando al reddito ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "\"Art. 11. - (Determinazione dell'imposta). - 1. L'imposta lorda è determinata ap"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 1,
+      "bbox": [
+        43.5,
+        70.94,
+        548.47,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "complessivo, al netto degli oneri deducibili indicati nell'articolo 10, le seguenti aliquote per scaglioni di ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "complessivo, al netto degli oneri deducibili indicati nell'articolo 10, le segue"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        86.93,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "reddito:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "reddito:  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 3,
+      "bbox": [
+        43.5,
+        123.5,
+        223.6,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "a) fino a 15.000 euro, 23 per cento;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "a) fino a 15.000 euro, 23 per cento;  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 4,
+      "bbox": [
+        43.5,
+        149.79,
+        322.54,
+        168.05
+      ],
+      "n_spans": 1,
+      "text_head": "b) oltre 15.000 euro e fino a 28.000 euro, 27 per cento;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "b) oltre 15.000 euro e fino a 28.000 euro, 27 per cento;  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 5,
+      "bbox": [
+        43.5,
+        176.07,
+        321.48,
+        194.33
+      ],
+      "n_spans": 1,
+      "text_head": "c) oltre 28.000 euro e fino a 55.000 euro, 38 per cento;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "c) oltre 28.000 euro e fino a 55.000 euro, 38 per cento;  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 6,
+      "bbox": [
+        43.5,
+        202.35,
+        322.56,
+        220.61
+      ],
+      "n_spans": 1,
+      "text_head": "d) oltre 55.000 euro e fino a 75.000 euro, 41 per cento;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "d) oltre 55.000 euro e fino a 75.000 euro, 41 per cento;  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 7,
+      "bbox": [
+        43.5,
+        228.64,
+        218.75,
+        246.9
+      ],
+      "n_spans": 1,
+      "text_head": "e) oltre 75.000 euro, 43 per cento.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "e) oltre 75.000 euro, 43 per cento.  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 8,
+      "bbox": [
+        43.5,
+        254.92,
+        545.15,
+        273.18
+      ],
+      "n_spans": 1,
+      "text_head": "2. Se alla formazione del reddito complessivo concorrono soltanto redditi di pensione non superiori a ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2. Se alla formazione del reddito complessivo concorrono soltanto redditi di pen"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 9,
+      "bbox": [
+        43.5,
+        281.2,
+        543.72,
+        299.46
+      ],
+      "n_spans": 1,
+      "text_head": "7.500 euro, goduti per l'intero anno, redditi di terreni per un importo non superiore a 185,92 euro e il ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "7.500 euro, goduti per l'intero anno, redditi di terreni per un importo non supe"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 10,
+      "bbox": [
+        43.5,
+        307.48,
+        551.17,
+        325.74
+      ],
+      "n_spans": 1,
+      "text_head": "reddito dell'unità immobiliare adibita ad abitazione principale e delle relative pertinenze, l'imposta non ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "reddito dell'unità immobiliare adibita ad abitazione principale e delle relative"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 11,
+      "bbox": [
+        43.5,
+        333.77,
+        94.72,
+        352.03
+      ],
+      "n_spans": 1,
+      "text_head": "è dovuta.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "è dovuta.  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 12,
+      "bbox": [
+        43.5,
+        360.05,
+        497.51,
+        378.31
+      ],
+      "n_spans": 1,
+      "text_head": "3. L'imposta netta è determinata operando sull'imposta lorda, fino alla concorrenza del suo ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "3. L'imposta netta è determinata operando sull'imposta lorda, fino alla concorre"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 13,
+      "bbox": [
+        43.5,
+        386.33,
+        538.5,
+        404.59
+      ],
+      "n_spans": 1,
+      "text_head": "ammontare, le detrazioni previste negli articoli 12, 13, 15 e 16 nonché in altre disposizioni di legge.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "ammontare, le detrazioni previste negli articoli 12, 13, 15 e 16 nonché in altre"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 14,
+      "bbox": [
+        43.5,
+        412.62,
+        535.13,
+        430.88
+      ],
+      "n_spans": 1,
+      "text_head": "4. Dall'imposta netta si detrae l'ammontare dei crediti d'imposta spettanti al contribuente a norma ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "4. Dall'imposta netta si detrae l'ammontare dei crediti d'imposta spettanti al c"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 15,
+      "bbox": [
+        43.5,
+        438.9,
+        514.34,
+        457.16
+      ],
+      "n_spans": 1,
+      "text_head": "dell'articolo 165. Se l'ammontare dei crediti d'imposta è superiore a quello dell'imposta netta il ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "dell'articolo 165. Se l'ammontare dei crediti d'imposta è superiore a quello del"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 16,
+      "bbox": [
+        43.5,
+        465.18,
+        542.47,
+        483.44
+      ],
+      "n_spans": 1,
+      "text_head": "contribuente ha diritto, a sua scelta, di computare l'eccedenza in diminuzione dell'imposta relativa al ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "contribuente ha diritto, a sua scelta, di computare l'eccedenza in diminuzione d"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 17,
+      "bbox": [
+        43.5,
+        491.46,
+        500.06,
+        509.72
+      ],
+      "n_spans": 1,
+      "text_head": "periodo d'imposta successivo o di chiederne il rimborso in sede di dichiarazione dei redditi\";  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "periodo d'imposta successivo o di chiederne il rimborso in sede di dichiarazione"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 18,
+      "bbox": [
+        51.0,
+        517.75,
+        253.78,
+        536.01
+      ],
+      "n_spans": 1,
+      "text_head": "c) l'articolo 12 è sostituito dal seguente:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "c) l'articolo 12 è sostituito dal seguente:  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 19,
+      "bbox": [
+        43.5,
+        544.03,
+        284.32,
+        562.29
+      ],
+      "n_spans": 1,
+      "text_head": "\"Art. 12. - (Detrazioni per carichi di famiglia). - 1. ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "\"Art. 12. - (Detrazioni per carichi di famiglia). - 1. "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 20,
+      "bbox": [
+        43.5,
+        570.31,
+        409.36,
+        588.57
+      ],
+      "n_spans": 1,
+      "text_head": "Dall'imposta lorda si detraggono per carichi di famiglia i seguenti importi:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Dall'imposta lorda si detraggono per carichi di famiglia i seguenti importi:  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 21,
+      "bbox": [
+        43.5,
+        596.6,
+        348.91,
+        614.86
+      ],
+      "n_spans": 1,
+      "text_head": "a) per il coniuge non legalmente ed effettivamente separato:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "a) per il coniuge non legalmente ed effettivamente separato:  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 22,
+      "bbox": [
+        43.5,
+        622.88,
+        528.32,
+        641.14
+      ],
+      "n_spans": 1,
+      "text_head": "1) 800 euro, diminuiti del prodotto tra 110 euro e l'importo corrispondente al rapporto fra reddito ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1) 800 euro, diminuiti del prodotto tra 110 euro e l'importo corrispondente al r"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 23,
+      "bbox": [
+        43.5,
+        649.16,
+        437.16,
+        667.42
+      ],
+      "n_spans": 1,
+      "text_head": "complessivo e 15.000 euro, se il reddito complessivo non supera 15.000 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "complessivo e 15.000 euro, se il reddito complessivo non supera 15.000 euro;  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 24,
+      "bbox": [
+        43.5,
+        675.44,
+        481.74,
+        693.7
+      ],
+      "n_spans": 1,
+      "text_head": "2) 690 euro, se il reddito complessivo è superiore a 15.000 euro ma non a 40.000 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2) 690 euro, se il reddito complessivo è superiore a 15.000 euro ma non a 40.000"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 25,
+      "bbox": [
+        43.5,
+        701.73,
+        548.99,
+        719.99
+      ],
+      "n_spans": 1,
+      "text_head": "3) 690 euro, se il reddito complessivo è superiore a 40.000 euro ma non a 80.000 euro. La detrazione ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "3) 690 euro, se il reddito complessivo è superiore a 40.000 euro ma non a 80.000"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 26,
+      "bbox": [
+        43.5,
+        728.01,
+        521.42,
+        746.27
+      ],
+      "n_spans": 1,
+      "text_head": "spetta per la parte corrispondente al rapporto tra l'importo di 80.000 euro, diminuito del reddito ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "spetta per la parte corrispondente al rapporto tra l'importo di 80.000 euro, dim"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 27,
+      "bbox": [
+        43.5,
+        754.29,
+        189.22,
+        772.55
+      ],
+      "n_spans": 1,
+      "text_head": "complessivo, e 40.000 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "complessivo, e 40.000 euro;  "
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "block": 28,
+      "bbox": [
+        43.5,
+        780.58,
+        458.32,
+        798.84
+      ],
+      "n_spans": 1,
+      "text_head": "b) la detrazione spettante ai sensi della lettera a) è aumentata di un importo pari a:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "b) la detrazione spettante ai sensi della lettera a) è aumentata di un importo p"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        475.02,
+        62.92
+      ],
+      "n_spans": 1,
+      "text_head": "1) 10 euro, se il reddito complessivo è superiore a 29.000 euro ma non a 29.200 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "1) 10 euro, se il reddito complessivo è superiore a 29.000 euro ma non a 29.200 "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 1,
+      "bbox": [
+        43.5,
+        70.94,
+        475.02,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "2) 20 euro, se il reddito complessivo è superiore a 29.200 euro ma non a 34.700 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2) 20 euro, se il reddito complessivo è superiore a 29.200 euro ma non a 34.700 "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        475.02,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "3) 30 euro, se il reddito complessivo è superiore a 34.700 euro ma non a 35.000 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "3) 30 euro, se il reddito complessivo è superiore a 34.700 euro ma non a 35.000 "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 3,
+      "bbox": [
+        43.5,
+        123.5,
+        475.02,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "4) 20 euro, se il reddito complessivo è superiore a 35.000 euro ma non a 35.100 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "4) 20 euro, se il reddito complessivo è superiore a 35.000 euro ma non a 35.100 "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 4,
+      "bbox": [
+        43.5,
+        149.79,
+        475.02,
+        168.05
+      ],
+      "n_spans": 1,
+      "text_head": "5) 10 euro, se il reddito complessivo è superiore a 35.100 euro ma non a 35.200 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "5) 10 euro, se il reddito complessivo è superiore a 35.100 euro ma non a 35.200 "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 5,
+      "bbox": [
+        43.5,
+        176.07,
+        541.97,
+        194.33
+      ],
+      "n_spans": 1,
+      "text_head": "c) 800 euro per ciascun figlio, compresi i figli naturali riconosciuti, i figli adottivi e gli affidati o affiliati. ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "c) 800 euro per ciascun figlio, compresi i figli naturali riconosciuti, i figli "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 6,
+      "bbox": [
+        43.5,
+        202.35,
+        509.34,
+        220.61
+      ],
+      "n_spans": 1,
+      "text_head": "La detrazione è aumentata a 900 euro per ciascun figlio di età inferiore a tre anni. Le predette ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "La detrazione è aumentata a 900 euro per ciascun figlio di età inferiore a tre a"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 7,
+      "bbox": [
+        43.5,
+        228.64,
+        546.91,
+        246.9
+      ],
+      "n_spans": 1,
+      "text_head": "detrazioni sono aumentate di un importo pari a 220 euro per ogni figlio portatore di handicap ai sensi ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "detrazioni sono aumentate di un importo pari a 220 euro per ogni figlio portator"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 8,
+      "bbox": [
+        43.5,
+        254.92,
+        517.54,
+        273.18
+      ],
+      "n_spans": 1,
+      "text_head": "dell'articolo 3 della legge 5 febbraio 1992, n. 104. Per i contribuenti con più di tre figli a carico la ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "dell'articolo 3 della legge 5 febbraio 1992, n. 104. Per i contribuenti con più "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 9,
+      "bbox": [
+        43.5,
+        281.2,
+        542.58,
+        299.46
+      ],
+      "n_spans": 1,
+      "text_head": "detrazione è aumentata di 200 euro per ciascun figlio a partire dal primo. La detrazione spetta per la ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "detrazione è aumentata di 200 euro per ciascun figlio a partire dal primo. La de"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 10,
+      "bbox": [
+        43.5,
+        307.48,
+        532.36,
+        325.74
+      ],
+      "n_spans": 1,
+      "text_head": "parte corrispondente al rapporto tra l'importo di 95.000 euro, diminuito del reddito complessivo, e ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "parte corrispondente al rapporto tra l'importo di 95.000 euro, diminuito del red"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 11,
+      "bbox": [
+        43.5,
+        333.77,
+        549.56,
+        352.03
+      ],
+      "n_spans": 1,
+      "text_head": "95.000 euro. In presenza di più figli, l'importo di 95.000 euro è aumentato per tutti di 15.000 euro per ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "95.000 euro. In presenza di più figli, l'importo di 95.000 euro è aumentato per "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 12,
+      "bbox": [
+        43.5,
+        360.05,
+        549.19,
+        378.31
+      ],
+      "n_spans": 1,
+      "text_head": "ogni figlio successivo al primo. La detrazione è ripartita nella misura del 50 per cento tra i genitori non ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "ogni figlio successivo al primo. La detrazione è ripartita nella misura del 50 p"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 13,
+      "bbox": [
+        43.5,
+        386.33,
+        529.32,
+        404.59
+      ],
+      "n_spans": 1,
+      "text_head": "legalmente ed effettivamente separati ovvero, previo accordo tra gli stessi, spetta al genitore che ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "legalmente ed effettivamente separati ovvero, previo accordo tra gli stessi, spe"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 14,
+      "bbox": [
+        43.5,
+        412.62,
+        546.59,
+        430.88
+      ],
+      "n_spans": 1,
+      "text_head": "possiede un reddito complessivo di ammontare più elevato. In caso di separazione legale ed effettiva ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "possiede un reddito complessivo di ammontare più elevato. In caso di separazione"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 15,
+      "bbox": [
+        43.5,
+        438.9,
+        552.17,
+        457.16
+      ],
+      "n_spans": 1,
+      "text_head": "o di annullamento, scioglimento o cessazione degli effetti civili del matrimonio, la detrazione spetta, in ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "o di annullamento, scioglimento o cessazione degli effetti civili del matrimonio"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 16,
+      "bbox": [
+        43.5,
+        465.18,
+        508.58,
+        483.44
+      ],
+      "n_spans": 1,
+      "text_head": "mancanza di accordo, al genitore affidatario. Nel caso di affidamento congiunto o condiviso la ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "mancanza di accordo, al genitore affidatario. Nel caso di affidamento congiunto "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 17,
+      "bbox": [
+        43.5,
+        491.46,
+        517.01,
+        509.72
+      ],
+      "n_spans": 1,
+      "text_head": "detrazione è ripartita, in mancanza di accordo, nella misura del 50 per cento tra i genitori. Ove il ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "detrazione è ripartita, in mancanza di accordo, nella misura del 50 per cento tr"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 18,
+      "bbox": [
+        43.5,
+        517.75,
+        531.08,
+        536.01
+      ],
+      "n_spans": 1,
+      "text_head": "genitore affidatario ovvero, in caso di affidamento congiunto, uno dei genitori affidatari non possa ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "genitore affidatario ovvero, in caso di affidamento congiunto, uno dei genitori "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 19,
+      "bbox": [
+        43.5,
+        544.03,
+        544.75,
+        562.29
+      ],
+      "n_spans": 1,
+      "text_head": "usufruire in tutto o in parte della detrazione, per limiti di reddito, la detrazione è assegnata per intero ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "usufruire in tutto o in parte della detrazione, per limiti di reddito, la detraz"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 20,
+      "bbox": [
+        43.5,
+        570.31,
+        521.99,
+        588.57
+      ],
+      "n_spans": 1,
+      "text_head": "al secondo genitore. Quest'ultimo, salvo diverso accordo tra le parti, è tenuto a riversare all'altro ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "al secondo genitore. Quest'ultimo, salvo diverso accordo tra le parti, è tenuto "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 21,
+      "bbox": [
+        43.5,
+        596.6,
+        551.21,
+        614.86
+      ],
+      "n_spans": 1,
+      "text_head": "genitore affidatario un importo pari all'intera detrazione ovvero, in caso di affidamento congiunto, pari ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "genitore affidatario un importo pari all'intera detrazione ovvero, in caso di af"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 22,
+      "bbox": [
+        43.5,
+        622.88,
+        548.66,
+        641.14
+      ],
+      "n_spans": 1,
+      "text_head": "al 50 per cento della detrazione stessa. In caso di coniuge fiscalmente a carico dell'altro, la detrazione ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "al 50 per cento della detrazione stessa. In caso di coniuge fiscalmente a carico"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 23,
+      "bbox": [
+        43.5,
+        649.16,
+        526.52,
+        667.42
+      ],
+      "n_spans": 1,
+      "text_head": "compete a quest'ultimo per l'intero importo. Se l'altro genitore manca o non ha riconosciuto i figli ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "compete a quest'ultimo per l'intero importo. Se l'altro genitore manca o non ha "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 24,
+      "bbox": [
+        43.5,
+        675.44,
+        511.98,
+        693.7
+      ],
+      "n_spans": 1,
+      "text_head": "naturali e il contribuente non è coniugato o, se coniugato, si è successivamente legalmente ed ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "naturali e il contribuente non è coniugato o, se coniugato, si è successivamente"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 25,
+      "bbox": [
+        43.5,
+        701.73,
+        523.1,
+        719.99
+      ],
+      "n_spans": 1,
+      "text_head": "effettivamente separato, ovvero se vi sono figli adottivi, affidati o affiliati del solo contribuente e ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "effettivamente separato, ovvero se vi sono figli adottivi, affidati o affiliati "
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 26,
+      "bbox": [
+        43.5,
+        728.01,
+        549.12,
+        746.27
+      ],
+      "n_spans": 1,
+      "text_head": "questi non è coniugato o, se coniugato, si è successivamente legalmente ed effettivamente separato, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "questi non è coniugato o, se coniugato, si è successivamente legalmente ed effet"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 27,
+      "bbox": [
+        43.5,
+        754.29,
+        466.84,
+        772.55
+      ],
+      "n_spans": 1,
+      "text_head": "per il primo figlio si applicano, se più convenienti, le detrazioni previste alla lettera a);  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "per il primo figlio si applicano, se più convenienti, le detrazioni previste all"
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "block": 28,
+      "bbox": [
+        43.5,
+        780.58,
+        542.06,
+        798.84
+      ],
+      "n_spans": 1,
+      "text_head": "d) 750 euro, da ripartire pro quota tra coloro che hanno diritto alla detrazione, per ogni altra persona ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "d) 750 euro, da ripartire pro quota tra coloro che hanno diritto alla detrazione"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 0,
+      "bbox": [
+        43.5,
+        44.66,
+        508.3,
+        62.92
+      ],
+      "n_spans": 1,
+      "text_head": "indicata nell'articolo 433 del codice civile che conviva con il contribuente o percepisca assegni ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "indicata nell'articolo 433 del codice civile che conviva con il contribuente o p"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 1,
+      "bbox": [
+        43.5,
+        70.94,
+        536.98,
+        89.2
+      ],
+      "n_spans": 1,
+      "text_head": "alimentari non risultanti da provvedimenti dell'autorità giudiziaria. La detrazione spetta per la parte ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "alimentari non risultanti da provvedimenti dell'autorità giudiziaria. La detrazi"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 2,
+      "bbox": [
+        43.5,
+        97.22,
+        541.88,
+        115.48
+      ],
+      "n_spans": 1,
+      "text_head": "corrispondente al rapporto tra l'importo di 80.000 euro, diminuito del reddito complessivo, e 80.000 ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "corrispondente al rapporto tra l'importo di 80.000 euro, diminuito del reddito c"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 3,
+      "bbox": [
+        43.5,
+        123.5,
+        73.99,
+        141.76
+      ],
+      "n_spans": 1,
+      "text_head": "euro.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "euro.  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 4,
+      "bbox": [
+        43.5,
+        149.79,
+        510.89,
+        168.05
+      ],
+      "n_spans": 1,
+      "text_head": "2. Le detrazioni di cui al comma 1 spettano a condizione che le persone alle quali si riferiscono ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "2. Le detrazioni di cui al comma 1 spettano a condizione che le persone alle qua"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 5,
+      "bbox": [
+        43.5,
+        176.07,
+        549.84,
+        194.33
+      ],
+      "n_spans": 1,
+      "text_head": "possiedano un reddito complessivo, computando anche le retribuzioni corrisposte da enti e organismi ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "possiedano un reddito complessivo, computando anche le retribuzioni corrisposte "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 6,
+      "bbox": [
+        43.5,
+        202.35,
+        533.1,
+        220.61
+      ],
+      "n_spans": 1,
+      "text_head": "internazionali, rappresentanze diplomatiche e consolari e missioni, nonché quelle corrisposte dalla ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "internazionali, rappresentanze diplomatiche e consolari e missioni, nonché quell"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 7,
+      "bbox": [
+        43.5,
+        228.64,
+        523.45,
+        246.9
+      ],
+      "n_spans": 1,
+      "text_head": "Santa Sede, dagli enti gestiti direttamente da essa e dagli enti centrali della Chiesa cattolica, non ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "Santa Sede, dagli enti gestiti direttamente da essa e dagli enti centrali della "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 8,
+      "bbox": [
+        43.5,
+        254.92,
+        325.96,
+        273.18
+      ],
+      "n_spans": 1,
+      "text_head": "superiore a 2.840,51 euro, al lordo degli oneri deducibili.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "superiore a 2.840,51 euro, al lordo degli oneri deducibili.  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 9,
+      "bbox": [
+        43.5,
+        281.2,
+        534.06,
+        299.46
+      ],
+      "n_spans": 1,
+      "text_head": "3. Le detrazioni per carichi di famiglia sono rapportate a mese e competono dal mese in cui si sono ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "3. Le detrazioni per carichi di famiglia sono rapportate a mese e competono dal "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 10,
+      "bbox": [
+        43.5,
+        307.48,
+        344.57,
+        325.74
+      ],
+      "n_spans": 1,
+      "text_head": "verificate a quello in cui sono cessate le condizioni richieste.  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "verificate a quello in cui sono cessate le condizioni richieste.  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 11,
+      "bbox": [
+        43.5,
+        333.77,
+        540.47,
+        352.03
+      ],
+      "n_spans": 1,
+      "text_head": "4. Se il rapporto di cui al comma 1, lettera a), numero 1), è uguale a uno, la detrazione compete nella ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "4. Se il rapporto di cui al comma 1, lettera a), numero 1), è uguale a uno, la d"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 12,
+      "bbox": [
+        43.5,
+        360.05,
+        527.48,
+        378.31
+      ],
+      "n_spans": 1,
+      "text_head": "misura di 690 euro. Se i rapporti di cui al comma 1, lettera a), numeri 1) e 3), sono uguali a zero, la ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "misura di 690 euro. Se i rapporti di cui al comma 1, lettera a), numeri 1) e 3),"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 13,
+      "bbox": [
+        43.5,
+        386.33,
+        549.22,
+        404.59
+      ],
+      "n_spans": 1,
+      "text_head": "detrazione non compete. Se i rapporti di cui al comma 1, lettere c) e d), sono pari a zero, minori di zero ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "detrazione non compete. Se i rapporti di cui al comma 1, lettere c) e d), sono p"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 14,
+      "bbox": [
+        43.5,
+        412.62,
+        546.96,
+        430.88
+      ],
+      "n_spans": 1,
+      "text_head": "o uguali a uno, le detrazioni non competono. Negli altri casi, il risultato dei predetti rapporti si assume ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "o uguali a uno, le detrazioni non competono. Negli altri casi, il risultato dei "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 15,
+      "bbox": [
+        43.5,
+        438.9,
+        219.48,
+        457.16
+      ],
+      "n_spans": 1,
+      "text_head": "nelle prime quattro cifre decimali\";  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "nelle prime quattro cifre decimali\";  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 16,
+      "bbox": [
+        51.0,
+        465.18,
+        254.86,
+        483.44
+      ],
+      "n_spans": 1,
+      "text_head": "d) l'articolo 13 è sostituito dal seguente:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "d) l'articolo 13 è sostituito dal seguente:  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 17,
+      "bbox": [
+        43.5,
+        491.46,
+        525.42,
+        509.72
+      ],
+      "n_spans": 1,
+      "text_head": "\"Art. 13. - (Altre detrazioni). - 1. Se alla formazione del reddito complessivo concorrono uno o più ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "\"Art. 13. - (Altre detrazioni). - 1. Se alla formazione del reddito complessivo "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 18,
+      "bbox": [
+        43.5,
+        517.75,
+        534.35,
+        536.01
+      ],
+      "n_spans": 1,
+      "text_head": "redditi di cui agli articoli 49, con esclusione di quelli indicati nel comma 2, lettera a), e 50, comma 1, ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "redditi di cui agli articoli 49, con esclusione di quelli indicati nel comma 2, "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 19,
+      "bbox": [
+        43.5,
+        544.03,
+        545.46,
+        562.29
+      ],
+      "n_spans": 1,
+      "text_head": "lettere a), b), c), c-bis), d), h-bis) e l), spetta una detrazione dall'imposta lorda, rapportata al periodo di ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "lettere a), b), c), c-bis), d), h-bis) e l), spetta una detrazione dall'imposta "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 20,
+      "bbox": [
+        43.5,
+        570.31,
+        162.9,
+        588.57
+      ],
+      "n_spans": 1,
+      "text_head": "lavoro nell'anno, pari a:  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "lavoro nell'anno, pari a:  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 21,
+      "bbox": [
+        43.5,
+        596.6,
+        358.78,
+        614.86
+      ],
+      "n_spans": 1,
+      "text_head": "a) 1.840 euro, se il reddito complessivo non supera 8.000 euro. ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "a) 1.840 euro, se il reddito complessivo non supera 8.000 euro. "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 22,
+      "bbox": [
+        43.5,
+        622.88,
+        532.76,
+        641.14
+      ],
+      "n_spans": 1,
+      "text_head": "L'ammontare della detrazione effettivamente spettante non può essere inferiore a 690 euro. Per i ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "L'ammontare della detrazione effettivamente spettante non può essere inferiore a"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 23,
+      "bbox": [
+        43.5,
+        649.16,
+        542.09,
+        667.42
+      ],
+      "n_spans": 1,
+      "text_head": "rapporti di lavoro a tempo determinato, l'ammontare della detrazione effettivamente spettante non ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "rapporti di lavoro a tempo determinato, l'ammontare della detrazione effettivame"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 24,
+      "bbox": [
+        43.5,
+        675.44,
+        217.06,
+        693.7
+      ],
+      "n_spans": 1,
+      "text_head": "può essere inferiore a 1.380 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "può essere inferiore a 1.380 euro;  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 25,
+      "bbox": [
+        43.5,
+        701.73,
+        549.6,
+        719.99
+      ],
+      "n_spans": 1,
+      "text_head": "b) 1.338 euro, aumentata del prodotto tra 502 euro e l'importo corrispondente al rapporto tra 15.000 ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "b) 1.338 euro, aumentata del prodotto tra 502 euro e l'importo corrispondente al"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 26,
+      "bbox": [
+        43.5,
+        728.01,
+        523.44,
+        746.27
+      ],
+      "n_spans": 1,
+      "text_head": "euro, diminuito del reddito complessivo, e 7.000 euro, se l'ammontare del reddito complessivo è ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "euro, diminuito del reddito complessivo, e 7.000 euro, se l'ammontare del reddit"
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 27,
+      "bbox": [
+        43.5,
+        754.29,
+        278.0,
+        772.55
+      ],
+      "n_spans": 1,
+      "text_head": "superiore a 8.000 euro ma non a 15.000 euro;  ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "superiore a 8.000 euro ma non a 15.000 euro;  "
+        }
+      ]
+    },
+    {
+      "page": 4,
+      "block": 28,
+      "bbox": [
+        43.5,
+        780.58,
+        500.74,
+        798.84
+      ],
+      "n_spans": 1,
+      "text_head": "c) 1.338 euro, se il reddito complessivo è superiore a 15.000 euro ma non a 55.000 euro. La ",
+      "spans": [
+        {
+          "font": "TitilliumWeb-Light",
+          "size": 12.0,
+          "flags": 4,
+          "text": "c) 1.338 euro, se il reddito complessivo è superiore a 15.000 euro ma non a 55.0"
+        }
+      ]
+    }
+  ],
+  "art_headers_sample": [
+    [
+      0,
+      "Art. 1"
+    ],
+    [
+      32,
+      "Art. 39-ter. - (Riscossione delle somme dovute a titolo di prelievo erariale unico a seguito dei controlli"
+    ],
+    [
+      33,
+      "Art. 39-quater. - (Accertamento e controlli in materia di prelievo erariale unico). - 1. Gli uffici"
+    ],
+    [
+      35,
+      "Art. 39-quinquies. - (Sanzioni in materia di prelievo erariale unico). - 1. La sanzione prevista"
+    ],
+    [
+      35,
+      "Art. 39-sexies. - (Responsabilità solidale dei terzi incaricati della raccolta delle somme giocate). - 1. I"
+    ],
+    [
+      35,
+      "Art. 39-septies. - (Disposizioni transitorie). - 1. Per le somme che, a seguito dei controlli automatici"
+    ],
+    [
+      41,
+      "Art. 1"
+    ],
+    [
+      74,
+      "Art. 1"
+    ],
+    [
+      107,
+      "Art. 1"
+    ],
+    [
+      142,
+      "Art. 1"
+    ],
+    [
+      171,
+      "Art. 1"
+    ],
+    [
+      199,
+      "Art. 1"
+    ],
+    [
+      231,
+      "Art. 1"
+    ],
+    [
+      274,
+      "Art. 1"
+    ],
+    [
+      305,
+      "Art. 1"
+    ],
+    [
+      329,
+      "Art. 1"
+    ],
+    [
+      358,
+      "Art. 1"
+    ],
+    [
+      390,
+      "Art. 1"
+    ],
+    [
+      415,
+      "Art. 1"
+    ]
+  ],
+  "art_headers_truncated": false
+}
