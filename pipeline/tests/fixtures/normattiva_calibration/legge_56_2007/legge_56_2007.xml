@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0" xmlns:eli="http://data.europa.eu/eli/ontology#" xmlns:fo="urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0" xmlns:gu="http://www.gazzettaufficiale.it/eli/" xmlns:html="http://www.w3.org/1999/xhtml" xmlns:na="http://www.normattiva.it/eli/" xmlns:nakn="http://normattiva.it/akn/vocabulary" xmlns:nrdfa="http://www.normattiva.it/rdfa/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfa="http://www.w3.org/1999/xhtml#">
+    <act name="monovigente">
+        <meta>
+            <identification source="">
+                <FRBRWork>
+                    <FRBRthis value="/akn/it/act/legge/stato/2007-05-04/56/!main"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2007-05-04/56"/>
+                    <FRBRalias name="urn:nir" value="urn:nir:stato:legge:2007-05-04;56"/>
+                    <FRBRalias name="eli" value="eli/id/2007/05/05/007G0075/ORIGINAL"/>
+                    <FRBRdate date="2007-05-04" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2007/05/05/007G0075/ORIGINAL" aknrelname="eli/id/2007/05/05/007G0075/ORIGINAL">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalResource"/>
+                            <nrdfa:span content="Istituzione del «Giorno della memoria» dedicato alle vittime del terrorismo e delle stragi di tale matrice. " lang="it" property="eli:title" xml:lang="it"/>
+                            <nrdfa:span content="http://www.normattiva.it/eli/id/{yyyy}/{mm}/{dd}/{codiceRedazionale}/{tipoVersione}" property="eli:uri_schema"/>
+                            <nrdfa:span content="007G0075" property="eli:id_local"/>
+                            <nrdfa:span property="eli:type_document" resource="gu:tables/resource-type#LEGGE"/>
+                            <nrdfa:span content="2007-05-04" datatype="xsd:date" property="eli:date_document"/>
+                            <nrdfa:span property="eli:version" resource="gu:tables/versions#ORIGINAL"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRcountry value="it"/>
+                </FRBRWork>
+                <FRBRExpression>
+                    <FRBRthis value="/akn/it/act/legge/stato/2007-05-04/56/ita@2007-05-06/!main"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2007-05-04/56/ita@2007-05-06"/>
+                    <FRBRdate date="2007-05-06" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2007/05/05/007G0075/ORIGINAL/ita">
+                            <nrdfa:span property="rdf:type" resource="eli:LegalExpression"/>
+                            <nrdfa:span property="eli:realizes" resource="na:id/2007/05/05/007G0075/ORIGINAL"/>
+                            <nrdfa:span property="eli:is_embodied_by" resource="na:id/2007/05/05/007G0075/ORIGINAL/ita/akn"/>
+                            <nrdfa:span property="eli:language" resource="http://publications.europa.eu/resource/authority/language/ITA"/>
+                            <nrdfa:span property="eli:publisher_agent" resource="http://www.ipzs.it"/>
+                        </nrdfa:eli>
+                    </preservation>
+                    <FRBRlanguage language="ita"/>
+                </FRBRExpression>
+                <FRBRManifestation>
+                    <FRBRthis value="/akn/it/act/legge/stato/2007-05-04/56/ita@2007-05-06/!main.xml"/>
+                    <FRBRuri value="/akn/it/act/legge/stato/2007-05-04/56/ita@2007-05-06.xml"/>
+                    <FRBRdate date="2007-05-04" name=""/>
+                    <FRBRauthor as="#author" href=""/>
+                    <preservation>
+                        <nrdfa:eli about="na:id/2007/05/05/007G0075/ORIGINAL/ita/akn">
+                            <nrdfa:span property="rdf:type" resource="eli:Format"/>
+                            <nrdfa:span property="eli:format" resource="http://www.iana.org/assignments/media-types/xml"/>
+                        </nrdfa:eli>
+                    </preservation>
+                </FRBRManifestation>
+            </identification>
+            <publication date="2007-05-05" name="" number="103" showAs=""/>
+            <lifecycle source="">
+                <eventRef date="2007-05-05" eId="eventRef_0" source="ro1"/>
+            </lifecycle>
+            <workflow source="">
+                <step by="#senato" date="2007-05-04" refersTo="#S.1003"/>
+                <step by="#camera" date="2007-05-04" refersTo="#C.2489"/>
+            </workflow>
+            <analysis source=""/>
+            <references source="">
+                <original eId="ro1" href="/akn/it/act/LEGGE/stato/2007-05-04/56/!main" showAs=""/>
+                <passiveRef eId="S.1003" href="/akn/it/senato-it:parl:ddl:senato;15.legislatura;1003" showAs=""/>
+                <passiveRef eId="C.2489" href="/akn/it/camera-it:parlamento:scheda.progetto.legge:camera;15.legislatura;2489" showAs=""/>
+            </references>
+            <proprietary source="">
+                <rdf:RDF>
+                    <rdf:Description rdf:about="na:id/2007/05/05/007G0075/ORIGINAL">
+                        <rdf:type rdf:resource="eli:LegalResource"/>
+                        <eli:title xml:lang="it">Istituzione del «Giorno della memoria» dedicato alle vittime del terrorismo e delle stragi di tale matrice. </eli:title>
+                        <eli:uri_schema>http://www.normattiva.it/eli/id/{yyyy}/{mm}/{dd}/{codiceRedazionale}/{tipoVersione}</eli:uri_schema>
+                        <eli:id_local>007G0075</eli:id_local>
+                        <eli:type_document rdf:resource="gu:tables/resource-type#LEGGE"/>
+                        <eli:date_document rdf:datatype="xsd:date">2007-05-04</eli:date_document>
+                        <eli:version rdf:resource="gu:tables/versions#ORIGINAL"/>
+                    </rdf:Description>
+                    <rdf:Description rdf:about="na:id/2007/05/05/007G0075/ORIGINAL/ita">
+                        <rdf:type rdf:resource="eli:LegalExpression"/>
+                        <eli:realizes rdf:resource="na:id/2007/05/05/007G0075/ORIGINAL"/>
+                        <eli:is_embodied_by rdf:resource="na:id/2007/05/05/007G0075/ORIGINAL/ita/akn"/>
+                        <eli:language rdf:resource="http://publications.europa.eu/resource/authority/language/ITA"/>
+                        <eli:publisher_agent rdf:resource="http://www.ipzs.it"/>
+                    </rdf:Description>
+                    <rdf:Description rdf:about="na:id/2007/05/05/007G0075/ORIGINAL/ita/akn">
+                        <rdf:type rdf:resource="eli:format"/>
+                        <eli:format rdf:resource="http://www.iana.org/assignments/media-types/xml"/>
+                    </rdf:Description>
+                </rdf:RDF>
+            </proprietary>
+        </meta>
+        <preface>
+            <p>
+                <docType>LEGGE</docType>
+                <docDate date="2007-05-04">04 maggio 2007</docDate>
+                <docNumber>56</docNumber>
+                <docTitle>Istituzione del «Giorno della memoria» dedicato alle vittime del terrorismo e delle stragi di tale matrice.
+</docTitle>
+            </p>
+            <p>
+                <authorialNote eId="atn1" placement="bottom">
+                    <p>Entrata in vigore del provvedimento: 6/5/2007</p>
+                </authorialNote>
+            </p>
+        </preface>
+        <preamble>
+            <formula name="primaDiFormulaInizialePreambolo">
+                <p>La Camera dei deputati ed il Senato della Repubblica hanno approvato;</p>
+            </formula>
+            <formula name="formulaInizialePreambolo">
+                <p>IL PRESIDENTE DELLA REPUBBLICA</p>
+            </formula>
+            <formula name="formulaFinalePreambolo">
+                <p>Promulga la seguente legge:</p>
+            </formula>
+        </preamble>
+        <body>
+            <article eId="art_1">
+                <num>Art. 1.</num>
+                <heading/>
+                <paragraph eId="art_1__para_1">
+                    <num>1.</num>
+                    <content>
+                        <p>La Repubblica riconosce il 9 maggio, anniversario dell'uccisione di Aldo Moro, quale «Giorno della memoria», al fine di ricordare tutte le vittime del terrorismo, interno e internazionale, e delle stragi di tale matrice.
+</p>
+                    </content>
+                </paragraph>
+                <paragraph eId="art_1__para_2">
+                    <num>2.</num>
+                    <content>
+                        <p>In occasione del «Giorno della memoria» di cui al comma 1, possono essere organizzate, senza nuovi o maggiori oneri a carico della finanza pubblica, manifestazioni pubbliche, cerimonie, incontri, momenti comuni di ricordo dei fatti e di riflessione, anche nelle scuole di ogni ordine e grado, al fine di conservare, rinnovare e costruire una memoria storica condivisa in difesa delle istituzioni democratiche.
+</p>
+                    </content>
+                </paragraph>
+            </article>
+            <article eId="art_2">
+                <num>Art. 2.</num>
+                <heading/>
+                <paragraph eId="art_2__para_1">
+                    <num>1.</num>
+                    <content>
+                        <p>La presente legge entra in vigore il giorno successivo a quello della sua pubblicazione nella Gazzetta Ufficiale.
+ </p>
+                    </content>
+                </paragraph>
+            </article>
+        </body>
+        <conclusions>
+            <formula name="formulaFinaleConclusioni">
+                <p>La presente legge, munita del sigillo dello Stato, sara' inserita nella Raccolta ufficiale degli atti normativi della Repubblica italiana. E' fatto obbligo a chiunque spetti di osservarla e di farla osservare come legge Stato.</p>
+            </formula>
+            <p> Data a Roma, addi' 4 maggio 2007</p>
+            <p>NAPOLITANO Prodi, Presidente del Consiglio dei Ministri Visto, il Guardasigilli: Mastella</p>
+        </conclusions>
+    </act>
+</akomaNtoso>
