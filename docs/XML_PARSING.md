@@ -9,11 +9,11 @@ Questa guida è il riferimento narrativo per il backend Layer 1 XML-native che c
 
 Il modulo `xml_akn/` è un endpoint Layer 1 separato. Il suo input è un file XML Akoma Ntoso scaricato dal portale Normattiva tramite il pulsante "Esporta in Akoma Ntoso"; il suo output è un `XmlAknParseResult` che contiene un `Document` pronto per l'emission al contratto JSON 0.6.0, una struttura `XmlAknDocumentMeta` con i descrittori FRBR (URN NIR, ELI, titolo), il verdetto del detector e una tupla di warning diagnostici. Il parser non passa per le fasi PDF-tier 1 (extraction PyMuPDF, classification, tier-1 reconstruction, apparatus resolver, post-processing) perché l'AKN già codifica strutturalmente quel lavoro: articoli, commi, gerarchia editoriale, riferimenti incrociati, note autoriali sono già espliciti come elementi XML tipizzati.
 
-Il primo deliverable del modulo (v1, 22 maggio 2026) consegna il detector blindato sui 9 atti del corpus di calibrazione + 1 atto dell'esplorazione preliminare, il parser end-to-end per gli atti BEN_FORMATO, l'emitter bridge verso `ScabopdfDocument`, e una baseline byte-for-byte (N-001) sulla legge_56_2007. Quattro percorsi sono stati esplicitamente rinviati a sessioni successive (debt formali nel `CARRYOVER.md`): il parser per gli atti FRAGMENTED (Codice Penale, Codice Civile), il URN binding strutturato per i tag `<ref>` esterni (richiede schema 0.7.0), il parsing degli atti modificatori con `<mod>` / `<quotedText>` / `<textualMod>` non vuoti, e il secondo backend EPUB IPZS come fallback per gli atti FRAGMENTED.
+Il primo deliverable del modulo (v1, 22 maggio 2026) consegnò il detector blindato sui 9 atti del corpus + 1 dell'esplorazione preliminare, il parser end-to-end per i soli BEN_FORMATO, l'emitter bridge verso `ScabopdfDocument`, e una baseline byte-for-byte (N-001) sulla legge_56_2007. La sessione di consolidamento del **24 maggio 2026** ha chiuso il backend del Layer 1 XML AKN portando il corpus a **copertura completa via nove baseline byte-for-byte** (N-001..N-009 — sei BEN_FORMATO aggiuntive: gelli_bianco, dlgs_231_2001, legge_bilancio_2023, codice_strada, codice_procedura_penale, tuf_dlgs_58_1998 — più due FRAGMENTED: codice_penale e codice_civile) e implementando il **parser FRAGMENTED unificato** (pattern (aaaa) di `CLAUDE.md`) che sintetizza coppie `(ARTICLE_HEADER, ARTICLE_BODY)` da ciascun `<attachment>/<doc>` via regex sul `name=`. Tre percorsi restano rinviati a sessioni successive (debt formali nel `CARRYOVER.md`): il URN binding strutturato per i tag `<ref>` esterni (richiede schema 0.7.0), il parsing degli atti modificatori con `<mod>` / `<quotedText>` / `<textualMod>` non vuoti, e il secondo backend EPUB IPZS come fallback alternativo per gli atti FRAGMENTED.
 
 ## 2. API pubblica
 
-Il modulo espone quattro simboli pubblici in `pipeline/src/scabopdf_pipeline/xml_akn/__init__.py`. La funzione `detect_health(xml_path: Path) -> XmlHealthReport` accetta un percorso e ritorna un report con uno dei quattro verdetti chiusi `OK` / `FRAGMENTED` / `NOT_AKN` / `INVALID_XML`. La funzione `parse(xml_path: Path) -> XmlAknParseResult` chiama internamente il detector, solleva `XmlAknParseError` su qualunque verdetto diverso da `OK` (così v1 è strettamente BEN_FORMATO), e produce il bundle Document + meta + health. La funzione `to_scabopdf_document(result: XmlAknParseResult, source_xml_path: Path) -> ScabopdfDocument` in `xml_akn/emitter.py` traduce il bundle nel modello Pydantic 0.6.0 emettibile come JSON via `model_dump(mode='json')`. I quattro dataclass `XmlHealthVerdict`, `XmlHealthReport`, `XmlStructuralSummary`, `XmlAknDocumentMeta`, `XmlAknParseResult` sono frozen e completano la superficie pubblica.
+Il modulo espone quattro simboli pubblici in `pipeline/src/scabopdf_pipeline/xml_akn/__init__.py`. La funzione `detect_health(xml_path: Path) -> XmlHealthReport` accetta un percorso e ritorna un report con uno dei quattro verdetti chiusi `OK` / `FRAGMENTED` / `NOT_AKN` / `INVALID_XML`. La funzione `parse(xml_path: Path) -> XmlAknParseResult` chiama internamente il detector e dispatcha sul verdetto: su `OK` produce un Document via il path BEN_FORMATO, su `FRAGMENTED` produce un Document via il path frammentato unificato (pattern (aaaa)) che sintetizza coppie `(ARTICLE_HEADER, ARTICLE_BODY)` da ciascun `<attachment>/<doc>` dopo il body's promulgation-decree articles; solleva `XmlAknParseError` solo su `INVALID_XML` o `NOT_AKN`. La funzione `to_scabopdf_document(result: XmlAknParseResult, source_xml_path: Path) -> ScabopdfDocument` in `xml_akn/emitter.py` traduce il bundle nel modello Pydantic 0.6.0 emettibile come JSON via `model_dump(mode='json')`. I quattro dataclass `XmlHealthVerdict`, `XmlHealthReport`, `XmlStructuralSummary`, `XmlAknDocumentMeta`, `XmlAknParseResult` sono frozen e completano la superficie pubblica.
 
 Esempio d'uso minimo:
 
@@ -25,13 +25,16 @@ from scabopdf_pipeline.xml_akn.emitter import to_scabopdf_document
 xml = Path("legge_56_2007.xml")
 report = detect_health(xml)
 print(report.verdict.value, "—", report.explanation)
-if report.verdict is XmlHealthVerdict.OK:
+if report.verdict in (XmlHealthVerdict.OK, XmlHealthVerdict.FRAGMENTED):
+    # Entrambi i verdetti producono un Document; il chiamante può
+    # ispezionare `result.warnings` per verificare se è stato emesso
+    # il warning `xml_akn:fragmented:editorial_hierarchy_unrecoverable`
+    # e decidere se proporre all'utente il fallback EPUB.
     result = parse(xml)
     sdoc = to_scabopdf_document(result, xml)
     json_payload = sdoc.model_dump_json(indent=2, exclude_none=False)
-elif report.verdict is XmlHealthVerdict.FRAGMENTED:
-    # Suggerito: provare il backend EPUB IPZS quando sarà disponibile
-    print("Provare il formato EPUB dello stesso atto.")
+elif report.verdict is XmlHealthVerdict.NOT_AKN:
+    print(f"File non AKN: {report.explanation}")
 ```
 
 ## 3. Il detector e la sua calibrazione empirica
@@ -56,9 +59,19 @@ I tag inline `<ref>` e `<ins>` ricevono in v1 un trattamento minimale: il loro t
 
 Una convenzione editoriale che ha richiesto cura particolare è la **headless-first-paragraph**: in alcuni atti (legge_gelli_bianco) il `<heading>` dell'articolo è esplicitamente vuoto (`<heading/>`) e il primo `<paragraph>` non ha `<num>`, ospitando il testo del heading come comma fantasma. Il parser riconosce il pattern (primo paragraph senza `<num>` AND heading vuoto) e folda il testo del paragraph nell'ARTICLE_HEADER, senza emettere uno spurious ARTICLE_BODY.
 
-I `Node.id` sono minted in pre-order traversal nel formato `node_NNNN` partendo da `node_0`, conformi al `NODE_ID_PATTERN = r"^node_\d+$"` dello schema. `Node.page_index` è uniformemente `0` perché AKN non ha concetto di pagina fisica; un futuro bump schema 0.7.0 con un campo `source_pages` potrebbe trasportare la paginazione FRBR di manifestation, ma in v1 il `page_index=0` è una scelta deliberata. `Node.block_indices` è sempre `()` (concept PDF-tier 1).
+I `Node.id` sono minted in pre-order traversal nel formato `node_NNNN` partendo da `node_0`, conformi al `NODE_ID_PATTERN = r"^node_\d+$"` dello schema. `Node.page_index` è uniformemente `0` perché AKN non ha concetto di pagina fisica; un futuro bump schema 0.7.0 con un campo `source_pages` potrebbe trasportare la paginazione FRBR di manifestation, ma in v2 il `page_index=0` è una scelta deliberata. `Node.block_indices` è sempre `()` (concept PDF-tier 1).
 
-Il parser è coperto da 18 unit test su skeleton sintetici (mapping per ogni categoria + 4 edge case su metadata FRBR + headless paragraph + notes container + paragraph senza content child + ref/ins preservati testualmente) e 11 integration test su corpus reale (1 baseline N-001 byte-for-byte su legge_56_2007 + 6 strutturali su BEN_FORMATO calibration + 3 schema-validation pydantic+jsonschema + 2 rejection FRAGMENTED su CP/CC). Coverage interno: 94 % sul parser (le righe non coperte sono edge case difensivi della metadata extraction, p.es. FRBRalias senza attribute value), 100 % su emitter.
+### 4.1 Path FRAGMENTED unificato (pattern (aaaa))
+
+Per gli atti su cui il detector emette il verdetto `FRAGMENTED` (Codice Penale e Codice Civile della calibrazione, plus l'esplorativo CP), il parser invoca un walker separato che ricostruisce la sequenza degli articoli dai wrapper `<attachment>/<doc>` siblings del `<body>`. Il **Fase 0** empirico ha falsificato l'ipotesi del PRECHECK secondo cui CP e CC esibivano due varianti A e B distinte: entrambe le fixture esibiscono la stessa shape strutturale `<attachment>/<doc>/<mainBody>/<paragraph>` con **zero `<article>` intermediari**. Un singolo walker frammentato gestisce entrambi senza dispatch interno sull'identità della fonte.
+
+Il walker itera ogni `<attachment>` in document-order (che l'ispezione empirica ha confermato strettamente monotono rispetto al numero d'articolo su entrambi i fixture), estrae il token articolo dall'attributo `<doc name="...-art. TOKEN">` via il regex `r"-art\.\s*(\d+(?:[\s\-][a-z]+(?:\.\d+)?|/\d+)?)\s*$"`, e minta una coppia sintetica `(ARTICLE_HEADER, ARTICLE_BODY+)` con `text="Art. <token>"` sul header e un `ARTICLE_BODY` per ogni `<mainBody>/<paragraph>` figlio. Il regex copre cinque forme empiriche di numerazione osservate: intero piano (`"411"`), suffisso con spazio (`"2505 bis"`), suffisso con trattino (`"339-bis"` — unico a CP), suffisso con sotto-decimale (`"270 bis.1"` — unico a CP post-1980), e forma slash (`"314/27"` — unica a CC sub-articoli). Tasso di match empirico: **100 % su entrambi i fixture** (987/987 su CP, 3256/3256 su CC).
+
+Gli articoli del `<body>` della fonte (tipicamente i 2-3 articoli del decreto reale di promulgazione che approvò il codice: 3 per CP da R.D. 1398/1930, 2 per CC da R.D. 262/1942) vengono emessi prima, in document order, via il path BEN_FORMATO standard; le coppie sintetiche dei `<attachment>` vengono appese dopo, mantenendo la sequenzialità degli id `node_NNNN`. La gerarchia editoriale (Libro/Titolo/Capo/Sezione) del codice è strutturalmente **persa** dall'XML di sorgente — il bug di export Normattiva la elimina completamente — e il parser non tenta di ricostruirla euristicamente. La perdita è segnalata via la warning di vocabolario chiuso `xml_akn:fragmented:editorial_hierarchy_unrecoverable` emessa una volta sola per parse. Warning per-attachment (`doc_name_unparseable_position_<idx>`, `doc_without_mainbody_position_<idx>`, `doc_without_paragraphs_position_<idx>`, `attachment_without_doc_position_<idx>`) parametrizzano sull'indice document-order del wrapper ospite e affiorano in `XmlAknParseResult.warnings`; zero occorrenze su entrambi i fixture reali dopo l'estensione del regex.
+
+### 4.2 Test coverage del parser
+
+Il parser è coperto da **39 unit test** su skeleton sintetici (mapping per ogni categoria + 4 edge case su metadata FRBR + headless paragraph + notes container + paragraph senza content child + ref/ins preservati testualmente + 7 nuovi unit FRAGMENTED che esercitano dispatch, ordering body-prima-attachments, ogni warning emission path + 11 parametrize sul regex di estrazione token con tutte le 8 forme conosciute), e **20 integration test** su corpus reale (9 baseline byte-for-byte N-001..N-009 + 6 strutturali su BEN_FORMATO calibration + 3 schema-validation pydantic+jsonschema + 2 strutturali FRAGMENTED su CP/CC). Coverage interno post-FRAGMENTED: **99 % sul parser** (3 righe difensive non coperte: il fallback nel `_local` per tag senza prefix, e due rami di error-handling in `_extract_meta` non esercitati sui fixture reali), 100 % su emitter, 100 % su detector, 100 % su constants, 100 % su types.
 
 ## 5. L'emitter e il bridge a `ScabopdfDocument`
 
@@ -96,23 +109,37 @@ Output JSON sample (legge_56_2007, document_id rimosso per byte-for-byte stabili
 
 ## 6. Convenzioni di calibrazione e regression protection
 
-Il modulo segue la convenzione dei plugin PDF-native per la regression protection: ogni atto rappresentativo del corpus riceve una baseline byte-for-byte committata in `pipeline/tests/snapshots/` con identificativo `N-NNN` (Normattiva, sequenziale). La prima baseline è **N-001** su legge_56_2007: tracking dei 5 Node prodotti + della metadata FRBR. Una sessione successiva che estende il parser dovrà rigenerare la baseline solo se la modifica è deliberatamente review-ed e approved, esattamente come per le baseline `P-014`/`P-018`/`P-019`/`P-021`/`P-040` del Piano Ambizioso PDF-native.
+Il modulo segue la convenzione dei plugin PDF-native per la regression protection: ogni atto rappresentativo del corpus riceve una baseline byte-for-byte committata in `pipeline/tests/snapshots/` con identificativo `N-NNN` (Normattiva, sequenziale). Lo stato delle baseline al **24 maggio 2026** copre l'intero corpus di calibrazione + il singolo atto esplorativo FRAGMENTED:
 
-Quando il parser sarà esteso al path FRAGMENTED (sessione futura), si dovranno aggiungere N-002 (codice_penale) e N-003 (codice_civile) come baseline. Quando si copriranno le fixture BEN_FORMATO più grandi, baseline N-004 (gelli_bianco), N-005 (dlgs_231_2001), N-006 (codice_procedura_penale), N-007 (codice_strada), N-008 (tuf_dlgs_58_1998), N-009 (legge_bilancio_2023) sono i candidati naturali.
+```
+N-001  legge_56_2007                  5 nodi      3 KB    BEN_FORMATO  smoke test minimale
+N-002  legge_gelli_bianco           110 nodi     99 KB    BEN_FORMATO  NOTE + LIST_ITEM + headless paragraph
+N-003  dlgs_231_2001                574 nodi    304 KB    BEN_FORMATO  primo fixture con HEADING_2
+N-004  legge_bilancio_2023        1 385 nodi    1.0 MB    BEN_FORMATO  articolo-unico patologico, 1032 commi
+N-005  codice_strada              2 904 nodi    2.0 MB    BEN_FORMATO  266 articoli, 17 capi
+N-006  codice_procedura_penale    4 973 nodi    2.5 MB    BEN_FORMATO  906 articoli, 104 capi, zero NOTE
+N-007  tuf_dlgs_58_1998           4 656 nodi    2.6 MB    BEN_FORMATO  563 articoli, 93 capi, 2336 ref
+N-008  codice_penale              2 273 nodi    1.5 MB    FRAGMENTED   987 articoli sintetici + 3 body
+N-009  codice_civile              6 736 nodi    3.6 MB    FRAGMENTED   3256 articoli sintetici + 2 body
+```
 
-Il property-based testing del detector (~800 esempi `hypothesis` per sessione di test) blinda il modulo contro regressioni sulle soglie e contro edge case sintetici che il corpus reale non esercita. Una eventuale estensione del detector per gestire varianti future (es. una "variante C" del bug Normattiva con shape ancora diverso) dovrebbe aggiungere nuove strategie hypothesis e nuove soglie costanti, mantenendo la calibrazione zero-falsi-positivi sui 9 atti esistenti.
+Aggregato: **9 baseline byte-for-byte** che coprono tutta la diversità strutturale del corpus (chapter density, article count, NOTE density, LIST_ITEM density, headless-paragraph convention, FRAGMENTED export bug). Una sessione successiva che modifica il parser dovrà rigenerare la baseline solo se la modifica è deliberatamente review-ed e approved, esattamente come per le baseline `P-014`/`P-018`/`P-019`/`P-021`/`P-040` del Piano Ambizioso PDF-native.
 
-## 7. Cosa NON fa il parser v1 (debt esplicito)
+Lo script di rigenerazione vive in `/tmp/capture_xml_akn_baselines.py` (BEN_FORMATO N-002..N-007) e `/tmp/capture_xml_akn_frag_baselines.py` (FRAGMENTED N-008..N-009) come script una-tantum di sessione. Quando arriverà la prima rigenerazione genuina, i due script andranno promossi a `pipeline/scripts/capture_xml_akn_baselines.py` come tool di sessione permanente; non è stato fatto in v2 per evitare commit cosmetici.
 
-I quattro debt formalizzati nel `CARRYOVER.md` v2.27 sono:
+Il property-based testing del detector (21 strategies × ~800 esempi `hypothesis` per sessione di test) blinda il modulo contro regressioni sulle soglie e contro edge case sintetici che il corpus reale non esercita. Una eventuale estensione del detector per gestire varianti future (es. una nuova variante del bug Normattiva con shape ancora diverso) dovrebbe aggiungere nuove strategie hypothesis e nuove soglie costanti, mantenendo la calibrazione zero-falsi-positivi sui 9 atti esistenti.
 
-**(xii) Parser FRAGMENTED non implementato**: gli atti FRAGMENTED (Codice Penale, Codice Civile) sollevano `XmlAknParseError` invece di produrre un Document. La ricostruzione euristica dei `<attachment>/<doc>` come `(ARTICLE_HEADER, ARTICLE_BODY)` siblings via regex sul `<doc name="...-art. N">` è scritta in design (decisione D4 della sessione di apertura) ma non implementata. Stima: ~150 LOC + 5-8 unit test sintetici + 2 integration test su CP/CC.
+## 7. Cosa NON fa il parser v2 (debt esplicito)
 
-**(xiii) URN binding per `<ref>` esterni rinviato**: in v1 il testo del `<ref>` è preservato nel `text` del Node ospite ma l'href URN viene scartato. Un bump schema 0.7.0 con `ApparatusRef.external_urn` opzionale (o un nuovo `ApparatusRefKind.EXTERNAL_URN_TARGET`) chiuderebbe il debt. Decisione di prodotto: lo schema bump 0.7.0 atteso quando Layer 2 ha bisogno strutturato di URN.
+Il debt **(xii) Parser FRAGMENTED non implementato** della v1 è stato **chiuso** nella sessione del 24 maggio 2026 (pattern (aaaa)). I tre debt residui sono:
+
+**(xiii) URN binding per `<ref>` esterni rinviato**: in v2 il testo del `<ref>` è preservato nel `text` del Node ospite ma l'href URN viene scartato. Un bump schema 0.7.0 con `ApparatusRef.external_urn` opzionale (o un nuovo `ApparatusRefKind.EXTERNAL_URN_TARGET`) chiuderebbe il debt. Decisione di prodotto: lo schema bump 0.7.0 atteso quando Layer 2 ha bisogno strutturato di URN.
 
 **(xiv) Parsing modifiche legislative non esercitato**: `<mod>`, `<quotedText>`, `<textualMod>` sono zero su tutto il corpus di calibrazione. Sessione futura dedicata quando un atto modificatore di calibrazione (legge_capitali esplorativa 80 `<mod>` + 88 `<quotedText>`) entra nel corpus. Le tre categorie nuove ipotizzate dal REPORT esplorativo (`AMENDMENT`, `QUOTED_TEXT`, `UPDATE_BLOCK`) probabilmente entreranno nello schema con la sessione.
 
-**(xv) Secondo backend EPUB IPZS rinviato**: il REPORT esplorativo raccomanda EPUB come fallback automatico per gli atti FRAGMENTED. La pipeline IPZS esibisce classi CSS `-akn` che proiettano sulla maggior parte degli atti recenti (post-2000) un livello strutturale comparabile all'XML AKN. Sessione dedicata futura.
+**(xv) Secondo backend EPUB IPZS rinviato**: il REPORT esplorativo raccomanda EPUB come fallback automatico per gli atti FRAGMENTED. Anche dopo la chiusura del path FRAGMENTED (pattern (aaaa)), la gerarchia editoriale Libro/Titolo/Capo è irrecuperabile dal XML; EPUB resta il candidato naturale per ricostruirla quando un consumatore Layer 2 la richieda. La pipeline IPZS esibisce classi CSS `-akn` che proiettano sulla maggior parte degli atti recenti (post-2000) un livello strutturale comparabile all'XML AKN. Sessione dedicata futura.
+
+**(xvi) Front-matter del decreto promulgativo non distinto dal corpo del codice**: nel path FRAGMENTED, i 2-3 articoli sostantivi del decreto reale di promulgazione (R.D. 1398/1930 per CP, R.D. 262/1942 per CC) sono emessi nello stesso Document degli articoli sintetici del codice, in document-order (body prima, attachments dopo). Layer 2 può distinguerli dal contesto testuale ("Il testo definitivo del codice penale è approvato" vs "Art. 411. (Detenzione...)") ma non da una segnalazione strutturale. Un futuro bump schema con un campo `Node.source_kind ∈ {body, attachment, synthetic}` o equivalente farebbe la distinzione esplicita. Bassa priorità; documento qui per traccia.
 
 ## 8. Posizione architetturale rispetto al Layer 1 PDF-native
 
@@ -124,18 +151,16 @@ L'ABC `ProfilePlugin` PDF-tier resta stable a 7 metodi astratti. Una eventuale i
 
 ## 9. Estensioni future raccomandate
 
-Per chiunque apra una sessione successiva sul backend XML AKN, l'ordine naturale di estensione è:
+Post-chiusura del backend XML AKN (sessione del 24 maggio 2026), l'ordine naturale di estensione è:
 
-Primo, **secondo baseline byte-for-byte** sulla legge_gelli_bianco (110 Node, esercita HEADING + NOTE + LIST_ITEM). Esercita i path code che la legge_56_2007 non esercita (chapter zero ma authorialNote ≥ 8 + LIST_ITEM ≥ 10). Probabile N-002.
+Primo, **CLI entry-point `scabopdf-xml-extract`**. Argparse con un singolo argomento posizionale (path XML), JSON dump su stdout, diagnostica detector su stderr. ~50 LOC + 3 integration test. Da promuovere in `[project.scripts]` di `pyproject.toml`. Beneficio immediato: permettere all'utente di processare un atto Normattiva senza scrivere codice Python.
 
-Secondo, **path FRAGMENTED implementato**. La diagnostica di Fase 0 della sessione di apertura ha confermato che CP e CC hanno la stessa shape (singola variante frammentata): walk `<attachment>/<doc>` → estrai art. N dal `<doc name>` → emit `(ARTICLE_HEADER, ARTICLE_BODY)` siblings. La gerarchia editoriale (Libro/Titolo/Capo) ricostruita euristicamente dai numeri di articolo è una sotto-decisione (opzione (a) della D4 originale) — può essere lasciata fuori scope v2 e produrre un Document piatto. Baseline N-003 (codice_penale) e N-004 (codice_civile).
+Secondo, **gestione atti modificatori** (`<mod>`, `<quotedText>`, `<textualMod>`) quando emerge un primo atto modificatore di calibrazione. Probabile bump schema 0.7.0 con tre nuove categorie AMENDMENT/QUOTED_TEXT/UPDATE_BLOCK; il modulo `xml_akn/parser.py` riceverà un set di handler dedicati. Il fixture esplorativo legge_capitali 2024 (80 `<mod>` + 88 `<quotedText>`) è il candidato di partenza naturale per la calibrazione.
 
-Terzo, **estensione baseline cross-fixture** alle restanti BEN_FORMATO: codice_procedura_penale (906 art), codice_strada (266 art + 17 chapter), dlgs_231_2001 (109 art + 15 chapter), legge_bilancio_2023 (21 art + 6 attachment), tuf_dlgs_58_1998 (563 art + 93 chapter). Baseline N-005..N-009.
+Terzo, **secondo backend EPUB IPZS** come modulo separato `pipeline/src/scabopdf_pipeline/epub_ipzs/` parallelo a `xml_akn/`. Architettonicamente analogo (endpoint Layer 1 separato che produce Document direttamente), mappato sulle classi CSS `-akn` di IPZS invece che sui tag AKN. La motivazione operativa è recuperare la gerarchia editoriale Libro/Titolo/Capo che il path FRAGMENTED XML AKN del backend attuale perde completamente. Sessione dedicata.
 
-Quarto, **CLI entry-point `scabopdf-xml-extract`**. Argparse con un singolo argomento posizionale (path XML), JSON dump su stdout, diagnostica detector su stderr. ~50 LOC + 3 integration test. Da promuovere in `[project.scripts]` di `pyproject.toml`.
+Quarto, **rinomina schema fields PDF-specific a generic**: bump 0.7.0 con `source_pages`/`source_format`/`source_filename` al posto di `pages_pdf`/`page_size_pt`/`source_pdf_filename`. Sotto-bump separato dalla gestione modifiche legislative; richiede aggiornamento simmetrico di `emission/converter.py` (PDF) e `xml_akn/emitter.py` (XML).
 
-Quinto, **gestione atti modificatori** (`<mod>`, `<quotedText>`, `<textualMod>`) quando emerge un primo atto modificatore di calibrazione. Probabile bump schema 0.7.0 con tre nuove categorie AMENDMENT/QUOTED_TEXT/UPDATE_BLOCK; il modulo `xml_akn/parser.py` riceverà un set di handler dedicati e il pattern strutturale corrispondente sarà documentato in `CLAUDE.md` (probabilmente (aaaa) della sequenza a doppia lettera).
+Quinto, **URN binding strutturato per `<ref>` esterni**: bump 0.7.0 con `ApparatusRef.external_urn` opzionale (o un nuovo `ApparatusRefKind.EXTERNAL_URN_TARGET`) per esporre l'href URN dei tag `<ref>` che oggi viene scartato. Layer 2 potrà mostrare i rinvii con un URI cliccabile risolvibile via `N2Ls` Normattiva. Stima: aggiornamento del parser per propagare `ref.href` come `external_urn` sull'`ApparatusRef` dell'articolo ospite + bump schema + estensione `contract.py`.
 
-Sesto, **secondo backend EPUB IPZS** come modulo separato `pipeline/src/scabopdf_pipeline/epub_ipzs/` parallelo a `xml_akn/`. Architettonicamente analogo (endpoint Layer 1 separato che produce Document direttamente), mappato sulle classi CSS `-akn` di IPZS invece che sui tag AKN. Sessione dedicata.
-
-Settimo, **rinomina schema fields PDF-specific a generic**: bump 0.7.0 con `source_pages`/`source_format`/`source_filename` al posto di `pages_pdf`/`page_size_pt`/`source_pdf_filename`. Sotto-bump separato dalla gestione modifiche legislative; richiede aggiornamento simmetrico di `emission/converter.py` (PDF) e `xml_akn/emitter.py` (XML).
+Sesto, **promozione degli script di capture-baseline a `pipeline/scripts/`**. Gli script di sessione `capture_xml_akn_baselines.py` (BEN_FORMATO) e `capture_xml_akn_frag_baselines.py` (FRAGMENTED) vivono oggi in `/tmp/` come una-tantum. Quando arriverà la prima rigenerazione genuina di baseline (es. dopo un bump schema 0.7.0 che cambia la forma del JSON emesso), promuoverli a tool permanente in `pipeline/scripts/capture_xml_akn_baselines.py` con CLI argparse (`--baselines all|N-001|...`).
