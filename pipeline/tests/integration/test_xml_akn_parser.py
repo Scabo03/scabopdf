@@ -37,6 +37,8 @@ _SNAPSHOT_ROOT = Path(__file__).parent.parent / "snapshots"
 _CALIBRATION = _FIXTURE_ROOT / "normattiva_calibration"
 _EXPLORATION = _FIXTURE_ROOT / "normattiva_exploration"
 
+_BOOKKEEPING_KEYS = ("_baseline_id", "_baseline_source", "_baseline_xml_akn_metadata")
+
 
 def _skip_if_missing(p: Path) -> None:
     if not p.exists():
@@ -54,32 +56,87 @@ def _parse_and_emit_dict(xml_path: Path) -> dict[str, object]:
     return data
 
 
-def test_baseline_holds_for_legge_56_2007() -> None:
-    """N-001 regression baseline. Any change to the parser output on
-    this fixture must regenerate the snapshot deliberately."""
-    xml = _CALIBRATION / "legge_56_2007" / "legge_56_2007.xml"
-    _skip_if_missing(xml)
+def _assert_baseline_holds(xml: Path, snapshot_name: str, baseline_id: str) -> None:
+    """Shared assertion for every N-NNN byte-for-byte baseline.
+
+    Loads the committed snapshot, strips the bookkeeping keys, compares
+    the remaining dict byte-for-byte with the freshly-parsed output, and
+    then validates the metadata side-channel against the bookkeeping
+    ``_baseline_xml_akn_metadata`` block when present.
+    """
     actual = _parse_and_emit_dict(xml)
-    snapshot_path = _SNAPSHOT_ROOT / "xml_akn_baseline_legge_56_2007.json"
+    snapshot_path = _SNAPSHOT_ROOT / snapshot_name
     expected = json.loads(snapshot_path.read_text(encoding="utf-8"))
-    # The committed snapshot carries three additional bookkeeping
-    # fields (_baseline_id, _baseline_source, _baseline_xml_akn_metadata)
-    # not present in the live ScabopdfDocument output. Strip them on the
-    # expected side, then assert dict equality.
     expected_metadata = expected.pop("_baseline_xml_akn_metadata", None)
-    expected.pop("_baseline_id", None)
-    expected.pop("_baseline_source", None)
+    for key in ("_baseline_id", "_baseline_source"):
+        expected.pop(key, None)
     assert actual == expected, (
-        "parser output drifted from committed baseline N-001; "
+        f"parser output drifted from committed baseline {baseline_id}; "
         "regenerate via the snapshot script if change is intended."
     )
-    # Bookkeeping metadata check
     if expected_metadata is not None:
         result = parse(xml)
         assert result.metadata.work_uri == expected_metadata["work_uri"]
         assert result.metadata.work_alias_urn == expected_metadata["work_alias_urn"]
         assert result.metadata.work_alias_eli == expected_metadata["work_alias_eli"]
         assert result.metadata.title == expected_metadata["title"]
+
+
+def test_baseline_holds_for_legge_56_2007() -> None:
+    """N-001 regression baseline. Any change to the parser output on
+    this fixture must regenerate the snapshot deliberately."""
+    xml = _CALIBRATION / "legge_56_2007" / "legge_56_2007.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_legge_56_2007.json", "N-001")
+
+
+def test_baseline_holds_for_legge_gelli_bianco() -> None:
+    """N-002 regression baseline. Smaller BEN_FORMATO fixture exercising
+    HEADING_2 absence + NOTE density + LIST_ITEM + headless-paragraph
+    convention (Gelli-Bianco style)."""
+    xml = _CALIBRATION / "legge_gelli_bianco" / "legge_gelli_bianco.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_legge_gelli_bianco.json", "N-002")
+
+
+def test_baseline_holds_for_dlgs_231_2001() -> None:
+    """N-003 regression baseline. Medium BEN_FORMATO with 15 chapters
+    (first fixture exercising HEADING_2 emission)."""
+    xml = _CALIBRATION / "dlgs_231_2001" / "dlgs_231_2001.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_dlgs_231_2001.json", "N-003")
+
+
+def test_baseline_holds_for_legge_bilancio_2023() -> None:
+    """N-004 regression baseline. Articolo-unico patologico — 21
+    articles enumerating 1032 commi, low NOTE density."""
+    xml = _CALIBRATION / "legge_bilancio_2023" / "legge_bilancio_2023.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_legge_bilancio_2023.json", "N-004")
+
+
+def test_baseline_holds_for_codice_strada() -> None:
+    """N-005 regression baseline. Large BEN_FORMATO code (266 articles,
+    17 chapters, 517 list items)."""
+    xml = _CALIBRATION / "codice_strada" / "codice_strada.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_codice_strada.json", "N-005")
+
+
+def test_baseline_holds_for_codice_procedura_penale() -> None:
+    """N-006 regression baseline. Largest article count in BEN_FORMATO
+    (906 articles, 104 chapters, zero authorialNote)."""
+    xml = _CALIBRATION / "codice_procedura_penale" / "codice_procedura_penale.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_codice_procedura_penale.json", "N-006")
+
+
+def test_baseline_holds_for_tuf_dlgs_58_1998() -> None:
+    """N-007 regression baseline. Largest BEN_FORMATO fixture overall
+    (4 MB, 563 articles, 93 chapters, 1264 list items, 2336 refs)."""
+    xml = _CALIBRATION / "tuf_dlgs_58_1998" / "tuf_dlgs_58_1998.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_tuf_dlgs_58_1998.json", "N-007")
 
 
 class TestRealFixtureStructure:
