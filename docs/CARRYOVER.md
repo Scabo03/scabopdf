@@ -316,7 +316,7 @@ Questa sezione contiene le **opportunità identificate nella pre-analisi del Pia
   - Coverage aggregata invariata a 96 % o superiore.
   - Drift test schema 0.6.0 verde byte-for-byte.
   - 13 × 1000 hypothesis equivalence verdi (Layer 1 PDF-native intoccato).
-  - Un commit atomico sul `main` locale (`<TBD>` — sarà valorizzato al momento del commit).
+  - Un commit atomico sul `main` locale: **`a89e535`** "Add scabopdf-xml-extract CLI entry-point for XML AKN backend" (6 files changed, 754 insertions, 3 deletions).
   - Pre-commit gate verde (ruff check + ruff format --check + mypy --strict + pytest tests/unit).
   - Working tree pulito al termine eccetto `docs/EXPLORATORY_LENER_BIN_PITRUZZELLA.md` untracked pre-esistente.
 
