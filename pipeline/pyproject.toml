@@ -74,6 +74,15 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+norecursedirs = [
+    "tests/fixtures/normattiva_exploration/.venv-exploration",
+    "tests/fixtures/normattiva_exploration/scripts",
+    "tests/fixtures/normattiva_exploration/findings",
+    "tests/fixtures/normattiva_calibration",
+    "tests/fixtures/normattiva_exploration/codice_penale",
+    "tests/fixtures/normattiva_exploration/legge_capitali",
+    "tests/fixtures/normattiva_exploration/legge_finanziaria_2007",
+]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
