@@ -336,36 +336,256 @@ class TestMetadata:
         assert "Testo del comma" in (nodes[1].text or "")
 
 
-class TestRefusesNonOkInput:
-    def test_refuses_fragmented(self, tmp_path: Path) -> None:
-        # Build a fragmented case: 0 body articles, many attachments
-        atts = "".join(
-            f'<attachment><doc name="X-art. {i}"><meta/><mainBody>'
-            f"<paragraph><content><p>text {i}.1</p></content></paragraph>"
-            f"<paragraph><content><p>text {i}.2</p></content></paragraph>"
-            "</mainBody></doc></attachment>"
-            for i in range(1, 80)
-        )
-        xml = (
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            f'<akomaNtoso xmlns="{AKN_NS}">'
-            '<act name="monovigente"><meta/><body/>'
-            f"{atts}"
-            "</act></akomaNtoso>"
-        )
-        path = _write(tmp_path, xml)
-        with pytest.raises(XmlAknParseError) as excinfo:
-            parse(path)
-        from scabopdf_pipeline.xml_akn.types import XmlHealthVerdict
-
-        assert excinfo.value.verdict is XmlHealthVerdict.FRAGMENTED
-        assert "EPUB" in excinfo.value.explanation
-
+class TestRefusesInvalidInput:
     def test_refuses_invalid_xml(self, tmp_path: Path) -> None:
         path = tmp_path / "garbage.xml"
         path.write_text("<not valid", encoding="utf-8")
         with pytest.raises(XmlAknParseError):
             parse(path)
+
+    def test_refuses_not_akn(self, tmp_path: Path) -> None:
+        """A well-formed XML file whose root is not ``<akomaNtoso>`` in
+        the OASIS namespace raises with verdict ``NOT_AKN``."""
+        from scabopdf_pipeline.xml_akn.types import XmlHealthVerdict
+
+        path = tmp_path / "rss.xml"
+        path.write_text(
+            '<?xml version="1.0"?>\n<rss version="2.0"><channel/></rss>',
+            encoding="utf-8",
+        )
+        with pytest.raises(XmlAknParseError) as excinfo:
+            parse(path)
+        assert excinfo.value.verdict is XmlHealthVerdict.NOT_AKN
+
+
+def _frag_attachment(name: str, paragraphs: list[str]) -> str:
+    """Build one ``<attachment>/<doc>`` element with the given name and
+    one ``<paragraph>`` per item of *paragraphs*."""
+    paras = "".join(
+        f"<paragraph><content><p>{text}</p></content></paragraph>" for text in paragraphs
+    )
+    return f'<attachment><doc name="{name}"><meta/><mainBody>{paras}</mainBody></doc></attachment>'
+
+
+def _frag_xml(body_inner: str, attachments: str) -> str:
+    """Build a synthetic FRAGMENTED AKN document with the given body
+    content and attachment block. The 50-attachment threshold of the
+    detector is the only constraint on the attachment count."""
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        f'<akomaNtoso xmlns="{AKN_NS}">'
+        '<act name="monovigente">'
+        "<meta>"
+        '<identification source="#test">'
+        "<FRBRWork>"
+        '<FRBRuri value="/akn/it/act/regio_decreto/stato/1930-10-19/1398"/>'
+        '<FRBRalias value="urn:nir:stato:regio.decreto:1930-10-19;1398"/>'
+        "</FRBRWork>"
+        "</identification>"
+        "</meta>"
+        f"<body>{body_inner}</body>"
+        f"{attachments}"
+        "</act></akomaNtoso>"
+    )
+
+
+class TestFragmentedParse:
+    """The FRAGMENTED path mints synthetic ``(ARTICLE_HEADER,
+    ARTICLE_BODY+)`` pairs from ``<attachment>/<doc>`` siblings of the
+    body, after walking the body itself. See the parser module
+    docstring for the full mapping rules."""
+
+    # FRAGMENTED detector requires both ATTACHMENT_DOC_FRAGMENTED_MIN
+    # (50) AND ATTACHMENT_PARAGRAPH_FRAGMENTED_MIN (100) — so the
+    # synthetic fixtures use 110 single-paragraph attachments (110 docs,
+    # 110 paragraphs) or 55 two-paragraph attachments (110 paragraphs).
+    _FRAG_THRESHOLD_DOCS = 110
+
+    def test_dispatches_on_fragmented_and_emits_hierarchy_warning(self, tmp_path: Path) -> None:
+        atts = "".join(
+            _frag_attachment(f"Codice-art. {i}", [f"Art. {i}. Testo {i}."])
+            for i in range(1, self._FRAG_THRESHOLD_DOCS + 1)
+        )
+        xml = _frag_xml("", atts)
+        result = parse(_write(tmp_path, xml))
+        from scabopdf_pipeline.xml_akn.types import XmlHealthVerdict
+
+        assert result.health_report.verdict is XmlHealthVerdict.FRAGMENTED
+        assert "xml_akn:fragmented:editorial_hierarchy_unrecoverable" in result.warnings
+
+    def test_attachment_with_single_paragraph_yields_header_plus_one_body(
+        self, tmp_path: Path
+    ) -> None:
+        n = self._FRAG_THRESHOLD_DOCS
+        atts = "".join(
+            _frag_attachment(f"Codice-art. {i}", [f"Art. {i}. body."]) for i in range(1, n + 1)
+        )
+        xml = _frag_xml("", atts)
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        # n attachments x (1 header + 1 body) = 2n nodes
+        assert len(nodes) == 2 * n
+        cats = [n.category.value for n in nodes[:6]]
+        assert cats == [
+            "ARTICLE_HEADER",
+            "ARTICLE_BODY",
+            "ARTICLE_HEADER",
+            "ARTICLE_BODY",
+            "ARTICLE_HEADER",
+            "ARTICLE_BODY",
+        ]
+        # The header carries the parsed token, not the full source name
+        assert nodes[0].text == "Art. 1"
+        assert nodes[2].text == "Art. 2"
+
+    def test_attachment_with_multi_paragraph_yields_one_header_n_bodies(
+        self, tmp_path: Path
+    ) -> None:
+        n = self._FRAG_THRESHOLD_DOCS // 2
+        atts = "".join(
+            _frag_attachment(
+                f"Codice-art. {i}",
+                [f"Art. {i}. first.", f"AGGIORNAMENTO {i}: second."],
+            )
+            for i in range(1, n + 1)
+        )
+        xml = _frag_xml("", atts)
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        # n x (1 header + 2 bodies) = 3n
+        assert len(nodes) == 3 * n
+        cats = [n.category.value for n in nodes[:6]]
+        assert cats == [
+            "ARTICLE_HEADER",
+            "ARTICLE_BODY",
+            "ARTICLE_BODY",
+            "ARTICLE_HEADER",
+            "ARTICLE_BODY",
+            "ARTICLE_BODY",
+        ]
+
+    def test_body_articles_come_before_attachments(self, tmp_path: Path) -> None:
+        """The promulgation-decree articles in ``<body>`` come first
+        in reading order; attachment articles follow."""
+        body = _article(
+            "art_d_1",
+            "Art. 1.",
+            "",
+            [("", "Il testo definitivo del codice e' approvato.")],
+        )
+        n = self._FRAG_THRESHOLD_DOCS
+        atts = "".join(
+            _frag_attachment(f"Codice-art. {i}", [f"Art. {i}. body."]) for i in range(1, n + 1)
+        )
+        xml = _frag_xml(body, atts)
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        # Body decree article: headless-paragraph fold → 1 ARTICLE_HEADER only
+        # n attachments x 2 = 2n → total 1 + 2n
+        assert len(nodes) == 1 + 2 * n
+        assert nodes[0].category.value == "ARTICLE_HEADER"
+        assert nodes[0].text == "Art. 1. Il testo definitivo del codice e' approvato."
+        # The first attachment article starts at node_1
+        assert nodes[1].category.value == "ARTICLE_HEADER"
+        assert nodes[1].text == "Art. 1"
+
+    def test_doc_name_unparseable_emits_warning_and_placeholder(self, tmp_path: Path) -> None:
+        # Mix one unparseable doc among n valid ones to clear FRAGMENTED
+        # detector threshold.
+        n = self._FRAG_THRESHOLD_DOCS
+        atts = _frag_attachment("Strange-something", ["No article token here."]) + "".join(
+            _frag_attachment(f"Codice-art. {i}", [f"Art. {i}. body."]) for i in range(1, n + 1)
+        )
+        xml = _frag_xml("", atts)
+        result = parse(_write(tmp_path, xml))
+        warnings = result.warnings
+        assert "xml_akn:fragmented:doc_name_unparseable_position_0" in warnings
+        # First synthetic header carries the placeholder text
+        nodes = result.document.root
+        assert nodes[0].text == "Art. (sconosciuto)"
+
+    def test_attachment_without_doc_emits_warning(self, tmp_path: Path) -> None:
+        n = self._FRAG_THRESHOLD_DOCS
+        atts = (
+            "".join(_frag_attachment(f"Codice-art. {i}", [f"Art. {i}."]) for i in range(1, n + 1))
+            + "<attachment/>"
+        )
+        xml = _frag_xml("", atts)
+        result = parse(_write(tmp_path, xml))
+        assert any(
+            w.startswith("xml_akn:fragmented:attachment_without_doc_position_")
+            for w in result.warnings
+        )
+
+    def test_doc_without_mainbody_emits_warning_and_no_body(self, tmp_path: Path) -> None:
+        n = self._FRAG_THRESHOLD_DOCS
+        atts = (
+            "".join(_frag_attachment(f"Codice-art. {i}", [f"Art. {i}."]) for i in range(1, n + 1))
+            + '<attachment><doc name="Codice-art. 999"><meta/></doc></attachment>'
+        )
+        xml = _frag_xml("", atts)
+        result = parse(_write(tmp_path, xml))
+        assert any(
+            w.startswith("xml_akn:fragmented:doc_without_mainbody_position_")
+            for w in result.warnings
+        )
+
+    def test_doc_without_paragraphs_emits_warning(self, tmp_path: Path) -> None:
+        n = self._FRAG_THRESHOLD_DOCS
+        atts = (
+            "".join(_frag_attachment(f"Codice-art. {i}", [f"Art. {i}."]) for i in range(1, n + 1))
+            + '<attachment><doc name="Codice-art. 999"><meta/><mainBody/></doc></attachment>'
+        )
+        xml = _frag_xml("", atts)
+        result = parse(_write(tmp_path, xml))
+        assert any(
+            w.startswith("xml_akn:fragmented:doc_without_paragraphs_position_")
+            for w in result.warnings
+        )
+
+
+class TestFragmentedArticleTokenRegex:
+    """Direct unit coverage of the article-token extraction regex.
+    The five forms were calibrated empirically on CP (987 docs) and CC
+    (3256 docs) — see the constant's docstring for the full taxonomy."""
+
+    @pytest.mark.parametrize(
+        ("doc_name", "expected"),
+        [
+            ("Codice Penale-art. 411", "411"),
+            ("Codice Penale-art. 411 bis", "411 bis"),
+            ("Codice Penale-art. 339-bis", "339-bis"),
+            ("Codice Penale-art. 270 bis.1", "270 bis.1"),
+            ("Codice Penale-art. 600 septies.2", "600 septies.2"),
+            ("CODICE CIVILE-art. 2505 bis", "2505 bis"),
+            ("CODICE CIVILE-art. 314/27", "314/27"),
+            ("Disposizioni sulla legge in generale-art. 1", "1"),
+        ],
+    )
+    def test_extracts_expected_token(self, doc_name: str, expected: str) -> None:
+        from scabopdf_pipeline.xml_akn.parser import (
+            _extract_fragmented_article_token,
+        )
+
+        assert _extract_fragmented_article_token(doc_name) == expected
+
+    @pytest.mark.parametrize(
+        "doc_name",
+        ["", "Strange-something", "no article here", "art. without prefix"],
+    )
+    def test_unparseable_yields_none(self, doc_name: str) -> None:
+        from scabopdf_pipeline.xml_akn.parser import (
+            _extract_fragmented_article_token,
+        )
+
+        assert _extract_fragmented_article_token(doc_name) is None
+
+    def test_none_input_returns_none(self) -> None:
+        from scabopdf_pipeline.xml_akn.parser import (
+            _extract_fragmented_article_token,
+        )
+
+        assert _extract_fragmented_article_token(None) is None
 
 
 class TestNodeIdsAreSequential:

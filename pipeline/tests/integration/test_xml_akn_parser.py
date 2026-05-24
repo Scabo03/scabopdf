@@ -29,15 +29,13 @@ from pathlib import Path
 import pytest
 
 from scabopdf_pipeline.schema.categories import SemanticCategory
-from scabopdf_pipeline.xml_akn import XmlAknParseError, parse
+from scabopdf_pipeline.xml_akn import parse
 from scabopdf_pipeline.xml_akn.emitter import to_scabopdf_document
 
 _FIXTURE_ROOT = Path(__file__).parent.parent / "fixtures"
 _SNAPSHOT_ROOT = Path(__file__).parent.parent / "snapshots"
 _CALIBRATION = _FIXTURE_ROOT / "normattiva_calibration"
 _EXPLORATION = _FIXTURE_ROOT / "normattiva_exploration"
-
-_BOOKKEEPING_KEYS = ("_baseline_id", "_baseline_source", "_baseline_xml_akn_metadata")
 
 
 def _skip_if_missing(p: Path) -> None:
@@ -270,15 +268,67 @@ class TestEmittedJsonValidatesAgainstSchema:
         validate_document(data)
 
 
-class TestRefusesFragmented:
-    def test_codice_penale_fragmented_raises(self) -> None:
+class TestFragmentedFixtures:
+    """End-to-end coverage of the FRAGMENTED parsing path on the two
+    real fixtures (Codice Penale exploration corpus, Codice Civile
+    calibration corpus). Both fixtures exhibit the same Normattiva
+    export bug shape — see the parser module docstring "Mapping for
+    the FRAGMENTED path" section for the full mapping rules."""
+
+    def test_codice_penale_parses_with_synthetic_articles(self) -> None:
         xml = _EXPLORATION / "codice_penale" / "codice_penale.xml"
         _skip_if_missing(xml)
-        with pytest.raises(XmlAknParseError):
-            parse(xml)
+        result = parse(xml)
+        from scabopdf_pipeline.xml_akn.types import XmlHealthVerdict
 
-    def test_codice_civile_fragmented_raises(self) -> None:
+        assert result.health_report.verdict is XmlHealthVerdict.FRAGMENTED
+        assert "xml_akn:fragmented:editorial_hierarchy_unrecoverable" in result.warnings
+        nodes = result.document.root
+        n_art_header = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_HEADER)
+        n_art_body = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_BODY)
+        # 987 attachment docs + 3 body promulgation articles
+        assert n_art_header == 990
+        # 1283 attachment paragraphs (the 3 body articles fold their
+        # single paragraph into the ARTICLE_HEADER via the headless-
+        # paragraph convention, contributing 0 ARTICLE_BODY each)
+        assert n_art_body == 1283
+        # No placeholder texts — all 987 doc names parse cleanly via
+        # the extended regex
+        placeholders = [n for n in nodes if n.text == "Art. (sconosciuto)"]
+        assert placeholders == []
+
+    def test_codice_civile_parses_with_synthetic_articles(self) -> None:
         xml = _CALIBRATION / "codice_civile" / "codice_civile.xml"
         _skip_if_missing(xml)
-        with pytest.raises(XmlAknParseError):
-            parse(xml)
+        result = parse(xml)
+        from scabopdf_pipeline.xml_akn.types import XmlHealthVerdict
+
+        assert result.health_report.verdict is XmlHealthVerdict.FRAGMENTED
+        assert "xml_akn:fragmented:editorial_hierarchy_unrecoverable" in result.warnings
+        nodes = result.document.root
+        n_art_header = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_HEADER)
+        n_art_body = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_BODY)
+        # 3256 attachment docs + 2 body promulgation articles
+        assert n_art_header == 3258
+        # 3477 attachment paragraphs + 1 body paragraph not folded
+        # (art. 1 of the R.D. has 2 paragraphs: the first folds into
+        # the ARTICLE_HEADER, the second becomes ARTICLE_BODY)
+        assert n_art_body == 3478
+        placeholders = [n for n in nodes if n.text == "Art. (sconosciuto)"]
+        assert placeholders == []
+
+    def test_baseline_holds_for_codice_penale(self) -> None:
+        """N-008 regression baseline. First FRAGMENTED baseline:
+        Codice Penale (987 synthetic articles from R.D. 1398/1930
+        export)."""
+        xml = _EXPLORATION / "codice_penale" / "codice_penale.xml"
+        _skip_if_missing(xml)
+        _assert_baseline_holds(xml, "xml_akn_baseline_codice_penale.json", "N-008")
+
+    def test_baseline_holds_for_codice_civile(self) -> None:
+        """N-009 regression baseline. Second FRAGMENTED baseline:
+        Codice Civile (3256 synthetic articles from R.D. 262/1942
+        export), the largest fixture in the corpus."""
+        xml = _CALIBRATION / "codice_civile" / "codice_civile.xml"
+        _skip_if_missing(xml)
+        _assert_baseline_holds(xml, "xml_akn_baseline_codice_civile.json", "N-009")

@@ -5,7 +5,7 @@ sequence of root-level Nodes that mirror the structural hierarchy
 implicit in the AKN tags. The mapping is conservative: every Node
 carries the AKN element's visible text concatenation; inline
 ``<ref>`` and ``<ins>`` are kept verbatim inside the BODY text rather
-than promoted to standalone Nodes (this is the v1 trade-off — a future
+than promoted to standalone Nodes (this is the v2 trade-off — a future
 session may split them out when Layer 2 needs structured URN binding).
 
 The Node id format is the standard ``"node_NNNN"`` pattern enforced by
@@ -14,12 +14,22 @@ reading order. ``page_index`` is uniformly ``0`` because AKN has no
 physical page concept; a future schema bump that introduces
 ``source_pages`` semantics could carry the FRBR manifestation paging.
 
-Parser scope (v1):
+Parser scope (v2):
 
-* OK fixtures only — FRAGMENTED input raises
-  :class:`XmlAknParseError`. The caller is expected to run
-  :func:`detect_health` first and either dispatch on the verdict or
-  catch the parse error.
+* OK fixtures (BEN_FORMATO) — full structural mapping as documented
+  below.
+* FRAGMENTED fixtures (codice_penale, codice_civile) — empirically
+  CP and CC share the same shape ``<attachment>/<doc>/<mainBody>/
+  <paragraph>`` with ZERO ``<article>`` intermediaries (the "variant
+  A vs B" of the early PRECHECK was falsified by Phase 0). A single
+  fragmented walker mints synthetic ``(ARTICLE_HEADER, ARTICLE_BODY)``
+  pairs per ``<attachment>/<doc>`` after the body's promulgation-
+  decree articles. The editorial hierarchy (Libro/Titolo/Capo) is
+  irrecoverable from the source XML and is signalled via the
+  ``xml_akn:fragmented:editorial_hierarchy_unrecoverable`` warning.
+* Only ``INVALID_XML`` and ``NOT_AKN`` still raise
+  :class:`XmlAknParseError`; OK and FRAGMENTED both produce a
+  ``Document``.
 * No URN binding — ``<ref>`` text is preserved inside BODY text but
   the URN/href is dropped on the floor. ``apparatus_refs`` is always
   empty on parser output.
@@ -32,7 +42,7 @@ Parser scope (v1):
   observed; a future bump may introduce versioning when Normattiva
   starts emitting ``<temporalGroup>``.
 
-Mapping AKN → :class:`SemanticCategory`:
+Mapping AKN → :class:`SemanticCategory` (BEN_FORMATO path):
 
 * ``<book>``, ``<part>``, ``<title>`` → HEADING_1
 * ``<chapter>`` → HEADING_2
@@ -46,6 +56,20 @@ Mapping AKN → :class:`SemanticCategory`:
 * ``<paragraph>`` (comma) → ARTICLE_BODY
 * ``<list>/<point>`` → LIST_ITEM
 * ``<authorialNote>`` → NOTE with ``length_category`` populated
+
+Mapping for the FRAGMENTED path:
+
+* Each ``<attachment>/<doc>`` becomes one synthetic ARTICLE_HEADER
+  (text ``"Art. <token>"`` extracted via regex from the
+  ``<doc name="...-art. TOKEN">`` attribute) followed by one
+  ARTICLE_BODY per ``<mainBody>/<paragraph>`` child.
+* The ``<body>`` of the source is walked first via the standard
+  BEN_FORMATO emitter — typically returns the 2-3 stub articles of
+  the promulgation decree (Codice Penale: 3 articles of R.D.
+  1398/1930; Codice Civile: 2 articles of R.D. 262/1942).
+* The synthetic articles are appended in document order after the
+  body promulgation articles; node ids continue the sequential
+  ``node_NNNN`` counter started by the body walk.
 """
 
 from __future__ import annotations
@@ -82,6 +106,33 @@ _HEADING_LEVEL_TO_CATEGORY = {
     3: SemanticCategory.HEADING_3,
     4: SemanticCategory.HEADING_4,
 }
+
+# FRAGMENTED-path constants — see module docstring section "Mapping for
+# the FRAGMENTED path" for the rationale. The regex captures five
+# article-token forms observed empirically on Codice Penale and Codice
+# Civile fixtures:
+#
+#   1. plain integer ("art. 411")
+#   2. integer + space + ordinal suffix ("art. 2505 bis")
+#   3. integer + hyphen + ordinal suffix ("art. 339-bis", "art. 613-ter")
+#      — unique to a small number of CP articles
+#   4. integer + space/hyphen + suffix + decimal sub-index ("art. 270 bis.1",
+#      "art. 416 bis.1", "art. 600 septies.2") — unique to a small set
+#      of CP articles inserted by post-1980 amendments
+#   5. integer + slash + integer ("art. 314/27") — unique to CC
+#      sub-articles inserted under article 314
+#
+# Empirical match rate on the two real fixtures is 100 % (987/987 on CP,
+# 3256/3256 on CC) after the regex was extended in this session to
+# accommodate forms 3 and 4 that the earlier diagnostic missed.
+_FRAGMENTED_ARTICLE_NUMBER_PATTERN = re.compile(
+    r"-art\.\s*(\d+(?:[\s\-][a-z]+(?:\.\d+)?|/\d+)?)\s*$"
+)
+
+_FRAG_HIERARCHY_LOST_WARNING = "xml_akn:fragmented:editorial_hierarchy_unrecoverable"
+"""Emitted exactly once per FRAGMENTED parse. The Normattiva export bug
+drops the editorial hierarchy (Libro/Titolo/Capo/Sezione) and the parser
+cannot recover it from the source XML alone."""
 
 
 class XmlAknParseError(RuntimeError):
@@ -375,34 +426,117 @@ def _dispatch(elem: ET.Element, minter: _NodeIdMinter, parent_level: int) -> Ite
     # not yet promoted to Nodes in v1).
 
 
-def _map_root(root: ET.Element) -> Document:
-    """Walk the body of the AKN document and produce the
-    reading-order Document tree."""
-    minter = _NodeIdMinter()
+def _walk_body(root: ET.Element, minter: _NodeIdMinter) -> list[Node]:
+    """Walk the ``<body>`` of the AKN document and produce the
+    reading-order Node list using the BEN_FORMATO emitters."""
     body = root.find(".//akn:body", _NS)
     nodes: list[Node] = []
     if body is not None:
         for child in body:
             nodes.extend(_dispatch(child, minter, parent_level=0))
-    return Document(root=tuple(nodes))
+    return nodes
+
+
+def _extract_fragmented_article_token(doc_name: str | None) -> str | None:
+    """Return the article token (e.g. ``"411"``, ``"2505 bis"``,
+    ``"314/27"``) parsed from a ``<doc name="...-art. TOKEN">``
+    attribute, or ``None`` if the attribute is absent or the regex
+    does not match.
+
+    The pattern accepts every empirical form observed on Codice Penale
+    (Royal Decree 1398/1930, 987 articles) and Codice Civile (R.D.
+    262/1942, 3256 articles): plain integers, integers followed by an
+    italic-ordinal suffix (``bis``, ``ter``, ``quater``, ...) separated
+    by a single space, and the ``N/M`` slash form unique to CC
+    sub-articles under article 314.
+    """
+    if doc_name is None:
+        return None
+    match = _FRAGMENTED_ARTICLE_NUMBER_PATTERN.search(doc_name)
+    if match is None:
+        return None
+    return _normalise_ws(match.group(1))
+
+
+def _emit_fragmented_doc(
+    doc: ET.Element,
+    position: int,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> Iterator[Node]:
+    """Synthesise the ``(ARTICLE_HEADER, ARTICLE_BODY+)`` sequence for
+    one ``<attachment>/<doc>`` element of a FRAGMENTED source.
+
+    ``position`` is the zero-based document-order index of the host
+    attachment, used only to disambiguate diagnostic warnings when the
+    ``doc[@name]`` is unparseable or absent.
+    """
+    doc_name = doc.get("name")
+    token = _extract_fragmented_article_token(doc_name)
+    if token is None:
+        warnings.append(f"xml_akn:fragmented:doc_name_unparseable_position_{position}")
+        header_text = "Art. (sconosciuto)"
+    else:
+        header_text = f"Art. {token}"
+    yield _mk_node(minter, SemanticCategory.ARTICLE_HEADER, header_text)
+
+    main_body = doc.find("./akn:mainBody", _NS)
+    if main_body is None:
+        warnings.append(f"xml_akn:fragmented:doc_without_mainbody_position_{position}")
+        return
+    paragraphs = main_body.findall("./akn:paragraph", _NS)
+    if not paragraphs:
+        warnings.append(f"xml_akn:fragmented:doc_without_paragraphs_position_{position}")
+        return
+    for paragraph in paragraphs:
+        yield from _emit_paragraph(paragraph, minter)
+
+
+def _walk_fragmented_attachments(
+    root: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> list[Node]:
+    """Walk every ``<attachment>`` of the root (regardless of whether
+    a wrapper ``<attachments>`` container is present) and synthesise
+    the article-pair sequence for each.
+
+    Document-order is the natural emission order: the empirical
+    inspection of CP (987 attachments) and CC (3256 attachments) shows
+    that document-order is strictly monotone with respect to article
+    number, so no sort is necessary.
+    """
+    out: list[Node] = []
+    for position, att in enumerate(root.findall(".//akn:attachment", _NS)):
+        doc = att.find("./akn:doc", _NS)
+        if doc is None:
+            warnings.append(f"xml_akn:fragmented:attachment_without_doc_position_{position}")
+            continue
+        out.extend(_emit_fragmented_doc(doc, position, minter, warnings))
+    return out
 
 
 def parse(xml_path: Path) -> XmlAknParseResult:
     """Parse a Normattiva AKN export into a :class:`XmlAknParseResult`.
 
-    The function first runs :func:`detect_health` on the file. If the
-    verdict is anything other than ``OK`` (FRAGMENTED, NOT_AKN,
-    INVALID_XML) the parser raises :class:`XmlAknParseError` rather
-    than producing a partial Document — the v1 scope is BEN_FORMATO
-    fixtures only and the fragmented parsing path is deferred to a
-    future session.
+    The function first runs :func:`detect_health` on the file and then
+    dispatches on the verdict:
 
-    The returned bundle carries the produced Document, the FRBR
-    metadata extracted from ``<meta>``, the detector's verdict, and
-    the parser's own diagnostic warnings (empty by default in v1).
+    * ``OK`` (BEN_FORMATO) → walk ``<body>`` using the AKN-canonical
+      mapping (book/title/chapter/section → HEADING_N, article →
+      ARTICLE_HEADER + ARTICLE_BODY, etc.).
+    * ``FRAGMENTED`` → walk ``<body>`` first (typically 2-3 stubs of
+      the promulgation decree) and then synthesise one ARTICLE_HEADER
+      + ARTICLE_BODY pair per ``<attachment>/<doc>`` from the
+      Normattiva export bug, emitting a single
+      ``xml_akn:fragmented:editorial_hierarchy_unrecoverable`` warning
+      to flag the irrecoverable Libro/Titolo/Capo structure.
+    * ``NOT_AKN`` or ``INVALID_XML`` → raise
+      :class:`XmlAknParseError` carrying the detector's prose
+      explanation.
     """
     health = detect_health(xml_path)
-    if health.verdict is not XmlHealthVerdict.OK:
+    if health.verdict in (XmlHealthVerdict.INVALID_XML, XmlHealthVerdict.NOT_AKN):
         raise XmlAknParseError(health.verdict, health.explanation)
     tree = ET.parse(str(xml_path))
     root = tree.getroot()
@@ -410,11 +544,21 @@ def parse(xml_path: Path) -> XmlAknParseResult:
     # at this point because the detector verified the precondition.
     assert root.tag == f"{{{AKN_NS}}}akomaNtoso"
 
-    document = _map_root(root)
+    minter = _NodeIdMinter()
+    body_nodes = _walk_body(root, minter)
+    parse_warnings: list[str] = []
+    if health.verdict is XmlHealthVerdict.FRAGMENTED:
+        parse_warnings.append(_FRAG_HIERARCHY_LOST_WARNING)
+        attachment_nodes = _walk_fragmented_attachments(root, minter, parse_warnings)
+        all_nodes = body_nodes + attachment_nodes
+    else:
+        all_nodes = body_nodes
+
+    document = Document(root=tuple(all_nodes))
     metadata = _extract_meta(root)
     return XmlAknParseResult(
         document=document,
         metadata=metadata,
         health_report=health,
-        warnings=(),
+        warnings=tuple(parse_warnings),
     )
