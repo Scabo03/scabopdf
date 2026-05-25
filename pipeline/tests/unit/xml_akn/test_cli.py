@@ -60,7 +60,7 @@ def _minimal_xml_document(tmp_path: Path, name: str = "doc.xml") -> Path:
 
 def _minimal_scabopdf_document() -> ScabopdfDocument:
     return ScabopdfDocument(
-        schema_version="0.6.0",
+        schema_version="0.7.0",
         document_id=uuid4(),
         metadata=DocumentMetadata(
             pages_pdf=0,
@@ -88,11 +88,11 @@ class TestMainSuccess:
         assert rc == 0
         assert output_path.exists()
         payload = json.loads(output_path.read_text(encoding="utf-8"))
-        assert payload["schema_version"] == "0.6.0"
+        assert payload["schema_version"] == "0.7.0"
         assert payload["profile"]["profile_id"] == "normattiva_xml_akn"
         captured = capsys.readouterr()
         # stdout carries the summary; stderr is silent without -v
-        assert "schema_version: 0.6.0" in captured.out
+        assert "schema_version: 0.7.0" in captured.out
         assert captured.err == ""
 
     def test_default_output_uses_xml_basename_with_json_suffix(self, tmp_path: Path) -> None:
@@ -143,7 +143,7 @@ class TestMainSuccess:
         assert "[scabopdf-xml-extract] writing" in captured.err
         assert "[scabopdf-xml-extract] done" in captured.err
         # stdout still carries the structured summary
-        assert "schema_version: 0.6.0" in captured.out
+        assert "schema_version: 0.7.0" in captured.out
 
 
 class TestMainFailure:

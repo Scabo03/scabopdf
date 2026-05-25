@@ -115,7 +115,7 @@ class TestComputeNoteLengthCategory:
     """Exhaustive coverage of the schema 0.6.0 helper.
 
     The thresholds are documented in
-    :func:`compute_note_length_category` and in ``docs/SCHEMA_v0.6.0.md``:
+    :func:`compute_note_length_category` and in ``docs/SCHEMA_v0.7.0.md``:
 
     - ``MICRO``      —   0 ≤ n <   50
     - ``SHORT``      —  50 ≤ n <  100

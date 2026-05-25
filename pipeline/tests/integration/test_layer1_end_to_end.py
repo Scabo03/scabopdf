@@ -481,7 +481,7 @@ def test_pipeline_runs_on_patriarca() -> None:
 
     # § 9 emission: the converted ScabopdfDocument is valid against both
     # the Pydantic contract and the committed shared/schema.json.
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
     assert scabopdf_document.profile.profile_id == "manuale_zanichelli_giuridica"
     assert len(scabopdf_document.structure) == len(document.root)
@@ -676,7 +676,7 @@ def test_pipeline_runs_on_tesauro() -> None:
 
     # § 9 emission: the converted ScabopdfDocument is valid against
     # both the Pydantic contract and the committed shared/schema.json.
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert scabopdf_document.metadata.pages_pdf == extraction.page_count
     assert scabopdf_document.profile.profile_id == "compendio_utet"
     assert len(scabopdf_document.structure) == len(document.root)
@@ -818,7 +818,7 @@ def test_pipeline_runs_on_mosconi() -> None:
     assert n_warnings > 0, "expected plugin-emitted warnings on the dense Mosconi apparatus"
 
     # § 9 emission conformance.
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert scabopdf_document.metadata.pages_pdf == 613
     assert len(scabopdf_document.structure) == len(document.root)
     assert scabopdf_document.profile.profile_id == "manuale_utet_wolterskluwer"
@@ -1029,7 +1029,7 @@ def test_pipeline_runs_on_mandrioli() -> None:
     )
 
     # § 9 emission conformance.
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     # The length_category surfaces verbatim in the emitted NodeDict.
     emitted_note_length_categories = [
         node.length_category
@@ -1100,7 +1100,7 @@ def test_emit_to_file_on_patriarca(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.6.0"
+    assert document.schema_version == "0.7.0"
     assert n_nodes_total > 0
     # unknown_generic declares no post-processing — the field is present
     # and empty in the on-disk JSON.
@@ -1138,7 +1138,7 @@ def test_emit_to_file_on_mosconi(tmp_path: Path) -> None:
     )
 
     assert file_size_kb > 0
-    assert document.schema_version == "0.6.0"
+    assert document.schema_version == "0.7.0"
     assert document.metadata.pages_pdf == 613
     assert n_nodes_total > 0
     assert document.transformations == []
@@ -1307,7 +1307,7 @@ def test_dehyphenation_end_to_end_synthetic() -> None:
         assert "-\n" not in t.normalized
 
     scabopdf_document = convert_document(new_document, extraction, profile, "synthetic.pdf")
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert len(scabopdf_document.transformations) == 2
     for td in scabopdf_document.transformations:
         assert td.step_id == "dehyphenate_with_log"
@@ -1440,7 +1440,7 @@ def test_pipeline_runs_on_mandrioli_vol_i() -> None:
     assert n_crossref == 0, f"Vol. I: empirical CROSS_REFERENCE count is 0, got {n_crossref}"
 
     # § 9 emission conformance.
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert scabopdf_document.metadata.pages_pdf == 288
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
 
@@ -1508,7 +1508,7 @@ def test_pipeline_runs_on_mandrioli_vol_ii() -> None:
     assert n_note == 0, f"Vol. II: empirical NOTE count is 0, got {n_note}"
     assert n_crossref == 0, f"Vol. II: empirical CROSS_REFERENCE count is 0, got {n_crossref}"
 
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert scabopdf_document.metadata.pages_pdf == 352
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
 
@@ -1593,7 +1593,7 @@ def test_pipeline_runs_on_mandrioli_vol_iv() -> None:
     )
     assert n_crossref >= 1000, f"expected ≥1000 CROSS_REFERENCE nodes, got {n_crossref}"
 
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert scabopdf_document.metadata.pages_pdf == 497
     assert scabopdf_document.profile.profile_id == "manuale_giappichelli"
     # § 7 post-processing: same shape as Vol. III, fewer events
@@ -1790,7 +1790,7 @@ def test_pipeline_runs_on_marotta_with_unknown_generic_fallback() -> None:
     assert max_depth == 1, (
         f"unknown_generic must produce a flat tree (depth 1); got depth {max_depth}"
     )
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
     assert scabopdf_document.metadata.pages_pdf == 206
     assert scabopdf_document.profile.profile_id == "unknown_generic"
 
@@ -2104,7 +2104,7 @@ def test_pipeline_runs_on_torrente_schlesinger() -> None:
     assert max_depth >= 3, f"expected tree depth >=3, got {max_depth}"
 
     assert scabopdf_document.profile.profile_id == "manuale_giuffre_diretto"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown_warnings = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
@@ -2288,7 +2288,7 @@ def test_pipeline_runs_on_marrone() -> None:
     assert max_depth >= 3, f"expected tree depth >=3, got {max_depth}"
 
     assert scabopdf_document.profile.profile_id == "manuale_bic"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown_warnings = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
@@ -2484,7 +2484,7 @@ def test_pipeline_runs_on_dejure_ns_recisione() -> None:
     assert len(document.transformations) >= 1  # metadata decomposition
 
     assert scabopdf_document.profile.profile_id == "dejure_nota_sentenza"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown_warnings = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
@@ -2581,7 +2581,7 @@ def test_pipeline_runs_on_dejure_ns_giudizio() -> None:
     assert len(document.transformations) >= 2  # metadata + notes consolidation
 
     assert scabopdf_document.profile.profile_id == "dejure_nota_sentenza"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown_warnings = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
@@ -2827,7 +2827,7 @@ def test_pipeline_runs_on_dejure_mm_procedura_civile() -> None:
     assert n_stamp >= 2, f"expected >=2 ARTIFACT_STAMP, got {n_stamp}"
 
     assert scabopdf_document.profile.profile_id == "dejure_massime"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown_warnings = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
@@ -2929,7 +2929,7 @@ def test_pipeline_runs_on_dejure_mm_responsabilita_civile_massivo() -> None:
     assert n_footer == 57, f"expected 57 ARTIFACT_FOOTER, got {n_footer}"
 
     assert scabopdf_document.profile.profile_id == "dejure_massime"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
@@ -3187,7 +3187,7 @@ def test_pipeline_runs_on_dejure_dt_bundle_procedura() -> None:
     )
     assert n_footer == 56
     assert scabopdf_document.profile.profile_id == "dejure_dottrina"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown_warnings = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
@@ -3263,7 +3263,7 @@ def test_pipeline_runs_on_dejure_dt_concause_causalita() -> None:
     )
     assert n_footer == 59
     assert scabopdf_document.profile.profile_id == "dejure_dottrina"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown_warnings = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
@@ -3641,7 +3641,7 @@ def test_pipeline_runs_on_enciclopedia_moderna_factoring() -> None:
     assert n_footer >= 14
     assert n_body >= 1
     assert scabopdf_document.profile.profile_id == "enciclopedia_moderna"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
@@ -3701,7 +3701,7 @@ def test_pipeline_runs_on_enciclopedia_storica_pagamento() -> None:
     # FONTI + LETTERATURA both present and clearly recoverable on Pagamento.
     assert n_section_label >= 2, f"expected FONTI + LETTERATURA labels: {n_section_label}"
     assert scabopdf_document.profile.profile_id == "enciclopedia_storica"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
@@ -3983,7 +3983,7 @@ def test_pipeline_runs_on_giuffre_codice_penale() -> None:
     assert n_procedural >= 100, f"PROCEDURAL blocks missing on penale: {n_procedural}"
     assert len(code_type_warnings) == 1, "code_type detection should fire once"
     assert scabopdf_document.profile.profile_id == "giuffre_codici"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
@@ -4057,7 +4057,7 @@ def test_pipeline_runs_on_giuffre_codice_civile() -> None:
     assert n_procedural == 0, f"civile should not produce PROCEDURAL: {n_procedural}"
     assert len(code_type_warnings) == 1
     assert scabopdf_document.profile.profile_id == "giuffre_codici"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     payload = scabopdf_document.model_dump(mode="json")
     validate_document(payload)
@@ -4402,7 +4402,7 @@ def test_pipeline_runs_on_materiali_teoria_generale() -> None:
         "expected mono_mode warning in document.warnings"
     )
     assert scabopdf_document.profile.profile_id == "materiali_studio"
-    assert scabopdf_document.schema_version == "0.6.0"
+    assert scabopdf_document.schema_version == "0.7.0"
 
     unknown = [
         w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)

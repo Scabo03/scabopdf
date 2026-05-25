@@ -1,16 +1,16 @@
 # Policy di versioning del JSON Schema
 
 > Riferimento per la policy SemVer applicata allo schema JSON del contratto Layer 1 ↔ Layer 2.
-> Versione corrente dello schema: 0.5.0 (instabile, pre-1.0).
+> Versione corrente dello schema: 0.7.0 (instabile, pre-1.0).
 > Riferimento normativo: `ARCHITECTURE.md § 8.13`.
 
 ---
 
 ## 1. Stato corrente
 
-Lo schema è alla versione **0.5.0**, dichiaratamente **instabile**. Il file canonico è `shared/schema.json`, generato dai modelli Pydantic in `pipeline/src/scabopdf_pipeline/schema/contract.py`. La descrizione narrativa campo per campo sta in `docs/SCHEMA_v0.5.0.md`; `docs/SCHEMA_v0.4.0.md`, `docs/SCHEMA_v0.3.0.md`, `docs/SCHEMA_v0.2.0.md` e `docs/SCHEMA_v0.1.0.md` restano in repo come riferimenti storici, e `docs/SCHEMA_CHANGELOG.md` riporta il delta per ciascuna versione.
+Lo schema è alla versione **0.7.0**, dichiaratamente **instabile**. Il file canonico è `shared/schema.json`, generato dai modelli Pydantic in `pipeline/src/scabopdf_pipeline/schema/contract.py`. La descrizione narrativa campo per campo sta in `docs/SCHEMA_v0.7.0.md`; `docs/SCHEMA_v0.6.0.md`, `docs/SCHEMA_v0.5.0.md`, `docs/SCHEMA_v0.4.0.md`, `docs/SCHEMA_v0.3.0.md`, `docs/SCHEMA_v0.2.0.md` e `docs/SCHEMA_v0.1.0.md` restano in repo come riferimenti storici, e `docs/SCHEMA_CHANGELOG.md` riporta il delta per ciascuna versione.
 
-Nessun consumatore in produzione legge ancora lo schema: il Layer 2 (app React Native) non è inizializzato. La 0.5.0 segue la 0.4.0 con un'aggiunta additiva (i campi opzionali `split_into` e `merged_from` su `TransformationDict`) introdotta contestualmente alla promozione del terzo step di post-processing reale `merge_cross_page_notes` e al consolidamento del plugin `manuale_giappichelli` sulla serie Mandrioli-Carratta integrale. La 0.5.0 colma la limitazione di reversibilità strutturale che la 0.4.0 aveva registrato esplicitamente per lo split body+note di Giappichelli e per il merge marginal-ellipsis di Mosconi: a partire dalla 0.5.0 il log Transformation è strutturalmente reversibile. Le emissioni reali (CLI `scabopdf-extract`) producono documenti conformi a 0.5.0 a partire da oggi.
+Nessun consumatore in produzione legge ancora lo schema: il Layer 2 (app React Native) non è inizializzato. La 0.7.0 segue la 0.6.0 con un'aggiunta additiva pura (quattro nuovi valori chiusi all'enum `SemanticCategory` — `AMENDMENT`, `QUOTED_TEXT_OLD`, `QUOTED_TEXT_NEW`, `UPDATE_BLOCK`) introdotta per chiudere il debt (xiv) di CARRYOVER v2.29: il riconoscimento delle modificazioni Akoma Ntoso del backend XML AKN del Layer 1. La 0.7.0 è il bump più additivo della serie 0.x perché non aggiunge campi nuovi su `NodeDict` o sugli altri modelli, non aggiunge nuovi `$defs`, non aggiunge nuovi valori `ApparatusRefKind`: cambia solo l'enum delle categorie di Node e il `Literal` di `schema_version` da `"0.6.0"` a `"0.7.0"`. La 0.6.0 (2026-05-20) aveva introdotto il campo opzionale `length_category` su `NodeDict` per il Layout 4 acoustic regime; la 0.5.0 (2026-05-18) i campi opzionali `split_into` e `merged_from` su `TransformationDict` per la reversibilità strutturale del log Transformation; la 0.4.0 il campo opzionale `toc_items` su `NodeDict`; la 0.3.0 il campo opzionale `items` su `NodeDict`; la 0.2.0 la formalizzazione iniziale del contratto; la 0.1.0 il primo stub. Le emissioni reali (CLI `scabopdf-extract` per il backend PDF e `scabopdf-xml-extract` per il backend XML AKN) producono documenti conformi a 0.7.0 a partire da oggi.
 
 ## 2. Schema SemVer
 

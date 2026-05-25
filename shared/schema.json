@@ -285,6 +285,10 @@
         "HEADING_LETTER_INITIAL",
         "FONTI",
         "LETTERATURA",
+        "AMENDMENT",
+        "QUOTED_TEXT_OLD",
+        "QUOTED_TEXT_NEW",
+        "UPDATE_BLOCK",
         "CROSS_REFERENCE",
         "LIST_ITEM",
         "BOOK_PAGE_ANCHOR",
@@ -414,10 +418,10 @@
     }
   },
   "additionalProperties": false,
-  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.6.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
+  "description": "The Layer 1 → Layer 2 JSON document, schema version 0.7.0.\n\nThe emitted JSON conforms to JSON Schema Draft 2020-12 as serialised\nby ``ScabopdfDocument.model_json_schema()`` and committed to\n``shared/schema.json``.\n\n``warnings`` is a single flat list at the document root. At emission\ntime (§ 9) the converter will merge the Document tier 1 warnings\n(first) with the DocumentProfile warnings (after) into this single\nlist. The contract therefore does **not** carry a separate warnings\nfield inside ``DocumentProfileDict``.\n\n``transformations`` is the reversible log of post-processing\nrewrites (§ 7). Empty when the profile declares no post-processing\nsteps; populated entry-per-substitution otherwise. Layer 2 reads\nthis block to support \"raw mode\" reading.\n\n``structure`` is the top-level sequence of reading-order nodes — the\nforest of root nodes produced by structural reconstruction (§ 5).",
   "properties": {
     "schema_version": {
-      "const": "0.6.0",
+      "const": "0.7.0",
       "title": "Schema Version",
       "type": "string"
     },

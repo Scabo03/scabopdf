@@ -2,7 +2,7 @@
 
 Runs the Layer 1 XML AKN backend on a Normattiva (or other Akoma Ntoso)
 export and writes the corresponding JSON document conforming to the
-ScaboPDF v0.6.0 schema. The CLI orchestrates the three phases — detect
+ScaboPDF v0.7.0 schema. The CLI orchestrates the three phases — detect
 + parse, emit, optional double validation, write — directly so it can
 interleave per-phase progress reporting and timing on stderr.
 

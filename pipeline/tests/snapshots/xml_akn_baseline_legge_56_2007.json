@@ -1,5 +1,14 @@
 {
-  "schema_version": "0.6.0",
+  "schema_version": "0.7.0",
+  "_baseline_id": "N-001",
+  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_56_2007/legge_56_2007.xml",
+  "_baseline_xml_akn_metadata": {
+    "work_uri": "/akn/it/act/legge/stato/2007-05-04/56",
+    "work_alias_urn": "urn:nir:stato:legge:2007-05-04;56",
+    "work_alias_eli": "eli/id/2007/05/05/007G0075/ORIGINAL",
+    "act_name_attribute": "monovigente",
+    "title": "Istituzione del «Giorno della memoria» dedicato alle vittime del terrorismo e delle stragi di tale matrice."
+  },
   "metadata": {
     "pages_pdf": 0,
     "page_size_pt": [
@@ -82,14 +91,5 @@
       "children": [],
       "apparatus_refs": []
     }
-  ],
-  "_baseline_id": "N-001",
-  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_56_2007/legge_56_2007.xml",
-  "_baseline_xml_akn_metadata": {
-    "work_uri": "/akn/it/act/legge/stato/2007-05-04/56",
-    "work_alias_urn": "urn:nir:stato:legge:2007-05-04;56",
-    "work_alias_eli": "eli/id/2007/05/05/007G0075/ORIGINAL",
-    "act_name_attribute": "monovigente",
-    "title": "Istituzione del «Giorno della memoria» dedicato alle vittime del terrorismo e delle stragi di tale matrice."
-  }
+  ]
 }

@@ -1,5 +1,14 @@
 {
-  "schema_version": "0.6.0",
+  "schema_version": "0.7.0",
+  "_baseline_id": "N-002",
+  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_gelli_bianco/legge_gelli_bianco.xml",
+  "_baseline_xml_akn_metadata": {
+    "work_uri": "/akn/it/act/legge/stato/2017-03-08/24",
+    "work_alias_urn": "urn:nir:stato:legge:2017-03-08;24",
+    "work_alias_eli": "eli/id/2017/03/17/17G00041/CONSOLIDATED/20230101",
+    "act_name_attribute": "monovigente",
+    "title": "Disposizioni in materia di sicurezza delle cure e della persona assistita, nonche' in materia di responsabilita' professionale degli esercenti le professioni sanitarie. (17G00041)"
+  },
   "metadata": {
     "pages_pdf": 0,
     "page_size_pt": [
@@ -14,7 +23,10 @@
     "genre": "legal_text_xml_akn",
     "confidence": 1.0
   },
-  "warnings": [],
+  "warnings": [
+    "xml_akn:amendments:active_modifications_minted_5",
+    "xml_akn:amendments:passive_modifications_minted_9"
+  ],
   "transformations": [],
   "structure": [
     {
@@ -1446,15 +1458,216 @@
       "block_indices": [],
       "children": [],
       "apparatus_refs": []
+    },
+    {
+      "id": "node_110",
+      "type": "HEADING_1",
+      "page_index": 0,
+      "text": "Modificazioni attive a altri atti",
+      "level": 1,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [
+        {
+          "id": "node_111",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ha disposto (con l'art. 2, comma 5) l'introduzione della lettera d-bis) all'art. 1, comma 539. (source urn:nir:stato:legge:2017-03-08;24#2, destination urn:nir:stato:legge:2015-12-28;208#)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_112",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ha disposto (con l'art. 4, comma 4) l'introduzione del comma 2-bis all'art. 37 del regolamento allegato. (source urn:nir:stato:legge:2017-03-08;24#4, destination urn:nir:stato:decreto.del.presidente.della.repubblica:1990-09-10;285#Regolamento di polizia mortuaria- art. 37)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_113",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ha disposto (con l'art. 6, comma 1) l'introduzione dell'art. 590-sexies. (source urn:nir:stato:legge:2017-03-08;24#6, destination urn:nir:stato:regio.decreto:1930-10-19;1398#Codice Penale-art. 590 sexies)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_114",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ha disposto (con l'art. 6, comma 2) l'abrogazione del comma 1 dell'art. 3 (source urn:nir:stato:legge:2017-03-08;24#6, destination urn:nir:stato:decreto.legge:2012-09-13;158#3)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_115",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ha disposto (con l'art. 16, comma 1) la modifica dell'art. 1, comma 539, lettera a); (con l'art. 16, comma 2) la modifica dell'art. 1, comma 540. (source urn:nir:stato:legge:2017-03-08;24#16, destination urn:nir:stato:legge:2015-12-28;208#)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        }
+      ],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_116",
+      "type": "HEADING_1",
+      "page_index": 0,
+      "text": "Modificazioni passive di questo atto",
+      "level": 1,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [
+        {
+          "id": "node_117",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((...)) (source #, destination #ins_1)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_118",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((4)) (source #, destination #ins_2)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_119",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((4)) (source #, destination #ins_3)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_120",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((pari al triplo del valore maggiore della retribuzione lorda o del corrispettivo convenzionale conseguiti nell'anno di inizio della condotta causa dell'evento o nell'anno immediatamente precedente o successivo)) (source #, destination #ins_4)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_121",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((pari al triplo del valore maggiore del reddito professionale, ivi compresa la retribuzione lorda, conseguito nell'anno di inizio della condotta causa dell'evento o nell'anno immediatamente precedente o successivo)) (source #, destination #ins_5)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_122",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((entro quarantacinque giorni)) (source #, destination #ins_6)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_123",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((entro quarantacinque giorni)) (source #, destination #ins_7)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_124",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((7-bis. Il Fondo di garanzia di cui al comma 1 assolve anche alla funzione di agevolare l'accesso alla copertura assicurativa da parte degli esercenti le professioni sanitarie che svolgono la propria attivita' in regime libero-professionale, ai sensi dell'articolo 10, comma 6)) (source #, destination #ins_8)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_125",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((2)) (source #, destination #ins_9)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        }
+      ],
+      "apparatus_refs": []
     }
-  ],
-  "_baseline_id": "N-002",
-  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_gelli_bianco/legge_gelli_bianco.xml",
-  "_baseline_xml_akn_metadata": {
-    "work_uri": "/akn/it/act/legge/stato/2017-03-08/24",
-    "work_alias_urn": "urn:nir:stato:legge:2017-03-08;24",
-    "work_alias_eli": "eli/id/2017/03/17/17G00041/CONSOLIDATED/20230101",
-    "act_name_attribute": "monovigente",
-    "title": "Disposizioni in materia di sicurezza delle cure e della persona assistita, nonche' in materia di responsabilita' professionale degli esercenti le professioni sanitarie. (17G00041)"
-  }
+  ]
 }

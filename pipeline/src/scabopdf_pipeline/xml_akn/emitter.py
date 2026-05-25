@@ -1,4 +1,4 @@
-"""Bridge from :class:`XmlAknParseResult` to schema 0.6.0
+"""Bridge from :class:`XmlAknParseResult` to schema 0.7.0
 :class:`ScabopdfDocument` JSON.
 
 The XML AKN parser produces a :class:`Document` plus FRBR metadata.
@@ -12,8 +12,10 @@ non-PDF nature:
 * ``pages_pdf = 0`` (AKN has no physical pages).
 * ``page_size_pt = (0.0, 0.0)``.
 * ``source_pdf_filename`` carries the XML filename verbatim (a small
-  semantic abuse documented as debt — a future 0.7.0 bump may rename
-  the field to ``source_filename`` and add ``source_format``).
+  semantic abuse documented as debt — a future bump may rename
+  the field to ``source_filename`` and add ``source_format``; the
+  0.7.0 bump deliberately did not touch the field because the AKN
+  modification categories landed there instead).
 * ``profile`` carries the constant ``XML_AKN_NORMATTIVA_PROFILE``: a
   stub :class:`DocumentProfileDict` with confidence 1.0 because the
   detector verified the source structurally.

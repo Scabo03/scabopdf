@@ -59,7 +59,7 @@ but no upper bound is enforced so documents with more than 9999 nodes
 remain valid.
 """
 
-SCHEMA_VERSION: Literal["0.6.0"] = "0.6.0"
+SCHEMA_VERSION: Literal["0.7.0"] = "0.7.0"
 """Single source of truth for the schema version literal.
 
 Bumping this is a deliberate act: see ``docs/json-schema-versioning.md``.
@@ -291,7 +291,7 @@ class DocumentProfileDict(BaseModel):
 
 
 class ScabopdfDocument(BaseModel):
-    """The Layer 1 → Layer 2 JSON document, schema version 0.6.0.
+    """The Layer 1 → Layer 2 JSON document, schema version 0.7.0.
 
     The emitted JSON conforms to JSON Schema Draft 2020-12 as serialised
     by ``ScabopdfDocument.model_json_schema()`` and committed to
@@ -314,7 +314,7 @@ class ScabopdfDocument(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    schema_version: Literal["0.6.0"]
+    schema_version: Literal["0.7.0"]
     document_id: UUID
     metadata: DocumentMetadata
     profile: DocumentProfileDict

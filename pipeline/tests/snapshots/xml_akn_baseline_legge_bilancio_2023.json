@@ -1,5 +1,14 @@
 {
-  "schema_version": "0.6.0",
+  "schema_version": "0.7.0",
+  "_baseline_id": "N-004",
+  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_bilancio_2023/legge_bilancio_2023.xml",
+  "_baseline_xml_akn_metadata": {
+    "work_uri": "/akn/it/act/legge/stato/2022-12-29/197",
+    "work_alias_urn": "urn:nir:stato:legge:2022-12-29;197",
+    "work_alias_eli": "eli/id/2022/12/29/22G00211/CONSOLIDATED/20260501",
+    "act_name_attribute": "monovigente",
+    "title": "Bilancio di previsione dello Stato per l'anno finanziario 2023 e bilancio pluriennale per il triennio 2023-2025. (22G00211)"
+  },
   "metadata": {
     "pages_pdf": 0,
     "page_size_pt": [
@@ -14,7 +23,10 @@
     "genre": "legal_text_xml_akn",
     "confidence": 1.0
   },
-  "warnings": [],
+  "warnings": [
+    "xml_akn:amendments:active_modifications_minted_1",
+    "xml_akn:amendments:passive_modifications_minted_19"
+  ],
   "transformations": [],
   "structure": [
     {
@@ -18021,15 +18033,294 @@
       "block_indices": [],
       "children": [],
       "apparatus_refs": []
+    },
+    {
+      "id": "node_1385",
+      "type": "HEADING_1",
+      "page_index": 0,
+      "text": "Modificazioni attive a altri atti",
+      "level": 1,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [
+        {
+          "id": "node_1386",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: , nel modificare l'art. 35, commi 2 e 3 del D.Lgs. 10 ottobre 2022, n. 149 (in S.O. n. 38, relativo alla G.U. 17/10/2022, n. 243), ha conseguentemente disposto (con l'art. 1, comma 380, lettera a)) la modifica dell'art. 193, comma 2. (source urn:nir:stato:legge:2022-12-29;197#2, destination urn:nir:stato:regio.decreto:1940-10-28;1443#CODICE DI PROCEDURA CIVILE-art. 193)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        }
+      ],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_1387",
+      "type": "HEADING_1",
+      "page_index": 0,
+      "text": "Modificazioni passive di questo atto",
+      "level": 1,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [
+        {
+          "id": "node_1388",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((Le disposizioni del comma 58 si applicano anche alle persone che prestano la propria attivita' lavorativa di natura subordinata mediante piattaforme digitali di cui alla direttiva (UE) 2024/2831.)) (source #, destination #ins_1)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1389",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((108.400 milioni di euro per l'anno 2023, in 104.500 milioni di euro per l'anno 2024 e in 95.314 milioni di euro per l'anno 2025)) (source #, destination #ins_2)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1390",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((Allegato 1 (articolo 1, comma 1) (importi in milioni di euro) RISULTATI DIFFERENZIALI - COMPETENZA - +=========================+=============+=============+=============+ | Descrizione risultato | | | | | differenziale | 2023 | 2024 | 2025 | +=========================+=============+=============+=============+ |Livello massimo del saldo| | | | |netto da finanziare, | | | | |tenuto conto degli | | | | |effetti derivanti dalla | | | | |presente legge | 227.600 | 143.000 | 116.814 | +-------------------------+-------------+-------------+-------------+ |Livello massimo del | | | | |ricorso al mercato | | | | |finanziario, tenuto conto| | | | |degli effetti derivanti | | | | |dalla presente legge (*) | 538.420 | 456.468 | 435.554 | +=========================+=============+=============+=============+ - CASSA - +=========================+=============+=============+=============+ | Descrizione risultato | | | | | differenziale | 2023 | 2024 | 2025 | +=========================+=============+=============+=============+ |Livello massimo del saldo| | | | |netto da finanziare, | | | | |tenuto conto degli | | | | |effetti derivanti dalla | | | | |presente legge | 282.600 | 185.000 | 152.814 | +-------------------------+-------------+-------------+-------------+ |Livello massimo del | | | | |ricorso al mercato | | | | |finanziario, tenuto conto| | | | |degli effetti derivanti | | | | |dalla presente legge (*) | 593.431 | 498.468 | 471.554 | +-------------------------+-------------+-------------+-------------+ (*) al netto delle operazioni effettuate al fine di rimborsare prima della scadenza o di ristrutturare passivita' preesistenti con ammortamento a carico dello Stato.)) (source #, destination #ins_3)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1391",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_4)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1392",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_5)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1393",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_6)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1394",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_7)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1395",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_8)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1396",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_9)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1397",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_10)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1398",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_11)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1399",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_12)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1400",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_13)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1401",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_14)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1402",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_15)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1403",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_16)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1404",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_17)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1405",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_18)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        },
+        {
+          "id": "node_1406",
+          "type": "UPDATE_BLOCK",
+          "page_index": 0,
+          "text": "insertion: ((24a)) (source #, destination #ins_19)",
+          "level": null,
+          "items": null,
+          "toc_items": null,
+          "length_category": null,
+          "block_indices": [],
+          "children": [],
+          "apparatus_refs": []
+        }
+      ],
+      "apparatus_refs": []
     }
-  ],
-  "_baseline_id": "N-004",
-  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_bilancio_2023/legge_bilancio_2023.xml",
-  "_baseline_xml_akn_metadata": {
-    "work_uri": "/akn/it/act/legge/stato/2022-12-29/197",
-    "work_alias_urn": "urn:nir:stato:legge:2022-12-29;197",
-    "work_alias_eli": "eli/id/2022/12/29/22G00211/CONSOLIDATED/20260501",
-    "act_name_attribute": "monovigente",
-    "title": "Bilancio di previsione dello Stato per l'anno finanziario 2023 e bilancio pluriennale per il triennio 2023-2025. (22G00211)"
-  }
+  ]
 }

@@ -69,6 +69,12 @@ class SemanticCategory(StrEnum):
     FONTI = "FONTI"
     LETTERATURA = "LETTERATURA"
 
+    # AKN modifications (schema 0.7.0)
+    AMENDMENT = "AMENDMENT"
+    QUOTED_TEXT_OLD = "QUOTED_TEXT_OLD"
+    QUOTED_TEXT_NEW = "QUOTED_TEXT_NEW"
+    UPDATE_BLOCK = "UPDATE_BLOCK"
+
     # Cross-references
     CROSS_REFERENCE = "CROSS_REFERENCE"
 

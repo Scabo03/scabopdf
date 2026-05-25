@@ -48,11 +48,11 @@ class TestCliEndToEnd:
         assert rc == 0, captured.err
         assert output_path.exists()
         payload = json.loads(output_path.read_text(encoding="utf-8"))
-        assert payload["schema_version"] == "0.6.0"
+        assert payload["schema_version"] == "0.7.0"
         assert payload["profile"]["profile_id"] == "normattiva_xml_akn"
         # 5 nodes per the N-001 baseline (2 ARTICLE_HEADER + 3 ARTICLE_BODY)
         assert "n_nodes_total: 5" in captured.out
-        assert "schema_version: 0.6.0" in captured.out
+        assert "schema_version: 0.7.0" in captured.out
         # Stderr is silent without -v
         assert captured.err == ""
 

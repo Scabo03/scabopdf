@@ -137,6 +137,22 @@ def test_baseline_holds_for_tuf_dlgs_58_1998() -> None:
     _assert_baseline_holds(xml, "xml_akn_baseline_tuf_dlgs_58_1998.json", "N-007")
 
 
+def test_baseline_holds_for_legge_capitali() -> None:
+    """N-010 regression baseline. Exploratory fixture for AKN
+    modifications (schema 0.7.0): legge_capitali (legge 5 marzo 2024
+    n. 21) is the unique fixture exercising ``<mod>``/``<quotedText>``
+    body-side and ``<textualMod>`` meta-side. The baseline asserts the
+    four new categories (`AMENDMENT`, `QUOTED_TEXT_OLD`,
+    `QUOTED_TEXT_NEW`, `UPDATE_BLOCK`) are produced with the empirical
+    counts documented in ``docs/ANALYSIS_AKN_MODIFICATIONS.md``: 80
+    AMENDMENT + 32 QUOTED_TEXT_OLD + 56 QUOTED_TEXT_NEW + 161
+    UPDATE_BLOCK distributed across two HEADING_1 container Nodes
+    (active 139 + passive 22). Total 472 Node count."""
+    xml = _EXPLORATION / "legge_capitali" / "legge_capitali.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_legge_capitali.json", "N-010")
+
+
 class TestRealFixtureStructure:
     """Structural sanity checks on the seven BEN_FORMATO fixtures.
 
@@ -217,6 +233,59 @@ class TestRealFixtureStructure:
         n_art_header = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_HEADER)
         # PRECHECK.md: 906 body_article
         assert n_art_header == 906
+
+    def test_legge_capitali_emits_akn_modifications(self) -> None:
+        """Sanity check on the exploratory fixture for AKN modifications
+        (schema 0.7.0). Verifies that the four new categories are minted
+        with the empirical counts documented in
+        ``docs/ANALYSIS_AKN_MODIFICATIONS.md`` § 2, the two HEADING_1
+        containers carry the closed-vocabulary text, and the closed
+        warning vocabulary surfaces the two ``*_modifications_minted``
+        markers and the nine ``mod_without_quoted_text`` diagnostics.
+        Looser than the byte-for-byte N-010 baseline but quick to
+        debug if the parser regresses on the modification path."""
+        import collections
+
+        from scabopdf_pipeline.reconstruction.types import Node
+
+        xml = _EXPLORATION / "legge_capitali" / "legge_capitali.xml"
+        _skip_if_missing(xml)
+        result = parse(xml)
+
+        counts: collections.Counter[str] = collections.Counter()
+
+        def walk(node: Node) -> None:
+            counts[node.category.value] += 1
+            for child in node.children:
+                walk(child)
+
+        for root_node in result.document.root:
+            walk(root_node)
+
+        # Empirical counts from docs/ANALYSIS_AKN_MODIFICATIONS.md § 2
+        assert counts["AMENDMENT"] == 80
+        assert counts["QUOTED_TEXT_OLD"] == 32
+        assert counts["QUOTED_TEXT_NEW"] == 56
+        assert counts["UPDATE_BLOCK"] == 161
+
+        # Two HEADING_1 containers in coda al Document.root
+        last_two = result.document.root[-2:]
+        assert all(n.category is SemanticCategory.HEADING_1 for n in last_two)
+        assert last_two[0].text == "Modificazioni attive a altri atti"
+        assert last_two[1].text == "Modificazioni passive di questo atto"
+        # Container sizes: 139 active + 22 passive
+        assert len(last_two[0].children) == 139
+        assert len(last_two[1].children) == 22
+
+        # Closed warning vocabulary surfaces both container markers and
+        # the nine pure-prose AMENDMENT diagnostics
+        warnings = list(result.warnings)
+        assert "xml_akn:amendments:active_modifications_minted_139" in warnings
+        assert "xml_akn:amendments:passive_modifications_minted_22" in warnings
+        n_mod_pure_prose = sum(
+            1 for w in warnings if w.startswith("xml_akn:amendments:mod_without_quoted_text_node_")
+        )
+        assert n_mod_pure_prose == 9
 
 
 class TestEmittedJsonValidatesAgainstSchema:

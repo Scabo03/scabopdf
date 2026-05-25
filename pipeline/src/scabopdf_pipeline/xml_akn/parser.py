@@ -33,11 +33,21 @@ Parser scope (v2):
 * No URN binding — ``<ref>`` text is preserved inside BODY text but
   the URN/href is dropped on the floor. ``apparatus_refs`` is always
   empty on parser output.
-* No active-modification handling — ``<mod>`` / ``<quotedText>`` /
-  ``<textualMod>`` are zero across the calibration corpus and are not
-  exercised. Their handling is forward-looking work for a future
-  session against the legge_capitali 2024 fixture (which carries 80
-  ``<mod>`` and 88 ``<quotedText>``).
+* AKN modifications (schema 0.7.0) — ``<mod>`` and ``<quotedText>``
+  body-side, ``<textualMod>`` meta-side are now mapped to the four
+  new categories ``AMENDMENT``, ``QUOTED_TEXT_OLD``, ``QUOTED_TEXT_NEW``
+  and ``UPDATE_BLOCK``. Vedi ``docs/ANALYSIS_AKN_MODIFICATIONS.md`` per
+  il riferimento canonico delle decisioni di mapping e
+  ``docs/SCHEMA_v0.7.0.md`` § 3 per le invarianti aggiuntive non
+  espresse dal JSON Schema (``AMENDMENT`` ha 0/1/2 children, i
+  ``QUOTED_TEXT_*`` sono solo children di ``AMENDMENT``, i
+  ``UPDATE_BLOCK`` sono leaf foglia, i container sono ``HEADING_1``
+  con testo chiuso). Le quattro categorie sono mintate esclusivamente
+  da questo backend al 2026-05-25; i tredici plugin PDF-native non
+  le producono. Sulla calibrazione ``legge_capitali.xml`` empiricamente
+  80 ``AMENDMENT`` + 32 ``QUOTED_TEXT_OLD`` + 56 ``QUOTED_TEXT_NEW``
+  + 161 ``UPDATE_BLOCK`` distribuiti in 139 ``activeModifications``
+  + 22 ``passiveModifications``.
 * No multi-vigenza — ``<act name="monovigente">`` is the only mode
   observed; a future bump may introduce versioning when Normattiva
   starts emitting ``<temporalGroup>``.
@@ -53,8 +63,22 @@ Mapping AKN → :class:`SemanticCategory` (BEN_FORMATO path):
 * ``<article>`` → ARTICLE_HEADER followed by ARTICLE_BODY siblings
   (one per ``<paragraph>`` / comma) and optionally NOTE Nodes for
   inline ``<authorialNote>``
-* ``<paragraph>`` (comma) → ARTICLE_BODY
-* ``<list>/<point>`` → LIST_ITEM
+* ``<paragraph>`` (comma) → ARTICLE_BODY (con ``<mod>`` children come
+  ``AMENDMENT`` se presenti)
+* ``<list>/<point>`` → LIST_ITEM (con ``<mod>`` children come
+  ``AMENDMENT`` se presenti)
+* ``<mod>`` → AMENDMENT (child di ARTICLE_BODY o LIST_ITEM; per la
+  posizione strutturale vedi ``docs/SCHEMA_v0.7.0.md`` § 3)
+* ``<quotedText>`` con suffisso ``_old_N`` → QUOTED_TEXT_OLD (child di
+  AMENDMENT)
+* ``<quotedText>`` con suffisso ``_new_N`` → QUOTED_TEXT_NEW (child di
+  AMENDMENT)
+* ``<textualMod>`` di ``<activeModifications>`` → UPDATE_BLOCK
+  appended come child di un container HEADING_1 in coda al
+  ``Document.root`` con testo ``"Modificazioni attive a altri atti"``
+* ``<textualMod>`` di ``<passiveModifications>`` → UPDATE_BLOCK
+  appended come child di un container HEADING_1 in coda al
+  ``Document.root`` con testo ``"Modificazioni passive di questo atto"``
 * ``<authorialNote>`` → NOTE with ``length_category`` populated
 
 Mapping for the FRAGMENTED path:
@@ -133,6 +157,14 @@ _FRAG_HIERARCHY_LOST_WARNING = "xml_akn:fragmented:editorial_hierarchy_unrecover
 """Emitted exactly once per FRAGMENTED parse. The Normattiva export bug
 drops the editorial hierarchy (Libro/Titolo/Capo/Sezione) and the parser
 cannot recover it from the source XML alone."""
+
+
+_ACTIVE_MODIFICATIONS_CONTAINER_TEXT = "Modificazioni attive a altri atti"
+_PASSIVE_MODIFICATIONS_CONTAINER_TEXT = "Modificazioni passive di questo atto"
+"""Container Node texts for the two `HEADING_1` Nodes that wrap the
+`UPDATE_BLOCK` children mintati dal meta-side ``<textualMod>`` di
+``<activeModifications>`` e ``<passiveModifications>``. Vedi
+``docs/SCHEMA_v0.7.0.md`` § 3 per l'invariante."""
 
 
 class XmlAknParseError(RuntimeError):
@@ -320,23 +352,154 @@ def _num_plus_content_text(elem: ET.Element) -> str:
     return f"{num_text} {body_text}".strip() if num_text else body_text
 
 
-def _emit_paragraph(elem: ET.Element, minter: _NodeIdMinter) -> Iterator[Node]:
+def _emit_amendment(
+    mod_elem: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> Node:
+    """Mint an `AMENDMENT` Node from a body-side ``<mod>`` element, with
+    ``QUOTED_TEXT_OLD`` / ``QUOTED_TEXT_NEW`` children for each
+    ``<quotedText>`` figlio del ``<mod>``.
+
+    Pre-order id minting: the amendment id is reserved **before** its
+    children's ids so the resulting Node id sequence reflects reading
+    order (parent before children), preserving the convention declared
+    at the top of this module.
+
+    Role discrimination: the ``<quotedText>`` element carries the role
+    in its ``eId`` attribute, with suffix ``_old_N`` (vecchio testo
+    sostituito) o ``_new_N`` (nuovo testo introdotto). Sulla
+    calibrazione ``legge_capitali.xml`` ogni ``<quotedText>`` rispetta
+    la convenzione (56 ``_new_*``, 32 ``_old_*``, zero altri suffissi).
+    Una fallback defensive verso ``QUOTED_TEXT_NEW`` con warning
+    ``quoted_text_eid_unrecognised`` copre i casi atipici eventuali.
+
+    Modificazioni di pura prosa narrativa senza ``<quotedText>``
+    (es. ``"il comma e' abrogato"``, 9/80 sulla fixture) producono un
+    ``AMENDMENT`` senza children e un warning diagnostico
+    ``mod_without_quoted_text``.
+    """
+    amendment_id = minter.next()
+    children: list[Node] = []
+    for qt in mod_elem.findall("./akn:quotedText", _NS):
+        eid = qt.get("eId", "")
+        qt_text = _itertext(qt)
+        if "_old_" in eid:
+            cat = SemanticCategory.QUOTED_TEXT_OLD
+        elif "_new_" in eid:
+            cat = SemanticCategory.QUOTED_TEXT_NEW
+        else:
+            cat = SemanticCategory.QUOTED_TEXT_NEW
+            # Warning emitted with the FUTURE id of the child about to be minted
+            warnings.append(
+                f"xml_akn:amendments:quoted_text_eid_unrecognised_node_node_{minter._counter}"
+            )
+        children.append(
+            Node(
+                id=minter.next(),
+                category=cat,
+                page_index=0,
+                block_indices=(),
+                text=qt_text,
+            )
+        )
+    if not children:
+        warnings.append(f"xml_akn:amendments:mod_without_quoted_text_node_{amendment_id}")
+    return Node(
+        id=amendment_id,
+        category=SemanticCategory.AMENDMENT,
+        page_index=0,
+        block_indices=(),
+        text=_itertext(mod_elem),
+        children=tuple(children),
+    )
+
+
+def _collect_amendments_in(
+    host: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> tuple[Node, ...]:
+    """Find direct ``<mod>`` elements inside ``host/<content>/<p>/mod``
+    and mint ``AMENDMENT`` Nodes for them.
+
+    The walk is scoped to ``host/<content>/<p>`` so that a ``<mod>``
+    embedded in a deeper descendant (typically inside a nested
+    ``<point>``) is NOT collected here — it belongs to the
+    ``LIST_ITEM`` that wraps that ``<point>``, not to *host*. Sulla
+    fixture di calibrazione la convenzione si rispetta universalmente:
+    21 ``<mod>`` vivono in ``<paragraph>/<content>/<p>`` e 59 vivono
+    in ``<point>/<content>/<p>``, mai più in profondità.
+    """
+    content = host.find("./akn:content", _NS)
+    if content is None:
+        return ()
+    out: list[Node] = []
+    for p in content.findall("./akn:p", _NS):
+        for mod in p.findall("./akn:mod", _NS):
+            out.append(_emit_amendment(mod, minter, warnings))
+    return tuple(out)
+
+
+def _emit_paragraph(
+    elem: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> Iterator[Node]:
     """Emit one ARTICLE_BODY Node for an AKN ``<paragraph>`` (comma),
     plus one LIST_ITEM Node per ``<point>`` descendant. The
     ARTICLE_BODY text combines the optional ``<num>`` prefix with the
     visible content; LIST_ITEM Nodes are sibling, not nested, to keep
     the tree shallow and consistent with the giuffre_codici plugin's
-    convention for legal codes."""
-    yield _mk_node(minter, SemanticCategory.ARTICLE_BODY, _num_plus_content_text(elem))
+    convention for legal codes.
+
+    AKN modifications (schema 0.7.0): when the ``<paragraph>``'s
+    ``<content>`` contains one or more direct ``<mod>`` children
+    inside its ``<p>``, each is minted as an ``AMENDMENT`` Node and
+    attached as child of the ``ARTICLE_BODY``. Symmetrically, each
+    ``<point>`` carries its own ``<mod>`` children that become
+    ``AMENDMENT`` children of the ``LIST_ITEM``. The parent's
+    ``Node.text`` keeps the full narrative prose verbatim (it already
+    includes the ``<mod>`` text via ``itertext()``); Layer 2 chooses
+    between flat reading (only parent text) and structured reading
+    (announce the ``AMENDMENT`` children with a distinct acoustic
+    regime). Pre-order id minting: the parent's id is reserved before
+    its children's so the resulting sequence reflects reading order.
+    """
+    body_id = minter.next()
+    body_text = _num_plus_content_text(elem)
+    body_amendments = _collect_amendments_in(elem, minter, warnings)
+    yield Node(
+        id=body_id,
+        category=SemanticCategory.ARTICLE_BODY,
+        page_index=0,
+        block_indices=(),
+        text=body_text,
+        children=body_amendments,
+    )
 
     # LIST_ITEM siblings for every <point>
     for point in elem.findall(".//akn:point", _NS):
         item_text = _num_plus_content_text(point)
-        if item_text:
-            yield _mk_node(minter, SemanticCategory.LIST_ITEM, item_text)
+        if not item_text:
+            continue
+        item_id = minter.next()
+        item_amendments = _collect_amendments_in(point, minter, warnings)
+        yield Node(
+            id=item_id,
+            category=SemanticCategory.LIST_ITEM,
+            page_index=0,
+            block_indices=(),
+            text=item_text,
+            children=item_amendments,
+        )
 
 
-def _emit_article(elem: ET.Element, minter: _NodeIdMinter) -> Iterator[Node]:
+def _emit_article(
+    elem: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> Iterator[Node]:
     """Emit an article as ARTICLE_HEADER + ARTICLE_BODY siblings plus
     any inline ``<authorialNote>`` as NOTE Nodes.
 
@@ -370,12 +533,17 @@ def _emit_article(elem: ET.Element, minter: _NodeIdMinter) -> Iterator[Node]:
     yield _mk_node(minter, SemanticCategory.ARTICLE_HEADER, header_text)
 
     for paragraph in paragraphs:
-        yield from _emit_paragraph(paragraph, minter)
+        yield from _emit_paragraph(paragraph, minter, warnings)
 
     yield from _emit_authorial_notes(elem, minter)
 
 
-def _emit_heading(elem: ET.Element, minter: _NodeIdMinter, level: int) -> Iterator[Node]:
+def _emit_heading(
+    elem: ET.Element,
+    minter: _NodeIdMinter,
+    level: int,
+    warnings: list[str],
+) -> Iterator[Node]:
     """Emit a HEADING_N Node for *elem* and then recurse into its
     structural children (chapter / section / article / paragraph),
     flattening them into the outer sibling stream."""
@@ -392,10 +560,15 @@ def _emit_heading(elem: ET.Element, minter: _NodeIdMinter, level: int) -> Iterat
         level=level,
     )
     for child in elem:
-        yield from _dispatch(child, minter, parent_level=level)
+        yield from _dispatch(child, minter, parent_level=level, warnings=warnings)
 
 
-def _dispatch(elem: ET.Element, minter: _NodeIdMinter, parent_level: int) -> Iterator[Node]:
+def _dispatch(
+    elem: ET.Element,
+    minter: _NodeIdMinter,
+    parent_level: int,
+    warnings: list[str],
+) -> Iterator[Node]:
     """Dispatch a structural element to its emitter.
 
     *parent_level* is the AKN-hierarchy depth of the enclosing element
@@ -406,35 +579,214 @@ def _dispatch(elem: ET.Element, minter: _NodeIdMinter, parent_level: int) -> Ite
     also 2 — the AKN canonical hierarchy collapses to HEADING_1
     (book/part/title) → HEADING_2 (chapter) → HEADING_3 (section) on
     every fixture observed.
+
+    *warnings* propagates through the dispatch tree so that emitters
+    deeper down (typically ``_emit_paragraph`` via the AMENDMENT
+    minting path) can append diagnostic warnings to the same closed
+    vocabulary.
     """
     local = _local(elem.tag)
     if local in ("book", "part", "title"):
-        yield from _emit_heading(elem, minter, level=1)
+        yield from _emit_heading(elem, minter, level=1, warnings=warnings)
     elif local == "chapter":
-        yield from _emit_heading(elem, minter, level=2)
+        yield from _emit_heading(elem, minter, level=2, warnings=warnings)
     elif local == "section":
         if _is_notes_container_section(elem):
             yield from _emit_authorial_notes(elem, minter)
         else:
-            yield from _emit_heading(elem, minter, level=3)
+            yield from _emit_heading(elem, minter, level=3, warnings=warnings)
     elif local == "article":
-        yield from _emit_article(elem, minter)
+        yield from _emit_article(elem, minter, warnings)
     elif local == "paragraph":
-        yield from _emit_paragraph(elem, minter)
+        yield from _emit_paragraph(elem, minter, warnings)
     # else: silently skip non-structural children (num / heading already
     # handled by the enclosing emitter, content / intro / formula
     # not yet promoted to Nodes in v1).
 
 
-def _walk_body(root: ET.Element, minter: _NodeIdMinter) -> list[Node]:
+def _walk_body(
+    root: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> list[Node]:
     """Walk the ``<body>`` of the AKN document and produce the
     reading-order Node list using the BEN_FORMATO emitters."""
     body = root.find(".//akn:body", _NS)
     nodes: list[Node] = []
     if body is not None:
         for child in body:
-            nodes.extend(_dispatch(child, minter, parent_level=0))
+            nodes.extend(_dispatch(child, minter, parent_level=0, warnings=warnings))
     return nodes
+
+
+def _extract_textual_mod_payload(elem: ET.Element | None, *, role: str) -> str:
+    """Extract the prose payload of a ``<new>`` or ``<old>`` child of a
+    ``<textualMod>``.
+
+    Two empirical regimes coexist on the Normattiva calibration corpus:
+    (a) the element carries verbatim prose inside a ``<nir:text>``
+    child of the AKN-extension Normattiva vocabulary (typically
+    descriptive sentences like ``"ha disposto l'introduzione della
+    lettera b-bis)..."``); (b) the element is empty and carries an
+    ``href`` attribute pointing to the body-side ``<quotedText>`` of
+    the same document (e.g. ``href="#modNov_1_new_1"``) — a lazy
+    cross-reference between the meta-side ``<textualMod>`` and the
+    body-side ``<mod>``. The helper falls back from (a) to (b) so the
+    Node carries informative text in both regimes.
+
+    When the element exists but neither prose nor href is available,
+    returns an empty string — the caller emits the
+    ``textual_mod_without_text`` warning.
+    """
+    if elem is None:
+        return ""
+    text = _itertext(elem)
+    if text:
+        return text
+    href = elem.get("href", "")
+    if href:
+        return f"[{role}→{href}]"
+    return ""
+
+
+def _emit_textual_mod(
+    tm_elem: ET.Element,
+    minter: _NodeIdMinter,
+    position: int,
+    direction: str,
+    warnings: list[str],
+) -> Node:
+    """Mint an ``UPDATE_BLOCK`` Node from a meta-side ``<textualMod>``
+    element.
+
+    ``UPDATE_BLOCK`` is a leaf Node (no children). Its ``Node.text`` is
+    a strutturata concatenation of the ``type`` attribute, the
+    ``<source href>`` URN, the ``<destination href>`` URN, and the
+    prose description from the ``<new>`` and/or ``<old>`` children of
+    the ``<textualMod>``. The shape is::
+
+        "<type>: <prose> (source <src_urn>, destination <dst_urn>)"
+
+    When both ``<new>`` and ``<old>`` are populated (substitution case)
+    the prose joins them as ``"vecchio: <old_text> | nuovo:
+    <new_text>"``. When source/destination are missing or both
+    ``<new>``/``<old>`` are empty, a per-position diagnostic warning is
+    emitted scoped to *direction* (``"active"`` or ``"passive"``) to
+    avoid id collisions between the two containers.
+    """
+    tm_id = minter.next()
+    type_attr = tm_elem.get("type", "") or "(unknown)"
+
+    source_elem = tm_elem.find("./akn:source", _NS)
+    dest_elem = tm_elem.find("./akn:destination", _NS)
+    src_href = source_elem.get("href", "") if source_elem is not None else ""
+    dst_href = dest_elem.get("href", "") if dest_elem is not None else ""
+    if not src_href or not dst_href:
+        warnings.append(
+            "xml_akn:amendments:textual_mod_missing_source_or_destination_"
+            f"{direction}_position_{position}"
+        )
+
+    new_elem = tm_elem.find("./akn:new", _NS)
+    old_elem = tm_elem.find("./akn:old", _NS)
+    new_text = _extract_textual_mod_payload(new_elem, role="new")
+    old_text = _extract_textual_mod_payload(old_elem, role="old")
+
+    if new_text and old_text:
+        prose = f"vecchio: {old_text} | nuovo: {new_text}"
+    elif new_text:
+        prose = new_text
+    elif old_text:
+        prose = old_text
+    else:
+        prose = ""
+        warnings.append(
+            f"xml_akn:amendments:textual_mod_without_text_{direction}_position_{position}"
+        )
+
+    coords_parts: list[str] = []
+    if src_href:
+        coords_parts.append(f"source {src_href}")
+    if dst_href:
+        coords_parts.append(f"destination {dst_href}")
+    coords = ", ".join(coords_parts)
+
+    if prose and coords:
+        text = f"{type_attr}: {prose} ({coords})"
+    elif prose:
+        text = f"{type_attr}: {prose}"
+    elif coords:
+        text = f"{type_attr}: ({coords})"
+    else:
+        text = f"{type_attr}:"
+
+    return Node(
+        id=tm_id,
+        category=SemanticCategory.UPDATE_BLOCK,
+        page_index=0,
+        block_indices=(),
+        text=text,
+    )
+
+
+def _emit_modifications_containers(
+    root: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> list[Node]:
+    """Find ``<activeModifications>`` and ``<passiveModifications>``
+    in the document meta and mint up to two ``HEADING_1`` container
+    Nodes whose children are the ``UPDATE_BLOCK`` Nodes for each
+    ``<textualMod>``.
+
+    Container Node texts are the closed strings declared at the top
+    of this module (``"Modificazioni attive a altri atti"`` /
+    ``"Modificazioni passive di questo atto"``). Containers are
+    mintati only if at least one ``<textualMod>`` of the corresponding
+    direction is present in the source XML (no empty container is
+    ever produced). Pre-order id minting: each container's id is
+    reserved before its children's so the resulting Node id sequence
+    reflects the natural reading order ``container → updates``.
+
+    The closed warning vocabulary covers two diagnostic surfaces:
+
+    * ``active_modifications_minted_<n>`` / ``passive_modifications_minted_<n>``
+      emit once per container with the count of children minted.
+    * The per-``UPDATE_BLOCK`` warnings (missing source/destination,
+      missing prose) are emitted by ``_emit_textual_mod`` scoped to
+      the direction string.
+    """
+    out: list[Node] = []
+
+    for container_tag, direction, container_text in (
+        ("activeModifications", "active", _ACTIVE_MODIFICATIONS_CONTAINER_TEXT),
+        ("passiveModifications", "passive", _PASSIVE_MODIFICATIONS_CONTAINER_TEXT),
+    ):
+        container = root.find(f".//akn:{container_tag}", _NS)
+        if container is None:
+            continue
+        textual_mods = container.findall("./akn:textualMod", _NS)
+        if not textual_mods:
+            continue
+        container_id = minter.next()
+        children = tuple(
+            _emit_textual_mod(tm, minter, position, direction, warnings)
+            for position, tm in enumerate(textual_mods)
+        )
+        out.append(
+            Node(
+                id=container_id,
+                category=SemanticCategory.HEADING_1,
+                page_index=0,
+                block_indices=(),
+                text=container_text,
+                level=1,
+                children=children,
+            )
+        )
+        warnings.append(f"xml_akn:amendments:{direction}_modifications_minted_{len(children)}")
+
+    return out
 
 
 def _extract_fragmented_article_token(doc_name: str | None) -> str | None:
@@ -489,7 +841,7 @@ def _emit_fragmented_doc(
         warnings.append(f"xml_akn:fragmented:doc_without_paragraphs_position_{position}")
         return
     for paragraph in paragraphs:
-        yield from _emit_paragraph(paragraph, minter)
+        yield from _emit_paragraph(paragraph, minter, warnings)
 
 
 def _walk_fragmented_attachments(
@@ -545,14 +897,21 @@ def parse(xml_path: Path) -> XmlAknParseResult:
     assert root.tag == f"{{{AKN_NS}}}akomaNtoso"
 
     minter = _NodeIdMinter()
-    body_nodes = _walk_body(root, minter)
     parse_warnings: list[str] = []
+    body_nodes = _walk_body(root, minter, parse_warnings)
     if health.verdict is XmlHealthVerdict.FRAGMENTED:
         parse_warnings.append(_FRAG_HIERARCHY_LOST_WARNING)
         attachment_nodes = _walk_fragmented_attachments(root, minter, parse_warnings)
         all_nodes = body_nodes + attachment_nodes
     else:
         all_nodes = body_nodes
+
+    # AKN modifications (schema 0.7.0): append meta-side <textualMod>
+    # containers in coda al Document.root, in reading order
+    # active → passive. The containers are mintati only if at least one
+    # <textualMod> of the corresponding direction is present.
+    modifications_containers = _emit_modifications_containers(root, minter, parse_warnings)
+    all_nodes = all_nodes + modifications_containers
 
     document = Document(root=tuple(all_nodes))
     metadata = _extract_meta(root)
