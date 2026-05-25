@@ -32,6 +32,7 @@ dev = [
 [project.scripts]
 scabopdf-extract = "scabopdf_pipeline.emission.cli:main"
 scabopdf-xml-extract = "scabopdf_pipeline.xml_akn.cli:main"
+scabopdf-epub-extract = "scabopdf_pipeline.epub_ipzs.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,0 +1,194 @@
+{
+  "schema_version": "0.7.0",
+  "_baseline_id": "E-001",
+  "_baseline_source": "pipeline/tests/fixtures/normattiva_calibration/legge_56_2007/legge_56_2007.epub",
+  "_baseline_epub_ipzs_metadata": {
+    "title": "Epub atto 56 del 2007",
+    "creator": "Istituto Poligrafico e della Zecca dello Stato",
+    "identifier": "ac83e7ee-615e-4d70-9427-0b2d0800b3bc",
+    "generator": "EPUBLib version 3.0"
+  },
+  "_baseline_health_verdict": "OK_STRUCTURED",
+  "metadata": {
+    "pages_pdf": 0,
+    "page_size_pt": [
+      0.0,
+      0.0
+    ],
+    "source_pdf_filename": "legge_56_2007.epub"
+  },
+  "profile": {
+    "profile_id": "normattiva_epub_ipzs",
+    "editorial_family": "normattiva",
+    "genre": "legal_text_epub_ipzs",
+    "confidence": 1.0
+  },
+  "warnings": [
+    "epub_ipzs:preamble_title_node_node_0",
+    "epub_ipzs:formula_introduttiva_node_node_1",
+    "epub_ipzs:conclusion_formula_node_node_7",
+    "epub_ipzs:conclusion_text_node_node_8",
+    "epub_ipzs:signature_block_node_node_9_kind_first",
+    "epub_ipzs:signature_block_node_node_10_kind_center",
+    "epub_ipzs:signature_block_node_node_11_kind_last"
+  ],
+  "transformations": [],
+  "structure": [
+    {
+      "id": "node_0",
+      "type": "BODY",
+      "page_index": 0,
+      "text": "IL PRESIDENTE DELLA REPUBBLICA",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_1",
+      "type": "BODY",
+      "page_index": 0,
+      "text": "la seguente legge:",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_2",
+      "type": "ARTICLE_HEADER",
+      "page_index": 0,
+      "text": "Art. 1",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_3",
+      "type": "ARTICLE_BODY",
+      "page_index": 0,
+      "text": "1. La Repubblica riconosce il 9 maggio, anniversario dell'uccisione di Aldo Moro, quale «Giorno della memoria», al fine di ricordare tutte le vittime del terrorismo, interno e internazionale, e delle stragi di tale matrice.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_4",
+      "type": "ARTICLE_BODY",
+      "page_index": 0,
+      "text": "2. In occasione del «Giorno della memoria» di cui al comma 1, possono essere organizzate, senza nuovi o maggiori oneri a carico della finanza pubblica, manifestazioni pubbliche, cerimonie, incontri, momenti comuni di ricordo dei fatti e di riflessione, anche nelle scuole di ogni ordine e grado, al fine di conservare, rinnovare e costruire una memoria storica condivisa in difesa delle istituzioni democratiche.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_5",
+      "type": "ARTICLE_HEADER",
+      "page_index": 0,
+      "text": "Art. 2",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_6",
+      "type": "ARTICLE_BODY",
+      "page_index": 0,
+      "text": "1. La presente legge entra in vigore il giorno successivo a quello della sua pubblicazione nella Gazzetta Ufficiale.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_7",
+      "type": "BODY",
+      "page_index": 0,
+      "text": "La presente legge, munita del sigillo dello Stato, sarà inserita nella Raccolta ufficiale degli atti normativi della Repubblica italiana. È fatto obbligo a chiunque spetti di osservarla e di farla osservare come legge Stato.",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_8",
+      "type": "BODY",
+      "page_index": 0,
+      "text": "Data a Roma, addì 4 maggio 2007",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_9",
+      "type": "BODY",
+      "page_index": 0,
+      "text": "NAPOLITANO",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_10",
+      "type": "BODY",
+      "page_index": 0,
+      "text": "Prodi, Presidente del Consiglio dei Ministri",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    },
+    {
+      "id": "node_11",
+      "type": "BODY",
+      "page_index": 0,
+      "text": "Visto, il Guardasigilli: Mastella",
+      "level": null,
+      "items": null,
+      "toc_items": null,
+      "length_category": null,
+      "block_indices": [],
+      "children": [],
+      "apparatus_refs": []
+    }
+  ]
+}
