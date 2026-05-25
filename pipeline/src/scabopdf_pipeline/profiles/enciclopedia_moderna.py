@@ -176,6 +176,126 @@ WARNING_TEMPLATES: tuple[str, ...] = (
 values at emission time.
 """
 
+
+LEXICON_ALLOWLIST: frozenset[str] = frozenset(
+    {
+        # Latin legal terms common across the EdD moderna voci. The
+        # moderna fixtures (Aggiornamenti, Annali, Tematici 1997-2025)
+        # are native SimonciniGaramond rather than OCR, but their
+        # vocabulary spans Roman law as much as the storica sister
+        # plugin. The allowlist is therefore largely a copy of the
+        # storica list, providing parity across the EdD family. See
+        # CLAUDE.md pattern (dddd) and the closure of debt (xi).
+        "actio",
+        "actiones",
+        "aequitas",
+        "auctoritas",
+        "causa",
+        "civitas",
+        "commodatum",
+        "condictio",
+        "conductio",
+        "constitutio",
+        "consuetudo",
+        "contractus",
+        "culpa",
+        "datio",
+        "deminutio",
+        "depositum",
+        "dolus",
+        "dominium",
+        "donatio",
+        "edictum",
+        "emptio",
+        "exceptio",
+        "exceptiones",
+        "fideicommissum",
+        "fideiussor",
+        "fiducia",
+        "furtum",
+        "hereditas",
+        "imperium",
+        "interdictum",
+        "interdicta",
+        "intuitu",
+        "iudex",
+        "iudicium",
+        "iure",
+        "iuris",
+        "ius",
+        "iustitia",
+        "jus",
+        "legatum",
+        "lex",
+        "locatio",
+        "mancipatio",
+        "mandatum",
+        "mora",
+        "mutuum",
+        "necessitas",
+        "negotium",
+        "nexum",
+        "novatio",
+        "obligatio",
+        "occupatio",
+        "pacta",
+        "pactum",
+        "pater",
+        "paterfamilias",
+        "familias",
+        "patrimonium",
+        "permutatio",
+        "persona",
+        "pignus",
+        "possessio",
+        "possessor",
+        "praescriptio",
+        "praetor",
+        "procurator",
+        "proprietas",
+        "quasi",
+        "res",
+        "responsum",
+        "responsa",
+        "restitutio",
+        "servitus",
+        "societas",
+        "solutio",
+        "stipulatio",
+        "successio",
+        "testamentum",
+        "traditio",
+        "transactio",
+        "tutela",
+        "tutor",
+        "usucapio",
+        "usufructus",
+        "usus",
+        "uti",
+        "venditio",
+        "vindicatio",
+        "voluntas",
+        # Modern Italian legal vocabulary missing from the bundled wordlist.
+        "pertinenzialità",
+        "cartolarità",
+    }
+)
+"""Profile-specific allowlist of words to treat as known by the lexicon.
+
+See :meth:`scabopdf_pipeline.profiling.plugin.ProfilePlugin.get_lexicon_allowlist`
+for the architectural convention and CLAUDE.md pattern (dddd) for the
+closure of debt (xi).
+
+The EdD moderna fixtures cite Roman law as routinely as the storica
+sister plugin; the allowlist is a parity copy of
+:data:`scabopdf_pipeline.profiles.enciclopedia_storica.LEXICON_ALLOWLIST`
+minus the OCR-noisy Roman-jurist names (which the moderna pipeline
+renders natively in SimonciniGaramond and the bundled wordlist
+already covers as proper Italian forms). Future sessions can extend
+this allowlist independently if the moderna corpus diverges from
+storica on vocabulary.
+"""
+
 # ---------------------------------------------------------------------------
 # Typographic family names (exact match — EdD uses ``SimonciniGaramond``,
 # the Giappichelli/Mandrioli plugin uses ``SimonciniGaramondStd`` and they
@@ -489,6 +609,10 @@ class EnciclopediaModernaProfile(ProfilePlugin):
     @classmethod
     def get_warning_templates(cls) -> tuple[str, ...]:
         return WARNING_TEMPLATES
+
+    @classmethod
+    def get_lexicon_allowlist(cls) -> frozenset[str]:
+        return LEXICON_ALLOWLIST
 
     @classmethod
     def matches(cls, signals: ProfilingSignals) -> float:

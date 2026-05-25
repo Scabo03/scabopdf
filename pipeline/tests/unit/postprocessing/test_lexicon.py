@@ -63,16 +63,40 @@ def test_from_word_set_bypasses_pyspellchecker(monkeypatch: pytest.MonkeyPatch) 
 
 
 def test_bundled_loader_returns_a_large_frozenset() -> None:
-    """The bundled resource ships ~280 000 lowercase Italian words."""
+    """The bundled resource ships ~898 000 lowercase Italian words."""
     from scabopdf_pipeline.postprocessing.lexicon import _load_bundled_wordlist
 
     words = _load_bundled_wordlist()
     assert words is not None
     assert isinstance(words, frozenset)
-    assert len(words) > 100_000
+    # Post-v2.32 bump that closed debt (xi): the bundled wordlist holds
+    # the MIT-only curated union (~898 k entries, ~9.7 k accented forms).
+    assert len(words) > 500_000
     assert "evoluzione" in words
     assert "letteratura" in words
     assert "fonti" in words
+
+
+def test_bundled_loader_contains_accented_italian_forms() -> None:
+    """Closure of debt (xi): the bundled wordlist now includes accented forms."""
+    from scabopdf_pipeline.postprocessing.lexicon import _load_bundled_wordlist
+
+    words = _load_bundled_wordlist()
+    assert words is not None
+    for accented in ("città", "perché", "così", "libertà", "università", "più", "già"):
+        assert accented in words, f"expected {accented!r} in the bundled wordlist"
+
+
+def test_bundled_loader_size_meets_v2_32_threshold() -> None:
+    """The richer wordlist sits well above the pre-v2.32 280 k threshold."""
+    from scabopdf_pipeline.postprocessing.lexicon import _load_bundled_wordlist
+
+    words = _load_bundled_wordlist()
+    assert words is not None
+    # The MIT-only curated subset settles around 898 k; loosen the
+    # assertion floor to 800 k to give the regeneration script some
+    # play if the upstream files shift slightly in the future.
+    assert len(words) >= 800_000
 
 
 def test_bundled_classmethod_builds_lexicon_backed_by_resource() -> None:
@@ -173,3 +197,90 @@ def test_bundled_loader_returns_none_when_resource_missing(
         assert lex_module._load_bundled_wordlist() is None
     finally:
         lex_module._load_bundled_wordlist.cache_clear()
+
+
+# ---------------------------------------------------------------------------
+# Profile-specific allowlist tests (closure of debt (xi)).
+
+
+def test_default_constructor_accepts_optional_allowlist() -> None:
+    """The default constructor accepts a frozenset allowlist."""
+    lexicon = ItalianLexicon(allowlist=frozenset({"ulpiano", "actio"}))
+    assert lexicon.is_known("ulpiano") is True
+    assert lexicon.is_known("actio") is True
+    # Bundled words still resolve through the underlying backend.
+    assert lexicon.is_known("casa") is True
+
+
+def test_allowlist_is_case_insensitive() -> None:
+    """Allowlist membership is normalised to lowercase."""
+    lexicon = ItalianLexicon(allowlist=frozenset({"Ulpiano", "PRAETOR"}))
+    assert lexicon.is_known("ulpiano") is True
+    assert lexicon.is_known("Ulpiano") is True
+    assert lexicon.is_known("ULPIANO") is True
+    assert lexicon.is_known("praetor") is True
+
+
+def test_allowlist_default_is_empty() -> None:
+    """A lexicon without ``allowlist`` keyword behaves byte-equivalent to pre-v2.32."""
+    lexicon = ItalianLexicon()
+    assert lexicon.allowlist_size() == 0
+    # ``ulpiano`` is not in the bundled wordlist and is not in the
+    # default allowlist; the default backend rejects it.
+    assert lexicon.is_known("ulpiano") is False
+
+
+def test_allowlist_none_is_equivalent_to_empty_frozenset() -> None:
+    """``allowlist=None`` and ``allowlist=frozenset()`` behave identically."""
+    lex_none = ItalianLexicon(allowlist=None)
+    lex_empty = ItalianLexicon(allowlist=frozenset())
+    assert lex_none.allowlist_size() == lex_empty.allowlist_size() == 0
+
+
+def test_bundled_classmethod_accepts_allowlist() -> None:
+    """``ItalianLexicon.bundled(allowlist=...)`` propagates the allowlist."""
+    lexicon = ItalianLexicon.bundled(allowlist=frozenset({"praetor"}))
+    assert lexicon.is_known("praetor") is True
+    assert lexicon.is_known("casa") is True
+    assert lexicon.allowlist_size() == 1
+
+
+def test_from_word_set_accepts_allowlist() -> None:
+    """``ItalianLexicon.from_word_set(words, allowlist=...)`` works deterministically."""
+    lexicon = ItalianLexicon.from_word_set({"casa"}, allowlist=frozenset({"ius", "actio"}))
+    assert lexicon.is_known("casa") is True
+    assert lexicon.is_known("ius") is True
+    assert lexicon.is_known("actio") is True
+    assert lexicon.is_known("tetto") is False
+
+
+def test_allowlist_strips_empty_and_whitespace_entries() -> None:
+    """Empty strings and pure-whitespace entries are silently dropped from the allowlist."""
+    lexicon = ItalianLexicon.from_word_set({"casa"}, allowlist=frozenset({"", "  ", "actio"}))
+    assert lexicon.allowlist_size() == 1
+    assert lexicon.is_known("actio") is True
+
+
+def test_size_includes_allowlist_contribution_for_bundled_backend() -> None:
+    """``size()`` adds entries the allowlist contributes that the backend does not already know."""
+    bare_size = ItalianLexicon().size()
+    assert bare_size is not None
+    enriched = ItalianLexicon(allowlist=frozenset({"ulpiano", "fideicommissum"}))
+    enriched_size = enriched.size()
+    assert enriched_size is not None
+    assert enriched_size == bare_size + 2
+
+
+def test_size_does_not_double_count_words_present_in_both_sets() -> None:
+    """Allowlist entries that are also in the bundled wordlist do not inflate ``size()``."""
+    bare_size = ItalianLexicon().size()
+    enriched = ItalianLexicon(allowlist=frozenset({"casa", "tetto"}))
+    enriched_size = enriched.size()
+    assert bare_size is not None and enriched_size is not None
+    assert enriched_size == bare_size
+
+
+def test_allowlist_size_returns_normalised_count() -> None:
+    """``allowlist_size`` counts unique lower-case entries after normalisation."""
+    lexicon = ItalianLexicon(allowlist=frozenset({"Ulpiano", "ulpiano", "ULPIANO", "actio"}))
+    assert lexicon.allowlist_size() == 2

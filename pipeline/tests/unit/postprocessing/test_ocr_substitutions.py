@@ -393,3 +393,114 @@ def test_collect_contextual_rewrite_matches_handles_no_op() -> None:
     # protects the contract.
     matches = collect_contextual_rewrite_matches("Solo testo pulito.")
     assert matches == []
+
+
+# ---------------------------------------------------------------------------
+# Contextual rewrites — accented Italian words (debt (xi) closure).
+
+
+def _apply(text: str) -> str:
+    """Apply all contextual rewrites to ``text``, returning the post-rewrite string."""
+    out = text
+    for start, end, _orig, replaced, _desc in reversed(collect_contextual_rewrite_matches(text)):
+        out = out[:start] + replaced + out[end:]
+    return out
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("la citta di Milano", "la città di Milano"),
+        ("perche non viene", "perché non viene"),
+        ("e cosi via", "e così via"),
+        ("e piu degli altri", "e più degli altri"),
+        ("gia visto", "già visto"),
+        ("piu in giu", "più in giù"),
+        ("liberta di pensiero", "libertà di pensiero"),
+        ("universita degli studi", "università degli studi"),
+        ("qualita e quantita", "qualità e quantità"),
+        ("attivita giornaliere", "attività giornaliere"),
+        ("realta storica", "realtà storica"),
+        ("verita assoluta", "verità assoluta"),
+        ("societa civile", "società civile"),
+        ("possibilita di scelta", "possibilità di scelta"),
+        ("responsabilita penale", "responsabilità penale"),
+        ("necessita morale", "necessità morale"),
+        ("autorita pubblica", "autorità pubblica"),
+        ("comunita europea", "comunità europea"),
+        ("proprieta intellettuale", "proprietà intellettuale"),
+        ("identita digitale", "identità digitale"),
+        ("facolta di Giurisprudenza", "facoltà di Giurisprudenza"),
+        ("volonta del legislatore", "volontà del legislatore"),
+        ("difficolta interpretativa", "difficoltà interpretativa"),
+        ("modalita di esercizio", "modalità di esercizio"),
+        ("nazionalita italiana", "nazionalità italiana"),
+    ],
+)
+def test_accented_rewrites_positive_cases(source: str, expected: str) -> None:
+    assert _apply(source) == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # The standalone-word boundary must not match these substrings of longer words.
+        "cittadinanza italiana",
+        "cittadina romana",
+        "libertario di lungo corso",
+        "perchessì",
+        "Università di Padova",  # title-case Università already accented
+        # The already-accented form must pass through unchanged.
+        "la città è grande",
+        "perché non viene",
+        "così è la legge",
+        "più che mai",
+        "libertà di stampa",
+        "quantità misurabile",
+    ],
+)
+def test_accented_rewrites_no_false_positives(text: str) -> None:
+    assert _apply(text) == text
+
+
+def test_accented_rewrites_preserve_neighbouring_punctuation() -> None:
+    """``,cosi,`` is rewritten on the standalone ``cosi`` without touching commas."""
+    assert _apply("Roma, cosi, è scritto.") == "Roma, così, è scritto."
+
+
+def test_accented_rewrites_ignore_ambiguous_unaccented_forms() -> None:
+    """Italian words whose unaccented form is itself legitimate are NOT rewritten."""
+    # ``e`` ↔ ``è``, ``se`` ↔ ``sé``, ``ne`` ↔ ``né``, ``si`` ↔ ``sì``,
+    # ``la`` ↔ ``là``, ``li`` ↔ ``lì``, ``da`` ↔ ``dà``, ``pero`` ↔ ``però``
+    # (``pero`` is the pear-tree noun), ``faro`` ↔ ``farò`` (lighthouse).
+    inputs = [
+        "Mario e Luigi",  # ``e`` stays ``e`` (would have meant ``è``)
+        "se vuoi venire",
+        "ne risulta che",
+        "si chiude qui",
+        "la luce",
+        "li attendiamo",
+        "da molto tempo",
+        "il pero da giardino",
+        "il faro di Genova",
+    ]
+    for text in inputs:
+        assert _apply(text) == text
+
+
+def test_accented_rewrites_only_match_lowercase() -> None:
+    """Title-case forms are not rewritten by the v1 table (forward-looking limitation)."""
+    # ``Universita`` at sentence start does not get rewritten to
+    # ``Università`` by the lowercase-only patterns; the case-preserving
+    # extension is a forward-looking refinement.
+    assert _apply("Universita degli studi") == "Universita degli studi"
+    # The lowercase form within the same sentence IS rewritten.
+    assert _apply("La universita degli studi") == "La università degli studi"
+
+
+def test_accented_rewrites_count_matches_table_growth() -> None:
+    """The table holds exactly 31 entries post-v2.32 (5 original + 26 accented Italian)."""
+    rewrites = get_contextual_rewrites()
+    # 5 original (digit_o, digit_middle_dot, art_ll, bullet_dot, leading_middle_dot)
+    # + 26 new accented-Italian rewrites = 31
+    assert len(rewrites) == 31

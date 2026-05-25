@@ -172,6 +172,204 @@ WARNING_TEMPLATES: tuple[str, ...] = (
 )
 
 
+LEXICON_ALLOWLIST: frozenset[str] = frozenset(
+    {
+        # Latin legal terms common across Roman-law voci. The bundled
+        # 898k Italian wordlist covers a handful of these as Italianised
+        # forms (``usucapione``, ``mancipio``, ``stipulazione``) but
+        # leaves the Latin originals unknown. Marking them known here
+        # speeds up Pass 2 of normalize_ocr_with_dictionary and lets
+        # dehyphenate_ocr_aggressive accept Latin words split over a
+        # line break (e.g. ``i-\nus`` → ``ius``).
+        "actio",
+        "actiones",
+        "aequitas",
+        "aequitate",
+        "animus",
+        "auctoritas",
+        "bonum",
+        "bona",
+        "capitis",
+        "causa",
+        "civitas",
+        "commodatum",
+        "condictio",
+        "conductio",
+        "constitutio",
+        "constitutum",
+        "consuetudo",
+        "contrahere",
+        "contractus",
+        "culpa",
+        "datio",
+        "deminutio",
+        "depositum",
+        "dolus",
+        "dominium",
+        "donatio",
+        "edictum",
+        "emptio",
+        "exceptio",
+        "exceptiones",
+        "fideicommissum",
+        "fideiussor",
+        "fiducia",
+        "filius",
+        "filia",
+        "furtum",
+        "gens",
+        "habere",
+        "hereditas",
+        "imperium",
+        "in",  # already common but harmless
+        "interdictum",
+        "interdicta",
+        "intuitu",
+        "iudex",
+        "iudicium",
+        "iudicia",
+        "iure",
+        "iuris",
+        "ius",
+        "iusta",
+        "iustitia",
+        "jus",
+        "legatum",
+        "lege",
+        "leges",
+        "lex",
+        "locatio",
+        "longi",
+        "mancipatio",
+        "mancipio",
+        "mandatum",
+        "mater",
+        "mora",
+        "mortis",
+        "mos",
+        "mutuum",
+        "necessitas",
+        "negotium",
+        "nexum",
+        "novatio",
+        "nuda",
+        "nudum",
+        "obligatio",
+        "occupatio",
+        "pacta",
+        "pactum",
+        "pater",
+        "paterfamilias",
+        "familias",
+        "patria",
+        "patrimonium",
+        "patronus",
+        "peregrinus",
+        "permutatio",
+        "persona",
+        "pignus",
+        "possessio",
+        "possessor",
+        "praescriptio",
+        "praetor",
+        "praetoris",
+        "praetorium",
+        "procurator",
+        "promissio",
+        "proprietas",
+        "publicum",
+        "quasi",
+        "res",
+        "responsa",
+        "responsum",
+        "restitutio",
+        "retentio",
+        "rei",
+        "sacramentum",
+        "servitus",
+        "sine",
+        "societas",
+        "solutio",
+        "stipulatio",
+        "stipulator",
+        "successio",
+        "successor",
+        "sui",
+        "suo",
+        "tempus",
+        "testamentum",
+        "tradere",
+        "traditio",
+        "transactio",
+        "tutela",
+        "tutor",
+        "usucapio",
+        "usufructus",
+        "usus",
+        "uti",
+        "venditio",
+        "venditor",
+        "verbis",
+        "verborum",
+        "vindicatio",
+        "voluntas",
+        # Roman jurists whose names appear repeatedly in the voci and
+        # are below the bundled wordlist's proper-name coverage.
+        "ulpiano",
+        "papiniano",
+        "labeone",
+        "massurio",
+        "tribonio",
+        "alfeno",
+        "marcello",
+        "marciano",
+        "paolo",  # already in lexicon but harmless
+        "javoleno",
+        # Pre-19th-century romanists and Pandettists cited routinely in
+        # storica.
+        "beseler",
+        "jhering",
+        "ihering",
+        "mommsen",
+        "lenel",
+        "windscheid",
+        "thibaut",
+        "vangerow",
+        "puchta",
+        "kaser",
+        "biondi",
+        # Italian legal vocabulary missing from the bundled wordlist.
+        "pertinenzialità",
+        "cartolarità",
+    }
+)
+"""Profile-specific allowlist of words to treat as known by the lexicon.
+
+See :meth:`scabopdf_pipeline.profiling.plugin.ProfilePlugin.get_lexicon_allowlist`
+for the architectural convention (pattern (ttt), opt-in non-abstract
+classmethod) and CLAUDE.md pattern (dddd) for the closure of debt (xi)
+"Lexicon coverage gap unaccented-only" of which this allowlist is the
+profile-specific complement.
+
+Empirical justification. The four EdD storica calibrating fixtures
+(``edd_eccesso_potere``, ``edd_lavoro``, ``edd_pagamento``, ``edd_azienda``)
+quote Roman law extensively. Latin legal terms (``actio``, ``exceptio``,
+``ius``, ``stipulatio``, ``mancipatio``, ``dolus``, ``traditio``,
+``usucapio``…) and classical jurist names (Ulpiano, Papiniano,
+Labeone, Massurio, Tribonio) are below the bundled 898k Italian
+wordlist's coverage. Marking them known here avoids two failure
+modes downstream: (a) ``dehyphenate_ocr_aggressive`` skipping
+legitimate Latin hyphenations because the joined form fails the
+lexicon check, and (b) ``normalize_ocr_with_dictionary`` Pass 2
+attempting OCR substitution lookups on already-correct Latin words
+(a small performance win and a clearer audit log).
+
+Membership is case-insensitive (see :func:`_normalise_allowlist`),
+but the constant is conventionally written lowercase to make the
+case-folding obvious.
+"""
+
+
 # ---------------------------------------------------------------------------
 # Typographic family names and size bands (cf. pattern (bbb)).
 
@@ -440,6 +638,10 @@ class EnciclopediaStoricaProfile(ProfilePlugin):
     @classmethod
     def get_warning_templates(cls) -> tuple[str, ...]:
         return WARNING_TEMPLATES
+
+    @classmethod
+    def get_lexicon_allowlist(cls) -> frozenset[str]:
+        return LEXICON_ALLOWLIST
 
     @classmethod
     def matches(cls, signals: ProfilingSignals) -> float:

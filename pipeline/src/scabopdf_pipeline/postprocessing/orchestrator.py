@@ -45,13 +45,20 @@ Resilience and edge cases.
 from __future__ import annotations
 
 import dataclasses
+import inspect
+from collections.abc import Callable
+from typing import Any, cast
 
 from scabopdf_pipeline.classification.types import ClassifiedBlock
 from scabopdf_pipeline.extraction.types import ExtractionResult
+from scabopdf_pipeline.postprocessing.lexicon import ItalianLexicon
 from scabopdf_pipeline.postprocessing.registry import PostProcessingRegistry
-from scabopdf_pipeline.postprocessing.types import Transformation
+from scabopdf_pipeline.postprocessing.types import PostProcessingStep, Transformation
 from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.reconstruction.types import Document
+
+_LEXICON_PARAM = "lexicon"
+"""Name of the optional lexicon keyword every lexicon-aware step accepts."""
 
 
 def apply_post_processing(
@@ -103,12 +110,40 @@ def apply_post_processing(
 
     effective_registry = registry if registry is not None else PostProcessingRegistry.default()
 
+    allowlist = plugin.get_lexicon_allowlist()
+    profile_lexicon: ItalianLexicon | None = None
+    if allowlist:
+        # Build the lexicon once per pipeline invocation and inject it
+        # into every step that accepts a ``lexicon`` keyword. Steps that
+        # do not consult the lexicon (``recompose_marginal_ellipsis``,
+        # ``merge_cross_page_notes``) receive the standard positional
+        # arguments only. When the plugin's allowlist is empty the
+        # default branch leaves ``profile_lexicon`` as ``None`` and the
+        # steps build their own (cached) default-bundled lexicon, which
+        # preserves the pre-debt-(xi) behaviour byte-for-byte.
+        profile_lexicon = ItalianLexicon(allowlist=allowlist)
+
     current_document = document
     accumulated: list[Transformation] = list(document.transformations)
 
     for step_id in step_ids:
         step = effective_registry.get(step_id)
-        new_document, new_transformations = step(current_document, extraction, classified_blocks)
+        if profile_lexicon is not None and _step_accepts_lexicon(step):
+            # Cast through Any: the public PostProcessingStep alias does
+            # not declare ``lexicon`` because most steps do not accept
+            # it. The introspection guard above proves the present step
+            # does; mypy cannot see the connection.
+            lexicon_aware_step = cast(Callable[..., Any], step)
+            new_document, new_transformations = lexicon_aware_step(
+                current_document,
+                extraction,
+                classified_blocks,
+                lexicon=profile_lexicon,
+            )
+        else:
+            new_document, new_transformations = step(
+                current_document, extraction, classified_blocks
+            )
         current_document = new_document
         if new_transformations:
             accumulated.extend(new_transformations)
@@ -117,3 +152,20 @@ def apply_post_processing(
         return document
 
     return dataclasses.replace(current_document, transformations=tuple(accumulated))
+
+
+def _step_accepts_lexicon(step: PostProcessingStep) -> bool:
+    """Return True iff ``step`` declares an optional ``lexicon`` keyword.
+
+    Steps that consult the lexicon (``dehyphenate_with_log``,
+    ``dehyphenate_ocr_aggressive``, ``normalize_ocr_with_dictionary``)
+    accept ``lexicon: ItalianLexicon | None = None`` so the orchestrator
+    can inject a profile-aware instance. Other steps
+    (``recompose_marginal_ellipsis``, ``merge_cross_page_notes``,
+    profile-specific placeholders) do not.
+    """
+    try:
+        parameters = inspect.signature(step).parameters
+    except (TypeError, ValueError):  # pragma: no cover — callable signatures inaccessible
+        return False
+    return _LEXICON_PARAM in parameters

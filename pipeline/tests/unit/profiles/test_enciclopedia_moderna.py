@@ -32,6 +32,7 @@ from scabopdf_pipeline.profiles.enciclopedia_moderna import (
     DROP_CAP_MIN_SIZE,
     FOOTER_ENTE_SIZE,
     HELVETICA_BOLD_FAMILY_FRAGMENT,
+    LEXICON_ALLOWLIST,
     NOTE_SIZE,
     SIMONCINI_BOLD_FAMILY,
     SIMONCINI_ITALIC_FAMILY,
@@ -281,6 +282,30 @@ def test_get_categories_returns_set() -> None:
 def test_warning_templates_are_a_tuple() -> None:
     assert isinstance(WARNING_TEMPLATES, tuple)
     assert all(w.startswith(WARNING_PREFIX) for w in WARNING_TEMPLATES)
+
+
+def test_lexicon_allowlist_is_a_frozenset() -> None:
+    assert isinstance(LEXICON_ALLOWLIST, frozenset)
+    assert len(LEXICON_ALLOWLIST) > 0
+
+
+def test_lexicon_allowlist_includes_latin_legal_core() -> None:
+    """The EdD moderna allowlist mirrors the storica latinismi for parity across the family."""
+    expected_core = {
+        "actio",
+        "exceptio",
+        "ius",
+        "stipulatio",
+        "traditio",
+        "dolus",
+        "praetor",
+        "usucapio",
+    }
+    assert expected_core.issubset(LEXICON_ALLOWLIST)
+
+
+def test_get_lexicon_allowlist_returns_the_module_constant() -> None:
+    assert EnciclopediaModernaProfile.get_lexicon_allowlist() is LEXICON_ALLOWLIST
 
 
 # ---------------------------------------------------------------------------

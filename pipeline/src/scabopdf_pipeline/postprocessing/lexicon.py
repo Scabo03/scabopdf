@@ -12,11 +12,12 @@ Backends.
 
 - **Bundled wordlist (default).** ``ItalianLexicon()`` lazily loads the
   gzipped Italian wordlist shipped under
-  :mod:`scabopdf_pipeline.resources.lexicon` (~280 000 entries,
-  including inflected forms; MIT licence, see the resource ``README.md``).
-  Loading happens at construction time once per process and is cached
-  through an LRU cache so subsequent constructors share the same
-  frozen set.
+  :mod:`scabopdf_pipeline.resources.lexicon` (~898 000 entries since the
+  v2.32 bump that closed debt (xi); was ~280 000 before then. Includes
+  inflected forms and ~9 700 accented entries; MIT licence, see the
+  resource ``README.md``). Loading happens at construction time once
+  per process and is cached through an LRU cache so subsequent
+  constructors share the same frozen set.
 - **pyspellchecker (fallback).** When the bundled resource is missing
   for any reason (broken install, manually purged wheel) the
   constructor falls back to ``SpellChecker(language='it')``. The
@@ -27,6 +28,17 @@ Backends.
 - **Deterministic in-memory (tests).** ``ItalianLexicon.from_word_set``
   bypasses every disk and Python import and stores a literal frozenset.
   Used by unit tests that need a small, known lexicon.
+
+Profile-specific allowlist (opt-in). The default constructor and
+:meth:`bundled` accept an optional ``allowlist`` frozenset of
+additional words to treat as known alongside the backend's data. The
+allowlist is purely additive (it cannot make a bundled word unknown)
+and applies case-insensitively. The
+:mod:`scabopdf_pipeline.postprocessing.orchestrator` builds the
+profile-aware lexicon from
+:meth:`scabopdf_pipeline.profiling.plugin.ProfilePlugin.get_lexicon_allowlist`
+once per pipeline invocation. See pattern (dddd) of CLAUDE.md for the
+architectural rationale (closure of debt (xi)).
 
 Future Hunspell support. A ``hunspell`` system installation with the
 ``it_IT.aff/it_IT.dic`` files brings affix expansion the bundled
@@ -85,6 +97,11 @@ class ItalianLexicon:
       and stores ``frozenset(w.lower() for w in words)``. Used in unit
       tests that need a known, small lexicon.
 
+    Every constructor accepts an optional ``allowlist`` frozenset of
+    additional words to treat as known. The allowlist is purely
+    additive and case-insensitive; see the module docstring for the
+    architectural context.
+
     The :meth:`is_known` contract is the stable API. The internal
     storage (a :class:`SpellChecker` instance or a :class:`frozenset`)
     is private and may change.
@@ -92,8 +109,10 @@ class ItalianLexicon:
 
     _spell: Any | None
     _words: frozenset[str] | None
+    _allowlist: frozenset[str]
 
-    def __init__(self) -> None:
+    def __init__(self, allowlist: frozenset[str] | None = None) -> None:
+        self._allowlist = _normalise_allowlist(allowlist)
         bundled = _load_bundled_wordlist()
         if bundled is not None:
             self._spell = None
@@ -113,14 +132,23 @@ class ItalianLexicon:
         self._words = None
 
     @classmethod
-    def bundled(cls) -> ItalianLexicon:
+    def bundled(cls, allowlist: frozenset[str] | None = None) -> ItalianLexicon:
         """Build a lexicon backed by the bundled Italian wordlist.
+
+        Parameters
+        ----------
+        allowlist
+            Optional frozenset of additional words to treat as known.
+            Case-folded on storage and consulted alongside the bundled
+            wordlist on every :meth:`is_known` call. ``None`` and an
+            empty frozenset are equivalent.
 
         Returns
         -------
         ItalianLexicon
             Instance whose :meth:`is_known` checks set membership against
-            the gzipped resource shipped with the package.
+            the gzipped resource shipped with the package, with the
+            allowlist as an additive secondary set.
 
         Raises
         ------
@@ -140,16 +168,25 @@ class ItalianLexicon:
         instance = cls.__new__(cls)
         instance._spell = None
         instance._words = words
+        instance._allowlist = _normalise_allowlist(allowlist)
         return instance
 
     @classmethod
-    def from_word_set(cls, words: set[str]) -> ItalianLexicon:
+    def from_word_set(
+        cls,
+        words: set[str],
+        allowlist: frozenset[str] | None = None,
+    ) -> ItalianLexicon:
         """Build a deterministic lexicon from a finite set of words.
 
         Parameters
         ----------
         words
             Set of words the lexicon will accept. Stored case-folded.
+        allowlist
+            Optional frozenset of additional words to treat as known.
+            Stored as a separate set; declaring the same word in both
+            ``words`` and ``allowlist`` is harmless.
 
         Returns
         -------
@@ -160,17 +197,22 @@ class ItalianLexicon:
         instance = cls.__new__(cls)
         instance._spell = None
         instance._words = frozenset(w.lower() for w in words)
+        instance._allowlist = _normalise_allowlist(allowlist)
         return instance
 
     def is_known(self, word: str) -> bool:
         """Return whether ``word`` is in the lexicon, case-insensitively.
 
         Empty strings return ``False`` regardless of the underlying
-        backend.
+        backend. The allowlist is consulted before the backend; a word
+        present in the allowlist returns ``True`` even when the backend
+        would otherwise reject it.
         """
         if not word:
             return False
         normalized = word.lower()
+        if normalized in self._allowlist:
+            return True
         if self._words is not None:
             return normalized in self._words
         assert self._spell is not None
@@ -181,8 +223,24 @@ class ItalianLexicon:
 
         Useful for diagnostic output. The pyspellchecker backend does
         not expose a stable count, so this method returns ``None`` in
-        that branch.
+        that branch. The allowlist contribution is added to the backend
+        count when both are countable.
         """
         if self._words is not None:
-            return len(self._words)
+            return len(self._words) + len(self._allowlist - self._words)
         return None
+
+    def allowlist_size(self) -> int:
+        """Return the number of entries contributed by the profile-specific allowlist."""
+        return len(self._allowlist)
+
+
+def _normalise_allowlist(allowlist: frozenset[str] | None) -> frozenset[str]:
+    """Lowercase every entry of ``allowlist`` and return it as a frozenset.
+
+    ``None`` returns the empty frozenset. Whitespace-only entries are
+    silently dropped; empty strings are dropped too.
+    """
+    if not allowlist:
+        return frozenset()
+    return frozenset(w.lower() for w in allowlist if w and w.strip())

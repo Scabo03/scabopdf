@@ -478,6 +478,96 @@ _CONTEXTUAL_OCR_REWRITES: tuple[tuple[re.Pattern[str], str, str], ...] = (
         "",
         "leading_middle_dot_stripped",
     ),
+    # 6. Italian accented words that the Paper Capture pipeline (and
+    # other OCR engines whose font does not render serif accents
+    # reliably) emits without their final accent. Empirical evidence
+    # on the four EdD storica calibrating fixtures: every occurrence
+    # of the unaccented form is a genuine corruption of the source
+    # accented form — Italian editorial typography uses ``città``,
+    # ``perché``, ``più``, ``così``, ``libertà``, ``qualità``,
+    # ``università``, ``attività``, ``realtà``, ``verità``,
+    # ``società``, ``possibilità``, ``responsabilità``, ``necessità``,
+    # ``autorità``, ``comunità``, ``proprietà``, ``identità``,
+    # ``già`` and ``giù`` exclusively, never their unaccented form.
+    #
+    # Each rule is anchored with ``\b`` on both sides to:
+    #
+    #   - match the standalone word only (no false positive on
+    #     ``cittadinanza`` or ``cittadina``);
+    #   - skip the correctly-accented source form (``città`` is not
+    #     matched because the trailing ``à`` is a word character and
+    #     the trailing ``\b`` therefore does not fire after ``citta``
+    #     when the next character is ``à``).
+    #
+    # The match operates on lowercase only. Title-case occurrences
+    # (``Città`` at sentence start) are rare in OCR-noisy body text
+    # and intentionally left untouched here — extending the table to
+    # title-case is a forward-looking refinement that the empirical
+    # diagnostic on EdD storica did not demonstrate to be necessary.
+    #
+    # Ambiguous unaccented forms that ARE legitimate Italian words
+    # are deliberately excluded from this table to preserve correctness
+    # outside the OCR pipeline: ``e`` ↔ ``è``, ``se`` ↔ ``sé``,
+    # ``ne`` ↔ ``né``, ``si`` ↔ ``sì``, ``la`` ↔ ``là``, ``li`` ↔
+    # ``lì``, ``da`` ↔ ``dà``, ``pero`` ↔ ``però`` (``pero`` is the
+    # pear-tree noun), ``faro`` ↔ ``farò`` (``faro`` is the
+    # lighthouse noun), ``papa`` ↔ ``papà``, ``subito`` ↔ ``subìto``.
+    # Future sessions can extend the table with context-anchored
+    # variants of these pairs if a real corpus surfaces the need.
+    (re.compile(r"\bcitta\b"), "città", "accented_citta_to_citta_accented"),
+    (re.compile(r"\bperche\b"), "perché", "accented_perche_to_perche_accented"),
+    (re.compile(r"\bpiu\b"), "più", "accented_piu_to_piu_accented"),
+    (re.compile(r"\bcosi\b"), "così", "accented_cosi_to_cosi_accented"),
+    (re.compile(r"\bgia\b"), "già", "accented_gia_to_gia_accented"),
+    (re.compile(r"\bgiu\b"), "giù", "accented_giu_to_giu_accented"),
+    (re.compile(r"\bliberta\b"), "libertà", "accented_liberta_to_liberta_accented"),
+    (
+        re.compile(r"\buniversita\b"),
+        "università",
+        "accented_universita_to_universita_accented",
+    ),
+    (re.compile(r"\bqualita\b"), "qualità", "accented_qualita_to_qualita_accented"),
+    (re.compile(r"\battivita\b"), "attività", "accented_attivita_to_attivita_accented"),
+    (re.compile(r"\brealta\b"), "realtà", "accented_realta_to_realta_accented"),
+    (re.compile(r"\bverita\b"), "verità", "accented_verita_to_verita_accented"),
+    (re.compile(r"\bsocieta\b"), "società", "accented_societa_to_societa_accented"),
+    (
+        re.compile(r"\bpossibilita\b"),
+        "possibilità",
+        "accented_possibilita_to_possibilita_accented",
+    ),
+    (
+        re.compile(r"\bresponsabilita\b"),
+        "responsabilità",
+        "accented_responsabilita_to_responsabilita_accented",
+    ),
+    (
+        re.compile(r"\bnecessita\b"),
+        "necessità",
+        "accented_necessita_to_necessita_accented",
+    ),
+    (re.compile(r"\bautorita\b"), "autorità", "accented_autorita_to_autorita_accented"),
+    (re.compile(r"\bcomunita\b"), "comunità", "accented_comunita_to_comunita_accented"),
+    (
+        re.compile(r"\bproprieta\b"),
+        "proprietà",
+        "accented_proprieta_to_proprieta_accented",
+    ),
+    (re.compile(r"\bidentita\b"), "identità", "accented_identita_to_identita_accented"),
+    (re.compile(r"\bquantita\b"), "quantità", "accented_quantita_to_quantita_accented"),
+    (re.compile(r"\bfacolta\b"), "facoltà", "accented_facolta_to_facolta_accented"),
+    (re.compile(r"\bvolonta\b"), "volontà", "accented_volonta_to_volonta_accented"),
+    (
+        re.compile(r"\bdifficolta\b"),
+        "difficoltà",
+        "accented_difficolta_to_difficolta_accented",
+    ),
+    (re.compile(r"\bmodalita\b"), "modalità", "accented_modalita_to_modalita_accented"),
+    (
+        re.compile(r"\bnazionalita\b"),
+        "nazionalità",
+        "accented_nazionalita_to_nazionalita_accented",
+    ),
 )
 """Closed list of contextual OCR regex rewrites.
 

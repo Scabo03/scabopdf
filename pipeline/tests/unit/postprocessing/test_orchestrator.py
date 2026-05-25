@@ -123,6 +123,110 @@ def test_custom_registry_overrides_default() -> None:
     assert len(result.transformations) == 1
 
 
+# ---------------------------------------------------------------------------
+# Allowlist wire-through tests (debt (xi) closure).
+
+
+class _AllowlistProfile(_FakeProfile):
+    """Test plugin that exposes both a post-processing list and an allowlist."""
+
+    def __init__(self, post_processing: list[str], allowlist: frozenset[str]) -> None:
+        super().__init__(post_processing)
+        self._allowlist = allowlist
+
+    @classmethod
+    def get_lexicon_allowlist(cls) -> frozenset[str]:
+        # Read from the instance attribute populated in __init__.
+        # NoOpProfilePlugin's ABC default is an empty frozenset;
+        # subclasses override here to carry the test instance state
+        # through a classmethod by inspecting the current class state.
+        return getattr(cls, "_class_allowlist", frozenset())
+
+
+def test_orchestrator_routes_allowlist_to_lexicon_aware_steps() -> None:
+    """The orchestrator injects a lexicon built from the plugin allowlist
+    into every step that accepts a ``lexicon`` keyword argument."""
+    captured: dict[str, ItalianLexicon | None] = {}
+
+    def _capturing_step(
+        doc: Document,
+        ext: ExtractionResult,
+        cb: list[ClassifiedBlock],
+        lexicon: ItalianLexicon | None = None,
+    ) -> tuple[Document, tuple[Transformation, ...]]:
+        del ext, cb
+        captured["lexicon"] = lexicon
+        return doc, ()
+
+    plugin = _AllowlistProfile(
+        post_processing=["capturing_step"],
+        allowlist=frozenset({"ulpiano", "actio"}),
+    )
+    _AllowlistProfile._class_allowlist = frozenset({"ulpiano", "actio"})  # type: ignore[attr-defined]
+    custom = PostProcessingRegistry(steps={"capturing_step": _capturing_step})
+
+    apply_post_processing(Document(), _empty_extraction(), [], plugin, registry=custom)
+
+    injected = captured["lexicon"]
+    assert injected is not None
+    assert injected.is_known("ulpiano") is True
+    assert injected.is_known("actio") is True
+    # Allowlist words DON'T leak into the bundled wordlist branch.
+    assert injected.allowlist_size() == 2
+    # Cleanup the class attribute.
+    del _AllowlistProfile._class_allowlist  # type: ignore[attr-defined]
+
+
+def test_orchestrator_skips_lexicon_injection_when_step_does_not_accept_it() -> None:
+    """A step without a ``lexicon`` keyword is called with positional args only."""
+    captured_kwargs: dict[str, object] = {}
+
+    def _plain_step(
+        doc: Document, ext: ExtractionResult, cb: list[ClassifiedBlock]
+    ) -> tuple[Document, tuple[Transformation, ...]]:
+        del ext, cb
+        captured_kwargs["called_with_positional_only"] = True
+        return doc, ()
+
+    plugin = _AllowlistProfile(
+        post_processing=["plain_step"],
+        allowlist=frozenset({"actio"}),
+    )
+    _AllowlistProfile._class_allowlist = frozenset({"actio"})  # type: ignore[attr-defined]
+    custom = PostProcessingRegistry(steps={"plain_step": _plain_step})
+
+    apply_post_processing(Document(), _empty_extraction(), [], plugin, registry=custom)
+
+    assert captured_kwargs.get("called_with_positional_only") is True
+    del _AllowlistProfile._class_allowlist  # type: ignore[attr-defined]
+
+
+def test_orchestrator_does_not_build_lexicon_when_allowlist_is_empty() -> None:
+    """The default ``frozenset()`` allowlist preserves the pre-v2.32 behaviour:
+    no profile-aware lexicon is built, every step uses its own default-bundled
+    lexicon (which is byte-equivalent to the prior orchestrator behaviour)."""
+    captured: dict[str, ItalianLexicon | None] = {}
+
+    def _capturing_step(
+        doc: Document,
+        ext: ExtractionResult,
+        cb: list[ClassifiedBlock],
+        lexicon: ItalianLexicon | None = None,
+    ) -> tuple[Document, tuple[Transformation, ...]]:
+        del ext, cb
+        captured["lexicon"] = lexicon
+        return doc, ()
+
+    plugin = _FakeProfile(post_processing=["capturing_step"])
+    custom = PostProcessingRegistry(steps={"capturing_step": _capturing_step})
+
+    apply_post_processing(Document(), _empty_extraction(), [], plugin, registry=custom)
+
+    # No allowlist → no profile-aware lexicon → step receives ``None``
+    # and is responsible for building its own default lexicon.
+    assert captured["lexicon"] is None
+
+
 def test_orchestrator_accumulates_transformations_across_steps() -> None:
     """Two consecutive fake steps each contribute one transformation."""
 

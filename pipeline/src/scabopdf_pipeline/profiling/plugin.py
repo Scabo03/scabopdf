@@ -205,3 +205,47 @@ class ProfilePlugin(ABC):
         vocabulary and the deterministic template-to-regex conversion.
         """
         return ()
+
+    @classmethod
+    def get_lexicon_allowlist(cls) -> frozenset[str]:
+        """Return profile-specific words to treat as valid alongside the bundled lexicon.
+
+        This classmethod is opt-in and non-abstract. The default returns
+        an empty :class:`frozenset` — a plugin that has no corpus-specific
+        vocabulary inherits it and consults only the bundled lexicon.
+        Concrete plugins whose corpus contains technical vocabulary the
+        bundled Italian wordlist does not cover (Roman-law latinismi,
+        author surnames specific to the corpus, archaic legal terms,
+        foreign loan words used routinely) typically return a module-level
+        ``LEXICON_ALLOWLIST: frozenset[str]`` constant declared above
+        the class definition, mirroring the convention established by
+        ``WARNING_TEMPLATES`` (pattern (sss)).
+
+        Membership is **case-insensitive**: every entry is matched
+        against the lower-cased token, so the allowlist may be declared
+        in any case but is conventionally written lowercase to make the
+        case-folding obvious.
+
+        Wire-through. The
+        :mod:`scabopdf_pipeline.postprocessing.orchestrator` builds the
+        :class:`scabopdf_pipeline.postprocessing.lexicon.ItalianLexicon`
+        instance once per pipeline invocation using this allowlist, and
+        every post-processing step that needs the lexicon
+        (``dehyphenate_with_log``, ``dehyphenate_ocr_aggressive``,
+        ``normalize_ocr_with_dictionary``) consumes the same enriched
+        instance. The allowlist is purely additive: it cannot mark a
+        bundled word as unknown, only extend the set of known words.
+
+        The ABC's count of *abstract* methods stays at seven — this
+        classmethod is additive and non-binding, paralleling
+        :meth:`get_warning_templates` and following pattern (ttt)
+        "opt-in ABC extension via non-abstract classmethod".
+
+        Example. A plugin for a Roman-law corpus that uses Latin legal
+        formulas not in the bundled lexicon could return
+        ``frozenset({"actio", "exceptio", "praetor", "interdictum",
+        "stipulatio", "ulpiano", ...})``; the OCR-normalisation step
+        will then treat ``Ulpiano`` and ``actio`` as valid words and
+        skip the substitution lookup on them.
+        """
+        return frozenset()

@@ -27,6 +27,7 @@ from scabopdf_pipeline.profiles.enciclopedia_storica import (
     _VOLUME_FOOTER_PATTERN,
     BODY_SIZE_MIN,
     CONFIDENCE_PAPER_CAPTURE_PRODUCER,
+    LEXICON_ALLOWLIST,
     NOTE_SIZE_MAX,
     PAPER_CAPTURE_PRODUCER_FRAGMENT,
     TIMES_FAMILY_PREFIX,
@@ -242,6 +243,48 @@ def test_get_layouts_disabled_disables_L4() -> None:
 def test_warning_templates_are_a_tuple() -> None:
     assert isinstance(WARNING_TEMPLATES, tuple)
     assert all(w.startswith(WARNING_PREFIX) for w in WARNING_TEMPLATES)
+
+
+# ---------------------------------------------------------------------------
+# Section 2b: lexicon allowlist (debt (xi) closure)
+
+
+def test_lexicon_allowlist_is_a_frozenset() -> None:
+    assert isinstance(LEXICON_ALLOWLIST, frozenset)
+    assert len(LEXICON_ALLOWLIST) > 0
+
+
+def test_lexicon_allowlist_entries_are_lowercase() -> None:
+    """Convention from CLAUDE.md pattern (dddd): entries written lowercase."""
+    for entry in LEXICON_ALLOWLIST:
+        assert entry == entry.lower(), f"{entry!r} is not lowercase"
+
+
+def test_lexicon_allowlist_includes_latin_legal_core() -> None:
+    """The allowlist must cover the empirical latinismi gap of the EdD storica fixtures."""
+    expected_core = {
+        "actio",
+        "exceptio",
+        "ius",
+        "stipulatio",
+        "traditio",
+        "dolus",
+        "praetor",
+        "usucapio",
+        "fideicommissum",
+    }
+    assert expected_core.issubset(LEXICON_ALLOWLIST)
+
+
+def test_lexicon_allowlist_includes_classical_jurists() -> None:
+    """The allowlist must cover the empirical Roman-jurist gap of the EdD storica fixtures."""
+    expected_jurists = {"ulpiano", "papiniano", "labeone", "massurio", "tribonio"}
+    assert expected_jurists.issubset(LEXICON_ALLOWLIST)
+
+
+def test_get_lexicon_allowlist_returns_the_module_constant() -> None:
+    """The classmethod returns the same frozenset as the module-level constant."""
+    assert EnciclopediaStoricaProfile.get_lexicon_allowlist() is LEXICON_ALLOWLIST
 
 
 # ---------------------------------------------------------------------------

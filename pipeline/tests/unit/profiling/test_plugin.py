@@ -52,6 +52,41 @@ def test_complete_subclass_works() -> None:
     assert plugin.get_post_processing() == []
 
 
+def test_default_lexicon_allowlist_is_empty_frozenset() -> None:
+    """The ABC's ``get_lexicon_allowlist`` returns an empty frozenset by default
+    so every plugin that does not override inherits the pre-v2.32 behaviour
+    (no profile-specific words injected into the lexicon)."""
+    assert NoOpProfilePlugin.get_lexicon_allowlist() == frozenset()
+    assert FakePlugin.get_lexicon_allowlist() == frozenset()
+
+
+def test_subclass_can_override_lexicon_allowlist() -> None:
+    """A concrete plugin can return a non-empty frozenset via classmethod."""
+
+    class WithAllowlist(NoOpProfilePlugin):
+        profile_id: ClassVar[str] = "with_allowlist"
+        editorial_family: ClassVar[str] = "test"
+        genre: ClassVar[str] = "test"
+
+        @classmethod
+        def get_lexicon_allowlist(cls) -> frozenset[str]:
+            return frozenset({"actio", "exceptio"})
+
+    assert WithAllowlist.get_lexicon_allowlist() == frozenset({"actio", "exceptio"})
+
+
+def test_lexicon_allowlist_is_classmethod_not_abstract() -> None:
+    """The classmethod is opt-in; the ABC's abstract surface stays at seven."""
+    # The default returns an empty frozenset and is callable on the ABC
+    # itself (no instance required) — this is the contract that pattern
+    # (ttt) opt-in ABC extension via non-abstract classmethod requires.
+    assert ProfilePlugin.get_lexicon_allowlist() == frozenset()
+    # ABC still cannot be instantiated (proves the seven abstract methods
+    # are still in place; the classmethod is purely additive).
+    with pytest.raises(TypeError):
+        ProfilePlugin()  # type: ignore[abstract]
+
+
 def test_incomplete_subclass_raises() -> None:
     class BrokenPlugin(ProfilePlugin):
         profile_id: ClassVar[str] = "broken"
