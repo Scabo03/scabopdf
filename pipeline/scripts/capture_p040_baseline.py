@@ -144,6 +144,10 @@ _BASELINES: tuple[tuple[str, str], ...] = (
     ("p040_baseline_edd_factoring", "edd_factoring.pdf"),
     ("p040_baseline_edd_lavoro", "edd_lavoro.pdf"),
     ("p040_baseline_materiali_tributario", "materiali_diritto_tributario.pdf"),
+    (
+        "p040_baseline_materiali_privato_con_toc",
+        "materiali_diritto_privato_con_toc.pdf",
+    ),
 )
 
 

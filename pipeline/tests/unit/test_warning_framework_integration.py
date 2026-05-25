@@ -120,8 +120,9 @@ def test_aggregate_template_count() -> None:
         len(profile_cls.get_warning_templates()) for _, profile_cls, _ in ALL_PROFILE_PLUGINS
     )
     tier1_total = len(TIER1_RECONSTRUCTION_TEMPLATES) + len(TIER1_APPARATUS_TEMPLATES)
-    # Empirical baseline at Fase 2 landing: 108 plugin templates + 6 tier 1.
-    # (BIC declares 12 templates after the gap-closure for the 4 warnings
-    # the v1 vocabulary missed; every other plugin keeps its v1 count.)
-    assert plugin_total == 108, f"plugin template count drift: {plugin_total} != 108"
+    # Empirical baseline at v2.33 (debt-(v) closure): 112 plugin templates + 6 tier 1.
+    # Was 108 at Fase 2; +4 added by the materiali_studio Word-ToC closure
+    # (heading_1_toc_header, heading_1_capitolo_full, toc_entry_dotted_leader,
+    # toc_entry_unparseable_node — see pattern (eeee) of CLAUDE.md).
+    assert plugin_total == 112, f"plugin template count drift: {plugin_total} != 112"
     assert tier1_total == 6, f"tier 1 template count drift: {tier1_total} != 6"

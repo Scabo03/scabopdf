@@ -218,7 +218,7 @@ from scabopdf_pipeline.profiling.plugin import ProfilePlugin
 from scabopdf_pipeline.profiling.profile import DisabledLayout
 from scabopdf_pipeline.profiling.signals import ProfilingSignals
 from scabopdf_pipeline.profiling.typography_constants import APPARATUS_PRESENCE_THRESHOLD
-from scabopdf_pipeline.reconstruction.types import Document
+from scabopdf_pipeline.reconstruction.types import Document, Node, TocGeneralItem
 from scabopdf_pipeline.schema.categories import SemanticCategory
 
 WARNING_PREFIX = "plugin:materiali_studio"
@@ -233,6 +233,8 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:materiali_studio:mono_mode_no_color_signal",
     "plugin:materiali_studio:heading_1_text_pattern_block_<idx>_page_<p>",
     "plugin:materiali_studio:heading_1_roman_block_<idx>_page_<p>_numeral_<roman>",
+    "plugin:materiali_studio:heading_1_toc_header_block_<idx>_page_<p>",
+    "plugin:materiali_studio:heading_1_capitolo_full_block_<idx>_page_<p>",
     "plugin:materiali_studio:heading_2_capitolo_block_<idx>_page_<p>",
     "plugin:materiali_studio:heading_2_decimal_block_<idx>_page_<p>_numbering_<value>",
     "plugin:materiali_studio:heading_3_section_letter_block_<idx>_page_<p>",
@@ -243,6 +245,8 @@ WARNING_TEMPLATES: tuple[str, ...] = (
     "plugin:materiali_studio:em_dash_separator_block_<idx>_page_<p>",
     "plugin:materiali_studio:decimal_hierarchical_depth_exceeded_block_<idx>_page_<p>_numbering_<value>",
     "plugin:materiali_studio:roman_lowercase_pattern_unsupported_block_<idx>_page_<p>",
+    "plugin:materiali_studio:toc_entry_dotted_leader_block_<idx>_page_<p>",
+    "plugin:materiali_studio:toc_entry_unparseable_node_<id>",
 )
 """Closed vocabulary of warnings the plugin may emit. Placeholders are
 replaced with concrete values at emission time. Consumers should match
@@ -337,13 +341,74 @@ user uploads.
 # ---------------------------------------------------------------------------
 # Body family and dominance threshold.
 
-BODY_FAMILY_PREFIX = "Arial"
-"""Family prefix shared by every Arial variant the user-generated
-documents may use as body or heading.
+BODY_FAMILY_PREFIXES: tuple[str, ...] = ("Arial", "Calibri")
+"""Family prefixes shared by every body/heading font variant the user-
+generated documents may use.
 
-PyMuPDF emits ``ArialMT`` (regular), ``Arial-BoldMT`` (bold),
-``Arial-ItalicMT`` (italic); the prefix check accepts every one.
+PyMuPDF emits ``ArialMT`` (Google Docs default body), ``Arial-BoldMT``,
+``Arial-ItalicMT``, plus ``Calibri`` (Microsoft Word default body since
+Word 2007), ``Calibri-Bold``, ``Calibri-Italic``. The prefix tuple
+accepts every variant of either family. Calibri was added by the
+debt-(v) consolidation session (CARRYOVER v2.33) when the
+``materiali_diritto_privato_con_toc.pdf`` fixture exposed a Word
+document with Calibri as the dominant body family — the prior four
+calibrating fixtures were all Arial monoculture (Google Docs).
 """
+
+BODY_FAMILY_PREFIX = BODY_FAMILY_PREFIXES[0]
+"""Backwards-compatible single-prefix alias kept for any external
+consumer that may still import the legacy name. Internally the plugin
+uses :data:`BODY_FAMILY_PREFIXES` exclusively.
+"""
+
+
+def _is_user_body_family(font: str) -> bool:
+    """Return True if ``font`` starts with any user-generated body prefix."""
+    return any(font.startswith(prefix) for prefix in BODY_FAMILY_PREFIXES)
+
+
+def _parse_toc_entry_text(text: str) -> TocGeneralItem | None:
+    """Parse a TOC_GENERAL Node's verbatim text into a ``TocGeneralItem``.
+
+    Applies :data:`_TOC_ENTRY_DOTTED_LEADER_PATTERN` to capture the
+    pre-leader heading text and the trailing page number, then
+    decomposes the heading text via
+    :data:`_TOC_ENTRY_TITLE_DECOMPOSE_PATTERN` to extract the optional
+    numeric / capitolo / section-letter prefix. Returns ``None`` if
+    the dotted-leader pattern does not match (defensive: classification
+    should reject any block that doesn't, but the function is
+    self-protective). The returned ``TocGeneralItem`` has:
+
+    - ``number``: the parsed prefix (``"Capitolo I"``, ``"2.1"``,
+      ``"A"``, or the empty string when no prefix is recognised).
+    - ``title``: the cleaned heading text (no leader, no page number,
+      no leading or trailing whitespace, no leading separator).
+    - ``page_number``: the integer trailing page number; ``None`` if
+      the trailing number could not be converted to int (defensive
+      guard, the regex enforces ``\\d+``).
+    """
+    m_leader = _TOC_ENTRY_DOTTED_LEADER_PATTERN.match(text.strip())
+    if m_leader is None:
+        return None
+    heading_text = m_leader.group(1).strip()
+    page_str = m_leader.group(2)
+    try:
+        page_number: int | None = int(page_str)
+    except ValueError:
+        page_number = None
+
+    m_decompose = _TOC_ENTRY_TITLE_DECOMPOSE_PATTERN.match(heading_text)
+    if m_decompose is None:
+        number = ""
+        title = heading_text
+    else:
+        number = (m_decompose.group("num") or "").strip()
+        title = (m_decompose.group("title") or "").strip()
+        if not title:
+            title = heading_text
+            number = ""
+    return TocGeneralItem(number=number, title=title, page_number=page_number)
+
 
 BODY_DOMINANCE_MIN_PERCENT = 60.0
 """Minimum body-family dominance percent to credit the body signal in
@@ -479,6 +544,17 @@ TOPIC_LABEL_MAX_CHARS = 80
 topic label.
 """
 
+_TOC_ENTRY_MAX_CHARS = 200
+"""Maximum character count of a ToC entry block.
+
+ToC entries are long single-line blocks composed of
+``"<title> .................. <page_number>"``. The dotted leader
+can extend the line well beyond the standard heading length cap
+(empirically 200 chars accommodates a ~80-char title + 100+ dots +
+3-digit page number). Blocks exceeding 200 chars are unlikely to be
+single-line ToC entries.
+"""
+
 BODY_X0_THRESHOLD = 80.0
 """Block ``bbox.x0`` threshold above which the block is considered
 **indented** rather than at the body left margin.
@@ -595,35 +671,36 @@ diritto_privato_ii fixture contains decorative lines like
 hand-typed horizontal rules.
 """
 
-_DECIMAL_HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)+)[\.\s]+[A-ZÀ-ſ]")
+_DECIMAL_HEADING_PATTERN = re.compile(r"^(\d+(?:\.\d+)*)[\.\s]+[A-ZÀ-ſ]")
 r"""HEADING_2/3/4 decimal hierarchical heading pattern.
 
-Matches a block opening with a decimal numbering of depth 2 to 4
-(``N.M``, ``N.M.K``, ``N.M.K.L``) followed by a dot or space and then
-an uppercase letter, anchored to the start of the stripped block text.
-Examples that match: ``"1.1 Introduzione"`` (depth 2 → HEADING_2),
-``"2.3.4 Argomento specifico"`` (depth 3 → HEADING_3),
-``"4.1.2.3 Sotto-sotto-paragrafo"`` (depth 4 → HEADING_4).
+Matches a block opening with a decimal numbering of depth 1 to 4
+(``N``, ``N.M``, ``N.M.K``, ``N.M.K.L``) followed by a dot or space
+and then an uppercase letter, anchored to the start of the stripped
+block text. Examples that match: ``"1. Definizione"`` (depth 1 →
+HEADING_2), ``"1.1 Introduzione"`` (depth 2 → HEADING_3),
+``"2.3.4 Argomento"`` (depth 3 → HEADING_4),
+``"4.1.2.3 Sub-sub"`` (depth 4 → unsupported diagnostic).
 
 Heading level is determined by the depth (count of dots + 1):
-``N.M`` → HEADING_2, ``N.M.K`` → HEADING_3, ``N.M.K.L`` → HEADING_4.
-Depth 5+ is not supported in v1 and falls through to BODY with a
-diagnostic ``decimal_hierarchical_depth_exceeded`` warning.
-
-Empirical falsification on the four calibrating fixtures: the pattern
-is **not exercised** by any of teoria_generale, diritto_tributario,
-diritto_privato_i or diritto_privato_ii — the four documents follow
-``Cap. N`` and ``A./B./C.`` conventions, not decimal hierarchical
-numbering. The pattern is included for forward-looking robustness on
-future user uploads (different authors may use decimal numbering on
-Word/GDocs export); unit tests exercise the pattern via synthetic
-fixtures.
+``N`` → HEADING_2, ``N.M`` → HEADING_3, ``N.M.K`` → HEADING_4.
+Depth 4+ is unsupported and falls through to BODY with a diagnostic
+``decimal_hierarchical_depth_exceeded`` warning. This convention
+(depth = heading-level - 1) emerged from the debt-(v) consolidation
+session (CARRYOVER v2.33) which calibrated against a Word document
+where the chapter heading occupies HEADING_1 (Capitolo X) and decimal
+sub-numbering provides HEADING_2..4. The four prior calibrating
+fixtures do not exercise decimal numbering empirically (forward-
+looking only), so the convention update produces zero regressions on
+the real fixtures.
 
 The anchor + uppercase-after-dot/space guard rules out the principal
 edge cases empirically: cross-reference inline like ``art. 1.1`` does
 not start with the digit (the block begins with ``art.``), dates like
 ``25.12.2023`` lack an uppercase letter after the numeral, page
-references like ``p. 1.1`` do not start with the digit either.
+references like ``p. 1.1`` do not start with the digit either. The
+``HEADING_LINE_MAX_CHARS`` length cap further filters long body
+paragraphs that happen to start with a numbered prefix.
 """
 
 _ROMAN_HEADING_PATTERN_CANDIDATE = re.compile(r"^([IVXLCDM]+)\.\s+[A-ZÀ-ſ]")
@@ -658,6 +735,97 @@ Used by :func:`_is_valid_roman_numeral` to filter out
 numerals (e.g. the decorative ``IIIIIIIIIIIIIIIIIIIIIIII`` line on
 the diritto_privato_ii fixture; the empty string, also matched by
 ``[IVXLCDM]+`` if quantifier were ``*``).
+"""
+
+# ---------------------------------------------------------------------------
+# Microsoft Word automatic table of contents (Sommario) patterns.
+# Landed by the debt-(v) consolidation session (CARRYOVER v2.33).
+# See module docstring's "Word automatic table of contents" section and
+# the corresponding pattern note in CLAUDE.md.
+
+_TOC_HEADER_TEXT_PATTERN = re.compile(
+    r"^\s*(Sommario|Indice(?:\s+generale)?|Contents|Table of Contents)\s*$",
+    re.IGNORECASE,
+)
+"""ToC header text marker pattern.
+
+Matches the localised header marker emitted by Microsoft Word's
+automatic table-of-contents feature at the top of the ToC block.
+``"Sommario"`` is the Italian Word default since Word 2007;
+``"Indice"``/``"Indice generale"`` cover Italian-locale variants used
+by older Word templates or by users who rename the style.
+``"Contents"`` and ``"Table of Contents"`` cover English-locale Word
+and Google Docs exports. Case-insensitive to tolerate user
+re-formatting.
+"""
+
+_TOC_HEADER_MIN_FONT_SIZE = 14.0
+"""Minimum leading-bold-span size for a block to qualify as a ToC header.
+
+Word's default ``Sommario`` heading style is 18.0pt Calibri-Bold;
+Google Docs uses 14-18pt typically. 14.0pt is a conservative lower
+bound that admits both pipelines while rejecting smaller body-sized
+``Sommario`` mentions (e.g., a body sentence that happens to contain
+the word ``Sommario`` will be at body 11.04pt).
+"""
+
+_TOC_ENTRY_DOTTED_LEADER_PATTERN = re.compile(r"^(.+?)(?:\s+[.…]{3,}|[.…]{6,})\s*(\d+)\s*$")
+"""ToC entry dotted-leader pattern.
+
+Matches a block whose stripped text follows the Word/GDocs automatic-
+ToC convention ``"<heading text> .................. <page number>"``,
+accepting both the ASCII period dotted leader (Word default) and the
+Unicode horizontal ellipsis ``\\u2026`` (less common but used by some
+templates) as the leader glyph. Captures the heading text in group 1
+and the printed page number in group 2.
+
+The pattern has two alternative shapes for the title-to-leader
+transition: the canonical Word shape requires at least one
+whitespace char between the title and a ≥ 3-char dotted leader
+(``"Capitolo I .................. 3"``); the no-whitespace fallback
+requires a ≥ 6-char contiguous dotted run when Word omits the space
+between the title and the leader (empirically observed on
+``"2. Inadempimento....................................... 5"`` of
+the ``materiali_diritto_privato_con_toc`` fixture, where Word omits
+the title-to-leader space). The 6-char floor for the no-whitespace
+branch rules out body sentences ending with a regular Italian
+ellipsis ``"..."`` followed by a numeric figure.
+"""
+
+_TOC_ENTRY_TITLE_DECOMPOSE_PATTERN = re.compile(
+    r"^\s*(?:(?P<num>Capitolo\s+[IVXLCDM]+|\d+(?:\.\d+)*|[A-Z])\s*[—–\-:.]?\s+)?(?P<title>.+?)\s*$"
+)
+"""ToC entry title decomposition pattern.
+
+Splits the captured heading text of a ToC entry into a
+``(number, title)`` pair for the structured ``toc_items`` field.
+Recognised number prefixes are: ``"Capitolo <roman>"`` (the
+upper-case Word/GDocs chapter convention this fixture uses),
+``"\\d+(?:\\.\\d+)*"`` (decimal hierarchical numbering at any depth,
+e.g. ``"1"``, ``"1.1"``, ``"2.1.3"``), or a single capital letter
+``"[A-Z]"`` (section-letter convention). The number is followed by
+an optional separator (``—``, ``–``, ``-``, ``:``, ``.``) and one or
+more whitespace chars before the title. When no number prefix is
+present, the entire text becomes the ``title`` and the ``number`` is
+the empty string.
+"""
+
+_CAPITOLO_FULL_PATTERN = re.compile(
+    r"^Capitolo\s+[IVXLCDM]+\s*[—–\-:]\s*.+$",
+    re.IGNORECASE,
+)
+"""HEADING_1 ``Capitolo <roman> — title`` body-side pattern.
+
+Matches the Word/GDocs body chapter heading convention used by the
+``materiali_diritto_privato_con_toc.pdf`` fixture and by any other
+study-notes document that spells the chapter heading out in full as
+``"Capitolo I — Nozioni Generali"`` rather than abbreviating it as
+``"Cap. 1"``. Requires the literal ``Capitolo`` keyword (case-
+insensitive), one or more whitespace chars, a canonical roman
+numeral, then a separator (em-dash, en-dash, ASCII hyphen, or
+colon) and a non-empty title tail. Distinct from :data:`_CAPITOLO_PATTERN`
+which targets the abbreviated ``Cap. N`` style of the four prior
+fixtures.
 """
 
 # ---------------------------------------------------------------------------
@@ -762,12 +930,12 @@ class MaterialiStudioProfile(ProfilePlugin):
 
         score = CONFIDENCE_USER_GENERATED_PRODUCER
 
-        arial_dominant = any(
-            font.family.startswith(BODY_FAMILY_PREFIX)
+        user_body_dominant = any(
+            _is_user_body_family(font.family)
             and font.dominance_percent >= BODY_DOMINANCE_MIN_PERCENT
             for font in signals.typographic_signature.fonts
         )
-        if arial_dominant:
+        if user_body_dominant:
             score += CONFIDENCE_ARIAL_BODY_DOMINANT
 
         width = signals.page_geometry.width_pt
@@ -815,6 +983,7 @@ class MaterialiStudioProfile(ProfilePlugin):
             SemanticCategory.HEADING_4,
             SemanticCategory.BODY,
             SemanticCategory.LIST_ITEM,
+            SemanticCategory.TOC_GENERAL,
             SemanticCategory.ARTIFACT_FILIGREE,
             SemanticCategory.ARTIFACT_RUNNING_HEADER,
             SemanticCategory.ARTIFACT_FOOTER,
@@ -889,26 +1058,108 @@ class MaterialiStudioProfile(ProfilePlugin):
         extraction: ExtractionResult,
         classified_blocks: list[ClassifiedBlock],
     ) -> Document:
-        """Pass-through hook: no structural transformation, only warning flush.
+        """Populate ``toc_items`` on TOC_GENERAL Nodes and flush warnings.
+
+        Walks the document tree in DFS pre-order. For every Node
+        whose category is ``TOC_GENERAL``, parses the Node's text via
+        :data:`_TOC_ENTRY_DOTTED_LEADER_PATTERN` and
+        :data:`_TOC_ENTRY_TITLE_DECOMPOSE_PATTERN` and replaces the
+        Node with a copy carrying a one-item ``toc_items`` tuple
+        ``(TocGeneralItem(number, title, page_number),)``. Nodes that
+        could not be parsed (defensive: the text shape should always
+        match because classification rejects anything that does not)
+        receive a per-Node ``toc_entry_unparseable_node_<id>`` warning
+        and keep ``toc_items=None``.
+
+        The text of the Node is preserved verbatim (including the
+        dotted leader and the trailing page number) — Layer 2 may
+        choose to display the raw text or the parsed item depending
+        on the layout. Preserving the verbatim text honours the
+        non-destructive reading convention shared with every other
+        plugin.
 
         The tier 1 reconstructor already builds the HEADING_N ⊃ BODY /
-        LIST_ITEM tree correctly from the plugin's classification
-        (the heading_stack logic of tier 1 handles HEADING_1..4
-        properly). No synthetic Node minting, no merge, no
-        decomposition is required.
+        LIST_ITEM / TOC_GENERAL tree correctly from the plugin's
+        classification (the heading_stack logic of tier 1 places
+        TOC_GENERAL children under the closest HEADING_N ancestor,
+        which on this fixture is the HEADING_1 ``Sommario`` Node).
         """
         del extraction, classified_blocks
 
         new_warnings = list(self._pending_warnings)
         self._pending_warnings = []
 
-        if not new_warnings:
+        new_root, extra_warnings = self._populate_toc_items_in_forest(document.root)
+        new_warnings.extend(extra_warnings)
+
+        if not new_warnings and new_root is document.root:
             return document
 
         return Document(
-            root=document.root,
+            root=new_root if new_root is not None else document.root,
             warnings=tuple(document.warnings) + tuple(new_warnings),
             transformations=document.transformations,
+        )
+
+    # ------------------------------------------------------------------
+    # TOC_GENERAL toc_items population
+
+    def _populate_toc_items_in_forest(
+        self, root: tuple[Node, ...]
+    ) -> tuple[tuple[Node, ...], list[str]]:
+        """Walk the forest and populate ``toc_items`` on TOC_GENERAL Nodes.
+
+        Returns a tuple ``(new_root, warnings)`` where ``new_root`` is
+        the structurally-equivalent forest with ``toc_items`` populated
+        on every TOC_GENERAL Node and ``warnings`` is the list of
+        per-Node diagnostic warnings emitted for any TOC_GENERAL Node
+        whose text could not be parsed.
+        """
+        warnings: list[str] = []
+        new_root = tuple(self._populate_toc_items_in_node(node, warnings) for node in root)
+        return new_root, warnings
+
+    def _populate_toc_items_in_node(self, node: Node, warnings: list[str]) -> Node:
+        new_children = tuple(
+            self._populate_toc_items_in_node(child, warnings) for child in node.children
+        )
+
+        if node.category is not SemanticCategory.TOC_GENERAL:
+            if new_children == node.children:
+                return node
+            return Node(
+                id=node.id,
+                category=node.category,
+                children=new_children,
+                page_index=node.page_index,
+                block_indices=node.block_indices,
+                text=node.text,
+                level=node.level,
+                summary_items=node.summary_items,
+                toc_items=node.toc_items,
+                length_category=node.length_category,
+                apparatus_refs=node.apparatus_refs,
+            )
+
+        text = node.text or ""
+        item = _parse_toc_entry_text(text)
+        if item is None:
+            warnings.append(f"{WARNING_PREFIX}:toc_entry_unparseable_node_{node.id}")
+            toc_items: tuple[TocGeneralItem, ...] | None = None
+        else:
+            toc_items = (item,)
+        return Node(
+            id=node.id,
+            category=node.category,
+            children=new_children,
+            page_index=node.page_index,
+            block_indices=node.block_indices,
+            text=node.text,
+            level=node.level,
+            summary_items=node.summary_items,
+            toc_items=toc_items,
+            length_category=node.length_category,
+            apparatus_refs=node.apparatus_refs,
         )
 
     def refine_apparatus(
@@ -952,7 +1203,7 @@ class MaterialiStudioProfile(ProfilePlugin):
                 break
             start, end = block.span_range
             for span in extraction.spans[start:end]:
-                if not span.font.startswith(BODY_FAMILY_PREFIX):
+                if not _is_user_body_family(span.font):
                     continue
                 if span.is_bold:
                     continue
@@ -969,6 +1220,18 @@ class MaterialiStudioProfile(ProfilePlugin):
             return self._make_verdict(
                 view, SemanticCategory.ARTIFACT_FILIGREE, "materiali_studio_em_dash_separator"
             )
+
+        toc_header_verdict = self._classify_toc_header(view)
+        if toc_header_verdict is not None:
+            return toc_header_verdict
+
+        toc_entry_verdict = self._classify_toc_entry(view)
+        if toc_entry_verdict is not None:
+            return toc_entry_verdict
+
+        capitolo_full_verdict = self._classify_capitolo_full(view)
+        if capitolo_full_verdict is not None:
+            return capitolo_full_verdict
 
         if self._color_mode:
             verdict_color = self._color_aware_predicate(view)
@@ -1041,7 +1304,7 @@ class MaterialiStudioProfile(ProfilePlugin):
         leading = view.leading_span
         if leading is None or leading.is_bold:
             return None
-        if not leading.font.startswith(BODY_FAMILY_PREFIX):
+        if not _is_user_body_family(leading.font):
             return None
 
         if self._is_grey_at(leading.color, COLOR_GREY_LIGHT_CENTER):
@@ -1185,13 +1448,13 @@ class MaterialiStudioProfile(ProfilePlugin):
 
         Matches :data:`_DECIMAL_HEADING_PATTERN` at start of stripped
         block text and maps depth (count of dot-separated digits) to
-        the heading level: depth 2 → HEADING_2, depth 3 → HEADING_3,
-        depth 4 → HEADING_4. Depth 5+ is unsupported in v1 and emits a
+        the heading level: depth 1 → HEADING_2, depth 2 → HEADING_3,
+        depth 3 → HEADING_4. Depth 4+ is unsupported and emits a
         ``decimal_hierarchical_depth_exceeded_*`` diagnostic warning;
         the block falls through to BODY.
 
         Returns the promoted ClassifiedBlock on success, ``None`` on
-        no match or on depth 5+. Length and line-count envelope
+        no match or on depth 4+. Length and line-count envelope
         identical to the other heading predicates.
         """
         stripped = view.text.strip()
@@ -1204,15 +1467,15 @@ class MaterialiStudioProfile(ProfilePlugin):
             return None
         numbering = m.group(1)
         depth = numbering.count(".") + 1
-        if depth == 2:
+        if depth == 1:
             level = SemanticCategory.HEADING_2
             template = "heading_2_decimal"
             reason = "materiali_studio_heading_2_decimal"
-        elif depth == 3:
+        elif depth == 2:
             level = SemanticCategory.HEADING_3
             template = "heading_3_decimal"
             reason = "materiali_studio_heading_3_decimal"
-        elif depth == 4:
+        elif depth == 3:
             level = SemanticCategory.HEADING_4
             template = "heading_4_decimal"
             reason = "materiali_studio_heading_4_decimal"
@@ -1227,6 +1490,120 @@ class MaterialiStudioProfile(ProfilePlugin):
             f"{view.block_index}_page_{view.block.page}_numbering_{numbering}"
         )
         return self._make_verdict(view, level, reason)
+
+    def _classify_toc_header(self, view: _BlockView) -> ClassifiedBlock | None:
+        """HEADING_1 ToC header (``Sommario``/``Indice``/etc.) classifier.
+
+        Recognises the localised header marker that opens the Word /
+        Google Docs automatic table-of-contents block. Two
+        complementary checks are required to fire: the stripped text
+        must match :data:`_TOC_HEADER_TEXT_PATTERN` (closed
+        Italian + English vocabulary), AND the leading span must be a
+        bold user-body family span of at least
+        :data:`_TOC_HEADER_MIN_FONT_SIZE` points. The size constraint
+        rules out body-sized occurrences of the same word inside a
+        sentence (``"vedi sommario a p. 12"``); the bold constraint
+        further isolates the structural header from a generic
+        body sentence that happens to start with ``Sommario``.
+
+        Returns the HEADING_1 ClassifiedBlock on success, ``None``
+        otherwise. The HEADING_1 level is the natural parallel of the
+        body-side ``Capitolo X`` HEADING_1: both are front-matter and
+        body-matter peers at the top of the document hierarchy. Layer
+        2 distinguishes them on category (HEADING_1 vs the
+        TOC_GENERAL children) and on text content.
+        """
+        stripped = view.text.strip()
+        if not _TOC_HEADER_TEXT_PATTERN.fullmatch(stripped):
+            return None
+        leading = view.leading_span
+        if leading is None:
+            return None
+        if not leading.is_bold:
+            return None
+        if not _is_user_body_family(leading.font):
+            return None
+        if leading.size < _TOC_HEADER_MIN_FONT_SIZE:
+            return None
+        self._pending_warnings.append(
+            f"{WARNING_PREFIX}:heading_1_toc_header_block_{view.block_index}_page_{view.block.page}"
+        )
+        return self._make_verdict(
+            view, SemanticCategory.HEADING_1, "materiali_studio_heading_1_toc_header"
+        )
+
+    def _classify_toc_entry(self, view: _BlockView) -> ClassifiedBlock | None:
+        """TOC_GENERAL ToC entry (dotted-leader) classifier.
+
+        Detects a single block whose text follows the Word/GDocs
+        automatic-ToC convention ``"<title> .................. <page>"``
+        with a dotted leader and a closing page number. The leading
+        span must belong to the user-body family (Arial or Calibri)
+        and may be regular or bold (Word emits ToC entries non-bold by
+        default; GDocs occasionally bolds the first-level entries).
+
+        Returns a ClassifiedBlock with category TOC_GENERAL when the
+        regex :data:`_TOC_ENTRY_DOTTED_LEADER_PATTERN` matches, ``None``
+        otherwise. The actual decomposition into the structured
+        ``toc_items`` field happens in :meth:`refine_reconstruction`,
+        which has access to the Node tree and can populate the
+        Node-level field directly; classification only marks the
+        category here.
+        """
+        stripped = view.text.strip()
+        if len(stripped) > _TOC_ENTRY_MAX_CHARS:
+            return None
+        if view.line_count > HEADING_LINE_MAX_LINES:
+            return None
+        leading = view.leading_span
+        if leading is None or not _is_user_body_family(leading.font):
+            return None
+        if not _TOC_ENTRY_DOTTED_LEADER_PATTERN.match(stripped):
+            return None
+        self._pending_warnings.append(
+            f"{WARNING_PREFIX}:toc_entry_dotted_leader_block_"
+            f"{view.block_index}_page_{view.block.page}"
+        )
+        return self._make_verdict(
+            view, SemanticCategory.TOC_GENERAL, "materiali_studio_toc_entry_dotted_leader"
+        )
+
+    def _classify_capitolo_full(self, view: _BlockView) -> ClassifiedBlock | None:
+        """HEADING_1 ``Capitolo <roman> — title`` body chapter classifier.
+
+        Recognises the body-side chapter heading convention used by
+        Word documents that spell the chapter out as ``"Capitolo I —
+        Nozioni Generali"`` (distinct from the abbreviated ``Cap. N``
+        convention handled by :meth:`_is_capitolo`). Bold leading
+        span is required to discriminate from a body sentence that
+        opens with the word ``Capitolo``; the text pattern enforces a
+        canonical roman numeral and a separator + non-empty tail.
+
+        Returns the HEADING_1 ClassifiedBlock on success, ``None``
+        otherwise. The HEADING_1 level matches the
+        :meth:`_classify_toc_header` choice for consistency: the
+        front-matter Sommario and each body chapter are peers at the
+        top of the structural hierarchy.
+        """
+        stripped = view.text.strip()
+        if len(stripped) > HEADING_LINE_MAX_CHARS:
+            return None
+        if view.line_count > HEADING_LINE_MAX_LINES:
+            return None
+        leading = view.leading_span
+        if leading is None or not leading.is_bold:
+            return None
+        if not _is_user_body_family(leading.font):
+            return None
+        if not _CAPITOLO_FULL_PATTERN.match(stripped):
+            return None
+        self._pending_warnings.append(
+            f"{WARNING_PREFIX}:heading_1_capitolo_full_block_"
+            f"{view.block_index}_page_{view.block.page}"
+        )
+        return self._make_verdict(
+            view, SemanticCategory.HEADING_1, "materiali_studio_heading_1_capitolo_full"
+        )
 
     def _classify_roman_heading(self, view: _BlockView) -> ClassifiedBlock | None:
         """HEADING_1 roman heading classifier.

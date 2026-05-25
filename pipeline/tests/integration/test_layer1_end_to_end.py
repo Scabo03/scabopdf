@@ -107,6 +107,15 @@ MATERIALI_TEORIA_FIXTURE = FIXTURES_DIR / "materiali_teoria_generale.pdf"
 MATERIALI_TRIBUTARIO_FIXTURE = FIXTURES_DIR / "materiali_diritto_tributario.pdf"
 MATERIALI_PRIVATO_I_FIXTURE = FIXTURES_DIR / "materiali_diritto_privato_i.pdf"
 MATERIALI_PRIVATO_II_FIXTURE = FIXTURES_DIR / "materiali_diritto_privato_ii.pdf"
+MATERIALI_PRIVATO_CON_TOC_FIXTURE = FIXTURES_DIR / "materiali_diritto_privato_con_toc.pdf"
+"""Fifth materiali_studio calibrating fixture. Landed in CARRYOVER v2.33
+(debt-(v) consolidation): Microsoft Word per Microsoft 365 export with
+the automatic ``Sommario`` (table of contents) feature enabled,
+Calibri 11.04pt body, three-level hierarchical ToC with dotted leader.
+The fixture exercises the new ToC recognition (Sommario header +
+TOC_GENERAL entries with parsed ``toc_items``), the new Calibri body
+family acceptance, and the new ``Capitolo <roman> — title`` HEADING_1
+predicate."""
 SHARED_SCHEMA_PATH = Path(__file__).resolve().parents[3] / "shared" / "schema.json"
 
 
@@ -4330,6 +4339,23 @@ def test_materiali_studio_matches_privato_ii_fixture() -> None:
     assert score >= 0.7, f"matches() failed on diritto_privato_ii: score {score}"
 
 
+def test_materiali_studio_matches_privato_con_toc_fixture() -> None:
+    """matches() clears the 0.6 dispatcher threshold on the Word + Calibri
+    + automatic Sommario fixture (debt-(v) consolidation, CARRYOVER v2.33).
+
+    Empirically the score lands at 0.75: producer = Microsoft Word
+    (+0.40), body family = Calibri ≥ 60% dominance (+0.20), A4 geometry
+    (+0.15). Validates that the Calibri family addition to
+    ``BODY_FAMILY_PREFIXES`` correctly credits Word documents that do
+    not happen to use Arial.
+    """
+    if not MATERIALI_PRIVATO_CON_TOC_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_PRIVATO_CON_TOC_FIXTURE}")
+    signals = _build_signals_from_fixture(MATERIALI_PRIVATO_CON_TOC_FIXTURE)
+    score = MaterialiStudioProfile.matches(signals)
+    assert score >= 0.7, f"matches() failed on diritto_privato_con_toc: score {score}"
+
+
 # ---------------------------------------------------------------------------
 # End-to-end pipeline tests on the four fixtures
 
@@ -4512,6 +4538,99 @@ def test_pipeline_runs_on_materiali_privato_ii() -> None:
     validate_against_schema(payload, _load_shared_schema())
 
 
+def test_pipeline_runs_on_materiali_privato_con_toc() -> None:
+    """End-to-end Layer 1 pipeline on the Word + Calibri + automatic Sommario fixture.
+
+    Validates the debt-(v) consolidation closure (CARRYOVER v2.33):
+    Sommario header → HEADING_1; 13 ToC entries with dotted leader →
+    TOC_GENERAL Nodes each carrying a parsed ``toc_items`` triple
+    ``(number, title, page_number)``; body chapter headings
+    ``Capitolo I/II/III — title`` → HEADING_1; first-level decimal
+    paragraphs ``1./2./3.`` → HEADING_2; second-level decimal
+    paragraphs ``2.1/2.2`` → HEADING_3.
+    """
+    if not MATERIALI_PRIVATO_CON_TOC_FIXTURE.exists():
+        pytest.skip(f"fixture missing: {MATERIALI_PRIVATO_CON_TOC_FIXTURE}")
+
+    extraction, _classified, document, scabopdf_document = _materiali_full_pipeline(
+        MATERIALI_PRIVATO_CON_TOC_FIXTURE
+    )
+
+    _print_materiali_summary("materiali_diritto_privato_con_toc", extraction, document)
+    counts = _category_counts(document)
+
+    assert extraction.page_count == 5
+    # 4 HEADING_1: 1 Sommario + 3 Capitolo I/II/III
+    assert counts.get(SemanticCategory.HEADING_1, 0) == 4, (
+        f"expected 4 HEADING_1 (Sommario + Capitolo I/II/III), got {counts}"
+    )
+    # 13 TOC_GENERAL: the empirical count of ToC entries on the Sommario page
+    assert counts.get(SemanticCategory.TOC_GENERAL, 0) == 13, (
+        f"expected 13 TOC_GENERAL ToC entries, got {counts}"
+    )
+    # First-level decimal headings 1./2./3. across three chapters: 6 total
+    assert counts.get(SemanticCategory.HEADING_2, 0) >= 5, (
+        f"expected >=5 HEADING_2 (first-level decimal), got {counts}"
+    )
+    # Second-level decimal headings 2.1/2.2: 4 total empirically
+    assert counts.get(SemanticCategory.HEADING_3, 0) >= 3, (
+        f"expected >=3 HEADING_3 (second-level decimal), got {counts}"
+    )
+
+    # Every TOC_GENERAL Node carries a parsed toc_items tuple
+    toc_nodes: list[Any] = []
+
+    def collect_toc(nodes: tuple[Any, ...]) -> None:
+        for node in nodes:
+            if node.category is SemanticCategory.TOC_GENERAL:
+                toc_nodes.append(node)
+            collect_toc(node.children)
+
+    collect_toc(document.root)
+    assert len(toc_nodes) == 13, f"expected 13 TOC_GENERAL Nodes, got {len(toc_nodes)}"
+    for node in toc_nodes:
+        assert node.toc_items is not None, f"TOC Node {node.id} missing toc_items"
+        assert len(node.toc_items) == 1, (
+            f"TOC Node {node.id} should have one item, has {len(node.toc_items)}"
+        )
+        item = node.toc_items[0]
+        assert item.title, f"TOC Node {node.id} has empty title"
+        assert item.page_number is not None, f"TOC Node {node.id} has no page_number"
+
+    # Sample three known entries
+    item_zero = toc_nodes[0].toc_items[0]
+    assert item_zero.number == "Capitolo I"
+    assert item_zero.title == "Nozioni Generali"
+    assert item_zero.page_number == 3
+
+    # The color-mode detector activates on this fixture because PyMuPDF
+    # emits some non-bold Calibri spans at non-zero (grey) colors on the
+    # Word document; either mode is acceptable, the assertion just
+    # verifies the detector emitted SOME mode warning.
+    assert any("color_mode" in w or "mono_mode" in w for w in document.warnings), (
+        "expected color_mode or mono_mode warning in document.warnings"
+    )
+    assert any("heading_1_toc_header" in w for w in document.warnings), (
+        "expected heading_1_toc_header warning"
+    )
+    assert any("toc_entry_dotted_leader" in w for w in document.warnings), (
+        "expected toc_entry_dotted_leader warnings"
+    )
+    assert any("heading_1_capitolo_full" in w for w in document.warnings), (
+        "expected heading_1_capitolo_full warning"
+    )
+    assert scabopdf_document.profile.profile_id == "materiali_studio"
+
+    unknown = [
+        w for w in document.warnings if not any(rx.match(w) for rx in _TIER1_WARNING_REGEXES)
+    ]
+    assert not unknown, f"unknown warnings: {unknown[:5]} ({len(unknown)} total)"
+
+    payload = scabopdf_document.model_dump(mode="json")
+    validate_document(payload)
+    validate_against_schema(payload, _load_shared_schema())
+
+
 # ---------------------------------------------------------------------------
 # Non-promotion of materiali_studio on representative editorial fixtures
 # (one fixture per editorial plugin family)
@@ -4626,6 +4745,10 @@ _P040_BASELINES: tuple[tuple[str, Path], ...] = (
     ("p040_baseline_edd_factoring", EDD_FACTORING_FIXTURE),
     ("p040_baseline_edd_lavoro", EDD_LAVORO_FIXTURE),
     ("p040_baseline_materiali_tributario", MATERIALI_TRIBUTARIO_FIXTURE),
+    (
+        "p040_baseline_materiali_privato_con_toc",
+        MATERIALI_PRIVATO_CON_TOC_FIXTURE,
+    ),
 )
 
 

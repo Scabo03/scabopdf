@@ -704,33 +704,41 @@ class TestDashBullet:
 
 
 class TestDecimalHeading:
-    def test_depth_2_returns_heading_2(self) -> None:
+    """Decimal heading convention updated in CARRYOVER v2.33 (debt (v)):
+    depth-1 → HEADING_2, depth-2 → HEADING_3, depth-3 → HEADING_4,
+    depth-4+ → unsupported. Was depth-2→HEADING_2 before; the change is
+    forward-looking (no real-fixture regression among the four prior
+    monoculture fixtures, which exercise zero decimal headings) and
+    aligns with the natural reading where the chapter occupies HEADING_1.
+    """
+
+    def test_depth_2_returns_heading_3(self) -> None:
         plugin = MaterialiStudioProfile()
         view = _view([_span("1.1 Introduzione")])
         result = plugin._classify_decimal_heading(view)
         assert result is not None
-        assert result.category is SemanticCategory.HEADING_2
+        assert result.category is SemanticCategory.HEADING_3
 
-    def test_depth_3_returns_heading_3(self) -> None:
+    def test_depth_3_returns_heading_4(self) -> None:
         plugin = MaterialiStudioProfile()
         view = _view([_span("1.1.1 Sotto-paragrafo")])
         result = plugin._classify_decimal_heading(view)
         assert result is not None
-        assert result.category is SemanticCategory.HEADING_3
+        assert result.category is SemanticCategory.HEADING_4
 
-    def test_depth_4_returns_heading_4(self) -> None:
+    def test_depth_4_returns_none_with_warning(self) -> None:
         plugin = MaterialiStudioProfile()
         view = _view([_span("1.1.1.1 Quarto livello")])
         result = plugin._classify_decimal_heading(view)
-        assert result is not None
-        assert result.category is SemanticCategory.HEADING_4
+        assert result is None
+        assert any("depth_exceeded" in w for w in plugin._pending_warnings)
 
     def test_multi_digit_numbers(self) -> None:
         plugin = MaterialiStudioProfile()
         view = _view([_span("12.34 Numerazione a due cifre")])
         result = plugin._classify_decimal_heading(view)
         assert result is not None
-        assert result.category is SemanticCategory.HEADING_2
+        assert result.category is SemanticCategory.HEADING_3
 
     def test_depth_5_returns_none_with_warning(self) -> None:
         plugin = MaterialiStudioProfile()
@@ -744,13 +752,17 @@ class TestDecimalHeading:
         view = _view([_span("Plain body text without numbering")])
         assert plugin._classify_decimal_heading(view) is None
 
-    def test_no_match_single_int(self) -> None:
+    def test_match_single_int_promoted_heading_2(self) -> None:
         plugin = MaterialiStudioProfile()
-        # Single integer like "1. Foo" is not a hierarchical decimal — it's
-        # an enumeration; the decimal predicate requires at least two
-        # dot-separated digits.
+        # Single integer like "1. Foo" is now recognised as a depth-1
+        # decimal heading (HEADING_2). The v2.33 convention treats the
+        # integer-only prefix as a valid hierarchical numbering when
+        # followed by an uppercase title; the title length cap and the
+        # single-line guard filter false positives from body sentences.
         view = _view([_span("1. Foo")])
-        assert plugin._classify_decimal_heading(view) is None
+        result = plugin._classify_decimal_heading(view)
+        assert result is not None
+        assert result.category is SemanticCategory.HEADING_2
 
     def test_no_match_lowercase_after_dot(self) -> None:
         plugin = MaterialiStudioProfile()
@@ -794,7 +806,7 @@ class TestDecimalHeading:
         view = _view([_span("1.1. Titolo con punto dopo numerazione")])
         result = plugin._classify_decimal_heading(view)
         assert result is not None
-        assert result.category is SemanticCategory.HEADING_2
+        assert result.category is SemanticCategory.HEADING_3
 
 
 # ===========================================================================
@@ -1091,40 +1103,42 @@ class TestRefineClassificationMono:
         out = plugin.refine_classification(ext, [_verdict(0)])
         assert out[0].category is SemanticCategory.BODY
 
-    def test_decimal_n_m_promoted_heading_2(self) -> None:
+    def test_decimal_n_m_promoted_heading_3(self) -> None:
         plugin = MaterialiStudioProfile()
         ext = _extraction(
             [_span("1.1 Introduzione")],
             [_block(span_range=(0, 1))],
         )
         out = plugin.refine_classification(ext, [_verdict(0)])
-        assert out[0].category is SemanticCategory.HEADING_2
+        assert out[0].category is SemanticCategory.HEADING_3
         assert any(
-            "heading_2_decimal" in w and "numbering_1.1" in w for w in plugin._pending_warnings
+            "heading_3_decimal" in w and "numbering_1.1" in w for w in plugin._pending_warnings
         )
 
-    def test_decimal_n_m_k_promoted_heading_3(self) -> None:
+    def test_decimal_n_m_k_promoted_heading_4(self) -> None:
         plugin = MaterialiStudioProfile()
         ext = _extraction(
             [_span("2.3.4 Argomento specifico")],
             [_block(span_range=(0, 1))],
         )
         out = plugin.refine_classification(ext, [_verdict(0)])
-        assert out[0].category is SemanticCategory.HEADING_3
+        assert out[0].category is SemanticCategory.HEADING_4
         assert any(
-            "heading_3_decimal" in w and "numbering_2.3.4" in w for w in plugin._pending_warnings
+            "heading_4_decimal" in w and "numbering_2.3.4" in w for w in plugin._pending_warnings
         )
 
-    def test_decimal_n_m_k_l_promoted_heading_4(self) -> None:
+    def test_decimal_n_m_k_l_unsupported_falls_to_body(self) -> None:
         plugin = MaterialiStudioProfile()
         ext = _extraction(
             [_span("4.1.2.3 Sotto-sotto-paragrafo")],
             [_block(span_range=(0, 1))],
         )
         out = plugin.refine_classification(ext, [_verdict(0)])
-        assert out[0].category is SemanticCategory.HEADING_4
+        # Depth 4 is unsupported in v2.33; the block falls through to BODY
+        # and emits the depth_exceeded warning.
+        assert out[0].category is SemanticCategory.BODY
         assert any(
-            "heading_4_decimal" in w and "numbering_4.1.2.3" in w for w in plugin._pending_warnings
+            "depth_exceeded" in w and "numbering_4.1.2.3" in w for w in plugin._pending_warnings
         )
 
     def test_decimal_depth_5_unsupported_warning(self) -> None:
@@ -1370,3 +1384,631 @@ class TestSisterPluginNonPromotion:
 def test_categories_contains_bookpageanchor() -> None:
     plugin = MaterialiStudioProfile()
     assert SemanticCategory.BOOK_PAGE_ANCHOR in plugin.get_categories()
+
+
+def test_categories_contains_toc_general() -> None:
+    """The plugin now emits TOC_GENERAL for Word/GDocs automatic ToC entries."""
+    plugin = MaterialiStudioProfile()
+    assert SemanticCategory.TOC_GENERAL in plugin.get_categories()
+
+
+# ===========================================================================
+# debt-(v) consolidation: Word automatic ToC (Sommario) recognition.
+# Landed in CARRYOVER v2.33 after empirical calibration against
+# materiali_diritto_privato_con_toc.pdf (Microsoft Word per Microsoft 365,
+# A4, Calibri body, three-level hierarchical ToC with dotted leader).
+# ===========================================================================
+
+
+from scabopdf_pipeline.profiles.materiali_studio import (  # noqa: E402
+    BODY_FAMILY_PREFIXES,
+    _is_user_body_family,
+    _parse_toc_entry_text,
+)
+
+
+class TestCalibriBodyFamilySupport:
+    """matches() must clear the 0.6 dispatcher threshold on Word documents
+    with Calibri as the dominant body family (the canonical Word default
+    since Word 2007). The four prior calibrating fixtures used Arial
+    monoculture; the debt-(v) fixture exposes Calibri.
+    """
+
+    def test_word_calibri_a4_clears_threshold(self) -> None:
+        sig = _signals(
+            producer="Microsoft® Word per Microsoft 365",
+            creator="Microsoft® Word per Microsoft 365",
+            body_family="Calibri",
+            body_size=11.04,
+            body_dominance=98.0,
+        )
+        score = MaterialiStudioProfile.matches(sig)
+        assert score >= 0.70
+
+    def test_word_calibri_bold_variant_recognised(self) -> None:
+        sig = _signals(
+            producer="Microsoft® Word per Microsoft 365",
+            body_family="Calibri-Bold",
+            body_dominance=95.0,
+        )
+        score = MaterialiStudioProfile.matches(sig)
+        assert score >= 0.70
+
+    def test_arial_still_recognised(self) -> None:
+        # Backward compatibility with the four prior fixtures.
+        sig = _signals(body_family="ArialMT")
+        score = MaterialiStudioProfile.matches(sig)
+        assert score >= 0.70
+
+    def test_unknown_family_no_credit(self) -> None:
+        sig = _signals(body_family="TimesNewRomanPSMT")
+        score = MaterialiStudioProfile.matches(sig)
+        assert score < 0.70
+
+    def test_body_family_prefixes_constant(self) -> None:
+        assert "Arial" in BODY_FAMILY_PREFIXES
+        assert "Calibri" in BODY_FAMILY_PREFIXES
+
+    def test_is_user_body_family_arial_variants(self) -> None:
+        assert _is_user_body_family("ArialMT")
+        assert _is_user_body_family("Arial-BoldMT")
+        assert _is_user_body_family("Arial-ItalicMT")
+
+    def test_is_user_body_family_calibri_variants(self) -> None:
+        assert _is_user_body_family("Calibri")
+        assert _is_user_body_family("Calibri-Bold")
+        assert _is_user_body_family("Calibri-Italic")
+
+    def test_is_user_body_family_rejects_unknown(self) -> None:
+        assert not _is_user_body_family("TimesNewRomanPSMT")
+        assert not _is_user_body_family("Verdana")
+        assert not _is_user_body_family("Helvetica")
+
+
+class TestTocHeaderPredicate:
+    """``_classify_toc_header`` recognises the Word/GDocs automatic ToC
+    header marker (Sommario / Indice / Contents / Table of Contents)
+    when typeset as a bold user-body-family span ≥ 14pt.
+    """
+
+    def test_sommario_calibri_bold_18pt(self) -> None:
+        spans = [_span("Sommario ", font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans, block_index=3, page=1)
+        plugin = MaterialiStudioProfile()
+        plugin._color_mode = False
+        plugin._pending_warnings = []
+        verdict = plugin._classify_toc_header(view)
+        assert verdict is not None
+        assert verdict.category is SemanticCategory.HEADING_1
+        assert verdict.reason == "materiali_studio_heading_1_toc_header"
+
+    def test_indice_italian_variant(self) -> None:
+        spans = [_span("Indice", font="Calibri-Bold", size=16.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is not None
+
+    def test_indice_generale_italian_variant(self) -> None:
+        spans = [_span("Indice generale", font="Calibri-Bold", size=14.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is not None
+
+    def test_contents_english_variant(self) -> None:
+        spans = [_span("Contents", font="Arial-BoldMT", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is not None
+
+    def test_table_of_contents_english(self) -> None:
+        spans = [_span("Table of Contents", font="Arial-BoldMT", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is not None
+
+    def test_case_insensitive(self) -> None:
+        spans = [_span("SOMMARIO", font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is not None
+
+    def test_rejects_body_sized_sommario(self) -> None:
+        # An inline body mention of "Sommario" at body size must NOT promote.
+        spans = [_span("Sommario", font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is None
+
+    def test_rejects_non_bold_at_size(self) -> None:
+        spans = [_span("Sommario", font="Calibri", size=18.0, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is None
+
+    def test_rejects_non_user_family(self) -> None:
+        spans = [_span("Sommario", font="TimesNewRomanPSMT", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is None
+
+    def test_rejects_non_matching_text(self) -> None:
+        spans = [_span("Premessa", font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is None
+
+    def test_rejects_size_below_floor(self) -> None:
+        spans = [_span("Sommario", font="Calibri-Bold", size=12.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_header(view) is None
+
+    def test_emits_warning(self) -> None:
+        spans = [_span("Sommario", font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans, block_index=3, page=1)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        plugin._classify_toc_header(view)
+        assert any("heading_1_toc_header_block_3_page_1" in w for w in plugin._pending_warnings)
+
+
+class TestTocEntryPredicate:
+    """``_classify_toc_entry`` recognises a dotted-leader ToC entry block
+    of the Word/GDocs format ``"<title> .................. <page>"``.
+    """
+
+    def test_capitolo_entry_with_em_dash(self) -> None:
+        text = "Capitolo I — Nozioni Generali ......................... 3 "
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans, block_index=4, page=1)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        verdict = plugin._classify_toc_entry(view)
+        assert verdict is not None
+        assert verdict.category is SemanticCategory.TOC_GENERAL
+
+    def test_decimal_entry_depth_one(self) -> None:
+        text = "1. Definizione di obbligazione ............................. 3 "
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is not None
+
+    def test_decimal_entry_depth_two(self) -> None:
+        text = "2.1 Il soggetto attivo ...................................... 3 "
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is not None
+
+    def test_entry_glued_to_leader_no_whitespace(self) -> None:
+        # Word occasionally omits the space between title and dotted leader.
+        text = "2. Inadempimento....................................... 5 "
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is not None
+
+    def test_short_dotted_run_no_whitespace_rejected(self) -> None:
+        # A body sentence like "Foo... 3" with 3 dots and no whitespace
+        # must NOT match (the no-whitespace branch requires 6+ dots).
+        text = "Foo... 3"
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is None
+
+    def test_unicode_ellipsis_leader(self) -> None:
+        text = "Premessa ………… 7"  # U+2026 ellipsis x4
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is not None
+
+    def test_no_dotted_leader_rejected(self) -> None:
+        text = "Capitolo I — Nozioni Generali"
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is None
+
+    def test_no_page_number_rejected(self) -> None:
+        text = "Capitolo I — Nozioni Generali ......................... "
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is None
+
+    def test_non_user_family_rejected(self) -> None:
+        text = "Foo ......................... 3"
+        spans = [_span(text, font="TimesNewRomanPSMT", size=11.04, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_toc_entry(view) is None
+
+    def test_emits_warning(self) -> None:
+        text = "Capitolo I — Nozioni Generali ......................... 3"
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans, block_index=4, page=1)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        plugin._classify_toc_entry(view)
+        assert any("toc_entry_dotted_leader_block_4_page_1" in w for w in plugin._pending_warnings)
+
+
+class TestCapitoloFullPredicate:
+    """``_classify_capitolo_full`` recognises the body-side
+    ``Capitolo <roman> — title`` chapter heading convention.
+    """
+
+    def test_capitolo_roman_em_dash(self) -> None:
+        text = "Capitolo I — Nozioni Generali "
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans, block_index=18, page=2)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        verdict = plugin._classify_capitolo_full(view)
+        assert verdict is not None
+        assert verdict.category is SemanticCategory.HEADING_1
+        assert verdict.reason == "materiali_studio_heading_1_capitolo_full"
+
+    def test_capitolo_roman_en_dash(self) -> None:
+        text = "Capitolo II – Le Fonti delle Obbligazioni"
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_capitolo_full(view) is not None
+
+    def test_capitolo_roman_ascii_hyphen(self) -> None:
+        text = "Capitolo III - L'Adempimento"
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_capitolo_full(view) is not None
+
+    def test_capitolo_roman_colon(self) -> None:
+        text = "Capitolo IV: Modalità"
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_capitolo_full(view) is not None
+
+    def test_capitolo_without_separator_rejected(self) -> None:
+        text = "Capitolo I Nozioni Generali"
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_capitolo_full(view) is None
+
+    def test_capitolo_lowercase_keyword_rejected(self) -> None:
+        # Case-insensitive — "capitolo" passes but the leading capital is
+        # expected by Word default. We accept both per docstring.
+        text = "capitolo I — title "
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_capitolo_full(view) is not None
+
+    def test_not_bold_rejected(self) -> None:
+        text = "Capitolo I — Nozioni Generali"
+        spans = [_span(text, font="Calibri", size=18.0, flags=0)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_capitolo_full(view) is None
+
+    def test_emits_warning(self) -> None:
+        text = "Capitolo I — Nozioni Generali"
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans, block_index=18, page=2)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        plugin._classify_capitolo_full(view)
+        assert any("heading_1_capitolo_full_block_18_page_2" in w for w in plugin._pending_warnings)
+
+
+class TestDecimalHeadingDepthOneConvention:
+    """The updated convention (debt-(v) consolidation): depth-1 → HEADING_2,
+    depth-2 → HEADING_3, depth-3 → HEADING_4, depth-4+ → unsupported.
+    """
+
+    def test_depth_one_promotes_heading_2(self) -> None:
+        text = "1. Definizione di obbligazione "
+        spans = [_span(text, font="Calibri-Bold", size=14.04, flags=BOLD_FLAG)]
+        view = _view(spans, block_index=19, page=2)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        verdict = plugin._classify_decimal_heading(view)
+        assert verdict is not None
+        assert verdict.category is SemanticCategory.HEADING_2
+        assert verdict.reason == "materiali_studio_heading_2_decimal"
+
+    def test_depth_two_promotes_heading_3(self) -> None:
+        text = "2.1 Il soggetto attivo "
+        spans = [_span(text, font="Calibri-Bold", size=12.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        verdict = plugin._classify_decimal_heading(view)
+        assert verdict is not None
+        assert verdict.category is SemanticCategory.HEADING_3
+
+    def test_depth_three_promotes_heading_4(self) -> None:
+        text = "2.1.3 Argomento sub-paragrafo"
+        spans = [_span(text, font="Calibri-Bold", size=11.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        verdict = plugin._classify_decimal_heading(view)
+        assert verdict is not None
+        assert verdict.category is SemanticCategory.HEADING_4
+
+    def test_depth_four_unsupported_and_warns(self) -> None:
+        text = "1.2.3.4 Sub-sub-sub"
+        spans = [_span(text, font="Calibri-Bold", size=11.0, flags=BOLD_FLAG)]
+        view = _view(spans, block_index=99, page=5)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        verdict = plugin._classify_decimal_heading(view)
+        assert verdict is None
+        assert any("decimal_hierarchical_depth_exceeded" in w for w in plugin._pending_warnings)
+
+    def test_no_uppercase_after_number_rejected(self) -> None:
+        text = "1.1 lowercase prose"
+        spans = [_span(text, font="Calibri-Bold", size=12.0, flags=BOLD_FLAG)]
+        view = _view(spans)
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        assert plugin._classify_decimal_heading(view) is None
+
+
+class TestParseTocEntryText:
+    """The module-level helper ``_parse_toc_entry_text`` returns a
+    ``TocGeneralItem`` decomposing the verbatim Node text into
+    ``(number, title, page_number)``.
+    """
+
+    def test_capitolo_roman_entry(self) -> None:
+        item = _parse_toc_entry_text("Capitolo I — Nozioni Generali ......................... 3 ")
+        assert item is not None
+        assert item.number == "Capitolo I"
+        assert item.title == "Nozioni Generali"
+        assert item.page_number == 3
+
+    def test_decimal_depth_one_entry(self) -> None:
+        item = _parse_toc_entry_text("1. Definizione di obbligazione ........................ 3 ")
+        assert item is not None
+        assert item.number == "1"
+        assert item.title == "Definizione di obbligazione"
+        assert item.page_number == 3
+
+    def test_decimal_depth_two_entry(self) -> None:
+        item = _parse_toc_entry_text("2.1 Il soggetto attivo ................................ 3 ")
+        assert item is not None
+        assert item.number == "2.1"
+        assert item.title == "Il soggetto attivo"
+        assert item.page_number == 3
+
+    def test_glued_no_space_before_leader(self) -> None:
+        item = _parse_toc_entry_text("2. Inadempimento....................................... 5 ")
+        assert item is not None
+        assert item.number == "2"
+        assert item.title == "Inadempimento"
+        assert item.page_number == 5
+
+    def test_unparseable_returns_none(self) -> None:
+        item = _parse_toc_entry_text("a body sentence without leader nor page number")
+        assert item is None
+
+    def test_section_letter_prefix(self) -> None:
+        item = _parse_toc_entry_text("A. Premesse ............... 7")
+        assert item is not None
+        assert item.number == "A"
+        assert item.title == "Premesse"
+        assert item.page_number == 7
+
+    def test_no_prefix_only_title(self) -> None:
+        item = _parse_toc_entry_text("Bibliografia ............ 142")
+        assert item is not None
+        assert item.title == "Bibliografia"
+        assert item.page_number == 142
+
+
+class TestRefineReconstructionPopulatesTocItems:
+    """``refine_reconstruction`` walks the tree and populates
+    ``toc_items`` on TOC_GENERAL Nodes; non-TOC_GENERAL Nodes pass
+    through unchanged.
+    """
+
+    @staticmethod
+    def _make_node(
+        node_id: str,
+        category: SemanticCategory,
+        text: str | None = None,
+        children: tuple[Node, ...] = (),
+        page_index: int = 1,
+    ) -> Node:
+        return Node(
+            id=node_id,
+            category=category,
+            children=children,
+            page_index=page_index,
+            block_indices=(0,),
+            text=text,
+        )
+
+    def test_populates_toc_items_on_toc_general_node(self) -> None:
+        toc_node = self._make_node(
+            "node_0001",
+            SemanticCategory.TOC_GENERAL,
+            text="Capitolo I — Nozioni Generali ......................... 3 ",
+        )
+        doc = Document(root=(toc_node,))
+        ext = _extraction([], [])
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        new_doc = plugin.refine_reconstruction(doc, ext, [])
+        assert len(new_doc.root) == 1
+        new_node = new_doc.root[0]
+        assert new_node.toc_items is not None
+        assert len(new_node.toc_items) == 1
+        item = new_node.toc_items[0]
+        assert item.number == "Capitolo I"
+        assert item.title == "Nozioni Generali"
+        assert item.page_number == 3
+
+    def test_unparseable_toc_node_emits_warning(self) -> None:
+        toc_node = self._make_node(
+            "node_0001",
+            SemanticCategory.TOC_GENERAL,
+            text="some body text not a toc entry",
+        )
+        doc = Document(root=(toc_node,))
+        ext = _extraction([], [])
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        new_doc = plugin.refine_reconstruction(doc, ext, [])
+        assert new_doc.root[0].toc_items is None
+        assert any("toc_entry_unparseable_node_node_0001" in w for w in new_doc.warnings)
+
+    def test_non_toc_node_unchanged(self) -> None:
+        heading = self._make_node("node_0001", SemanticCategory.HEADING_1, text="Sommario ")
+        doc = Document(root=(heading,))
+        ext = _extraction([], [])
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        new_doc = plugin.refine_reconstruction(doc, ext, [])
+        new_node = new_doc.root[0]
+        assert new_node.toc_items is None
+        assert new_node.category is SemanticCategory.HEADING_1
+
+    def test_nested_toc_under_heading_populated(self) -> None:
+        toc_child = self._make_node(
+            "node_0002",
+            SemanticCategory.TOC_GENERAL,
+            text="1. Definizione ............. 3 ",
+        )
+        heading = self._make_node(
+            "node_0001",
+            SemanticCategory.HEADING_1,
+            text="Sommario ",
+            children=(toc_child,),
+        )
+        doc = Document(root=(heading,))
+        ext = _extraction([], [])
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = []
+        new_doc = plugin.refine_reconstruction(doc, ext, [])
+        new_heading = new_doc.root[0]
+        new_toc = new_heading.children[0]
+        assert new_toc.toc_items is not None
+        assert new_toc.toc_items[0].number == "1"
+        assert new_toc.toc_items[0].title == "Definizione"
+        assert new_toc.toc_items[0].page_number == 3
+
+    def test_warning_flush_preserves_document_warnings(self) -> None:
+        toc_node = self._make_node(
+            "node_0001",
+            SemanticCategory.TOC_GENERAL,
+            text="Capitolo I ............. 3 ",
+        )
+        doc = Document(root=(toc_node,), warnings=("preexisting_warning",))
+        ext = _extraction([], [])
+        plugin = MaterialiStudioProfile()
+        plugin._pending_warnings = ["plugin:materiali_studio:test_warning"]
+        new_doc = plugin.refine_reconstruction(doc, ext, [])
+        assert "preexisting_warning" in new_doc.warnings
+        assert "plugin:materiali_studio:test_warning" in new_doc.warnings
+
+
+class TestReclassifyCascadeOrder:
+    """The reclassify cascade must dispatch ToC predicates BEFORE the
+    generic heading/body predicates so that ``Sommario`` and dotted-leader
+    ToC entries are recognised even when they would also match a
+    lower-priority predicate.
+    """
+
+    def test_sommario_word_dispatch_before_decimal(self) -> None:
+        # Even if the text matched a decimal heading shape (it doesn't,
+        # but the dispatch order is what we test), Sommario should fire
+        # the ToC header branch.
+        spans = [_span("Sommario", font="Calibri-Bold", size=18.0, flags=BOLD_FLAG)]
+        view = _view(spans, block_index=3, page=1)
+        plugin = MaterialiStudioProfile()
+        plugin._color_mode = False
+        plugin._pending_warnings = []
+        verdict = plugin._reclassify(_verdict(block_index=3), view)
+        assert verdict.category is SemanticCategory.HEADING_1
+        assert verdict.reason == "materiali_studio_heading_1_toc_header"
+
+    def test_toc_entry_dispatch_before_decimal(self) -> None:
+        # "1. Definizione ........ 3" matches both _classify_toc_entry
+        # (TOC_GENERAL) AND _classify_decimal_heading (HEADING_2). The
+        # cascade must pick TOC_GENERAL.
+        text = "1. Definizione di obbligazione ......................... 3 "
+        spans = [_span(text, font="Calibri", size=11.04, flags=0)]
+        view = _view(spans, block_index=5, page=1)
+        plugin = MaterialiStudioProfile()
+        plugin._color_mode = False
+        plugin._pending_warnings = []
+        verdict = plugin._reclassify(_verdict(block_index=5), view)
+        assert verdict.category is SemanticCategory.TOC_GENERAL
+
+    def test_capitolo_full_dispatch_before_color_aware(self) -> None:
+        # In color_mode True, the color predicate would fire on the leading
+        # span's color. We test that a Capitolo-style body chapter heading
+        # still routes through _classify_capitolo_full FIRST when it's bold.
+        text = "Capitolo I — Nozioni Generali "
+        spans = [_span(text, font="Calibri-Bold", size=18.0, flags=BOLD_FLAG, color=0x1F3864)]
+        view = _view(spans, block_index=18, page=2)
+        plugin = MaterialiStudioProfile()
+        plugin._color_mode = True
+        plugin._pending_warnings = []
+        verdict = plugin._reclassify(_verdict(block_index=18), view)
+        assert verdict.category is SemanticCategory.HEADING_1
+        assert verdict.reason == "materiali_studio_heading_1_capitolo_full"
+
+
+class TestWarningTemplatesCoverage:
+    """The new closed-vocabulary entries are declared in WARNING_TEMPLATES
+    (consumed by the framework-derived validation registry in
+    pipeline/src/scabopdf_pipeline/warning_framework.py)."""
+
+    def test_toc_header_template_declared(self) -> None:
+        templates = MaterialiStudioProfile.get_warning_templates()
+        assert any("heading_1_toc_header" in t for t in templates)
+
+    def test_capitolo_full_template_declared(self) -> None:
+        templates = MaterialiStudioProfile.get_warning_templates()
+        assert any("heading_1_capitolo_full" in t for t in templates)
+
+    def test_toc_entry_template_declared(self) -> None:
+        templates = MaterialiStudioProfile.get_warning_templates()
+        assert any("toc_entry_dotted_leader" in t for t in templates)
+
+    def test_toc_entry_unparseable_template_declared(self) -> None:
+        templates = MaterialiStudioProfile.get_warning_templates()
+        assert any("toc_entry_unparseable_node" in t for t in templates)
