@@ -464,9 +464,13 @@ class TestFragmentedParse:
             "ARTICLE_BODY",
         ]
 
-    def test_body_articles_come_before_attachments(self, tmp_path: Path) -> None:
-        """The promulgation-decree articles in ``<body>`` come first
-        in reading order; attachment articles follow."""
+    def test_body_articles_wrapped_in_promulgation_container_before_attachments(
+        self, tmp_path: Path
+    ) -> None:
+        """The promulgation-decree articles in ``<body>`` come first in
+        reading order, wrapped inside a single ``HEADING_1`` container
+        with text ``"Decreto di promulgazione"``; attachment articles
+        follow as siblings of the container. Debt (xvi), pattern ffff."""
         body = _article(
             "art_d_1",
             "Art. 1.",
@@ -480,14 +484,21 @@ class TestFragmentedParse:
         xml = _frag_xml(body, atts)
         result = parse(_write(tmp_path, xml))
         nodes = result.document.root
-        # Body decree article: headless-paragraph fold → 1 ARTICLE_HEADER only
-        # n attachments x 2 = 2n → total 1 + 2n
+        # Container + n attachment article pairs = 1 + 2n root nodes
         assert len(nodes) == 1 + 2 * n
-        assert nodes[0].category.value == "ARTICLE_HEADER"
-        assert nodes[0].text == "Art. 1. Il testo definitivo del codice e' approvato."
-        # The first attachment article starts at node_1
-        assert nodes[1].category.value == "ARTICLE_HEADER"
+        assert nodes[0].category is SemanticCategory.HEADING_1
+        assert nodes[0].text == "Decreto di promulgazione"
+        assert nodes[0].level == 1
+        # Promulgation container holds the wrapped article (headless-fold:
+        # one ARTICLE_HEADER, no ARTICLE_BODY)
+        assert len(nodes[0].children) == 1
+        assert nodes[0].children[0].category is SemanticCategory.ARTICLE_HEADER
+        assert nodes[0].children[0].text == "Art. 1. Il testo definitivo del codice e' approvato."
+        # The first attachment article starts as a sibling of the container
+        assert nodes[1].category is SemanticCategory.ARTICLE_HEADER
         assert nodes[1].text == "Art. 1"
+        # The closed warning carries the source-article count, not Node count
+        assert "xml_akn:promulgation:front_matter_articles_1" in result.warnings
 
     def test_doc_name_unparseable_emits_warning_and_placeholder(self, tmp_path: Path) -> None:
         # Mix one unparseable doc among n valid ones to clear FRAGMENTED
@@ -641,3 +652,247 @@ class TestRefsAndInsArePreservedInBodyText:
         result = parse(_write(tmp_path, xml))
         nodes = result.document.root
         assert "((modificato))" in (nodes[1].text or "")
+
+
+def _chapter(eid: str, heading: str, articles: str) -> str:
+    """Construct an AKN ``<chapter>`` with a numbering, heading and the
+    given inner ``<article>`` markup string."""
+    return f'<chapter eId="{eid}"><num>Capo I</num><heading>{heading}</heading>{articles}</chapter>'
+
+
+class TestPromulgativeFrontMatterDiscriminator:
+    """Direct unit coverage of :func:`_is_promulgative_act`.
+
+    The predicate is the structural co-occurrence of body-direct
+    ``<article>`` AND (body-direct ``<chapter>`` OR FRAGMENTED-pattern
+    attachment). It is empirically calibrated on the 13 calibration +
+    exploration fixtures with zero false positives and zero false
+    negatives (see ``docs/XML_PARSING.md`` § "Front-matter promulgativo"
+    for the verification table). Debt (xvi), pattern ffff."""
+
+    def test_body_with_article_and_chapter_sibling_is_promulgative(self, tmp_path: Path) -> None:
+        """CPP shape: 1 body article + N body chapters → promulgative."""
+        body = _article("art_01", "Art. 01.", "", [("", "E' approvato il testo.")])
+        body += _chapter(
+            "cap_01",
+            "Disposizioni Generali",
+            _article("art_1", "Art. 1.", "Definizione", [("1.", "Si applica.")]),
+        )
+        xml = _akn(f"<body>{body}</body>")
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        assert nodes[0].category is SemanticCategory.HEADING_1
+        assert nodes[0].text == "Decreto di promulgazione"
+        # The chapter heading and its article emerge as siblings of the
+        # container, in reading order after it.
+        assert nodes[1].category is SemanticCategory.HEADING_2
+        assert "Disposizioni Generali" in (nodes[1].text or "")
+        assert "xml_akn:promulgation:front_matter_articles_1" in result.warnings
+
+    def test_body_with_articles_only_is_not_promulgative(self, tmp_path: Path) -> None:
+        """Legge 56/2007 shape: body articles only, no chapter siblings,
+        no attachments → regular law, no container."""
+        body = _article("art_1", "Art. 1.", "Disposizioni", [("1.", "La Repubblica riconosce.")])
+        body += _article(
+            "art_2", "Art. 2.", "Entrata in vigore", [("1.", "Il decreto entra in vigore.")]
+        )
+        xml = _akn(f"<body>{body}</body>")
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        # Flat emission: ARTICLE_HEADER + ARTICLE_BODY for each article
+        assert nodes[0].category is SemanticCategory.ARTICLE_HEADER
+        assert nodes[0].text == "Art. 1. Disposizioni"
+        assert not any(w.startswith("xml_akn:promulgation:") for w in result.warnings)
+
+    def test_body_with_only_chapters_is_not_promulgative(self, tmp_path: Path) -> None:
+        """Codice della Strada shape: only chapters in body, no body
+        article → predicate does not fire."""
+        body = _chapter(
+            "cap_01",
+            "Disposizioni generali",
+            _article("art_1", "Art. 1.", "Definizioni", [("1.", "Si applica.")]),
+        )
+        xml = _akn(f"<body>{body}</body>")
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        assert nodes[0].category is SemanticCategory.HEADING_2
+        assert not any(w.startswith("xml_akn:promulgation:") for w in result.warnings)
+
+    def test_fragmented_promulgative_wraps_body_articles_only(self, tmp_path: Path) -> None:
+        """CP/CC shape: body has 2-3 promulgative articles + attachments
+        carry the FRAGMENTED article tokens → container wraps the body
+        articles, attachments come after as flat siblings."""
+        body = _article(
+            "art_p_1",
+            "Art. 1.",
+            "",
+            [("", "E' approvato il testo del Codice.")],
+        )
+        body += _article(
+            "art_p_2",
+            "Art. 2.",
+            "",
+            [("", "Un esemplare del testo del Codice e' depositato.")],
+        )
+        n = TestFragmentedParse._FRAG_THRESHOLD_DOCS
+        atts = "".join(
+            _frag_attachment(f"Codice-art. {i}", [f"Art. {i}. body."]) for i in range(1, n + 1)
+        )
+        xml = _frag_xml(body, atts)
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        assert nodes[0].category is SemanticCategory.HEADING_1
+        assert nodes[0].text == "Decreto di promulgazione"
+        # Two body articles wrap inside the container
+        children = nodes[0].children
+        assert all(c.category is SemanticCategory.ARTICLE_HEADER for c in children)
+        assert len(children) == 2
+        # The fragmented synthetic articles are siblings of the container
+        assert nodes[1].category is SemanticCategory.ARTICLE_HEADER
+        assert nodes[1].text == "Art. 1"
+        assert "xml_akn:promulgation:front_matter_articles_2" in result.warnings
+
+    def test_attachments_without_fragmented_token_do_not_trigger_promulgative(
+        self, tmp_path: Path
+    ) -> None:
+        """dl_rilancio shape: body articles + ``Allegato 1`` / ``Elenco 1``
+        attachments whose names do NOT match the FRAGMENTED article
+        regex → not promulgative. The token regex strictly rules out
+        legitimate annex names."""
+        # Body has one article; attachment is named "Allegato 1" so the
+        # FRAGMENTED regex does not match. The detector still classifies
+        # the document as BEN_FORMATO because it doesn't reach the
+        # fragmented thresholds, but the promulgative predicate is
+        # independent of the detector verdict.
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        body = _article("art_1", "Art. 1.", "Disposizioni", [("1.", "Si applica.")])
+        xml_str = _akn(
+            f"<body>{body}</body>"
+            '<attachments><attachment><doc name="Allegato 1"><meta/>'
+            "<mainBody><paragraph><content><p>Tabella.</p></content></paragraph>"
+            "</mainBody></doc></attachment></attachments>"
+        )
+        path = _write(tmp_path, xml_str)
+        # Direct predicate exercise
+        root = ET.parse(str(path)).getroot()
+        assert _is_promulgative_act(root) is False
+
+    def test_promulgation_container_node_id_is_pre_order_first(self, tmp_path: Path) -> None:
+        """Pre-order id minting: the container's id is reserved before
+        its children's ids so the resulting sequence reflects reading
+        order. With one body article (CPP-style), the container is
+        ``node_0`` and the wrapped article's nodes start at ``node_1``."""
+        body = _article("art_1", "Art. 1.", "Approvazione", [("1.", "E' approvato.")])
+        body += _chapter(
+            "cap_01",
+            "Capo I",
+            _article("art_2", "Art. 2.", "Disposizioni", [("1.", "Si applica.")]),
+        )
+        xml = _akn(f"<body>{body}</body>")
+        result = parse(_write(tmp_path, xml))
+        nodes = result.document.root
+        assert nodes[0].id == "node_0"
+        assert nodes[0].children[0].id == "node_1"
+
+
+class TestPromulgativeFrontMatterPredicate:
+    """Direct unit tests for :func:`_is_promulgative_act` covering the
+    five logical branches without going through the full parser."""
+
+    def test_no_body_returns_false(self, tmp_path: Path) -> None:
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        xml_str = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            f'<akomaNtoso xmlns="{AKN_NS}">'
+            '<act name="monovigente">'
+            "<meta/></act></akomaNtoso>"
+        )
+        path = _write(tmp_path, xml_str)
+        root = ET.parse(str(path)).getroot()
+        assert _is_promulgative_act(root) is False
+
+    def test_body_without_article_returns_false(self, tmp_path: Path) -> None:
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        xml_str = _akn("<body><chapter><num>Capo I</num><heading>X</heading></chapter></body>")
+        path = _write(tmp_path, xml_str)
+        root = ET.parse(str(path)).getroot()
+        assert _is_promulgative_act(root) is False
+
+    def test_body_article_plus_chapter_returns_true(self, tmp_path: Path) -> None:
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        body = _article("art_1", "Art. 1.", "X", [("1.", "Y.")])
+        body += "<chapter><num>Capo I</num><heading>X</heading></chapter>"
+        xml_str = _akn(f"<body>{body}</body>")
+        path = _write(tmp_path, xml_str)
+        root = ET.parse(str(path)).getroot()
+        assert _is_promulgative_act(root) is True
+
+    def test_body_article_only_returns_false(self, tmp_path: Path) -> None:
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        body = _article("art_1", "Art. 1.", "X", [("1.", "Y.")])
+        xml_str = _akn(f"<body>{body}</body>")
+        path = _write(tmp_path, xml_str)
+        root = ET.parse(str(path)).getroot()
+        assert _is_promulgative_act(root) is False
+
+    def test_body_article_plus_fragmented_attachment_returns_true(self, tmp_path: Path) -> None:
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        body = _article("art_1", "Art. 1.", "X", [("1.", "Y.")])
+        # A single FRAG-pattern attachment is enough to flip the predicate.
+        xml_str = _akn(
+            f"<body>{body}</body>"
+            '<attachments><attachment><doc name="Codice-art. 1"><meta/>'
+            "<mainBody><paragraph><content><p>Art. 1.</p></content></paragraph>"
+            "</mainBody></doc></attachment></attachments>"
+        )
+        path = _write(tmp_path, xml_str)
+        root = ET.parse(str(path)).getroot()
+        assert _is_promulgative_act(root) is True
+
+    def test_body_article_plus_non_fragmented_attachment_returns_false(
+        self, tmp_path: Path
+    ) -> None:
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        body = _article("art_1", "Art. 1.", "X", [("1.", "Y.")])
+        xml_str = _akn(
+            f"<body>{body}</body>"
+            '<attachments><attachment><doc name="Allegato 1"><meta/>'
+            "<mainBody><paragraph><content><p>Tabella.</p></content></paragraph>"
+            "</mainBody></doc></attachment></attachments>"
+        )
+        path = _write(tmp_path, xml_str)
+        root = ET.parse(str(path)).getroot()
+        assert _is_promulgative_act(root) is False
+
+    def test_attachment_without_doc_child_is_ignored_by_predicate(self, tmp_path: Path) -> None:
+        import xml.etree.ElementTree as ET
+
+        from scabopdf_pipeline.xml_akn.parser import _is_promulgative_act
+
+        body = _article("art_1", "Art. 1.", "X", [("1.", "Y.")])
+        xml_str = _akn(f"<body>{body}</body><attachments><attachment/></attachments>")
+        path = _write(tmp_path, xml_str)
+        root = ET.parse(str(path)).getroot()
+        # No doc child + no chapter sibling → predicate stays False.
+        assert _is_promulgative_act(root) is False

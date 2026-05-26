@@ -94,6 +94,38 @@ Il vocabolario warning chiuso esteso per il pattern AKN modifications è:
 
 I conteggi empirici post-parse su tutte le 10 fixture di calibrazione + esplorazione, dopo il bump 0.7.0, sono mostrati in § 6 (tabella baseline). Sorpresa empirica: tutte le 9 fixture eccetto `legge_56_2007` portano `passiveModifications` (storie di modifiche subite) anche se non esercitano `<mod>` body-side. Soltanto `legge_capitali` esercita anche le modifiche attive con `<mod>`/`<quotedText>` body-side, perché soltanto lei è un atto modificatore.
 
+### 4.4 Front-matter promulgativo (pattern (ffff))
+
+Il parser v2.35 estende il mapping al riconoscimento del decreto di promulgazione che precede il corpo dei codici legali. La closure del debt (xvi) ratifica il pattern strutturale (ffff): un atto AKN è promulgativo iff il suo `<body>` carica almeno un `<article>` diretto E (a) il body carica anche almeno un `<chapter>` diretto come sibling — caso BEN_FORMATO del Codice di Procedura Penale, 1 articolo promulgativo + 104 chapter del codice nello stesso body — OPPURE (b) il documento carica almeno un `<attachment>` il cui `<doc name>` matcha il regex FRAGMENTED `_FRAGMENTED_ARTICLE_NUMBER_PATTERN` — caso del Codice Penale e del Codice Civile, 2-3 articoli promulgativi nel body + 987/3256 articoli del codice negli attachments.
+
+Quando il discriminatore fa fire, il parser pre-pende a `Document.root` un Node container di category `HEADING_1` con `level=1` e `text="Decreto di promulgazione"` (closed string identica all'analogo `UPDATE_BLOCK` container pattern bbbb). Gli articoli body-direct vengono mintati flat come prima (ARTICLE_HEADER + ARTICLE_BODY siblings con headless-paragraph fold della Gelli-Bianco convention) e collezionati come **children** del container; i siblings non-articoli del body (tipicamente `<chapter>` per CPP) vengono emessi come **siblings** del container subito dopo, preservando il reading-order naturale. La discriminazione è simmetrica ai container di modifiche meta-side: front-matter promulgativo all'inizio di `Document.root`, modifiche attive/passive in coda. Layer 2 può navigare il decreto promulgativo come unità autonoma (`HEADING_1 "Decreto di promulgazione"` con N children ARTICLE_HEADER+) oppure ignorarlo e partire direttamente dal corpo del codice (siblings post-container).
+
+Il vocabolario warning chiuso esteso include una sola entry:
+
+- `xml_akn:promulgation:front_matter_articles_<n>` — emesso una volta per parse, n = count degli `<article>` source wrappati (1 per CPP, 2 per CC, 3 per CP).
+
+Tabella verifica empirica del discriminatore sulle 13 fixture XML AKN dello stato corrente del corpus (zero falsi positivi, zero falsi negativi):
+
+| Fixture | body article | body chapter | FRAG attach | trigger | corretto |
+|---------|--------------|--------------|-------------|---------|----------|
+| codice_civile (N-009) | 2 | 0 | 3256 | sì | promulgativo |
+| codice_penale (N-008) | 3 | 0 | 987 | sì | promulgativo |
+| codice_procedura_penale (N-006) | 1 | 104 | 0 | sì | promulgativo |
+| codice_strada (N-005) | 0 | 17 | 0 | no | ✓ |
+| dlgs_231_2001 (N-003) | 0 | 15 | 0 | no | ✓ |
+| legge_56_2007 (N-001) | 2 | 0 | 0 | no | ✓ (legge ordinaria) |
+| legge_bilancio_2023 (N-004) | 0 | 2 | 0 | no | ✓ |
+| legge_gelli_bianco (N-002) | 18 | 0 | 0 | no | ✓ (legge ordinaria) |
+| tuf_dlgs_58_1998 (N-007) | 0 | 93 | 0 | no | ✓ |
+| legge_capitali (N-010) | 0 | 5 | 0 | no | ✓ |
+| dl_rilancio (N-011) | 0 | 26 | 9 Allegati | no | ✓ (token regex non matcha "Allegato 1") |
+| dlgs_cartabia (N-012) | 0 | 14 | 0 | no | ✓ |
+| dlgs_correttivo_appalti (N-013) | 97 | 0 | 0 | no | ✓ (atto modificatore) |
+
+Il decisore-chiave dell'edge case `dl_rilancio` è il regex `_FRAGMENTED_ARTICLE_NUMBER_PATTERN` che pretende il prefisso `-art. <token>` sull'attributo `<doc name>`: gli allegati genuini (`"Allegato 1"`, `"Elenco 1"`) non matchano e quindi il discriminatore resta `False` anche in presenza di `<attachment>` siblings legittimi. La regola è robusta e si scala automaticamente a nuove fixture future con allegati tabellari.
+
+Tre baseline drifano dopo la closure di (xvi): **N-006** (CPP, 1 articolo wrappato), **N-008** (CP, 3 articoli wrappati), **N-009** (CC, 2 articoli wrappati). Il drift è atteso come miglioramento strutturale (la distinzione semantica del front-matter è ora visibile a Layer 2). Le altre 10 baseline N-* restano byte-for-byte invariate.
+
 ## 5. L'emitter e il bridge a `ScabopdfDocument`
 
 Il modulo `xml_akn/emitter.py` traduce un `XmlAknParseResult` nel modello Pydantic `ScabopdfDocument` di schema 0.7.0. È il secondo produttore di `ScabopdfDocument` nel progetto (il primo è `emission/converter.py` per il backend PDF), e i due sono deliberatamente indipendenti: il bridge XML non riusa il PDF converter perché quest'ultimo prende come argomenti un `ExtractionResult` PyMuPDF e un `DocumentProfile` profile-detection-based che il backend XML non ha.

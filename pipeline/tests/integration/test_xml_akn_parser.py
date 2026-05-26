@@ -24,10 +24,12 @@ sanity check is sufficient for v1.
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
 
+from scabopdf_pipeline.reconstruction.types import Node
 from scabopdf_pipeline.schema.categories import SemanticCategory
 from scabopdf_pipeline.xml_akn import parse
 from scabopdf_pipeline.xml_akn.emitter import to_scabopdf_document
@@ -41,6 +43,35 @@ _EXPLORATION = _FIXTURE_ROOT / "normattiva_exploration"
 def _skip_if_missing(p: Path) -> None:
     if not p.exists():
         pytest.skip(f"fixture {p} missing — see tests/fixtures/README")
+
+
+def _walk_count_category(nodes: Sequence[Node], category: SemanticCategory) -> int:
+    """Count Nodes of *category* recursively across the whole forest.
+
+    Required after debt (xvi) pattern (ffff): promulgative front-matter
+    articles now sit as children of a ``HEADING_1`` ``"Decreto di
+    promulgazione"`` container rather than at root level, so a flat
+    ``sum(1 for n in root if ...)`` undercounts. The walk preserves the
+    structural invariant that the total ARTICLE_HEADER / ARTICLE_BODY
+    count is unchanged by the wrapping."""
+    n = 0
+    for node in nodes:
+        if node.category is category:
+            n += 1
+        n += _walk_count_category(node.children, category)
+    return n
+
+
+def _flatten_forest(nodes: Sequence[Node]) -> list[Node]:
+    """Flatten a forest of Nodes (with children) into a flat list via
+    DFS pre-order. Used by integration tests that need to inspect every
+    Node regardless of tree position (e.g. searching for placeholder
+    text across both root-level and container-children Nodes)."""
+    flat: list[Node] = []
+    for node in nodes:
+        flat.append(node)
+        flat.extend(_flatten_forest(node.children))
+    return flat
 
 
 def _parse_and_emit_dict(xml_path: Path) -> dict[str, object]:
@@ -285,9 +316,15 @@ class TestRealFixtureStructure:
         _skip_if_missing(xml)
         result = parse(xml)
         nodes = result.document.root
-        n_art_header = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_HEADER)
-        # PRECHECK.md: 906 body_article
+        # Walk count: 1 promulgative body article (now wrapped in the
+        # "Decreto di promulgazione" HEADING_1 container per pattern ffff)
+        # + 905 chapter-nested articles = 906 total
+        n_art_header = _walk_count_category(nodes, SemanticCategory.ARTICLE_HEADER)
         assert n_art_header == 906
+        # Promulgation container is the first root Node
+        assert nodes[0].category is SemanticCategory.HEADING_1
+        assert nodes[0].text == "Decreto di promulgazione"
+        assert "xml_akn:promulgation:front_matter_articles_1" in result.warnings
 
     def test_legge_capitali_emits_akn_modifications(self) -> None:
         """Sanity check on the exploratory fixture for AKN modifications
@@ -300,8 +337,6 @@ class TestRealFixtureStructure:
         Looser than the byte-for-byte N-010 baseline but quick to
         debug if the parser regresses on the modification path."""
         import collections
-
-        from scabopdf_pipeline.reconstruction.types import Node
 
         xml = _EXPLORATION / "legge_capitali" / "legge_capitali.xml"
         _skip_if_missing(xml)
@@ -352,8 +387,6 @@ class TestRealFixtureStructure:
         HEADING_1 container Nodes in coda al Document.root."""
         import collections
 
-        from scabopdf_pipeline.reconstruction.types import Node
-
         xml = _EXPLORATION / "dl_rilancio" / "dl_rilancio.xml"
         _skip_if_missing(xml)
         result = parse(xml)
@@ -403,8 +436,6 @@ class TestRealFixtureStructure:
         UPDATE_BLOCK Node text leads with the ``split:`` prefix."""
         import collections
 
-        from scabopdf_pipeline.reconstruction.types import Node
-
         xml = _EXPLORATION / "dlgs_cartabia" / "dlgs_cartabia.xml"
         _skip_if_missing(xml)
         result = parse(xml)
@@ -449,8 +480,6 @@ class TestRealFixtureStructure:
         verbatim inside the UPDATE_BLOCK text; this test verifies that at
         least one UPDATE_BLOCK contains the FRBR-style fragment."""
         import collections
-
-        from scabopdf_pipeline.reconstruction.types import Node
 
         xml = _EXPLORATION / "dlgs_correttivo_appalti" / "dlgs_correttivo_appalti.xml"
         _skip_if_missing(xml)
@@ -556,8 +585,11 @@ class TestFragmentedFixtures:
         assert result.health_report.verdict is XmlHealthVerdict.FRAGMENTED
         assert "xml_akn:fragmented:editorial_hierarchy_unrecoverable" in result.warnings
         nodes = result.document.root
-        n_art_header = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_HEADER)
-        n_art_body = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_BODY)
+        # After pattern ffff the 3 body promulgation articles are wrapped
+        # in a "Decreto di promulgazione" HEADING_1 container; the walk
+        # count is invariant w.r.t. the wrapping.
+        n_art_header = _walk_count_category(nodes, SemanticCategory.ARTICLE_HEADER)
+        n_art_body = _walk_count_category(nodes, SemanticCategory.ARTICLE_BODY)
         # 987 attachment docs + 3 body promulgation articles
         assert n_art_header == 990
         # 1283 attachment paragraphs (the 3 body articles fold their
@@ -566,8 +598,13 @@ class TestFragmentedFixtures:
         assert n_art_body == 1283
         # No placeholder texts — all 987 doc names parse cleanly via
         # the extended regex
-        placeholders = [n for n in nodes if n.text == "Art. (sconosciuto)"]
+        all_nodes = _flatten_forest(nodes)
+        placeholders = [n for n in all_nodes if n.text == "Art. (sconosciuto)"]
         assert placeholders == []
+        # Promulgation container present at root[0]
+        assert nodes[0].category is SemanticCategory.HEADING_1
+        assert nodes[0].text == "Decreto di promulgazione"
+        assert "xml_akn:promulgation:front_matter_articles_3" in result.warnings
 
     def test_codice_civile_parses_with_synthetic_articles(self) -> None:
         xml = _CALIBRATION / "codice_civile" / "codice_civile.xml"
@@ -578,16 +615,24 @@ class TestFragmentedFixtures:
         assert result.health_report.verdict is XmlHealthVerdict.FRAGMENTED
         assert "xml_akn:fragmented:editorial_hierarchy_unrecoverable" in result.warnings
         nodes = result.document.root
-        n_art_header = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_HEADER)
-        n_art_body = sum(1 for n in nodes if n.category is SemanticCategory.ARTICLE_BODY)
+        # After pattern ffff the 2 body promulgation articles are wrapped
+        # in a "Decreto di promulgazione" HEADING_1 container; the walk
+        # count is invariant w.r.t. the wrapping.
+        n_art_header = _walk_count_category(nodes, SemanticCategory.ARTICLE_HEADER)
+        n_art_body = _walk_count_category(nodes, SemanticCategory.ARTICLE_BODY)
         # 3256 attachment docs + 2 body promulgation articles
         assert n_art_header == 3258
         # 3477 attachment paragraphs + 1 body paragraph not folded
         # (art. 1 of the R.D. has 2 paragraphs: the first folds into
         # the ARTICLE_HEADER, the second becomes ARTICLE_BODY)
         assert n_art_body == 3478
-        placeholders = [n for n in nodes if n.text == "Art. (sconosciuto)"]
+        all_nodes = _flatten_forest(nodes)
+        placeholders = [n for n in all_nodes if n.text == "Art. (sconosciuto)"]
         assert placeholders == []
+        # Promulgation container present at root[0]
+        assert nodes[0].category is SemanticCategory.HEADING_1
+        assert nodes[0].text == "Decreto di promulgazione"
+        assert "xml_akn:promulgation:front_matter_articles_2" in result.warnings
 
     def test_baseline_holds_for_codice_penale(self) -> None:
         """N-008 regression baseline. First FRAGMENTED baseline:

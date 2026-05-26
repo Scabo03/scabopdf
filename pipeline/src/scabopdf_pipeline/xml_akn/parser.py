@@ -94,6 +94,24 @@ Mapping for the FRAGMENTED path:
 * The synthetic articles are appended in document order after the
   body promulgation articles; node ids continue the sequential
   ``node_NNNN`` counter started by the body walk.
+
+Promulgation-decree front-matter wrapping (debt xvi, pattern ffff):
+
+* The discriminator :func:`_is_promulgative_act` returns ``True`` iff
+  the body carries at least one direct ``<article>`` AND either a
+  ``<chapter>`` direct sibling (Codice di Procedura Penale: 1 article
+  + 104 chapters in body) or at least one FRAGMENTED-pattern
+  ``<attachment>`` (Codice Penale, Codice Civile). When it fires, all
+  body-direct articles are wrapped under a single ``HEADING_1``
+  container whose text is the closed string
+  ``"Decreto di promulgazione"`` so Layer 2 can navigate the
+  promulgation front-matter independently from the code body. The
+  container is pre-pended at the start of ``Document.root``,
+  symmetrically to the ``UPDATE_BLOCK`` containers appended at the end
+  by :func:`_emit_modifications_containers`.
+* When the discriminator does not fire (regular laws: Legge 56/2007,
+  Gelli-Bianco, correttivo appalti), body-direct articles are emitted
+  flat as before — no container.
 """
 
 from __future__ import annotations
@@ -157,6 +175,15 @@ _FRAG_HIERARCHY_LOST_WARNING = "xml_akn:fragmented:editorial_hierarchy_unrecover
 """Emitted exactly once per FRAGMENTED parse. The Normattiva export bug
 drops the editorial hierarchy (Libro/Titolo/Capo/Sezione) and the parser
 cannot recover it from the source XML alone."""
+
+
+_PROMULGATION_CONTAINER_TEXT = "Decreto di promulgazione"
+"""Closed Container Node text for the ``HEADING_1`` Node that wraps the
+body-direct promulgative ``<article>`` children of an act whose actual
+code/text lives outside those articles — either in ``<chapter>`` siblings
+of the same body (BEN_FORMATO with code-body in chapters: Codice di
+Procedura Penale) or in FRAGMENTED-pattern ``<attachment>/<doc>``
+elements (Codice Penale, Codice Civile)."""
 
 
 _ACTIVE_MODIFICATIONS_CONTAINER_TEXT = "Modificazioni attive a altri atti"
@@ -868,6 +895,100 @@ def _walk_fragmented_attachments(
     return out
 
 
+def _is_promulgative_act(root: ET.Element) -> bool:
+    """Return ``True`` iff the AKN document carries a promulgation-decree
+    front-matter structure.
+
+    The discriminator is the structural co-occurrence of (a) at least one
+    body-direct ``<article>`` AND (b) at least one of:
+
+    * a body-direct ``<chapter>`` sibling — covers the BEN_FORMATO case
+      of an act whose body interleaves the promulgation decree (one or
+      more direct ``<article>`` children) with the code text proper
+      (organised as ``<chapter>`` direct children). Codice di Procedura
+      Penale exhibits this shape (1 promulgative article + 104 chapters).
+    * an ``<attachment>`` somewhere in the document whose ``<doc name>``
+      matches the FRAGMENTED article-token regex — covers the FRAGMENTED
+      case (Codice Penale, Codice Civile) where the body carries the 2-3
+      promulgation articles and the actual code lives under attachments.
+      The strict regex match avoids false positives on legitimate
+      ``Allegato 1`` / ``Elenco 1`` annexes (dl_rilancio).
+
+    When the discriminator fires, the body-direct articles are wrapped
+    in a ``HEADING_1`` ``"Decreto di promulgazione"`` container at the
+    start of ``Document.root`` so Layer 2 has a robust signal to
+    distinguish the promulgative front-matter from the code body. When
+    the discriminator does not fire, body-direct articles are emitted
+    flat as before (regular law acts: Legge 56/2007, Gelli-Bianco,
+    correttivo appalti).
+    """
+    body = root.find(".//akn:body", _NS)
+    if body is None:
+        return False
+    has_body_article = any(_local(c.tag) == "article" for c in body)
+    if not has_body_article:
+        return False
+    has_body_chapter = any(_local(c.tag) == "chapter" for c in body)
+    if has_body_chapter:
+        return True
+    for att in root.findall(".//akn:attachment", _NS):
+        doc = att.find("./akn:doc", _NS)
+        if doc is None:
+            continue
+        if _extract_fragmented_article_token(doc.get("name")) is not None:
+            return True
+    return False
+
+
+def _walk_body_with_promulgation_container(
+    root: ET.Element,
+    minter: _NodeIdMinter,
+    warnings: list[str],
+) -> list[Node]:
+    """Walk the ``<body>`` wrapping every body-direct ``<article>`` in a
+    single ``HEADING_1`` ``"Decreto di promulgazione"`` container that is
+    pre-pended at the start of the returned Node list.
+
+    The container's id is reserved **before** the children's ids so the
+    Node id sequence reflects pre-order reading (container parent before
+    its article children), preserving the convention declared at the top
+    of this module. Non-article direct children of the body (typically
+    ``<chapter>``) are emitted as siblings of the container after it,
+    keeping their reading-order position relative to the article block.
+
+    The closed warning vocabulary covers one entry:
+
+    * ``promulgation_front_matter_articles_<n>`` emitted once with the
+      count of articles wrapped (typically 1 for CPP, 2 for CC, 3 for
+      CP).
+    """
+    body = root.find(".//akn:body", _NS)
+    if body is None:
+        return []
+    container_id = minter.next()
+    promulgation_children: list[Node] = []
+    rest: list[Node] = []
+    article_count = 0
+    for child in body:
+        emitted = list(_dispatch(child, minter, parent_level=0, warnings=warnings))
+        if _local(child.tag) == "article":
+            promulgation_children.extend(emitted)
+            article_count += 1
+        else:
+            rest.extend(emitted)
+    container = Node(
+        id=container_id,
+        category=SemanticCategory.HEADING_1,
+        page_index=0,
+        block_indices=(),
+        text=_PROMULGATION_CONTAINER_TEXT,
+        level=1,
+        children=tuple(promulgation_children),
+    )
+    warnings.append(f"xml_akn:promulgation:front_matter_articles_{article_count}")
+    return [container, *rest]
+
+
 def parse(xml_path: Path) -> XmlAknParseResult:
     """Parse a Normattiva AKN export into a :class:`XmlAknParseResult`.
 
@@ -898,7 +1019,10 @@ def parse(xml_path: Path) -> XmlAknParseResult:
 
     minter = _NodeIdMinter()
     parse_warnings: list[str] = []
-    body_nodes = _walk_body(root, minter, parse_warnings)
+    if _is_promulgative_act(root):
+        body_nodes = _walk_body_with_promulgation_container(root, minter, parse_warnings)
+    else:
+        body_nodes = _walk_body(root, minter, parse_warnings)
     if health.verdict is XmlHealthVerdict.FRAGMENTED:
         parse_warnings.append(_FRAG_HIERARCHY_LOST_WARNING)
         attachment_nodes = _walk_fragmented_attachments(root, minter, parse_warnings)
