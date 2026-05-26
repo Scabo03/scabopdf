@@ -7,7 +7,7 @@ The snapshot is the entire emitted dict with ``document_id`` removed
 ``_baseline_source``, ``_baseline_xml_akn_metadata``) appended for
 traceability and FRBR-metadata side-channel validation.
 
-The N-NNN family covers ten fixtures at landing of schema 0.7.0:
+The N-NNN family covers thirteen fixtures at the closure of debt (xvii):
 
 * N-001 — legge_56_2007 (smallest BEN_FORMATO, 5 nodes)
 * N-002 — legge_gelli_bianco (headless-paragraph convention)
@@ -18,8 +18,18 @@ The N-NNN family covers ten fixtures at landing of schema 0.7.0:
 * N-007 — tuf_dlgs_58_1998 (largest BEN_FORMATO, 4 MB)
 * N-008 — codice_penale FRAGMENTED (987 synthetic articles)
 * N-009 — codice_civile FRAGMENTED (3256 synthetic articles)
-* N-010 — legge_capitali (AKN modifications: 80 AMENDMENT + 88
-  QUOTED_TEXT + 161 UPDATE_BLOCK)
+* N-010 — legge_capitali (AKN modifications calibration, debt xiv:
+  80 AMENDMENT + 88 QUOTED_TEXT + 161 UPDATE_BLOCK)
+* N-011 — dl_rilancio (D.L. 34/2020 "Rilancio", debt xvii edge case:
+  zero body-side `<mod>`, 1031 UPDATE_BLOCK with single-type
+  "insertion" — atto modificato senza essere modificatore narrativo)
+* N-012 — dlgs_cartabia (D.Lgs. 149/2022 "Riforma Cartabia", debt xvii
+  stress test: 483 AMENDMENT + 518 QUOTED_TEXT + 1287 UPDATE_BLOCK,
+  cross-epoch URN binding R.D. 1940/1941/1942, nuovo valore
+  `type="split"`)
+* N-013 — dlgs_correttivo_appalti (D.Lgs. 209/2024 "Correttivo Codice
+  Appalti", debt xvii mid-size: 221 AMENDMENT + 214 QUOTED_TEXT + 453
+  UPDATE_BLOCK + forma URN-FRBR con frammento `~art_NN__para_NN`)
 
 Usage::
 
@@ -113,6 +123,21 @@ _BASELINES: tuple[tuple[str, Path, str], ...] = (
         "N-010",
         _EXPLORATION / "legge_capitali" / "legge_capitali.xml",
         "xml_akn_baseline_legge_capitali.json",
+    ),
+    (
+        "N-011",
+        _EXPLORATION / "dl_rilancio" / "dl_rilancio.xml",
+        "xml_akn_baseline_dl_rilancio.json",
+    ),
+    (
+        "N-012",
+        _EXPLORATION / "dlgs_cartabia" / "dlgs_cartabia.xml",
+        "xml_akn_baseline_dlgs_cartabia.json",
+    ),
+    (
+        "N-013",
+        _EXPLORATION / "dlgs_correttivo_appalti" / "dlgs_correttivo_appalti.xml",
+        "xml_akn_baseline_dlgs_correttivo_appalti.json",
     ),
 )
 

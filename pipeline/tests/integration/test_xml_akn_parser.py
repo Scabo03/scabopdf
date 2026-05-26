@@ -153,6 +153,61 @@ def test_baseline_holds_for_legge_capitali() -> None:
     _assert_baseline_holds(xml, "xml_akn_baseline_legge_capitali.json", "N-010")
 
 
+def test_baseline_holds_for_dl_rilancio() -> None:
+    """N-011 regression baseline. AKN modifications calibration on the
+    edge-case fixture for debt (xvii): D.L. 19 maggio 2020, n. 34
+    "Rilancio" (COVID-19), CONSOLIDATED 2026-04-07. The fixture exhibits
+    a degenerate regime — **zero body-side** (`<mod>` = 0,
+    `<quotedText>` = 0) — and 1031 ``<textualMod>`` meta-side
+    distributed across 360 active + 671 passive, all with the single
+    ``type="insertion"`` value. The baseline pins the empirical
+    distribution and the absence of ``AMENDMENT``/``QUOTED_TEXT_*``
+    nodes. Total 3346 Node count (mostly ARTICLE_BODY + LIST_ITEM +
+    UPDATE_BLOCK)."""
+    xml = _EXPLORATION / "dl_rilancio" / "dl_rilancio.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_dl_rilancio.json", "N-011")
+
+
+def test_baseline_holds_for_dlgs_cartabia() -> None:
+    """N-012 regression baseline. AKN modifications stress test for
+    debt (xvii): D.Lgs. 10 ottobre 2022, n. 149 "Riforma Cartabia",
+    CONSOLIDATED 2025-08-09. The fixture is the largest modifier in the
+    corpus — 483 ``<mod>`` + 518 ``<quotedText>`` body-side + 1287
+    ``<textualMod>`` meta-side (1270 active + 17 passive) — and is the
+    first fixture to exercise (a) cross-epoch URN binding against the
+    Codici (R.D. 1940-10-28;1443 c.p.c., R.D. 1942-03-16;262 c.c.,
+    R.D. 1941-01-30;12 ord. giud.) and (b) the previously-unseen
+    ``type="split"`` value of the ``<textualMod>`` vocabulary (1 occ.).
+    The parser emits the ``type`` attribute verbatim in the
+    UPDATE_BLOCK text without any taxonomic interpretation, so the
+    new value flows through transparently. Total 2913 Node count."""
+    xml = _EXPLORATION / "dlgs_cartabia" / "dlgs_cartabia.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(xml, "xml_akn_baseline_dlgs_cartabia.json", "N-012")
+
+
+def test_baseline_holds_for_dlgs_correttivo_appalti() -> None:
+    """N-013 regression baseline. AKN modifications mid-size baseline
+    for debt (xvii): D.Lgs. 31 dicembre 2024, n. 209 "Correttivo Codice
+    Appalti", version ORIGINAL. The fixture exercises 221 ``<mod>`` +
+    214 ``<quotedText>`` body-side + 453 ``<textualMod>`` meta-side
+    (all active, zero passive because the ORIGINAL manifestation has
+    received no subsequent modifications yet), with 3 occurrences of
+    the ``type="split"`` value and a previously-unseen form of the
+    ``destination href`` — the AKN expression URI with sub-article
+    fragment ``/akn/it/act/.../!main/~art_NN__para_NN`` instead of the
+    URN-NIR canonical form. Parser emits the href verbatim so this
+    flows through without parser changes. Total 1376 Node count."""
+    xml = _EXPLORATION / "dlgs_correttivo_appalti" / "dlgs_correttivo_appalti.xml"
+    _skip_if_missing(xml)
+    _assert_baseline_holds(
+        xml,
+        "xml_akn_baseline_dlgs_correttivo_appalti.json",
+        "N-013",
+    )
+
+
 class TestRealFixtureStructure:
     """Structural sanity checks on the seven BEN_FORMATO fixtures.
 
@@ -286,6 +341,154 @@ class TestRealFixtureStructure:
             1 for w in warnings if w.startswith("xml_akn:amendments:mod_without_quoted_text_node_")
         )
         assert n_mod_pure_prose == 9
+
+    def test_dl_rilancio_emits_only_meta_side_modifications(self) -> None:
+        """Sanity check on the debt-(xvii) edge-case fixture: D.L. 34/2020
+        "Rilancio" exercises the degenerate regime "atto modificato senza
+        essere modificatore narrativo" — zero ``<mod>`` body-side, 1031
+        ``<textualMod>`` meta-side (360 active + 671 passive) with the
+        single ``type="insertion"`` value. The parser must produce zero
+        ``AMENDMENT``/``QUOTED_TEXT_*`` Nodes and exactly the two
+        HEADING_1 container Nodes in coda al Document.root."""
+        import collections
+
+        from scabopdf_pipeline.reconstruction.types import Node
+
+        xml = _EXPLORATION / "dl_rilancio" / "dl_rilancio.xml"
+        _skip_if_missing(xml)
+        result = parse(xml)
+
+        counts: collections.Counter[str] = collections.Counter()
+
+        def walk(node: Node) -> None:
+            counts[node.category.value] += 1
+            for child in node.children:
+                walk(child)
+
+        for root_node in result.document.root:
+            walk(root_node)
+
+        assert counts["AMENDMENT"] == 0
+        assert counts["QUOTED_TEXT_OLD"] == 0
+        assert counts["QUOTED_TEXT_NEW"] == 0
+        assert counts["UPDATE_BLOCK"] == 1031
+
+        # Two HEADING_1 containers exactly (no other top-level HEADING_1)
+        modifications_containers = [
+            n
+            for n in result.document.root
+            if n.category is SemanticCategory.HEADING_1
+            and n.text
+            in (
+                "Modificazioni attive a altri atti",
+                "Modificazioni passive di questo atto",
+            )
+        ]
+        assert len(modifications_containers) == 2
+        assert len(modifications_containers[0].children) == 360
+        assert len(modifications_containers[1].children) == 671
+
+        warnings = list(result.warnings)
+        assert "xml_akn:amendments:active_modifications_minted_360" in warnings
+        assert "xml_akn:amendments:passive_modifications_minted_671" in warnings
+
+    def test_dlgs_cartabia_emits_cross_epoch_modifications(self) -> None:
+        """Sanity check on the debt-(xvii) stress test fixture: D.Lgs.
+        149/2022 "Riforma Cartabia" is the largest modifier in the corpus
+        — 483 AMENDMENT + 380 QUOTED_TEXT_NEW + 138 QUOTED_TEXT_OLD + 1287
+        UPDATE_BLOCK (1270 active + 17 passive) — and the first fixture
+        to exercise (a) cross-epoch URN binding to R.D. 1940/1941/1942
+        and (b) the ``type="split"`` value of the ``<textualMod>`` type
+        vocabulary. Verifies the counts plus that at least one
+        UPDATE_BLOCK Node text leads with the ``split:`` prefix."""
+        import collections
+
+        from scabopdf_pipeline.reconstruction.types import Node
+
+        xml = _EXPLORATION / "dlgs_cartabia" / "dlgs_cartabia.xml"
+        _skip_if_missing(xml)
+        result = parse(xml)
+
+        counts: collections.Counter[str] = collections.Counter()
+        split_update_block_count = 0
+
+        def walk(node: Node) -> None:
+            nonlocal split_update_block_count
+            counts[node.category.value] += 1
+            if (
+                node.category is SemanticCategory.UPDATE_BLOCK
+                and node.text is not None
+                and node.text.startswith("split:")
+            ):
+                split_update_block_count += 1
+            for child in node.children:
+                walk(child)
+
+        for root_node in result.document.root:
+            walk(root_node)
+
+        assert counts["AMENDMENT"] == 483
+        assert counts["QUOTED_TEXT_OLD"] == 138
+        assert counts["QUOTED_TEXT_NEW"] == 380
+        assert counts["UPDATE_BLOCK"] == 1287
+        # The new "split" type value, emitted verbatim by the parser
+        assert split_update_block_count == 1
+
+        warnings = list(result.warnings)
+        assert "xml_akn:amendments:active_modifications_minted_1270" in warnings
+        assert "xml_akn:amendments:passive_modifications_minted_17" in warnings
+
+    def test_dlgs_correttivo_appalti_emits_frbr_uri_modifications(self) -> None:
+        """Sanity check on the debt-(xvii) mid-size fixture: D.Lgs.
+        209/2024 "Correttivo Codice Appalti" (ORIGINAL manifestation,
+        zero passive modifications) — 221 AMENDMENT + 162 QUOTED_TEXT_NEW
+        + 52 QUOTED_TEXT_OLD + 453 UPDATE_BLOCK all active. Three
+        ``type="split"`` occurrences and the previously-unseen AKN
+        expression URI form ``/akn/it/act/.../~art_NN__para_NN`` for
+        sub-article destinations. The parser emits the destination href
+        verbatim inside the UPDATE_BLOCK text; this test verifies that at
+        least one UPDATE_BLOCK contains the FRBR-style fragment."""
+        import collections
+
+        from scabopdf_pipeline.reconstruction.types import Node
+
+        xml = _EXPLORATION / "dlgs_correttivo_appalti" / "dlgs_correttivo_appalti.xml"
+        _skip_if_missing(xml)
+        result = parse(xml)
+
+        counts: collections.Counter[str] = collections.Counter()
+        split_update_block_count = 0
+        frbr_subarticle_uri_count = 0
+
+        def walk(node: Node) -> None:
+            nonlocal split_update_block_count, frbr_subarticle_uri_count
+            counts[node.category.value] += 1
+            if node.category is SemanticCategory.UPDATE_BLOCK and node.text is not None:
+                if node.text.startswith("split:"):
+                    split_update_block_count += 1
+                if "~art_" in node.text:
+                    frbr_subarticle_uri_count += 1
+            for child in node.children:
+                walk(child)
+
+        for root_node in result.document.root:
+            walk(root_node)
+
+        assert counts["AMENDMENT"] == 221
+        assert counts["QUOTED_TEXT_OLD"] == 52
+        assert counts["QUOTED_TEXT_NEW"] == 162
+        assert counts["UPDATE_BLOCK"] == 453
+        assert split_update_block_count == 3
+        # FRBR-style sub-article URI verbatim in at least one UPDATE_BLOCK
+        assert frbr_subarticle_uri_count > 0
+
+        warnings = list(result.warnings)
+        assert "xml_akn:amendments:active_modifications_minted_453" in warnings
+        # No passive modifications container (ORIGINAL manifestation)
+        passive_minted = [
+            w for w in warnings if w.startswith("xml_akn:amendments:passive_modifications_minted_")
+        ]
+        assert passive_minted == []
 
 
 class TestEmittedJsonValidatesAgainstSchema:
