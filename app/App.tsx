@@ -2,25 +2,37 @@
  * ScaboPDF — app root.
  *
  * Placeholder home screen. The real reading experience (native
- * UIAccessibilityReadingContent view, the three layout renderers, the theme
- * system and the JSON consumption layer) lands in later phases. This screen
- * exists so the scaffold runs and is fully VoiceOver-accessible from day one
- * (SPECS § 0: accessibility is total and non-negotiable).
+ * UIAccessibilityReadingContent view, the three layout renderers and the JSON
+ * consumption wiring) lands in later phases. This screen exists so the
+ * scaffold runs, is fully VoiceOver-accessible from day one (SPECS § 0), and
+ * consumes the theme system (SPECS § A).
  */
 
+import { useMemo } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-
-const colors = {
-  background: '#0A0A0A',
-  textPrimary: '#E0E0D8',
-  textSecondary: '#8A8A82',
-};
+import { ThemeProvider, useTheme, type Theme } from './src/theme';
 
 function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      <ThemeProvider>
+        <Home />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function Home() {
+  const theme = useTheme();
+  const styles = useMemo(() => makeStyles(theme), [theme]);
+
+  return (
+    <>
+      <StatusBar
+        barStyle={theme.isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={theme.palette.background.primary}
+      />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <Text accessibilityRole="header" style={styles.title}>
@@ -31,32 +43,34 @@ function App() {
           </Text>
         </View>
       </SafeAreaView>
-    </SafeAreaProvider>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: 17,
-    textAlign: 'center',
-  },
-});
+function makeStyles(theme: Theme) {
+  return StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: theme.palette.background.primary,
+    },
+    container: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    title: {
+      color: theme.palette.accent.heading,
+      fontSize: theme.typography.screenTitle.fontSize,
+      fontWeight: theme.typography.screenTitle.fontWeight,
+      marginBottom: 12,
+    },
+    subtitle: {
+      color: theme.palette.text.secondary,
+      fontSize: theme.typography.documentBody.fontSize,
+      textAlign: 'center',
+    },
+  });
+}
 
 export default App;
