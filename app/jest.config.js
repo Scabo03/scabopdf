@@ -5,6 +5,9 @@ module.exports = {
   // and falls back to the node crawler with a noisy 60s timeout. Disable it
   // for deterministic test runs in pre-commit/CI.
   watchman: false,
+  // Require a *.test.* suffix so non-test helpers can sit next to test files
+  // inside __tests__/ without being scheduled as suites themselves.
+  testMatch: ['**/?(*.)+(test).{ts,tsx,js,jsx}'],
   // The preset's transformIgnorePatterns does not include
   // react-native-safe-area-context, whose Jest mock ships as untransformed
   // TSX. Re-state the preset pattern and add the library so Babel transforms
