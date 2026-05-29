@@ -17,6 +17,11 @@ end
 target 'ScaboPDF' do
   config = use_native_modules!
 
+  # Local pod for the app's own native code (reading view + accessibility
+  # settings TurboModule). The podspec consumes install_modules_dependencies
+  # so it inherits React-Codegen and React-RCTFabric automatically.
+  pod 'ScaboNative', :path => './ScaboNative'
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
