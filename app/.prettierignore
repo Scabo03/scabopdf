@@ -1,0 +1,8 @@
+# Generated / native / vendored — not formatted by Prettier.
+node_modules/
+ios/
+android/
+vendor/
+coverage/
+*.lock
+package-lock.json

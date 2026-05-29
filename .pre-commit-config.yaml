@@ -30,3 +30,30 @@ repos:
         language: system
         pass_filenames: false
         files: ^pipeline/
+      # Layer 2 (app/) hooks. They use the local node_modules/.bin binaries,
+      # so there is nothing to network-fetch on install. Run ``npm install``
+      # in app/ once after cloning; see docs/DEVELOPMENT.md.
+      - id: app-eslint
+        name: eslint (app)
+        entry: bash -c 'cd app && node_modules/.bin/eslint .'
+        language: system
+        pass_filenames: false
+        files: ^app/
+      - id: app-prettier
+        name: prettier --check (app)
+        entry: bash -c 'cd app && node_modules/.bin/prettier --check "**/*.{ts,tsx,js,jsx,json,md}"'
+        language: system
+        pass_filenames: false
+        files: ^app/
+      - id: app-typecheck
+        name: tsc --noEmit (app)
+        entry: bash -c 'cd app && node_modules/.bin/tsc --noEmit'
+        language: system
+        pass_filenames: false
+        files: ^app/
+      - id: app-jest
+        name: jest (app)
+        entry: bash -c 'cd app && node_modules/.bin/jest'
+        language: system
+        pass_filenames: false
+        files: ^app/

@@ -17,10 +17,10 @@ node_modules/
 .expo/
 *.log
 
-# iOS build
-ios/build/
-ios/Pods/
-*.xcworkspace/xcuserdata/
+# React Native app (Layer 2) build/native artifacts are ignored by the
+# app/.gitignore shipped with the RN scaffold (ios/build, ios/Pods, android
+# build, .xcode.env.local, *.jsbundle, coverage, ...), which is correctly
+# anchored to the app/ subtree. node_modules/ above already matches app/.
 
 # OS
 .DS_Store
