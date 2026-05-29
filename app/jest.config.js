@@ -13,6 +13,6 @@ module.exports = {
   // TSX. Re-state the preset pattern and add the library so Babel transforms
   // it.
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|react-native-safe-area-context)/)',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-native-async-storage|@react-native-documents|react-native-safe-area-context)/)',
   ],
 };

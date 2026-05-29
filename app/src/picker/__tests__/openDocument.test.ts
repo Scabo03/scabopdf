@@ -1,0 +1,47 @@
+/**
+ * Tests for the document picker wrapper. The native picker is mocked at the
+ * jest setup level; this file replaces the mock per-scenario.
+ */
+
+import { errorCodes, pick } from '@react-native-documents/picker';
+import { openDocumentFromPicker } from '../openDocument';
+
+describe('openDocumentFromPicker', () => {
+  beforeEach(() => {
+    (pick as jest.Mock).mockReset();
+  });
+
+  test('returns null when the user cancels the picker', async () => {
+    const cancelError = Object.assign(new Error('cancelled'), {
+      code: errorCodes.OPERATION_CANCELED,
+    });
+    (pick as jest.Mock).mockRejectedValueOnce(cancelError);
+
+    expect(await openDocumentFromPicker()).toBeNull();
+  });
+
+  test('returns null when the picker returns no results', async () => {
+    (pick as jest.Mock).mockResolvedValueOnce([]);
+    expect(await openDocumentFromPicker()).toBeNull();
+  });
+
+  test('returns the file contents on the happy path', async () => {
+    (pick as jest.Mock).mockResolvedValueOnce([
+      { uri: 'file:///tmp/doc.scabopdf.json', name: 'doc.scabopdf.json' },
+    ]);
+    const fetchSpy = jest
+      .spyOn(global, 'fetch')
+      // The text() method on the fake response returns a JSON string.
+      .mockResolvedValueOnce({
+        text: () => Promise.resolve('{"schema_version":"0.7.0"}'),
+      } as unknown as Response);
+
+    const picked = await openDocumentFromPicker();
+    expect(picked).not.toBeNull();
+    expect(picked?.name).toBe('doc.scabopdf.json');
+    expect(picked?.content).toBe('{"schema_version":"0.7.0"}');
+    expect(fetchSpy).toHaveBeenCalledWith('file:///tmp/doc.scabopdf.json');
+
+    fetchSpy.mockRestore();
+  });
+});
