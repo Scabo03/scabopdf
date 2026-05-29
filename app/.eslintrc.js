@@ -1,6 +1,8 @@
 module.exports = {
   root: true,
   extends: ['@react-native', 'plugin:react-native-a11y/ios'],
+  // Generated from shared/schema.json by npm run gen:schema; not hand-edited.
+  ignorePatterns: ['src/consumption/schema.generated.ts'],
   rules: {
     // SPECS § 0.5: accessibilityHint is required only where the action is
     // not self-evident from the label, not on every labelled element. The

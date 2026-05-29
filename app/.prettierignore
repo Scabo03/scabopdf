@@ -6,3 +6,8 @@ vendor/
 coverage/
 *.lock
 package-lock.json
+
+# Generated from shared/schema.json by npm run gen:schema (do not reformat;
+# the schema copy must stay byte-identical to the canonical contract).
+src/consumption/schema.generated.ts
+src/consumption/schema.json
