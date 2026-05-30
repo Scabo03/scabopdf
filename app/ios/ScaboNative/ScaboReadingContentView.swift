@@ -30,6 +30,12 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
 
   private var pageNumber: Int = 1
 
+  // Retained so the page can be re-rendered when the Dynamic Type setting
+  // changes while the document is open (UIContentSizeCategory.didChange).
+  private var segmentsData: [[String: String]] = []
+  private var textColorHex: String?
+  private var baseBodyFontSize: CGFloat = 18
+
   /// Set by the ObjC++ component view; called when VoiceOver requests a new page.
   @objc public var onPageChangeRequest: ((String, Int) -> Void)?
 
@@ -48,11 +54,27 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
 
     isAccessibilityElement = true
     accessibilityTraits.insert(.causesPageTurn)
+
+    // Re-render when the user changes Settings → Display & Text Size → Larger
+    // Text while the document is open, so Dynamic Type updates live.
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(contentSizeCategoryDidChange),
+      name: UIContentSizeCategory.didChangeNotification,
+      object: nil)
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
   }
 
   @available(*, unavailable)
   required init?(coder: NSCoder) {
     fatalError("not supported")
+  }
+
+  @objc private func contentSizeCategoryDidChange() {
+    renderContent()
   }
 
   // MARK: - Content update (called from ObjC++)
@@ -62,11 +84,31 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
                                       textColor: String?,
                                       bodyFontSize: CGFloat) {
     self.pageNumber = pageNumber
+    self.segmentsData = segments
+    self.textColorHex = textColor
+    self.baseBodyFontSize = bodyFontSize > 0 ? bodyFontSize : 18
 
-    let baseFont = UIFont.preferredFont(forTextStyle: .body)
-      .withSize(bodyFontSize > 0 ? bodyFontSize : 18)
-    let baseColor = Self.color(fromHex: textColor) ?? UIColor.label
+    renderContent()
+    // The element's accessibilityLabel is the short document name, applied by
+    // the Fabric host through -accessibilityElement; the page text itself is
+    // exposed line-by-line through the UIAccessibilityReadingContent methods
+    // below, so we must NOT overwrite the label with the whole page string.
+    UIAccessibility.post(notification: .layoutChanged, argument: self)
+  }
 
+  /// Builds the attributed page from the retained segment data. Split out of
+  /// updatePageContent so a Dynamic Type change can re-run it without new props.
+  private func renderContent() {
+    // Scale the body base via UIFontMetrics so the whole page (every role's
+    // font is derived from this base) honours the user's preferred text size;
+    // role fonts are proportional multiples of the scaled base. Using the
+    // non-`compatibleWith:` API reads the current content-size category, which
+    // is up to date by the time the change notification fires.
+    let nominalBase = UIFont.systemFont(ofSize: baseBodyFontSize)
+    let baseFont = UIFontMetrics(forTextStyle: .body).scaledFont(for: nominalBase)
+    let baseColor = Self.color(fromHex: textColorHex) ?? UIColor.label
+
+    let segments = segmentsData
     let body = NSMutableAttributedString()
     for (index, segment) in segments.enumerated() {
       let role = segment["role"] ?? "BODY"
@@ -111,17 +153,15 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
     }
 
     textView.attributedText = body
-    // The element's accessibilityLabel is the short document name, applied by
-    // the Fabric host through -accessibilityElement; the page text itself is
-    // exposed line-by-line through the UIAccessibilityReadingContent methods
-    // below, so we must NOT overwrite the label with the whole page string.
-    UIAccessibility.post(notification: .layoutChanged, argument: self)
   }
 
   /// Clears all content + state. Called by the Fabric host on view recycle so
   /// a recycled instance never exposes the previous document to VoiceOver.
   @objc public func reset() {
     pageNumber = 1
+    segmentsData = []
+    textColorHex = nil
+    baseBodyFontSize = 18
     textView.attributedText = NSAttributedString(string: "")
     accessibilityLabel = nil
   }
