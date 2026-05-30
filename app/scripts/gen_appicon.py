@@ -10,7 +10,9 @@ import json
 import os
 from PIL import Image, ImageDraw
 
-OUT = os.path.join(os.path.dirname(__file__), "ScaboPDF", "Images.xcassets", "AppIcon.appiconset")
+OUT = os.path.join(
+    os.path.dirname(__file__), "..", "ios", "ScaboPDF", "Images.xcassets", "AppIcon.appiconset"
+)
 M = 1024
 
 
