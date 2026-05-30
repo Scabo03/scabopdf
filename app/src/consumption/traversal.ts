@@ -16,22 +16,48 @@ export type NodeVisitor = (
   parent: NodeDict | null,
 ) => void;
 
-/** Walks `nodes` and their descendants in pre-order, calling `visit`. */
+/**
+ * Walks `nodes` and their descendants in pre-order, calling `visit`.
+ *
+ * Implemented with an explicit work-list rather than recursion so a deeply
+ * nested (but schema-valid — `NodeDict.children` is unbounded) document cannot
+ * overflow the JS call stack. The stack ceiling is small on Hermes under the
+ * New Architecture, so a recursive walk could crash the render path on input
+ * that the parser accepts; the iterative form is bounded by the heap instead.
+ * Order is identical to the recursive walk: children are pushed in reverse so
+ * siblings pop left-to-right and each node's subtree is visited before the
+ * next sibling.
+ */
 export function walkTree(nodes: readonly NodeDict[], visit: NodeVisitor): void {
-  const recurse = (
-    current: readonly NodeDict[],
+  interface Frame {
+    node: NodeDict;
+    depth: number;
+    parent: NodeDict | null;
+  }
+  const stack: Frame[] = [];
+  const pushReversed = (
+    list: readonly NodeDict[],
     depth: number,
     parent: NodeDict | null,
   ): void => {
-    for (const node of current) {
-      visit(node, depth, parent);
-      const children = node.children;
-      if (children !== undefined && children.length > 0) {
-        recurse(children, depth + 1, node);
+    for (let i = list.length - 1; i >= 0; i--) {
+      const node = list[i];
+      if (node !== undefined) {
+        stack.push({ node, depth, parent });
       }
     }
   };
-  recurse(nodes, 0, null);
+
+  pushReversed(nodes, 0, null);
+  let frame = stack.pop();
+  while (frame !== undefined) {
+    visit(frame.node, frame.depth, frame.parent);
+    const children = frame.node.children;
+    if (children !== undefined && children.length > 0) {
+      pushReversed(children, frame.depth + 1, frame.node);
+    }
+    frame = stack.pop();
+  }
 }
 
 /**
