@@ -60,23 +60,29 @@ def master():
 
 def main():
     base = master()
+    # (idiom, size, scale, pixels) — covers the full iPhone + iPad + marketing
+    # matrix App Store requires for a universal (TARGETED_DEVICE_FAMILY 1,2) app.
     specs = [
-        ("20x20", "2x", 40), ("20x20", "3x", 60),
-        ("29x29", "2x", 58), ("29x29", "3x", 87),
-        ("40x40", "2x", 80), ("40x40", "3x", 120),
-        ("60x60", "2x", 120), ("60x60", "3x", 180),
-        ("1024x1024", "1x", 1024),
+        ("iphone", "20x20", "2x", 40), ("iphone", "20x20", "3x", 60),
+        ("iphone", "29x29", "2x", 58), ("iphone", "29x29", "3x", 87),
+        ("iphone", "40x40", "2x", 80), ("iphone", "40x40", "3x", 120),
+        ("iphone", "60x60", "2x", 120), ("iphone", "60x60", "3x", 180),
+        ("ipad", "20x20", "1x", 20), ("ipad", "20x20", "2x", 40),
+        ("ipad", "29x29", "1x", 29), ("ipad", "29x29", "2x", 58),
+        ("ipad", "40x40", "1x", 40), ("ipad", "40x40", "2x", 80),
+        ("ipad", "76x76", "1x", 76), ("ipad", "76x76", "2x", 152),
+        ("ipad", "83.5x83.5", "2x", 167),
+        ("ios-marketing", "1024x1024", "1x", 1024),
     ]
     images = []
     written = {}
-    for size, scale, px in specs:
+    for idiom, size, scale, px in specs:
         fn = f"icon-{px}.png"
         if px not in written:
             im = base.resize((px, px), Image.LANCZOS).convert("RGB")
             im.save(os.path.join(OUT, fn))
             written[px] = fn
-        images.append({"idiom": "iphone" if size != "1024x1024" else "ios-marketing",
-                       "scale": scale, "size": size, "filename": fn})
+        images.append({"idiom": idiom, "scale": scale, "size": size, "filename": fn})
     contents = {"images": images, "info": {"author": "xcode", "version": 1}}
     with open(os.path.join(OUT, "Contents.json"), "w") as f:
         json.dump(contents, f, indent=2)
