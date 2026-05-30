@@ -2,20 +2,27 @@
  * ScaboPDF — app root.
  *
  * Wires the end-to-end minimum: theme + layout preferences restored from
- * AsyncStorage, the home screen offers a single "Apri documento" action, the
- * iOS system document picker imports a .scabopdf.json file, the consumption
- * layer parses + validates it, the rendering layer builds the segment stream
- * for the active layout, and the native ReadingView renders the current page
- * (Fase 4 + 5 + 6 partial).
+ * AsyncStorage, the home screen lists the documents opened this session and
+ * offers "Apri documento", the iOS system document picker imports a
+ * .scabopdf.json file, the consumption layer parses + validates it, the
+ * rendering layer builds the segment stream for the active layout, and the
+ * native ReadingView renders the current page (Fase 4 + 5 + 6 partial).
+ *
+ * Navigation (Q3): opening a document swaps to a reader with a top-left
+ * "Chiudi" control (iOS convention); closing returns to the home list and
+ * moves VoiceOver focus onto the row of the document that was just closed —
+ * the one the user had open — rather than the top of the list.
  *
  * Everything VoiceOver-facing carries explicit accessibility props per
  * SPECS § 0 (total accessibility, P0).
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
+  findNodeHandle,
   Pressable,
+  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
@@ -66,27 +73,61 @@ function ThemeBootstrap({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** A document opened this session, kept parsed in memory for instant reopen. */
+interface OpenedDocument {
+  id: string;
+  name: string;
+  doc: ScabopdfDocument;
+}
+
 function Home() {
   const theme = useTheme();
   const styles = useMemo(() => makeStyles(theme), [theme]);
 
   const [layoutId, setLayoutId] = useState<LayoutId>('continuous');
-  const [doc, setDoc] = useState<ScabopdfDocument | null>(null);
-  const [documentName, setDocumentName] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<OpenedDocument[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pageIndex, setPageIndex] = useState<number>(0);
   const [busy, setBusy] = useState<boolean>(false);
+  // The row to move VoiceOver focus to after returning to the home list.
+  const [focusTargetId, setFocusTargetId] = useState<string | null>(null);
+
+  const nextId = useRef<number>(0);
+  const rowRefs = useRef<Map<string, View | null>>(new Map());
 
   useEffect(() => {
     getStoredLayoutId().then(setLayoutId);
   }, []);
 
+  const activeDoc = useMemo(
+    () => documents.find(d => d.id === activeId) ?? null,
+    [documents, activeId],
+  );
+
   const pages = useMemo<ContentPage[]>(() => {
-    if (doc === null) {
+    if (activeDoc === null) {
       return [];
     }
-    return paginate(buildLayout(doc, layoutId)).pages;
-  }, [doc, layoutId]);
+    return paginate(buildLayout(activeDoc.doc, layoutId)).pages;
+  }, [activeDoc, layoutId]);
+
+  // After closing a document, move VoiceOver focus onto its row in the list.
+  useEffect(() => {
+    if (activeId !== null || focusTargetId === null) {
+      return;
+    }
+    const id = focusTargetId;
+    const timer = setTimeout(() => {
+      const el = rowRefs.current.get(id);
+      const node = el ? findNodeHandle(el) : null;
+      if (node != null) {
+        AccessibilityInfo.setAccessibilityFocus(node);
+      }
+      setFocusTargetId(null);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [activeId, focusTargetId]);
 
   async function handleOpenDocument(): Promise<void> {
     setError(null);
@@ -107,9 +148,7 @@ function Home() {
         setError(result.error.message);
         return;
       }
-      setDoc(result.document);
-      setDocumentName(picked.name);
-      setPageIndex(0);
+      openInReader(picked.name, result.document);
     } catch {
       setError(
         'Non è stato possibile aprire il documento. Riprova o scegli un altro file.',
@@ -117,6 +156,32 @@ function Home() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function openInReader(name: string, doc: ScabopdfDocument): void {
+    // Reuse the existing entry when the same file is reopened, so the list
+    // stays clean and the focus-return target is stable.
+    const existing = documents.find(d => d.name === name);
+    const id = existing ? existing.id : `doc_${nextId.current++}`;
+    setDocuments(prev => {
+      const without = prev.filter(d => d.id !== id);
+      return [{ id, name, doc }, ...without];
+    });
+    setActiveId(id);
+    setPageIndex(0);
+    AccessibilityInfo.announceForAccessibility(`Documento ${name} aperto`);
+  }
+
+  function handleReopen(item: OpenedDocument): void {
+    setActiveId(item.id);
+    setPageIndex(0);
+    AccessibilityInfo.announceForAccessibility(`Documento ${item.name} aperto`);
+  }
+
+  function handleClose(): void {
+    const closed = activeId;
+    setActiveId(null);
+    setFocusTargetId(closed);
   }
 
   function handlePageChange(
@@ -131,6 +196,8 @@ function Home() {
     });
   }
 
+  const page = pages[pageIndex] ?? pages[0];
+
   return (
     <>
       <StatusBar
@@ -138,8 +205,8 @@ function Home() {
         backgroundColor={theme.palette.background.primary}
       />
       <SafeAreaView style={styles.safeArea}>
-        {doc === null ? (
-          <View style={styles.container}>
+        {activeDoc === null ? (
+          <ScrollView contentContainerStyle={styles.homeContent}>
             <Text accessibilityRole="header" style={styles.title}>
               ScaboPDF
             </Text>
@@ -168,21 +235,59 @@ function Home() {
                 {error}
               </Text>
             ) : null}
-          </View>
+            {documents.length > 0 ? (
+              <View style={styles.list}>
+                <Text accessibilityRole="header" style={styles.listHeader}>
+                  Documenti aperti
+                </Text>
+                {documents.map(item => (
+                  <Pressable
+                    key={item.id}
+                    ref={el => {
+                      rowRefs.current.set(item.id, el);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.name}
+                    accessibilityHint="Riapre il documento in lettura"
+                    onPress={() => handleReopen(item)}
+                    style={styles.row}
+                  >
+                    <Text style={styles.rowLabel}>{item.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </ScrollView>
         ) : (
-          <ReadingView
-            style={styles.reader}
-            pageContent={(pages[pageIndex] ?? pages[0])?.segments ?? []}
-            pageNumber={(pages[pageIndex] ?? pages[0])?.pageNumber ?? 1}
-            textColor={theme.palette.text.primary}
-            bodyFontSize={theme.typography.documentBody.fontSize}
-            onRequestPageChange={handlePageChange}
-            accessibilityLabel={
-              documentName !== null
-                ? `Lettura del documento ${documentName}`
-                : 'Lettura del documento'
-            }
-          />
+          <View style={styles.readerScreen}>
+            <View style={styles.readerBar}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Chiudi documento"
+                accessibilityHint="Torna all'elenco dei documenti"
+                onPress={handleClose}
+                style={styles.backButton}
+              >
+                <Text style={styles.backLabel}>‹ Chiudi</Text>
+              </Pressable>
+              <Text
+                accessibilityRole="header"
+                numberOfLines={1}
+                style={styles.readerTitle}
+              >
+                {activeDoc.name}
+              </Text>
+            </View>
+            <ReadingView
+              style={styles.reader}
+              pageContent={page?.segments ?? []}
+              pageNumber={page?.pageNumber ?? 1}
+              textColor={theme.palette.text.primary}
+              bodyFontSize={theme.typography.documentBody.fontSize}
+              onRequestPageChange={handlePageChange}
+              accessibilityLabel={`Lettura del documento ${activeDoc.name}`}
+            />
+          </View>
         )}
       </SafeAreaView>
     </>
@@ -195,11 +300,10 @@ function makeStyles(theme: Theme) {
       flex: 1,
       backgroundColor: theme.palette.background.primary,
     },
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+    homeContent: {
       paddingHorizontal: 24,
+      paddingTop: 32,
+      paddingBottom: 24,
     },
     title: {
       color: theme.palette.accent.heading,
@@ -210,8 +314,7 @@ function makeStyles(theme: Theme) {
     subtitle: {
       color: theme.palette.text.secondary,
       fontSize: theme.typography.documentBody.fontSize,
-      textAlign: 'center',
-      marginBottom: 32,
+      marginBottom: 24,
     },
     button: {
       minWidth: 200,
@@ -234,7 +337,58 @@ function makeStyles(theme: Theme) {
       marginTop: 16,
       color: theme.palette.accent.warning,
       fontSize: theme.typography.note.fontSize,
-      textAlign: 'center',
+    },
+    list: {
+      marginTop: 32,
+    },
+    listHeader: {
+      color: theme.palette.accent.heading,
+      fontSize: theme.typography.uiLabel.fontSize,
+      fontWeight: theme.typography.uiLabel.fontWeight,
+      marginBottom: 12,
+    },
+    row: {
+      minHeight: 44,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      backgroundColor: theme.palette.background.secondary,
+      borderWidth: 1,
+      borderColor: theme.palette.background.tertiary,
+      marginBottom: 8,
+      justifyContent: 'center',
+    },
+    rowLabel: {
+      color: theme.palette.text.primary,
+      fontSize: theme.typography.documentBody.fontSize,
+    },
+    readerScreen: {
+      flex: 1,
+    },
+    readerBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 44,
+      paddingHorizontal: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.palette.background.tertiary,
+    },
+    backButton: {
+      minHeight: 44,
+      minWidth: 44,
+      paddingHorizontal: 8,
+      justifyContent: 'center',
+    },
+    backLabel: {
+      color: theme.palette.accent.link,
+      fontSize: theme.typography.uiLabel.fontSize,
+      fontWeight: theme.typography.uiLabel.fontWeight,
+    },
+    readerTitle: {
+      flex: 1,
+      color: theme.palette.text.secondary,
+      fontSize: theme.typography.note.fontSize,
+      marginLeft: 8,
     },
     reader: {
       flex: 1,
