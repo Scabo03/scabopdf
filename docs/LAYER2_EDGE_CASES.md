@@ -196,3 +196,38 @@ entries follow.
   (VoiceOver announcement).
 - The native-boundary / defensive-branch **test-coverage gaps are largely closed**
   (+11 tests). The App.tsx integration suite remains open debt.
+
+---
+
+## 2026-05-30 — Post-audit implementation: resolved entries
+
+Implemented in the Blocker A + Q1/Q2/Q3 session (see
+`LAYER2_AUDIT_REPORT.md` → "Post-audit implementation"). Resolved:
+
+- **(1) / (1a) / (1b) — modification + structural roles undifferentiated →
+  RESOLVED (Q2).** Each modification role now has a distinct spoken intro
+  ("Modifica.", "Testo previgente.", "Nuovo testo.", "Aggiornamento.") and a
+  tinted, indented visual block; LIST_ITEM is differentiated typographically.
+  Validated on real baselines (dlgs_cartabia: all 2000+ modification segments
+  intro'd). `roleStyle.acousticIntroFor` + `ScaboReadingContentView.style(forRole:)`.
+- **(5) — NOTE skew to MEGA with no warning → RESOLVED (acoustic) (Q2).** The
+  intro folds the length regime: VERY_LONG/LONG → "Nota lunga.", MEGA → "Nota
+  molto lunga.", read before the note body. (A distinct visual length treatment
+  could still be added, but the blind-user warning is in place.)
+- **(10) — native reading view not the VoiceOver element → RESOLVED in code,
+  device-confirm pending (Blocker A).** `-accessibilityElement` now returns the
+  inner view; build succeeds; runtime focus is a TestFlight on-device check.
+- **(11) — parent/child verbatim double/triple reading → RESOLVED (Q1).**
+  Read-once interleaving; −39% chars on dlgs_cartabia, flat docs unchanged.
+- **(14) — reader is a navigation dead-end → RESOLVED (Q3).** Top-left "Chiudi"
+  control + opened-documents list + VoiceOver focus return to the closed row
+  (focus move device-confirmed); open/busy announced.
+- **(16) — LIST_ITEM has no list semantics → PARTIALLY RESOLVED (Q2).** Now a
+  bullet marker + hanging indent; an explicit "elemento N" count is not added.
+
+Still open (re-stated for clarity): (2) synthetic-container rotor flag, (3)
+QuickConsult collapse of the modification family, (7) length-weighted
+pagination, (12) async page-turn race + "Pagina N di M" voicing, (13) Dynamic
+Type via UIFontMetrics, (15) artifact filtering (latent until a PDF corpus is
+openable in-app), (17) container sub-navigation. Entries (4), (6), (8), (9)
+unchanged.

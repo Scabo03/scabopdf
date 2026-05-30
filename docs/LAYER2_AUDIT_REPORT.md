@@ -839,3 +839,64 @@ semantics), and the Axis 1 App-integration test suite.
 All other findings were left untouched on purpose: they require on-device
 VoiceOver verification (C1, C4, C5, C7) or a product decision (C2, C3, C6, C8-
 C11), both of which are the user's call per the project rules.
+
+---
+
+## Post-audit implementation — 2026-05-30 (Blocker A + Q1/Q2/Q3)
+
+A follow-up session implemented the user's product decisions and the Blocker A
+fix. Four macro-steps, each its own commit, pushed to `main`.
+
+### Blocker A — native VoiceOver element identity (commit a3a2870) — DONE (device-confirm pending)
+The reading view was installed as the Fabric host's `contentView` while
+`RCTViewComponentView.accessibilityElement` defaults to the host `self`, so a
+JS `accessibilityLabel` promoted the host and shadowed the inner view, leaving
+`UIAccessibilityReadingContent` + `.causesPageTurn` + `accessibilityScroll`
+dormant. Fix per the documented base-class contract: override
+`-accessibilityElement` to return `_contentView` (host becomes transparent),
+drop the whole-page `accessibilityLabel` (the page is read line-by-line via the
+reading-content protocol; the label is the short document name), and add
+`-prepareForRecycle`/`reset()` so a recycled instance never exposes the prior
+document (also closes audit C7). Build: ** BUILD SUCCEEDED **. Runtime VoiceOver
+focus/line-reading/page-turn is observable only via Accessibility Inspector or a
+physical device → **TestFlight on-device confirmation item**.
+
+### Q1 — read-once reading model (commit ab6a35d) — DONE
+Always read everything, never skip, but kill the 2-3× verbatim repeat (a
+technical bug, not a product choice). `buildBaseSegments` now emits a node's
+text only for the spans its children do not reproduce, interleaving the
+children at their textual position — every character voiced once, at the most
+specific role. Validated on real baselines: **−39.0% characters on dlgs_cartabia**
+(the worst case), −28.9% correttivo_appalti, −20.7% legge_capitali; flat
+codice_civile byte-identical. (C3, registry 11 resolved.)
+
+### Q2 — visual + acoustic role differentiation (commit 9f8926c) — DONE
+Acoustic: a pure, baseline-tested `acousticIntroFor(role, lengthCategory)`
+maps each role to a distinct spoken intro ("Modifica.", "Testo previgente.",
+"Nuovo testo.", "Aggiornamento.", plus "Nota."/"Nota lunga."/"Nota molto lunga."
+folding the NOTE length regime), carried on the segment and read first by
+VoiceOver. Visual: the four modification roles render as tinted, indented blocks
+(orange/red/green/gray) with a bold accent label (Normattiva "box" reference);
+LIST_ITEM gets a bullet + hanging indent. The five roles that fell through to
+body font are now all differentiated. Validated: on dlgs_cartabia (the 90%-
+undifferentiated worst case) all 2000+ modification segments carry a distinct
+intro. (C2, registry 1 + 5 resolved; registry 16 partially.)
+
+### Q3 — reader navigation + focus return (commit f7f0f26) — DONE (device-confirm pending)
+A session list of opened documents on the home screen; opening swaps to a reader
+with a top-left "‹ Chiudi" control; closing returns to the list and calls
+`setAccessibilityFocus` on the just-closed document's row; open/busy are
+announced. New AppFlow integration tests close the audit's untested-App-shell
+gap. The actual VoiceOver focus move depends on `findNodeHandle` at runtime →
+**TestFlight on-device confirmation item**. (C6, registry 14 resolved.)
+
+### Still open after this session (registered, not in scope of Blocker A / Q1-Q3)
+- **C4 / registry 12** — async page-turn contract race + boundary `return false`
+  (needs device). Page-of-total ("Pagina N di M") still not voiced.
+- **C5 / registry 13** — Dynamic Type (`UIFontMetrics`) not yet honored.
+- Registry 2 (synthetic-container rotor flag), 3 (QuickConsult collapse of the
+  modification family), 7 (length-weighted pagination), 15 (artifact filtering —
+  latent until a PDF corpus is openable), 17 (container sub-navigation).
+
+Suite at end of session: **90 tests, 15 suites, green**; tsc / eslint(+a11y) /
+prettier clean; native build SUCCEEDED.
