@@ -44,4 +44,25 @@ describe('openDocumentFromPicker', () => {
 
     fetchSpy.mockRestore();
   });
+
+  test('re-throws a non-cancel picker error', async () => {
+    (pick as jest.Mock).mockRejectedValueOnce(
+      Object.assign(new Error('io failure'), { code: 'IO_ERROR' }),
+    );
+    await expect(openDocumentFromPicker()).rejects.toThrow('io failure');
+  });
+
+  test('falls back to a default name when the picker omits one', async () => {
+    (pick as jest.Mock).mockResolvedValueOnce([
+      { uri: 'file:///tmp/x.json', name: undefined },
+    ]);
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      text: () => Promise.resolve('{}'),
+    } as unknown as Response);
+
+    const picked = await openDocumentFromPicker();
+    expect(picked?.name).toBe('documento.scabopdf.json');
+
+    fetchSpy.mockRestore();
+  });
 });
