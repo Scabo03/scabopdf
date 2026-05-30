@@ -13,7 +13,14 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  Pressable,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   ThemeProvider,
@@ -84,6 +91,12 @@ function Home() {
   async function handleOpenDocument(): Promise<void> {
     setError(null);
     setBusy(true);
+    // The button label flips to "Apertura…" and is disabled, but a state
+    // change is not spoken; announce it so the wait is not silent for a
+    // VoiceOver user while the picker / parse runs (SPECS § 0, P0).
+    AccessibilityInfo.announceForAccessibility(
+      'Apertura del documento in corso',
+    );
     try {
       const picked = await openDocumentFromPicker();
       if (picked === null) {
