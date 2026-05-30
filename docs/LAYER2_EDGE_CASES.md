@@ -231,3 +231,34 @@ pagination, (12) async page-turn race + "Pagina N di M" voicing, (13) Dynamic
 Type via UIFontMetrics, (15) artifact filtering (latent until a PDF corpus is
 openable in-app), (17) container sub-navigation. Entries (4), (6), (8), (9)
 unchanged.
+
+---
+
+## 2026-05-30 — Pre-TestFlight debt sprint: resolved entries
+
+Implemented in the Dynamic Type + synthetic-divider + docs sprint. Resolved:
+
+- **(13) / C5 — Dynamic Type not honored → RESOLVED.** The native reading view
+  now scales the body base via `UIFontMetrics(forTextStyle:.body).scaledFont(for:)`
+  (every role font is a proportional multiple, so all scale) and re-renders on
+  `UIContentSizeCategory.didChangeNotification` for live updates. Pagination
+  stays the fixed 20-segment heuristic (re-paginating on Dynamic Type remains
+  registry 7). Verified by build + code review; live size-change check is a
+  manual Simulator/TestFlight step (RN debug bundle + picker make it
+  non-scriptable; no Swift test target exists).
+- **(2) — synthetic HEADING_1 containers indistinguishable from real headings →
+  RESOLVED.** `roleStyle.isSyntheticContainer` recognises the minted titles
+  ("Decreto di promulgazione", "Modificazioni attive/passive…", "Aggiornamenti…")
+  by anchored text patterns; `buildBaseSegments` reclassifies them to the
+  Layer-2 role `SECTION_DIVIDER` (out of any future Headings rotor) with a spoken
+  "Sezione." prefix and a native labelled indigo band. Validated on real
+  baselines (legge_capitali: the 2 containers become dividers; EPUB
+  codice_civile: 1 divider vs 142 real LIBRO/CAPO headings untouched). The
+  literal per-heading UIAccessibility rotor trait still awaits the per-element
+  reading architecture; the reclassification is its data foundation.
+
+Still open (re-stated): (3) QuickConsult collapse of the modification family,
+(7) length-weighted pagination, (12) async page-turn race + "Pagina N di M"
+voicing, (15) artifact filtering (latent until a PDF corpus is openable in-app),
+(17) container sub-navigation. Entries (4), (6), (8), (9) unchanged; (16)
+LIST_ITEM remains partially resolved (bullet + indent, no "elemento N" count).
