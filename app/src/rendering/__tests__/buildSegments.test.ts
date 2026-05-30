@@ -41,6 +41,7 @@ describe('buildBaseSegments skips text-less nodes', () => {
       role: 'BODY',
       text: 'reale',
       lengthCategory: '',
+      acousticIntro: '',
     });
   });
 

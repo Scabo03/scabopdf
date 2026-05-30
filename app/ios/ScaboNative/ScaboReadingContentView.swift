@@ -71,15 +71,42 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
     for (index, segment) in segments.enumerated() {
       let role = segment["role"] ?? "BODY"
       let text = segment["text"] ?? ""
+      let intro = segment["acousticIntro"] ?? ""
 
-      let font = Self.font(forRole: role, baseFont: baseFont)
-      let attributes: [NSAttributedString.Key: Any] = [
-        .font: font,
-        .foregroundColor: baseColor,
+      let style = Self.style(forRole: role, baseFont: baseFont, baseColor: baseColor)
+
+      let paragraph = NSMutableParagraphStyle()
+      paragraph.headIndent = style.headIndent
+      paragraph.firstLineHeadIndent = style.firstLineHeadIndent
+      paragraph.paragraphSpacing = 4
+      paragraph.paragraphSpacingBefore = style.background != nil ? 6 : 2
+      paragraph.lineHeightMultiple = 1.05
+
+      var bodyAttributes: [NSAttributedString.Key: Any] = [
+        .font: style.font,
+        .foregroundColor: style.textColor,
+        .paragraphStyle: paragraph,
       ]
-      body.append(NSAttributedString(string: text, attributes: attributes))
+      if let background = style.background {
+        bodyAttributes[.backgroundColor] = background
+      }
+
+      // Visible + spoken prefix. LIST_ITEM uses a bullet marker (typographic +
+      // a light acoustic list cue); the boxed/modification + NOTE roles use the
+      // spoken intro ("Modifica.", "Nuovo testo.", "Nota lunga.", …) rendered
+      // bold in the role's accent colour so it reads first and stands out.
+      if let marker = style.marker {
+        body.append(NSAttributedString(string: marker, attributes: bodyAttributes))
+      } else if !intro.isEmpty {
+        var labelAttributes = bodyAttributes
+        labelAttributes[.font] = Self.boldVariant(of: style.font)
+        labelAttributes[.foregroundColor] = style.labelColor ?? style.textColor
+        body.append(NSAttributedString(string: intro + " ", attributes: labelAttributes))
+      }
+
+      body.append(NSAttributedString(string: text, attributes: bodyAttributes))
       if index < segments.count - 1 {
-        body.append(NSAttributedString(string: "\n\n", attributes: attributes))
+        body.append(NSAttributedString(string: "\n\n", attributes: bodyAttributes))
       }
     }
 
@@ -148,17 +175,86 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
 
   // MARK: - Helpers
 
-  private static func font(forRole role: String, baseFont: UIFont) -> UIFont {
+  /// Per-role visual presentation (Q2). The modification family is framed as
+  /// tinted, indented blocks with an accent-coloured label (the Normattiva
+  /// "box" reference); LIST_ITEM is differentiated typographically; headings
+  /// and notes keep their size/weight. The spoken distinction is carried
+  /// separately by the segment's acousticIntro.
+  private struct RoleStyle {
+    var font: UIFont
+    var textColor: UIColor
+    var labelColor: UIColor?
+    var background: UIColor?
+    var headIndent: CGFloat = 0
+    var firstLineHeadIndent: CGFloat = 0
+    var marker: String?
+  }
+
+  private static func style(forRole role: String,
+                            baseFont: UIFont,
+                            baseColor: UIColor) -> RoleStyle {
+    let muted = baseColor.withAlphaComponent(0.75)
     switch role {
-    case "HEADING_1", "HEADING_2", "TITLE":
-      return UIFont.systemFont(ofSize: baseFont.pointSize * 1.35, weight: .semibold)
+    case "HEADING_1", "HEADING_2", "TITLE", "GENRE_BANNER":
+      return RoleStyle(
+        font: UIFont.systemFont(ofSize: baseFont.pointSize * 1.35, weight: .semibold),
+        textColor: baseColor)
     case "HEADING_3", "HEADING_4", "ARTICLE_HEADER", "MASSIMA_LABEL", "SECTION_LABEL":
-      return UIFont.systemFont(ofSize: baseFont.pointSize * 1.15, weight: .semibold)
+      return RoleStyle(
+        font: UIFont.systemFont(ofSize: baseFont.pointSize * 1.15, weight: .semibold),
+        textColor: baseColor)
+    case "AMENDMENT":
+      return RoleStyle(
+        font: baseFont, textColor: baseColor,
+        labelColor: .systemOrange,
+        background: UIColor.systemOrange.withAlphaComponent(0.16),
+        headIndent: 14, firstLineHeadIndent: 14)
+    case "QUOTED_TEXT_OLD":
+      return RoleStyle(
+        font: Self.italicVariant(of: baseFont), textColor: muted,
+        labelColor: .systemRed,
+        background: UIColor.systemRed.withAlphaComponent(0.14),
+        headIndent: 22, firstLineHeadIndent: 22)
+    case "QUOTED_TEXT_NEW":
+      return RoleStyle(
+        font: Self.italicVariant(of: baseFont), textColor: baseColor,
+        labelColor: .systemGreen,
+        background: UIColor.systemGreen.withAlphaComponent(0.14),
+        headIndent: 22, firstLineHeadIndent: 22)
+    case "UPDATE_BLOCK":
+      return RoleStyle(
+        font: UIFont.systemFont(ofSize: baseFont.pointSize * 0.95, weight: .regular),
+        textColor: muted,
+        labelColor: .systemTeal,
+        background: UIColor.systemGray.withAlphaComponent(0.14),
+        headIndent: 14, firstLineHeadIndent: 14)
+    case "LIST_ITEM":
+      return RoleStyle(
+        font: baseFont, textColor: baseColor,
+        headIndent: 26, firstLineHeadIndent: 10, marker: "•  ")
     case "NOTE", "EDITORIAL_NOTE", "FONTI", "LETTERATURA":
-      return UIFont.systemFont(ofSize: baseFont.pointSize * 0.9, weight: .regular)
+      return RoleStyle(
+        font: UIFont.systemFont(ofSize: baseFont.pointSize * 0.9, weight: .regular),
+        textColor: muted, labelColor: muted)
     default:
-      return baseFont
+      return RoleStyle(font: baseFont, textColor: baseColor)
     }
+  }
+
+  private static func boldVariant(of font: UIFont) -> UIFont {
+    let traits = font.fontDescriptor.symbolicTraits.union(.traitBold)
+    guard let descriptor = font.fontDescriptor.withSymbolicTraits(traits) else {
+      return UIFont.systemFont(ofSize: font.pointSize, weight: .semibold)
+    }
+    return UIFont(descriptor: descriptor, size: font.pointSize)
+  }
+
+  private static func italicVariant(of font: UIFont) -> UIFont {
+    let traits = font.fontDescriptor.symbolicTraits.union(.traitItalic)
+    guard let descriptor = font.fontDescriptor.withSymbolicTraits(traits) else {
+      return font
+    }
+    return UIFont(descriptor: descriptor, size: font.pointSize)
   }
 
   private static func color(fromHex hex: String?) -> UIColor? {

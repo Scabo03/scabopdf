@@ -27,17 +27,20 @@
 import type { ScabopdfDocument } from '../consumption';
 import type { NodeDict } from '../consumption';
 import type { ContentSegment } from './contentModel';
+import { acousticIntroFor } from './roleStyle';
 
 type Work =
   | { kind: 'segment'; segment: ContentSegment }
   | { kind: 'node'; node: NodeDict };
 
 function segmentFor(node: NodeDict, text: string): ContentSegment {
+  const lengthCategory = node.length_category ?? '';
   return {
     id: node.id,
     role: node.type,
     text,
-    lengthCategory: node.length_category ?? '',
+    lengthCategory,
+    acousticIntro: acousticIntroFor(node.type, lengthCategory),
   };
 }
 

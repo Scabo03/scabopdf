@@ -22,6 +22,13 @@ export interface ContentSegment {
    * native side which uses an empty string to mean "not applicable".
    */
   lengthCategory: string;
+  /**
+   * Spoken role intro the native view prepends before reading the text (Q2),
+   * e.g. 'Modifica.' for AMENDMENT or 'Nuovo testo.' for QUOTED_TEXT_NEW.
+   * Empty string for roles that need no acoustic prefix. Derived from role
+   * (+ lengthCategory for NOTE) by roleStyle.acousticIntroFor.
+   */
+  acousticIntro: string;
 }
 
 /** A page of content delivered to the native view. */

@@ -37,6 +37,11 @@ export type ReadingSegment = Readonly<{
    * any other role. Native will later attach speech attributes per regime.
    */
   lengthCategory: string;
+  /**
+   * Spoken role intro VoiceOver reads before the text (e.g. 'Modifica.',
+   * 'Nuovo testo.'); empty string when the role needs no acoustic prefix.
+   */
+  acousticIntro: string;
 }>;
 
 /** Payload of the onRequestPageChange event. */

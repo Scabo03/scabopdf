@@ -81,9 +81,10 @@ using namespace facebook::react;
       [NSMutableArray arrayWithCapacity:newProps.pageContent.size()];
   for (const auto &segment : newProps.pageContent) {
     [segments addObject:@{
-      @"role" : [NSString stringWithUTF8String:segment.role.c_str()],
-      @"text" : [NSString stringWithUTF8String:segment.text.c_str()],
-      @"lengthCategory" : [NSString stringWithUTF8String:segment.lengthCategory.c_str()],
+      @"role" : [NSString stringWithUTF8String:segment.role.c_str()] ?: @"",
+      @"text" : [NSString stringWithUTF8String:segment.text.c_str()] ?: @"",
+      @"lengthCategory" : [NSString stringWithUTF8String:segment.lengthCategory.c_str()] ?: @"",
+      @"acousticIntro" : [NSString stringWithUTF8String:segment.acousticIntro.c_str()] ?: @"",
     }];
   }
 

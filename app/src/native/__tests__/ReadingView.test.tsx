@@ -8,7 +8,7 @@ import { render } from '@testing-library/react-native';
 import { ReadingView, type ReadingSegment } from '../ReadingView';
 
 const segments: ReadingSegment[] = [
-  { role: 'BODY', text: 'corpo', lengthCategory: '' },
+  { role: 'BODY', text: 'corpo', lengthCategory: '', acousticIntro: '' },
 ];
 
 type HostTree = { type: string; props: Record<string, unknown> };
