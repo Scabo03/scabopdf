@@ -3,7 +3,16 @@
 > Running log of edge cases observed while exercising the Layer 2 consumption
 > and rendering layers against the real Layer 1 baselines under
 > `pipeline/tests/snapshots/`. Each entry is a candidate for a focused polish
-> session; nothing here blocks the current phase.
+> session.
+>
+> **Update 2026-05-30 (structured audit — see `LAYER2_AUDIT_REPORT.md`):** the
+> original "nothing here blocks the current phase" no longer holds. The audit
+> quantified the impact of these debts across all 24 structure-bearing baselines
+> and found entry (1) to be **blocking** for a usable TestFlight build on the
+> legal corpus (37.65% of all segments read with no role distinction, up to 90%
+> on `dlgs_cartabia`). Re-prioritisations and new entries are appended in the
+> "## 2026-05-30 audit revision" section at the foot of this file; the original
+> entries below are preserved as written.
 >
 > First entry: 2026-05-29 (end of Fase 5 — rendering layouts v1).
 
@@ -100,3 +109,90 @@ and one of `_baseline_xml_akn_metadata` / `_baseline_epub_ipzs_metadata` /
 `additionalProperties: false` and must be stripped before `parseDocument`.
 The current loader strips by prefix. If the capture script ever adds a
 field without the `_baseline_` prefix, the strip will miss it.
+
+---
+
+## 2026-05-30 audit revision
+
+Cross-referenced against the full baseline set and the live code by the
+five-axis audit (`LAYER2_AUDIT_REPORT.md`). The "six debts" the audit brief
+referred to map to entries (1)–(7); (8) and (9) are **informational test-harness
+notes, not product debts** — relabel them as such. Re-prioritisations and new
+entries follow.
+
+### Re-prioritisation of existing entries
+
+- **(1) → split, P0 / BLOCKING.** Severely understated as a `legge_capitali`
+  corner case. Measured corpus-wide: `UPDATE_BLOCK` (20.5% of all segments),
+  `LIST_ITEM` (10.6%), `AMENDMENT` (5.4%), `QUOTED_TEXT_OLD/NEW` (1.1%) all hit
+  the Swift `font(forRole:)` `default:` body branch — **37.65% of 73,255
+  segments**; 13/24 docs ≥30%, `dlgs_cartabia` 90%. Split into **(1a)** generic
+  structural roles (`LIST_ITEM`, `UPDATE_BLOCK`) — add to the switch before
+  TestFlight; **(1b)** the 0.7.0 modification family (`AMENDMENT`,
+  `QUOTED_TEXT_OLD/NEW`) — old/new prefixes + distinct regime. **Blocking.**
+- **(2) → P1.** On AKN the editorial hierarchy is flat: `codice_civile` AKN has
+  HEADING_1=2 (both synthetic "Modificazioni" containers), 3258 ARTICLE_HEADER,
+  zero real chapter headings. A HEADING_1 rotor lists only the two containers.
+  Mark synthetic containers with a divider/`isSynthetic` flag; key the rotor on
+  ARTICLE_HEADER for AKN codes.
+- **(3) → P1.** `buildQuickConsultLayout` drops 0.0% on 16/24 docs (only
+  NOTE+EDITORIAL_NOTE). Collapse `UPDATE_BLOCK`/`AMENDMENT`/`QUOTED_TEXT_*` so it
+  surfaces the article skeleton. Not a hard blocker (Continuous is default).
+- **(4) → P2 (unchanged).** Doctrina==Continuous; affects only doctrinal corpora,
+  none in the structure-bearing baseline set.
+- **(5) → P1.** `ScaboReadingContentView` never reads `lengthCategory`. NOTE skews
+  hard to MEGA/VERY_LONG where present (`dlgs_cartabia` 19 MEGA, `legge_capitali`
+  15 MEGA). Interim: spoken "nota lunga / molto lunga" prefix for VERY_LONG/MEGA.
+- **(6) → P2 (unchanged, informational).** EPUB emits fewer mods than the AKN twin
+  by design.
+- **(7) → P1.** `DEFAULT_SEGMENTS_PER_PAGE=20` is content-blind: `codice_civile`
+  AKN → 428 pages. Length-weight pages. Degraded but functional.
+- **(8) and (9) → Informational (not product debts).** Correct test-loader
+  behaviour. (9)'s `_baseline_` prefix-strip is a tiny harness fragility, no more.
+
+### New entries from the audit
+
+- **(10) [P0 / BLOCKING — needs on-device VoiceOver] Native reading view may not
+  be the VoiceOver element.** `ScaboReadingContentView` is installed as the
+  Fabric `contentView` (layout slot); `RCTViewComponentView.accessibilityElement`
+  defaults to the host `self`. If so, `UIAccessibilityReadingContent`,
+  `causesPageTurn` and `accessibilityScroll` are all dormant. Verify on device;
+  candidate fix `- (NSObject *)accessibilityElement { return _contentView; }`.
+  (Axis 2 #1 / Axis 4.)
+- **(11) [P0 — design decision] Parent + child double/triple reading.**
+  `buildBaseSegments` emits every text-bearing node; AKN AMENDMENT/QUOTED_TEXT
+  children repeat the parent's text verbatim, so it is read 2–3× (80/80 AMENDMENT
+  on `legge_capitali`). Decide parent-only vs children-only vs distinct-regime.
+  (Axis 3 HIGH.)
+- **(12) [P1 — needs device] Async page-turn contract race.**
+  `accessibilityScroll` returns `true` synchronously while the new page arrives
+  later via JS, and posts `.pageScrolled` with `nil` (no announce, no focus).
+  Add a `pendingPageTurn` flag consumed in `updatePageContent`, post
+  `.screenChanged`, and `return false` at the first/last page. (Axis 2 #3,#5.)
+- **(13) [P1 — accessibility] Dynamic Type not honored.** `font(forRole:)` uses
+  `.preferredFont(...).withSize(...)`, discarding content-size scaling; no
+  `UIFontMetrics`, no trait observer. Reading body pinned at 18pt. (Axis 4 ALTO.)
+- **(14) [P1 — UX] Reader is a navigation dead-end.** No Back/Close control once
+  a document is open; no spoken open-success confirmation; page-of-total never
+  voiced though `pageNumber` is plumbed. (Axis 4 ALTO.)
+- **(15) [P2 — latent, HIGH on first PDF corpus] No artifact/anchor filtering.**
+  `buildBaseSegments` would voice `ARTIFACT_*`, `BOOK_PAGE_ANCHOR`,
+  `CROSS_REFERENCE`, `UNCLASSIFIED`. Invisible on XML/EPUB (zero artifacts) but
+  the 13 PDF plugins emit thousands (Marrone: 693 footers, 1473 anchors, 1489
+  cross-refs). Add a skip-set mirroring `quickConsult`'s `COLLAPSED_ROLES`. (Axis 3.)
+- **(16) [P2] `LIST_ITEM` has no list semantics anywhere** (10.6% of all
+  segments, 17/24 docs). Falls through to body font and carries no "elemento N" /
+  indentation affordance — losing statutory enumeration structure. (Axis 5 N1.)
+- **(17) [P3] Synthetic-container child cardinality is large/unbounded** —
+  `legge_capitali` "Modificazioni attive" holds 139 children; `codice_civile` AKN
+  containers aggregate 1812 UPDATE_BLOCK. Under fixed pagination a container
+  spans 70+ pages with no intra-container landmark. (Axis 5 N2.)
+
+### Resolved this session
+
+- The latent `walkTree` stack-overflow crash (was a robustness debt) is **fixed**
+  (iterative traversal + regression test).
+- The silent busy state on open (was an accessibility debt) is **fixed**
+  (VoiceOver announcement).
+- The native-boundary / defensive-branch **test-coverage gaps are largely closed**
+  (+11 tests). The App.tsx integration suite remains open debt.
