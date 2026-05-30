@@ -1,0 +1,2 @@
+app_identifier(ENV["APP_IDENTIFIER"] || "com.scabo.scabopdf")
+team_id("D2KQYQ8YU8")

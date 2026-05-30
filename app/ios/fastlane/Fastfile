@@ -1,0 +1,27 @@
+default_platform(:ios)
+
+APP_ID = ENV["APP_IDENTIFIER"] || "com.scabo.scabopdf"
+TEAM_ID = "D2KQYQ8YU8"
+
+platform :ios do
+  desc "Generate or fetch the App Store distribution certificate and provisioning profile via Match"
+  lane :setup_signing do
+    api_key = app_store_connect_api_key(
+      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+      issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+      key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+      is_key_content_base64: false,
+      in_house: false
+    )
+
+    match(
+      type: "appstore",
+      app_identifier: APP_ID,
+      team_id: TEAM_ID,
+      api_key: api_key,
+      readonly: false,
+      force_for_new_devices: false,
+      verbose: true
+    )
+  end
+end
