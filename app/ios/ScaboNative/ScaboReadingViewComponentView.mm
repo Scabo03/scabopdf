@@ -49,6 +49,30 @@ using namespace facebook::react;
   return self;
 }
 
+- (NSObject *)accessibilityElement
+{
+  // The reading experience lives entirely on the inner Swift view: it adopts
+  // UIAccessibilityReadingContent, carries the .causesPageTurn trait and
+  // overrides accessibilityScroll. RCTViewComponentView applies every RN
+  // accessibility prop to -accessibilityElement and, when that is the host
+  // `self` (the default), promotes the host to a VoiceOver element — which
+  // shadows the inner view and leaves the reading-content protocol dormant.
+  // Returning _contentView makes the host accessibilitywise transparent
+  // "in favour of some subview" exactly as the base-class contract documents,
+  // so VoiceOver focuses the reading view and the JS accessibilityLabel (the
+  // document name) lands on it rather than on the host.
+  return _contentView;
+}
+
+- (void)prepareForRecycle
+{
+  // Fabric recycles component views across shadow nodes; without a reset the
+  // inner view would briefly expose the previous document's page (and its
+  // accessibilityLabel) to VoiceOver on the next mount.
+  [_contentView reset];
+  [super prepareForRecycle];
+}
+
 - (void)updateProps:(const Props::Shared &)props oldProps:(const Props::Shared &)oldProps
 {
   const auto &newProps = static_cast<const ScaboReadingViewProps &>(*props);

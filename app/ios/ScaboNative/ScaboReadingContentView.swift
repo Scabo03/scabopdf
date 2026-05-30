@@ -84,8 +84,19 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
     }
 
     textView.attributedText = body
-    accessibilityLabel = body.string
+    // The element's accessibilityLabel is the short document name, applied by
+    // the Fabric host through -accessibilityElement; the page text itself is
+    // exposed line-by-line through the UIAccessibilityReadingContent methods
+    // below, so we must NOT overwrite the label with the whole page string.
     UIAccessibility.post(notification: .layoutChanged, argument: self)
+  }
+
+  /// Clears all content + state. Called by the Fabric host on view recycle so
+  /// a recycled instance never exposes the previous document to VoiceOver.
+  @objc public func reset() {
+    pageNumber = 1
+    textView.attributedText = NSAttributedString(string: "")
+    accessibilityLabel = nil
   }
 
   // MARK: - UIAccessibilityReadingContent
