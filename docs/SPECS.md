@@ -1,4 +1,4 @@
-# AccessiPDF Studio — Specifiche di Progetto
+# ScaboPDF — Specifiche di Progetto
 > Versione 0.4 — Aggiornata con quattro regimi acustici A/B/C/D Layout 4 (decisione utente formalizzata maggio 2026)
 > Stato: bozza di lavoro, da aggiornare sessione per sessione
 

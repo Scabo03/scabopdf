@@ -4,7 +4,11 @@ Pipeline e app iOS/iPadOS per leggere PDF giuridici complessi con VoiceOver, in 
 
 ## Status
 
-Pre-development. Design phase complete.
+Layer 1 (Python pipeline) complete: 13 PDF corpus plugins plus three Layer-1
+backends — PDF-native, Akoma Ntoso XML, and EPUB IPZS — emitting the schema
+0.7.0 contract. Layer 2 (React Native iOS/iPadOS app) is at the TestFlight gate:
+end-to-end open → parse → render flow working, the native VoiceOver reading
+module in place, with on-device VoiceOver confirmation the remaining step.
 
 ## Layout
 

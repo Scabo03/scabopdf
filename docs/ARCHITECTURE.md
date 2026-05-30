@@ -1369,7 +1369,7 @@ For each fixture, record processing time on a reference machine. CI fails if any
 ### Logging
 
 - Pipeline logs to stderr in human-readable format by default; `--json-log` for structured JSON.
-- App logs to console in development; OSLog in production (subsystem `com.scabo03.scabopdf`).
+- App logs to console in development; OSLog in production (subsystem `com.scabo.scabopdf`).
 - No PII in logs ever; document filenames are logged but content is not.
 
 ### Error handling
