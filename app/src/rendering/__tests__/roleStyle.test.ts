@@ -5,7 +5,12 @@
  * 37.65%-fall-through finding, up to 90% on dlgs_cartabia).
  */
 
-import { acousticIntroFor, BOXED_ROLES } from '../roleStyle';
+import {
+  acousticIntroFor,
+  BOXED_ROLES,
+  isSyntheticContainer,
+  SECTION_DIVIDER_ROLE,
+} from '../roleStyle';
 import { buildBaseSegments } from '../index';
 import { loadBaselineDocument } from './baselineFixtures';
 
@@ -79,5 +84,73 @@ describe('role distinction is effective on real baselines', () => {
     for (const s of segs) {
       expect(s.acousticIntro).toBe(acousticIntroFor(s.role, s.lengthCategory));
     }
+  });
+});
+
+describe('isSyntheticContainer (Punto 2 — rotor divider recognition)', () => {
+  test('recognises the minted AKN container titles (HEADING_1 only)', () => {
+    expect(
+      isSyntheticContainer('HEADING_1', 'Modificazioni attive a altri atti'),
+    ).toBe(true);
+    expect(
+      isSyntheticContainer('HEADING_1', 'Modificazioni passive di questo atto'),
+    ).toBe(true);
+    expect(isSyntheticContainer('HEADING_1', 'Decreto di promulgazione')).toBe(
+      true,
+    );
+    expect(isSyntheticContainer('HEADING_1', "Aggiornamenti dell'atto")).toBe(
+      true,
+    );
+    expect(isSyntheticContainer('HEADING_1', "Aggiornamenti all'art. 5")).toBe(
+      true,
+    );
+  });
+
+  test('does not match real document headings or non-HEADING_1 roles', () => {
+    expect(
+      isSyntheticContainer('HEADING_1', 'LIBRO PRIMO — DELLE PERSONE'),
+    ).toBe(false);
+    expect(isSyntheticContainer('HEADING_1', '((CAPO II')).toBe(false);
+    expect(isSyntheticContainer('HEADING_1', 'Disposizioni generali')).toBe(
+      false,
+    );
+    expect(
+      isSyntheticContainer('BODY', 'Modificazioni attive a altri atti'),
+    ).toBe(false);
+    expect(isSyntheticContainer('HEADING_2', 'Decreto di promulgazione')).toBe(
+      false,
+    );
+  });
+
+  test('acousticIntroFor maps the divider role to a short spoken prefix', () => {
+    expect(acousticIntroFor(SECTION_DIVIDER_ROLE, '')).toBe('Sezione.');
+  });
+});
+
+describe('synthetic dividers on real baselines', () => {
+  test('legge_capitali: both synthetic containers become SECTION_DIVIDER with the prefix', () => {
+    const segs = buildBaseSegments(
+      loadBaselineDocument('xml_akn_baseline_legge_capitali.json'),
+    );
+    const dividers = segs.filter(s => s.role === SECTION_DIVIDER_ROLE);
+    expect(dividers.length).toBe(2);
+    expect(dividers.every(s => s.acousticIntro === 'Sezione.')).toBe(true);
+    expect(segs.some(s => s.role === 'HEADING_1')).toBe(false);
+  });
+
+  test('EPUB codice_civile: synthetic dividers split from the real LIBRO/CAPO headings', () => {
+    // The EPUB backend keeps the real hierarchy as HEADING_1 (LIBRO/CAPO …)
+    // alongside the synthetic "Aggiornamenti dell'atto" container, so it
+    // exercises both branches. (The XML AKN codice_civile is flat — its only
+    // HEADING_1 are synthetic — so it cannot test the real-heading branch.)
+    const segs = buildBaseSegments(
+      loadBaselineDocument('epub_ipzs_baseline_codice_civile.json'),
+    );
+    const dividers = segs.filter(s => s.role === SECTION_DIVIDER_ROLE);
+    const realHeadings = segs.filter(s => s.role === 'HEADING_1');
+    expect(dividers.length).toBeGreaterThan(0);
+    expect(realHeadings.length).toBeGreaterThan(100); // 142 real LIBRO/CAPO
+    expect(realHeadings.every(s => s.acousticIntro === '')).toBe(true);
+    expect(dividers.every(s => s.acousticIntro === 'Sezione.')).toBe(true);
   });
 });

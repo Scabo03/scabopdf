@@ -7,7 +7,12 @@ export type {
 } from './contentModel';
 
 export { buildBaseSegments } from './buildSegments';
-export { acousticIntroFor, BOXED_ROLES } from './roleStyle';
+export {
+  acousticIntroFor,
+  BOXED_ROLES,
+  isSyntheticContainer,
+  SECTION_DIVIDER_ROLE,
+} from './roleStyle';
 export { buildContinuousLayout } from './layouts/continuous';
 export { buildQuickConsultLayout } from './layouts/quickConsult';
 export { buildDoctrineInlineLayout } from './layouts/doctrineInline';

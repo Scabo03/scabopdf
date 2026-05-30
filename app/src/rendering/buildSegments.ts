@@ -27,7 +27,11 @@
 import type { ScabopdfDocument } from '../consumption';
 import type { NodeDict } from '../consumption';
 import type { ContentSegment } from './contentModel';
-import { acousticIntroFor } from './roleStyle';
+import {
+  acousticIntroFor,
+  isSyntheticContainer,
+  SECTION_DIVIDER_ROLE,
+} from './roleStyle';
 
 type Work =
   | { kind: 'segment'; segment: ContentSegment }
@@ -35,12 +39,17 @@ type Work =
 
 function segmentFor(node: NodeDict, text: string): ContentSegment {
   const lengthCategory = node.length_category ?? '';
+  // Synthetic AKN containers are reclassified to a divider role so they are
+  // not read as ordinary chapter headings (Punto 2 / registry 2).
+  const role = isSyntheticContainer(node.type, node.text)
+    ? SECTION_DIVIDER_ROLE
+    : node.type;
   return {
     id: node.id,
-    role: node.type,
+    role,
     text,
     lengthCategory,
-    acousticIntro: acousticIntroFor(node.type, lengthCategory),
+    acousticIntro: acousticIntroFor(role, lengthCategory),
   };
 }
 

@@ -243,6 +243,17 @@ public final class ScaboReadingContentView: UIView, UIAccessibilityReadingConten
       return RoleStyle(
         font: UIFont.systemFont(ofSize: baseFont.pointSize * 1.15, weight: .semibold),
         textColor: baseColor)
+    case "SECTION_DIVIDER":
+      // Synthetic AKN container ("Modificazioni attive…", "Decreto di
+      // promulgazione", "Aggiornamenti dell'atto"): a labelled band, visually
+      // and acoustically distinct from a real chapter heading, so VoiceOver and
+      // the eye read it as a section divider rather than document structure.
+      return RoleStyle(
+        font: UIFont.systemFont(ofSize: baseFont.pointSize * 1.2, weight: .semibold),
+        textColor: baseColor,
+        labelColor: .systemIndigo,
+        background: UIColor.systemIndigo.withAlphaComponent(0.14),
+        headIndent: 0, firstLineHeadIndent: 0)
     case "AMENDMENT":
       return RoleStyle(
         font: baseFont, textColor: baseColor,

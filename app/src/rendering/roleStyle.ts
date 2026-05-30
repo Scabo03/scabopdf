@@ -24,6 +24,42 @@ export const BOXED_ROLES: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Layer-2 presentation role for the synthetic HEADING_1 containers the XML AKN
+ * backend mints (their text is a fixed editorial string, not document text).
+ * They must not read as ordinary chapter headings — reclassifying them keeps
+ * them out of any future Headings rotor and lets the native side render them
+ * as a labelled section divider with a distinct spoken prefix.
+ */
+export const SECTION_DIVIDER_ROLE = 'SECTION_DIVIDER';
+
+// The fixed titles Layer 1 mints for the synthetic containers (patterns bbbb /
+// cccc / ffff). Anchored at the start; none of the thousands of real document
+// headings in the baseline corpus begin with any of these, so the match is
+// unambiguous. Recognition is text-only (no Layer 1 field exists for it).
+const SYNTHETIC_CONTAINER_PATTERNS: readonly RegExp[] = [
+  /^Decreto di promulgazione/,
+  /^Modificazioni attive/,
+  /^Modificazioni passive/,
+  /^Aggiornamenti\b/,
+];
+
+/**
+ * True for a HEADING_1 node whose text is one of the synthetic editorial
+ * container titles minted by the XML AKN backend (e.g. "Modificazioni attive a
+ * altri atti", "Decreto di promulgazione", "Aggiornamenti dell'atto").
+ */
+export function isSyntheticContainer(
+  role: string,
+  text: string | null | undefined,
+): boolean {
+  if (role !== 'HEADING_1') {
+    return false;
+  }
+  const t = (text ?? '').trim();
+  return SYNTHETIC_CONTAINER_PATTERNS.some(pattern => pattern.test(t));
+}
+
+/**
  * The spoken intro VoiceOver reads before a segment's text, or '' when the
  * role needs no acoustic prefix (body/article prose, headings, list items —
  * which are differentiated typographically, not acoustically).
@@ -38,6 +74,8 @@ export function acousticIntroFor(role: string, lengthCategory: string): string {
       return 'Nuovo testo.';
     case 'UPDATE_BLOCK':
       return 'Aggiornamento.';
+    case SECTION_DIVIDER_ROLE:
+      return 'Sezione.';
     case 'EDITORIAL_NOTE':
       return 'Nota editoriale.';
     case 'NOTE':
