@@ -41,10 +41,72 @@ import {
   type ScabopdfDocument,
 } from './src/consumption';
 import { buildLayout, paginate, type ContentPage } from './src/rendering';
-import { extractPdf, ReadingView, totalLines } from './src/native';
+import {
+  extractPdf,
+  ReadingView,
+  totalLines,
+  logEvent,
+  logError,
+  snapshot,
+  isTestMode,
+  LogCategory,
+} from './src/native';
 import { buildDocumentFromPdf } from './src/plugins';
 import { openDocumentFromPicker } from './src/picker';
 import { getStoredLayoutId, getStoredThemeSelection } from './src/storage';
+
+/**
+ * Walks a built document and returns content-free structural metrics: total
+ * node count and the distribution of roles and NOTE length categories. No text
+ * is read — only `type` and `length_category` — so the result is safe to log in
+ * production (privacy contract: content is never logged).
+ */
+function documentMetrics(doc: ScabopdfDocument): {
+  total: number;
+  roleCounts: Record<string, number>;
+  lengthCounts: Record<string, number>;
+} {
+  const roleCounts: Record<string, number> = {};
+  const lengthCounts: Record<string, number> = {};
+  let total = 0;
+  const walk = (nodes: ScabopdfDocument['structure']): void => {
+    for (const node of nodes ?? []) {
+      total += 1;
+      roleCounts[node.type] = (roleCounts[node.type] ?? 0) + 1;
+      if (node.length_category) {
+        lengthCounts[node.length_category] =
+          (lengthCounts[node.length_category] ?? 0) + 1;
+      }
+      if (node.children && node.children.length > 0) {
+        walk(node.children);
+      }
+    }
+  };
+  walk(doc.structure);
+  return { total, roleCounts, lengthCounts };
+}
+
+/** Flattens the metrics into a content-free, scalar-only log payload. */
+function metricsPayload(
+  name: string,
+  doc: ScabopdfDocument,
+): Record<string, string | number> {
+  const { total, roleCounts, lengthCounts } = documentMetrics(doc);
+  const payload: Record<string, string | number> = {
+    name,
+    profile: doc.profile.profile_id,
+    pages: doc.metadata.pages_pdf,
+    nodes: total,
+    warnings: doc.warnings?.length ?? 0,
+  };
+  for (const [role, count] of Object.entries(roleCounts)) {
+    payload[`role_${role}`] = count;
+  }
+  for (const [len, count] of Object.entries(lengthCounts)) {
+    payload[`len_${len}`] = count;
+  }
+  return payload;
+}
 
 function App() {
   return (
@@ -101,6 +163,13 @@ function Home() {
     getStoredLayoutId().then(setLayoutId);
   }, []);
 
+  // Emit a launch event onto the unified channel so the diagnostic stream has a
+  // heartbeat even before any document is opened, and so a real device records
+  // that the app started (visible in Console.app / Analytics).
+  useEffect(() => {
+    logEvent(LogCategory.lifecycle, 'app_launch', { testMode: isTestMode });
+  }, []);
+
   const activeDoc = useMemo(
     () => documents.find(d => d.id === activeId) ?? null,
     [documents, activeId],
@@ -136,6 +205,8 @@ function Home() {
   function fail(message: string): void {
     setError(message);
     AccessibilityInfo.announceForAccessibility(message);
+    // Content-free: the length classifies the failure without logging its text.
+    logError('document_open_failed', { messageLength: message.length });
   }
 
   async function handleOpenDocument(): Promise<void> {
@@ -194,6 +265,12 @@ function Home() {
   }
 
   function openInReader(name: string, doc: ScabopdfDocument): void {
+    // Unified channel: content-free structural metrics in every build; the full
+    // node/role tree only as a test-mode snapshot (written to a file natively).
+    logEvent(LogCategory.navigation, 'document_open', metricsPayload(name, doc));
+    if (isTestMode) {
+      snapshot(LogCategory.plugin, `document_tree_${doc.document_id}`, doc);
+    }
     // Reuse the existing entry when the same file is reopened, so the list
     // stays clean and the focus-return target is stable.
     const existing = documents.find(d => d.name === name);

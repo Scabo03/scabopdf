@@ -25,6 +25,36 @@ public final class ScaboPdfExtractor: NSObject {
   /// is invalid, the PDF cannot be opened, it is password-protected, or the
   /// extracted text cannot be serialised.
   @objc public static func extract(fromUri uri: String) throws -> String {
+    let start = Date()
+    do {
+      let (json, pageCount, lineCount) = try buildJSON(fromUri: uri)
+      let elapsedMs = Int(Date().timeIntervalSince(start) * 1000)
+      // Content-free metrics onto the unified channel: counts + duration, no text.
+      ScaboLog.event(.pdfExtraction, "extract_complete", [
+        "pages": pageCount,
+        "lines": lineCount,
+        "bytes": json.utf8.count,
+        "ms": elapsedMs,
+      ])
+      // Test-mode-only raw extraction snapshot (carries text → file, gated).
+      ScaboLog.snapshot(categoryName: ScaboLogCategory.pdfExtraction.rawName,
+                        name: "extraction_raw",
+                        json: json)
+      return json
+    } catch let error as NSError {
+      ScaboLog.error("extract_failed", [
+        "domain": error.domain,
+        "code": error.code,
+      ])
+      throw error
+    }
+  }
+
+  /// Builds the extraction JSON and returns it with content-free counts for the
+  /// diagnostic event. Split out of `extract` so the public entry point can time
+  /// and log around a single throwing body.
+  private static func buildJSON(fromUri uri: String) throws
+    -> (json: String, pageCount: Int, lineCount: Int) {
     guard let url = fileURL(from: uri) else {
       throw makeError("Percorso del file PDF non valido.")
     }
@@ -36,10 +66,12 @@ public final class ScaboPdfExtractor: NSObject {
     }
 
     var pages: [[String: Any]] = []
+    var lineCount = 0
     let pageCount = document.pageCount
     for index in 0..<pageCount {
       guard let page = document.page(at: index) else { continue }
       let pageLines = lines(for: page)
+      lineCount += pageLines.count
       let lineDicts: [[String: Any]] = pageLines.map { line in
         [
           "text": line.text,
@@ -61,7 +93,7 @@ public final class ScaboPdfExtractor: NSObject {
     guard let json = String(data: data, encoding: .utf8) else {
       throw makeError("Errore nella serializzazione del testo estratto.")
     }
-    return json
+    return (json, pageCount, lineCount)
   }
 
   // MARK: - Line extraction

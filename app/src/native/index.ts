@@ -20,3 +20,14 @@ export {
   type PdfPageExtraction,
   type PdfTextLine,
 } from './pdfExtraction';
+
+export {
+  logEvent,
+  logError,
+  snapshot,
+  isTestMode,
+  subsystem,
+  LogCategory,
+  type LogLevel,
+  type LogMetadata,
+} from './diag';
