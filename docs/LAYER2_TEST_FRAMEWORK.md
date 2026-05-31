@@ -133,3 +133,28 @@ sub-millisecond on the trivial synthetic input.)
   text-bearing dumps, and the per-PDF reports generated locally. These derive
   from copyright-protected PDFs and inherit the same treatment as the fixtures
   themselves (`*.pdf` is gitignored).
+
+## 6. Measured impact of the per-span enrichment (2026-05-31)
+
+The bridge was enriched from per-line `{text, fontSize, bold}` to per-span
+`{text, fontSize, bold, italic, color, bbox}` + page geometry, and the Generic
+became multi-signal (size + colour + geometry). Content-free deltas on the 7
+fixtures (role counts; pre = size-only, post = multi-signal):
+
+| Fixture (corpus) | key delta |
+| --- | --- |
+| Dir. proc. civ. Vol. IV (Giappichelli) | **D1 closed**: HEADING_3 7694 → 16; NOTE 4 → 915 (real MICRO..MEGA spread). The body size is no longer mistaken for the note size. |
+| Manuale dir. privato (Torrente) | **D2 closed**: HEADING_2 1560 → 0 — the per-page `[§ N]` running header and the `© Giuffrè` watermark are dropped as furniture. |
+| Manuale del Marrone (BIC) | **D4 unblocked**: 486 colour-driven headings now seen (green/indigo/maroon) vs the old 554 spurious-by-size + 0 colour; the 670 MICRO "notes" were invisible 1pt white anchors, now removed. Exact level mapping still needs a corpus plugin. |
+| Compendio tributario (Tesauro) | **D3 de-noised**: NOTE 544 → 63 — the 481 dropped were ALL MICRO artifacts (page numbers); the 63 real MED/LONG/VL/MEGA notes are preserved. |
+| Dir. internazionale (Mosconi) | NOTE 1325 → 1200 (112 MICRO artifacts removed; real notes preserved). |
+| Corso proc. civ. I & II (Mandrioli) | unchanged (already clean Photoshop pipeline) — no regression. |
+
+Debt status: **D1 closed**, **D2 closed**, **D3 substantially de-noised**,
+**D4 physically unblocked** (colour visible + used; precise level mapping is
+corpus-plugin work), **D6** signals available and used internally (surfacing
+inline emphasis to VoiceOver is a deferred accessibility decision). Remaining
+Generic limits: colour-heading level mapping on fully colour-coded corpora
+(Marrone), and under-detection of real headings on corpora whose heads are not
+size/colour-distinct (Torrente) — both are by design the job of corpus plugins,
+which the enriched bridge now enables.
