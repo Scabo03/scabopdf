@@ -157,13 +157,13 @@ function Home() {
       } else {
         openScabopdf(picked.name, picked.content ?? '');
       }
-    } catch (error) {
+    } catch (cause) {
       // parseDocument never throws; the throwing paths are the picker, the
       // file read and the native PDF extractor — all of which carry a readable
       // Italian message we must show rather than replace with an opaque one.
       fail(
-        error instanceof Error && error.message.length > 0
-          ? error.message
+        cause instanceof Error && cause.message.length > 0
+          ? cause.message
           : 'Non è stato possibile aprire il documento. Riprova o scegli un altro file.',
       );
     } finally {
