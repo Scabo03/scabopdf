@@ -38,6 +38,16 @@
                ReferencedContainer = "container:ScaboPDF.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F9AFCA99AF9A8DCFD33ADA4A"
+               BuildableName = "ScaboPDFExtractionTests.xctest"
+               BlueprintName = "ScaboPDFExtractionTests"
+               ReferencedContainer = "container:ScaboPDF.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

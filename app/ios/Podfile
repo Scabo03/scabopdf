@@ -28,6 +28,16 @@ target 'ScaboPDF' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # App-hosted XCTest unit target for the on-device extraction measurement
+  # layer. :search_paths lets it `import ScaboNative` from the host app at
+  # compile time without linking a second copy (no duplicate ObjC classes); the
+  # symbols come from the host app at runtime. It needs no pods of its own.
+  # (The XCUITest target ScaboPDFUITests is black-box and intentionally absent
+  # from the Podfile.)
+  target 'ScaboPDFExtractionTests' do
+    inherit! :search_paths
+  end
+
   post_install do |installer|
     react_native_post_install(
       installer,
