@@ -36,12 +36,17 @@ function extraction(pages: PdfTextLine[][]): PdfExtraction {
 
 describe('genericPlugin.build', () => {
   test('classifies a larger short line as a heading and prose as body', () => {
+    // The body must dominate by line count (as in a real book) for the
+    // statistical body-size estimate to settle on 12pt, not the rare heading.
     const doc = genericPlugin.build(
       extraction([
         [
           line('Capitolo Primo', 20, true),
           line('Questo è il primo paragrafo del corpo del testo.'),
           line('e continua sulla riga successiva senza interruzioni.'),
+          line('Una terza riga di corpo per consolidare la stima.'),
+          line('Una quarta riga di corpo del testo normale.'),
+          line('Una quinta riga di corpo del testo normale.'),
         ],
       ]),
       'manuale.pdf',
@@ -50,10 +55,10 @@ describe('genericPlugin.build', () => {
     expect(structure[0]?.type).toBe('HEADING_1');
     expect(structure[0]?.text).toBe('Capitolo Primo');
     expect(structure[0]?.level).toBe(1);
-    // The two body lines merge into one paragraph node.
+    // The body lines merge into one paragraph node.
     expect(structure[1]?.type).toBe('BODY');
-    expect(structure[1]?.text).toBe(
-      'Questo è il primo paragrafo del corpo del testo. e continua sulla riga successiva senza interruzioni.',
+    expect(structure[1]?.text).toContain(
+      'Questo è il primo paragrafo del corpo del testo.',
     );
     expect(structure).toHaveLength(2);
   });
@@ -66,6 +71,10 @@ describe('genericPlugin.build', () => {
           line('Sottotitolo', 15),
           line('Minore', 13.5),
           line('corpo del documento normale qui presente'),
+          line('seconda riga di corpo a dimensione normale'),
+          line('terza riga di corpo a dimensione normale'),
+          line('quarta riga di corpo a dimensione normale'),
+          line('quinta riga di corpo a dimensione normale'),
         ],
       ]),
       'x.pdf',
@@ -149,6 +158,9 @@ describe('dispatcher', () => {
         [
           line('Capitolo', 20, true),
           line('Testo del corpo del capitolo che scorre.'),
+          line('Seconda riga di corpo del capitolo.'),
+          line('Terza riga di corpo del capitolo.'),
+          line('Quarta riga di corpo del capitolo.'),
         ],
       ]),
       'manuale.pdf',

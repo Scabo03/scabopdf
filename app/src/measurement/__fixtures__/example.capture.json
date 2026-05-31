@@ -30,6 +30,24 @@
             ]
           },
           {
+            "bbox": [72, 704, 451, 14],
+            "spans": [
+              { "text": "Una terza riga di corpo del testo normale a dimensione standard di lettura.", "fontSize": 10, "bold": false, "italic": false, "color": "#000000", "bbox": [72, 704, 451, 14] }
+            ]
+          },
+          {
+            "bbox": [72, 686, 451, 14],
+            "spans": [
+              { "text": "Una quarta riga di corpo del testo normale per dare maggioranza al corpo.", "fontSize": 10, "bold": false, "italic": false, "color": "#000000", "bbox": [72, 686, 451, 14] }
+            ]
+          },
+          {
+            "bbox": [72, 668, 451, 14],
+            "spans": [
+              { "text": "Una quinta riga di corpo del testo normale che chiude il paragrafo lungo.", "fontSize": 10, "bold": false, "italic": false, "color": "#000000", "bbox": [72, 668, 451, 14] }
+            ]
+          },
+          {
             "bbox": [72, 90, 430, 11],
             "spans": [
               { "text": "1 Una nota a pie di pagina in carattere piu piccolo del corpo principale.", "fontSize": 8, "bold": false, "italic": false, "color": "#000000", "bbox": [72, 90, 430, 11] }

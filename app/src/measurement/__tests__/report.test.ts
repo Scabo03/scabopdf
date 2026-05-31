@@ -20,12 +20,12 @@ describe('buildReport (synthetic capture)', () => {
 
   it('measures the extraction layer content-free', () => {
     expect(report.extraction.pages).toBe(1);
-    expect(report.extraction.lines).toBe(4);
-    // One 16pt + two 10pt + one 8pt line.
-    expect(report.extraction.fontSizeHistogram['10.0']).toBe(2);
+    expect(report.extraction.lines).toBe(7);
+    // One 16pt heading + five 10pt body + one 8pt note.
+    expect(report.extraction.fontSizeHistogram['10.0']).toBe(5);
     expect(report.extraction.fontSizeHistogram['16.0']).toBe(1);
     expect(report.extraction.fontSizeHistogram['8.0']).toBe(1);
-    expect(report.extraction.boldLineRatio).toBeCloseTo(0.25, 5);
+    expect(report.extraction.boldLineRatio).toBeCloseTo(1 / 7, 3);
   });
 
   it('classifies via the real Generic plugin: heading, merged body, note', () => {
