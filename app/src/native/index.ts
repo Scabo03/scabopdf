@@ -12,3 +12,11 @@ export {
   subscribeAccessibilitySettings,
   type AccessibilitySettings,
 } from './accessibilitySettings';
+
+export {
+  extractPdf,
+  totalLines,
+  type PdfExtraction,
+  type PdfPageExtraction,
+  type PdfTextLine,
+} from './pdfExtraction';

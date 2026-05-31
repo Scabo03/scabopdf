@@ -9,6 +9,10 @@ Pod::Spec.new do |s|
   s.license        = { :type => "MIT" }
   s.author         = { "Scabo03" => "scabi03@gmail.com" }
   s.platforms      = { :ios => "15.1" }
+  # PDFKit backs the native PDF text extractor (ScaboPdfExtractor.swift). It is
+  # a system framework Swift would autolink, but listing it keeps the link
+  # explicit across linkage modes.
+  s.frameworks     = "PDFKit"
   s.source         = { :path => "." }
   s.source_files   = "**/*.{h,m,mm,swift}"
   # Keep the Fabric component header out of the umbrella: it imports
