@@ -56,9 +56,10 @@ export function totalLines(extraction: PdfExtraction): number {
 /**
  * Defensive normaliser: the native payload is trusted but parsed at the
  * boundary, so a malformed shape degrades to an empty extraction rather than
- * crashing the reader.
+ * crashing the reader. Exported so the test/measurement layer can normalise a
+ * captured device extraction with the exact production logic.
  */
-function normalizeExtraction(parsed: unknown): PdfExtraction {
+export function normalizeExtraction(parsed: unknown): PdfExtraction {
   if (typeof parsed !== 'object' || parsed === null) {
     return { pageCount: 0, pages: [] };
   }

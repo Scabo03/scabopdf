@@ -40,3 +40,8 @@ docs/analysis/private/
 # Copyright-protected PDF samples for local testing only
 pipeline/tests/fixtures/private/
 .venv-exploration/
+
+# On-device test-framework output derived from the private PDFs (extraction
+# captures, full node/segment dumps, per-PDF reports). Copyright-encumbered like
+# the fixtures; only content-free baseline reports are committed, deliberately.
+test-output-private/

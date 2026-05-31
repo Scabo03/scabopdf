@@ -1,0 +1,19 @@
+{
+  "filename": "synthetic-example.pdf",
+  "extractMs": 12,
+  "pdfSizeBytes": 1024,
+  "extraction": {
+    "pageCount": 1,
+    "pages": [
+      {
+        "pageIndex": 0,
+        "lines": [
+          { "text": "Capitolo I", "fontSize": 16, "bold": true },
+          { "text": "Questo e un paragrafo di corpo del testo abbastanza lungo da dominare la stima.", "fontSize": 10, "bold": false },
+          { "text": "Un secondo paragrafo di corpo per consolidare la dimensione dominante del testo.", "fontSize": 10, "bold": false },
+          { "text": "1 Una nota a pie di pagina in carattere piu piccolo del corpo principale.", "fontSize": 8, "bold": false }
+        ]
+      }
+    ]
+  }
+}
