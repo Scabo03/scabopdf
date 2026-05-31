@@ -40,16 +40,25 @@ function pickPdf() {
 }
 
 const sampleExtraction: PdfExtraction = {
+  version: 2,
   pageCount: 1,
   pages: [
     {
       pageIndex: 0,
+      width: 595,
+      height: 842,
       lines: [
-        { text: 'Capitolo Primo', fontSize: 20, bold: true },
         {
-          text: 'Il corpo del capitolo che scorre regolarmente.',
-          fontSize: 12,
-          bold: false,
+          bbox: [72, 780, 160, 24],
+          spans: [
+            { text: 'Capitolo Primo', fontSize: 20, bold: true, italic: false, color: '#000000', bbox: [72, 780, 160, 24] },
+          ],
+        },
+        {
+          bbox: [72, 740, 300, 14],
+          spans: [
+            { text: 'Il corpo del capitolo che scorre regolarmente.', fontSize: 12, bold: false, italic: false, color: '#000000', bbox: [72, 740, 300, 14] },
+          ],
         },
       ],
     },
@@ -92,7 +101,7 @@ describe('App PDF flow', () => {
 
   test('reports an empty (image-only) PDF accessibly', async () => {
     pickPdf();
-    mockedExtract.mockResolvedValue({ pageCount: 3, pages: [] });
+    mockedExtract.mockResolvedValue({ version: 2, pageCount: 3, pages: [] });
 
     const { getByLabelText, findByRole } = render(<App />);
     fireEvent.press(getByLabelText('Apri documento'));

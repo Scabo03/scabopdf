@@ -10,14 +10,27 @@ import { buildDocumentFromPdf, genericPlugin, selectPlugin } from '..';
 import type { PdfExtraction, PdfTextLine } from '../../native/pdfExtraction';
 import { buildLayout, paginate } from '../../rendering';
 
+// Builds a single-span line in the v2 shape; bbox is a stub for the size-only
+// assertions here (geometry-aware tests live with the heuristics).
 function line(text: string, fontSize = 12, bold = false): PdfTextLine {
-  return { text, fontSize, bold };
+  return {
+    spans: [
+      { text, fontSize, bold, italic: false, color: '#000000', bbox: [0, 0, 0, 0] },
+    ],
+    bbox: [0, 0, 0, 0],
+  };
 }
 
 function extraction(pages: PdfTextLine[][]): PdfExtraction {
   return {
+    version: 2,
     pageCount: pages.length,
-    pages: pages.map((lines, pageIndex) => ({ pageIndex, lines })),
+    pages: pages.map((lines, pageIndex) => ({
+      pageIndex,
+      width: 595,
+      height: 842,
+      lines,
+    })),
   };
 }
 

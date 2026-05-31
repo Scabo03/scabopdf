@@ -17,7 +17,12 @@
  */
 
 import type { ScabopdfDocument, NodeDict } from '../consumption';
-import { normalizeExtraction, totalLines } from '../native/pdfExtraction';
+import type { PdfExtraction } from '../native/pdfExtraction';
+import {
+  normalizeExtraction,
+  summarizeLine,
+  totalLines,
+} from '../native/pdfExtraction';
 import { buildDocumentFromPdf } from '../plugins';
 import { buildLayout, paginate } from '../rendering';
 
@@ -167,28 +172,24 @@ function walkDocument(doc: ScabopdfDocument): {
   return { roleCounts, noteLengthCounts, nodeTotal };
 }
 
-function fontSizeHistogram(extraction: {
-  pages: { lines: { fontSize: number }[] }[];
-}): Record<string, number> {
+function fontSizeHistogram(extraction: PdfExtraction): Record<string, number> {
   const hist: Record<string, number> = {};
   for (const page of extraction.pages) {
     for (const line of page.lines) {
-      const key = (Math.round(line.fontSize * 2) / 2).toFixed(1);
+      const key = (Math.round(summarizeLine(line).fontSize * 2) / 2).toFixed(1);
       hist[key] = (hist[key] ?? 0) + 1;
     }
   }
   return hist;
 }
 
-function boldLineRatio(extraction: {
-  pages: { lines: { bold: boolean }[] }[];
-}): number {
+function boldLineRatio(extraction: PdfExtraction): number {
   let total = 0;
   let bold = 0;
   for (const page of extraction.pages) {
     for (const line of page.lines) {
       total += 1;
-      if (line.bold) {
+      if (summarizeLine(line).bold) {
         bold += 1;
       }
     }

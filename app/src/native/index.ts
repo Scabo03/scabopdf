@@ -16,9 +16,13 @@ export {
 export {
   extractPdf,
   totalLines,
+  summarizeLine,
   type PdfExtraction,
   type PdfPageExtraction,
   type PdfTextLine,
+  type PdfSpan,
+  type BBox,
+  type LineSummary,
 } from './pdfExtraction';
 
 export {

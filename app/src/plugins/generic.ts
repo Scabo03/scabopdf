@@ -31,8 +31,9 @@ import { SUPPORTED_SCHEMA_VERSION } from '../consumption';
 import type {
   PdfExtraction,
   PdfPageExtraction,
-  PdfTextLine,
+  LineSummary,
 } from '../native/pdfExtraction';
+import { summarizeLine } from '../native/pdfExtraction';
 import type { ExtractionPlugin } from './types';
 
 /** A heading is only accepted on a reasonably short line. */
@@ -119,9 +120,10 @@ function estimateBodySize(extraction: PdfExtraction): number {
   const charsBySize = new Map<number, number>();
   for (const page of extraction.pages) {
     for (const line of page.lines) {
-      if (line.fontSize > 0) {
-        const key = Math.round(line.fontSize * 2) / 2; // round to 0.5pt
-        charsBySize.set(key, (charsBySize.get(key) ?? 0) + line.text.length);
+      const sm = summarizeLine(line);
+      if (sm.fontSize > 0) {
+        const key = Math.round(sm.fontSize * 2) / 2; // round to 0.5pt
+        charsBySize.set(key, (charsBySize.get(key) ?? 0) + sm.text.length);
       }
     }
   }
@@ -136,7 +138,7 @@ function estimateBodySize(extraction: PdfExtraction): number {
   return best;
 }
 
-function classify(line: PdfTextLine, bodySize: number): Kind {
+function classify(line: LineSummary, bodySize: number): Kind {
   if (bodySize === 0 || line.fontSize === 0) {
     return { role: 'BODY' };
   }
@@ -199,14 +201,15 @@ function appendPageNodes(
   };
 
   for (const line of page.lines) {
-    const kind = classify(line, bodySize);
+    const sm = summarizeLine(line);
+    const kind = classify(sm, bodySize);
     if (kind.role === 'HEADING') {
       flushRun();
       out.push({
         id: nextId(),
         type: `HEADING_${kind.level}` as SemanticCategory,
         page_index: page.pageIndex,
-        text: line.text,
+        text: sm.text,
         level: kind.level,
         children: [],
       });
@@ -216,7 +219,7 @@ function appendPageNodes(
       flushRun();
     }
     runRole = kind.role;
-    runLines.push(line.text);
+    runLines.push(sm.text);
   }
   flushRun();
 }

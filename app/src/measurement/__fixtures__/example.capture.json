@@ -3,15 +3,38 @@
   "extractMs": 12,
   "pdfSizeBytes": 1024,
   "extraction": {
+    "version": 2,
     "pageCount": 1,
     "pages": [
       {
         "pageIndex": 0,
+        "width": 595,
+        "height": 842,
         "lines": [
-          { "text": "Capitolo I", "fontSize": 16, "bold": true },
-          { "text": "Questo e un paragrafo di corpo del testo abbastanza lungo da dominare la stima.", "fontSize": 10, "bold": false },
-          { "text": "Un secondo paragrafo di corpo per consolidare la dimensione dominante del testo.", "fontSize": 10, "bold": false },
-          { "text": "1 Una nota a pie di pagina in carattere piu piccolo del corpo principale.", "fontSize": 8, "bold": false }
+          {
+            "bbox": [72, 780, 120, 22],
+            "spans": [
+              { "text": "Capitolo I", "fontSize": 16, "bold": true, "italic": false, "color": "#000000", "bbox": [72, 780, 120, 22] }
+            ]
+          },
+          {
+            "bbox": [72, 740, 451, 14],
+            "spans": [
+              { "text": "Questo e un paragrafo di corpo del testo abbastanza lungo da dominare la stima.", "fontSize": 10, "bold": false, "italic": false, "color": "#000000", "bbox": [72, 740, 451, 14] }
+            ]
+          },
+          {
+            "bbox": [72, 722, 451, 14],
+            "spans": [
+              { "text": "Un secondo paragrafo di corpo per consolidare la dimensione dominante del testo.", "fontSize": 10, "bold": false, "italic": false, "color": "#000000", "bbox": [72, 722, 451, 14] }
+            ]
+          },
+          {
+            "bbox": [72, 90, 430, 11],
+            "spans": [
+              { "text": "1 Una nota a pie di pagina in carattere piu piccolo del corpo principale.", "fontSize": 8, "bold": false, "italic": false, "color": "#000000", "bbox": [72, 90, 430, 11] }
+            ]
+          }
         ]
       }
     ]

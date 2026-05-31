@@ -156,11 +156,13 @@ public final class ScaboPdfExtractor: NSObject {
     var currentSpans: [Span] = []
 
     func flush() {
-      let kept = currentSpans.filter {
-        !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-      }
-      if !kept.isEmpty {
-        result.append(Line(spans: kept, bbox: unionBBox(kept.map { $0.bbox })))
+      // Keep whitespace-only spans (inter-word spaces that PDFKit splits into
+      // their own attribute run) so the joined line text preserves spacing;
+      // drop only a line whose text is entirely whitespace.
+      let joined = currentSpans.map { $0.text }.joined()
+      if !joined.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        result.append(Line(spans: currentSpans,
+                           bbox: unionBBox(currentSpans.map { $0.bbox })))
       }
       currentSpans = []
     }
