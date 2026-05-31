@@ -65,4 +65,44 @@ describe('openDocumentFromPicker', () => {
 
     fetchSpy.mockRestore();
   });
+
+  test('routes a .scabopdf.json to the JSON path with its content', async () => {
+    (pick as jest.Mock).mockResolvedValueOnce([
+      { uri: 'file:///tmp/doc.scabopdf.json', name: 'doc.scabopdf.json' },
+    ]);
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      text: () => Promise.resolve('{"schema_version":"0.7.0"}'),
+    } as unknown as Response);
+
+    const picked = await openDocumentFromPicker();
+    expect(picked?.kind).toBe('scabopdf');
+    expect(picked?.content).toBe('{"schema_version":"0.7.0"}');
+
+    fetchSpy.mockRestore();
+  });
+
+  test('detects a PDF by extension and does not read its text', async () => {
+    (pick as jest.Mock).mockResolvedValueOnce([
+      { uri: 'file:///tmp/Manuale.pdf', name: 'Manuale.pdf' },
+    ]);
+    const fetchSpy = jest.spyOn(global, 'fetch');
+
+    const picked = await openDocumentFromPicker();
+    expect(picked?.kind).toBe('pdf');
+    expect(picked?.uri).toBe('file:///tmp/Manuale.pdf');
+    expect(picked?.content).toBeNull();
+    // The PDF is read natively from the URI, never via fetch().
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+  });
+
+  test('detects a PDF by MIME type when the name has no .pdf suffix', async () => {
+    (pick as jest.Mock).mockResolvedValueOnce([
+      { uri: 'file:///tmp/scan', name: 'scan', type: 'application/pdf' },
+    ]);
+    const picked = await openDocumentFromPicker();
+    expect(picked?.kind).toBe('pdf');
+    expect(picked?.content).toBeNull();
+  });
 });
