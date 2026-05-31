@@ -262,6 +262,20 @@ Da discutere con l'utente quali altri tipi di documento sono rilevanti per il su
 
 ---
 
+## Layer 2 (app React Native) — stato corrente (addendum 31 maggio 2026)
+
+> Questo CARRYOVER traccia il **Layer 1** (pipeline Python); la cadenza di versione e la cronologia sopra restano Layer 1. Questa sezione è un **addendum Layer 2** perché una sessione che apre con tutti gli `.md` sappia lo stato dell'app. Fonti canoniche Layer 2: i file **memory** (`project-pdf-native-backend`, `project-test-framework`, `project-layer2-bootstrap`, `project-ios-testflight`) e i doc repo `docs/LAYER2_TEST_FRAMEWORK.md` + `docs/ARCHITECTURE.md`.
+
+**Backend PDF on-device — build SBLOCCATA (commit `fe489e7`).** L'app costruisce per il Simulator da sorgente, installa, lancia, home pulita. Sblocco: `pod install` con `RCT_USE_PREBUILT_RNCORE=0 RCT_NEW_ARCH_ENABLED=1` (RN 0.85 spedisce un React-Core prebuilt incompatibile col grafo Fabric locale su Xcode 26.x); Podfile.lock pinnato a React-Core da sorgente. Catena: picker → `NativePdfExtractor` (PDFKit Swift) → `extractPdf` → `buildDocumentFromPdf` (**solo plugin Generic size-only registrato**) → `buildLayout`/`paginate`/`ReadingView`.
+
+**Framework di test + osservabilità (commit `496d629` + `5f5c2ee` + `26bff09` + `ebc84d8` + `5657aa1`).** Canale OSLog unificato `com.scabo.scabopdf` (`ScaboLog.swift` + TurboModule `NativeDiagnostics` + `diag.ts`): eventi content-free persistiti (Console.app / Analisi dati) vs snapshot test-mode su file. Piramide: XCUITest E2E (`ScaboPDFUITests`, **builda ma non esegue nel sandbox** — `axremoted` AX-init timeout; gira su Mac vero) → XCTest estrazione ospitato (`ScaboPDFExtractionTests`, **gira nel sandbox**) → generatore report TS (`app/src/measurement`, schema content-free v1.0). Seeding fixture via `seed_fixtures.sh`. Doc: `docs/LAYER2_TEST_FRAMEWORK.md`.
+
+**PRIME misurazioni REALI on-device (7 fixture, sostituiscono il proxy PyMuPDF ritirato) → debt confermati:** D1 collasso Generic su Giappichelli Vol. IV (7694 HEADING_3 / 4 NOTE); D2 furniture di pagina come HEADING_2 ~1/pagina (Torrente 1560); D3 frammentazione NOTE → MICRO-dominato (Marrone 670/670); D4 **colore invisibile** (estrattore espone solo testo+size+bold, niente colore — Marrone BIC mis-letto); D5 estrazione ~9–12 ms/pagina (Torrente 1559pp = 15 s); D6 granularità a riga, non a span. Report reali locali in `test-output-private/` (gitignored); **baseline NON ancora committate** (decisione 4: aspettare output Generic sano).
+
+**DECISIONE APERTA (utente, in cima alla prossima sessione):** migliorare il Generic entro il bridge attuale (dedup header testuale, merge note tollerante — guadagno limitato) **vs** arricchire l'estrattore Swift a per-span `size/bold/COLORE/bbox` (allineato a Layer 1) — la leva vera che chiude D4/D6 e abilita plugin corpus on-device. **Residuo sessione Mac:** eseguire lo XCUITest; finalizzare `seed_fixtures.sh --dest files` per il picker (esporre i Documents in Files via `UIFileSharingEnabled`/`LSSupportsOpeningDocumentsInPlace`, modifica Info.plist di produzione da confermare, o scrivere il File Provider locale).
+
+---
+
 ## Esclusioni di scope strategiche permanenti
 
 Le seguenti aree sono **fuori scope strategico del progetto ScaboPDF** e non vanno re-affrontate in sessioni future. La motivazione filosofica del progetto è che ScaboPDF parsea **testo strutturato** per la lettura accessibile via VoiceOver, non interpreta multimedia o contenuti grafico-tabulari. La distinzione "testo strutturato" vs "multimedia/grafico" è il confine permanente del prodotto, non un debt rinviato.

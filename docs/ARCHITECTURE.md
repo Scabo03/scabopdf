@@ -1369,8 +1369,12 @@ For each fixture, record processing time on a reference machine. CI fails if any
 ### Logging
 
 - Pipeline logs to stderr in human-readable format by default; `--json-log` for structured JSON.
-- App logs to console in development; OSLog in production (subsystem `com.scabo.scabopdf`).
+- App logs to console in development; OSLog in production (subsystem `com.scabo.scabopdf`). **Implemented 2026-05-31** as the unified channel `ScaboLog.swift` + the `NativeDiagnostics` TurboModule + `app/src/native/diag.ts`: content-free `event()`s (persisted, visible in Console.app / Settings → Privacy & Security → Analytics on device) and test-mode-only `snapshot()`s (heavy JSON to a Caches file). See `docs/LAYER2_TEST_FRAMEWORK.md`.
 - No PII in logs ever; document filenames are logged but content is not.
+
+### Layer 2 Generic plugin — gaps measured on-device (2026-05-31)
+
+First objective on-device measurements (real PDFKit + the size-only Generic plugin, via `ScaboPDFExtractionTests`; the PyMuPDF proxy is retracted) surfaced concrete debts on the 7 fixtures: (D1) Generic collapses on Giappichelli Vol. IV (7694 HEADING_3 / 4 NOTE); (D2) running headers/footers become HEADING_2 ~1 per page (Torrente 1560); (D3) NOTE fragmentation → MICRO-dominated (Marrone 670/670); (D4) **colour is invisible** — the extractor carries only text+fontSize+bold, so the colour-coded Marrone (BIC) is mis-read; (D5) extraction ~9–12 ms/page; (D6) line-granularity, not span. The architectural fork (decision pending): improve the Generic within the current bridge vs enrich the Swift extractor to per-span `size/bold/colour/bbox`. See `docs/LAYER2_TEST_FRAMEWORK.md` and the `project-pdf-native-backend` memory.
 
 ### Error handling
 
