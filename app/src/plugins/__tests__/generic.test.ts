@@ -73,7 +73,7 @@ describe('genericPlugin.build', () => {
     );
     const note = (doc.structure ?? []).find(n => n.type === 'NOTE');
     expect(note).toBeDefined();
-    expect(note?.length_category).toBe('SHORT');
+    expect(note?.length_category).toBe('MICRO');
   });
 
   test('de-hyphenates a word broken across two lines', () => {
