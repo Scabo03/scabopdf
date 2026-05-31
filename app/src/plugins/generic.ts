@@ -276,7 +276,8 @@ function detectFurniture(extraction: PdfExtraction): Set<string> {
 function classify(line: LineSummary, profile: Profile): Kind {
   const { bodySize, bodyColor } = profile;
   const short = line.text.length <= HEADING_MAX_CHARS;
-  const ratio = bodySize > 0 && line.fontSize > 0 ? line.fontSize / bodySize : 0;
+  const ratio =
+    bodySize > 0 && line.fontSize > 0 ? line.fontSize / bodySize : 0;
 
   // Colour-distinct, substantial, at-least-body-size short lines are heading
   // candidates regardless of size (D4). Pure markers (digits/punctuation) and
