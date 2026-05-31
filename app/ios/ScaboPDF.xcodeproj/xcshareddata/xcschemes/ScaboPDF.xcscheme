@@ -32,9 +32,9 @@
             skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "ScaboPDFTests.xctest"
-               BlueprintName = "ScaboPDFTests"
+               BlueprintIdentifier = "47C6D6A0B023DC81897DF802"
+               BuildableName = "ScaboPDFUITests.xctest"
+               BlueprintName = "ScaboPDFUITests"
                ReferencedContainer = "container:ScaboPDF.xcodeproj">
             </BuildableReference>
          </TestableReference>
