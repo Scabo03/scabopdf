@@ -27,6 +27,13 @@
  * VoiceOver is a deferred accessibility decision.
  *
  * Still a corpus-agnostic heuristic: it loses to any corpus-specific plugin.
+ *
+ * The closed set of categories this plugin produces — HEADING_1..4, BODY, NOTE
+ * — plus the per-category discriminating signal, and the categories it detects
+ * only to suppress (furniture / anchors) versus those reserved for corpus
+ * plugins, are declared and pinned in ./taxonomy.ts. Keep the two in sync: a
+ * change to what classify()/appendPageNodes() emit must update GENERIC_TAXONOMY
+ * (the behavioural test in __tests__/taxonomy.test.ts enforces this).
  */
 
 import type {

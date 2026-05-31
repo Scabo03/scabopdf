@@ -3,9 +3,15 @@
  * produce a stream of these; the pagination util chunks the stream into
  * pages; the native view renders each page.
  *
- * The role field is the SemanticCategory string from the Layer 1 contract
- * (e.g. 'HEADING_1', 'BODY', 'NOTE'). It is passed verbatim to native so the
- * UIView can pick the typographic style and acoustic regime per segment.
+ * The role field is, in the common case, the SemanticCategory string from the
+ * Layer 1 contract (e.g. 'HEADING_1', 'BODY', 'NOTE') — see the closed Generic
+ * taxonomy in plugins/taxonomy.ts for the categories Layer 2 produces and how
+ * they map onto Layer 1. The one exception is the Layer-2 *presentation-only*
+ * role 'SECTION_DIVIDER' (LAYER2_PRESENTATION_ONLY_ROLES), which buildSegments
+ * mints for the synthetic AKN containers so they do not read as ordinary
+ * chapter headings. Either way role is an opaque string passed verbatim to
+ * native, so the UIView can pick the typographic style and acoustic regime per
+ * segment; the binary contract is unchanged by the presentation role.
  */
 
 /** A single renderable, accessible chunk of text. */

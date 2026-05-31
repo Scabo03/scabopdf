@@ -14,6 +14,20 @@ import type { ExtractionPlugin } from './types';
 
 export type { ExtractionPlugin } from './types';
 export { genericPlugin } from './generic';
+export type {
+  GenericCategoryContract,
+  GenericCoverage,
+  GenericSignal,
+} from './taxonomy';
+export {
+  GENERIC_TAXONOMY,
+  GENERIC_TAXONOMY_ENTRIES,
+  GENERIC_PRODUCED_CATEGORIES,
+  GENERIC_DETECTED_SUPPRESSED_CATEGORIES,
+  GENERIC_RESERVED_CATEGORIES,
+  isGenericProduced,
+  LAYER2_PRESENTATION_ONLY_ROLES,
+} from './taxonomy';
 
 /** Confidence a corpus plugin must clear to win over the Generic fallback. */
 export const DISPATCH_THRESHOLD = 0.6;
