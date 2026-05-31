@@ -41,7 +41,8 @@ import {
   type ScabopdfDocument,
 } from './src/consumption';
 import { buildLayout, paginate, type ContentPage } from './src/rendering';
-import { ReadingView } from './src/native';
+import { extractPdf, ReadingView, totalLines } from './src/native';
+import { buildDocumentFromPdf } from './src/plugins';
 import { openDocumentFromPicker } from './src/picker';
 import { getStoredLayoutId, getStoredThemeSelection } from './src/storage';
 
@@ -129,6 +130,14 @@ function Home() {
     return () => clearTimeout(timer);
   }, [activeId, focusTargetId]);
 
+  // Surface a failure to VoiceOver: the live-region <Text alert> renders it,
+  // and the explicit announce guarantees it is spoken even if the region update
+  // is missed. Never swallow a meaningful message (SPECS § 0, P0).
+  function fail(message: string): void {
+    setError(message);
+    AccessibilityInfo.announceForAccessibility(message);
+  }
+
   async function handleOpenDocument(): Promise<void> {
     setError(null);
     setBusy(true);
@@ -143,19 +152,45 @@ function Home() {
       if (picked === null) {
         return;
       }
-      const result = parseDocument(picked.content);
-      if (!result.ok) {
-        setError(result.error.message);
-        return;
+      if (picked.kind === 'pdf') {
+        await openPdf(picked.name, picked.uri);
+      } else {
+        openScabopdf(picked.name, picked.content ?? '');
       }
-      openInReader(picked.name, result.document);
-    } catch {
-      setError(
-        'Non è stato possibile aprire il documento. Riprova o scegli un altro file.',
+    } catch (error) {
+      // parseDocument never throws; the throwing paths are the picker, the
+      // file read and the native PDF extractor — all of which carry a readable
+      // Italian message we must show rather than replace with an opaque one.
+      fail(
+        error instanceof Error && error.message.length > 0
+          ? error.message
+          : 'Non è stato possibile aprire il documento. Riprova o scegli un altro file.',
       );
     } finally {
       setBusy(false);
     }
+  }
+
+  function openScabopdf(name: string, content: string): void {
+    const result = parseDocument(content);
+    if (!result.ok) {
+      // invalid_json / unsupported_version / schema_validation — each carries
+      // its own user-facing message; surface it instead of swallowing it.
+      fail(result.error.message);
+      return;
+    }
+    openInReader(name, result.document);
+  }
+
+  async function openPdf(name: string, uri: string): Promise<void> {
+    const extraction = await extractPdf(uri);
+    if (totalLines(extraction) === 0) {
+      fail(
+        'Nessun testo estraibile da questo PDF. Potrebbe essere un documento scansionato, fatto di sole immagini.',
+      );
+      return;
+    }
+    openInReader(name, buildDocumentFromPdf(extraction, name));
   }
 
   function openInReader(name: string, doc: ScabopdfDocument): void {
@@ -216,7 +251,7 @@ function Home() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Apri documento"
-              accessibilityHint="Apre il selettore file di sistema per scegliere un documento .scabopdf.json"
+              accessibilityHint="Apre il selettore file di sistema per scegliere un PDF o un documento .scabopdf.json"
               accessibilityState={{ disabled: busy }}
               disabled={busy}
               onPress={handleOpenDocument}
