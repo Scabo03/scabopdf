@@ -143,6 +143,84 @@ d'oro) resta valido. Le sezioni sotto sono aggiornate dove i due fatti incidono.
 
 ---
 
+## 0.2 Stato di avanzamento — banda OGGI COMPLETATA (2026-06-05)
+
+La **banda OGGI è chiusa**: tutta la logica deterministica
+migrabile-e-verificabile-senza-Mac è tradotta in `ScaboCore` (SwiftPM,
+solo-Foundation, pod-free, deployment iOS 15/macOS 12, nessun import
+PDFKit/UIKit/SwiftUI) e blindata da XCTest unitari eseguiti con `swift test` nel
+sandbox MacInCloud. **Esito reale al termine della Fase 4-logica: 126 test, 0
+fallimenti.**
+
+Fasi completate (regola d'oro test-first rispettata in ognuna):
+
+- **Fase 0a + Fase 1 — consumo JSON (Path A).** `consumption/*` → `SchemaTypes`,
+  `DocumentLoader`, `DocumentValidation`, `Traversal`, `Layout`, e il seam
+  `PdfExtraction`/`PdfExtracting` (§ 10). Commit `bf5130d`.
+- **Fase 2 — tassonomia + Generic (Path B).** `plugins/*` + l'adattatore
+  `summarizeLine` (`LineSummary`), oracolo ricostruito dove il TS non aveva unit
+  test. Commit `9bf54da`.
+- **Fase 3-logica — rendering puro.** `rendering/*` → `ContentModel`,
+  `RoleStyle`, `BuildSegments`, `Pagination`, `Layouts`. Output = i `segments`
+  come dato; la resa a schermo è Fase 3-view (POST-MAC). Commit `123664d`.
+- **Fase 4-logica — theme/storage/measurement (chiude la banda OGGI).**
+  `theme/tokens` + la derivazione pura `resolveThemeId` (`Tokens`,
+  `ThemeResolution`); `storage/preferences` dietro il confine astratto
+  `KeyValueStore` con store in-memory (`Preferences`); il framework di
+  measurement tradotto **as-is** (`Report`, `StructuralComparison`,
+  `CorpusBaselines`), con la `PdfExtraction` resa `Codable` per decodificare le
+  `Capture`. Confini netti: token = dato, non componente di view; preferenze =
+  logica dietro protocollo, persistenza concreta fuori; measurement preservato
+  nel comportamento (il ripensamento del metodo di validazione è decisione
+  separata dello sviluppatore, non anticipata qui). Commit `<questa fase>`.
+
+> **Dichiarazione di chiusura banda OGGI.** Con la Fase 4-logica è esaurito tutto
+> il codice di logica deterministica traducibile e verificabile con XCTest nel
+> sandbox senza Mac fisico. Quanto resta richiede il Mac fisico (XCUITest +
+> `axremoted`), un estrattore concreto, o la persistenza/observation di sistema —
+> tutto banda POST-MAC.
+
+### Banda POST-MAC — inventario di ciò che RESTA (prossima banda)
+
+Si apre all'arrivo del Mac fisico (§ 0.1, § 6). In ordine indicativo:
+
+1. **Cablaggio del target app + harness di test on-device.** Creare il target
+   Swift nel `.xcodeproj` e **ricollegare** `ScaboPDFExtractionTests` /
+   `ScaboPDFUITests` (la Fase 1 ha tradotto la logica in `ScaboCore` ma ha
+   lasciato fuori il cablaggio nel progetto app, che richiede Simulator). Fase 0b
+   shell UI minima + smoke XCUITest che *builda* oggi ma *gira* solo sul Mac.
+2. **Estrattore concreto PDFKit** (`ScaboPdfExtractor`) come conformità di
+   `PdfExtracting` (il seam § 10 è già pronto e isolato da PDFKit). Strada
+   parallela MuPDF on-device come tetto di qualità (Fatto nuovo 2).
+3. **Fase 3-view — reading view + VoiceOver.** Hosting di
+   `ScaboReadingContentView` in un `UIViewController`, `updatePageContent` cablato
+   ai `segments` di Fase 3-logica, verifica reale di `causesPageTurn` /
+   `accessibilityScroll` come li percorre VoiceOver.
+4. **Accessibilità + applicazione tema.** `NativeAccessibilitySettings`
+   ObjC++→Swift come tipo osservabile (la subscription concreta che alimenta
+   `resolveThemeId`); il `ThemeProvider`/hook come meccanismo runtime;
+   l'applicazione dei token a schermo. Decisione § 9.4 (Combine/`@Published` vs
+   callback vs `@Observable`) ancora aperta.
+5. **Persistenza concreta.** Implementazione `UserDefaults`-backed di
+   `KeyValueStore` (la logica preferenze è già pronta dietro il protocollo).
+   Decisione § 9.5 (embedding fixture) parzialmente risolta: per `ScaboCore` le
+   baseline reali si leggono da disco via `#filePath`, il fixture sintetico è
+   embeddato nel test; resta da fissare la convenzione per il target app.
+6. **Measurement integration on-device.** Le due integration TS
+   (`measureRealCaptures`, `structuralComparison.integration`) sulle 7 capture
+   reali in `test-output-private/` (seed_fixtures.sh + estrazione su Simulator +
+   pull_captures.sh). La logica del framework è tradotta e già esercitata su
+   baseline reali committate; il braccio Generic-vs-Layer1 con capture on-device
+   è POST-MAC.
+7. **Fase 5-UI.** `App.tsx` → schermate SwiftUI/UIKit (home/lista/reader),
+   navigazione, picker presentato, nuovo `AppDelegate`/`SceneDelegate`. Verifica
+   via XCUITest.
+8. **Fase 6 — teardown RN.** A parità raggiunta: eliminazione di
+   `node_modules`, `Pods`, bridge `.mm`, `App.tsx`, `src/`, workspace, residui
+   Python (§ 5).
+
+---
+
 ## 1. Inventario: tenere / tradurre / eliminare
 
 ### 1.1 Tenere as-is — Swift nativo che sopravvive intatto (logica)

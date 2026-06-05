@@ -29,7 +29,14 @@ import Foundation
 
 /// A page-local bounding box, origin bottom-left, y up. Mirrors the TS
 /// `[x, y, w, h]` tuple.
-public struct BBox: Equatable, Sendable {
+///
+/// `Codable` decodes/encodes the JSON **array** form `[x, y, w, h]` (the shape a
+/// captured device extraction uses), not a keyed object — added in Fase 4 so the
+/// measurement layer can parse a `Capture` with the production decode (the Swift
+/// analog of the TS `normalizeExtraction`). The conformance is additive: existing
+/// `Equatable`/`Sendable` behaviour is unchanged, and no PDFKit type leaks across
+/// the seam.
+public struct BBox: Codable, Equatable, Sendable {
     public var x: Double
     public var y: Double
     public var width: Double
@@ -41,10 +48,27 @@ public struct BBox: Equatable, Sendable {
         self.width = width
         self.height = height
     }
+
+    public init(from decoder: Decoder) throws {
+        var c = try decoder.unkeyedContainer()
+        let x = try c.decode(Double.self)
+        let y = try c.decode(Double.self)
+        let w = try c.decode(Double.self)
+        let h = try c.decode(Double.self)
+        self.init(x: x, y: y, width: w, height: h)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.unkeyedContainer()
+        try c.encode(x)
+        try c.encode(y)
+        try c.encode(width)
+        try c.encode(height)
+    }
 }
 
 /// One maximal run of uniform typographic attributes within a laid-out line.
-public struct PdfSpan: Equatable, Sendable {
+public struct PdfSpan: Codable, Equatable, Sendable {
     public var text: String
     /// Font point size (0 if the engine reported none, e.g. a scanned PDF).
     public var fontSize: Double
@@ -65,7 +89,7 @@ public struct PdfSpan: Equatable, Sendable {
 }
 
 /// One laid-out line of text: its spans plus the union bbox.
-public struct PdfTextLine: Equatable, Sendable {
+public struct PdfTextLine: Codable, Equatable, Sendable {
     public var spans: [PdfSpan]
     public var bbox: BBox
 
@@ -76,7 +100,7 @@ public struct PdfTextLine: Equatable, Sendable {
 }
 
 /// The lines extracted from a single PDF page, in reading order.
-public struct PdfPageExtraction: Equatable, Sendable {
+public struct PdfPageExtraction: Codable, Equatable, Sendable {
     /// 0-based page index (the Layer 1 `PageIndex` convention).
     public var pageIndex: Int
     /// Page (cropBox) width/height in points, for normalising bbox positions.
@@ -93,7 +117,7 @@ public struct PdfPageExtraction: Equatable, Sendable {
 }
 
 /// The full structured extraction of a PDF — the boundary value type.
-public struct PdfExtraction: Equatable, Sendable {
+public struct PdfExtraction: Codable, Equatable, Sendable {
     /// Payload shape version (2 = per-span).
     public var version: Int
     public var pageCount: Int
