@@ -1,0 +1,489 @@
+//
+//  GenericPlugin.swift
+//  ScaboCore
+//
+//  The corpus-agnostic Generic extraction plugin. Faithful translation of
+//  `app/src/plugins/generic.ts` (the multi-signal size+colour+geometry rewrite,
+//  commit 3a811f8).
+//
+//  FIDELITY, NOT IMPROVEMENT. Translating the Generic does not fix it. By
+//  construction it over-detects headings from generic signals and cannot tell a
+//  corpus's specific notes apart — it collapses on several corpora, and that is
+//  the documented behaviour the future corpus plugins (out of this phase) will
+//  correct. The success criterion here is that the Swift Generic behaves
+//  IDENTICALLY to the TS Generic, collapse included. No classification is
+//  "fixed" in this translation.
+//
+//  The closed set it emits — HEADING_1..4, BODY, NOTE — plus the per-category
+//  signal and the suppressed/reserved buckets are pinned in `Taxonomy.swift`.
+//
+
+import Foundation
+
+// MARK: - Calibrated constants (verbatim from generic.ts)
+
+/// A heading is only accepted on a reasonably short line.
+let HEADING_MAX_CHARS = 120
+/// Size ratios (line size / body size) that promote a short line to a heading.
+let HEADING_1_RATIO = 1.5
+let HEADING_2_RATIO = 1.25
+let HEADING_3_RATIO = 1.12
+/// A short, bold line a touch larger than body reads as a minor heading.
+let HEADING_4_BOLD_RATIO = 1.04
+/// Below this ratio a line reads as a note (smaller than body).
+let NOTE_RATIO = 0.85
+
+/// RGB distance beyond which a colour counts as "distinct from body".
+let COLOR_DISTANCE_MIN = 100.0
+/// Min RGB saturation (max−min channel) for a colour to read as structural.
+let COLOR_SATURATION_MIN = 40
+/// A colour-distinct line must be at least this fraction of the body size.
+let COLOR_HEADING_MIN_RATIO = 0.95
+/// Page bands (fraction of height) where running furniture lives.
+let TOP_BAND = 0.9
+let BOTTOM_BAND = 0.1
+/// A furniture candidate is short.
+let FURNITURE_MAX_CHARS = 60
+
+/// NOTE length → acoustic regime thresholds (mirrors Layer 1).
+let LENGTH_THRESHOLDS: [(Int, LengthCategory)] = [
+    (50, .MICRO),
+    (100, .SHORT),
+    (500, .MEDIUM),
+    (1000, .LONG),
+    (3000, .VERY_LONG),
+]
+
+/// The classification verdict for a line.
+enum Kind: Equatable {
+    case body
+    case note
+    case heading(level: Int)
+}
+
+/// The estimated body profile.
+struct Profile {
+    let bodySize: Double
+    let bodyColor: String
+}
+
+// MARK: - The plugin
+
+/// The universal fallback: always eligible, always loses to a corpus-specific
+/// plugin that recognises the document. A `final class` so the dispatcher's
+/// identity check works (`selectPlugin(...) === genericPlugin`).
+public final class GenericPlugin: ExtractionPlugin {
+    public let id = "generic"
+    public let label = "Generico"
+
+    public func matches(_ extraction: PdfExtraction) -> Double { 0.05 }
+
+    public func build(_ extraction: PdfExtraction, sourceName: String) -> ScabopdfDocument {
+        let profile = estimateProfile(extraction)
+        let furniture = detectFurniture(extraction)
+        var nodes: [NodeDict] = []
+        var counter = 0
+        func nextId() -> String {
+            defer { counter += 1 }
+            return "node_\(counter)"
+        }
+
+        for page in extraction.pages {
+            appendPageNodes(page, profile, furniture, &nodes, nextId)
+        }
+
+        var warnings = [
+            "plugin:generic:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
+        ]
+        if profile.bodySize == 0 {
+            warnings.append("plugin:generic:no_font_information_all_body")
+        }
+        if furniture.count > 0 {
+            warnings.append("plugin:generic:furniture_lines_removed_\(furniture.count)")
+        }
+
+        return ScabopdfDocument(
+            schema_version: SUPPORTED_SCHEMA_VERSION,
+            document_id: slug(sourceName),
+            metadata: DocumentMetadata(
+                pages_pdf: extraction.pageCount,
+                page_size_pt: [0, 0],
+                source_pdf_filename: sourceName
+            ),
+            profile: DocumentProfileDict(
+                profile_id: "generic",
+                editorial_family: "generic",
+                genre: "unknown",
+                confidence: matches(extraction)
+            ),
+            warnings: warnings,
+            transformations: [],
+            structure: nodes
+        )
+    }
+}
+
+/// The Generic plugin singleton (identity matters for the dispatcher).
+public let genericPlugin = GenericPlugin()
+
+// MARK: - Profile estimation
+
+/// Body size = the LARGEST size bucket that is at least half as frequent (by
+/// line count) as the most frequent bucket — robust to note-heavy documents.
+/// Body colour = the colour covering the most characters (ties → first-seen).
+func estimateProfile(_ extraction: PdfExtraction) -> Profile {
+    var linesBySize: [Double: Int] = [:]
+    var colorCounts: [String: Int] = [:]
+    var colorOrder: [String] = []
+
+    for page in extraction.pages {
+        for line in page.lines {
+            let sm = summarizeLine(line)
+            if sm.fontSize > 0 {
+                let key = (sm.fontSize * 2).rounded(.toNearestOrAwayFromZero) / 2 // 0.5pt buckets
+                linesBySize[key, default: 0] += 1
+            }
+            if colorCounts[sm.color] == nil { colorOrder.append(sm.color) }
+            colorCounts[sm.color, default: 0] += sm.text.utf16.count
+        }
+    }
+
+    var topCount = 0
+    for count in linesBySize.values { topCount = max(topCount, count) }
+
+    var bodySize = 0.0
+    for (size, count) in linesBySize {
+        if Double(count) >= Double(topCount) * 0.5 && size > bodySize {
+            bodySize = size
+        }
+    }
+
+    var bodyColor = "#000000"
+    var bestChars = -1
+    for c in colorOrder {
+        let chars = colorCounts[c]!
+        if chars > bestChars {
+            bestChars = chars
+            bodyColor = c
+        }
+    }
+
+    return Profile(bodySize: bodySize, bodyColor: bodyColor)
+}
+
+// MARK: - Furniture detection
+
+/// Running headers/footers + per-page colour markers + majority watermarks:
+/// short lines (or any-length watermarks) recurring across many pages.
+/// Returns "pageIndex:lineIndex" keys to skip.
+func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
+    struct Candidate { let key: String; let norm: String }
+    var bandCandidates: [Candidate] = []
+    var colorCandidates: [Candidate] = []
+    var generalCandidates: [Candidate] = []
+    var bandPages: [String: Set<Int>] = [:]
+    var colorPages: [String: Set<Int>] = [:]
+    var generalPages: [String: Set<Int>] = [:]
+
+    func track(_ map: inout [String: Set<Int>], _ norm: String, _ pageIndex: Int) {
+        map[norm, default: []].insert(pageIndex)
+    }
+
+    for page in extraction.pages {
+        let height = page.height
+        for (lineIndex, line) in page.lines.enumerated() {
+            let sm = summarizeLine(line)
+            if sm.text.utf16.count == 0 { continue }
+            let norm = jsTrim(normalizeDigits(sm.text).lowercased())
+            let key = "\(page.pageIndex):\(lineIndex)"
+            // General majority-recurrence applies at any length.
+            generalCandidates.append(Candidate(key: key, norm: norm))
+            track(&generalPages, norm, page.pageIndex)
+            // Band / colour furniture are short headers/footers/markers only.
+            if sm.text.utf16.count > FURNITURE_MAX_CHARS { continue }
+            let yFrac = height > 0 ? sm.yTop / height : 0.5
+            if yFrac >= TOP_BAND || yFrac <= BOTTOM_BAND {
+                bandCandidates.append(Candidate(key: key, norm: norm))
+                track(&bandPages, norm, page.pageIndex)
+            }
+            if isSaturated(sm.color) {
+                colorCandidates.append(Candidate(key: key, norm: norm))
+                track(&colorPages, norm, page.pageIndex)
+            }
+        }
+    }
+
+    let minPages = max(5, Int((Double(extraction.pageCount) * 0.15).rounded(.up)))
+    let majorityPages = max(5, Int((Double(extraction.pageCount) * 0.5).rounded(.up)))
+    var furniture: Set<String> = []
+    for c in bandCandidates where (bandPages[c.norm]?.count ?? 0) >= minPages {
+        furniture.insert(c.key)
+    }
+    for c in colorCandidates where (colorPages[c.norm]?.count ?? 0) >= minPages {
+        furniture.insert(c.key)
+    }
+    for c in generalCandidates where (generalPages[c.norm]?.count ?? 0) >= majorityPages {
+        furniture.insert(c.key)
+    }
+    return furniture
+}
+
+// MARK: - Classification
+
+func classify(_ line: LineSummary, _ profile: Profile) -> Kind {
+    let bodySize = profile.bodySize
+    let bodyColor = profile.bodyColor
+    let short = line.text.utf16.count <= HEADING_MAX_CHARS
+    let ratio = (bodySize > 0 && line.fontSize > 0) ? line.fontSize / bodySize : 0.0
+
+    // Colour-distinct, substantial, at-least-body-size short lines are heading
+    // candidates regardless of size (D4).
+    let colorHeading = short
+        && isSubstantial(line.text)
+        && isSaturated(line.color)
+        && colorDistance(line.color, bodyColor) > COLOR_DISTANCE_MIN
+        && (ratio == 0 || ratio >= COLOR_HEADING_MIN_RATIO)
+
+    if colorHeading {
+        if ratio >= HEADING_2_RATIO { return .heading(level: 1) }
+        if ratio >= HEADING_3_RATIO { return .heading(level: 2) }
+        return .heading(level: 3)
+    }
+
+    if ratio == 0 { return .body }
+
+    if short {
+        if ratio >= HEADING_1_RATIO { return .heading(level: 1) }
+        if ratio >= HEADING_2_RATIO { return .heading(level: 2) }
+        if ratio >= HEADING_3_RATIO { return .heading(level: 3) }
+        if line.bold && ratio >= HEADING_4_BOLD_RATIO { return .heading(level: 4) }
+    }
+    if ratio <= NOTE_RATIO { return .note }
+    return .body
+}
+
+// MARK: - Node emission
+
+private enum RunRole { case body, note }
+
+/// Emits the nodes for one page: furniture + invisible-anchor lines skipped,
+/// headings as standalone nodes, runs of consecutive BODY (or NOTE) lines merged
+/// into one paragraph node.
+func appendPageNodes(
+    _ page: PdfPageExtraction,
+    _ profile: Profile,
+    _ furniture: Set<String>,
+    _ out: inout [NodeDict],
+    _ nextId: () -> String
+) {
+    var runRole: RunRole?
+    var runLines: [String] = []
+
+    func flushRun() {
+        guard let role = runRole, !runLines.isEmpty else {
+            runRole = nil
+            runLines = []
+            return
+        }
+        let text = joinLines(runLines)
+        var node = NodeDict(
+            id: nextId(),
+            type: role == .body ? .BODY : .NOTE,
+            page_index: page.pageIndex,
+            text: text
+        )
+        if role == .note { node.length_category = lengthCategoryFor(text) }
+        out.append(node)
+        runRole = nil
+        runLines = []
+    }
+
+    for (lineIndex, line) in page.lines.enumerated() {
+        if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
+        let sm = summarizeLine(line)
+        if isNearWhite(sm.color) { continue } // invisible white text (page anchors)
+        let kind = classify(sm, profile)
+        switch kind {
+        case .heading(let level):
+            flushRun()
+            out.append(NodeDict(
+                id: nextId(),
+                type: headingCategory(level),
+                page_index: page.pageIndex,
+                text: sm.text,
+                level: level
+            ))
+        case .body, .note:
+            let role: RunRole = (kind == .body) ? .body : .note
+            if let r = runRole, r != role { flushRun() }
+            runRole = role
+            runLines.append(sm.text)
+        }
+    }
+    flushRun()
+}
+
+private func headingCategory(_ level: Int) -> SemanticCategory {
+    switch level {
+    case 1: return .HEADING_1
+    case 2: return .HEADING_2
+    case 3: return .HEADING_3
+    default: return .HEADING_4
+    }
+}
+
+// MARK: - Text helpers
+
+/// Joins lines into one paragraph, de-hyphenating a word broken at line end.
+func joinLines(_ lines: [String]) -> String {
+    var out = ""
+    for raw in lines {
+        let line = jsTrim(raw)
+        if line.isEmpty { continue }
+        if out.isEmpty {
+            out = line
+            continue
+        }
+        if endsWithLetterHyphen(out) {
+            out = String(String.UnicodeScalarView(out.unicodeScalars.dropLast())) + stripLeadingWhitespace(line)
+        } else {
+            out = "\(out) \(line)"
+        }
+    }
+    return out
+}
+
+/// True when `s` ends with a `[A-Za-zÀ-ÿ]` letter immediately followed by `-`
+/// (the TS regex `/[A-Za-zÀ-ÿ]-$/`).
+private func endsWithLetterHyphen(_ s: String) -> Bool {
+    let scalars = Array(s.unicodeScalars)
+    guard scalars.count >= 2, scalars[scalars.count - 1] == "-" else { return false }
+    return isLetterScalar(scalars[scalars.count - 2])
+}
+
+/// Removes leading whitespace (the TS `replace(/^\s+/, '')`). `line` is already
+/// trimmed here, so this is a no-op kept for fidelity.
+private func stripLeadingWhitespace(_ s: String) -> String {
+    var view = Substring(s)
+    while let first = view.first, first.isWhitespace { view = view.dropFirst() }
+    return String(view)
+}
+
+/// A heading must carry actual letters, not be a bare marker (≥ 2 letters in the
+/// literal range `[A-Za-zÀ-ÿ]`, the TS regex including U+00C0…U+00FF verbatim).
+func isSubstantial(_ text: String) -> Bool {
+    var count = 0
+    for scalar in text.unicodeScalars where isLetterScalar(scalar) {
+        count += 1
+        if count >= 2 { return true }
+    }
+    return false
+}
+
+/// Matches the literal regex class `[A-Za-zÀ-ÿ]` (ASCII letters plus the
+/// Latin-1 supplement range U+00C0…U+00FF, which includes × and ÷ exactly as the
+/// TS regex does).
+private func isLetterScalar(_ scalar: Unicode.Scalar) -> Bool {
+    let v = scalar.value
+    return (v >= 0x41 && v <= 0x5A) || (v >= 0x61 && v <= 0x7A) || (v >= 0xC0 && v <= 0xFF)
+}
+
+/// Replaces each maximal run of ASCII digits `[0-9]+` with a single `#`
+/// (the TS `replace(/\d+/g, '#')`).
+func normalizeDigits(_ s: String) -> String {
+    var out = ""
+    var inDigits = false
+    for ch in s {
+        if ch.isASCII, ch.isNumber {
+            if !inDigits {
+                out.append("#")
+                inDigits = true
+            }
+        } else {
+            out.append(ch)
+            inDigits = false
+        }
+    }
+    return out
+}
+
+// MARK: - Colour helpers
+
+func isNearWhite(_ color: String) -> Bool {
+    let (r, g, b) = rgb(color)
+    return r > 230 && g > 230 && b > 230
+}
+
+/// A saturated colour (clearly not a grey/near-grey) reads as structural.
+func isSaturated(_ color: String) -> Bool {
+    let (r, g, b) = rgb(color)
+    return max(r, g, b) - min(r, g, b) > COLOR_SATURATION_MIN
+}
+
+func colorDistance(_ a: String, _ b: String) -> Double {
+    let (ar, ag, ab) = rgb(a)
+    let (br, bg, bb) = rgb(b)
+    let dr = Double(ar - br), dg = Double(ag - bg), db = Double(ab - bb)
+    return (dr * dr + dg * dg + db * db).squareRoot()
+}
+
+/// Parses `#rrggbb` strictly (exactly `#` + 6 ASCII hex); anything else → (0,0,0).
+func rgb(_ color: String) -> (Int, Int, Int) {
+    guard color.count == 7 else { return (0, 0, 0) }
+    let chars = Array(color)
+    guard chars[0] == "#" else { return (0, 0, 0) }
+    let hex = chars[1...6]
+    guard hex.allSatisfy(isAsciiHex) else { return (0, 0, 0) }
+    let h = Array(hex)
+    let r = Int(String(h[0...1]), radix: 16)!
+    let g = Int(String(h[2...3]), radix: 16)!
+    let b = Int(String(h[4...5]), radix: 16)!
+    return (r, g, b)
+}
+
+private func isAsciiHex(_ c: Character) -> Bool {
+    ("0"..."9").contains(c) || ("a"..."f").contains(c) || ("A"..."F").contains(c)
+}
+
+// MARK: - NOTE acoustic regime + slug
+
+func lengthCategoryFor(_ text: String) -> LengthCategory {
+    let length = jsTrim(text).utf16.count
+    for (threshold, category) in LENGTH_THRESHOLDS where length < threshold {
+        return category
+    }
+    return .MEGA
+}
+
+/// A stable, filesystem-ish id derived from the source file name. Faithful to
+/// the TS `slug`: strip the last extension, lowercase, collapse runs of
+/// non-`[a-z0-9]` into `_`, strip leading/trailing `_`, fall back to `documento`.
+func slug(_ name: String) -> String {
+    let base = stripLastExtension(name)
+    var out = ""
+    var lastWasUnderscore = false
+    for ch in base.lowercased() {
+        if isAsciiAlphanumeric(ch) {
+            out.append(ch)
+            lastWasUnderscore = false
+        } else if !out.isEmpty, !lastWasUnderscore {
+            out.append("_")
+            lastWasUnderscore = true
+        }
+    }
+    while out.hasSuffix("_") { out.removeLast() }
+    return out.isEmpty ? "documento" : out
+}
+
+/// Removes a trailing `.<ext>` (the TS regex `\.[^.]+$`): the last `.` plus the
+/// non-dot run to the end, only when that run is non-empty.
+private func stripLastExtension(_ name: String) -> String {
+    guard let dot = name.lastIndex(of: "."), dot != name.index(before: name.endIndex) else {
+        return name
+    }
+    return String(name[name.startIndex..<dot])
+}
+
+private func isAsciiAlphanumeric(_ c: Character) -> Bool {
+    ("a"..."z").contains(c) || ("0"..."9").contains(c)
+}
