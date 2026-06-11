@@ -184,11 +184,22 @@ Fasi completate (regola d'oro test-first rispettata in ognuna):
 
 Si apre all'arrivo del Mac fisico (§ 0.1, § 6). In ordine indicativo:
 
-1. **Cablaggio del target app + harness di test on-device.** Creare il target
-   Swift nel `.xcodeproj` e **ricollegare** `ScaboPDFExtractionTests` /
-   `ScaboPDFUITests` (la Fase 1 ha tradotto la logica in `ScaboCore` ma ha
-   lasciato fuori il cablaggio nel progetto app, che richiede Simulator). Fase 0b
-   shell UI minima + smoke XCUITest che *builda* oggi ma *gira* solo sul Mac.
+1. **Cablaggio del target app + harness di test on-device.** Si scinde in due
+   sotto-passi, **W1** e **W2**.
+   - **W1 — ScaboCore nel target app + harness in-project. ✅ COMPLETATO**
+     (2026-06-11, vedi § 0.3). Il target app vero è ora `ScaboApp`
+     (UIKit/Storyboard, creato a mano in Xcode 26.5), a cui è collegata la
+     libreria SwiftPM locale `ScaboCore` via riferimento nativo di Xcode
+     (`XCLocalSwiftPackageReference` + `XCSwiftPackageProductDependency`), **non**
+     via wrapper podspec, in modo puramente additivo e reversibile (Pods/RN
+     intatti). Aggiunto l'harness `ScaboAppTests` (unit test hosted su `ScaboApp`)
+     che linka `ScaboCore` ed è complementare — non sostitutivo — del veloce
+     `swift test` su `ScaboCore` (126 verdi).
+   - **W2 — ricollegare `ScaboPDFExtractionTests` / `ScaboPDFUITests`. RINVIATO**
+     ai punti POST-MAC 2/3: dipendono da `ScaboNative`/RN/estrattore e non sono in
+     scope W1.
+   - Fase 0b shell UI minima + smoke XCUITest che *builda* oggi ma *gira* solo sul
+     Mac (con la piattaforma simulatore iOS installata).
 2. **Estrattore concreto PDFKit** (`ScaboPdfExtractor`) come conformità di
    `PdfExtracting` (il seam § 10 è già pronto e isolato da PDFKit). Strada
    parallela MuPDF on-device come tetto di qualità (Fatto nuovo 2).
@@ -218,6 +229,65 @@ Si apre all'arrivo del Mac fisico (§ 0.1, § 6). In ordine indicativo:
 8. **Fase 6 — teardown RN.** A parità raggiunta: eliminazione di
    `node_modules`, `Pods`, bridge `.mm`, `App.tsx`, `src/`, workspace, residui
    Python (§ 5).
+
+---
+
+## 0.3 Avanzamento banda POST-MAC — W1 completato (2026-06-11)
+
+Primo lavoro eseguito sul **Mac fisico** (Xcode 26.5 pubblico). Lo sviluppatore
+ha creato a mano, dalla GUI, un nuovo target app iOS **`ScaboApp`**
+(Interface = Storyboard / UIKit — scelta architetturale ferma per il controllo
+fine dell'accessibilità VoiceOver, **non** SwiftUI; Language = Swift; bundle id
+attuale `com.scabo.ScaboApp`) accanto ai tre target esistenti. Lo stato di quel
+target creato a mano è il **punto di ritorno** `chore(xcode): add ScaboApp target
+(UIKit/Storyboard) shell`.
+
+**W1 eseguito (cablaggio additivo e reversibile).** `ScaboCore` è collegata a
+`ScaboApp` via **riferimento SwiftPM locale nativo di Xcode**
+(`XCLocalSwiftPackageReference relativePath = ScaboCore` +
+`XCSwiftPackageProductDependency` sul prodotto-libreria `ScaboCore`), **mai** via
+wrapper podspec: il grafo Pods non è toccato, `Podfile`/`Pods`/`pod ScaboNative`/
+target RN/build phase RN restano intatti. La modifica al `.pbxproj` è **puramente
+additiva (154 inserzioni, 0 cancellazioni)** e si annulla tornando al punto di
+ritorno. Aggiunto l'harness di test **in-project `ScaboAppTests`** (unit-test
+hosted su `ScaboApp`, come `ScaboPDFExtractionTests` lo è su `ScaboPDF`) che
+`import ScaboCore` ed esercita un simbolo pubblico già coperto (superficie
+`Layout`); è **complementare**, non sostitutivo, del veloce `swift test` su
+`ScaboCore` (i 126 test restano dove sono). Schema condiviso `ScaboApp.xcscheme`
+con `ScaboAppTests` nella Test action, per `xcodebuild -scheme ScaboApp test`
+riproducibile.
+
+**Stato di verifica (reale, senza phantom).** Validazione strutturale verde:
+`plutil -lint` OK; `xcodebuild -list` risolve `ScaboCore` come *local source
+package* e mostra i target `ScaboApp`/`ScaboAppTests` e lo schema `ScaboApp`;
+`ScaboCore` `swift test` resta **126 test, 0 fallimenti** (non impattato dal
+cablaggio). La **build/run on-Simulator è in attesa di un prerequisito
+ambientale del Mac nuovo**: la piattaforma simulatore **iOS 26.5 non è ancora
+installata** (`xcodebuild` rifiuta ogni destinazione iOS con *"iOS 26.5 is not
+installed"*); il download (8.52 GB) è stato avviato. È un limite d'infrastruttura
+una-tantum, analogo per natura al limite `axremoted` (§ 6), **non un difetto del
+cablaggio**. A piattaforma installata, l'esecuzione canonica è
+`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild test
+-project app/ios/ScaboPDF.xcodeproj -scheme ScaboApp -destination
+'platform=iOS Simulator,name=<device iOS 26.5>'` (sul **`-project`**, non sul
+workspace, così l'eventuale `Pods.xcodeproj` non entra in gioco).
+
+**Decisione di fasatura — RN va demolito PRESTO, non per ultimo.** `ScaboApp` è
+**l'app vera d'ora in avanti**, il sostituto di React Native, non un esperimento
+parallelo. Non c'è e non ci sarà alcuna app RN/Android da preservare. La vecchia
+Fase 6 collocava il teardown RN in fondo al percorso, a parità completa
+raggiunta; la decisione aggiornata è che **RN si smantella subito dopo che lo
+scheletro `ScaboApp` cammina** (build+run reali sul Mac), non in coda. Ogni cosa
+costruita da qui in poi nasce **per sostituire** RN, non per affiancarlo: lo
+scheletro resta deliberatamente minimo (nessuna UI o accessibilità in W1) e
+cresce per fette testate fino a poter spegnere l'apparato RN.
+
+**Punto noto — bundle id da riallineare per TestFlight.** Il bundle id di
+`ScaboApp` è oggi `com.scabo.ScaboApp`; va riallineato all'identificativo
+ufficiale **`com.scabo.scabopdf`** (quello già usato dal target RN `ScaboPDF`)
+**più avanti**, quando lo scheletro sarà pronto per TestFlight. Non va cambiato
+ora: cambiarlo prima del momento di firma/distribuzione non porta valore e tocca
+firma/provisioning. Registrato come punto noto, **nessuna azione in W1**.
 
 ---
 
