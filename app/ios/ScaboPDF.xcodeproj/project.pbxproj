@@ -17,6 +17,9 @@
 		AB9A5F697FF176B0B3FDEEBA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B55DA5BCF4152E8860366D9B /* Foundation.framework */; };
 		B09DB2AED16C0B44176B8C23 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		B3354F36E264653C957EB230 /* ScaboPDFExtractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8381CE9A901F4E4D88C130C0 /* ScaboPDFExtractionTests.swift */; };
+		5CABC04E0000000000000003 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000002 /* ScaboCore */; };
+		5CABC04E0000000000000005 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000004 /* ScaboCore */; };
+		5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E000000000000000C /* ScaboAppTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +36,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
 			remoteInfo = ScaboPDF;
+		};
+		5CABC04E0000000000000012 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 252450252FDB5D06009D756D;
+			remoteInfo = ScaboApp;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -56,6 +66,8 @@
 		B55DA5BCF4152E8860366D9B /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		CB78712121251D9642142E69 /* ScaboPDFUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScaboPDFUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		5CABC04E0000000000000006 /* ScaboAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScaboAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		5CABC04E000000000000000C /* ScaboAppTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaboAppTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -93,6 +105,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5CABC04E0000000000000003 /* ScaboCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5CABC04E0000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5CABC04E0000000000000005 /* ScaboCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -157,6 +178,7 @@
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
 				1B0731D0DAB1754D2A82B4F4 /* ScaboPDFUITests */,
 				FC8F9379B172803A31FF5F17 /* ScaboPDFExtractionTests */,
+				5CABC04E000000000000000D /* ScaboAppTests */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -170,6 +192,7 @@
 				CB78712121251D9642142E69 /* ScaboPDFUITests.xctest */,
 				99C907CA4C0CCC74457A8E58 /* ScaboPDFExtractionTests.xctest */,
 				252450262FDB5D06009D756D /* ScaboApp.app */,
+				5CABC04E0000000000000006 /* ScaboAppTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -199,6 +222,14 @@
 				8381CE9A901F4E4D88C130C0 /* ScaboPDFExtractionTests.swift */,
 			);
 			path = ScaboPDFExtractionTests;
+			sourceTree = SOURCE_ROOT;
+		};
+		5CABC04E000000000000000D /* ScaboAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				5CABC04E000000000000000C /* ScaboAppTests.swift */,
+			);
+			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXGroup section */
@@ -242,6 +273,7 @@
 			);
 			name = ScaboApp;
 			packageProductDependencies = (
+				5CABC04E0000000000000002 /* ScaboCore */,
 			);
 			productName = ScaboApp;
 			productReference = 252450262FDB5D06009D756D /* ScaboApp.app */;
@@ -284,6 +316,27 @@
 			productReference = 99C907CA4C0CCC74457A8E58 /* ScaboPDFExtractionTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		5CABC04E0000000000000007 /* ScaboAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5CABC04E000000000000000E /* Build configuration list for PBXNativeTarget "ScaboAppTests" */;
+			buildPhases = (
+				5CABC04E0000000000000008 /* Sources */,
+				5CABC04E0000000000000009 /* Frameworks */,
+				5CABC04E000000000000000A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5CABC04E0000000000000011 /* PBXTargetDependency */,
+			);
+			name = ScaboAppTests;
+			packageProductDependencies = (
+				5CABC04E0000000000000004 /* ScaboCore */,
+			);
+			productName = ScaboAppTests;
+			productReference = 5CABC04E0000000000000006 /* ScaboAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -299,6 +352,10 @@
 					252450252FDB5D06009D756D = {
 						CreatedOnToolsVersion = 26.5;
 					};
+					5CABC04E0000000000000007 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 252450252FDB5D06009D756D;
+					};
 				};
 			};
 			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "ScaboPDF" */;
@@ -310,6 +367,9 @@
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
+			packageReferences = (
+				5CABC04E0000000000000001 /* XCLocalSwiftPackageReference "ScaboCore" */,
+			);
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -318,6 +378,7 @@
 				47C6D6A0B023DC81897DF802 /* ScaboPDFUITests */,
 				F9AFCA99AF9A8DCFD33ADA4A /* ScaboPDFExtractionTests */,
 				252450252FDB5D06009D756D /* ScaboApp */,
+				5CABC04E0000000000000007 /* ScaboAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -334,6 +395,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		252450242FDB5D06009D756D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5CABC04E000000000000000A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -485,6 +553,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5CABC04E0000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		B34D9CFB0CF8E80CE51C3D19 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -507,6 +583,12 @@
 			name = ScaboPDF;
 			target = 13B07F861A680F5B00A75B9A /* ScaboPDF */;
 			targetProxy = 7478DB0D49512C639ECB9301 /* PBXContainerItemProxy */;
+		};
+		5CABC04E0000000000000011 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ScaboApp;
+			target = 252450252FDB5D06009D756D /* ScaboApp */;
+			targetProxy = 5CABC04E0000000000000012 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -902,6 +984,51 @@
 			};
 			name = Release;
 		};
+		5CABC04E000000000000000F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.ScaboApp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboApp.app/ScaboApp";
+			};
+			name = Debug;
+		};
+		5CABC04E0000000000000010 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.ScaboApp.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboApp.app/ScaboApp";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -950,7 +1077,34 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		5CABC04E000000000000000E /* Build configuration list for PBXNativeTarget "ScaboAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5CABC04E000000000000000F /* Debug */,
+				5CABC04E0000000000000010 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		5CABC04E0000000000000001 /* XCLocalSwiftPackageReference "ScaboCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ScaboCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5CABC04E0000000000000002 /* ScaboCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScaboCore;
+		};
+		5CABC04E0000000000000004 /* ScaboCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScaboCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 }
