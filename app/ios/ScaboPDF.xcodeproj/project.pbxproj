@@ -22,6 +22,7 @@
 		5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E000000000000000C /* ScaboAppTests.swift */; };
 		5CABC04E0000000000000020 /* PdfKitExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */; };
 		5CABC04E0000000000000030 /* PdfKitExplorationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000031 /* PdfKitExplorationTests.swift */; };
+		5CABC04E0000000000000040 /* ContinuousReadingViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000041 /* ContinuousReadingViewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +73,7 @@
 		5CABC04E000000000000000C /* ScaboAppTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaboAppTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PdfKitExtractorTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000031 /* PdfKitExplorationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PdfKitExplorationTests.swift; sourceTree = "<group>"; };
+		5CABC04E0000000000000041 /* ContinuousReadingViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContinuousReadingViewTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -234,6 +236,7 @@
 				5CABC04E000000000000000C /* ScaboAppTests.swift */,
 				5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */,
 				5CABC04E0000000000000031 /* PdfKitExplorationTests.swift */,
+				5CABC04E0000000000000041 /* ContinuousReadingViewTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -566,6 +569,7 @@
 				5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */,
 				5CABC04E0000000000000020 /* PdfKitExtractorTests.swift in Sources */,
 				5CABC04E0000000000000030 /* PdfKitExplorationTests.swift in Sources */,
+				5CABC04E0000000000000040 /* ContinuousReadingViewTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
