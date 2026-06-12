@@ -20,6 +20,7 @@
 		5CABC04E0000000000000003 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000002 /* ScaboCore */; };
 		5CABC04E0000000000000005 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000004 /* ScaboCore */; };
 		5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E000000000000000C /* ScaboAppTests.swift */; };
+		5CABC04E0000000000000020 /* PdfKitExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,6 +69,7 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		5CABC04E0000000000000006 /* ScaboAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScaboAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CABC04E000000000000000C /* ScaboAppTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaboAppTests.swift; sourceTree = "<group>"; };
+		5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PdfKitExtractorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -228,6 +230,7 @@
 			isa = PBXGroup;
 			children = (
 				5CABC04E000000000000000C /* ScaboAppTests.swift */,
+				5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -558,6 +561,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */,
+				5CABC04E0000000000000020 /* PdfKitExtractorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
