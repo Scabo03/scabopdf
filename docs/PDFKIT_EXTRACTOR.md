@@ -4,6 +4,12 @@ Stato: realizzato (banda POST-MAC, punto 2 di `docs/SWIFT_MIGRATION_PLAN.md`
 § 0.2). Destinatario: chiunque manutenga l'estrattore o ne valuti l'evoluzione
 (MuPDF come tetto di qualità, § 0.1 Fatto nuovo 2).
 
+> **Aggiornamento 2026-06-12.** Chiusa la fase esplorativa
+> (`docs/PDFKIT_EXPLORATION.md`), **PDFKit è l'estrattore confermato**; MuPDF e
+> Surya sono messi formalmente da parte come riserva subordinata a due condizioni
+> (perdita di contenuto vero o ordine di lettura irrecuperabile). Decisione e dati
+> in `docs/SWIFT_MIGRATION_PLAN.md` § 0.4.
+
 L'estrattore è `app/ios/ScaboApp/PdfKitExtractor.swift`, conforme al protocollo
 `PdfExtracting` definito in ScaboCore. È il **solo** componente dell'app che
 conosce PDFKit; il classificatore (plugin Generic) consuma esclusivamente il

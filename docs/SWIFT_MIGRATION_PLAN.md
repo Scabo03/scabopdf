@@ -109,7 +109,11 @@ distribuibile*. Il piano **non si impegna** su quale prevarrà, ma **non deve
 incardinarsi su PDFKit** in modo da rendere costoso innestare MuPDF più avanti.
 Vincolo di design conseguente, da rispettare fin dalla prima fase: il confine
 estrazione/classificazione resta pulito e modulare, con l'estrattore
-sostituibile (§ 10).
+sostituibile (§ 10). **Aggiornamento 2026-06-12 (§ 0.4):** dopo la fase
+esplorativa, MuPDF e Surya sono messi *formalmente da parte* e PDFKit è
+l'estrattore confermato; la parallela resta una riserva subordinata a due
+condizioni precise (perdita di contenuto vero o ordine irrecuperabile). Vedi
+§ 0.4 per la decisione e i dati che la sostengono.
 
 **Doppio-check dell'inventario (esito).** Ho ri-verificato con `wc -l` ogni
 numero della prima stesura contro il repo attuale. Esito: **l'inventario di massa
@@ -288,6 +292,87 @@ ufficiale **`com.scabo.scabopdf`** (quello già usato dal target RN `ScaboPDF`)
 **più avanti**, quando lo scheletro sarà pronto per TestFlight. Non va cambiato
 ora: cambiarlo prima del momento di firma/distribuzione non porta valore e tocca
 firma/provisioning. Registrato come punto noto, **nessuna azione in W1**.
+
+---
+
+## 0.4 Chiusura fase esplorativa PDFKit — decisione estrattore (2026-06-12)
+
+Dopo la fotografia del segnale grezzo (`docs/PDFKIT_EXPLORATION.md`, estrazione
+reale con `PdfKitExtractor` su iPhone 16 / iOS 26.5 su patriarca_benazzo,
+marrone_istituzioni, mandrioli_carratta_vol_iii), due domande aperte sono state
+sciolte lavorando sui dump per-span già prodotti.
+
+**Esito 1 — Ordine di lettura: già corretto, con eccezioni localizzate rare e
+recuperabili.** L'estrattore consegna span/righe nell'ordine di lettura umano
+(alto→basso, sinistra→destra), perché segue l'`attributedString` di PDFKit, che è
+già in ordine di layout. Misura su tutte le pagine campionate (sequenza dei `y`
+di riga in ordine di emissione, origine in basso): **Patriarca 0 inversioni** su
+8 pagine; **Marrone 23/25 pagine perfettamente monotòne** (2 con un solo
+micro-salto di 5 pt, sub-riga — un apice/marcatore, non disordine); **Mandrioli
+24/25 monotòne**. L'unica eccezione strutturale è la **MARGINAL_GLOSS** del
+Mandrioli (p80: gloss di margine a 8,52 pt, x≈43, emessa fuori ordine verticale
+tra corpo e note, salto di 68 pt), rara (12 in tutto il Vol. III) e **distinguibile
+per posizione-x di margine + dimensione**, con le note che restano comunque
+ordinate dopo di essa. Caso non banale ma benigno: le note del paragrafo
+*precedente* compaiono in cima alla pagina seguita dal nuovo § e dal suo corpo —
+**ordine umano corretto**, non inversione. Conclusione: il corpo (contenuto di
+lettura) dei tre documenti è **monocolonna e già ordinato**; non serve una
+ricostruzione sistematica dell'ordine, solo la normale collocazione delle
+annotazioni di margine, fattibile on-device dai segnali che PDFKit cattura.
+*Caveat di scope:* nessuno dei tre ha corpo a due colonne, quindi il caso
+two-column del contenuto di lettura non è stato esercitato (gli indici
+analitici a due colonne sono back-matter, non lettura lineare).
+
+**Esito 2 — Perdita di bold/italic sul Mandrioli: irrilevante per la
+classificazione on-device.** Il classificatore on-device è il **Generic**
+(`ScaboCore/GenericPlugin.swift`), non il plugin Giappichelli di Layer 1. Nel
+Generic, **`italic` non è usato per nulla**; **`bold` è usato in un solo punto**
+(`classify()`, ramo HEADING_4: `line.bold && ratio ≥ 1.04`). I titoli di
+paragrafo § del Mandrioli — le vere HEADING_4 — sono empiricamente a **11,52 pt
+con `bold=false, italic=false`** (es. «16. Le ordinanze sommarie definitorie…»,
+«17. L'appello…»): nel documento sono **italic, non bold** (la pipeline
+Giappichelli esprime enfasi con corsivo e maiuscoletto, non grassetto). Con corpo
+stimato a 11 pt, il loro ratio è **1,047**, nella fascia [1,04; 1,12) che solo il
+ramo bold gestisce — ma essendo non-bold, **collassano a BODY a prescindere dal
+fatto che PDFKit catturi o no bold/italic**: il segnale perso non avrebbe
+ribaltato un solo verdetto. Tutte le categorie che il Generic *sa* distinguere su
+questo documento derivano da dimensione/posizione/colore — testate maggiori
+(PARTE 13,98 pt, CAPITOLO 13 pt: ratio ≥1,12 → HEADING per sola taglia), NOTE
+(9 pt, ratio 0,82 ≤0,85 → NOTE), BODY — tutti segnali che PDFKit cattura. La
+perdita del corsivo costa solo l'enfasi *inline* (termini latini, nomi di
+rivista), che è presentazione, non struttura, e che VoiceOver non veicola
+comunque. **Degrado della classificazione: no.**
+
+### Decisione registrata — PDFKit è l'estrattore; MuPDF e Surya da parte
+
+Scelta dello sviluppatore: **lo scheletro e lo sviluppo procedono su PDFKit come
+estrattore.** I due esiti sopra la confermano sul piano dei dati: nessuna perdita
+di contenuto (il testo cross-page è presente, solo spezzato alla pagina — lavoro
+di fusione che resta a valle, non dato perso), ordine di lettura già corretto, e
+la perdita di bold/italic non degrada la classificazione on-device.
+
+**MuPDF e Surya sono messi formalmente DA PARTE** come opzioni future. Si
+rivalutano **solo se** un test rigoroso dimostrerà una perdita che PDFKit non può
+colmare, e cioè una delle due seguenti, non altro:
+
+1. **Perdita di CONTENUTO vero** — testo che *sparisce* dall'estrazione (non
+   semplicemente spezzato tra pagine o tra span come il maiuscoletto), tale da non
+   essere ricostruibile a valle.
+2. **Ordine di lettura irrecuperabile** dalla classificazione on-device — un
+   disordine sistematico che i segnali catturati (posizione, dimensione, colore)
+   non bastano a riordinare.
+
+Finché i test non mostrano (1) o (2), **non si tocca PDFKit**. Questo aggiorna il
+«Fatto nuovo 2» di § 0.1 (strada parallela MuPDF): la parallela non è abbandonata
+in linea di principio — il seam di § 10 resta pulito e l'estrattore sostituibile —
+ma **non è una strada attiva**: è una riserva subordinata alle due condizioni.
+
+**Surya — contesto.** Surya resta candidato **non** come estrattore on-device (è
+Python, pesante, non può stare nell'app: viola la regola anti-Python e i vincoli
+di footprint). L'eventuale ruolo è di **strumento/oracolo in fase di sviluppo sul
+Mac** per validare l'ordine di lettura (un riferimento contro cui misurare
+l'ordine prodotto da PDFKit), da valutare a tempo debito e mai dentro il
+binario di shipping.
 
 ---
 
