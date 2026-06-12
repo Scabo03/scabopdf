@@ -16,6 +16,19 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 
 Esito atteso: `Executed 126 tests, with 0 failures`.
 
+### Validation loop (scudo su TUTTI i test)
+
+Per eseguire in un colpo solo i 126 test di ScaboCore **e** i test del target app
+(`ScaboAppTests` sul Simulator iPhone 16 / iOS 26.5) con un verdetto unico
+verde/rosso, usa lo scudo, dalla root del repo:
+
+```sh
+app/ios/scripts/validate.sh
+```
+
+È il gesto standard prima e dopo ogni lavoro. Dettagli, significato dell'output e
+exit code in `docs/VALIDATION_LOOP.md`.
+
 ### Perché l'override `DEVELOPER_DIR`
 
 Su una macchina con **Command Line Tools** come developer directory attiva
