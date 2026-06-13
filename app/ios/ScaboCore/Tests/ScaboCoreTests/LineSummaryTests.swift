@@ -120,4 +120,18 @@ final class LineSummaryTests: XCTestCase {
         let sm = summarizeLine(textLine([span("\u{00E9}", size: 10), span("xx", size: 20)]))
         XCTAssertEqual(sm.fontSize, 50.0 / 3.0, accuracy: 1e-9)
     }
+
+    /// La geometria deriva dal bbox della LINEA, non da quelli dei singoli span: anche
+    /// con span dotati di bbox propri, x0/x1/yTop/yBottom vengono dal bbox di linea.
+    func test_geometry_comesFromLineBbox_notSpanBboxes() {
+        let sm = summarizeLine(textLine(
+            [span("A", bbox: BBox(x: 999, y: 999, width: 1, height: 1)),
+             span("B", bbox: BBox(x: 5, y: 5, width: 1, height: 1))],
+            bbox: BBox(x: 10, y: 20, width: 30, height: 6)))
+        XCTAssertEqual(sm.x0, 10, accuracy: 1e-9)
+        XCTAssertEqual(sm.x1, 40, accuracy: 1e-9)   // x + w
+        XCTAssertEqual(sm.yTop, 26, accuracy: 1e-9) // y + h
+        XCTAssertEqual(sm.yBottom, 20, accuracy: 1e-9)
+        XCTAssertEqual(sm.text, "AB")
+    }
 }

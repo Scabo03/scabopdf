@@ -181,4 +181,177 @@ final class GenericPluginTests: XCTestCase {
         XCTAssertEqual(parsed.profile.profile_id, "generic")
         XCTAssertEqual(parsed.metadata.source_pdf_filename, "manuale.pdf")
     }
+
+    // MARK: - Furniture detection (detectFurniture: copertura prima assente)
+    //
+    // `detectFurniture` ha tre rami — banda alta/bassa, colore per-pagina, watermark
+    // a maggioranza — calibrati su soglie di ricorrenza, e nessun test li esercitava
+    // (le suite esistenti usano 1-2 pagine, dove il rilevatore ritorna sempre vuoto).
+    // Soglie su N pagine: minPages = max(5, ceil(N*0.15)); majorityPages = max(5, ceil(N*0.5)).
+    // La geometria (yTop = bbox.y + bbox.height, su altezza pagina 842) decide la banda.
+
+    /// Una riga con colore e posizione esplicite (per i rami furniture/colore).
+    private func placedLine(
+        _ text: String, size: Double = 12, bold: Bool = false,
+        color: String = "#000000", y: Double = 400, height: Double = 12
+    ) -> PdfTextLine {
+        let bbox = BBox(x: 0, y: y, width: 100, height: height)
+        return PdfTextLine(
+            spans: [PdfSpan(text: text, fontSize: size, bold: bold, italic: false, color: color, bbox: bbox)],
+            bbox: bbox)
+    }
+
+    /// Un'intestazione corta nella banda ALTA, identica su tutte e 6 le pagine, è
+    /// furniture: rimossa (non emessa) e contata nella warning.
+    func test_detectFurniture_runningHeaderInTopBandRemovedAcrossPages() {
+        let header = placedLine("Diritto Privato Italiano", size: 9, y: 800) // banda alta, < 60 char
+        func body(_ word: String) -> [PdfTextLine] {
+            ["primo", "secondo", "terzo", "quarto"].map {
+                placedLine("Paragrafo \($0) della sezione \(word) del corpo del documento.", size: 12, y: 400)
+            }
+        }
+        let words = ["alfa", "beta", "gamma", "delta", "epsilon", "zeta"] // 6 pagine
+        let doc = genericPlugin.build(extraction(words.map { [header] + body($0) }), sourceName: "x.pdf")
+
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "").contains("Diritto Privato Italiano") },
+            "l'header ricorrente nella banda alta è furniture, non deve essere emesso")
+        XCTAssertTrue(
+            doc.warnings.contains("plugin:generic:furniture_lines_removed_6"),
+            "le 6 occorrenze dell'header sono contate come furniture rimossa")
+    }
+
+    /// Un footer "Pagina N" nella banda BASSA ricorre dopo `normalizeDigits` ("pagina #")
+    /// ed è rimosso anche se il numero varia di pagina in pagina.
+    func test_detectFurniture_pageNumberFooterNormalizedAndRemoved() {
+        func page(_ n: Int, _ word: String) -> [PdfTextLine] {
+            [placedLine("Pagina \(n)", size: 9, y: 0)] // banda bassa (yTop = 12 / 842 ≈ 0.014)
+                + ["uno", "due", "tre"].map {
+                    placedLine("Frase \($0) di corpo della parte \(word) del testo.", size: 12, y: 400)
+                }
+        }
+        let words = ["alfa", "beta", "gamma", "delta", "epsilon", "zeta"]
+        let pages = words.enumerated().map { page($0.offset + 1, $0.element) }
+        let doc = genericPlugin.build(extraction(pages), sourceName: "x.pdf")
+
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "").hasPrefix("Pagina") },
+            "il footer di pagina, normalizzato a 'pagina #', ricorre ed è rimosso")
+        XCTAssertTrue(doc.warnings.contains { $0.hasPrefix("plugin:generic:furniture_lines_removed_") })
+    }
+
+    /// Un watermark LUNGO (> 60 char) è invisibile al ramo di banda (che salta le righe
+    /// lunghe) ma viene preso dal ramo a maggioranza, e rimosso.
+    func test_detectFurniture_longWatermarkRemovedByMajorityNotBand() {
+        let watermark = "Copia riservata esclusivamente all'uso personale del titolare della licenza dell'opera"
+        XCTAssertGreaterThan(watermark.utf16.count, FURNITURE_MAX_CHARS, "il watermark supera il cap di banda")
+        func page(_ word: String) -> [PdfTextLine] {
+            [placedLine(watermark, size: 8, y: 400)] // banda media: solo il ramo a maggioranza può prenderlo
+                + ["a", "b", "c"].map {
+                    placedLine("Contenuto \($0) della sezione \(word) del documento.", size: 12, y: 400)
+                }
+        }
+        let words = ["alfa", "beta", "gamma", "delta", "epsilon"] // 5 pagine → majorityPages = 5
+        let doc = genericPlugin.build(extraction(words.map { page($0) }), sourceName: "x.pdf")
+
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "").contains("Copia riservata esclusivamente") },
+            "il watermark a maggioranza è rimosso anche se troppo lungo per il ramo di banda")
+        XCTAssertTrue(doc.warnings.contains { $0.hasPrefix("plugin:generic:furniture_lines_removed_") })
+    }
+
+    /// Una riga corta saturata e distinta dal corpo, ricorrente su abbastanza pagine da
+    /// superare minPages (5) ma non majorityPages (10), è presa SOLO dal ramo colore.
+    func test_detectFurniture_perPageColourMarkerRemovedByColourBranch() {
+        let marker = placedLine("MarkerRosso", size: 12, color: "#cc0000", y: 400) // saturo, banda media
+        func body(_ word: String) -> [PdfTextLine] {
+            [placedLine("Testo di corpo nero della parte \(word) del documento.", size: 12, y: 400)]
+        }
+        // 20 pagine: minPages = max(5, 3) = 5; majorityPages = max(5, 10) = 10.
+        // Il marker compare su 6 pagine: ≥ 5 (colore) ma < 10 (maggioranza) → solo il ramo colore.
+        // Parole-pagina SENZA cifre ("a".."t"): altrimenti normalizeDigits le collasserebbe
+        // a un'unica forma ricorrente e il corpo verrebbe preso dal ramo a maggioranza.
+        let words = (0..<20).map { String(UnicodeScalar(UInt8(97 + $0))) }
+        let pages = words.enumerated().map { idx, w -> [PdfTextLine] in
+            idx < 6 ? [marker] + body(w) : body(w)
+        }
+        let doc = genericPlugin.build(extraction(pages), sourceName: "x.pdf")
+
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "").contains("MarkerRosso") },
+            "il marker colorato per-pagina è furniture per il ramo colore")
+        XCTAssertTrue(doc.warnings.contains("plugin:generic:furniture_lines_removed_6"))
+    }
+
+    /// Sotto la soglia di ricorrenza (header su 4 pagine su 6, minPages = 5) NON è furniture:
+    /// la riga resta (qui classificata NOTE per la dimensione ridotta) e non c'è warning.
+    func test_detectFurniture_belowThresholdRecurrenceIsKept() {
+        let header = placedLine("Intestazione Saltuaria", size: 9, y: 800)
+        func body(_ word: String) -> [PdfTextLine] {
+            ["x", "y"].map { placedLine("Riga \($0) della parte \(word) del corpo.", size: 12, y: 400) }
+        }
+        let words = ["alfa", "beta", "gamma", "delta", "epsilon", "zeta"]
+        let pages = words.enumerated().map { idx, w -> [PdfTextLine] in
+            idx < 4 ? [header] + body(w) : body(w) // header solo su 4 pagine < minPages
+        }
+        let doc = genericPlugin.build(extraction(pages), sourceName: "x.pdf")
+
+        XCTAssertTrue(
+            doc.structure.contains { ($0.text ?? "").contains("Intestazione Saltuaria") },
+            "sotto soglia non è furniture: la riga resta")
+        XCTAssertFalse(
+            doc.warnings.contains { $0.hasPrefix("plugin:generic:furniture_lines_removed_") },
+            "nessuna furniture rimossa → nessuna warning")
+    }
+
+    // MARK: - Colour heading (D4) — il ramo `colorHeading` di classify()
+    //
+    // Tutti i test esistenti usano testo nero (#000000), quindi il ramo che promuove
+    // una riga corta, saturata e distinta dal corpo a HEADING — a prescindere dalla
+    // dimensione — non era mai esercitato. Anche la soppressione del testo quasi-bianco
+    // (anchor invisibili) era scoperta.
+
+    private func blackBody(_ count: Int) -> [PdfTextLine] {
+        (0..<count).map { placedLine("Riga \($0) di corpo nero a dimensione normale del documento.", size: 12) }
+    }
+
+    /// Riga rossa alla STESSA dimensione del corpo: il ramo D4 la promuove comunque a
+    /// heading; livello 3 perché il ratio (1.0) non raggiunge le fasce superiori.
+    func test_build_colorHeadingAtBodySizeBecomesHeading3() {
+        let doc = genericPlugin.build(
+            extraction([[placedLine("Titolo In Rosso", size: 12, color: "#cc0000")] + blackBody(5)]),
+            sourceName: "x.pdf")
+        XCTAssertEqual(doc.structure.first?.type, .HEADING_3)
+        XCTAssertEqual(doc.structure.first?.text, "Titolo In Rosso")
+    }
+
+    /// Il livello del colour-heading segue le fasce di ratio: 1.25 → H1, 1.125 → H2.
+    func test_build_colorHeadingLevelsByRatio() {
+        func headType(_ size: Double) -> SemanticCategory? {
+            genericPlugin.build(
+                extraction([[placedLine("Titolo Colorato", size: size, color: "#cc0000")] + blackBody(5)]),
+                sourceName: "x.pdf").structure.first?.type
+        }
+        XCTAssertEqual(headType(15), .HEADING_1, "ratio 15/12 = 1.25 ≥ HEADING_2_RATIO → livello 1")
+        XCTAssertEqual(headType(13.5), .HEADING_2, "ratio 13.5/12 = 1.125 ∈ [1.12, 1.25) → livello 2")
+    }
+
+    /// Una riga non satura (grigia) e distante in colore NON è un colour-heading: alla
+    /// dimensione del corpo resta corpo (il ramo richiede saturazione > 40).
+    func test_build_nonSaturatedColourIsNotAHeading() {
+        let doc = genericPlugin.build(
+            extraction([[placedLine("Riga Grigia Non Satura", size: 12, color: "#888888")] + blackBody(5)]),
+            sourceName: "x.pdf")
+        XCTAssertEqual(doc.structure.first?.type, .BODY, "grigio (max−min = 0) non è saturo → non è heading")
+    }
+
+    /// Testo quasi-bianco (anchor invisibile): soppresso prima della classificazione.
+    func test_build_nearWhiteTextIsSuppressed() {
+        let doc = genericPlugin.build(
+            extraction([[placedLine("ancora invisibile di pagina", size: 12, color: "#fefefe")] + blackBody(3)]),
+            sourceName: "x.pdf")
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "").contains("invisibile") },
+            "il testo quasi-bianco è soppresso, non emesso")
+    }
 }
