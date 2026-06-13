@@ -13,15 +13,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Radicamento programmatico della reading view (gradino 2, sessione 1).
-        // ADDITIVO E REVERSIBILE: sovrascrive la window dello storyboard senza
-        // toccare `Main.storyboard`/`ViewController` (che restano dormienti). Per
-        // annullare basta ripristinare questo metodo. La VC è incartata in una
-        // navigation controller solo per la title bar ("Lettura Continua").
+        // Radicamento programmatico della Home nuda (flusso import → elaborazione → reading view).
+        // ADDITIVO E REVERSIBILE: sovrascrive la window dello storyboard senza toccare
+        // `Main.storyboard`/`ViewController` (che restano dormienti). La reading view porta con sé
+        // i propri due container sigillati (titolo + Indietro), perciò NON serve una navigation
+        // controller di sistema: la Home presenta la finestra di elaborazione e poi il lettore.
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = UINavigationController(
-            rootViewController: ContinuousReadingViewController())
+        window.rootViewController = HomeViewController()
         self.window = window
         window.makeKeyAndVisible()
     }

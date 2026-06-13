@@ -2,27 +2,53 @@
 //  ContinuousReadingViewController.swift
 //  ScaboApp
 //
-//  Ospita la `ContinuousReadingView` e la fa vivere nel contesto app/Simulator
-//  facendo arrivare un PDF reale alla view tramite la catena on-device
-//  PdfKitExtractor → ScaboCore (classificazione) → corpo paginato.
+//  Ospita il Layout "Lettura Continua" su DUE container di accessibilità separati e CHIUSI
+//  (§ 2.3, § 3.1): il container del TESTO (`ContinuousReadingView`, dove vive solo il documento)
+//  e il container dell'INTERFACCIA (`ReadingInterfaceBar`, per ora titolo + Indietro, struttura
+//  permanente per la futura toolbar). Riceve dall'esterno il contenuto già elaborato dal flusso
+//  di import/elaborazione: nessun caricamento autonomo nel percorso utente.
 //
-//  ── PONTE TEMPORANEO (non architettura definitiva) ──────────────────────────────
+//  ── Due container APERTI — entrambe le vie di passaggio (§ 2.3) ──────────────────────────────
 //
-//  Il caricamento del documento qui è un PONTE per dare vita e testabilità alla
-//  view in questa fase, NON il design finale. Non c'è ancora libreria né document
-//  picker: il ponte cerca un fixture SEEDATO sul Simulator
-//  (`Documents/scabo-fixtures/patriarca_benazzo.pdf`, via
-//  `app/ios/scripts/seed_fixtures.sh`) e, se assente, RIPIEGA su un campione PDF
-//  sintetizzato in-app così la view è sempre dimostrabile su un Simulator pulito.
-//  Quando c'è il fixture reale (manuale di centinaia di pagine) il ponte ne
-//  campiona le prime pagine: è un cap di RESPONSIVITÀ del demo, non un limite di
-//  prodotto, e non intacca la continuità del container (che è continuo su
-//  qualunque insieme di segmenti riceva). Tutto questo evapora quando arriva il
-//  flusso libreria/import reale.
+//  Restano DUE container di accessibilità distinti e ordinati internamente: il container del
+//  testo (solo segmenti) e quello dell'interfaccia (solo [Indietro, titolo]). Il § 2.3 prevede
+//  TRE vie deliberate per passare da un container all'altro: lo scrub a due dita, l'esplorazione
+//  tattile (toccare la zona dell'altro container), e i gesti di sistema. Questa build adotta la
+//  versione APERTA: ENTRAMBE le vie disponibili.
 //
-//  La VERA verifica di correttezza non dipende da questo ponte: vive nei test
-//  (container/ordine/etichette/continuità su contenuto deterministico, end-to-end
-//  da PDF sintetico, ed esercizio del fixture reale patriarca quando presente).
+//  Per questo NON si usa `accessibilityViewIsModal`: la modalità confina la navigazione lineare
+//  ma rende il container inattivo irraggiungibile anche al TOCCO, sopprimendo una delle due vie.
+//  Senza modalità i due container restano entrambi nell'albero di accessibilità (raggiungibili per
+//  tocco) e la struttura a container (`accessibilityElements` disgiunti e ordinati su ciascuna
+//  sottoview-container, `accessibilityContainerType` sull'interfaccia) definisce l'ordine di
+//  navigazione. Lo scrub a due dita resta una via di passaggio: l'override
+//  `accessibilityPerformEscape` (non un gesto ridefinito, § 2.4: solo la risposta all'azione di
+//  escape) sposta il focus all'altro container, in entrambe le direzioni.
+//
+//  ── Conseguenza onesta della versione aperta (da provare all'orecchio) ───────────────────────
+//
+//  Senza modalità, lo swipe orizzontale LINEARE può attraversare il confine fra i due container
+//  quando raggiunge l'estremo dell'ordine di navigazione. L'ordine è scelto perché, SE attraversa,
+//  lo faccia in un punto PREVEDIBILE: l'interfaccia PRECEDE il testo
+//  (`view.accessibilityElements = [interfaceBar, readingView]`), così l'unica giunzione è
+//  [ultimo elemento d'interfaccia ↔ primo segmento del testo]; swipando indietro dall'inizio del
+//  testo si arriva all'interfaccia (non a un punto casuale), e swipando avanti dall'ultimo
+//  segmento si raggiunge la fine assoluta del documento. QUESTA build serve proprio a provare se,
+//  all'orecchio, lo swipe nel testo sconfina sull'interfaccia; se sarà un problema reale lo si
+//  scoprirà sul dispositivo e ALLORA si valuterà se blindare (es. reintrodurre la modalità). Qui
+//  NON si blinda: l'obiettivo è la versione aperta.
+//
+//  Onestà sulla verifica: i test (Simulator) certificano la STRUTTURA — due container distinti con
+//  `accessibilityElements` DISGIUNTI e ordinati, entrambi presenti nell'albero (nessuna modalità,
+//  nessuno nascosto), lo scrub instradato come passaggio. Se lo swipe lineare attraversi o no il
+//  confine, e il feel delle due vie di passaggio, sono comportamento VoiceOver RUNTIME che il
+//  Simulator non riproduce: li certifica lo sviluppatore su dispositivo reale (TestFlight).
+//
+//  ── Ponte di sviluppo (NON più nel percorso utente) ─────────────────────────────────────────
+//
+//  Gli helper statici di demo (fixture seedato / campione sintetico) restano disponibili per i
+//  test e per un eventuale avvio di sviluppo, ma il percorso utente reale è import → elaborazione
+//  → questa view col contenuto iniettato; non c'è più auto-caricamento al lancio.
 //
 
 import PDFKit
@@ -31,89 +57,156 @@ import ScaboCore
 
 final class ContinuousReadingViewController: UIViewController {
 
+    // MARK: - Container del testo e dell'interfaccia
+
     private let readingView = ContinuousReadingView()
+    private let interfaceBar = ReadingInterfaceBar()
 
-    /// Cap di responsività del demo (vedi nota PONTE TEMPORANEO). Non è un limite
-    /// di prodotto.
-    private static let demoMaxPages = 6
+    /// Contenuto di corpo da rendere (iniettato dal flusso di elaborazione).
+    private let content: PaginatedContent
 
-    /// Pagina di partenza del campione demo su patriarca: le prime pagine sono
-    /// frontespizio/indice, il corpo monocolonna pulito (confermato dalla
-    /// "fotografia" d'esplorazione) vive da ~40 in poi. Patriarca-specifico, vive
-    /// solo finché vive il ponte temporaneo.
-    private static let demoBodyStartPage = 40
+    /// Azione del tasto Indietro: torna alla Home nuda. Impostata dal presentatore.
+    var onBack: (() -> Void)?
 
-    /// Nome del fixture privato cercato sul Simulator (seedato dallo script).
-    private static let seededFixtureName = "patriarca_benazzo.pdf"
-    private static let seededSubdir = "scabo-fixtures"
+    private static let interfaceBarHeight: CGFloat = 44
+
+    // MARK: - Init
+
+    /// Costruisce la reading view sul contenuto già elaborato. `sourceName` è conservato per usi
+    /// futuri (referto, persistenza); il titolo del container d'interfaccia è fisso
+    /// "Lettura Continua".
+    init(content: PaginatedContent, sourceName: String = "") {
+        self.content = content
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) non supportato: ContinuousReadingViewController è costruito in codice.")
+    }
+
+    // MARK: - Ciclo di vita
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = LAYOUT_DISPLAY_NAMES[.continuous]  // "Lettura Continua"
         view.backgroundColor = .systemBackground
-        embedReadingView()
-
-        // Non auto-caricare sotto XCTest: il test host non deve fare lavoro di
-        // estrazione al lancio. I test esercitano il ponte esplicitamente.
-        if Self.isRunningUnderTests { return }
-        loadBodyContentViaBridge()
+        embedContainers()
+        wireContainers()
+        readingView.render(content)
     }
 
-    private func embedReadingView() {
+    private func embedContainers() {
+        interfaceBar.translatesAutoresizingMaskIntoConstraints = false
         readingView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(interfaceBar)
         view.addSubview(readingView)
+
         NSLayoutConstraint.activate([
-            readingView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            interfaceBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            interfaceBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            interfaceBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            interfaceBar.heightAnchor.constraint(equalToConstant: Self.interfaceBarHeight),
+
+            readingView.topAnchor.constraint(equalTo: interfaceBar.bottomAnchor),
             readingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             readingView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             readingView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+
+        // La radice espone i DUE container; l'INTERFACCIA precede il TESTO, così l'unica giunzione
+        // possibile dello swipe lineare è [interfaccia ↔ inizio del testo] (vedi nota di testata).
+        // Versione APERTA: nessuna modalità, entrambi raggiungibili anche per tocco.
+        readingView.accessibilityViewIsModal = false
+        interfaceBar.accessibilityViewIsModal = false
+        view.accessibilityElements = [interfaceBar, readingView]
     }
 
-    // MARK: - Ponte temporaneo
-
-    private func loadBodyContentViaBridge() {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let document = Self.loadDemoDocument()
-            let content = (try? ContinuousBodyBuilder.bodyPaginatedContent(from: document))
-                ?? PaginatedContent(pages: [], totalSegments: 0)
-            DispatchQueue.main.async { [weak self] in
-                self?.readingView.render(content)
-            }
-        }
+    private func wireContainers() {
+        interfaceBar.onBack = { [weak self] in self?.onBack?() }
+        // Scrub a due dita (escape): una delle vie di passaggio fra container — sposta il focus
+        // all'altro container, in entrambe le direzioni. L'altra via, l'esplorazione tattile,
+        // funziona da sé perché nessuno dei due container è nascosto da una modalità.
+        readingView.onEscape = { [weak self] in self?.focusInterfaceContainer() }
+        interfaceBar.onEscape = { [weak self] in self?.focusTextContainer() }
     }
 
-    /// Produce un `ScabopdfDocument` di corpo da mostrare: fixture reale seedato se
-    /// raggiungibile, altrimenti campione sintetico. Compute puro, off-main.
-    private static func loadDemoDocument() -> ScabopdfDocument {
+    // MARK: - Passaggio fra i due container (scrub → spostamento di focus, niente modalità)
+
+    /// Sposta il focus VoiceOver al container dell'interfaccia (sul tasto Indietro).
+    private func focusInterfaceContainer() {
+        UIAccessibility.post(notification: .screenChanged, argument: interfaceBar.backButton)
+    }
+
+    /// Sposta il focus VoiceOver al container del testo (sul suo primo elemento).
+    private func focusTextContainer() {
+        UIAccessibility.post(notification: .screenChanged, argument: readingView)
+    }
+
+    // MARK: - Introspezione per i test (struttura dei due container)
+
+    /// Il container del testo (sola lettura).
+    var textContainerForTesting: ContinuousReadingView { readingView }
+    /// Il container dell'interfaccia (sola lettura).
+    var interfaceContainerForTesting: ReadingInterfaceBar { interfaceBar }
+    /// I due container esposti dalla radice, nell'ordine.
+    var rootAccessibilityContainersForTesting: [NSObject] {
+        (view.accessibilityElements as? [NSObject]) ?? []
+    }
+    /// Vero se il container del testo è modale (DEVE essere falso: versione aperta).
+    var textContainerIsModalForTesting: Bool { readingView.accessibilityViewIsModal }
+    /// Vero se il container dell'interfaccia è modale (DEVE essere falso: versione aperta).
+    var interfaceContainerIsModalForTesting: Bool { interfaceBar.accessibilityViewIsModal }
+    /// Vero se il container del testo è nascosto all'accessibilità (DEVE essere falso: raggiungibile).
+    var textContainerIsHiddenForTesting: Bool { readingView.accessibilityElementsHidden }
+    /// Vero se il container dell'interfaccia è nascosto (DEVE essere falso: raggiungibile per tocco).
+    var interfaceContainerIsHiddenForTesting: Bool { interfaceBar.accessibilityElementsHidden }
+}
+
+// MARK: - Ponte di sviluppo / helper per i test (fuori dal percorso utente)
+
+extension ContinuousReadingViewController {
+
+    /// Cap di responsività del demo (vedi nota PONTE). Non è un limite di prodotto.
+    static let demoMaxPages = 6
+    /// Pagina di partenza del campione demo su patriarca (le prime sono frontespizio/indice).
+    static let demoBodyStartPage = 40
+    static let seededFixtureName = "patriarca_benazzo.pdf"
+    static let seededSubdir = "scabo-fixtures"
+
+    /// Contenuto di corpo di demo (fixture seedato se presente, altrimenti campione sintetico).
+    /// Per un eventuale avvio di sviluppo: il percorso utente reale passa per l'import.
+    static func demoContent() -> PaginatedContent {
+        let document = loadDemoDocument()
+        return (try? ContinuousBodyBuilder.bodyPaginatedContent(from: document))
+            ?? PaginatedContent(pages: [], totalSegments: 0)
+    }
+
+    /// Produce un `ScabopdfDocument` di corpo: fixture reale seedato se raggiungibile, altrimenti
+    /// campione sintetico. Compute puro, off-main.
+    static func loadDemoDocument() -> ScabopdfDocument {
         let extractor = PdfKitExtractor()
         if let seeded = seededFixtureURL(),
            let sample = sampledPDF(at: seeded, from: demoBodyStartPage, count: demoMaxPages),
            let extraction = try? extractor.extract(fromUri: sample.absoluteString) {
             return buildDocumentFromPdf(extraction, sourceName: seededFixtureName)
         }
-        // Fallback: campione sintetico in-app (la view è sempre dimostrabile).
         let synthetic = makeSyntheticSamplePDF()
         if let extraction = try? extractor.extract(fromUri: synthetic.absoluteString) {
             return buildDocumentFromPdf(extraction, sourceName: "campione_sintetico.pdf")
         }
-        // Estrema difesa: documento vuoto valido (la view mostra contenuto vuoto,
-        // non crasha).
-        return emptyDocument()
+        let extraction = PdfExtraction(version: 2, pageCount: 0, pages: [])
+        return buildDocumentFromPdf(extraction, sourceName: "vuoto.pdf")
     }
 
-    // MARK: - Localizzazione / campionamento PDF
-
-    private static func seededFixtureURL() -> URL? {
+    static func seededFixtureURL() -> URL? {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         guard let base = documents.first else { return nil }
         let url = base.appendingPathComponent(seededSubdir).appendingPathComponent(seededFixtureName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
-    /// Riserializza una finestra di `count` pagine a partire da `startPage` in un
-    /// file temporaneo. Cap di responsività per il demo/test; `startPage` è
-    /// clampato all'intervallo valido. Ritorna `nil` se il PDF non apre.
+    /// Riserializza una finestra di `count` pagine a partire da `startPage` in un file temporaneo.
+    /// Cap di responsività per il demo/test; `startPage` è clampato. `nil` se il PDF non apre.
     static func sampledPDF(at source: URL, from startPage: Int = 0, count: Int) -> URL? {
         guard let document = PDFDocument(url: source), document.pageCount > 0 else { return nil }
         let sample = PDFDocument()
@@ -129,8 +222,8 @@ final class ContinuousReadingViewController: UIViewController {
         return sample.write(to: url) ? url : nil
     }
 
-    /// Campione PDF sintetizzato in-app: un titolo, alcuni paragrafi di corpo e una
-    /// nota piccola (che il filtro di corpo esclude). Deterministico, ermetico.
+    /// Campione PDF sintetizzato in-app: un titolo, alcuni paragrafi di corpo e una nota piccola
+    /// (che il filtro di corpo esclude). Deterministico, ermetico.
     static func makeSyntheticSamplePDF() -> URL {
         let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)  // A4 pt
         let blocks: [(text: String, size: CGFloat, bold: Bool)] = [
@@ -161,13 +254,7 @@ final class ContinuousReadingViewController: UIViewController {
         return url
     }
 
-    private static func emptyDocument() -> ScabopdfDocument {
-        let extraction = PdfExtraction(version: 2, pageCount: 0, pages: [])
-        return buildDocumentFromPdf(extraction, sourceName: "vuoto.pdf")
-    }
-
-    // MARK: - Guardia test host
-
+    /// Guardia test host (conservata per simmetria con eventuali avvii di sviluppo).
     static var isRunningUnderTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }

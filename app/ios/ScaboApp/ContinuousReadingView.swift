@@ -130,6 +130,20 @@ final class ContinuousReadingView: UIView {
     /// Token dell'osservatore di cambio Dynamic Type (rimosso in deinit).
     private var contentSizeObserver: NSObjectProtocol?
 
+    /// Azione di uscita dal container del testo (gesto di scrub a due dita = "escape" di
+    /// VoiceOver, § 2.3/§ 2.4): impostata dal view controller per passare al container
+    /// dell'interfaccia. Nil → l'escape non fa nulla (comportamento di default). Additivo: i test
+    /// che istanziano la view direttamente non lo impostano e l'escape resta inerte.
+    var onEscape: (() -> Void)?
+
+    /// Override dell'escape standard di VoiceOver. NON ridefinisce un gesto (§ 2.4): risponde solo
+    /// all'azione di escape sull'elemento corrente, instradandola all'`onEscape` del controller.
+    override func accessibilityPerformEscape() -> Bool {
+        guard let onEscape else { return false }
+        onEscape()
+        return true
+    }
+
     // MARK: - Metrica di lettura
 
     private enum Metrics {

@@ -92,14 +92,68 @@ public final class GenericPlugin: ExtractionPlugin {
             appendPageNodes(page, profile, furniture, &nodes, nextId)
         }
 
+        return assembleDocument(
+            extraction, sourceName: sourceName, nodes: nodes, profile: profile,
+            furnitureCount: furniture.count)
+    }
+
+    /// Progress- and cancellation-aware build (ADDITIVO, sessione import). Riproduce
+    /// `build(_:sourceName:)` ESATTAMENTE — stessa stima di profilo, stessa rilevazione di
+    /// furniture, stesso `nextId` sequenziale, stesso assemblaggio via `assembleDocument` — ma
+    /// riporta il progresso reale per pagina e onora la cancellazione cooperativa a ogni tappa
+    /// naturale (prima delle due passate globali e prima di ciascuna pagina). Ritorna `nil` se
+    /// cancellato, senza emettere un documento parziale. Le pagine sono l'unità di avanzamento
+    /// reale: `onPageClassified(i+1, total)` dopo l'emissione dei nodi della pagina i.
+    public func build(
+        _ extraction: PdfExtraction,
+        sourceName: String,
+        onPageClassified: (_ done: Int, _ total: Int) -> Void,
+        isCancelled: () -> Bool
+    ) -> ScabopdfDocument? {
+        if isCancelled() { return nil }
+        let profile = estimateProfile(extraction)
+        if isCancelled() { return nil }
+        let furniture = detectFurniture(extraction)
+        if isCancelled() { return nil }
+
+        var nodes: [NodeDict] = []
+        var counter = 0
+        func nextId() -> String {
+            defer { counter += 1 }
+            return "node_\(counter)"
+        }
+
+        let total = extraction.pages.count
+        for (index, page) in extraction.pages.enumerated() {
+            if isCancelled() { return nil }
+            appendPageNodes(page, profile, furniture, &nodes, nextId)
+            onPageClassified(index + 1, total)
+        }
+        if isCancelled() { return nil }
+
+        return assembleDocument(
+            extraction, sourceName: sourceName, nodes: nodes, profile: profile,
+            furnitureCount: furniture.count)
+    }
+
+    /// Assembla il `ScabopdfDocument` finale dai nodi emessi. Punto unico di verità per le
+    /// warning e i metadati, condiviso dai due `build` (sincrono e progress-aware) così non
+    /// possono divergere.
+    private func assembleDocument(
+        _ extraction: PdfExtraction,
+        sourceName: String,
+        nodes: [NodeDict],
+        profile: Profile,
+        furnitureCount: Int
+    ) -> ScabopdfDocument {
         var warnings = [
             "plugin:generic:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
         ]
         if profile.bodySize == 0 {
             warnings.append("plugin:generic:no_font_information_all_body")
         }
-        if furniture.count > 0 {
-            warnings.append("plugin:generic:furniture_lines_removed_\(furniture.count)")
+        if furnitureCount > 0 {
+            warnings.append("plugin:generic:furniture_lines_removed_\(furnitureCount)")
         }
 
         return ScabopdfDocument(
