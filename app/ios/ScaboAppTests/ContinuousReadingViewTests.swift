@@ -440,6 +440,60 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertEqual(idsSmall, segs.map { $0.id })
     }
 
+    // ════════════════════════════════════════════════════════════════════════════
+    // GRANULARITÀ DEL CORPO (§ 7.6) → CABLAGGIO ALLA READING VIEW
+    // ════════════════════════════════════════════════════════════════════════════
+
+    /// Documento discorsivo sintetico: un titolo + un corpo lungo (molte frasi).
+    private func discursiveDoc(longBody: String) -> ScabopdfDocument {
+        ScabopdfDocument(
+            schema_version: "0.7.0",
+            document_id: "discorsivo",
+            metadata: DocumentMetadata(pages_pdf: 1, page_size_pt: [595, 842], source_pdf_filename: "x.pdf"),
+            profile: DocumentProfileDict(
+                profile_id: "generic", editorial_family: "generic", genre: "unknown", confidence: 0.05),
+            structure: [
+                NodeDict(id: "node_0", type: .HEADING_1, page_index: 0, text: "Capitolo Primo", level: 1),
+                NodeDict(id: "node_1", type: .BODY, page_index: 0, text: longBody),
+            ])
+    }
+
+    // MARK: - 16. Il corpo discorsivo è granularizzato e alimenta il container continuo
+
+    func test_discursiveBodyIsGranularized_feedsContinuousContainer_stress() throws {
+        let longBody = (1...30)
+            .map { "Questa e la frase numero \($0) del corpo discorsivo di prova." }
+            .joined(separator: " ")
+        let doc = discursiveDoc(longBody: longBody)
+
+        let segs = ContinuousBodyBuilder.bodySegments(from: doc)  // target default 400
+
+        // Il corpo lungo è stato spezzato in più blocchi BODY (granularizzazione),
+        // oltre al titolo (un solo HEADING_1, non granularizzato).
+        let headings = segs.filter { $0.role == "HEADING_1" }
+        let bodies = segs.filter { $0.role == "BODY" }
+        XCTAssertEqual(headings.count, 1, "il titolo resta un'unica intestazione")
+        XCTAssertGreaterThan(bodies.count, 1, "il corpo lungo è granularizzato in più blocchi")
+        // Ogni blocco di corpo rispetta il target (le frasi qui sono tutte corte).
+        for b in bodies {
+            XCTAssertLessThanOrEqual(b.text.count, DEFAULT_GRANULARITY_TARGET)
+            XCTAssertEqual(b.text.last, ".", "ogni blocco finisce a un punto fermo")
+        }
+
+        // Stress dell'impaginazione paginata-ma-continua col massimo di elementi:
+        // viewport piccolo → più pagine visive, ma UN solo container continuo.
+        let content = try ContinuousBodyBuilder.bodyPaginatedContent(from: doc)
+        let view = makeView(width: 320, height: 240)
+        view.render(content)
+        view.layoutIfNeeded()
+
+        XCTAssertGreaterThanOrEqual(view.visualPageCount, 2, "molti blocchi in viewport piccolo → più pagine")
+        let elements = view.exposedAccessibilityElements
+        XCTAssertEqual(elements.count, segs.count, "un solo array piatto = un elemento per blocco granularizzato")
+        let ids = elements.compactMap { ($0 as? SegmentLabel)?.segment.id }
+        XCTAssertEqual(ids, segs.map { $0.id }, "ordine di lettura preservato attraverso la paginazione")
+    }
+
     // MARK: - Localizzazione fixture privato (filesystem host via #filePath)
 
     private static func privateFixtureURL(_ slug: String) -> URL {
