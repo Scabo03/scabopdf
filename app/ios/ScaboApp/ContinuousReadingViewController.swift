@@ -2,27 +2,36 @@
 //  ContinuousReadingViewController.swift
 //  ScaboApp
 //
-//  Ospita la `ContinuousReadingView` e la fa vivere nel contesto app/Simulator
-//  facendo arrivare un PDF reale alla view tramite la catena on-device
-//  PdfKitExtractor → ScaboCore (classificazione) → corpo paginato.
+//  Ospita il Layout "Lettura Continua" su DUE container di accessibilità separati e CHIUSI
+//  (§ 2.3, § 3.1): il container del TESTO (`ContinuousReadingView`, dove vive solo il documento)
+//  e il container dell'INTERFACCIA (`ReadingInterfaceBar`, per ora titolo + Indietro, struttura
+//  permanente per la futura toolbar). Riceve dall'esterno il contenuto già elaborato dal flusso
+//  di import/elaborazione: nessun caricamento autonomo nel percorso utente.
 //
-//  ── PONTE TEMPORANEO (non architettura definitiva) ──────────────────────────────
+//  ── Sigillatura dei due container — il vincolo sacro (§ 2.2/§ 2.3) ───────────────────────────
 //
-//  Il caricamento del documento qui è un PONTE per dare vita e testabilità alla
-//  view in questa fase, NON il design finale. Non c'è ancora libreria né document
-//  picker: il ponte cerca un fixture SEEDATO sul Simulator
-//  (`Documents/scabo-fixtures/patriarca_benazzo.pdf`, via
-//  `app/ios/scripts/seed_fixtures.sh`) e, se assente, RIPIEGA su un campione PDF
-//  sintetizzato in-app così la view è sempre dimostrabile su un Simulator pulito.
-//  Quando c'è il fixture reale (manuale di centinaia di pagine) il ponte ne
-//  campiona le prime pagine: è un cap di RESPONSIVITÀ del demo, non un limite di
-//  prodotto, e non intacca la continuità del container (che è continuo su
-//  qualunque insieme di segmenti riceva). Tutto questo evapora quando arriva il
-//  flusso libreria/import reale.
+//  Lo swipe orizzontale VoiceOver dentro il container del testo non deve MAI raggiungere gli
+//  elementi d'interfaccia in alto; resta nel testo fino al primo/ultimo elemento ASSOLUTO del
+//  documento. Il meccanismo UIKit affidabile per CONFINARE la navigazione lineare a una regione è
+//  `accessibilityViewIsModal`: il container ATTIVO è modale e VoiceOver ignora il container
+//  fratello, perciò lo swipe non può sconfinare. Il passaggio fra i due container NON avviene via
+//  swipe ma col solo gesto di sistema di escape (scrub a due dita): l'escape sul testo attiva
+//  l'interfaccia, l'escape sull'interfaccia riattiva il testo. È la realizzazione fedele di "si
+//  cambia container solo con atti deliberati di sistema" (§ 2.3) e non ridefinisce alcun gesto
+//  (§ 2.4): si definisce solo la risposta all'azione di escape.
 //
-//  La VERA verifica di correttezza non dipende da questo ponte: vive nei test
-//  (container/ordine/etichette/continuità su contenuto deterministico, end-to-end
-//  da PDF sintetico, ed esercizio del fixture reale patriarca quando presente).
+//  Onestà sulla verifica: i test (Simulator) certificano la STRUTTURA — due container distinti
+//  con `accessibilityElements` DISGIUNTI (il testo espone solo segmenti, l'interfaccia solo
+//  [Indietro, titolo]), la sigillatura modale impostata, l'escape che commuta la modalità. Che lo
+//  swipe "all'orecchio" non raggiunga mai l'interfaccia, e il feel del passaggio fra container, li
+//  certifica lo sviluppatore su dispositivo reale con VoiceOver (TestFlight); il Simulator non
+//  riproduce VoiceOver.
+//
+//  ── Ponte di sviluppo (NON più nel percorso utente) ─────────────────────────────────────────
+//
+//  Gli helper statici di demo (fixture seedato / campione sintetico) restano disponibili per i
+//  test e per un eventuale avvio di sviluppo, ma il percorso utente reale è import → elaborazione
+//  → questa view col contenuto iniettato; non c'è più auto-caricamento al lancio.
 //
 
 import PDFKit
@@ -31,89 +40,159 @@ import ScaboCore
 
 final class ContinuousReadingViewController: UIViewController {
 
+    // MARK: - Container del testo e dell'interfaccia
+
     private let readingView = ContinuousReadingView()
+    private let interfaceBar = ReadingInterfaceBar()
 
-    /// Cap di responsività del demo (vedi nota PONTE TEMPORANEO). Non è un limite
-    /// di prodotto.
-    private static let demoMaxPages = 6
+    /// Contenuto di corpo da rendere (iniettato dal flusso di elaborazione).
+    private let content: PaginatedContent
 
-    /// Pagina di partenza del campione demo su patriarca: le prime pagine sono
-    /// frontespizio/indice, il corpo monocolonna pulito (confermato dalla
-    /// "fotografia" d'esplorazione) vive da ~40 in poi. Patriarca-specifico, vive
-    /// solo finché vive il ponte temporaneo.
-    private static let demoBodyStartPage = 40
+    /// Azione del tasto Indietro: torna alla Home nuda. Impostata dal presentatore.
+    var onBack: (() -> Void)?
 
-    /// Nome del fixture privato cercato sul Simulator (seedato dallo script).
-    private static let seededFixtureName = "patriarca_benazzo.pdf"
-    private static let seededSubdir = "scabo-fixtures"
+    private static let interfaceBarHeight: CGFloat = 44
+
+    // MARK: - Init
+
+    /// Costruisce la reading view sul contenuto già elaborato. `sourceName` è conservato per usi
+    /// futuri (referto, persistenza); il titolo del container d'interfaccia è fisso
+    /// "Lettura Continua".
+    init(content: PaginatedContent, sourceName: String = "") {
+        self.content = content
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) non supportato: ContinuousReadingViewController è costruito in codice.")
+    }
+
+    // MARK: - Ciclo di vita
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = LAYOUT_DISPLAY_NAMES[.continuous]  // "Lettura Continua"
         view.backgroundColor = .systemBackground
-        embedReadingView()
-
-        // Non auto-caricare sotto XCTest: il test host non deve fare lavoro di
-        // estrazione al lancio. I test esercitano il ponte esplicitamente.
-        if Self.isRunningUnderTests { return }
-        loadBodyContentViaBridge()
+        embedContainers()
+        wireContainers()
+        readingView.render(content)
+        // Stato iniziale: il container del testo è quello attivo (si entra leggendo).
+        activateTextContainer(moveFocus: false)
     }
 
-    private func embedReadingView() {
+    private func embedContainers() {
+        interfaceBar.translatesAutoresizingMaskIntoConstraints = false
         readingView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(interfaceBar)
         view.addSubview(readingView)
+
         NSLayoutConstraint.activate([
-            readingView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            interfaceBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            interfaceBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            interfaceBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            interfaceBar.heightAnchor.constraint(equalToConstant: Self.interfaceBarHeight),
+
+            readingView.topAnchor.constraint(equalTo: interfaceBar.bottomAnchor),
             readingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             readingView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             readingView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+
+        // La radice espone i DUE container nell'ordine di lettura visivo (interfaccia in alto,
+        // testo sotto). La sigillatura runtime fra i due è la modalità (vedi `activate…`).
+        view.accessibilityElements = [interfaceBar, readingView]
     }
 
-    // MARK: - Ponte temporaneo
+    private func wireContainers() {
+        interfaceBar.onBack = { [weak self] in self?.onBack?() }
+        // Escape (scrub a due dita) commuta il container attivo, in entrambe le direzioni.
+        readingView.onEscape = { [weak self] in self?.activateInterfaceContainer(moveFocus: true) }
+        interfaceBar.onEscape = { [weak self] in self?.activateTextContainer(moveFocus: true) }
+    }
 
-    private func loadBodyContentViaBridge() {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let document = Self.loadDemoDocument()
-            let content = (try? ContinuousBodyBuilder.bodyPaginatedContent(from: document))
-                ?? PaginatedContent(pages: [], totalSegments: 0)
-            DispatchQueue.main.async { [weak self] in
-                self?.readingView.render(content)
-            }
+    // MARK: - Commutazione fra i due container sigillati
+
+    /// Rende ATTIVO il container del testo: il testo è modale (lo swipe vi resta confinato),
+    /// l'interfaccia è ignorata da VoiceOver finché non si fa di nuovo escape.
+    private func activateTextContainer(moveFocus: Bool) {
+        interfaceBar.accessibilityViewIsModal = false
+        readingView.accessibilityViewIsModal = true
+        if moveFocus {
+            UIAccessibility.post(notification: .screenChanged, argument: readingView)
         }
     }
 
-    /// Produce un `ScabopdfDocument` di corpo da mostrare: fixture reale seedato se
-    /// raggiungibile, altrimenti campione sintetico. Compute puro, off-main.
-    private static func loadDemoDocument() -> ScabopdfDocument {
+    /// Rende ATTIVO il container dell'interfaccia: l'interfaccia è modale (lo swipe vi resta
+    /// confinato fra [Indietro, titolo]), il testo è ignorato finché non si fa escape.
+    private func activateInterfaceContainer(moveFocus: Bool) {
+        readingView.accessibilityViewIsModal = false
+        interfaceBar.accessibilityViewIsModal = true
+        if moveFocus {
+            UIAccessibility.post(notification: .screenChanged, argument: interfaceBar.backButton)
+        }
+    }
+
+    // MARK: - Introspezione per i test (sigillatura dei due container)
+
+    /// Il container del testo (sola lettura).
+    var textContainerForTesting: ContinuousReadingView { readingView }
+    /// Il container dell'interfaccia (sola lettura).
+    var interfaceContainerForTesting: ReadingInterfaceBar { interfaceBar }
+    /// I due container esposti dalla radice, nell'ordine.
+    var rootAccessibilityContainersForTesting: [NSObject] {
+        (view.accessibilityElements as? [NSObject]) ?? []
+    }
+    /// Vero se il container del testo è il modale attivo (swipe confinato al testo, § 2.2).
+    var textContainerIsModalForTesting: Bool { readingView.accessibilityViewIsModal }
+    /// Vero se il container dell'interfaccia è il modale attivo.
+    var interfaceContainerIsModalForTesting: Bool { interfaceBar.accessibilityViewIsModal }
+}
+
+// MARK: - Ponte di sviluppo / helper per i test (fuori dal percorso utente)
+
+extension ContinuousReadingViewController {
+
+    /// Cap di responsività del demo (vedi nota PONTE). Non è un limite di prodotto.
+    static let demoMaxPages = 6
+    /// Pagina di partenza del campione demo su patriarca (le prime sono frontespizio/indice).
+    static let demoBodyStartPage = 40
+    static let seededFixtureName = "patriarca_benazzo.pdf"
+    static let seededSubdir = "scabo-fixtures"
+
+    /// Contenuto di corpo di demo (fixture seedato se presente, altrimenti campione sintetico).
+    /// Per un eventuale avvio di sviluppo: il percorso utente reale passa per l'import.
+    static func demoContent() -> PaginatedContent {
+        let document = loadDemoDocument()
+        return (try? ContinuousBodyBuilder.bodyPaginatedContent(from: document))
+            ?? PaginatedContent(pages: [], totalSegments: 0)
+    }
+
+    /// Produce un `ScabopdfDocument` di corpo: fixture reale seedato se raggiungibile, altrimenti
+    /// campione sintetico. Compute puro, off-main.
+    static func loadDemoDocument() -> ScabopdfDocument {
         let extractor = PdfKitExtractor()
         if let seeded = seededFixtureURL(),
            let sample = sampledPDF(at: seeded, from: demoBodyStartPage, count: demoMaxPages),
            let extraction = try? extractor.extract(fromUri: sample.absoluteString) {
             return buildDocumentFromPdf(extraction, sourceName: seededFixtureName)
         }
-        // Fallback: campione sintetico in-app (la view è sempre dimostrabile).
         let synthetic = makeSyntheticSamplePDF()
         if let extraction = try? extractor.extract(fromUri: synthetic.absoluteString) {
             return buildDocumentFromPdf(extraction, sourceName: "campione_sintetico.pdf")
         }
-        // Estrema difesa: documento vuoto valido (la view mostra contenuto vuoto,
-        // non crasha).
-        return emptyDocument()
+        let extraction = PdfExtraction(version: 2, pageCount: 0, pages: [])
+        return buildDocumentFromPdf(extraction, sourceName: "vuoto.pdf")
     }
 
-    // MARK: - Localizzazione / campionamento PDF
-
-    private static func seededFixtureURL() -> URL? {
+    static func seededFixtureURL() -> URL? {
         let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         guard let base = documents.first else { return nil }
         let url = base.appendingPathComponent(seededSubdir).appendingPathComponent(seededFixtureName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
-    /// Riserializza una finestra di `count` pagine a partire da `startPage` in un
-    /// file temporaneo. Cap di responsività per il demo/test; `startPage` è
-    /// clampato all'intervallo valido. Ritorna `nil` se il PDF non apre.
+    /// Riserializza una finestra di `count` pagine a partire da `startPage` in un file temporaneo.
+    /// Cap di responsività per il demo/test; `startPage` è clampato. `nil` se il PDF non apre.
     static func sampledPDF(at source: URL, from startPage: Int = 0, count: Int) -> URL? {
         guard let document = PDFDocument(url: source), document.pageCount > 0 else { return nil }
         let sample = PDFDocument()
@@ -129,8 +208,8 @@ final class ContinuousReadingViewController: UIViewController {
         return sample.write(to: url) ? url : nil
     }
 
-    /// Campione PDF sintetizzato in-app: un titolo, alcuni paragrafi di corpo e una
-    /// nota piccola (che il filtro di corpo esclude). Deterministico, ermetico.
+    /// Campione PDF sintetizzato in-app: un titolo, alcuni paragrafi di corpo e una nota piccola
+    /// (che il filtro di corpo esclude). Deterministico, ermetico.
     static func makeSyntheticSamplePDF() -> URL {
         let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)  // A4 pt
         let blocks: [(text: String, size: CGFloat, bold: Bool)] = [
@@ -161,13 +240,7 @@ final class ContinuousReadingViewController: UIViewController {
         return url
     }
 
-    private static func emptyDocument() -> ScabopdfDocument {
-        let extraction = PdfExtraction(version: 2, pageCount: 0, pages: [])
-        return buildDocumentFromPdf(extraction, sourceName: "vuoto.pdf")
-    }
-
-    // MARK: - Guardia test host
-
+    /// Guardia test host (conservata per simmetria con eventuali avvii di sviluppo).
     static var isRunningUnderTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }

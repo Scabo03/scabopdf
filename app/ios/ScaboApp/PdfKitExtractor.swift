@@ -65,6 +65,24 @@ struct PdfKitExtractor: PdfExtracting {
     /// message when the path is invalid, the PDF cannot be opened, or it is
     /// password-protected.
     func extract(fromUri uri: String) throws -> PdfExtraction {
+        // Variante senza progresso/cancellazione: percorso storico, identico nel comportamento
+        // (closures no-op, mai cancellato). Il `!` è sicuro per costruzione: con `isCancelled`
+        // costante falso la variante progress-aware non ritorna mai `nil`.
+        try extract(fromUri: uri, onPageExtracted: { _, _ in }, isCancelled: { false })!
+    }
+
+    /// Estrazione con reporting di progresso reale per pagina e cancellazione COOPERATIVA
+    /// (ADDITIVO, sessione import). `onPageExtracted(done, total)` scatta una volta per pagina
+    /// realmente estratta (`done` monotòno da 1 a `total` = numero di pagine, noto subito dopo
+    /// l'apertura). `isCancelled()` è consultato a ogni tappa naturale (prima di ciascuna pagina):
+    /// se diventa vero, l'estrazione si ferma pulita e ritorna `nil` — nessuna estrazione parziale
+    /// viene spacciata per completa. Gli errori di apertura (percorso non valido, PDF danneggiato,
+    /// protetto da password) restano `throw` con messaggio in prosa italiana.
+    func extract(
+        fromUri uri: String,
+        onPageExtracted: (_ done: Int, _ total: Int) -> Void,
+        isCancelled: () -> Bool
+    ) throws -> PdfExtraction? {
         guard let url = Self.fileURL(from: uri) else {
             throw Self.makeError("Percorso del file PDF non valido.")
         }
@@ -79,7 +97,11 @@ struct PdfKitExtractor: PdfExtracting {
         var pages: [PdfPageExtraction] = []
         pages.reserveCapacity(pageCount)
         for index in 0..<pageCount {
-            guard let page = document.page(at: index) else { continue }
+            if isCancelled() { return nil }
+            guard let page = document.page(at: index) else {
+                onPageExtracted(index + 1, pageCount)
+                continue
+            }
             let cropBox = page.bounds(for: .cropBox)
             let lines = Self.lines(for: page, cropBox: cropBox)
             pages.append(PdfPageExtraction(
@@ -88,7 +110,9 @@ struct PdfKitExtractor: PdfExtracting {
                 height: Double(cropBox.height),
                 lines: lines
             ))
+            onPageExtracted(index + 1, pageCount)
         }
+        if isCancelled() { return nil }
 
         return PdfExtraction(version: 2, pageCount: pageCount, pages: pages)
     }
