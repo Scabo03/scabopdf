@@ -1,27 +1,110 @@
 default_platform(:ios)
 
-APP_ID = ENV["APP_IDENTIFIER"] || "com.scabo.scabopdf"
+# Identità di pubblicazione. Override possibile via ENV per test, ma il default è
+# l'identificativo ufficiale, ora assegnato al target Swift ScaboApp.
+APP_ID  = ENV["APP_IDENTIFIER"] || "com.scabo.scabopdf"
 TEAM_ID = "D2KQYQ8YU8"
 
+# ── Segreti: referenziati per NOME, mai versionati ───────────────────────────────
+# Lo sviluppatore li fornisce in ENV al momento dell'esecuzione (questo file NON li
+# contiene e non deve contenerli):
+#   APP_STORE_CONNECT_API_KEY_ID / _ISSUER_ID / _CONTENT  → chiave API App Store Connect
+#   MATCH_PASSWORD                                         → decifra il repo certs di match
+#   MATCH_GIT_URL                                          → URL del repo certs match
+# Opzionali:
+#   APP_IDENTIFIER       → override del bundle id (default com.scabo.scabopdf)
+#   MATCH_READONLY       → "false" per RIGENERARE i certificati (default: readonly)
+#   SCABO_BUILD_NUMBER   → forza il build number (altrimenti: ultimo TestFlight + 1)
+
+# Chiave API App Store Connect (NON Apple ID). Costruita dai 3 valori in ENV.
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+    issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+    key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+    is_key_content_base64: false,
+    in_house: false
+  )
+end
+
+# READONLY di default: il primo giro sul Mac nuovo deve INSTALLARE i cert/profili
+# esistenti, mai rigenerarli o revocarli (niente rotazione — il vecchio Mac è ancora
+# sotto controllo). Per rigenerare di proposito: MATCH_READONLY=false.
+def match_readonly?
+  ENV.fetch("MATCH_READONLY", "true") != "false"
+end
+
+# Installa cert+profilo App Store via match (chiamata condivisa fra le lane).
+def install_signing(api_key)
+  match(
+    type: "appstore",
+    app_identifier: APP_ID,
+    team_id: TEAM_ID,
+    api_key: api_key,
+    git_url: ENV["MATCH_GIT_URL"],
+    readonly: match_readonly?,
+    force_for_new_devices: false,
+    verbose: true
+  )
+end
+
 platform :ios do
-  desc "Generate or fetch the App Store distribution certificate and provisioning profile via Match"
+  desc "Installa (o, con MATCH_READONLY=false, rigenera) cert+profilo App Store via Match."
   lane :setup_signing do
-    api_key = app_store_connect_api_key(
-      key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
-      issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
-      key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
-      is_key_content_base64: false,
-      in_house: false
+    install_signing(asc_api_key)
+  end
+
+  desc "PRIMA build TestFlight di ScaboApp (Swift puro). Archivia dal .xcodeproj nudo " \
+       "(-project, MAI -workspace: niente Pods/RN), esporta con ExportOptions.plist, " \
+       "carica su TestFlight. NON rigenera la firma (match readonly di default)."
+  lane :beta do
+    api_key = asc_api_key
+
+    # 1) Firma: installa cert "Apple Distribution" + profilo "match AppStore
+    #    com.scabo.scabopdf" nel keychain (readonly di default).
+    install_signing(api_key)
+
+    # 2) Build number che SUPERA quello già su TestFlight. Override esplicito via
+    #    SCABO_BUILD_NUMBER; altrimenti ultimo presente su TestFlight + 1.
+    #    (Lo sviluppatore conferma/supera il valore reale dal portale all'upload.)
+    build_number =
+      if ENV["SCABO_BUILD_NUMBER"]
+        ENV["SCABO_BUILD_NUMBER"]
+      else
+        (latest_testflight_build_number(
+          api_key: api_key,
+          app_identifier: APP_ID,
+          initial_build_number: 0
+        ) + 1).to_s
+      end
+
+    # 3) Archive + export. SOLO -project (niente workspace ⇒ niente Pods/RN). La firma
+    #    di distribuzione è manuale e coerente con ExportOptions.plist: stesso cert e
+    #    stesso profilo match sia in archive sia in export (il nome del profilo è la
+    #    convenzione match, già fissata in ExportOptions.plist).
+    build_app(
+      project: "ScaboPDF.xcodeproj",
+      scheme: "ScaboApp",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: "ExportOptions.plist",
+      clean: true,
+      output_directory: "build",
+      output_name: "ScaboApp.ipa",
+      xcargs: [
+        "CURRENT_PROJECT_VERSION=#{build_number}",
+        "CODE_SIGN_STYLE=Manual",
+        "DEVELOPMENT_TEAM=#{TEAM_ID}",
+        %("CODE_SIGN_IDENTITY=Apple Distribution"),
+        %("PROVISIONING_PROFILE_SPECIFIER=match AppStore #{APP_ID}"),
+      ].join(" ")
     )
 
-    match(
-      type: "appstore",
-      app_identifier: APP_ID,
-      team_id: TEAM_ID,
+    # 4) Upload su TestFlight con la chiave API ASC. Non attende il processing Apple.
+    upload_to_testflight(
       api_key: api_key,
-      readonly: false,
-      force_for_new_devices: false,
-      verbose: true
+      app_identifier: APP_ID,
+      skip_waiting_for_build_processing: true
     )
   end
 end
