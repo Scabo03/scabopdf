@@ -37,14 +37,26 @@ final class ContinuousReadingViewTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeView() -> ContinuousReadingView {
-        // Cornice realistica (iPhone 16) così il layout risolve senza warning.
-        let view = ContinuousReadingView(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
-        return view
+    private func makeView(width: CGFloat = 393, height: CGFloat = 852) -> ContinuousReadingView {
+        // Cornice realistica (iPhone 16 di default) così il layout risolve senza
+        // warning. I test sul confine di pagina passano un viewport piccolo per
+        // forzare l'impaginazione per misura a produrre più pagine visive.
+        ContinuousReadingView(frame: CGRect(x: 0, y: 0, width: width, height: height))
     }
 
     private func bodySegment(_ id: String, _ text: String, role: String = "BODY") -> ContentSegment {
         ContentSegment(id: id, role: role, text: text, lengthCategory: "", acousticIntro: "")
+    }
+
+    /// N segmenti di corpo, ciascuno alto alcune righe nella colonna stretta del
+    /// viewport di prova: in un viewport piccolo producono più pagine visive.
+    private func manyBodySegments(_ count: Int) -> [ContentSegment] {
+        (0..<count).map { i in
+            bodySegment(
+                "n\(i)",
+                "Paragrafo numero \(i), con testo sufficiente a occupare alcune righe "
+                    + "nella colonna stretta della pagina logica di prova.")
+        }
     }
 
     /// Tre pagine logiche di dimensioni diverse: il banco di prova della continuità.
@@ -276,6 +288,156 @@ final class ContinuousReadingViewTests: XCTestCase {
         for element in elements {
             XCTAssertFalse((element.accessibilityLabel ?? "").isEmpty)
         }
+    }
+
+    // ════════════════════════════════════════════════════════════════════════════
+    // PAGINATO-MA-CONTINUO — il punto critico: continuità dell'accessibilità
+    // ATTRAVERSO i confini di pagina logica (presentazione paginata, container unico).
+    // ════════════════════════════════════════════════════════════════════════════
+
+    // MARK: - 9. La presentazione produce più pagine VISIVE (paging, non scroll)
+
+    func test_viewportPagination_producesMultipleVisualPages() {
+        let view = makeView(width: 320, height: 220)
+        view.render(manyBodySegments(12))
+        view.layoutIfNeeded()
+
+        XCTAssertTrue(view.isHorizontallyPaged, "la presentazione è a paging orizzontale, non scroll continuo")
+        XCTAssertGreaterThanOrEqual(view.visualPageCount, 2, "12 paragrafi in un viewport piccolo → più pagine logiche")
+        XCTAssertTrue(view.contentSpansMultiplePages, "il contenuto si estende oltre un singolo viewport")
+    }
+
+    // MARK: - 10. UN solo array piatto attraverso le pagine, ordine preservato
+
+    func test_singleFlatContainerSpansVisualPages_readingOrderPreserved() {
+        let view = makeView(width: 320, height: 220)
+        let segs = manyBodySegments(12)
+        view.render(segs)
+        view.layoutIfNeeded()
+
+        XCTAssertGreaterThanOrEqual(view.visualPageCount, 2, "servono più pagine per esercitare il confine")
+        let elements = view.exposedAccessibilityElements
+        XCTAssertEqual(elements.count, segs.count,
+                       "un solo array piatto = un elemento per segmento, ATTRAVERSO le pagine")
+        let ids = elements.compactMap { ($0 as? SegmentLabel)?.segment.id }
+        XCTAssertEqual(ids, segs.map { $0.id },
+                       "ordine di lettura globale preservato attraverso la paginazione")
+    }
+
+    // MARK: - 11. Al confine di pagina: il primo della pagina seguente è ADIACENTE
+    //             all'ultimo della precedente nell'array piatto, niente in mezzo
+
+    func test_pageBoundary_nextElementIsFirstOfNextPage_noIntermediateContainer() {
+        let view = makeView(width: 320, height: 220)
+        let segs = manyBodySegments(12)
+        view.render(segs)
+        view.layoutIfNeeded()
+        XCTAssertGreaterThanOrEqual(view.visualPageCount, 2, "serve almeno un confine di pagina")
+
+        let elements = view.exposedAccessibilityElements
+        // Per OGNI confine di pagina visiva:
+        for page in 1..<view.visualPageCount {
+            let firstOfPage = view.pageStartElementIndices[page]
+            let lastOfPrev = firstOfPage - 1
+            XCTAssertGreaterThanOrEqual(lastOfPrev, 0)
+
+            // L'elemento accessibile successivo all'ultimo della pagina k-1 è il
+            // primo della pagina k: indici CONSECUTIVI nello stesso array piatto,
+            // nessun oggetto-confine interposto.
+            XCTAssertEqual(view.visualPageIndex(ofElementAt: lastOfPrev), page - 1)
+            XCTAssertEqual(view.visualPageIndex(ofElementAt: firstOfPage), page)
+
+            // Entrambi sono foglie, non sotto-container: nessun raggruppamento
+            // per-pagina che possa frapporre una barriera allo swipe.
+            let last = elements[lastOfPrev] as? SegmentLabel
+            let first = elements[firstOfPage] as? SegmentLabel
+            XCTAssertNotNil(last)
+            XCTAssertNotNil(first)
+            XCTAssertNil(last?.accessibilityElements, "l'ultimo di pagina è una foglia")
+            XCTAssertNil(first?.accessibilityElements, "il primo della pagina seguente è una foglia")
+        }
+    }
+
+    // MARK: - 12. Un solo container di accessibilità, NON uno per pagina
+
+    func test_exactlyOneAccessibilityContainer_noPerPageContainer() {
+        let view = makeView(width: 320, height: 220)
+        view.render(manyBodySegments(12))
+        view.layoutIfNeeded()
+        XCTAssertGreaterThanOrEqual(view.visualPageCount, 2)
+
+        XCTAssertFalse(view.isDocumentContainerAnAccessibilityElement, "il container è un container, non una foglia")
+        XCTAssertTrue(view.scrollViewHasNoAccessibilityElements, "lo scroll non è un container di accessibilità")
+        XCTAssertEqual(view.exposedAccessibilityElements.count, 12, "tutti gli elementi in UN solo array")
+        for element in view.exposedAccessibilityElements {
+            XCTAssertNil((element as? SegmentLabel)?.accessibilityElements, "nessun container per-pagina")
+        }
+    }
+
+    // MARK: - 13. Pagine disposte sinistra→destra, assegnazione monotòna in lettura
+
+    func test_visualPagesLeftToRight_andPageAssignmentMonotonic() {
+        let view = makeView(width: 320, height: 220)
+        let segs = manyBodySegments(12)
+        view.render(segs)
+        view.layoutIfNeeded()
+        XCTAssertGreaterThanOrEqual(view.visualPageCount, 2)
+
+        // L'assegnazione di pagina non torna mai indietro nell'ordine di lettura.
+        for i in 0..<(segs.count - 1) {
+            let p0 = try! XCTUnwrap(view.visualPageIndex(ofElementAt: i))
+            let p1 = try! XCTUnwrap(view.visualPageIndex(ofElementAt: i + 1))
+            XCTAssertLessThanOrEqual(p0, p1, "la pagina non regredisce lungo la lettura")
+        }
+
+        // Le pagine successive stanno più a destra (paging orizzontale visivo).
+        let firstOfPage1 = view.pageStartElementIndices[1]
+        let xPage0 = try! XCTUnwrap(view.elementFrameInContent(at: 0)).minX
+        let xPage1 = try! XCTUnwrap(view.elementFrameInContent(at: firstOfPage1)).minX
+        XCTAssertGreaterThan(xPage1, xPage0, "la seconda pagina è a destra della prima")
+    }
+
+    // MARK: - 14. Elemento più alto di una pagina: pagina propria, testo integro
+
+    func test_overTallElement_getsOwnPage_fullTextStaysAccessible() throws {
+        let view = makeView(width: 300, height: 80)  // pagina deliberatamente molto bassa
+        let tall = bodySegment("tall", String(repeating: "frase lunga che occupa molte righe. ", count: 20))
+        let segs = [bodySegment("a", "Corto prima."), tall, bodySegment("b", "Corto dopo.")]
+        view.render(segs)
+        view.layoutIfNeeded()
+
+        // L'elemento alto sta da solo sulla sua pagina (i vicini sono su altre pagine).
+        let tallPage = try XCTUnwrap(view.visualPageIndex(ofElementAt: 1))
+        let onTallPage = (0..<segs.count).filter { view.visualPageIndex(ofElementAt: $0) == tallPage }
+        XCTAssertEqual(onTallPage, [1], "un elemento più alto di una pagina occupa una pagina propria")
+
+        // Il testo resta INTEGRO nell'etichetta accessibile (l'eventuale eccedenza è
+        // solo clip VISIVO; la lettura VoiceOver è completa).
+        let label = view.exposedAccessibilityElements[1] as? SegmentLabel
+        XCTAssertEqual(label?.accessibilityLabel, ContinuousReadingView.spokenText(for: tall),
+                       "il testo completo resta accessibile nonostante il clip visivo")
+    }
+
+    // MARK: - 15. Ri-impaginazione al cambio di viewport: container e ordine invariati
+
+    func test_repaginationOnViewportChange_preservesContainerAndOrder() {
+        let view = makeView(width: 393, height: 4000)  // viewport alto: una sola pagina
+        let segs = manyBodySegments(12)
+        view.render(segs)
+        view.layoutIfNeeded()
+        let pagesLarge = view.visualPageCount
+        let idsLarge = view.exposedAccessibilityElements.compactMap { ($0 as? SegmentLabel)?.segment.id }
+
+        // Riduce il viewport (come una rotazione o uno schermo piccolo): si ricalcola.
+        view.frame = CGRect(x: 0, y: 0, width: 320, height: 220)
+        view.layoutIfNeeded()
+        let pagesSmall = view.visualPageCount
+        let idsSmall = view.exposedAccessibilityElements.compactMap { ($0 as? SegmentLabel)?.segment.id }
+
+        XCTAssertEqual(pagesLarge, 1, "in un viewport molto alto i 12 paragrafi stanno su una pagina")
+        XCTAssertGreaterThan(pagesSmall, pagesLarge, "viewport più piccolo → più pagine (impaginazione per misura)")
+        XCTAssertEqual(idsSmall, idsLarge, "il container e l'ordine di lettura non cambiano con la ri-impaginazione")
+        XCTAssertEqual(idsSmall, segs.map { $0.id })
     }
 
     // MARK: - Localizzazione fixture privato (filesystem host via #filePath)

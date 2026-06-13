@@ -2,57 +2,77 @@
 //  ContinuousReadingView.swift
 //  ScaboApp
 //
-//  Reading view UIKit per il Layout "Lettura Continua" (gradino 2, sessione 1).
-//  Rende il CORPO di un documento classificato (ScaboCore) come contenuto
-//  accessibile VoiceOver, navigabile via swipe orizzontale CONTINUO da un capo
-//  all'altro del documento.
+//  Reading view UIKit per il Layout "Lettura Continua" (gradino 2). Rende il CORPO
+//  di un documento classificato (ScaboCore) come contenuto accessibile VoiceOver,
+//  PAGINATO-MA-CONTINUO: pagine logiche di visualizzazione come presentazione,
+//  sopra un UNICO container di accessibilità esteso a tutto il documento.
+//
+//  ── PERCHÉ paginato-ma-continuo (correzione della sessione 1) ────────────────────
+//
+//  La sessione 1 presentava il corpo come scroll verticale continuo, scartando la
+//  pagina logica. Il prodotto (LAYER2_PRODUCT_DECISIONS.md § 3.3) prescrive invece
+//  che il container del testo sia organizzato in PAGINE LOGICHE di visualizzazione
+//  (blocchi finiti che riempiono lo schermo, stacco netto fra pagina e pagina,
+//  paging orizzontale, NON scroll verticale continuo) MENTRE il container di
+//  accessibilità sottostante resta UNITARIO E CONTINUO. L'analisi diagnostica
+//  (docs/ANALYSIS_READING_VIEW_PAGINATION.md) ha stabilito che lo strato di
+//  container della sessione 1 era già corretto e va conservato; va riscritto solo
+//  lo strato di presentazione. Questo file lo fa.
 //
 //  ── VINCOLO INVIOLABILE — principio sacro del prodotto (§ 2.2) ──────────────────
 //
-//  Lo swipe orizzontale dentro il testo NON deve MAI essere ostacolato, bloccato,
-//  rallentato o ridirezionato da confini interni al documento (confini di pagina
-//  logica o di unità strutturale). Lo swipe scorre fluido da un elemento
-//  accessibile al successivo per TUTTA l'estensione del documento; l'unica
-//  eccezione è il primo/ultimo elemento assoluto.
+//  Lo swipe orizzontale VoiceOver nel container del testo non deve MAI essere
+//  ostacolato da un confine di PAGINA LOGICA: scorre fluido dall'ultimo elemento di
+//  una pagina al primo della successiva senza handoff né blocco; unica eccezione è
+//  il primo/ultimo elemento ASSOLUTO del documento.
 //
-//  Realizzazione a livello di API. Il container del testo è UN SOLO container di
-//  accessibilità — la `documentContainer` — il cui `accessibilityElements` è UN
-//  UNICO array piatto e ordinato che copre OGNI segmento di OGNI pagina logica,
-//  in ordine di lettura. È la garanzia strutturale del requisito: VoiceOver,
-//  attraversando un singolo array piatto, passa da elemento a elemento senza che
-//  alcun oggetto-confine si frapponga ai bordi di pagina, perché i bordi di
-//  pagina non esistono in quell'array. La paginazione logica (`ContentPage`) è
-//  appiattita in ingresso: è presentazione/orientamento e NON spezza il container.
+//  Come è realizzato (modello identificato dall'analisi — UN container sigillato,
+//  paging solo VISIVO):
+//    • `documentContainer` è UN SOLO container di accessibilità. Il suo
+//      `accessibilityElements` è UN UNICO array piatto e ordinato di TUTTI i
+//      segmenti del documento, impostato in `rebuildLabels()` indipendentemente
+//      dalla geometria. A livello di accessibilità i confini di pagina NON
+//      ESISTONO: VoiceOver attraversa un solo array, quindi nessun oggetto-confine
+//      può frapporsi ai bordi di pagina.
+//    • Le PAGINE sono un fatto puramente VISIVO dello scroll: una `UIScrollView`
+//      con `isPagingEnabled` orizzontale, il cui contenuto è largo `nPagine ×
+//      viewport`. Ogni segmento è posato (a frame) nella colonna della sua pagina.
+//      Il gesto nativo a tre dita opera il paging; quando VoiceOver mette a fuoco
+//      un elemento di un'altra pagina, lo scroll lo porta in vista. Le pagine NON
+//      frammentano il container.
+//    • NON si usa l'architettura "un container per pagina" (es. UIPageViewController
+//      con sotto-container per pagina): è quella del guasto Acrobat
+//      (focus-hijacking ai confini) e il prodotto non la prescrive. ScaboPDF, non
+//      essendo un viewer PDF, tiene UN container immune al passaggio fra pagine.
 //
-//  Perché un array piatto esplicito e NON `UIAccessibilityReadingContent`.
-//  `UIAccessibilityReadingContent` modella la LETTURA AUTOMATICA continua (linea
-//  per linea, con auto-page-turn), che è lo strumento SECONDARIO del prodotto. La
-//  modalità primaria è lo swipe MANUALE elemento-per-elemento, ed è esattamente
-//  ciò che un container con `accessibilityElements` piatto serve in modo nativo e
-//  verificabile. Un'architettura multi-pagina (UIPageViewController + reading
-//  content) reintrodurrebbe proprio il confine di pagina che il vincolo vieta;
-//  l'array piatto unico lo rende impossibile per costruzione. ("o equivalente
-//  UIKit" del brief: questo È l'equivalente che garantisce la continuità.)
+//  ── Impaginazione per misura (il punto tecnico non banale, § 3.3 / § 4.1) ───────
 //
-//  ── Design bi-modale (principio inderogabile) ───────────────────────────────────
+//  Le pagine logiche NON corrispondono alle pagine fisiche del PDF: si dimensionano
+//  in base alla dimensione tipografica (Dynamic Type), all'orientamento e allo
+//  schermo. Per questo l'impaginazione è calcolata QUI (la view ha la geometria),
+//  non in ScaboCore (`Pagination.paginate` è un chunk per CONTEGGIO di segmenti,
+//  geometry-agnostic: NON è la pagina-di-viewport; la view lo appiattisce e
+//  ricalcola). Il packing è greedy per altezza misurata: ogni elemento è posato
+//  intero su una pagina; se non entra nello spazio residuo va INTERO alla pagina
+//  successiva — un elemento non è MAI spezzato a cavallo di due pagine. Si ricalcola
+//  su cambio di viewport (rotazione) e di categoria Dynamic Type.
 //
-//  Ogni segmento ha resa VISIVA (un `UILabel` stilizzato per ruolo, Dynamic Type)
-//  ED accessibile (`accessibilityLabel` = testo parlato). Nessuna delle due è
-//  sacrificata. Non si ridefinisce alcun gesto standard di VoiceOver: si definisce
-//  solo il comportamento dei propri elementi in risposta ai gesti standard.
+//  Caso limite dichiarato: un singolo elemento più alto di un'intera pagina occupa
+//  una pagina propria; se eccede l'altezza, eccede visivamente in basso (clip per
+//  l'utente vedente), ma il testo resta INTEGRO nell'`accessibilityLabel` — la
+//  lettura VoiceOver, esperienza primaria, è completa. Il bounding della dimensione
+//  dell'elemento è compito della granularità di lettura (§ 7.6), sessione futura.
 //
-//  ── Confine pulito (seam) ───────────────────────────────────────────────────────
+//  ── Design bi-modale / seam / onestà sulla verifica ─────────────────────────────
 //
-//  La view NON importa PDFKit e non conosce l'estrazione: CONSUMA il modello già
-//  prodotto (`ContentSegment`/`PaginatedContent` di ScaboCore). La classificazione
-//  non viene toccata.
-//
-//  ── Onestà sulla verifica ───────────────────────────────────────────────────────
-//
-//  Questa view garantisce, a livello di API, struttura/ordine/etichette/container
-//  unico. L'ESPERIENZA VoiceOver effettiva (fluidità reale dello swipe, resa
-//  vocale) si verifica solo con VoiceOver sull'iPhone fisico (fase TestFlight): il
-//  Simulator non la riproduce.
+//  Bi-modale: ogni segmento ha resa VISIVA (UILabel per ruolo, Dynamic Type) ed
+//  accessibile (etichetta non vuota). Nessun gesto VoiceOver ridefinito. La view NON
+//  importa PDFKit: consuma il modello già prodotto. Onestà: il Simulator NON
+//  riproduce VoiceOver. Qui si garantisce la correttezza ARCHITETTURALE (container
+//  unico, array piatto continuo su tutto il documento, ordine, paging visivo
+//  presente); che lo swipe "scorra fluido" sul confine di pagina e che lo scroll
+//  agganci pulito la pagina al passaggio di focus si certifica solo su iPhone reale
+//  con VoiceOver (TestFlight).
 //
 
 import UIKit
@@ -75,18 +95,20 @@ final class SegmentLabel: UILabel {
     }
 }
 
-/// La reading view del Layout "Lettura Continua". Renderizza una sequenza di
-/// `ContentSegment` (il corpo) come container di accessibilità unico e continuo.
+/// La reading view del Layout "Lettura Continua": pagine logiche di visualizzazione
+/// (paging orizzontale) sopra un container di accessibilità unico e continuo.
 final class ContinuousReadingView: UIView {
 
     // MARK: - Sottoviste
 
-    /// Scroll verticale: porta on-screen l'elemento che VoiceOver mette a fuoco
-    /// (auto-scroll nativo, perché gli elementi sono `UIView` reali nel contenuto).
+    /// Scroll a PAGING ORIZZONTALE: ogni pagina riempie lo schermo, con stacco netto
+    /// fra una pagina e la successiva. È il dispositivo di presentazione; non tocca
+    /// l'accessibilità.
     private let scrollView = UIScrollView()
 
-    /// IL container di accessibilità unico per l'INTERO documento. Il suo
-    /// `accessibilityElements` è l'array piatto e ordinato di tutti i segmenti.
+    /// IL container di accessibilità unico per l'INTERO documento (content view del
+    /// paging scroll). Il suo `accessibilityElements` è l'array piatto e ordinato di
+    /// tutti i segmenti; le pagine sono solo le colonne visive del suo frame.
     private let documentContainer = UIView()
 
     // MARK: - Stato
@@ -94,8 +116,19 @@ final class ContinuousReadingView: UIView {
     /// Le etichette per-segmento, in ordine di lettura. Sola lettura per i test.
     private(set) var segmentLabels: [SegmentLabel] = []
 
-    /// Vincoli del layout verticale corrente (azzerati a ogni `render`).
-    private var contentConstraints: [NSLayoutConstraint] = []
+    /// I segmenti correnti (ordine di lettura).
+    private var segments: [ContentSegment] = []
+
+    /// Per ogni pagina VISIVA, l'indice (in `segmentLabels`) del suo primo elemento.
+    /// È bookkeeping di sola PRESENTAZIONE: l'accessibilità resta l'array piatto.
+    /// `count` == numero di pagine visive. Esposto per i test sul confine di pagina.
+    private(set) var pageStartElementIndices: [Int] = []
+
+    /// L'ultimo viewport impaginato: evita ricalcoli inutili a parità di dimensione.
+    private var lastViewport: CGSize = .zero
+
+    /// Token dell'osservatore di cambio Dynamic Type (rimosso in deinit).
+    private var contentSizeObserver: NSObjectProtocol?
 
     // MARK: - Metrica di lettura
 
@@ -117,16 +150,28 @@ final class ContinuousReadingView: UIView {
         fatalError("init(coder:) non supportato: ContinuousReadingView è costruita in codice.")
     }
 
+    deinit {
+        if let token = contentSizeObserver {
+            NotificationCenter.default.removeObserver(token)
+        }
+    }
+
     private func setUp() {
         backgroundColor = .systemBackground
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.alwaysBounceVertical = true
+        scrollView.isPagingEnabled = true
+        scrollView.alwaysBounceVertical = false
+        scrollView.alwaysBounceHorizontal = true
+        scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
+        // Niente aggiustamento da safe area: i confini di pagina devono allinearsi
+        // esattamente alla larghezza del viewport, senza offset.
+        scrollView.contentInsetAdjustmentBehavior = .never
         addSubview(scrollView)
 
-        documentContainer.translatesAutoresizingMaskIntoConstraints = false
-        // È un CONTAINER, non un elemento foglia: VoiceOver non lo mette a fuoco,
-        // ne attraversa gli `accessibilityElements`.
+        // È un CONTAINER, non un elemento foglia: VoiceOver non lo mette a fuoco, ne
+        // attraversa gli `accessibilityElements`. Frame gestito a mano in relayout.
         documentContainer.isAccessibilityElement = false
         scrollView.addSubview(documentContainer)
 
@@ -135,123 +180,204 @@ final class ContinuousReadingView: UIView {
             scrollView.leadingAnchor.constraint(equalTo: leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            // Container ancorato al contenuto scrollabile; larghezza vincolata alla
-            // cornice → scroll solo verticale, testo che va a capo.
-            documentContainer.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            documentContainer.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
-            documentContainer.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            documentContainer.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            documentContainer.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
         ])
+
+        // Ricalcola l'impaginazione quando cambia la dimensione testo dell'utente
+        // (Dynamic Type): le pagine logiche dipendono dalla tipografia (§ 4.1).
+        contentSizeObserver = NotificationCenter.default.addObserver(
+            forName: UIContentSizeCategory.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.lastViewport = .zero
+            self?.setNeedsLayout()
+        }
     }
 
     // MARK: - Rendering (API pubblica della view)
 
-    /// Renderizza un layout PAGINATO. Le pagine logiche vengono APPIATTITE in un
-    /// unico flusso continuo: la paginazione è solo presentazione/orientamento e
-    /// non frammenta né il flusso visivo né — soprattutto — il container di
-    /// accessibilità. Far passare di qui un `PaginatedContent` multi-pagina è il
-    /// modo più diretto per dimostrare il vincolo: N pagine → 1 container piatto.
+    /// Renderizza un layout di ScaboCore. Le pagine logiche di `PaginatedContent`
+    /// sono un chunk geometry-agnostic (per conteggio di segmenti) e NON sono la
+    /// pagina-di-viewport: vengono APPIATTITE, e la view ricalcola le pagine VISIVE
+    /// per misura (vedi docstring di testata). Il container di accessibilità resta
+    /// unico e continuo su tutta la sequenza.
     func render(_ content: PaginatedContent) {
         render(content.pages.flatMap { $0.segments })
     }
 
     /// Renderizza una sequenza piatta di segmenti in ordine di lettura.
     func render(_ segments: [ContentSegment]) {
-        // Smonta il rendering precedente.
-        NSLayoutConstraint.deactivate(contentConstraints)
-        contentConstraints.removeAll()
+        self.segments = segments
+        rebuildLabels()
+        // Forza un nuovo calcolo di impaginazione al prossimo layout.
+        lastViewport = .zero
+        setNeedsLayout()
+        layoutIfNeeded()
+    }
+
+    // MARK: - Costruzione degli elementi (accessibilità: indipendente dalla geometria)
+
+    /// (Ri)costruisce un `SegmentLabel` per segmento e fissa il container di
+    /// accessibilità. Sincrono e indipendente dal viewport: il container è valido
+    /// subito dopo `render`, anche prima che il layout (le pagine VISIVE) sia
+    /// calcolato.
+    private func rebuildLabels() {
         segmentLabels.forEach { $0.removeFromSuperview() }
-        segmentLabels.removeAll()
-
-        // Costruisce un'etichetta per segmento, in ordine.
-        var previousBottom = documentContainer.topAnchor
-        var newConstraints: [NSLayoutConstraint] = []
-
-        for (index, segment) in segments.enumerated() {
-            let label = makeLabel(for: segment)
-            documentContainer.addSubview(label)
-            segmentLabels.append(label)
-
-            let topSpacing = index == 0 ? Metrics.verticalInset : Metrics.interSegmentSpacing
-            newConstraints.append(contentsOf: [
-                label.topAnchor.constraint(equalTo: previousBottom, constant: topSpacing),
-                label.leadingAnchor.constraint(
-                    equalTo: documentContainer.leadingAnchor, constant: Metrics.horizontalInset),
-                label.trailingAnchor.constraint(
-                    equalTo: documentContainer.trailingAnchor, constant: -Metrics.horizontalInset),
-            ])
-            previousBottom = label.bottomAnchor
-        }
-
-        // Chiude il contenuto: l'ultimo elemento determina l'altezza scrollabile.
-        // Se il documento è vuoto il container collassa a un'altezza nulla.
-        if let last = segmentLabels.last {
-            newConstraints.append(
-                last.bottomAnchor.constraint(
-                    equalTo: documentContainer.bottomAnchor, constant: -Metrics.verticalInset))
-        } else {
-            newConstraints.append(documentContainer.heightAnchor.constraint(equalToConstant: 0))
-        }
-
-        NSLayoutConstraint.activate(newConstraints)
-        contentConstraints = newConstraints
+        segmentLabels = segments.map { makeLabel(for: $0) }
+        segmentLabels.forEach { documentContainer.addSubview($0) }
 
         // ── Il cuore del vincolo sacro ──────────────────────────────────────────
         // UN solo container, UN solo array piatto e ordinato su TUTTO il documento.
         // Esplicito (non derivato dalla geometria) così l'ordine di lettura è
-        // deterministico e il container resta unico per costruzione.
+        // deterministico e il container resta unico per costruzione, attraverso ogni
+        // pagina visiva.
         documentContainer.accessibilityElements = segmentLabels
     }
 
-    // MARK: - Introspezione per i test (il container è privato)
-
-    /// Gli elementi accessibili ESPOSTI dal container, nell'ordine che VoiceOver
-    /// attraversa. È la superficie su cui i test verificano il vincolo sacro:
-    /// unicità del container, conteggio, ordine, continuità ai confini di pagina.
-    var exposedAccessibilityElements: [NSObject] {
-        (documentContainer.accessibilityElements as? [NSObject]) ?? []
-    }
-
-    /// Vero se il container si espone come elemento foglia. DEVE essere falso: è un
-    /// container che si attraversa, non un elemento da mettere a fuoco.
-    var isDocumentContainerAnAccessibilityElement: Bool {
-        documentContainer.isAccessibilityElement
-    }
-
-    // MARK: - Costruzione dell'elemento accessibile + visivo (bi-modale)
-
     private func makeLabel(for segment: ContentSegment) -> SegmentLabel {
         let label = SegmentLabel(segment: segment)
-        label.translatesAutoresizingMaskIntoConstraints = false
+        // Frame manuali (l'impaginazione per misura posa le label a coordinate).
+        label.translatesAutoresizingMaskIntoConstraints = true
         label.numberOfLines = 0
         label.lineBreakMode = .byWordWrapping
 
-        // Resa VISIVA: stile tipografico per ruolo, con Dynamic Type (rispetta la
-        // dimensione testo scelta dall'utente — requisito di accessibilità).
-        let textStyle = Self.textStyle(for: segment.role)
-        label.font = UIFont.preferredFont(forTextStyle: textStyle)
+        // Resa VISIVA: stile tipografico per ruolo, con Dynamic Type.
+        label.font = UIFont.preferredFont(forTextStyle: Self.textStyle(for: segment.role))
         label.adjustsFontForContentSizeCategory = true
         label.textColor = .label
         label.text = segment.text
 
-        // Resa ACCESSIBILE: ogni elemento DEVE avere un'etichetta non vuota (un
-        // elemento senza resa accessibile è bug critico). Il testo parlato include
-        // l'intro acustica del ruolo quando presente (vuota per corpo/heading,
-        // che si distinguono tipograficamente — RoleStyle del prodotto).
+        // Resa ACCESSIBILE: etichetta mai vuota (un elemento senza resa è bug
+        // critico). Include l'intro acustica del ruolo quando presente.
         label.isAccessibilityElement = true
         label.accessibilityLabel = Self.spokenText(for: segment)
 
-        // Tratto header per heading e divisori: abilita la navigazione per
-        // intestazioni nel rotore VoiceOver SENZA introdurre alcun confine allo
-        // swipe (lo swipe resta elemento-per-elemento; il rotore è navigazione
-        // aggiuntiva, non un blocco).
+        // Tratto header per heading/divisori: navigazione per intestazioni nel
+        // rotore, SENZA introdurre confini allo swipe.
         if Self.isHeadingRole(segment.role) {
             label.accessibilityTraits.insert(.header)
         }
-
         return label
+    }
+
+    // MARK: - Layout: impaginazione per misura (presentazione, NON accessibilità)
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let viewport = bounds.size
+        guard viewport.width > 0, viewport.height > 0 else { return }
+        if viewport != lastViewport {
+            lastViewport = viewport
+            relayoutPages(viewport: viewport)
+        }
+    }
+
+    /// Posa i `SegmentLabel` in colonne larghe quanto il viewport (pagine visive),
+    /// con packing greedy per altezza misurata. Aggiorna `pageStartElementIndices`,
+    /// la dimensione del container e il `contentSize` del paging scroll. NON tocca
+    /// l'array di accessibilità.
+    private func relayoutPages(viewport: CGSize) {
+        let hInset = Metrics.horizontalInset
+        let vInset = Metrics.verticalInset
+        let gap = Metrics.interSegmentSpacing
+
+        let pageWidth = viewport.width
+        let textWidth = max(1, pageWidth - 2 * hInset)
+        let pageTop = vInset
+        let pageBottom = max(pageTop + 1, viewport.height - vInset)
+
+        guard !segmentLabels.isEmpty else {
+            pageStartElementIndices = []
+            documentContainer.frame = CGRect(origin: .zero, size: .zero)
+            scrollView.contentSize = .zero
+            return
+        }
+
+        var pageIndex = 0
+        var cursorY = pageTop
+        pageStartElementIndices = [0]
+
+        for (index, label) in segmentLabels.enumerated() {
+            let height = measuredHeight(label, width: textWidth)
+            // Spaziatura se posato sulla pagina corrente (zero se è il primo della pagina).
+            let spacingHere = (cursorY == pageTop) ? 0 : gap
+            // Se l'elemento INTERO non entra nello spazio residuo della pagina (e la
+            // pagina non è vuota), va INTERO alla pagina successiva: mai spezzato.
+            if index > 0, cursorY > pageTop, cursorY + spacingHere + height > pageBottom {
+                pageIndex += 1
+                cursorY = pageTop
+                pageStartElementIndices.append(index)
+            }
+            let spacing = (cursorY == pageTop) ? 0 : gap
+            let y = cursorY + spacing
+            let x = CGFloat(pageIndex) * pageWidth + hInset
+            label.frame = CGRect(x: x, y: y, width: textWidth, height: height)
+            cursorY = y + height
+        }
+
+        let pageCount = pageIndex + 1
+        documentContainer.frame = CGRect(
+            x: 0, y: 0, width: CGFloat(pageCount) * pageWidth, height: viewport.height)
+        scrollView.contentSize = documentContainer.bounds.size
+    }
+
+    /// Altezza necessaria a una label per il suo testo, alla larghezza data e al
+    /// font Dynamic Type corrente. È la misura su cui si decide il confine di pagina.
+    private func measuredHeight(_ label: UILabel, width: CGFloat) -> CGFloat {
+        let fitting = label.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return ceil(fitting.height)
+    }
+
+    // MARK: - Introspezione per i test
+
+    /// Gli elementi accessibili ESPOSTI dal container, nell'ordine che VoiceOver
+    /// attraversa. Unica superficie di accessibilità: un solo array piatto su tutto
+    /// il documento.
+    var exposedAccessibilityElements: [NSObject] {
+        (documentContainer.accessibilityElements as? [NSObject]) ?? []
+    }
+
+    /// Vero se il container si espone come elemento foglia. DEVE essere falso.
+    var isDocumentContainerAnAccessibilityElement: Bool {
+        documentContainer.isAccessibilityElement
+    }
+
+    /// Numero di pagine VISIVE prodotte dall'impaginazione corrente (0 se vuoto).
+    var visualPageCount: Int { pageStartElementIndices.count }
+
+    /// Vero se la presentazione è a paging orizzontale (sempre, by design).
+    var isHorizontallyPaged: Bool { scrollView.isPagingEnabled }
+
+    /// Vero se il contenuto si estende oltre un singolo viewport (≥ 2 pagine visive).
+    var contentSpansMultiplePages: Bool {
+        scrollView.contentSize.width > bounds.width + 0.5
+    }
+
+    /// La pagina VISIVA dell'elemento di indice dato (in `segmentLabels`), o `nil`
+    /// se l'indice è fuori range o l'impaginazione non è ancora stata calcolata.
+    func visualPageIndex(ofElementAt index: Int) -> Int? {
+        guard index >= 0, index < segmentLabels.count, !pageStartElementIndices.isEmpty else {
+            return nil
+        }
+        // Numero di inizi-pagina con start <= index, meno uno.
+        var page = 0
+        for (p, start) in pageStartElementIndices.enumerated() where start <= index {
+            page = p
+        }
+        return page
+    }
+
+    /// Frame (in spazio contenuto) dell'elemento di indice dato — per verificare che
+    /// le pagine successive stiano più a destra (paging orizzontale).
+    func elementFrameInContent(at index: Int) -> CGRect? {
+        guard index >= 0, index < segmentLabels.count else { return nil }
+        return segmentLabels[index].frame
+    }
+
+    /// Vero se lo scroll NON espone propri sotto-elementi di accessibilità (così il
+    /// solo container è `documentContainer`: nessun container per-pagina).
+    var scrollViewHasNoAccessibilityElements: Bool {
+        scrollView.accessibilityElements == nil
     }
 
     // MARK: - Mappature ruolo → stile / semantica
@@ -270,8 +396,7 @@ final class ContinuousReadingView: UIView {
         role.hasPrefix("HEADING_") || role == SECTION_DIVIDER_ROLE
     }
 
-    /// Stile tipografico (Dynamic Type) per ruolo. Heading via taglie titolo
-    /// decrescenti; corpo via `.body`. Differenziazione VISIVA dei ruoli.
+    /// Stile tipografico (Dynamic Type) per ruolo.
     private static func textStyle(for role: String) -> UIFont.TextStyle {
         switch role {
         case "HEADING_1": return .title1
