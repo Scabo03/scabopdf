@@ -1,5 +1,12 @@
 # Ricognizione deploy / TestFlight — mappa dello stato reale
 
+> **Aggiornamento — preparazione eseguita.** La fase di *preparazione senza segreti*
+> descritta qui (deployment floor, riallineamento bundle id, export compliance,
+> versione/build, lane fastlane) è stata **completata e committata**. Il seguito
+> operativo, con la **checklist d'esecuzione** per lo sviluppatore, vive in
+> **`docs/DEPLOY_READY.md`**. Le note di seguito restano valide come diagnosi di
+> partenza; dove indicano un'azione «da fare», `DEPLOY_READY.md` dice se è già fatta.
+
 Stato: **ricognizione diagnostica, sola lettura.** Nessuna modifica, nessuna build,
 nessun segreto esposto. Tutto ciò che segue è verificato per ispezione del repo; i
 punti non verificabili dal repo (portale Apple) sono marcati come tali.
