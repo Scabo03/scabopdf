@@ -8,7 +8,7 @@
 //  permanente per la futura toolbar). Riceve dall'esterno il contenuto già elaborato dal flusso
 //  di import/elaborazione: nessun caricamento autonomo nel percorso utente.
 //
-//  ── Sigillatura con modalità + scrub (§ 2.2/§ 2.3) — perché questo scenario ──────────────────
+//  ── Sigillatura con array-di-radice attivo + modalità + scrub (§ 2.2/§ 2.3) ──────────────────
 //
 //  La prova su dispositivo (TestFlight build 3) della versione APERTA ha confermato il difetto
 //  predetto: senza modalità lo swipe lineare ATTRAVERSA il confine fra i container (swipe indietro
@@ -16,32 +16,40 @@
 //  saltava nel testo). Il § 2.2 (il primo/ultimo elemento ASSOLUTO del testo è il limite dello
 //  swipe) impone che ciò non accada.
 //
-//  Tentativo "aperto-rafforzato" (mantenere tocco + scrub e fermare lo swipe al confine SENZA
-//  modalità): NON è realizzabile in modo affidabile in UIKit. Lo swipe lineare di VoiceOver
-//  attraversa un appiattimento DFS di tutto l'albero di accessibilità; il raggruppamento a
-//  container (`accessibilityElements`, `accessibilityContainerType`, `shouldGroupAccessibility
-//  Children`) governa l'ORDINE, non ferma lo swipe al bordo di un container. Per tenere ENTRAMBI i
-//  container raggiungibili al TOCCO devono essere entrambi presenti nell'albero; ma se sono
-//  entrambi presenti, lo swipe lineare li attraversa al loro punto di giunzione. Le uniche API che
-//  tolgono un container dall'ordine lineare (`accessibilityViewIsModal`, `accessibilityElements
-//  Hidden`) lo tolgono ANCHE al tocco. Le due esigenze sono in tensione diretta; non esiste un
-//  flag pubblico "salta nello swipe ma resta al tocco". (`accessibilityNavigationStyle = .separate`
-//  è pensato per mazzi di pagine omogenee, non per una barra + un'area di lettura, e il suo effetto
-//  qui non è né standard né verificabile sul Simulator: affidarvisi sarebbe la "soluzione fragile o
-//  apparente" da evitare.) Quindi si ripiega — come previsto e ACCETTATO dallo sviluppatore — sulla
-//  blindatura.
+//  Build 4 (correzione precedente, INSUFFICIENTE — diagnosi sotto): si era usato il SOLO
+//  `accessibilityViewIsModal` sul container attivo, lasciando però la radice con ENTRAMBI i
+//  container sempre presenti (`view.accessibilityElements = [interfaceBar, readingView]`). La prova
+//  su dispositivo ha rivelato che la blindatura tiene nelle pagine INTERNE ma SI ROMPE ai DUE
+//  ESTREMI ASSOLUTI: dal primissimo elemento del testo lo swipe indietro raggiungeva ancora la
+//  barra; dall'interfaccia lo swipe avanti rientrava nel testo forzandolo al primissimo elemento.
 //
-//  Meccanismo adottato: `accessibilityViewIsModal` sul container ATTIVO. Il container col fuoco è
-//  l'unico esposto a VoiceOver (swipe lineare E tocco vi restano confinati): lo swipe non può
-//  sconfinare sull'altro (§ 2.2 blindato al 100%). Il passaggio fra i due container avviene SOLO
-//  col gesto di scrub a due dita (escape), che commuta quale container è modale, in entrambe le
-//  direzioni. È il costo accettato: il tocco non è più una via di passaggio fra container. Nessun
-//  gesto VoiceOver è ridefinito (§ 2.4): si definisce solo la risposta all'azione di escape.
+//  Causa radice: il pruning dei FRATELLI di `accessibilityViewIsModal` è applicato da UIKit durante
+//  la visita AUTOMATICA della gerarchia di viste; quando il padre espone un `accessibilityElements`
+//  ESPLICITO, VoiceOver consuma quell'array e l'esclusione modale del sibling NON è applicata in
+//  modo affidabile. Nelle pagine interne i due array dei container non si incontrano mai (ci si
+//  muove dentro l'unico array piatto dei segmenti), quindi il buco è invisibile; l'UNICA giunzione
+//  reale è [ultimo elemento dell'interfaccia ↔ primo segmento] e, simmetricamente, [ultimo segmento
+//  ↔ fine]. È esattamente lì, e solo lì, che il modale-da-solo lasciava concatenati i due container
+//  nello swipe lineare ("come l'elemento prima o dopo normalmente", oss. dello sviluppatore). Il
+//  "funziona nelle pagine interne" non era prova di sigillo: era solo l'array dei segmenti
+//  contiguo, lontano dalla giunzione. La modalità-da-sola, di fatto, non sigillava nulla.
 //
-//  La navigazione DENTRO il testo (intra-pagina e inter-pagina logica) è INVARIATA: la modalità
-//  agisce solo sui FRATELLI del container modale, non sulla sua navigazione interna (l'array piatto
-//  e continuo dei segmenti resta intatto). Il § 2.2 di continuità del testo, che già funziona, non
-//  è toccato.
+//  Meccanismo adottato (build 5): il sigillo è STRUTTURALE. La radice espone nel suo
+//  `accessibilityElements` SOLO il container ATTIVO ( `[readingView]` quando il testo è attivo,
+//  `[interfaceBar]` quando l'interfaccia è attiva). Sparita dall'array la controparte, sparisce la
+//  giunzione: lo swipe indietro dal primo segmento e avanti dall'ultimo cadono sul bordo dell'array
+//  del PROPRIO container → scatta il segnale standard iOS "fine raggiunta" (§ 2.2, unica eccezione
+//  ammessa al non-blocco). Nessun elemento dell'altro container è più raggiungibile né via swipe né
+//  via tocco. Il flag `accessibilityViewIsModal` resta impostato sul container attivo come RINFORZO
+//  semantico (modalità), ma il portante del sigillo è la selezione dell'array di radice. Il
+//  passaggio fra i due container avviene SOLO col gesto di scrub a due dita (escape), che commuta
+//  quale container è esposto+modale, in entrambe le direzioni. Nessun gesto VoiceOver è ridefinito
+//  (§ 2.4): si definisce solo la risposta all'azione di escape.
+//
+//  La navigazione DENTRO il testo (intra-pagina e inter-pagina logica) è INVARIATA: `Continuous
+//  ReadingView` non è toccata; il suo unico array piatto e continuo dei segmenti resta intatto, e
+//  la radice ne espone l'intero container. Il § 2.2 di continuità del testo, che già funziona, non
+//  è toccato in alcun modo da questa correzione (che vive interamente nel view controller).
 //
 //  ── Ripristino della posizione di lettura (difetto a sé, corretto qui) ───────────────────────
 //
@@ -50,12 +58,14 @@
 //  (`lastFocusedTextElement`), e la riattivazione del container del testo riporta il fuoco LÌ, non
 //  sul primo elemento.
 //
-//  Onestà sulla verifica: i test (Simulator) certificano la STRUTTURA — due container distinti con
-//  `accessibilityElements` DISGIUNTI, la modalità sul container attivo che commuta con l'escape, e
-//  la POSIZIONE ricordata che sopravvive al ciclo interfaccia→testo. Il confinamento effettivo
-//  dello swipe all'orecchio e lo spostamento reale del fuoco sono comportamento VoiceOver RUNTIME
-//  non riproducibile dal Simulator: li certifica lo sviluppatore su dispositivo (TestFlight); per
-//  raggiungere la barra deve usare lo SCRUB a due dita.
+//  Onestà sulla verifica: i test (Simulator) certificano la STRUTTURA — i due container sono
+//  oggetti distinti con `accessibilityElements` DISGIUNTI; la radice espone SOLO il container
+//  attivo (perciò la controparte è assente dall'array piatto di swipe, estremi assoluti compresi);
+//  l'escape commuta quale container è esposto+modale; la POSIZIONE ricordata sopravvive al ciclo
+//  interfaccia→testo via scrub. Il confinamento effettivo dello swipe all'orecchio (incluso il
+//  segnale "fine raggiunta" ai due estremi) e lo spostamento reale del fuoco sono comportamento
+//  VoiceOver RUNTIME non riproducibile dal Simulator: li certifica lo sviluppatore su dispositivo
+//  (TestFlight); per raggiungere la barra deve usare lo SCRUB a due dita.
 //
 //  ── Ponte di sviluppo (NON più nel percorso utente) ─────────────────────────────────────────
 //
@@ -129,10 +139,11 @@ final class ContinuousReadingViewController: UIViewController {
             readingView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
 
-        // La radice espone i DUE container. Quale dei due è navigabile via swipe è governato dalla
-        // modalità (vedi `activate…`), non dall'ordine; l'ordine resta [interfaccia, testo] per
-        // coerenza visiva. La modalità iniziale è impostata in `viewDidLoad`.
-        view.accessibilityElements = [interfaceBar, readingView]
+        // La radice espone nel suo `accessibilityElements` SOLO il container ATTIVO: è il sigillo
+        // strutturale (vedi nota di testata). Quale dei due sia esposto lo decidono le `activate…`,
+        // chiamate da `viewDidLoad` (testo attivo all'ingresso). Qui NON si fissa l'array: lo fissa
+        // `activateTextContainer(restoreFocus:)` subito dopo, evitando uno stato in cui entrambi i
+        // container sarebbero transitoriamente concatenati.
     }
 
     private func wireContainers() {
@@ -145,11 +156,13 @@ final class ContinuousReadingViewController: UIViewController {
 
     // MARK: - Commutazione fra i due container (modalità sul container attivo)
 
-    /// Rende ATTIVO (modale) il container del testo: lo swipe lineare e il tocco vi restano
-    /// confinati, l'interfaccia è esclusa da VoiceOver finché non si fa di nuovo escape. Se
-    /// `restoreFocus`, riporta il fuoco all'ULTIMO elemento di lettura (non al primo): è la
-    /// correzione del reset di posizione.
+    /// Rende ATTIVO il container del testo: la radice espone SOLO il testo (sigillo strutturale →
+    /// lo swipe non può raggiungere l'interfaccia a nessun elemento, estremi assoluti compresi), col
+    /// flag modale sul testo come rinforzo. Se `restoreFocus`, riporta il fuoco all'ULTIMO elemento
+    /// di lettura (non al primo): è la correzione del reset di posizione, che vale ANCHE qui perché
+    /// ora l'unica via di rientro nel testo è lo scrub (la giunzione di swipe è stata rimossa).
     private func activateTextContainer(restoreFocus: Bool) {
+        view.accessibilityElements = [readingView]
         interfaceBar.accessibilityViewIsModal = false
         readingView.accessibilityViewIsModal = true
         if restoreFocus {
@@ -159,10 +172,11 @@ final class ContinuousReadingViewController: UIViewController {
         }
     }
 
-    /// Rende ATTIVO (modale) il container dell'interfaccia: lo swipe vi resta confinato fra
-    /// [Indietro, titolo], il testo è escluso finché non si fa escape. Porta il fuoco sul tasto
-    /// Indietro.
+    /// Rende ATTIVO il container dell'interfaccia: la radice espone SOLO l'interfaccia (sigillo
+    /// strutturale → lo swipe resta confinato fra [Indietro, titolo] e non rientra nel testo), col
+    /// flag modale sull'interfaccia come rinforzo. Porta il fuoco sul tasto Indietro.
     private func activateInterfaceContainer() {
+        view.accessibilityElements = [interfaceBar]
         readingView.accessibilityViewIsModal = false
         interfaceBar.accessibilityViewIsModal = true
         UIAccessibility.post(notification: .screenChanged, argument: interfaceBar.backButton)
@@ -174,7 +188,9 @@ final class ContinuousReadingViewController: UIViewController {
     var textContainerForTesting: ContinuousReadingView { readingView }
     /// Il container dell'interfaccia (sola lettura).
     var interfaceContainerForTesting: ReadingInterfaceBar { interfaceBar }
-    /// I due container esposti dalla radice, nell'ordine.
+    /// Gli elementi esposti dalla radice: nello scenario blindato è il SOLO container attivo
+    /// (sigillo strutturale). La controparte inattiva NON compare qui, perciò non è raggiungibile
+    /// via swipe a nessun elemento, estremi assoluti compresi.
     var rootAccessibilityContainersForTesting: [NSObject] {
         (view.accessibilityElements as? [NSObject]) ?? []
     }

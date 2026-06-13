@@ -199,18 +199,24 @@ final class ImportProcessingTests: XCTestCase {
         return vc
     }
 
-    func test_reader_exposesTwoDistinctOrderedContainers() {
+    func test_reader_rootExposesOnlyActiveContainer_sealedAtAbsoluteExtremes() {
         let content = sampleContent(5)
         let vc = makeLoadedReader(content)
 
-        // La radice espone ESATTAMENTE due container, nell'ordine [interfaccia, testo]: l'ordine
-        // è voluto perché l'unica giunzione possibile dello swipe lineare sia [interfaccia ↔
-        // inizio del testo] (vedi nota di testata del VC).
+        // Sigillo STRUTTURALE (build 5): la radice espone SOLO il container ATTIVO. All'ingresso il
+        // testo è attivo, quindi la radice espone il SOLO testo e NON l'interfaccia. È questa
+        // assenza dall'array piatto che chiude la falla ai due estremi assoluti: non esistendo più
+        // la giunzione [interfaccia ↔ inizio/fine del testo], lo swipe non può raggiungere la barra
+        // a nessun elemento, primo e ultimo assoluti compresi.
         let roots = vc.rootAccessibilityContainersForTesting
-        XCTAssertEqual(roots.count, 2, "due container principali")
-        XCTAssertTrue(roots[0] === vc.interfaceContainerForTesting, "l'interfaccia precede il testo")
-        XCTAssertTrue(roots[1] === vc.textContainerForTesting)
-        XCTAssertFalse(roots[0] === roots[1], "i due container sono oggetti distinti")
+        XCTAssertEqual(roots.count, 1, "la radice espone un solo container: quello attivo")
+        XCTAssertTrue(roots[0] === vc.textContainerForTesting, "all'ingresso l'attivo è il testo")
+        XCTAssertFalse(roots.contains { $0 === vc.interfaceContainerForTesting },
+                       "l'interfaccia è ASSENTE dall'array di radice → non raggiungibile via swipe")
+
+        // I due container restano comunque oggetti distinti e disgiunti (verificabili dai testing
+        // accessor), ciò che cambia è solo quale dei due la radice espone.
+        XCTAssertFalse(vc.textContainerForTesting === vc.interfaceContainerForTesting)
     }
 
     func test_reader_textContainerExposesOnlySegments_interfaceOnlyTitleAndBack() {
@@ -255,26 +261,37 @@ final class ImportProcessingTests: XCTestCase {
     }
 
     func test_reader_textContainerIsModalByDefault_interfaceSealedFromSwipe() {
-        // Scenario blindato (§ 2.2): all'ingresso il container del testo è il modale attivo → lo
-        // swipe lineare vi resta confinato e non può sconfinare sull'interfaccia.
+        // Scenario blindato (§ 2.2): all'ingresso il testo è il container attivo. Sigillo su DUE
+        // livelli — la radice espone il SOLO testo (portante) e il flag modale è sul testo
+        // (rinforzo). Lo swipe lineare resta confinato al testo e non può sconfinare sull'interfaccia.
         let vc = makeLoadedReader(sampleContent(4))
-        XCTAssertTrue(vc.textContainerIsModalForTesting, "il testo è il container modale attivo")
+        XCTAssertEqual(vc.rootAccessibilityContainersForTesting.count, 1, "la radice espone solo l'attivo")
+        XCTAssertTrue(vc.rootAccessibilityContainersForTesting.first === vc.textContainerForTesting)
+        XCTAssertTrue(vc.textContainerIsModalForTesting, "il testo porta anche il flag modale (rinforzo)")
         XCTAssertFalse(vc.interfaceContainerIsModalForTesting, "l'interfaccia non è il modale attivo")
     }
 
-    func test_reader_scrubTogglesActiveModalContainer_bothDirections() {
+    func test_reader_scrubTogglesActiveContainer_bothDirections_rootArrayAndModalSwap() {
         let vc = makeLoadedReader(sampleContent(4))
 
         // Lo scrub a due dita (escape) è l'unica via di passaggio: commuta quale container è
-        // modale, in entrambe le direzioni. (Lo spostamento effettivo del fuoco è runtime
-        // VoiceOver, certificato sul dispositivo.)
+        // ESPOSTO dalla radice (sigillo portante) e modale (rinforzo), in entrambe le direzioni.
+        // (Lo spostamento effettivo del fuoco è runtime VoiceOver, certificato sul dispositivo.)
+        XCTAssertTrue(vc.rootAccessibilityContainersForTesting.first === vc.textContainerForTesting,
+                      "stato iniziale: la radice espone il testo")
         XCTAssertTrue(vc.textContainerIsModalForTesting, "stato iniziale: testo modale")
 
         XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape(), "scrub gestito")
+        XCTAssertEqual(vc.rootAccessibilityContainersForTesting.count, 1)
+        XCTAssertTrue(vc.rootAccessibilityContainersForTesting.first === vc.interfaceContainerForTesting,
+                      "scrub dal testo → la radice espone l'interfaccia, il testo sparisce dallo swipe")
         XCTAssertFalse(vc.textContainerIsModalForTesting)
         XCTAssertTrue(vc.interfaceContainerIsModalForTesting, "scrub dal testo → interfaccia modale")
 
         XCTAssertTrue(vc.interfaceContainerForTesting.accessibilityPerformEscape(), "scrub gestito")
+        XCTAssertEqual(vc.rootAccessibilityContainersForTesting.count, 1)
+        XCTAssertTrue(vc.rootAccessibilityContainersForTesting.first === vc.textContainerForTesting,
+                      "scrub dall'interfaccia → la radice torna a esporre il testo")
         XCTAssertTrue(vc.textContainerIsModalForTesting, "scrub dall'interfaccia → di nuovo testo modale")
         XCTAssertFalse(vc.interfaceContainerIsModalForTesting)
     }
