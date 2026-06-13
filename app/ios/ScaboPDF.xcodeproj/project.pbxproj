@@ -7,16 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0C80B921A6F3F58F76C31292 /* libPods-ScaboPDF.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-ScaboPDF.a */; };
-		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		3A8D08BBC2C8AAD52A34DE22 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B55DA5BCF4152E8860366D9B /* Foundation.framework */; };
-		3BABFD4453A2576358E1FABD /* ScaboPDFUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E126E612F34D6EDE723D5B9 /* ScaboPDFUITests.swift */; };
-		3CDFB1C318E96EA44BE3A8C3 /* libPods-ScaboPDFExtractionTests.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 370612EC355BF13E079401BB /* libPods-ScaboPDFExtractionTests.a */; };
-		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
-		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
-		AB9A5F697FF176B0B3FDEEBA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B55DA5BCF4152E8860366D9B /* Foundation.framework */; };
-		B09DB2AED16C0B44176B8C23 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
-		B3354F36E264653C957EB230 /* ScaboPDFExtractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8381CE9A901F4E4D88C130C0 /* ScaboPDFExtractionTests.swift */; };
 		5CABC04E0000000000000003 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000002 /* ScaboCore */; };
 		5CABC04E0000000000000005 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000004 /* ScaboCore */; };
 		5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E000000000000000C /* ScaboAppTests.swift */; };
@@ -26,20 +16,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		0AC1F59D2ABC6D4EC67576CB /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
-			remoteInfo = ScaboPDF;
-		};
-		7478DB0D49512C639ECB9301 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 13B07F861A680F5B00A75B9A;
-			remoteInfo = ScaboPDF;
-		};
 		5CABC04E0000000000000012 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 83CBB9F71A601CBA00E9B192 /* Project object */;
@@ -50,25 +26,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* ScaboPDF.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScaboPDF.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = ScaboPDF/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = ScaboPDF/Info.plist; sourceTree = "<group>"; };
-		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = ScaboPDF/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		252450262FDB5D06009D756D /* ScaboApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScaboApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		370612EC355BF13E079401BB /* libPods-ScaboPDFExtractionTests.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ScaboPDFExtractionTests.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3B4392A12AC88292D35C810B /* Pods-ScaboPDF.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ScaboPDF.debug.xcconfig"; path = "Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF.debug.xcconfig"; sourceTree = "<group>"; };
-		4E126E612F34D6EDE723D5B9 /* ScaboPDFUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaboPDFUITests.swift; sourceTree = "<group>"; };
-		5709B34CF0A7D63546082F79 /* Pods-ScaboPDF.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ScaboPDF.release.xcconfig"; path = "Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF.release.xcconfig"; sourceTree = "<group>"; };
-		5DCACB8F33CDC322A6C60F78 /* libPods-ScaboPDF.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-ScaboPDF.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = ScaboPDF/AppDelegate.swift; sourceTree = "<group>"; };
-		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = ScaboPDF/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		8381CE9A901F4E4D88C130C0 /* ScaboPDFExtractionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaboPDFExtractionTests.swift; sourceTree = "<group>"; };
-		99C907CA4C0CCC74457A8E58 /* ScaboPDFExtractionTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScaboPDFExtractionTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		9A1A875AC3553A6F6A7D345D /* Pods-ScaboPDFExtractionTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ScaboPDFExtractionTests.release.xcconfig"; path = "Target Support Files/Pods-ScaboPDFExtractionTests/Pods-ScaboPDFExtractionTests.release.xcconfig"; sourceTree = "<group>"; };
-		AA9449B8F4D7ECCE7B023C9E /* Pods-ScaboPDFExtractionTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-ScaboPDFExtractionTests.debug.xcconfig"; path = "Target Support Files/Pods-ScaboPDFExtractionTests/Pods-ScaboPDFExtractionTests.debug.xcconfig"; sourceTree = "<group>"; };
-		B55DA5BCF4152E8860366D9B /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
-		CB78712121251D9642142E69 /* ScaboPDFUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScaboPDFUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		5CABC04E0000000000000006 /* ScaboAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScaboAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CABC04E000000000000000C /* ScaboAppTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScaboAppTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PdfKitExtractorTests.swift; sourceTree = "<group>"; };
@@ -77,7 +35,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		252450392FDB5D07009D756D /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		252450392FDB5D07009D756D /* Exceptions for "ScaboApp" folder in "ScaboApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -87,26 +45,21 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		252450272FDB5D06009D756D /* ScaboApp */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (252450392FDB5D07009D756D /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ScaboApp; sourceTree = "<group>"; };
+		252450272FDB5D06009D756D /* ScaboApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				252450392FDB5D07009D756D /* Exceptions for "ScaboApp" folder in "ScaboApp" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ScaboApp;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		0D0D900D7E857FFFC57C2B91 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				3A8D08BBC2C8AAD52A34DE22 /* Foundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				0C80B921A6F3F58F76C31292 /* libPods-ScaboPDF.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		252450232FDB5D06009D756D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -123,113 +76,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F5D8E883EDD980870C16FC16 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AB9A5F697FF176B0B3FDEEBA /* Foundation.framework in Frameworks */,
-				3CDFB1C318E96EA44BE3A8C3 /* libPods-ScaboPDFExtractionTests.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		13B07FAE1A68108700A75B9A /* ScaboPDF */ = {
-			isa = PBXGroup;
-			children = (
-				13B07FB51A68108700A75B9A /* Images.xcassets */,
-				761780EC2CA45674006654EE /* AppDelegate.swift */,
-				13B07FB61A68108700A75B9A /* Info.plist */,
-				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
-				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
-			);
-			name = ScaboPDF;
-			sourceTree = "<group>";
-		};
-		1B0731D0DAB1754D2A82B4F4 /* ScaboPDFUITests */ = {
-			isa = PBXGroup;
-			children = (
-				4E126E612F34D6EDE723D5B9 /* ScaboPDFUITests.swift */,
-			);
-			path = ScaboPDFUITests;
-			sourceTree = SOURCE_ROOT;
-		};
-		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5DCACB8F33CDC322A6C60F78 /* libPods-ScaboPDF.a */,
-				DAE8AB96FD6059B4527A9AAD /* iOS */,
-				370612EC355BF13E079401BB /* libPods-ScaboPDFExtractionTests.a */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Libraries;
-			sourceTree = "<group>";
-		};
-		83CBB9F61A601CBA00E9B192 = {
-			isa = PBXGroup;
-			children = (
-				13B07FAE1A68108700A75B9A /* ScaboPDF */,
-				832341AE1AAA6A7D00B99B32 /* Libraries */,
-				252450272FDB5D06009D756D /* ScaboApp */,
-				83CBBA001A601CBA00E9B192 /* Products */,
-				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				BBD78D7AC51CEA395F1C20DB /* Pods */,
-				1B0731D0DAB1754D2A82B4F4 /* ScaboPDFUITests */,
-				FC8F9379B172803A31FF5F17 /* ScaboPDFExtractionTests */,
-				5CABC04E000000000000000D /* ScaboAppTests */,
-			);
-			indentWidth = 2;
-			sourceTree = "<group>";
-			tabWidth = 2;
-			usesTabs = 0;
-		};
-		83CBBA001A601CBA00E9B192 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				13B07F961A680F5B00A75B9A /* ScaboPDF.app */,
-				CB78712121251D9642142E69 /* ScaboPDFUITests.xctest */,
-				99C907CA4C0CCC74457A8E58 /* ScaboPDFExtractionTests.xctest */,
-				252450262FDB5D06009D756D /* ScaboApp.app */,
-				5CABC04E0000000000000006 /* ScaboAppTests.xctest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				3B4392A12AC88292D35C810B /* Pods-ScaboPDF.debug.xcconfig */,
-				5709B34CF0A7D63546082F79 /* Pods-ScaboPDF.release.xcconfig */,
-				9A1A875AC3553A6F6A7D345D /* Pods-ScaboPDFExtractionTests.release.xcconfig */,
-				AA9449B8F4D7ECCE7B023C9E /* Pods-ScaboPDFExtractionTests.debug.xcconfig */,
-			);
-			path = Pods;
-			sourceTree = "<group>";
-		};
-		DAE8AB96FD6059B4527A9AAD /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				B55DA5BCF4152E8860366D9B /* Foundation.framework */,
-			);
-			name = iOS;
-			sourceTree = "<group>";
-		};
-		FC8F9379B172803A31FF5F17 /* ScaboPDFExtractionTests */ = {
-			isa = PBXGroup;
-			children = (
-				8381CE9A901F4E4D88C130C0 /* ScaboPDFExtractionTests.swift */,
-			);
-			path = ScaboPDFExtractionTests;
-			sourceTree = SOURCE_ROOT;
-		};
 		5CABC04E000000000000000D /* ScaboAppTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -241,30 +90,30 @@
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
 		};
+		83CBB9F61A601CBA00E9B192 = {
+			isa = PBXGroup;
+			children = (
+				252450272FDB5D06009D756D /* ScaboApp */,
+				83CBBA001A601CBA00E9B192 /* Products */,
+				5CABC04E000000000000000D /* ScaboAppTests */,
+			);
+			indentWidth = 2;
+			sourceTree = "<group>";
+			tabWidth = 2;
+			usesTabs = 0;
+		};
+		83CBBA001A601CBA00E9B192 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				252450262FDB5D06009D756D /* ScaboApp.app */,
+				5CABC04E0000000000000006 /* ScaboAppTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		13B07F861A680F5B00A75B9A /* ScaboPDF */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "ScaboPDF" */;
-			buildPhases = (
-				C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */,
-				13B07F871A680F5B00A75B9A /* Sources */,
-				13B07F8C1A680F5B00A75B9A /* Frameworks */,
-				13B07F8E1A680F5B00A75B9A /* Resources */,
-				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
-				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
-				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = ScaboPDF;
-			productName = ScaboPDF;
-			productReference = 13B07F961A680F5B00A75B9A /* ScaboPDF.app */;
-			productType = "com.apple.product-type.application";
-		};
 		252450252FDB5D06009D756D /* ScaboApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2524503A2FDB5D07009D756D /* Build configuration list for PBXNativeTarget "ScaboApp" */;
@@ -287,43 +136,6 @@
 			productName = ScaboApp;
 			productReference = 252450262FDB5D06009D756D /* ScaboApp.app */;
 			productType = "com.apple.product-type.application";
-		};
-		47C6D6A0B023DC81897DF802 /* ScaboPDFUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1503FF8204FB0661EDA4A3A7 /* Build configuration list for PBXNativeTarget "ScaboPDFUITests" */;
-			buildPhases = (
-				1CAEA5EBC7A38F22921EFDF3 /* Sources */,
-				0D0D900D7E857FFFC57C2B91 /* Frameworks */,
-				98E1938A1F6302648000BFE0 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				FDF80FC674C9037EE336A5FC /* PBXTargetDependency */,
-			);
-			name = ScaboPDFUITests;
-			productName = ScaboPDFUITests;
-			productReference = CB78712121251D9642142E69 /* ScaboPDFUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
-		F9AFCA99AF9A8DCFD33ADA4A /* ScaboPDFExtractionTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = D734D0032033A32AD178E48E /* Build configuration list for PBXNativeTarget "ScaboPDFExtractionTests" */;
-			buildPhases = (
-				D4C0334B5B5B2D89DDDFBC3E /* [CP] Check Pods Manifest.lock */,
-				B34D9CFB0CF8E80CE51C3D19 /* Sources */,
-				F5D8E883EDD980870C16FC16 /* Frameworks */,
-				B57C5913A863D19D10E8EB4E /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				C9B6BF7E8CEA5EBC91170959 /* PBXTargetDependency */,
-			);
-			name = ScaboPDFExtractionTests;
-			productName = ScaboPDFExtractionTests;
-			productReference = 99C907CA4C0CCC74457A8E58 /* ScaboPDFExtractionTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		5CABC04E0000000000000007 /* ScaboAppTests */ = {
 			isa = PBXNativeTarget;
@@ -383,9 +195,6 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				13B07F861A680F5B00A75B9A /* ScaboPDF */,
-				47C6D6A0B023DC81897DF802 /* ScaboPDFUITests */,
-				F9AFCA99AF9A8DCFD33ADA4A /* ScaboPDFExtractionTests */,
 				252450252FDB5D06009D756D /* ScaboApp */,
 				5CABC04E0000000000000007 /* ScaboAppTests */,
 			);
@@ -393,16 +202,6 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		13B07F8E1A680F5B00A75B9A /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
-				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
-				B09DB2AED16C0B44176B8C23 /* PrivacyInfo.xcprivacy in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		252450242FDB5D06009D756D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -417,144 +216,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		98E1938A1F6302648000BFE0 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		B57C5913A863D19D10E8EB4E /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/.xcode.env",
-			);
-			name = "Bundle React Native code and images";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\n/bin/sh -c \"\\\"$WITH_ENVIRONMENT\\\" \\\"$REACT_NATIVE_XCODE\\\"\"\n";
-		};
-		00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-ScaboPDF-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		D4C0334B5B5B2D89DDDFBC3E /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-ScaboPDFExtractionTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		E235C05ADACE081382539298 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-ScaboPDF/Pods-ScaboPDF-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
-		13B07F871A680F5B00A75B9A /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		1CAEA5EBC7A38F22921EFDF3 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				3BABFD4453A2576358E1FABD /* ScaboPDFUITests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		252450222FDB5D06009D756D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -573,29 +237,9 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		B34D9CFB0CF8E80CE51C3D19 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				B3354F36E264653C957EB230 /* ScaboPDFExtractionTests.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		C9B6BF7E8CEA5EBC91170959 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = ScaboPDF;
-			target = 13B07F861A680F5B00A75B9A /* ScaboPDF */;
-			targetProxy = 0AC1F59D2ABC6D4EC67576CB /* PBXContainerItemProxy */;
-		};
-		FDF80FC674C9037EE336A5FC /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = ScaboPDF;
-			target = 13B07F861A680F5B00A75B9A /* ScaboPDF */;
-			targetProxy = 7478DB0D49512C639ECB9301 /* PBXContainerItemProxy */;
-		};
 		5CABC04E0000000000000011 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = ScaboApp;
@@ -605,64 +249,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		13B07F941A680F5B00A75B9A /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B4392A12AC88292D35C810B /* Pods-ScaboPDF.debug.xcconfig */;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_BITCODE = NO;
-				INFOPLIST_FILE = ScaboPDF/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-lc++",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.scabopdf;
-				PRODUCT_NAME = ScaboPDF;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Debug;
-		};
-		13B07F951A680F5B00A75B9A /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5709B34CF0A7D63546082F79 /* Pods-ScaboPDF.release.xcconfig */;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CLANG_ENABLE_MODULES = YES;
-				CURRENT_PROJECT_VERSION = 1;
-				INFOPLIST_FILE = ScaboPDF/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-ObjC",
-					"-lc++",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.scabopdf;
-				PRODUCT_NAME = ScaboPDF;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Release;
-		};
 		252450372FDB5D07009D756D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -758,65 +344,50 @@
 			};
 			name = Release;
 		};
-		44A0999AE43FA0CC861986AC /* Release */ = {
+		5CABC04E000000000000000F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.scabopdf.uitests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScaboPDF;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		630F2DA5DE98A08507E1012B /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = AA9449B8F4D7ECCE7B023C9E /* Pods-ScaboPDFExtractionTests.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_OBJC_WEAK = NO;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.scabopdf.extractiontests;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.ScaboApp.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboPDF.app/ScaboPDF";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboApp.app/ScaboApp";
 			};
 			name = Debug;
 		};
-		6F48D78855F6517FC82CFE55 /* Debug */ = {
+		5CABC04E0000000000000010 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				CLANG_ENABLE_OBJC_WEAK = NO;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.scabopdf.uitests;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.ScaboApp.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScaboPDF;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboApp.app/ScaboApp";
+				VALIDATE_PRODUCT = YES;
 			};
-			name = Debug;
+			name = Release;
 		};
 		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
@@ -974,94 +545,9 @@
 			};
 			name = Release;
 		};
-		B5F7E3F453B701C4E8FD1099 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 9A1A875AC3553A6F6A7D345D /* Pods-ScaboPDFExtractionTests.release.xcconfig */;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGN_STYLE = Automatic;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.scabopdf.extractiontests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboPDF.app/ScaboPDF";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		5CABC04E000000000000000F /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.ScaboApp.tests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboApp.app/ScaboApp";
-			};
-			name = Debug;
-		};
-		5CABC04E0000000000000010 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGNING_ALLOWED = NO;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.scabo.ScaboApp.tests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScaboApp.app/ScaboApp";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "ScaboPDF" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				13B07F941A680F5B00A75B9A /* Debug */,
-				13B07F951A680F5B00A75B9A /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		1503FF8204FB0661EDA4A3A7 /* Build configuration list for PBXNativeTarget "ScaboPDFUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				44A0999AE43FA0CC861986AC /* Release */,
-				6F48D78855F6517FC82CFE55 /* Debug */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		2524503A2FDB5D07009D756D /* Build configuration list for PBXNativeTarget "ScaboApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -1071,29 +557,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "ScaboPDF" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				83CBBA201A601CBA00E9B192 /* Debug */,
-				83CBBA211A601CBA00E9B192 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		D734D0032033A32AD178E48E /* Build configuration list for PBXNativeTarget "ScaboPDFExtractionTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				B5F7E3F453B701C4E8FD1099 /* Release */,
-				630F2DA5DE98A08507E1012B /* Debug */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		5CABC04E000000000000000E /* Build configuration list for PBXNativeTarget "ScaboAppTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				5CABC04E000000000000000F /* Debug */,
 				5CABC04E0000000000000010 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "ScaboPDF" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				83CBBA201A601CBA00E9B192 /* Debug */,
+				83CBBA211A601CBA00E9B192 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
