@@ -17,6 +17,26 @@ di complessità.
 
 ---
 
+## Documento di prodotto Layer 2 — leggere prima di toccare la reading view
+
+Prima di progettare o modificare qualunque parte della reading view, del suo
+container di accessibilità, della paginazione, del selettore di Layout o di ogni
+altra superficie di interfaccia del Layer 2, **leggi
+`docs/LAYER2_PRODUCT_DECISIONS.md`**. È il documento di prodotto completo dell'app
+a pubblicazione ufficiale. Definisce in modo vincolante: il principio inderogabile
+dello swipe orizzontale mai ostacolato nel container del testo (§ 2.2), i container
+di accessibilità separati e chiusi (§ 2.3), e — punto critico per questa migrazione
+— che **la paginazione del container del testo è un dispositivo di presentazione e
+orientamento mentre il container di accessibilità sottostante resta unitario e
+continuo per tutto il documento** (§ 3.3), con le due numerazioni di pagina
+(visualizzazione e file originale) di § 4, i tre Layout (§ 7, § 8, § 10), lo split
+screen iPad con i suoi container simultanei (§ 11) e l'orizzonte Layer 3. Questo
+piano governa il *come* tecnologico (Swift/UIKit puro, non più React Native); quel
+documento governa il *cosa* e il *perché* del comportamento utente. I due vanno
+letti insieme.
+
+---
+
 ## 0. Stato di partenza verificato (ri-verificato 2026-06-05)
 
 Struttura rilevante (`app/`):

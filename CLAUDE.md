@@ -1,5 +1,28 @@
 # ScaboPDF — Project rules
 
+## Layer 2 — documento di prodotto di riferimento (LEGGERE PRIMA)
+
+**Prima di qualunque scelta di prodotto, di interfaccia o di architettura della
+reading view del Layer 2, leggi `docs/LAYER2_PRODUCT_DECISIONS.md`.** È il
+documento di prodotto completo del Layer 2 — la visione dell'app a pubblicazione
+ufficiale: principi inderogabili di accessibilità (§ 2: swipe orizzontale mai
+ostacolato § 2.2, container di accessibilità separati e chiusi § 2.3, gesti
+VoiceOver mai ridefiniti § 2.4), architettura dell'interfaccia e **paginazione
+del container del testo come dispositivo di presentazione/orientamento con il
+container di accessibilità sottostante unitario e continuo** (§ 3.3, § 4), i tre
+Layout di output (Lettura Continua § 7, Consultazione Rapida § 8, Dottrina Inline
+§ 10; l'Apparato Critico è stato scartato § 9), sistema note per i sei regimi di
+lunghezza, segnalibri/tag, sottolineature, split screen iPad (§ 11), libreria e
+importazione (§ 12), e l'orizzonte verso il Layer 3 (differenziazione acustica).
+
+Nessuna sessione deve più decidere interfaccia o architettura della reading view
+senza avere questo documento davanti: è la fonte di verità di **prodotto** (il
+COSA e il PERCHÉ del comportamento utente). Caveat di un punto solo: il § 1.1
+descrive l'implementazione come "React Native + moduli Swift"; quel dettaglio
+*tecnologico* è superato dalla migrazione a Swift/UIKit puro governata da
+`docs/SWIFT_MIGRATION_PLAN.md`. La specifica di **comportamento** del documento
+resta interamente vincolante; cambia solo la tecnologia con cui la si realizza.
+
 ## Mandatory interaction rules
 
 These rules are absolute. They override any other behavior, default, or convention.
