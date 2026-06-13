@@ -15,9 +15,10 @@
 //     and no accessibility daemon (the sandbox can run it today, exactly like
 //     the existing non-UI `ScaboPDFExtractionTests` unit layer).
 //
-// Deployment floor matches the app's current target (iOS 15.1). No iOS 17
-// constructs are used here (Fase 1 is pure logic). macOS is declared so the
-// test suite runs on the host.
+// Deployment floor matches the app's target (iOS 15.0, the real minimum: the
+// app and reading view use only APIs available at iOS 15, and ScaboCore is pure
+// Foundation). No iOS 17 constructs are used here (Fase 1 is pure logic). macOS
+// is declared so the test suite runs on the host.
 import PackageDescription
 
 let package = Package(
