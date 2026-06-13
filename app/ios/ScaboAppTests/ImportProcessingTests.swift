@@ -254,29 +254,53 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertFalse(interfaceIDs.isEmpty)
     }
 
-    func test_reader_containersAreOpen_neitherModalNorHidden() {
-        // Versione APERTA (§ 2.3): NESSUNA modalità (così entrambi sono raggiungibili anche per
-        // tocco) e NESSUN container nascosto (entrambi presenti nell'albero di accessibilità).
+    func test_reader_textContainerIsModalByDefault_interfaceSealedFromSwipe() {
+        // Scenario blindato (§ 2.2): all'ingresso il container del testo è il modale attivo → lo
+        // swipe lineare vi resta confinato e non può sconfinare sull'interfaccia.
         let vc = makeLoadedReader(sampleContent(4))
-        XCTAssertFalse(vc.textContainerIsModalForTesting, "il testo non è modale (raggiungibile per tocco)")
-        XCTAssertFalse(vc.interfaceContainerIsModalForTesting, "l'interfaccia non è modale (raggiungibile per tocco)")
-        XCTAssertFalse(vc.textContainerIsHiddenForTesting, "il testo è presente nell'albero")
-        XCTAssertFalse(vc.interfaceContainerIsHiddenForTesting, "l'interfaccia è presente nell'albero")
+        XCTAssertTrue(vc.textContainerIsModalForTesting, "il testo è il container modale attivo")
+        XCTAssertFalse(vc.interfaceContainerIsModalForTesting, "l'interfaccia non è il modale attivo")
     }
 
-    func test_reader_scrubIsWiredAsContainerPassage_bothDirections_withoutModality() {
+    func test_reader_scrubTogglesActiveModalContainer_bothDirections() {
         let vc = makeLoadedReader(sampleContent(4))
 
-        // Lo scrub a due dita (escape) è instradato come PASSAGGIO fra container in entrambe le
-        // direzioni: l'override è gestito (ritorna true → niente comportamento di default come la
-        // chiusura), e NON reintroduce la modalità. Lo spostamento effettivo del focus è
-        // comportamento VoiceOver runtime, certificato sul dispositivo.
-        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape(),
-                      "scrub nel testo: gestito come passaggio all'interfaccia")
-        XCTAssertTrue(vc.interfaceContainerForTesting.accessibilityPerformEscape(),
-                      "scrub nell'interfaccia: gestito come passaggio al testo")
-        XCTAssertFalse(vc.textContainerIsModalForTesting, "lo scrub non reintroduce la modalità sul testo")
-        XCTAssertFalse(vc.interfaceContainerIsModalForTesting, "lo scrub non reintroduce la modalità sull'interfaccia")
+        // Lo scrub a due dita (escape) è l'unica via di passaggio: commuta quale container è
+        // modale, in entrambe le direzioni. (Lo spostamento effettivo del fuoco è runtime
+        // VoiceOver, certificato sul dispositivo.)
+        XCTAssertTrue(vc.textContainerIsModalForTesting, "stato iniziale: testo modale")
+
+        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape(), "scrub gestito")
+        XCTAssertFalse(vc.textContainerIsModalForTesting)
+        XCTAssertTrue(vc.interfaceContainerIsModalForTesting, "scrub dal testo → interfaccia modale")
+
+        XCTAssertTrue(vc.interfaceContainerForTesting.accessibilityPerformEscape(), "scrub gestito")
+        XCTAssertTrue(vc.textContainerIsModalForTesting, "scrub dall'interfaccia → di nuovo testo modale")
+        XCTAssertFalse(vc.interfaceContainerIsModalForTesting)
+    }
+
+    func test_reader_returningToText_preservesReadingPosition() {
+        // Correzione del reset di posizione: il rientro nel testo dall'interfaccia torna DOVE
+        // l'utente era, non al primissimo elemento.
+        let content = sampleContent(6)
+        let vc = makeLoadedReader(content)
+        let labels = vc.textContainerForTesting.segmentLabels
+        XCTAssertGreaterThan(labels.count, 3)
+
+        // L'utente legge fino a un elemento centrale: VoiceOver lo mette a fuoco.
+        let middle = labels[3]
+        middle.accessibilityElementDidBecomeFocused()
+        XCTAssertTrue(vc.textFocusRestoreTargetForTesting === middle, "la posizione di lettura è ricordata")
+
+        // Va all'interfaccia (scrub) e torna al testo (scrub).
+        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape())      // testo → interfaccia
+        XCTAssertTrue(vc.interfaceContainerForTesting.accessibilityPerformEscape()) // interfaccia → testo
+
+        // Il rientro NON resetta: il bersaglio di ripristino è ancora l'elemento centrale.
+        XCTAssertTrue(vc.textFocusRestoreTargetForTesting === middle,
+                      "il rientro nel testo riporta dove l'utente era, non al primissimo elemento")
+        XCTAssertFalse(vc.textFocusRestoreTargetForTesting === labels[0],
+                       "non si torna al primo elemento")
     }
 
     func test_reader_backButtonInvokesOnBack() {

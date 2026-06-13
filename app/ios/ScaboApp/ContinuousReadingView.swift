@@ -84,6 +84,11 @@ final class SegmentLabel: UILabel {
     /// Il segmento sorgente (ordine, ruolo, testo).
     let segment: ContentSegment
 
+    /// Notifica che VoiceOver ha messo a fuoco QUESTO elemento. La reading view la usa per
+    /// ricordare l'ultima posizione di lettura, così il rientro nel testo (dall'interfaccia) torna
+    /// dove l'utente era, non al primissimo elemento.
+    var onBecomeFocused: (() -> Void)?
+
     init(segment: ContentSegment) {
         self.segment = segment
         super.init(frame: .zero)
@@ -92,6 +97,12 @@ final class SegmentLabel: UILabel {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) non supportato: SegmentLabel è costruita in codice.")
+    }
+
+    /// Hook standard di VoiceOver (UIAccessibilityFocus): NON ridefinisce alcun gesto (§ 2.4), si
+    /// limita a registrare che questo elemento ha ricevuto il fuoco.
+    override func accessibilityElementDidBecomeFocused() {
+        onBecomeFocused?()
     }
 }
 
@@ -143,6 +154,15 @@ final class ContinuousReadingView: UIView {
         onEscape()
         return true
     }
+
+    /// L'ultimo `SegmentLabel` che ha ricevuto il fuoco VoiceOver (debole: si azzera al re-render
+    /// e non trattiene l'etichetta). È la posizione di lettura corrente da ripristinare al rientro
+    /// nel testo dall'interfaccia.
+    private weak var lastFocusedElement: SegmentLabel?
+
+    /// L'elemento di testo su cui riportare il fuoco al rientro nel container del testo, o `nil`
+    /// se nessuno è ancora stato messo a fuoco (in tal caso il chiamante ripiega sul primo).
+    var lastFocusedTextElement: NSObject? { lastFocusedElement }
 
     // MARK: - Metrica di lettura
 
@@ -237,6 +257,8 @@ final class ContinuousReadingView: UIView {
     /// calcolato.
     private func rebuildLabels() {
         segmentLabels.forEach { $0.removeFromSuperview() }
+        // Le etichette precedenti spariscono: la posizione di lettura ricordata non è più valida.
+        lastFocusedElement = nil
         segmentLabels = segments.map { makeLabel(for: $0) }
         segmentLabels.forEach { documentContainer.addSubview($0) }
 
@@ -270,6 +292,12 @@ final class ContinuousReadingView: UIView {
         // rotore, SENZA introdurre confini allo swipe.
         if Self.isHeadingRole(segment.role) {
             label.accessibilityTraits.insert(.header)
+        }
+
+        // Ricorda la posizione di lettura: quando VoiceOver mette a fuoco questa etichetta, diventa
+        // l'elemento da ripristinare al rientro nel testo dall'interfaccia.
+        label.onBecomeFocused = { [weak self, weak label] in
+            self?.lastFocusedElement = label
         }
         return label
     }

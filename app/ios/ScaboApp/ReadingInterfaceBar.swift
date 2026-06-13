@@ -15,12 +15,13 @@
 //  container, attraversa esclusivamente [Indietro, titolo]. Mai un elemento di testo del
 //  documento. Lo `accessibilityContainerType = .semanticGroup` dichiara la natura di gruppo.
 //
-//  Versione APERTA (§ 2.3): si passa DA/VERSO il container del testo con DUE vie — l'esplorazione
-//  tattile (toccare l'altra zona dello schermo), che funziona perché questo container non è
-//  nascosto da una modalità, e lo scrub a due dita, di cui l'override `accessibilityPerformEscape`
-//  instrada l'`onEscape` impostato dal view controller per spostare il focus al container del
-//  testo. Nessun gesto VoiceOver è ridefinito (§ 2.4): si definisce solo la risposta dell'elemento
-//  all'azione di escape.
+//  Scenario blindato (§ 2.2/§ 2.3): il container ATTIVO è modale (lo decide il view controller),
+//  così lo swipe non sconfina mai fra i container. Il passaggio DA/VERSO il container del testo
+//  avviene SOLO col gesto di scrub a due dita: l'override `accessibilityPerformEscape` instrada
+//  l'`onEscape` impostato dal view controller, che riattiva il container del testo riportando il
+//  fuoco dove l'utente era. Nessun gesto VoiceOver è ridefinito (§ 2.4): si definisce solo la
+//  risposta dell'elemento all'azione di escape. (Vedi la nota di testata del view controller per
+//  perché la versione "aperta con tocco" non è realizzabile in modo affidabile senza modalità.)
 //
 
 import UIKit
