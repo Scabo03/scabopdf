@@ -8,7 +8,8 @@ TEAM_ID = "D2KQYQ8YU8"
 # ── Segreti: referenziati per NOME, mai versionati ───────────────────────────────
 # Lo sviluppatore li fornisce in ENV al momento dell'esecuzione (questo file NON li
 # contiene e non deve contenerli):
-#   APP_STORE_CONNECT_API_KEY_ID / _ISSUER_ID / _CONTENT  → chiave API App Store Connect
+#   APP_STORE_CONNECT_API_KEY_ID / _ISSUER_ID             → chiave API App Store Connect
+#   APP_STORE_CONNECT_API_KEY_PATH (o _CONTENT)           → .p8 per percorso (preferito) o inline
 #   MATCH_PASSWORD                                         → decifra il repo certs di match
 #   MATCH_GIT_URL                                          → URL del repo certs match
 # Opzionali:
@@ -16,15 +17,22 @@ TEAM_ID = "D2KQYQ8YU8"
 #   MATCH_READONLY       → "false" per RIGENERARE i certificati (default: readonly)
 #   SCABO_BUILD_NUMBER   → forza il build number (altrimenti: ultimo TestFlight + 1)
 
-# Chiave API App Store Connect (NON Apple ID). Costruita dai 3 valori in ENV.
+# Chiave API App Store Connect (NON Apple ID). Due modi, in ordine di preferenza:
+#   - APP_STORE_CONNECT_API_KEY_PATH → percorso del .p8 (fuori dal repo);
+#   - APP_STORE_CONNECT_API_KEY_CONTENT → contenuto inline del .p8.
 def asc_api_key
-  app_store_connect_api_key(
+  common = {
     key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
     issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
-    key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
-    is_key_content_base64: false,
-    in_house: false
-  )
+    in_house: false,
+  }
+  if (path = ENV["APP_STORE_CONNECT_API_KEY_PATH"]) && !path.empty?
+    app_store_connect_api_key(**common, key_filepath: path)
+  else
+    app_store_connect_api_key(**common,
+                              key_content: ENV["APP_STORE_CONNECT_API_KEY_CONTENT"],
+                              is_key_content_base64: false)
+  end
 end
 
 # READONLY di default: il primo giro sul Mac nuovo deve INSTALLARE i cert/profili
