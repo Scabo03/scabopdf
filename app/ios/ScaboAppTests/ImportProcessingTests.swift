@@ -199,14 +199,16 @@ final class ImportProcessingTests: XCTestCase {
         return vc
     }
 
-    func test_reader_exposesTwoDistinctSealedContainers() {
+    func test_reader_exposesTwoDistinctOrderedContainers() {
         let content = sampleContent(5)
         let vc = makeLoadedReader(content)
 
-        // La radice espone ESATTAMENTE due container, nell'ordine [interfaccia, testo].
+        // La radice espone ESATTAMENTE due container, nell'ordine [interfaccia, testo]: l'ordine
+        // è voluto perché l'unica giunzione possibile dello swipe lineare sia [interfaccia ↔
+        // inizio del testo] (vedi nota di testata del VC).
         let roots = vc.rootAccessibilityContainersForTesting
         XCTAssertEqual(roots.count, 2, "due container principali")
-        XCTAssertTrue(roots[0] === vc.interfaceContainerForTesting)
+        XCTAssertTrue(roots[0] === vc.interfaceContainerForTesting, "l'interfaccia precede il testo")
         XCTAssertTrue(roots[1] === vc.textContainerForTesting)
         XCTAssertFalse(roots[0] === roots[1], "i due container sono oggetti distinti")
     }
@@ -235,43 +237,46 @@ final class ImportProcessingTests: XCTestCase {
         }
     }
 
-    func test_reader_containersAreDisjoint_noSwipeBridgeBetweenThem() {
+    func test_reader_containersHaveDisjointElementSets() {
         let content = sampleContent(6)
         let vc = makeLoadedReader(content)
 
+        // Gli insiemi di elementi dei due container sono DISGIUNTI: nessun elemento è condiviso.
+        // (Che lo swipe lineare attraversi o no il confine fra i container è comportamento
+        // VoiceOver runtime, non riproducibile sul Simulator: si verifica sul dispositivo.)
         let textIDs = Set(vc.textContainerForTesting.exposedAccessibilityElements.map { ObjectIdentifier($0) })
         let interfaceElements = (vc.interfaceContainerForTesting.accessibilityElements as? [NSObject]) ?? []
         let interfaceIDs = Set(interfaceElements.map { ObjectIdentifier($0) })
 
         XCTAssertTrue(textIDs.isDisjoint(with: interfaceIDs),
-                      "gli insiemi di elementi dei due container non si sovrappongono: nessun ponte allo swipe")
+                      "gli insiemi di elementi dei due container non si sovrappongono")
         XCTAssertFalse(textIDs.isEmpty)
         XCTAssertFalse(interfaceIDs.isEmpty)
     }
 
-    func test_reader_textContainerIsSealedModal_byDefault() {
-        // § 2.2: di default il container del testo è il modale attivo → lo swipe lineare vi resta
-        // confinato e non può raggiungere l'interfaccia.
+    func test_reader_containersAreOpen_neitherModalNorHidden() {
+        // Versione APERTA (§ 2.3): NESSUNA modalità (così entrambi sono raggiungibili anche per
+        // tocco) e NESSUN container nascosto (entrambi presenti nell'albero di accessibilità).
         let vc = makeLoadedReader(sampleContent(4))
-        XCTAssertTrue(vc.textContainerIsModalForTesting, "il testo è il container modale attivo")
-        XCTAssertFalse(vc.interfaceContainerIsModalForTesting, "l'interfaccia non è raggiungibile via swipe")
+        XCTAssertFalse(vc.textContainerIsModalForTesting, "il testo non è modale (raggiungibile per tocco)")
+        XCTAssertFalse(vc.interfaceContainerIsModalForTesting, "l'interfaccia non è modale (raggiungibile per tocco)")
+        XCTAssertFalse(vc.textContainerIsHiddenForTesting, "il testo è presente nell'albero")
+        XCTAssertFalse(vc.interfaceContainerIsHiddenForTesting, "l'interfaccia è presente nell'albero")
     }
 
-    func test_reader_escapeTogglesActiveContainer_bothDirections() {
+    func test_reader_scrubIsWiredAsContainerPassage_bothDirections_withoutModality() {
         let vc = makeLoadedReader(sampleContent(4))
 
-        // Stato iniziale: testo attivo.
-        XCTAssertTrue(vc.textContainerIsModalForTesting)
-
-        // Escape dal testo (scrub a due dita) → interfaccia attiva.
-        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape())
-        XCTAssertFalse(vc.textContainerIsModalForTesting)
-        XCTAssertTrue(vc.interfaceContainerIsModalForTesting)
-
-        // Escape dall'interfaccia → di nuovo testo attivo.
-        XCTAssertTrue(vc.interfaceContainerForTesting.accessibilityPerformEscape())
-        XCTAssertTrue(vc.textContainerIsModalForTesting)
-        XCTAssertFalse(vc.interfaceContainerIsModalForTesting)
+        // Lo scrub a due dita (escape) è instradato come PASSAGGIO fra container in entrambe le
+        // direzioni: l'override è gestito (ritorna true → niente comportamento di default come la
+        // chiusura), e NON reintroduce la modalità. Lo spostamento effettivo del focus è
+        // comportamento VoiceOver runtime, certificato sul dispositivo.
+        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape(),
+                      "scrub nel testo: gestito come passaggio all'interfaccia")
+        XCTAssertTrue(vc.interfaceContainerForTesting.accessibilityPerformEscape(),
+                      "scrub nell'interfaccia: gestito come passaggio al testo")
+        XCTAssertFalse(vc.textContainerIsModalForTesting, "lo scrub non reintroduce la modalità sul testo")
+        XCTAssertFalse(vc.interfaceContainerIsModalForTesting, "lo scrub non reintroduce la modalità sull'interfaccia")
     }
 
     func test_reader_backButtonInvokesOnBack() {
