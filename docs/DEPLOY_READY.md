@@ -65,6 +65,11 @@ Tutto verificato senza segreti: `validate.sh` **verde, 167 test** (ScaboCore 141
 ScaboApp 26); `plutil -lint` OK; `xcodebuild -list` pulito (solo schemi ScaboApp +
 ScaboCore); `ruby -c Fastfile` Syntax OK.
 
+> *Aggiornamento 2026-06-13:* il conteggio 167 è quello verificato a questa sessione di
+> preparazione; dopo le sessioni successive (reading view, import, fix container, coperture
+> additive) la suite è a **195 test** (ScaboCore 156 + ScaboApp 39), sempre verde via
+> `app/ios/scripts/validate.sh`.
+
 ---
 
 ## 3. Cosa NON è stato fatto (di proposito)

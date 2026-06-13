@@ -7,6 +7,19 @@ VoiceOver, valore cross-platform incassato = 0). Il modulo nativo Swift
 esistente si tiene; l'apparato RN si elimina; la logica TypeScript si **traduce**
 preservando il comportamento, non si ridisegna.
 
+> **Stato al 2026-06-13 — migrazione eseguita oltre il punto in cui questo piano si ferma.**
+> Il corpo del documento (verifiche al 2026-06-05/12) colloca ancora in «banda POST-MAC, da
+> fare» cose che sono **già fatte**. Stato reale: React Native **demolito** (commit `d4c839c`,
+> repository solo-Swift); **reading view "Lettura Continua" paginato-ma-continuo** + **motore di
+> granularità** del corpo (target 400) **costruiti**; **due container di accessibilità** sigillati;
+> **deploy su TestFlight eseguito (build 5)**. Valori da rettificare leggendo il piano: i test sono
+> **195** (ScaboCore 156 + ScaboApp 39), non 126; il **deployment target reale è iOS 15.0**, non
+> 15.1; il **bundle id è già `com.scabo.scabopdf`** sul target Swift; RN **non è più** l'«oracolo
+> vivo» (è stato rimosso). Prossimi passi aperti (decisioni di prodotto, non di migrazione):
+> indice/Consultazione Rapida, sistema note, guardiani contenuto/ordine, porting di `RoleStyle`,
+> icona definitiva — mappati in `docs/CHECKUP_SALUTE.md`. Fonti aggiornate: `git log`,
+> `docs/CHECKUP_SALUTE.md`, `docs/DEPLOY_READY.md`.
+
 Ogni numero in questo documento è stato verificato con comandi in sola lettura
 sul working tree. La prima stesura fu fatta su RN 0.85.3, React 19.2.3, Xcode
 26.5, New Architecture / bridgeless. Questo aggiornamento (**2026-06-05**)

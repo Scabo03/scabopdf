@@ -286,6 +286,24 @@ Da discutere con l'utente quali altri tipi di documento sono rilevanti per il su
 
 ---
 
+## Layer 2 (app Swift/UIKit) — stato corrente (addendum 13 giugno 2026)
+
+> Questo addendum **supera** quello del 31 maggio qui sopra, scritto nell'era React Native. Le sessioni Swift NON sono tracciate nella cronologia di versione di questo CARRYOVER (che resta Layer 1); fonti canoniche dell'app: il `git log` di `main`, `docs/SWIFT_MIGRATION_PLAN.md`, `docs/LAYER2_PRODUCT_DECISIONS.md` e `docs/CHECKUP_SALUTE.md`.
+
+**React Native demolito (commit `d4c839c`): repository solo-Swift.** Tutto l'apparato RN/TypeScript/CocoaPods/Metro è stato rimosso. L'app è ora `ScaboApp` (target UIKit) + `ScaboCore` (libreria SwiftPM, logica tradotta fedelmente dal TS, *debt inclusi*). I riferimenti a RN/TS/Pods negli altri doc sono storici. I due file nativi non ancora trapiantati (`ScaboReadingContentView` con il sistema `RoleStyle`, `ScaboLog`) sono preservati come riferimento **non compilato** in `docs/salvage/` (decisione aperta sul porting di `RoleStyle`).
+
+**Reading view "Lettura Continua" paginato-ma-continuo + granularità (commit `54f7d0b`/`72841b1`/`40c2f29`).** Container di accessibilità **unico e continuo** sul corpo (array piatto ordinato); la paginazione è puro dispositivo visivo che non frammenta il container né ostacola lo swipe ai confini di pagina (§ 3.3 di `LAYER2_PRODUCT_DECISIONS`). Motore di granularità del corpo discorsivo a target 400 (§ 7.6) agganciato alla view.
+
+**Import → elaborazione → reading view + due container sigillati (commit `ac68e91`..`548da4a`).** Flusso utente reale: import PDF, finestra di elaborazione bloccante, reading view col contenuto iniettato (nessun auto-caricamento). Due container di accessibilità separati e chiusi (testo + interfaccia) con **sigillo strutturale** ai due estremi assoluti; passaggio fra container solo via scrub a due dita; posizione di lettura ripristinata. Il confinamento effettivo dello swipe e i fuochi VoiceOver si certificano su dispositivo reale (TestFlight), non dal Simulator.
+
+**Deploy / TestFlight (commit `e7f7519`..`4b929ed`; doc `DEPLOY_RECON.md`/`DEPLOY_READY.md`).** Deployment target reale **iOS 15.0** (non 15.1/26.5); bundle id ufficiale **`com.scabo.scabopdf`** sul target Swift; export compliance; lane fastlane `beta`; AppIcon placeholder 1024. **Build 5 su TestFlight** (conferma VoiceOver su dispositivo reale = passo restante). Icona definitiva ancora placeholder.
+
+**Stato test: 195 verdi** (ScaboCore 156 + ScaboApp 39) via `app/ios/scripts/validate.sh` (swift test + xcodebuild su iPhone 16 / iOS 26.5).
+
+**Debt di prodotto/architettura aperti (decisioni utente — vedi `docs/CHECKUP_SALUTE.md`):** Consultazione Rapida (Layout 2) e gestione **indice/TOC** — oggi l'app legge l'indice come corpo lineare, referto `docs/ANALYSIS_INDICE_TOC.md`; **sistema note** (sei regimi + segnali acustici); annuncio **«fine del documento» + «torna all'inizio»** (§ 7.14); guardiani contenuto/ordine; segnalibri/tag, sottolineature, split iPad, granularità a 4 valori utente; porting di `RoleStyle`; icona definitiva. I debt on-device **D1–D6** dell'addendum 31 maggio restano la cornice del Generic, e il **registro plugin di corpus on-device è ancora vuoto** (solo Generic). La pulizia sicura del check-up (hook pre-commit Layer 2 morto, scaffolding demo orfano, coperture additive di `detectFurniture`/colour-heading, allineamento doc) è stata eseguita; l'env di deploy `SCABO_BUILD_NUMBER="2"` stale resta da correggere **fuori dal repo** (lo sviluppatore).
+
+---
+
 ## Esclusioni di scope strategiche permanenti
 
 Le seguenti aree sono **fuori scope strategico del progetto ScaboPDF** e non vanno re-affrontate in sessioni future. La motivazione filosofica del progetto è che ScaboPDF parsea **testo strutturato** per la lettura accessibile via VoiceOver, non interpreta multimedia o contenuti grafico-tabulari. La distinzione "testo strutturato" vs "multimedia/grafico" è il confine permanente del prodotto, non un debt rinviato.

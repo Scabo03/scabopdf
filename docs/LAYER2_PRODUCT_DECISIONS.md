@@ -28,6 +28,8 @@ Il Layer 1 è la pipeline Python di estrazione e classificazione del contenuto d
 
 Il Layer 2 è l'applicazione mobile iOS e iPadOS che consuma il JSON 0.7.0 prodotto dal Layer 1 e lo rende esperienza accessibile VoiceOver. È implementata in React Native con moduli Swift nativi per le funzionalità di accessibilità più specifiche (in particolare `UIAccessibilityReadingContent` per il rendering del contenuto lungo paginato). Lo sviluppo del Layer 2 non è ancora iniziato: questa apertura coincide con l'inizio del lavoro di prodotto necessario per arrivare alla prima sessione di sviluppo Layer 2 con un pacchetto di decisioni sufficientemente solido.
 
+> **Nota di allineamento (2026-06-13).** Il riferimento a «React Native con moduli Swift nativi» di questo § 1.1 è **storicamente superato**: il Layer 2 è ora un'app **Swift/UIKit puro** (target `ScaboApp` + libreria `ScaboCore`), come governato da `docs/SWIFT_MIGRATION_PLAN.md`; lo sviluppo è iniziato (reading view "Lettura Continua" costruita, build 5 su TestFlight). La specifica di **comportamento** di questo documento — principi di accessibilità, Layout, sistema note, vincoli VoiceOver — **resta interamente vincolante**: cambia solo la tecnologia con cui la si realizza (lo stesso caveat è in `CLAUDE.md`). L'approccio acustico del Layout 4 segue i **sei regimi di lunghezza** del § 10.4, non i quattro regimi A/B/C/D di `SPECS.md`.
+
 Il Layer 3 sarà la differenziazione acustica dei contenuti tramite voci sintetiche specifiche e segnali acustici discreti (integrazioni ElevenLabs e StableAudio già disponibili come abbonamenti utente), come upgrade della versione base dell'app. È rinviato al post-MVP.
 
 ### 1.2 Scopo di questo documento

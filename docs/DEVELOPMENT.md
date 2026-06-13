@@ -1,8 +1,9 @@
 # ScaboPDF — Development workflow
 
 This document collects the local bootstrap steps for working on Layer 1
-(the Python pipeline). Layer 2 (React Native) has its own setup and is
-not covered here.
+(the Python pipeline). Layer 2 (the Swift/UIKit app under `app/ios`,
+`ScaboApp` + `ScaboCore`) has its own workflow — its test suite runs via
+`app/ios/scripts/validate.sh` — and is not covered here.
 
 ## One-time setup
 

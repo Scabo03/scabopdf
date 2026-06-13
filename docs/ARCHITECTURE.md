@@ -7,6 +7,19 @@
 > Version: 0.1 (initial draft, May 2026).
 > Status: pre-development. No code has been written yet.
 
+> **Nota di allineamento (2026-06-13).** Questo documento è una bozza di maggio 2026
+> e in più punti è **storicamente superato**. In particolare: il Layer 1 è completo
+> (schema 0.7.0, 13 plugin PDF + backend XML AKN ed EPUB IPZS); il Layer 2 **non** è
+> più React Native — è un'app **Swift/UIKit puro** (`ScaboApp` + libreria `ScaboCore`,
+> logica tradotta dal TS), con reading view "Lettura Continua" e build 5 su TestFlight.
+> Di conseguenza i riferimenti a React Native, `react-native-fs`, Jest/RNTL, al bridge
+> `native-modules/ReadingContent.swift`, a CocoaPods, e alla strategia **MacInCloud +
+> Ubuntu 90%** descrivono un assetto **non più in uso** (lo sviluppo avviene su Mac
+> fisico con Xcode 26.5). Le checkbox `[ ]` di questa guida non riflettono lo stato
+> reale. Fonti aggiornate: `git log`, `docs/SWIFT_MIGRATION_PLAN.md`,
+> `docs/LAYER2_PRODUCT_DECISIONS.md`, `docs/CHECKUP_SALUTE.md`. La sostanza di
+> prodotto/architettura del contratto (schema 0.7.0, pattern del Layer 1) resta valida.
+
 ---
 
 ## Table of contents

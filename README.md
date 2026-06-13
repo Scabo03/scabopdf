@@ -6,14 +6,17 @@ Pipeline e app iOS/iPadOS per leggere PDF giuridici complessi con VoiceOver, in 
 
 Layer 1 (Python pipeline) complete: 13 PDF corpus plugins plus three Layer-1
 backends — PDF-native, Akoma Ntoso XML, and EPUB IPZS — emitting the schema
-0.7.0 contract. Layer 2 (React Native iOS/iPadOS app) is at the TestFlight gate:
-end-to-end open → parse → render flow working, the native VoiceOver reading
-module in place, with on-device VoiceOver confirmation the remaining step.
+0.7.0 contract. Layer 2 is now a **pure Swift/UIKit** iOS/iPadOS app (the
+TypeScript/React Native scaffold was demolished — the logic was translated to
+the `ScaboCore` SwiftPM library): import → processing → "Lettura Continua"
+reading view, with a single continuous VoiceOver container over the body and
+discursive-body granularity. The app is on TestFlight (build 5); on-device
+VoiceOver confirmation is the remaining step.
 
 ## Layout
 
 - `pipeline/` — Layer 1, Python extraction pipeline (PyMuPDF + Pydantic)
-- `app/` — Layer 2, React Native iOS/iPadOS app (TypeScript)
+- `app/ios/` — Layer 2, Swift/UIKit iOS/iPadOS app (`ScaboApp` target + `ScaboCore` SwiftPM library)
 - `shared/schema.json` — canonical JSON contract Layer 1 ↔ Layer 2
 - `docs/` — architecture, specs, carryover, typographic analyses
 

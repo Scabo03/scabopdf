@@ -6,6 +6,13 @@
 > operativo, con la **checklist d'esecuzione** per lo sviluppatore, vive in
 > **`docs/DEPLOY_READY.md`**. Le note di seguito restano valide come diagnosi di
 > partenza; dove indicano un'azione «da fare», `DEPLOY_READY.md` dice se è già fatta.
+>
+> **Aggiornamento (2026-06-13).** Le azioni che il § 6 elencava come «NON eseguito ora»
+> sono ora **eseguite**: il bundle id è `com.scabo.scabopdf` sul target Swift `ScaboApp`
+> (e `com.scabo.scabopdf.tests` sui test), il deployment floor è **iOS 15.0** (non 26.5),
+> e l'app è **su TestFlight (build 5)**. Il § 6 e i passaggi su «bundle id provvisorio
+> `com.scabo.ScaboApp`» / «conflitto col target RN» sono quindi **storici**: il target RN
+> non esiste più (React Native demolito).
 
 Stato: **ricognizione diagnostica, sola lettura.** Nessuna modifica, nessuna build,
 nessun segreto esposto. Tutto ciò che segue è verificato per ispezione del repo; i

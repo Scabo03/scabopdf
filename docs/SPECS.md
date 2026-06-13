@@ -2,6 +2,14 @@
 > Versione 0.4 — Aggiornata con quattro regimi acustici A/B/C/D Layout 4 (decisione utente formalizzata maggio 2026)
 > Stato: bozza di lavoro, da aggiornare sessione per sessione
 
+> **Nota di allineamento (2026-06-13).** Due punti di questo documento sono superati.
+> (1) I **«quattro regimi acustici A/B/C/D»** del Layout 4 sono stati rimpiazzati dai
+> **sei regimi di lunghezza** MICRO/SHORT/MEDIUM/LONG/VERY_LONG/MEGA
+> (vedi `docs/LAYER2_PRODUCT_DECISIONS.md` § 10.4 e § 16). (2) L'**ambiente di
+> sviluppo** non è più «Ubuntu 90% / MacInCloud PAYG 10%»: si lavora su **Mac fisico
+> con Xcode 26.5** e l'app Layer 2 è **Swift/UIKit puro** (non React Native). La
+> sostanza di prodotto (accessibilità, Layout, vincoli VoiceOver) resta valida.
+
 ---
 
 ## Identità del Progetto
