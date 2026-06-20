@@ -15,6 +15,7 @@
 		5CABC04E0000000000000040 /* ContinuousReadingViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000041 /* ContinuousReadingViewTests.swift */; };
 		5CABC04E0000000000000050 /* ImportProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000051 /* ImportProcessingTests.swift */; };
 		5CABC04E0000000000000060 /* GranularityWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000061 /* GranularityWiringTests.swift */; };
+		5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000063 /* RealPdfBenchTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,6 +37,7 @@
 		5CABC04E0000000000000041 /* ContinuousReadingViewTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContinuousReadingViewTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000051 /* ImportProcessingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImportProcessingTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000061 /* GranularityWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GranularityWiringTests.swift; sourceTree = "<group>"; };
+		5CABC04E0000000000000063 /* RealPdfBenchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RealPdfBenchTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -92,6 +94,7 @@
 				5CABC04E0000000000000041 /* ContinuousReadingViewTests.swift */,
 				5CABC04E0000000000000051 /* ImportProcessingTests.swift */,
 				5CABC04E0000000000000061 /* GranularityWiringTests.swift */,
+				5CABC04E0000000000000063 /* RealPdfBenchTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -242,6 +245,7 @@
 				5CABC04E0000000000000040 /* ContinuousReadingViewTests.swift in Sources */,
 				5CABC04E0000000000000050 /* ImportProcessingTests.swift in Sources */,
 				5CABC04E0000000000000060 /* GranularityWiringTests.swift in Sources */,
+				5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
