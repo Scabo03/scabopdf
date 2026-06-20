@@ -72,8 +72,37 @@
 import Foundation
 
 /// Target di caratteri per blocco, valore più fine del prodotto (§ 7.6). È un
-/// parametro: il controllo utente dei quattro livelli (§ 7.7) sarà additivo.
+/// parametro: il controllo utente dei quattro livelli (§ 7.7) è esposto da
+/// `GranularityLevel`.
 public let DEFAULT_GRANULARITY_TARGET = 400
+
+/// I quattro livelli di granularità di lettura del prodotto (§ 7.7), come
+/// vocabolario CHIUSO. Il `rawValue` è la stringa persistita, esattamente come
+/// `ThemeSelection`/`LayoutId`: un valore mancante o fuori vocabolario collassa al
+/// default in `getStoredGranularityLevel`. Ogni livello mappa a un target di
+/// caratteri consumato da `granularizeBody(_:target:)` — il motore §7.6 esistente,
+/// invariato. `fine` (400) è il default e coincide con `DEFAULT_GRANULARITY_TARGET`,
+/// così esporre i livelli NON cambia il comportamento di chi non sceglie.
+public enum GranularityLevel: String, CaseIterable, Sendable {
+    case fine = "400"        // granularità fine (default, § 7.6)
+    case medium = "600"
+    case coarse = "900"
+    case veryCoarse = "1200"
+
+    /// Target di caratteri per blocco corrispondente al livello.
+    public var target: Int {
+        switch self {
+        case .fine: return 400
+        case .medium: return 600
+        case .coarse: return 900
+        case .veryCoarse: return 1200
+        }
+    }
+}
+
+/// Il livello di default globale (§ 7.6 "granularità fine"). Coincide con
+/// `DEFAULT_GRANULARITY_TARGET` per non alterare il comportamento preesistente.
+public let DEFAULT_GRANULARITY_LEVEL: GranularityLevel = .fine
 
 /// Le categorie il cui flusso è riassemblato per caratteri: il corpo discorsivo.
 /// Tutto il resto è confine di run e passa invariato (vedi docstring di testata).

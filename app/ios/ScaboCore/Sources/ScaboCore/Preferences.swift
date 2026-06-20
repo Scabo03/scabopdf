@@ -63,6 +63,16 @@ public final class InMemoryKeyValueStore: KeyValueStore {
 public enum PreferenceKeys {
     public static let themeSelection = "@scabopdf/theme/selection"
     public static let layoutId = "@scabopdf/reading/layout"
+    /// Livello di granularità di lettura GLOBALE di default (§ 7.7).
+    public static let granularityLevel = "@scabopdf/reading/granularity"
+    /// Prefisso della chiave PER-DOCUMENTO della granularità (§ 7.7, additivo).
+    /// La chiave effettiva è `granularityLevelPrefix + documentId`.
+    public static let granularityLevelPrefix = "@scabopdf/reading/granularity/"
+
+    /// Chiave per-documento della granularità, derivata dall'id del documento.
+    public static func documentGranularityLevel(_ documentId: String) -> String {
+        granularityLevelPrefix + documentId
+    }
 }
 
 /// Reads the stored theme selection, validating it against the closed vocabulary.
@@ -93,4 +103,38 @@ public func getStoredLayoutId(_ store: KeyValueStore) -> LayoutId {
 
 public func setStoredLayoutId(_ store: KeyValueStore, _ layout: LayoutId) {
     store.setItem(PreferenceKeys.layoutId, layout.rawValue)
+}
+
+// MARK: - Granularità di lettura (§ 7.7) — default globale + override per-documento
+
+/// Legge il livello di granularità GLOBALE, validandolo contro il vocabolario
+/// chiuso `GranularityLevel`. Un valore mancante o fuori vocabolario collassa a
+/// `DEFAULT_GRANULARITY_LEVEL` (fine/400), esattamente come tema e layout.
+public func getStoredGranularityLevel(_ store: KeyValueStore) -> GranularityLevel {
+    if let raw = store.getItem(PreferenceKeys.granularityLevel),
+       let level = GranularityLevel(rawValue: raw) {
+        return level
+    }
+    return DEFAULT_GRANULARITY_LEVEL
+}
+
+public func setStoredGranularityLevel(_ store: KeyValueStore, _ level: GranularityLevel) {
+    store.setItem(PreferenceKeys.granularityLevel, level.rawValue)
+}
+
+/// Livello di granularità EFFETTIVO per un documento: l'override per-documento se
+/// presente e valido (§ 7.7), altrimenti il default globale. Risoluzione a due
+/// livelli che non spezza chi non ha mai scelto: documento → globale → default.
+public func getDocumentGranularityLevel(_ store: KeyValueStore, documentId: String) -> GranularityLevel {
+    if let raw = store.getItem(PreferenceKeys.documentGranularityLevel(documentId)),
+       let level = GranularityLevel(rawValue: raw) {
+        return level
+    }
+    return getStoredGranularityLevel(store)
+}
+
+public func setDocumentGranularityLevel(
+    _ store: KeyValueStore, documentId: String, _ level: GranularityLevel
+) {
+    store.setItem(PreferenceKeys.documentGranularityLevel(documentId), level.rawValue)
 }

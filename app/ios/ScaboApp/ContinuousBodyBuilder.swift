@@ -71,4 +71,27 @@ enum ContinuousBodyBuilder {
     ) throws -> PaginatedContent {
         try paginate(bodySegments(from: document, target: target), segmentsPerPage)
     }
+
+    // ── Controllo dei quattro livelli (§ 7.7) ───────────────────────────────────────
+    // Overload ADDITIVI che accettano un `GranularityLevel` (vocabolario chiuso
+    // 400/600/900/1200) invece del target grezzo: il chiamato usa `level.target`.
+    // Permettono al flusso di import/elaborazione di passare il livello scelto
+    // dall'utente (default `.fine`), senza riscrivere le firme a target esistenti.
+    // La persistenza dello stesso livello è banda successiva (manca lo store
+    // concreto in app — vedi Preferences.swift, banda POST-MAC).
+
+    static func bodySegments(
+        from document: ScabopdfDocument,
+        granularity level: GranularityLevel
+    ) -> [ContentSegment] {
+        bodySegments(from: document, target: level.target)
+    }
+
+    static func bodyPaginatedContent(
+        from document: ScabopdfDocument,
+        granularity level: GranularityLevel,
+        segmentsPerPage: Int = DEFAULT_SEGMENTS_PER_PAGE
+    ) throws -> PaginatedContent {
+        try bodyPaginatedContent(from: document, target: level.target, segmentsPerPage: segmentsPerPage)
+    }
 }
