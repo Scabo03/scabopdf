@@ -138,14 +138,20 @@ final class RealPdfBenchTests: XCTestCase {
 
     // MARK: - Dump diagnostico delle righe reali (Mattone A)
 
-    private struct LineDumpLine: Codable { let i: Int; let text: String; let yTop: Double; let color: String }
-    private struct LineDumpPage: Codable { let pageIndex: Int; let height: Double; let lines: [LineDumpLine] }
+    private struct LineDumpLine: Codable {
+        let i: Int; let text: String; let yTop: Double; let color: String
+        let x0: Double; let x1: Double  // bordi orizzontali (page-local): per il riconoscitore due-colonne (Mattone B)
+    }
+    private struct LineDumpPage: Codable {
+        let pageIndex: Int; let height: Double; let width: Double; let lines: [LineDumpLine]
+    }
     private struct LineDump: Codable { let pageCount: Int; let pages: [LineDumpPage] }
 
-    /// Riduce l'estrazione reale al vettore-segnale che `detectFurniture` consuma,
-    /// pagina per pagina: per ogni riga il `summarizeLine` (testo, yTop, colore) +
-    /// l'altezza pagina. Niente bbox completa né span: solo ciò che serve a
-    /// replicare i tre canali della furniture fuori-processo.
+    /// Riduce l'estrazione reale al vettore-segnale che `detectFurniture` e il
+    /// riconoscitore due-colonne consumano, pagina per pagina: per ogni riga il
+    /// `summarizeLine` (testo, yTop, colore, x0/x1) + altezza e larghezza pagina.
+    /// Solo ciò che serve a replicare furniture (Mattone A) e gutter/colonne
+    /// (Mattone B) fuori-processo.
     private func lineDump(_ extraction: PdfExtraction) -> LineDump {
         var pages: [LineDumpPage] = []
         pages.reserveCapacity(extraction.pages.count)
@@ -154,9 +160,11 @@ final class RealPdfBenchTests: XCTestCase {
             dumped.reserveCapacity(page.lines.count)
             for (i, line) in page.lines.enumerated() {
                 let sm = summarizeLine(line)
-                dumped.append(LineDumpLine(i: i, text: sm.text, yTop: sm.yTop, color: sm.color))
+                dumped.append(LineDumpLine(
+                    i: i, text: sm.text, yTop: sm.yTop, color: sm.color, x0: sm.x0, x1: sm.x1))
             }
-            pages.append(LineDumpPage(pageIndex: page.pageIndex, height: page.height, lines: dumped))
+            pages.append(LineDumpPage(
+                pageIndex: page.pageIndex, height: page.height, width: page.width, lines: dumped))
         }
         return LineDump(pageCount: extraction.pageCount, pages: pages)
     }
