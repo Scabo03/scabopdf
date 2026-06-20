@@ -44,6 +44,11 @@ let TOP_BAND = 0.9
 let BOTTOM_BAND = 0.1
 /// A furniture candidate is short.
 let FURNITURE_MAX_CHARS = 60
+/// The digit-normalised form of a line whose entire text is one bare number
+/// (`normalizeDigits` collapses the single digit run to this). Such lines are
+/// routed to folio-by-progression detection instead of the recurring-norm
+/// channels — see `detectFurniture`.
+let BARE_NUMBER_NORM = "#"
 
 /// NOTE length → acoustic regime thresholds (mirrors Layer 1).
 let LENGTH_THRESHOLDS: [(Int, LengthCategory)] = [
@@ -228,16 +233,33 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
 // MARK: - Furniture detection
 
 /// Running headers/footers + per-page colour markers + majority watermarks:
-/// short lines (or any-length watermarks) recurring across many pages.
-/// Returns "pageIndex:lineIndex" keys to skip.
+/// short lines (or any-length watermarks) recurring across many pages; plus the
+/// page-number folio, removed by PROGRESSION rather than by recurrence (see
+/// below). Returns "pageIndex:lineIndex" keys to skip.
+///
+/// Folio vs content-number (Mattone A). A line whose entire text is one bare
+/// number normalises — like every page-number — to the single norm "#". Routing
+/// it through the recurring-norm channels collapses every isolated number to
+/// that one norm, and because the folio makes "#" recur on most pages it then
+/// sweeps away every *content* number that happens to sit on its own line: an
+/// index page reference, an article number, a bibliography entry number, a
+/// marginal paragraph number. So bare-number lines bypass the recurrence
+/// channels entirely and are removed only when they form a folio PROGRESSION —
+/// a value tracking v = pageIndex + offset for an offset that recurs across the
+/// volume. A number that does not progress (notes restarting from 1, an index
+/// reference, a marginal §-number) never matches and is preserved.
 func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     struct Candidate { let key: String; let norm: String }
+    struct FolioCandidate { let key: String; let page: Int; let value: Int }
     var bandCandidates: [Candidate] = []
     var colorCandidates: [Candidate] = []
     var generalCandidates: [Candidate] = []
     var bandPages: [String: Set<Int>] = [:]
     var colorPages: [String: Set<Int>] = [:]
     var generalPages: [String: Set<Int>] = [:]
+    // Folio detection runs on bare-number lines only, off to the side.
+    var folioCandidates: [FolioCandidate] = []
+    var offsetPages: [Int: Set<Int>] = [:]
 
     func track(_ map: inout [String: Set<Int>], _ norm: String, _ pageIndex: Int) {
         map[norm, default: []].insert(pageIndex)
@@ -250,6 +272,18 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
             if sm.text.utf16.count == 0 { continue }
             let norm = jsTrim(normalizeDigits(sm.text).lowercased())
             let key = "\(page.pageIndex):\(lineIndex)"
+            // Bare-number line: a folio candidate, NOT a recurring-norm candidate.
+            // It never enters the band/colour/general channels (which would key it
+            // under the lumped norm "#"); it is judged solely by the progression
+            // pass after the loop. An unparseable bare number (overflows Int) is
+            // simply preserved — it is not a page-number folio.
+            if norm == BARE_NUMBER_NORM {
+                if let value = Int(jsTrim(sm.text)) {
+                    folioCandidates.append(FolioCandidate(key: key, page: page.pageIndex, value: value))
+                    offsetPages[value - page.pageIndex, default: []].insert(page.pageIndex)
+                }
+                continue
+            }
             // General majority-recurrence applies at any length.
             generalCandidates.append(Candidate(key: key, norm: norm))
             track(&generalPages, norm, page.pageIndex)
@@ -277,6 +311,17 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         furniture.insert(c.key)
     }
     for c in generalCandidates where (generalPages[c.norm]?.count ?? 0) >= majorityPages {
+        furniture.insert(c.key)
+    }
+    // Folio progression. An offset is a folio slot when a bare number equal to
+    // pageIndex + offset recurs on at least `minPages` DISTINCT pages — the same
+    // 15 % recurrence floor the band/colour channels use. The global counter does
+    // not reset and tolerates blank divider pages (they simply miss the slot; the
+    // surrounding folios still satisfy v = p + offset). Several offsets can
+    // qualify when unnumbered inserts shift the printed-page/PDF-page delta along
+    // the volume — each stable run keeps its own offset.
+    let folioOffsets = Set(offsetPages.compactMap { $0.value.count >= minPages ? $0.key : nil })
+    for c in folioCandidates where folioOffsets.contains(c.value - c.page) {
         furniture.insert(c.key)
     }
     return furniture

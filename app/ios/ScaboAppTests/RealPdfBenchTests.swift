@@ -136,6 +136,31 @@ final class RealPdfBenchTests: XCTestCase {
     private static let requestPath =
         ProcessInfo.processInfo.environment["SCABO_BENCH_REQUEST"] ?? "/tmp/scabo_bench_request.json"
 
+    // MARK: - Dump diagnostico delle righe reali (Mattone A)
+
+    private struct LineDumpLine: Codable { let i: Int; let text: String; let yTop: Double; let color: String }
+    private struct LineDumpPage: Codable { let pageIndex: Int; let height: Double; let lines: [LineDumpLine] }
+    private struct LineDump: Codable { let pageCount: Int; let pages: [LineDumpPage] }
+
+    /// Riduce l'estrazione reale al vettore-segnale che `detectFurniture` consuma,
+    /// pagina per pagina: per ogni riga il `summarizeLine` (testo, yTop, colore) +
+    /// l'altezza pagina. Niente bbox completa né span: solo ciò che serve a
+    /// replicare i tre canali della furniture fuori-processo.
+    private func lineDump(_ extraction: PdfExtraction) -> LineDump {
+        var pages: [LineDumpPage] = []
+        pages.reserveCapacity(extraction.pages.count)
+        for page in extraction.pages {
+            var dumped: [LineDumpLine] = []
+            dumped.reserveCapacity(page.lines.count)
+            for (i, line) in page.lines.enumerated() {
+                let sm = summarizeLine(line)
+                dumped.append(LineDumpLine(i: i, text: sm.text, yTop: sm.yTop, color: sm.color))
+            }
+            pages.append(LineDumpPage(pageIndex: page.pageIndex, height: page.height, lines: dumped))
+        }
+        return LineDump(pageCount: extraction.pageCount, pages: pages)
+    }
+
     /// Pezzo Swift del comando di verifica-fedeltà: per ogni PDF della richiesta,
     /// esegue la pipeline REALE e scrive il `ScabopdfDocument` come JSON (Codable →
     /// testo + struttura) in `outDir` (fuori repo). `XCTSkip` se non c'è richiesta
@@ -160,7 +185,15 @@ final class RealPdfBenchTests: XCTestCase {
             let doc = buildDocumentFromPdf(extraction, sourceName: name)
             let stem = (name as NSString).deletingPathExtension
             try enc.encode(doc).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).scabopdf.json"))
-            print("[fidelity-dump] \(name): \(doc.structure.count) nodi, \(doc.metadata.pages_pdf) pagine → \(stem).scabopdf.json")
+            // DIAGNOSTICA Mattone A (additiva, solo banco): dump delle righe REALI
+            // come le vede `detectFurniture` — il vettore-segnale `summarizeLine`
+            // (testo trimmato, yTop in convenzione PDFKit origin-basso, colore
+            // dominante) + altezza pagina. Permette di replicare i tre canali della
+            // furniture su estrazione PDFKit VERA e decomporre il "perso numerico"
+            // in folio vs contenuto-numero, fuori dal processo del Simulator.
+            let lines = try enc.encode(lineDump(extraction))
+            try lines.write(to: URL(fileURLWithPath: req.outDir + "/\(stem).lines.json"))
+            print("[fidelity-dump] \(name): \(doc.structure.count) nodi, \(doc.metadata.pages_pdf) pagine → \(stem).scabopdf.json (+ .lines.json)")
         }
     }
 }

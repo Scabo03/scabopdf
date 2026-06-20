@@ -304,6 +304,85 @@ final class GenericPluginTests: XCTestCase {
             "nessuna furniture rimossa → nessuna warning")
     }
 
+    // MARK: - Folio per progressione vs contenuto-numero (Mattone A)
+    //
+    // Una riga il cui testo è un solo numero nudo normalizza a "#" come ogni
+    // numero-pagina. Il vecchio canale a maggioranza, vedendo "#" ricorrere su
+    // quasi tutte le pagine (per via del folio), spazzava via OGNI numero isolato,
+    // folio E contenuto. Ora i numeri nudi bypassano i canali di ricorrenza e sono
+    // rimossi solo se formano una progressione v = pageIndex + offset.
+
+    /// Il folio (numero nudo = pageIndex + offset costante) è rimosso anche quando
+    /// sta a metà pagina — dove il canale di banda non lo prenderebbe — perché la
+    /// progressione, non la posizione, lo identifica.
+    func test_detectFurniture_folioByProgressionRemovedMidPage() {
+        func page(_ idx: Int) -> [PdfTextLine] {
+            [placedLine("\(idx + 100)", size: 12, y: 400)] // numero nudo a metà pagina
+                + ["uno", "due"].map { placedLine("Frase \($0) di corpo della pagina numero \(idx).", y: 400) }
+        }
+        let doc = genericPlugin.build(extraction((0..<12).map { page($0) }), sourceName: "x.pdf")
+
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "") == "105" || ($0.text ?? "") == "111" },
+            "il folio per progressione (offset 100) è rimosso pur stando a metà pagina")
+        XCTAssertTrue(doc.warnings.contains { $0.hasPrefix("plugin:generic:furniture_lines_removed_") })
+    }
+
+    /// Un contenuto-numero isolato (un rimando d'indice, un numero d'articolo) che
+    /// NON progredisce è preservato anche quando un folio fa ricorrere "#" su tutte
+    /// le pagine — il caso che il vecchio canale "#" mangiava.
+    func test_detectFurniture_isolatedContentNumberPreservedDespiteFolio() {
+        func page(_ idx: Int) -> [PdfTextLine] {
+            var lines = [placedLine("\(idx + 200)", size: 9, y: 0)] // folio in banda bassa
+            if idx == 5 { lines.append(placedLine("777", size: 12, y: 400)) } // rimando isolato, una sola pagina
+            lines += ["alfa", "beta"].map { placedLine("Riga \($0) del corpo della pagina \(idx).", y: 400) }
+            return lines
+        }
+        let doc = genericPlugin.build(extraction((0..<12).map { page($0) }), sourceName: "x.pdf")
+
+        XCTAssertTrue(
+            doc.structure.contains { ($0.text ?? "").contains("777") },
+            "il contenuto-numero isolato (777) è preservato: non forma progressione")
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "") == "205" },
+            "il folio (offset 200) resta rimosso per progressione")
+    }
+
+    /// Numeri-nota che ripartono da 1 a ogni pagina non formano progressione e sono
+    /// preservati, anche col folio che fa ricorrere "#".
+    func test_detectFurniture_restartingNoteNumbersPreserved() {
+        func page(_ idx: Int) -> [PdfTextLine] {
+            [placedLine("\(idx + 300)", size: 9, y: 0)] // folio
+                + [placedLine("1", size: 8, y: 200), placedLine("2", size: 8, y: 150)] // note che ripartono
+                + ["x", "y"].map { placedLine("Contenuto \($0) della pagina \(idx).", y: 400) }
+        }
+        let doc = genericPlugin.build(extraction((0..<10).map { page($0) }), sourceName: "x.pdf")
+
+        // i marcatori di nota "1"/"2" ricorrono su ogni pagina ma il loro valore non
+        // progredisce (offset diverso ad ogni pagina) → preservati.
+        XCTAssertTrue(
+            doc.structure.contains { ($0.text ?? "").contains("1") && ($0.text ?? "").contains("2") },
+            "i numeri-nota che ripartono da 1 sono preservati")
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "") == "305" },
+            "il folio resta rimosso")
+    }
+
+    /// Una pagina-divisoria bianca (senza folio) non spezza la progressione: i folii
+    /// attorno restano coerenti con v = pageIndex + offset e sono rimossi.
+    func test_detectFurniture_blankDividerToleratedByProgression() {
+        func page(_ idx: Int) -> [PdfTextLine] {
+            let body = ["a", "b"].map { placedLine("Testo \($0) di corpo della pagina \(idx).", y: 400) }
+            if idx == 6 { return body } // pagina-divisoria: nessun folio
+            return [placedLine("\(idx + 10)", size: 9, y: 0)] + body
+        }
+        let doc = genericPlugin.build(extraction((0..<14).map { page($0) }), sourceName: "x.pdf")
+
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "") == "13" || ($0.text ?? "") == "23" },
+            "i folii attorno alla pagina-divisoria restano rimossi: la progressione regge")
+    }
+
     // MARK: - Colour heading (D4) — il ramo `colorHeading` di classify()
     //
     // Tutti i test esistenti usano testo nero (#000000), quindi il ramo che promuove
