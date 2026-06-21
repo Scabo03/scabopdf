@@ -48,6 +48,12 @@ except Exception as exc:  # pragma: no cover
 
 _WORD = re.compile(r"[0-9A-Za-zÀ-ÿ]+")
 _HYPHEN_BREAK = re.compile(r"([0-9A-Za-zÀ-ÿ])-\s*\n\s*([0-9A-Za-zÀ-ÿ])")
+
+# Ruoli dell'apparato note che la reading view (ContinuousBodyBuilder) FILTRA dal
+# corpo letto: sono nel documento classificato ma NON vengono pronunciati da
+# VoiceOver. Allineati a `ContinuousBodyBuilder.noteRoles` /
+# `quickConsultCollapsedRoles` di ScaboCore.
+APPARATUS_ROLES = {"NOTE", "EDITORIAL_NOTE"}
 DEFAULT_DOCLING_PY = os.path.expanduser("~/Developer/scabopdf-docling-venv/bin/python")
 DEFAULT_DOCLING_DRIVER = os.path.expanduser(
     "~/Developer/scabopdf-triple-take/harness/ttx/_docling_driver.py")
@@ -136,6 +142,57 @@ def completeness(ref_text: str, out_text: str, recurring: set[str]) -> dict:
     }
 
 
+# ── Asse FEDELTÀ LETTURA (reading view — ciò che VoiceOver legge DAVVERO) ─────────
+#
+# CAUTELA 7 — il metro deve misurare la SUPERFICIE GIUSTA. L'asse COMPLETEZZA qui
+# sopra confronta `scabopdf_text(doc)` = TUTTI i nodi della struttura, NOTE incluse:
+# misura la fedeltà del DOCUMENTO classificato, non di ciò che la reading view legge.
+# Ma la reading view (`ContinuousBodyBuilder.bodySegments`) FILTRA l'apparato note
+# (NOTE/EDITORIAL_NOTE): quel testo è nel documento (quindi conta come "comune" e NON
+# come "perso" nell'asse COMPLETEZZA) ma l'utente non lo sente mai. Senza questo asse
+# il metro è CIECO all'esclusione: dà ~99% mentre la reading view può star leggendo
+# il 75% del libro (volumi a forte apparato, es. Mosconi-Campiglio).
+#
+# Proxy fedele (perché non serve rieseguire il Builder): l'UNICA trasformazione della
+# reading view che TOGLIE contenuto è il filtro dell'apparato. La granularità (§7.6)
+# riassembla il corpo `BODY` in blocchi ma PRESERVA i token; la paginazione è
+# presentazione. Quindi "testo letto" ≈ concatenazione dei nodi NON-apparato, e
+# l'insieme di parole è quello che VoiceOver pronuncia.
+#
+# Confine onesto del metro (l'aggancio richiamo↔nota): questo asse misura SE le note
+# sono lette (presenza nel corpo letto), NON SE ogni nota è agganciata al richiamo
+# giusto. Su pipeline on-device oggi la struttura è PIATTA e non esiste alcun aggancio
+# richiamo→nota da verificare; e un metro automatico della CORRETTEZZA dell'aggancio
+# richiederebbe una verità-di-riferimento (quale marcatore nel testo ↔ quale nota) che
+# né PyMuPDF né docling forniscono. Quella correttezza resta giudizio umano (orecchio).
+def reading_view_axis(doc: dict, ref_text: str, recurring: set[str], doc_comp: dict) -> dict:
+    nodes = doc.get("structure", [])
+    apparatus = [n for n in nodes if n.get("type") in APPARATUS_ROLES]
+    read_nodes = [n for n in nodes if n.get("type") not in APPARATUS_ROLES]
+    read_text = "\n".join(n.get("text", "") for n in read_nodes)
+    comp = completeness(ref_text, read_text, recurring)
+    lc = collections.Counter(n.get("length_category") for n in apparatus)
+    note_chars = sum(len(n.get("text", "")) for n in apparatus)
+    all_chars = sum(len(n.get("text", "")) for n in nodes)
+    gap = doc_comp["completeness_pct"] - comp["completeness_pct"]
+    flags = []
+    if gap >= 0.5:
+        flags.append(
+            f"l'apparato note ({len(apparatus)} nodi, {100 * note_chars / all_chars:.1f}% "
+            f"del testo del documento) NON è letto dalla reading view (filtro "
+            f"ContinuousBodyBuilder): {gap:.2f} punti di contenuto che l'utente non sente"
+        )
+    return {
+        "doc_completeness_pct": doc_comp["completeness_pct"],
+        "reading_completeness_pct": comp["completeness_pct"],
+        "gap_pct": gap,
+        "n_notes": len(apparatus),
+        "note_char_share_pct": 100 * note_chars / all_chars if all_chars else 0.0,
+        "length_categories": {k: lc[k] for k in sorted(lc, key=lambda x: (x is None, x))},
+        "flags": flags,
+    }
+
+
 # ── Asse STRUTTURA (auto-descrizione) ────────────────────────────────────────────
 
 def structural_self(doc: dict) -> dict:
@@ -211,9 +268,12 @@ def docling_axis(pdf_path: str, doc: dict, page_range: range,
 
 # ── Referto ──────────────────────────────────────────────────────────────────────
 
-def render_report(name: str, comp: dict, struct: dict, docling: dict | None) -> str:
+def render_report(name: str, comp: dict, struct: dict, docling: dict | None,
+                  reading: dict | None = None) -> str:
     L = [f"================ FEDELTA' CONTENUTO — {name} ================", ""]
-    L.append("COMPLETEZZA (riferimento PyMuPDF, de-sillabato su entrambi i lati)")
+    L.append("COMPLETEZZA DOCUMENTO (riferimento PyMuPDF, de-sillabato su entrambi i lati)")
+    L.append("  NB: misura il DOCUMENTO classificato (note INCLUSE come nodi); per ciò che la")
+    L.append("      reading view LEGGE davvero vedi l'asse FEDELTÀ LETTURA sotto.")
     L.append(f"  fedeltà-contenuto: {comp['completeness_pct']:.2f}%  "
              f"({comp['common']} parole comuni su {comp['ref_words']} del riferimento)")
     sus_ratio = 100.0 * comp["suspect_total"] / comp["ref_words"] if comp["ref_words"] else 0.0
@@ -226,6 +286,20 @@ def render_report(name: str, comp: dict, struct: dict, docling: dict | None) -> 
     if comp["added_samples"]:
         L.append("     aggiunti (frammenti corti=sillabazione non ricucita; parole piene=sospetto): "
                  + "  ".join(f"{w!r}×{c}" for w, c in comp["added_samples"][:18]))
+    if reading is not None:
+        L += ["", "FEDELTÀ LETTURA (reading view — ciò che VoiceOver legge DAVVERO, cautela 7)"]
+        L.append(f"  documento (note incluse): {reading['doc_completeness_pct']:.2f}%  |  "
+                 f"letto (apparato note ESCLUSO): {reading['reading_completeness_pct']:.2f}%  |  "
+                 f"divario: {reading['gap_pct']:.2f} punti")
+        L.append(f"  apparato note: {reading['n_notes']} nodi = "
+                 f"{reading['note_char_share_pct']:.1f}% del testo del documento; "
+                 f"regimi acustici (length_category): {reading['length_categories']}")
+        for f in reading["flags"]:
+            L.append(f"  ⚠ {f}")
+        if not reading["flags"]:
+            L.append("  (la reading view legge quanto il documento: nessun apparato note sottratto)")
+        L.append("  CONFINE DEL METRO: misura SE le note sono lette, NON se ogni nota è agganciata")
+        L.append("  al richiamo giusto (l'aggancio resta giudizio umano — vedi cautela 7 nel codice).")
     L += ["", "STRUTTURA (auto-descrizione ScaboPDF)"]
     L.append(f"  categorie: {struct['categories']}")
     L.append(f"  titoli={struct['headings']} note={struct['notes']} corpo={struct['body']}")
@@ -277,15 +351,17 @@ def main() -> int:
     doc = load_scabopdf(args.dump)
     pages = pymupdf_pages(args.pdf)
     recurring = recurring_words(pages)
-    comp = completeness(" ".join(pages), scabopdf_text(doc), recurring)
+    ref_text = " ".join(pages)
+    comp = completeness(ref_text, scabopdf_text(doc), recurring)
     struct = structural_self(doc)
+    reading = reading_view_axis(doc, ref_text, recurring, comp)
     docling = None
     if args.order_pages:
         a, b = (int(x) for x in args.order_pages.split(":"))
         docling = docling_axis(args.pdf, doc, range(a, b),
                                args.docling_python, args.docling_driver)
 
-    report = render_report(name, comp, struct, docling)
+    report = render_report(name, comp, struct, docling, reading)
     if args.report:
         with open(args.report, "w", encoding="utf-8") as fh:
             fh.write(report + "\n")
