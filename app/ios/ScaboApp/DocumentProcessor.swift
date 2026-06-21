@@ -164,7 +164,7 @@ final class DocumentProcessor {
             let pageCount = extraction.pageCount
 
             // ── Fase 2: classificazione (per pagina) ───────────────────────────────────────────
-            let document = buildDocumentFromPdf(
+            let rawDocument = buildDocumentFromPdf(
                 extraction,
                 sourceName: sourceName,
                 onPageClassified: { done, total in
@@ -175,7 +175,14 @@ final class DocumentProcessor {
                 },
                 isCancelled: { self.flag.isCancelled }
             )
-            guard let document else { finish(.cancelled); return }
+            guard let rawDocument else { finish(.cancelled); return }
+
+            // ── Aggancio e piazzamento delle note (capitolo NOTE) ──────────────────────────────
+            // Tra classificazione e impaginazione: aggancia ogni richiamo alla sua nota e
+            // riposiziona le note nell'albero (brevi a fine frase, lunghe a fine sezione, § 7.3).
+            // Le non agganciate restano in posizione (lette, mai perse). Richiede l'estrazione
+            // (i segnali di dimensione/parentesi degli span che la classificazione collassa).
+            let document = bindAndPlaceNotes(rawDocument, extraction).document
 
             // ── Fase 3: impaginazione del corpo (passo finale unico) ───────────────────────────
             if self.flag.isCancelled { finish(.cancelled); return }

@@ -7,20 +7,21 @@
 //  che la reading view consuma, applicando l'unica scelta di scope di QUESTA
 //  sessione (gradino 2, sessione 1): rendere il CORPO, escludere l'apparato note.
 //
-//  ── Scelta di scope dichiarata: note ESCLUSE in questa sessione ──────────────────
+//  ── Note REINTRODOTTE e PIAZZATE (capitolo NOTE, mattone aggancio) ───────────────
 //
-//  Il Layout "Lettura Continua" di ScaboCore (`buildContinuousLayout`) emette il
-//  corpo CON le note interfogliate dove l'albero Layer-1 le ha collocate. Le note
-//  e il loro apparato sono materia della SESSIONE 2. Per questa sessione il corpo
-//  deve leggersi pulito, quindi si filtrano i ruoli `NOTE`/`EDITORIAL_NOTE` — lo
-//  stesso insieme che `buildQuickConsultLayout` già scarta in ScaboCore. È un
-//  filtro di una riga (più pulito che lasciare le note grezze nel flusso) e
-//  REVERSIBILE: la sessione 2 lo rimuoverà reintroducendo l'apparato. La
-//  classificazione non è toccata: le note restano nel `Document`, solo non
-//  vengono rese qui.
+//  La sessione 1 escludeva l'apparato note dal corpo letto con un filtro di una
+//  riga, dichiarato reversibile. Quel filtro è ORA RIMOSSO: le note rientrano nel
+//  corpo e vengono LETTE. Non più a fondo pagina grezzo, ma al punto giusto del
+//  LAYER2 (§ 7.3): la pipeline a monte (`DocumentProcessor` →
+//  `bindAndPlaceNotes`) aggancia ogni richiamo alla sua nota e riposiziona le note
+//  nell'albero — brevi a fine frase del richiamo, lunghe a fine sezione. Qui il
+//  documento arriva GIÀ PIAZZATO: si granularizza il corpo discorsivo e si rende
+//  tutto in ordine, note comprese. La granularità tratta `NOTE` come confine di
+//  run (le note passano invariate, non si fondono col corpo).
 //
-//  Il filtro vive QUI, al confine di cablaggio, non nella view: la view resta
-//  agnostica al layout e rende qualunque sequenza riceva.
+//  Le note non agganciate (segnale assente/ambiguo su PDFKit — vedi
+//  `NoteBinding.swift` e docs/NOTES_BINDING.md) restano lette nella loro posizione
+//  d'origine: presenti, mai perse, solo non spostate.
 //
 //  ── Granularità del corpo discorsivo (§ 7.6, motore ScaboCore) ───────────────────
 //
@@ -47,18 +48,15 @@ import ScaboCore
 /// Costruisce il contenuto di CORPO (granularizzato, note escluse) dal documento.
 enum ContinuousBodyBuilder {
 
-    /// Ruoli dell'apparato note, esclusi dal rendering di questa sessione
-    /// (allineati a `quickConsultCollapsedRoles` di ScaboCore).
-    static let noteRoles: Set<String> = ["NOTE", "EDITORIAL_NOTE"]
-
-    /// Flusso di soli segmenti di corpo, granularizzati (§ 7.6) e in ordine di
-    /// lettura. `target` è il valore di granularità (default 400, granularità fine).
+    /// Flusso dei segmenti di lettura — CORPO E NOTE PIAZZATE — granularizzati
+    /// (§ 7.6) e in ordine di lettura. `target` è il valore di granularità (default
+    /// 400). Le note sono già al punto giusto nell'albero (vedi `bindAndPlaceNotes`,
+    /// applicato a monte da `DocumentProcessor`); qui non si filtra più nulla.
     static func bodySegments(
         from document: ScabopdfDocument,
         target: Int = DEFAULT_GRANULARITY_TARGET
     ) -> [ContentSegment] {
-        let granular = granularizeBody(buildLayout(document, .continuous), target: target)
-        return granular.filter { !noteRoles.contains($0.role) }
+        granularizeBody(buildLayout(document, .continuous), target: target)
     }
 
     /// Corpo paginato pronto per `ContinuousReadingView.render(_:)`. La

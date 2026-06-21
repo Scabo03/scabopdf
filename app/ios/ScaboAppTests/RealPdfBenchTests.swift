@@ -204,4 +204,264 @@ final class RealPdfBenchTests: XCTestCase {
             print("[fidelity-dump] \(name): \(doc.structure.count) nodi, \(doc.metadata.pages_pdf) pagine → \(stem).scabopdf.json (+ .lines.json)")
         }
     }
+
+    // MARK: - Aggancio note sulla pipeline reale: precisione + non-distruttività
+
+    /// Su Marotta (regime SMALLER): l'aggancio produce legami same-page, le note
+    /// restano LETTE (presenti) e il piazzamento non perde né duplica testo.
+    func test_marotta_noteBinding_boundAndNonDestructive() throws {
+        let path = corpusDir + "/Marotta.pdf"
+        guard FileManager.default.fileExists(atPath: path) else {
+            throw XCTSkip("corpus assente: \(path) (vedi convenzione fixture).")
+        }
+        let ex = try PdfKitExtractor().extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+        let raw = buildDocumentFromPdf(ex, sourceName: "Marotta.pdf")
+        let (placed, stats) = bindAndPlaceNotes(raw, ex)
+
+        // Aggancio: qualche legame nella stessa pagina, nessun cross-page sospetto in eccesso.
+        XCTAssertGreaterThan(stats.boundSamePage, 0, "su Marotta alcuni richiami si agganciano alla nota della pagina")
+        XCTAssertGreaterThan(stats.footnotes, 0, "le note vengono spezzate in voci individuali")
+        // Contabilità: ogni nota o è piazzata (breve/lunga) o resta in posizione.
+        XCTAssertEqual(stats.placedShort + stats.placedLong + stats.unboundNotes, stats.footnotes,
+                       "ogni nota è contabilizzata: piazzata o in-loco")
+        // Le note restano LETTE (presenti nella struttura piazzata).
+        XCTAssertTrue(placed.structure.contains { $0.type == .NOTE || $0.type == .EDITORIAL_NOTE },
+                      "le note sono lette (presenti), non escluse")
+        // Non-distruttività: il testo totale non si perde né si duplica (entro tolleranza
+        // di separatori/trim del piazzamento).
+        func chars(_ d: ScabopdfDocument) -> Int { d.structure.reduce(0) { $0 + ($1.text?.count ?? 0) } }
+        let r = Double(chars(raw)), p = Double(chars(placed))
+        XCTAssertGreaterThan(p, r * 0.97, "nessuna perdita rilevante di testo nel piazzamento")
+        XCTAssertLessThan(p, r * 1.05, "nessuna duplicazione rilevante di testo nel piazzamento")
+    }
+
+    // MARK: - Recon marcatore di richiamo sulla pipeline PDFKit REALE (Fase 1b note)
+
+    // Verdetto make-or-break del capitolo NOTE: con cosa PDFKit espone DAVVERO
+    // (dimensione span, bbox, testo), il marcatore di richiamo in-corpo è
+    // distinguibile? Quattro regimi misurati sulla sorgente (PyMuPDF) e qui
+    // VERIFICATI su PDFKit, perché gli strumenti dev-time spezzano/ordinano
+    // diversamente (cautela di metodo, Mattone A/B): SMALLER (dim minore),
+    // RAISED (stessa dim, apice solo geometria), PAREN (testo "(N)" a dim body),
+    // FLAT (cifra incollata stessa dim, indistinguibile = PDFKit cieco).
+    // Tutto FUORI repo; il JSON dumpato porta SOLO il marcatore corto + geometria,
+    // nessun testo di corpo.
+
+    private struct MarkerSample: Codable {
+        let page: Int; let marker: String; let kind: String
+        let size: Double; let bodySize: Double; let yDelta: Double
+    }
+    private struct MarkerRecon: Codable {
+        let pdf: String; let pages: Int; let bodySize: Double
+        let sizeHistogram: [String: Int]
+        let smaller: Int; let raisedSameSize: Int; let flatSameSize: Int; let parenInline: Int
+        let noteLines: Int; let adjSame: Int; let adjNext: Int; let adjNone: Int
+        let samples: [MarkerSample]
+    }
+
+    private static let reNum = try! NSRegularExpression(pattern: "^[0-9]{1,3}$")
+    private static let reParNum = try! NSRegularExpression(pattern: "^[\\(\\[]\\s?[0-9]{1,3}\\s?[\\)\\]]$")
+    private static let reParInline = try! NSRegularExpression(pattern: "\\(([0-9]{1,3})\\)")
+    private static let symMarkers: Set<String> = ["*", "†", "‡", "§", "¶"]
+
+    private func matches(_ re: NSRegularExpression, _ s: String) -> Bool {
+        re.firstMatch(in: s, range: NSRange(s.startIndex..<s.endIndex, in: s)) != nil
+    }
+    /// (kind, numeric-or-symbol value) for a marker-shaped trimmed token, else nil.
+    private func markerKind(_ raw: String) -> (String, String)? {
+        let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty || t.utf16.count > 5 { return nil }
+        if matches(Self.reNum, t) { return ("num", t) }
+        if matches(Self.reParNum, t) { return ("paren", t.filter { $0.isNumber }) }
+        if Self.symMarkers.contains(t) { return ("sym", t) }
+        return nil
+    }
+
+    /// Body font size by the Generic's rule (largest 0.5pt bucket with line-count
+    /// ≥ half the most frequent — robust to note-heavy volumes).
+    private func bodySize(_ ex: PdfExtraction) -> Double {
+        var cnt: [Double: Int] = [:]
+        for page in ex.pages {
+            for line in page.lines {
+                let sm = summarizeLine(line)
+                if sm.fontSize > 0 {
+                    let k = (sm.fontSize * 2).rounded() / 2
+                    cnt[k, default: 0] += 1
+                }
+            }
+        }
+        let top = cnt.values.max() ?? 0
+        var body = 0.0
+        for (s, c) in cnt where Double(c) >= Double(top) * 0.5 && s > body { body = s }
+        return body
+    }
+
+    private func markerRecon(_ ex: PdfExtraction, name: String, pageCap: Int = 400) -> MarkerRecon {
+        let body = bodySize(ex)
+        let smallTh = 0.80 * body
+        var sizeHist: [String: Int] = [:]
+        var smaller = 0, raised = 0, flat = 0, paren = 0, noteLines = 0
+        var inbodyByPage: [Int: [Int]] = [:]
+        var openByPage: [Int: [Int]] = [:]
+        var samples: [MarkerSample] = []
+        let pages = min(ex.pages.count, pageCap)
+        for pi in 0..<pages {
+            let page = ex.pages[pi]
+            let h = page.height
+            for line in page.lines {
+                let spans = line.spans.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+                if spans.isEmpty { continue }
+                for s in spans where s.fontSize > 0 {
+                    let k = (s.fontSize * 2).rounded() / 2
+                    sizeHist[String(format: "%.1f", k), default: 0] += 1
+                }
+                let bodySpans = spans.filter { abs($0.fontSize - body) <= 0.6 }
+                let hasBody = !bodySpans.isEmpty
+                // bottom edge (origin bottom-left) of body spans = baseline reference
+                let bodyBottom = bodySpans.map { $0.bbox.y }.min() ?? 0
+                // ---- in-body markers (line carries body text) ----
+                if hasBody {
+                    for s in spans {
+                        // regime 3: parenthesised (N) inside a body-size span's text
+                        if abs(s.fontSize - body) <= 0.6 {
+                            let t = s.text
+                            let ns = t as NSString
+                            for m in Self.reParInline.matches(in: t, range: NSRange(location: 0, length: ns.length)) {
+                                paren += 1
+                                if let v = Int(ns.substring(with: m.range(at: 1))) {
+                                    inbodyByPage[pi, default: []].append(v)
+                                }
+                            }
+                        }
+                        guard let mk = markerKind(s.text) else { continue }
+                        let yDelta = s.bbox.y - bodyBottom
+                        let kind: String
+                        if s.fontSize > 0 && s.fontSize <= smallTh {
+                            kind = "smaller"; smaller += 1
+                        } else if yDelta > 1.0 {
+                            kind = "raised"; raised += 1
+                        } else {
+                            kind = "flat"; flat += 1
+                        }
+                        if (kind == "smaller" || kind == "raised"), let v = Int(mk.1) {
+                            inbodyByPage[pi, default: []].append(v)
+                        }
+                        if samples.count < 40 {
+                            samples.append(MarkerSample(
+                                page: pi, marker: mk.1, kind: kind,
+                                size: s.fontSize, bodySize: body, yDelta: (yDelta * 100).rounded() / 100))
+                        }
+                    }
+                }
+                // ---- note-open markers: small line in the bottom band ----
+                let sm = summarizeLine(line)
+                if sm.fontSize > 0 && sm.fontSize <= 0.85 * body && sm.yTop < 0.40 * h {
+                    noteLines += 1
+                    let lead = sm.text.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let digits = lead.prefix { $0.isNumber }
+                    if let v = Int(digits) { openByPage[pi, default: []].append(v) }
+                }
+            }
+        }
+        var adjSame = 0, adjNext = 0, adjNone = 0
+        for (pi, vals) in inbodyByPage {
+            let here = Set(openByPage[pi] ?? [])
+            let next = Set(openByPage[pi + 1] ?? [])
+            for v in vals {
+                if here.contains(v) { adjSame += 1 }
+                else if next.contains(v) { adjNext += 1 }
+                else { adjNone += 1 }
+            }
+        }
+        return MarkerRecon(
+            pdf: name, pages: pages, bodySize: body, sizeHistogram: sizeHist,
+            smaller: smaller, raisedSameSize: raised, flatSameSize: flat, parenInline: paren,
+            noteLines: noteLines, adjSame: adjSame, adjNext: adjNext, adjNone: adjNone,
+            samples: samples)
+    }
+
+    // MARK: - Fedeltà-lettura DOPO il piazzamento note + meccanica dell'aggancio (Fase 3)
+
+    private struct ReadingSegmentDump: Codable {
+        let role: String; let lengthCategory: String; let acousticIntro: String; let text: String
+    }
+    private struct ReadingDump: Codable {
+        let pdf: String
+        let stats: NotePlacementStats
+        let segments: [ReadingSegmentDump]
+    }
+
+    /// Esegue la pipeline REALE + aggancio/piazzamento note e dumpa i segmenti di
+    /// lettura effettivi (CORPO + note piazzate) + la diagnostica di aggancio, per
+    /// misurare la fedeltà-lettura prima/dopo e ispezionare i piazzamenti. Path di
+    /// richiesta dedicato; tutto fuori repo. `XCTSkip` senza richiesta.
+    func test_readingFidelityDump_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_READING_REQUEST"]
+            ?? "/tmp/scabo_reading_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta reading in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let extractor = PdfKitExtractor()
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[reading] assente, salto: \(path)"); continue
+            }
+            let ex = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+            let raw = buildDocumentFromPdf(ex, sourceName: name)
+            let placedResult = bindAndPlaceNotes(raw, ex)
+            let segments = ContinuousBodyBuilder.bodySegments(from: placedResult.document, granularity: .fine)
+            let dump = ReadingDump(
+                pdf: name, stats: placedResult.stats,
+                segments: segments.map {
+                    ReadingSegmentDump(role: $0.role, lengthCategory: $0.lengthCategory,
+                                       acousticIntro: $0.acousticIntro, text: $0.text)
+                })
+            let stem = (name as NSString).deletingPathExtension
+            try enc.encode(dump).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).reading.json"))
+            let s = placedResult.stats
+            print("""
+                [reading] \(name): segmenti=\(segments.count)  note(footnotes)=\(s.footnotes)
+                  aggancio: same-page=\(s.boundSamePage) cross-page=\(s.boundCrossPage) non-agganciati(marker)=\(s.unboundMarkers)
+                  piazzate: brevi(fine-frase)=\(s.placedShort) lunghe(fine-sezione)=\(s.placedLong) non-agganciate(in-loco)=\(s.unboundNotes)
+                  marker: smaller=\(s.markersSmaller) paren=\(s.markersParen)
+                """)
+        }
+    }
+
+    /// Esegue il recon marcatore sulla pipeline PDFKit reale per i PDF della
+    /// richiesta (path fisso, fuori repo) e scrive un JSON compatto per volume.
+    /// `XCTSkip` se non c'è richiesta (le run normali non fanno nulla).
+    func test_markerReconDump_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_MARKER_REQUEST"]
+            ?? "/tmp/scabo_marker_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta marker in \(reqPath): recon non invocato.")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let extractor = PdfKitExtractor()
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[marker] assente, salto: \(path)"); continue
+            }
+            let ex = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+            let recon = markerRecon(ex, name: name)
+            let stem = (name as NSString).deletingPathExtension
+            try enc.encode(recon).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).markers.json"))
+            let total = recon.smaller + recon.raisedSameSize + recon.flatSameSize + recon.parenInline
+            print("""
+                [marker] \(name): body≈\(recon.bodySize)pt pagine=\(recon.pages)
+                  in-corpo: SMALLER=\(recon.smaller) RAISED=\(recon.raisedSameSize) FLAT=\(recon.flatSameSize) PAREN=\(recon.parenInline) (tot \(total))
+                  note-lines(settore)=\(recon.noteLines)  ADIACENZA same=\(recon.adjSame) next=\(recon.adjNext) none=\(recon.adjNone)
+                """)
+        }
+    }
 }

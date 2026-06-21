@@ -363,36 +363,36 @@ func classify(_ line: LineSummary, _ profile: Profile) -> Kind {
 
 // MARK: - Node emission
 
-private enum RunRole { case body, note }
+enum RunRole { case body, note }
 
-/// Emits the nodes for one page: furniture + invisible-anchor lines skipped,
-/// headings as standalone nodes, runs of consecutive BODY (or NOTE) lines merged
-/// into one paragraph node.
-func appendPageNodes(
+/// One emitted unit of a page, carrying its SOURCE line summaries so a consumer
+/// (the note binder) can re-derive span-level signal (marker sizes, note opening
+/// numbers) that `summarizeLine` collapses. A `.heading` carries its single line;
+/// a `.run` carries the consecutive BODY (or NOTE) lines merged into one node.
+/// `pageItems` is the single point of truth for "which lines become which node",
+/// shared verbatim by `appendPageNodes` (the build path) and `NoteBinding`.
+enum GenItem {
+    case heading(LineSummary, level: Int)
+    case run(RunRole, [LineSummary])
+}
+
+/// Derives the ordered emit-items for one page: furniture + invisible-anchor
+/// lines skipped, headings standalone, runs of consecutive BODY (or NOTE) lines
+/// grouped. One item ⇄ one emitted node, in order — so a per-page zip of items
+/// with `document.structure` (filtered by page_index) is exact.
+func pageItems(
     _ page: PdfPageExtraction,
     _ profile: Profile,
-    _ furniture: Set<String>,
-    _ out: inout [NodeDict],
-    _ nextId: () -> String
-) {
+    _ furniture: Set<String>
+) -> [GenItem] {
+    var items: [GenItem] = []
     var runRole: RunRole?
-    var runLines: [String] = []
+    var runLines: [LineSummary] = []
 
     func flushRun() {
-        guard let role = runRole, !runLines.isEmpty else {
-            runRole = nil
-            runLines = []
-            return
+        if let role = runRole, !runLines.isEmpty {
+            items.append(.run(role, runLines))
         }
-        let text = joinLines(runLines)
-        var node = NodeDict(
-            id: nextId(),
-            type: role == .body ? .BODY : .NOTE,
-            page_index: page.pageIndex,
-            text: text
-        )
-        if role == .note { node.length_category = lengthCategoryFor(text) }
-        out.append(node)
         runRole = nil
         runLines = []
     }
@@ -405,6 +405,30 @@ func appendPageNodes(
         switch kind {
         case .heading(let level):
             flushRun()
+            items.append(.heading(sm, level: level))
+        case .body, .note:
+            let role: RunRole = (kind == .body) ? .body : .note
+            if let r = runRole, r != role { flushRun() }
+            runRole = role
+            runLines.append(sm)
+        }
+    }
+    flushRun()
+    return items
+}
+
+/// Emits the nodes for one page from `pageItems`: headings as standalone nodes,
+/// runs of consecutive BODY (or NOTE) lines merged into one paragraph node.
+func appendPageNodes(
+    _ page: PdfPageExtraction,
+    _ profile: Profile,
+    _ furniture: Set<String>,
+    _ out: inout [NodeDict],
+    _ nextId: () -> String
+) {
+    for item in pageItems(page, profile, furniture) {
+        switch item {
+        case .heading(let sm, let level):
             out.append(NodeDict(
                 id: nextId(),
                 type: headingCategory(level),
@@ -412,14 +436,18 @@ func appendPageNodes(
                 text: sm.text,
                 level: level
             ))
-        case .body, .note:
-            let role: RunRole = (kind == .body) ? .body : .note
-            if let r = runRole, r != role { flushRun() }
-            runRole = role
-            runLines.append(sm.text)
+        case .run(let role, let lines):
+            let text = joinLines(lines.map { $0.text })
+            var node = NodeDict(
+                id: nextId(),
+                type: role == .body ? .BODY : .NOTE,
+                page_index: page.pageIndex,
+                text: text
+            )
+            if role == .note { node.length_category = lengthCategoryFor(text) }
+            out.append(node)
         }
     }
-    flushRun()
 }
 
 private func headingCategory(_ level: Int) -> SemanticCategory {

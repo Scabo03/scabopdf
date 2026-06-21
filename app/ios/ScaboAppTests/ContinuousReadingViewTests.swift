@@ -206,16 +206,20 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertEqual(view.exposedAccessibilityElements.count, 0)
     }
 
-    // MARK: - 7. End-to-end da PDF sintetico: corpo reso, note escluse, in ordine
+    // MARK: - 7. End-to-end da PDF sintetico: corpo E note (lette), in ordine
 
-    func test_endToEnd_syntheticPdf_rendersBodyExcludesNotesInOrder() throws {
-        // Catena reale: PDF sintetico → PdfKitExtractor → Generic → corpo paginato.
+    func test_endToEnd_syntheticPdf_rendersBodyIncludingNotesInOrder() throws {
+        // Catena reale: PDF sintetico → PdfKitExtractor → Generic → aggancio/piazzamento
+        // note → corpo paginato. Le note ora sono LETTE (capitolo NOTE): la nota di
+        // questo campione non ha numero d'apertura né richiamo in-corpo, quindi resta
+        // NON agganciata → letta in posizione (presente, mai persa).
         let pdfURL = Self.makeSyntheticSamplePDF()
         addTeardownBlock { try? FileManager.default.removeItem(at: pdfURL) }
 
         let extraction = try PdfKitExtractor().extract(fromUri: pdfURL.absoluteString)
-        let document = buildDocumentFromPdf(extraction, sourceName: "campione_sintetico.pdf")
-        XCTAssertFalse(document.structure.isEmpty, "la catena deve produrre struttura")
+        let raw = buildDocumentFromPdf(extraction, sourceName: "campione_sintetico.pdf")
+        XCTAssertFalse(raw.structure.isEmpty, "la catena deve produrre struttura")
+        let document = bindAndPlaceNotes(raw, extraction).document
 
         let content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document)
         let view = makeView()
@@ -224,7 +228,7 @@ final class ContinuousReadingViewTests: XCTestCase {
 
         let labels = view.segmentLabels
         XCTAssertFalse(labels.isEmpty, "il corpo deve produrre elementi")
-        XCTAssertEqual(view.exposedAccessibilityElements.count, labels.count, "container unico = un elemento per segmento di corpo")
+        XCTAssertEqual(view.exposedAccessibilityElements.count, labels.count, "container unico = un elemento per segmento")
 
         let texts = labels.map { $0.segment.text }
 
@@ -236,9 +240,10 @@ final class ContinuousReadingViewTests: XCTestCase {
         // Il corpo è presente.
         XCTAssertTrue(texts.contains { $0.contains("creditore") }, "il corpo è reso")
 
-        // La NOTA (8pt, 'Cfr. art. 1218') è ESCLUSA in questa sessione.
-        XCTAssertFalse(texts.contains { $0.contains("1218") }, "le note sono escluse dal rendering del corpo")
-        XCTAssertFalse(labels.contains { $0.segment.role == "NOTE" || $0.segment.role == "EDITORIAL_NOTE" })
+        // La NOTA (8pt, 'Cfr. art. 1218') è ora LETTA (inclusa nel corpo).
+        XCTAssertTrue(texts.contains { $0.contains("1218") }, "le note sono lette (non più escluse)")
+        XCTAssertTrue(labels.contains { $0.segment.role == "NOTE" || $0.segment.role == "EDITORIAL_NOTE" },
+                      "esiste almeno un segmento di nota letto")
 
         // Ordine di lettura: il titolo precede il primo paragrafo di corpo.
         if let titleIdx = texts.firstIndex(where: { $0.contains("Capitolo Primo") }),

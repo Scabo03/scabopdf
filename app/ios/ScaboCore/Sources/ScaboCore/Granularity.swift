@@ -177,6 +177,41 @@ private func granularizeRun(_ texts: [String], idBase: String, target: Int) -> [
     }
 }
 
+/// Offset di carattere (indici in `Array(text)`) a cui termina un confine di
+/// frase ad alta confidenza (subito dopo il terminatore + eventuali virgolette di
+/// chiusura). Stessa euristica CONSERVATIVA di `splitIntoSentences`. Lo usa il
+/// piazzamento delle note (§ 7.3) per trovare la fine della frase che contiene il
+/// richiamo: una nota breve si legge subito dopo quel confine.
+public func sentenceBoundaryOffsets(_ text: String) -> [Int] {
+    let chars = Array(text)
+    let count = chars.count
+    var bounds: [Int] = []
+    var i = 0
+    while i < count {
+        let ch = chars[i]
+        if ch == "." || ch == "!" || ch == "?" {
+            var afterClosings = i + 1
+            while afterClosings < count, CLOSING_CHARS.contains(chars[afterClosings]) {
+                afterClosings += 1
+            }
+            if afterClosings < count, chars[afterClosings].isWhitespace {
+                var nextStart = afterClosings
+                while nextStart < count, chars[nextStart].isWhitespace { nextStart += 1 }
+                if nextStart < count, isSentenceStart(chars[nextStart]) {
+                    let isBoundary = (ch == ".") ? !isAbbreviationBefore(chars, periodIndex: i) : true
+                    if isBoundary {
+                        bounds.append(afterClosings)
+                        i = nextStart
+                        continue
+                    }
+                }
+            }
+        }
+        i += 1
+    }
+    return bounds
+}
+
 // MARK: - Segmentazione di frase (euristica conservativa)
 
 /// Abbreviazioni italiane/giuridiche note (forma minuscola, senza punto finale,
