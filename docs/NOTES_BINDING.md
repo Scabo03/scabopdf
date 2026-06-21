@@ -118,7 +118,116 @@ né duplica** testo del corpo.
   collaudo a campione "questa nota qui suona giusta" resta all'**orecchio del
   maintainer**.
 
-## 6. Strumenti di verifica
+## 6. Indagine sul regime cieco — la tripletta successione+adiacenza+doppia-comparsa
+
+Giro di **sola raccolta dati** (nessuna regola in produzione): validare se, dove
+manca il segnale tipografico, l'aggancio possa reggere su tre segnali meccanici
+on-device — **successione** (i numeri di nota avanzano), **adiacenza di pagina**
+(richiamo e nota sulla stessa pagina), **doppia-comparsa** (un vero richiamo N
+compare DUE volte: nel corpo e in testa alla nota; un numero-esca compare una sola
+volta). Il giudizio semantico è stato usato **solo come metro** per certificare
+l'output della regola eseguita ALLA CIECA, mai come motore.
+
+### 6.1 Precondizione sui volumi nominati: NON soddisfatta
+
+Misura sui dump PDFKit reali:
+
+- **Torrente**: 1882 nodi NOTE, ma **solo l'1% inizia con un numero**; **0 pagine**
+  con doppia-comparsa nell'intero volume. Le "note" sono **glosse marginali /
+  parole-chiave** ("ADR", "Premessa: insufficienza delle tutele…", "CAPITOLO XL"),
+  non note numerate. Torrente **non è** un volume a note-numerate-cieche: è un
+  volume **senza apparato numerato**. La tripletta non ha a cosa ancorarsi → **non
+  applicabile**. Il trattamento giusto delle glosse marginali è un'altra cosa
+  (lettura come parole-chiave di sezione), materia di layout, non di aggancio.
+- **Marrone**: ha note numerate (marcatore rosso per paragrafo), ma il Generic
+  on-device **non riconosce il lato-nota** (stessa dimensione del corpo: rileva 1
+  solo nodo NOTE) → la tripletta **non può partire**. Il segnale però **c'è ed è
+  esposto da PDFKit**: `#FF0000` ×195 (testo "Note"/"Nota") + palette colori dei
+  titoli (#800000, #0000FF, #333399). Recuperabile via **colore** nel giro di
+  implementazione (precondizione lato-nota = rilevamento colore, non la tripletta).
+
+### 6.2 Validazione della tripletta sul banco-proxy (Mosconi, note numerate reali)
+
+Mosconi ha note numerate + doppia-comparsa (285 pagine), quindi è il banco per
+misurare la tripletta eseguita **alla cieca** (solo numeri/successione/doppia-
+comparsa sul testo, ignorando la dimensione) — proxy di un futuro volume a
+note-numerate-cieche:
+
+- 963 note numerate; **53%** con doppia-comparsa nel corpo; di queste **90%
+  UNIVOCHE** (il numero compare una sola volta nel corpo → bind sicuro), **10%
+  ambigue** (>1 occorrenza → astieni).
+- **La doppia-comparsa scarta 5210 numeri-corpo** che non sono note-number (anni,
+  articoli, commi, importi): è il filtro anti-esca decisivo. Esempio: una pagina
+  con artt. 2505, 2509, 2, 3, 4, 37, 796, 805 — **nessuno** aggancia; solo "11" (il
+  vero numero di nota) aggancia.
+- **Precisione (giudizio semantico come metro)**: tutti i bind univoci esaminati
+  sono **posizionalmente corretti** (il numero del corpo sta a fine inciso, subito
+  prima della sua nota). I casi pericolosi di **esca dentro l'intervallo** (es.
+  "infra, par. 12" mentre esiste la nota 12; il numero di paragrafo "1." mentre
+  esiste la nota 1) cadono **tutti** nel secchio AMBIGUO → la tripletta **si
+  astiene**, non aggancia mai sbagliato. Questo è il risultato centrale: la
+  sicurezza nasce da **doppia-comparsa + univocità + astensione**.
+- **Copertura ~48%** delle note numerate (univoche su doppia-comparsa): **inferiore**
+  al binding tipografico (regime 1). La tripletta è quindi un **fallback**, non un
+  sostituto: utile su un volume a note-numerate che manca del segnale di dimensione.
+
+### 6.3 Divergenza meccanica vs giudizio semantico = dove la regola si astiene
+
+La divergenza preziosa: dove un numero compare più volte nel corpo (esca + richiamo,
+o un numero di paragrafo), il mio giudizio sa quale è il richiamo ma **la meccanica
+cieca no** → deve **astenersi e raggruppare**, non agganciare. Campioni (i pochi
+casi ambigui, già minimi):
+
+```
+p43 N=12:  "…n. 476 e L. 28 marzo 2001, n. 149)12 ."   (richiamo)
+           "…come vedremo (infra, par. 12 e in fine…"   (esca: rinvio a paragrafo)
+p34 N=1:   "1. Il dir[itto]…"                            (esca: numero di paragrafo)
+           "…di altri Stati.1 L'opzione…"                (richiamo)
+```
+
+In tutti, la regola cieca trova >1 occorrenza → **astensione corretta**. Non serve
+escalation: la meccanica non sbaglia, semplicemente non decide.
+
+### 6.4 Precondizione-struttura per il fallback di raggruppamento (Fase 2)
+
+Il fallback corretto per una nota dubbia/orfana **non è "a fine pagina"** (ScaboPDF
+non ha pagine visive: ha un flusso continuo): è il **raggruppamento** a fine
+unità. Stato on-device:
+
+- **"Fine sezione" ESISTE** (confini HEADING_1..4) ed è **già usato**: il
+  piazzamento differisce le note lunghe a fine sezione (`flushLong` prima del
+  prossimo HEADING). Il raggruppamento delle note adiacenti-per-numero può quindi
+  **poggiare su questo confine OGGI**.
+- **"Paragrafo numerato" (§ 7.3 prodotto) NON esiste** come unità a sé sull'output
+  del Generic (struttura piatta: il § numerato non è emesso come unità propria, al
+  più diventa HEADING_4 se la dimensione/grassetto lo promuovono). La granularità
+  più fine del raggruppamento richiede quindi **rafforzamento dei layout** (giro
+  successivo).
+
+### 6.5 Proposta sui dati (per il giro di implementazione)
+
+1. **Torrente non si risolve con la tripletta** (premessa errata: niente apparato
+   numerato). Le sue glosse marginali vanno trattate come tali (parole-chiave di
+   sezione) — lavoro di layout/classificazione, separato dall'aggancio.
+2. **La tripletta è sana e sicura come FALLBACK** per volumi a note-numerate privi
+   del segnale tipografico, **a patto** che il lato-nota sia riconosciuto. La sua
+   sicurezza è già garantita dal principio "**nel dubbio astieni e raggruppa**":
+   doppia-comparsa + univocità + astensione → mai aggancio sbagliato, a costo di
+   copertura parziale (~48%).
+3. **Marrone è il caso reale** dove la tripletta (o il binding-per-colore stile
+   plugin BIC) potrebbe estendere l'aggancio, **previo** rilevamento del lato-nota
+   per **colore** (#FF0000), che PDFKit espone on-device. È il primo pezzo del giro
+   successivo.
+4. Le note non agganciate restano **raggruppate a fine sezione** (meccanismo già
+   presente per le lunghe) — nessuna "fine pagina", nessun aggancio forzato.
+
+Cautela nuova emersa: **"regime cieco" non è una categoria sola.** Va distinto in
+(a) *niente apparato numerato* (Torrente → la tripletta è lo strumento sbagliato) e
+(b) *apparato numerato col lato-nota non rilevato per dimensione* (Marrone → serve
+prima il rilevamento per colore). Confondere i due porterebbe a costruire la
+tripletta per Torrente, dove non potrà mai agganciare.
+
+## 7. Strumenti di verifica
 
 - Banco `RealPdfBenchTests`:
   `test_markerReconDump_fromRequest` (regime del segnale su PDFKit),
