@@ -87,6 +87,21 @@ final class GlossRecognitionTests: XCTestCase {
         XCTAssertEqual(nodes(d, .MARGINAL_GLOSS).count, 2)
     }
 
+    // stima colonna ROBUSTA: una riga corpo-larga con x0 anomalo (bordo pagina) NON
+    // deve collassare il bordo-colonna e far sfuggire la glossa (causa reale delle
+    // sfuggite del Torrente: colX0 stimato a ~9 col min invece di ~100 con la mediana).
+    func test_outlierBodyLine_doesNotHideGloss() {
+        var lines = bodyLines(6)  // colonna a x0=100, x1=450
+        // outlier: riga corpo-larga che parte dal bordo sinistro (x0=9)
+        lines.append(lineAt("Riga anomala che parte dal bordo sinistro della pagina molto larga.",
+                            size: 10, x0: 9, x1: 300, y: 500))
+        // glossa a margine sinistro
+        lines.insert(lineAt("Servitù", size: 6.5, x0: 40, x1: 85, y: 120), at: 2)
+        let d = doc([page(0, lines)])
+        XCTAssertTrue(texts(d, .MARGINAL_GLOSS).contains("Servitù"),
+                      "la glossa è riconosciuta nonostante l'outlier di colonna (mediana, non min)")
+    }
+
     // astensione: senza colonna stimabile (poche righe-corpo) una riga a margine resta NOTE.
     func test_abstain_whenColumnUnknown() {
         // 2 sole righe-corpo (< MIN_BODY_LINES_FOR_COLUMN) + una riga piccola "a margine"

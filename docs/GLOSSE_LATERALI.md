@@ -246,3 +246,62 @@ Riconoscimento geometrico calibrato sul Generic on-device. Dove la colonna
 per-pagina è incerta o la geometria ambigua, **si astiene** (resta NOTE, letto):
 preferito a uno scarto largo. La categoria è **conservata** nel documento: lo
 scarto è dal solo flusso di lettura, reversibile (navigazione futura).
+
+## 9. Affinamento — stima colonna ROBUSTA (recupero delle glosse sfuggite)
+
+Le glosse che restavano `NOTE` (lette) sfuggivano per una causa precisa, accertata
+sulla geometria PDFKit REALE: la colonna del corpo era stimata col `min`/`max` dei
+bordi delle righe corpo-larghe, e PDFKit emette su alcune pagine una riga corpo-larga
+con `x0` anomalo (≈9pt, bordo pagina). Il `min` collassava il bordo-colonna sinistro
+a ~9–10 invece di ~85, così la glossa (x1≤79) non risultava più "fuori colonna" e
+sfuggiva. Le sfuggite erano glosse vere ("Eguaglianza", "Servitù", "Soggettività
+giuridica", "Servitus in faciendo consistere"). I margini alternati recto/verso
+rendevano una banda-di-volume globale insicura (la banda sx del verso si sovrappone
+alla colonna del recto): scartata come segnale.
+
+**Fix (conservativo, una riga concettuale):** i bordi colonna per-pagina si stimano
+per **MEDIANA** invece che min/max (`median(bodyX0s)`, `median(bodyX1s)` in
+`GenericPlugin.pageItems`). La mediana ignora l'outlier di bordo. **Sicuro per
+costruzione:** il bordo destro di una riga di corpo è sempre ≥ colX0, quindi il test
+glossa `x1 < colX0` non scatta MAI su una riga di corpo qualunque sia colX0 → zero
+falsi positivi sulle righe in-colonna, indipendentemente dalla stima. Il test e le
+soglie di astensione restano invariati (nessun allentamento): cambia solo la
+robustezza della stima. Le glosse a corpo rado / con colonna ancora ambigua restano
+`NOTE` per astensione (residuo accettabile, ridondante).
+
+### Recupero (banco iPad reale, prima→dopo l'affinamento)
+
+| Volume | NOTE prima→dopo | MARGINAL_GLOSS prima→dopo | recupero glosse |
+|---|---|---|---|
+| Torrente | 333 → **308** | 1765 → 1790 | +25 |
+| Mandrioli vol.1 | 366 → **315** | 228 → **282** | +54 |
+| Mandrioli vol.2 | 414 → **392** | 318 → 340 | +22 |
+| Mosconi | 1080 → 1080 | 441 → 441 | 0 (nessuna sfuggita recuperabile per mediana) |
+| Marotta (controllo) | 101 → 101 | 0 → 0 | 0 |
+
+Le righe migrate NOTE→MARGINAL_GLOSS sono **confermate glosse** (campione): Torrente
+"Eguaglianza", "Servitù", "Soggettività giuridica", "Forma ad probationem";
+Mandrioli "La controeccezione.", "Il c.d. principio di non contestazione…",
+titoletti-riassunto con "…". NON sono note (le note vere sono in-colonna e restano).
+
+### Rete A — token-per-token (zero contenuto unico)
+
+Tipi-token che diventano non-letti per il recupero (verificati uno per uno):
+Torrente **0**; Mandrioli vol.1 **7** (`caratterizzata`, `discrezione`, `estraneo`,
+`pregiudizi`, `temperata`…); Mandrioli vol.2 **2** (`decidendi`, `massimate`). Tutti
+**parole comuni / termini già presenti nel corpo** (verificato: M1 `pregiudiz`×40,
+`discrezion`×10, `caratterizz`×15…; M2 `massim`×35). Zero concetti unici persi. Il
+calo a occorrenze (M1 −0.40, M2 −0.15, Torrente −0.01) è ridondanza, non contenuto.
+
+### Rete B — apparato note intatto
+
+Mosconi aggancio richiamo↔nota **518/10 identico** prima/dopo; Marotta intatto
+(NOTE 101, gloss 0, aggancio 86/242 identico). Solo glosse migrano; le note vere e
+il binding (commit 4cd6fd6) sono invariati.
+
+### Confine
+
+Il recupero è quello sicuro via stima robusta; non si è introdotta la banda-di-volume
+(insicura sui margini alternati del Torrente). Eventuali glosse residue su pagine a
+colonna ancora ambigua restano lette per **astensione** — un residuo minimo e
+ridondante, preferito a qualunque rischio di scartare una riga buona.

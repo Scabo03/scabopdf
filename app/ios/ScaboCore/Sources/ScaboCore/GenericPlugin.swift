@@ -395,6 +395,13 @@ func isLateralGloss(_ sm: LineSummary, colX0: Double, colX1: Double, columnKnown
     return true
 }
 
+/// Mediana di un vettore (robusta agli outlier). 0 su vettore vuoto. Per pari
+/// restituisce l'elemento superiore-mediano (sufficiente per la stima di colonna).
+func median(_ xs: [Double]) -> Double {
+    guard !xs.isEmpty else { return 0 }
+    return xs.sorted()[xs.count / 2]
+}
+
 /// Vero se il testo (a meno di un punto finale) è composto SOLO da lettere romane
 /// `[IVXLCDM]` (numero romano di capitolo/sezione a margine, da non scambiare per
 /// glossa). Cap di lunghezza per evitare falsi su parole maiuscole lunghe.
@@ -439,20 +446,28 @@ func pageItems(
     // Stima della colonna del corpo PER-PAGINA (i margini si alternano recto/verso):
     // bordi sx/dx delle righe alla taglia del corpo e abbastanza larghe. Sotto
     // `MIN_BODY_LINES_FOR_COLUMN` la colonna è incerta → ci si astiene dal glossare.
+    //
+    // I bordi si stimano per MEDIANA, non per min/max: PDFKit emette su alcune
+    // pagine una riga corpo-larga con x0 anomalo (≈9pt, bordo pagina) che, presa col
+    // `min`, collassava il bordo-colonna sinistro e faceva SFUGGIRE le glosse vere
+    // (es. "Eguaglianza", "Servitù" — colonna stimata a 9 invece di ~85). La mediana
+    // ignora l'outlier. È sicuro per costruzione: il bordo destro di una riga di
+    // corpo è sempre ≥ colX0, quindi il test glossa `x1 < colX0` non scatta MAI su
+    // una riga di corpo, qualunque sia il valore stimato di colX0.
     let body = profile.bodySize
-    var colX0 = Double.greatestFiniteMagnitude
-    var colX1 = -Double.greatestFiniteMagnitude
-    var bodyLineCount = 0
+    var bodyX0s: [Double] = []
+    var bodyX1s: [Double] = []
     if body > 0 {
         for sm in summaries
         where abs(sm.fontSize - body) <= BODY_SIZE_TOLERANCE
             && sm.width > BODY_COLUMN_MIN_WIDTH_FRACTION * page.width {
-            colX0 = min(colX0, sm.x0)
-            colX1 = max(colX1, sm.x1)
-            bodyLineCount += 1
+            bodyX0s.append(sm.x0)
+            bodyX1s.append(sm.x1)
         }
     }
-    let columnKnown = bodyLineCount >= MIN_BODY_LINES_FOR_COLUMN
+    let columnKnown = bodyX0s.count >= MIN_BODY_LINES_FOR_COLUMN
+    let colX0 = median(bodyX0s)
+    let colX1 = median(bodyX1s)
 
     var items: [GenItem] = []
     var runRole: RunRole?
