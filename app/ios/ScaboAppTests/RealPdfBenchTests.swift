@@ -388,6 +388,7 @@ final class RealPdfBenchTests: XCTestCase {
     private struct ReadingDump: Codable {
         let pdf: String
         let stats: NotePlacementStats
+        let categories: [String: Int]   // istogramma categorie del documento grezzo (rete B)
         let segments: [ReadingSegmentDump]
     }
 
@@ -413,10 +414,12 @@ final class RealPdfBenchTests: XCTestCase {
             }
             let ex = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
             let raw = buildDocumentFromPdf(ex, sourceName: name)
+            var cats: [String: Int] = [:]
+            for n in raw.structure { cats[n.type.rawValue, default: 0] += 1 }
             let placedResult = bindAndPlaceNotes(raw, ex)
             let segments = ContinuousBodyBuilder.bodySegments(from: placedResult.document, granularity: .fine)
             let dump = ReadingDump(
-                pdf: name, stats: placedResult.stats,
+                pdf: name, stats: placedResult.stats, categories: cats,
                 segments: segments.map {
                     ReadingSegmentDump(role: $0.role, lengthCategory: $0.lengthCategory,
                                        acousticIntro: $0.acousticIntro, text: $0.text)
@@ -424,11 +427,12 @@ final class RealPdfBenchTests: XCTestCase {
             let stem = (name as NSString).deletingPathExtension
             try enc.encode(dump).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).reading.json"))
             let s = placedResult.stats
+            let nNote = cats["NOTE", default: 0], nGloss = cats["MARGINAL_GLOSS", default: 0]
+            let nBody = cats["BODY", default: 0]
             print("""
-                [reading] \(name): segmenti=\(segments.count)  note(footnotes)=\(s.footnotes)
+                [reading] \(name): segmenti=\(segments.count)  NOTE=\(nNote) MARGINAL_GLOSS=\(nGloss) BODY=\(nBody)
                   aggancio: same-page=\(s.boundSamePage) cross-page=\(s.boundCrossPage) non-agganciati(marker)=\(s.unboundMarkers)
-                  piazzate: brevi(fine-frase)=\(s.placedShort) lunghe(fine-sezione)=\(s.placedLong) non-agganciate(in-loco)=\(s.unboundNotes)
-                  marker: smaller=\(s.markersSmaller) paren=\(s.markersParen)
+                  piazzate: brevi=\(s.placedShort) lunghe=\(s.placedLong) non-agganciate(in-loco)=\(s.unboundNotes)
                 """)
         }
     }

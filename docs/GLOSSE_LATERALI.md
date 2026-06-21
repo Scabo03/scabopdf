@@ -1,4 +1,10 @@
-# Glosse laterali — indagine (riconoscimento, scartabilità, categorizzazione)
+# Glosse laterali — indagine + implementazione
+
+> **Stato: IMPLEMENTATO** (categoria `MARGINAL_GLOSS`, riconoscimento geometrico,
+> scarto dal flusso). Vedi § 8 in fondo per l'implementazione e le due reti di
+> verifica. Le sezioni 1–7 sono l'indagine che l'ha fondata.
+
+
 
 Giro di **sola analisi e misura** (nessun codice di produzione, nessuna regola di
 scarto implementata). Le glosse laterali sono le parole-chiave / titoletti a
@@ -169,3 +175,74 @@ categoria**, non distruggere.
 - `/tmp/scabo_gloss/*.v2.json` — campioni glossa + contesto-corpo per la lettura
   semantica.
 - Misura della perdita: occorrenze coperte solo-da-glossa / riferimento.
+
+## 8. Implementazione (categoria MARGINAL_GLOSS, riconoscimento geometrico, scarto)
+
+Implementato senza bump di schema: si **riusa la categoria esistente
+`MARGINAL_GLOSS`** del contratto 0.7.0 (la stessa che i plugin Python usano per le
+glosse), non si inventa un'etichetta nuova. Cosa è cambiato:
+
+- **`GenericPlugin.swift`** — `pageItems` stima la **colonna del corpo PER-PAGINA**
+  (bordi sx/dx delle righe corpo-size larghe; margini alternati recto/verso). Una
+  riga di taglia-nota che cade **fuori dalla colonna** (`x1 < colX0−5` o `x0 >
+  colX1+5`), **alfabetica** e **non romano di capitolo** è una glossa →
+  `RunRole.gloss` → nodo `MARGINAL_GLOSS`. **Astensione** (resta `NOTE`) se la
+  colonna è incerta (<3 righe-corpo) o la riga è al confine: nel dubbio non si
+  scarta. Le note vere (piccole ma **dentro** la colonna) restano `NOTE`.
+- **`BuildSegments.swift`** — `MARGINAL_GLOSS` è escluso dal flusso letto
+  (`NON_READ_ROLES`), come la furniture, **ma resta nell'albero** del documento
+  (categoria conservata → reversibile: navigazione futura non preclusa).
+- **`NoteBinding.swift`** — il binder ignora i run `.gloss`: l'apparato note si
+  occupa solo delle note vere.
+
+### Rete A — nessuna perdita di contenuto (numero + semantica)
+
+Misurato sui dump della pipeline reale. La fedeltà-lettura **a occorrenze** cala
+(Torrente 97.43→95.09, Mosconi 99.43→97.10, ≈ −2.3pt sui volumi a glosse dense),
+**ma è ridondanza, non contenuto**. Il metro a occorrenze conta le **ripetizioni**
+delle glosse rimosse; il contenuto vero è la copertura a **tipi**. I token che
+diventano *non più coperti* togliendo le glosse:
+
+| Volume | tipi non-più-coperti | natura (giudizio semantico) |
+|---|---|---|
+| Torrente | 115 (0.47%) | in larga parte **garbage di concatenazione** dei frammenti-glossa (`affercontratto`, `biosentenza`, `comcause`) + qualche forma-parola-chiave già nel corpo |
+| Mosconi | 32 (0.19%) | forme-parola-chiave (`miscelati`, `statuali`, `previgenti`) il cui **concetto è nel corpo** (sinonimi/forme affini) |
+| Marotta (controllo) | **0** | nessuna glossa → nessun cambiamento |
+
+Nessun **concetto unico** perso (confermato anche dall'indagine § 2: token-solo-
+glossa 0.01–0.07% delle occorrenze; controesempio Mosconi 2017/2022 verificato
+ridondante). Effetto collaterale utile: rimuovere le glosse elimina pure i **token
+malformati** che la concatenazione dei frammenti a margine produceva. **Divergenza
+numero↔semantica registrata**: il calo a occorrenze (−2.3pt) NON è perdita; il
+controllo Marotta a 0 conferma la non-regressione dove non ci sono glosse.
+
+### Rete B — apparato note intatto sulle note vere
+
+| Volume | NOTE prima | NOTE dopo | MARGINAL_GLOSS | aggancio note (same-page / orfani) |
+|---|---|---|---|---|
+| Torrente | 1882 | **333** | **1765** | n/d (Torrente non ha note numerate) |
+| Mosconi | 1203 | 1080 | 441 | **518 / 10 — IDENTICO a prima** |
+| Marotta (controllo) | 101 | **101** | 0 | **86 / 242 — IDENTICO a prima** |
+
+Le glosse migrano in massa fuori dal secchio NOTE (Torrente −1549 NOTE → 1765
+MARGINAL_GLOSS); le **note vere e il loro aggancio restano invariati** (Mosconi
+518/10 identico; Marotta intatto). L'apparato note committato (`4cd6fd6`) non
+peggiora — si **ripulisce**.
+
+Residuo dichiarato: su Torrente restano **333 NOTE** (non near-zero): righe piccole
+**dentro la colonna** (voci d'indice, didascalie) o glosse che la stima per-pagina
+non ha isolato → per **astensione** restano lette (sicuro, mai scarto nel dubbio).
+
+### Verifica
+
+- ScaboCore 186 test (6 nuovi in `GlossRecognitionTests`: glossa→MARGINAL_GLOSS e
+  fuori-flusso; nota in colonna→NOTE+agganciata; folio/romano→non-glossa; colonna
+  per-pagina margini alternati; astensione; aggancio note intatto con glossa).
+- ScaboAppTests verdi; banco iPad reale (reti A/B sopra).
+
+### Confine onesto
+
+Riconoscimento geometrico calibrato sul Generic on-device. Dove la colonna
+per-pagina è incerta o la geometria ambigua, **si astiene** (resta NOTE, letto):
+preferito a uno scarto largo. La categoria è **conservata** nel documento: lo
+scarto è dal solo flusso di lettura, reversibile (navigazione futura).

@@ -162,6 +162,8 @@ public func bindAndPlaceNotes(
             if node.type == .NOTE {
                 footnotesByNoteId[node.id] = splitFootnotes(lines, page: page)
             }
+        case .run(.gloss, _):
+            break  // le glosse laterali non sono note: niente aggancio (apparato note ripulito)
         case .heading:
             break
         }

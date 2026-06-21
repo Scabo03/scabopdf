@@ -46,6 +46,14 @@ private enum Work {
     case node(NodeDict)
 }
 
+/// Ruoli ESCLUSI dal flusso di lettura (presenti nel documento, ma non vocalizzati).
+/// `MARGINAL_GLOSS` (glosse laterali) sono parole-chiave/titoletti a margine:
+/// ridondanti col corpo (indagine docs/GLOSSE_LATERALI.md, perdita ≤0.07%) e, in un
+/// flusso lineare, interruzioni a metà discorso. Si scartano dalla voce come la
+/// furniture, ma restano CATEGORIZZATI nell'albero (scelta reversibile: un domani
+/// potranno servire alla navigazione). Le note vere restano lette/piazzate.
+private let NON_READ_ROLES: Set<String> = [SemanticCategory.MARGINAL_GLOSS.rawValue]
+
 private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
     let lengthCategory = node.length_category?.rawValue ?? ""
     // Synthetic AKN containers are reclassified to a divider role so they are not
@@ -84,6 +92,11 @@ private func pushSlice(
 
 /// Builds the ordered work-items a node expands into (children + own text).
 private func expand(_ node: NodeDict) -> [Work] {
+    // Glosse laterali (e altri ruoli non-letti): scartate dal flusso vocale, ma
+    // restano nell'albero del documento. Sono foglie senza figli nel Generic.
+    if NON_READ_ROLES.contains(node.type.rawValue) {
+        return []
+    }
     let text = node.text ?? ""
     let children = node.children
 

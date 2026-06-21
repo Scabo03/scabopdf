@@ -33,6 +33,20 @@ let HEADING_4_BOLD_RATIO = 1.04
 /// Below this ratio a line reads as a note (smaller than body).
 let NOTE_RATIO = 0.85
 
+// ── Glossa laterale (riconoscimento geometrico bidimensionale) ───────────────────
+// Una glossa è una riga PICCOLA (banda nota) che sta FUORI dalla colonna del corpo
+// (margine sx/dx), alfabetica, non folio/romano. La colonna è stimata PER-PAGINA
+// (i margini si alternano recto/verso). Vedi docs/GLOSSE_LATERALI.md.
+/// Tolleranza dimensione per dire "questa riga è alla taglia del corpo".
+let BODY_SIZE_TOLERANCE = 0.6
+/// Una riga conta come "riga della colonna del corpo" solo se è larga almeno così.
+let BODY_COLUMN_MIN_WIDTH_FRACTION = 0.40
+/// Servono almeno N righe-corpo per stimare la colonna; sotto, ci si ASTIENE.
+let MIN_BODY_LINES_FOR_COLUMN = 3
+/// Margine (pt) oltre il bordo colonna perché una riga sia "fuori colonna": più
+/// stretto di così → ambigua → si resta in NOTE (astensione, mai scarto nel dubbio).
+let GLOSS_MARGIN_TOLERANCE = 5.0
+
 /// RGB distance beyond which a colour counts as "distinct from body".
 let COLOR_DISTANCE_MIN = 100.0
 /// Min RGB saturation (max−min channel) for a colour to read as structural.
@@ -159,6 +173,10 @@ public final class GenericPlugin: ExtractionPlugin {
         }
         if furnitureCount > 0 {
             warnings.append("plugin:generic:furniture_lines_removed_\(furnitureCount)")
+        }
+        let glossCount = nodes.reduce(0) { $0 + ($1.type == .MARGINAL_GLOSS ? 1 : 0) }
+        if glossCount > 0 {
+            warnings.append("plugin:generic:lateral_glosses_\(glossCount)")
         }
 
         return ScabopdfDocument(
@@ -361,9 +379,40 @@ func classify(_ line: LineSummary, _ profile: Profile) -> Kind {
     return .body
 }
 
+// MARK: - Glossa laterale: discriminazione geometrica (posizione, non sola dimensione)
+
+/// Vero se `sm` (già di taglia-nota: piccola) è una GLOSSA LATERALE: sta tutta
+/// FUORI dalla colonna del corpo (a sinistra o a destra), è testo alfabetico vero
+/// e non è un numero romano di capitolo. `columnKnown` falso → ASTENSIONE (resta
+/// nota): nel dubbio non si scarta. La colonna `[colX0, colX1]` è stimata
+/// PER-PAGINA dal chiamante (i margini si alternano recto/verso).
+func isLateralGloss(_ sm: LineSummary, colX0: Double, colX1: Double, columnKnown: Bool) -> Bool {
+    guard columnKnown else { return false }
+    let outside = sm.x1 < colX0 - GLOSS_MARGIN_TOLERANCE || sm.x0 > colX1 + GLOSS_MARGIN_TOLERANCE
+    guard outside else { return false }
+    guard isSubstantial(sm.text) else { return false }   // ≥2 lettere → esclude folii numerici
+    if isRomanNumeralOnly(sm.text) { return false }       // romano di capitolo = furniture, non glossa
+    return true
+}
+
+/// Vero se il testo (a meno di un punto finale) è composto SOLO da lettere romane
+/// `[IVXLCDM]` (numero romano di capitolo/sezione a margine, da non scambiare per
+/// glossa). Cap di lunghezza per evitare falsi su parole maiuscole lunghe.
+func isRomanNumeralOnly(_ text: String) -> Bool {
+    var t = jsTrim(text)
+    if t.hasSuffix(".") { t.removeLast() }
+    t = jsTrim(t)
+    guard !t.isEmpty, t.utf16.count <= 8 else { return false }
+    let roman: Set<Character> = ["I", "V", "X", "L", "C", "D", "M"]
+    return t.allSatisfy { roman.contains($0) }
+}
+
 // MARK: - Node emission
 
-enum RunRole { case body, note }
+/// Ruolo di un run di righe consecutive. `.gloss` = glossa laterale, categoria
+/// propria `MARGINAL_GLOSS` (≠ NOTE): separarla ripulisce l'apparato note dalla
+/// conflazione size-only del classificatore.
+enum RunRole { case body, note, gloss }
 
 /// One emitted unit of a page, carrying its SOURCE line summaries so a consumer
 /// (the note binder) can re-derive span-level signal (marker sizes, note opening
@@ -385,6 +434,26 @@ func pageItems(
     _ profile: Profile,
     _ furniture: Set<String>
 ) -> [GenItem] {
+    let summaries = page.lines.map { summarizeLine($0) }
+
+    // Stima della colonna del corpo PER-PAGINA (i margini si alternano recto/verso):
+    // bordi sx/dx delle righe alla taglia del corpo e abbastanza larghe. Sotto
+    // `MIN_BODY_LINES_FOR_COLUMN` la colonna è incerta → ci si astiene dal glossare.
+    let body = profile.bodySize
+    var colX0 = Double.greatestFiniteMagnitude
+    var colX1 = -Double.greatestFiniteMagnitude
+    var bodyLineCount = 0
+    if body > 0 {
+        for sm in summaries
+        where abs(sm.fontSize - body) <= BODY_SIZE_TOLERANCE
+            && sm.width > BODY_COLUMN_MIN_WIDTH_FRACTION * page.width {
+            colX0 = min(colX0, sm.x0)
+            colX1 = max(colX1, sm.x1)
+            bodyLineCount += 1
+        }
+    }
+    let columnKnown = bodyLineCount >= MIN_BODY_LINES_FOR_COLUMN
+
     var items: [GenItem] = []
     var runRole: RunRole?
     var runLines: [LineSummary] = []
@@ -396,21 +465,30 @@ func pageItems(
         runRole = nil
         runLines = []
     }
+    func appendToRun(_ role: RunRole, _ sm: LineSummary) {
+        if let r = runRole, r != role { flushRun() }
+        runRole = role
+        runLines.append(sm)
+    }
 
-    for (lineIndex, line) in page.lines.enumerated() {
+    for (lineIndex, sm) in summaries.enumerated() {
         if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
-        let sm = summarizeLine(line)
         if isNearWhite(sm.color) { continue } // invisible white text (page anchors)
-        let kind = classify(sm, profile)
-        switch kind {
+        switch classify(sm, profile) {
         case .heading(let level):
             flushRun()
             items.append(.heading(sm, level: level))
-        case .body, .note:
-            let role: RunRole = (kind == .body) ? .body : .note
-            if let r = runRole, r != role { flushRun() }
-            runRole = role
-            runLines.append(sm)
+        case .body:
+            appendToRun(.body, sm)
+        case .note:
+            // Una riga di taglia-nota fuori dalla colonna del corpo è una GLOSSA
+            // laterale (categoria propria), non una nota; le note vere (in colonna)
+            // restano `.note`. Nel dubbio (colonna incerta o riga al confine) →
+            // resta `.note` (astensione).
+            let role: RunRole =
+                isLateralGloss(sm, colX0: colX0, colX1: colX1, columnKnown: columnKnown)
+                ? .gloss : .note
+            appendToRun(role, sm)
         }
     }
     flushRun()
@@ -438,9 +516,15 @@ func appendPageNodes(
             ))
         case .run(let role, let lines):
             let text = joinLines(lines.map { $0.text })
+            let category: SemanticCategory
+            switch role {
+            case .body: category = .BODY
+            case .note: category = .NOTE
+            case .gloss: category = .MARGINAL_GLOSS
+            }
             var node = NodeDict(
                 id: nextId(),
-                type: role == .body ? .BODY : .NOTE,
+                type: category,
                 page_index: page.pageIndex,
                 text: text
             )
