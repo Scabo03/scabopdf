@@ -47,12 +47,17 @@ private enum Work {
 }
 
 /// Ruoli ESCLUSI dal flusso di lettura (presenti nel documento, ma non vocalizzati).
-/// `MARGINAL_GLOSS` (glosse laterali) sono parole-chiave/titoletti a margine:
-/// ridondanti col corpo (indagine docs/GLOSSE_LATERALI.md, perdita ≤0.07%) e, in un
-/// flusso lineare, interruzioni a metà discorso. Si scartano dalla voce come la
-/// furniture, ma restano CATEGORIZZATI nell'albero (scelta reversibile: un domani
-/// potranno servire alla navigazione). Le note vere restano lette/piazzate.
-private let NON_READ_ROLES: Set<String> = [SemanticCategory.MARGINAL_GLOSS.rawValue]
+/// Scartati dalla voce come la furniture, ma CONSERVATI nell'albero (reversibile:
+/// un domani potranno servire alla navigazione). Le note vere restano lette/piazzate;
+/// il CONTENUTO del front-matter (prefazione/introduzione, prosa) NON è qui dentro.
+///  • `MARGINAL_GLOSS` — glosse laterali, ridondanti (docs/GLOSSE_LATERALI.md).
+///  • `TOC_GENERAL` — indice/sommario del volume (front-matter): navigazione visiva.
+///  • `ARTIFACT_STAMP` — colophon/frontespizio/pagina legale: dati editoriali.
+private let NON_READ_ROLES: Set<String> = [
+    SemanticCategory.MARGINAL_GLOSS.rawValue,
+    SemanticCategory.TOC_GENERAL.rawValue,
+    SemanticCategory.ARTIFACT_STAMP.rawValue,
+]
 
 private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
     let lengthCategory = node.length_category?.rawValue ?? ""

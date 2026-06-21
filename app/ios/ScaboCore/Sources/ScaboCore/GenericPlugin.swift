@@ -100,6 +100,7 @@ public final class GenericPlugin: ExtractionPlugin {
     public func build(_ extraction: PdfExtraction, sourceName: String) -> ScabopdfDocument {
         let profile = estimateProfile(extraction)
         let furniture = detectFurniture(extraction)
+        let fmMax = frontMatterRegionLimit(extraction.pageCount)
         var nodes: [NodeDict] = []
         var counter = 0
         func nextId() -> String {
@@ -108,7 +109,7 @@ public final class GenericPlugin: ExtractionPlugin {
         }
 
         for page in extraction.pages {
-            appendPageNodes(page, profile, furniture, &nodes, nextId)
+            appendPageNodes(page, profile, furniture, fmMax, &nodes, nextId)
         }
 
         return assembleDocument(
@@ -135,6 +136,7 @@ public final class GenericPlugin: ExtractionPlugin {
         let furniture = detectFurniture(extraction)
         if isCancelled() { return nil }
 
+        let fmMax = frontMatterRegionLimit(extraction.pageCount)
         var nodes: [NodeDict] = []
         var counter = 0
         func nextId() -> String {
@@ -145,7 +147,7 @@ public final class GenericPlugin: ExtractionPlugin {
         let total = extraction.pages.count
         for (index, page) in extraction.pages.enumerated() {
             if isCancelled() { return nil }
-            appendPageNodes(page, profile, furniture, &nodes, nextId)
+            appendPageNodes(page, profile, furniture, fmMax, &nodes, nextId)
             onPageClassified(index + 1, total)
         }
         if isCancelled() { return nil }
@@ -177,6 +179,11 @@ public final class GenericPlugin: ExtractionPlugin {
         let glossCount = nodes.reduce(0) { $0 + ($1.type == .MARGINAL_GLOSS ? 1 : 0) }
         if glossCount > 0 {
             warnings.append("plugin:generic:lateral_glosses_\(glossCount)")
+        }
+        let stampCount = nodes.reduce(0) { $0 + ($1.type == .ARTIFACT_STAMP ? 1 : 0) }
+        let tocCount = nodes.reduce(0) { $0 + ($1.type == .TOC_GENERAL ? 1 : 0) }
+        if stampCount + tocCount > 0 {
+            warnings.append("plugin:generic:front_matter_apparatus_stamp_\(stampCount)_toc_\(tocCount)")
         }
 
         return ScabopdfDocument(
@@ -414,6 +421,50 @@ func isRomanNumeralOnly(_ text: String) -> Bool {
     return t.allSatisfy { roman.contains($0) }
 }
 
+// MARK: - Front-matter: apparato (scartabile) vs contenuto (protetto)
+
+// L'apparato iniziale del volume — frontespizio/colophon e indice/sommario — è
+// navigazione visiva e dati editoriali: tedio per chi ascolta. Si riconosce SOLO
+// nella regione iniziale (per non toccare il back-matter, cantiere a parte) e con
+// segnali AUTO-IDENTIFICANTI che NON compaiono nella prosa: così la PREFAZIONE /
+// INTRODUZIONE / PREMESSA (contenuto vero, prosa) non li matcha mai e resta letta —
+// protezione assoluta del contenuto. Nel dubbio: NON apparato (letto).
+let FRONT_MATTER_REGION_FRACTION = 0.25
+let FRONT_MATTER_REGION_FLOOR = 30
+/// Una pagina è indice/sommario se ha almeno così tante righe con leader puntinato.
+let INDEX_MIN_LEADER_LINES = 3
+
+/// Pagine [0, limite) in cui si cerca l'apparato di front-matter. Generoso quanto
+/// basta a coprire indici lunghi (codici), ma sempre lontano dal back-matter.
+func frontMatterRegionLimit(_ pageCount: Int) -> Int {
+    max(FRONT_MATTER_REGION_FLOOR, Int(Double(pageCount) * FRONT_MATTER_REGION_FRACTION))
+}
+
+/// Pattern di COLOPHON/pagina legale, auto-identificanti (mai in prosa di
+/// prefazione): ISBN, "tutti i diritti riservati", "finito di stampare",
+/// "© copyright"/"copyright <anno>", SIAE. NON si usano parole legali generiche
+/// (copyright/diritti/legge) perché una prefazione può citarle.
+private let frontMatterColophonRegex = try! NSRegularExpression(
+    pattern: "\\bISBN[\\s:]*\\d|tutti i diritti(\\s+sono)?\\s+riservati|finito di stampare"
+        + "|©\\s*copyright|copyright\\s*©|copyright\\s*\\d{4}|©\\s*\\d{4}|\\bS\\.I\\.A\\.E",
+    options: [.caseInsensitive])
+/// Voce d'indice: leader puntinato (≥4 caratteri-punto, anche spaziati di un
+/// soffio). La prosa non ha leader; richiedere ≥3 righe per pagina è la guardia.
+private let frontMatterLeaderRegex =
+    try! NSRegularExpression(pattern: "[.\u{2026}\u{00B7}](\\s?[.\u{2026}\u{00B7}]){3,}")
+
+private func regexHits(_ re: NSRegularExpression, _ s: String) -> Bool {
+    re.firstMatch(in: s, range: NSRange(s.startIndex..<s.endIndex, in: s)) != nil
+}
+/// Vero se la pagina (sue righe di contenuto) è una pagina di colophon/legale.
+func isFrontMatterColophon(_ content: [LineSummary]) -> Bool {
+    content.contains { regexHits(frontMatterColophonRegex, $0.text) }
+}
+/// Vero se la pagina è un indice/sommario (≥ `INDEX_MIN_LEADER_LINES` voci a leader).
+func isFrontMatterIndex(_ content: [LineSummary]) -> Bool {
+    content.reduce(0) { regexHits(frontMatterLeaderRegex, $1.text) ? $0 + 1 : $0 } >= INDEX_MIN_LEADER_LINES
+}
+
 // MARK: - Node emission
 
 /// Ruolo di un run di righe consecutive. `.gloss` = glossa laterale, categoria
@@ -430,6 +481,9 @@ enum RunRole { case body, note, gloss }
 enum GenItem {
     case heading(LineSummary, level: Int)
     case run(RunRole, [LineSummary])
+    /// Apparato di front-matter (colophon → ARTIFACT_STAMP, indice → TOC_GENERAL):
+    /// una pagina intera, scartata dal flusso letto ma conservata nell'albero.
+    case apparatus(SemanticCategory, [LineSummary])
 }
 
 /// Derives the ordered emit-items for one page: furniture + invisible-anchor
@@ -439,9 +493,28 @@ enum GenItem {
 func pageItems(
     _ page: PdfPageExtraction,
     _ profile: Profile,
-    _ furniture: Set<String>
+    _ furniture: Set<String>,
+    _ frontMatterMaxPage: Int
 ) -> [GenItem] {
-    let summaries = page.lines.map { summarizeLine($0) }
+    // Righe di CONTENUTO della pagina: furniture e anchor invisibili tolti subito.
+    var content: [LineSummary] = []
+    for (lineIndex, line) in page.lines.enumerated() {
+        if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
+        let sm = summarizeLine(line)
+        if isNearWhite(sm.color) { continue } // invisible white text (page anchors)
+        content.append(sm)
+    }
+
+    // FRONT-MATTER APPARATO (solo regione iniziale): una pagina di colophon/legale
+    // → ARTIFACT_STAMP; una pagina d'indice/sommario → TOC_GENERAL. Entrambe
+    // scartate dal flusso (vedi BuildSegments) ma conservate. La prefazione è prosa:
+    // non è colophon (nessun ISBN/©) né indice (niente leader) → resta letta.
+    if page.pageIndex < frontMatterMaxPage, !content.isEmpty {
+        if isFrontMatterColophon(content) { return [.apparatus(.ARTIFACT_STAMP, content)] }
+        if isFrontMatterIndex(content) { return [.apparatus(.TOC_GENERAL, content)] }
+    }
+
+    let summaries = content
 
     // Stima della colonna del corpo PER-PAGINA (i margini si alternano recto/verso):
     // bordi sx/dx delle righe alla taglia del corpo e abbastanza larghe. Sotto
@@ -486,9 +559,7 @@ func pageItems(
         runLines.append(sm)
     }
 
-    for (lineIndex, sm) in summaries.enumerated() {
-        if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
-        if isNearWhite(sm.color) { continue } // invisible white text (page anchors)
+    for sm in summaries {  // già filtrate: niente furniture, niente anchor invisibili
         switch classify(sm, profile) {
         case .heading(let level):
             flushRun()
@@ -516,10 +587,11 @@ func appendPageNodes(
     _ page: PdfPageExtraction,
     _ profile: Profile,
     _ furniture: Set<String>,
+    _ frontMatterMaxPage: Int,
     _ out: inout [NodeDict],
     _ nextId: () -> String
 ) {
-    for item in pageItems(page, profile, furniture) {
+    for item in pageItems(page, profile, furniture, frontMatterMaxPage) {
         switch item {
         case .heading(let sm, let level):
             out.append(NodeDict(
@@ -545,6 +617,13 @@ func appendPageNodes(
             )
             if role == .note { node.length_category = lengthCategoryFor(text) }
             out.append(node)
+        case .apparatus(let category, let lines):
+            out.append(NodeDict(
+                id: nextId(),
+                type: category,
+                page_index: page.pageIndex,
+                text: joinLines(lines.map { $0.text })
+            ))
         }
     }
 }
