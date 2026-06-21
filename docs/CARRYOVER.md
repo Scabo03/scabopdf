@@ -52,6 +52,66 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Capitolo NOTE / APPARATO (lato app) — 2026-06-21
+
+Punto di ripartenza dopo la lunga tornata lato app (Swift/UIKit: `ScaboCore` +
+`ScaboApp`, pipeline on-device `PdfKitExtractor` → `GenericPlugin` → reading view
+`ContinuousReadingView`). Tutto verificato sul **banco iPad reale** (pipeline PDFKit),
+non sugli strumenti dev-time. Nessun bump di schema: categorie riusate dal contratto
+0.7.0. L'apparato (glosse/front-matter) è escluso dal flusso letto via
+`NON_READ_ROLES` in `BuildSegments.swift`, ma **conservato nell'albero** (reversibile,
+navigazione futura).
+
+**IN APP e committato in questa tornata (hash principali):**
+- Folio chirurgico per progressione nel Generic (Mattone A) — `522d3cc`.
+- Strumento di fedeltà-CONTENUTO (dump iPad + confronto PyMuPDF/docling) — `4598269`;
+  asse fedeltà-LETTURA (misura ciò che la reading view legge davvero) — `c371a8d`.
+- Aggancio richiamo↔nota + piazzamento LAYER2 in Lettura Continua (brevi MICRO/SHORT
+  inline a fine frase; lunghe a fine sezione; note non agganciate lette in posizione)
+  — `4cd6fd6`.
+- Scarto GLOSSE LATERALI: categoria `MARGINAL_GLOSS`, riconoscimento geometrico
+  (dimensione piccola + fuori dalla colonna del corpo), fuori dal flusso ma conservata
+  — `982ad45`; affinamento via stima-colonna a MEDIANA (recupera le sfuggite, zero
+  falsi positivi) — `1434f97`.
+- Scarto FRONT-MATTER-apparato: colophon → `ARTIFACT_STAMP` (pattern auto-identificanti:
+  ISBN+cifra / © copyright / "tutti i diritti riservati" / SIAE), indice/sommario →
+  `TOC_GENERAL` (≥3 righe a leader puntinato), scope alla sola regione iniziale;
+  **protezione ASSOLUTA di prefazioni/introduzioni** (prosa → mai scartata, verificato
+  su tutto il corpus) — `edefe47`. Indagini fondative: glosse `c7b5279`, regime cieco
+  note `2bf31dd`.
+- Indice 2 colonne: verificato GIÀ corretto sulla pipeline reale → niente da spedire,
+  archiviato (Mattone B) — `1f21aad`.
+- Granularità di lettura a 4 livelli esposta (§7.7) — `07c1a9b`.
+
+**APERTO (prossima sessione):**
+- Memory refresh delle note lunghe differite (§7.4/7.5) — da calibrare all'ORECCHIO.
+- Regime cieco note numerate via COLORE (Marrone) → destinato a un plugin specializzato
+  colori, NON al Generic (la tripletta successione+adiacenza+doppia-comparsa non basta:
+  Torrente non ha note numerate, Marrone ha il lato-nota non rilevato per dimensione).
+- Glosse residue su colonna ambigua: astenute (lette), recupero non forzato.
+- Front-matter parziale: indici a leader debole/spaziato, frontespizio, elenco
+  abbreviazioni, dedica → restano letti per ASTENSIONE (nessuna prefazione persa).
+- Back-matter: indice analitico GIÀ fatto nel sentiero indice (non toccare); restano
+  bibliografia e colophon finale → giro proprio, riusando i segnali front-matter con
+  scope FINALE.
+- Sospetto titoli sotto-riconosciuti sul Torrente (HEADING declassati a corpo).
+- Build TestFlight per portare su dispositivo quanto committato.
+- Collaudo d'ORECCHIO del maintainer su agganci note e scarti (giudice ultimo).
+
+**CAUTELE DI METODO (confermate più volte, valgono per ogni giro futuro):**
+- Per ORDINE/GEOMETRIA/FEDELTÀ il metro è la pipeline **PDFKit reale**, non gli
+  strumenti dev-time (PyMuPDF/docling spezzano e ordinano diversamente). Confermato su
+  Mattone A/B, aggancio note, glosse (la stima offline PyMuPDF si è rivelata fuorviante
+  più volte).
+- Per lo SCARTO il segnale è la copertura a **TIPI-token**, non le occorrenze (le
+  occorrenze sovrastimano: contano la ridondanza rimossa).
+- Per riconoscere APPARATO serve un segnale che la **prosa di contenuto non possa
+  produrre** (pattern auto-identificanti: ISBN, © copyright, leader puntinato;
+  dimensione+posizione per le glosse), MAI parole generiche (copyright/diritti/legge
+  compaiono anche nella prosa).
+
+---
+
 ## Stato dell'avanzamento
 
 ### Decisioni architetturali definitive
