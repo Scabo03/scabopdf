@@ -52,51 +52,99 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Capitolo NOTE / APPARATO (lato app) — 2026-06-21
+## ▶ STATO — Capitolo NOTE / APPARATO (lato app) — 2026-06-22
 
-Punto di ripartenza dopo la lunga tornata lato app (Swift/UIKit: `ScaboCore` +
-`ScaboApp`, pipeline on-device `PdfKitExtractor` → `GenericPlugin` → reading view
-`ContinuousReadingView`). Tutto verificato sul **banco iPad reale** (pipeline PDFKit),
-non sugli strumenti dev-time. Nessun bump di schema: categorie riusate dal contratto
-0.7.0. L'apparato (glosse/front-matter) è escluso dal flusso letto via
-`NON_READ_ROLES` in `BuildSegments.swift`, ma **conservato nell'albero** (reversibile,
-navigazione futura).
+Punto di ripartenza dopo la tornata lato app (Swift/UIKit: `ScaboCore` + `ScaboApp`,
+pipeline on-device `PdfKitExtractor` → `GenericPlugin` → `bindAndPlaceNotes` → reading
+view `ContinuousReadingView`). Tutto verificato sul **banco iPad reale** (pipeline
+PDFKit) con doppia rete BEFORE/AFTER, non sugli strumenti dev-time. Nessun bump di
+schema: categorie riusate dal contratto 0.7.0. L'apparato (glosse / front-matter /
+back-matter) è escluso dal flusso letto via `NON_READ_ROLES` in `BuildSegments.swift`,
+ma **conservato nell'albero** (reversibile, navigazione futura).
 
-**IN APP e committato in questa tornata (hash principali):**
-- Folio chirurgico per progressione nel Generic (Mattone A) — `522d3cc`.
-- Strumento di fedeltà-CONTENUTO (dump iPad + confronto PyMuPDF/docling) — `4598269`;
-  asse fedeltà-LETTURA (misura ciò che la reading view legge davvero) — `c371a8d`.
-- Aggancio richiamo↔nota + piazzamento LAYER2 in Lettura Continua (brevi MICRO/SHORT
-  inline a fine frase; lunghe a fine sezione; note non agganciate lette in posizione)
-  — `4cd6fd6`.
-- Scarto GLOSSE LATERALI: categoria `MARGINAL_GLOSS`, riconoscimento geometrico
-  (dimensione piccola + fuori dalla colonna del corpo), fuori dal flusso ma conservata
-  — `982ad45`; affinamento via stima-colonna a MEDIANA (recupera le sfuggite, zero
-  falsi positivi) — `1434f97`.
-- Scarto FRONT-MATTER-apparato: colophon → `ARTIFACT_STAMP` (pattern auto-identificanti:
-  ISBN+cifra / © copyright / "tutti i diritti riservati" / SIAE), indice/sommario →
-  `TOC_GENERAL` (≥3 righe a leader puntinato), scope alla sola regione iniziale;
-  **protezione ASSOLUTA di prefazioni/introduzioni** (prosa → mai scartata, verificato
-  su tutto il corpus) — `edefe47`. Indagini fondative: glosse `c7b5279`, regime cieco
-  note `2bf31dd`.
-- Indice 2 colonne: verificato GIÀ corretto sulla pipeline reale → niente da spedire,
-  archiviato (Mattone B) — `1f21aad`.
-- Granularità di lettura a 4 livelli esposta (§7.7) — `07c1a9b`.
+**Consolidamento accertato (audit doc↔codice del 2026-06-22).** Il flusso utente reale
+`DocumentProcessor.process` chiama in sequenza `extract` → `buildDocumentFromPdf`
+(furniture/folio, glosse, front-matter apparato + recupero indici, back-matter apparato,
+tutto via `detectApparatus` + `pageItems`) → `bindAndPlaceNotes` (aggancio + piazzamento
++ note spezzate materializzate come nodi sintetici + cross-page con guardia di
+successione) → `bodyPaginatedContent` (granularizzazione al DEFAULT + intro acustica nel
+flusso letto). **Tutto il lavoro contenutistico committato è nel flusso reale**: niente
+dietro un flag, un default che nasconde contenuto, o un percorso non chiamato. La build è
+stata portata su dispositivo (build 6) per il **collaudo d'orecchio** del maintainer; la
+pipeline di pubblicazione è documentata a parte in `docs/RELEASE_TESTFLIGHT.md` (fuori da
+questo carryover).
 
-**APERTO (prossima sessione):**
-- Memory refresh delle note lunghe differite (§7.4/7.5) — da calibrare all'ORECCHIO.
-- Regime cieco note numerate via COLORE (Marrone) → destinato a un plugin specializzato
-  colori, NON al Generic (la tripletta successione+adiacenza+doppia-comparsa non basta:
-  Torrente non ha note numerate, Marrone ha il lato-nota non rilevato per dimensione).
-- Glosse residue su colonna ambigua: astenute (lette), recupero non forzato.
-- Front-matter parziale: indici a leader debole/spaziato, frontespizio, elenco
-  abbreviazioni, dedica → restano letti per ASTENSIONE (nessuna prefazione persa).
-- Back-matter: indice analitico GIÀ fatto nel sentiero indice (non toccare); restano
-  bibliografia e colophon finale → giro proprio, riusando i segnali front-matter con
-  scope FINALE.
-- Sospetto titoli sotto-riconosciuti sul Torrente (HEADING declassati a corpo).
-- Build TestFlight per portare su dispositivo quanto committato.
-- Collaudo d'ORECCHIO del maintainer su agganci note e scarti (giudice ultimo).
+**IN APP e committato (hash principali, cronologico):**
+- Folio chirurgico per progressione (Mattone A) — `522d3cc`; fedeltà-CONTENUTO `4598269`
+  + fedeltà-LETTURA `c371a8d`; indice 2-col già corretto, archiviato (Mattone B) `1f21aad`.
+- Aggancio richiamo↔nota + piazzamento (brevi MICRO/SHORT inline a fine frase; lunghe a
+  fine sezione; non agganciate lette in posizione) — `4cd6fd6`.
+- Glosse laterali → `MARGINAL_GLOSS` (geometrico, fuori flusso, conservato) — `982ad45`;
+  stima-colonna a MEDIANA (recupera le sfuggite, zero falsi positivi) — `1434f97`.
+- Front-matter apparato: colophon → `ARTIFACT_STAMP`, indice/sommario a leader →
+  `TOC_GENERAL`, scope alla regione iniziale; **prefazioni/introduzioni protette per
+  costruzione** — `edefe47`. Granularità 4 livelli esposta (motore) — `07c1a9b`. Indagini
+  fondative: glosse `c7b5279`, regime cieco note `2bf31dd`.
+- **Back-matter apparato (NUOVO) — `76863e2`** (+ housekeeping tassonomia `22d5e7f`).
+  Simmetrico al front: colophon finale → `ARTIFACT_STAMP`; sommario ripetuto / indice
+  cronologico a leader → `TOC_GENERAL`; **indice dei nomi / delle fonti / delle sentenze
+  citate → `INDEX_ENTRY`** (ancorato al TITOLO di sezione + guardia di struttura
+  debole/forte, robusta alle voci multi-riga: Mosconi sentenze ~0.27 ma ≥10 righe-voce).
+  **Indice analitico RECINTATO** (deny-list del titolo: resta LETTO, cantiere INDICE non
+  toccato). Decisione di merito coi dati: **bibliografia = LETTA** (è per-capitolo,
+  contenuto curato; un titolo di bibliografia chiude anzi la regione indice). Reti su 18
+  volumi: Marotta INDEX_ENTRY 0→12, Mosconi 0→26, Compendio TOC 0→15, colophon finali su
+  Torrente/Elementi/Mandrioli; **zero parole di contenuto perse** (Marotta APPENDICE
+  protetta), note-binding byte-identico. Falso positivo trovato e chiuso al banco
+  ("Le fonti" come titolo di capitolo Torrente). Mappa completa in `docs/BACK_MATTER.md`.
+  Drift tassonomia chiuso: MARGINAL_GLOSS / TOC_GENERAL / ARTIFACT_STAMP marcate
+  `.produced` (erano `.reserved` benché già emesse).
+- **Recupero indici front-matter senza leader (NUOVO) — `4576fab`.** Riusa il
+  riconoscitore-indici del back-matter sullo scope INIZIALE (titolo INDICE/SOMMARIO,
+  folio-tollerante + struttura ≥10 righe-voce): recupera gli indici "Titolo … pag. NN"
+  senza leader (Mandrioli I +6, II +6, Marotta +3 pagine → `TOC_GENERAL`).
+  **Prefazioni/introduzioni ancora protette** (prosa → struttura debole fallisce: Marotta
+  INTRODUZIONE e Compendio PREMESSA ~60k verificate lette). Astensione su Patriarca
+  (numero di pagina IN TESTA alla voce → struttura a fine riga non scatta). I Codici: il
+  recognizer flagga solo il front INDICE SOMMARIO già preso dal leader (0 pagine nuove,
+  0 articoli toccati). `docs/FRONT_MATTER.md §2` aggiornato. Build number → 6 `ec37e93`.
+
+**INVENTARIO ALLINEAMENTO (audit 2026-06-22) — cosa è in app e cosa no:**
+- **IN PRODUZIONE** (nel flusso reale): estrazione, classificazione completa (furniture/
+  folio, glosse, front+back-matter apparato, recupero indici front), aggancio+piazzamento
+  note (incl. cross-page + note spezzate), 6 regimi `length_category` + intro acustica,
+  granularizzazione al default, reading view a due container sigillati + scrub, posizione
+  ricordata in-sessione, import sotto-il-picker, errori in prosa, progresso reale.
+- **VALIDATO MA NON IMPLEMENTATO** (logica c'è, non cablata): persistenza preferenze
+  (`Preferences.swift`: tema/layout/granularità + override per-documento, MA solo
+  `InMemoryKeyValueStore`, nessuno store `UserDefaults`, nessun chiamante → "banda
+  POST-MAC"); granularità come scelta utente (4 livelli + overload pronti e testati, MA
+  nessun controllo UI né re-render); tema applicato (logica c'è, reading view usa colori
+  di sistema, nessun selettore); memory refresh note lunghe; tripletta marker-less note.
+- **PARZIALE**: posizione di lettura (in-sessione sì, cross-sessione no); layout (logica
+  dei tre `continuous`/`quick`/`doctrine` in `Layouts.swift`, ma l'app rende solo Lettura
+  Continua); recupero indici front (Mandrioli/Marotta sì, Patriarca astenuto).
+
+**APERTO (per le prossime sessioni, separato per natura):**
+- **Gruppo B — richiede orecchio / decisione di prodotto (non al buio):** esposizione
+  granularità (controllo UI accessibile + re-render + comportamento del fuoco dopo il
+  re-render, da collaudare sul device) + persistenza della scelta; tema applicato +
+  selettore; memory refresh note lunghe differite (§7.4/7.5); posizione di lettura
+  cross-sessione (persistita per-documento).
+- **Gruppo C — giri/plugin dedicati:** layout Consultazione Rapida + Dottrina Inline
+  (rendering); split iPad; segnalibri/tag; sottolineature; libreria/organizzazione
+  import; regime cieco note numerate via COLORE → plugin colori (la tripletta succ.+adiac.
+  +doppia-comparsa non basta: Torrente senza note numerate, Marrone col lato-nota non
+  rilevato per dimensione); tripletta marker-less in produzione; OOM Codici 2700pp via
+  PDFKit; estrazione span-level + plugin corpus on-device; aggiornare `SPECS.md §4.5`
+  (quattro regimi acustici A/B/C/D → sei MICRO…MEGA).
+- **Residui di rumore d'apparato (da valutare all'orecchio, non perdita di contenuto):**
+  all'apertura di alcuni volumi qualche testatina d'indice ("Indice VII") e il SOMMARIO
+  di capitolo vengono letti come "Nota." — astensioni note del Generic, candidati a un
+  giro di rifinitura, non bloccanti.
+- **Collaudo d'ORECCHIO del maintainer** su agganci note e scarti (giudice ultimo):
+  partire dagli agganci di Mosconi/Mandrioli III, poi Marotta (appendice/introduzione
+  preservate mentre l'apparato è scartato). Checklist mirata consegnata in sessione.
 
 **CAUTELE DI METODO (confermate più volte, valgono per ogni giro futuro):**
 - Per ORDINE/GEOMETRIA/FEDELTÀ il metro è la pipeline **PDFKit reale**, non gli
