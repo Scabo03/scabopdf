@@ -32,6 +32,12 @@ public enum GenericSignal: Equatable, Sendable {
     case recurrence
     /// Merged-text length → MICRO…MEGA regime. Annotates NOTE nodes, not classifying.
     case textLength
+    /// A self-identifying TEXT pattern that prose cannot produce — the colophon
+    /// markers (ISBN/©/"finito di stampare"), the dotted-leader index line, the
+    /// back-matter index section heading. Drives the front-/back-matter apparatus
+    /// recognisers in `GenericPlugin` (the apparatus is emitted as a node but
+    /// excluded from the read flow via `NON_READ_ROLES`).
+    case textPattern
 }
 
 /// How the Generic relates to a given Layer 1 category.
@@ -72,6 +78,12 @@ public let GENERIC_TAXONOMY_ENTRIES: [GenericCategoryContract] = [
         "Default class: size ratio between NOTE_RATIO (0.85) and the heading bands, or no font information at all (ratio===0). Consecutive BODY lines are merged into one paragraph node by appendPageNodes."),
     GenericCategoryContract(.NOTE, .produced, [.sizeBand, .textLength],
         "Line clearly smaller than body, size ratio ≤0.85 (NOTE_RATIO). Runs of NOTE lines merge into one node; length_category (MICRO…MEGA) is computed from the merged text length (lengthCategoryFor)."),
+    GenericCategoryContract(.MARGINAL_GLOSS, .produced, [.sizeBand, .geometry],
+        "Lateral gloss: a note-sized line (ratio ≤0.85) sitting OUTSIDE the per-page body column (left/right margin), alphabetic, not a chapter roman. Emitted as a node but excluded from the read flow (NON_READ_ROLES). See docs/GLOSSE_LATERALI.md / isLateralGloss."),
+    GenericCategoryContract(.TOC_GENERAL, .produced, [.textPattern, .geometry],
+        "Index / table of contents: a page (front- or back-matter region) carrying ≥3 dotted-leader lines (frontMatterLeaderRegex). Emitted as a node but excluded from the read flow. The analytic index — no leaders — is NOT caught here."),
+    GenericCategoryContract(.ARTIFACT_STAMP, .produced, [.textPattern],
+        "Colophon / legal page: a sparse page (front- or back-matter region) carrying a self-identifying marker prose cannot produce — ISBN+digit, '© copyright'/'copyright <year>', 'tutti i diritti riservati', 'finito di stampare', SIAE (frontMatterColophonRegex). Emitted as a node but excluded from the read flow."),
 
     // ── Detected by the Generic but emitted as NO node (furniture / anchors) ─────
     GenericCategoryContract(.ARTIFACT_RUNNING_HEADER, .detectedSuppressed, [.recurrence, .geometry],
@@ -96,14 +108,10 @@ public let GENERIC_TAXONOMY_ENTRIES: [GenericCategoryContract] = [
         "The Generic merges note runs into a single NOTE node; it has no cross-page note-continuation model."),
     GenericCategoryContract(.MARGINAL_HEADING, .reserved, [],
         "Marginal apparatus keyed on corpus-specific font + margin geometry (e.g. Mandrioli Vol. I/II). Outside the Generic signal set."),
-    GenericCategoryContract(.MARGINAL_GLOSS, .reserved, [],
-        "Margin gloss keyed on a corpus-specific font + bbox.x0 guard; corpus-specific."),
     GenericCategoryContract(.EXAMPLE_BOX, .reserved, [],
         "Boxed worked example; needs a corpus-specific layout signal the Generic does not measure."),
     GenericCategoryContract(.CHAPTER_SUMMARY, .reserved, [],
         "Editorial chapter summary with a corpus-specific signature (e.g. small-caps SOMMARIO label). Corpus-specific."),
-    GenericCategoryContract(.TOC_GENERAL, .reserved, [],
-        "Table of contents; recognised via a Sommario header + dotted-leader entry pattern (materiali_studio pattern eeee), not by the Generic."),
     GenericCategoryContract(.INDEX_ENTRY, .reserved, [],
         "Back-matter analytic index entry; corpus-specific (often double-column)."),
     GenericCategoryContract(.EDITORIAL_NOTE, .reserved, [],
@@ -148,8 +156,6 @@ public let GENERIC_TAXONOMY_ENTRIES: [GenericCategoryContract] = [
         "Inline reference marker minted as a synthetic node by corpus plugins / the apparatus resolver. The Generic does not mint synthetic reference nodes."),
     GenericCategoryContract(.LIST_ITEM, .reserved, [],
         "List item keyed on geometric indentation / bullet glyph (materiali_studio). The Generic folds such lines into BODY."),
-    GenericCategoryContract(.ARTIFACT_STAMP, .reserved, [],
-        "Copyright / frontispiece stamp identified by a corpus-specific text regex. The Generic only drops *recurring* furniture, not a one-off stamp by signature."),
     GenericCategoryContract(.ARTIFACT_PAGE_HEADER, .reserved, [],
         "A distinct page-header artifact category; the Generic only models running-header furniture (ARTIFACT_RUNNING_HEADER)."),
     GenericCategoryContract(.EMPTY_PAGE, .reserved, [],

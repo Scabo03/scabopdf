@@ -59,12 +59,50 @@ final class TaxonomyTests: XCTestCase {
 
     // MARK: the produced closed set
 
-    /// TS: "produced is exactly the six categories the Generic emits".
-    func test_producedSet_isTheSixCategories() {
+    /// Produced is exactly the categories the Generic emits as nodes today:
+    /// the six classifier outputs plus the three apparatus categories that the
+    /// glosse + front-matter work added (emitted as nodes but excluded from the
+    /// read flow via NON_READ_ROLES). Diverges from the TS oracle's six on
+    /// purpose: the Swift app's Generic has grown those producers.
+    func test_producedSet_isTheNineCategories() {
         XCTAssertEqual(
             GENERIC_PRODUCED_CATEGORIES,
-            [.HEADING_1, .HEADING_2, .HEADING_3, .HEADING_4, .BODY, .NOTE]
+            [.HEADING_1, .HEADING_2, .HEADING_3, .HEADING_4, .BODY, .NOTE,
+             .MARGINAL_GLOSS, .TOC_GENERAL, .ARTIFACT_STAMP]
         )
+    }
+
+    /// Regression for the taxonomy drift this commit closes: a document that
+    /// actually exercises the apparatus producers (a colophon page and an index
+    /// page) must emit ONLY produced categories — and in particular the apparatus
+    /// categories it emits must be marked produced, not reserved.
+    func test_apparatusDocument_emitsOnlyProducedCategories() {
+        func l(_ t: String, _ s: Double) -> PdfTextLine {
+            let b = BBox(x: 100, y: 0, width: Double(max(1, t.count)) * 2, height: s)
+            return PdfTextLine(spans: [PdfSpan(text: t, fontSize: s, bold: false, italic: false, color: "#000000", bbox: b)], bbox: b)
+        }
+        func p(_ i: Int, _ lines: [PdfTextLine]) -> PdfPageExtraction {
+            PdfPageExtraction(pageIndex: i, width: 595, height: 842, lines: lines)
+        }
+        func body(_ i: Int) -> PdfPageExtraction {
+            p(i, (0..<6).map { l("Riga di corpo \($0) abbastanza lunga da formare un paragrafo reale.", 10) })
+        }
+        let colo = p(1, [l("ISBN 9788828829546", 9), l("© Copyright 2021 Editore S.p.A.", 9), l("Tutti i diritti sono riservati", 9)])
+        let idx = p(2, [
+            l("Capitolo I L’introduzione ................................. 3", 10),
+            l("Sezione II Le fonti normative ........................... 12", 10),
+            l("Capitolo III Conclusioni generali ....................... 45", 10),
+        ])
+        let doc = buildDocumentFromPdf(
+            PdfExtraction(version: 2, pageCount: 4, pages: [body(0), colo, idx, body(3)]),
+            sourceName: "apparato.pdf")
+        var types: Set<SemanticCategory> = []
+        everyNodeType(doc.structure, &types)
+        XCTAssertTrue(types.contains(.ARTIFACT_STAMP), "il colophon è emesso come nodo")
+        XCTAssertTrue(types.contains(.TOC_GENERAL), "l'indice è emesso come nodo")
+        for type in types {
+            XCTAssertTrue(GENERIC_PRODUCED_CATEGORIES.contains(type), "\(type.rawValue) deve essere produced")
+        }
     }
 
     /// TS: "isGenericProduced agrees with the produced set".
