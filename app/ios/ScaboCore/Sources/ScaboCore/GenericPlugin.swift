@@ -101,7 +101,7 @@ public final class GenericPlugin: ExtractionPlugin {
         let profile = estimateProfile(extraction)
         let furniture = detectFurniture(extraction)
         let fmMax = frontMatterRegionLimit(extraction.pageCount)
-        let backApparatus = detectBackMatterApparatus(extraction, furniture)
+        let apparatus = detectApparatus(extraction, furniture)
         var nodes: [NodeDict] = []
         var counter = 0
         func nextId() -> String {
@@ -110,7 +110,7 @@ public final class GenericPlugin: ExtractionPlugin {
         }
 
         for page in extraction.pages {
-            appendPageNodes(page, profile, furniture, fmMax, backApparatus, &nodes, nextId)
+            appendPageNodes(page, profile, furniture, fmMax, apparatus, &nodes, nextId)
         }
 
         return assembleDocument(
@@ -136,7 +136,7 @@ public final class GenericPlugin: ExtractionPlugin {
         if isCancelled() { return nil }
         let furniture = detectFurniture(extraction)
         if isCancelled() { return nil }
-        let backApparatus = detectBackMatterApparatus(extraction, furniture)
+        let apparatus = detectApparatus(extraction, furniture)
         if isCancelled() { return nil }
 
         let fmMax = frontMatterRegionLimit(extraction.pageCount)
@@ -150,7 +150,7 @@ public final class GenericPlugin: ExtractionPlugin {
         let total = extraction.pages.count
         for (index, page) in extraction.pages.enumerated() {
             if isCancelled() { return nil }
-            appendPageNodes(page, profile, furniture, fmMax, backApparatus, &nodes, nextId)
+            appendPageNodes(page, profile, furniture, fmMax, apparatus, &nodes, nextId)
             onPageClassified(index + 1, total)
         }
         if isCancelled() { return nil }
@@ -673,6 +673,77 @@ func detectBackMatterApparatus(
     return result
 }
 
+// MARK: - Front-matter: recupero degli indici INIZIALI senza leader
+
+// Rifinitura trasversale (riusa il riconoscitore-indici del back-matter sullo scope
+// iniziale). Il front-matter già scarta gli indici a leader puntinato (TOC_GENERAL) e
+// il colophon; restavano LETTI per astensione gli indici/sommari iniziali SENZA leader
+// ("Titolo … pag. NN": Mandrioli, Marotta). Li si recupera con lo STESSO principio del
+// back-matter: ancoraggio al TITOLO di sezione (INDICE/SOMMARIO) + guardia di struttura
+// (≥ righe-voce: `isWeaklyBackMatterIndexStructured`). Un titolo da solo NON apre la
+// regione (lezione "Le fonti"): la PREFAZIONE/INTRODUZIONE/PREMESSA è prosa piena,
+// struttura debole fallisce → resta LETTA, protetta per costruzione.
+
+/// Titolo del SOMMARIO/INDICE generale iniziale. `(?:\d{1,4}\s+)?` tollera il folio
+/// incollato; ancorato a fine riga così non matcha una frase di prosa che cita "indice".
+private let frontMatterTocHeadingRegex = try! NSRegularExpression(
+    pattern: "^\\s*(?:\\d{1,4}\\s+)?(indice([\\s-]+(generale|sommario|del\\s+volume))?|sommario)\\s*$",
+    options: [.caseInsensitive])
+
+/// Vero se tra le righe di contenuto c'è un titolo BREVE di sommario/indice generale.
+func frontMatterTocHeadingPresent(_ content: [LineSummary]) -> Bool {
+    content.contains { sm in
+        let t = jsTrim(sm.text)
+        return t.utf16.count <= 50 && regexHits(frontMatterTocHeadingRegex, t)
+    }
+}
+
+/// Pagine [0, fmMax) che sono un indice/sommario iniziale SENZA leader (il segnale a
+/// leader le manca). Regione aperta da un TITOLO di sommario CONFERMATO dalla struttura
+/// (≥ 10 righe-voce, riusa `isWeaklyBackMatterIndexStructured`), propagata finché la
+/// struttura tiene. Una pagina di prosa (prefazione/introduzione: struttura debole
+/// fallisce) NON apre né continua la regione → resta LETTA. Astensione su tutto il resto.
+func detectFrontMatterNoLeaderIndex(
+    _ extraction: PdfExtraction, _ furniture: Set<String>, _ fmMax: Int
+) -> Set<Int> {
+    var result: Set<Int> = []
+    var inRegion = false
+    for pageIndex in 0..<min(fmMax, extraction.pageCount) {
+        let page = extraction.pages[pageIndex]
+        var content: [LineSummary] = []
+        for (lineIndex, line) in page.lines.enumerated() {
+            if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
+            let sm = summarizeLine(line)
+            if isNearWhite(sm.color) { continue }
+            content.append(sm)
+        }
+        if content.isEmpty { continue }   // pagina vuota: regione invariata
+        let weak = isWeaklyBackMatterIndexStructured(content)
+        // Apre su titolo+struttura; continua su struttura; chiude su prosa (non-struttura).
+        if (frontMatterTocHeadingPresent(content) && weak) || (inRegion && weak) {
+            inRegion = true
+            result.insert(pageIndex)
+        } else if !weak {
+            inRegion = false
+        }
+    }
+    return result
+}
+
+/// Mappa pagina → categoria d'apparato escluso dal flusso: back-matter (colophon/TOC/
+/// indice nomi) UNITO al recupero degli indici iniziali senza leader (→ TOC_GENERAL).
+/// Calcolata una volta e passata a `pageItems` (build e NoteBinding vedono lo stesso
+/// item per pagina). Il colophon/indice-a-leader iniziali restano gestiti per-pagina in
+/// `pageItems` (auto-identificanti); qui si aggiunge solo ciò che richiede la regione.
+func detectApparatus(_ extraction: PdfExtraction, _ furniture: Set<String>) -> [Int: SemanticCategory] {
+    var apparatus = detectBackMatterApparatus(extraction, furniture)
+    let fmMax = frontMatterRegionLimit(extraction.pageCount)
+    for pageIndex in detectFrontMatterNoLeaderIndex(extraction, furniture, fmMax) {
+        apparatus[pageIndex] = .TOC_GENERAL
+    }
+    return apparatus
+}
+
 // MARK: - Node emission
 
 /// Ruolo di un run di righe consecutive. `.gloss` = glossa laterale, categoria
@@ -703,7 +774,7 @@ func pageItems(
     _ profile: Profile,
     _ furniture: Set<String>,
     _ frontMatterMaxPage: Int,
-    _ backApparatus: [Int: SemanticCategory] = [:]
+    _ apparatus: [Int: SemanticCategory] = [:]
 ) -> [GenItem] {
     // Righe di CONTENUTO della pagina: furniture e anchor invisibili tolti subito.
     var content: [LineSummary] = []
@@ -727,7 +798,7 @@ func pageItems(
     // in detectBackMatterApparatus (colophon → ARTIFACT_STAMP, indice/sommario a leader
     // → TOC_GENERAL, indice nomi/fonti/sentenze → INDEX_ENTRY). Scartata dal flusso ma
     // conservata. L'indice analitico recintato e ogni prosa NON sono in mappa → lette.
-    if let category = backApparatus[page.pageIndex], !content.isEmpty {
+    if let category = apparatus[page.pageIndex], !content.isEmpty {
         return [.apparatus(category, content)]
     }
 
@@ -805,11 +876,11 @@ func appendPageNodes(
     _ profile: Profile,
     _ furniture: Set<String>,
     _ frontMatterMaxPage: Int,
-    _ backApparatus: [Int: SemanticCategory],
+    _ apparatus: [Int: SemanticCategory],
     _ out: inout [NodeDict],
     _ nextId: () -> String
 ) {
-    for item in pageItems(page, profile, furniture, frontMatterMaxPage, backApparatus) {
+    for item in pageItems(page, profile, furniture, frontMatterMaxPage, apparatus) {
         switch item {
         case .heading(let sm, let level):
             out.append(NodeDict(

@@ -52,20 +52,30 @@ li matcha mai → protezione per costruzione):
   `ISBN` + cifra, "tutti i diritti riservati", "finito di stampare", "© copyright"
   / "copyright `<anno>`", SIAE. **Non** parole legali generiche (copyright/diritti/
   legge da sole): una prefazione può citarle (es. "ai sensi dell'art. 342 TFUE").
-- **Indice/sommario → `TOC_GENERAL`.** Una pagina con ≥ 3 righe a **leader
+- **Indice/sommario a leader → `TOC_GENERAL`.** Una pagina con ≥ 3 righe a **leader
   puntinato** (`[.…·]` ripetuti ≥ 4, anche spaziati di un soffio). La prosa non ha
   leader; la soglia ≥ 3/pagina è la guardia.
+- **Indice/sommario SENZA leader → `TOC_GENERAL` (recupero, rifinitura trasversale).**
+  Riusa il riconoscitore-indici del back-matter (commit `76863e2`) sullo scope
+  iniziale: una regione aperta da un **titolo** di sommario (`INDICE`/`SOMMARIO`,
+  tollerante al folio) **e confermata dalla struttura** (≥ 10 righe-voce che finiscono
+  in numero di pagina, `isWeaklyBackMatterIndexStructured`), propagata finché la
+  struttura tiene. Recupera Mandrioli e Marotta (indici "Titolo … pag. NN" senza
+  leader). **Un titolo da solo NON apre la regione** (lezione "Le fonti"): una
+  prefazione è prosa, struttura debole fallisce → letta.
 - **Prefazione/introduzione/premessa → resta `BODY`/`HEADING` (LETTA).** È prosa:
-  niente ISBN/©, niente leader → non matcha nulla → protetta.
+  niente ISBN/©, niente leader, **niente struttura-indice** → non matcha nulla →
+  protetta (Marotta INTRODUZIONE, Compendio PREMESSA ~60k: verificate lette).
 
 Categorie **riusate** dal contratto 0.7.0 (nessun bump): `ARTIFACT_STAMP` (colophon)
-e `TOC_GENERAL` (indice). Entrambe **escluse dal flusso letto** (`NON_READ_ROLES`
-in `BuildSegments`) ma **conservate nell'albero** (reversibile: navigazione futura).
+e `TOC_GENERAL` (indice, a leader e senza leader). Entrambe **escluse dal flusso
+letto** (`NON_READ_ROLES` in `BuildSegments`) ma **conservate nell'albero**.
 
 **Astensione dichiarata (lasciato letto, non scartato):**
-- indici a leader troppo **spaziato** (Mosconi, Tesauro, CompendioPP) o **senza
-  leader** ("Titolo … pag. NN": Mandrioli, Patriarca, Marotta): non riconosciuti →
-  restano letti. Recupero possibile in futuro, ma rischioso → si preferisce tenerli.
+- indici a leader troppo **spaziato** non riconosciuti, e sommari **col numero di
+  pagina in TESTA** alla voce ("`278` 2. Titolo": **Patriarca**) → la struttura a
+  fine riga non scatta → astenuti (confine onesto: meglio un sommario letto di troppo
+  che una riga di prefazione scartata).
 - **frontespizio** (titolo/autore maiuscolo), **elenco abbreviazioni**, **dedica**:
   segnali troppo vicini a contenuto/heading → astensione (letti).
 

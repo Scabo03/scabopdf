@@ -101,4 +101,41 @@ final class FrontMatterTests: XCTestCase {
         XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0)
         XCTAssertTrue(readText(d).contains("testo ordinario di corpo"), "nel dubbio: letta")
     }
+
+    // ── RECUPERO (rifinitura): indice INIZIALE senza leader → TOC_GENERAL, fuori flusso ─
+    // (riusa il riconoscitore-indici del back-matter: titolo INDICE + struttura ≥10 voci.)
+    func test_initialIndexWithoutLeaders_recovered_asTocGeneral() {
+        var idx = [line("INDICE", size: 12)]
+        for i in 0..<14 {
+            idx.append(line("Capitolo \(i + 1) Argomento trattato nel capitolo  pag. \(i * 7 + 11)", size: 10))
+        }
+        let d = doc([bodyPage(0), page(1, idx), bodyPage(2)])
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 1, "l'indice iniziale senza leader è recuperato → TOC_GENERAL")
+        XCTAssertFalse(readText(d).contains("Argomento trattato"), "indice iniziale scartato dal flusso")
+        XCTAssertTrue(readText(d).contains("Riga di corpo"), "il corpo è letto")
+    }
+
+    // ── PROTEZIONE: prefazione/introduzione (prosa) → LETTA, anche se nomina "indice" ─
+    func test_initialPrefaceProse_isReadAndProtected_evenNamingIndex() {
+        let pref = page(1, [
+            line("INTRODUZIONE", size: 13),
+            line("Questo lavoro nasce da una lunga ricerca e, come si vedrà nell’indice, affronta", size: 10),
+            line("molti temi del diritto romano con attenzione alle fonti e alla loro tradizione.", size: 10),
+            line("L’introduzione espone il metodo e i risultati principali della monografia.", size: 10),
+        ])
+        let d = doc([bodyPage(0), pref, bodyPage(2)])
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0, "la prefazione/introduzione (prosa) NON è indice")
+        XCTAssertTrue(readText(d).contains("Questo lavoro nasce"), "la prosa è LETTA (contenuto protetto)")
+    }
+
+    // ── astensione: titolo di sommario SENZA struttura forte (numero in testa, Patriarca) ─
+    func test_initialTocTitleWithoutStructure_abstains_leftRead() {
+        var lines = [line("Sommario", size: 12)]
+        for i in 0..<12 {
+            lines.append(line("\(i * 10 + 5) Capitolo dedicato a un argomento di diritto commerciale", size: 10))
+        }
+        let d = doc([bodyPage(0), page(1, lines), bodyPage(2)])
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0, "titolo senza struttura (numero in testa) → astensione")
+        XCTAssertTrue(readText(d).contains("argomento di diritto commerciale"), "nel dubbio: letto")
+    }
 }

@@ -134,12 +134,12 @@ public func bindAndPlaceNotes(
     // ── 1. Zip per pagina: ogni nodo del documento ⇄ il suo item del Generic ──────
     // (stesso profilo/furniture/ordine → corrispondenza esatta 1:1 per pagina).
     let fmMax = frontMatterRegionLimit(extraction.pageCount)
-    let backApparatus = detectBackMatterApparatus(extraction, furniture)
+    let apparatus = detectApparatus(extraction, furniture)
     var itemsByPage: [Int: [GenItem]] = [:]
     func items(_ page: Int) -> [GenItem] {
         if let cached = itemsByPage[page] { return cached }
         let pageExtraction = extraction.pages.first { $0.pageIndex == page }
-        let derived = pageExtraction.map { pageItems($0, profile, furniture, fmMax, backApparatus) } ?? []
+        let derived = pageExtraction.map { pageItems($0, profile, furniture, fmMax, apparatus) } ?? []
         itemsByPage[page] = derived
         return derived
     }
