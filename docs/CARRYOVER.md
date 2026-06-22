@@ -52,7 +52,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Capitolo NOTE / APPARATO (lato app) — 2026-06-22
+## ▶ STATO — Capitolo NOTE / APPARATO (lato app) — 2026-06-22 (post primo collaudo d'orecchio)
 
 Punto di ripartenza dopo la tornata lato app (Swift/UIKit: `ScaboCore` + `ScaboApp`,
 pipeline on-device `PdfKitExtractor` → `GenericPlugin` → `bindAndPlaceNotes` → reading
@@ -69,10 +69,52 @@ tutto via `detectApparatus` + `pageItems`) → `bindAndPlaceNotes` (aggancio + p
 + note spezzate materializzate come nodi sintetici + cross-page con guardia di
 successione) → `bodyPaginatedContent` (granularizzazione al DEFAULT + intro acustica nel
 flusso letto). **Tutto il lavoro contenutistico committato è nel flusso reale**: niente
-dietro un flag, un default che nasconde contenuto, o un percorso non chiamato. La build è
-stata portata su dispositivo (build 6) per il **collaudo d'orecchio** del maintainer; la
+dietro un flag, un default che nasconde contenuto, o un percorso non chiamato. La
 pipeline di pubblicazione è documentata a parte in `docs/RELEASE_TESTFLIGHT.md` (fuori da
 questo carryover).
+
+**PRIMO COLLAUDO D'ORECCHIO su device (build 6) → tre difetti reali corretti → build 7**
+(`f108bb2` i fix, `a6760dd` il build-number, caricata su TestFlight via `fastlane beta` il
+2026-06-22 — "UPLOAD SUCCEEDED"). Difetti che gli strumenti NON vedevano (comportamento
+VoiceOver / piazzamento), riprodotti nel Simulator iPad via banco sul volume reale
+**"Delitti in prima pagina"** (E. Bruti Liberati, in `originals_new`) e diagnosticati
+sull'output EFFETTIVO dei segmenti di lettura (`test_readingFidelityDump_fromRequest`),
+non al buio:
+1. **"Nota." prima di OGNI intestazione** (il più grave). Diagnosi: NON era
+   `acousticIntroFor` (già corretto, vuoto per HEADING/BODY) ma la CLASSIFICAZIONE — il
+   Generic size-only collassa in `NOTE` testatine e titoli di sezione in maiuscoletto
+   (taglia < corpo). Fix: passo finale `suppressCollapsedHeadingNoteIntros` in
+   `BuildSegments.swift`, **solo sul backend euristico** (`profile_id == "generic"`), che
+   toglie l'intro "Nota." a una NOTE il cui testo non si apre con un marcatore di nota
+   (numero/simbolo); AKN/EPUB intatti. Su Delitti: NOTE-titolo con "Nota." **241 → 0**.
+2. **Titolo del libro in mezzo al primo paragrafo.** Causa CONDIVISA col bug 1: la
+   testatina-verso "DELITTI IN PRIMA PAGINA" (yFrac≈0.883, 131 pagine) sfuggiva alla banda
+   furniture (`TOP_BAND` 0.9) e si intrufolava nel corpo a cavallo del salto pagina. Fix:
+   `TOP_BAND` 0.9 → 0.85, così la **ricorrenza-per-NORMA** (testo, non posizione) la
+   riconosce. Sicuro: una riga di corpo, sempre di testo diverso, non ricorre mai per norma.
+   Su Delitti: testatina-libro letta nel flusso **124 → 1** (resta il solo titolo di
+   frontespizio, letto una volta — corretto).
+3. **Nota breve orfana a fine paragrafo invece che inline.** Il richiamo "2" della Genesi
+   sedeva sulla CITAZIONE A BLOCCO (10.3pt, sotto il corpo 11.5pt): la guardia stretta di
+   `detectInlineMarkers` (`== corpo ± 0.6`) saltava la riga e la nota restava non
+   agganciata. Fix: guardia allargata a "almeno uno span ≥ `NOTE_RATIO`·corpo" (cattura le
+   citazioni a blocco, esclude l'apparato a piè di pagina). "2. Genesi 4, 1-15." ora si lega
+   e si piazza inline subito dopo la citazione.
+
+   **Reti BEFORE/AFTER al banco** (stash HEAD vs fix): **rete A — zero frasi reali perse**
+   su Mosconi e Marotta (il calo-token è solo testatine ricorrenti de-duplicate, nessun
+   tipo perso); **rete B — il già-fatto invariato**: Mosconi glosse 441→441, INDEX_ENTRY
+   26→26, aggancio 518→915 (più note legate correttamente, stesso fix del bug 3),
+   front/back-matter intatti; Marotta 86→98, indice/glosse/note invariati. +8 test unità;
+   suite **ScaboCore 217/217, ScaboApp 48/48**. **Nota di metodo importante**: una prima
+   versione del fix-testatina (canale "per-POSIZIONE"/slot, testo-agnostico) **perdeva corpo
+   reale** su Mosconi — toglieva le prime-righe-di-paragrafo, che su pagine dense cadono allo
+   STESSO slot verticale della testatina — ed è stata **scartata** in favore della banda
+   per-NORMA (vedi rete A). Conferma la cautela di metodo: lo scarto va misurato a tipi-token
+   sul banco reale, non assunto. **Residuo dichiarato**: i titoli di sezione / testatine-recto
+   in maiuscoletto restano classificati `NOTE` (Generic size-only) e letti in posizione SENZA
+   "Nota." (rete A intatta), ma non navigabili come heading; il recupero pieno a `HEADING` è
+   rinviato perché rischioso per la rete B sul classificatore size-only.
 
 **IN APP e committato (hash principali, cronologico):**
 - Folio chirurgico per progressione (Mattone A) — `522d3cc`; fedeltà-CONTENUTO `4598269`
@@ -138,13 +180,17 @@ questo carryover).
   rilevato per dimensione); tripletta marker-less in produzione; OOM Codici 2700pp via
   PDFKit; estrazione span-level + plugin corpus on-device; aggiornare `SPECS.md §4.5`
   (quattro regimi acustici A/B/C/D → sei MICRO…MEGA).
-- **Residui di rumore d'apparato (da valutare all'orecchio, non perdita di contenuto):**
-  all'apertura di alcuni volumi qualche testatina d'indice ("Indice VII") e il SOMMARIO
-  di capitolo vengono letti come "Nota." — astensioni note del Generic, candidati a un
-  giro di rifinitura, non bloccanti.
-- **Collaudo d'ORECCHIO del maintainer** su agganci note e scarti (giudice ultimo):
-  partire dagli agganci di Mosconi/Mandrioli III, poi Marotta (appendice/introduzione
-  preservate mentre l'apparato è scartato). Checklist mirata consegnata in sessione.
+- **Residui di rumore d'apparato — il falso "Nota." è CHIUSO al primo collaudo (build 7).**
+  Le testatine d'indice ("Indice VII") e i titoli di sezione collassati in `NOTE` non
+  annunciano più "Nota." (vedi blocco "PRIMO COLLAUDO"). Resta UN residuo dichiarato, non
+  bloccante: quei titoli sono letti in posizione come testo (rete A intatta) ma **non
+  navigabili come heading** — il Generic size-only non li distingue da una nota a piè di
+  pagina con sicurezza; il recupero a `HEADING` è rinviato (rischioso per la rete B).
+- **Collaudo d'ORECCHIO del maintainer** su agganci note e scarti (giudice ultimo): **primo
+  giro fatto su "Delitti in prima pagina" → tre fix in build 7**. Prossimi giri: ri-collaudo
+  dei tre casi su device, poi agganci di Mosconi/Mandrioli III e scarti Marotta
+  (appendice/introduzione preservate mentre l'apparato è scartato). Metodo del banco
+  on-device in `docs/RELEASE_TESTFLIGHT.md` + memoria di sessione.
 
 **CAUTELE DI METODO (confermate più volte, valgono per ogni giro futuro):**
 - Per ORDINE/GEOMETRIA/FEDELTÀ il metro è la pipeline **PDFKit reale**, non gli

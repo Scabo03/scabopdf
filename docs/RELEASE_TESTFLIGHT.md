@@ -56,8 +56,10 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
 - La lane usa `ENV["SCABO_BUILD_NUMBER"]` **se presente** (anche stringa vuota = valore!), altrimenti
   `latest_testflight_build_number + 1`. Per questo si fa `unset SCABO_BUILD_NUMBER` (auto-calcolo).
 - La lane passa `CURRENT_PROJECT_VERSION=<n>` come `xcarg`, quindi **sovrascrive** il valore nel
-  `project.pbxproj`. Il valore committato (allineato a 6 il 2026-06-22) è solo cosmetico/coerenza.
-- Storia: build 2–5 il 2026-06-13; **build 6 il 2026-06-22**. Il prossimo run produrrà 7.
+  `project.pbxproj`. Il valore committato (allineato a 7 il 2026-06-22, commit `a6760dd`) è solo
+  cosmetico/coerenza.
+- Storia: build 2–5 il 2026-06-13; build 6 il 2026-06-22; **build 7 il 2026-06-22** (tre fix del
+  primo collaudo d'orecchio — vedi `docs/CARRYOVER.md` § "PRIMO COLLAUDO"). Il prossimo run produrrà 8.
 
 ## Unico punto eventualmente manuale
 

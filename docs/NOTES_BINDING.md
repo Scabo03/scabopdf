@@ -39,6 +39,15 @@ Dettaglio PDFKit: alcuni span-richiamo SMALLER arrivano con dimensione degenere
    `summarizeLine` collassi la dimensione): regime SMALLER (`0 < size < 0.75×corpo`,
    testo = 1–3 cifre) e regime PAREN (`(\d{1,3})` in uno span a dimensione corpo).
    Si registra l'**offset di carattere** nel testo del nodo (per il piazzamento).
+   La riga deve portare **contenuto di corpo** perché vi si cerchi un richiamo
+   (guardia di riga): vale se ha almeno uno span `≥ NOTE_RATIO·corpo`. La soglia è
+   `NOTE_RATIO` (0.85·corpo), non la taglia-corpo stretta `±0.6`, così include le
+   **citazioni a blocco** (testo a taglia ridotta ma sopra la soglia-nota): su
+   "Delitti in prima pagina" il richiamo della nota breve sedeva in coda alla
+   citazione della Genesi (10.3pt contro corpo 11.5pt) e con la guardia stretta non
+   veniva mai trovato — la nota restava orfana a fine paragrafo (chiuso al primo
+   collaudo d'orecchio, build 7). Le righe di sola taglia-nota (apparato a piè di
+   pagina) restano escluse: sono nodi NOTE, non scanditi qui.
 2. **Spezzettamento note**: il Generic fonde le note di una pagina in pochi nodi
    NOTE; si rispezzano nelle singole note riconoscendo il numero d'apertura a
    inizio riga, e si **ricalcola `length_category` per nota** (il regime acustico
