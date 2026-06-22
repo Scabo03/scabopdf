@@ -68,7 +68,7 @@ final class TaxonomyTests: XCTestCase {
         XCTAssertEqual(
             GENERIC_PRODUCED_CATEGORIES,
             [.HEADING_1, .HEADING_2, .HEADING_3, .HEADING_4, .BODY, .NOTE,
-             .MARGINAL_GLOSS, .TOC_GENERAL, .ARTIFACT_STAMP]
+             .MARGINAL_GLOSS, .TOC_GENERAL, .ARTIFACT_STAMP, .INDEX_ENTRY]
         )
     }
 

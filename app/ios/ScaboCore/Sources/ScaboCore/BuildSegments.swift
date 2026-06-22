@@ -51,12 +51,16 @@ private enum Work {
 /// un domani potranno servire alla navigazione). Le note vere restano lette/piazzate;
 /// il CONTENUTO del front-matter (prefazione/introduzione, prosa) NON è qui dentro.
 ///  • `MARGINAL_GLOSS` — glosse laterali, ridondanti (docs/GLOSSE_LATERALI.md).
-///  • `TOC_GENERAL` — indice/sommario del volume (front-matter): navigazione visiva.
+///  • `TOC_GENERAL` — indice/sommario del volume (front- o back-matter): navigazione.
 ///  • `ARTIFACT_STAMP` — colophon/frontespizio/pagina legale: dati editoriali.
+///  • `INDEX_ENTRY` — indice dei nomi/fonti/sentenze in coda (back-matter): apparato
+///    di consultazione (docs/BACK_MATTER.md). L'indice ANALITICO recintato NON è qui:
+///    non è classificato INDEX_ENTRY dal Generic, resta letto.
 private let NON_READ_ROLES: Set<String> = [
     SemanticCategory.MARGINAL_GLOSS.rawValue,
     SemanticCategory.TOC_GENERAL.rawValue,
     SemanticCategory.ARTIFACT_STAMP.rawValue,
+    SemanticCategory.INDEX_ENTRY.rawValue,
 ]
 
 private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {

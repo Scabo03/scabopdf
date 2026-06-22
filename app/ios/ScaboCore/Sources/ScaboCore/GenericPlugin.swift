@@ -101,6 +101,7 @@ public final class GenericPlugin: ExtractionPlugin {
         let profile = estimateProfile(extraction)
         let furniture = detectFurniture(extraction)
         let fmMax = frontMatterRegionLimit(extraction.pageCount)
+        let backApparatus = detectBackMatterApparatus(extraction, furniture)
         var nodes: [NodeDict] = []
         var counter = 0
         func nextId() -> String {
@@ -109,7 +110,7 @@ public final class GenericPlugin: ExtractionPlugin {
         }
 
         for page in extraction.pages {
-            appendPageNodes(page, profile, furniture, fmMax, &nodes, nextId)
+            appendPageNodes(page, profile, furniture, fmMax, backApparatus, &nodes, nextId)
         }
 
         return assembleDocument(
@@ -135,6 +136,8 @@ public final class GenericPlugin: ExtractionPlugin {
         if isCancelled() { return nil }
         let furniture = detectFurniture(extraction)
         if isCancelled() { return nil }
+        let backApparatus = detectBackMatterApparatus(extraction, furniture)
+        if isCancelled() { return nil }
 
         let fmMax = frontMatterRegionLimit(extraction.pageCount)
         var nodes: [NodeDict] = []
@@ -147,7 +150,7 @@ public final class GenericPlugin: ExtractionPlugin {
         let total = extraction.pages.count
         for (index, page) in extraction.pages.enumerated() {
             if isCancelled() { return nil }
-            appendPageNodes(page, profile, furniture, fmMax, &nodes, nextId)
+            appendPageNodes(page, profile, furniture, fmMax, backApparatus, &nodes, nextId)
             onPageClassified(index + 1, total)
         }
         if isCancelled() { return nil }
@@ -180,10 +183,16 @@ public final class GenericPlugin: ExtractionPlugin {
         if glossCount > 0 {
             warnings.append("plugin:generic:lateral_glosses_\(glossCount)")
         }
+        // Apparato di front- e back-matter emesso come nodi ma escluso dal flusso
+        // letto (NON_READ_ROLES): colophon (STAMP), indice/sommario a leader (TOC),
+        // indice nomi/fonti/sentenze di coda (INDEX_ENTRY). L'indice analitico
+        // recintato NON è contato qui (resta letto, non è INDEX_ENTRY).
         let stampCount = nodes.reduce(0) { $0 + ($1.type == .ARTIFACT_STAMP ? 1 : 0) }
         let tocCount = nodes.reduce(0) { $0 + ($1.type == .TOC_GENERAL ? 1 : 0) }
-        if stampCount + tocCount > 0 {
-            warnings.append("plugin:generic:front_matter_apparatus_stamp_\(stampCount)_toc_\(tocCount)")
+        let indexCount = nodes.reduce(0) { $0 + ($1.type == .INDEX_ENTRY ? 1 : 0) }
+        if stampCount + tocCount + indexCount > 0 {
+            warnings.append(
+                "plugin:generic:apparatus_stamp_\(stampCount)_toc_\(tocCount)_index_\(indexCount)")
         }
 
         return ScabopdfDocument(
@@ -465,6 +474,205 @@ func isFrontMatterIndex(_ content: [LineSummary]) -> Bool {
     content.reduce(0) { regexHits(frontMatterLeaderRegex, $1.text) ? $0 + 1 : $0 } >= INDEX_MIN_LEADER_LINES
 }
 
+// MARK: - Back-matter: apparato finale (scartabile) vs contenuto (protetto)
+
+// Simmetrico al front-matter (§ docs/BACK_MATTER.md). L'apparato di coda — colophon
+// finale, indice/sommario generale ripetuto, indice dei nomi/fonti/sentenze citate —
+// è navigazione/dati editoriali: tedio per chi ascolta. Si riconosce SOLO nella
+// regione FINALE e con segnali AUTO-IDENTIFICANTI (gli stessi del front-matter: regex
+// colophon, leader puntinato) più, per l'indice dei nomi, il TITOLO di sezione.
+//
+// L'INDICE ANALITICO (per argomento/alfabetico) è RECINTATO: il suo titolo è in
+// deny-list, resta LETTO (cantiere INDICE, non toccato — vedi
+// docs/ANALYSIS_INDICE_DUE_COLONNE_ORDINE.md). Empiricamente l'analitico è SENZA
+// leader (voci con riferimenti inline), quindi il segnale-leader non lo prende mai.
+//
+// La doppia natura vale anche qui: una APPENDICE/POSTFAZIONE è prosa → non matcha
+// nessun segnale → resta LETTA (protezione per costruzione, come la prefazione nel
+// front-matter). Nel dubbio: NON apparato (letto).
+let BACK_MATTER_REGION_FRACTION = 0.25
+let BACK_MATTER_REGION_FLOOR = 30
+/// Una pagina di colophon è SPARSA: poche righe di contenuto. La guardia evita di
+/// scartare un'intera pagina di corpo (densa) che citasse un marcatore di colophon.
+let COLOPHON_MAX_CONTENT_LINES = 20
+/// Frazione minima di righe-voce (che finiscono in un riferimento di pagina) perché
+/// una pagina conti come "FORTEMENTE strutturata a indice": indice fonti Marotta
+/// ~0.5, corpo Marotta ≤0.28. È la soglia per la continuazione di regione senza
+/// testatina (le pagine successive dell'indice fonti, senza titolo).
+let INDEX_PAGE_MIN_ENTRY_FRACTION = 0.35
+/// "DEBOLMENTE strutturata a indice": frazione bassa MA con un numero assoluto alto
+/// di righe-voce — le voci multi-riga (Mosconi sentenze: frac ~0.27, ma ~30 righe-voce
+/// per pagina). Distingue una pagina d'indice da una pagina di corpo con un titolo
+/// ambiguo ("Le fonti" di un capitolo: frac 0.04, 2 righe-voce). Serve a CONFERMARE
+/// la testatina/titolo prima di aprire la regione o scartare: un titolo da solo non basta.
+let INDEX_PAGE_WEAK_ENTRY_FRACTION = 0.20
+let INDEX_PAGE_WEAK_MIN_ENTRIES = 10
+/// Servono almeno così tante righe di contenuto perché valga la pena valutare la
+/// struttura a indice (sotto: troppo sparsa → astensione, letta).
+let INDEX_PAGE_MIN_LINES = 6
+
+/// Pagine [inizio, fine) in cui si cerca l'apparato di coda. Sempre OLTRE la regione
+/// di front-matter (niente sovrapposizione) e generosa quanto basta a coprire il
+/// colophon dopo un indice analitico lungo. I segnali auto-identificanti danno la
+/// precisione; lo scope dà solo il confine.
+func backMatterRegionStart(_ pageCount: Int) -> Int {
+    let span = max(BACK_MATTER_REGION_FLOOR, Int(Double(pageCount) * BACK_MATTER_REGION_FRACTION))
+    return max(frontMatterRegionLimit(pageCount), pageCount - span)
+}
+
+/// Natura della regione indice di coda propagata in avanti.
+enum BackMatterIndexKind { case nameIndex, analytical }
+/// Natura del titolo di sezione riconosciuto su una pagina.
+enum BackMatterHeading { case nameIndex, analytical, bibliography }
+
+// `(?:\d{1,4}\s+)?` tollera il FOLIO incollato a inizio testatina ("554 Indice
+// cronologico delle sentenze citate"): la testatina RIPETUTA sulle pagine d'indice è
+// il segnale più robusto quando le voci sono multi-riga (Mosconi sentenze: ogni voce
+// si avvolge su 3-6 righe, solo l'ultima finisce nel riferimento → frazione di
+// righe-voce bassa, ~0.27, sotto la soglia di struttura; la testatina la riconosce).
+/// Titolo di un indice DEI NOMI / DELLE FONTI / DELLE SENTENZE (apparato, scartabile).
+/// Auto-identificante: queste frasi non compaiono come prosa di contenuto. `LE FONTI`
+/// è ancorato a fine riga per non matchare "le fonti del diritto" (prosa/heading).
+private let backMatterNameIndexHeadingRegex = try! NSRegularExpression(
+    pattern: "^\\s*(?:\\d{1,4}\\s+)?("
+        + "indice\\s+(dei\\s+nomi|onomastico|degli\\s+autori|delle\\s+fonti"
+        + "|(cronologico\\s+)?delle\\s+sentenze|della\\s+giurisprudenza|delle\\s+opere)"
+        + "|le\\s+fonti\\s*$|fonti\\s+di\\s+tradizione|giurisprudenza\\s+citata"
+        + ")",
+    options: [.caseInsensitive])
+/// Titolo dell'indice ANALITICO/alfabetico per argomento — RECINTATO: resta letto
+/// (sentiero INDICE, non toccato). La deny-list protegge il fence per costruzione.
+private let backMatterAnalyticalHeadingRegex = try! NSRegularExpression(
+    pattern: "^\\s*(?:\\d{1,4}\\s+)?indice\\s+(analitico|alfabetico)",
+    options: [.caseInsensitive])
+/// Titolo di BIBLIOGRAFIA / LETTERATURA / RIFERIMENTI: per decisione di prodotto la
+/// bibliografia resta LETTA (è prevalentemente per-capitolo, contenuto curato — vedi
+/// docs/BACK_MATTER.md). Un titolo di bibliografia CHIUDE ogni regione indice aperta,
+/// così una bibliografia che segue un indice nomi non viene mai scartata.
+private let backMatterBibliographyHeadingRegex = try! NSRegularExpression(
+    pattern: "^\\s*(?:\\d{1,4}\\s+)?(bibliografia|letteratura|riferimenti\\s+bibliografici"
+        + "|opere\\s+citate|fonti(\\s|,|\\.|$))",
+    options: [.caseInsensitive])
+/// Una riga-voce d'indice finisce in un riferimento di pagina: una cifra (con
+/// eventuale `s./ss./nt./n.` e punteggiatura di chiusura) a fine riga.
+private let indexEntryPageRefRegex = try! NSRegularExpression(
+    pattern: "[0-9]\\s*(s{1,2}\\.|n(t)?\\.)?\\s*[.)\\]]?\\s*$")
+
+/// Il titolo di sezione (se presente) tra le righe di contenuto: una riga BREVE che
+/// matcha il vocabolario analitico (→ recinto), nomi (→ apre regione scartabile) o
+/// bibliografia (→ chiude la regione, resta letta). L'ordine conta: `nomi` PRIMA di
+/// `bibliografia` così "LE FONTI"/"FONTI DI TRADIZIONE" (indice fonti) vincono su un
+/// titolo generico di bibliografia, mentre "FONTI." isolato (EdD) resta bibliografia.
+func backMatterHeadingKind(_ content: [LineSummary]) -> BackMatterHeading? {
+    for sm in content {
+        let t = jsTrim(sm.text)
+        guard t.utf16.count <= 50 else { continue }   // un titolo è corto, non prosa
+        if regexHits(backMatterAnalyticalHeadingRegex, t) { return .analytical }
+        if regexHits(backMatterNameIndexHeadingRegex, t) { return .nameIndex }
+        if regexHits(backMatterBibliographyHeadingRegex, t) { return .bibliography }
+    }
+    return nil
+}
+
+/// Vero se la pagina è strutturata a indice: abbastanza righe, e una frazione
+/// significativa finisce in un riferimento di pagina (voce → numero/locus). Distingue
+/// una pagina d'indice da una pagina di prosa (appendice) che NON la matcha.
+func isBackMatterIndexStructured(_ content: [LineSummary]) -> Bool {
+    guard content.count >= INDEX_PAGE_MIN_LINES else { return false }
+    let entries = content.reduce(0) { regexHits(indexEntryPageRefRegex, $1.text) ? $0 + 1 : $0 }
+    return Double(entries) / Double(content.count) >= INDEX_PAGE_MIN_ENTRY_FRACTION
+}
+
+/// DEBOLE: frazione bassa ma molte righe-voce in assoluto (voci multi-riga, Mosconi
+/// sentenze). CONFERMA che una pagina col titolo/testatina di indice è davvero un
+/// indice, non un capitolo che si apre con un titolo ambiguo ("Le fonti": frac 0.04,
+/// 2 righe-voce → fallisce → NON è apparato, resta letto).
+func isWeaklyBackMatterIndexStructured(_ content: [LineSummary]) -> Bool {
+    guard content.count >= INDEX_PAGE_MIN_LINES else { return false }
+    let entries = content.reduce(0) { regexHits(indexEntryPageRefRegex, $1.text) ? $0 + 1 : $0 }
+    return entries >= INDEX_PAGE_WEAK_MIN_ENTRIES
+        && Double(entries) / Double(content.count) >= INDEX_PAGE_WEAK_ENTRY_FRACTION
+}
+
+/// Mappa pagina → categoria d'apparato di coda da scartare: ARTIFACT_STAMP (colophon
+/// finale), TOC_GENERAL (indice/sommario a leader), INDEX_ENTRY (indice nomi/fonti/
+/// sentenze, ancorato al titolo). Le pagine NON in mappa restano processate
+/// normalmente (LETTE): l'indice analitico recintato, ogni prosa (appendice/
+/// postfazione), e ogni pagina indice-like senza titolo riconosciuto (astensione).
+/// Calcolata una volta come `detectFurniture` e passata a `pageItems` (così il build
+/// e `NoteBinding` vedono lo STESSO item per pagina — zip 1:1 invariato).
+func detectBackMatterApparatus(
+    _ extraction: PdfExtraction, _ furniture: Set<String>
+) -> [Int: SemanticCategory] {
+    let n = extraction.pageCount
+    let start = backMatterRegionStart(n)
+    guard start < n else { return [:] }
+    var result: [Int: SemanticCategory] = [:]
+    // Stato di regione: il titolo dell'indice (nomi vs analitico) è solo sulla prima
+    // pagina della sezione; lo si propaga in avanti finché una pagina di prosa
+    // (non-indice) chiude la regione, così non si entra mai in una appendice/corpo.
+    var region: BackMatterIndexKind?
+    for pageIndex in start..<n {
+        let page = extraction.pages[pageIndex]
+        var content: [LineSummary] = []
+        for (lineIndex, line) in page.lines.enumerated() {
+            if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
+            let sm = summarizeLine(line)
+            if isNearWhite(sm.color) { continue }
+            content.append(sm)
+        }
+        if content.isEmpty { continue }   // pagina vuota: nessun nodo, regione invariata
+
+        let headingThisPage = backMatterHeadingKind(content)
+        let weak = isWeaklyBackMatterIndexStructured(content)
+        let strong = isBackMatterIndexStructured(content)
+        // Aggiorna la regione dal titolo/testatina di sezione. CRUCIALE: la regione
+        // indice-nomi si apre SOLO se la pagina del titolo è ANCHE debolmente strutturata
+        // a indice — un titolo ambiguo ("Le fonti" che apre un capitolo, prosa) NON apre
+        // la regione e non scarta nulla. L'analitico (recinto) non scarta mai → nessuna
+        // guardia; la bibliografia chiude la regione (letta, per decisione).
+        switch headingThisPage {
+        case .nameIndex where weak: region = .nameIndex
+        case .analytical: region = .analytical
+        case .bibliography: region = nil
+        default: break
+        }
+
+        // 1) Colophon finale (sparso) → ARTIFACT_STAMP.
+        if content.count <= COLOPHON_MAX_CONTENT_LINES, isFrontMatterColophon(content) {
+            result[pageIndex] = .ARTIFACT_STAMP
+            continue
+        }
+        // 2) Regione indice-nomi → INDEX_ENTRY se la pagina è CONFERMATA indice: titolo/
+        //    testatina + debolmente strutturata (voci multi-riga, Mosconi sentenze ~0.27
+        //    ma ~30 righe-voce), OPPURE fortemente strutturata (indice fonti Marotta ~0.5,
+        //    pagine di continuazione senza testatina). La struttura da sola NON distingue
+        //    l'indice dal corpo fitto di note (Mosconi corpo ~0.45 > indice ~0.27): è la
+        //    regione (titolo esplicito + conferma per-pagina) il discriminatore.
+        if region == .nameIndex, (headingThisPage == .nameIndex && weak) || strong {
+            result[pageIndex] = .INDEX_ENTRY
+            continue
+        }
+        // 3) Indice/sommario a leader puntinato → TOC_GENERAL. Prima del fence: gli
+        //    indici analitici sono SENZA leader, quindi non passano mai di qui (è
+        //    invece l'indice cronologico delle leggi a leader → giustamente scartato).
+        if isFrontMatterIndex(content) {
+            result[pageIndex] = .TOC_GENERAL
+            continue
+        }
+        // 4) Indice analitico RECINTATO → LETTO (mai in mappa). La regione resta aperta.
+        if region == .analytical, strong {
+            continue
+        }
+        // 5) Pagina di prosa / non-indice: chiude ogni regione indice aperta, così una
+        //    appendice/postfazione che segue un indice NON viene mai scartata.
+        if !strong {
+            region = nil
+        }
+    }
+    return result
+}
+
 // MARK: - Node emission
 
 /// Ruolo di un run di righe consecutive. `.gloss` = glossa laterale, categoria
@@ -494,7 +702,8 @@ func pageItems(
     _ page: PdfPageExtraction,
     _ profile: Profile,
     _ furniture: Set<String>,
-    _ frontMatterMaxPage: Int
+    _ frontMatterMaxPage: Int,
+    _ backApparatus: [Int: SemanticCategory] = [:]
 ) -> [GenItem] {
     // Righe di CONTENUTO della pagina: furniture e anchor invisibili tolti subito.
     var content: [LineSummary] = []
@@ -512,6 +721,14 @@ func pageItems(
     if page.pageIndex < frontMatterMaxPage, !content.isEmpty {
         if isFrontMatterColophon(content) { return [.apparatus(.ARTIFACT_STAMP, content)] }
         if isFrontMatterIndex(content) { return [.apparatus(.TOC_GENERAL, content)] }
+    }
+
+    // BACK-MATTER APPARATO (regione finale): la disposizione di pagina è precalcolata
+    // in detectBackMatterApparatus (colophon → ARTIFACT_STAMP, indice/sommario a leader
+    // → TOC_GENERAL, indice nomi/fonti/sentenze → INDEX_ENTRY). Scartata dal flusso ma
+    // conservata. L'indice analitico recintato e ogni prosa NON sono in mappa → lette.
+    if let category = backApparatus[page.pageIndex], !content.isEmpty {
+        return [.apparatus(category, content)]
     }
 
     let summaries = content
@@ -588,10 +805,11 @@ func appendPageNodes(
     _ profile: Profile,
     _ furniture: Set<String>,
     _ frontMatterMaxPage: Int,
+    _ backApparatus: [Int: SemanticCategory],
     _ out: inout [NodeDict],
     _ nextId: () -> String
 ) {
-    for item in pageItems(page, profile, furniture, frontMatterMaxPage) {
+    for item in pageItems(page, profile, furniture, frontMatterMaxPage, backApparatus) {
         switch item {
         case .heading(let sm, let level):
             out.append(NodeDict(

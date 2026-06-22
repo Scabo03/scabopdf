@@ -73,9 +73,11 @@ final class FrontMatterTests: XCTestCase {
         XCTAssertTrue(read.contains("art. 342 TFUE"), "le parole legali nella prosa non causano scarto")
     }
 
-    // ── scope: colophon/indice nel back-matter (oltre la regione iniziale) NON tocco ─
-    func test_backMatterRegion_notTreatedAsFrontMatter() {
-        // 40 pagine: frontMatterMaxPage = max(30, 40*0.25)=30 → p35 è fuori regione.
+    // ── handoff front→back: il colophon di coda è ora gestito dal back-matter ─────────
+    // (era "cantiere a parte" prima di docs/BACK_MATTER.md; ora il colophon finale è
+    // riconosciuto come ARTIFACT_STAMP e scartato dal flusso, simmetrico al front.)
+    func test_backMatterRegion_colophonNowCaughtByBackMatter() {
+        // 37 pagine: backMatterRegionStart = max(fmMax=30, 37-max(30,9)=7)=30 → p35 in coda.
         var pages = (0..<35).map { bodyPage($0) }
         pages.append(page(35, [
             line("ISBN 9999999999999", size: 9),
@@ -84,8 +86,8 @@ final class FrontMatterTests: XCTestCase {
         ]))
         pages.append(bodyPage(36))
         let d = doc(pages)
-        XCTAssertEqual(nodes(d, .ARTIFACT_STAMP).count, 0, "a p35 (back) il front-matter NON scatta")
-        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0, "a p35 (back) l'indice NON è trattato (cantiere a parte)")
+        XCTAssertEqual(nodes(d, .ARTIFACT_STAMP).count, 1, "il colophon di coda (ISBN/©) è ARTIFACT_STAMP")
+        XCTAssertFalse(readText(d).contains("ISBN"), "il colophon di coda è scartato dal flusso letto")
     }
 
     // ── astensione: pagina iniziale né colophon né indice né prosa-vuota → normale ───

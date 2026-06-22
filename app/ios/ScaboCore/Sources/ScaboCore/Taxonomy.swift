@@ -84,6 +84,8 @@ public let GENERIC_TAXONOMY_ENTRIES: [GenericCategoryContract] = [
         "Index / table of contents: a page (front- or back-matter region) carrying ≥3 dotted-leader lines (frontMatterLeaderRegex). Emitted as a node but excluded from the read flow. The analytic index — no leaders — is NOT caught here."),
     GenericCategoryContract(.ARTIFACT_STAMP, .produced, [.textPattern],
         "Colophon / legal page: a sparse page (front- or back-matter region) carrying a self-identifying marker prose cannot produce — ISBN+digit, '© copyright'/'copyright <year>', 'tutti i diritti riservati', 'finito di stampare', SIAE (frontMatterColophonRegex). Emitted as a node but excluded from the read flow."),
+    GenericCategoryContract(.INDEX_ENTRY, .produced, [.textPattern, .geometry],
+        "Back-matter named index (names / sources / cited cases): a page in the final region under a name-index section heading (INDICE DEI NOMI/DEGLI AUTORI/DELLE FONTI, LE FONTI, INDICE CRONOLOGICO DELLE SENTENZE, …) whose lines are index-structured (entries ending in page references). Emitted as a node but excluded from the read flow. The analytic/alphabetical subject index is deliberately EXCLUDED (left read) via a heading deny-list — see docs/BACK_MATTER.md / detectBackMatterApparatus."),
 
     // ── Detected by the Generic but emitted as NO node (furniture / anchors) ─────
     GenericCategoryContract(.ARTIFACT_RUNNING_HEADER, .detectedSuppressed, [.recurrence, .geometry],
@@ -112,8 +114,6 @@ public let GENERIC_TAXONOMY_ENTRIES: [GenericCategoryContract] = [
         "Boxed worked example; needs a corpus-specific layout signal the Generic does not measure."),
     GenericCategoryContract(.CHAPTER_SUMMARY, .reserved, [],
         "Editorial chapter summary with a corpus-specific signature (e.g. small-caps SOMMARIO label). Corpus-specific."),
-    GenericCategoryContract(.INDEX_ENTRY, .reserved, [],
-        "Back-matter analytic index entry; corpus-specific (often double-column)."),
     GenericCategoryContract(.EDITORIAL_NOTE, .reserved, [],
         "Editorial (*) note; minted by the DeJure-family / AKN backends. The Generic only emits plain NOTE."),
     GenericCategoryContract(.MASSIMA_LABEL, .reserved, [],

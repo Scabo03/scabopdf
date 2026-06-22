@@ -102,22 +102,25 @@ in `BuildSegments`) ma **conservate nell'albero** (reversibile: navigazione futu
 - Le righe ri-categorizzate sono apparato (colophon/indice), verificato a occhio +
   token-per-token; nessuna riga in-colonna di contenuto catturata.
 
-## 4. Back-matter — solo MAPPA (cantiere a parte, NON toccato qui)
+## 4. Back-matter — IMPLEMENTATO in un giro proprio (§ docs/BACK_MATTER.md)
 
-Per simmetria il fondo volume ha la stessa doppia natura. Mappato come conoscenza,
-**non implementato** in questo giro:
+Per simmetria il fondo volume ha la stessa doppia natura, ed è ora trattato nel suo
+giro dedicato — **`docs/BACK_MATTER.md`** (mappa completa, segnali, doppia rete):
 
-- **Indice analitico / dei nomi:** voci alfabetiche con numeri di pagina. **Già
-  studiato nel sentiero INDICE** (Mattone B: l'ordine 2-colonne è corretto sulla
-  pipeline reale) — NON va rifatto né disfatto. Oggi è letto.
-- **Bibliografia generale:** lista di riferimenti (es. ElementiUE "BIBLIOGRAFIA
-  GENERALE"). Natura apparato-consultabile; un domani scartabile/raggruppabile.
-- **Colophon finale:** "finito di stampare nel mese di…". Apparato.
+- **Colophon finale** → `ARTIFACT_STAMP` (stesso regex + guardia pagina sparsa).
+- **Indice/sommario ripetuto + cronologico delle leggi a leader** → `TOC_GENERAL`.
+- **Indice dei nomi / delle fonti / delle sentenze citate** → `INDEX_ENTRY` (ancorato
+  al titolo di sezione, con guardia di struttura debole/forte robusta alle voci
+  multi-riga).
+- **Indice analitico**: **recintato, resta LETTO** — il suo titolo è in deny-list e
+  i suoi pagine (senza leader) non sono mai scartate; la logica-colonna del sentiero
+  INDICE non è toccata.
+- **Bibliografia**: **resta LETTA** (decisione di prodotto: è prevalentemente
+  per-capitolo, contenuto curato — vedi `docs/BACK_MATTER.md` § 1).
+- **Appendici/postfazioni** (prosa, es. Marotta APPENDICE): protette per costruzione.
 
-Confine del back-matter: il riconoscimento front-matter è **scopato alla regione
-iniziale** apposta per non toccarlo. Il back-matter avrà il suo giro, riusando i
-segnali qui validati (leader→TOC, pattern legali→STAMP) ma con scope finale e con
-attenzione a non disfare il lavoro indice già fatto.
+Front-matter e back-matter restano scopati alle rispettive regioni (niente
+sovrapposizione); l'apparato di entrambi è in `NON_READ_ROLES`.
 
 ## 5. Confine onesto
 
