@@ -1,54 +1,71 @@
-# Pubblicazione TestFlight — pipeline accertata
+# Pubblicazione TestFlight — pipeline accertata ed ESEGUITA
 
-Nota operativa per non re-investigare a ogni pubblicazione. **Accertata il 2026-06-22**
-ispezionando lo stato reale del Mac di sviluppo (certificati, archivi storici, account).
+Metodo reale **verificato eseguendolo il 2026-06-22** (build 6 caricata con successo).
 
-## Il metodo reale: Xcode GUI (Archive → Distribute) — NON fastlane
+> Correzione: una versione precedente di questa nota ipotizzava "Xcode GUI Archive→Distribute".
+> **Era sbagliata.** Il metodo reale è **`fastlane beta`** — ricostruito dalle prove e poi
+> eseguito davvero. Niente click in Xcode.
 
-Le build TestFlight storiche sono state fatte **da Xcode GUI**, non con fastlane:
-- `fastlane` **non è installato** su questa macchina (`which fastlane` → not found); `~/.fastlane`
-  contiene solo `.did_show_opt_info` (residuo di una singola invocazione, non una config).
-- Non esiste `Matchfile`, non esiste una chiave API App Store Connect `.p8` su disco, non
-  esiste un repo `match` inizializzato.
-- Il file `app/ios/fastlane/Fastfile` (lane `beta`) è **aspirazionale**: mai eseguito con
-  successo. **Ignoralo** — usarlo significherebbe inizializzare `match` da zero (cammino più
-  lungo, non più corto). Resta nel repo come riferimento, ma non è la pipeline reale.
-- Prova storica: 5 archivi `ScaboApp.xcarchive` del 2026-06-13 (build 2, 2, 3, 4, 5) in
-  `~/Library/Developer/Xcode/Archives/`; le build 3/4/5 sono quelle del debug del sigillo dei
-  due container (TestFlight). **Ultima build caricata: 5.**
+## Il metodo reale: `fastlane beta` (riga di comando, zero passi manuali)
 
-## Setup di firma già presente (da riusare, niente da ricreare)
+Prova storica: `app/ios/fastlane/report.xml` del 13 giu registra il run completo delle 6 step
+(match → latest_testflight_build_number → build_app → upload_to_testflight). Il 2026-06-22 la
+stessa lane ha caricato la **build 6**: `UPLOAD SUCCEEDED with no errors`.
 
-- **Certificato di distribuzione:** `Apple Distribution: Luca Scabini (D2KQYQ8YU8)` nel
-  portachiavi, **valido fino al 15 aprile 2027**. Niente `match`, niente nuovo certificato.
-- **Firma automatica** (`CODE_SIGN_STYLE = Automatic`): la cartella dei profili manuali
-  (`~/Library/MobileDevice/Provisioning Profiles/`) è vuota perché Xcode genera/scarica il
-  profilo App Store da sé con l'account loggato. Nessun profilo manuale da installare.
-- **Team:** `D2KQYQ8YU8` — **Bundle id:** `com.scabo.scabopdf` — **Marketing version:** `1.0`.
+La lane fa tutto: firma via **match**, archive+export via **gym**, upload via **altool** con la
+**chiave API App Store Connect**. Nessun login Apple ID interattivo, nessun Xcode aperto.
 
-## I passi (≈5 minuti)
+## Cosa è già presente sulla macchina (riusare, non ricreare)
 
-1. **Bump del build number** in `app/ios/ScaboPDF.xcodeproj` → target **ScaboApp** →
-   `CURRENT_PROJECT_VERSION = <ultimo su TestFlight + 1>`. Il valore committato deve superare
-   l'ultimo caricato (TestFlight rifiuta un numero ≤ esistente per la stessa `MARKETING_VERSION`).
-   Si bumpano i **due** config del target ScaboApp (Debug + Release); il target dei test resta
-   com'è (irrilevante). Storia: 5 → **6** (2026-06-22), via commit `chore(release): build number …`.
-2. **Apri** `app/ios/ScaboPDF.xcodeproj` in Xcode, scheme **ScaboApp**, destinazione
-   **"Any iOS Device (arm64)"**. Archivia il `main` aggiornato (così la build contiene tutto il
-   lavoro contenutistico committato).
-3. **Product → Archive.**
-4. In **Organizer**: **Distribute App → App Store Connect → Upload** → firma **automatica**
-   (riusa il certificato già presente) → **Upload**.
+- **fastlane**: gem **2.236.1**, eseguibile in `/opt/homebrew/lib/ruby/gems/4.0.0/bin/fastlane`
+  (NON nel PATH di default → vedi sotto). `bundle` è in `/opt/homebrew/bin`.
+- **xcpretty**: il formatter che `gym` usa di default. Deve essere **trovabile nel PATH**. Se
+  manca: `gem install xcpretty` (installa in `/opt/homebrew/lib/ruby/gems/4.0.0/bin`). Il sintomo
+  se non è nel PATH è `sh: xcpretty: command not found` e il build fallisce per `pipefail`.
+- **Segreti**: tutti in **`/Users/lucascabini/Developer/private_keys/scabo_deploy.env`** (file
+  `export KEY=...`, fuori dal repo, mai committato). Definisce: `APP_IDENTIFIER`, `APPLE_TEAM_ID`,
+  `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_KEY_ISSUER_ID`,
+  `APP_STORE_CONNECT_API_KEY_PATH`, `MATCH_PASSWORD`, `MATCH_GIT_URL`, `MATCH_READONLY`,
+  `SCABO_BUILD_NUMBER`.
+- **Chiave API ASC**: `/Users/lucascabini/Developer/private_keys/AuthKey_MGW9GC97HV.p8`
+  (key id `MGW9GC97HV`; issuer id nel file env).
+- **match**: repo certificati **`github.com/Scabo03/scabopdf-certs`** (storage git, branch
+  `master`), decifrato con `MATCH_PASSWORD`. Contiene il certificato di distribuzione, la `.p12`
+  e il profilo **`match AppStore com.scabo.scabopdf`**. `MATCH_READONLY=true` → installa soltanto,
+  non rigenera.
+- **Certificato**: `Apple Distribution: Luca Scabini (D2KQYQ8YU8)`, **valido fino al 2027-05-30**.
+- **App**: bundle `com.scabo.scabopdf`, team `D2KQYQ8YU8`, marketing version `1.0`.
 
-## Unico punto manuale che richiede le credenziali Apple ID
+## Il comando esatto (eseguito e verificato)
 
-- Conferma che l'**Apple ID è loggato** in **Xcode → Settings → Accounts** col team
-  `D2KQYQ8YU8`. Serve a Xcode per il profilo automatico e per l'upload da Organizer. Non è
-  leggibile da terminale (portachiavi protetto); dato che le build 2–5 sono state archiviate e
-  caricate, di norma è già presente. Se fosse stato rimosso, ri-aggiungilo lì. **Nessuna chiave
-  API .p8 necessaria** con questo metodo.
+```sh
+cd app/ios
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"   # rende fastlane E xcpretty risolvibili
+set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a
+unset SCABO_BUILD_NUMBER    # IMPORTANTE: il valore nell'env è statico/vecchio; la lane,
+                            # senza questa var, calcola "ultimo su TestFlight + 1"
+fastlane beta
+```
+
+Esito atteso: `... upload_to_testflight ...` → `UPLOAD SUCCEEDED` → `fastlane.tools finished
+successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di processing Apple.
+
+## Numero di build
+
+- La lane usa `ENV["SCABO_BUILD_NUMBER"]` **se presente** (anche stringa vuota = valore!), altrimenti
+  `latest_testflight_build_number + 1`. Per questo si fa `unset SCABO_BUILD_NUMBER` (auto-calcolo).
+- La lane passa `CURRENT_PROJECT_VERSION=<n>` come `xcarg`, quindi **sovrascrive** il valore nel
+  `project.pbxproj`. Il valore committato (allineato a 6 il 2026-06-22) è solo cosmetico/coerenza.
+- Storia: build 2–5 il 2026-06-13; **build 6 il 2026-06-22**. Il prossimo run produrrà 7.
+
+## Unico punto eventualmente manuale
+
+Nessuno, di norma: l'autenticazione è la **chiave API** (non Apple ID), già su disco. Serve solo
+che cert (in scadenza 2027) e repo `scabopdf-certs` restino accessibili. Se il certificato scadrà,
+rigenerare con `MATCH_READONLY=false fastlane beta` (richiede accesso in scrittura al repo certs).
 
 ## In una riga
 
-Bump `CURRENT_PROJECT_VERSION` (ultimo +1) → Archive del `main` su "Any iOS Device" → Distribute
-→ App Store Connect → Upload con firma automatica. Cert e account già presenti; fastlane no.
+`cd app/ios` → esporta `DEVELOPER_DIR`+`PATH`(gem bin) → `source scabo_deploy.env` → `unset
+SCABO_BUILD_NUMBER` → `fastlane beta`. Tutto già configurato; niente Xcode, niente Apple ID.
