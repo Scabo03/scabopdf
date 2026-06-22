@@ -45,7 +45,11 @@ public struct ContentSegment: Equatable, Sendable {
     /// Spoken role intro the native view prepends before reading the text (Q2),
     /// e.g. `Modifica.` for AMENDMENT or `Nuovo testo.` for QUOTED_TEXT_NEW. The
     /// empty string for roles that need no acoustic prefix. Derived from role
-    /// (+ lengthCategory for NOTE) by `acousticIntroFor`.
+    /// (+ lengthCategory for NOTE) by `acousticIntroFor`, with one backend-scoped
+    /// refinement: on the heuristic Generic PDF stream a `NOTE` whose text does not
+    /// open with a footnote marker is a heading/running-header collapsed into NOTE
+    /// by the size-only classifier, so its `Nota.` intro is cleared
+    /// (`suppressCollapsedHeadingNoteIntros`). The text is unchanged.
     public var acousticIntro: String
 
     public init(

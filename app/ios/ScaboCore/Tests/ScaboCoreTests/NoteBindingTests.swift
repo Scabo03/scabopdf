@@ -186,4 +186,49 @@ final class NoteBindingTests: XCTestCase {
         XCTAssertEqual(out, doc, "documento senza note invariato")
         XCTAssertEqual(stats.footnotes, 0)
     }
+
+    // MARK: - richiamo su una CITAZIONE A BLOCCO (collaudo d'orecchio — bug 3)
+    //
+    // Su "Delitti in prima pagina" il richiamo della nota breve sedeva in coda alla
+    // citazione della Genesi (10.3pt), sotto il corpo (11.5pt) ma sopra la soglia-nota.
+    // La guardia stretta "riga a taglia-corpo ± 0.6" saltava la riga e il richiamo non
+    // si trovava: la nota breve restava non agganciata, finendo a fine paragrafo.
+
+    func test_detectSmallerMarker_onBlockQuoteSizedLine() {
+        // Citazione a blocco a 8.7pt (corpo 10) con il richiamo "12" (5pt) in coda.
+        // 8.7 ≥ NOTE_RATIO·10 = 8.5 → la riga è contenuto di corpo → si scandisce.
+        let quote = line([span("e così l’episodio biblico si conclude.", 8.7), span("12", 5)])
+        let markers = detectInlineMarkers([summarizeLine(quote)], body: 10)
+        XCTAssertEqual(markers.map { $0.value }, [12], "il richiamo sulla citazione a blocco viene trovato")
+        XCTAssertEqual(markers.first?.regime, .smaller)
+    }
+
+    func test_noteSizedLine_isNotScannedForMarkers() {
+        // Una riga interamente a taglia-NOTA (8.0 < NOTE_RATIO·10 = 8.5): è apparato a
+        // piè di pagina, non corpo → NON vi si cercano richiami (nessun falso marcatore).
+        let noteish = line([span("testo della nota a piè di pagina ", 8.0), span("5", 4)])
+        let markers = detectInlineMarkers([summarizeLine(noteish)], body: 10)
+        XCTAssertEqual(markers.count, 0, "le righe a taglia-nota restano fuori dal rilevamento richiami")
+    }
+
+    func test_shortNote_onBlockQuote_bindsAndPlacesInline() {
+        // End-to-end: corpo a 11pt per fissare il profilo, una citazione a blocco a 9.6pt
+        // col richiamo "12" in coda, e la nota breve "12 …". La nota si aggancia e si piazza
+        // INLINE (subito dopo la frase del richiamo), non a fine paragrafo.
+        let pages = [[
+            bodyLine("Prima riga di corpo a piena dimensione del documento per il profilo.", body: 11),
+            bodyLine("Seconda riga di corpo che conferma la dimensione dominante del testo.", body: 11),
+            line([span("La citazione a blocco si chiude qui.", 9.6), span("12", 5),
+                  span(" E il corpo riprende normale.", 11)]),
+            noteLine("12 Fonte della citazione.", small: 8),
+        ]]
+        let (doc, stats) = placed(pages)
+        XCTAssertEqual(stats.boundSamePage, 1, "il richiamo sulla citazione si aggancia alla nota di pagina")
+        XCTAssertEqual(stats.placedShort, 1, "la nota breve è piazzata (non lasciata in fondo)")
+        let t = types(doc)
+        let noteIdx = t.firstIndex(of: .NOTE)
+        XCTAssertNotNil(noteIdx)
+        XCTAssertEqual(t[noteIdx! - 1], .BODY, "la nota è interleavata subito dopo un pezzo di corpo")
+        XCTAssertTrue(texts(doc).contains { $0.contains("Fonte della citazione") }, "la nota resta letta")
+    }
 }

@@ -53,8 +53,16 @@ let COLOR_DISTANCE_MIN = 100.0
 let COLOR_SATURATION_MIN = 40
 /// A colour-distinct line must be at least this fraction of the body size.
 let COLOR_HEADING_MIN_RATIO = 0.95
-/// Page bands (fraction of height) where running furniture lives.
-let TOP_BAND = 0.9
+/// Page bands (fraction of height) where running furniture lives. `TOP_BAND` è
+/// 0.85 (non 0.9) perché molte testatine correnti siedono appena sotto il decile
+/// più alto: su "Delitti in prima pagina" il titolo-libro corre a yFrac≈0.883 e su
+/// Mosconi la testatina "Il diritto internazionale privato N" è analoga; col 0.9
+/// sfuggivano alla banda e finivano lette (annuncio "Nota." + intrusione del titolo
+/// in mezzo al primo paragrafo — collaudo d'orecchio, bug 1/2). La discriminazione
+/// resta per NORMA RICORRENTE (stesso testo normalizzato su ≥ 15% delle pagine): una
+/// riga di corpo, sempre di testo diverso, non ricorre mai per norma e non è toccata
+/// — è ciò che rende sicuro abbassare la banda invece di togliere per posizione.
+let TOP_BAND = 0.85
 let BOTTOM_BAND = 0.1
 /// A furniture candidate is short.
 let FURNITURE_MAX_CHARS = 60

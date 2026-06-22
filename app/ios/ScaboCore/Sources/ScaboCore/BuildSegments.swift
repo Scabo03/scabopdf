@@ -79,6 +79,45 @@ private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
     )
 }
 
+// MARK: - Solo le note VERE annunciano "Nota." (passo finale, solo backend Generic)
+
+/// Profilo dei documenti prodotti dal classificatore euristico size-only (il
+/// Generic PDF). È l'UNICO backend che può collassare in `NOTE` una testatina o un
+/// titolo di sezione in maiuscoletto a taglia inferiore al corpo; i backend
+/// strutturati (AKN, EPUB) emettono note semanticamente vere e non vanno toccati.
+private let HEURISTIC_NOTE_PROFILE_ID = "generic"
+
+/// Simboli di richiamo di nota ammessi a inizio testo (oltre al numerico).
+private let NOTE_SYMBOL_MARKERS: Set<Character> = ["*", "†", "‡", "§", "¶"]
+
+/// Vero se il testo si apre con un marcatore di nota: un numero d'apertura
+/// (riusa `noteOpening`, che copre "12.", "(3)", "[4]") o un simbolo di richiamo.
+/// È il discriminatore fra una nota vera (apparato) e un'intestazione collassata
+/// in `NOTE` dal classificatore size-only.
+func textOpensWithNoteMarker(_ text: String) -> Bool {
+    if noteOpening(text) != nil { return true }
+    if let first = jsTrim(text).first, NOTE_SYMBOL_MARKERS.contains(first) { return true }
+    return false
+}
+
+/// Toglie l'intro "Nota." dai segmenti `NOTE` il cui testo NON si apre con un
+/// marcatore di nota — sul solo flusso del backend euristico (Generic). Sono le
+/// testatine/titoli di sezione che il classificatore size-only ha collassato in
+/// `NOTE`: senza questo passo si sentirebbe "Nota." prima di un'intestazione (il
+/// difetto a orecchio). Il TESTO resta invariato e letto in posizione (nessun
+/// contenuto perso, rete A); cambia solo il prefisso parlato. `EDITORIAL_NOTE`
+/// (solo AKN) e ogni altro ruolo non sono toccati. Idempotente.
+func suppressCollapsedHeadingNoteIntros(_ segments: [ContentSegment]) -> [ContentSegment] {
+    segments.map { seg in
+        guard seg.role == SemanticCategory.NOTE.rawValue,
+              !seg.acousticIntro.isEmpty,
+              !textOpensWithNoteMarker(seg.text) else { return seg }
+        var fixed = seg
+        fixed.acousticIntro = ""
+        return fixed
+    }
+}
+
 /// Pushes the parent's own text for `[start, end)` as a segment, trimmed.
 private func pushSlice(
     _ items: inout [Work],
@@ -193,5 +232,10 @@ public func buildBaseSegments(_ doc: ScabopdfDocument) -> [ContentSegment] {
             pushReversed(expand(node))
         }
     }
-    return out
+    // Passo finale, solo per il backend euristico (Generic): le testatine / titoli
+    // di sezione collassati in NOTE dal classificatore size-only non devono
+    // annunciare "Nota.". Vedi `suppressCollapsedHeadingNoteIntros`.
+    return doc.profile.profile_id == HEURISTIC_NOTE_PROFILE_ID
+        ? suppressCollapsedHeadingNoteIntros(out)
+        : out
 }

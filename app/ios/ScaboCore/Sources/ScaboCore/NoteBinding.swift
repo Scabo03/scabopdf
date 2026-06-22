@@ -295,8 +295,17 @@ func detectInlineMarkers(_ lines: [LineSummary], body: Double) -> [InlineMarker]
     for (li, line) in lines.enumerated() {
         let start = lineStarts[li]
         if start < 0 { continue }
+        // La riga deve portare CONTENUTO di corpo perché vi si cerchi un richiamo.
+        // Guardia allargata dalla taglia-corpo stretta (`== corpo ± 0.6`) a "almeno
+        // uno span ≥ NOTE_RATIO·corpo": include le CITAZIONI A BLOCCO (Delitti: Genesi
+        // a 10.3pt contro corpo 11.5pt), il cui span resta sopra la soglia-nota ma
+        // sotto la taglia-corpo stretta. Senza questo, il richiamo posto in coda a una
+        // citazione (il "2" apice della Genesi) non veniva mai trovato e la nota breve
+        // restava non agganciata, finendo a fine paragrafo. Le righe di sola taglia-nota
+        // (apparato a piè di pagina) restano escluse: sono nodi NOTE, non scanditi qui.
         let hasBody = line.spans.contains {
-            abs($0.fontSize - body) <= 0.6 && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            $0.fontSize >= NOTE_RATIO * body
+                && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
         guard hasBody else { continue }
         let spanStarts = spanCharStarts(line)

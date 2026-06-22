@@ -304,6 +304,40 @@ final class GenericPluginTests: XCTestCase {
             "nessuna furniture rimossa → nessuna warning")
     }
 
+    /// Una testatina appena SOTTO il decile più alto (yFrac≈0.87, fra `TOP_BAND` 0.85
+    /// e 0.9) è furniture: col vecchio 0.9 sfuggiva alla banda e veniva letta (annuncio
+    /// "Nota." + intrusione nel primo paragrafo — bug 1/2 di "Delitti in prima pagina").
+    func test_detectFurniture_runningHeaderJustBelowTopDecileRemoved() {
+        // yTop = 720 + 12 = 732 su pagina 842 → yFrac ≈ 0.869 (fra 0.85 e 0.9).
+        let header = placedLine("Delitti in prima pagina", size: 7, y: 720)
+        func body(_ w: String) -> [PdfTextLine] {
+            ["uno", "due", "tre"].map { placedLine("Riga \($0) di corpo della sezione \(w).", size: 12, y: 400) }
+        }
+        let words = ["alfa", "beta", "gamma", "delta", "epsilon", "zeta"] // 6 pagine ≥ minPages
+        let doc = genericPlugin.build(extraction(words.map { [header] + body($0) }), sourceName: "x.pdf")
+
+        XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "").contains("Delitti in prima pagina") },
+            "la testatina a yFrac 0.87 ora cade nella banda alta ed è furniture")
+        XCTAssertTrue(doc.warnings.contains { $0.hasPrefix("plugin:generic:furniture_lines_removed_") })
+    }
+
+    /// Discriminazione per NORMA, non per posizione: una riga corta nella stessa banda
+    /// alta ma di TESTO DIVERSO ogni pagina (tipica prima-riga-di-corpo sotto la
+    /// testatina) NON ricorre per norma e NON è furniture — la garanzia che abbassare
+    /// la banda non tolga contenuto (rete A su Mosconi: prime righe di corpo salve).
+    func test_detectFurniture_topBandUniqueTextLinesAreKept() {
+        let words = ["alfa", "beta", "gamma", "delta", "epsilon", "zeta"]
+        let pages = words.map { w -> [PdfTextLine] in
+            [placedLine("Apertura unica del paragrafo \(w) del capitolo.", size: 12, y: 720)] // banda alta, testo diverso
+                + ["x", "y"].map { placedLine("Riga \($0) del corpo \(w).", size: 12, y: 400) }
+        }
+        let doc = genericPlugin.build(extraction(pages), sourceName: "x.pdf")
+        XCTAssertTrue(
+            doc.structure.contains { ($0.text ?? "").contains("Apertura unica del paragrafo alfa") },
+            "righe in banda alta con testo distinto per pagina non ricorrono per norma → restano lette")
+    }
+
     // MARK: - Folio per progressione vs contenuto-numero (Mattone A)
     //
     // Una riga il cui testo è un solo numero nudo normalizza a "#" come ogni
