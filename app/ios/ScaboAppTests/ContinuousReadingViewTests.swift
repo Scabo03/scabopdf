@@ -639,6 +639,42 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertEqual(view.segmentLabels[0].accessibilityLabel, "Nota editoriale. Avvertenza redazionale.")
     }
 
+    // MARK: - 21. Memory refresh (§ 7.4/§ 7.5): rinfresco anteposto, contenuto integro
+
+    func test_spokenComposition_includesMemoryRefresh() {
+        let seg = ContentSegment(
+            id: "n", role: "NOTE", text: "contenuto della nota.", lengthCategory: "LONG",
+            acousticIntro: "Nota lunga.", memoryRefresh: "il contesto del richiamo")
+        // Senza segnale (path verbale): intro + rinfresco + contenuto.
+        XCTAssertEqual(ContinuousReadingView.spokenText(for: seg),
+                       "Nota lunga. il contesto del richiamo contenuto della nota.")
+        // Con segnale: l'intro verbale è sostituita, il rinfresco RESTA, contenuto integro.
+        XCTAssertEqual(ContinuousReadingView.spoken(intro: "", segment: seg),
+                       "il contesto del richiamo contenuto della nota.")
+    }
+
+    func test_deferredNote_label_prependsRefresh_keepsContent_replacesVerbalIntro() {
+        let view = makeView()
+        let note = ContentSegment(
+            id: "nt", role: "NOTE", text: "Cfr. art. 1218 c.c. sulla responsabilità del debitore.",
+            lengthCategory: "LONG", acousticIntro: "Nota lunga.",
+            memoryRefresh: "la rivalutazione del credito del lavoratore")
+        view.render([note])
+        view.layoutIfNeeded()
+        let label = view.segmentLabels[0].accessibilityLabel ?? ""
+        XCTAssertTrue(label.hasPrefix("la rivalutazione del credito del lavoratore"),
+                      "il rinfresco è anteposto: \(label)")
+        XCTAssertTrue(label.contains("Cfr. art. 1218 c.c. sulla responsabilità del debitore."),
+                      "il contenuto della nota resta integro (rete A): \(label)")
+        XCTAssertFalse(label.contains("Nota lunga."), "il segnale-nota sostituisce l'intro verbale")
+    }
+
+    func test_bodySegment_withoutRefresh_spokenUnchanged() {
+        // Rete A/B: un segmento senza rinfresco (corpo) non cambia resa parlata.
+        let body = bodySegment("b", "Un paragrafo qualunque del corpo.")
+        XCTAssertEqual(ContinuousReadingView.spokenText(for: body), "Un paragrafo qualunque del corpo.")
+    }
+
     // MARK: - Helper PDF sintetici (ex "ponte di sviluppo", ora nel target di test)
     //
     // Questi due helper esercitano la catena reale (PDF → PdfKitExtractor → Generic)

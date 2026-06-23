@@ -75,7 +75,11 @@ private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
         role: role,
         text: text,
         lengthCategory: lengthCategory,
-        acousticIntro: acousticIntroFor(role, lengthCategory)
+        acousticIntro: acousticIntroFor(role, lengthCategory),
+        // Il rinfresco è annotato sui nodi nota differiti da `bindAndPlaceNotes`; vuoto
+        // altrove. Vale solo per il testo PROPRIO del nodo (le note sono foglie senza
+        // figli, quindi `segmentFor(node, node.text)`), non per gli slice di un padre.
+        memoryRefresh: (text == (node.text ?? "")) ? (node.memoryRefresh ?? "") : ""
     )
 }
 

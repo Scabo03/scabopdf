@@ -204,6 +204,10 @@ public func bindAndPlaceNotes(
     var boundFootnoteIds: Set<String> = []
     var shortByBody: [String: [(offset: Int, length: Int, fid: String)]] = [:]
     var longByBody: [String: [String]] = [:]
+    // Rinfresco di contesto (§ 7.4/§ 7.5) per le note DIFFERITE (lunghe): la "frase
+    // del richiamo" calcolata dal testo del BODY attorno al marcatore. Le brevi
+    // (MICRO/SHORT, lette a fine frase) non hanno rinfresco (§ 7.4).
+    var refreshByFootnoteId: [String: String] = [:]
     func isShort(_ fid: String) -> Bool {
         switch footnoteNodeById[fid]?.length_category {
         case .MICRO, .SHORT: return true
@@ -235,6 +239,10 @@ public func bindAndPlaceNotes(
             } else {
                 longByBody[node.id, default: []].append(bound)
                 stats.placedLong += 1
+                // Nota differita: calcola QUI il rinfresco (servono testo del BODY del
+                // richiamo + offset del marcatore, entrambi disponibili solo ora).
+                let refresh = memoryRefreshSegment(node.text ?? "", markerOffset: m.offset)
+                if !refresh.isEmpty { refreshByFootnoteId[bound] = refresh }
             }
         }
     }
@@ -259,7 +267,13 @@ public func bindAndPlaceNotes(
                 out.append(node)
             }
             if let longs = longByBody[node.id] {
-                for fid in longs { if let n = footnoteNodeById[fid] { pendingLong.append(n) } }
+                for fid in longs {
+                    if var n = footnoteNodeById[fid] {
+                        // Annota il rinfresco (§ 7.4/§ 7.5) sul nodo nota differito.
+                        n.memoryRefresh = refreshByFootnoteId[fid]
+                        pendingLong.append(n)
+                    }
+                }
             }
         case .NOTE, .EDITORIAL_NOTE:
             // I figli AGGANCIATI sono stati spostati; qui restano solo i NON agganciati,

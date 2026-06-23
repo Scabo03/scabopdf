@@ -185,6 +185,12 @@ public struct NodeDict: Codable, Equatable, Sendable {
     public var block_indices: [Int]
     public var children: [NodeDict]
     public var apparatus_refs: [ApparatusRefDict]
+    /// Rinfresco di contesto (§ 7.4/§ 7.5) da anteporre alla lettura di QUESTA nota
+    /// quando è differita lontano dal richiamo. Campo INTERNO di Layer 2: NON fa parte
+    /// del contratto schema (assente da `CodingKeys` → mai serializzato/deserializzato),
+    /// è annotato in memoria da `bindAndPlaceNotes` sui soli nodi nota differiti.
+    /// `nil` per ogni altro nodo. Vedi `MemoryRefresh.swift`.
+    public var memoryRefresh: String? = nil
 
     public init(
         id: String,
@@ -197,7 +203,8 @@ public struct NodeDict: Codable, Equatable, Sendable {
         length_category: LengthCategory? = nil,
         block_indices: [Int] = [],
         children: [NodeDict] = [],
-        apparatus_refs: [ApparatusRefDict] = []
+        apparatus_refs: [ApparatusRefDict] = [],
+        memoryRefresh: String? = nil
     ) {
         self.id = id
         self.type = type
@@ -210,6 +217,7 @@ public struct NodeDict: Codable, Equatable, Sendable {
         self.block_indices = block_indices
         self.children = children
         self.apparatus_refs = apparatus_refs
+        self.memoryRefresh = memoryRefresh
     }
 
     private enum CodingKeys: String, CodingKey {

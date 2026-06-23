@@ -51,19 +51,27 @@ public struct ContentSegment: Equatable, Sendable {
     /// by the size-only classifier, so its `Nota.` intro is cleared
     /// (`suppressCollapsedHeadingNoteIntros`). The text is unchanged.
     public var acousticIntro: String
+    /// Rinfresco di contesto (§ 7.4/§ 7.5) che la view antepone alla lettura di una
+    /// nota DIFFERITA: la "frase del richiamo", così la nota non arrivi scollegata da
+    /// ciò a cui risponde. Stringa vuota per ogni segmento che non sia una nota
+    /// differita. È testo RIPETUTO in aggiunta (rete A): non sostituisce il contenuto.
+    /// Calcolato da `bindAndPlaceNotes` (vedi `MemoryRefresh.swift`).
+    public var memoryRefresh: String
 
     public init(
         id: String,
         role: String,
         text: String,
         lengthCategory: String,
-        acousticIntro: String
+        acousticIntro: String,
+        memoryRefresh: String = ""
     ) {
         self.id = id
         self.role = role
         self.text = text
         self.lengthCategory = lengthCategory
         self.acousticIntro = acousticIntro
+        self.memoryRefresh = memoryRefresh
     }
 }
 

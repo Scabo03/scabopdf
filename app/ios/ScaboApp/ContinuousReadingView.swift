@@ -300,9 +300,13 @@ final class ContinuousReadingView: UIView {
         // o caratterizzazione". Il CONTENUTO della nota resta integro nell'etichetta
         // (rete A): si toglie solo il prefisso parlato, non il testo.
         let noteSignal = Self.noteSignal(for: segment)
+        // Composizione del parlato: [intro verbale] + [rinfresco di contesto] + [testo].
+        // Quando un segnale-nota è presente, SOSTITUISCE l'intro verbale ("Nota lunga.")
+        // ma il rinfresco di contesto (§ 7.4/§ 7.5) RESTA: è il recap della frase del
+        // richiamo, additivo, mai sostitutivo del contenuto (rete A).
         label.accessibilityLabel = noteSignal == nil
             ? Self.spokenText(for: segment)
-            : segment.text
+            : Self.spoken(intro: "", segment: segment)
 
         // Tratto header per heading/divisori: navigazione per intestazioni nel
         // rotore, SENZA introdurre confini allo swipe.
@@ -444,13 +448,20 @@ final class ContinuousReadingView: UIView {
 
     // MARK: - Mappature ruolo → stile / semantica
 
-    /// Testo che VoiceOver pronuncia: intro acustica (se presente) + testo.
+    /// Testo che VoiceOver pronuncia: intro acustica (se presente) + rinfresco di
+    /// contesto (se nota differita) + testo. Le parti vuote sono omesse.
     static func spokenText(for segment: ContentSegment) -> String {
-        let intro = segment.acousticIntro.trimmingCharacters(in: .whitespacesAndNewlines)
-        if intro.isEmpty {
-            return segment.text
-        }
-        return "\(intro) \(segment.text)"
+        spoken(intro: segment.acousticIntro, segment: segment)
+    }
+
+    /// Compone il parlato con un `intro` esplicito (vuoto quando il segnale-nota lo
+    /// sostituisce): `[intro] [memoryRefresh] [text]`, scartando le parti vuote. Il
+    /// `text` (contenuto) è sempre presente: il rinfresco è additivo (rete A).
+    static func spoken(intro: String, segment: ContentSegment) -> String {
+        [intro, segment.memoryRefresh, segment.text]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
     }
 
     /// Il segnale-nota da riprodurre quando il fuoco entra in QUESTO segmento, o `nil`
