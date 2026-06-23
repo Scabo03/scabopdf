@@ -84,6 +84,13 @@ final class ContinuousReadingViewController: UIViewController {
     /// Azione del tasto Indietro: torna alla Home nuda. Impostata dal presentatore.
     var onBack: (() -> Void)?
 
+    /// Player dei segnali acustici (seam per i test). Cablato: `mode1`, riprodotto
+    /// all'attivazione del Layout Lettura Continua (l'unico Layout reso oggi).
+    private let signalPlayer: SignalPlaying
+
+    /// Il segnale di attivazione del Layout suona una sola volta alla comparsa.
+    private var didPlayModeSignal = false
+
     private static let interfaceBarHeight: CGFloat = 44
 
     // MARK: - Init
@@ -91,8 +98,13 @@ final class ContinuousReadingViewController: UIViewController {
     /// Costruisce la reading view sul contenuto già elaborato. `sourceName` è conservato per usi
     /// futuri (referto, persistenza); il titolo del container d'interfaccia è fisso
     /// "Lettura Continua".
-    init(content: PaginatedContent, sourceName: String = "") {
+    init(
+        content: PaginatedContent,
+        sourceName: String = "",
+        signalPlayer: SignalPlaying = SignalPlayer.shared
+    ) {
         self.content = content
+        self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -112,6 +124,16 @@ final class ContinuousReadingViewController: UIViewController {
         // Si entra leggendo: il testo è il container attivo (modale). Nessun fuoco forzato qui:
         // alla comparsa VoiceOver si posa sul primo elemento del testo, ed è ciò che si vuole.
         activateTextContainer(restoreFocus: false)
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // Attivazione del Layout Lettura Continua: suona il segnale `mode1` una volta sola,
+        // alla comparsa effettiva (dopo l'apertura automatica dal flusso di import). Si
+        // mischia col parlato VoiceOver d'ingresso senza sopprimerlo (sessione `.mixWithOthers`).
+        guard !didPlayModeSignal else { return }
+        didPlayModeSignal = true
+        signalPlayer.play(.mode1)
     }
 
     private func embedContainers() {

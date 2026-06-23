@@ -499,6 +499,146 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertEqual(ids, segs.map { $0.id }, "ordine di lettura preservato attraverso la paginazione")
     }
 
+    // ════════════════════════════════════════════════════════════════════════════
+    // SEGNALI ACUSTICI DELLE NOTE (§ 10.4/§ 10.5) → CABLAGGIO ALLA READING VIEW
+    // Cosa è verificabile QUI: la MAPPATURA regime→segnale, che il player sia invocato
+    // al PUNTO giusto (fuoco sulla nota vera), che il segnale SOSTITUISCA l'intro verbale
+    // lasciando il contenuto integro (rete A). Che il suono "suoni bene" e non sia
+    // troncato/in conflitto con VoiceOver si certifica solo all'orecchio sul dispositivo.
+    // ════════════════════════════════════════════════════════════════════════════
+
+    private func noteSegment(
+        _ id: String, _ text: String, length: String, intro: String = "Nota."
+    ) -> ContentSegment {
+        ContentSegment(id: id, role: "NOTE", text: text, lengthCategory: length, acousticIntro: intro)
+    }
+
+    // MARK: - 17. Mappatura dei sei regimi sui sei segnali, incisività crescente
+
+    func test_noteSignal_mapsSixRegimesInOrder() {
+        XCTAssertEqual(AudioSignal.noteSignal(forLengthCategory: "MICRO"), .noteMicro)
+        XCTAssertEqual(AudioSignal.noteSignal(forLengthCategory: "SHORT"), .noteShort)
+        XCTAssertEqual(AudioSignal.noteSignal(forLengthCategory: "MEDIUM"), .noteMedium)
+        XCTAssertEqual(AudioSignal.noteSignal(forLengthCategory: "LONG"), .noteLong)
+        XCTAssertEqual(AudioSignal.noteSignal(forLengthCategory: "VERY_LONG"), .noteVeryLong)
+        XCTAssertEqual(AudioSignal.noteSignal(forLengthCategory: "MEGA"), .noteMega)
+        XCTAssertNil(AudioSignal.noteSignal(forLengthCategory: ""), "categoria vuota → nessun segnale")
+        XCTAssertNil(AudioSignal.noteSignal(forLengthCategory: "BOGUS"))
+    }
+
+    func test_audioSignal_resourceNamesMatchInventory() {
+        XCTAssertEqual(AudioSignal.noteMicro.resourceName, "very-brief")
+        XCTAssertEqual(AudioSignal.noteShort.resourceName, "brief")
+        XCTAssertEqual(AudioSignal.noteMedium.resourceName, "medium")
+        XCTAssertEqual(AudioSignal.noteLong.resourceName, "long")
+        XCTAssertEqual(AudioSignal.noteVeryLong.resourceName, "very-long")
+        XCTAssertEqual(AudioSignal.noteMega.resourceName, "ultra-long")
+        XCTAssertEqual(AudioSignal.loading.resourceName, "loading")
+        XCTAssertEqual(AudioSignal.completion.resourceName, "completion")
+        XCTAssertEqual(AudioSignal.error.resourceName, "error")
+        XCTAssertEqual(AudioSignal.announcement.resourceName, "announcement")
+        XCTAssertEqual(AudioSignal.mode1.resourceName, "mode-1")
+        XCTAssertEqual(AudioSignal.mode2.resourceName, "mode-2")
+        XCTAssertEqual(AudioSignal.mode3.resourceName, "mode-3")
+        XCTAssertEqual(AudioSignal.splitScreen.resourceName, "split-screen")
+        XCTAssertEqual(AudioSignal.extra1.resourceName, "extra-1")
+        XCTAssertEqual(AudioSignal.extra2.resourceName, "extra-2")
+    }
+
+    // MARK: - 18. Ogni asset .mp3 dichiarato è presente nel bundle dell'app
+
+    func test_everyAudioSignalAssetIsBundled() {
+        let bundle = Bundle(for: SignalPlayer.self)
+        for signal in AudioSignal.allCases {
+            XCTAssertNotNil(
+                bundle.url(forResource: signal.resourceName, withExtension: "mp3"),
+                "asset mancante dal bundle: \(signal.resourceName).mp3")
+        }
+    }
+
+    // MARK: - 19. Nota vera con regime: segnale al fuoco, intro verbale sostituita
+
+    func test_realNoteWithRegime_playsRegimeSignalOnFocus_replacesVerbalIntro() {
+        let view = makeView()
+        let spy = SignalPlayerSpy()
+        view.signalPlayer = spy
+        view.render([noteSegment("nt", "12. Cfr. art. 1218 c.c.", length: "MEDIUM")])
+        view.layoutIfNeeded()
+
+        let label = view.segmentLabels[0]
+        // Il segnale SOSTITUISCE "Nota.": l'etichetta parlata è il solo testo della nota.
+        XCTAssertEqual(label.accessibilityLabel, "12. Cfr. art. 1218 c.c.")
+        XCTAssertFalse((label.accessibilityLabel ?? "").hasPrefix("Nota"))
+        // Rete A: il contenuto della nota resta integro nell'etichetta.
+        XCTAssertTrue((label.accessibilityLabel ?? "").contains("1218"))
+
+        // Nessun segnale finché il fuoco non entra nella nota; uno solo all'ingresso.
+        XCTAssertTrue(spy.played.isEmpty, "nessun segnale prima del fuoco")
+        label.accessibilityElementDidBecomeFocused()
+        XCTAssertEqual(spy.played, [.noteMedium], "all'ingresso suona il segnale del regime MEDIUM")
+    }
+
+    func test_realNotes_eachRegimeMapsToItsSignal() {
+        let cases: [(String, AudioSignal)] = [
+            ("MICRO", .noteMicro), ("SHORT", .noteShort), ("MEGA", .noteMega),
+        ]
+        for (regime, expected) in cases {
+            let view = makeView()
+            let spy = SignalPlayerSpy()
+            view.signalPlayer = spy
+            view.render([noteSegment("n", "Testo nota.", length: regime)])
+            view.layoutIfNeeded()
+            view.segmentLabels[0].accessibilityElementDidBecomeFocused()
+            XCTAssertEqual(spy.played, [expected], "regime \(regime) → \(expected)")
+        }
+    }
+
+    // MARK: - 20. Note NON vere e altri ruoli: nessun segnale, intro invariata
+
+    func test_collapsedHeadingNote_emptyIntro_playsNoSignal_keepsText() {
+        // Testatina collassata in NOTE dal classificatore size-only: intro già svuotata
+        // (`suppressCollapsedHeadingNoteIntros`) → NON è una nota → nessun segnale.
+        let view = makeView()
+        let spy = SignalPlayerSpy()
+        view.signalPlayer = spy
+        view.render([noteSegment("ch", "TITOLO DI SEZIONE", length: "SHORT", intro: "")])
+        view.layoutIfNeeded()
+
+        view.segmentLabels[0].accessibilityElementDidBecomeFocused()
+        XCTAssertTrue(spy.played.isEmpty, "una falsa nota (testatina collassata) non ha segnale")
+        XCTAssertEqual(view.segmentLabels[0].accessibilityLabel, "TITOLO DI SEZIONE")
+    }
+
+    func test_bodyAndHeading_playNoSignalOnFocus() {
+        let view = makeView()
+        let spy = SignalPlayerSpy()
+        view.signalPlayer = spy
+        view.render([
+            bodySegment("h", "Titolo", role: "HEADING_1"),
+            bodySegment("b", "Corpo del testo."),
+        ])
+        view.layoutIfNeeded()
+        view.segmentLabels.forEach { $0.accessibilityElementDidBecomeFocused() }
+        XCTAssertTrue(spy.played.isEmpty, "corpo e intestazioni non hanno segnale-nota")
+    }
+
+    func test_editorialNote_keepsVerbalIntro_noSignal() {
+        // EDITORIAL_NOTE non porta `length_category` → nessun segnale → mantiene il suo
+        // intro verbale "Nota editoriale." (nessun asset di regime per le note editoriali).
+        let view = makeView()
+        let spy = SignalPlayerSpy()
+        view.signalPlayer = spy
+        let seg = ContentSegment(
+            id: "e", role: "EDITORIAL_NOTE", text: "Avvertenza redazionale.",
+            lengthCategory: "", acousticIntro: "Nota editoriale.")
+        view.render([seg])
+        view.layoutIfNeeded()
+
+        view.segmentLabels[0].accessibilityElementDidBecomeFocused()
+        XCTAssertTrue(spy.played.isEmpty, "la nota editoriale non ha segnale di regime")
+        XCTAssertEqual(view.segmentLabels[0].accessibilityLabel, "Nota editoriale. Avvertenza redazionale.")
+    }
+
     // MARK: - Helper PDF sintetici (ex "ponte di sviluppo", ora nel target di test)
     //
     // Questi due helper esercitano la catena reale (PDF → PdfKitExtractor → Generic)

@@ -164,6 +164,12 @@ final class ContinuousReadingView: UIView {
     /// se nessuno è ancora stato messo a fuoco (in tal caso il chiamante ripiega sul primo).
     var lastFocusedTextElement: NSObject? { lastFocusedElement }
 
+    /// Player dei segnali acustici (seam per i test: § AudioSignals). Quando il fuoco
+    /// VoiceOver entra in una NOTA VERA con un regime di lunghezza, si riproduce il
+    /// segnale-nota del regime (§ 10.4/§ 10.5 del documento di prodotto). Default: il
+    /// player condiviso; i test iniettano una spia.
+    var signalPlayer: SignalPlaying = SignalPlayer.shared
+
     // MARK: - Metrica di lettura
 
     private enum Metrics {
@@ -286,7 +292,17 @@ final class ContinuousReadingView: UIView {
         // Resa ACCESSIBILE: etichetta mai vuota (un elemento senza resa è bug
         // critico). Include l'intro acustica del ruolo quando presente.
         label.isAccessibilityElement = true
-        label.accessibilityLabel = Self.spokenText(for: segment)
+
+        // Segnale-nota del regime di lunghezza (solo per le note VERE). Quando esiste,
+        // il segnale acustico SOSTITUISCE l'intro verbale ("Nota."/"Nota lunga."): il
+        // documento di prodotto (§ 10.4) prescrive che la conoscenza del regime arrivi
+        // "esclusivamente dal segnale acustico, senza alcun annuncio verbale di durata
+        // o caratterizzazione". Il CONTENUTO della nota resta integro nell'etichetta
+        // (rete A): si toglie solo il prefisso parlato, non il testo.
+        let noteSignal = Self.noteSignal(for: segment)
+        label.accessibilityLabel = noteSignal == nil
+            ? Self.spokenText(for: segment)
+            : segment.text
 
         // Tratto header per heading/divisori: navigazione per intestazioni nel
         // rotore, SENZA introdurre confini allo swipe.
@@ -295,9 +311,13 @@ final class ContinuousReadingView: UIView {
         }
 
         // Ricorda la posizione di lettura: quando VoiceOver mette a fuoco questa etichetta, diventa
-        // l'elemento da ripristinare al rientro nel testo dall'interfaccia.
+        // l'elemento da ripristinare al rientro nel testo dall'interfaccia. Se è una nota vera con
+        // un regime, riproduce QUI il segnale-nota di apertura (il fuoco entra nella nota, § 10.5).
         label.onBecomeFocused = { [weak self, weak label] in
             self?.lastFocusedElement = label
+            if let noteSignal {
+                self?.signalPlayer.play(noteSignal)
+            }
         }
         return label
     }
@@ -431,6 +451,22 @@ final class ContinuousReadingView: UIView {
             return segment.text
         }
         return "\(intro) \(segment.text)"
+    }
+
+    /// Il segnale-nota da riprodurre quando il fuoco entra in QUESTO segmento, o `nil`
+    /// se non è una nota vera con un regime. La discriminazione "nota vera" riusa la
+    /// scelta già fatta a monte: una `NOTE` con `acousticIntro` NON vuota è una nota
+    /// d'apparato (avrebbe detto "Nota."); una `NOTE` con intro svuotata è una testatina
+    /// collassata dal classificatore size-only (`suppressCollapsedHeadingNoteIntros`) e
+    /// NON deve avere segnale. `EDITORIAL_NOTE` non porta `length_category` → nessun
+    /// segnale, mantiene il suo intro verbale "Nota editoriale.".
+    static func noteSignal(for segment: ContentSegment) -> AudioSignal? {
+        guard segment.role == SemanticCategory.NOTE.rawValue,
+              !segment.acousticIntro.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return nil
+        }
+        return AudioSignal.noteSignal(forLengthCategory: segment.lengthCategory)
     }
 
     /// Vero per i ruoli da trattare come intestazione (tratto `.header`).

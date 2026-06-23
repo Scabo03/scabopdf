@@ -39,6 +39,10 @@ final class ProcessingViewController: UIViewController {
     private let sourceName: String
     private let processor: DocumentProcessor
 
+    /// Player dei segnali acustici (seam per i test). Stati cablati: `loading` (in loop
+    /// mentre l'elaborazione è in corso), `completion` (successo), `error` (fallimento).
+    private let signalPlayer: SignalPlaying
+
     /// Una sola consegna dell'esito (Annulla immediato + completion del processor convergono qui).
     private var finished = false
 
@@ -112,10 +116,16 @@ final class ProcessingViewController: UIViewController {
 
     // MARK: - Init
 
-    init(fileURL: URL, sourceName: String, processor: DocumentProcessor = DocumentProcessor()) {
+    init(
+        fileURL: URL,
+        sourceName: String,
+        processor: DocumentProcessor = DocumentProcessor(),
+        signalPlayer: SignalPlaying = SignalPlayer.shared
+    ) {
         self.fileURL = fileURL
         self.sourceName = sourceName
         self.processor = processor
+        self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .overFullScreen
         modalTransitionStyle = .crossDissolve
@@ -154,6 +164,9 @@ final class ProcessingViewController: UIViewController {
     private func startProcessingIfNeeded() {
         guard !started else { return }
         started = true
+        // Segnale di stato "in corso": parte all'avvio reale dell'elaborazione e gira in
+        // loop finché non arriva l'esito (clip breve, l'elaborazione può durare di più).
+        signalPlayer.playLooping(.loading)
         processor.process(
             fileURL: fileURL,
             sourceName: sourceName,
@@ -205,6 +218,17 @@ final class ProcessingViewController: UIViewController {
     private func finish(_ outcome: DocumentProcessor.Outcome) {
         guard !finished else { return }
         finished = true
+        // Chiude il segnale "in corso" e suona l'esito: completamento o errore. Su
+        // annullamento non si suona nulla (l'utente torna alla Home nuda in silenzio).
+        signalPlayer.stop(.loading)
+        switch outcome {
+        case .success:
+            signalPlayer.play(.completion)
+        case .failure:
+            signalPlayer.play(.error)
+        case .cancelled:
+            break
+        }
         onOutcome?(outcome)
     }
 
@@ -220,6 +244,10 @@ final class ProcessingViewController: UIViewController {
     func applyForTesting(_ progress: DocumentProcessor.Progress) { apply(progress) }
     /// Simula il tocco su Annulla (senza avviare l'elaborazione reale).
     func cancelForTesting() { cancelTapped() }
+    /// Consegna un esito (per verificare i segnali acustici di stato senza l'elaborazione reale).
+    func finishForTesting(_ outcome: DocumentProcessor.Outcome) { finish(outcome) }
+    /// Avvia il segnale "in corso" come farebbe l'avvio reale (per i test, senza estrazione).
+    func startSignalForTesting() { startProcessingIfNeeded() }
 
     // MARK: - Layout
 

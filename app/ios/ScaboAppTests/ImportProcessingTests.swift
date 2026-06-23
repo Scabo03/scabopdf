@@ -79,6 +79,21 @@ private final class FakeProgressExtractor: ProgressReportingPdfExtractor {
     }
 }
 
+// MARK: - Spia del player di segnali (registra le invocazioni, niente audio reale)
+
+/// Spia conforme a `SignalPlaying`: cattura le invocazioni così i test verificano che il
+/// player sia chiamato allo stato/punto giusto senza riprodurre audio. Visibile a tutto il
+/// target di test (usata anche da `ContinuousReadingViewTests`).
+final class SignalPlayerSpy: SignalPlaying {
+    private(set) var played: [AudioSignal] = []
+    private(set) var looped: [AudioSignal] = []
+    private(set) var stopped: [AudioSignal] = []
+
+    func play(_ signal: AudioSignal) { played.append(signal) }
+    func playLooping(_ signal: AudioSignal) { looped.append(signal) }
+    func stop(_ signal: AudioSignal) { stopped.append(signal) }
+}
+
 final class ImportProcessingTests: XCTestCase {
 
     // MARK: - DocumentProcessor: progresso reale e successo
@@ -326,6 +341,70 @@ final class ImportProcessingTests: XCTestCase {
         vc.onBack = { backCalled = true }
         vc.interfaceContainerForTesting.backButton.sendActions(for: .touchUpInside)
         XCTAssertTrue(backCalled, "il tasto Indietro instrada all'azione di ritorno alla Home")
+    }
+
+    // MARK: - Segnali acustici di stato e di Layout (cablaggio agli stati reali)
+
+    private func minimalDocument() -> ScabopdfDocument {
+        ScabopdfDocument(
+            schema_version: "0.7.0", document_id: "d",
+            metadata: DocumentMetadata(pages_pdf: 1, page_size_pt: [595, 842], source_pdf_filename: "x.pdf"),
+            profile: DocumentProfileDict(
+                profile_id: "generic", editorial_family: "generic", genre: "unknown", confidence: 0.05),
+            structure: [])
+    }
+
+    func test_processing_playsLoadingOnStart_thenCompletionOnSuccess() {
+        let spy = SignalPlayerSpy()
+        let vc = ProcessingViewController(
+            fileURL: URL(fileURLWithPath: "/x.pdf"), sourceName: "x.pdf",
+            processor: DocumentProcessor(extractor: FakeProgressExtractor(pages: 1)),
+            signalPlayer: spy)
+        vc.loadViewIfNeeded()
+
+        vc.startSignalForTesting()
+        XCTAssertEqual(spy.looped, [.loading], "all'avvio dell'elaborazione suona 'loading' in loop")
+
+        vc.finishForTesting(.success(document: minimalDocument(), content: sampleContent(2)))
+        XCTAssertEqual(spy.stopped, [.loading], "all'esito si ferma 'loading'")
+        XCTAssertEqual(spy.played, [.completion], "successo → 'completion'")
+    }
+
+    func test_processing_playsErrorOnFailure() {
+        let spy = SignalPlayerSpy()
+        let vc = ProcessingViewController(
+            fileURL: URL(fileURLWithPath: "/x.pdf"), sourceName: "x.pdf", signalPlayer: spy)
+        vc.loadViewIfNeeded()
+
+        vc.finishForTesting(.failure(message: "PDF non leggibile"))
+        XCTAssertEqual(spy.stopped, [.loading], "anche su errore si ferma 'loading'")
+        XCTAssertEqual(spy.played, [.error], "fallimento → 'error'")
+    }
+
+    func test_processing_cancel_playsNeitherCompletionNorError_stopsLoading() {
+        let spy = SignalPlayerSpy()
+        let vc = ProcessingViewController(
+            fileURL: URL(fileURLWithPath: "/x.pdf"), sourceName: "x.pdf", signalPlayer: spy)
+        vc.loadViewIfNeeded()
+
+        vc.cancelForTesting()
+        XCTAssertEqual(spy.stopped, [.loading], "su annullamento si ferma 'loading'")
+        XCTAssertTrue(spy.played.isEmpty, "annullamento: nessun segnale di esito (Home nuda, in silenzio)")
+    }
+
+    func test_reader_playsMode1OnAppear_onlyOnce() {
+        let spy = SignalPlayerSpy()
+        let vc = ContinuousReadingViewController(
+            content: sampleContent(3), sourceName: "x.pdf", signalPlayer: spy)
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
+
+        XCTAssertTrue(spy.played.isEmpty, "nessun segnale di Layout prima della comparsa")
+        vc.viewDidAppear(false)
+        XCTAssertEqual(spy.played, [.mode1], "alla comparsa di Lettura Continua suona 'mode-1'")
+        vc.viewDidAppear(false)
+        XCTAssertEqual(spy.played, [.mode1], "il segnale di Layout suona una sola volta")
     }
 
     // MARK: - Finestra di elaborazione: sigillatura modale, avanzamento, annulla idempotente
