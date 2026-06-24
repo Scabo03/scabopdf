@@ -52,6 +52,92 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — sessioni recenti lato app (memory refresh, audio, sotto-titoli Cortina) — 2026-06-24 → build 9 su TestFlight
+
+Aggiornamento che copre le tre tornate lato app dopo il primo collaudo d'orecchio (build
+7). Tutto verificato sul **banco iPad reale** (pipeline `PdfKitExtractor` → plugin →
+`bindAndPlaceNotes` → reading view), doppia rete BEFORE/AFTER, nessun bump di schema
+(categorie riusate dal contratto 0.7.0). **Build 9 caricata su TestFlight via `fastlane
+beta` il 2026-06-24** ("UPLOAD SUCCEEDED", `CURRENT_PROJECT_VERSION=9` auto-calcolato come
+ultimo-TestFlight+1, Delivery UUID `2ab5ad16-…`). Allineamento verificato commit↔push↔build:
+HEAD `d368808` == `origin/main`, archivio costruito da quel checkout.
+
+**1) Memory refresh delle note differite (§7.4/§7.5) — build 8** (`56549d0`; analisi
+esplorativa `c920ffa`). Quando una nota lunga è letta lontano dal richiamo, VoiceOver
+antepone un breve rinfresco della "frase del richiamo". Parametri decisi dal maintainer:
+**pavimento 60 / soffitto 180 caratteri**; marcatore dopo punto → rilegge la frase appena
+conclusa; sotto il pavimento → estende alla frase precedente; sopra il soffitto →
+troncamento netto al confine di parola tenendo la parte vicina al richiamo; `.` è fine
+frase solo se non è un'abbreviazione. Cuore in `app/ios/ScaboCore/Sources/ScaboCore/MemoryRefresh.swift`,
+calcolato in `bindAndPlaceNotes` per ogni nota lunga agganciata, portato su
+`NodeDict.memoryRefresh` (campo INTERNO Layer 2, NON nello schema) → letto prima della nota.
+Before/after sul corpus (2727 richiami differiti, Mandrioli III/IV + BIC Marrone):
+vuoti/minuscoli 51%→13%, sani (25–180) 39%→87%, oltre-soffitto 10%→0%. **Dormiente**:
+`noteParaTitolo` (anteprima §7.4 per VERY_LONG/MEGA) implementato e testato ma NON cablato
+nel flusso (serve all'interazione di salto, non ancora costruita).
+
+**2) Strato dei segnali acustici (earcon mp3) — build 8** (`bd9b112`). Sei regimi-nota
+(MICRO…MEGA), stati di import e mode-1 cablati; modi 2/3 e split dormienti. L'earcon
+sostituisce (REPLACE) l'intro verbale "Nota lunga." per le note differite e coesiste col
+memory refresh. Asset `error.mp3` & co. impacchettati nel bundle (visibili nel log di
+build). Restano voci di certificazione all'orecchio (vedi memoria di sessione `audio-signals-layer`).
+
+**3) Riconoscimento dei sotto-titoli di sezione → plugin Raffaello Cortina — build 9**
+(`d368808`). Chiude il **residuo dichiarato** del collaudo build 7 ("i titoli di sezione in
+maiuscoletto collassati in NOTE, recupero a HEADING rinviato"). I saggi Cortina "Saggi"
+(Delitti in prima pagina, Pubblico ministero) compongono i sotto-titoli di sezione in
+maiuscoletto PIÙ PICCOLO del corpo (≈0.80×): il Generic size-only li manda in NOTE, quindi
+non diventano confine di lettura e le note lunghe scaricano a fine capitolo (30–44 pagine
+dal richiamo).
+
+  - **Indagine prima dell'implementazione** (solo accertamento, su ~24 volumi del corpus):
+    l'ipotesi-guida "l'isolamento geometrico è il segnale primario" è stata **falsificata
+    dai dati** — l'isolamento ha precisione ~0.64 e recall ~0.43 (sbaglia su aperture di
+    paragrafo, citazioni a blocco, lead-in coi due punti, didascalie) e i sotto-titoli di
+    Pubblico ministero non sono nemmeno isolati (gap ≈0.8). Il segnale pulito è **tipografico**
+    (maiuscoletto piccolo): precisione/recall ~1.0 dentro Cortina. La patologia è
+    **editorialmente specifica**, non generale.
+  - **Rete sovrana — non-regressione cross-volume (il gate che ha deciso Generic vs plugin).**
+    Diff prima/dopo riga-per-riga su ~24 volumi: un riconoscitore nel `GenericPlugin.classify`
+    regredisce ovunque — il confermatore *numerazione* ("N.") promuove citazioni/voci/articoli
+    a centinaia (Tesauro 283, Nomofanie 499, Il mercato finanziario 81, Costituzionale 308), e
+    **anche il solo maiuscolo** cambia ≥8 volumi (Costituzionale 131, Lezioni 34, Torrente 18
+    "CAPITOLO", Mandrioli 11, DeJure 11, Marotta 8, Marrone 4). Condizione del maintainer: zero
+    cambiamenti altrove → **decisione data-determinata: plugin dedicato, Generic intatto
+    byte-per-byte**.
+  - **Implementazione**: `RaffaelloCortinaPlugin.swift` (registrato in `registeredPlugins`).
+    `matches()` gated sul formato tascabile **453×694 pt** (univoco nel corpus: Mosconi
+    457×684, manuali 482×680, monografie 595×842) + densità sotto-titoli maiuscoli + nero
+    ricco #231f20; scatta solo su Delitti+Pubblico ministero (0.9 al banco reale), tutti gli
+    altri 0.0 → Generic. `build()` = emissione Generic + un solo passo: una *run* a taglia-nota
+    nel flusso del corpo, tutta in maiuscolo (≥0.85) e corta in larghezza (<0.85 colonna),
+    promossa a **HEADING_4**. Isolamento NON richiesto (la porta editoriale è la guardia).
+    **NoteBinding NON toccato**: la run promossa è vista come HEADING → `flushLong` scarica le
+    note lunghe al sotto-titolo vicino; lo zip 1:1 resta allineato (conteggio/ordine nodi per
+    pagina identici al Generic).
+  - **Guadagno al banco reale**: Delitti 45 sotto-titoli promossi, span confine-scarico note
+    **30→5 pagine mediane (max 44→22)**, **236 note lunghe** ora differite alla sezione vicina;
+    Pubblico ministero 15 promossi, **32→7**; Il mercato finanziario invariato (generic, zero
+    HEADING_4, lettura byte-identica = prova diretta della non-regressione). Il memory refresh
+    ora opera sulle distanze piccole come previsto.
+  - **Reti**: A (NOTA→HEADING_4 resta letto, testo verbatim, nessun contenuto perso);
+    B (238 test ScaboCore + 63 ScaboApp verdi; allineamento NoteBinding provato; Il mercato
+    invariato). **Rinviate le patologie gemelle** (sotto-titoli a taglia-corpo: decimali r0.91
+    di PM, corsivi-numerati r1.04 di Breve storia inglese) — richiederebbero di spezzare le run
+    di corpo (invasivo, rischio rete-B) e quelli non-Cortina sono fuori scopo di un plugin
+    Cortina; si rivaluta solo se il collaudo dice che servono confini più fini.
+
+**Residue al COLLAUDO D'ORECCHIO (build 9)**: naturalezza dei confini-sezione su Delitti (45
+transizioni strutturali al posto di "Nota."); note lunghe che cadono davvero alla sezione
+vicina col refresh+earcon che fila; il residuo senza-paracadute (alcune sezioni lunghe
+lasciano viaggiare una nota fino a ~22 pagine, prezzo accettato del recall-alto); eventuale
+micro-falso-positivo "SAGGI" a fine Pubblico ministero. Più la certificazione del memory
+refresh (60/180 giusti all'orecchio?) e degli earcon (vedi punto 2). **Prossimo build = 10**
+(non toccare `CURRENT_PROJECT_VERSION` a mano: lo imposta `fastlane beta` all'upload come
+ultimo-TestFlight+1).
+
+---
+
 ## ▶ STATO — Capitolo NOTE / APPARATO (lato app) — 2026-06-22 (post primo collaudo d'orecchio)
 
 Punto di ripartenza dopo la tornata lato app (Swift/UIKit: `ScaboCore` + `ScaboApp`,
@@ -114,7 +200,10 @@ non al buio:
    sul banco reale, non assunto. **Residuo dichiarato**: i titoli di sezione / testatine-recto
    in maiuscoletto restano classificati `NOTE` (Generic size-only) e letti in posizione SENZA
    "Nota." (rete A intatta), ma non navigabili come heading; il recupero pieno a `HEADING` è
-   rinviato perché rischioso per la rete B sul classificatore size-only.
+   rinviato perché rischioso per la rete B sul classificatore size-only. **→ CHIUSO il
+   2026-06-24** per la famiglia Cortina (Delitti, Pubblico ministero) via plugin dedicato
+   `RaffaelloCortinaPlugin` (NON nel Generic, per non regredire altrove): i sotto-titoli
+   maiuscoli diventano HEADING_4 e confine di scarico note. Vedi il blocco STATO 2026-06-24.
 
 **IN APP e committato (hash principali, cronologico):**
 - Folio chirurgico per progressione (Mattone A) — `522d3cc`; fedeltà-CONTENUTO `4598269`
@@ -171,8 +260,8 @@ non al buio:
 - **Gruppo B — richiede orecchio / decisione di prodotto (non al buio):** esposizione
   granularità (controllo UI accessibile + re-render + comportamento del fuoco dopo il
   re-render, da collaudare sul device) + persistenza della scelta; tema applicato +
-  selettore; memory refresh note lunghe differite (§7.4/7.5); posizione di lettura
-  cross-sessione (persistita per-documento).
+  selettore; posizione di lettura cross-sessione (persistita per-documento).
+  (**FATTO**: memory refresh note lunghe differite §7.4/7.5 → build 8, `56549d0`.)
 - **Gruppo C — giri/plugin dedicati:** layout Consultazione Rapida + Dottrina Inline
   (rendering); split iPad; segnalibri/tag; sottolineature; libreria/organizzazione
   import; regime cieco note numerate via COLORE → plugin colori (la tripletta succ.+adiac.
@@ -186,6 +275,10 @@ non al buio:
   bloccante: quei titoli sono letti in posizione come testo (rete A intatta) ma **non
   navigabili come heading** — il Generic size-only non li distingue da una nota a piè di
   pagina con sicurezza; il recupero a `HEADING` è rinviato (rischioso per la rete B).
+  **→ CHIUSO 2026-06-24** per la famiglia Cortina via `RaffaelloCortinaPlugin` (build 9):
+  i sotto-titoli maiuscoli piccoli diventano HEADING_4. Generic invariato → zero regressione
+  sugli altri volumi (gate sul formato 453×694). Resta aperto solo per editori non-Cortina
+  con sotto-titoli a taglia-corpo (patologie gemelle, rinviate). Vedi blocco STATO 2026-06-24.
 - **Collaudo d'ORECCHIO del maintainer** su agganci note e scarti (giudice ultimo): **primo
   giro fatto su "Delitti in prima pagina" → tre fix in build 7**. Prossimi giri: ri-collaudo
   dei tre casi su device, poi agganci di Mosconi/Mandrioli III e scarti Marotta

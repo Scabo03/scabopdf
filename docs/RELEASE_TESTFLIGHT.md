@@ -59,7 +59,10 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   `project.pbxproj`. Il valore committato (allineato a 7 il 2026-06-22, commit `a6760dd`) è solo
   cosmetico/coerenza.
 - Storia: build 2–5 il 2026-06-13; build 6 il 2026-06-22; **build 7 il 2026-06-22** (tre fix del
-  primo collaudo d'orecchio — vedi `docs/CARRYOVER.md` § "PRIMO COLLAUDO"). Il prossimo run produrrà 8.
+  primo collaudo d'orecchio); **build 8 il 2026-06-23** (memory refresh note differite §7.4/7.5 +
+  strato segnali acustici earcon); **build 9 il 2026-06-24** (plugin Raffaello Cortina: sotto-titoli
+  di sezione maiuscoli → HEADING_4, confine di scarico note; Generic invariato — vedi
+  `docs/CARRYOVER.md` § STATO 2026-06-24). Il prossimo run produrrà 10.
 
 ## Unico punto eventualmente manuale
 

@@ -212,6 +212,17 @@ unità. Stato on-device:
   più diventa HEADING_4 se la dimensione/grassetto lo promuovono). La granularità
   più fine del raggruppamento richiede quindi **rafforzamento dei layout** (giro
   successivo).
+- **Confini di sezione aggiuntivi via plugin editoriale (2026-06-24, build 9).** Per la
+  famiglia Raffaello Cortina "Saggi" (Delitti in prima pagina, Pubblico ministero) i
+  sotto-titoli di sezione sono in maiuscoletto più piccolo del corpo: il Generic
+  size-only li mandava in NOTE (nessun confine). `RaffaelloCortinaPlugin` li promuove a
+  **HEADING_4**, quindi `flushLong` ora scarica le note lunghe al sotto-titolo vicino
+  (Delitti: confine-scarico da ~30 a ~5 pagine mediane). Decisione data-determinata
+  (plugin, NON Generic) per la rete di non-regressione cross-volume: nel Generic un
+  riconoscitore di sotto-titoli regredirebbe su altri volumi (numerazione/maiuscolo
+  promuovono citazioni e titoli-capitolo). `bindAndPlaceNotes` NON è stato toccato: la run
+  promossa è vista come HEADING e lo zip 1:1 resta allineato. Vedi `docs/CARRYOVER.md`
+  § STATO 2026-06-24.
 
 ### 6.5 Proposta sui dati (per il giro di implementazione)
 
