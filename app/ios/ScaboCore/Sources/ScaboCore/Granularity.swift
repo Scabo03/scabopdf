@@ -108,9 +108,84 @@ public let DEFAULT_GRANULARITY_LEVEL: GranularityLevel = .fine
 /// Tutto il resto è confine di run e passa invariato (vedi docstring di testata).
 public let GRANULARIZABLE_ROLES: Set<String> = [SemanticCategory.BODY.rawValue]
 
-/// Riassembla i segmenti del corpo discorsivo in blocchi ~`target` caratteri,
-/// secondo § 7.6. I segmenti non-`BODY` sono confini di run e passano invariati,
-/// nell'ordine di lettura originale.
+// ── Ricostruzione del corpo attraverso le pagine (continuità della colonna) ──────
+//
+// Un paragrafo che scavalca il salto pagina diventa due nodi BODY distinti; in mezzo,
+// nell'ordine di lettura per posizione, finisce l'apparato (nota a piè) — letto DENTRO
+// la frase. E le due metà restano spezzate, spesso a metà parola col trattino
+// ("giu-"/"stizia" sull'Iliade di Delitti). Qui le ricuciamo, in modo deterministico:
+//  • la giunzione del run DE-SILLABA (trattino di fine riga assorbito) quando la metà
+//    seguente inizia in minuscolo (caso sicuro);
+//  • un'APPARATO (NOTE/EDITORIAL_NOTE) incontrato mentre il run di corpo è APERTO (la
+//    metà finisce a metà parola o a metà periodo) viene TRATTENUTO e ri-emesso DOPO il
+//    paragrafo ricucito — mai dentro il periodo — purché la metà seguente sia una
+//    continuazione. Così la nota resta letta (rete A), solo spostata fuori dalla frase.
+//
+// GUARDIE anti-fusione (zero falsi-fusione, calibrate sul banco reale su 10 volumi):
+//  • la metà che "apre" deve finire a metà parola (trattino) o a metà periodo (lettera
+//    o virgola, MAI punteggiatura forte . ! ? : » ») — un paragrafo completo finisce col
+//    punto e NON si ricuce;
+//  • la metà che "apre" NON dev'essere maiuscola (uno SCHEMA/titolo collassato in BODY)
+//    né troppo corta (un'etichetta/frammento);
+//  • la metà seguente deve iniziare in MINUSCOLO (le frasi/paragrafi nuovi iniziano in
+//    maiuscolo; i versi pure) e NON con un marcatore d'elenco ("a)", "i)", "-", "1.").
+// Nel dubbio NON si ricuce (stella polare): si perde al più una ricucitura, mai si
+// fondono due paragrafi distinti.
+
+/// Lunghezza minima della metà che "apre" perché valga come paragrafo in corso (sotto,
+/// è un'etichetta/frammento → non si ricuce).
+let CROSS_PAGE_MIN_OPEN_LEN = 40
+/// Frazione massima di maiuscole della metà che "apre": sopra, è uno SCHEMA/titolo
+/// collassato in BODY → non si ricuce.
+let CROSS_PAGE_MAX_OPEN_CAPS = 0.7
+/// Apparato trattenibile mentre un run di corpo è aperto: solo le note (non le
+/// strutture). Glosse/indici/colophon sono già fuori dal flusso (NON_READ_ROLES).
+let HOLDABLE_APPARATUS_ROLES: Set<String> = [
+    SemanticCategory.NOTE.rawValue, SemanticCategory.EDITORIAL_NOTE.rawValue,
+]
+
+/// Vero se `s` termina con lettera + trattino (sillabazione di fine riga).
+func endsWithLetterHyphenG(_ s: String) -> Bool {
+    let sc = Array(s.unicodeScalars)
+    guard sc.count >= 2, sc[sc.count - 1] == "-" else { return false }
+    let v = sc[sc.count - 2].value
+    return (v >= 0x41 && v <= 0x5A) || (v >= 0x61 && v <= 0x7A) || (v >= 0xC0 && v <= 0xFF)
+}
+
+/// Vero se la metà di corpo "apre" (il paragrafo prosegue): finisce a metà parola
+/// (trattino) o a metà periodo (lettera/virgola, non punteggiatura forte), ed è prosa
+/// in corso (non maiuscola-schema, non troppo corta). Guardia anti-fusione.
+func bodyRunOpens(_ text: String) -> Bool {
+    let s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard s.count >= CROSS_PAGE_MIN_OPEN_LEN else { return false }
+    if capsRatioCortina(s) >= CROSS_PAGE_MAX_OPEN_CAPS { return false }
+    if endsWithLetterHyphenG(s) { return true }
+    guard let last = s.last else { return false }
+    return last == "," || last.isLetter
+}
+
+private let CROSS_PAGE_LIST_MARKER = try! NSRegularExpression(
+    pattern: "^\\s*([a-z]\\)|[ivxlcdm]{1,4}\\)|[-–—•∙·*]\\s|\\d{1,2}[.)]\\s)")
+
+/// Vero se la metà seguente è una CONTINUAZIONE: inizia in minuscolo (le frasi/
+/// paragrafi/versi nuovi iniziano in maiuscolo) e NON con un marcatore d'elenco.
+func bodyContinues(_ text: String) -> Bool {
+    let s = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    if CROSS_PAGE_LIST_MARKER.firstMatch(in: s, range: NSRange(s.startIndex..<s.endIndex, in: s)) != nil {
+        return false
+    }
+    for ch in s {
+        if ch.isLetter { return ch.isLowercase }
+        if ch.isWhitespace { continue }
+        return false  // inizia con cifra/virgoletta/parentesi → non una continuazione chiara
+    }
+    return false
+}
+
+/// Riassembla i segmenti del corpo discorsivo in blocchi ~`target` caratteri (§ 7.6),
+/// ricostruendo la continuità del corpo attraverso le pagine (vedi sopra). I segmenti
+/// non-`BODY` sono confini di run; le note possono essere TRATTENUTE oltre un run aperto
+/// e ri-emesse dopo il paragrafo ricucito.
 public func granularizeBody(
     _ segments: [ContentSegment],
     target: Int = DEFAULT_GRANULARITY_TARGET
@@ -118,22 +193,38 @@ public func granularizeBody(
     var out: [ContentSegment] = []
     var runTexts: [String] = []
     var runIdBase: String?
+    var heldApparatus: [ContentSegment] = []   // note trattenute mentre il run è aperto
 
     func flushRun() {
         if let base = runIdBase, !runTexts.isEmpty {
             out.append(contentsOf: granularizeRun(runTexts, idBase: base, target: target))
         }
+        out.append(contentsOf: heldApparatus)   // l'apparato trattenuto va DOPO il paragrafo
         runTexts = []
         runIdBase = nil
+        heldApparatus = []
     }
 
     for segment in segments {
         if GRANULARIZABLE_ROLES.contains(segment.role) {
-            if runIdBase == nil { runIdBase = segment.id }
-            runTexts.append(segment.text)
+            if runTexts.isEmpty {
+                runIdBase = segment.id
+                runTexts = [segment.text]
+            } else if heldApparatus.isEmpty {
+                runTexts.append(segment.text)   // corpo adiacente: comportamento invariato
+            } else if bodyContinues(segment.text) {
+                runTexts.append(segment.text)   // continuazione OLTRE l'apparato trattenuto
+            } else {
+                flushRun()                       // metà seguente NON è continuazione: chiudi
+                runIdBase = segment.id
+                runTexts = [segment.text]
+            }
+        } else if HOLDABLE_APPARATUS_ROLES.contains(segment.role),
+                  let last = runTexts.last, bodyRunOpens(last) {
+            heldApparatus.append(segment)        // nota dentro un paragrafo aperto: trattieni
         } else {
             flushRun()
-            out.append(segment)  // confine / apparato / struttura: invariato
+            out.append(segment)  // confine di struttura / apparato non trattenibile: invariato
         }
     }
     flushRun()
@@ -145,10 +236,22 @@ public func granularizeBody(
 /// senza mai spezzare una frase. Gli id dei blocchi sono deterministici e stabili
 /// (`<idBase>#<k>`), così lo stesso input produce sempre lo stesso output.
 private func granularizeRun(_ texts: [String], idBase: String, target: Int) -> [ContentSegment] {
-    let joined = texts
-        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-        .filter { !$0.isEmpty }
-        .joined(separator: " ")
+    // Giunzione DE-SILLABANTE: se una metà finisce con lettera+trattino e la successiva
+    // inizia in minuscolo, è sillabazione di fine riga → si assorbe il trattino e si
+    // concatena senza spazio ("giu-" + "stizia" → "giustizia"); altrimenti spazio
+    // (comportamento invariato: il trattino+uppercase resta com'era, niente distorsioni).
+    var joined = ""
+    for raw in texts {
+        let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty { continue }
+        if joined.isEmpty {
+            joined = t
+        } else if endsWithLetterHyphenG(joined), let first = t.first, first.isLowercase {
+            joined = String(joined.dropLast()) + t
+        } else {
+            joined += " " + t
+        }
+    }
     let sentences = splitIntoSentences(joined)
     if sentences.isEmpty { return [] }
 
