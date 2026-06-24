@@ -52,6 +52,64 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — secondo mattone "flusso di lettura": continuità del corpo attraverso le pagine — 2026-06-24 (committato, in attesa di build 11)
+
+Secondo mattone della strada-2 (modello uniforme del flusso di lettura nel Generic), dopo il
+primo (testatine correnti, build 10). Toglie la causa per cui le frasi di corpo si spezzano a
+cavallo del salto pagina e per cui l'apparato finisce letto DENTRO la frase. Tutto misurato
+sul banco PdfKit reale (10 volumi) prima e dopo, due reti, niente cerotti.
+
+**Diagnosi (banco reale).** Un paragrafo a cavallo pagina diventa due nodi BODY; tra le due
+metà, nell'ordine per posizione, finisce l'apparato (la nota a piè), letto in mezzo alla
+frase — e le metà restano spezzate, spesso a metà parola col trattino ("giu-"/"stizia"
+sull'Iliade di Delitti). Due tipi di rottura, valutati insieme: **col trattino** (sicuro:
+Delitti 67, Mandrioli 117, Torrente 101, Costituzionale 92, PM 44, Mercato 39; Mosconi/
+Tesauro/Compendio ne hanno ZERO — non sillabano) e **senza trattino, a metà periodo**
+(Compendio 929, Torrente 592, Mosconi 312, Mandrioli 162, Tesauro 145, Costituzionale 109).
+L'apparato interposto è la NORMA (Mandrioli 100%, Mosconi 285, Compendio 327).
+
+**Implementazione (in `granularizeBody`/`granularizeRun`, a livello dei segmenti di lettura —
+struttura e aggancio note INVARIATI, minima superficie di rete B).** (a) la giunzione del run
+**DE-SILLABA** quando la metà seguente inizia in minuscolo (caso sicuro); (b) una **NOTE/
+EDITORIAL_NOTE** incontrata mentre il run di corpo è APERTO viene **TRATTENUTA** e ri-emessa
+DOPO il paragrafo ricucito — mai dentro il periodo — se la metà seguente è una continuazione.
+**Guardie anti-fusione** (zero falsi-fusione, calibrate leggendo ~80 candidati su 5 volumi-
+trappola + censimento): la metà che apre finisce a metà parola/periodo (trattino, lettera o
+virgola, MAI punteggiatura forte), NON è maiuscola (SCHEMA/titolo collassato) né corta
+(etichetta/frammento); la metà seguente inizia in MINUSCOLO (frasi/paragrafi/versi nuovi
+iniziano in maiuscolo → esclusi) e NON con un marcatore d'elenco ("a)", "i)", "-", "1."). Nel
+dubbio NON si ricuce (stella polare): si perde al più una ricucitura, mai si fondono due
+paragrafi distinti. I controesempi cercati e respinti dalle guardie: Costituzionale "…E I
+TRATTATI INTERNAZIONALI ⟂ c) la politica" (elenco), "SCHEMA RIASSUNTIVO… COSTITUZIONALI ⟂
+zionali…" e Mandrioli "TRENTESIMA EDIZIONE ⟂ pag. Premessa" (titolo collassato), Compendio
+"– a", "," (frammenti corti), versi e nomi propri (next maiuscolo).
+
+**Reti (banco reale, 10 volumi).** Rete A: **0 lettere perse, 0 create su TUTTI i 10 volumi**
+(la de-sillabazione e lo spostamento dell'apparato preservano le lettere). Rete B: **stat di
+aggancio note IDENTICHE** su tutti i 10 (il mattone è a valle del binding, in granularità),
+struttura del documento INVARIATA, conteggio NOTE invariato (apparato spostato, non perso),
+suite app verde. De-sillabazione verificata leggendo le 23 giunzioni reali di Delitti: 23/23
+parole corrette (giustizia, cattolico, marciapiedi, democrazia…), 0 falsi join. Righe-corpo a
+fine-trattino: Delitti 34→8, Mandrioli 79→3, Mercato 21→4, Torrente 6→0, PM 2→0. **Caso
+Iliade RISOLTO**: "…giustizia contenuta nei poemi" ricomposta, "3. Iliade" letta DOPO il
+paragrafo (fuori dalla parola). Cross-volume: nessuna perdita su nessun volume; Marotta sano.
+
+**Terzo caso emerso (NON era previsto, messo sul tavolo).** Gli 8 trattini residui di Delitti
+NON sono rotture cavallo-pagina: sono parole spezzate INTRA-pagina dove la coda è
+**misclassificata NOTE** (`BODY "…preoccu-"` → `NOTE "pazione.19"` → `BODY "Pratiche…"`: la
+coda "pazione" incollata al marcatore di nota "19" è finita in NOTE). È il difetto
+**frammento-di-corpo→NOTE** (famiglia "loro funzione.28" della diagnosi build 9), un mattone
+a sé: il mattone 2 (corpo↔corpo) non lo tocca perché la continuazione non è un nodo BODY. Da
+fare nel prossimo giro (mattone 3). Non è una regressione (preesistente, rete A intatta).
+
+**Test:** +10 unità (`GranularityCrossPageTests`: de-sillabazione, trattenimento apparato,
+ognuna delle 4 guardie, run-chiuso, confine-heading); ScaboCore 256/256, ScaboApp 63/63.
+**Build:** committato su main; **prossima upload → build 11** (fastlane calcola
+`CURRENT_PROJECT_VERSION`). Al collaudo d'orecchio: le frasi non si spezzano più a metà parola
+a cavallo pagina e la nota a piè non interrompe più il periodo (Iliade e simili).
+
+---
+
 ## ▶ STATO — diagnosi regressione build 9 + primo mattone "flusso di lettura" — 2026-06-24 → build 10 su TestFlight
 
 L'utente ha collaudato la build 9 (plugin Cortina) e all'orecchio era PEGGIORATA, non
