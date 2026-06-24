@@ -52,6 +52,73 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — diagnosi regressione build 9 + primo mattone "flusso di lettura" — 2026-06-24 → build 10 su TestFlight
+
+L'utente ha collaudato la build 9 (plugin Cortina) e all'orecchio era PEGGIORATA, non
+migliorata: earcon "Nota." un paio di volte per pagina, più elementi trattati come NOTE,
+più blocchi spezzati a metà. Giro lungo di sola indagine sul banco PdfKit reale (non
+strumenti dev-time), poi un primo mattone alla radice. Tutto misurato prima di toccare.
+
+**Diagnosi (numeri dal banco reale, diff build 8 vs build 9).** La regressione immediata è
+un **effetto collaterale del `profile_id`**, non la regola maiuscoletto→HEADING_4: il fix
+build-7 `suppressCollapsedHeadingNoteIntros` in `BuildSegments.swift:242` è cablato su
+`profile_id == "generic"`; il plugin Cortina cambia `profile_id` a `raffaello_cortina`, così
+quel fix si SPEGNE sui volumi Cortina e tornano i "Nota." falsi: **Delitti +184 (425→609
+earcon, 185 falsi), Pubblico ministero +78 (188→266, 92 falsi)**. Categorie dei falsi su
+Delitti: **121 testatine correnti** ("Nota. DELITTI E PROCESSI"), 31 code di frase di corpo
+("loro funzione.28"), 27 voci di catalogo del front-matter. La build 8 NON era pulita: le
+leggeva in SILENZIO (la soppressione zittiva il "Nota." ma il testo restava nel flusso ~136
+volte); la build 9 le ha solo vocalizzate. **Difetto profondo, comune a tutti i volumi
+(Mercato incluso, generic):** la pipeline non ricostruisce il flusso lineare del corpo — (a)
+testatine correnti per-capitolo lette nel flusso (soglia furniture globale 15% le manca), (b)
+nessuna continuità del corpo cross-pagina (frase spezzata a metà parola, es. "giu-"/"stizia"
+sull'Iliade di Delitti, con nota e testatina lette in mezzo), (c) frammenti di corpo finiti
+in NOTE. Earcon-troppo-frequenti e blocchi-spezzati sono due facce dello stesso difetto.
+Mappa completa e proposta di modello uniforme (separazione zona-corpo / zona-note /
+apparato interposto) discussa con l'utente; il cerotto anti-"Nota." (soppressione a valle)
+è da eliminare alla causa, non da estendere. Si procede per MATTONI nel Generic (non plugin,
+non cerotto), ognuno con le due reti su tutti i volumi.
+
+**Mattone 1 — testatine correnti di capitolo (commit `2b3394c`, build 10).** La soglia
+furniture era globale (15% = ~44 pagine su un libro tipico); una testatina di capitolo
+ricorre solo dentro il suo capitolo (9–21 pagine) → sotto soglia → letta. È la fetta più
+grossa del rumore sui libri accademici, generale, NON Cortina. Nuovo canale in
+`GenericPlugin.detectFurniture` (per TUTTI i volumi, Generic e plugin che lo riusano): la
+riga **più in alto** della pagina, sostanziale, corta, in banda superiore, **ancorata** alla
+stessa frazione-y (σ<0.006) su **≥3 pagine** è una testatina — anche sotto il 15%. Additivo
+(union coi canali esistenti). Segnale scelto coi dati su 10 volumi: l'ipotesi "pagine
+consecutive" è stata sostituita da "ancoraggio posizionale" (σ=0.0000 sulle testatine vere,
+mai su una riga di corpo); la guardia "riga più in alto" esclude per costruzione note a piè
+(in basso) e sotto-titoli di sezione (sotto la testatina). **Guardia d'apparato:** una
+testatina che APRE una regione esclusa (indice nomi/sentenze, sommario) NON è rimossa — il
+rilevatore la usa per aprire la regione, le cui pagine sono comunque escluse: senza la
+guardia l'indice Mosconi (26 pagine) veniva LETTO (regressione net-B intercettata in
+indagine, non spedita). **Numeri (banco reale):** testatine tolte Delitti 136, Mosconi 526,
+Costituzionale 521, Compendio ~1258, Mandrioli III 309, Tesauro 439, Torrente 562, PM 91,
+Mercato ~73; **Marotta 0 (byte-identico, volume non interessato)**. **Zero falsi positivi su
+corpo/note**, verificato leggendo ogni riga rimossa e con net A a livello-parola
+(`gained=0` ovunque; ogni forma-corpo "cambiata" è il suffisso della forma con la sola
+testatina-prefisso tolta → corpo preservato). Net B: apparato invariato (Mosconi INDEX_ENTRY
+26→26, TOC/glosse/stamp invariati), folii/note invariati; uniche variazioni: testatine tolte
+(il fix) e +1 Delitti / +3 PM HEADING_4 (sotto-titoli GENUINI ora riconosciuti meglio, zero
+heading persi). Earcon falsi "Nota.": **Delitti 185→62, PM 92→4** — testatine ELIMINATE a
+monte (meglio della build 8 che le leggeva mute; nessun cerotto reso più necessario, anzi
+meno). +8 test unità (`RunningHeaderFurnitureTests`) con le guardie di precisione e
+d'apparato; suite ScaboCore 246/246, ScaboApp 63/63.
+
+**Mattoni successivi (stessa filosofia, prossimi giri).** (2) frammento di corpo→NOTE
+("loro funzione.28": ~31 falsi residui su Delitti) e voci di catalogo front-matter (~27);
+(3) continuità del corpo cross-pagina (de-sillabazione al salto pagina, niente apparato letto
+mid-frase). **Debt Cortina:** il `profile_id == "generic"` di `suppressCollapsedHeadingNoteIntros`
+va sganciato (applicare a ogni backend euristico PDF, o meglio: far sì che testatine/frammenti
+non diventino mai NOTE a monte — i mattoni 1/2/3); finché non chiudo i mattoni 2/3 i ~62 falsi
+residui di Delitti restano vocalizzati sui volumi Cortina (profilo non-generic). Da valutare
+se il riconoscitore sotto-titoli Cortina vada riassorbito nel modello uniforme del Generic.
+**Build number:** ultima caricata 9; **questo giro → build 10** (fastlane calcola
+`CURRENT_PROJECT_VERSION` = ultimo-TestFlight+1; non toccarlo a mano).
+
+---
+
 ## ▶ STATO — sessioni recenti lato app (memory refresh, audio, sotto-titoli Cortina) — 2026-06-24 → build 9 su TestFlight
 
 Aggiornamento che copre le tre tornate lato app dopo il primo collaudo d'orecchio (build

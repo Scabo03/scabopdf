@@ -62,7 +62,11 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   primo collaudo d'orecchio); **build 8 il 2026-06-23** (memory refresh note differite §7.4/7.5 +
   strato segnali acustici earcon); **build 9 il 2026-06-24** (plugin Raffaello Cortina: sotto-titoli
   di sezione maiuscoli → HEADING_4, confine di scarico note; Generic invariato — vedi
-  `docs/CARRYOVER.md` § STATO 2026-06-24). Il prossimo run produrrà 10.
+  `docs/CARRYOVER.md` § STATO 2026-06-24); **build 10 il 2026-06-24** (furniture per le
+  testatine correnti di capitolo nel Generic: la riga più in alto, ancorata, ricorrente su
+  ≥3 pagine è rimossa anche sotto il 15% — toglie la fetta più grossa del rumore "Nota."
+  falso su tutti i volumi, zero falsi positivi sul corpo, apparato/Marotta invariati). Il
+  prossimo run produrrà 11.
 
 ## Unico punto eventualmente manuale
 
