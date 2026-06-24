@@ -283,25 +283,36 @@ final class GenericPluginTests: XCTestCase {
         XCTAssertTrue(doc.warnings.contains("plugin:generic:furniture_lines_removed_6"))
     }
 
-    /// Sotto la soglia di ricorrenza (header su 4 pagine su 6, minPages = 5) NON è furniture:
-    /// la riga resta (qui classificata NOTE per la dimensione ridotta) e non c'è warning.
-    func test_detectFurniture_belowThresholdRecurrenceIsKept() {
-        let header = placedLine("Intestazione Saltuaria", size: 9, y: 800)
-        func body(_ word: String) -> [PdfTextLine] {
-            ["x", "y"].map { placedLine("Riga \($0) della parte \(word) del corpo.", size: 12, y: 400) }
-        }
+    /// AGGIORNATO 2026-06-24 (nuovo canale "testatine correnti di capitolo"). Sotto il
+    /// pavimento globale del 15% (header su 4 pagine su 6, minPages = 5) una TESTATINA
+    /// CORRENTE è ORA furniture: è la riga più in alto, in banda superiore, ancorata alla
+    /// stessa y. Una ricorrenza sotto soglia che NON è una testatina (riga di corpo a metà
+    /// pagina) resta invece letta — la guardia "riga più in alto + posizione ancorata"
+    /// separa i due casi. Vedi RUNNING_HEADER_* in GenericPlugin.
+    func test_detectFurniture_runningHeaderBelowFloorRemoved_nonHeaderKept() {
+        let header = placedLine("Intestazione Corrente", size: 9, y: 800) // topmost, banda, ancorata
+        // Frase di corpo che si ripete a metà pagina sulle STESSE 4 pagine della testatina
+        // (sotto sia minPages=5 sia majorityPages=5): non topmost, non in banda → deve restare.
+        let midRepeat = placedLine("Frase di corpo a metà pagina, ripetuta.", size: 12, y: 400)
         let words = ["alfa", "beta", "gamma", "delta", "epsilon", "zeta"]
         let pages = words.enumerated().map { idx, w -> [PdfTextLine] in
-            idx < 4 ? [header] + body(w) : body(w) // header solo su 4 pagine < minPages
+            idx < 4
+                ? [header, midRepeat, placedLine("Riga \(w) variabile del corpo.", size: 12, y: 360)]
+                : [placedLine("Riga \(w) variabile del corpo.", size: 12, y: 360)]
         }
         let doc = genericPlugin.build(extraction(pages), sourceName: "x.pdf")
 
-        XCTAssertTrue(
-            doc.structure.contains { ($0.text ?? "").contains("Intestazione Saltuaria") },
-            "sotto soglia non è furniture: la riga resta")
+        // La testatina corrente (topmost+ancorata) sotto il pavimento del 15% ora è furniture.
         XCTAssertFalse(
+            doc.structure.contains { ($0.text ?? "").contains("Intestazione Corrente") },
+            "testatina corrente sotto soglia: ora rimossa dal nuovo canale")
+        XCTAssertTrue(
             doc.warnings.contains { $0.hasPrefix("plugin:generic:furniture_lines_removed_") },
-            "nessuna furniture rimossa → nessuna warning")
+            "rimozione testatina → warning furniture")
+        // La frase di corpo ricorrente a metà pagina (non topmost, non in banda) resta letta.
+        XCTAssertTrue(
+            doc.structure.contains { ($0.text ?? "").contains("Frase di corpo a metà pagina") },
+            "ricorrenza non-testatina sotto soglia: resta letta (precisione)")
     }
 
     /// Una testatina appena SOTTO il decile più alto (yFrac≈0.87, fra `TOP_BAND` 0.85

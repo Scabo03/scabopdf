@@ -72,6 +72,32 @@ let FURNITURE_MAX_CHARS = 60
 /// channels — see `detectFurniture`.
 let BARE_NUMBER_NORM = "#"
 
+// ── Testatina corrente di CAPITOLO (running header) ──────────────────────────────
+// La testatina che ripete il titolo del capitolo (recto) o del libro (verso) ricorre
+// solo DENTRO il suo capitolo (9–21 pagine su un volume tipico), quindi resta sotto il
+// pavimento globale del 15% (`minPages`) e finisce LETTA — su molti libri accademici è
+// la fetta più grossa del rumore (Delitti: 9 testatine, 136 occorrenze). Il canale
+// generale per-norma non la prende perché è per-capitolo, non globale.
+//
+// Il segnale che la distingue da una riga di corpo che si ripete (coda di tabella, voce
+// bibliografica, sotto-titolo numerato collassato dalla normalizzazione cifre) è
+// GEOMETRICO e verificato sul banco PDFKit reale su 10 volumi: la testatina è (1) la riga
+// PIÙ IN ALTO della pagina (sopra di lei non c'è contenuto — i sotto-titoli di sezione
+// come "3.4.1 Definizioni" stanno SOTTO la testatina, le note a piè stanno in fondo),
+// (2) nella banda superiore, (3) ANCORATA alla stessa y su tutte le sue occorrenze
+// (σ ≈ 0; una riga di corpo non si blocca mai a una y fissa). Le tre guardie insieme
+// danno ZERO falsi positivi sul corpo nel banco (footnote e sotto-titoli esclusi per
+// costruzione). Il titolo di capitolo VERO resta: è un nodo HEADING separato, di norma
+// diversa (porta il numero "1." / dimensione maggiore) e occorre una volta sola.
+//
+/// Una testatina corrente è riconosciuta se la riga-candidata ricorre su almeno così
+/// tante pagine (sotto il pavimento globale del 15%, che resta per il canale generale).
+let RUNNING_HEADER_MIN_PAGES = 3
+/// Deviazione standard massima della frazione-y fra le occorrenze perché valga
+/// "ancorata alla stessa posizione" (≈ 4pt su una pagina di 700pt). Una riga di corpo
+/// che si ripete non è mai ancorata; la testatina sì.
+let RUNNING_HEADER_POSITION_LOCK = 0.006
+
 /// NOTE length → acoustic regime thresholds (mirrors Layer 1).
 let LENGTH_THRESHOLDS: [(Int, LengthCategory)] = [
     (50, .MICRO),
@@ -290,6 +316,17 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
 /// a value tracking v = pageIndex + offset for an offset that recurs across the
 /// volume. A number that does not progress (notes restarting from 1, an index
 /// reference, a marginal §-number) never matches and is preserved.
+/// Vero se la riga APRE una regione d'apparato ESCLUSA dal flusso letto (indice dei nomi/
+/// fonti/sentenze → INDEX_ENTRY; sommario/indice generale → TOC_GENERAL): il rilevatore
+/// d'apparato (`detectBackMatterApparatus` / `detectFrontMatterNoLeaderIndex`) usa questa
+/// riga-testatina per aprire la regione, e le sue pagine sono comunque escluse dalla
+/// lettura — quindi NON va rimossa come testatina corrente (la rimozione spezzerebbe il
+/// rilevamento e farebbe LEGGERE l'indice). Le regioni LETTE (bibliografia, indice
+/// analitico recintato) non sono qui: lì la testatina corrente va rimossa come ovunque.
+private func opensExcludedApparatusRegion(_ text: String) -> Bool {
+    regexHits(backMatterNameIndexHeadingRegex, text) || regexHits(frontMatterTocHeadingRegex, text)
+}
+
 func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     struct Candidate { let key: String; let norm: String }
     struct FolioCandidate { let key: String; let page: Int; let value: Int }
@@ -302,6 +339,11 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // Folio detection runs on bare-number lines only, off to the side.
     var folioCandidates: [FolioCandidate] = []
     var offsetPages: [Int: Set<Int>] = [:]
+    // Testatina corrente di capitolo: per ogni pagina UNA sola candidata (la riga più in
+    // alto, sostanziale, corta, in banda superiore), raggruppata per norma e risolta dopo
+    // il ciclo con la guardia di ANCORAGGIO posizionale (vedi RUNNING_HEADER_*).
+    struct HeaderCandidate { let key: String; let yFrac: Double }
+    var headerCandidatesByNorm: [String: [HeaderCandidate]] = [:]
 
     func track(_ map: inout [String: Set<Int>], _ norm: String, _ pageIndex: Int) {
         map[norm, default: []].insert(pageIndex)
@@ -309,6 +351,12 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
 
     for page in extraction.pages {
         let height = page.height
+        // Candidata-testatina della pagina: la riga PIÙ IN ALTO fra le sostanziali corte
+        // in banda superiore (i bare-number/folii sono saltati: non sostanziali).
+        var topHeaderKey: String?
+        var topHeaderNorm = ""
+        var topHeaderYFrac = 0.0
+        var topHeaderYTop = -Double.greatestFiniteMagnitude
         for (lineIndex, line) in page.lines.enumerated() {
             let sm = summarizeLine(line)
             if sm.text.utf16.count == 0 { continue }
@@ -340,6 +388,25 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                 colorCandidates.append(Candidate(key: key, norm: norm))
                 track(&colorPages, norm, page.pageIndex)
             }
+            // Candidata-testatina: riga sostanziale, banda superiore, più in alto vista
+            // finora su questa pagina (la testatina sta SOPRA il contenuto: i sotto-titoli
+            // di sezione e le note a piè non sono mai la riga più in alto). ESCLUSIONE: una
+            // riga che APRE una regione d'apparato esclusa dal flusso (indice nomi/fonti/
+            // sentenze, sommario/indice generale) NON è candidata — il rilevatore d'apparato
+            // la usa per aprire la regione (le cui pagine sono comunque escluse dalla
+            // lettura). Toglierla qui spezzerebbe quel rilevamento (regressione: l'indice
+            // verrebbe letto). Le regioni LETTE (bibliografia, indice analitico) non sono qui.
+            if isSubstantial(sm.text), yFrac >= TOP_BAND, sm.yTop > topHeaderYTop,
+               !opensExcludedApparatusRegion(sm.text) {
+                topHeaderYTop = sm.yTop
+                topHeaderKey = key
+                topHeaderNorm = norm
+                topHeaderYFrac = yFrac
+            }
+        }
+        if let key = topHeaderKey {
+            headerCandidatesByNorm[topHeaderNorm, default: []].append(
+                HeaderCandidate(key: key, yFrac: topHeaderYFrac))
         }
     }
 
@@ -365,6 +432,21 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     let folioOffsets = Set(offsetPages.compactMap { $0.value.count >= minPages ? $0.key : nil })
     for c in folioCandidates where folioOffsets.contains(c.value - c.page) {
         furniture.insert(c.key)
+    }
+    // Testatine correnti di capitolo (NUOVO canale, indipendente dal pavimento del 15%).
+    // Una candidata-testatina ricorrente su >= RUNNING_HEADER_MIN_PAGES pagine e ANCORATA
+    // alla stessa frazione-y (σ < RUNNING_HEADER_POSITION_LOCK) è una testatina corrente:
+    // additivo (unione col resto). La doppia guardia — riga PIÙ IN ALTO della pagina +
+    // posizione ancorata — esclude per costruzione note a piè (in basso) e sotto-titoli di
+    // sezione collassati dalla normalizzazione cifre (mai la riga più in alto). Verificato
+    // a ZERO falsi positivi su corpo/note su 10 volumi reali (banco PDFKit).
+    for (_, candidates) in headerCandidatesByNorm where candidates.count >= RUNNING_HEADER_MIN_PAGES {
+        let ys = candidates.map { $0.yFrac }
+        let mean = ys.reduce(0, +) / Double(ys.count)
+        let variance = ys.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(ys.count)
+        if variance.squareRoot() < RUNNING_HEADER_POSITION_LOCK {
+            for c in candidates { furniture.insert(c.key) }
+        }
     }
     return furniture
 }
