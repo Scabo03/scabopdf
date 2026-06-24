@@ -66,9 +66,14 @@ public extension ExtractionPlugin {
 /// Confidence a corpus plugin must clear to win over the Generic fallback.
 public let DISPATCH_THRESHOLD = 0.6
 
-/// Corpus-specific plugins, highest priority first. Generic is NOT here. Empty
-/// this session (mirrors the TS `PLUGINS: readonly ExtractionPlugin[] = []`).
-let registeredPlugins: [ExtractionPlugin] = []
+/// Corpus-specific plugins, highest priority first. Generic is NOT here. Each
+/// must clear `DISPATCH_THRESHOLD` on its own corpus and stay below it on every
+/// other (the cross-volume non-regression gate). `raffaelloCortinaPlugin`
+/// recognises the Cortina "Saggi" trim and promotes its small-caps section
+/// sub-titles to HEADING_4 (note-placement boundary); it is gated so tightly on
+/// the 453×694 trim that no other corpus volume reaches the threshold — the
+/// Generic stays untouched for everything else.
+let registeredPlugins: [ExtractionPlugin] = [raffaelloCortinaPlugin]
 
 /// Selects the plugin that should own the extraction.
 public func selectPlugin(_ extraction: PdfExtraction) -> ExtractionPlugin {
