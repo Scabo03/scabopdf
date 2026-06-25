@@ -131,6 +131,31 @@ public let GRANULARIZABLE_ROLES: Set<String> = [SemanticCategory.BODY.rawValue]
 //    maiuscolo; i versi pure) e NON con un marcatore d'elenco ("a)", "i)", "-", "1.").
 // Nel dubbio NON si ricuce (stella polare): si perde al più una ricucitura, mai si
 // fondono due paragrafi distinti.
+//
+// ── MATTONE 3: la CODA di una parola spezzata classificata NOTE ──────────────────
+//
+// Caso emerso dal mattone 2 e documentato lì: una parola spezzata col trattino di
+// fine riga ("ecce-") la cui coda è finita INCOLLATA al numero di richiamo di nota
+// ("zionali.14") e, per la dimensione ridotta dell'apice, classificata NOTE dal
+// classificatore size-only. Risultato a orecchio: "…più ecce-" poi una falsa nota
+// "zionali quattordici" poi "Si parla…" — la parola "eccezionali" spezzata in due e
+// un numero letto in mezzo. Qui la coda viene RICUCITA nella parola (de-sillabazione)
+// e il SOLO numero di richiamo rimosso (la nota vera resta letta a fondo pagina come
+// nodo NOTE proprio: il numero in linea era solo il rimando, ridondante una volta che
+// la nota è comunque letta). Il frammento-NOTE spurio sparisce.
+//
+// PALETTO ESPLICITO (deciso dal maintainer): la rimozione del numero di richiamo vale
+// SOLO E UNICAMENTE per questa ricucitura di parola spezzata, MAI come regola
+// generale. I numeri di richiamo nelle frasi normali restano e vanno letti (servono al
+// lettore per sapere che, e quanti, richiami ci sono): vivono nei nodi BODY e li
+// gestisce `NoteBinding` a monte — questo ramo, che lavora dopo, su un segmento NOTE
+// trattenuto, non li raggiunge MAI. Le guardie (TUTTE necessarie insieme):
+//  • il run di corpo aperto finisce in lettera+trattino (parola spezzata davvero);
+//  • la coda trattenuta è UNA sola, corta (≤ FRAGMENT_TAIL_MAX_LEN), inizia MINUSCOLA
+//    (completa la parola), NON apre con un marcatore di nota (≠ nota vera "14. Autore…");
+//  • la coda FINISCE con un numero di richiamo (1–3 cifre) — l'unico token rimosso.
+//  • il segmento seguente è una NUOVA frase (non una continuazione: quella la prende
+//    già il mattone 2) — la parola si completa DENTRO la coda, non dopo.
 
 /// Lunghezza minima della metà che "apre" perché valga come paragrafo in corso (sotto,
 /// è un'etichetta/frammento → non si ricuce).
@@ -182,6 +207,66 @@ func bodyContinues(_ text: String) -> Bool {
     return false
 }
 
+// ── Mattone 3 — coda di parola spezzata classificata NOTE ────────────────────────
+
+/// Lunghezza massima della "coda spezzata + numero" perché valga come troncone di
+/// parola e non come prosa vera. Gli 8 casi reali su Delitti stanno in 7–18 caratteri;
+/// il cap a 40 lascia margine ma resta ben sotto la nota vera più corta del corpus che
+/// inizierebbe minuscola (≥ ~100 char), così nessuna nota vera vi cade dentro.
+let FRAGMENT_TAIL_MAX_LEN = 40
+
+/// Numero di richiamo a fine coda: 1–3 cifre, eventualmente fra ( ) o [ ], con
+/// whitespace di contorno. È il SOLO marcatore che il mattone 3 rimuove, e solo dalla
+/// coda fusa. Ancorato a fine stringa: non tocca cifre interne (anni, pagine) della coda.
+private let FRAGMENT_CALL_MARKER = try! NSRegularExpression(
+    pattern: "\\s*[\\(\\[]?\\d{1,3}[\\)\\]]?\\s*$")
+
+/// Vero se il primo carattere alfabetico di `s` è minuscolo (la coda completa la parola
+/// spezzata; una frase/nota vera inizia in maiuscolo o con la cifra del proprio numero).
+func firstAlphaIsLower(_ s: String) -> Bool {
+    for ch in s where ch.isLetter { return ch.isLowercase }
+    return false
+}
+
+/// Vero se il segmento NOTE `seg` è, da solo, una coda-di-parola-spezzata + numero di
+/// richiamo (le guardie sul solo frammento; il contesto — corpo-trattino prima — lo
+/// verifica il chiamante). Ritorna la coda col SOLO numero rimosso (parola e punto di
+/// fine frase conservati), altrimenti nil.
+func brokenWordTailCompletion(_ seg: ContentSegment) -> String? {
+    guard HOLDABLE_APPARATUS_ROLES.contains(seg.role) else { return nil }
+    let t = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard t.count <= FRAGMENT_TAIL_MAX_LEN,   // troncone corto, non prosa vera
+          firstAlphaIsLower(t),               // completa la parola (minuscola)
+          noteOpening(t) == nil               // non è una nota vera "14. Autore…"
+    else { return nil }
+    // Deve FINIRE con un numero di richiamo, che è l'unica cosa rimossa; davanti deve
+    // restare la coda della parola (match non all'inizio della stringa).
+    let ns = t as NSString
+    guard let m = FRAGMENT_CALL_MARKER.firstMatch(in: t, range: NSRange(location: 0, length: ns.length)),
+          m.range.location > 0 else { return nil }
+    let completion = ns.substring(to: m.range.location)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    return completion.isEmpty ? nil : completion
+}
+
+/// Se fra l'apparato trattenuto c'è la CODA DI UNA PAROLA SPEZZATA + numero di richiamo
+/// (mattone 3), ritorna `(indice nel vettore, coda ripulita)`; altrimenti nil. Il
+/// chiamante fonde la coda e RIMUOVE solo quell'elemento, lasciando trattenute le note
+/// VERE (ri-emesse dopo, mattone 2). Si cerca dall'ULTIMO perché `bindAndPlaceNotes` può
+/// piazzare una nota lunga FRA il corpo-trattino e il frammento (il frammento, che è la
+/// coda fisica della parola, resta l'ultimo trattenuto). Guardia di contesto: il run di
+/// corpo aperto DEVE finire in lettera+trattino (parola spezzata davvero). nel dubbio nil.
+func wordTailFragmentInHeld(_ held: [ContentSegment], openRunLast: String?)
+    -> (index: Int, completion: String)?
+{
+    guard let last = openRunLast?.trimmingCharacters(in: .whitespacesAndNewlines),
+          endsWithLetterHyphenG(last) else { return nil }
+    for i in stride(from: held.count - 1, through: 0, by: -1) {
+        if let completion = brokenWordTailCompletion(held[i]) { return (i, completion) }
+    }
+    return nil
+}
+
 /// Riassembla i segmenti del corpo discorsivo in blocchi ~`target` caratteri (§ 7.6),
 /// ricostruendo la continuità del corpo attraverso le pagine (vedi sopra). I segmenti
 /// non-`BODY` sono confini di run; le note possono essere TRATTENUTE oltre un run aperto
@@ -214,6 +299,19 @@ public func granularizeBody(
                 runTexts.append(segment.text)   // corpo adiacente: comportamento invariato
             } else if bodyContinues(segment.text) {
                 runTexts.append(segment.text)   // continuazione OLTRE l'apparato trattenuto
+            } else if let frag = wordTailFragmentInHeld(
+                        heldApparatus, openRunLast: runTexts.last) {
+                // MATTONE 3: fra l'apparato trattenuto c'è la CODA DELLA PAROLA SPEZZATA +
+                // il numero di richiamo. Si de-sillaba la coda nel run (assorbendo il
+                // trattino), si rimuove il SOLO numero di richiamo (la nota vera resta
+                // letta a fondo pagina), si CONSUMA il solo frammento-NOTE spurio (le note
+                // vere eventualmente trattenute restano, ri-emesse dopo) e la frase
+                // prosegue nello stesso run. Vedi PALETTO nella testata.
+                let last = runTexts[runTexts.count - 1]
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                runTexts[runTexts.count - 1] = String(last.dropLast()) + frag.completion
+                heldApparatus.remove(at: frag.index)
+                runTexts.append(segment.text)   // stessa unità: la frase prosegue
             } else {
                 flushRun()                       // metà seguente NON è continuazione: chiudi
                 runIdBase = segment.id
