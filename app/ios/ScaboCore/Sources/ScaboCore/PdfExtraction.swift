@@ -122,11 +122,31 @@ public struct PdfExtraction: Codable, Equatable, Sendable {
     public var version: Int
     public var pageCount: Int
     public var pages: [PdfPageExtraction]
+    /// Document `Producer` metadata (the exporter that wrote the PDF, e.g.
+    /// "Skia/PDF … Google Docs Renderer", "Aspose.PDF for .NET", "PDFsharp …"),
+    /// or `nil` if the engine reported none. A self-declaring family signal used by
+    /// corpus branches (the user-generated branch keys on Google Docs / Word); the
+    /// trunk Generic never reads it. Optional + default `nil` keeps the field purely
+    /// additive — existing constructions and captured JSON without it are unchanged
+    /// (synthesised `Codable` omits a `nil` optional on encode, and decodes a missing
+    /// key to `nil`).
+    public var producer: String?
+    /// Document `Creator` metadata (the authoring app), or `nil`. Same role as
+    /// `producer`; some pipelines stamp the family signal here instead.
+    public var creator: String?
 
-    public init(version: Int, pageCount: Int, pages: [PdfPageExtraction]) {
+    public init(
+        version: Int,
+        pageCount: Int,
+        pages: [PdfPageExtraction],
+        producer: String? = nil,
+        creator: String? = nil
+    ) {
         self.version = version
         self.pageCount = pageCount
         self.pages = pages
+        self.producer = producer
+        self.creator = creator
     }
 }
 

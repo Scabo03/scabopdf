@@ -93,6 +93,13 @@ struct PdfKitExtractor: PdfExtracting {
             throw Self.makeError("Il PDF è protetto da password e non può essere letto.")
         }
 
+        // Metadati editoriali del documento (firma di famiglia auto-dichiarante per i
+        // rami di corpus; il tronco Generic non li legge). Affiorati qui alle radici e
+        // trasportati su `PdfExtraction`: dato in più, inerte finché un ramo non lo legge.
+        let attributes = document.documentAttributes
+        let producer = attributes?[PDFDocumentAttribute.producerAttribute] as? String
+        let creator = attributes?[PDFDocumentAttribute.creatorAttribute] as? String
+
         let pageCount = document.pageCount
         var pages: [PdfPageExtraction] = []
         pages.reserveCapacity(pageCount)
@@ -114,7 +121,9 @@ struct PdfKitExtractor: PdfExtracting {
         }
         if isCancelled() { return nil }
 
-        return PdfExtraction(version: 2, pageCount: pageCount, pages: pages)
+        return PdfExtraction(
+            version: 2, pageCount: pageCount, pages: pages,
+            producer: producer, creator: creator)
     }
 
     // MARK: - Line / span extraction
