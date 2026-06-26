@@ -39,7 +39,7 @@
 
 import XCTest
 @testable import ScaboApp
-import ScaboCore
+@testable import ScaboCore
 
 final class RealPdfBenchTests: XCTestCase {
 
@@ -466,6 +466,62 @@ final class RealPdfBenchTests: XCTestCase {
                   in-corpo: SMALLER=\(recon.smaller) RAISED=\(recon.raisedSameSize) FLAT=\(recon.flatSameSize) PAREN=\(recon.parenInline) (tot \(total))
                   note-lines(settore)=\(recon.noteLines)  ADIACENZA same=\(recon.adjSame) next=\(recon.adjNext) none=\(recon.adjNone)
                 """)
+        }
+    }
+
+    // MARK: - Audit del cerotto anti-"Nota." (falsi "Nota." residui sullo stream finale)
+
+    private struct FalseNotaRecord: Codable {
+        let page: Int; let lengthCategory: String; let text: String
+    }
+    private struct FalseNotaAudit: Codable {
+        let pdf: String; let pageCount: Int; let frontMatterLimit: Int
+        let profileId: String
+        let totalNoteSegs: Int; let falseCount: Int
+        let records: [FalseNotaRecord]
+    }
+
+    func test_falseNotaAudit_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_AUDIT_REQUEST"]
+            ?? "/tmp/scabo_audit_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta audit in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let extractor = PdfKitExtractor()
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.prettyPrinted]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[audit] assente, salto: \(path)"); continue
+            }
+            let ex = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+            let raw = buildDocumentFromPdf(ex, sourceName: name)
+            let placed = bindAndPlaceNotes(raw, ex).document
+            var pageById: [String: Int] = [:]
+            for n in placed.structure { pageById[n.id] = n.page_index }
+            let segments = ContinuousBodyBuilder.bodySegments(from: placed, granularity: .fine)
+            var records: [FalseNotaRecord] = []
+            var totalNote = 0
+            for seg in segments where seg.role == SemanticCategory.NOTE.rawValue {
+                totalNote += 1
+                if !textOpensWithNoteMarker(seg.text) {
+                    records.append(FalseNotaRecord(
+                        page: pageById[seg.id] ?? -1,
+                        lengthCategory: seg.lengthCategory,
+                        text: seg.text))
+                }
+            }
+            let audit = FalseNotaAudit(
+                pdf: name, pageCount: ex.pageCount,
+                frontMatterLimit: frontMatterRegionLimit(ex.pageCount),
+                profileId: placed.profile.profile_id,
+                totalNoteSegs: totalNote, falseCount: records.count, records: records)
+            let stem = (name as NSString).deletingPathExtension
+            try enc.encode(audit).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).falsenota.json"))
+            print("[audit] \(name): note-seg=\(totalNote) falsi-Nota=\(records.count)")
         }
     }
 }

@@ -204,9 +204,18 @@ public final class GenericPlugin: ExtractionPlugin {
         profile: Profile,
         furnitureCount: Int
     ) -> ScabopdfDocument {
+        // Riclassificazione a monte delle famiglie pulite (SOMMARIO → CHAPTER_SUMMARY,
+        // intestazioni di struttura → HEADING_n): così non diventano mai NOTA e non
+        // serve zittirle a valle. In posizione (conteggio/ordine invariati).
+        var nodes = nodes
+        let reclass = reclassifyCleanFamilies(&nodes)
         var warnings = [
             "plugin:generic:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
         ]
+        if reclass.summary + reclass.heading > 0 {
+            warnings.append(
+                "plugin:generic:reclassified_chapter_summary_\(reclass.summary)_structure_heading_\(reclass.heading)")
+        }
         if profile.bodySize == 0 {
             warnings.append("plugin:generic:no_font_information_all_body")
         }
@@ -1014,6 +1023,67 @@ private func headingCategory(_ level: Int) -> SemanticCategory {
     case 3: return .HEADING_3
     default: return .HEADING_4
     }
+}
+
+// MARK: - Riclassificazione delle famiglie pulite (mai più NOTA: si riclassifica)
+
+// Il classificatore size-only collassa in NOTE alcune unità che DICHIARANO
+// meccanicamente il proprio ruolo (maiuscoletto/taglia sotto il corpo). Qui ricevono
+// il ruolo giusto a monte, così non producono MAI un "Nota." da zittire a valle —
+// è riclassificazione, NON soppressione (≠ `suppressCollapsedHeadingNoteIntros`, il
+// cerotto che resta acceso per il nucleo ambiguo). Due famiglie a segnale inequivocabile,
+// verificate a ZERO falsi positivi su 26 volumi reali (banco PdfKit, ispezione di OGNI match):
+//  • SOMMARIO di capitolo ("SOMMARIO: 1. … – 2. …") → CHAPTER_SUMMARY (letto, senza intro);
+//  • intestazione di struttura ("CAPITOLO TERZO", "SEZIONE PRIMA", "CAPITOLO I") → HEADING_n
+//    (bonus: navigabile da rotore).
+// Il retag è IN POSIZIONE: stesso id/pagina/testo, nessun nodo aggiunto o tolto (così
+// l'allineamento per-pagina che `NoteBinding` ricostruisce resta esatto, e il binding
+// delle note vere non regredisce — un SOMMARIO/heading non era una nota), testo invariato
+// (rete A). I volumi senza queste famiglie restano identici al byte.
+
+private let SOMMARIO_HEADING_RE = try! NSRegularExpression(
+    pattern: "^\\s*sommario\\s*:", options: [.caseInsensitive])
+/// Keyword in MAIUSCOLO (le intestazioni sono "TITOLO"; il corpo dice "titolo") seguita
+/// da un ordinale (romano, cifra, o parola maiuscola tipo "TERZO"/"PRIMA"). La guardia di
+/// lunghezza tiene fuori la prosa di corpo che cita "titolo secondo della parte quarta…".
+private let STRUCT_HEADING_RE = try! NSRegularExpression(
+    pattern: "^(CAPITOLO|CAPO|SEZIONE|PARTE|TITOLO|LIBRO)\\s+([IVXLCDM]+|\\d+|[A-ZÀ-Ý][A-ZÀ-Ý]+)\\b")
+let STRUCT_HEADING_MAX_LEN = 70
+
+private func structHeadingLevel(_ keyword: String) -> Int {
+    switch keyword {
+    case "LIBRO", "PARTE", "TITOLO": return 1
+    case "SEZIONE": return 3
+    default: return 2  // CAPITOLO, CAPO
+    }
+}
+
+/// Riclassifica in posizione i nodi NOTE che il classificatore size-only ha collassato
+/// ma che dichiarano il proprio ruolo: SOMMARIO → CHAPTER_SUMMARY, intestazione di
+/// struttura → HEADING_n. Conta i retag per le warning. Deterministica, additiva.
+func reclassifyCleanFamilies(_ nodes: inout [NodeDict]) -> (summary: Int, heading: Int) {
+    var summaryCount = 0
+    var headingCount = 0
+    for i in nodes.indices where nodes[i].type == .NOTE {
+        let t = (nodes[i].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let range = NSRange(t.startIndex..<t.endIndex, in: t)
+        if SOMMARIO_HEADING_RE.firstMatch(in: t, range: range) != nil {
+            nodes[i].type = .CHAPTER_SUMMARY
+            nodes[i].length_category = nil  // non è una nota: niente regime acustico
+            summaryCount += 1
+            continue
+        }
+        if t.utf16.count <= STRUCT_HEADING_MAX_LEN,
+           let m = STRUCT_HEADING_RE.firstMatch(in: t, range: range) {
+            let keyword = (t as NSString).substring(with: m.range(at: 1))
+            let level = structHeadingLevel(keyword)
+            nodes[i].type = headingCategory(level)
+            nodes[i].level = level
+            nodes[i].length_category = nil
+            headingCount += 1
+        }
+    }
+    return (summaryCount, headingCount)
 }
 
 // MARK: - Text helpers
