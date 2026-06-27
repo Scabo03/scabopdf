@@ -142,6 +142,11 @@ enum Kind: Equatable {
 struct Profile {
     let bodySize: Double
     let bodyColor: String
+    /// Gate della foglia titoli-Estratto (taglia+struttura): vero SOLO sui volumi che
+    /// presentano la firma dell'Estratto — un "CAPITOLO N" seguito da un titolo TUTTO
+    /// MAIUSCOLO a taglia DISTINTAMENTE > corpo (≈ corpo×1.04). Confina la foglia a quel
+    /// volume/famiglia: dove è falso, `recognizeEstrattoTitles` è un no-op (byte-identico).
+    var isEstrattoChrome: Bool = false
 }
 
 // MARK: - The plugin
@@ -328,7 +333,37 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
         }
     }
 
-    return Profile(bodySize: bodySize, bodyColor: bodyColor)
+    // Gate foglia titoli-Estratto: firma "CAPITOLO N" seguito (entro poche righe) da un
+    // titolo TUTTO MAIUSCOLO a taglia distintamente > corpo (≈ corpo×1.04). È la co-occorrenza
+    // specifica dell'Estratto: Mandrioli ha CAPITOLO N ma il titolo è a corpo×1.0 (e già
+    // HEADING_3); gli altri non hanno il titolo-maiuscolo-più-grande. Co-occorrenza, non la
+    // sola taglia: confina la foglia a quel volume/famiglia.
+    var isEstratto = false
+    if bodySize > 0 {
+        outer: for page in extraction.pages {
+            var sinceCapitolo = 99
+            for line in page.lines {
+                let sm = summarizeLine(line)
+                let t = jsTrim(sm.text)
+                if t.isEmpty { continue }
+                if ESTRATTO_CAPITOLO_RE.firstMatch(
+                    in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) != nil {
+                    sinceCapitolo = 0
+                } else {
+                    if sinceCapitolo <= 3,
+                       sm.fontSize >= bodySize * ESTRATTO_CHAPTER_RATIO_LO,
+                       sm.fontSize <= bodySize * ESTRATTO_CHAPTER_RATIO_HI,
+                       isSubstantial(t), capsRatioCortina(t) >= ESTRATTO_TITLE_CAPS_MIN {
+                        isEstratto = true
+                        break outer
+                    }
+                    sinceCapitolo += 1
+                }
+            }
+        }
+    }
+
+    return Profile(bodySize: bodySize, bodyColor: bodyColor, isEstrattoChrome: isEstratto)
 }
 
 // MARK: - Furniture detection
@@ -931,6 +966,152 @@ enum GenItem {
     case apparatus(SemanticCategory, [LineSummary])
 }
 
+// ── Foglia titoli-Estratto: taglia + struttura, GATED su isEstrattoChrome ─────────
+//
+// Sui PDF dove PDFKit non risolve i font (Estratto: tutto "Helvetica", niente bold/italic —
+// vedi [[debt-lowlevel-font-extraction]]), il discriminatore dei titoli NON può essere il
+// font. Resta taglia+struttura, e SOLO in combinazione (la taglia da sola è vicina al corpo).
+// Due livelli, robustezza diversa:
+//  • CAPITOLO (solido, struttura): un run di corpo TUTTO MAIUSCOLO a taglia distintamente
+//    > corpo (≈ corpo×1.04) è il titolo di capitolo → heading di capitolo (le righe del run,
+//    già consecutive, sono unite). NON dipende dal numero esatto, è la combinazione caps+taglia.
+//  • PARAGRAFO (più debole, taglia+struttura): una riga a taglia-paragrafo (≈ corpo×0.96,
+//    banda STRETTA: il corpo-con-richiamo varia 11.4–11.8, il titolo è esattamente ~11.52) che
+//    INIZIA con numero-sequenziale + Maiuscola (o "Segue") è il titolo di paragrafo → heading;
+//    le righe-continuazione (stessa taglia-stretta, senza nuovo numero) si uniscono. La banda
+//    stretta + il prefisso-numero+Maiuscola è il discriminatore (taglia sola NON basta).
+// GATED: opera solo se `profile.isEstrattoChrome` (firma CAPITOLO+titolo-maiuscolo->corpo).
+// Dove falso → no-op → volumi non-Estratto byte-identici. Gira in `pageItems` (sorgente
+// condivisa con NoteBinding e build) così la struttura è coerente per entrambi.
+
+// Banda capitolo STRETTA attorno alla firma esatta dell'Estratto (12.48/12.0 = 1.040). Stretta
+// per ESCLUDERE i Giappichelli con CAPITOLO N ma titolo ad altra taglia: Mandrioli ha i titoli a
+// 13.02/10.98 = 1.186 e sotto-titoli a 1.093 — entrambi fuori da [1.03, 1.06]. La co-occorrenza
+// CAPITOLO + titolo-maiuscolo-IN-QUESTA-BANDA è la firma confinante (gate isEstrattoChrome).
+let ESTRATTO_CHAPTER_RATIO_LO = 1.03
+let ESTRATTO_CHAPTER_RATIO_HI = 1.06
+let ESTRATTO_PARA_RATIO_LO = 0.957
+let ESTRATTO_PARA_RATIO_HI = 0.963
+let ESTRATTO_TITLE_CAPS_MIN = 0.9
+private let ESTRATTO_CAPITOLO_RE = try! NSRegularExpression(pattern: "^CAPITOLO\\s+[IVXLCDM]+$")
+/// Titolo di paragrafo: numero sequenziale (1–2 cifre) + spazio + MAIUSCOLA (titolo, o
+/// "Segue"). Esclude i numeri-citazione lunghi (3 cifre) e gli inizi minuscoli (date "1 gennaio").
+private let ESTRATTO_PARA_NUM_RE = try! NSRegularExpression(pattern: "^\\s*\\d{1,2}\\s+[A-ZÀ-Ý]")
+
+func estrattoIsChapterTitleLine(_ sm: LineSummary, _ body: Double) -> Bool {
+    body > 0 && sm.fontSize >= body * ESTRATTO_CHAPTER_RATIO_LO
+        && sm.fontSize <= body * ESTRATTO_CHAPTER_RATIO_HI
+        && isSubstantial(sm.text) && capsRatioCortina(jsTrim(sm.text)) >= ESTRATTO_TITLE_CAPS_MIN
+}
+func estrattoIsParaSizeLine(_ sm: LineSummary, _ body: Double) -> Bool {
+    body > 0 && sm.fontSize >= body * ESTRATTO_PARA_RATIO_LO
+        && sm.fontSize <= body * ESTRATTO_PARA_RATIO_HI
+}
+func estrattoParaTitleStarts(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    guard t.utf16.count <= HEADING_MAX_CHARS else { return false }
+    return ESTRATTO_PARA_NUM_RE.firstMatch(
+        in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) != nil
+}
+/// Fonde più righe in una LineSummary sintetica (testo unito, attributi della prima):
+/// per emettere un titolo multi-riga come UN heading.
+func mergedLine(_ lines: [LineSummary]) -> LineSummary {
+    let f = lines[0]
+    return LineSummary(
+        text: joinLines(lines.map { $0.text }), fontSize: f.fontSize, bold: f.bold,
+        italic: f.italic, color: f.color, x0: f.x0, x1: f.x1, yTop: f.yTop, yBottom: f.yBottom,
+        width: f.width, height: f.height, spans: f.spans)
+}
+
+/// Testo unito di un GenItem (per riconoscere il marcatore "CAPITOLO N").
+func estrattoItemText(_ item: GenItem) -> String {
+    switch item {
+    case .heading(let sm, _): return sm.text
+    case .run(_, let lines): return joinLines(lines.map { $0.text })
+    case .apparatus(_, let lines): return joinLines(lines.map { $0.text })
+    }
+}
+func estrattoIsCapitoloMarker(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    return ESTRATTO_CAPITOLO_RE.firstMatch(
+        in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) != nil
+}
+
+/// Pre-passo GATED (foglia titoli-Estratto): converte i titoli di capitolo/paragrafo
+/// nascosti nei run di corpo in `.heading`. No-op se non è un volume Estratto.
+/// Il titolo di capitolo è promosso SOLO se il blocco precedente è "CAPITOLO N" (spec:
+/// "il blocco MAIUSCOLO subito dopo il nodo CAPITOLO N"): esclude mezzotitoli/occhielli di
+/// front-matter (es. il titolo del libro in copertina) che non seguono un CAPITOLO.
+func recognizeEstrattoTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+    guard profile.isEstrattoChrome, profile.bodySize > 0 else { return items }
+    let body = profile.bodySize
+    var out: [GenItem] = []
+    var afterCapitolo = false
+    for item in items {
+        if estrattoIsCapitoloMarker(estrattoItemText(item)) {   // "CAPITOLO N" → arma la promozione
+            out.append(item); afterCapitolo = true; continue
+        }
+        if case let .run(.body, lines) = item {
+            out.append(contentsOf: splitEstrattoBodyRun(lines, body, afterCapitolo: afterCapitolo))
+        } else {
+            out.append(item)
+        }
+        afterCapitolo = false
+    }
+    return out
+}
+
+/// Spezza un run di corpo dell'Estratto nei suoi titoli (capitolo / paragrafo) + corpo.
+/// La promozione a titolo di CAPITOLO richiede `afterCapitolo` (blocco precedente = "CAPITOLO N");
+/// i titoli di PARAGRAFO (taglia-stretta + prefisso-numero) non hanno tale vincolo.
+func splitEstrattoBodyRun(_ lines: [LineSummary], _ body: Double, afterCapitolo: Bool) -> [GenItem] {
+    var out: [GenItem] = []
+    var buf: [LineSummary] = []
+    func flush() { if !buf.isEmpty { out.append(.run(.body, buf)); buf = [] } }
+    var canChapter = afterCapitolo
+    var i = 0
+    while i < lines.count {
+        let sm = lines[i]
+        if canChapter, estrattoIsChapterTitleLine(sm, body) {  // titolo capitolo (caps + >corpo, dopo CAPITOLO)
+            flush()
+            var j = i
+            var title: [LineSummary] = []
+            while j < lines.count, estrattoIsChapterTitleLine(lines[j], body) {
+                title.append(lines[j]); j += 1
+            }
+            out.append(.heading(mergedLine(title), level: 2))
+            canChapter = false
+            i = j; continue
+        }
+        if estrattoIsParaSizeLine(sm, body), estrattoParaTitleStarts(sm.text) {  // titolo paragrafo
+            flush()
+            var j = i + 1
+            var title: [LineSummary] = [sm]
+            // righe-continuazione del titolo: stessa taglia-stretta, senza un NUOVO numero,
+            // e non una riga-corpo che finisce con un marcatore di richiamo.
+            while j < lines.count, estrattoIsParaSizeLine(lines[j], body),
+                  !estrattoParaTitleStarts(lines[j].text),
+                  !lineEndsWithCallMarker(lines[j].text) {
+                title.append(lines[j]); j += 1
+            }
+            out.append(.heading(mergedLine(title), level: 3))
+            i = j; continue
+        }
+        buf.append(sm); i += 1
+    }
+    flush()
+    return out
+}
+
+private let ESTRATTO_CALL_MARKER_END = try! NSRegularExpression(pattern: "\\s\\d{1,3}$")
+/// Vero se la riga finisce con un numero di richiamo isolato (corpo-con-richiamo): NON è
+/// continuazione di titolo (i titoli non finiscono con un marcatore di nota).
+func lineEndsWithCallMarker(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    return ESTRATTO_CALL_MARKER_END.firstMatch(
+        in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) != nil
+}
+
 /// Derives the ordered emit-items for one page: furniture + invisible-anchor
 /// lines skipped, headings standalone, runs of consecutive BODY (or NOTE) lines
 /// grouped. One item ⇄ one emitted node, in order — so a per-page zip of items
@@ -1032,7 +1213,9 @@ func pageItems(
         }
     }
     flushRun()
-    return items
+    // Foglia titoli-Estratto (gated): converte i titoli capitolo/paragrafo nascosti nei run
+    // di corpo in heading. No-op (byte-identico) sui volumi non-Estratto.
+    return recognizeEstrattoTitles(items, profile)
 }
 
 /// Emits the nodes for one page from `pageItems`: headings as standalone nodes,
