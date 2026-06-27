@@ -533,6 +533,7 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertEqual(AudioSignal.noteLong.resourceName, "long")
         XCTAssertEqual(AudioSignal.noteVeryLong.resourceName, "very-long")
         XCTAssertEqual(AudioSignal.noteMega.resourceName, "ultra-long")
+        XCTAssertEqual(AudioSignal.bibliography.resourceName, "bibliography")
         XCTAssertEqual(AudioSignal.loading.resourceName, "loading")
         XCTAssertEqual(AudioSignal.completion.resourceName, "completion")
         XCTAssertEqual(AudioSignal.error.resourceName, "error")
@@ -637,6 +638,71 @@ final class ContinuousReadingViewTests: XCTestCase {
         view.segmentLabels[0].accessibilityElementDidBecomeFocused()
         XCTAssertTrue(spy.played.isEmpty, "la nota editoriale non ha segnale di regime")
         XCTAssertEqual(view.segmentLabels[0].accessibilityLabel, "Nota editoriale. Avvertenza redazionale.")
+    }
+
+    // MARK: - 20bis. Earcon di blocco bibliografico (ruolo LETTERATURA)
+
+    private func letteratura(_ id: String, _ text: String) -> ContentSegment {
+        ContentSegment(id: id, role: SemanticCategory.LETTERATURA.rawValue, text: text,
+                       lengthCategory: "", acousticIntro: "")
+    }
+
+    func test_bibliography_earconAtBlockEntry_notPerVoice() {
+        let view = makeView()
+        let spy = SignalPlayerSpy()
+        view.signalPlayer = spy
+        view.render([
+            bodySegment("b0", "Corpo prima della bibliografia."),
+            letteratura("l1", "BENVENUTI, Giustizia amministrativa, in Enc. dir., Milano 1970."),
+            letteratura("l2", "GIANNINI, Diritto amministrativo, Milano 1993."),
+            letteratura("l3", "SORDI, Giustizia e amministrazione, Milano 1985."),
+            bodySegment("b1", "Corpo dopo la bibliografia."),
+            letteratura("l4", "FALCON, Lezioni, cit., 59."),
+        ])
+        view.layoutIfNeeded()
+        // Navigazione sequenziale (swipe) attraverso tutti gli elementi.
+        for label in view.segmentLabels { label.accessibilityElementDidBecomeFocused() }
+        // L'earcon suona all'INGRESSO di ciascun blocco (l1 e l4), MAI su l2/l3 adiacenti.
+        XCTAssertEqual(spy.played, [.bibliography, .bibliography],
+                       "un earcon per blocco (ingresso), non uno per voce")
+    }
+
+    func test_bibliography_noEarconWithinBlock_reentryReplays() {
+        let view = makeView()
+        let spy = SignalPlayerSpy()
+        view.signalPlayer = spy
+        view.render([
+            letteratura("l1", "BENVENUTI, in Enc. dir., Milano 1970."),
+            letteratura("l2", "GIANNINI, Milano 1993."),
+            bodySegment("b", "Corpo."),
+        ])
+        view.layoutIfNeeded()
+        let l1 = view.segmentLabels[0], l2 = view.segmentLabels[1], b = view.segmentLabels[2]
+        l1.accessibilityElementDidBecomeFocused()    // ingresso blocco → suona
+        l2.accessibilityElementDidBecomeFocused()    // voce adiacente → NO
+        XCTAssertEqual(spy.played, [.bibliography])
+        b.accessibilityElementDidBecomeFocused()     // esce dal blocco
+        l2.accessibilityElementDidBecomeFocused()    // rientra nel blocco → risuona
+        XCTAssertEqual(spy.played, [.bibliography, .bibliography], "rientro nel blocco → earcon di nuovo")
+    }
+
+    func test_bibliography_spokenIsTextOnly_noVerbalAnnounce() {
+        let view = makeView()
+        view.render([letteratura("l1", "BENVENUTI, Giustizia amministrativa, in Enc. dir., Milano 1970.")])
+        view.layoutIfNeeded()
+        // Nessun annuncio parlato ("Bibliografia."): l'etichetta è il solo testo (l'earcon è il segnale).
+        XCTAssertEqual(view.segmentLabels[0].accessibilityLabel,
+                       "BENVENUTI, Giustizia amministrativa, in Enc. dir., Milano 1970.")
+    }
+
+    func test_bibliography_bodyAndNoteDoNotPlayBibliographyEarcon() {
+        let view = makeView()
+        let spy = SignalPlayerSpy()
+        view.signalPlayer = spy
+        view.render([bodySegment("b", "Corpo."), noteSegment("n", "12. Cfr. art. 1.", length: "SHORT")])
+        view.layoutIfNeeded()
+        view.segmentLabels.forEach { $0.accessibilityElementDidBecomeFocused() }
+        XCTAssertFalse(spy.played.contains(.bibliography), "corpo e note non innescano l'earcon bibliografia")
     }
 
     // MARK: - 21. Memory refresh (§ 7.4/§ 7.5): rinfresco anteposto, contenuto integro

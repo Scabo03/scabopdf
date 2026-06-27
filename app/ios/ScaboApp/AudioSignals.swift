@@ -52,6 +52,13 @@ enum AudioSignal: String, CaseIterable {
     /// Regime MEGA (mini-saggio).
     case noteMega = "ultra-long"
 
+    // ── Segnale di blocco bibliografico ──────────────────────────────────────────
+    /// Earcon che PRECEDE un blocco di testo bibliografico (ruolo `LETTERATURA`): non
+    /// un annuncio parlato ("Bibliografia."), solo l'effetto sonoro all'ingresso del
+    /// blocco. Suonato una volta sola all'apertura del blocco, non per ogni voce
+    /// adiacente (vedi il trigger in `ContinuousReadingView`).
+    case bibliography = "bibliography"
+
     // ── Segnali di stato dell'app ────────────────────────────────────────────────
     /// Import/estrazione/elaborazione in corso (schermata di elaborazione).
     case loading

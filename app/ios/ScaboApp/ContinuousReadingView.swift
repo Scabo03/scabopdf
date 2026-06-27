@@ -160,6 +160,12 @@ final class ContinuousReadingView: UIView {
     /// nel testo dall'interfaccia.
     private weak var lastFocusedElement: SegmentLabel?
 
+    /// Ruolo dell'ULTIMO segmento messo a fuoco, per l'earcon di blocco bibliografico:
+    /// l'effetto bibliografia suona solo sulla transizione di fuoco *da non-LETTERATURA a
+    /// LETTERATURA* (ingresso del blocco), non su ogni voce adiacente dello stesso blocco
+    /// (vedi `makeLabel`). Resettato a `nil` quando si ricostruisce il contenuto.
+    private var lastFocusedRole: String?
+
     /// L'elemento di testo su cui riportare il fuoco al rientro nel container del testo, o `nil`
     /// se nessuno è ancora stato messo a fuoco (in tal caso il chiamante ripiega sul primo).
     var lastFocusedTextElement: NSObject? { lastFocusedElement }
@@ -265,6 +271,7 @@ final class ContinuousReadingView: UIView {
         segmentLabels.forEach { $0.removeFromSuperview() }
         // Le etichette precedenti spariscono: la posizione di lettura ricordata non è più valida.
         lastFocusedElement = nil
+        lastFocusedRole = nil
         segmentLabels = segments.map { makeLabel(for: $0) }
         segmentLabels.forEach { documentContainer.addSubview($0) }
 
@@ -317,11 +324,20 @@ final class ContinuousReadingView: UIView {
         // Ricorda la posizione di lettura: quando VoiceOver mette a fuoco questa etichetta, diventa
         // l'elemento da ripristinare al rientro nel testo dall'interfaccia. Se è una nota vera con
         // un regime, riproduce QUI il segnale-nota di apertura (il fuoco entra nella nota, § 10.5).
+        let role = segment.role
         label.onBecomeFocused = { [weak self, weak label] in
-            self?.lastFocusedElement = label
+            guard let self else { return }
+            self.lastFocusedElement = label
             if let noteSignal {
-                self?.signalPlayer.play(noteSignal)
+                self.signalPlayer.play(noteSignal)
             }
+            // Earcon di blocco bibliografico: precede il blocco LETTERATURA, una volta
+            // all'INGRESSO (transizione di fuoco da non-LETTERATURA a LETTERATURA), non
+            // su ogni voce adiacente dello stesso blocco — così non risulta martellante.
+            if role == SemanticCategory.LETTERATURA.rawValue, self.lastFocusedRole != role {
+                self.signalPlayer.play(.bibliography)
+            }
+            self.lastFocusedRole = role
         }
         return label
     }
