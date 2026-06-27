@@ -98,6 +98,30 @@ let RUNNING_HEADER_MIN_PAGES = 3
 /// che si ripete non è mai ancorata; la testatina sì.
 let RUNNING_HEADER_POSITION_LOCK = 0.006
 
+// ── Furniture front-matter / running-header / folii romani (generalizza il mattone 1) ──
+// Il mattone 1 prende SOLO la riga PIÙ IN ALTO della pagina: restano fuori, e finiscono
+// letti, i running-header NON-topmost (recto/verso, testatine col § o col titolo-volume),
+// i footer ricorrenti (© editore), e i folii ROMANI di front-matter ("PREMESSA VII").
+// Questo canale generalizza: QUALUNQUE riga corta sostanziale, in banda alta o bassa,
+// RIPETUTA su ≥ pagine e ANCORATA alla stessa y, è furniture — anche sotto il 15% globale
+// e anche se non è la più in alto. Due differenze dal mattone 1, entrambe per recall:
+//  (a) si normalizzano anche i NUMERI ROMANI (oltre alle cifre) così "PREMESSA VII" e
+//      "PREMESSA VIII" diventano una sola norma ricorrente (il folio romano varia);
+//  (b) si considera OGNI riga (non solo la più in alto), in banda alta o bassa (footer
+//      inclusi).
+// Precisione prima del recall: l'ancoraggio σ < LOCK su TUTTE le occorrenze è la guardia che
+// il corpo non supera mai (una nota a piè o una riga di corpo hanno y variabile da pagina a
+// pagina → σ alta; testatine/folii/footer no). "Mobilia vs contenuto" si scioglie così: se
+// un'intestazione vera dello stesso testo comparisse a y diversa (stessa norma), il suo
+// outlier alza σ oltre LOCK e l'intera norma NON è rimossa (conservativo, mai si tocca il
+// contenuto). In più si richiede la banda alta/bassa (esclude un lock di corpo a metà pagina)
+// e si esclude chi APRE una regione d'apparato (come il mattone 1, per non rompere gli indici).
+let FURNITURE_RECUR_MIN_PAGES = 3
+/// Bande (frazione-dall'alto, convenzione yTop/height) entro cui vive la furniture: testa
+/// alta o piè basso. Esclude un lock di corpo nel mezzo della pagina (0.28–0.72).
+let FURNITURE_TOP_BAND = 0.72
+let FURNITURE_BOTTOM_BAND = 0.28
+
 /// NOTE length → acoustic regime thresholds (mirrors Layer 1).
 let LENGTH_THRESHOLDS: [(Int, LengthCategory)] = [
     (50, .MICRO),
@@ -337,6 +361,12 @@ private func opensExcludedApparatusRegion(_ text: String) -> Bool {
 }
 
 func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
+    // Dimensione del corpo, per la guardia anti-falso-positivo del canale generalizzato:
+    // testatine/folii/footer sono ≤ corpo; le INTESTAZIONI (capitolo/sezione) sono PIÙ GRANDI.
+    // Senza questa guardia la norma roman/ordinale collasserebbe "Capitolo II/III/…" in
+    // "capitolo #", e quelle intestazioni — tutte alla y d'inizio-capitolo (ancorate) — verrebbero
+    // rimosse come mobilia (regressione: si mangia un'intestazione vera).
+    let bodySizeForFurniture = estimateProfile(extraction).bodySize
     struct Candidate { let key: String; let norm: String }
     struct FolioCandidate { let key: String; let page: Int; let value: Int }
     var bandCandidates: [Candidate] = []
@@ -353,6 +383,11 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // il ciclo con la guardia di ANCORAGGIO posizionale (vedi RUNNING_HEADER_*).
     struct HeaderCandidate { let key: String; let yFrac: Double }
     var headerCandidatesByNorm: [String: [HeaderCandidate]] = [:]
+    // Furniture ricorrente generalizzata (qualunque riga corta sostanziale in banda
+    // alta/bassa, non solo la topmost): chiave + pagina + frazione-y, per norma
+    // roman-aware. Risolta dopo il ciclo col cluster di posizione (vedi FURNITURE_*).
+    struct RecurLine { let key: String; let page: Int; let yFrac: Double }
+    var recurCandidatesByNorm: [String: [RecurLine]] = [:]
 
     func track(_ map: inout [String: Set<Int>], _ norm: String, _ pageIndex: Int) {
         map[norm, default: []].insert(pageIndex)
@@ -412,6 +447,18 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                 topHeaderNorm = norm
                 topHeaderYFrac = yFrac
             }
+            // Furniture ricorrente generalizzata: ogni riga corta sostanziale, ≤ corpo
+            // (le intestazioni vere sono PIÙ GRANDI → escluse), in banda ALTA o BASSA (non
+            // solo topmost), per norma roman-aware. Esclusa chi apre una regione d'apparato
+            // (come il mattone 1). Risolta dopo il ciclo con l'ancoraggio σ.
+            if isSubstantial(sm.text),
+               bodySizeForFurniture <= 0 || sm.fontSize <= bodySizeForFurniture + 0.3,
+               yFrac >= FURNITURE_TOP_BAND || yFrac <= FURNITURE_BOTTOM_BAND,
+               !opensExcludedApparatusRegion(sm.text),
+               !looksLikeStructureHeading(sm.text) {
+                recurCandidatesByNorm[furnitureNorm(sm.text), default: []].append(
+                    RecurLine(key: key, page: page.pageIndex, yFrac: yFrac))
+            }
         }
         if let key = topHeaderKey {
             headerCandidatesByNorm[topHeaderNorm, default: []].append(
@@ -455,6 +502,26 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         let variance = ys.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(ys.count)
         if variance.squareRoot() < RUNNING_HEADER_POSITION_LOCK {
             for c in candidates { furniture.insert(c.key) }
+        }
+    }
+    // Furniture ricorrente generalizzata (additivo, unione col resto). Stessa logica del
+    // mattone 1 — ricorrenza ≥ FURNITURE_RECUR_MIN_PAGES pagine + ANCORAGGIO σ <
+    // RUNNING_HEADER_POSITION_LOCK su TUTTE le occorrenze — ma applicata a QUALUNQUE riga
+    // corta sostanziale in banda alta/bassa (non solo la topmost), con norma roman-aware.
+    // Il σ su tutte le occorrenze è la guardia di precisione: una riga di corpo o una nota
+    // a piè (y variabile da pagina a pagina) non si ancora mai a σ≈0; solo testatine/folii/
+    // footer lo fanno. Se un'INTESTAZIONE vera dello stesso testo comparisse a una y diversa
+    // (raggruppata nella stessa norma), il suo outlier alza σ oltre LOCK e l'intera norma NON
+    // è rimossa (conservativo: si manca la mobilia ma non si tocca mai il contenuto). Sul
+    // campione reale i running-header sono a σ=0.0000 (nessun outlier) → presi senza perdita.
+    for (_, lines) in recurCandidatesByNorm {
+        let pages = Set(lines.map { $0.page })
+        guard pages.count >= FURNITURE_RECUR_MIN_PAGES else { continue }
+        let ys = lines.map { $0.yFrac }
+        let mean = ys.reduce(0, +) / Double(ys.count)
+        let variance = ys.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(ys.count)
+        if variance.squareRoot() < RUNNING_HEADER_POSITION_LOCK {
+            for c in lines { furniture.insert(c.key) }
         }
     }
     return furniture
@@ -1050,6 +1117,18 @@ private let STRUCT_HEADING_RE = try! NSRegularExpression(
     pattern: "^(CAPITOLO|CAPO|SEZIONE|PARTE|TITOLO|LIBRO)\\s+([IVXLCDM]+|\\d+|[A-ZÀ-Ý][A-ZÀ-Ý]+)\\b")
 let STRUCT_HEADING_MAX_LEN = 70
 
+/// Vero se la riga DICHIARA di essere un'intestazione di struttura (keyword MAIUSCOLA +
+/// ordinale, ≤ STRUCT_HEADING_MAX_LEN): è la stessa firma della foglia famiglie-pulite. Usata
+/// dal canale furniture come ESCLUSIONE: un'intestazione che si auto-dichiara (es. "CAPITOLO
+/// QUINTO", "SEZIONE SECONDA") NON è mai mobilia, anche se ricorre identica in più parti del
+/// volume ed è ancorata. Un running-header col folio ("76 Capitolo Secondo") NON inizia con la
+/// keyword → non è escluso → resta mobilia.
+func looksLikeStructureHeading(_ text: String) -> Bool {
+    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard t.utf16.count <= STRUCT_HEADING_MAX_LEN else { return false }
+    return STRUCT_HEADING_RE.firstMatch(in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) != nil
+}
+
 private func structHeadingLevel(_ keyword: String) -> Int {
     switch keyword {
     case "LIBRO", "PARTE", "TITOLO": return 1
@@ -1159,6 +1238,30 @@ func normalizeDigits(_ s: String) -> String {
         }
     }
     return out
+}
+
+/// Vero se `t` è un token di numero romano (eventuale punto finale): II, III, IV, XIII…
+/// e i singoli V/X/L/C/D/M. Il singolo "I" è ESCLUSO: è una parola italiana comune
+/// (articolo) e normalizzarlo confonderebbe norme di corpo. Per la sola furniture-norm.
+func isRomanNumeralToken(_ t: String) -> Bool {
+    var s = t
+    if s.hasSuffix(".") { s.removeLast() }
+    guard !s.isEmpty else { return false }
+    let roman: Set<Character> = ["I", "V", "X", "L", "C", "D", "M"]
+    guard s.allSatisfy({ roman.contains($0) }) else { return false }
+    return s.count >= 2 || s != "I"
+}
+
+/// Norma per il riconoscimento della furniture ricorrente (testatine/folii): come
+/// `normalizeDigits` (cifre → "#") ma normalizza ANCHE i token-numero romani → "#", così
+/// "PREMESSA VII"/"PREMESSA VIII" e i folii romani collassano in una norma ricorrente.
+/// Locale a questo canale: NON tocca `normalizeDigits` (usato dagli altri canali, invariati).
+func furnitureNorm(_ s: String) -> String {
+    let withDigits = normalizeDigits(s)
+    let tokens = withDigits.split(separator: " ", omittingEmptySubsequences: true).map {
+        isRomanNumeralToken(String($0)) ? "#" : String($0)
+    }
+    return jsTrim(tokens.joined(separator: " ")).lowercased()
 }
 
 // MARK: - Colour helpers

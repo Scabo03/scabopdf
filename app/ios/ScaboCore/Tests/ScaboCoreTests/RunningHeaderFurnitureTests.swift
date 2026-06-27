@@ -42,31 +42,39 @@ final class RunningHeaderFurnitureTests: XCTestCase {
     // MARK: - La testatina corrente viene rimossa (sotto il pavimento del 15%)
 
     func test_runningHeader_removed_belowGlobalFloor() {
+        // Nota: il canale furniture è stato generalizzato (estensione mattone 1: cattura anche
+        // i ricorrenti non-topmost/footer ancorati). La nota a piè qui ha y VARIABILE per pagina
+        // (come nella realtà: la sua posizione dipende da quante note ci sono) → σ alta → salva.
         var sp: [Int: [PdfTextLine]] = [:]
+        let noteY = [35.0, 52.0, 41.0, 60.0, 33.0]   // varia: nota a piè reale non è ancorata
         for p in 0..<5 {   // 5 pagine < minPages(6): il vecchio canale la mancherebbe
             sp[p] = [ln("Capitolo Primo", yTop: 630),                  // testatina, topmost, y locked
                      ln("Testo del corpo della pagina \(p), unico.", yTop: 500),
-                     ln("12. Una nota a piè di pagina.", yTop: 35)]    // bottom band
+                     ln("12. Una nota a piè di pagina.", yTop: noteY[p])]
         }
         let furn = detectFurniture(doc(sp))
         for p in 0..<5 { XCTAssertTrue(furn.contains("\(p):0"), "testatina pagina \(p) rimossa") }
         XCTAssertFalse(furn.contains("0:1"), "il corpo non è furniture")
-        XCTAssertFalse(furn.contains("0:2"), "la nota a piè non è furniture")
+        XCTAssertFalse(furn.contains("0:2"), "la nota a piè (y variabile) non è furniture")
     }
 
     // MARK: - Le guardie di precisione (nessun falso positivo)
 
-    /// Sotto-titolo di sezione SOTTO la testatina: ricorre ma NON è la riga più in alto.
+    /// Sotto-titolo di sezione (non running header): col canale generalizzato la guardia è
+    /// l'ANCORAGGIO. Un sotto-titolo vero non è ancorato a σ≈0 (compare a y diverse, ai vari
+    /// inizi-sezione); qui ha y VARIABILE → σ alta → non rimosso. (Un sotto-titolo ancorato a
+    /// σ≈0 su molte pagine sarebbe un running sub-header = mobilia, ed è giusto toglierlo.)
     func test_sectionSubheading_belowHeader_notRemoved() {
         var sp: [Int: [PdfTextLine]] = [:]
+        let subY = [600.0, 585.0, 612.0, 578.0, 620.0]   // varia: inizio-sezione, non ancorato
         for p in 0..<5 {
-            sp[p] = [ln("Capitolo Primo", yTop: 630),     // testatina (topmost)
-                     ln("3.4.1 Definizioni", yTop: 600),  // sotto-titolo in banda ma SOTTO la testatina
+            sp[p] = [ln("Capitolo Primo", yTop: 630),     // testatina (topmost, ancorata)
+                     ln("3.4.1 Definizioni", yTop: subY[p]),  // sotto-titolo in banda, y variabile
                      ln("Corpo unico della pagina \(p).", yTop: 500)]
         }
         let furn = detectFurniture(doc(sp))
         XCTAssertTrue(furn.contains("0:0"), "la testatina sì")
-        for p in 0..<5 { XCTAssertFalse(furn.contains("\(p):1"), "il sotto-titolo NON va rimosso") }
+        for p in 0..<5 { XCTAssertFalse(furn.contains("\(p):1"), "il sotto-titolo (non ancorato) NON va rimosso") }
     }
 
     /// Nota a piè ricorrente (collisione di norma): è in basso, mai topmost.
@@ -99,10 +107,11 @@ final class RunningHeaderFurnitureTests: XCTestCase {
         XCTAssertFalse(furn.contains("1:0"))
     }
 
-    /// Testatina FUORI dalla banda superiore (più in basso) → non candidata.
+    /// Riga ricorrente nel MEZZO della pagina (fuori dalle bande furniture 0.28–0.72) → non
+    /// candidata, nemmeno col canale generalizzato (la banda esclude un lock di corpo centrale).
     func test_topmost_belowTopBand_notRemoved() {
         var sp: [Int: [PdfTextLine]] = [:]
-        for p in 0..<5 { sp[p] = [ln("Riga non in banda", yTop: 560), ln("Corpo \(p).", yTop: 400)] }  // 560/700=0.8 < 0.85
+        for p in 0..<5 { sp[p] = [ln("Riga nel mezzo", yTop: 400), ln("Corpo \(p).", yTop: 300)] }  // 400/700=0.57, fuori banda
         let furn = detectFurniture(doc(sp))
         for p in 0..<5 { XCTAssertFalse(furn.contains("\(p):0")) }
     }
