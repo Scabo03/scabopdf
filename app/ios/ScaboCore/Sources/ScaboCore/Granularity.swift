@@ -370,6 +370,73 @@ func mergeNoteContinuations(_ segments: [ContentSegment]) -> [ContentSegment] {
     return out
 }
 
+// ── BIBLIOGRAFIA in corpo-piccolo: riconoscimento alla RADICE (NOTE → LETTERATURA) ─
+//
+// Una voce di bibliografia ("AUTORE, opera, in Riv., …, p. N ss.") è una riga corpo-piccolo
+// classificata NOTE dal classificatore size-only, ma NON è una nota d'apparato con richiamo.
+// Oggi resta letta come falso-"Nota." (zittita dal band-aid sui volumi generic). Qui la si
+// RICONOSCE per ciò che è e la si riclassifica `LETTERATURA` — categoria già esistente
+// (apparato bibliografico EdD), letta in loco, NON granularizzata, NON trattenuta, con intro
+// acustica derivata dal ruolo (`acousticIntroFor(LETTERATURA)` = "", non un annuncio "Nota.").
+// È riclassificazione alla radice, NON soppressione: cambia il RUOLO (riconoscimento) e ne
+// deriva l'intro, non azzera l'annuncio di una NOTE lasciandola NOTE. Così la voce non diventa
+// MAI un falso-"Nota." e il band-aid si ritira (resta corretta anche quando sarà rimosso).
+//
+// REGIME-AWARE + PRECISIONE (il rischio è l'altra direzione: una NOTA VERA scambiata per
+// bibliografia). Guardia cardine: si tocca SOLO una NOTE SENZA marcatore di richiamo. Nel
+// regime AGGANCIATO una nota vera apre col marcatore ("14 ANTOLISEI…") → esclusa → il suo
+// "Nota." e il suo richiamo restano intatti. Una NOTE senza marcatore è già zittita dal
+// band-aid (stessa lettura prima/dopo): riclassificarla non perde alcun richiamo (il richiamo
+// in-corpo lo gestisce NoteBinding, qui non si tocca). Riconoscimento per PATTERN: cognome in
+// MAIUSCOLETTO (o AA.VV./ID. o iniziali+cognome) + virgola in testa, E uno stilema bibliografico
+// (", in ", "cit.", "a cura di", "p. N", "N ss.", rivista/enciclopedia, luogo di pubblicazione).
+// Stress su 0 falsi-positivi: Cortina (Delitti/PM), codici, DeJure, box Costituzionale,
+// Patriarca, Mosconi, Marotta → ZERO match (verificato sul campione). Gira DOPO
+// `granularizeBody` (e quindi dopo `mergeNoteContinuations`): le bibliografie spezzate dal
+// salto pagina sono già ricucite in un'unica NOTE, che qui viene riconosciuta intera — le due
+// foglie non si pestano i piedi.
+
+/// Marcatore di richiamo in testa (1–3 cifre + punto/paren, o "N Maiuscola" del regime
+/// agganciato): se presente è una NOTA VERA con richiamo → MAI riclassificata.
+private let BIBLIO_CALL_MARKER = try! NSRegularExpression(
+    pattern: "^\\s*[\\(\\[]?\\d{1,3}[\\.\\)]|^\\s*\\d{1,3}\\s+[A-ZÀ-Ý]")
+/// Autore in testa: AA.VV. / ID. / (iniziali) + cognome in MAIUSCOLETTO (≥3, accenti/'/-),
+/// seguito da virgola o spazio. Il maiuscoletto (tutte maiuscole) distingue la voce
+/// bibliografica dalla prosa Title-case.
+private let BIBLIO_AUTHOR = try! NSRegularExpression(
+    pattern: "^\\s*(AA\\.?\\s?VV\\.?|ID\\.|(?:[A-ZÀ-Ý]\\.\\s*){0,3}[A-ZÀ-Ý][A-ZÀ-Ý’'\\-]{2,})[,\\s]")
+/// Stilema bibliografico: strutturali (in/cit/a cura di/p./ss./trad), riviste/enciclopedie,
+/// e luogo di pubblicazione dopo virgola. Uno qualunque, in presenza dell'autore in testa.
+private let BIBLIO_STYLEME = try! NSRegularExpression(
+    pattern: ",\\s+in\\s+|[\\s(]cit\\.|op\\.\\s*cit|a\\s+cura\\s+di|,\\s+pp?\\.\\s*\\d|\\b\\d+\\s+ss\\.|,\\s+trad\\.|in\\s+Enc\\.|in\\s+Dig\\.|in\\s+Riv\\.|in\\s+Foro\\b|in\\s+Giur\\.|in\\s+Giust\\.|,\\s+(?:Milano|Torino|Bologna|Padova|Roma|Napoli|Firenze|Genova|Venezia|Pisa|Bari|Giuffrè)\\b")
+
+/// Vero se `text` è una VOCE DI BIBLIOGRAFIA (autore-maiuscoletto in testa + stilema), e NON
+/// una nota con richiamo (marcatore in testa → esclusa).
+func looksLikeBibliographyEntry(_ text: String) -> Bool {
+    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    let ns = t as NSString
+    let r = NSRange(location: 0, length: ns.length)
+    if BIBLIO_CALL_MARKER.firstMatch(in: t, range: r) != nil { return false }
+    return BIBLIO_AUTHOR.firstMatch(in: t, range: r) != nil
+        && BIBLIO_STYLEME.firstMatch(in: t, range: r) != nil
+}
+
+/// Post-passo: riclassifica le voci di bibliografia (NOTE senza richiamo + pattern) in
+/// `LETTERATURA`, ricalcolando l'intro acustica dal nuovo ruolo (= "", non "Nota."). Testo
+/// invariato (rete A: nessuna lettera tocca). Le NOTE con richiamo e ogni altra categoria
+/// passano invariate.
+func reclassifyBibliographyEntries(_ segments: [ContentSegment]) -> [ContentSegment] {
+    let LETTERATURA = SemanticCategory.LETTERATURA.rawValue
+    return segments.map { seg in
+        guard seg.role == SemanticCategory.NOTE.rawValue,
+              looksLikeBibliographyEntry(seg.text) else { return seg }
+        var s = seg
+        s.role = LETTERATURA
+        s.acousticIntro = acousticIntroFor(LETTERATURA, s.lengthCategory)
+        return s
+    }
+}
+
 /// Riassembla i segmenti del corpo discorsivo in blocchi ~`target` caratteri (§ 7.6),
 /// ricostruendo la continuità del corpo attraverso le pagine (vedi sopra). I segmenti
 /// non-`BODY` sono confini di run; le note possono essere TRATTENUTE oltre un run aperto
@@ -431,7 +498,10 @@ public func granularizeBody(
         }
     }
     flushRun()
-    return out
+    // Post-passo: le voci di bibliografia in corpo-piccolo (NOTE senza richiamo + pattern
+    // autore-maiuscoletto) sono riconosciute alla radice come LETTERATURA — dopo la ricucitura
+    // delle note spezzate, così una bibliografia cross-pagina già unita è riconosciuta intera.
+    return reclassifyBibliographyEntries(out)
 }
 
 /// Granularizza un singolo run di corpo (testi di `BODY` consecutivi della stessa
