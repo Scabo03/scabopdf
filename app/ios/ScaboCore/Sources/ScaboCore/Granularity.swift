@@ -267,14 +267,119 @@ func wordTailFragmentInHeld(_ held: [ContentSegment], openRunLast: String?)
     return nil
 }
 
+// ── MATTONE 2/3 esteso al REGIME DELLE NOTE: continuità cross-pagina delle note ───
+//
+// Una nota spezzata dal salto pagina riaffiora come DUE segmenti NOTE consecutivi: il
+// primo finisce a metà citazione (APRE: virgola, lettera, lettera+trattino, o
+// un'abbreviazione che ATTENDE un numero — "p."/"n."/"art."/"vol."…), il secondo la
+// CONTINUA (minuscola, oppure un numero di pagina/data che NON è un nuovo marcatore di
+// nota). Si ricuciono in una sola nota (de-sillabando una parola spezzata
+// "media-"|"tica"→"mediatica"), così la nota è letta di seguito e il frammento minuscolo/
+// numerico spurio — che il classificatore size-only lascia come falso-"Nota." — sparisce.
+//
+// REGIME-AWARE (il punto chiave del mandato): nel regime AGGANCIATO una nuova nota apre
+// con un marcatore "N " (1–3 cifre + spazio + Maiuscola); la guardia lo riconosce ed
+// ESCLUDE, così non si fondono MAI due note distinte ("…493 ss." || "13 Le pronunce…"
+// resta separato). Nel regime BIBLIOGRAFIA non agganciato non ci sono marcatori, e le
+// continuazioni minuscole/di-pagina ("…Torino 1991, p." | "508 ss.; SORDI…") si ricuciono.
+// PRECISIONE PRIMA DEL RECALL: una nota che finisce con punteggiatura forte (completa) NON
+// apre; un frammento che inizia Maiuscolo (nuova voce/frase) o con un marcatore è una nuova
+// nota → mai fuso. Nel dubbio non si ricuce: si lascia un frammento, mai si fondono due note.
+// rete A: il testo è solo concatenato (de-sillabato), nessuna lettera persa.
+
+/// Abbreviazioni che ATTENDONO un numero a seguire (la nota continua: "p." → "508").
+/// Le abbreviazioni COMPLETE ("ss.", "cit.", "op.", "ecc.", "cfr.") NON aprono: un range
+/// "64 ss." è finito, e un eventuale numero a seguire sarebbe un NUOVO marcatore di nota.
+let NOTE_CONT_NUMBER_ABBR: Set<String> = [
+    "p", "pp", "pag", "pagg", "n", "nn", "art", "artt",
+    "vol", "voll", "cap", "capp", "par", "parr", "sez", "lett",
+]
+/// Marcatore di nota in testa al frammento: "5." "5)" "(5)" — è una NUOVA nota, mai fusa.
+private let NOTE_NEW_MARKER_PUNCT = try! NSRegularExpression(pattern: "^\\s*[\\(\\[]?\\d{1,3}[\\.\\)]")
+/// Marcatore del regime AGGANCIATO: "5 Sembra" / "39 F." (1–3 cifre + spazio + Maiuscola).
+/// È il discriminante che impedisce di fondere due note distinte sotto questo regime.
+private let NOTE_NEW_MARKER_BOUND = try! NSRegularExpression(pattern: "^\\s*\\d{1,3}\\s+[A-ZÀ-Ý]")
+
+/// Vero se la nota `s` "apre" (attende una continuazione): finisce a metà — lettera,
+/// virgola, lettera+trattino, o un'abbreviazione-che-attende-numero. Una nota completa
+/// (punto forte, o abbreviazione completa tipo "ss.") NON apre.
+func noteOpensForContinuation(_ s: String) -> Bool {
+    let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard let last = t.last else { return false }
+    if last == "," { return true }
+    if endsWithLetterHyphenG(t) { return true }
+    if last.isLetter { return true }
+    if last == "." {
+        var word = ""
+        for ch in t.dropLast().reversed() {
+            if ch.isLetter { word.append(ch) } else { break }
+        }
+        return NOTE_CONT_NUMBER_ABBR.contains(String(word.reversed()).lowercased())
+    }
+    return false
+}
+
+/// Vero se la nota `s` è una CONTINUAZIONE (non una nuova nota): non un marcatore (né
+/// "5."/"5)" né "5 Maiuscola"), e inizia in minuscolo o con una cifra (pagina/data);
+/// mai Maiuscola (nuova voce/frase) né virgoletta/parentesi (avvio ambiguo).
+func noteContinuation(_ s: String) -> Bool {
+    let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    let ns = t as NSString
+    let r = NSRange(location: 0, length: ns.length)
+    if NOTE_NEW_MARKER_PUNCT.firstMatch(in: t, range: r) != nil { return false }
+    if NOTE_NEW_MARKER_BOUND.firstMatch(in: t, range: r) != nil { return false }
+    for ch in t {
+        if ch.isLetter { return ch.isLowercase }
+        if ch.isNumber { return true }
+        if ch.isWhitespace { continue }
+        return false
+    }
+    return false
+}
+
+/// Pre-passo (mattone 2/3 esteso al regime note): ricuce le note spezzate dal salto
+/// pagina. Fonde un segmento NOTE nel NOTE immediatamente precedente quando il primo APRE
+/// e il secondo lo CONTINUA (vedi guardie). De-sillaba se la prima metà finisce in
+/// lettera+trattino. Ricomputa lengthCategory/acousticIntro della nota fusa (cresciuta);
+/// se l'intro della testa era già azzerata dal band-aid (nota senza marcatore, regime
+/// bibliografia) resta azzerata. Conserva id/memoryRefresh della nota-testa.
+func mergeNoteContinuations(_ segments: [ContentSegment]) -> [ContentSegment] {
+    let NOTE = SemanticCategory.NOTE.rawValue
+    var out: [ContentSegment] = []
+    for seg in segments {
+        if seg.role == NOTE, let prev = out.last, prev.role == NOTE,
+           noteOpensForContinuation(prev.text), noteContinuation(seg.text) {
+            let a = prev.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let b = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            let merged: String
+            if endsWithLetterHyphenG(a), let f = b.first, f.isLowercase {
+                merged = String(a.dropLast()) + b           // de-sillabazione
+            } else {
+                merged = a + " " + b
+            }
+            let lc = lengthCategoryFor(merged).rawValue
+            var m = prev
+            m.text = merged
+            m.lengthCategory = lc
+            m.acousticIntro = prev.acousticIntro.isEmpty ? "" : acousticIntroFor(NOTE, lc)
+            out[out.count - 1] = m
+        } else {
+            out.append(seg)
+        }
+    }
+    return out
+}
+
 /// Riassembla i segmenti del corpo discorsivo in blocchi ~`target` caratteri (§ 7.6),
 /// ricostruendo la continuità del corpo attraverso le pagine (vedi sopra). I segmenti
 /// non-`BODY` sono confini di run; le note possono essere TRATTENUTE oltre un run aperto
-/// e ri-emesse dopo il paragrafo ricucito.
+/// e ri-emesse dopo il paragrafo ricucito. Prima si ricuciono le note spezzate dal salto
+/// pagina (`mergeNoteContinuations`, mattone 2/3 esteso al regime note).
 public func granularizeBody(
-    _ segments: [ContentSegment],
+    _ rawSegments: [ContentSegment],
     target: Int = DEFAULT_GRANULARITY_TARGET
 ) -> [ContentSegment] {
+    let segments = mergeNoteContinuations(rawSegments)
     var out: [ContentSegment] = []
     var runTexts: [String] = []
     var runIdBase: String?
