@@ -38,6 +38,58 @@ final class GenericReclassifyCleanFamiliesTests: XCTestCase {
         XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
     }
 
+    // MARK: - variante SENZA due punti ("SOMMARIO" secco, isolato): Estratto/Patriarca
+
+    func test_sommario_noColon_uppercase_isolated_becomesChapterSummary() {
+        let out = reclass([note("SOMMARIO")])
+        XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
+    }
+    func test_sommario_noColon_mixedCase_isolated_becomesChapterSummary() {
+        let out = reclass([note("Sommario")])
+        XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
+    }
+    func test_sommario_noColon_trailingSpaces_becomesChapterSummary() {
+        let out = reclass([note("  SOMMARIO  ")])
+        XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
+    }
+    // Estratto: l'etichetta e l'elenco numerato stanno nello STESSO nodo, separati da spazio
+    // (non da ":"): "SOMMARIO 1. … – 2. …". La cifra dopo lo spazio apre l'elenco → promosso.
+    func test_sommario_inlineElenco_noColon_becomesChapterSummary() {
+        let out = reclass([note("SOMMARIO 1. Premessa critica. – 2. Caratteri essenziali del provvedimento.")])
+        XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
+    }
+    func test_sommario_inlineElenco_mixedCase_becomesChapterSummary() {
+        let out = reclass([note("Sommario 1. L’impresa e l’imprenditore.")])
+        XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
+    }
+    // Guardia: "SOMMARIO" + parola (non cifra) NON è un elenco → resta NOTE (precisione).
+    func test_guard_sommarioSpaceWord_notReclassified() {
+        let out = reclass([note("SOMMARIO delle decisioni piu rilevanti in materia")])
+        XCTAssertEqual(out[0].type, .NOTE)
+    }
+    // Guardie precisione: la parola NON isolata NON è promossa (precisione prima del recall).
+    func test_guard_sommarioWithFolio_runningHeader_notReclassified() {
+        let out = reclass([note("Sommario VII")])   // testatina d'indice col folio romano
+        XCTAssertEqual(out[0].type, .NOTE)
+    }
+    func test_guard_sommarioWithPeriod_notReclassified() {
+        let out = reclass([note("Sommario.")])      // etichetta col punto (Nomofanie) → ambigua
+        XCTAssertEqual(out[0].type, .NOTE)
+    }
+    func test_guard_sommarioInSentence_notReclassified() {
+        let out = reclass([note("a un sommario esame del ricorso la sezione provvede")])
+        XCTAssertEqual(out[0].type, .NOTE)
+    }
+    func test_guard_sommarioNotAtStart_notReclassified() {
+        let out = reclass([note("(*) Sommario 1. Il senso della ricerca")])  // inizia con (*)
+        XCTAssertEqual(out[0].type, .NOTE)
+    }
+    // Non-regressione del ramo col due punti (deve restare identico a prima).
+    func test_colonVariant_withInlineElenco_stillBecomesChapterSummary() {
+        let out = reclass([note("SOMMARIO: 1. Premessa. – 2. La giurisdizione. – 3. Profili")])
+        XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
+    }
+
     // MARK: - intestazioni di struttura → HEADING_n
 
     func test_capitolo_word_becomesHeading2() {

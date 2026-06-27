@@ -1108,8 +1108,18 @@ private func headingCategory(_ level: Int) -> SemanticCategory {
 // delle note vere non regredisce — un SOMMARIO/heading non era una nota), testo invariato
 // (rete A). I volumi senza queste famiglie restano identici al byte.
 
+// SOMMARIO di capitolo, tre forme della stessa autodichiarazione:
+//  • col due punti  → "SOMMARIO:" (eventualmente + elenco inline) — rischio quasi nullo;
+//  • secco isolato  → il nodo è ESATTAMENTE "SOMMARIO" (apre l'elenco in nodi fratelli);
+//  • elenco inline SENZA due punti → "SOMMARIO 1. Premessa. – 2. …" (il caso dell'Estratto:
+//    l'etichetta e l'elenco numerato stanno nello stesso nodo, separati da spazio, non da ":").
+// La variante senza colon alza il rischio (la parola potrebbe comparire in corpo/riferimenti),
+// perciò la guardia è strutturale: dopo "SOMMARIO" deve esserci due punti, fine-stringa, o uno
+// SPAZIO seguito da una CIFRA (l'apertura dell'elenco numerato). Così "SOMMARIO VII" (testatina
+// d'indice, romano), "Sommario." (etichetta col punto), "a un sommario esame…" (corpo) e
+// "sommario delle decisioni" NON matchano. Il ramo `:` resta identico a prima (no regressione).
 private let SOMMARIO_HEADING_RE = try! NSRegularExpression(
-    pattern: "^\\s*sommario\\s*:", options: [.caseInsensitive])
+    pattern: "^\\s*sommario(?:\\s*:|\\s*$|\\s+\\d)", options: [.caseInsensitive])
 /// Keyword in MAIUSCOLO (le intestazioni sono "TITOLO"; il corpo dice "titolo") seguita
 /// da un ordinale (romano, cifra, o parola maiuscola tipo "TERZO"/"PRIMA"). La guardia di
 /// lunghezza tiene fuori la prosa di corpo che cita "titolo secondo della parte quarta…".
