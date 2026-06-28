@@ -65,8 +65,17 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   `docs/CARRYOVER.md` § STATO 2026-06-24); **build 10 il 2026-06-24** (furniture per le
   testatine correnti di capitolo nel Generic: la riga più in alto, ancorata, ricorrente su
   ≥3 pagine è rimossa anche sotto il 15% — toglie la fetta più grossa del rumore "Nota."
-  falso su tutti i volumi, zero falsi positivi sul corpo, apparato/Marotta invariati). Il
-  prossimo run produrrà 11.
+  falso su tutti i volumi, zero falsi positivi sul corpo, apparato/Marotta invariati);
+  **build 11 il 2026-06-25** (mattone 2 — continuità del corpo attraverso le pagine:
+  de-sillabazione + nota tenuta fuori dalla frase, commit `9487c8b`); **build 12 il 2026-06-25**
+  (mattone 3 — coda di parola spezzata classificata NOTE ricucita, commit `b7b5300`);
+  **build 13 il 2026-06-26** (consolidamento tronco: i 3 mattoni + le 2 famiglie pulite
+  SOMMARIO→CHAPTER_SUMMARY e struttura→HEADING, commit `c0561e8`); **build 14 il 2026-06-28**
+  (focus Estratto: titoli di capitolo+paragrafo via taglia+struttura gated `isEstrattoChrome`,
+  commit `50f23a6`; + apparato denso — ricucitura note per identità cross-page/same-page +
+  reclassify testatina corrente, falsi-"Nota." 240→52 con anti-fusione 0, commit `2bd48b1`;
+  `UPLOAD SUCCEEDED`, Delivery UUID `92dc26b4-3d56-48c8-b220-8320457476b3`). Il prossimo run
+  produrrà 15.
 
 ## Unico punto eventualmente manuale
 

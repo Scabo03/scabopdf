@@ -57,6 +57,18 @@ produce — `bbox = [x, y, w, h]` con `y` dal basso, relativo al cropBox — è
 precisamente quella che `summarizeLine` e `detectFurniture` consumano (`yTop /
 height`, banda alta a `yFrac ≥ 0.9`). Non c'è disallineamento da riconciliare.
 
+**Limitazione on-device sul font (importante, debito registrato).** `PdfSpan` porta
+`fontSize`, `bold`, `italic`, `color` — **NON il nome/famiglia del font**. E su alcuni PDF
+(pipeline Acrobat/Photoshop, es. "Estratto da Il provvedimento amministrativo") **PDFKit non
+risolve i font embedded**: `attributedString` ripiega su `"Helvetica"` per OGNI span e azzera
+bold/italic. Quindi su quei volumi il font reale (Futura, Times, …) è **perso on-device** e non
+può fare da discriminatore — la foglia titoli dell'Estratto (build 14) usa per questo
+taglia+struttura, non il font. Il rimedio è un **estrattore a basso livello via CGPDF**
+(content-stream + font-dictionary, `CGPDFContentStreamCreateWithPage`/`CGPDFScannerCreate`,
+bypassando `attributedString` quando ripiega su Helvetica): progetto architetturale a sé,
+registrato come debito (vedi `docs/CARRYOVER.md` e la memoria di progetto), utile a qualunque
+volume con chrome-font non risolto da PDFKit.
+
 Questo cuore è anche **privo di unit test** (solo l'integration su capture reali,
 gitignored): è una "zona ad alta attenzione" per perdita silenziosa in
 traduzione (Piano § 4). La conoscenza dei suoi casi limite vive nel codice, non

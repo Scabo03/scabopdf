@@ -255,3 +255,39 @@ tripletta per Torrente, dove non potrà mai agganciare.
 - Metro `app/ios/scripts/fidelity_report.py` (asse fedeltà-lettura).
 - Unit: `ScaboCoreTests/NoteBindingTests.swift` (rilevamento, split, scope,
   anti-collisione, piazzamento breve/lungo, non-distruttività).
+
+## 8. Ricucitura-per-identità delle note spezzate (Estratto, gated) — build 14
+
+L'apparato denso dell'Estratto produceva ~240 falsi-"Nota.": una nota spezzata dal salto
+pagina riaffiora come due footnote — la **testa** (ultima della pagina N, col suo numero,
+finisce "aperta") e la **coda** (prima di N+1, **senza numero d'apertura** → non agganciabile
+→ letta come "Nota." spuria). La continuità-note per-adiacenza (mattoni 2/3, segmenti) non le
+ricuce perché dopo il piazzamento le due metà non sono più adiacenti.
+
+**`stitchCrossPageFootnotes`** (in `bindAndPlaceNotes`, a livello **footnote** e **PRIMA del
+piazzamento**, gated `Profile.isEstrattoChrome`): nel flatten in ordine di lettura testa e coda
+sono adiacenti (il corpo è saltato), quindi lo zip `pageItems↔structure` dello step 1 non è
+toccato. Fonde la coda nella testa quando la testa **APRE** (`noteOpensForContinuation`) e la
+coda **CONTINUA** (`noteContinuation`), de-sillabando la parola spezzata ("pub-"|"blicistica" →
+"pubblicistica"). Copre cross-pagina (N→N+1), **same-page** (over-split di `splitFootnotes` su un
+numero spurio dentro la nota, es. "…cordi 69"|"le norme…") e catene su 3+ pagine.
+
+**Guardia anti-fusione (priorità assoluta)**: una nota **nuova apre col suo numero** →
+`noteContinuation` la esclude → **due note distinte non si fondono MAI**. Verificato empiricamente:
+i 455 numeri-nota d'apertura del reading dell'Estratto sono identici before/after (zero spariti).
+Dove l'identità è dubbia (coda che inizia Maiuscola = possibile nuova voce bibliografica; testa
+chiusa da un marcatore spurio; avvii con ellissi/virgoletta/cifra) **non si fonde**: si lascia un
+residuo onesto. Risultato: falsi-"Nota." Estratto **240 → 52**, 414/465 pagine senza alcun residuo.
+
+**Testatina corrente** (`reclassifyEstrattoRunningHeaders`, in `assembleDocument`, gated): il
+titolo del cap. II usato come testatina recto ricorre identico su 83 pagine ma, lungo >60 char,
+sfugge al cap-caratteri della furniture e finisce NOTE. Le NOTE **lunghe** (>`FURNITURE_MAX_CHARS`)
+che ricorrono identiche (numero di pagina a parte) ≥5 volte sono reclassificate a
+`ARTIFACT_RUNNING_HEADER` (aggiunto a `NON_READ_ROLES`; nessun volume lo emetteva come nodo → zero
+impatto altrove). Una nota vera non ricorre mai identica → nessun contenuto rimosso (verificato:
+le 83 reclassificate sono tutte puro header). Confina su `isEstrattoChrome` → altri volumi invariati.
+
+Unit: `ScaboCoreTests/CrossPageNoteStitchTests.swift` (cross/same-page, catene, tutte le guardie
+anti-fusione) + `ScaboCoreTests/EstrattoRunningHeaderTests.swift` (ricorrenza, soglia, gating,
+nessun contenuto rimosso). Scoperta architetturale collegata: on-device il font non è disponibile
+(PDFKit→Helvetica) — vedi `docs/CARRYOVER.md` e la memoria di progetto.

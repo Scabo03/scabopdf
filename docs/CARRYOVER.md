@@ -52,6 +52,48 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — focus Estratto: titoli + apparato denso → build 14 su TestFlight — 2026-06-28 (SPEDITA)
+
+Dopo i tre mattoni del flusso di lettura (build 11 continuità corpo cross-pagina `9487c8b`,
+build 12 coda di parola spezzata `b7b5300`, build 13 consolidamento tronco + famiglie pulite
+SOMMARIO→CHAPTER_SUMMARY e struttura→HEADING `c0561e8`) e una serie di foglie di rifinitura
+(furniture front-matter `0e61fed`, continuità cross-pagina delle NOTE `4423a2e`, bibliografia
+in corpo-piccolo→LETTERATURA `3ddd7a4`, earcon bibliografia + SOMMARIO-senza-due-punti
+`e4de568`/`4c93152`, più il root-leaf producer/creator `7bb7b35` e il primo ramo utente
+`d5cbfb7`), le ultime due sessioni hanno portato **"Estratto da Il provvedimento amministrativo"
+alla perfezione di lettura** — il volume che il maintainer studia per primo. Cronologia
+brick-by-brick e numeri completi in [[reading-flow-bricks]] (memoria); qui il riassunto.
+
+**Foglia titoli Estratto** (commit `50f23a6`). Capitoli e paragrafi dell'Estratto erano letti
+come corpo, non navigabili. Scoperta strutturale: **on-device il font NON esiste** — PDFKit
+(`attributedString`) ripiega su "Helvetica" per ogni span e azzera bold/italic, quindi il
+discriminatore Futura immaginato è invisibile (debito architetturale registrato:
+`docs/…`/memoria [[debt-lowlevel-font-extraction]] — estrattore CGPDF a basso livello, progetto
+a sé). Meccanismo adottato (con OK del nucleo duro al cambio): **taglia+struttura gated**
+`Profile.isEstrattoChrome` (firma "CAPITOLO N" + titolo MAIUSCOLO ~corpo×1.04). Capitolo = run
+MAIUSCOLO a corpo×[1.03,1.06] dopo "CAPITOLO N" → HEADING_2; paragrafo = riga a banda STRETTA
+~corpo×0.96 (≈11.52) con prefisso numero+Maiuscola/"Segue" → HEADING_3. Verifica font-ground-
+truth (PyMuPDF) su **tutte le 465 pagine**: recall 100% + precision 100% (font-agnostico: prende
+sia FuturaHvBT sia FuturaBT-Heavy). reti verdi (39/40 byte-identici, gate confina).
+
+**Foglia apparato Estratto** (commit `2bd48b1`). Chiusura dell'apparato denso (~240 falsi
+"Nota."). Scoperta: NON erano in larga parte continuazioni cross-pagina — ~105 continuazioni
+(cross-pagina **e** same-page da over-split di `splitFootnotes` su numeri spuri) + **83 testatine**
+(titolo cap.II ripetuto, troppo lungo per il cap-furniture → finiva NOTE) + ~52 dubbi.
+(1) **Ricucitura-per-identità** a livello footnote in `bindAndPlaceNotes` PRIMA del piazzamento:
+fonde coda→testa quando la testa APRE e la coda CONTINUA (una nota nuova apre col suo numero →
+esclusa → **mai due note distinte fuse**), de-sillaba; (2) **testatina** ricorrente reclassificata
+ad ARTIFACT_RUNNING_HEADER (non-letto). Esito Estratto: **falsi-"Nota." 240→52**, 414/465 pagine
+senza alcun residuo, titoli intatti, **anti-fusione 0** (455 numeri-nota d'apertura before==after),
+rete A contenuto preservato, rete B non-Estratto invariati. I 52 residui sono **residuo onesto**
+documentato (identità dubbia, non forzata: marcatore spurio, biblio-Maiuscola, avvii ambigui).
+
+**Build 14 su TestFlight** (2026-06-28): `UPLOAD SUCCEEDED`, CURRENT_PROJECT_VERSION=14, Delivery
+UUID `92dc26b4-3d56-48c8-b220-8320457476b3`. Procedura `fastlane beta` — vedi `docs/RELEASE_TESTFLIGHT.md`
+e [[testflight-release-pipeline]]. **Prossimo run → 15.**
+
+---
+
 ## ▶ STATO — secondo mattone "flusso di lettura": continuità del corpo attraverso le pagine — 2026-06-24 (committato, in attesa di build 11)
 
 Secondo mattone della strada-2 (modello uniforme del flusso di lettura nel Generic), dopo il
