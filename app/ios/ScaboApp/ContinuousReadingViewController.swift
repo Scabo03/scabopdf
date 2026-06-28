@@ -81,8 +81,22 @@ final class ContinuousReadingViewController: UIViewController {
     /// Contenuto di corpo da rendere (iniettato dal flusso di elaborazione).
     private let content: PaginatedContent
 
-    /// Azione del tasto Indietro: torna alla Home nuda. Impostata dal presentatore.
+    /// Azione del tasto Indietro: torna alla Home. Impostata dal presentatore.
     var onBack: (() -> Void)?
+
+    /// Id del documento (per la persistenza della posizione di lettura). Vuoto se non pertinente
+    /// (es. test che istanziano il lettore senza libreria).
+    private let documentId: String
+
+    /// Posizione di lettura da ripristinare all'apertura (§ 2.5): indice 0-based nel flusso. 0 =
+    /// inizio (nessun ripristino, VoiceOver si posa sul primo elemento).
+    private let initialReadingPosition: Int
+
+    /// Notifica del cambio di posizione di lettura, inoltrata alla persistenza dal presentatore.
+    private let onPositionChanged: ((Int) -> Void)?
+
+    /// Il ripristino della posizione avviene una sola volta, alla prima comparsa.
+    private var didRestorePosition = false
 
     /// Player dei segnali acustici (seam per i test). Cablato: `mode1`, riprodotto
     /// all'attivazione del Layout Lettura Continua (l'unico Layout reso oggi).
@@ -101,9 +115,15 @@ final class ContinuousReadingViewController: UIViewController {
     init(
         content: PaginatedContent,
         sourceName: String = "",
+        documentId: String = "",
+        initialReadingPosition: Int = 0,
+        onPositionChanged: ((Int) -> Void)? = nil,
         signalPlayer: SignalPlaying = SignalPlayer.shared
     ) {
         self.content = content
+        self.documentId = documentId
+        self.initialReadingPosition = initialReadingPosition
+        self.onPositionChanged = onPositionChanged
         self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
     }
@@ -121,8 +141,15 @@ final class ContinuousReadingViewController: UIViewController {
         embedContainers()
         wireContainers()
         readingView.render(content)
+        // Persistenza della posizione di lettura (§ 2.5): ogni cambio di fuoco aggiorna lo store.
+        readingView.onReadingPositionChanged = { [weak self] index in
+            self?.onPositionChanged?(index)
+        }
+        // Posizione di lettura ricordata: la si preimposta come ultima posizione (senza spostare
+        // ancora il fuoco) così il rientro nel testo e il ripristino alla comparsa vi puntano.
+        readingView.presetReadingPosition(toIndex: initialReadingPosition)
         // Si entra leggendo: il testo è il container attivo (modale). Nessun fuoco forzato qui:
-        // alla comparsa VoiceOver si posa sul primo elemento del testo, ed è ciò che si vuole.
+        // alla comparsa VoiceOver si posa sul primo elemento (o sulla posizione ripristinata).
         activateTextContainer(restoreFocus: false)
     }
 
@@ -134,6 +161,19 @@ final class ContinuousReadingViewController: UIViewController {
         guard !didPlayModeSignal else { return }
         didPlayModeSignal = true
         signalPlayer.play(.mode1)
+        restoreReadingPositionIfNeeded()
+    }
+
+    /// Ripristina il fuoco VoiceOver all'elemento della posizione di lettura ricordata (§ 2.5),
+    /// una sola volta alla prima comparsa. Solo se la posizione non è l'inizio (per l'inizio si
+    /// lascia il comportamento naturale: VoiceOver si posa sul primo elemento). Il layout è già
+    /// avvenuto (viewDidAppear), quindi lo scroll porta la pagina in vista.
+    private func restoreReadingPositionIfNeeded() {
+        guard !didRestorePosition else { return }
+        didRestorePosition = true
+        guard initialReadingPosition > 0,
+              let target = readingView.element(atIndex: initialReadingPosition) else { return }
+        UIAccessibility.post(notification: .screenChanged, argument: target)
     }
 
     private func embedContainers() {
@@ -216,4 +256,8 @@ final class ContinuousReadingViewController: UIViewController {
     /// L'elemento di testo su cui il rientro riporterebbe il fuoco (posizione ricordata), per
     /// verificare che il ciclo interfaccia→testo NON resetti la posizione.
     var textFocusRestoreTargetForTesting: NSObject? { readingView.lastFocusedTextElement }
+    /// L'elemento bersaglio del ripristino della posizione di lettura iniziale (§ 2.5), per i test.
+    var restoredPositionTargetForTesting: NSObject? { readingView.element(atIndex: initialReadingPosition) }
+    /// L'indice di posizione di lettura corrente esposto dalla view, per i test.
+    var currentReadingPositionForTesting: Int? { readingView.currentReadingElementIndex }
 }

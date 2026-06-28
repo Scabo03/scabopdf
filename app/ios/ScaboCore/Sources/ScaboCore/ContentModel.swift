@@ -28,7 +28,7 @@
 import Foundation
 
 /// A single renderable, accessible chunk of text.
-public struct ContentSegment: Equatable, Sendable {
+public struct ContentSegment: Codable, Equatable, Sendable {
     /// Node id from the source document — stable identity for diffing.
     public var id: String
     /// `SemanticCategory` of the originating node, OR the Layer-2
@@ -76,7 +76,7 @@ public struct ContentSegment: Equatable, Sendable {
 }
 
 /// A page of content delivered to the native view.
-public struct ContentPage: Equatable, Sendable {
+public struct ContentPage: Codable, Equatable, Sendable {
     /// 1-based logical page number.
     public var pageNumber: Int
     public var segments: [ContentSegment]
@@ -88,7 +88,7 @@ public struct ContentPage: Equatable, Sendable {
 }
 
 /// A layout's full output: an ordered list of pages.
-public struct PaginatedContent: Equatable, Sendable {
+public struct PaginatedContent: Codable, Equatable, Sendable {
     public var pages: [ContentPage]
     public var totalSegments: Int
 

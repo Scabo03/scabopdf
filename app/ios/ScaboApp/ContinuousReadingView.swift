@@ -170,6 +170,36 @@ final class ContinuousReadingView: UIView {
     /// se nessuno è ancora stato messo a fuoco (in tal caso il chiamante ripiega sul primo).
     var lastFocusedTextElement: NSObject? { lastFocusedElement }
 
+    /// Notifica del cambio di posizione di lettura (§ 2.5): porta l'indice 0-based dell'elemento
+    /// appena messo a fuoco nel flusso continuo. Il view controller la inoltra alla persistenza.
+    /// Additivo: i test che istanziano la view direttamente non lo impostano e nessuno è notificato.
+    var onReadingPositionChanged: ((Int) -> Void)?
+
+    /// L'indice (in `segmentLabels`) dell'ultimo elemento messo a fuoco, o `nil` se nessuno.
+    var currentReadingElementIndex: Int? {
+        guard let element = lastFocusedElement else { return nil }
+        return index(of: element)
+    }
+
+    /// L'elemento accessibile di indice dato (per il ripristino del fuoco), o `nil` se fuori range.
+    func element(atIndex index: Int) -> NSObject? {
+        guard index >= 0, index < segmentLabels.count else { return nil }
+        return segmentLabels[index]
+    }
+
+    /// Preimposta la posizione di lettura ripristinata SENZA spostare il fuoco: registra l'elemento
+    /// come ultima posizione, così il successivo `screenChanged` del view controller vi porta il
+    /// fuoco. Sicuro anche prima che le pagine visive siano calcolate.
+    func presetReadingPosition(toIndex index: Int) {
+        guard index > 0, index < segmentLabels.count else { return }
+        lastFocusedElement = segmentLabels[index]
+    }
+
+    /// Indice di un elemento per IDENTITÀ (le label sono classi: niente Equatable di valore).
+    private func index(of label: SegmentLabel) -> Int? {
+        segmentLabels.firstIndex { $0 === label }
+    }
+
     /// Player dei segnali acustici (seam per i test: § AudioSignals). Quando il fuoco
     /// VoiceOver entra in una NOTA VERA con un regime di lunghezza, si riproduce il
     /// segnale-nota del regime (§ 10.4/§ 10.5 del documento di prodotto). Default: il
@@ -328,6 +358,10 @@ final class ContinuousReadingView: UIView {
         label.onBecomeFocused = { [weak self, weak label] in
             guard let self else { return }
             self.lastFocusedElement = label
+            // Posizione di lettura aggiornata (§ 2.5): notifica l'indice per la persistenza.
+            if let label, let idx = self.index(of: label) {
+                self.onReadingPositionChanged?(idx)
+            }
             if let noteSignal {
                 self.signalPlayer.play(noteSignal)
             }

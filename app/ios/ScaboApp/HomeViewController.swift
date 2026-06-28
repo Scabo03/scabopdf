@@ -2,158 +2,246 @@
 //  HomeViewController.swift
 //  ScaboApp
 //
-//  La Home NUDA (decisione A): un solo pulsante "Importa". Niente recenti, niente libreria,
-//  niente memoria del punto di lettura — sono versioni future (§ 12), esplicitamente fuori scope.
-//  Il flusso minimo è: Importa → scelta del PDF col document picker di sistema → finestra di
-//  elaborazione bloccante → all'esito positivo si apre AUTOMATICAMENTE la reading view; il tasto
-//  Indietro della reading view riporta qui. Reimportare = nuova elaborazione da capo. Nessuna
-//  persistenza.
+//  La Home (§ 12.1): dall'alto verso il basso, i RECENTI (i documenti aperti più di recente,
+//  indipendentemente dal contenitore) e i WORKSPACES (i contenitori di primo livello), con il tasto
+//  per creare un nuovo workspace allineato all'intestazione "Workspaces". In barra di navigazione,
+//  il tasto + di importazione (§ 12.8). Toccando un recente si riapre il documento AL PUNTO DI
+//  LETTURA (§ 2.5); toccando un workspace si entra nel contenitore.
 //
-//  ── Confine di responsabilità ───────────────────────────────────────────────────────────────
+//  ── Accessibilità (criterio sovrano) ────────────────────────────────────────────────────────
 //
-//  La Home orchestra soltanto: presenta il picker, copia in locale il file scelto, presenta la
-//  finestra di elaborazione e instrada l'esito (apri lettore / mostra errore in prosa / torna in
-//  Home). Il lavoro pesante vive nel `DocumentProcessor` (fuori dal main); l'estrazione PDFKit
-//  resta confinata nel suo estrattore. Qui non si importa PDFKit.
+//  Lista a sezioni con intestazioni marcate come header (navigabili dal rotore). Ogni riga espone
+//  due elementi consecutivi — riquadro + Opzioni (§ 12.4, vedi `LibraryRowCell`). L'intestazione
+//  "Workspaces" espone, subito dopo il testo, il tasto "Nuovo workspace" (§ 12.1). Ordine di lettura
+//  logico dall'alto in basso; nessun elemento muto.
 //
 
 import UIKit
-import UniformTypeIdentifiers
 import ScaboCore
 
-final class HomeViewController: UIViewController {
+final class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
 
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = "ScaboPDF"
-        label.font = UIFont.preferredFont(forTextStyle: .largeTitle)
-        label.adjustsFontForContentSizeCategory = true
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.accessibilityTraits.insert(.header)
-        return label
-    }()
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    private var service: LibraryService { .shared }
 
-    private let importButton: UIButton = {
-        var config = UIButton.Configuration.filled()
-        config.title = "Importa"
-        config.buttonSize = .large
-        let button = UIButton(configuration: config)
-        button.titleLabel?.adjustsFontForContentSizeCategory = true
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.accessibilityLabel = "Importa un documento PDF"
-        button.accessibilityHint = "Apre la scelta di un file PDF dal dispositivo"
-        return button
-    }()
+    private var recents: [ArchivedDocument] = []
+    private var workspaces: [Workspace] = []
+
+    private enum Section: Int, CaseIterable { case recents, workspaces }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = "ScaboPDF"
         view.backgroundColor = .systemBackground
-        layoutHome()
-        importButton.addTarget(self, action: #selector(importTapped), for: .touchUpInside)
-    }
+        navigationController?.navigationBar.prefersLargeTitles = true
 
-    private func layoutHome() {
-        view.addSubview(titleLabel)
-        view.addSubview(importButton)
+        let importItem = UIBarButtonItem(
+            barButtonSystemItem: .add, target: self, action: #selector(importTapped))
+        importItem.accessibilityLabel = "Importa un documento"
+        importItem.accessibilityHint = "Apre la scelta di un file PDF dal dispositivo"
+        navigationItem.rightBarButtonItem = importItem
+
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.register(LibraryRowCell.self, forCellReuseIdentifier: LibraryRowCell.reuseId)
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "empty")
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
         NSLayoutConstraint.activate([
-            titleLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            titleLabel.bottomAnchor.constraint(equalTo: importButton.topAnchor, constant: -32),
-            titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor, constant: 24),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor, constant: -24),
-
-            importButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            importButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 
-    // MARK: - Import
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        reload()
+    }
+
+    private func reload() {
+        recents = service.store.recents(limit: 5)
+        workspaces = service.store.state.workspaces
+        tableView.reloadData()
+    }
+
+    // MARK: - Azioni
 
     @objc private func importTapped() {
-        // Document picker di sistema. `asCopy: true` consegna una copia nel sandbox dell'app:
-        // niente risorsa security-scoped da gestire a mano oltre il callback.
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.pdf], asCopy: true)
-        picker.delegate = self
-        picker.allowsMultipleSelection = false
-        present(picker, animated: true)
+        DocumentOpener.startImport(from: self, into: nil) { [weak self] in self?.reload() }
     }
 
-    /// Avvia l'elaborazione su una copia locale del PDF che l'app possiede, presentando la
-    /// finestra di elaborazione bloccante. Alla conclusione la copia temporanea è rimossa.
-    private func startProcessing(originalURL: URL) {
-        guard let localCopy = copyIntoTemporary(originalURL) else {
-            presentError(
-                "Non è stato possibile leggere il file scelto. Riprova selezionandolo di nuovo.")
-            return
-        }
-        let sourceName = originalURL.lastPathComponent
-
-        let processingVC = ProcessingViewController(fileURL: localCopy, sourceName: sourceName)
-        processingVC.onOutcome = { [weak self] outcome in
-            self?.dismiss(animated: true) {   // chiude la finestra di elaborazione
-                try? FileManager.default.removeItem(at: localCopy)   // pulizia copia temporanea
-                self?.handleOutcome(outcome, sourceName: sourceName)
+    @objc private func newWorkspaceTapped() {
+        LibraryDialogs.prompt(
+            title: "Nuovo workspace", message: "Un workspace raggruppa e organizza i tuoi documenti.",
+            placeholder: "Nome del workspace", confirmTitle: "Crea", from: self) { [weak self] name in
+                self?.service.store.createWorkspace(name: name)
+                self?.reload()
             }
+    }
+
+    private func openWorkspace(_ ws: Workspace) {
+        let vc = ContainerViewController(ref: .workspace(ws.id))
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func workspaceOptions(_ ws: Workspace) {
+        let sheet = UIAlertController(title: ws.name, message: nil, preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(title: "Rinomina", style: .default) { [weak self] _ in
+            guard let self else { return }
+            LibraryDialogs.prompt(
+                title: "Rinomina workspace", message: nil, initialText: ws.name,
+                placeholder: "Nome del workspace", from: self) { name in
+                    self.service.store.renameWorkspace(id: ws.id, to: name)
+                    self.reload()
+                }
+        })
+        sheet.addAction(UIAlertAction(title: "Crea nuova cartella", style: .default) { [weak self] _ in
+            guard let self else { return }
+            LibraryDialogs.prompt(
+                title: "Nuova cartella", message: nil, placeholder: "Nome della cartella",
+                confirmTitle: "Crea", from: self) { name in
+                    self.service.store.createFolder(inWorkspace: ws.id, name: name)
+                    self.reload()
+                }
+        })
+        sheet.addAction(UIAlertAction(title: "Elimina", style: .destructive) { [weak self] _ in
+            guard let self else { return }
+            LibraryDialogs.confirm(
+                title: "Eliminare il workspace?",
+                message: "Il workspace «\(ws.name)» e la sua organizzazione vengono rimossi. I file "
+                    + "contenuti restano nell'archivio e trovabili dalla Ricerca.",
+                confirmTitle: "Elimina", from: self) {
+                    self.service.store.deleteWorkspace(id: ws.id)
+                    self.reload()
+                }
+        })
+        sheet.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+        FileOptions.configurePopover(sheet, in: self)
+        present(sheet, animated: true)
+    }
+
+    // MARK: - Table data
+
+    func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        switch Section(rawValue: section)! {
+        case .recents: return recents.count                       // sezione assente se vuota (header nil)
+        case .workspaces: return max(workspaces.count, 1)         // almeno la riga "nessun workspace"
         }
-        present(processingVC, animated: true)
     }
 
-    private func handleOutcome(_ outcome: DocumentProcessor.Outcome, sourceName: String) {
-        switch outcome {
-        case .success(_, let content):
-            openReader(content: content, sourceName: sourceName)
-        case .cancelled:
-            break   // torna alla Home nuda, senza messaggi
-        case .failure(let message):
-            presentError(message)
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        switch Section(rawValue: section)! {
+        case .recents: return recents.isEmpty ? nil : "Recenti"
+        case .workspaces: return nil   // header custom (con il tasto Nuovo workspace)
         }
     }
 
-    /// Apre AUTOMATICAMENTE la reading view sul documento elaborato. Il suo Indietro torna qui.
-    private func openReader(content: PaginatedContent, sourceName: String) {
-        let reader = ContinuousReadingViewController(content: content, sourceName: sourceName)
-        reader.modalPresentationStyle = .fullScreen
-        reader.onBack = { [weak self] in self?.dismiss(animated: true) }
-        present(reader, animated: true)
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        guard Section(rawValue: section) == .workspaces else { return nil }
+        return WorkspacesHeaderView(target: self, action: #selector(newWorkspaceTapped))
     }
 
-    // MARK: - Helpers
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        Section(rawValue: section) == .workspaces ? UITableView.automaticDimension : UITableView.automaticDimension
+    }
 
-    /// Copia il file in una posizione temporanea che l'app controlla, così l'elaborazione lunga
-    /// non dipende dal ciclo di vita dell'URL del picker. `nil` se la copia fallisce.
-    private func copyIntoTemporary(_ source: URL) -> URL? {
-        let destination = FileManager.default.temporaryDirectory
-            .appendingPathComponent("scabo_import_\(UUID().uuidString).pdf")
-        do {
-            try FileManager.default.copyItem(at: source, to: destination)
-            return destination
-        } catch {
-            return nil
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        switch Section(rawValue: indexPath.section)! {
+        case .recents:
+            return fileCell(recents[indexPath.row], at: indexPath)
+        case .workspaces:
+            if workspaces.isEmpty {
+                let cell = tableView.dequeueReusableCell(withIdentifier: "empty", for: indexPath)
+                var config = cell.defaultContentConfiguration()
+                config.text = "Nessun workspace"
+                config.secondaryText = "Crea un workspace per organizzare i tuoi documenti."
+                config.textProperties.numberOfLines = 0
+                config.secondaryTextProperties.numberOfLines = 0
+                cell.contentConfiguration = config
+                cell.selectionStyle = .none
+                return cell
+            }
+            return workspaceCell(workspaces[indexPath.row], at: indexPath)
         }
     }
 
-    /// Messaggio d'errore in prosa comprensibile (§ 12.10): niente solo "errore".
-    private func presentError(_ message: String) {
-        let alert = UIAlertController(
-            title: "Importazione non riuscita", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Ho capito", style: .default))
-        present(alert, animated: true)
+    private func fileCell(_ doc: ArchivedDocument, at indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: LibraryRowCell.reuseId, for: indexPath) as! LibraryRowCell
+        cell.configure(
+            title: doc.title,
+            detail: LibraryFormatting.fileDetail(doc),
+            accessibilityText: LibraryFormatting.fileAccessibility(doc),
+            openHint: LibraryFormatting.fileOpenHint,
+            symbolName: "doc.text",
+            optionsHint: LibraryFormatting.fileOptionsHint)
+        cell.onOpen = { [weak self] in
+            guard let self else { return }
+            DocumentOpener.open(documentId: doc.id, from: self, onClosed: { self.reload() })
+        }
+        cell.onOptions = { [weak self] in
+            guard let self else { return }
+            FileOptions.present(document: doc, context: .recents, from: self) { self.reload() }
+        }
+        return cell
+    }
+
+    private func workspaceCell(_ ws: Workspace, at indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: LibraryRowCell.reuseId, for: indexPath) as! LibraryRowCell
+        cell.configure(
+            title: ws.name,
+            detail: LibraryFormatting.workspaceDetail(ws),
+            accessibilityText: "\(ws.name), workspace, \(LibraryFormatting.workspaceDetail(ws))",
+            openHint: LibraryFormatting.workspaceOpenHint,
+            symbolName: "square.stack.3d.up",
+            optionsHint: "Rinomina, crea cartella, o elimina il workspace")
+        cell.onOpen = { [weak self] in self?.openWorkspace(ws) }
+        cell.onOptions = { [weak self] in self?.workspaceOptions(ws) }
+        return cell
     }
 }
 
-// MARK: - UIDocumentPickerDelegate
+// MARK: - Intestazione "Workspaces" con il tasto Nuovo workspace (§ 12.1)
 
-extension HomeViewController: UIDocumentPickerDelegate {
+private final class WorkspacesHeaderView: UITableViewHeaderFooterView {
+    init(target: Any, action: Selector) {
+        super.init(reuseIdentifier: nil)
+        let title = UILabel()
+        title.text = "Workspaces"
+        title.font = UIFont.preferredFont(forTextStyle: .headline)
+        title.adjustsFontForContentSizeCategory = true
+        title.translatesAutoresizingMaskIntoConstraints = false
+        title.accessibilityTraits.insert(.header)
 
-    func documentPicker(
-        _ controller: UIDocumentPickerViewController,
-        didPickDocumentsAt urls: [URL]
-    ) {
-        guard let url = urls.first else { return }
-        startProcessing(originalURL: url)
+        let button = UIButton(type: .system)
+        var config = UIButton.Configuration.plain()
+        config.image = UIImage(systemName: "plus.circle")
+        config.title = "Nuovo workspace"
+        config.imagePadding = 6
+        button.configuration = config
+        button.titleLabel?.adjustsFontForContentSizeCategory = true
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.accessibilityLabel = "Nuovo workspace"
+        button.accessibilityHint = "Crea un nuovo workspace"
+        button.addTarget(target, action: action, for: .touchUpInside)
+
+        contentView.addSubview(title)
+        contentView.addSubview(button)
+        NSLayoutConstraint.activate([
+            title.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            title.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            title.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            button.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
+            button.centerYAnchor.constraint(equalTo: title.centerYAnchor),
+            button.leadingAnchor.constraint(greaterThanOrEqualTo: title.trailingAnchor, constant: 8),
+        ])
+        // Ordine di lettura: prima il testo "Workspaces", poi il tasto (§ 12.1).
+        accessibilityElements = [title, button]
     }
 
-    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-        // L'utente ha annullato la scelta del file: nessuna azione, resta in Home nuda.
-    }
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) non supportato.") }
 }

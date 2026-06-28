@@ -1,0 +1,539 @@
+//
+//  Library.swift
+//  ScaboCore
+//
+//  Il modello dati e la LOGICA della libreria del Layer 2 (§ 12 del documento di prodotto):
+//  l'archivio dei documenti elaborati, i contenitori organizzativi (workspace → cartella →
+//  sottocartella), le collocazioni, i recenti, e lo stato di lettura per documento (§ 2.5).
+//
+//  ── Perché vive in ScaboCore (pura logica, nessun UIKit) ─────────────────────────────────────
+//
+//  Esattamente come `Preferences.swift`, qui non si tocca lo schermo né il filesystem reale: la
+//  persistenza concreta è dietro il confine `LibraryPersisting`, così le regole — id stabili,
+//  ordine dei recenti, distinzione archivio/collocazione (§ 12.6), eliminazione su due livelli
+//  (§ 12.7), riapertura al punto di lettura (§ 2.5) — sono verificabili in memoria su `swift test`,
+//  senza Simulator. L'app inietta un `FileLibraryPersistence` (JSON in Application Support); i test
+//  iniettano `InMemoryLibraryPersistence`.
+//
+//  ── Modello archivio / collocazioni (§ 12.6, inderogabile) ───────────────────────────────────
+//
+//  Il FILE è un'entità unica nell'archivio (`ArchivedDocument`): vi entra all'importazione e vi
+//  resta. Segnalibri, sottolineature, posizione di lettura sono dati personali UNICI del file, mai
+//  divisi fra collocazioni. I contenitori (workspace/cartelle/sottocartelle) contengono COLLOCAZIONI
+//  — semplici riferimenti all'id del documento — non i file. "Aggiungi file" crea una collocazione
+//  in più; "Sposta" sposta una collocazione esistente senza duplicarla; eliminare una collocazione
+//  non tocca l'archivio (il file resta trovabile dalla Ricerca); l'eliminazione definitiva è solo
+//  dall'archivio (§ 12.7) e porta via tutte le collocazioni.
+//
+
+import Foundation
+
+// MARK: - Documento d'archivio
+
+/// Un documento elaborato presente nell'archivio. È l'entità UNICA del file (§ 12.6): porta i suoi
+/// dati personali (per ora la posizione di lettura; segnalibri e sottolineature arriveranno) e il
+/// referto di elaborazione (warning in prosa, § 12.10).
+public struct ArchivedDocument: Codable, Equatable, Sendable {
+    /// Identità stabile del documento (UUID), indipendente dal nome e dalle collocazioni.
+    public var id: String
+    /// Nome visualizzato, modificabile dall'utente (default: nome del file senza estensione).
+    public var title: String
+    /// Nome del file PDF di origine, conservato per il referto e la citazione.
+    public var sourceFileName: String
+    /// Quando il file è stato importato (per l'ordinamento "data di importazione", § 12.3).
+    public var importedAt: Date
+    /// Ultima apertura (per i Recenti, § 12.1, e per l'ordinamento "data di modifica"). `nil` finché
+    /// non è mai stato aperto.
+    public var lastOpenedAt: Date?
+    /// Numero di pagine del PDF di origine (informazione di referto/citazione).
+    public var sourcePageCount: Int
+    /// Posizione di lettura ricordata (§ 2.5): indice 0-based dell'elemento (segmento) nel flusso
+    /// continuo del documento. 0 = inizio. È stabile perché la pipeline è deterministica.
+    public var readingPosition: Int
+    /// Referto di elaborazione permanente (§ 12.10): i warning in prosa accumulati all'importazione.
+    public var warnings: [String]
+
+    public init(
+        id: String,
+        title: String,
+        sourceFileName: String,
+        importedAt: Date,
+        lastOpenedAt: Date? = nil,
+        sourcePageCount: Int,
+        readingPosition: Int = 0,
+        warnings: [String] = []
+    ) {
+        self.id = id
+        self.title = title
+        self.sourceFileName = sourceFileName
+        self.importedAt = importedAt
+        self.lastOpenedAt = lastOpenedAt
+        self.sourcePageCount = sourcePageCount
+        self.readingPosition = readingPosition
+        self.warnings = warnings
+    }
+}
+
+// MARK: - Contenitori organizzativi (tre livelli, § 12.2)
+
+/// Terzo e ultimo livello di annidamento: contiene SOLO collocazioni di file (§ 12.2).
+public struct Subfolder: Codable, Equatable, Sendable {
+    public var id: String
+    public var name: String
+    /// Id dei documenti collocati qui (collocazioni, non i file).
+    public var fileIds: [String]
+
+    public init(id: String, name: String, fileIds: [String] = []) {
+        self.id = id
+        self.name = name
+        self.fileIds = fileIds
+    }
+}
+
+/// Secondo livello: può contenere sottocartelle e/o collocazioni di file (§ 12.2).
+public struct Folder: Codable, Equatable, Sendable {
+    public var id: String
+    public var name: String
+    public var subfolders: [Subfolder]
+    public var fileIds: [String]
+
+    public init(id: String, name: String, subfolders: [Subfolder] = [], fileIds: [String] = []) {
+        self.id = id
+        self.name = name
+        self.subfolders = subfolders
+        self.fileIds = fileIds
+    }
+}
+
+/// Primo livello: puro contenitore organizzativo, senza impostazioni proprie (§ 12.2). Può
+/// contenere cartelle e/o collocazioni di file.
+public struct Workspace: Codable, Equatable, Sendable {
+    public var id: String
+    public var name: String
+    public var folders: [Folder]
+    public var fileIds: [String]
+
+    public init(id: String, name: String, folders: [Folder] = [], fileIds: [String] = []) {
+        self.id = id
+        self.name = name
+        self.folders = folders
+        self.fileIds = fileIds
+    }
+}
+
+/// Lo stato persistente completo della libreria.
+public struct LibraryState: Codable, Equatable, Sendable {
+    public var documents: [ArchivedDocument]
+    public var workspaces: [Workspace]
+    /// L'ultimo documento aperto quando l'app è stata chiusa, per la riapertura nello stato di
+    /// chiusura (§ 2.5). `nil` se l'ultima schermata attiva non era un documento.
+    public var lastOpenDocumentId: String?
+
+    public init(
+        documents: [ArchivedDocument] = [],
+        workspaces: [Workspace] = [],
+        lastOpenDocumentId: String? = nil
+    ) {
+        self.documents = documents
+        self.workspaces = workspaces
+        self.lastOpenDocumentId = lastOpenDocumentId
+    }
+}
+
+// MARK: - Riferimento a un contenitore e ordinamento
+
+/// Identifica un contenitore per percorso di id (workspace → cartella → sottocartella). È il modo
+/// in cui le viste indicano allo store DOVE collocare/spostare/leggere.
+public enum ContainerRef: Equatable, Hashable, Sendable {
+    case workspace(String)
+    case folder(workspace: String, folder: String)
+    case subfolder(workspace: String, folder: String, subfolder: String)
+
+    /// L'id del workspace radice, comune a ogni livello.
+    public var workspaceId: String {
+        switch self {
+        case .workspace(let w): return w
+        case .folder(let w, _): return w
+        case .subfolder(let w, _, _): return w
+        }
+    }
+}
+
+/// I criteri di ordinamento automatico dei contenuti (§ 12.3). Niente riordino manuale.
+public enum SortOrder: String, CaseIterable, Sendable {
+    case alphabetical
+    case modifiedDate
+    case importDate
+}
+
+// MARK: - Confine di persistenza
+
+/// Il confine minimo di persistenza dello stato della libreria. Mirror di `KeyValueStore`, ma per
+/// un blob unico (lo stato è un grafo, non chiavi sparse).
+public protocol LibraryPersisting: AnyObject {
+    /// I dati salvati, o `nil` se assenti/illeggibili (mai lancia: un fallimento collassa a `nil`).
+    func load() -> Data?
+    /// Salva i dati.
+    func save(_ data: Data)
+}
+
+/// Persistenza in memoria — l'implementazione non-di-sistema usata da logica e test.
+public final class InMemoryLibraryPersistence: LibraryPersisting {
+    private var data: Data?
+    public init(_ initial: Data? = nil) { self.data = initial }
+    public func load() -> Data? { data }
+    public func save(_ data: Data) { self.data = data }
+}
+
+/// Persistenza su file (JSON), Foundation puro. L'app la radica in Application Support; i test
+/// continuano a usare la versione in memoria.
+public final class FileLibraryPersistence: LibraryPersisting {
+    private let url: URL
+    public init(url: URL) { self.url = url }
+    public func load() -> Data? { try? Data(contentsOf: url) }
+    public func save(_ data: Data) {
+        try? FileManager.default.createDirectory(
+            at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: url, options: .atomic)
+    }
+}
+
+// MARK: - LibraryStore
+
+/// La logica della libreria. Tiene lo stato in memoria e lo persiste a ogni mutazione attraverso il
+/// confine `LibraryPersisting`. Da usare sul main (le viste lo chiamano dal main).
+public final class LibraryStore {
+
+    /// Lo stato corrente (sola lettura dall'esterno; le mutazioni passano dai metodi).
+    public private(set) var state: LibraryState
+
+    private let persistence: LibraryPersisting
+    private let makeId: () -> String
+    private let now: () -> Date
+
+    /// `makeId`/`now` sono iniettabili per test deterministici; in produzione sono UUID e `Date()`.
+    public init(
+        persistence: LibraryPersisting,
+        makeId: @escaping () -> String = { UUID().uuidString },
+        now: @escaping () -> Date = { Date() }
+    ) {
+        self.persistence = persistence
+        self.makeId = makeId
+        self.now = now
+        if let data = persistence.load(),
+           let decoded = try? JSONDecoder.library.decode(LibraryState.self, from: data) {
+            self.state = decoded
+        } else {
+            self.state = LibraryState()
+        }
+    }
+
+    private func persist() {
+        if let data = try? JSONEncoder.library.encode(state) {
+            persistence.save(data)
+        }
+    }
+
+    // MARK: Query — archivio e recenti
+
+    public func document(id: String) -> ArchivedDocument? {
+        state.documents.first { $0.id == id }
+    }
+
+    /// Tutti i documenti dell'archivio (per la Ricerca, § 13.2).
+    public func allDocuments() -> [ArchivedDocument] { state.documents }
+
+    /// I documenti aperti più di recente, dal più recente (§ 12.1). Solo quelli mai aperti sono
+    /// esclusi. `limit` di default 5.
+    public func recents(limit: Int = 5) -> [ArchivedDocument] {
+        state.documents
+            .filter { $0.lastOpenedAt != nil }
+            .sorted { ($0.lastOpenedAt ?? .distantPast) > ($1.lastOpenedAt ?? .distantPast) }
+            .prefix(limit)
+            .map { $0 }
+    }
+
+    /// I documenti non collocati in alcun contenitore (atterraggio "non collocato" dell'import,
+    /// § 12.8): restano trovabili dalla Ricerca e collocabili in seguito.
+    public func uncollocatedDocuments() -> [ArchivedDocument] {
+        let collocated = collocatedDocumentIds()
+        return state.documents.filter { !collocated.contains($0.id) }
+    }
+
+    private func collocatedDocumentIds() -> Set<String> {
+        var ids = Set<String>()
+        for w in state.workspaces {
+            ids.formUnion(w.fileIds)
+            for f in w.folders {
+                ids.formUnion(f.fileIds)
+                for s in f.subfolders { ids.formUnion(s.fileIds) }
+            }
+        }
+        return ids
+    }
+
+    // MARK: Mutazioni — archivio
+
+    /// Inserisce un nuovo documento nell'archivio e ne restituisce il record (con id minted).
+    @discardableResult
+    public func addDocument(
+        title: String,
+        sourceFileName: String,
+        sourcePageCount: Int,
+        warnings: [String] = []
+    ) -> ArchivedDocument {
+        let doc = ArchivedDocument(
+            id: makeId(),
+            title: title,
+            sourceFileName: sourceFileName,
+            importedAt: now(),
+            lastOpenedAt: nil,
+            sourcePageCount: sourcePageCount,
+            readingPosition: 0,
+            warnings: warnings)
+        state.documents.append(doc)
+        persist()
+        return doc
+    }
+
+    public func renameDocument(id: String, to title: String) {
+        guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
+        state.documents[i].title = title
+        persist()
+    }
+
+    /// Eliminazione DEFINITIVA dall'archivio (§ 12.7): rimuove il documento e ogni sua collocazione,
+    /// e lo deseleziona da `lastOpenDocumentId`. È l'unica eliminazione irreversibile.
+    public func deleteDocumentFromArchive(id: String) {
+        state.documents.removeAll { $0.id == id }
+        removeAllCollocations(of: id)
+        if state.lastOpenDocumentId == id { state.lastOpenDocumentId = nil }
+        persist()
+    }
+
+    /// Registra un'apertura: aggiorna `lastOpenedAt` (→ Recenti) e marca il documento come ultimo
+    /// aperto (→ riapertura nello stato di chiusura, § 2.5).
+    public func recordOpened(id: String) {
+        guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
+        state.documents[i].lastOpenedAt = now()
+        state.lastOpenDocumentId = id
+        persist()
+    }
+
+    /// Aggiorna la posizione di lettura ricordata (§ 2.5). No-op se invariata (evita scritture).
+    public func updateReadingPosition(id: String, position: Int) {
+        guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
+        let clamped = max(0, position)
+        guard state.documents[i].readingPosition != clamped else { return }
+        state.documents[i].readingPosition = clamped
+        persist()
+    }
+
+    /// Imposta (o azzera) il documento da riaprire al prossimo avvio (§ 2.5). Si azzera quando
+    /// l'utente torna alla Home, così un avvio a freddo dalla Home non riapre un lettore.
+    public func setLastOpenDocument(id: String?) {
+        guard state.lastOpenDocumentId != id else { return }
+        state.lastOpenDocumentId = id
+        persist()
+    }
+
+    public var lastOpenDocumentId: String? { state.lastOpenDocumentId }
+
+    // MARK: Mutazioni — contenitori
+
+    @discardableResult
+    public func createWorkspace(name: String) -> Workspace {
+        let ws = Workspace(id: makeId(), name: name)
+        state.workspaces.append(ws)
+        persist()
+        return ws
+    }
+
+    public func renameWorkspace(id: String, to name: String) {
+        guard let i = state.workspaces.firstIndex(where: { $0.id == id }) else { return }
+        state.workspaces[i].name = name
+        persist()
+    }
+
+    /// Elimina un workspace e tutto il suo contenuto ORGANIZZATIVO (§ 12.7): i file restano
+    /// nell'archivio, solo le loro collocazioni qui spariscono.
+    public func deleteWorkspace(id: String) {
+        state.workspaces.removeAll { $0.id == id }
+        persist()
+    }
+
+    @discardableResult
+    public func createFolder(inWorkspace workspaceId: String, name: String) -> Folder? {
+        guard let wi = state.workspaces.firstIndex(where: { $0.id == workspaceId }) else { return nil }
+        let folder = Folder(id: makeId(), name: name)
+        state.workspaces[wi].folders.append(folder)
+        persist()
+        return folder
+    }
+
+    public func renameFolder(inWorkspace workspaceId: String, folderId: String, to name: String) {
+        guard let wi = state.workspaces.firstIndex(where: { $0.id == workspaceId }),
+              let fi = state.workspaces[wi].folders.firstIndex(where: { $0.id == folderId }) else { return }
+        state.workspaces[wi].folders[fi].name = name
+        persist()
+    }
+
+    public func deleteFolder(inWorkspace workspaceId: String, folderId: String) {
+        guard let wi = state.workspaces.firstIndex(where: { $0.id == workspaceId }) else { return }
+        state.workspaces[wi].folders.removeAll { $0.id == folderId }
+        persist()
+    }
+
+    @discardableResult
+    public func createSubfolder(
+        inWorkspace workspaceId: String, folderId: String, name: String
+    ) -> Subfolder? {
+        guard let wi = state.workspaces.firstIndex(where: { $0.id == workspaceId }),
+              let fi = state.workspaces[wi].folders.firstIndex(where: { $0.id == folderId }) else {
+            return nil
+        }
+        let sub = Subfolder(id: makeId(), name: name)
+        state.workspaces[wi].folders[fi].subfolders.append(sub)
+        persist()
+        return sub
+    }
+
+    public func renameSubfolder(
+        inWorkspace workspaceId: String, folderId: String, subfolderId: String, to name: String
+    ) {
+        guard let wi = state.workspaces.firstIndex(where: { $0.id == workspaceId }),
+              let fi = state.workspaces[wi].folders.firstIndex(where: { $0.id == folderId }),
+              let si = state.workspaces[wi].folders[fi].subfolders.firstIndex(where: { $0.id == subfolderId })
+        else { return }
+        state.workspaces[wi].folders[fi].subfolders[si].name = name
+        persist()
+    }
+
+    public func deleteSubfolder(inWorkspace workspaceId: String, folderId: String, subfolderId: String) {
+        guard let wi = state.workspaces.firstIndex(where: { $0.id == workspaceId }),
+              let fi = state.workspaces[wi].folders.firstIndex(where: { $0.id == folderId }) else { return }
+        state.workspaces[wi].folders[fi].subfolders.removeAll { $0.id == subfolderId }
+        persist()
+    }
+
+    // MARK: Mutazioni — collocazioni
+
+    /// Aggiunge una collocazione del documento nel contenitore (§ 12.6, "Aggiungi file"). Idempotente
+    /// dentro lo stesso contenitore (non duplica la stessa presenza nello stesso posto).
+    public func addCollocation(documentId: String, to ref: ContainerRef) {
+        mutateContainer(ref) { ids in
+            if !ids.contains(documentId) { ids.append(documentId) }
+        }
+    }
+
+    /// Sposta una collocazione esistente da un contenitore a un altro (§ 12.6, "Sposta"): non
+    /// attinge dall'archivio, opera su una presenza già esistente.
+    public func moveCollocation(documentId: String, from source: ContainerRef, to destination: ContainerRef) {
+        guard source != destination else { return }
+        mutateContainer(source) { ids in ids.removeAll { $0 == documentId } }
+        addCollocation(documentId: documentId, to: destination)
+    }
+
+    /// Rimuove una collocazione (§ 12.7): il file resta nell'archivio.
+    public func removeCollocation(documentId: String, from ref: ContainerRef) {
+        mutateContainer(ref) { ids in ids.removeAll { $0 == documentId } }
+    }
+
+    /// Gli id dei documenti collocati direttamente nel contenitore indicato (in ordine di
+    /// inserimento; la vista applica l'ordinamento scelto).
+    public func fileIds(in ref: ContainerRef) -> [String] {
+        switch ref {
+        case .workspace(let w):
+            return state.workspaces.first { $0.id == w }?.fileIds ?? []
+        case .folder(let w, let f):
+            return state.workspaces.first { $0.id == w }?.folders.first { $0.id == f }?.fileIds ?? []
+        case .subfolder(let w, let f, let s):
+            return state.workspaces.first { $0.id == w }?
+                .folders.first { $0.id == f }?
+                .subfolders.first { $0.id == s }?.fileIds ?? []
+        }
+    }
+
+    /// Le cartelle di un workspace (per la navigazione).
+    public func folders(inWorkspace workspaceId: String) -> [Folder] {
+        state.workspaces.first { $0.id == workspaceId }?.folders ?? []
+    }
+
+    /// Le sottocartelle di una cartella (per la navigazione).
+    public func subfolders(inWorkspace workspaceId: String, folderId: String) -> [Subfolder] {
+        state.workspaces.first { $0.id == workspaceId }?
+            .folders.first { $0.id == folderId }?.subfolders ?? []
+    }
+
+    public func workspace(id: String) -> Workspace? { state.workspaces.first { $0.id == id } }
+
+    // MARK: Helpers privati
+
+    private func mutateContainer(_ ref: ContainerRef, _ body: (inout [String]) -> Void) {
+        switch ref {
+        case .workspace(let w):
+            guard let wi = state.workspaces.firstIndex(where: { $0.id == w }) else { return }
+            body(&state.workspaces[wi].fileIds)
+        case .folder(let w, let f):
+            guard let wi = state.workspaces.firstIndex(where: { $0.id == w }),
+                  let fi = state.workspaces[wi].folders.firstIndex(where: { $0.id == f }) else { return }
+            body(&state.workspaces[wi].folders[fi].fileIds)
+        case .subfolder(let w, let f, let s):
+            guard let wi = state.workspaces.firstIndex(where: { $0.id == w }),
+                  let fi = state.workspaces[wi].folders.firstIndex(where: { $0.id == f }),
+                  let si = state.workspaces[wi].folders[fi].subfolders.firstIndex(where: { $0.id == s })
+            else { return }
+            body(&state.workspaces[wi].folders[fi].subfolders[si].fileIds)
+        }
+        persist()
+    }
+
+    private func removeAllCollocations(of documentId: String) {
+        for wi in state.workspaces.indices {
+            state.workspaces[wi].fileIds.removeAll { $0 == documentId }
+            for fi in state.workspaces[wi].folders.indices {
+                state.workspaces[wi].folders[fi].fileIds.removeAll { $0 == documentId }
+                for si in state.workspaces[wi].folders[fi].subfolders.indices {
+                    state.workspaces[wi].folders[fi].subfolders[si].fileIds.removeAll { $0 == documentId }
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Ordinamento documenti (logica condivisa, § 12.3)
+
+extension LibraryStore {
+    /// Ordina una lista di documenti secondo il criterio scelto. L'alfabetico è case-insensitive e
+    /// localizzato; gli altri due sono cronologici decrescenti (il più recente in cima).
+    public func sorted(_ docs: [ArchivedDocument], by order: SortOrder) -> [ArchivedDocument] {
+        switch order {
+        case .alphabetical:
+            return docs.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        case .modifiedDate:
+            return docs.sorted { ($0.lastOpenedAt ?? $0.importedAt) > ($1.lastOpenedAt ?? $1.importedAt) }
+        case .importDate:
+            return docs.sorted { $0.importedAt > $1.importedAt }
+        }
+    }
+}
+
+// MARK: - Coder condivisi
+
+extension JSONEncoder {
+    /// Encoder stabile per la libreria: date ISO-8601, chiavi ordinate (diff leggibili su disco).
+    static var library: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
+    }
+}
+
+extension JSONDecoder {
+    static var library: JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }
+}

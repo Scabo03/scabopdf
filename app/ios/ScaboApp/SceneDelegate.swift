@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import ScaboCore
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -13,16 +14,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Radicamento programmatico della Home nuda (flusso import → elaborazione → reading view).
+        // Radicamento programmatico della navigazione a tab (Home, Ricerca, Impostazioni, § 12.1).
         // ADDITIVO E REVERSIBILE: sovrascrive la window dello storyboard senza toccare
-        // `Main.storyboard`/`ViewController` (che restano dormienti). La reading view porta con sé
-        // i propri due container sigillati (titolo + Indietro), perciò NON serve una navigation
-        // controller di sistema: la Home presenta la finestra di elaborazione e poi il lettore.
+        // `Main.storyboard`/`ViewController` (che restano dormienti). Il tema memorizzato è applicato
+        // alla finestra; se all'ultima chiusura era aperto un documento e il suo contenuto è in cache,
+        // lo si riapre al punto di lettura (§ 2.5, riapertura nello stato di chiusura).
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = HomeViewController()
+        let tabBar = RootTabBarController()
+        window.rootViewController = tabBar
         self.window = window
+        AppTheme.applyStored(to: window)
         window.makeKeyAndVisible()
+
+        if let lastId = LibraryService.shared.store.lastOpenDocumentId {
+            // Differito dopo che la finestra è visibile, così la presentazione modale è valida.
+            DispatchQueue.main.async {
+                DocumentOpener.reopenFromCache(documentId: lastId, from: tabBar)
+            }
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

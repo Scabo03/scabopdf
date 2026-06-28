@@ -59,6 +59,17 @@ public final class InMemoryKeyValueStore: KeyValueStore {
     }
 }
 
+/// A `UserDefaults`-backed `KeyValueStore` — the real, system persistence for app preferences.
+/// `UserDefaults` is Foundation-only (no UIKit), synchronous, and never throws on read, so it
+/// satisfies the boundary contract exactly: a missing value returns `nil`. This is the concrete
+/// store the app injects; the in-memory store stays for tests.
+public final class UserDefaultsKeyValueStore: KeyValueStore {
+    private let defaults: UserDefaults
+    public init(_ defaults: UserDefaults = .standard) { self.defaults = defaults }
+    public func getItem(_ key: String) -> String? { defaults.string(forKey: key) }
+    public func setItem(_ key: String, _ value: String) { defaults.set(value, forKey: key) }
+}
+
 /// Storage keys, verbatim from the TS.
 public enum PreferenceKeys {
     public static let themeSelection = "@scabopdf/theme/selection"
@@ -69,10 +80,25 @@ public enum PreferenceKeys {
     /// La chiave effettiva è `granularityLevelPrefix + documentId`.
     public static let granularityLevelPrefix = "@scabopdf/reading/granularity/"
 
+    /// Toggle globale "Mostra numero pagine file originale" (§ 4.2).
+    public static let showOriginalPageNumbers = "@scabopdf/reading/showOriginalPages"
+
     /// Chiave per-documento della granularità, derivata dall'id del documento.
     public static func documentGranularityLevel(_ documentId: String) -> String {
         granularityLevelPrefix + documentId
     }
+}
+
+// MARK: - Toggle pagine del file originale (§ 4.2)
+
+/// Legge il toggle globale "Mostra numero pagine file originale" (§ 4.2). Default `false`
+/// (disattivato): finché l'utente non lo chiede, l'app mostra solo la pagina di visualizzazione.
+public func getStoredShowOriginalPageNumbers(_ store: KeyValueStore) -> Bool {
+    store.getItem(PreferenceKeys.showOriginalPageNumbers) == "1"
+}
+
+public func setStoredShowOriginalPageNumbers(_ store: KeyValueStore, _ enabled: Bool) {
+    store.setItem(PreferenceKeys.showOriginalPageNumbers, enabled ? "1" : "0")
 }
 
 /// Reads the stored theme selection, validating it against the closed vocabulary.

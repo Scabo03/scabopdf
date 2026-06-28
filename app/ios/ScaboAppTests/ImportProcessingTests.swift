@@ -335,6 +335,30 @@ final class ImportProcessingTests: XCTestCase {
                        "non si torna al primo elemento")
     }
 
+    // MARK: - Posizione di lettura: ripristino all'apertura e notifica del cambio (§ 2.5)
+
+    func test_reader_restoresInitialReadingPosition_andReportsChanges() {
+        let content = sampleContent(8)
+        var reported: [Int] = []
+        let vc = ContinuousReadingViewController(
+            content: content, sourceName: "x.pdf", documentId: "doc1",
+            initialReadingPosition: 4,
+            onPositionChanged: { reported.append($0) })
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
+
+        // Il bersaglio del ripristino è l'elemento all'indice 4 (la posizione ricordata).
+        let labels = vc.textContainerForTesting.segmentLabels
+        XCTAssertTrue(vc.restoredPositionTargetForTesting === labels[4],
+                      "all'apertura il fuoco si ripristina all'elemento della posizione ricordata")
+
+        // Mettendo a fuoco un altro elemento, la posizione viene notificata per la persistenza.
+        labels[6].accessibilityElementDidBecomeFocused()
+        XCTAssertEqual(reported.last, 6, "il cambio di fuoco notifica l'indice della nuova posizione")
+        XCTAssertEqual(vc.currentReadingPositionForTesting, 6)
+    }
+
     func test_reader_backButtonInvokesOnBack() {
         let vc = makeLoadedReader(sampleContent(3))
         var backCalled = false
