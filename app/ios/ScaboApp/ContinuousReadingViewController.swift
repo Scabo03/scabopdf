@@ -95,6 +95,23 @@ final class ContinuousReadingViewController: UIViewController {
     /// Notifica del cambio di posizione di lettura, inoltrata alla persistenza dal presentatore.
     private let onPositionChanged: ((Int) -> Void)?
 
+    /// Numero di pagine del PDF di origine, per l'indicatore doppio (§ 4.3). 0 = non pertinente.
+    private let sourcePageCount: Int
+
+    /// Se mostrare anche la pagina del file originale nell'indicatore (toggle globale, § 4.2).
+    private let showOriginalPages: Bool
+
+    /// Mappa id-segmento → pagina del file originale (1-based), o `nil` se non disponibile per quel
+    /// segmento. Iniettata dal presentatore (costruita dalla mappa nodo→pagina del documento).
+    private let sourcePage: ((String) -> Int?)?
+
+    /// Quale dei due container è attivo (testo o interfaccia): determina dove il riaggancio di
+    /// VoiceOver riporta il fuoco.
+    private var isTextContainerActive = true
+
+    /// Osservatore del cambio di stato di VoiceOver (riaggancio in lettura). Rimosso in deinit.
+    private var voiceOverObserver: NSObjectProtocol?
+
     /// Il ripristino della posizione avviene una sola volta, alla prima comparsa.
     private var didRestorePosition = false
 
@@ -118,14 +135,26 @@ final class ContinuousReadingViewController: UIViewController {
         documentId: String = "",
         initialReadingPosition: Int = 0,
         onPositionChanged: ((Int) -> Void)? = nil,
+        sourcePageCount: Int = 0,
+        showOriginalPages: Bool = false,
+        sourcePage: ((String) -> Int?)? = nil,
         signalPlayer: SignalPlaying = SignalPlayer.shared
     ) {
         self.content = content
         self.documentId = documentId
         self.initialReadingPosition = initialReadingPosition
         self.onPositionChanged = onPositionChanged
+        self.sourcePageCount = sourcePageCount
+        self.showOriginalPages = showOriginalPages
+        self.sourcePage = sourcePage
         self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
+    }
+
+    deinit {
+        if let token = voiceOverObserver {
+            NotificationCenter.default.removeObserver(token)
+        }
     }
 
     @available(*, unavailable)
@@ -141,13 +170,25 @@ final class ContinuousReadingViewController: UIViewController {
         embedContainers()
         wireContainers()
         readingView.render(content)
-        // Persistenza della posizione di lettura (§ 2.5): ogni cambio di fuoco aggiorna lo store.
+        // Persistenza della posizione di lettura (§ 2.5): ogni cambio di fuoco aggiorna lo store e
+        // l'indicatore di pagina in toolbar (§ 4.3, silenzioso: nessun annuncio, § 4.5).
         readingView.onReadingPositionChanged = { [weak self] index in
             self?.onPositionChanged?(index)
+            self?.updatePageIndicator()
         }
+        // Ricalcolo dell'impaginazione visiva (rotazione, Dynamic Type) → aggiorna il totale pagine.
+        readingView.onPaginationChanged = { [weak self] in self?.updatePageIndicator() }
         // Posizione di lettura ricordata: la si preimposta come ultima posizione (senza spostare
         // ancora il fuoco) così il rientro nel testo e il ripristino alla comparsa vi puntano.
         readingView.presetReadingPosition(toIndex: initialReadingPosition)
+        // Riaggancio di VoiceOver in lettura (§ 2.5, caso distinto dalla riapertura del documento):
+        // quando VoiceOver si riattiva mentre questa schermata è in primo piano, il fuoco non deve
+        // cadere sul primo elemento del file. Si osserva il cambio di stato e si riporta il fuoco
+        // dove l'utente era (ritorno diretto al segmento). Vedi `voiceOverStatusChanged`.
+        voiceOverObserver = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.voiceOverStatusDidChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in self?.voiceOverStatusChanged() }
         // Si entra leggendo: il testo è il container attivo (modale). Nessun fuoco forzato qui:
         // alla comparsa VoiceOver si posa sul primo elemento (o sulla posizione ripristinata).
         activateTextContainer(restoreFocus: false)
@@ -162,6 +203,60 @@ final class ContinuousReadingViewController: UIViewController {
         didPlayModeSignal = true
         signalPlayer.play(.mode1)
         restoreReadingPositionIfNeeded()
+        updatePageIndicator()
+    }
+
+    // MARK: - Riaggancio di VoiceOver in lettura (ritorno diretto al segmento)
+
+    /// VoiceOver è stato attivato/disattivato. Alla RIATTIVAZIONE, mentre la reading view è in primo
+    /// piano, VoiceOver — ricostruendo l'albero di accessibilità — atterrerebbe sul PRIMO elemento
+    /// del container attivo (il primo segmento del file), facendo perdere il segno. Si riporta il
+    /// fuoco DOVE l'utente era con lo stesso meccanismo già certificato su dispositivo (post di
+    /// `screenChanged` sull'elemento-segmento). I segmenti sono elementi accessibili distinti, quindi
+    /// il ritorno diretto è possibile e ripetibile. Si posta SUBITO e di nuovo dopo un breve ritardo,
+    /// per vincere con certezza la corsa col fuoco automatico di VoiceOver alla riattivazione.
+    @objc private func voiceOverStatusChanged() {
+        guard UIAccessibility.isVoiceOverRunning, isViewLoaded, view.window != nil else { return }
+        let target = reengagementTarget()
+        UIAccessibility.post(notification: .screenChanged, argument: target)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self, UIAccessibility.isVoiceOverRunning, self.view.window != nil else { return }
+            UIAccessibility.post(notification: .screenChanged, argument: self.reengagementTarget())
+        }
+    }
+
+    /// L'elemento su cui riportare il fuoco al riaggancio: nel container del testo è l'ultimo
+    /// segmento messo a fuoco (la posizione di lettura corrente; ripiego sul container del testo —
+    /// quindi sul primo elemento — solo se nessuno è mai stato messo a fuoco); nel container
+    /// dell'interfaccia è il tasto Indietro.
+    private func reengagementTarget() -> Any {
+        if isTextContainerActive {
+            return readingView.lastFocusedTextElement ?? readingView
+        }
+        return interfaceBar.backButton
+    }
+
+    // MARK: - Indicatore di pagina (§ 4.3)
+
+    /// Ricalcola e applica l'indicatore di pagina in toolbar: pagina di visualizzazione corrente su
+    /// totale (sempre), più la pagina del file originale quando il toggle è attivo e il dato è
+    /// disponibile (§ 4.2/§ 4.3). Silenzioso: aggiorna solo il valore, nessun annuncio (§ 4.5).
+    private func updatePageIndicator() {
+        let total = readingView.visualPageCount
+        let index = readingView.currentReadingElementIndex ?? max(0, initialReadingPosition)
+        let visualPage = (readingView.visualPageIndex(ofElementAt: index) ?? 0) + 1
+        var originalCurrent: Int? = nil
+        if showOriginalPages, sourcePageCount > 0,
+           let segId = readingView.segmentId(atIndex: index),
+           let page = sourcePage?(segId) {
+            originalCurrent = page
+        }
+        interfaceBar.setPageIndicator(
+            visualizationCurrent: total > 0 ? visualPage : 0,
+            visualizationTotal: total,
+            originalCurrent: originalCurrent,
+            originalTotal: sourcePageCount,
+            showOriginal: originalCurrent != nil)
     }
 
     /// Ripristina il fuoco VoiceOver all'elemento della posizione di lettura ricordata (§ 2.5),
@@ -217,6 +312,7 @@ final class ContinuousReadingViewController: UIViewController {
     /// di lettura (non al primo): è la correzione del reset di posizione, che vale ANCHE qui perché
     /// ora l'unica via di rientro nel testo è lo scrub (la giunzione di swipe è stata rimossa).
     private func activateTextContainer(restoreFocus: Bool) {
+        isTextContainerActive = true
         view.accessibilityElements = [readingView]
         interfaceBar.accessibilityViewIsModal = false
         readingView.accessibilityViewIsModal = true
@@ -231,6 +327,7 @@ final class ContinuousReadingViewController: UIViewController {
     /// strutturale → lo swipe resta confinato fra [Indietro, titolo] e non rientra nel testo), col
     /// flag modale sull'interfaccia come rinforzo. Porta il fuoco sul tasto Indietro.
     private func activateInterfaceContainer() {
+        isTextContainerActive = false
         view.accessibilityElements = [interfaceBar]
         readingView.accessibilityViewIsModal = false
         interfaceBar.accessibilityViewIsModal = true
@@ -260,4 +357,9 @@ final class ContinuousReadingViewController: UIViewController {
     var restoredPositionTargetForTesting: NSObject? { readingView.element(atIndex: initialReadingPosition) }
     /// L'indice di posizione di lettura corrente esposto dalla view, per i test.
     var currentReadingPositionForTesting: Int? { readingView.currentReadingElementIndex }
+    /// L'elemento su cui il riaggancio di VoiceOver riporterebbe il fuoco (ritorno diretto al
+    /// segmento), per verificare che NON sia il primo elemento ma la posizione ricordata.
+    var reengagementTargetForTesting: NSObject? { reengagementTarget() as? NSObject }
+    /// Forza l'aggiornamento dell'indicatore di pagina (per i test, senza ciclo di vita reale).
+    func updatePageIndicatorForTesting() { updatePageIndicator() }
 }

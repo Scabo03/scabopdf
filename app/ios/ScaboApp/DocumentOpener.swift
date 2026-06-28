@@ -40,9 +40,10 @@ enum DocumentOpener {
         }
 
         // Percorso veloce: contenuto in cache → lettore immediato al punto di lettura.
-        if let content = service.cachedContent(forDocumentId: id) {
+        if let cached = service.loadCache(forDocumentId: id) {
             service.store.recordOpened(id: id)
-            presentReader(content: content, document: doc, from: presenter, onClosed: onClosed)
+            presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
+                          from: presenter, onClosed: onClosed)
             return
         }
 
@@ -61,10 +62,12 @@ enum DocumentOpener {
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
                 switch outcome {
-                case .success(_, let content):
-                    service.writeCache(content, forDocumentId: id)
+                case .success(let document, let content):
+                    let pageMap = buildPageMap(document)
+                    service.writeCache(content, pageMap: pageMap, forDocumentId: id)
                     service.store.recordOpened(id: id)
-                    presentReader(content: content, document: doc, from: presenter, onClosed: onClosed)
+                    presentReader(content: content, document: doc, pageMap: pageMap,
+                                  from: presenter, onClosed: onClosed)
                 case .cancelled:
                     break
                 case .failure(let message):
@@ -81,19 +84,21 @@ enum DocumentOpener {
     @discardableResult
     static func reopenFromCache(documentId id: String, from presenter: UIViewController, onClosed: (() -> Void)? = nil) -> Bool {
         guard let doc = service.store.document(id: id),
-              let content = service.cachedContent(forDocumentId: id) else {
+              let cached = service.loadCache(forDocumentId: id) else {
             return false
         }
         service.store.recordOpened(id: id)
-        presentReader(content: content, document: doc, from: presenter, onClosed: onClosed)
+        presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
+                      from: presenter, onClosed: onClosed)
         return true
     }
 
     /// Presenta il lettore Lettura Continua al punto di lettura ricordato, cablando la persistenza
-    /// della posizione e la chiusura.
+    /// della posizione, l'indicatore di pagina (§ 4.3) e la chiusura.
     private static func presentReader(
         content: PaginatedContent,
         document doc: ArchivedDocument,
+        pageMap: [String: Int],
         from presenter: UIViewController,
         onClosed: (() -> Void)?
     ) {
@@ -104,7 +109,10 @@ enum DocumentOpener {
             initialReadingPosition: doc.readingPosition,
             onPositionChanged: { index in
                 service.store.updateReadingPosition(id: doc.id, position: index)
-            })
+            },
+            sourcePageCount: doc.sourcePageCount,
+            showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
+            sourcePage: sourcePageProvider(pageMap))
         reader.modalPresentationStyle = .fullScreen
         reader.onBack = { [weak presenter] in
             // Tornando alla Home/contenitore, l'ultimo-documento-aperto si azzera: un avvio a
@@ -113,6 +121,32 @@ enum DocumentOpener {
             presenter?.dismiss(animated: true) { onClosed?() }
         }
         presenter.present(reader, animated: true)
+    }
+
+    // MARK: - Mappa pagine del file originale (§ 4.3)
+
+    /// Costruisce la mappa id-nodo → pagina del file originale (1-based) dall'albero del documento.
+    /// `page_index` è 0-based (convenzione PyMuPDF); l'indicatore mostra la pagina 1-based.
+    static func buildPageMap(_ document: ScabopdfDocument) -> [String: Int] {
+        var map: [String: Int] = [:]
+        func walk(_ nodes: [NodeDict]) {
+            for node in nodes {
+                map[node.id] = node.page_index + 1
+                if !node.children.isEmpty { walk(node.children) }
+            }
+        }
+        walk(document.structure)
+        return map
+    }
+
+    /// Risolve la pagina del file originale di un segmento. I segmenti granularizzati portano un id
+    /// `<idNodo>#<k>`: si risale all'id del nodo (prima del `#`) per la lookup nella mappa.
+    private static func sourcePageProvider(_ pageMap: [String: Int]) -> (String) -> Int? {
+        { segmentId in
+            let base = segmentId.split(separator: "#", maxSplits: 1,
+                                       omittingEmptySubsequences: false).first.map(String.init) ?? segmentId
+            return pageMap[base]
+        }
     }
 
     // MARK: - Importazione (§ 12.8)
@@ -223,13 +257,14 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 // cache, ma non rielaborabile in futuro. Si avvisa in prosa senza bloccare la lettura.
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
             }
-            service.writeCache(content, forDocumentId: doc.id)
+            let pageMap = DocumentOpener.buildPageMap(document)
+            service.writeCache(content, pageMap: pageMap, forDocumentId: doc.id)
             if let destination { service.store.addCollocation(documentId: doc.id, to: destination) }
             service.store.recordOpened(id: doc.id)
             onImported?()
             // Apertura automatica del lettore sul documento appena importato (al primo elemento).
             DocumentOpener.presentReaderAfterImport(
-                content: content, document: doc, from: presenter, onImported: onImported)
+                content: content, document: doc, pageMap: pageMap, from: presenter, onImported: onImported)
         case .cancelled:
             break
         case .failure(let message):
@@ -258,6 +293,7 @@ extension DocumentOpener {
     fileprivate static func presentReaderAfterImport(
         content: PaginatedContent,
         document doc: ArchivedDocument,
+        pageMap: [String: Int],
         from presenter: UIViewController,
         onImported: (() -> Void)?
     ) {
@@ -268,7 +304,10 @@ extension DocumentOpener {
             initialReadingPosition: doc.readingPosition,
             onPositionChanged: { index in
                 service.store.updateReadingPosition(id: doc.id, position: index)
-            })
+            },
+            sourcePageCount: doc.sourcePageCount,
+            showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
+            sourcePage: sourcePageProvider(pageMap))
         reader.modalPresentationStyle = .fullScreen
         reader.onBack = { [weak presenter] in
             service.store.setLastOpenDocument(id: nil)

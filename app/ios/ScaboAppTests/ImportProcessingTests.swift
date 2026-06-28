@@ -245,12 +245,16 @@ final class ImportProcessingTests: XCTestCase {
             XCTAssertTrue(element is SegmentLabel, "il container del testo espone solo segmenti")
         }
 
-        // Container dell'INTERFACCIA: solo [Indietro, titolo].
+        // Container dell'INTERFACCIA: [Indietro, titolo, indicatore di pagina] — l'indicatore (§ 4.3)
+        // è il terzo elemento, sempre dentro l'interfaccia (mai nel container del testo, così non
+        // interferisce con lo swipe di lettura). NESSUN elemento di testo qui.
+        vc.viewDidAppear(false)   // attiva l'indicatore di pagina (impaginazione disponibile)
         let interface = vc.interfaceContainerForTesting
         let interfaceElements = (interface.accessibilityElements as? [NSObject]) ?? []
-        XCTAssertEqual(interfaceElements.count, 2, "interfaccia: solo titolo + Indietro")
+        XCTAssertEqual(interfaceElements.count, 3, "interfaccia: Indietro, titolo, indicatore di pagina")
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.backButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.titleLabel })
+        XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.pageIndicatorLabel })
         XCTAssertEqual(interface.titleLabel.text, "Lettura Continua")
         XCTAssertEqual(interface.backButton.accessibilityLabel, "Indietro")
         for element in interfaceElements {
@@ -357,6 +361,80 @@ final class ImportProcessingTests: XCTestCase {
         labels[6].accessibilityElementDidBecomeFocused()
         XCTAssertEqual(reported.last, 6, "il cambio di fuoco notifica l'indice della nuova posizione")
         XCTAssertEqual(vc.currentReadingPositionForTesting, 6)
+    }
+
+    // MARK: - Riaggancio di VoiceOver in lettura: ritorno diretto al segmento (non al primo)
+
+    func test_reader_voiceOverReengagement_targetsCurrentSegment_notFirst() {
+        let vc = makeLoadedReader(sampleContent(6))
+        vc.viewDidAppear(false)
+        let labels = vc.textContainerForTesting.segmentLabels
+
+        // L'utente legge fino a un elemento centrale.
+        labels[3].accessibilityElementDidBecomeFocused()
+
+        // Al riaggancio di VoiceOver il fuoco torna LÌ, non al primo elemento del file.
+        XCTAssertTrue(vc.reengagementTargetForTesting === labels[3],
+                      "il riaggancio riporta il fuoco dove l'utente era")
+        XCTAssertFalse(vc.reengagementTargetForTesting === labels[0],
+                       "il riaggancio NON cade sul primo elemento del file")
+    }
+
+    func test_reader_voiceOverReengagement_anchorsToBackButton_whenInterfaceActive() {
+        let vc = makeLoadedReader(sampleContent(4))
+        vc.viewDidAppear(false)
+        // Scrub al container dell'interfaccia: ora il container attivo è la barra.
+        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape())
+        XCTAssertTrue(vc.reengagementTargetForTesting === vc.interfaceContainerForTesting.backButton,
+                      "con l'interfaccia attiva il riaggancio si ancora al tasto Indietro")
+    }
+
+    // MARK: - Indicatore di pagina in toolbar (§ 4.3)
+
+    func test_pageIndicator_single_whenOriginalPagesOff() {
+        let vc = makeLoadedReader(sampleContent(3))   // sourcePageCount 0, toggle off → singolo
+        vc.viewDidAppear(false)
+        let bar = vc.interfaceContainerForTesting
+        let total = vc.textContainerForTesting.visualPageCount
+        XCTAssertFalse(bar.pageIndicatorLabel.isHidden, "l'indicatore è visibile con un'impaginazione")
+        XCTAssertEqual(bar.pageIndicatorLabel.text, "1 di \(total)")
+        XCTAssertEqual(bar.pageIndicatorLabel.accessibilityLabel, "pagina 1 di \(total) di visualizzazione")
+        // L'indicatore è il TERZO elemento del container d'interfaccia, dopo Indietro e titolo.
+        let elements = (bar.accessibilityElements as? [NSObject]) ?? []
+        XCTAssertTrue(elements.last === bar.pageIndicatorLabel)
+    }
+
+    func test_pageIndicator_double_whenOriginalPagesOnAndDataAvailable() {
+        let vc = ContinuousReadingViewController(
+            content: sampleContent(3), sourceName: "x.pdf", documentId: "d",
+            initialReadingPosition: 0, onPositionChanged: nil,
+            sourcePageCount: 1985, showOriginalPages: true, sourcePage: { _ in 100 })
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
+        vc.viewDidAppear(false)
+        let bar = vc.interfaceContainerForTesting
+        let total = vc.textContainerForTesting.visualPageCount
+        XCTAssertEqual(bar.pageIndicatorLabel.text, "100 di 1985 — 1 di \(total)")
+        XCTAssertEqual(
+            bar.pageIndicatorLabel.accessibilityLabel,
+            "pagina 100 di 1985 del file originale, pagina 1 di \(total) di visualizzazione")
+    }
+
+    func test_buildPageMap_mapsNodeIdsToOneBasedPages() {
+        let doc = ScabopdfDocument(
+            schema_version: "0.7.0", document_id: "d",
+            metadata: DocumentMetadata(pages_pdf: 5, page_size_pt: [595, 842], source_pdf_filename: "x.pdf"),
+            profile: DocumentProfileDict(
+                profile_id: "generic", editorial_family: "generic", genre: "unknown", confidence: 0.05),
+            structure: [
+                NodeDict(id: "node_0", type: .HEADING_1, page_index: 2, text: "T", children: [
+                    NodeDict(id: "node_1", type: .BODY, page_index: 4, text: "b"),
+                ]),
+            ])
+        let map = DocumentOpener.buildPageMap(doc)
+        XCTAssertEqual(map["node_0"], 3, "page_index 2 (0-based) → pagina 3 (1-based)")
+        XCTAssertEqual(map["node_1"], 5, "i figli sono mappati ricorsivamente")
     }
 
     func test_reader_backButtonInvokesOnBack() {

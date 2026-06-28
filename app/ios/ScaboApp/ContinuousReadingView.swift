@@ -187,6 +187,18 @@ final class ContinuousReadingView: UIView {
         return segmentLabels[index]
     }
 
+    /// L'id del segmento di indice dato (per mappare la posizione alla pagina del file originale),
+    /// o `nil` se fuori range.
+    func segmentId(atIndex index: Int) -> String? {
+        guard index >= 0, index < segmentLabels.count else { return nil }
+        return segmentLabels[index].segment.id
+    }
+
+    /// Notifica che l'impaginazione VISIVA è stata ricalcolata (cambio viewport o Dynamic Type):
+    /// il numero di pagine di visualizzazione può essere cambiato, e l'indicatore in toolbar va
+    /// aggiornato. Additivo: chi non lo imposta non è notificato.
+    var onPaginationChanged: (() -> Void)?
+
     /// Preimposta la posizione di lettura ripristinata SENZA spostare il fuoco: registra l'elemento
     /// come ultima posizione, così il successivo `screenChanged` del view controller vi porta il
     /// fuoco. Sicuro anche prima che le pagine visive siano calcolate.
@@ -406,6 +418,7 @@ final class ContinuousReadingView: UIView {
             pageStartElementIndices = []
             documentContainer.frame = CGRect(origin: .zero, size: .zero)
             scrollView.contentSize = .zero
+            onPaginationChanged?()
             return
         }
 
@@ -435,6 +448,7 @@ final class ContinuousReadingView: UIView {
         documentContainer.frame = CGRect(
             x: 0, y: 0, width: CGFloat(pageCount) * pageWidth, height: viewport.height)
         scrollView.contentSize = documentContainer.bounds.size
+        onPaginationChanged?()
     }
 
     /// Altezza necessaria a una label per il suo testo, alla larghezza data e al

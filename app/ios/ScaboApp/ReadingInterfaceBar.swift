@@ -55,6 +55,23 @@ final class ReadingInterfaceBar: UIView {
         return label
     }()
 
+    /// Indicatore di pagina (§ 4.3): singolo di norma ("100 di 1985"), doppio quando il toggle
+    /// pagine originali è attivo ("30 di 1472 — 100 di 1985"). Vive in QUESTO container
+    /// d'interfaccia (chiuso): non è mai raggiungibile dallo swipe orizzontale di lettura, quindi
+    /// non interferisce col vincolo costitutivo (§ 2.2). L'utente lo consulta scrubando alla barra.
+    let pageIndicatorLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.preferredFont(forTextStyle: .footnote)
+        label.adjustsFontForContentSizeCategory = true
+        label.textColor = .label
+        label.textAlignment = .right
+        label.numberOfLines = 1
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isAccessibilityElement = true
+        label.isHidden = true   // nascosto finché non c'è un'impaginazione da mostrare
+        return label
+    }()
+
     /// Azione del tasto Indietro (impostata dal controller).
     var onBack: (() -> Void)?
 
@@ -75,15 +92,22 @@ final class ReadingInterfaceBar: UIView {
         backgroundColor = .secondarySystemBackground
         addSubview(backButton)
         addSubview(titleLabel)
+        addSubview(pageIndicatorLabel)
+
+        pageIndicatorLabel.setContentHuggingPriority(.required, for: .horizontal)
+        pageIndicatorLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         NSLayoutConstraint.activate([
             backButton.leadingAnchor.constraint(equalTo: layoutMarginsGuide.leadingAnchor),
             backButton.centerYAnchor.constraint(equalTo: centerYAnchor),
 
+            pageIndicatorLabel.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
+            pageIndicatorLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+
             titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: layoutMarginsGuide.trailingAnchor),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: pageIndicatorLabel.leadingAnchor, constant: -8),
         ])
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
@@ -91,7 +115,49 @@ final class ReadingInterfaceBar: UIView {
         // ── Container chiuso: elenco esplicito e ordinato dei soli elementi d'interfaccia ──────
         isAccessibilityElement = false
         accessibilityContainerType = .semanticGroup
-        accessibilityElements = [backButton, titleLabel]
+        refreshAccessibilityElements()
+    }
+
+    /// Aggiorna l'ordine di lettura del container in base alla visibilità dell'indicatore: sempre
+    /// [Indietro, titolo], e in coda l'indicatore di pagina quando presente. Ordine logico
+    /// dall'azione di uscita, al titolo, all'orientamento di pagina.
+    private func refreshAccessibilityElements() {
+        var elements: [NSObject] = [backButton, titleLabel]
+        if !pageIndicatorLabel.isHidden { elements.append(pageIndicatorLabel) }
+        accessibilityElements = elements
+    }
+
+    /// Imposta l'indicatore di pagina (§ 4.3). `visualizationTotal == 0` lo nasconde (nessuna
+    /// impaginazione disponibile). Quando `showOriginal` è vero si mostra la forma DOPPIA
+    /// (pagina del file originale prima, di visualizzazione dopo), altrimenti la forma SINGOLA
+    /// (solo visualizzazione). La resa è bi-modale (§ 2.1): testo compatto a video, etichetta
+    /// estesa per VoiceOver con i qualificatori "del file originale" / "di visualizzazione".
+    func setPageIndicator(
+        visualizationCurrent: Int,
+        visualizationTotal: Int,
+        originalCurrent: Int?,
+        originalTotal: Int,
+        showOriginal: Bool
+    ) {
+        guard visualizationTotal > 0 else {
+            pageIndicatorLabel.isHidden = true
+            pageIndicatorLabel.text = nil
+            refreshAccessibilityElements()
+            return
+        }
+        let visText = "\(visualizationCurrent) di \(visualizationTotal)"
+        if showOriginal, let original = originalCurrent, originalTotal > 0 {
+            pageIndicatorLabel.text = "\(original) di \(originalTotal) — \(visText)"
+            pageIndicatorLabel.accessibilityLabel =
+                "pagina \(original) di \(originalTotal) del file originale, "
+                + "pagina \(visualizationCurrent) di \(visualizationTotal) di visualizzazione"
+        } else {
+            pageIndicatorLabel.text = visText
+            pageIndicatorLabel.accessibilityLabel =
+                "pagina \(visualizationCurrent) di \(visualizationTotal) di visualizzazione"
+        }
+        pageIndicatorLabel.isHidden = false
+        refreshAccessibilityElements()
     }
 
     @objc private func backTapped() {
