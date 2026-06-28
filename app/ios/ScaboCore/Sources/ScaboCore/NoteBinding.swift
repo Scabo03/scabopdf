@@ -91,6 +91,8 @@ public struct NotePlacementStats: Codable, Equatable, Sendable {
     public var unboundNotes = 0
     public var placedShort = 0
     public var placedLong = 0
+    /// Footnote-continuazione cross-pagina ricucite nella testa (GATED Estratto).
+    public var stitchedCrossPage = 0
 }
 
 // MARK: - Costanti del segnale (calibrate in Fase 1b su PDFKit reale)
@@ -200,6 +202,20 @@ public func bindAndPlaceNotes(
         footnotesInNoteOrder[node.id] = ids
     }
 
+    // ── 2b. RICUCITURA cross-pagina per identità (GATED Estratto) ─────────────────
+    // Una nota spezzata dal salto pagina riaffiora come due footnote: la testa (ultima di
+    // pag N, col suo numero, finisce "aperta") e la coda (prima di N+1, SENZA numero
+    // d'apertura → non agganciabile → falso-"Nota."). Qui, PRIMA del piazzamento, si fonde
+    // la coda nella testa quando la testa APRE e la coda CONTINUA (guardie condivise
+    // noteOpensForContinuation/noteContinuation: una nota NUOVA apre col suo numero →
+    // noteContinuation la ESCLUDE → due note distinte non si fondono MAI). Nel flatten in
+    // ordine di lettura testa e coda sono adiacenti (il corpo è saltato), quindi lo zip
+    // pageItems↔structure dello step 1 NON è toccato. Confinata: altrove byte-identico.
+    if profile.isEstrattoChrome {
+        stats.stitchedCrossPage = stitchCrossPageFootnotes(
+            document.structure, &footnoteNodeById, &footnotesInNoteOrder)
+    }
+
     // ── 3. Aggancio richiamo↔nota con scope e guardia di successione ──────────────
     var boundFootnoteIds: Set<String> = []
     var shortByBody: [String: [(offset: Int, length: Int, fid: String)]] = [:]
@@ -296,6 +312,67 @@ public func bindAndPlaceNotes(
     var placed = document
     placed.structure = out
     return (placed, stats)
+}
+
+/// Ricucitura-per-identità delle note spezzate dal salto pagina, a livello FOOTNOTE e
+/// PRIMA del piazzamento (chiamata gated da `bindAndPlaceNotes` solo per l'Estratto).
+/// Appiattisce le footnote in ordine di lettura (le NOTE di `structure` saltano il corpo,
+/// quindi la testa di pag N e la coda di pag N+1 sono ADIACENTI nel flatten) e fonde la
+/// coda nella testa quando: pagine consecutive (N → N+1), la testa APRE
+/// (`noteOpensForContinuation`) e la coda CONTINUA (`noteContinuation` — esclude i marcatori
+/// di nota, così due note distinte non si fondono MAI). De-sillaba la parola spezzata
+/// ("pub-"|"blicistica" → "pubblicistica") e ricomputa `length_category` (la testa cresce).
+/// Gestisce catene (nota su 3+ pagine) tramite `tailPage`. Ritorna il numero di code fuse.
+func stitchCrossPageFootnotes(
+    _ structure: [NodeDict],
+    _ footnoteNodeById: inout [String: NodeDict],
+    _ footnotesInNoteOrder: inout [String: [String]]
+) -> Int {
+    var flat: [String] = []
+    for node in structure where node.type == .NOTE || node.type == .EDITORIAL_NOTE {
+        flat.append(contentsOf: footnotesInNoteOrder[node.id] ?? [])
+    }
+    guard flat.count >= 2 else { return 0 }
+
+    var removed = Set<String>()
+    var headFid = flat[0]
+    var tailPage = footnoteNodeById[headFid]?.page_index ?? Int.min
+    var count = 0
+    for i in 1..<flat.count {
+        let fid = flat[i]
+        guard let cur = footnoteNodeById[fid], let head = footnoteNodeById[headFid] else { continue }
+        let a = (head.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = (cur.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        // Cross-pagina (N → N+1) e SAME-PAGE (over-split di `splitFootnotes` su un numero
+        // spurio nel testo della nota, es. "…cordi 69" | "le norme…"): in entrambi i casi la
+        // testa deve APRIRE e la coda CONTINUARE (guardie invariate, anti-fusione: una nota
+        // NUOVA apre col suo numero → `noteContinuation` la esclude → mai fuse due note distinte).
+        if cur.page_index == tailPage || cur.page_index == tailPage + 1,
+           noteOpensForContinuation(a), noteContinuation(b) {
+            let merged: String
+            if endsWithLetterHyphenG(a), let f = b.first, f.isLowercase {
+                merged = String(a.dropLast()) + b           // de-sillabazione
+            } else {
+                merged = a + " " + b
+            }
+            var h = head
+            h.text = merged
+            h.length_category = lengthCategoryFor(merged)
+            footnoteNodeById[headFid] = h
+            removed.insert(fid)
+            tailPage = cur.page_index                        // catena: la testa copre fino a qui
+            count += 1
+        } else {
+            headFid = fid
+            tailPage = cur.page_index
+        }
+    }
+    if !removed.isEmpty {
+        for (k, v) in footnotesInNoteOrder {
+            footnotesInNoteOrder[k] = v.filter { !removed.contains($0) }
+        }
+    }
+    return count
 }
 
 // MARK: - Rilevamento marcatori in-corpo

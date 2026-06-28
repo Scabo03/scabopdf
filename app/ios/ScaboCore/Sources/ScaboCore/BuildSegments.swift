@@ -61,6 +61,12 @@ private let NON_READ_ROLES: Set<String> = [
     SemanticCategory.TOC_GENERAL.rawValue,
     SemanticCategory.ARTIFACT_STAMP.rawValue,
     SemanticCategory.INDEX_ENTRY.rawValue,
+    // Testatina corrente: cromo editoriale, non letto. Il Generic di norma SOPPRIME le
+    // testatine via furniture (mai emesse come nodi); l'unico produttore di nodi
+    // ARTIFACT_RUNNING_HEADER è il reclassify gated-Estratto delle testatine lunghe ricorrenti
+    // che sfuggono al cap-caratteri della furniture. Nessun altro volume emette questo tipo
+    // (verificato sul corpus) → aggiungerlo qui non cambia la lettura di alcun volume esistente.
+    SemanticCategory.ARTIFACT_RUNNING_HEADER.rawValue,
 ]
 
 private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {

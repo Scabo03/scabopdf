@@ -238,12 +238,19 @@ public final class GenericPlugin: ExtractionPlugin {
         // serve zittirle a valle. In posizione (conteggio/ordine invariati).
         var nodes = nodes
         let reclass = reclassifyCleanFamilies(&nodes)
+        // Testatina corrente ricorrente (titolo capitolo recto, lunga, ripetuta) sfuggita al
+        // cap-caratteri della furniture e finita come NOTE → ARTIFACT_RUNNING_HEADER (non-letta).
+        // GATED Estratto: no-op (e nodi invariati) sugli altri volumi.
+        let runningHeaders = reclassifyEstrattoRunningHeaders(&nodes, profile)
         var warnings = [
             "plugin:generic:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
         ]
         if reclass.summary + reclass.heading > 0 {
             warnings.append(
                 "plugin:generic:reclassified_chapter_summary_\(reclass.summary)_structure_heading_\(reclass.heading)")
+        }
+        if runningHeaders > 0 {
+            warnings.append("plugin:generic:estratto_running_headers_reclassified_\(runningHeaders)")
         }
         if profile.bodySize == 0 {
             warnings.append("plugin:generic:no_font_information_all_body")
@@ -1356,6 +1363,47 @@ func reclassifyCleanFamilies(_ nodes: inout [NodeDict]) -> (summary: Int, headin
         }
     }
     return (summaryCount, headingCount)
+}
+
+/// Numero minimo di ricorrenze (testo normalizzato) perché una NOTE lunga sia una testatina
+/// corrente. L'Estratto ha 83 ricorrenze della testatina cap. II, niente fra 2 e 82, e nessuna
+/// nota vera ricorre identica → la soglia 5 isola le testatine con ampio margine.
+let ESTRATTO_RUNNING_HEADER_MIN_RECUR = 5
+/// Numero di pagina del libro in coda alla testatina ("… e processo 55") da ignorare nel
+/// confronto di ricorrenza (cambia pagina per pagina; il resto della testatina è identico).
+private let ESTRATTO_TRAILING_PAGENO_RE = try! NSRegularExpression(pattern: "\\s+\\d+$")
+func estrattoHeaderNormalize(_ text: String) -> String {
+    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    return ESTRATTO_TRAILING_PAGENO_RE.stringByReplacingMatches(
+        in: t, range: NSRange(t.startIndex..<t.endIndex, in: t), withTemplate: "")
+}
+
+/// Reclassifica le testatine correnti ricorrenti (titolo di capitolo recto, lungo, ripetuto su
+/// molte pagine) che il cap-caratteri della furniture (`FURNITURE_MAX_CHARS`) lascia passare e
+/// che il classificatore size-only colloca in NOTE → falso-"Nota.". Le porta a
+/// `ARTIFACT_RUNNING_HEADER` (non-letto, vedi `NON_READ_ROLES`). GATED Estratto: altrove no-op,
+/// nodi invariati. Conserva il nodo (cambia solo il TIPO → conteggio invariato → zip
+/// `NoteBinding`↔`pageItems` intatto). Guardia anti-perdita-contenuto: solo NOTE LUNGHE (oltre il
+/// cap furniture) che ricorrono IDENTICHE (numero pagina a parte) ≥ soglia; una nota vera non
+/// ricorre mai identica, quindi nessun contenuto reale è rimosso.
+func reclassifyEstrattoRunningHeaders(_ nodes: inout [NodeDict], _ profile: Profile) -> Int {
+    guard profile.isEstrattoChrome else { return 0 }
+    var counts: [String: Int] = [:]
+    for n in nodes where n.type == .NOTE {
+        let t = estrattoHeaderNormalize(n.text ?? "")
+        if t.utf16.count > FURNITURE_MAX_CHARS { counts[t, default: 0] += 1 }
+    }
+    let headers = Set(counts.filter { $0.value >= ESTRATTO_RUNNING_HEADER_MIN_RECUR }.map { $0.key })
+    guard !headers.isEmpty else { return 0 }
+    var reclassified = 0
+    for i in nodes.indices where nodes[i].type == .NOTE {
+        if headers.contains(estrattoHeaderNormalize(nodes[i].text ?? "")) {
+            nodes[i].type = .ARTIFACT_RUNNING_HEADER
+            nodes[i].length_category = nil
+            reclassified += 1
+        }
+    }
+    return reclassified
 }
 
 // MARK: - Text helpers
