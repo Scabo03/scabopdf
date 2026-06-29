@@ -43,7 +43,7 @@ enum DocumentOpener {
         if let cached = service.loadCache(forDocumentId: id) {
             service.store.recordOpened(id: id)
             presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
-                          from: presenter, onClosed: onClosed)
+                          doctrineContent: cached.doctrineContent, from: presenter, onClosed: onClosed)
             return
         }
 
@@ -62,12 +62,13 @@ enum DocumentOpener {
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
                 switch outcome {
-                case .success(let document, let content):
+                case .success(let document, let content, let doctrineContent):
                     let pageMap = buildPageMap(document)
-                    service.writeCache(content, pageMap: pageMap, forDocumentId: id)
+                    service.writeCache(content, pageMap: pageMap,
+                                       doctrineContent: doctrineContent, forDocumentId: id)
                     service.store.recordOpened(id: id)
                     presentReader(content: content, document: doc, pageMap: pageMap,
-                                  from: presenter, onClosed: onClosed)
+                                  doctrineContent: doctrineContent, from: presenter, onClosed: onClosed)
                 case .cancelled:
                     break
                 case .failure(let message):
@@ -89,16 +90,19 @@ enum DocumentOpener {
         }
         service.store.recordOpened(id: id)
         presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
-                      from: presenter, onClosed: onClosed)
+                      doctrineContent: cached.doctrineContent, from: presenter, onClosed: onClosed)
         return true
     }
 
-    /// Presenta il lettore Lettura Continua al punto di lettura ricordato, cablando la persistenza
-    /// della posizione, l'indicatore di pagina (§ 4.3) e la chiusura.
+    /// Presenta il lettore al punto di lettura ricordato, cablando la persistenza della posizione,
+    /// l'indicatore di pagina (§ 4.3), il flusso Dottrina Inline (§ 10) per il selettore, e la
+    /// chiusura. Apre SEMPRE in Lettura Continua (default, § 3.4): l'Estratto e ogni documento
+    /// partono identici a prima; Dottrina Inline è una scelta esplicita dal selettore.
     private static func presentReader(
         content: PaginatedContent,
         document doc: ArchivedDocument,
         pageMap: [String: Int],
+        doctrineContent: PaginatedContent?,
         from presenter: UIViewController,
         onClosed: (() -> Void)?
     ) {
@@ -112,7 +116,8 @@ enum DocumentOpener {
             },
             sourcePageCount: doc.sourcePageCount,
             showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
-            sourcePage: sourcePageProvider(pageMap))
+            sourcePage: sourcePageProvider(pageMap),
+            doctrineContent: doctrineContent)
         reader.modalPresentationStyle = .fullScreen
         reader.onBack = { [weak presenter] in
             // Tornando alla Home/contenitore, l'ultimo-documento-aperto si azzera: un avvio a
@@ -241,7 +246,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
     ) {
         let service = LibraryService.shared
         switch outcome {
-        case .success(let document, let content):
+        case .success(let document, let content, let doctrineContent):
             // Il titolo di default è il nome del file senza estensione (modificabile poi).
             let title = (sourceName as NSString).deletingPathExtension
             let doc = service.store.addDocument(
@@ -258,13 +263,15 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
             }
             let pageMap = DocumentOpener.buildPageMap(document)
-            service.writeCache(content, pageMap: pageMap, forDocumentId: doc.id)
+            service.writeCache(content, pageMap: pageMap,
+                               doctrineContent: doctrineContent, forDocumentId: doc.id)
             if let destination { service.store.addCollocation(documentId: doc.id, to: destination) }
             service.store.recordOpened(id: doc.id)
             onImported?()
             // Apertura automatica del lettore sul documento appena importato (al primo elemento).
             DocumentOpener.presentReaderAfterImport(
-                content: content, document: doc, pageMap: pageMap, from: presenter, onImported: onImported)
+                content: content, document: doc, pageMap: pageMap,
+                doctrineContent: doctrineContent, from: presenter, onImported: onImported)
         case .cancelled:
             break
         case .failure(let message):
@@ -294,6 +301,7 @@ extension DocumentOpener {
         content: PaginatedContent,
         document doc: ArchivedDocument,
         pageMap: [String: Int],
+        doctrineContent: PaginatedContent?,
         from presenter: UIViewController,
         onImported: (() -> Void)?
     ) {
@@ -307,7 +315,8 @@ extension DocumentOpener {
             },
             sourcePageCount: doc.sourcePageCount,
             showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
-            sourcePage: sourcePageProvider(pageMap))
+            sourcePage: sourcePageProvider(pageMap),
+            doctrineContent: doctrineContent)
         reader.modalPresentationStyle = .fullScreen
         reader.onBack = { [weak presenter] in
             service.store.setLastOpenDocument(id: nil)

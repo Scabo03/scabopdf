@@ -68,8 +68,14 @@ final class DocumentProcessor {
 
     /// Esito dell'elaborazione, consegnato sul main.
     enum Outcome {
-        /// Documento elaborato e corpo impaginato pronto per la reading view.
-        case success(document: ScabopdfDocument, content: PaginatedContent)
+        /// Documento elaborato e corpo impaginato pronto per la reading view. `content` è il
+        /// flusso di Lettura Continua (sempre presente); `doctrineContent` è il flusso di Dottrina
+        /// Inline (§ 10), presente SOLO se il documento ha note (altrimenti `nil` → il layout è
+        /// disabilitato nel selettore, § 10.3).
+        case success(
+            document: ScabopdfDocument,
+            content: PaginatedContent,
+            doctrineContent: PaginatedContent?)
         /// Annullato dall'utente: nessun documento prodotto.
         case cancelled
         /// Fallimento con spiegazione in PROSA italiana comprensibile (§ 12.10), mai il solo
@@ -182,7 +188,12 @@ final class DocumentProcessor {
             // riposiziona le note nell'albero (brevi a fine frase, lunghe a fine sezione, § 7.3).
             // Le non agganciate restano in posizione (lette, mai perse). Richiede l'estrazione
             // (i segnali di dimensione/parentesi degli span che la classificazione collassa).
+            // `document` è il piazzamento LETTURA CONTINUA (default, storico invariato).
             let document = bindAndPlaceNotes(rawDocument, extraction).document
+            // Il documento ha note? (decide se Dottrina Inline è disponibile, § 10.3.)
+            let hasNotes = rawDocument.structure.contains {
+                $0.type == .NOTE || $0.type == .EDITORIAL_NOTE
+            }
 
             // ── Fase 3: impaginazione del corpo (passo finale unico) ───────────────────────────
             if self.flag.isCancelled { finish(.cancelled); return }
@@ -191,8 +202,17 @@ final class DocumentProcessor {
                 fraction: pageCount > 0 ? Double(2 * pageCount) / Double(2 * pageCount + 1) : 0.5))
 
             let content: PaginatedContent
+            var doctrineContent: PaginatedContent?
             do {
                 content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document)
+                // Dottrina Inline (§ 10): SOLO se ci sono note. Stesso aggancio, piazzamento
+                // tutto-inline a fine frase del richiamo (§ 10.2). Riusa l'audio esistente
+                // (i NOTE portano già `length_category` → regime acustico).
+                if hasNotes {
+                    let doctrineDoc = bindAndPlaceNotes(
+                        rawDocument, extraction, placement: .doctrineInline).document
+                    doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContent(from: doctrineDoc)
+                }
             } catch {
                 finish(.failure(message: Self.proseMessage(from: error)))
                 return
@@ -213,7 +233,7 @@ final class DocumentProcessor {
 
             if self.flag.isCancelled { finish(.cancelled); return }
             report(Progress(phase: .pagination, unitsDone: pageCount, unitsTotal: pageCount, fraction: 1.0))
-            finish(.success(document: document, content: content))
+            finish(.success(document: document, content: content, doctrineContent: doctrineContent))
         }
     }
 

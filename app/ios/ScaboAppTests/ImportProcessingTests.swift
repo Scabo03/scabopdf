@@ -114,7 +114,7 @@ final class ImportProcessingTests: XCTestCase {
         wait(for: [done], timeout: 5)
 
         // Esito: successo con contenuto reso.
-        guard case .success(_, let content)? = outcome else {
+        guard case .success(_, let content, _)? = outcome else {
             return XCTFail("atteso successo, ottenuto \(String(describing: outcome))")
         }
         XCTAssertGreaterThan(content.totalSegments, 0, "l'elaborazione deve produrre contenuto di corpo")
@@ -245,17 +245,18 @@ final class ImportProcessingTests: XCTestCase {
             XCTAssertTrue(element is SegmentLabel, "il container del testo espone solo segmenti")
         }
 
-        // Container dell'INTERFACCIA: [Indietro, titolo, indicatore di pagina] — l'indicatore (§ 4.3)
-        // è il terzo elemento, sempre dentro l'interfaccia (mai nel container del testo, così non
-        // interferisce con lo swipe di lettura). NESSUN elemento di testo qui.
+        // Container dell'INTERFACCIA: [Indietro, selettore Layout, box visualizzazione] — il
+        // selettore (§ 3.4) ha sostituito il titolo statico; l'indicatore (§ 4.3) resta dentro
+        // l'interfaccia (mai nel container del testo, così non interferisce con lo swipe). NESSUN
+        // elemento di testo qui.
         vc.viewDidAppear(false)   // attiva l'indicatore di pagina (impaginazione disponibile)
         let interface = vc.interfaceContainerForTesting
         let interfaceElements = (interface.accessibilityElements as? [NSObject]) ?? []
-        XCTAssertEqual(interfaceElements.count, 3, "interfaccia: Indietro, titolo, box visualizzazione")
+        XCTAssertEqual(interfaceElements.count, 3, "interfaccia: Indietro, selettore Layout, box visualizzazione")
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.backButton })
-        XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.titleLabel })
+        XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.layoutSelectorButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.visualizationPageLabel })
-        XCTAssertEqual(interface.titleLabel.text, "Lettura Continua")
+        XCTAssertEqual(interface.layoutSelectorButton.title(for: .normal), "Lettura Continua")
         XCTAssertEqual(interface.backButton.accessibilityLabel, "Indietro")
         for element in interfaceElements {
             XCTAssertFalse(element is SegmentLabel, "nessun elemento di testo nell'interfaccia")
@@ -449,6 +450,65 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertEqual(map["node_1"], 5, "i figli sono mappati ricorsivamente")
     }
 
+    // MARK: - Selettore di Layout (§ 3.4 / § 10): Continua ⇄ Dottrina Inline
+
+    private func makeReader(continuous: PaginatedContent, doctrine: PaginatedContent?) -> ContinuousReadingViewController {
+        let vc = ContinuousReadingViewController(
+            content: continuous, sourceName: "x.pdf", documentId: "d",
+            doctrineContent: doctrine, signalPlayer: SignalPlayerSpy())
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
+        return vc
+    }
+
+    func test_layoutSelector_defaultsToContinuous_doctrineAvailableWhenProvided() {
+        let vc = makeReader(continuous: sampleContent(3), doctrine: sampleContent(7))
+        XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "default sempre Lettura Continua (§ 3.4)")
+        XCTAssertTrue(vc.doctrineAvailableForTesting, "Dottrina Inline disponibile: il documento ha il flusso")
+        XCTAssertEqual(vc.renderedSegmentCountForTesting, 3, "rende il flusso continua all'apertura")
+        XCTAssertEqual(vc.interfaceContainerForTesting.layoutSelectorButton.title(for: .normal), "Lettura Continua")
+    }
+
+    func test_layoutSelector_disabledWhenNoDoctrineContent() {
+        let vc = makeReader(continuous: sampleContent(4), doctrine: nil)
+        XCTAssertFalse(vc.doctrineAvailableForTesting, "nessun flusso dottrina → selettore disabilitato (§ 10.3)")
+        vc.switchLayoutForTesting(to: .doctrine)
+        XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "switch a dottrina senza flusso è no-op")
+        XCTAssertEqual(vc.renderedSegmentCountForTesting, 4)
+    }
+
+    func test_layoutSelector_switchSwapsRenderedFlow_andBack() {
+        let vc = makeReader(continuous: sampleContent(3), doctrine: sampleContent(7))
+        vc.switchLayoutForTesting(to: .doctrine)
+        XCTAssertEqual(vc.currentLayoutForTesting, .doctrine)
+        XCTAssertEqual(vc.renderedSegmentCountForTesting, 7, "passa al flusso Dottrina Inline")
+        XCTAssertEqual(vc.interfaceContainerForTesting.layoutSelectorButton.title(for: .normal), "Dottrina Inline")
+        vc.switchLayoutForTesting(to: .continuous)
+        XCTAssertEqual(vc.currentLayoutForTesting, .continuous)
+        XCTAssertEqual(vc.renderedSegmentCountForTesting, 3, "torna al flusso Lettura Continua")
+    }
+
+    func test_layoutSelector_doctrinePositionDoesNotCorruptContinuousSaved() {
+        var saved: [Int] = []
+        let vc = ContinuousReadingViewController(
+            content: sampleContent(3), sourceName: "x.pdf", documentId: "d",
+            onPositionChanged: { saved.append($0) },
+            doctrineContent: sampleContent(7), signalPlayer: SignalPlayerSpy())
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
+        // In dottrina, mettere a fuoco un segmento NON deve persistere la posizione (§ 2.5).
+        vc.switchLayoutForTesting(to: .doctrine)
+        saved.removeAll()
+        vc.textContainerForTesting.segmentLabels[5].accessibilityElementDidBecomeFocused()
+        XCTAssertTrue(saved.isEmpty, "in Dottrina Inline la posizione non è persistita (non corrompe il punto continua)")
+        // In continua invece sì.
+        vc.switchLayoutForTesting(to: .continuous)
+        vc.textContainerForTesting.segmentLabels[2].accessibilityElementDidBecomeFocused()
+        XCTAssertEqual(saved.last, 2, "in Lettura Continua la posizione è persistita")
+    }
+
     func test_reader_backButtonInvokesOnBack() {
         let vc = makeLoadedReader(sampleContent(3))
         var backCalled = false
@@ -479,7 +539,7 @@ final class ImportProcessingTests: XCTestCase {
         vc.startSignalForTesting()
         XCTAssertEqual(spy.looped, [.loading], "all'avvio dell'elaborazione suona 'loading' in loop")
 
-        vc.finishForTesting(.success(document: minimalDocument(), content: sampleContent(2)))
+        vc.finishForTesting(.success(document: minimalDocument(), content: sampleContent(2), doctrineContent: nil))
         XCTAssertEqual(spy.stopped, [.loading], "all'esito si ferma 'loading'")
         XCTAssertEqual(spy.played, [.completion], "successo → 'completion'")
     }

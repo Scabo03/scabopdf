@@ -39,7 +39,7 @@ final class LibraryService {
 
     /// Versione del formato di cache: un cambiamento del modello `PaginatedContent` la fa
     /// incrementare, invalidando le cache vecchie (che ripiegano sulla rielaborazione dal PDF).
-    private static let cacheFormatVersion = 2
+    private static let cacheFormatVersion = 3
 
     private init() {
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -81,23 +81,25 @@ final class LibraryService {
         var formatVersion: Int
         var content: PaginatedContent
         /// Mappa id-nodo → pagina del file originale (1-based), per l'indicatore doppio (§ 4.3).
-        /// Aggiunta al formato 2: le cache di formato 1 vengono ignorate e rielaborate.
         var pageMap: [String: Int]
+        /// Flusso Dottrina Inline (§ 10), `nil` se il documento non ha note. Aggiunto al formato 3.
+        var doctrineContent: PaginatedContent?
     }
 
     private func cacheURL(forDocumentId id: String) -> URL {
         cacheDir.appendingPathComponent("\(id).json")
     }
 
-    /// Il contenuto e la mappa pagine in cache, o `nil` se assente/corrotto/di formato superato
-    /// (→ si rielabora dal PDF d'archivio).
-    func loadCache(forDocumentId id: String) -> (content: PaginatedContent, pageMap: [String: Int])? {
+    /// Contenuto + mappa pagine + (se presente) flusso Dottrina Inline in cache, o `nil` se
+    /// assente/corrotto/di formato superato (→ si rielabora dal PDF d'archivio).
+    func loadCache(forDocumentId id: String)
+        -> (content: PaginatedContent, pageMap: [String: Int], doctrineContent: PaginatedContent?)? {
         guard let data = try? Data(contentsOf: cacheURL(forDocumentId: id)),
               let cached = try? JSONDecoder().decode(CachedContent.self, from: data),
               cached.formatVersion == Self.cacheFormatVersion else {
             return nil
         }
-        return (cached.content, cached.pageMap)
+        return (cached.content, cached.pageMap, cached.doctrineContent)
     }
 
     /// Il solo contenuto elaborato in cache (riapertura all'avvio).
@@ -105,10 +107,14 @@ final class LibraryService {
         loadCache(forDocumentId: id)?.content
     }
 
-    /// Scrive (o aggiorna) la cache del contenuto elaborato e della mappa pagine di un documento.
-    func writeCache(_ content: PaginatedContent, pageMap: [String: Int], forDocumentId id: String) {
+    /// Scrive (o aggiorna) la cache: contenuto Lettura Continua + mappa pagine + Dottrina Inline.
+    func writeCache(
+        _ content: PaginatedContent, pageMap: [String: Int],
+        doctrineContent: PaginatedContent?, forDocumentId id: String
+    ) {
         let wrapped = CachedContent(
-            formatVersion: Self.cacheFormatVersion, content: content, pageMap: pageMap)
+            formatVersion: Self.cacheFormatVersion, content: content,
+            pageMap: pageMap, doctrineContent: doctrineContent)
         if let data = try? JSONEncoder().encode(wrapped) {
             try? data.write(to: cacheURL(forDocumentId: id), options: .atomic)
         }

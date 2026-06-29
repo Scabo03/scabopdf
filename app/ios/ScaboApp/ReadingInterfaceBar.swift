@@ -41,19 +41,26 @@ final class ReadingInterfaceBar: UIView {
         return button
     }()
 
-    /// Titolo del Layout corrente, "Lettura Continua".
-    let titleLabel: UILabel = {
-        let label = UILabel()
-        label.text = LAYOUT_DISPLAY_NAMES[.continuous]  // "Lettura Continua"
-        label.font = UIFont.preferredFont(forTextStyle: .headline)
-        label.adjustsFontForContentSizeCategory = true
-        label.textColor = .label
-        label.textAlignment = .center
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.isAccessibilityElement = true
-        label.accessibilityTraits.insert(.header)
-        return label
+    /// Selettore di Layout (§ 3.4) al centro della barra: mostra il layout corrente e, al doppio
+    /// tap, apre il menù delle scelte (Lettura Continua / Dottrina Inline). Sostituisce il vecchio
+    /// titolo statico (mostrava già il nome del layout). Vive in QUESTO container d'interfaccia,
+    /// mai raggiungibile dallo swipe del testo (§ 2.2). È un `UIButton` con `UIMenu`: VoiceOver lo
+    /// annuncia come pulsante a comparsa, ne legge il valore corrente, e la scelta è navigabile.
+    let layoutSelectorButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.titleLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+        button.titleLabel?.adjustsFontForContentSizeCategory = true
+        button.titleLabel?.lineBreakMode = .byTruncatingTail
+        button.tintColor = .label
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.showsMenuAsPrimaryAction = true   // il doppio tap apre il menù, non un'azione separata
+        return button
     }()
+
+    /// Layout-id usato come fallback quando il selettore non è ancora configurato.
+    private var currentLayout: LayoutId = .continuous
+    /// Inoltrata dal controller: l'utente ha scelto un layout dal menù.
+    private var onLayoutSelected: ((LayoutId) -> Void)?
 
     /// Indicatore di pagina (§ 4.3) come DUE BOX DISTINTI e separati. Quando ci sono entrambe le
     /// numerazioni (toggle pagine originali attivo) si mostrano due elementi accessibili a sé —
@@ -119,7 +126,7 @@ final class ReadingInterfaceBar: UIView {
     private func setUp() {
         backgroundColor = .secondarySystemBackground
         addSubview(backButton)
-        addSubview(titleLabel)
+        addSubview(layoutSelectorButton)
         addSubview(pageIndicatorStack)
 
         pageIndicatorStack.setContentHuggingPriority(.required, for: .horizontal)
@@ -132,13 +139,15 @@ final class ReadingInterfaceBar: UIView {
             pageIndicatorStack.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
             pageIndicatorStack.centerYAnchor.constraint(equalTo: centerYAnchor),
 
-            titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: pageIndicatorStack.leadingAnchor, constant: -8),
+            layoutSelectorButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+            layoutSelectorButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+            layoutSelectorButton.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
+            layoutSelectorButton.trailingAnchor.constraint(lessThanOrEqualTo: pageIndicatorStack.leadingAnchor, constant: -8),
         ])
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        // Menù iniziale (solo Lettura Continua finché il controller non lo configura).
+        configureLayoutSelector(current: .continuous, doctrineAvailable: false, onSelect: { _ in })
 
         // ── Container chiuso: elenco esplicito e ordinato dei soli elementi d'interfaccia ──────
         isAccessibilityElement = false
@@ -146,14 +155,45 @@ final class ReadingInterfaceBar: UIView {
         refreshAccessibilityElements()
     }
 
-    /// Aggiorna l'ordine di lettura del container in base alla visibilità dei box: sempre
-    /// [Indietro, titolo], poi — quando presenti — il box pagina ORIGINALE e infine quello di
-    /// VISUALIZZAZIONE. L'ordine originale→visualizzazione segue il § 4.3.
+    /// Aggiorna l'ordine di lettura del container: [Indietro, selettore Layout], poi — quando
+    /// presenti — il box pagina ORIGINALE e infine quello di VISUALIZZAZIONE (§ 4.3).
     private func refreshAccessibilityElements() {
-        var elements: [NSObject] = [backButton, titleLabel]
+        var elements: [NSObject] = [backButton, layoutSelectorButton]
         if !originalPageLabel.isHidden { elements.append(originalPageLabel) }
         if !visualizationPageLabel.isHidden { elements.append(visualizationPageLabel) }
         accessibilityElements = elements
+    }
+
+    // MARK: - Selettore di Layout (§ 3.4)
+
+    /// Configura il selettore: `current` è il layout attivo, `doctrineAvailable` decide se la voce
+    /// Dottrina Inline è scegliibile (§ 10.3: disabilitata, con motivo esplicito, se il documento
+    /// non ha note). `onSelect` è invocato quando l'utente sceglie un layout dal menù.
+    func configureLayoutSelector(
+        current: LayoutId, doctrineAvailable: Bool, onSelect: @escaping (LayoutId) -> Void
+    ) {
+        currentLayout = current
+        onLayoutSelected = onSelect
+
+        let continuousAction = UIAction(
+            title: LAYOUT_DISPLAY_NAMES[.continuous] ?? "Lettura Continua",
+            state: current == .continuous ? .on : .off
+        ) { [weak self] _ in self?.onLayoutSelected?(.continuous) }
+
+        let doctrineTitle = doctrineAvailable
+            ? (LAYOUT_DISPLAY_NAMES[.doctrine] ?? "Dottrina Inline")
+            : "Dottrina Inline — non disponibile (nessuna nota)"
+        let doctrineAction = UIAction(
+            title: doctrineTitle,
+            attributes: doctrineAvailable ? [] : [.disabled],
+            state: current == .doctrine ? .on : .off
+        ) { [weak self] _ in self?.onLayoutSelected?(.doctrine) }
+
+        layoutSelectorButton.menu = UIMenu(title: "Layout di lettura", children: [continuousAction, doctrineAction])
+        let name = LAYOUT_DISPLAY_NAMES[current] ?? "Lettura Continua"
+        layoutSelectorButton.setTitle(name, for: .normal)
+        layoutSelectorButton.accessibilityLabel = "Layout di lettura, \(name)"
+        layoutSelectorButton.accessibilityHint = "Doppio tap per scegliere il layout di lettura"
     }
 
     /// Imposta l'indicatore di pagina (§ 4.3) come due box separati. `visualizationTotal == 0`

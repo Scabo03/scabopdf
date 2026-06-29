@@ -113,14 +113,28 @@ private func fullMatch(_ re: NSRegularExpression, _ s: String) -> Bool {
     re.firstMatch(in: s, range: NSRange(s.startIndex..<s.endIndex, in: s)) != nil
 }
 
+// MARK: - Modo di piazzamento (per layout)
+
+/// Come le note AGGANCIATE vengono piazzate nel flusso.
+///   • `.continuous` — Lettura Continua (§ 7.3): brevi a fine frase del richiamo, lunghe
+///     differite a fine sezione (col rinfresco di contesto § 7.4/§ 7.5). È il default e l'unico
+///     comportamento storico: invariato byte-per-byte.
+///   • `.doctrineInline` — Dottrina Inline (§ 10.2): OGNI nota, qualunque sia la lunghezza, è
+///     letta a fine frase del richiamo. Niente differimento a fine sezione, niente rinfresco
+///     (§ 10.5). Riusa l'aggancio e lo split esistenti; cambia solo la scelta inline-vs-differito.
+public enum NotePlacement: Equatable, Sendable { case continuous, doctrineInline }
+
 // MARK: - Entry point
 
 /// Aggancia e piazza le note del documento PIATTO del Generic. Ritorna il
 /// documento trasformato (note spezzate dai nodi fusi e ricollocate al punto di
 /// lettura corretto) + la diagnostica. Idempotente sull'assenza di note.
+///
+/// `placement` sceglie il layout di piazzamento (default `.continuous`, storico invariato).
 public func bindAndPlaceNotes(
     _ document: ScabopdfDocument,
-    _ extraction: PdfExtraction
+    _ extraction: PdfExtraction,
+    placement: NotePlacement = .continuous
 ) -> (document: ScabopdfDocument, stats: NotePlacementStats) {
     var stats = NotePlacementStats()
 
@@ -249,14 +263,18 @@ public func bindAndPlaceNotes(
                 continue
             }
             boundFootnoteIds.insert(bound)
-            if isShort(bound) {
+            // Dottrina Inline (§ 10.2): TUTTE le note inline a fine frase, a prescindere dalla
+            // lunghezza. Lettura Continua: solo le brevi inline, le lunghe differite (§ 7.3).
+            let inline = isShort(bound) || placement == .doctrineInline
+            if inline {
                 shortByBody[node.id, default: []].append((m.offset, m.length, bound))
                 stats.placedShort += 1
             } else {
                 longByBody[node.id, default: []].append(bound)
                 stats.placedLong += 1
                 // Nota differita: calcola QUI il rinfresco (servono testo del BODY del
-                // richiamo + offset del marcatore, entrambi disponibili solo ora).
+                // richiamo + offset del marcatore, entrambi disponibili solo ora). In Dottrina
+                // Inline questo ramo non è MAI raggiunto → nessun rinfresco (§ 10.5).
                 let refresh = memoryRefreshSegment(node.text ?? "", markerOffset: m.offset)
                 if !refresh.isEmpty { refreshByFootnoteId[bound] = refresh }
             }

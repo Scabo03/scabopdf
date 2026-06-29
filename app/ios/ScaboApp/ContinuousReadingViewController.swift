@@ -105,6 +105,19 @@ final class ContinuousReadingViewController: UIViewController {
     /// segmento. Iniettata dal presentatore (costruita dalla mappa nodo→pagina del documento).
     private let sourcePage: ((String) -> Int?)?
 
+    /// Flusso Dottrina Inline (§ 10), `nil` se il documento non ha note → il selettore mostra il
+    /// layout disabilitato (§ 10.3). Si apre SEMPRE in `.continuous` (default, § 3.4).
+    private let doctrineContent: PaginatedContent?
+
+    /// Layout attualmente reso. Default `.continuous` per ogni documento (l'Estratto e tutti gli
+    /// altri partono identici a prima); Dottrina Inline è una scelta esplicita dal selettore.
+    private var currentLayout: LayoutId = .continuous
+
+    /// Ultima posizione di lettura nota IN LETTURA CONTINUA (l'unica persistita, § 2.5). In Dottrina
+    /// Inline gli indici sono di un altro flusso e NON sovrascrivono questa: così la riapertura al
+    /// punto giusto in Lettura Continua resta intatta e l'Estratto è al sicuro.
+    private var continuousPosition: Int
+
     /// Osservatore del cambio di stato di VoiceOver (riaggancio in lettura). Rimosso in deinit.
     private var voiceOverObserver: NSObjectProtocol?
 
@@ -134,15 +147,18 @@ final class ContinuousReadingViewController: UIViewController {
         sourcePageCount: Int = 0,
         showOriginalPages: Bool = false,
         sourcePage: ((String) -> Int?)? = nil,
+        doctrineContent: PaginatedContent? = nil,
         signalPlayer: SignalPlaying = SignalPlayer.shared
     ) {
         self.content = content
         self.documentId = documentId
         self.initialReadingPosition = initialReadingPosition
+        self.continuousPosition = max(0, initialReadingPosition)
         self.onPositionChanged = onPositionChanged
         self.sourcePageCount = sourcePageCount
         self.showOriginalPages = showOriginalPages
         self.sourcePage = sourcePage
+        self.doctrineContent = doctrineContent
         self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
     }
@@ -169,11 +185,20 @@ final class ContinuousReadingViewController: UIViewController {
         // Persistenza della posizione di lettura (§ 2.5): ogni cambio di fuoco aggiorna lo store e
         // l'indicatore di pagina in toolbar (§ 4.3, silenzioso: nessun annuncio, § 4.5).
         readingView.onReadingPositionChanged = { [weak self] index in
-            self?.onPositionChanged?(index)
-            self?.updatePageIndicator()
+            guard let self else { return }
+            // La posizione si PERSISTE solo in Lettura Continua (l'indice di Dottrina Inline è di
+            // un altro flusso e non deve corrompere il punto di lettura salvato, § 2.5).
+            if self.currentLayout == .continuous {
+                self.continuousPosition = index
+                self.onPositionChanged?(index)
+            }
+            self.updatePageIndicator()
         }
         // Ricalcolo dell'impaginazione visiva (rotazione, Dynamic Type) → aggiorna il totale pagine.
         readingView.onPaginationChanged = { [weak self] in self?.updatePageIndicator() }
+        // Selettore di Layout (§ 3.4): Dottrina Inline disponibile solo se il documento ha note
+        // (§ 10.3). Default Lettura Continua.
+        configureLayoutSelector()
         // Posizione di lettura ricordata: la si preimposta come ultima posizione (senza spostare
         // ancora il fuoco) così il rientro nel testo e il ripristino alla comparsa vi puntano.
         readingView.presetReadingPosition(toIndex: initialReadingPosition)
@@ -200,6 +225,47 @@ final class ContinuousReadingViewController: UIViewController {
         signalPlayer.play(.mode1)
         restoreReadingPositionIfNeeded()
         updatePageIndicator()
+    }
+
+    // MARK: - Selettore di Layout (§ 3.4 / § 10)
+
+    /// (Ri)configura il selettore della toolbar con il layout corrente e la disponibilità di
+    /// Dottrina Inline, instradando la scelta a `switchLayout`.
+    private func configureLayoutSelector() {
+        interfaceBar.configureLayoutSelector(
+            current: currentLayout,
+            doctrineAvailable: doctrineContent != nil
+        ) { [weak self] layout in self?.switchLayout(to: layout) }
+    }
+
+    /// Cambia il layout reso. Lettura Continua ⇄ Dottrina Inline: ridisegna il flusso scelto,
+    /// riconfigura il selettore, suona il segnale di attivazione del Layout (asset esistenti
+    /// `mode-1`/`mode-3`, § AudioSignals — nessun audio nuovo), e posiziona il fuoco. La POSIZIONE
+    /// di lettura ricordata in Lettura Continua è preservata e ripristinata al ritorno; entrando in
+    /// Dottrina Inline il fuoco parte dal primo elemento (mappatura cross-layout = rinvio).
+    private func switchLayout(to layout: LayoutId) {
+        guard layout != currentLayout else { return }
+        let target: PaginatedContent
+        switch layout {
+        case .doctrine:
+            guard let doctrine = doctrineContent else { return }  // disabilitato: nessuna nota
+            target = doctrine
+        case .continuous, .quick:
+            target = content
+        }
+        currentLayout = layout
+        readingView.render(target)
+        view.layoutIfNeeded()
+        configureLayoutSelector()
+        signalPlayer.play(layout == .doctrine ? .mode3 : .mode1)
+        let focusTarget: Any
+        if layout == .continuous {
+            readingView.presetReadingPosition(toIndex: continuousPosition)
+            focusTarget = readingView.element(atIndex: continuousPosition) ?? readingView
+        } else {
+            focusTarget = readingView.element(atIndex: 0) ?? readingView
+        }
+        UIAccessibility.post(notification: .screenChanged, argument: focusTarget)
     }
 
     // MARK: - Riaggancio di VoiceOver in lettura (ANCORA al tasto Indietro, definitiva)
@@ -352,4 +418,12 @@ final class ContinuousReadingViewController: UIViewController {
     var reengagementTargetForTesting: NSObject? { reengagementTarget() }
     /// Forza l'aggiornamento dell'indicatore di pagina (per i test, senza ciclo di vita reale).
     func updatePageIndicatorForTesting() { updatePageIndicator() }
+    /// Il layout attualmente reso (per i test del selettore).
+    var currentLayoutForTesting: LayoutId { currentLayout }
+    /// Vero se Dottrina Inline è disponibile (il documento ha note, § 10.3), per i test.
+    var doctrineAvailableForTesting: Bool { doctrineContent != nil }
+    /// Numero di segmenti correntemente resi (per verificare che lo switch cambi davvero il flusso).
+    var renderedSegmentCountForTesting: Int { readingView.segmentLabels.count }
+    /// Cambia layout come farebbe il selettore (per i test, senza UIMenu).
+    func switchLayoutForTesting(to layout: LayoutId) { switchLayout(to: layout) }
 }

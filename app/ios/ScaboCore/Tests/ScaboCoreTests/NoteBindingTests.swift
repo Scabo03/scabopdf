@@ -47,6 +47,11 @@ final class NoteBindingTests: XCTestCase {
         let doc = buildDocumentFromPdf(ex, sourceName: "t.pdf")
         return bindAndPlaceNotes(doc, ex)
     }
+    private func placedDoctrine(_ pages: [[PdfTextLine]]) -> (ScabopdfDocument, NotePlacementStats) {
+        let ex = extraction(pages)
+        let doc = buildDocumentFromPdf(ex, sourceName: "t.pdf")
+        return bindAndPlaceNotes(doc, ex, placement: .doctrineInline)
+    }
     private func types(_ doc: ScabopdfDocument) -> [SemanticCategory] { doc.structure.map { $0.type } }
     private func texts(_ doc: ScabopdfDocument) -> [String] { doc.structure.map { $0.text ?? "" } }
 
@@ -141,6 +146,56 @@ final class NoteBindingTests: XCTestCase {
         let firstHeadingAfterBody = t.firstIndex(of: .HEADING_1)!  // sezione 1
         let secondHeadingIdx = t[(firstHeadingAfterBody + 1)...].firstIndex(of: .HEADING_1)!
         XCTAssertEqual(t[secondHeadingIdx - 1], .NOTE, "la nota lunga precede immediatamente il prossimo titolo")
+    }
+
+    // MARK: - Dottrina Inline (§ 10.2/§ 10.5): ogni nota inline al richiamo, niente differimento
+
+    func test_doctrineInline_longNotePlacedInlineNotDeferred() {
+        let longText = "13 " + String(repeating: "parola ", count: 60) + "fine."  // > 100 char → MEDIUM+
+        let pages = [[
+            line([span("TITOLO DI SEZIONE", 18)]),
+            bodyLine("Prima riga di corpo della sezione uno."),
+            bodyLineWithMarker("Corpo con richiamo lungo", "13", " e altro testo qui."),
+            bodyLine("Terza riga di corpo della sezione uno."),
+            bodyLine("Quarta riga di corpo della sezione uno."),
+            noteLine(longText),
+            line([span("PROSSIMA SEZIONE", 18)]),
+            bodyLine("Corpo della seconda sezione."),
+        ]]
+        // Lettura Continua: la nota lunga è DIFFERITA a fine sezione (verificato altrove).
+        let (cont, contStats) = placed(pages)
+        XCTAssertEqual(contStats.placedLong, 1, "continua: nota lunga differita")
+
+        // Dottrina Inline: la stessa nota lunga è INLINE al richiamo, niente differimento.
+        let (doc, stats) = placedDoctrine(pages)
+        XCTAssertEqual(stats.placedShort, 1, "dottrina: ogni nota inline (conteggiata come 'short')")
+        XCTAssertEqual(stats.placedLong, 0, "dottrina: nessun differimento a fine sezione (§ 10.2)")
+
+        let t = types(doc)
+        let noteIdx = t.firstIndex(of: .NOTE)!
+        let lastHeadingIdx = t.lastIndex(of: .HEADING_1)!
+        // La nota è inline al richiamo → fra la nota e il titolo della sezione successiva restano
+        // ancora righe di corpo della sezione uno (in continua la nota le seguiva, a ridosso del titolo).
+        XCTAssertTrue(t[(noteIdx + 1)..<lastHeadingIdx].contains(.BODY),
+                      "dottrina: la nota precede il resto del corpo, non è a fine sezione")
+        XCTAssertGreaterThan(lastHeadingIdx, cont.structure.firstIndex { $0.type == .NOTE }!,
+                             "le due disposizioni differiscono")
+
+        // § 10.5: nessun rinfresco di contesto sulle note di Dottrina Inline.
+        let noteNode = doc.structure.first { $0.type == .NOTE }!
+        XCTAssertTrue((noteNode.memoryRefresh ?? "").isEmpty, "dottrina: niente memory refresh (§ 10.5)")
+    }
+
+    func test_doctrineInline_shortNote_sameAsContinuous() {
+        // Le note brevi sono inline in entrambi i layout: stesso risultato.
+        let pages = [[
+            bodyLineWithMarker("Prima frase con richiamo", "12", " a metà periodo qui. Seconda frase."),
+            noteLine("12 Nota breve."),
+        ]]
+        let (cont, _) = placed(pages)
+        let (doc, _) = placedDoctrine(pages)
+        XCTAssertEqual(types(cont), types(doc), "le note brevi sono inline in entrambi → identico")
+        XCTAssertEqual(texts(cont), texts(doc))
     }
 
     // MARK: - sicurezza: numerazione che riparte tra pagine
