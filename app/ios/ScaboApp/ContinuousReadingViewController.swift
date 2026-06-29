@@ -105,10 +105,6 @@ final class ContinuousReadingViewController: UIViewController {
     /// segmento. Iniettata dal presentatore (costruita dalla mappa nodo→pagina del documento).
     private let sourcePage: ((String) -> Int?)?
 
-    /// Quale dei due container è attivo (testo o interfaccia): determina dove il riaggancio di
-    /// VoiceOver riporta il fuoco.
-    private var isTextContainerActive = true
-
     /// Osservatore del cambio di stato di VoiceOver (riaggancio in lettura). Rimosso in deinit.
     private var voiceOverObserver: NSObjectProtocol?
 
@@ -206,35 +202,31 @@ final class ContinuousReadingViewController: UIViewController {
         updatePageIndicator()
     }
 
-    // MARK: - Riaggancio di VoiceOver in lettura (ritorno diretto al segmento)
+    // MARK: - Riaggancio di VoiceOver in lettura (ANCORA al tasto Indietro, definitiva)
 
     /// VoiceOver è stato attivato/disattivato. Alla RIATTIVAZIONE, mentre la reading view è in primo
     /// piano, VoiceOver — ricostruendo l'albero di accessibilità — atterrerebbe sul PRIMO elemento
-    /// del container attivo (il primo segmento del file), facendo perdere il segno. Si riporta il
-    /// fuoco DOVE l'utente era con lo stesso meccanismo già certificato su dispositivo (post di
-    /// `screenChanged` sull'elemento-segmento). I segmenti sono elementi accessibili distinti, quindi
-    /// il ritorno diretto è possibile e ripetibile. Si posta SUBITO e di nuovo dopo un breve ritardo,
-    /// per vincere con certezza la corsa col fuoco automatico di VoiceOver alla riattivazione.
+    /// del container del testo (il primo segmento del file), facendo perdere il segno.
+    ///
+    /// Il collaudo su dispositivo ha ESCLUSO il ritorno diretto al segmento (il fuoco veniva
+    /// comunque sbalzato a inizio documento): si adotta perciò l'ANCORA FORZATA al tasto Indietro,
+    /// decisa e definitiva. A ogni riattivazione si sposta il fuoco sul tasto Indietro in alto a
+    /// sinistra; da lì l'utente fa scrub e rientra nel container del testo DOVE era (il rientro via
+    /// scrub ripristina l'ultima posizione, vedi `activateTextContainer(restoreFocus:)`), senza che
+    /// il fuoco entri mai nel testo all'inizio del file. Nessuna eccezione. Si posta SUBITO e di
+    /// nuovo dopo un breve ritardo, per vincere con certezza la corsa col fuoco automatico di
+    /// VoiceOver alla riattivazione.
     @objc private func voiceOverStatusChanged() {
         guard UIAccessibility.isVoiceOverRunning, isViewLoaded, view.window != nil else { return }
-        let target = reengagementTarget()
-        UIAccessibility.post(notification: .screenChanged, argument: target)
+        UIAccessibility.post(notification: .screenChanged, argument: reengagementTarget())
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self, UIAccessibility.isVoiceOverRunning, self.view.window != nil else { return }
             UIAccessibility.post(notification: .screenChanged, argument: self.reengagementTarget())
         }
     }
 
-    /// L'elemento su cui riportare il fuoco al riaggancio: nel container del testo è l'ultimo
-    /// segmento messo a fuoco (la posizione di lettura corrente; ripiego sul container del testo —
-    /// quindi sul primo elemento — solo se nessuno è mai stato messo a fuoco); nel container
-    /// dell'interfaccia è il tasto Indietro.
-    private func reengagementTarget() -> Any {
-        if isTextContainerActive {
-            return readingView.lastFocusedTextElement ?? readingView
-        }
-        return interfaceBar.backButton
-    }
+    /// L'ancora del riaggancio: SEMPRE il tasto Indietro (scelta definitiva, vedi sopra).
+    private func reengagementTarget() -> NSObject { interfaceBar.backButton }
 
     // MARK: - Indicatore di pagina (§ 4.3)
 
@@ -312,7 +304,6 @@ final class ContinuousReadingViewController: UIViewController {
     /// di lettura (non al primo): è la correzione del reset di posizione, che vale ANCHE qui perché
     /// ora l'unica via di rientro nel testo è lo scrub (la giunzione di swipe è stata rimossa).
     private func activateTextContainer(restoreFocus: Bool) {
-        isTextContainerActive = true
         view.accessibilityElements = [readingView]
         interfaceBar.accessibilityViewIsModal = false
         readingView.accessibilityViewIsModal = true
@@ -327,7 +318,6 @@ final class ContinuousReadingViewController: UIViewController {
     /// strutturale → lo swipe resta confinato fra [Indietro, titolo] e non rientra nel testo), col
     /// flag modale sull'interfaccia come rinforzo. Porta il fuoco sul tasto Indietro.
     private func activateInterfaceContainer() {
-        isTextContainerActive = false
         view.accessibilityElements = [interfaceBar]
         readingView.accessibilityViewIsModal = false
         interfaceBar.accessibilityViewIsModal = true
@@ -357,9 +347,9 @@ final class ContinuousReadingViewController: UIViewController {
     var restoredPositionTargetForTesting: NSObject? { readingView.element(atIndex: initialReadingPosition) }
     /// L'indice di posizione di lettura corrente esposto dalla view, per i test.
     var currentReadingPositionForTesting: Int? { readingView.currentReadingElementIndex }
-    /// L'elemento su cui il riaggancio di VoiceOver riporterebbe il fuoco (ritorno diretto al
-    /// segmento), per verificare che NON sia il primo elemento ma la posizione ricordata.
-    var reengagementTargetForTesting: NSObject? { reengagementTarget() as? NSObject }
+    /// L'elemento su cui il riaggancio di VoiceOver riporta il fuoco: SEMPRE il tasto Indietro
+    /// (ancora definitiva). Per i test.
+    var reengagementTargetForTesting: NSObject? { reengagementTarget() }
     /// Forza l'aggiornamento dell'indicatore di pagina (per i test, senza ciclo di vita reale).
     func updatePageIndicatorForTesting() { updatePageIndicator() }
 }

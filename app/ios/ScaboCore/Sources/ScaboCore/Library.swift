@@ -53,6 +53,14 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// Referto di elaborazione permanente (§ 12.10): i warning in prosa accumulati all'importazione.
     public var warnings: [String]
 
+    /// Nascosto dalla sezione Recenti della Home ("Rimuovi dai recenti"): operazione di SOLA LISTA,
+    /// non distruttiva. Il file resta nell'archivio e in ogni collocazione, e `readingPosition`
+    /// resta intatta. È OPZIONALE di proposito: una libreria salvata da una versione precedente non
+    /// ha la chiave, e `nil` (come `false`) significa "visibile nei recenti" — così l'aggiunta del
+    /// campo NON rompe la decodifica delle librerie esistenti. Riaprendo il documento il flag si
+    /// riazzera (vedi `recordOpened`), perché un documento appena aperto è di nuovo recente.
+    public var isHiddenFromRecents: Bool?
+
     public init(
         id: String,
         title: String,
@@ -61,7 +69,8 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         lastOpenedAt: Date? = nil,
         sourcePageCount: Int,
         readingPosition: Int = 0,
-        warnings: [String] = []
+        warnings: [String] = [],
+        isHiddenFromRecents: Bool? = nil
     ) {
         self.id = id
         self.title = title
@@ -71,6 +80,7 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         self.sourcePageCount = sourcePageCount
         self.readingPosition = readingPosition
         self.warnings = warnings
+        self.isHiddenFromRecents = isHiddenFromRecents
     }
 }
 
@@ -243,11 +253,12 @@ public final class LibraryStore {
     /// Tutti i documenti dell'archivio (per la Ricerca, § 13.2).
     public func allDocuments() -> [ArchivedDocument] { state.documents }
 
-    /// I documenti aperti più di recente, dal più recente (§ 12.1). Solo quelli mai aperti sono
-    /// esclusi. `limit` di default 5.
+    /// I documenti aperti più di recente, dal più recente (§ 12.1). Esclude quelli mai aperti e
+    /// quelli rimossi dai recenti ("Rimuovi dai recenti", operazione di sola lista). `limit` di
+    /// default 5.
     public func recents(limit: Int = 5) -> [ArchivedDocument] {
         state.documents
-            .filter { $0.lastOpenedAt != nil }
+            .filter { $0.lastOpenedAt != nil && ($0.isHiddenFromRecents ?? false) == false }
             .sorted { ($0.lastOpenedAt ?? .distantPast) > ($1.lastOpenedAt ?? .distantPast) }
             .prefix(limit)
             .map { $0 }
@@ -316,7 +327,18 @@ public final class LibraryStore {
     public func recordOpened(id: String) {
         guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
         state.documents[i].lastOpenedAt = now()
+        // Riaprire un documento lo riporta fra i recenti: un documento appena aperto è recente.
+        state.documents[i].isHiddenFromRecents = false
         state.lastOpenDocumentId = id
+        persist()
+    }
+
+    /// Rimuove il documento dalla sola sezione Recenti (operazione di SOLA LISTA): non tocca
+    /// l'archivio, le collocazioni, né la posizione di lettura. Riaprendolo, tornerà fra i recenti.
+    public func removeFromRecents(id: String) {
+        guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
+        guard state.documents[i].isHiddenFromRecents != true else { return }
+        state.documents[i].isHiddenFromRecents = true
         persist()
     }
 

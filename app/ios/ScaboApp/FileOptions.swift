@@ -59,6 +59,16 @@ enum FileOptions {
             })
         }
 
+        if case .recents = context {
+            // Operazione di SOLA LISTA, non distruttiva (stile .default, non .destructive): toglie
+            // il documento dalla sezione Recenti senza toccare archivio, collocazioni o posizione di
+            // lettura. Riaprendolo tornerà fra i recenti.
+            sheet.addAction(UIAlertAction(title: "Rimuovi dai recenti", style: .default) { _ in
+                service.store.removeFromRecents(id: doc.id)
+                onChanged()
+            })
+        }
+
         sheet.addAction(UIAlertAction(title: "Aggiungi a un contenitore", style: .default) { [weak presenter] _ in
             guard let presenter else { return }
             DestinationChooser_add(doc: doc, presenter: presenter, onChanged: onChanged)

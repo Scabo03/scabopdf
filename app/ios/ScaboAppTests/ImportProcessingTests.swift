@@ -251,10 +251,10 @@ final class ImportProcessingTests: XCTestCase {
         vc.viewDidAppear(false)   // attiva l'indicatore di pagina (impaginazione disponibile)
         let interface = vc.interfaceContainerForTesting
         let interfaceElements = (interface.accessibilityElements as? [NSObject]) ?? []
-        XCTAssertEqual(interfaceElements.count, 3, "interfaccia: Indietro, titolo, indicatore di pagina")
+        XCTAssertEqual(interfaceElements.count, 3, "interfaccia: Indietro, titolo, box visualizzazione")
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.backButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.titleLabel })
-        XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.pageIndicatorLabel })
+        XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.visualizationPageLabel })
         XCTAssertEqual(interface.titleLabel.text, "Lettura Continua")
         XCTAssertEqual(interface.backButton.accessibilityLabel, "Indietro")
         for element in interfaceElements {
@@ -363,48 +363,49 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertEqual(vc.currentReadingPositionForTesting, 6)
     }
 
-    // MARK: - Riaggancio di VoiceOver in lettura: ritorno diretto al segmento (non al primo)
+    // MARK: - Riaggancio di VoiceOver in lettura: ANCORA al tasto Indietro (definitiva)
 
-    func test_reader_voiceOverReengagement_targetsCurrentSegment_notFirst() {
+    func test_reader_voiceOverReengagement_anchorsToBackButton_evenAfterReadingSegment() {
         let vc = makeLoadedReader(sampleContent(6))
         vc.viewDidAppear(false)
         let labels = vc.textContainerForTesting.segmentLabels
 
-        // L'utente legge fino a un elemento centrale.
+        // L'utente legge fino a un elemento centrale, poi VoiceOver si riattiva.
         labels[3].accessibilityElementDidBecomeFocused()
 
-        // Al riaggancio di VoiceOver il fuoco torna LÌ, non al primo elemento del file.
-        XCTAssertTrue(vc.reengagementTargetForTesting === labels[3],
-                      "il riaggancio riporta il fuoco dove l'utente era")
-        XCTAssertFalse(vc.reengagementTargetForTesting === labels[0],
-                       "il riaggancio NON cade sul primo elemento del file")
+        // Scelta definitiva: il riaggancio si ancora SEMPRE al tasto Indietro, MAI a un segmento
+        // (niente ritorno diretto). Da lì l'utente scruba e rientra nel testo dove era.
+        XCTAssertTrue(vc.reengagementTargetForTesting === vc.interfaceContainerForTesting.backButton,
+                      "il riaggancio ancora al tasto Indietro")
+        XCTAssertFalse(vc.reengagementTargetForTesting === labels[3], "mai ritorno diretto al segmento")
+        XCTAssertFalse(vc.reengagementTargetForTesting === labels[0], "mai il primo elemento del file")
     }
 
     func test_reader_voiceOverReengagement_anchorsToBackButton_whenInterfaceActive() {
         let vc = makeLoadedReader(sampleContent(4))
         vc.viewDidAppear(false)
-        // Scrub al container dell'interfaccia: ora il container attivo è la barra.
         XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape())
         XCTAssertTrue(vc.reengagementTargetForTesting === vc.interfaceContainerForTesting.backButton,
-                      "con l'interfaccia attiva il riaggancio si ancora al tasto Indietro")
+                      "anche con l'interfaccia attiva il riaggancio si ancora al tasto Indietro")
     }
 
-    // MARK: - Indicatore di pagina in toolbar (§ 4.3)
+    // MARK: - Indicatore di pagina in toolbar: due box separati (§ 4.3)
 
     func test_pageIndicator_single_whenOriginalPagesOff() {
-        let vc = makeLoadedReader(sampleContent(3))   // sourcePageCount 0, toggle off → singolo
+        let vc = makeLoadedReader(sampleContent(3))   // sourcePageCount 0, toggle off → solo visualizzazione
         vc.viewDidAppear(false)
         let bar = vc.interfaceContainerForTesting
         let total = vc.textContainerForTesting.visualPageCount
-        XCTAssertFalse(bar.pageIndicatorLabel.isHidden, "l'indicatore è visibile con un'impaginazione")
-        XCTAssertEqual(bar.pageIndicatorLabel.text, "1 di \(total)")
-        XCTAssertEqual(bar.pageIndicatorLabel.accessibilityLabel, "pagina 1 di \(total) di visualizzazione")
-        // L'indicatore è il TERZO elemento del container d'interfaccia, dopo Indietro e titolo.
+        XCTAssertFalse(bar.visualizationPageLabel.isHidden, "il box visualizzazione è visibile")
+        XCTAssertTrue(bar.originalPageLabel.isHidden, "modalità singola: nessun box del file originale")
+        XCTAssertEqual(bar.visualizationPageLabel.text, "1 di \(total)")
+        XCTAssertEqual(bar.visualizationPageLabel.accessibilityLabel, "pagina 1 di \(total) di visualizzazione")
+        // È l'ultimo elemento del container d'interfaccia, dopo Indietro e titolo.
         let elements = (bar.accessibilityElements as? [NSObject]) ?? []
-        XCTAssertTrue(elements.last === bar.pageIndicatorLabel)
+        XCTAssertTrue(elements.last === bar.visualizationPageLabel)
     }
 
-    func test_pageIndicator_double_whenOriginalPagesOnAndDataAvailable() {
+    func test_pageIndicator_double_isTwoSeparateBoxes_withDistinctLabels() {
         let vc = ContinuousReadingViewController(
             content: sampleContent(3), sourceName: "x.pdf", documentId: "d",
             initialReadingPosition: 0, onPositionChanged: nil,
@@ -415,10 +416,21 @@ final class ImportProcessingTests: XCTestCase {
         vc.viewDidAppear(false)
         let bar = vc.interfaceContainerForTesting
         let total = vc.textContainerForTesting.visualPageCount
-        XCTAssertEqual(bar.pageIndicatorLabel.text, "100 di 1985 — 1 di \(total)")
-        XCTAssertEqual(
-            bar.pageIndicatorLabel.accessibilityLabel,
-            "pagina 100 di 1985 del file originale, pagina 1 di \(total) di visualizzazione")
+
+        // DUE box distinti, ciascuno con testo e etichetta VoiceOver propria.
+        XCTAssertFalse(bar.originalPageLabel.isHidden)
+        XCTAssertFalse(bar.visualizationPageLabel.isHidden)
+        XCTAssertEqual(bar.originalPageLabel.text, "100 di 1985")
+        XCTAssertEqual(bar.originalPageLabel.accessibilityLabel, "pagina 100 di 1985 del file originale")
+        XCTAssertEqual(bar.visualizationPageLabel.text, "1 di \(total)")
+        XCTAssertEqual(bar.visualizationPageLabel.accessibilityLabel, "pagina 1 di \(total) di visualizzazione")
+
+        // Sono due elementi accessibili a sé, in ordine originale → visualizzazione.
+        let elements = (bar.accessibilityElements as? [NSObject]) ?? []
+        let iOrig = elements.firstIndex { $0 === bar.originalPageLabel }
+        let iVis = elements.firstIndex { $0 === bar.visualizationPageLabel }
+        XCTAssertNotNil(iOrig); XCTAssertNotNil(iVis)
+        XCTAssertTrue((iOrig ?? 0) < (iVis ?? 0), "il box originale precede quello di visualizzazione")
     }
 
     func test_buildPageMap_mapsNodeIdsToOneBasedPages() {

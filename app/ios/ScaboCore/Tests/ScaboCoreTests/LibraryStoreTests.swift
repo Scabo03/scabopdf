@@ -88,6 +88,41 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertNil(store.lastOpenDocumentId)
     }
 
+    // MARK: - Rimuovi dai recenti (sola lista, non distruttivo)
+
+    func test_removeFromRecents_isListOnly_keepsArchiveCollocationsAndPosition() {
+        let store = makeStore()
+        let d = store.addDocument(title: "D", sourceFileName: "d.pdf", sourcePageCount: 9)
+        let ws = store.createWorkspace(name: "W")
+        store.addCollocation(documentId: d.id, to: .workspace(ws.id))
+        store.updateReadingPosition(id: d.id, position: 33)
+        store.recordOpened(id: d.id)
+        XCTAssertEqual(store.recents().map { $0.id }, [d.id])
+
+        store.removeFromRecents(id: d.id)
+        XCTAssertEqual(store.recents().count, 0, "tolto dalla sezione Recenti")
+        XCTAssertNotNil(store.document(id: d.id), "il file resta nell'archivio")
+        XCTAssertEqual(store.fileIds(in: .workspace(ws.id)), [d.id], "la collocazione resta intatta")
+        XCTAssertEqual(store.document(id: d.id)?.readingPosition, 33, "la posizione di lettura resta")
+
+        // Riaprendolo dall'archivio torna fra i recenti, e la posizione è ancora quella.
+        store.recordOpened(id: d.id)
+        XCTAssertEqual(store.recents().map { $0.id }, [d.id], "riaperto: di nuovo recente")
+        XCTAssertEqual(store.document(id: d.id)?.readingPosition, 33)
+    }
+
+    func test_archivedDocument_decodesWithoutHiddenFlag_backwardCompatible() {
+        // Una libreria salvata PRIMA dell'aggiunta del flag non ha la chiave: deve decodificare.
+        let json = Data("""
+        {"id":"x","title":"T","sourceFileName":"x.pdf","importedAt":"2026-01-01T00:00:00Z",\
+        "sourcePageCount":3,"readingPosition":7,"warnings":[]}
+        """.utf8)
+        let doc = try? JSONDecoder.library.decode(ArchivedDocument.self, from: json)
+        XCTAssertNotNil(doc, "la decodifica non deve fallire per la chiave mancante")
+        XCTAssertEqual(doc?.readingPosition, 7)
+        XCTAssertNil(doc?.isHiddenFromRecents, "chiave assente → nil (= visibile nei recenti)")
+    }
+
     // MARK: - Archivio vs collocazioni (§ 12.6)
 
     func test_addCollocation_doesNotDuplicateInSamePlace() {

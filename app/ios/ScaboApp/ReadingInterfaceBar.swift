@@ -55,22 +55,50 @@ final class ReadingInterfaceBar: UIView {
         return label
     }()
 
-    /// Indicatore di pagina (§ 4.3): singolo di norma ("100 di 1985"), doppio quando il toggle
-    /// pagine originali è attivo ("30 di 1472 — 100 di 1985"). Vive in QUESTO container
-    /// d'interfaccia (chiuso): non è mai raggiungibile dallo swipe orizzontale di lettura, quindi
-    /// non interferisce col vincolo costitutivo (§ 2.2). L'utente lo consulta scrubando alla barra.
-    let pageIndicatorLabel: UILabel = {
-        let label = UILabel()
+    /// Indicatore di pagina (§ 4.3) come DUE BOX DISTINTI e separati. Quando ci sono entrambe le
+    /// numerazioni (toggle pagine originali attivo) si mostrano due elementi accessibili a sé —
+    /// `originalPageLabel` e `visualizationPageLabel` — letti SEPARATAMENTE da VoiceOver, ciascuno
+    /// con la propria etichetta che chiarisce quale numerazione è (così con lo scrub l'utente
+    /// distingue quale numero sta sentendo). In modalità singola resta il solo box della
+    /// numerazione continua (di visualizzazione). Vivono in QUESTO container d'interfaccia (chiuso):
+    /// mai raggiungibili dallo swipe orizzontale di lettura → nessuna interferenza col vincolo
+    /// costitutivo (§ 2.2). L'utente li consulta scrubando alla barra.
+
+    /// Box della pagina del FILE ORIGINALE (mostrato solo in modalità doppia).
+    let originalPageLabel = ReadingInterfaceBar.makePageBox()
+
+    /// Box della pagina di VISUALIZZAZIONE (numerazione continua, sempre presente con impaginazione).
+    let visualizationPageLabel = ReadingInterfaceBar.makePageBox()
+
+    /// Contenitore visivo dei due box, allineato a destra. La gestione della visibilità del singolo
+    /// box passa per `isHidden` sui box (uno stack li impacchetta automaticamente).
+    private lazy var pageIndicatorStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [originalPageLabel, visualizationPageLabel])
+        stack.axis = .horizontal
+        stack.spacing = 8
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
+    }()
+
+    /// Costruisce un box-etichetta per l'indicatore: padding, sfondo tenue e angoli, così i due box
+    /// si distinguono visivamente (bi-modale, § 2.1). È un elemento accessibile a sé.
+    private static func makePageBox() -> InsetLabel {
+        let label = InsetLabel()
         label.font = UIFont.preferredFont(forTextStyle: .footnote)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = .label
-        label.textAlignment = .right
+        label.textAlignment = .center
         label.numberOfLines = 1
-        label.translatesAutoresizingMaskIntoConstraints = false
+        label.backgroundColor = .tertiarySystemFill
+        label.layer.cornerRadius = 6
+        label.layer.masksToBounds = true
+        label.setContentHuggingPriority(.required, for: .horizontal)
+        label.setContentCompressionResistancePriority(.required, for: .horizontal)
         label.isAccessibilityElement = true
-        label.isHidden = true   // nascosto finché non c'è un'impaginazione da mostrare
+        label.isHidden = true
         return label
-    }()
+    }
 
     /// Azione del tasto Indietro (impostata dal controller).
     var onBack: (() -> Void)?
@@ -92,22 +120,22 @@ final class ReadingInterfaceBar: UIView {
         backgroundColor = .secondarySystemBackground
         addSubview(backButton)
         addSubview(titleLabel)
-        addSubview(pageIndicatorLabel)
+        addSubview(pageIndicatorStack)
 
-        pageIndicatorLabel.setContentHuggingPriority(.required, for: .horizontal)
-        pageIndicatorLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        pageIndicatorStack.setContentHuggingPriority(.required, for: .horizontal)
+        pageIndicatorStack.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         NSLayoutConstraint.activate([
             backButton.leadingAnchor.constraint(equalTo: layoutMarginsGuide.leadingAnchor),
             backButton.centerYAnchor.constraint(equalTo: centerYAnchor),
 
-            pageIndicatorLabel.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
-            pageIndicatorLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            pageIndicatorStack.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
+            pageIndicatorStack.centerYAnchor.constraint(equalTo: centerYAnchor),
 
             titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: pageIndicatorLabel.leadingAnchor, constant: -8),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: pageIndicatorStack.leadingAnchor, constant: -8),
         ])
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
@@ -118,20 +146,21 @@ final class ReadingInterfaceBar: UIView {
         refreshAccessibilityElements()
     }
 
-    /// Aggiorna l'ordine di lettura del container in base alla visibilità dell'indicatore: sempre
-    /// [Indietro, titolo], e in coda l'indicatore di pagina quando presente. Ordine logico
-    /// dall'azione di uscita, al titolo, all'orientamento di pagina.
+    /// Aggiorna l'ordine di lettura del container in base alla visibilità dei box: sempre
+    /// [Indietro, titolo], poi — quando presenti — il box pagina ORIGINALE e infine quello di
+    /// VISUALIZZAZIONE. L'ordine originale→visualizzazione segue il § 4.3.
     private func refreshAccessibilityElements() {
         var elements: [NSObject] = [backButton, titleLabel]
-        if !pageIndicatorLabel.isHidden { elements.append(pageIndicatorLabel) }
+        if !originalPageLabel.isHidden { elements.append(originalPageLabel) }
+        if !visualizationPageLabel.isHidden { elements.append(visualizationPageLabel) }
         accessibilityElements = elements
     }
 
-    /// Imposta l'indicatore di pagina (§ 4.3). `visualizationTotal == 0` lo nasconde (nessuna
-    /// impaginazione disponibile). Quando `showOriginal` è vero si mostra la forma DOPPIA
-    /// (pagina del file originale prima, di visualizzazione dopo), altrimenti la forma SINGOLA
-    /// (solo visualizzazione). La resa è bi-modale (§ 2.1): testo compatto a video, etichetta
-    /// estesa per VoiceOver con i qualificatori "del file originale" / "di visualizzazione".
+    /// Imposta l'indicatore di pagina (§ 4.3) come due box separati. `visualizationTotal == 0`
+    /// nasconde entrambi (nessuna impaginazione). Con `showOriginal` vero e dato disponibile si
+    /// mostrano DUE box distinti — originale e visualizzazione — ciascuno elemento accessibile a sé
+    /// con la propria etichetta qualificata (bi-modale, § 2.1); altrimenti il solo box di
+    /// visualizzazione.
     func setPageIndicator(
         visualizationCurrent: Int,
         visualizationTotal: Int,
@@ -140,23 +169,27 @@ final class ReadingInterfaceBar: UIView {
         showOriginal: Bool
     ) {
         guard visualizationTotal > 0 else {
-            pageIndicatorLabel.isHidden = true
-            pageIndicatorLabel.text = nil
+            originalPageLabel.isHidden = true
+            visualizationPageLabel.isHidden = true
             refreshAccessibilityElements()
             return
         }
-        let visText = "\(visualizationCurrent) di \(visualizationTotal)"
+
+        // Box di visualizzazione: sempre presente.
+        visualizationPageLabel.text = "\(visualizationCurrent) di \(visualizationTotal)"
+        visualizationPageLabel.accessibilityLabel =
+            "pagina \(visualizationCurrent) di \(visualizationTotal) di visualizzazione"
+        visualizationPageLabel.isHidden = false
+
+        // Box del file originale: solo in modalità doppia, con dato disponibile.
         if showOriginal, let original = originalCurrent, originalTotal > 0 {
-            pageIndicatorLabel.text = "\(original) di \(originalTotal) — \(visText)"
-            pageIndicatorLabel.accessibilityLabel =
-                "pagina \(original) di \(originalTotal) del file originale, "
-                + "pagina \(visualizationCurrent) di \(visualizationTotal) di visualizzazione"
+            originalPageLabel.text = "\(original) di \(originalTotal)"
+            originalPageLabel.accessibilityLabel =
+                "pagina \(original) di \(originalTotal) del file originale"
+            originalPageLabel.isHidden = false
         } else {
-            pageIndicatorLabel.text = visText
-            pageIndicatorLabel.accessibilityLabel =
-                "pagina \(visualizationCurrent) di \(visualizationTotal) di visualizzazione"
+            originalPageLabel.isHidden = true
         }
-        pageIndicatorLabel.isHidden = false
         refreshAccessibilityElements()
     }
 
@@ -168,5 +201,21 @@ final class ReadingInterfaceBar: UIView {
         guard let onEscape else { return false }
         onEscape()
         return true
+    }
+}
+
+/// `UILabel` con padding interno, per rendere i box dell'indicatore di pagina come riquadri
+/// distinti (sfondo + angoli + spazio attorno al testo).
+final class InsetLabel: UILabel {
+    var insets = UIEdgeInsets(top: 3, left: 8, bottom: 3, right: 8)
+
+    override func drawText(in rect: CGRect) {
+        super.drawText(in: rect.inset(by: insets))
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let size = super.intrinsicContentSize
+        return CGSize(width: size.width + insets.left + insets.right,
+                      height: size.height + insets.top + insets.bottom)
     }
 }
