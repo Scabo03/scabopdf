@@ -117,15 +117,123 @@ public final class DeJurePlugin: ExtractionPlugin {
         return document
     }
 
-    /// Ri-etichetta la furniture DeJure a `ARTIFACT_STAMP` (ruolo non letto) e annota i warning.
-    /// Il `profile_id` resta "generic" (vedi nota di testata): nessun altro campo è toccato.
+    /// Ri-etichetta la furniture DeJure a `ARTIFACT_STAMP` (ruolo non letto), RECUPERA le note
+    /// della dottrina dalla zona-note, e annota i warning. Il `profile_id` resta "generic" (vedi
+    /// nota di testata): il cerotto anti-"Nota." del tronco resta attivo, e le note recuperate —
+    /// che APRONO con "(N)" — non vengono toccate dal cerotto (textOpensWithNoteMarker vero), quindi
+    /// suonano il regime acustico. L'ordine: prima la furniture (così i banner "DOTTRINA" sono già
+    /// ARTIFACT_STAMP e fanno da confine d'articolo), poi il recupero note.
     private func finishDejure(_ document: inout ScabopdfDocument) {
         let suppressed = retagDejureFurniture(&document.structure)
         if suppressed > 0 {
             document.warnings.append("plugin:dejure:furniture_suppressed_\(suppressed)")
         }
+        let recovered = recoverDejureNotes(&document.structure)
+        if recovered > 0 {
+            document.warnings.append("plugin:dejure:notes_recovered_\(recovered)")
+        }
         document.warnings.append("plugin:dejure:branch_active")
     }
+}
+
+// MARK: - Recupero delle note della dottrina DeJure (separazione della zona, poi classificazione)
+
+/// Etichetta di apertura della sezione-note: "Note:" / "Note :" NON preceduta da una lettera (così
+/// non si confonde con un "note:" interno a una parola/frase). È il segnale che Layer-1 Python usa
+/// (SECTION_LABEL "Note:"), qui presente nel testo del nodo (incollato dal generico). Misurato:
+/// compare ESATTAMENTE una volta per articolo (Concause 1, Cartabia 7 = i 7 banner DOTTRINA).
+private let DEJURE_NOTE_LABEL_REGEX = try! NSRegularExpression(
+    pattern: "(?<!\\p{L})Note\\s?:\\s*", options: [])
+
+/// Apertura di una nota DENTRO la zona-note: "(N) " numerica o "(*) " editoriale. Si SPEZZA il
+/// testo della zona PRIMA di ogni apertura (lookahead) → ogni pezzo è una nota + le sue
+/// continuazioni (le righe che vanno a capo senza riaprire con "(N)" restano col pezzo precedente).
+private let DEJURE_NOTE_SPLIT_REGEX = try! NSRegularExpression(
+    pattern: "(?=\\(\\d{1,3}\\)\\s|\\(\\*\\)\\s)", options: [])
+
+/// Separa la zona-note (dal marcatore "Note:" al banner "DOTTRINA" successivo o a fine documento) e
+/// vi classifica le singole note. PRECISIONE PRIMA DEL RECALL (stella polare): si promuove a NOTE
+/// SOLO il testo DENTRO la zona riconosciuta; un "(N)" nel corpo, fuori zona, resta richiamo nel
+/// corpo. Lavora sul testo dei nodi (la zona è auto-contenuta: nessuna estrazione necessaria).
+/// Ritorna il numero di note recuperate. File-scope internal per i test.
+@discardableResult
+func recoverDejureNotes(_ nodes: inout [NodeDict]) -> Int {
+    var nextCounter = maxNodeCounter(nodes) + 1
+    var out: [NodeDict] = []
+    var recovered = 0
+    var zoneText: String?      // testo della zona-note in accumulo (nil = fuori zona)
+    var zonePage = 0
+
+    func flushZone() {
+        guard let zt = zoneText?.trimmingCharacters(in: .whitespacesAndNewlines), !zt.isEmpty else {
+            zoneText = nil; return
+        }
+        for chunk in splitDejureNotes(zt) {
+            let text = chunk.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { continue }
+            var note = NodeDict(id: "node_\(nextCounter)", type: .NOTE, page_index: zonePage, text: text)
+            note.length_category = lengthCategoryFor(text)
+            out.append(note)
+            nextCounter += 1
+            recovered += 1
+        }
+        zoneText = nil
+    }
+
+    for node in nodes {
+        let text = node.text ?? ""
+        // Confine d'articolo: il banner DOTTRINA (già ARTIFACT_STAMP) chiude la zona corrente.
+        if node.type == .ARTIFACT_STAMP, text.trimmingCharacters(in: .whitespacesAndNewlines) == "DOTTRINA" {
+            flushZone()
+            out.append(node)
+            continue
+        }
+        let ns = text as NSString
+        if let m = DEJURE_NOTE_LABEL_REGEX.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) {
+            // Nodo-straddle: corpo PRIMA di "Note:", note DOPO. Si spezza.
+            flushZone()
+            let before = ns.substring(to: m.range.location)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !before.isEmpty {
+                var body = node
+                body.text = before
+                out.append(body)   // il corpo resta corpo (mai promosso)
+            }
+            zoneText = ns.substring(from: m.range.location + m.range.length)
+            zonePage = node.page_index
+            continue
+        }
+        if zoneText != nil {
+            if node.type == .BODY {
+                zoneText! += " " + text   // continuazione della zona-note
+                continue
+            }
+            // Un nodo non-corpo dentro la zona (titolo, furniture): chiudi conservativamente.
+            flushZone()
+            out.append(node)
+            continue
+        }
+        out.append(node)
+    }
+    flushZone()
+    nodes = out
+    return recovered
+}
+
+/// Spezza il testo della zona-note in singole note (una per "(N)"/"(*)"), continuazioni incluse.
+private func splitDejureNotes(_ text: String) -> [String] {
+    let ns = text as NSString
+    let matches = DEJURE_NOTE_SPLIT_REGEX.matches(in: text, range: NSRange(location: 0, length: ns.length))
+    guard !matches.isEmpty else { return [text] }
+    var pieces: [String] = []
+    var cursor = 0
+    for m in matches {
+        let loc = m.range.location
+        if loc > cursor { pieces.append(ns.substring(with: NSRange(location: cursor, length: loc - cursor))) }
+        cursor = loc
+    }
+    if cursor < ns.length { pieces.append(ns.substring(from: cursor)) }
+    return pieces
 }
 
 /// Cammina l'albero e separa la furniture DeJure (timbro colophon / banner di genere) dal flusso

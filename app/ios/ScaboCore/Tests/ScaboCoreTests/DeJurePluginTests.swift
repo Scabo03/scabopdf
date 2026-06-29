@@ -133,6 +133,55 @@ final class DeJurePluginTests: XCTestCase {
         XCTAssertEqual(nodes[0].children[0].type, .ARTIFACT_STAMP)
     }
 
+    // MARK: - Recupero note dottrina: zona + split + continuazioni + precisione
+
+    func test_recoverNotes_separatesZoneAndSplits() {
+        var nodes = [
+            NodeDict(id: "node_0", type: .ARTIFACT_STAMP, page_index: 0, text: "DOTTRINA"),
+            NodeDict(id: "node_1", type: .HEADING_4, page_index: 0, text: "Titolo dell'articolo"),
+            NodeDict(id: "node_2", type: .BODY, page_index: 0, text: "Corpo con richiamo (1) e altro testo."),
+            NodeDict(id: "node_3", type: .BODY, page_index: 5,
+                     text: "ultima frase del corpo. Note: (1) Prima nota di Tizio. "
+                         + "(2) Seconda nota con continuazione che va a capo qui senza riaprire."),
+        ]
+        let n = recoverDejureNotes(&nodes)
+        XCTAssertEqual(n, 2, "due note recuperate dalla zona")
+        XCTAssertEqual(nodes.map { $0.type }, [.ARTIFACT_STAMP, .HEADING_4, .BODY, .BODY, .NOTE, .NOTE])
+        XCTAssertEqual(nodes[3].text, "ultima frase del corpo.", "il corpo prima di 'Note:' resta corpo")
+        XCTAssertTrue(nodes[4].text?.hasPrefix("(1) Prima nota") == true)
+        XCTAssertTrue(nodes[5].text?.hasPrefix("(2) Seconda nota") == true)
+        XCTAssertTrue(nodes[5].text?.contains("continuazione che va a capo") == true,
+                      "la continuazione resta con la sua nota")
+        XCTAssertNotNil(nodes[4].length_category, "le note recuperate portano il regime di lunghezza")
+    }
+
+    func test_recoverNotes_precision_bodyParenStaysBodyOutsideZone() {
+        // Un "(46)" nel CORPO, fuori da una zona-note riconosciuta, NON diventa nota (stella polare).
+        var nodes = [
+            NodeDict(id: "node_0", type: .BODY, page_index: 0, text: "Il principio (46) è ben noto in dottrina."),
+            NodeDict(id: "node_1", type: .BODY, page_index: 1, text: "Altro corpo con richiamo (2) qui."),
+        ]
+        let n = recoverDejureNotes(&nodes)
+        XCTAssertEqual(n, 0, "nessuna etichetta 'Note:' → nessuna zona → nessuna promozione")
+        XCTAssertEqual(nodes.map { $0.type }, [.BODY, .BODY], "i richiami nel corpo restano corpo")
+    }
+
+    func test_recoverNotes_perArticleZones_closedByBanner() {
+        var nodes = [
+            NodeDict(id: "node_0", type: .ARTIFACT_STAMP, page_index: 0, text: "DOTTRINA"),
+            NodeDict(id: "node_1", type: .BODY, page_index: 0, text: "Corpo uno. Note: (1) Nota dell'articolo uno."),
+            NodeDict(id: "node_2", type: .ARTIFACT_STAMP, page_index: 1, text: "DOTTRINA"),  // confine: chiude zona art1
+            NodeDict(id: "node_3", type: .BODY, page_index: 1, text: "Corpo due. Note: (1) Nota dell'articolo due."),
+        ]
+        let n = recoverDejureNotes(&nodes)
+        XCTAssertEqual(n, 2)
+        let noteTexts = nodes.filter { $0.type == .NOTE }.map { $0.text ?? "" }
+        XCTAssertTrue(noteTexts.contains { $0.contains("Nota dell'articolo uno") })
+        XCTAssertTrue(noteTexts.contains { $0.contains("Nota dell'articolo due") })
+        XCTAssertFalse(noteTexts.contains { $0.contains("Corpo due") },
+                       "il banner chiude la zona: il corpo del secondo articolo non è inglobato")
+    }
+
     // MARK: - Build: profilo invariato (cerotto anti-'Nota.' del tronco intatto) + diagnostica
 
     func test_build_keepsGenericProfile_andAnnotatesBranch() {

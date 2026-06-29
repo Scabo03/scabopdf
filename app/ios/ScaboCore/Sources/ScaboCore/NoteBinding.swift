@@ -87,6 +87,9 @@ public struct NotePlacementStats: Codable, Equatable, Sendable {
     public var footnotes = 0
     public var boundSamePage = 0
     public var boundCrossPage = 0
+    /// Agganci per SCOPE D'ARTICOLO (solo DeJure dottrina: note d'endnote a numerazione
+    /// per-articolo, lontane dal richiamo → lo scope per-pagina non le raggiunge).
+    public var boundArticleScope = 0
     public var unboundMarkers = 0
     public var unboundNotes = 0
     public var placedShort = 0
@@ -142,6 +145,25 @@ public func bindAndPlaceNotes(
     guard document.structure.contains(where: { $0.type == .NOTE || $0.type == .EDITORIAL_NOTE }) else {
         return (document, stats)
     }
+
+    // DeJure dottrina: le note recuperate sono ENDNOTE a numerazione PER-ARTICOLO (lontane dal
+    // richiamo), quindi lo scope per-pagina non le aggancia. Si abilita un fallback di aggancio per
+    // SCOPE D'ARTICOLO (delimitato dai banner "DOTTRINA" = ARTIFACT_STAMP), GATED su DeJure: il
+    // percorso generico resta byte-identico per ogni altro volume. `articleOf[id]` = indice
+    // d'articolo del nodo (numeri unici dentro l'articolo → aggancio sicuro su match unico).
+    let dejure = document.warnings.contains { $0.hasPrefix("plugin:dejure:") }
+    var articleOf: [String: Int] = [:]
+    if dejure {
+        var art = 0
+        for node in document.structure {
+            if node.type == .ARTIFACT_STAMP,
+               (node.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines) == "DOTTRINA" {
+                art += 1
+            }
+            articleOf[node.id] = art
+        }
+    }
+    var footnoteIdsByArticle: [Int: [Int: [String]]] = [:]
 
     let profile = estimateProfile(extraction)
     let furniture = detectFurniture(extraction)
@@ -211,6 +233,10 @@ public func bindAndPlaceNotes(
             if let num = f.openingNumber {
                 footnoteIdsByPageNumber[f.page, default: [:]][num, default: []].append(fid)
                 lastNumberOnPage[f.page] = max(lastNumberOnPage[f.page] ?? 0, num)
+                // Indice per articolo (solo DeJure): nota → articolo del NODO-nota di provenienza.
+                if dejure, let art = articleOf[node.id] {
+                    footnoteIdsByArticle[art, default: [:]][num, default: []].append(fid)
+                }
             }
         }
         footnotesInNoteOrder[node.id] = ids
@@ -257,6 +283,12 @@ public func bindAndPlaceNotes(
                       let nextIds = footnoteIdsByPageNumber[page + 1]?[m.value], nextIds.count == 1,
                       m.value == (lastNumberOnPage[page] ?? -999) + 1 {
                 fid = nextIds[0]; stats.boundCrossPage += 1
+            } else if dejure, let art = articleOf[node.id],
+                      // SCOPE D'ARTICOLO (solo DeJure): endnote a numerazione per-articolo. Si
+                      // aggancia SOLO su match UNICO nello stesso articolo del richiamo (i numeri
+                      // sono unici dentro l'articolo → niente cross-bind, precisione mantenuta).
+                      let ids = footnoteIdsByArticle[art]?[m.value], ids.count == 1 {
+                fid = ids[0]; stats.boundArticleScope += 1
             }
             guard let bound = fid, !boundFootnoteIds.contains(bound) else {
                 stats.unboundMarkers += 1
