@@ -121,4 +121,55 @@ final class RivistaDpcRecoveryTests: XCTestCase {
                       "fuori geometria DPC il recupero è un no-op: resta glossa (byte-identico)")
         XCTAssertNotEqual(d.profile.profile_id, "rivista_dpc")
     }
+
+    // ── Testatina corrente separata per posizione (running header) ────────────────
+
+    // Testano DIRETTAMENTE `rivistaRunningHeaderFurniture` (la logica di produzione,
+    // isolata dagli altri canali furniture e dall'artefatto sintetico della maggioranza).
+    // h=814 → banda alta (TOP_BAND=0.85) = bbox.y ≥ ~692; banda bassa = bbox.y piccolo.
+
+    func test_runningHeaderFurniture_topRecurringRemoved_titleKept() {
+        var pages: [PdfPageExtraction] = []
+        // page 0: il TITOLO vero a metà pagina (y=400 → yFrac ≈0.51, FUORI banda alta)
+        pages.append(page(0, [line("In memoriam: Joachim Vogel", size: 14, x0: 154, x1: 400, y: 400)]))
+        // pages 1..5: la testatina in cima (y=790 → yFrac ≈0.97, banda alta)
+        for pi in 1...5 {
+            pages.append(page(pi, [line("In memoriam: Joachim Vogel", size: 9, x0: 409, x1: 524, y: 790)]))
+        }
+        let furn = rivistaRunningHeaderFurniture(PdfExtraction(version: 2, pageCount: 6, pages: pages))
+        XCTAssertEqual(furn, ["1:0", "2:0", "3:0", "4:0", "5:0"],
+                       "rimosse SOLO le occorrenze in cima (le 5 testatine)")
+        XCTAssertFalse(furn.contains("0:0"), "il titolo vero (fuori banda alta) NON è rimosso (net-A)")
+    }
+
+    func test_runningHeaderFurniture_belowMinPages_notRemoved() {
+        var pages: [PdfPageExtraction] = []
+        for pi in 0..<2 {   // solo 2 pagine in cima < RIVISTA_HEADER_MIN_PAGES (3)
+            pages.append(page(pi, [line("Testatina corta", size: 9, x0: 409, x1: 524, y: 790)]))
+        }
+        let furn = rivistaRunningHeaderFurniture(PdfExtraction(version: 2, pageCount: 2, pages: pages))
+        XCTAssertTrue(furn.isEmpty, "sotto soglia di pagine → nessuna rimozione (conservativo)")
+    }
+
+    func test_runningHeaderFurniture_mostlyMidPage_notRemoved() {
+        // Un heading legittimo ricorrente (es. "Bibliografia") che capita in cima solo
+        // 1 volta su molte → ratio top-band < soglia → NON rimosso (resta letto).
+        var pages: [PdfPageExtraction] = []
+        pages.append(page(0, [line("Bibliografia", size: 11, x0: 154, x1: 250, y: 790)]))   // 1 in cima
+        for pi in 1...6 {   // 6 a metà pagina (sezione che inizia nel corpo)
+            pages.append(page(pi, [line("Bibliografia", size: 11, x0: 154, x1: 250, y: 400)]))
+        }
+        let furn = rivistaRunningHeaderFurniture(PdfExtraction(version: 2, pageCount: 7, pages: pages))
+        XCTAssertTrue(furn.isEmpty,
+                      "ricorre ma è in cima solo 1/7 (< ratio) → heading, non testatina: non rimosso")
+    }
+
+    func test_runningHeaderFurniture_isGatedOnRivistaDpcFlag() {
+        // Il canale è invocato da detectFurniture SOLO dietro `profile.isRivistaDpc`
+        // (gate = la firma 567×814 + corpo≈10). Qui si verifica il gate alla sorgente:
+        // su geometria non-DPC il flag è falso → il canale non gira (l'integrazione
+        // byte-identica su volumi reali è provata dalle reti del bench).
+        XCTAssertTrue(estimateProfile(PdfExtraction(version: 2, pageCount: 1, pages: [page(0, bodyLines(6))])).isRivistaDpc)
+        XCTAssertFalse(estimateProfile(PdfExtraction(version: 2, pageCount: 1, pages: [page(0, bodyLines(6), w: 595, h: 842)])).isRivistaDpc)
+    }
 }

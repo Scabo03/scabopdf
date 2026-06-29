@@ -141,6 +141,24 @@ let FURNITURE_RECUR_MIN_PAGES = 3
 let FURNITURE_TOP_BAND = 0.72
 let FURNITURE_BOTTOM_BAND = 0.28
 
+// ── Testatina corrente "separata per posizione" — ramo Riviste (porta DPC) ──────
+// La Rivista DPC ha testatine correnti (il titolo dell'articolo, ripetuto in cima a
+// ogni pagina della sezione) che SFUGGONO al position-lock σ qui sopra per un motivo
+// preciso: il TITOLO omonimo (la prima comparsa, a metà pagina = contenuto) cade nella
+// stessa norma delle testatine e, a y diversa, alza σ ben oltre LOCK → il canale,
+// all-or-nothing per norma, RINUNCIA a rimuoverle (per non rischiare il titolo). È la
+// conservatività voluta del tronco. Qui la si raffina SEPARANDO PER POSIZIONE: di un
+// testo che ricorre identico ed è in banda-ALTA nella grande maggioranza delle sue
+// occorrenze (≥ RATIO), si rimuovono SOLO le occorrenze in banda alta (le testatine);
+// la rara occorrenza fuori-banda (il titolo vero) resta LETTA. Net-A sicuro per
+// costruzione: il contenuto unico (titolo) è preservato, la furniture ricorrente tolta.
+// GATED su isRivistaDpc → altrove no-op (l'Estratto e i manuali non la sfiorano).
+/// Pagine distinte in banda-alta su cui una testatina corrente deve ricorrere.
+let RIVISTA_HEADER_MIN_PAGES = 3
+/// Frazione minima di occorrenze in banda-alta (TOP_BAND) perché un testo ricorrente
+/// sia una testatina corrente (e non un heading che capita in cima una volta sola).
+let RIVISTA_HEADER_TOPBAND_RATIO = 0.8
+
 /// NOTE length → acoustic regime thresholds (mirrors Layer 1).
 let LENGTH_THRESHOLDS: [(Int, LengthCategory)] = [
     (50, .MICRO),
@@ -458,7 +476,8 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // Senza questa guardia la norma roman/ordinale collasserebbe "Capitolo II/III/…" in
     // "capitolo #", e quelle intestazioni — tutte alla y d'inizio-capitolo (ancorate) — verrebbero
     // rimosse come mobilia (regressione: si mangia un'intestazione vera).
-    let bodySizeForFurniture = estimateProfile(extraction).bodySize
+    let profileForFurniture = estimateProfile(extraction)
+    let bodySizeForFurniture = profileForFurniture.bodySize
     struct Candidate { let key: String; let norm: String }
     struct FolioCandidate { let key: String; let page: Int; let value: Int }
     var bandCandidates: [Candidate] = []
@@ -615,6 +634,45 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         if variance.squareRoot() < RUNNING_HEADER_POSITION_LOCK {
             for c in lines { furniture.insert(c.key) }
         }
+    }
+    // Ramo Riviste (porta DPC): testatine correnti separate per posizione (additivo).
+    // Gated → no-op altrove, byte-identico (Estratto/manuali non sfiorati).
+    if profileForFurniture.isRivistaDpc {
+        furniture.formUnion(rivistaRunningHeaderFurniture(extraction))
+    }
+    return furniture
+}
+
+/// Testatine correnti della Rivista DPC che sfuggono al position-lock perché il TITOLO
+/// omonimo (la prima comparsa, a metà pagina = contenuto) sta nella stessa norma e alza
+/// σ oltre LOCK. Le si riconosce SEPARANDO PER POSIZIONE: di un testo che ricorre identico
+/// (norma furniture, cifre/romani normalizzati) ed è in banda-ALTA su ≥ `RIVISTA_HEADER_MIN_PAGES`
+/// pagine distinte, con ≥ `RIVISTA_HEADER_TOPBAND_RATIO` delle occorrenze in banda alta, si
+/// rimuovono SOLO le occorrenze in banda alta. La rara occorrenza fuori-banda (il titolo)
+/// resta letta → net-A sicuro per costruzione. Solo testa (≥ TOP_BAND): i footer restano ai
+/// canali esistenti. Ritorna le chiavi "page:lineIndex" da scartare.
+func rivistaRunningHeaderFurniture(_ extraction: PdfExtraction) -> Set<String> {
+    struct Occ { let key: String; let page: Int; let yFrac: Double; let top: Bool }
+    var byNorm: [String: [Occ]] = [:]
+    for page in extraction.pages {
+        let height = page.height
+        for (lineIndex, line) in page.lines.enumerated() {
+            let sm = summarizeLine(line)
+            guard isSubstantial(sm.text) else { continue }   // ≥2 lettere: esclude folii nudi
+            let yFrac = height > 0 ? sm.yTop / height : 0.5
+            let norm = furnitureNorm(sm.text)
+            byNorm[norm, default: []].append(
+                Occ(key: "\(page.pageIndex):\(lineIndex)", page: page.pageIndex,
+                    yFrac: yFrac, top: yFrac >= TOP_BAND))
+        }
+    }
+    var furniture: Set<String> = []
+    for (_, occ) in byNorm {
+        let topOcc = occ.filter { $0.top }
+        let topPages = Set(topOcc.map { $0.page })
+        guard topPages.count >= RIVISTA_HEADER_MIN_PAGES,
+              Double(topOcc.count) >= RIVISTA_HEADER_TOPBAND_RATIO * Double(occ.count) else { continue }
+        for o in topOcc { furniture.insert(o.key) }
     }
     return furniture
 }

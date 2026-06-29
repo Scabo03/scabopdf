@@ -52,6 +52,36 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Ramo Riviste on-device, foglia 2: testatina corrente DPC "separata per posizione" — 2026-06-29 (PUSH, niente build)
+
+Rifinitura "gratis" del ramo DPC trovata cambiando metodologia: invece dei secchi di
+classificazione, **analisi per frequenza del flusso letto**. Segnale netto e net-A-sicuro per
+costruzione: un testo **letto identico molte volte** è furniture (una frase vera non si ripete
+identica). Sulla DPC 2-2018 la testatina corrente "In memoriam: Joachim Vogel" era **letta 59
+volte** (sezione memoriale). Sfuggiva ai canali furniture esistenti per design conservativo: il
+position-lock σ è all-or-nothing per norma, e il **titolo omonimo** (la prima comparsa, a metà
+pagina = contenuto, stessa norma) alza σ oltre la soglia → il canale rinuncia per non rischiare
+il titolo. Il raffinamento (gated DPC, `rivistaRunningHeaderFurniture` in `detectFurniture`)
+**separa per posizione**: di un testo ricorrente identico e in banda-ALTA nella grande maggioranza
+delle occorrenze (≥80%, ≥3 pagine), rimuove SOLO le occorrenze in banda alta (le testatine); la
+rara fuori-banda (il titolo) resta letta. Net-A sicuro: contenuto unico preservato, furniture tolta.
+
+**Reti (banco iPad reale).** Rete A: "In memoriam" letto **59→2** (resta il titolo vero); **0
+contenuto unico perso** — i 6 token-tipo che scompaiono sono **frammenti de-sillabati**
+("armoniz"+"zazione"→"armonizzazione", "baciga"+"lupo"→"Bacigalupo", "inte"+"ractions"→
+"interactions"): la testatina stava fra le due metà di pagina e bloccava la fusione cross-page,
+rimuoverla ha **risanato 6 parole spezzate** (parole intere tutte presenti dopo); binding note
+invariato (same-page 1256/871). Effetto collaterale: anche l'etichetta `Sommario` verticale
+ricorrente (×17, già non-letta come glossa) è assorbita dalla furniture (reading-neutral). DPC4: 0
+token persi. Rete B: Estratto **byte-identico** al freeze build-19 (sha
+`c0e9877279dc5977a1cbb844d366b937b864dd315565099ac81a74b7be0eaedd`) + 7 controlli byte-identici al
+baseline build-19 (Generic/user_notes/DeJure). Test: ScaboCore **419** (+4 `RivistaDpcRecoveryTests`).
+
+Gated su `isRivistaDpc` (complemento dei canali furniture esistenti, additivo). Schema invariato
+0.7.0. Commit unico su `main`, push manuale a discrezione utente.
+
+---
+
 ## ▶ STATO — Ramo Riviste on-device, foglia 1: recupero apparato-nota DPC (D-RIV-1) — 2026-06-29 (PUSH, niente build)
 
 Prima foglia del **ramo Riviste**, sul difetto serio: l'unica **perdita di contenuto** dei
