@@ -104,6 +104,24 @@ final class DeJurePluginTests: XCTestCase {
         XCTAssertEqual(nodes[2].type, .ARTIFACT_STAMP, "il timbro diventa furniture non letta")
     }
 
+    func test_retag_splitsGluedStampSuffix_keepingContent() {
+        // Caso Concause/Cartabia: il colophon è incollato in coda a un nodo BODY di contenuto.
+        var nodes = [
+            NodeDict(id: "node_0", type: .BODY, page_index: 5,
+                     text: "Per il resto rimando ad un successivo studio. "
+                         + "SERVIZIO GESTIONE RISORSE DOCUMENTARIE © Copyright Giuffrè Francis Lefebvre S.p.A. 2024 11/12/2024"),
+        ]
+        let n = retagDejureFurniture(&nodes)
+        XCTAssertEqual(n, 1, "un timbro isolato")
+        XCTAssertEqual(nodes.count, 2, "il nodo è spaccato in contenuto + timbro")
+        XCTAssertEqual(nodes[0].type, .BODY)
+        XCTAssertEqual(nodes[0].text, "Per il resto rimando ad un successivo studio.",
+                       "il contenuto reale resta, senza il colophon")
+        XCTAssertEqual(nodes[1].type, .ARTIFACT_STAMP, "il colophon diventa furniture non letta")
+        XCTAssertTrue(nodes[1].text?.hasPrefix("SERVIZIO GESTIONE RISORSE DOCUMENTARIE") == true)
+        XCTAssertEqual(nodes[1].id, "node_1", "id mintato continuando la sequenza")
+    }
+
     func test_retag_recursesIntoChildren() {
         var nodes = [
             NodeDict(id: "node_0", type: .HEADING_1, page_index: 0, text: "Titolo", children: [

@@ -128,19 +128,80 @@ public final class DeJurePlugin: ExtractionPlugin {
     }
 }
 
-/// Cammina l'albero e ri-etichetta ogni nodo-furniture DeJure (timbro / banner) a `ARTIFACT_STAMP`
-/// (ruolo non letto). Ritorna il numero di nodi ri-etichettati. File-scope internal per i test.
+/// Cammina l'albero e separa la furniture DeJure (timbro colophon / banner di genere) dal flusso
+/// di lettura, ri-etichettandola `ARTIFACT_STAMP` (ruolo non letto). Ritorna il numero di nodi-
+/// furniture isolati. File-scope internal per i test.
+///
+/// Due casi (misurati sui volumi reali):
+///   • furniture AUTONOMA (banner "DOTTRINA" su riga a sé; timbro come nodo proprio, es. MM):
+///     il nodo intero passa ad `ARTIFACT_STAMP`;
+///   • timbro INCOLLATO IN CODA a un nodo di corpo (Concause, Cartabia: il Generic appende il
+///     colophon all'ultimo nodo BODY) → si SPACCA: il contenuto reale prima del timbro resta nel
+///     nodo originale, il colophon va in un nuovo nodo `ARTIFACT_STAMP` fratello subito dopo.
+///
+/// Precisione piena (stella polare): la firma del timbro `SERVIZIO GESTIONE RISORSE DOCUMENTARIE`
+/// è unica e non compare nel testo giuridico; il banner è match ESATTO. Rete A: lo split è un
+/// suffisso (il colophon è l'ultimo testo del documento) → nessuna frase reale persa.
 @discardableResult
 func retagDejureFurniture(_ nodes: inout [NodeDict]) -> Int {
+    var nextCounter = maxNodeCounter(nodes) + 1
     var count = 0
-    for i in nodes.indices {
-        if let text = nodes[i].text, isDejureFurnitureText(text), nodes[i].type != .ARTIFACT_STAMP {
-            nodes[i].type = .ARTIFACT_STAMP
-            count += 1
-        }
-        count += retagDejureFurniture(&nodes[i].children)
-    }
+    nodes = rewriteDejureFurniture(nodes, &nextCounter, &count)
     return count
+}
+
+/// Massimo contatore `node_<n>` presente nell'albero (−1 se nessuno), per mintare id nuovi
+/// continuando la sequenza del Generic.
+private func maxNodeCounter(_ nodes: [NodeDict]) -> Int {
+    var maxN = -1
+    func walk(_ ns: [NodeDict]) {
+        for n in ns {
+            if n.id.hasPrefix("node_"), let v = Int(n.id.dropFirst(5)) { maxN = max(maxN, v) }
+            walk(n.children)
+        }
+    }
+    walk(nodes)
+    return maxN
+}
+
+private func rewriteDejureFurniture(
+    _ nodes: [NodeDict], _ nextCounter: inout Int, _ count: inout Int
+) -> [NodeDict] {
+    var out: [NodeDict] = []
+    for var node in nodes {
+        node.children = rewriteDejureFurniture(node.children, &nextCounter, &count)
+        let text = node.text ?? ""
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if trimmed == DEJURE_BANNER_EXACT {
+            // Banner di genere autonomo → furniture intera.
+            if node.type != .ARTIFACT_STAMP { node.type = .ARTIFACT_STAMP; count += 1 }
+            out.append(node)
+        } else if let r = text.range(of: DEJURE_STAMP_PREFIX) {
+            let before = String(text[text.startIndex..<r.lowerBound])
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let stampText = String(text[r.lowerBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            if before.isEmpty {
+                // Timbro come nodo proprio → furniture intera.
+                node.text = stampText
+                if node.type != .ARTIFACT_STAMP { node.type = .ARTIFACT_STAMP }
+                count += 1
+                out.append(node)
+            } else {
+                // Timbro incollato in coda → SPACCA: contenuto reale + fratello ARTIFACT_STAMP.
+                node.text = before
+                out.append(node)
+                out.append(NodeDict(
+                    id: "node_\(nextCounter)", type: .ARTIFACT_STAMP,
+                    page_index: node.page_index, text: stampText))
+                nextCounter += 1
+                count += 1
+            }
+        } else {
+            out.append(node)
+        }
+    }
+    return out
 }
 
 /// Il singleton del plugin (l'identità conta per il dispatcher `===`).
