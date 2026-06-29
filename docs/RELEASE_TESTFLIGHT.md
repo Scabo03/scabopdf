@@ -74,8 +74,29 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   (focus Estratto: titoli di capitolo+paragrafo via taglia+struttura gated `isEstrattoChrome`,
   commit `50f23a6`; + apparato denso — ricucitura note per identità cross-page/same-page +
   reclassify testatina corrente, falsi-"Nota." 240→52 con anti-fusione 0, commit `2bd48b1`;
-  `UPLOAD SUCCEEDED`, Delivery UUID `92dc26b4-3d56-48c8-b220-8320457476b3`). Il prossimo run
-  produrrà 15.
+  `UPLOAD SUCCEEDED`, Delivery UUID `92dc26b4-3d56-48c8-b220-8320457476b3`).
+- **Build 15 il 2026-06-28** (prima sessione UI del Layer 2: Home a tab con Recenti +
+  Workspaces, libreria archivio/collocazioni a tre livelli, memoria dello stato fra
+  sessioni, riapertura del documento al punto di lettura; persistenza via `LibraryStore`
+  in ScaboCore + cache contenuto; commit `7cce6a2`, Delivery UUID
+  `1bd3acdf-edaa-4884-b8d2-03bdfd6bd9be`).
+- **Build 16 il 2026-06-28** (reader: primo tentativo di riaggancio VoiceOver diretto al
+  segmento — poi SUPERATO in build 17 — + indicatore di pagina in toolbar, commit
+  `928121d`, Delivery UUID `864a8f16-11a9-490b-b7c9-01f0ede3d427`).
+- **Build 17 il 2026-06-28** (reader: indicatore di pagina a DUE BOX separati visualizzazione
+  + file originale, **ancora VoiceOver al tasto Indietro** alla riattivazione — scelta
+  definitiva dopo il collaudo che ha escluso il ritorno diretto — e "Rimuovi dai recenti"
+  come operazione di sola lista; commit `fc70147`, Delivery UUID
+  `c921b624-839b-4455-8d9a-4f1754acb4e3`).
+- **Build 18 il 2026-06-28** (primo ramo DeJure on-device gated sulla porta Aspose + Letter +
+  piè "Pagina N di M": foglia furniture timbro+banner `c84620e`, split del suffisso-timbro
+  colophon `708847c`; + layout **Dottrina Inline** con piazzamento tutto-inline § 10.2 e
+  **selettore di Layout** in toolbar; commit `69e114f`, Delivery UUID
+  `4e5699f4-65be-4681-9e29-34f86bb7da63`).
+- **Build 19 il 2026-06-29** (recupero delle note della dottrina DeJure: separazione della
+  zona-note via etichetta "Note:" + aggancio per-articolo delle endnote; Concause 96/98 note
+  piazzate al richiamo, Cartabia ~455/468; Dottrina Inline si abilita su quei volumi; commit
+  `d32bccf`, Delivery UUID `ff07b1be-034b-4e5c-be2c-f8f50934de2b`). Il prossimo run produrrà 20.
 
 ## Unico punto eventualmente manuale
 

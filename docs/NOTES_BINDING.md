@@ -291,3 +291,30 @@ Unit: `ScaboCoreTests/CrossPageNoteStitchTests.swift` (cross/same-page, catene, 
 anti-fusione) + `ScaboCoreTests/EstrattoRunningHeaderTests.swift` (ricorrenza, soglia, gating,
 nessun contenuto rimosso). Scoperta architetturale collegata: on-device il font non è disponibile
 (PDFKit→Helvetica) — vedi `docs/CARRYOVER.md` e la memoria di progetto.
+
+## 9. Modo di piazzamento per layout — Dottrina Inline (build 18)
+
+`bindAndPlaceNotes` prende ora `placement: NotePlacement` (default `.continuous`, storico
+**invariato byte-per-byte**). `.doctrineInline` (§ 10.2 del prodotto) piazza **ogni** nota inline
+a fine frase del richiamo a prescindere dalla lunghezza — niente differimento a fine sezione,
+niente memory refresh (§ 10.5) — riusando aggancio e split esistenti (cambia solo la scelta
+inline-vs-differito: `inline = isShort || placement == .doctrineInline`). L'audio è quello già in
+piedi (i sei regimi acustici sui NOTE via `length_category`). Il documento è elaborato in due
+flussi (Continua sempre + Dottrina se ci sono note), entrambi in cache; il selettore di Layout in
+toolbar commuta quale flusso è reso (default sempre Lettura Continua). Unit:
+`NoteBindingTests.test_doctrineInline_*`.
+
+## 10. Aggancio per scope d'articolo — endnote DeJure dottrina (build 19)
+
+Le note della dottrina DeJure (Concause, Cartabia) sono **endnote a numerazione per-articolo**,
+lontane dal richiamo: lo scope per-pagina (§ 2 sopra) non le raggiunge. Il plugin DeJure
+**recupera** prima la zona-note dal testo dei nodi — l'etichetta `"Note:"` (presente nelle righe
+PdfKit anche se il generico la incolla in un nodo-straddle; una per articolo, delimitata dal banner
+`DOTTRINA` successivo) — e splitta su `(?=\(\d+\)\s|\(\*\)\s)` in singole NOTE (`recoverDejureNotes`,
+gated, **precisione piena**: si promuove solo dentro la zona; un `(N)` nel corpo resta richiamo).
+Poi `bindAndPlaceNotes` aggancia con un fallback per **SCOPE D'ARTICOLO** (delimitato dai banner,
+GATED su DeJure via il warning `plugin:dejure:`), dopo che same-page e cross-page falliscono, su
+**match unico** nello stesso articolo (numeri unici dentro l'articolo → niente cross-bind; il
+percorso generico resta byte-identico per ogni altro volume). Empirico: Concause 96/98 note
+piazzate, Cartabia ~455/468, zero falsi positivi sul corpo. Unit:
+`DeJurePluginTests.test_recoverNotes_*` (zona/split/precisione) + `NotePlacementStats.boundArticleScope`.
