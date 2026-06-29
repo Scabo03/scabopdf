@@ -52,6 +52,65 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Ramo Riviste on-device, foglia 1: recupero apparato-nota DPC (D-RIV-1) — 2026-06-29 (PUSH, niente build)
+
+Prima foglia del **ramo Riviste**, sul difetto serio: l'unica **perdita di contenuto** dei
+materiali staccati dall'Estratto. Niente build TestFlight questo giro (si accumula per il
+collaudo). **Estratto byte-identico** al punto di congelamento build-19 (sha256
+`c0e9877279dc5977a1cbb844d366b937b864dd315565099ac81a74b7be0eaedd`) — prova, non assunzione.
+
+**Mappatura fresca (Triple Take + bench reale, prima di costruire).** Riviste = **due rametti
+staccati** su tutti e tre gli assi dall'Estratto (Acrobat Pro 9 / TimesNewRoman / 483×684):
+**(A) Rivista DPC** (Adobe InDesign CC / Adobe PDF Lib 15, **ACaslonPro**, **567×814**, colonna
+singola, apparato note fittissimo regime SMALLER) — 2-2018 (333pp), 4-2020 (232pp); **(B)
+1720-951X / "Analisi Giuridica dell'Economia"** (**itext** + ricucitura pdftk, **BauerBodoni**,
+A4 595×842, offprint d'articolo a una colonna, apparato leggero regime FLAT) — 24236 (19pp),
+28105 (3pp). Verdetti freschi che **smentiscono misure/ipotesi vecchie**: (1) **nessun falso
+"Nota." udibile** sui journal — il cerotto `suppressCollapsedHeadingNoteIntros` lo neutralizza; il
+problema nascosto è l'**opposto** (note vere che spariscono); (2) la geometria DPC **non è "due
+colonne"** (corpo a colonna SINGOLA) — la diagnosi vecchia falsificata dalla misura PyMuPDF reale;
+(3) i HEADING_1 ≈1/pagina dei DPC sono **titoli multi-riga frammentati** + fronte trilingue, non
+errori di promozione.
+
+**D-RIV-1 — la radice e il recupero.** L'apparato di note a piè della DPC **sporge nel margine
+sinistro** (indent-nota x0≈77 < bordo-corpo x0≈154): le note **corte** (x1 < bordo-corpo) cadono a
+sinistra del corpo e il test-glossa size-only le scambia per `MARGINAL_GLOSS` → **escluse dalla
+lettura** (`NON_READ_ROLES`). **Verifica pagina-per-pagina blindata** (metro PyMuPDF, geometria
+certificata): **130 nodi-nota persi sul 2-2018** (di 157 glosse: 130 apparato sotto-corpo + 20
+glosse genuine `Sommario`/bilingui + 7 merge), **90 sul 4-2020** (di 114). Fix-radice **geometrico
+e a monte** in `GenericPlugin.pageItems` gated `profile.isRivistaDpc`: una riga taglia-nota **sotto
+il blocco-corpo** è apparato (→ `.note`), non glossa; le glosse genuine stanno **in alto** →
+intoccate. Flag impostato da `estimateProfile` (firma 567×814 univoca + corpo≈10pt) → build e
+`bindAndPlaceNotes` coerenti, le note recuperate **splittate e agganciate** come ogni altra.
+
+**Architettura.** Nuovo `RivistaDpcPlugin` registrato (gate = il flag, profile_id `rivista_dpc`),
+come DeJure/Cortina/user_notes. Fix gated nel `pageItems` via flag di profilo (modello provato
+`isEstrattoChrome`): **byte-identico ovunque la porta sia falsa**. On-device il font non è
+affidabile (PDFKit→Helvetica) → firma **geometrica**, come Cortina.
+
+**Le due reti (banco iPad reale).** **Rete A** (prova regina): `MARGINAL_GLOSS` **157→21** (2-2018,
+le 21 rimaste tutte genuine: 17 `Sommario` + 4 etichette bilingui) e **114→16** (4-2020); **0
+token-tipo persi** sul 2-2018, 1 sul 4-2020 (`ipo` **fuso** in `ipoapplicazione`, contenuto
+preservato); le note prima perse ora **lette E agganciate** (binding same-page 1151→**1256** sul
+2-2018, 830→**871** sul 4-2020, +146 piazzate al richiamo). **Rete B**: Estratto byte-identico (sha
+sopra) + 7 controlli byte-identici pre/post (Marotta, Mandrioli v1, Torrente, Mosconi, Patriarca =
+Generic; Appunti = user_notes; DeJure Concause), Cortina invariato (codice non toccato + test).
+**Test**: ScaboCore **415 verdi** (+7 `RivistaDpcRecoveryTests`), app **71 verdi**.
+
+**Classifica riviste aggiornata (prossimi giri).** ③ recupero note **FATTA**. Restano, rimisurate:
+① **consolidamento titoli multi-riga** (frammentazione HEADING per riga, tutti e 4 i journal;
+branch-gated alle riviste, **mai al tronco** perché toccherebbe l'Estratto); ② **furniture-testatina
+riviste** (testatine recto/verso "In memoriam: …" che restano in NOTE — silenzioso, non perdita di
+contenuto; falsi-"Nota." strutturali residui 22/38); ④ masthead/bibliografia offprint (1720-951X);
+⑤ binding FLAT offprint (tripletta). Fermato a UNA foglia per disciplina: è l'unica perdita di
+contenuto; ① e ② sono cosmetici/silenziosi e meccanismi distinti, da posare puliti a parte
+(precisione prima del recall, niente scope in un commit).
+
+Schema **invariato 0.7.0** (riusa `MARGINAL_GLOSS`/`NOTE`, nessun campo/categoria nuovo; il flag di
+profilo è interno, non nel contratto). Commit unico su `main`, push manuale a discrezione utente.
+
+---
+
 ## ▶ STATO — UI Layer 2 + ramo DeJure on-device + Dottrina Inline → build 15-19 su TestFlight — 2026-06-28/29 (SPEDITE)
 
 Cinque build di Layer 2 sopra la baseline congelata dell'Estratto, in due blocchi: **UI dell'app** (build 15-17) e **ramo DeJure + layout Dottrina Inline** (build 18-19). Tutto **additivo**: il flusso di Lettura Continua resta byte-identico a livello segmenti su ogni documento (verificato col bench reale, JSON canonico), e l'**Estratto** — Acrobat, non DeJure — resta intatto per costruzione.

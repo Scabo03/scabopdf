@@ -318,3 +318,37 @@ GATED su DeJure via il warning `plugin:dejure:`), dopo che same-page e cross-pag
 percorso generico resta byte-identico per ogni altro volume). Empirico: Concause 96/98 note
 piazzate, Cartabia ~455/468, zero falsi positivi sul corpo. Unit:
 `DeJurePluginTests.test_recoverNotes_*` (zona/split/precisione) + `NotePlacementStats.boundArticleScope`.
+
+## 11. Recupero dell'apparato a piè che SPORGE nel margine (Rivista DPC) — ramo riviste
+
+Sui fascicoli **Diritto Penale Contemporaneo** (InDesign, ACaslonPro, 567×814) l'apparato di
+note a piè sporge nel **margine sinistro**: l'indent della nota (x0≈77) sta a SINISTRA del bordo
+del corpo (x0≈154). Le note **corte** (bordo destro x1 < bordo-corpo) cadono interamente a
+sinistra del corpo, e il test-glossa size-only del Generic (riga taglia-nota **fuori colonna** →
+`MARGINAL_GLOSS`) le scambiava per glosse laterali → **escluse dalla lettura** (`NON_READ_ROLES`):
+unica perdita di contenuto reale del ramo, invisibile all'orecchio (il cerotto anti-"Nota."
+zittisce la categoria). La verifica pagina-per-pagina (metro PyMuPDF + lettura semantica) conta
+**~130 nodi-nota persi sul 2-2018** e **~90 sul 4-2020**, non letti da nessuna parte.
+
+**La radice non è "due colonne"** (la diagnosi vecchia, falsificata dalla misura fresca: il corpo
+DPC è a colonna SINGOLA, x0≈154→x1≈527): è il **rientro-nota a sinistra**. Il recupero è
+geometrico e a monte (`GenericPlugin.pageItems`, gated `profile.isRivistaDpc`): una riga
+taglia-nota il cui bordo superiore sta **SOTTO l'ultima riga di corpo** (zona-piè) è apparato di
+note per costruzione → `.note`, non glossa. Le glosse genuine della DPC (etichetta `Sommario`
+verticale in alto, titoli di sezione bilingui) stanno **sopra** il corpo → non toccate. Poiché
+`bindAndPlaceNotes` ri-stima il profilo via `estimateProfile` (stesso flag), le note recuperate
+sono splittate e **agganciate** dal binder come ogni altra nota — niente percorso speciale.
+
+La porta (`RivistaDpcPlugin.matches`) è il flag stesso (geometria 567×814 **univoca** nel corpus +
+corpo≈10pt): dove è falso → Generic, byte-identico, **l'Estratto (Acrobat/Times) e i manuali non la
+sfiorano per costruzione**. On-device il nome-font non è affidabile (PDFKit→Helvetica) → firma
+geometrica, come la porta Cortina.
+
+**Reti (banco iPad reale).** Rete A (prova regina, è perdita di contenuto): `MARGINAL_GLOSS`
+**157→21** (2-2018) e **114→16** (4-2020), tutte le rimaste genuine (`Sommario` + etichette
+bilingui); **0 token-tipo persi** sul 2-2018, 1 sul 4-2020 (`ipo` **fuso** in `ipoapplicazione`,
+contenuto preservato); le note recuperate sono ora LETTE e **agganciate** (same-page 1151→**1256**
+sul 2-2018, 830→**871** sul 4-2020 — +146 piazzate al richiamo). Rete B: ogni volume non-DPC ha
+`isRivistaDpc==false` → `pageItems` byte-identico (Estratto, Marotta, Mandrioli, Torrente, Mosconi,
+Patriarca, Appunti, DeJure verificati byte-identici pre/post). Unit: `RivistaDpcRecoveryTests`
+(porta, recupero sotto-corpo, glossa-in-alto conservata, nota-in-colonna invariata, gating).

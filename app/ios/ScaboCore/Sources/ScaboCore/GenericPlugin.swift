@@ -47,6 +47,25 @@ let MIN_BODY_LINES_FOR_COLUMN = 3
 /// stretto di così → ambigua → si resta in NOTE (astensione, mai scarto nel dubbio).
 let GLOSS_MARGIN_TOLERANCE = 5.0
 
+// ── Ramo Riviste — porta DPC (Diritto Penale Contemporaneo) ──────────────────────
+// Fascicolo a colonna singola in cui l'APPARATO DI NOTE a piè sporge nel MARGINE
+// SINISTRO (indent-nota x0 ≈ 77 < bordo-corpo x0 ≈ 154): le note CORTE (x1 < bordo
+// corpo) cadono interamente a sinistra del corpo e il test-glossa size-only le scambia
+// per glosse laterali → escluse dalla lettura (perdita di contenuto, ~130 nodi sul
+// 2-2018, ~90 sul 4-2020 — verifica pagina-per-pagina). La radice NON è "due colonne"
+// (il corpo È a colonna singola): è il RIENTRO-NOTA a sinistra. Il recupero riconosce
+// la zona-piè per GEOMETRIA — una riga taglia-nota SOTTO il blocco-corpo è apparato
+// note (→ NOTE), non glossa — gated su questa firma di volume (geometria unica nel
+// corpus + corpo ≈10pt). Le glosse genuine (etichetta "Sommario" verticale in alto,
+// titoli di sezione bilingui) stanno ALTE → non toccate. Vedi RivistaDpcPlugin.swift.
+/// Formato della Rivista DPC (pt). Univoco nel corpus di calibrazione (nessun altro
+/// volume è 567×814; gli altri InDesign sono a geometrie distinte).
+let RIVISTA_DPC_TRIM_WIDTH = 567.0
+let RIVISTA_DPC_TRIM_HEIGHT = 814.0
+/// Tolleranza sul formato (pt): generosa per la deriva dell'estrattore, stretta
+/// abbastanza da non collidere con nessun'altra geometria del corpus.
+let RIVISTA_DPC_TRIM_TOLERANCE = 12.0
+
 /// RGB distance beyond which a colour counts as "distinct from body".
 let COLOR_DISTANCE_MIN = 100.0
 /// Min RGB saturation (max−min channel) for a colour to read as structural.
@@ -147,6 +166,11 @@ struct Profile {
     /// MAIUSCOLO a taglia DISTINTAMENTE > corpo (≈ corpo×1.04). Confina la foglia a quel
     /// volume/famiglia: dove è falso, `recognizeEstrattoTitles` è un no-op (byte-identico).
     var isEstrattoChrome: Bool = false
+    /// Gate del ramo Riviste — porta DPC: vero SOLO sui fascicoli con la firma della
+    /// Rivista DPC (geometria 567×814 + corpo ≈10pt). Quando vero, `pageItems` recupera
+    /// l'apparato di note che sporge nel margine sinistro (riga taglia-nota SOTTO il
+    /// corpo → NOTE, non glossa). Dove è falso → no-op, byte-identico ovunque.
+    var isRivistaDpc: Bool = false
 }
 
 // MARK: - The plugin
@@ -370,7 +394,33 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
         }
     }
 
-    return Profile(bodySize: bodySize, bodyColor: bodyColor, isEstrattoChrome: isEstratto)
+    // Gate del ramo Riviste — porta DPC: la geometria 567×814 è univoca nel corpus
+    // (necessaria) e il corpo ≈10pt la corrobora. Fail-safe: dove è falso il recupero
+    // zona-piè in `pageItems` è un no-op (byte-identico ovunque). `matches()` del plugin
+    // legge QUESTO stesso flag → porta e recupero hanno un'unica sorgente di verità.
+    let (pageW, pageH) = dominantPageSize(extraction)
+    let isRivistaDpc =
+        abs(pageW - RIVISTA_DPC_TRIM_WIDTH) <= RIVISTA_DPC_TRIM_TOLERANCE
+            && abs(pageH - RIVISTA_DPC_TRIM_HEIGHT) <= RIVISTA_DPC_TRIM_TOLERANCE
+            && bodySize >= 9.0 && bodySize <= 11.0
+
+    return Profile(
+        bodySize: bodySize, bodyColor: bodyColor,
+        isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc)
+}
+
+/// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
+/// Helper libero usato dal gate Riviste (in `estimateProfile`) e dal plugin omonimo.
+func dominantPageSize(_ extraction: PdfExtraction) -> (Double, Double) {
+    var counts: [String: (count: Int, w: Double, h: Double)] = [:]
+    for page in extraction.pages {
+        let key = "\(Int(page.width.rounded()))x\(Int(page.height.rounded()))"
+        let cur = counts[key] ?? (0, page.width, page.height)
+        counts[key] = (cur.count + 1, page.width, page.height)
+    }
+    var best = (count: 0, w: 0.0, h: 0.0)
+    for (_, v) in counts where v.count > best.count { best = v }
+    return (best.w, best.h)
 }
 
 // MARK: - Furniture detection
@@ -1172,17 +1222,25 @@ func pageItems(
     let body = profile.bodySize
     var bodyX0s: [Double] = []
     var bodyX1s: [Double] = []
+    var bodyYBottoms: [Double] = []
     if body > 0 {
         for sm in summaries
         where abs(sm.fontSize - body) <= BODY_SIZE_TOLERANCE
             && sm.width > BODY_COLUMN_MIN_WIDTH_FRACTION * page.width {
             bodyX0s.append(sm.x0)
             bodyX1s.append(sm.x1)
+            bodyYBottoms.append(sm.yBottom)
         }
     }
     let columnKnown = bodyX0s.count >= MIN_BODY_LINES_FOR_COLUMN
     let colX0 = median(bodyX0s)
     let colX1 = median(bodyX1s)
+    // Ramo Riviste (porta DPC): bordo inferiore del blocco-corpo (origine in basso-
+    // sinistra → "più in basso in pagina" = y MINORE). Una riga taglia-nota il cui
+    // bordo superiore sta SOTTO l'ultima riga di corpo è APPARATO DI NOTE (sporge a
+    // sinistra ma è una nota), non glossa: si recupera a `.note`. Gated su isRivistaDpc
+    // e su colonna nota → altrove e nel dubbio: nessun cambiamento (decisione storica).
+    let bodyBottomY = bodyYBottoms.min()
 
     var items: [GenItem] = []
     var runRole: RunRole?
@@ -1213,9 +1271,19 @@ func pageItems(
             // laterale (categoria propria), non una nota; le note vere (in colonna)
             // restano `.note`. Nel dubbio (colonna incerta o riga al confine) →
             // resta `.note` (astensione).
-            let role: RunRole =
-                isLateralGloss(sm, colX0: colX0, colX1: colX1, columnKnown: columnKnown)
-                ? .gloss : .note
+            //
+            // RAMO RIVISTE (porta DPC): l'apparato di note sporge nel margine sinistro
+            // e le note corte cadrebbero in glossa. Se la riga sta SOTTO il blocco-corpo
+            // (zona-piè) la si RECUPERA a nota — radice geometrica, non patch testuale:
+            // la zona-piè è l'apparato per costruzione (le glosse genuine stanno in alto).
+            let role: RunRole
+            if profile.isRivistaDpc, columnKnown, let bottom = bodyBottomY,
+               sm.yTop < bottom {
+                role = .note
+            } else {
+                role = isLateralGloss(sm, colX0: colX0, colX1: colX1, columnKnown: columnKnown)
+                    ? .gloss : .note
+            }
             appendToRun(role, sm)
         }
     }
