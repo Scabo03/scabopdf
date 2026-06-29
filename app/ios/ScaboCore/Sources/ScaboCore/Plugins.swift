@@ -74,7 +74,7 @@ public let DISPATCH_THRESHOLD = 0.6
 /// the 453×694 trim that no other corpus volume reaches the threshold — the
 /// Generic stays untouched for everything else.
 let registeredPlugins: [ExtractionPlugin] = [
-    raffaelloCortinaPlugin, userNotesPlugin, dejurePlugin, rivistaDpcPlugin,
+    raffaelloCortinaPlugin, userNotesPlugin, dejurePlugin, rivistaDpcPlugin, codiciPlugin,
 ]
 
 /// Selects the plugin that should own the extraction.

@@ -524,4 +524,78 @@ final class RealPdfBenchTests: XCTestCase {
             print("[audit] \(name): note-seg=\(totalNote) falsi-Nota=\(records.count)")
         }
     }
+
+    // MARK: - Probe diagnostica: segnale trigger-articolo dei codici (span-level reale)
+
+    private struct ArtProbeSample: Codable {
+        let page: Int; let firstSpanSize: Double; let firstSpanBold: Bool
+        let lineMean: Double; let firstSpanText: String; let text: String
+    }
+    private struct ArtProbe: Codable {
+        let pdf: String; let bodySize: Double
+        let regexMatchLines: Int; let caughtAtThreshold: Int
+        let firstSpanSizeHistogram: [String: Int]   // among regex-matching lines
+        let samples: [ArtProbeSample]
+        let distinctNumbersCaught: Int
+    }
+
+    func test_codiciArticleProbe_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_ARTPROBE_REQUEST"]
+            ?? "/tmp/scabo_artprobe_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta artprobe in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let artRe = try! NSRegularExpression(
+            pattern: "^\\d{1,4}([ -](bis|ter|quater|quinquies|sexies|septies|octies|novies|decies))*([.]\\d+)?[.]\\s*(\\(\\d+\\)\\s*)?[–-]?\\s*[«\"“A-ZÀ-Ù\\[]")
+        let numRe = try! NSRegularExpression(pattern: "^\\d{1,4}([ -](bis|ter|quater|quinquies|sexies|septies|octies|novies|decies))*$")
+        let extractor = PdfKitExtractor()
+        let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else { continue }
+            let ex = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+            let body = estimateProfile(ex).bodySize
+            let thr = body * 1.13
+            var matchLines = 0, caught = 0
+            var hist: [String: Int] = [:]
+            var allCaught: [ArtProbeSample] = []
+            var nums = Set<String>()
+            for page in ex.pages {
+                for line in page.lines {
+                    let sm = summarizeLine(line)
+                    let t = jsTrim(sm.text)
+                    let r = NSRange(t.startIndex..<t.endIndex, in: t)
+                    guard artRe.firstMatch(in: t, range: r) != nil else { continue }
+                    matchLines += 1
+                    guard let first = line.spans.first(where: { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }) else { continue }
+                    let key = String(format: "%.1f", first.fontSize)
+                    hist[key, default: 0] += 1
+                    let ft = jsTrim(first.text)
+                    let fr = NSRange(ft.startIndex..<ft.endIndex, in: ft)
+                    let firstIsNumber = numRe.firstMatch(in: ft, range: fr) != nil
+                    // SEGNALE FINALE on-device: size≥soglia + primo-span numero puro (NO bold: perso col font)
+                    if first.fontSize >= thr && firstIsNumber {
+                        caught += 1
+                        if let m = ft.split(separator: ".").first { nums.insert(String(m)) }
+                        allCaught.append(ArtProbeSample(
+                            page: page.pageIndex, firstSpanSize: first.fontSize, firstSpanBold: first.bold,
+                            lineMean: sm.fontSize, firstSpanText: String(ft.prefix(16)), text: String(t.prefix(50))))
+                    }
+                }
+            }
+            // campione SPARSO su tutto il documento (precisione nel corpo profondo, non solo il fronte)
+            let stepN = max(1, allCaught.count / 40)
+            var samples: [ArtProbeSample] = []
+            var k = 0
+            while k < allCaught.count { samples.append(allCaught[k]); k += stepN }
+            let probe = ArtProbe(
+                pdf: name, bodySize: body, regexMatchLines: matchLines, caughtAtThreshold: caught,
+                firstSpanSizeHistogram: hist, samples: samples, distinctNumbersCaught: nums.count)
+            let stem = (name as NSString).deletingPathExtension
+            try enc.encode(probe).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).artprobe.json"))
+            print("[artprobe] \(name): body=\(body) regexLines=\(matchLines) caught=\(caught) distinctNums=\(nums.count)")
+        }
+    }
 }

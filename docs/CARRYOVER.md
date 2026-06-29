@@ -52,6 +52,58 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Ramo Codici on-device, foglia 1: navigabilità per articolo (HEADING_4) — 2026-06-30 (PUSH, niente build)
+
+Primo ramo **Codici** (codici legali tascabili Giuffrè PDFsharp 357×547). Mappatura fresca + foglia
+1 nello stesso giro. Niente build. **Estratto byte-identico** al freeze build-19 (sha
+`c0e9877279dc5977a1cbb844d366b937b864dd315565099ac81a74b7be0eaedd`). Gate `isCodici` = geometria
+357×547 + producer PDFsharp + corpo≈7.5 — firma univoca, **lontanissima dall'Estratto**
+(Acrobat/Times/483×684): un ramo Codici gated non può sfiorarlo per costruzione.
+
+**Mappatura — due ipotesi ribaltate dai dati.** (1) **L'ordine di lettura NON è rotto.** I codici
+SONO a due colonne (verificato: sx [31,174], dx [184,326]), ma PDFKit on-device li legge
+**column-corretto** (articoli in sequenza 1321→1322… colonna sx, poi dx; ~4 cambi-colonna/pagina =
+code cross-page). Stesso column-awareness del Mattone B sugli indici → **niente port di riordino,
+niente estrazione low-level**. (2) Il difetto vero è la **navigabilità per articolo, ASSENTE**:
+~18.000 marcatori d'articolo sepolti in nodi BODY giganti, **0 come heading** (HEADING_4 pre=0).
+Causa: il classificatore size-only usa la media-riga; «1321. Nozione. – [I]. Il contratto…» ha il
+numero a 9.0pt ma il resto a 7.5pt → media ≈8.0 → BODY. Il segnale c'è ma va letto **allo span**.
+
+**Quantificazione preventiva (probe sul banco PdfKit REALE, non PyMuPDF).** Lezione riviste di
+nuovo: PDFKit conserva la **dimensione** dello span (numero d'articolo a 9.0pt) ma **perde il flag
+bold** col nome-font (→Helvetica) — misurato: 7978 righe-articolo, primo span 9.0pt, bold=false su
+tutte (un check con bold catturava 0 on-device). Segnale finale: **primo span ≥ corpo×1.13 + testo
+del primo span = numero puro + riga che matcha il pattern d'articolo, SENZA bold**. Precisione
+~100% (campione sparso 41/41 articoli veri su tutto il volume; suffissi bis/ter/septies e marcatori
+«(N)» inclusi), recall ~99%.
+
+**La foglia (`CodiciPlugin`, gated).** Riconosce il trigger allo span e promuove ogni articolo a
+**HEADING_4** (navigabile dal rotore — `isHeadingRole` accetta solo `HEADING_*`/SECTION_DIVIDER,
+non ARTICLE_HEADER). Spacca il run di corpo: header = «NNNN. Rubrica.» (rubrica multi-riga **unita
+e de-sillabata** fino al confine «–»/«[»), corpo = «[I]…». Lo split vive in `pageItems` gated
+`isCodici` (via estimateProfile) → build e `bindAndPlaceNotes` coerenti. Layer 1 Python classifica
+per font-family (perso on-device) ma ogni segnale (size 9 numero, size 6.5 note, keyword
+LIBRO/TITOLO/CAPO/SEZIONE, «[I]» commi, «[N]» rimandi) è ricostruibile da size+testo → **port, non
+estrazione**.
+
+**Le due reti (banco iPad reale).** Rete A: **HEADING_4 0 → 7887 (civile) / 5622 (penale)** —
+~13.500 articoli ora navigabili, precisione ~100% (campioni tutti articoli veri, rubrica intera);
+**0 contenuto perso** (token letti +13/+40); rubrica troncata a capo **22% → 0%** dopo il merge
+multi-riga. Rete B: **Estratto byte-identico** al freeze + **7 controlli byte-identici** (Marotta,
+Mosconi, Torrente, Mandrioli, Patriarca, Appunti, DeJure); DPC e ogni non-codice invariati per
+costruzione (gated `isCodici`). Test: ScaboCore **429** (+10 `CodiciArticleTests`). Probe diagnostica
+`test_codiciArticleProbe_fromRequest` aggiunta a `RealPdfBenchTests` (misura del segnale, skip senza
+richiesta). Schema invariato 0.7.0 (HEADING_4 esistente; nessun campo/categoria nuovo).
+
+**Classifica codici aggiornata.** ① navigabilità articolo **FATTA**. Restano: ② gerarchia
+LIBRO/TITOLO/CAPO/SEZIONE → HEADING (CAPO/SEZIONE ancora incollati nel BODY; condivide la
+separazione-per-posizione testatina-vs-heading con ③); ③ furniture testatine codici (le «ARTT. N-M
+[pag]» → falsi HEADING_3 nel rotore, «TITOLO X» letti ×44 — riusa `rivistaRunningHeaderFurniture`);
+④ apparato note (già letto, bassa priorità). **L'ordine non è una foglia: è già giusto.** Commit
+unico su `main`, push manuale a discrezione utente.
+
+---
+
 ## ▶ STATO — Ramo Riviste on-device, foglia 2: testatina corrente DPC "separata per posizione" — 2026-06-29 (PUSH, niente build)
 
 Rifinitura "gratis" del ramo DPC trovata cambiando metodologia: invece dei secchi di

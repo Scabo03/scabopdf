@@ -189,6 +189,10 @@ struct Profile {
     /// l'apparato di note che sporge nel margine sinistro (riga taglia-nota SOTTO il
     /// corpo → NOTE, non glossa). Dove è falso → no-op, byte-identico ovunque.
     var isRivistaDpc: Bool = false
+    /// Gate del ramo Codici (codici legali tascabili PDFsharp 357×547): vero SOLO sui
+    /// due codici. Quando vero, `pageItems` riconosce i trigger d'articolo allo span e
+    /// li promuove a HEADING_4 navigabili. Dove è falso → no-op, byte-identico ovunque.
+    var isCodici: Bool = false
 }
 
 // MARK: - The plugin
@@ -422,9 +426,17 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
             && abs(pageH - RIVISTA_DPC_TRIM_HEIGHT) <= RIVISTA_DPC_TRIM_TOLERANCE
             && bodySize >= 9.0 && bodySize <= 11.0
 
+    // Gate del ramo Codici: geometria tascabile 357×547 + producer PDFsharp + corpo
+    // ≈7.5pt — firma univoca nel corpus, lontanissima dall'Estratto (Acrobat/Times).
+    let isCodici =
+        abs(pageW - CODICI_TRIM_WIDTH) <= CODICI_TRIM_TOLERANCE
+            && abs(pageH - CODICI_TRIM_HEIGHT) <= CODICI_TRIM_TOLERANCE
+            && (extraction.producer ?? "").contains(CODICI_PRODUCER_FRAGMENT)
+            && bodySize >= 6.5 && bodySize <= 8.5
+
     return Profile(
         bodySize: bodySize, bodyColor: bodyColor,
-        isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc)
+        isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc, isCodici: isCodici)
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
@@ -1348,7 +1360,10 @@ func pageItems(
     flushRun()
     // Foglia titoli-Estratto (gated): converte i titoli capitolo/paragrafo nascosti nei run
     // di corpo in heading. No-op (byte-identico) sui volumi non-Estratto.
-    return recognizeEstrattoTitles(items, profile)
+    let withEstratto = recognizeEstrattoTitles(items, profile)
+    // Foglia 1 dei Codici (gated): promuove i trigger d'articolo a HEADING_4 navigabili.
+    // No-op (byte-identico) sui volumi non-codice.
+    return profile.isCodici ? recognizeCodiciArticles(withEstratto, profile) : withEstratto
 }
 
 /// Emits the nodes for one page from `pageItems`: headings as standalone nodes,
