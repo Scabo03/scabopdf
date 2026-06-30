@@ -489,6 +489,48 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertEqual(vc.renderedSegmentCountForTesting, 3, "torna al flusso Lettura Continua")
     }
 
+    private func sampleTree() -> [QuickConsultNode] {
+        let art = QuickConsultNode(role: "ARTICLE_HEADER", depth: 2, title: "1173. Fonti",
+                                   headingId: "node_5", firstPage: 0, lastPage: 0, children: [],
+                                   contentIds: ["node_6"])
+        let libro = QuickConsultNode(role: "HEADING_1", depth: 1, title: "LIBRO QUARTO",
+                                     headingId: "node_4", firstPage: 0, lastPage: 0, children: [art],
+                                     contentIds: [])
+        return [libro]
+    }
+
+    func test_quickLayout_availableWhenTreeProvided() {
+        let vc = ContinuousReadingViewController(
+            content: sampleContent(3), sourceName: "codice.pdf", documentId: "dq",
+            quickConsultTree: sampleTree(), signalPlayer: SignalPlayerSpy())
+        vc.loadViewIfNeeded(); vc.view.frame = CGRect(x: 0, y: 0, width: 768, height: 1024); vc.view.layoutIfNeeded()
+        XCTAssertTrue(vc.quickAvailableForTesting, "albero presente → Consultazione Rapida disponibile")
+        XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "default sempre Lettura Continua")
+    }
+
+    func test_quickLayout_disabledWhenNoTree_isNoOp() {
+        let vc = makeReader(continuous: sampleContent(4), doctrine: nil)
+        XCTAssertFalse(vc.quickAvailableForTesting, "nessun albero → disabilitato")
+        vc.switchLayoutForTesting(to: .quick)
+        XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "switch a quick senza albero è no-op")
+    }
+
+    func test_quickLayout_switchShowsTreeContainer_andBack() {
+        let vc = ContinuousReadingViewController(
+            content: sampleContent(3), sourceName: "codice.pdf", documentId: "dq",
+            quickConsultTree: sampleTree(), signalPlayer: SignalPlayerSpy())
+        vc.loadViewIfNeeded(); vc.view.frame = CGRect(x: 0, y: 0, width: 768, height: 1024); vc.view.layoutIfNeeded()
+        vc.switchLayoutForTesting(to: .quick)
+        XCTAssertEqual(vc.currentLayoutForTesting, .quick)
+        XCTAssertNotNil(vc.quickConsultViewForTesting, "la vista ad albero è creata")
+        // La radice espone SOLO il container-albero (sigillo strutturale, § 2.2).
+        let exposed = vc.rootAccessibilityContainersForTesting
+        XCTAssertTrue(exposed.contains { $0 === vc.quickConsultViewForTesting }, "albero è il container attivo")
+        vc.switchLayoutForTesting(to: .continuous)
+        XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "torna a Lettura Continua")
+        XCTAssertEqual(vc.renderedSegmentCountForTesting, 3)
+    }
+
     func test_layoutSelector_doctrinePositionDoesNotCorruptContinuousSaved() {
         var saved: [Int] = []
         let vc = ContinuousReadingViewController(

@@ -21,7 +21,7 @@
 import Foundation
 
 /// Un nodo dell'albero di Consultazione Rapida.
-public struct QuickConsultNode: Equatable, Sendable {
+public struct QuickConsultNode: Equatable, Sendable, Codable {
     /// Ruolo del nodo-intestazione (HEADING_1..4 o ARTICLE_HEADER).
     public let role: String
     /// Profondità nell'albero (1 = livello più alto presente).
@@ -38,6 +38,18 @@ public struct QuickConsultNode: Equatable, Sendable {
     /// Id dei nodi-contenuto dell'unità-foglia (corpo/commi/note), da mostrare
     /// all'espansione dell'articolo. Vuoto per i nodi non-foglia.
     public var contentIds: [String]
+
+    public init(role: String, depth: Int, title: String, headingId: String,
+                firstPage: Int, lastPage: Int, children: [QuickConsultNode], contentIds: [String]) {
+        self.role = role
+        self.depth = depth
+        self.title = title
+        self.headingId = headingId
+        self.firstPage = firstPage
+        self.lastPage = lastPage
+        self.children = children
+        self.contentIds = contentIds
+    }
 }
 
 /// Ruolo → profondità d'albero assoluta (LIBRO=1 … ARTICOLO=5); nil se non è un
@@ -108,6 +120,29 @@ private func freeze(_ n: MutableTreeNode, depth: Int) -> QuickConsultNode {
     return QuickConsultNode(
         role: n.role, depth: depth, title: n.title, headingId: n.headingId,
         firstPage: first, lastPage: last, children: kids, contentIds: n.contentIds)
+}
+
+/// Vero se l'albero ha una gerarchia consultabile (§ 8.8): almeno un nodo con figli (vera
+/// annidatura) oppure almeno due voci di primo livello. Un documento sostanzialmente piatto
+/// (una sola radice senza figli) non ha un albero da mostrare → il selettore disabilita il
+/// Layout con motivo. Calcolo su `roots` (il modello già costruito).
+public func quickConsultAvailable(_ roots: [QuickConsultNode]) -> Bool {
+    if roots.count >= 2 { return true }
+    return roots.contains { !$0.children.isEmpty }
+}
+
+/// Mappa id-nodo → testo per ogni nodo del documento, usata dalla vista per mostrare il
+/// contenuto dell'unità-foglia all'espansione (§ 8.6).
+public func quickConsultNodeText(_ document: ScabopdfDocument) -> [String: String] {
+    var map: [String: String] = [:]
+    func walk(_ nodes: [NodeDict]) {
+        for node in nodes {
+            if let t = node.text, !t.isEmpty { map[node.id] = t }
+            if !node.children.isEmpty { walk(node.children) }
+        }
+    }
+    walk(document.structure)
+    return map
 }
 
 // MARK: - Etichetta di summary (§ 8.3): titolo + range-figli + intervallo-pagine

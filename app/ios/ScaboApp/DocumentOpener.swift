@@ -43,7 +43,8 @@ enum DocumentOpener {
         if let cached = service.loadCache(forDocumentId: id) {
             service.store.recordOpened(id: id)
             presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
-                          doctrineContent: cached.doctrineContent, from: presenter, onClosed: onClosed)
+                          doctrineContent: cached.doctrineContent,
+                          quickConsultTree: cached.quickConsultTree, from: presenter, onClosed: onClosed)
             return
         }
 
@@ -64,11 +65,14 @@ enum DocumentOpener {
                 switch outcome {
                 case .success(let document, let content, let doctrineContent):
                     let pageMap = buildPageMap(document)
+                    let tree = quickConsultTreeIfAvailable(document)
                     service.writeCache(content, pageMap: pageMap,
-                                       doctrineContent: doctrineContent, forDocumentId: id)
+                                       doctrineContent: doctrineContent, quickConsultTree: tree,
+                                       forDocumentId: id)
                     service.store.recordOpened(id: id)
                     presentReader(content: content, document: doc, pageMap: pageMap,
-                                  doctrineContent: doctrineContent, from: presenter, onClosed: onClosed)
+                                  doctrineContent: doctrineContent, quickConsultTree: tree,
+                                  from: presenter, onClosed: onClosed)
                 case .cancelled:
                     break
                 case .failure(let message):
@@ -90,8 +94,16 @@ enum DocumentOpener {
         }
         service.store.recordOpened(id: id)
         presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
-                      doctrineContent: cached.doctrineContent, from: presenter, onClosed: onClosed)
+                      doctrineContent: cached.doctrineContent,
+                      quickConsultTree: cached.quickConsultTree, from: presenter, onClosed: onClosed)
         return true
+    }
+
+    /// Costruisce l'albero della Consultazione Rapida dal documento, o `nil` se non c'è una
+    /// gerarchia consultabile (§ 8.8) → il selettore mostrerà il layout disabilitato con motivo.
+    static func quickConsultTreeIfAvailable(_ document: ScabopdfDocument) -> [QuickConsultNode]? {
+        let tree = buildQuickConsultTree(document)
+        return quickConsultAvailable(tree) ? tree : nil
     }
 
     /// Presenta il lettore al punto di lettura ricordato, cablando la persistenza della posizione,
@@ -103,6 +115,7 @@ enum DocumentOpener {
         document doc: ArchivedDocument,
         pageMap: [String: Int],
         doctrineContent: PaginatedContent?,
+        quickConsultTree: [QuickConsultNode]?,
         from presenter: UIViewController,
         onClosed: (() -> Void)?
     ) {
@@ -117,7 +130,8 @@ enum DocumentOpener {
             sourcePageCount: doc.sourcePageCount,
             showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
             sourcePage: sourcePageProvider(pageMap),
-            doctrineContent: doctrineContent)
+            doctrineContent: doctrineContent,
+            quickConsultTree: quickConsultTree)
         reader.modalPresentationStyle = .fullScreen
         reader.onBack = { [weak presenter] in
             // Tornando alla Home/contenitore, l'ultimo-documento-aperto si azzera: un avvio a
@@ -263,15 +277,18 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
             }
             let pageMap = DocumentOpener.buildPageMap(document)
+            let tree = DocumentOpener.quickConsultTreeIfAvailable(document)
             service.writeCache(content, pageMap: pageMap,
-                               doctrineContent: doctrineContent, forDocumentId: doc.id)
+                               doctrineContent: doctrineContent, quickConsultTree: tree,
+                               forDocumentId: doc.id)
             if let destination { service.store.addCollocation(documentId: doc.id, to: destination) }
             service.store.recordOpened(id: doc.id)
             onImported?()
             // Apertura automatica del lettore sul documento appena importato (al primo elemento).
             DocumentOpener.presentReaderAfterImport(
                 content: content, document: doc, pageMap: pageMap,
-                doctrineContent: doctrineContent, from: presenter, onImported: onImported)
+                doctrineContent: doctrineContent, quickConsultTree: tree,
+                from: presenter, onImported: onImported)
         case .cancelled:
             break
         case .failure(let message):
@@ -302,6 +319,7 @@ extension DocumentOpener {
         document doc: ArchivedDocument,
         pageMap: [String: Int],
         doctrineContent: PaginatedContent?,
+        quickConsultTree: [QuickConsultNode]?,
         from presenter: UIViewController,
         onImported: (() -> Void)?
     ) {
@@ -316,7 +334,8 @@ extension DocumentOpener {
             sourcePageCount: doc.sourcePageCount,
             showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
             sourcePage: sourcePageProvider(pageMap),
-            doctrineContent: doctrineContent)
+            doctrineContent: doctrineContent,
+            quickConsultTree: quickConsultTree)
         reader.modalPresentationStyle = .fullScreen
         reader.onBack = { [weak presenter] in
             service.store.setLastOpenDocument(id: nil)

@@ -253,7 +253,29 @@ func normalizeCodiciStructure(_ nodes: inout [NodeDict])
         i += 1
     }
     nodes = fused
+    // 3. Pulizia front-matter: i frammenti di copertina ("CODICE", "CIVILE", gli editori) che il
+    //    generico classifica HEADING_1/2 PRIMA del primo nodo strutturale reale sono radici
+    //    spurie dell'albero → BODY (testo preservato e letto; via dal rotore e dall'albero).
+    if let firstStructural = nodes.firstIndex(where: isCodiciStructuralHeading) {
+        for i in 0..<firstStructural where nodes[i].type.rawValue.hasPrefix("HEADING_") {
+            nodes[i].type = .BODY; nodes[i].level = nil; nodes[i].length_category = nil
+        }
+    }
     return n
+}
+
+/// Vero se il nodo è una VERA intestazione di struttura dei codici (per testo + livello),
+/// non un'intestazione spuria del front-matter (copertina, editori).
+func isCodiciStructuralHeading(_ node: NodeDict) -> Bool {
+    let t = jsTrim(node.text ?? "")
+    switch node.type {
+    case .HEADING_1: return t.hasPrefix("LIBRO")
+    case .HEADING_2: return t.hasPrefix("TITOLO")
+    case .HEADING_3: return t.hasPrefix("CAPO")
+    case .HEADING_4: return t.hasPrefix("SEZIONE")
+    case .ARTICLE_HEADER: return true
+    default: return false
+    }
 }
 
 // MARK: - Riconoscimento + split dell'articolo (livello span)

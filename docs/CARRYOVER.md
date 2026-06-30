@@ -52,6 +52,65 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Layout 2 (Consultazione Rapida): vista nativa ad albero + chiusura modulo codici — 2026-06-30 (BUILD 20 TestFlight)
+
+Chiusura del modulo codici: la **vista nativa** della Consultazione Rapida (§8) + i debiti di
+struttura. Approccio (direzione del maintainer): la vista si COSTRUISCE al meglio per VoiceOver e
+si manda a build; il collaudo all'orecchio sul device lo fa il maintainer — costruire non è
+"alla cieca", è il passo perché esista qualcosa da collaudare. **Estratto byte-identico** al
+freeze build-19 (sha `c0e9877…`); **Lettura Continua invariata su ogni documento** (rete B verde).
+
+**La vista (`QuickConsultView.swift`).** Albero collassabile su `UITableView`: ogni riga visibile è
+una cella, elemento di accessibilità a sé. Consuma il modello `buildQuickConsultTree` (5 livelli
+LIBRO→TITOLO→CAPO→SEZIONE→ARTICOLO) e le etichette §8.3 `quickConsultSummaryLabel` (titolo +
+range-figli + intervallo-pagine). **Accessibilità VoiceOver**: cella-intestazione con `label` =
+summary §8.3, `value` = "espanso"/"compresso", trait `.button`, `hint` espandi/comprimi (o apri,
+per l'articolo); al doppio tap il ramo si apre/chiude, il **fuoco resta sul pulsante** (§8.6), il
+`value` riflette il nuovo stato e un annuncio "espanso"/"nascosto" lo conferma; la foglia-articolo
+espansa mostra il contenuto (rubrica, commi) come righe di testo sotto. Indentazione visiva per la
+profondità; font per livello (title2…body). È il TERZO container di accessibilità: la radice del
+VC espone SOLO il container attivo (sigillo strutturale §2.2), lo scrub a due dita commuta verso
+l'interfaccia.
+
+**Selettore (§3.4) + default invariato.** `LayoutId.quick` aggiunto al menù del selettore accanto
+a Lettura Continua e Dottrina Inline, **abilitato dove c'è gerarchia** (`quickConsultAvailable`:
+≥2 radici o annidatura), **disabilitato con motivo** ("non disponibile (nessuna gerarchia)") dove
+no — come Dottrina Inline. **Default sempre Lettura Continua**: l'Estratto e ogni documento si
+aprono identici a prima; Rapida è scelta esplicita.
+
+**Toolbar §8.5.** In Rapida compaiono in barra (al posto dell'indicatore-pagina, §8.4): **Reset
+struttura** (pop-up di conferma → comprime tutto) e le **frecce `< >`** fra foglie espanse (attive
+solo con ≥2 foglie espanse, oscurate altrimenti). **Persistenza** dello stato albero (tendine
+espanse) per documento in `UserDefaults` (§8.2). Transizioni Continua↔Rapida: mostra/nasconde il
+container-albero, ripristina lo stato, posa il fuoco; affinamento del focus-mapping cross-layout e
+annuncio catena gerarchica estesa §7 = rifinitura da collaudo device.
+
+**Plumbing.** L'albero deriva da `document`; viaggia processor/opener → **cache (formato 4)** → VC
+(mirror di `doctrineContent`). Il VC costruisce `nodeText` (id→testo per il contenuto-foglia) dal
+flusso Lettura Continua già in cache. `QuickConsultNode` reso `Codable` + init pubblico.
+
+**Debiti di struttura chiusi.** **Front-matter**: i frammenti di copertina ("CODICE", "CIVILE",
+editori) che il generico classificava HEADING_1/2 prima del primo nodo strutturale → demoti a BODY
+in `normalizeCodiciStructure` (testo preservato, letto; via dal rotore e dall'albero). Civile:
+radici spurie **8 → 0** (10 radici LIBRO pulite). **Fusione sottotitolo LIBRO**: rinviata (fiddly;
+«LIBRO QUARTO» + range-figli §8.3 è informativo). **LIBRO penale parziale**: lasciato (più
+intricato — i divisori penale non sono incollati a fine-body come nel civile; recuperati 4, civile
+10 completo). Entrambi annotati come residui a basso impatto.
+
+**Reti (banco iPad reale).** Rete A: **0 tipi del tutto assenti** su entrambi i codici (front-matter
+demotion preserva il testo; net token invariato). Rete B: **Estratto byte-identico** al freeze + 4
+controlli byte-identici (Marotta, Torrente, Mosconi, Appunti) → vista + filtro + plumbing CONFINATI
+(gated isCodici / additivi), Lettura Continua invariata ovunque. Struttura: civile LIBRO 10 / TITOLO
+303 / CAPO 716 / SEZIONE 443 / ARTICOLO 7887; penale 4/244/532/70/5622. Test: ScaboCore **442** (+10
+modello albero), app **74** suite completa + **30** layout (di cui 3 nuovi quick: disponibilità,
+no-op senza albero, switch mostra il container-albero). App compila pulita. Schema invariato 0.7.0.
+
+**Build 20 TestFlight**: porta a collaudo tutto il ramo codici completo — navigazione per articolo,
+gerarchia a 5 livelli, rotore pulito, e la vista Consultazione Rapida — più l'accumulato DeJure +
+riviste. Collaudo della vista albero + accessibilità VoiceOver sul device = passo del maintainer.
+
+---
+
 ## ▶ STATO — Layout 2 (Consultazione Rapida), giro 1: base struttura a 5 livelli + modello albero — 2026-06-30 (PUSH, niente build)
 
 Apertura del giro dedicato a Consultazione Rapida (§8 LAYER2_PRODUCT_DECISIONS). Decisione

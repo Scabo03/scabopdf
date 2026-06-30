@@ -84,9 +84,60 @@ final class ReadingInterfaceBar: UIView {
         stack.axis = .horizontal
         stack.spacing = 8
         stack.alignment = .center
+        return stack
+    }()
+
+    // ── Controlli specifici della Consultazione Rapida (§ 8.5): Reset struttura + frecce ──────
+    // Compaiono SOLO quando il Layout attivo è Consultazione Rapida; in quel Layout l'indicatore
+    // di pagina del bar è nascosto (la pagina sta nelle etichette dell'albero, § 8.4).
+
+    /// "Reset struttura" (§ 8.5): comprime tutto l'albero, previo pop-up di conferma.
+    let resetStructureButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "arrow.up.left.and.arrow.down.right.circle"), for: .normal)
+        b.accessibilityLabel = "Reset struttura"
+        b.accessibilityHint = "Comprime tutte le tendine dell'albero. Chiede conferma."
+        return b
+    }()
+    /// Freccia "precedente" (§ 8.5): va alla foglia espansa precedente.
+    let prevExpandedButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "chevron.left"), for: .normal)
+        b.accessibilityLabel = "Elemento espanso precedente"
+        return b
+    }()
+    /// Freccia "successivo" (§ 8.5): va alla foglia espansa successiva.
+    let nextExpandedButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "chevron.right"), for: .normal)
+        b.accessibilityLabel = "Elemento espanso successivo"
+        return b
+    }()
+
+    private lazy var quickControlsStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [resetStructureButton, prevExpandedButton, nextExpandedButton])
+        stack.axis = .horizontal
+        stack.spacing = 12
+        stack.alignment = .center
+        stack.isHidden = true   // visibile solo in Consultazione Rapida
+        return stack
+    }()
+
+    /// Lo stack di destra impacchetta indicatore-pagina e controlli-quick: si mostra l'uno o gli
+    /// altri secondo il Layout attivo (uno stack collassa gli arranged hidden).
+    private lazy var rightStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [quickControlsStack, pageIndicatorStack])
+        stack.axis = .horizontal
+        stack.spacing = 12
+        stack.alignment = .center
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
+
+    /// Azioni dei controlli quick (impostate dal controller).
+    var onResetStructure: (() -> Void)?
+    var onPrevExpanded: (() -> Void)?
+    var onNextExpanded: (() -> Void)?
 
     /// Costruisce un box-etichetta per l'indicatore: padding, sfondo tenue e angoli, così i due box
     /// si distinguono visivamente (bi-modale, § 2.1). È un elemento accessibile a sé.
@@ -127,27 +178,31 @@ final class ReadingInterfaceBar: UIView {
         backgroundColor = .secondarySystemBackground
         addSubview(backButton)
         addSubview(layoutSelectorButton)
-        addSubview(pageIndicatorStack)
+        addSubview(rightStack)
 
-        pageIndicatorStack.setContentHuggingPriority(.required, for: .horizontal)
-        pageIndicatorStack.setContentCompressionResistancePriority(.required, for: .horizontal)
+        rightStack.setContentHuggingPriority(.required, for: .horizontal)
+        rightStack.setContentCompressionResistancePriority(.required, for: .horizontal)
 
         NSLayoutConstraint.activate([
             backButton.leadingAnchor.constraint(equalTo: layoutMarginsGuide.leadingAnchor),
             backButton.centerYAnchor.constraint(equalTo: centerYAnchor),
 
-            pageIndicatorStack.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
-            pageIndicatorStack.centerYAnchor.constraint(equalTo: centerYAnchor),
+            rightStack.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
+            rightStack.centerYAnchor.constraint(equalTo: centerYAnchor),
 
             layoutSelectorButton.centerXAnchor.constraint(equalTo: centerXAnchor),
             layoutSelectorButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             layoutSelectorButton.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
-            layoutSelectorButton.trailingAnchor.constraint(lessThanOrEqualTo: pageIndicatorStack.leadingAnchor, constant: -8),
+            layoutSelectorButton.trailingAnchor.constraint(lessThanOrEqualTo: rightStack.leadingAnchor, constant: -8),
         ])
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        resetStructureButton.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
+        prevExpandedButton.addTarget(self, action: #selector(prevTapped), for: .touchUpInside)
+        nextExpandedButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
         // Menù iniziale (solo Lettura Continua finché il controller non lo configura).
-        configureLayoutSelector(current: .continuous, doctrineAvailable: false, onSelect: { _ in })
+        configureLayoutSelector(current: .continuous, doctrineAvailable: false,
+                                quickAvailable: false, onSelect: { _ in })
 
         // ── Container chiuso: elenco esplicito e ordinato dei soli elementi d'interfaccia ──────
         isAccessibilityElement = false
@@ -159,10 +214,32 @@ final class ReadingInterfaceBar: UIView {
     /// presenti — il box pagina ORIGINALE e infine quello di VISUALIZZAZIONE (§ 4.3).
     private func refreshAccessibilityElements() {
         var elements: [NSObject] = [backButton, layoutSelectorButton]
+        if !quickControlsStack.isHidden {
+            elements.append(resetStructureButton)
+            elements.append(prevExpandedButton)
+            elements.append(nextExpandedButton)
+        }
         if !originalPageLabel.isHidden { elements.append(originalPageLabel) }
         if !visualizationPageLabel.isHidden { elements.append(visualizationPageLabel) }
         accessibilityElements = elements
     }
+
+    /// Mostra/nasconde i controlli specifici della Consultazione Rapida (§ 8.5). In quel Layout
+    /// l'indicatore di pagina del bar è nascosto (la pagina sta nelle etichette dell'albero, § 8.4).
+    /// `canNavigate` abilita le frecce solo con ≥ 2 foglie espanse (altrimenti oscurate).
+    func setQuickControls(visible: Bool, canNavigate: Bool) {
+        quickControlsStack.isHidden = !visible
+        pageIndicatorStack.isHidden = visible || (originalPageLabel.isHidden && visualizationPageLabel.isHidden)
+        prevExpandedButton.isEnabled = canNavigate
+        nextExpandedButton.isEnabled = canNavigate
+        prevExpandedButton.accessibilityTraits = canNavigate ? .button : [.button, .notEnabled]
+        nextExpandedButton.accessibilityTraits = canNavigate ? .button : [.button, .notEnabled]
+        refreshAccessibilityElements()
+    }
+
+    @objc private func resetTapped() { onResetStructure?() }
+    @objc private func prevTapped() { onPrevExpanded?() }
+    @objc private func nextTapped() { onNextExpanded?() }
 
     // MARK: - Selettore di Layout (§ 3.4)
 
@@ -170,7 +247,8 @@ final class ReadingInterfaceBar: UIView {
     /// Dottrina Inline è scegliibile (§ 10.3: disabilitata, con motivo esplicito, se il documento
     /// non ha note). `onSelect` è invocato quando l'utente sceglie un layout dal menù.
     func configureLayoutSelector(
-        current: LayoutId, doctrineAvailable: Bool, onSelect: @escaping (LayoutId) -> Void
+        current: LayoutId, doctrineAvailable: Bool, quickAvailable: Bool,
+        onSelect: @escaping (LayoutId) -> Void
     ) {
         currentLayout = current
         onLayoutSelected = onSelect
@@ -179,6 +257,17 @@ final class ReadingInterfaceBar: UIView {
             title: LAYOUT_DISPLAY_NAMES[.continuous] ?? "Lettura Continua",
             state: current == .continuous ? .on : .off
         ) { [weak self] _ in self?.onLayoutSelected?(.continuous) }
+
+        // Consultazione Rapida (§ 8): disponibile solo se il documento ha una gerarchia
+        // consultabile (§ 8.8); altrimenti disabilitata con motivo esplicito (come Dottrina Inline).
+        let quickTitle = quickAvailable
+            ? (LAYOUT_DISPLAY_NAMES[.quick] ?? "Consultazione Rapida")
+            : "Consultazione Rapida — non disponibile (nessuna gerarchia)"
+        let quickAction = UIAction(
+            title: quickTitle,
+            attributes: quickAvailable ? [] : [.disabled],
+            state: current == .quick ? .on : .off
+        ) { [weak self] _ in self?.onLayoutSelected?(.quick) }
 
         let doctrineTitle = doctrineAvailable
             ? (LAYOUT_DISPLAY_NAMES[.doctrine] ?? "Dottrina Inline")
@@ -189,7 +278,8 @@ final class ReadingInterfaceBar: UIView {
             state: current == .doctrine ? .on : .off
         ) { [weak self] _ in self?.onLayoutSelected?(.doctrine) }
 
-        layoutSelectorButton.menu = UIMenu(title: "Layout di lettura", children: [continuousAction, doctrineAction])
+        layoutSelectorButton.menu = UIMenu(
+            title: "Layout di lettura", children: [continuousAction, quickAction, doctrineAction])
         let name = LAYOUT_DISPLAY_NAMES[current] ?? "Lettura Continua"
         layoutSelectorButton.setTitle(name, for: .normal)
         layoutSelectorButton.accessibilityLabel = "Layout di lettura, \(name)"

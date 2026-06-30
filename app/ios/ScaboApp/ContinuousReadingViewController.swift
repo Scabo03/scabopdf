@@ -109,6 +109,23 @@ final class ContinuousReadingViewController: UIViewController {
     /// layout disabilitato (§ 10.3). Si apre SEMPRE in `.continuous` (default, § 3.4).
     private let doctrineContent: PaginatedContent?
 
+    /// Albero della Consultazione Rapida (§ 8), `nil` se il documento non ha gerarchia → il
+    /// selettore mostra il Layout disabilitato (§ 8.8). Si apre SEMPRE in `.continuous`.
+    private let quickConsultTree: [QuickConsultNode]?
+
+    /// Titolo del documento (per la catena gerarchica estesa, § 7).
+    private let documentTitle: String
+
+    /// La vista ad albero della Consultazione Rapida, creata pigramente al primo ingresso nel
+    /// Layout (è il TERZO container di accessibilità, alternativo al testo).
+    private var quickConsultView: QuickConsultView?
+
+    /// Stato dell'albero (tendine espanse) persistito per documento (§ 2.5 / § 8.2).
+    private lazy var quickExpandedState: Set<String> = loadQuickExpandedState()
+
+    /// Mappa id-nodo → testo per il contenuto delle foglie (costruita dal flusso Lettura Continua).
+    private lazy var quickNodeText: [String: String] = buildQuickNodeText()
+
     /// Layout attualmente reso. Default `.continuous` per ogni documento (l'Estratto e tutti gli
     /// altri partono identici a prima); Dottrina Inline è una scelta esplicita dal selettore.
     private var currentLayout: LayoutId = .continuous
@@ -148,9 +165,12 @@ final class ContinuousReadingViewController: UIViewController {
         showOriginalPages: Bool = false,
         sourcePage: ((String) -> Int?)? = nil,
         doctrineContent: PaginatedContent? = nil,
+        quickConsultTree: [QuickConsultNode]? = nil,
         signalPlayer: SignalPlaying = SignalPlayer.shared
     ) {
         self.content = content
+        self.quickConsultTree = quickConsultTree
+        self.documentTitle = sourceName
         self.documentId = documentId
         self.initialReadingPosition = initialReadingPosition
         self.continuousPosition = max(0, initialReadingPosition)
@@ -234,7 +254,8 @@ final class ContinuousReadingViewController: UIViewController {
     private func configureLayoutSelector() {
         interfaceBar.configureLayoutSelector(
             current: currentLayout,
-            doctrineAvailable: doctrineContent != nil
+            doctrineAvailable: doctrineContent != nil,
+            quickAvailable: quickConsultTree != nil
         ) { [weak self] layout in self?.switchLayout(to: layout) }
     }
 
@@ -245,6 +266,16 @@ final class ContinuousReadingViewController: UIViewController {
     /// Dottrina Inline il fuoco parte dal primo elemento (mappatura cross-layout = rinvio).
     private func switchLayout(to layout: LayoutId) {
         guard layout != currentLayout else { return }
+        // Consultazione Rapida (§ 8): è una VISTA AD ALBERO distinta, non un flusso piatto. Mostra
+        // il container-albero al posto del testo; gli altri due Layout restano sul flusso continuo.
+        if layout == .quick {
+            guard let roots = quickConsultTree else { return }  // disabilitato: nessuna gerarchia
+            currentLayout = .quick
+            showQuickConsult(roots)
+            configureLayoutSelector()
+            signalPlayer.play(.mode1)
+            return
+        }
         let target: PaginatedContent
         switch layout {
         case .doctrine:
@@ -253,10 +284,13 @@ final class ContinuousReadingViewController: UIViewController {
         case .continuous, .quick:
             target = content
         }
+        let comingFromQuick = currentLayout == .quick
         currentLayout = layout
+        if comingFromQuick { hideQuickConsult() }
         readingView.render(target)
         view.layoutIfNeeded()
         configureLayoutSelector()
+        interfaceBar.setQuickControls(visible: false, canNavigate: false)
         signalPlayer.play(layout == .doctrine ? .mode3 : .mode1)
         let focusTarget: Any
         if layout == .continuous {
@@ -265,7 +299,87 @@ final class ContinuousReadingViewController: UIViewController {
         } else {
             focusTarget = readingView.element(atIndex: 0) ?? readingView
         }
+        activateTextContainer(restoreFocus: false)
         UIAccessibility.post(notification: .screenChanged, argument: focusTarget)
+    }
+
+    // MARK: - Consultazione Rapida (§ 8): vista ad albero collassabile
+
+    /// Mostra il container-albero: lo crea pigramente, lo rende attivo (sigillo strutturale →
+    /// lo swipe resta nell'albero), mostra i controlli §8.5 in toolbar, posa il fuoco sulla prima
+    /// voce. § 8.7: da Lettura Continua a Rapida si ripristina l'ultimo stato dell'albero.
+    private func showQuickConsult(_ roots: [QuickConsultNode]) {
+        let tree = quickConsultView ?? makeQuickConsultView(roots)
+        readingView.isHidden = true
+        tree.isHidden = false
+        view.layoutIfNeeded()
+        view.accessibilityElements = [tree]
+        readingView.accessibilityViewIsModal = false
+        tree.accessibilityViewIsModal = true
+        interfaceBar.setQuickControls(visible: true, canNavigate: tree.canNavigateExpandedLeaves)
+        UIAccessibility.post(notification: .screenChanged, argument: tree.firstRowElement ?? tree)
+    }
+
+    /// Nasconde il container-albero e torna al container del testo (al passaggio a un altro Layout).
+    private func hideQuickConsult() {
+        quickConsultView?.isHidden = true
+        quickConsultView?.accessibilityViewIsModal = false
+        readingView.isHidden = false
+    }
+
+    /// Crea la vista ad albero, la inserisce nella gerarchia (sovrapposta al testo), e ne cabla
+    /// la persistenza dello stato e l'escape verso l'interfaccia.
+    private func makeQuickConsultView(_ roots: [QuickConsultNode]) -> QuickConsultView {
+        let tree = QuickConsultView(roots: roots, nodeText: quickNodeText,
+                                    documentTitle: documentTitle, expanded: quickExpandedState)
+        tree.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tree)
+        NSLayoutConstraint.activate([
+            tree.topAnchor.constraint(equalTo: interfaceBar.bottomAnchor),
+            tree.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tree.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tree.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+        tree.onEscape = { [weak self] in self?.activateInterfaceContainer() }
+        tree.onExpansionChanged = { [weak self] expanded in
+            guard let self else { return }
+            self.quickExpandedState = expanded
+            self.saveQuickExpandedState(expanded)
+            // Le frecce §8.5 sono attive solo con ≥ 2 foglie espanse.
+            self.interfaceBar.setQuickControls(
+                visible: true, canNavigate: self.quickConsultView?.canNavigateExpandedLeaves ?? false)
+        }
+        quickConsultView = tree
+        return tree
+    }
+
+    /// Costruisce la mappa id-nodo → testo dal flusso di Lettura Continua (i segmenti portano l'id
+    /// del nodo, eventualmente granularizzato `id#k`): per il contenuto delle foglie nell'albero.
+    private func buildQuickNodeText() -> [String: String] {
+        var map: [String: String] = [:]
+        for page in content.pages {
+            for seg in page.segments {
+                let base = seg.id.split(separator: "#", maxSplits: 1,
+                                        omittingEmptySubsequences: false).first.map(String.init) ?? seg.id
+                if map[base] == nil { map[base] = seg.text }
+                else { map[base]! += " " + seg.text }
+            }
+        }
+        return map
+    }
+
+    private func quickExpandedDefaultsKey() -> String { "scabo.quickExpanded.\(documentId)" }
+
+    private func loadQuickExpandedState() -> Set<String> {
+        guard !documentId.isEmpty,
+              let saved = UserDefaults.standard.array(forKey: quickExpandedDefaultsKey()) as? [String]
+        else { return [] }
+        return Set(saved)
+    }
+
+    private func saveQuickExpandedState(_ expanded: Set<String>) {
+        guard !documentId.isEmpty else { return }
+        UserDefaults.standard.set(Array(expanded), forKey: quickExpandedDefaultsKey())
     }
 
     // MARK: - Riaggancio di VoiceOver in lettura (ANCORA al tasto Indietro, definitiva)
@@ -359,7 +473,38 @@ final class ContinuousReadingViewController: UIViewController {
         // Scrub a due dita (escape): UNICA via di passaggio fra container nello scenario blindato.
         // Commuta quale container è modale, in entrambe le direzioni.
         readingView.onEscape = { [weak self] in self?.activateInterfaceContainer() }
-        interfaceBar.onEscape = { [weak self] in self?.activateTextContainer(restoreFocus: true) }
+        // Dall'interfaccia si rientra nel container ATTIVO: testo, oppure albero in Rapida.
+        interfaceBar.onEscape = { [weak self] in
+            guard let self else { return }
+            if self.currentLayout == .quick, let tree = self.quickConsultView {
+                self.view.accessibilityElements = [tree]
+                self.interfaceBar.accessibilityViewIsModal = false
+                tree.accessibilityViewIsModal = true
+                UIAccessibility.post(notification: .screenChanged, argument: tree.firstRowElement ?? tree)
+            } else {
+                self.activateTextContainer(restoreFocus: true)
+            }
+        }
+        // Controlli §8.5 della Consultazione Rapida.
+        interfaceBar.onResetStructure = { [weak self] in self?.confirmResetStructure() }
+        interfaceBar.onPrevExpanded = { [weak self] in self?.quickConsultView?.navigateExpandedLeaf(forward: false) }
+        interfaceBar.onNextExpanded = { [weak self] in self?.quickConsultView?.navigateExpandedLeaf(forward: true) }
+    }
+
+    /// "Reset struttura" (§ 8.5): pop-up di conferma (testo visivo esplicito per l'utente vedente;
+    /// l'utente VoiceOver lo capisce dall'etichetta estesa) e, su conferma, comprime tutto l'albero.
+    private func confirmResetStructure() {
+        let alert = UIAlertController(
+            title: "Reset struttura",
+            message: "Comprimi tutte le tendine dell'albero e torna alla struttura di base "
+                   + "(solo le voci del livello più alto).",
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Conferma", style: .destructive) { [weak self] _ in
+            self?.quickConsultView?.collapseAll()
+            self?.interfaceBar.setQuickControls(visible: true, canNavigate: false)
+        })
+        present(alert, animated: true)
     }
 
     // MARK: - Commutazione fra i due container (modalità sul container attivo)
@@ -422,6 +567,10 @@ final class ContinuousReadingViewController: UIViewController {
     var currentLayoutForTesting: LayoutId { currentLayout }
     /// Vero se Dottrina Inline è disponibile (il documento ha note, § 10.3), per i test.
     var doctrineAvailableForTesting: Bool { doctrineContent != nil }
+    /// Vero se Consultazione Rapida è disponibile (il documento ha gerarchia, § 8.8), per i test.
+    var quickAvailableForTesting: Bool { quickConsultTree != nil }
+    /// La vista ad albero (se creata), per i test.
+    var quickConsultViewForTesting: QuickConsultView? { quickConsultView }
     /// Numero di segmenti correntemente resi (per verificare che lo switch cambi davvero il flusso).
     var renderedSegmentCountForTesting: Int { readingView.segmentLabels.count }
     /// Cambia layout come farebbe il selettore (per i test, senza UIMenu).
