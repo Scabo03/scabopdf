@@ -147,11 +147,114 @@ func codiciFurnitureLines(_ extraction: PdfExtraction) -> Set<String> {
     return furniture
 }
 
-// LIBRO: la mappatura fresca mostra che esiste SOLO come testatina corrente (size 10pt,
-// nessuna forma-contenuto, nessun divisore) ed è GIÀ tolto dal canale furniture ricorrente
-// (recur a posizione-ancorata) → niente inquinamento del rotore, ma nemmeno un'intestazione
-// LIBRO. Recuperarlo come heading (esenzione prima-occorrenza dalla furniture) è un follow-up
-// di valore modesto, rinviato; la gerarchia naviga su TITOLO/CAPO/SEZIONE (le divisioni-contenuto).
+/// Inizio di un header d'articolo (numero), per riclassificare HEADING_4 → ARTICLE_HEADER.
+let codiciArticleHeadStartRe = try! NSRegularExpression(pattern: "^\\d{1,4}")
+
+/// Divisore di LIBRO nella forma a PAROLE («LIBRO QUARTO»), che apre la prima pagina di
+/// ogni libro col sottotitolo all-caps a capo. È l'UNICA forma-contenuto del LIBRO (la
+/// forma romana «LIBRO IV - …» è solo testatina, tolta dalla furniture): on-device finisce
+/// INCOLLATO in coda al BODY dell'ultimo paragrafo del libro precedente (è a inizio-pagina
+/// dove il corpo prosegue). Lo split lo STACCA → pulisce il corpo E dà la radice dell'albero.
+let codiciLibroDividerTailRe = try! NSRegularExpression(
+    pattern: "\\s+(LIBRO\\s+(?:PRIMO|SECONDO|TERZO|QUARTO|QUINTO|SESTO|SETTIMO|OTTAVO|NONO|DECIMO))\\s*$")
+
+/// Stacca i divisori-LIBRO a parole incollati in coda ai BODY → HEADING_1 sintetici (radice
+/// dell'albero). Conia id `node_N` oltre il massimo esistente. Net-MIGLIORAMENTO: toglie il
+/// LIBRO dal flusso di corpo (dov'era letto inline) e lo eleva a intestazione. Ritorna quanti.
+func recoverCodiciLibroDividers(_ nodes: inout [NodeDict]) -> Int {
+    var maxId = -1
+    for node in nodes where node.id.hasPrefix("node_") {
+        if let v = Int(node.id.dropFirst(5)) { maxId = max(maxId, v) }
+    }
+    var out: [NodeDict] = []
+    out.reserveCapacity(nodes.count + 16)
+    var nextId = maxId + 1
+    var recovered = 0
+    for node in nodes {
+        guard node.type == .BODY, let t = node.text, !t.isEmpty,
+              let m = codiciLibroDividerTailRe.firstMatch(
+                in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)),
+              let libroRange = Range(m.range(at: 1), in: t),
+              let fullRange = Range(m.range, in: t) else {
+            out.append(node); continue
+        }
+        let libroText = jsTrim(String(t[libroRange]))
+        let bodyText = jsTrim(String(t[t.startIndex..<fullRange.lowerBound]))
+        if bodyText.isEmpty {
+            var libro = node
+            libro.type = .HEADING_1; libro.text = libroText; libro.level = 1; libro.length_category = nil
+            out.append(libro)
+        } else {
+            var body = node; body.text = bodyText
+            out.append(body)
+            out.append(NodeDict(id: "node_\(nextId)", type: .HEADING_1,
+                                page_index: node.page_index, text: libroText, level: 1))
+            nextId += 1
+        }
+        recovered += 1
+    }
+    nodes = out
+    return recovered
+}
+
+/// Vero se il nodo è il sottotitolo di un TITOLO (la riga-divisione subito sotto «TITOLO X»,
+/// es. «Dei contratti in generale», «Il Parlamento»): BODY corto, iniziale maiuscola, non
+/// struttura né articolo. Da fondere nell'etichetta del TITOLO.
+private func codiciIsTitoloSubtitleNode(_ node: NodeDict) -> Bool {
+    guard node.type == .BODY else { return false }
+    let t = jsTrim(node.text ?? "")
+    guard !t.isEmpty, t.utf16.count <= 60 else { return false }
+    guard let f = t.unicodeScalars.first, CharacterSet.uppercaseLetters.contains(f) else { return false }
+    if codiciStructuralLevel(t) != nil { return false }
+    if t.hasPrefix("LIBRO") || codiciReMatches(codiciArticleLineRe, t) { return false }
+    return true
+}
+
+/// Normalizza la struttura dei codici sui 5 livelli pieni e annidati (decisione utente):
+/// LIBRO=HEADING_1, TITOLO=HEADING_2 (col sottotitolo fuso), CAPO=HEADING_3, SEZIONE=HEADING_4,
+/// ARTICOLO=ARTICLE_HEADER (categoria propria, navigabile dal rotore via app). Punto UNICO di
+/// verità sui livelli: riallinea qualunque intestazione struttura, comunque promossa
+/// (mio leaf .body/.note o `reclassifyCleanFamilies` .note), allo stesso schema → annidamento
+/// distinto CAPO > SEZIONE > ARTICOLO. Ritorna i conteggi per il warning diagnostico.
+func normalizeCodiciStructure(_ nodes: inout [NodeDict])
+    -> (libro: Int, titolo: Int, capo: Int, sezione: Int, article: Int) {
+    var n = (libro: 0, titolo: 0, capo: 0, sezione: 0, article: 0)
+    // 1. Rilivellamento per testo (struttura) + categoria propria per gli articoli. Il LIBRO
+    //    è già HEADING_1 dallo splitter del divisore a parole (recoverCodiciLibroDividers);
+    //    qui lo si CONTA per il warning, senza ri-toccarlo.
+    for i in nodes.indices {
+        let t = jsTrim(nodes[i].text ?? "")
+        if nodes[i].type == .HEADING_1, t.hasPrefix("LIBRO") {
+            n.libro += 1
+        } else if t.utf16.count <= 70, t.hasPrefix("TITOLO"), codiciReMatches(codiciStructRe, t) {
+            nodes[i].type = .HEADING_2; nodes[i].level = 2; nodes[i].length_category = nil; n.titolo += 1
+        } else if t.utf16.count <= 70, t.hasPrefix("CAPO"), codiciReMatches(codiciStructRe, t) {
+            nodes[i].type = .HEADING_3; nodes[i].level = 3; nodes[i].length_category = nil; n.capo += 1
+        } else if t.utf16.count <= 70, t.hasPrefix("SEZIONE"), codiciReMatches(codiciStructRe, t) {
+            nodes[i].type = .HEADING_4; nodes[i].level = 4; nodes[i].length_category = nil; n.sezione += 1
+        } else if nodes[i].type == .HEADING_4, codiciReMatches(codiciArticleHeadStartRe, t) {
+            nodes[i].type = .ARTICLE_HEADER; nodes[i].level = nil; nodes[i].length_category = nil; n.article += 1
+        }
+    }
+    // 2. Fusione del sottotitolo nel TITOLO (etichetta unica e informativa per l'albero).
+    var fused: [NodeDict] = []
+    fused.reserveCapacity(nodes.count)
+    var i = 0
+    while i < nodes.count {
+        var node = nodes[i]
+        if node.type == .HEADING_2, codiciReMatches(codiciTitoloBareRe, jsTrim(node.text ?? "")),
+           i + 1 < nodes.count, codiciIsTitoloSubtitleNode(nodes[i + 1]) {
+            node.text = jsTrim(node.text ?? "") + " - " + jsTrim(nodes[i + 1].text ?? "")
+            fused.append(node)
+            i += 2
+            continue
+        }
+        fused.append(node)
+        i += 1
+    }
+    nodes = fused
+    return n
+}
 
 // MARK: - Riconoscimento + split dell'articolo (livello span)
 
@@ -331,13 +434,16 @@ public final class CodiciPlugin: ExtractionPlugin {
         var nodes = nodes
         let reclass = reclassifyCleanFamilies(&nodes)
         _ = reclassifyEstrattoRunningHeaders(&nodes, profile)   // no-op sui codici (gated Estratto)
-        let articleCount = nodes.reduce(0) { $0 + ($1.type == .HEADING_4 ? 1 : 0) }
-        let titoloCount = nodes.reduce(0) { $0 + ($1.type == .HEADING_2 ? 1 : 0) }
-        let capoSezCount = nodes.reduce(0) { $0 + ($1.type == .HEADING_3 ? 1 : 0) }
+        // Radice dell'albero: stacca i divisori-LIBRO a parole incollati in coda ai BODY → H1.
+        let libroRecovered = recoverCodiciLibroDividers(&nodes)
+        // Normalizza i 5 livelli pieni: LIBRO=H1, TITOLO=H2 (sottotitolo fuso), CAPO=H3,
+        // SEZIONE=H4, ARTICOLO=ARTICLE_HEADER (categoria propria, navigabile dal rotore via app).
+        let s = normalizeCodiciStructure(&nodes)
+        _ = libroRecovered
         var warnings = [
             "plugin:codici:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
-            "plugin:codici:article_headings_recognized_\(articleCount)",
-            "plugin:codici:structure_titolo_\(titoloCount)_capo_sezione_\(capoSezCount)",
+            "plugin:codici:articles_\(s.article)",
+            "plugin:codici:structure_libro_\(s.libro)_titolo_\(s.titolo)_capo_\(s.capo)_sezione_\(s.sezione)",
         ]
         if reclass.summary + reclass.heading > 0 {
             warnings.append(

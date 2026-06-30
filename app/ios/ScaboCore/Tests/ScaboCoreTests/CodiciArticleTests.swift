@@ -69,9 +69,9 @@ final class CodiciArticleTests: XCTestCase {
         lines.append(articleLine("1321", ". Nozione. – [I]. Il contratto è l’accordo di due o più parti.", y: 380))
         lines.append(bodyLine("per costituire un rapporto giuridico patrimoniale.", y: 371))
         let d = doc([page(0, lines)])
-        XCTAssertTrue(texts(d, .HEADING_4).contains { $0.contains("1321") && $0.contains("Nozione") },
+        XCTAssertTrue(texts(d, .ARTICLE_HEADER).contains { $0.contains("1321") && $0.contains("Nozione") },
                       "l'articolo è promosso a HEADING_4 navigabile")
-        XCTAssertFalse(texts(d, .HEADING_4).contains { $0.contains("Il contratto è l’accordo") },
+        XCTAssertFalse(texts(d, .ARTICLE_HEADER).contains { $0.contains("Il contratto è l’accordo") },
                        "il corpo NON sta nell'header (split header/corpo)")
         XCTAssertTrue(texts(d, .BODY).contains { $0.contains("Il contratto è l’accordo") },
                       "il corpo dell'articolo resta BODY (letto)")
@@ -82,7 +82,7 @@ final class CodiciArticleTests: XCTestCase {
         lines.append(articleLine("1323", ". Norme regolatrici dei contratti.", y: 380))
         lines.append(bodyLine("[I]. Tutti i contratti sono sottoposti alle norme.", y: 371))
         let d = doc([page(0, lines)])
-        XCTAssertTrue(texts(d, .HEADING_4).contains { $0.contains("1323") && $0.contains("Norme regolatrici") })
+        XCTAssertTrue(texts(d, .ARTICLE_HEADER).contains { $0.contains("1323") && $0.contains("Norme regolatrici") })
         XCTAssertTrue(texts(d, .BODY).contains { $0.contains("Tutti i contratti") })
     }
 
@@ -92,7 +92,7 @@ final class CodiciArticleTests: XCTestCase {
         lines.append(articleLine("942", ". (1) Terreni abbandonati dalle ac-", y: 388))
         lines.append(bodyLine("que correnti.– [I]. I terreni abbandonati che emergono.", y: 379))
         let d = doc([page(0, lines)])
-        XCTAssertTrue(texts(d, .HEADING_4).contains { $0.contains("942") && $0.contains("acque correnti") && !$0.hasSuffix("-") },
+        XCTAssertTrue(texts(d, .ARTICLE_HEADER).contains { $0.contains("942") && $0.contains("acque correnti") && !$0.hasSuffix("-") },
                       "la rubrica multi-riga è unita e de-sillabata nell'header ('acque', non 'ac-')")
         XCTAssertTrue(texts(d, .BODY).contains { $0.contains("I terreni abbandonati che emergono") },
                       "il corpo (dal comma) resta BODY")
@@ -102,17 +102,19 @@ final class CodiciArticleTests: XCTestCase {
         var lines = bodyFill(0, 420)
         lines.append(articleLine("624-bis", ". Furto in abitazione. – [I]. Chiunque…", y: 380))
         let d = doc([page(0, lines)])
-        XCTAssertTrue(texts(d, .HEADING_4).contains { $0.contains("624-bis") && $0.contains("Furto in abitazione") })
+        XCTAssertTrue(texts(d, .ARTICLE_HEADER).contains { $0.contains("624-bis") && $0.contains("Furto in abitazione") })
     }
 
-    func test_navigable_isHeadingRole() {
+    func test_article_isArticleHeader_andRead() {
         var lines = bodyFill(0, 420)
         lines.append(articleLine("5", ". [I] La Repubblica, una e indivisibile, riconosce.", y: 380))
         let d = doc([page(0, lines)])
-        let h4 = d.structure.first { $0.type == .HEADING_4 }
-        XCTAssertNotNil(h4)
-        // i HEADING_* sono navigabili dal rotore (ContinuousReadingView.isHeadingRole)
-        XCTAssertTrue((h4?.type.rawValue ?? "").hasPrefix("HEADING_"))
+        XCTAssertNotNil(d.structure.first { $0.type == .ARTICLE_HEADER && ($0.text ?? "").hasPrefix("5") },
+                        "l'articolo è ARTICLE_HEADER (categoria propria)")
+        // letto nel flusso (non NON_READ); la navigabilità rotore di ARTICLE_HEADER è
+        // verificata lato app (ContinuousReadingView.isHeadingRole) dal bench.
+        let read = buildBaseSegments(d).map { $0.text }.joined(separator: " ")
+        XCTAssertTrue(read.contains("La Repubblica, una e indivisibile"), "l'articolo è letto")
     }
 
     // ── Precisione: NON promuovere ciò che non è un articolo ─────────────────────
@@ -126,7 +128,8 @@ final class CodiciArticleTests: XCTestCase {
         // numero a TAGLIA CORPO (7.5, non 9.0): non è un trigger d'articolo
         lines.append(bodyLine("1. accordo delle parti, secondo il numero.", y: 370))
         let d = doc([page(0, lines)])
-        XCTAssertEqual(texts(d, .HEADING_4).count, 0, "nessuna riga non-articolo è promossa")
+        XCTAssertEqual(texts(d, .ARTICLE_HEADER).count, 0, "nessuna riga non-articolo è promossa ad articolo")
+        XCTAssertEqual(texts(d, .HEADING_4).count, 0, "né a heading di sezione")
     }
 
     func test_structuralHeading_notArticle() {
@@ -155,7 +158,7 @@ final class CodiciArticleTests: XCTestCase {
         lines.append(bodyLine("Dei contratti in generale", y: 379))
         lines.append(articleLine("1321", ". Nozione. – [I]. Il contratto.", y: 360))
         let d = doc([page(0, lines)])
-        XCTAssertTrue(texts(d, .HEADING_1).contains { $0.contains("TITOLO II") && $0.contains("Dei contratti in generale") },
+        XCTAssertTrue(texts(d, .HEADING_2).contains { $0.contains("TITOLO II") && $0.contains("Dei contratti in generale") },
                       "il TITOLO bare + sottotitolo a capo → HEADING_1 fuso")
     }
 
@@ -164,8 +167,8 @@ final class CodiciArticleTests: XCTestCase {
         lines.append(bodyLine("CAPO I– Disposizioni preliminari", y: 388))
         lines.append(bodyLine("SEZIONE I– Dell’accordo delle parti", y: 379))
         let d = doc([page(0, lines)])
-        XCTAssertTrue(texts(d, .HEADING_2).contains { $0.contains("CAPO I") }, "CAPO → HEADING_2")
-        XCTAssertTrue(texts(d, .HEADING_3).contains { $0.contains("SEZIONE I") }, "SEZIONE → HEADING_3")
+        XCTAssertTrue(texts(d, .HEADING_3).contains { $0.contains("CAPO I") }, "CAPO → HEADING_3")
+        XCTAssertTrue(texts(d, .HEADING_4).contains { $0.contains("SEZIONE I") }, "SEZIONE → HEADING_4")
     }
 
     func test_capo_atPageTop_isStillHeading_notFurniture() {
@@ -173,7 +176,7 @@ final class CodiciArticleTests: XCTestCase {
         var lines: [PdfTextLine] = [bodyLine("CAPO III– Del matrimonio", y: 520)]
         lines += bodyFill(0, 400)
         let d = doc([page(0, lines)])
-        XCTAssertTrue(texts(d, .HEADING_2).contains { $0.contains("CAPO III") },
+        XCTAssertTrue(texts(d, .HEADING_3).contains { $0.contains("CAPO III") },
                       "CAPO a inizio pagina resta intestazione (precisione: non furniture)")
     }
 
@@ -189,6 +192,35 @@ final class CodiciArticleTests: XCTestCase {
         XCTAssertFalse(all.contains("ARTT. 1320-1329"), "il range-testatina è furniture (rimosso)")
         XCTAssertFalse(all.contains("TITOLO II - Dei contratti"), "la testatina TITOLO col trattino è furniture")
         XCTAssertFalse(all.contains("CODICE CIVILE"), "il banner è furniture")
+    }
+
+    func test_libro_spelledDivider_recoveredAsHeading1() {
+        // il divisore-LIBRO a parole «LIBRO QUARTO» finisce incollato in coda al BODY del
+        // libro precedente (è a inizio-pagina dove il corpo prosegue): lo split lo stacca → H1.
+        var lines = bodyFill(0, 420)
+        lines.append(bodyLine("previa dichiarazione al creditore. LIBRO QUARTO", y: 300))
+        lines.append(articleLine("1173", ". Fonti delle obbligazioni. – [I]. Le obbligazioni.", y: 282))
+        let d = doc([page(0, lines)])
+        XCTAssertTrue(texts(d, .HEADING_1).contains { $0 == "LIBRO QUARTO" },
+                      "il divisore LIBRO a parole è staccato come radice HEADING_1")
+        XCTAssertFalse(texts(d, .HEADING_1).contains { $0.contains("previa dichiarazione") },
+                       "il corpo precedente NON entra nell'intestazione (split pulito)")
+    }
+
+    func test_fiveLevels_distinct_titoloFused_articleOwnCategory() {
+        var lines = bodyFill(0, 480)
+        lines.append(bodyLine("conclusione del precedente libro. LIBRO QUARTO", y: 372))
+        lines.append(bodyLine("TITOLO II", y: 360))
+        lines.append(bodyLine("Dei contratti in generale", y: 351))
+        lines.append(bodyLine("CAPO I– Disposizioni preliminari", y: 342))
+        lines.append(bodyLine("SEZIONE I– Dell’accordo", y: 333))
+        lines.append(articleLine("1321", ". Nozione. – [I]. Il contratto.", y: 324))
+        let d = doc([page(0, lines)])
+        XCTAssertTrue(texts(d, .HEADING_1).contains { $0 == "LIBRO QUARTO" }, "LIBRO=H1")
+        XCTAssertTrue(texts(d, .HEADING_2).contains { $0 == "TITOLO II - Dei contratti in generale" }, "TITOLO=H2 fuso")
+        XCTAssertTrue(texts(d, .HEADING_3).contains { $0.contains("CAPO I") }, "CAPO=H3")
+        XCTAssertTrue(texts(d, .HEADING_4).contains { $0.contains("SEZIONE I") }, "SEZIONE=H4")
+        XCTAssertTrue(texts(d, .ARTICLE_HEADER).contains { $0.contains("1321") }, "ARTICOLO=ARTICLE_HEADER")
     }
 
     func test_nonCodiciGeometry_articleLineStaysBody() {

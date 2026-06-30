@@ -52,6 +52,56 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Layout 2 (Consultazione Rapida), giro 1: base struttura a 5 livelli + modello albero — 2026-06-30 (PUSH, niente build)
+
+Apertura del giro dedicato a Consultazione Rapida (§8 LAYER2_PRODUCT_DECISIONS). Decisione
+utente: albero a **5 livelli pieni e annidati** LIBRO→TITOLO→CAPO→SEZIONE→ARTICOLO. Questo giro
+posa **la base di struttura (le 3 rifiniture) + il modello-dati dell'albero**; la vista nativa è
+il pezzo successivo. **Estratto byte-identico** al freeze build-19 (sha `c0e9877…`). **Lettura
+Continua invariata su ogni non-codice** (byte-identico).
+
+**Rifinitura 1 — radice LIBRO.** Il LIBRO non ha forma-intestazione pulita: la forma romana
+«LIBRO IV - …» è solo testatina (tolta dalla furniture), la forma a parole «LIBRO QUARTO» (vero
+divisore) on-device finisce **incollata in coda al BODY** dell'ultimo paragrafo del libro
+precedente (è a inizio-pagina dove il corpo prosegue). Un primo tentativo (esenzione della
+testatina romana dalla furniture) è stato SCARTATO: reintroduceva la testatina nel corpo ("LIBRO I
+- DELLE PERSONE… finanziaria, su richiesta…") = regressione di Lettura Continua. Soluzione:
+`recoverCodiciLibroDividers` **stacca** il divisore a parole dalla coda del BODY → HEADING_1
+sintetico (net-MIGLIORAMENTO, toglie il LIBRO dal flusso di corpo). Recuperati: **civile 10**
+(cc I-VI + cpc I-IV, completo), **penale 4** (parziale, solo i divisori incollati a fine-body).
+
+**Rifinitura 2 — etichette TITOLO col sottotitolo.** `normalizeCodiciStructure` fonde a livello
+di NODO (cross-run) «TITOLO II» + «Dei contratti in generale» → etichetta unica. **190/303** fusi
+(gli altri terse, marker o nessun sottotitolo pulito).
+
+**Rifinitura 3 — quinto livello, articoli su categoria propria (punto critico).** Articoli da
+HEADING_4 → **ARTICLE_HEADER**, liberando i 4 livelli per LIBRO=1/TITOLO=2/CAPO=3/SEZIONE=4. Il
+cambio tocca i TRE check "è-heading" — `isHeadingRole` (rotore+earcon), `textStyle` (resa),
+`NoteBinding.flushLong` (confine note lunghe) — tutti estesi con ARTICLE_HEADER perché Lettura
+Continua resti identica. **Prova rotore: ARTICLE_HEADER segs=7887 = n. articoli, rotore-navigabili
+9373** → NESSUNA regressione (la conquista del giro scorso regge il cambio categoria).
+
+**Modello albero (`QuickConsultTree.swift`, ScaboCore PURO, no UIKit).** Layer-dati di Layout 2:
+`buildQuickConsultTree` (5 livelli, stack per livello assoluto → livelli intermedi opzionali,
+intervallo-pagine, `contentIds` per l'espansione foglia) + `quickConsultSummaryLabel` (etichetta
+§8.3 «CAPO III - …, articoli da 1218 a 1229, pagine da 287 a 295»). 7 test puri.
+
+**Reti.** Rete A: **0 tipi del tutto assenti** su entrambi i codici (split LIBRO + fusione TITOLO
+preservano il testo). Rete B: **Estratto byte-identico** + 4 controlli byte-identici (Marotta,
+Torrente, Mosconi, Appunti) → tutto CONFINATO (gated isCodici). Test ScaboCore **442** (+7 modello).
+Schema invariato 0.7.0 (ARTICLE_HEADER già nell'enum).
+
+**Dove mi fermo (punto coerente).** La **vista nativa** (albero collassabile a tendine, toolbar
+Reset+frecce, espansione foglia, transizioni Continua↔Rapida focus+persistenza, selettore,
+persistenza stato, e l'**accessibilità VoiceOver** dell'albero) è un grosso pezzo UIKit la cui
+accessibilità — **criterio sovrano** — va collaudata su device reale, impossibile in questo
+ambiente (il simulatore non collauda i gesti VoiceOver). Costruirla alla cieca rischierebbe proprio
+l'accessibilità che l'utente mette al primo posto. Base struttura a 5 livelli + modello verificati;
+la vista è il **prossimo giro**. Debiti annotati: LIBRO penale parziale; ~6-8 H1 di front-matter
+("CODICE CIVILE E…") come radici spurie (il view può filtrarle); fusione sottotitolo LIBRO (terse).
+
+---
+
 ## ▶ STATO — Ramo Codici on-device, foglie 2-3: gerarchia + furniture testatine (disegnate insieme) — 2026-06-30 (PUSH, niente build)
 
 Le due foglie strutturali dei codici, disegnate insieme perché condividono il confine

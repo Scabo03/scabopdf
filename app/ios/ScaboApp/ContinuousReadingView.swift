@@ -546,7 +546,10 @@ final class ContinuousReadingView: UIView {
 
     /// Vero per i ruoli da trattare come intestazione (tratto `.header`).
     static func isHeadingRole(_ role: String) -> Bool {
-        role.hasPrefix("HEADING_") || role == SECTION_DIVIDER_ROLE
+        // ARTICLE_HEADER = l'intestazione d'articolo dei codici (categoria propria dopo lo
+        // spostamento da HEADING_4): resta navigabile dal rotore "intestazioni" e fa scattare
+        // l'earcon di transizione strutturale, esattamente come quando era HEADING_4.
+        role.hasPrefix("HEADING_") || role == SECTION_DIVIDER_ROLE || role == "ARTICLE_HEADER"
     }
 
     /// Stile tipografico (Dynamic Type) per ruolo.
@@ -556,6 +559,7 @@ final class ContinuousReadingView: UIView {
         case "HEADING_2": return .title2
         case "HEADING_3": return .title3
         case "HEADING_4": return .headline
+        case "ARTICLE_HEADER": return .headline   // intestazione d'articolo (ex HEADING_4)
         case SECTION_DIVIDER_ROLE: return .headline
         default: return .body
         }

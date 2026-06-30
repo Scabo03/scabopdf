@@ -323,7 +323,10 @@ public func bindAndPlaceNotes(
     }
     for node in document.structure {
         switch node.type {
-        case .HEADING_1, .HEADING_2, .HEADING_3, .HEADING_4:
+        case .HEADING_1, .HEADING_2, .HEADING_3, .HEADING_4, .ARTICLE_HEADER:
+            // ARTICLE_HEADER è l'intestazione d'articolo dei codici (ex HEADING_4): resta un
+            // CONFINE di sezione per il piazzamento delle note lunghe, identico a prima del
+            // cambio di categoria → Lettura Continua invariata. Altrove non esiste (no-op).
             flushLong()
             out.append(node)
         case .BODY:

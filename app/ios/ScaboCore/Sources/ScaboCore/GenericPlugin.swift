@@ -653,7 +653,9 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         furniture.formUnion(rivistaRunningHeaderFurniture(extraction))
     }
     // Ramo Codici (porta isCodici): testatine-range «ARTT. N-M», banner «CODICE …»,
-    // testatine TITOLO col trattino in cima (additivo). Gated → no-op altrove.
+    // testatine TITOLO col trattino in cima (additivo). Gated → no-op altrove. Poi ESENTA
+    // la prima occorrenza di ogni LIBRO (tolto dal recur del tronco) così diventa la
+    // radice-intestazione dell'albero (le successive restano testatine rimosse).
     if profileForFurniture.isCodici {
         furniture.formUnion(codiciFurnitureLines(extraction))
     }
