@@ -41,9 +41,10 @@ final class CodiciArticleTests: XCTestCase {
     private func texts(_ d: ScabopdfDocument, _ c: SemanticCategory) -> [String] {
         d.structure.filter { $0.type == c }.map { $0.text ?? "" }
     }
-    /// 6 righe di corpo + i trigger inseriti, per avere un body run reale.
+    /// Righe di corpo (taglia 7.5) dominanti, perché `estimateProfile` stimi corpo=7.5
+    /// (nel codice reale il corpo domina su migliaia di righe; nel sintetico va riempito).
     private func bodyFill(_ from: Int, _ y0: Double) -> [PdfTextLine] {
-        (0..<3).map { bodyLine("riga di corpo \(from + $0) di un comma legale qualunque.", y: y0 - Double($0) * 9) }
+        (0..<12).map { bodyLine("riga di corpo \(from + $0) di un comma legale qualunque.", y: y0 - Double($0) * 9) }
     }
 
     // ── La porta ─────────────────────────────────────────────────────────────────
@@ -139,6 +140,56 @@ final class CodiciArticleTests: XCTestCase {
     }
 
     // ── Gating: fuori dai codici nessun cambiamento (byte-identico) ───────────────
+
+    // ── Foglia 2: gerarchia (TITOLO/CAPO/SEZIONE/LIBRO) ──────────────────────────
+
+    /// riga a banda-alta (testatina): h=547 → top-band ≥ 465.
+    private func topLine(_ text: String, y: Double = 520, size: Double = 9, x0: Double = 31) -> PdfTextLine {
+        bodyLine(text, y: y, body: size, x0: x0)
+    }
+
+    // Gerarchia: TITOLO=H1, CAPO=H2, SEZIONE=H3 (allineata a structHeadingLevel), articoli=H4.
+    func test_titolo_bareWithSubtitle_promotedToHeading1Fused() {
+        var lines = bodyFill(0, 420)
+        lines.append(bodyLine("TITOLO II", y: 388))
+        lines.append(bodyLine("Dei contratti in generale", y: 379))
+        lines.append(articleLine("1321", ". Nozione. – [I]. Il contratto.", y: 360))
+        let d = doc([page(0, lines)])
+        XCTAssertTrue(texts(d, .HEADING_1).contains { $0.contains("TITOLO II") && $0.contains("Dei contratti in generale") },
+                      "il TITOLO bare + sottotitolo a capo → HEADING_1 fuso")
+    }
+
+    func test_capo_and_sezione_promotedToHeadings() {
+        var lines = bodyFill(0, 420)
+        lines.append(bodyLine("CAPO I– Disposizioni preliminari", y: 388))
+        lines.append(bodyLine("SEZIONE I– Dell’accordo delle parti", y: 379))
+        let d = doc([page(0, lines)])
+        XCTAssertTrue(texts(d, .HEADING_2).contains { $0.contains("CAPO I") }, "CAPO → HEADING_2")
+        XCTAssertTrue(texts(d, .HEADING_3).contains { $0.contains("SEZIONE I") }, "SEZIONE → HEADING_3")
+    }
+
+    func test_capo_atPageTop_isStillHeading_notFurniture() {
+        // un CAPO a inizio pagina (banda alta) è un'intestazione VERA (non testatina): NON va tolto.
+        var lines: [PdfTextLine] = [bodyLine("CAPO III– Del matrimonio", y: 520)]
+        lines += bodyFill(0, 400)
+        let d = doc([page(0, lines)])
+        XCTAssertTrue(texts(d, .HEADING_2).contains { $0.contains("CAPO III") },
+                      "CAPO a inizio pagina resta intestazione (precisione: non furniture)")
+    }
+
+    func test_furniture_arttRange_codiceBanner_titoloRunHeader_removed() {
+        var lines: [PdfTextLine] = [
+            topLine("ARTT. 1320-1329 273", y: 524),                  // range articoli + folio
+            topLine("TITOLO II - Dei contratti in generale", y: 524),// testatina TITOLO col trattino
+            topLine("CODICE CIVILE", y: 520, x0: 342),               // banner
+        ]
+        lines += bodyFill(0, 400)
+        let d = doc([page(0, lines)])
+        let all = d.structure.map { $0.text ?? "" }.joined(separator: " | ")
+        XCTAssertFalse(all.contains("ARTT. 1320-1329"), "il range-testatina è furniture (rimosso)")
+        XCTAssertFalse(all.contains("TITOLO II - Dei contratti"), "la testatina TITOLO col trattino è furniture")
+        XCTAssertFalse(all.contains("CODICE CIVILE"), "il banner è furniture")
+    }
 
     func test_nonCodiciGeometry_articleLineStaysBody() {
         var lines = bodyFill(0, 420)

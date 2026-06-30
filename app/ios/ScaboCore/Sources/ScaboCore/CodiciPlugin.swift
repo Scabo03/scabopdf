@@ -79,6 +79,80 @@ private func codiciReMatches(_ re: NSRegularExpression, _ s: String) -> Bool {
     re.firstMatch(in: s, range: NSRange(s.startIndex..<s.endIndex, in: s)) != nil
 }
 
+// MARK: - Foglia 2: gerarchia (LIBRO/TITOLO/CAPO/SEZIONE) + furniture testatine
+//
+// Le testatine e le intestazioni vere condividono il confine: «TITOLO II - …» in cima
+// è una testatina ricorrente (forma col trattino+sottotitolo), mentre «TITOLO II» bare
+// mid-page è l'intestazione vera. CAPO/SEZIONE sono SEMPRE intestazioni (anche a inizio
+// pagina: misurato, le top-band sono UNICHE, non ricorrenti). LIBRO esiste solo come
+// testatina (size 10pt, nessuna forma-contenuto) → dedup prima-occorrenza. La furniture
+// toglie ARTT-range, banner CODICE e le testatine TITOLO/LIBRO col trattino in cima;
+// la gerarchia promuove le intestazioni vere. Precisione nei due sensi (stella polare).
+
+/// Testatina-range d'articolo in cima a ogni pagina: «ARTT. 8-16», «ART. XVIII» (+folio).
+let codiciArttHeaderRe = try! NSRegularExpression(pattern: "^ARTT?\\.\\s?(\\d|[IVXLC])")
+/// Banner verticale del codice: «CODICE CIVILE», «CODICE PENALE», «CODICE DI PROCEDURA…».
+let codiciBannerRe = try! NSRegularExpression(pattern: "^CODICE\\s+[A-ZÀ-Ù]")
+/// Testatina corrente di divisione col trattino+sottotitolo (≠ l'intestazione vera, bare
+/// per il TITOLO, o assente come forma-contenuto per il LIBRO).
+let codiciDivHeaderRe = try! NSRegularExpression(pattern: "^TITOLO\\s+[IVXLC]+\\s*[-\u{2013}]")
+/// Intestazione di struttura di un codice: TITOLO/CAPO/SEZIONE + numero romano.
+let codiciStructRe = try! NSRegularExpression(pattern: "^(TITOLO|CAPO|SEZIONE)\\s+[IVXLC]+")
+/// TITOLO «bare» (solo numero, niente sottotitolo sulla riga) → il sottotitolo è a capo.
+let codiciTitoloBareRe = try! NSRegularExpression(pattern: "^TITOLO\\s+[IVXLC]+$")
+
+/// Livello heading dell'intestazione di struttura. Allineato a `structHeadingLevel`
+/// del tronco (TITOLO→1, CAPO→2, SEZIONE→3) così le intestazioni promosse dal mio leaf
+/// (.body) e quelle promosse da `reclassifyCleanFamilies` (.note) hanno lo STESSO livello.
+/// LIBRO è assente come forma-contenuto (solo testatina); ARTICOLO=4 dalla foglia 1.
+/// Gerarchia navigabile risultante: TITOLO(1) > CAPO(2) > SEZIONE(3) > ARTICOLO(4).
+func codiciStructuralLevel(_ text: String) -> Int? {
+    let t = jsTrim(text)
+    guard t.utf16.count <= 70, codiciReMatches(codiciStructRe, t) else { return nil }
+    if t.hasPrefix("TITOLO") { return 1 }
+    if t.hasPrefix("CAPO") { return 2 }
+    return 3  // SEZIONE
+}
+
+/// Vero se la riga è un sottotitolo plausibile da fondere nel TITOLO (titolo breve,
+/// iniziale maiuscola, non struttura/articolo, senza punto finale di frase).
+private func codiciIsSubtitle(_ text: String, _ body: Double) -> Bool {
+    let t = jsTrim(text)
+    guard !t.isEmpty, t.utf16.count <= 60, !t.hasSuffix(".") else { return false }
+    guard let f = t.unicodeScalars.first, CharacterSet.uppercaseLetters.contains(f) else { return false }
+    if codiciStructuralLevel(t) != nil { return false }
+    if codiciReMatches(codiciArticleLineRe, t) { return false }
+    return true
+}
+
+/// Righe-testatina dei codici da scartare (furniture): range «ARTT. N-M», banner CODICE
+/// in cima, testatina TITOLO col trattino in cima. NON il LIBRO (dedup), NON CAPO/SEZIONE,
+/// NON il TITOLO bare. Ritorna le chiavi "page:lineIndex". Gated dal chiamante (isCodici).
+func codiciFurnitureLines(_ extraction: PdfExtraction) -> Set<String> {
+    var furniture: Set<String> = []
+    for page in extraction.pages {
+        let h = page.height
+        for (lineIndex, line) in page.lines.enumerated() {
+            let sm = summarizeLine(line)
+            let t = jsTrim(sm.text)
+            guard !t.isEmpty else { continue }
+            let topBand = h > 0 && sm.yTop / h >= TOP_BAND
+            let isFurniture =
+                codiciReMatches(codiciArttHeaderRe, t)                       // range articoli (sempre)
+                || (topBand && codiciReMatches(codiciBannerRe, t))            // banner (in cima)
+                || (topBand && codiciReMatches(codiciDivHeaderRe, t))         // testatina TITOLO col trattino
+            if isFurniture { furniture.insert("\(page.pageIndex):\(lineIndex)") }
+        }
+    }
+    return furniture
+}
+
+// LIBRO: la mappatura fresca mostra che esiste SOLO come testatina corrente (size 10pt,
+// nessuna forma-contenuto, nessun divisore) ed è GIÀ tolto dal canale furniture ricorrente
+// (recur a posizione-ancorata) → niente inquinamento del rotore, ma nemmeno un'intestazione
+// LIBRO. Recuperarlo come heading (esenzione prima-occorrenza dalla furniture) è un follow-up
+// di valore modesto, rinviato; la gerarchia naviga su TITOLO/CAPO/SEZIONE (le divisioni-contenuto).
+
 // MARK: - Riconoscimento + split dell'articolo (livello span)
 
 /// Vero se la riga è un trigger d'articolo: primo span non-vuoto a taglia ≥ corpo×1.13,
@@ -119,13 +193,32 @@ private let CODICI_RUBRIC_MAX_LINES = 4
 /// finché si trova il confine «–»/«[» (→ il resto è corpo) oppure una riga che NON
 /// finisce con trattino (rubrica completa). Emette `.heading(level:4)` per ogni header
 /// e `.run(.body)` per il corpo fra un articolo e il successivo.
-func splitCodiciArticleRun(_ lines: [LineSummary], _ body: Double) -> [GenItem] {
+func splitCodiciArticleRun(_ lines: [LineSummary], _ body: Double, role: RunRole = .body) -> [GenItem] {
     var out: [GenItem] = []
     var buf: [LineSummary] = []
-    func flush() { if !buf.isEmpty { out.append(.run(.body, buf)); buf = [] } }
+    func flush() { if !buf.isEmpty { out.append(.run(role, buf)); buf = [] } }
     var i = 0
     while i < lines.count {
-        guard codiciArticleTrigger(lines[i], body) else {
+        // Foglia 2 — intestazione di struttura (TITOLO/CAPO/SEZIONE): promossa a heading.
+        // Vale su qualunque run (body o note): on-device il bare «TITOLO X» è spesso a
+        // taglia-nota, quindi va riconosciuto anche nei run di note.
+        if let lvl = codiciStructuralLevel(lines[i].text) {
+            flush()
+            var headerText = jsTrim(lines[i].text)
+            var j = i + 1
+            // TITOLO «bare» (numero solo) → fonde il sottotitolo a capo, se plausibile.
+            if codiciReMatches(codiciTitoloBareRe, headerText),
+               j < lines.count, codiciIsSubtitle(lines[j].text, body) {
+                headerText += " - " + jsTrim(lines[j].text)
+                j += 1
+            }
+            var h = lines[i]; h.text = headerText
+            out.append(.heading(h, level: lvl))
+            i = j
+            continue
+        }
+        // Il trigger d'articolo vale solo nel corpo (le note non aprono articoli).
+        guard role == .body, codiciArticleTrigger(lines[i], body) else {
             buf.append(lines[i]); i += 1; continue
         }
         flush()
@@ -168,7 +261,9 @@ func recognizeCodiciArticles(_ items: [GenItem], _ profile: Profile) -> [GenItem
     var out: [GenItem] = []
     for item in items {
         if case let .run(.body, lines) = item {
-            out.append(contentsOf: splitCodiciArticleRun(lines, profile.bodySize))
+            out.append(contentsOf: splitCodiciArticleRun(lines, profile.bodySize, role: .body))
+        } else if case let .run(.note, lines) = item {
+            out.append(contentsOf: splitCodiciArticleRun(lines, profile.bodySize, role: .note))
         } else {
             out.append(item)
         }
@@ -237,9 +332,12 @@ public final class CodiciPlugin: ExtractionPlugin {
         let reclass = reclassifyCleanFamilies(&nodes)
         _ = reclassifyEstrattoRunningHeaders(&nodes, profile)   // no-op sui codici (gated Estratto)
         let articleCount = nodes.reduce(0) { $0 + ($1.type == .HEADING_4 ? 1 : 0) }
+        let titoloCount = nodes.reduce(0) { $0 + ($1.type == .HEADING_2 ? 1 : 0) }
+        let capoSezCount = nodes.reduce(0) { $0 + ($1.type == .HEADING_3 ? 1 : 0) }
         var warnings = [
             "plugin:codici:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
             "plugin:codici:article_headings_recognized_\(articleCount)",
+            "plugin:codici:structure_titolo_\(titoloCount)_capo_sezione_\(capoSezCount)",
         ]
         if reclass.summary + reclass.heading > 0 {
             warnings.append(

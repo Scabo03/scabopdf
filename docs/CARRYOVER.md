@@ -52,6 +52,67 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Ramo Codici on-device, foglie 2-3: gerarchia + furniture testatine (disegnate insieme) — 2026-06-30 (PUSH, niente build)
+
+Le due foglie strutturali dei codici, disegnate insieme perché condividono il confine
+testatina-vs-intestazione. Niente build. **Estratto byte-identico** al freeze build-19 (sha
+`c0e9877279dc5977a1cbb844d366b937b864dd315565099ac81a74b7be0eaedd`).
+
+**Mappatura fresca (lines.json PDFKit reale) — il confine è netto per FORMA + posizione.** Le
+testatine correnti hanno forma distinta dalle intestazioni vere: «ARTT. 8-16 [folio]» (range
+articoli, 891 top-band, mai contenuto), banner «CODICE CIVILE» verticale (267 top), «TITOLO X -
+sottotitolo» col trattino in cima (373 top, testatina) vs bare «TITOLO X» (246 mid, intestazione
+vera). **CAPO/SEZIONE sono SEMPRE intestazioni** (anche a inizio-pagina: misurato, le top-band sono
+UNICHE non ricorrenti). **LIBRO esiste SOLO come testatina** (11 distinti, size 10pt, nessuna
+forma-contenuto) ed è GIÀ tolto dal canale furniture ricorrente del tronco → nessun inquinamento,
+ma nemmeno un'intestazione LIBRO (recupero rinviato, vedi sotto).
+
+**Le due foglie.** (a) **Furniture** (`codiciFurnitureLines` in `detectFurniture`, gated isCodici):
+toglie «ARTT. N-M» (qualunque posizione, è il difetto-chiave che il recur del tronco MANCA perché
+il range varia per pagina), banner CODICE e testatine TITOLO col trattino in cima. NON CAPO/SEZIONE,
+NON bare-TITOLO. (b) **Gerarchia** (in `pageItems` gated, sul body-splitter esteso a body+note-run
+perché on-device il bare «TITOLO» è spesso a taglia-nota): promuove TITOLO/CAPO/SEZIONE a heading.
+Livelli allineati a `structHeadingLevel` del tronco (TITOLO=1, CAPO=2, SEZIONE=3) così le
+intestazioni .body (mio leaf) e .note (`reclassifyCleanFamilies`) hanno lo STESSO livello →
+gerarchia coerente **TITOLO(1) > CAPO(2) > SEZIONE(3) > ARTICOLO(4)**.
+
+**Guardie nei due sensi (stella polare).** Non promuovere una testatina a heading: ARTT/CODICE/
+TITOLO-dash sono furniture-rimosse PRIMA della classificazione → impossibile promuoverle. Non
+rimuovere un'intestazione vera come furniture: i pattern-furniture sono testatina-specifici
+(ARTT/CODICE/TITOLO-col-trattino); i CAPO/SEZIONE/bare-TITOLO non matchano → mai rimossi (la
+top-band-guard protegge anche il raro TITOLO-dash mid-page).
+
+**Reti (banco iPad reale).** Rete A: rotore CIVILE H1(TITOLO)=311, H2(CAPO)=703, H3(SEZIONE)=456,
+H4(articoli)=7887; PENALE 244/510/92/5622; **falsi-heading «ARTT.» 267 → 0** (rotore pulito); **0
+perdita di contenuto reale** (token totali −3968 = solo testatine; tipi del tutto assenti = 3-6, e
+sono garbage di de-sillabazione «dicapo»=«di»+«capo» RISOLTI dallo split strutturale, un
+miglioramento). Rete B: **Estratto byte-identico** al freeze + 3 controlli byte-identici (Marotta,
+Torrente, Mosconi); ogni non-codice invariato (gated). Test: ScaboCore **433** (+ test gerarchia/
+furniture). Schema invariato 0.7.0.
+
+**Rinvii dichiarati (data-driven).** (1) **LIBRO come intestazione**: esiste solo come testatina
+(già tolta, nessun inquinamento); recuperarne la prima-occorrenza come HEADING_1 root è un follow-up
+di valore modesto, **utile per il root dell'albero Layout 2**. (2) **Fusione sottotitolo TITOLO**:
+on-device «TITOLO II» e «Dei contratti in generale» sono in run diversi → la fusione in-run non
+scatta, i label restano terse «TITOLO II»; fonderli (post-pass a livello di nodo) migliora i label
+del rotore/albero — **rifinitura per il prep di Layout 2**.
+
+**Valutazione di sequenza — Consultazione Rapida (Layout 2).** Letto il disegno (§8 di
+LAYER2_PRODUCT_DECISIONS): albero collassabile LIBRO→TITOLO→CAPO→SEZIONE→ARTICOLO, etichette con
+range-figli + intervallo-pagine, toolbar Reset/frecce, espansione foglia, transizioni Continua↔Rapida
+con persistenza, annuncio esteso a catena gerarchica completa («Codice civile, libro quarto, titolo
+primo, capo terzo, Articolo 1218»). **Verdetto: giro DEDICATO** (è un pezzo UI grande e completo,
+scala-Dottrina-Inline o più; non si infila in coda a una foglia). La struttura dei codici è ora una
+**base solida** (articoli + TITOLO/CAPO/SEZIONE navigabili, page_index sui nodi per i range-pagina),
+ma per appoggiarsi PULITO l'albero vuole due rifiniture come PRIMO passo del giro Layout 2: il
+**root LIBRO** (la catena «libro quarto…») e i **label-sottotitolo dei TITOLO**; opzionale il
+5° livello pulito (articoli→ARTICLE_HEADER + supporto rotore nativo, che libera HEADING_4 per una
+SEZIONE distinta) se l'albero vuole il nesting CAPO>SEZIONE pieno. Raccomandazione: Layout 2 = giro
+suo, che apre con quelle due-tre rifiniture di struttura e poi costruisce l'albero. Commit unico su
+`main`, push manuale a discrezione utente.
+
+---
+
 ## ▶ STATO — Ramo Codici on-device, foglia 1: navigabilità per articolo (HEADING_4) — 2026-06-30 (PUSH, niente build)
 
 Primo ramo **Codici** (codici legali tascabili Giuffrè PDFsharp 357×547). Mappatura fresca + foglia
