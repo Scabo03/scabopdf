@@ -361,8 +361,8 @@ final class ContinuousReadingViewController: UIViewController {
             for seg in page.segments {
                 let base = seg.id.split(separator: "#", maxSplits: 1,
                                         omittingEmptySubsequences: false).first.map(String.init) ?? seg.id
-                if map[base] == nil { map[base] = seg.text }
-                else { map[base]! += " " + seg.text }
+                if let existing = map[base] { map[base] = existing + " " + seg.text }
+                else { map[base] = seg.text }
             }
         }
         return map

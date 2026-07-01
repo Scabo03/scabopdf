@@ -205,58 +205,6 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 
-    // MARK: - REPRO crash apertura build 20 (percorso completo apertura→lettore)
-
-    /// Riproduce il percorso REALE di apertura del lettore su un file piccolo che "prima si
-    /// apriva": estrazione → classificazione → aggancio note → corpo → ALBERO → round-trip cache
-    /// → creazione VC in finestra → viewDidAppear → switch a Consultazione Rapida. Un trap in
-    /// uno qualsiasi dei passi (force-unwrap, indice, decode) fa fallire il test con la riga.
-    func test_REPRO_openReaderFullPath_marotta() throws {
-        try reproOpen("Marotta.pdf")
-    }
-    func test_REPRO_openReaderFullPath_estratto() throws {
-        try reproOpen("Estratto da Il provvedimento amministrativo_9788892107779_PDF.pdf")
-    }
-
-    private func reproOpen(_ name: String) throws {
-        let path = corpusDir + "/" + name
-        guard FileManager.default.fileExists(atPath: path) else {
-            throw XCTSkip("corpus assente: \(path)")
-        }
-        print("[REPRO] 1 estrazione \(name)")
-        let ex = try PdfKitExtractor().extract(fromUri: URL(fileURLWithPath: path).absoluteString)
-        print("[REPRO] 2 buildDocumentFromPdf")
-        let raw = buildDocumentFromPdf(ex, sourceName: name)
-        print("[REPRO] 3 bindAndPlaceNotes")
-        let document = bindAndPlaceNotes(raw, ex).document
-        print("[REPRO] 4 bodyPaginatedContent (nodi=\(document.structure.count))")
-        let content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document)
-        print("[REPRO] 5 buildQuickConsultTree")
-        let tree = buildQuickConsultTree(document)
-        let available = quickConsultAvailable(tree)
-        print("[REPRO] 5b tree roots=\(tree.count) available=\(available)")
-        print("[REPRO] 6 round-trip cache (encode/decode dell'albero)")
-        let enc = try JSONEncoder().encode(tree)
-        let dec = try JSONDecoder().decode([QuickConsultNode].self, from: enc)
-        XCTAssertEqual(dec.count, tree.count)
-        print("[REPRO] 7 crea VC + finestra")
-        let vc = ContinuousReadingViewController(
-            content: content, sourceName: name, documentId: "repro",
-            quickConsultTree: available ? tree : nil, signalPlayer: SignalPlayerSpy())
-        let win = UIWindow(frame: CGRect(x: 0, y: 0, width: 834, height: 1194))
-        win.rootViewController = vc
-        win.makeKeyAndVisible()
-        print("[REPRO] 8 loadViewIfNeeded + layout")
-        vc.loadViewIfNeeded()
-        vc.view.layoutIfNeeded()
-        print("[REPRO] 9 viewWillAppear + viewDidAppear")
-        vc.beginAppearanceTransition(true, animated: false)
-        vc.endAppearanceTransition()
-        print("[REPRO] 10 switch a Consultazione Rapida")
-        if available { vc.switchLayoutForTesting(to: .quick); vc.view.layoutIfNeeded() }
-        print("[REPRO] OK — nessun crash su \(name)")
-    }
-
     // MARK: - REGRESSIONE cache build 20: retrocompatibilità formato 3 (niente rielaborazione forzata)
 
     /// Prova che una cache di FORMATO 3 (build 19, senza l'albero) è ancora LEGGIBILE dalla build

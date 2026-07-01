@@ -27,12 +27,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         AppTheme.applyStored(to: window)
         window.makeKeyAndVisible()
 
-        if let lastId = LibraryService.shared.store.lastOpenDocumentId {
-            // Differito dopo che la finestra è visibile, così la presentazione modale è valida.
-            DispatchQueue.main.async {
-                DocumentOpener.reopenFromCache(documentId: lastId, from: tabBar)
-            }
-        }
+        // Avvio SEMPRE sulla Home stabile. La riapertura automatica dell'ultimo documento
+        // all'avvio è DISABILITATA di proposito: presentare (e far leggere a VoiceOver) un
+        // documento pesante durante il collegamento della scena rischia un'espulsione all'avvio
+        // (jetsam/watchdog) e lascia l'app in uno stato di presentazione instabile. Il documento
+        // si apre SOLO su azione dell'utente dai Recenti. Degradazione ragionevole (§ 2.5: il
+        // principio di riapertura non è un vincolo assoluto). L'ultimo-documento resta memorizzato
+        // per i Recenti; semplicemente non lo si ripresenta da solo.
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

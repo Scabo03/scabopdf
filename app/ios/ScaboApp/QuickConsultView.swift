@@ -167,13 +167,13 @@ final class QuickConsultView: UIView {
     /// Salta alla prossima/precedente foglia espansa rispetto al fuoco corrente (§ 8.5).
     func navigateExpandedLeaf(forward: Bool) {
         let leaves = expandedLeafRowIndices()
-        guard leaves.count >= 2 else { return }
+        guard leaves.count >= 2, let firstLeaf = leaves.first, let lastLeaf = leaves.last else { return }
         let current = focusedRowIndex() ?? -1
         let target: Int
         if forward {
-            target = leaves.first(where: { $0 > current }) ?? leaves.first!
+            target = leaves.first(where: { $0 > current }) ?? firstLeaf
         } else {
-            target = leaves.last(where: { $0 < current }) ?? leaves.last!
+            target = leaves.last(where: { $0 < current }) ?? lastLeaf
         }
         if let cell = tableView.cellForRow(at: IndexPath(row: target, section: 0)) {
             UIAccessibility.post(notification: .screenChanged, argument: cell)

@@ -139,7 +139,19 @@ enum DocumentOpener {
             service.store.setLastOpenDocument(id: nil)
             presenter?.dismiss(animated: true) { onClosed?() }
         }
-        presenter.present(reader, animated: true)
+        presentRobustly(reader, from: presenter)
+    }
+
+    /// Presenta il lettore in modo robusto: se il presentatore ha già QUALCOSA di presentato
+    /// (uno stato residuo/instabile), lo chiude PRIMA, così il reader non viene mai presentato
+    /// sopra uno stato di presentazione corrotto (una delle possibili cause del crash secco
+    /// all'apertura). Nessun force-unwrap; se anche il present fallisse, l'app resta sulla Home.
+    static func presentRobustly(_ reader: UIViewController, from presenter: UIViewController) {
+        if let existing = presenter.presentedViewController {
+            existing.dismiss(animated: false) { presenter.present(reader, animated: true) }
+        } else {
+            presenter.present(reader, animated: true)
+        }
     }
 
     // MARK: - Mappa pagine del file originale (§ 4.3)
@@ -341,6 +353,6 @@ extension DocumentOpener {
             service.store.setLastOpenDocument(id: nil)
             presenter?.dismiss(animated: true) { onImported?() }
         }
-        presenter.present(reader, animated: true)
+        presentRobustly(reader, from: presenter)
     }
 }
