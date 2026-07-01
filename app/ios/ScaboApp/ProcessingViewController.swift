@@ -37,6 +37,8 @@ final class ProcessingViewController: UIViewController {
 
     private let fileURL: URL
     private let sourceName: String
+    private let granularityTarget: Int
+    private let buildDoctrine: Bool
     private let processor: DocumentProcessor
 
     /// Player dei segnali acustici (seam per i test). Stati cablati: `loading` (in loop
@@ -119,11 +121,15 @@ final class ProcessingViewController: UIViewController {
     init(
         fileURL: URL,
         sourceName: String,
+        granularityTarget: Int = DEFAULT_GRANULARITY_TARGET,
+        buildDoctrine: Bool = true,
         processor: DocumentProcessor = DocumentProcessor(),
         signalPlayer: SignalPlaying = SignalPlayer.shared
     ) {
         self.fileURL = fileURL
         self.sourceName = sourceName
+        self.granularityTarget = granularityTarget
+        self.buildDoctrine = buildDoctrine
         self.processor = processor
         self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
@@ -170,6 +176,8 @@ final class ProcessingViewController: UIViewController {
         processor.process(
             fileURL: fileURL,
             sourceName: sourceName,
+            granularityTarget: granularityTarget,
+            buildDoctrine: buildDoctrine,
             onProgress: { [weak self] progress in self?.apply(progress) },
             completion: { [weak self] outcome in self?.finish(outcome) }
         )

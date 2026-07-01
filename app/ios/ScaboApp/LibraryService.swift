@@ -94,6 +94,12 @@ final class LibraryService {
         /// Albero della Consultazione Rapida (§ 8), `nil` se il documento non ha gerarchia.
         /// Aggiunto al formato 4 (vecchie cache senza albero → invalidate → rielabora).
         var quickConsultTree: [QuickConsultNode]?
+        /// Granularità con cui il `content` è stato costruito (§ 7.6). `nil` sulle cache più
+        /// vecchie (trattate come granularità di default). Per i volumi ENORMI il content è
+        /// costruito a granularità grossa (meno segmenti → meno memoria all'apertura); questo
+        /// campo permette all'apertura di riconoscere una cache "leggera" già pronta da una
+        /// cache "pesante" a granularità fine da rielaborare. Additivo (formato 4 invariato).
+        var contentTarget: Int?
     }
 
     private func cacheURL(forDocumentId id: String) -> URL {
@@ -107,7 +113,7 @@ final class LibraryService {
     /// assente/corrotto/di formato superato (→ si rielabora dal PDF d'archivio).
     func loadCache(forDocumentId id: String)
         -> (content: PaginatedContent, pageMap: [String: Int], doctrineContent: PaginatedContent?,
-            quickConsultTree: [QuickConsultNode]?)? {
+            quickConsultTree: [QuickConsultNode]?, contentTarget: Int?)? {
         guard let data = try? Data(contentsOf: cacheURL(forDocumentId: id)),
               let cached = try? JSONDecoder().decode(CachedContent.self, from: data),
               cached.formatVersion >= Self.minReadableCacheFormatVersion,
@@ -116,7 +122,7 @@ final class LibraryService {
             // Non deve MAI far crashare: un fallimento di decodifica cade qui via `try?`.
             return nil
         }
-        return (cached.content, cached.pageMap, cached.doctrineContent, cached.quickConsultTree)
+        return (cached.content, cached.pageMap, cached.doctrineContent, cached.quickConsultTree, cached.contentTarget)
     }
 
     /// Il solo contenuto elaborato in cache (riapertura all'avvio).
@@ -128,11 +134,12 @@ final class LibraryService {
     func writeCache(
         _ content: PaginatedContent, pageMap: [String: Int],
         doctrineContent: PaginatedContent?, quickConsultTree: [QuickConsultNode]?,
-        forDocumentId id: String
+        contentTarget: Int, forDocumentId id: String
     ) {
         let wrapped = CachedContent(
             formatVersion: Self.cacheFormatVersion, content: content,
-            pageMap: pageMap, doctrineContent: doctrineContent, quickConsultTree: quickConsultTree)
+            pageMap: pageMap, doctrineContent: doctrineContent, quickConsultTree: quickConsultTree,
+            contentTarget: contentTarget)
         if let data = try? JSONEncoder().encode(wrapped) {
             try? data.write(to: cacheURL(forDocumentId: id), options: .atomic)
         }

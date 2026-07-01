@@ -28,6 +28,16 @@ enum DocumentOpener {
 
     private static var service: LibraryService { .shared }
 
+    /// Soglia di "volume ENORME" (pagine del PDF): oltre questa, l'apertura è alleggerita per
+    /// stare nel budget di memoria del dispositivo. Empirica: il Codice civile (2697 pp, ~7900
+    /// articoli, ~47k segmenti di lettura → ~47k UILabel = picco ~865 MB) è l'unico del corpus
+    /// sopra soglia; ogni manuale sta sotto 900 pp, l'Estratto 465. Vedi il profiling di memoria.
+    static let LARGE_DOCUMENT_PAGE_THRESHOLD = 1500
+    /// Granularità di lettura grossa per i volumi enormi (§ 7.6, valore ammesso): meno segmenti
+    /// → meno etichette → meno memoria (e meno elementi d'accessibilità per VoiceOver). Rete-A
+    /// safe: tutto il testo resta, solo raggruppato in blocchi più grandi.
+    static let LARGE_DOCUMENT_GRANULARITY = 1200
+
     // MARK: - Apertura di un documento d'archivio (§ 2.5)
 
     /// Apre il documento `id` al suo punto di lettura. Usa la cache se disponibile, altrimenti
@@ -39,12 +49,24 @@ enum DocumentOpener {
             return
         }
 
-        // Percorso veloce: contenuto in cache → lettore immediato al punto di lettura.
-        if let cached = service.loadCache(forDocumentId: id) {
+        // I volumi ENORMI si aprono ALLEGGERITI (granularità grossa, niente Dottrina Inline né
+        // Consultazione Rapida all'apertura) per stare nel budget di memoria del dispositivo, e
+        // NON usano la cache (quella scritta da build precedenti è a granularità fine = pesante):
+        // si rielaborano leggeri ogni apertura. La Lettura Continua — il default, ciò che serve
+        // per leggere il volume — non ha bisogno né dell'albero né del flusso Dottrina.
+        let large = doc.sourcePageCount > Self.LARGE_DOCUMENT_PAGE_THRESHOLD
+
+        // Percorso veloce: contenuto in cache → lettore immediato. Per i volumi ENORMI si usa la
+        // cache SOLO se è già la versione LEGGERA (granularità grossa, `contentTarget` marcato):
+        // una cache pesante a granularità fine (scritta da build precedenti) viene ignorata qui e
+        // rielaborata leggera sotto (il suo decode è transitorio e rilasciato subito).
+        if let cached = service.loadCache(forDocumentId: id),
+           !large || cached.contentTarget == Self.LARGE_DOCUMENT_GRANULARITY {
             service.store.recordOpened(id: id)
             presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
-                          doctrineContent: cached.doctrineContent,
-                          quickConsultTree: cached.quickConsultTree, from: presenter, onClosed: onClosed)
+                          doctrineContent: large ? nil : cached.doctrineContent,
+                          quickConsultTree: large ? nil : cached.quickConsultTree,
+                          from: presenter, onClosed: onClosed)
             return
         }
 
@@ -57,21 +79,26 @@ enum DocumentOpener {
             return
         }
 
+        let target = large ? Self.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
         let pdfURL = service.archivedPDFURL(forDocumentId: id)
-        let processingVC = ProcessingViewController(fileURL: pdfURL, sourceName: doc.title)
+        let processingVC = ProcessingViewController(
+            fileURL: pdfURL, sourceName: doc.title, granularityTarget: target, buildDoctrine: !large)
         processingVC.onOutcome = { [weak presenter] outcome in
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
                 switch outcome {
                 case .success(let document, let content, let doctrineContent):
                     let pageMap = buildPageMap(document)
-                    let tree = quickConsultTreeIfAvailable(document)
+                    let tree = large ? nil : quickConsultTreeIfAvailable(document)
+                    // Cache SEMPRE, ma per gli enormi è la versione LEGGERA (content a granularità
+                    // grossa, niente albero né Dottrina, `contentTarget` marcato): la prossima
+                    // apertura la riconosce e la usa senza rielaborare.
                     service.writeCache(content, pageMap: pageMap,
-                                       doctrineContent: doctrineContent, quickConsultTree: tree,
-                                       forDocumentId: id)
+                                       doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
+                                       contentTarget: target, forDocumentId: id)
                     service.store.recordOpened(id: id)
                     presentReader(content: content, document: doc, pageMap: pageMap,
-                                  doctrineContent: doctrineContent, quickConsultTree: tree,
+                                  doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
                                   from: presenter, onClosed: onClosed)
                 case .cancelled:
                     break
@@ -289,17 +316,22 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
             }
             let pageMap = DocumentOpener.buildPageMap(document)
-            let tree = DocumentOpener.quickConsultTreeIfAvailable(document)
-            service.writeCache(content, pageMap: pageMap,
-                               doctrineContent: doctrineContent, quickConsultTree: tree,
-                               forDocumentId: doc.id)
+            // Volume ENORME: apertura alleggerita (niente albero né Dottrina) e NON cachato — la
+            // prossima apertura dai Recenti lo rielabora leggero (granularità grossa) via `open`.
+            let large = document.metadata.pages_pdf > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
+            let tree = large ? nil : DocumentOpener.quickConsultTreeIfAvailable(document)
+            if !large {
+                service.writeCache(content, pageMap: pageMap,
+                                   doctrineContent: doctrineContent, quickConsultTree: tree,
+                                   contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id)
+            }
             if let destination { service.store.addCollocation(documentId: doc.id, to: destination) }
             service.store.recordOpened(id: doc.id)
             onImported?()
             // Apertura automatica del lettore sul documento appena importato (al primo elemento).
             DocumentOpener.presentReaderAfterImport(
                 content: content, document: doc, pageMap: pageMap,
-                doctrineContent: doctrineContent, quickConsultTree: tree,
+                doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
                 from: presenter, onImported: onImported)
         case .cancelled:
             break

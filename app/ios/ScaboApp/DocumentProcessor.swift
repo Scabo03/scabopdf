@@ -127,6 +127,8 @@ final class DocumentProcessor {
     func process(
         fileURL: URL,
         sourceName: String,
+        granularityTarget: Int = DEFAULT_GRANULARITY_TARGET,
+        buildDoctrine: Bool = true,
         onProgress: @escaping (Progress) -> Void,
         completion: @escaping (Outcome) -> Void
     ) {
@@ -204,14 +206,16 @@ final class DocumentProcessor {
             let content: PaginatedContent
             var doctrineContent: PaginatedContent?
             do {
-                content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document)
-                // Dottrina Inline (§ 10): SOLO se ci sono note. Stesso aggancio, piazzamento
-                // tutto-inline a fine frase del richiamo (§ 10.2). Riusa l'audio esistente
-                // (i NOTE portano già `length_category` → regime acustico).
-                if hasNotes {
+                content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document, target: granularityTarget)
+                // Dottrina Inline (§ 10): SOLO se ci sono note E se `buildDoctrine` (per i volumi
+                // enormi lo si salta: è un secondo flusso da decine di migliaia di segmenti che
+                // raddoppierebbe la memoria all'apertura, e la Lettura Continua di default non lo
+                // usa — vedi la gate sui volumi enormi in DocumentOpener). Stesso aggancio,
+                // piazzamento tutto-inline a fine frase del richiamo (§ 10.2).
+                if hasNotes && buildDoctrine {
                     let doctrineDoc = bindAndPlaceNotes(
                         rawDocument, extraction, placement: .doctrineInline).document
-                    doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContent(from: doctrineDoc)
+                    doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContent(from: doctrineDoc, target: granularityTarget)
                 }
             } catch {
                 finish(.failure(message: Self.proseMessage(from: error)))
