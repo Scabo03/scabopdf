@@ -37,9 +37,16 @@ final class LibraryService {
     private let archiveDir: URL
     private let cacheDir: URL
 
-    /// Versione del formato di cache: un cambiamento del modello `PaginatedContent` la fa
-    /// incrementare, invalidando le cache vecchie (che ripiegano sulla rielaborazione dal PDF).
+    /// Versione del formato di cache SCRITTA dalle nuove elaborazioni.
     private static let cacheFormatVersion = 4
+    /// Versione minima LEGGIBILE. Il formato 3 (build 19, senza l'albero della Consultazione
+    /// Rapida) è RETROCOMPATIBILE col 4: `content`/`pageMap`/`doctrineContent` hanno la stessa
+    /// forma, il campo `quickConsultTree` è opzionale (nil sul 3 → Consultazione Rapida non
+    /// disponibile per quel documento finché non viene rielaborato). Accettare il 3 evita di
+    /// invalidare TUTTE le cache all'aggiornamento: senza questo, ogni documento già in cache
+    /// verrebbe RIELABORATO all'apertura — un picco di memoria che sul dispositivo espelle l'app
+    /// (regressione build 20). Con questo, i documenti cachati si aprono leggeri come in build 19.
+    private static let minReadableCacheFormatVersion = 3
 
     private init() {
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -93,6 +100,9 @@ final class LibraryService {
         cacheDir.appendingPathComponent("\(id).json")
     }
 
+    /// URL del file di cache di un documento (per i test: simulare una cache di formato vecchio).
+    func cacheURLForTesting(forDocumentId id: String) -> URL { cacheURL(forDocumentId: id) }
+
     /// Contenuto + mappa pagine + (se presente) flusso Dottrina Inline in cache, o `nil` se
     /// assente/corrotto/di formato superato (→ si rielabora dal PDF d'archivio).
     func loadCache(forDocumentId id: String)
@@ -100,7 +110,10 @@ final class LibraryService {
             quickConsultTree: [QuickConsultNode]?)? {
         guard let data = try? Data(contentsOf: cacheURL(forDocumentId: id)),
               let cached = try? JSONDecoder().decode(CachedContent.self, from: data),
-              cached.formatVersion == Self.cacheFormatVersion else {
+              cached.formatVersion >= Self.minReadableCacheFormatVersion,
+              cached.formatVersion <= Self.cacheFormatVersion else {
+            // Cache assente, corrotta, o di formato non compatibile → rielabora dal PDF.
+            // Non deve MAI far crashare: un fallimento di decodifica cade qui via `try?`.
             return nil
         }
         return (cached.content, cached.pageMap, cached.doctrineContent, cached.quickConsultTree)

@@ -205,6 +205,104 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 
+    // MARK: - REPRO crash apertura build 20 (percorso completo apertura→lettore)
+
+    /// Riproduce il percorso REALE di apertura del lettore su un file piccolo che "prima si
+    /// apriva": estrazione → classificazione → aggancio note → corpo → ALBERO → round-trip cache
+    /// → creazione VC in finestra → viewDidAppear → switch a Consultazione Rapida. Un trap in
+    /// uno qualsiasi dei passi (force-unwrap, indice, decode) fa fallire il test con la riga.
+    func test_REPRO_openReaderFullPath_marotta() throws {
+        try reproOpen("Marotta.pdf")
+    }
+    func test_REPRO_openReaderFullPath_estratto() throws {
+        try reproOpen("Estratto da Il provvedimento amministrativo_9788892107779_PDF.pdf")
+    }
+
+    private func reproOpen(_ name: String) throws {
+        let path = corpusDir + "/" + name
+        guard FileManager.default.fileExists(atPath: path) else {
+            throw XCTSkip("corpus assente: \(path)")
+        }
+        print("[REPRO] 1 estrazione \(name)")
+        let ex = try PdfKitExtractor().extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+        print("[REPRO] 2 buildDocumentFromPdf")
+        let raw = buildDocumentFromPdf(ex, sourceName: name)
+        print("[REPRO] 3 bindAndPlaceNotes")
+        let document = bindAndPlaceNotes(raw, ex).document
+        print("[REPRO] 4 bodyPaginatedContent (nodi=\(document.structure.count))")
+        let content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document)
+        print("[REPRO] 5 buildQuickConsultTree")
+        let tree = buildQuickConsultTree(document)
+        let available = quickConsultAvailable(tree)
+        print("[REPRO] 5b tree roots=\(tree.count) available=\(available)")
+        print("[REPRO] 6 round-trip cache (encode/decode dell'albero)")
+        let enc = try JSONEncoder().encode(tree)
+        let dec = try JSONDecoder().decode([QuickConsultNode].self, from: enc)
+        XCTAssertEqual(dec.count, tree.count)
+        print("[REPRO] 7 crea VC + finestra")
+        let vc = ContinuousReadingViewController(
+            content: content, sourceName: name, documentId: "repro",
+            quickConsultTree: available ? tree : nil, signalPlayer: SignalPlayerSpy())
+        let win = UIWindow(frame: CGRect(x: 0, y: 0, width: 834, height: 1194))
+        win.rootViewController = vc
+        win.makeKeyAndVisible()
+        print("[REPRO] 8 loadViewIfNeeded + layout")
+        vc.loadViewIfNeeded()
+        vc.view.layoutIfNeeded()
+        print("[REPRO] 9 viewWillAppear + viewDidAppear")
+        vc.beginAppearanceTransition(true, animated: false)
+        vc.endAppearanceTransition()
+        print("[REPRO] 10 switch a Consultazione Rapida")
+        if available { vc.switchLayoutForTesting(to: .quick); vc.view.layoutIfNeeded() }
+        print("[REPRO] OK — nessun crash su \(name)")
+    }
+
+    // MARK: - REGRESSIONE cache build 20: retrocompatibilità formato 3 (niente rielaborazione forzata)
+
+    /// Prova che una cache di FORMATO 3 (build 19, senza l'albero) è ancora LEGGIBILE dalla build
+    /// nuova (niente invalidazione → niente rielaborazione forzata all'apertura, la causa del crash
+    /// sul dispositivo). E che il documento si apre dalla cache riletta (Consultazione Rapida
+    /// disabilitata, tree=nil, ma Lettura Continua funziona). Round-trip anche del formato 4.
+    func test_cache_format3_isReadable_noForcedReprocess() throws {
+        let path = corpusDir + "/Marotta.pdf"
+        guard FileManager.default.fileExists(atPath: path) else { throw XCTSkip("corpus assente") }
+        let ex = try PdfKitExtractor().extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+        let document = bindAndPlaceNotes(buildDocumentFromPdf(ex, sourceName: "Marotta.pdf"), ex).document
+        let content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document)
+        let tree = buildQuickConsultTree(document)
+        let svc = LibraryService.shared
+        let id = "test_cache_fmt_\(UUID().uuidString)"
+        let url = svc.cacheURLForTesting(forDocumentId: id)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        // 1. Formato 4 (nuovo, con albero): round-trip pieno.
+        svc.writeCache(content, pageMap: [:], doctrineContent: nil, quickConsultTree: tree, forDocumentId: id)
+        let loaded4 = svc.loadCache(forDocumentId: id)
+        XCTAssertNotNil(loaded4, "cache formato 4 leggibile")
+        XCTAssertNotNil(loaded4?.quickConsultTree, "formato 4 porta l'albero")
+
+        // 2. Declassa il file a FORMATO 3 (come lo scriveva la build 19: niente quickConsultTree).
+        var json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+        json["formatVersion"] = 3
+        json.removeValue(forKey: "quickConsultTree")
+        try JSONSerialization.data(withJSONObject: json).write(to: url)
+
+        // 3. La build nuova DEVE ancora leggerlo (niente rielaborazione forzata) — questa è la fix.
+        let loaded3 = svc.loadCache(forDocumentId: id)
+        XCTAssertNotNil(loaded3, "REGRESSIONE: formato 3 (build 19) DEVE restare leggibile → niente reprocess forzato")
+        XCTAssertNil(loaded3?.quickConsultTree, "formato 3 non ha l'albero (Consultazione Rapida disabilitata)")
+        XCTAssertEqual(loaded3?.content.totalSegments, content.totalSegments, "contenuto integro dalla cache formato 3")
+
+        // 4. Il documento si apre dalla cache formato 3 riletta (Lettura Continua, quick disabilitata).
+        let vc = ContinuousReadingViewController(
+            content: loaded3!.content, sourceName: "Marotta.pdf", documentId: id,
+            quickConsultTree: loaded3!.quickConsultTree, signalPlayer: SignalPlayerSpy())
+        vc.loadViewIfNeeded(); vc.view.frame = CGRect(x: 0, y: 0, width: 834, height: 1194); vc.view.layoutIfNeeded()
+        vc.viewDidAppear(false)
+        XCTAssertFalse(vc.quickAvailableForTesting, "quick disabilitata su cache formato 3 (nessun albero)")
+        XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "apre in Lettura Continua")
+    }
+
     // MARK: - Aggancio note sulla pipeline reale: precisione + non-distruttività
 
     /// Su Marotta (regime SMALLER): l'aggancio produce legami same-page, le note
