@@ -219,6 +219,9 @@ final class ContinuousReadingViewController: UIViewController {
         // Selettore di Layout (§ 3.4): Dottrina Inline disponibile solo se il documento ha note
         // (§ 10.3). Default Lettura Continua.
         configureLayoutSelector()
+        // Segnalibri e tag (§ 5): azioni personalizzate sugli elementi + pulsante Segnalibri in
+        // toolbar. Attivi solo per un documento reale (id non vuoto).
+        setUpBookmarks()
         // Posizione di lettura ricordata: la si preimposta come ultima posizione (senza spostare
         // ancora il fuoco) così il rientro nel testo e il ripristino alla comparsa vi puntano.
         readingView.presetReadingPosition(toIndex: initialReadingPosition)
@@ -535,6 +538,66 @@ final class ContinuousReadingViewController: UIViewController {
         UIAccessibility.post(notification: .screenChanged, argument: interfaceBar.backButton)
     }
 
+    // MARK: - Segnalibri e tag (§ 5)
+
+    /// Lo store della libreria (segnalibri per-documento + tag globali). Confine di persistenza già
+    /// predisposto per iCloud/Mac; nessuno store parallelo.
+    private var libraryStore: LibraryStore { LibraryService.shared.store }
+
+    /// Aggancia il coordinatore dei segnalibri al container del testo e mostra il pulsante
+    /// Segnalibri in toolbar. Solo per un documento reale (id non vuoto): nei test senza libreria
+    /// tutto resta invariato (nessuna azione, pulsante nascosto).
+    private func setUpBookmarks() {
+        guard !documentId.isEmpty else { return }
+        readingView.bookmarkCoordinator = self
+        interfaceBar.setBookmarksAvailable(true)
+        interfaceBar.onBookmarks = { [weak self] in self?.openBookmarksWindow() }
+    }
+
+    /// Apre la finestra dei Segnalibri del documento (§ 5.4). È un container modale (§ 2.3); alla
+    /// scelta di una voce si chiude e si salta al punto.
+    private func openBookmarksWindow() {
+        BookmarksWindowViewController.present(
+            from: self, store: libraryStore, documentId: documentId
+        ) { [weak self] anchorId, hint in
+            self?.jumpToBookmark(anchorSegmentId: anchorId, hint: hint)
+        }
+    }
+
+    /// Salta all'elemento di un segnalibro (§ 5.4). Se si è in un Layout che non rende il flusso
+    /// continuo (Consultazione Rapida) o in Dottrina Inline (indici di un altro flusso), si torna
+    /// prima a Lettura Continua, così il segnalibro atterra su un elemento reso e coerente con l'id
+    /// con cui è stato creato.
+    private func jumpToBookmark(anchorSegmentId: String, hint: Int) {
+        if currentLayout != .continuous { switchLayout(to: .continuous) }
+        let index = readingView.indexOfSegment(anchorId: anchorSegmentId, hint: hint)
+        activateTextContainer(restoreFocus: false)
+        if let element = readingView.element(atIndex: index) {
+            UIAccessibility.post(notification: .screenChanged, argument: element)
+        }
+    }
+
+    /// Anteprima (prime parole) dell'elemento marcato, per la lista dei segnalibri (§ 5.4).
+    private static func previewText(_ text: String, wordLimit: Int = 12) -> String {
+        let words = text.split(whereSeparator: { $0.isWhitespace })
+        let head = words.prefix(wordLimit).map(String.init).joined(separator: " ")
+        return words.count > wordLimit ? head + "…" : head
+    }
+
+    /// Riporta il fuoco all'elemento d'origine dopo un'operazione sui segnalibri (§ 2.3) e posta un
+    /// breve annuncio di conferma. L'annuncio è leggermente ritardato per non essere sovrascritto dal
+    /// cambio di schermo (calibratura all'orecchio sul dispositivo).
+    private func announceAndReturnFocus(_ message: String, toSegmentId id: String, hint: Int) {
+        let index = readingView.indexOfSegment(anchorId: id, hint: hint)
+        activateTextContainer(restoreFocus: false)
+        if let element = readingView.element(atIndex: index) {
+            UIAccessibility.post(notification: .screenChanged, argument: element)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            UIAccessibility.post(notification: .announcement, argument: message)
+        }
+    }
+
     // MARK: - Introspezione per i test (struttura dei due container + posizione)
 
     /// Il container del testo (sola lettura).
@@ -575,4 +638,47 @@ final class ContinuousReadingViewController: UIViewController {
     var renderedSegmentCountForTesting: Int { readingView.segmentLabels.count }
     /// Cambia layout come farebbe il selettore (per i test, senza UIMenu).
     func switchLayoutForTesting(to layout: LayoutId) { switchLayout(to: layout) }
+}
+
+// MARK: - ReadingBookmarkCoordinator (§ 5.1 / § 5.7)
+
+extension ContinuousReadingViewController: ReadingBookmarkCoordinator {
+
+    func existingBookmark(forSegmentId id: String) -> Bookmark? {
+        libraryStore.bookmarks(documentId: documentId).first { $0.anchorSegmentId == id }
+    }
+
+    func addBookmark(segmentId: String, orderIndex: Int, segmentText: String) {
+        let preview = Self.previewText(segmentText)
+        let page = sourcePage?(segmentId)
+        BookmarkEditorViewController.present(
+            from: self, title: "Nuovo segnalibro", preview: preview,
+            tags: libraryStore.tags(), initialName: nil, initialTagIds: []
+        ) { [weak self] name, tagIds in
+            guard let self else { return }
+            self.libraryStore.addBookmark(
+                documentId: self.documentId, anchorSegmentId: segmentId, orderIndexHint: orderIndex,
+                name: name, preview: preview, originalPage: page, tagIds: tagIds)
+            self.announceAndReturnFocus("Segnalibro aggiunto.", toSegmentId: segmentId, hint: orderIndex)
+        }
+    }
+
+    func editBookmark(_ bookmark: Bookmark) {
+        BookmarkEditorViewController.present(
+            from: self, title: "Modifica segnalibro", preview: bookmark.preview,
+            tags: libraryStore.tags(), initialName: bookmark.name, initialTagIds: Set(bookmark.tagIds)
+        ) { [weak self] name, tagIds in
+            guard let self else { return }
+            self.libraryStore.updateBookmark(
+                documentId: self.documentId, bookmarkId: bookmark.id, name: name, tagIds: tagIds)
+            self.announceAndReturnFocus(
+                "Segnalibro aggiornato.", toSegmentId: bookmark.anchorSegmentId, hint: bookmark.orderIndexHint)
+        }
+    }
+
+    func removeBookmark(_ bookmark: Bookmark) {
+        libraryStore.deleteBookmark(documentId: documentId, bookmarkId: bookmark.id)
+        announceAndReturnFocus(
+            "Segnalibro rimosso.", toSegmentId: bookmark.anchorSegmentId, hint: bookmark.orderIndexHint)
+    }
 }

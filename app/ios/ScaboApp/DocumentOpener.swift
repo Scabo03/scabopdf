@@ -40,10 +40,40 @@ enum DocumentOpener {
 
     // MARK: - Apertura di un documento d'archivio (§ 2.5)
 
+    /// L'ancora di apertura a un segnalibro (§ 5.6): l'id del segmento marcato più l'indice di
+    /// fallback. Quando presente, il lettore parte da quel punto invece che dalla posizione di
+    /// lettura ricordata.
+    struct BookmarkFocus {
+        let anchorSegmentId: String
+        let orderIndexHint: Int
+    }
+
+    /// Risolve l'ancora di un segnalibro in una posizione (indice di lettura 0-based) nel contenuto:
+    /// prima per id esatto del segmento (identità di nodo del Layer 1), poi per id-nodo base (senza
+    /// suffisso di granularità `#k`), infine ripiega sull'indice di fallback clampato (§ 2.5,
+    /// degradazione ragionevole se il nodo non è nello stream corrente).
+    static func resolveAnchorIndex(_ content: PaginatedContent, anchor: BookmarkFocus) -> Int {
+        let segments = content.pages.flatMap { $0.segments }
+        if let i = segments.firstIndex(where: { $0.id == anchor.anchorSegmentId }) { return i }
+        let base = baseNodeId(anchor.anchorSegmentId)
+        if let i = segments.firstIndex(where: { baseNodeId($0.id) == base }) { return i }
+        return min(max(0, anchor.orderIndexHint), max(0, segments.count - 1))
+    }
+
+    /// L'id-nodo base di un id-segmento, togliendo l'eventuale suffisso di granularità `#k`.
+    static func baseNodeId(_ segmentId: String) -> String {
+        segmentId.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+            .first.map(String.init) ?? segmentId
+    }
+
     /// Apre il documento `id` al suo punto di lettura. Usa la cache se disponibile, altrimenti
     /// rielabora dal PDF d'archivio. `onClosed` è chiamato quando il lettore viene chiuso (per far
-    /// aggiornare i Recenti alla schermata chiamante).
-    static func open(documentId id: String, from presenter: UIViewController, onClosed: (() -> Void)? = nil) {
+    /// aggiornare i Recenti alla schermata chiamante). `focusAnchor`, se presente, apre a un
+    /// segnalibro (§ 5.6) invece che alla posizione ricordata.
+    static func open(
+        documentId id: String, from presenter: UIViewController,
+        focusAnchor: BookmarkFocus? = nil, onClosed: (() -> Void)? = nil
+    ) {
         guard let doc = service.store.document(id: id) else {
             presentError("Il documento non è più disponibile.", from: presenter)
             return
@@ -66,7 +96,7 @@ enum DocumentOpener {
             presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
                           doctrineContent: large ? nil : cached.doctrineContent,
                           quickConsultTree: large ? nil : cached.quickConsultTree,
-                          from: presenter, onClosed: onClosed)
+                          focusAnchor: focusAnchor, from: presenter, onClosed: onClosed)
             return
         }
 
@@ -99,7 +129,7 @@ enum DocumentOpener {
                     service.store.recordOpened(id: id)
                     presentReader(content: content, document: doc, pageMap: pageMap,
                                   doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
-                                  from: presenter, onClosed: onClosed)
+                                  focusAnchor: focusAnchor, from: presenter, onClosed: onClosed)
                 case .cancelled:
                     break
                 case .failure(let message):
@@ -143,14 +173,18 @@ enum DocumentOpener {
         pageMap: [String: Int],
         doctrineContent: PaginatedContent?,
         quickConsultTree: [QuickConsultNode]?,
+        focusAnchor: BookmarkFocus? = nil,
         from presenter: UIViewController,
         onClosed: (() -> Void)?
     ) {
+        // Posizione iniziale: il segnalibro se si apre a uno (§ 5.6), altrimenti il punto ricordato.
+        let initialPosition = focusAnchor.map { resolveAnchorIndex(content, anchor: $0) }
+            ?? doc.readingPosition
         let reader = ContinuousReadingViewController(
             content: content,
             sourceName: doc.title,
             documentId: doc.id,
-            initialReadingPosition: doc.readingPosition,
+            initialReadingPosition: initialPosition,
             onPositionChanged: { index in
                 service.store.updateReadingPosition(id: doc.id, position: index)
             },

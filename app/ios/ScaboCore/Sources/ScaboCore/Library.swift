@@ -61,6 +61,13 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// riazzera (vedi `recordOpened`), perché un documento appena aperto è di nuovo recente.
     public var isHiddenFromRecents: Bool?
 
+    /// I segnalibri del documento (§ 5.1), dati personali UNICI del file (§ 12.6). OPZIONALE per la
+    /// stessa ragione di `isHiddenFromRecents`: una libreria di una versione precedente non ha la
+    /// chiave, e `nil` significa "nessun segnalibro" senza rompere la decodifica delle librerie
+    /// esistenti (retro-compatibilità additiva). I tag associati sono id nello spazio GLOBALE dei
+    /// tag (`LibraryState.tags`): il segnalibro porta solo i riferimenti, mai copie del nome.
+    public var bookmarks: [Bookmark]?
+
     public init(
         id: String,
         title: String,
@@ -70,7 +77,8 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         sourcePageCount: Int,
         readingPosition: Int = 0,
         warnings: [String] = [],
-        isHiddenFromRecents: Bool? = nil
+        isHiddenFromRecents: Bool? = nil,
+        bookmarks: [Bookmark]? = nil
     ) {
         self.id = id
         self.title = title
@@ -81,6 +89,81 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         self.readingPosition = readingPosition
         self.warnings = warnings
         self.isHiddenFromRecents = isHiddenFromRecents
+        self.bookmarks = bookmarks
+    }
+}
+
+// MARK: - Segnalibro (§ 5.1) e Tag (§ 5.2)
+
+/// Un segnalibro marca un SINGOLO elemento del documento accessibile via swipe (§ 5.1): un comma,
+/// un paragrafo, una nota, qualunque elemento. Porta un nome scelto dall'utente (facoltativo) e
+/// zero o più tag dello spazio globale.
+public struct Bookmark: Codable, Equatable, Sendable {
+    /// Identità stabile del segnalibro (UUID).
+    public var id: String
+    /// L'ancora: l'id del `ContentSegment` marcato, che è l'id-nodo STABILE del Layer 1 (non un
+    /// indice). Robusto alla ripaginazione (Dynamic Type, rotazione) e quasi sempre al cambio di
+    /// Layout/granularità, perché il nodo sorgente resta lo stesso. La reading view lo risolve in
+    /// una posizione al momento del salto; se il nodo non è nello stream corrente si ripiega su
+    /// `orderIndexHint` (degradazione ragionevole, § 2.5).
+    public var anchorSegmentId: String
+    /// Indice di lettura (0-based) dell'elemento alla creazione: ordina la lista "in ordine di
+    /// occorrenza nel documento" (§ 5.4) e fa da fallback di risoluzione dell'ancora.
+    public var orderIndexHint: Int
+    /// Nome scelto dall'utente, oppure `nil`/vuoto: in tal caso la lista mostra l'anteprima (§ 5.4).
+    public var name: String?
+    /// Anteprima delle prime parole dell'elemento marcato, catturata alla creazione (§ 5.4).
+    public var preview: String
+    /// Pagina del file originale (1-based) alla creazione, se disponibile (§ 5.4); `nil` per i
+    /// documenti di origine non impaginata (§ 4.1).
+    public var originalPage: Int?
+    /// Gli id dei tag globali associati (§ 5.1). Un tag eliminato (§ 5.3) viene scollato da qui, ma
+    /// il segnalibro resta in vita.
+    public var tagIds: [String]
+    /// Quando è stato creato (ordinamento secondario e referto).
+    public var createdAt: Date
+
+    public init(
+        id: String,
+        anchorSegmentId: String,
+        orderIndexHint: Int,
+        name: String? = nil,
+        preview: String,
+        originalPage: Int? = nil,
+        tagIds: [String] = [],
+        createdAt: Date
+    ) {
+        self.id = id
+        self.anchorSegmentId = anchorSegmentId
+        self.orderIndexHint = orderIndexHint
+        self.name = name
+        self.preview = preview
+        self.originalPage = originalPage
+        self.tagIds = tagIds
+        self.createdAt = createdAt
+    }
+
+    /// Etichetta da mostrare nella lista: il nome se l'utente gliel'ha dato, altrimenti l'anteprima
+    /// (§ 5.4). Mai vuota se l'anteprima non lo è.
+    public var displayTitle: String {
+        if let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            return name
+        }
+        return preview
+    }
+}
+
+/// Un tag è un'etichetta nominale dello spazio GLOBALE dell'utente (§ 5.2), valida su tutta la
+/// libreria. Strutturalmente tutti i tag sono uguali: non esiste un flag "predefinito" — i sei
+/// predefiniti sono solo un punto di partenza seminato al primo avvio (`LibraryStore.tags()`) e
+/// sono eliminabili come qualunque tag personale.
+public struct Tag: Codable, Equatable, Sendable {
+    public var id: String
+    public var name: String
+
+    public init(id: String, name: String) {
+        self.id = id
+        self.name = name
     }
 }
 
@@ -139,14 +222,24 @@ public struct LibraryState: Codable, Equatable, Sendable {
     /// chiusura (§ 2.5). `nil` se l'ultima schermata attiva non era un documento.
     public var lastOpenDocumentId: String?
 
+    /// Lo spazio GLOBALE dei tag dell'utente (§ 5.2), comune a tutta la libreria. OPZIONALE per la
+    /// retro-compatibilità additiva (come `ArchivedDocument.isHiddenFromRecents`): `nil` significa
+    /// "mai inizializzato" e distingue il primo avvio (→ si seminano i sei predefiniti, § 5.2) dallo
+    /// stato in cui l'utente ha eliminato tutti i tag (`[]`, che si rispetta). La semina avviene
+    /// pigramente in `LibraryStore.tags()`, così le librerie esistenti non vengono riscritte finché
+    /// i tag non servono davvero.
+    public var tags: [Tag]?
+
     public init(
         documents: [ArchivedDocument] = [],
         workspaces: [Workspace] = [],
-        lastOpenDocumentId: String? = nil
+        lastOpenDocumentId: String? = nil,
+        tags: [Tag]? = nil
     ) {
         self.documents = documents
         self.workspaces = workspaces
         self.lastOpenDocumentId = lastOpenDocumentId
+        self.tags = tags
     }
 }
 
@@ -537,6 +630,193 @@ extension LibraryStore {
         case .importDate:
             return docs.sorted { $0.importedAt > $1.importedAt }
         }
+    }
+}
+
+// MARK: - Tag globali (§ 5.2 / § 5.3)
+
+extension LibraryStore {
+
+    /// I sei tag predefiniti seminati al primo avvio (§ 5.2), nell'ordine del documento di prodotto.
+    /// Sono un punto di partenza: strutturalmente uguali a qualunque tag personale ed eliminabili.
+    public static let defaultTagNames: [String] = [
+        "Da rileggere", "Dubbio", "Importante", "Citazione", "Per tesi", "Da verificare",
+    ]
+
+    /// Lo spazio globale dei tag (§ 5.2). Alla PRIMA lettura, se lo stato non è mai stato
+    /// inizializzato (`state.tags == nil`, tipico di una libreria di build precedente o di
+    /// un'installazione nuova), semina i sei predefiniti e persiste. Una lista VUOTA (`[]`) — cioè
+    /// l'utente che ha eliminato tutti i tag — è rispettata e NON riseminata.
+    @discardableResult
+    public func tags() -> [Tag] {
+        if let existing = state.tags { return existing }
+        let seeded = Self.defaultTagNames.map { Tag(id: makeId(), name: $0) }
+        state.tags = seeded
+        persist()
+        return seeded
+    }
+
+    public func tag(id: String) -> Tag? { tags().first { $0.id == id } }
+
+    /// Crea un nuovo tag globale (§ 5.6) e restituisce il record con id minted. Nome ripulito dagli
+    /// spazi; un nome vuoto è rifiutato (`nil`).
+    @discardableResult
+    public func createTag(name: String) -> Tag? {
+        let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return nil }
+        var current = tags()
+        let tag = Tag(id: makeId(), name: clean)
+        current.append(tag)
+        state.tags = current
+        persist()
+        return tag
+    }
+
+    /// Rinomina un tag esistente (§ 5.6). Nome vuoto ignorato.
+    public func renameTag(id: String, to name: String) {
+        let clean = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !clean.isEmpty else { return }
+        var current = tags()
+        guard let i = current.firstIndex(where: { $0.id == id }) else { return }
+        current[i].name = clean
+        state.tags = current
+        persist()
+    }
+
+    /// Elimina un tag (§ 5.3), predefinito o personale. Il tag scompare definitivamente; i
+    /// segnalibri che lo portavano RESTANO IN VITA e perdono solo l'associazione — se non hanno
+    /// altri tag restano come segnalibri senza tag. Una sola scrittura per l'intera operazione.
+    public func deleteTag(id: String) {
+        var current = tags()
+        guard current.contains(where: { $0.id == id }) else { return }
+        current.removeAll { $0.id == id }
+        state.tags = current
+        // Scolla l'id da ogni segnalibro di ogni documento, senza toccarne l'esistenza.
+        for di in state.documents.indices {
+            guard var bms = state.documents[di].bookmarks else { continue }
+            var changed = false
+            for bi in bms.indices where bms[bi].tagIds.contains(id) {
+                bms[bi].tagIds.removeAll { $0 == id }
+                changed = true
+            }
+            if changed { state.documents[di].bookmarks = bms }
+        }
+        persist()
+    }
+}
+
+// MARK: - Segnalibri (§ 5.1 / § 5.4 / § 5.5 / § 5.6)
+
+extension LibraryStore {
+
+    /// I segnalibri di un documento in ordine di occorrenza nel documento (§ 5.4), a parità di
+    /// posizione per data di creazione. Lista vuota se il documento non esiste o non ha segnalibri.
+    public func bookmarks(documentId: String) -> [Bookmark] {
+        let raw = document(id: documentId)?.bookmarks ?? []
+        return raw.sorted {
+            $0.orderIndexHint != $1.orderIndexHint
+                ? $0.orderIndexHint < $1.orderIndexHint
+                : $0.createdAt < $1.createdAt
+        }
+    }
+
+    /// I segnalibri di un documento filtrati con la logica ADDITIVA "o" (§ 5.5): quelli che portano
+    /// ALMENO UNO dei tag selezionati. Un insieme di tag vuoto → lista completa (nessun filtro).
+    public func bookmarks(documentId: String, filteredByAnyTag tagIds: Set<String>) -> [Bookmark] {
+        let all = bookmarks(documentId: documentId)
+        guard !tagIds.isEmpty else { return all }
+        return all.filter { !Set($0.tagIds).isDisjoint(with: tagIds) }
+    }
+
+    /// Aggiunge un segnalibro al documento (§ 5.7) e restituisce il record con id minted, o `nil` se
+    /// il documento non esiste. `tagIds` è filtrato ai soli tag esistenti (un tag eliminato nel
+    /// frattempo non viene associato).
+    @discardableResult
+    public func addBookmark(
+        documentId: String,
+        anchorSegmentId: String,
+        orderIndexHint: Int,
+        name: String? = nil,
+        preview: String,
+        originalPage: Int? = nil,
+        tagIds: [String] = []
+    ) -> Bookmark? {
+        guard let di = state.documents.firstIndex(where: { $0.id == documentId }) else { return nil }
+        let validTagIds = existingTagIds(from: tagIds)
+        let cleanName = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let bookmark = Bookmark(
+            id: makeId(),
+            anchorSegmentId: anchorSegmentId,
+            orderIndexHint: max(0, orderIndexHint),
+            name: (cleanName?.isEmpty ?? true) ? nil : cleanName,
+            preview: preview,
+            originalPage: originalPage,
+            tagIds: validTagIds,
+            createdAt: now())
+        var bms = state.documents[di].bookmarks ?? []
+        bms.append(bookmark)
+        state.documents[di].bookmarks = bms
+        persist()
+        return bookmark
+    }
+
+    /// Aggiorna nome e/o tag di un segnalibro esistente (§ 5.7, finestra di modifica). `tagIds` è
+    /// filtrato ai soli tag esistenti.
+    public func updateBookmark(
+        documentId: String, bookmarkId: String, name: String?, tagIds: [String]
+    ) {
+        guard let di = state.documents.firstIndex(where: { $0.id == documentId }),
+              var bms = state.documents[di].bookmarks,
+              let bi = bms.firstIndex(where: { $0.id == bookmarkId }) else { return }
+        let cleanName = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        bms[bi].name = (cleanName?.isEmpty ?? true) ? nil : cleanName
+        bms[bi].tagIds = existingTagIds(from: tagIds)
+        state.documents[di].bookmarks = bms
+        persist()
+    }
+
+    /// Elimina un segnalibro dal documento.
+    public func deleteBookmark(documentId: String, bookmarkId: String) {
+        guard let di = state.documents.firstIndex(where: { $0.id == documentId }),
+              var bms = state.documents[di].bookmarks else { return }
+        let before = bms.count
+        bms.removeAll { $0.id == bookmarkId }
+        guard bms.count != before else { return }
+        state.documents[di].bookmarks = bms
+        persist()
+    }
+
+    /// Un segnalibro con il suo documento di provenienza, per la vista globale per tag (§ 5.6).
+    public struct GlobalBookmark: Equatable, Sendable {
+        public let document: ArchivedDocument
+        public let bookmark: Bookmark
+    }
+
+    /// La vista globale dei segnalibri per tag su TUTTA la libreria (§ 5.6), con la stessa logica
+    /// additiva "o" della § 5.5: quelli che portano almeno uno dei tag selezionati. Un insieme
+    /// vuoto → tutti i segnalibri della libreria. Ordinati per titolo del documento, poi per
+    /// occorrenza nel documento.
+    public func bookmarksAcrossLibrary(withAnyTag tagIds: Set<String>) -> [GlobalBookmark] {
+        var result: [GlobalBookmark] = []
+        for doc in state.documents {
+            let matches = tagIds.isEmpty
+                ? bookmarks(documentId: doc.id)
+                : bookmarks(documentId: doc.id, filteredByAnyTag: tagIds)
+            result.append(contentsOf: matches.map { GlobalBookmark(document: doc, bookmark: $0) })
+        }
+        return result.sorted {
+            let byTitle = $0.document.title.localizedCaseInsensitiveCompare($1.document.title)
+            if byTitle != .orderedSame { return byTitle == .orderedAscending }
+            return $0.bookmark.orderIndexHint < $1.bookmark.orderIndexHint
+        }
+    }
+
+    /// Filtra una lista di id-tag ai soli tag GLOBALI esistenti, preservando l'ordine e togliendo i
+    /// duplicati. Impedisce che un segnalibro trattenga un tag già eliminato.
+    private func existingTagIds(from ids: [String]) -> [String] {
+        let known = Set(tags().map { $0.id })
+        var seen = Set<String>()
+        return ids.filter { known.contains($0) && seen.insert($0).inserted }
     }
 }
 

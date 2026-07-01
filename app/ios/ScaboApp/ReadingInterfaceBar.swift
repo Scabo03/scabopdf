@@ -57,6 +57,28 @@ final class ReadingInterfaceBar: UIView {
         return button
     }()
 
+    /// Pulsante Segnalibri (§ 5.4): apre la finestra dei segnalibri del documento corrente. Vive in
+    /// QUESTO container d'interfaccia (chiuso): mai raggiungibile dallo swipe di lettura (§ 2.2).
+    let bookmarksButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "bookmark"), for: .normal)
+        b.accessibilityLabel = "Segnalibri"
+        b.accessibilityHint = "Apre i segnalibri del documento e il filtro per tag"
+        b.isHidden = true   // visibile solo quando il documento è reale (lo abilita il controller)
+        return b
+    }()
+
+    /// Azione del pulsante Segnalibri (impostata dal controller).
+    var onBookmarks: (() -> Void)?
+
+    /// Mostra/nasconde il pulsante Segnalibri (§ 5.4). Il controller lo abilita solo per un
+    /// documento reale (id non vuoto); nei test senza libreria resta nascosto e l'interfaccia è
+    /// identica a prima.
+    func setBookmarksAvailable(_ available: Bool) {
+        bookmarksButton.isHidden = !available
+        refreshAccessibilityElements()
+    }
+
     /// Layout-id usato come fallback quando il selettore non è ancora configurato.
     private var currentLayout: LayoutId = .continuous
     /// Inoltrata dal controller: l'utente ha scelto un layout dal menù.
@@ -126,7 +148,7 @@ final class ReadingInterfaceBar: UIView {
     /// Lo stack di destra impacchetta indicatore-pagina e controlli-quick: si mostra l'uno o gli
     /// altri secondo il Layout attivo (uno stack collassa gli arranged hidden).
     private lazy var rightStack: UIStackView = {
-        let stack = UIStackView(arrangedSubviews: [quickControlsStack, pageIndicatorStack])
+        let stack = UIStackView(arrangedSubviews: [bookmarksButton, quickControlsStack, pageIndicatorStack])
         stack.axis = .horizontal
         stack.spacing = 12
         stack.alignment = .center
@@ -197,6 +219,7 @@ final class ReadingInterfaceBar: UIView {
         ])
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        bookmarksButton.addTarget(self, action: #selector(bookmarksTapped), for: .touchUpInside)
         resetStructureButton.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
         prevExpandedButton.addTarget(self, action: #selector(prevTapped), for: .touchUpInside)
         nextExpandedButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
@@ -214,6 +237,7 @@ final class ReadingInterfaceBar: UIView {
     /// presenti — il box pagina ORIGINALE e infine quello di VISUALIZZAZIONE (§ 4.3).
     private func refreshAccessibilityElements() {
         var elements: [NSObject] = [backButton, layoutSelectorButton]
+        if !bookmarksButton.isHidden { elements.append(bookmarksButton) }
         if !quickControlsStack.isHidden {
             elements.append(resetStructureButton)
             elements.append(prevExpandedButton)
@@ -325,6 +349,10 @@ final class ReadingInterfaceBar: UIView {
 
     @objc private func backTapped() {
         onBack?()
+    }
+
+    @objc private func bookmarksTapped() {
+        onBookmarks?()
     }
 
     override func accessibilityPerformEscape() -> Bool {

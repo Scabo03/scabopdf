@@ -41,6 +41,14 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
         importItem.accessibilityHint = "Apre la scelta di un file PDF dal dispositivo"
         navigationItem.rightBarButtonItem = importItem
 
+        // Ingresso alla schermata Tag globali (§ 5.6): gestione dei tag e vista globale dei
+        // segnalibri per tag su tutta la libreria.
+        let tagsItem = UIBarButtonItem(
+            image: UIImage(systemName: "tag"), style: .plain, target: self, action: #selector(tagsTapped))
+        tagsItem.accessibilityLabel = "Tag"
+        tagsItem.accessibilityHint = "Gestisci i tag e trova i segnalibri per tag"
+        navigationItem.leftBarButtonItem = tagsItem
+
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(LibraryRowCell.self, forCellReuseIdentifier: LibraryRowCell.reuseId)
@@ -70,6 +78,11 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     @objc private func importTapped() {
         DocumentOpener.startImport(from: self, into: nil) { [weak self] in self?.reload() }
+    }
+
+    @objc private func tagsTapped() {
+        navigationController?.pushViewController(
+            TagsScreenViewController(store: service.store), animated: true)
     }
 
     @objc private func newWorkspaceTapped() {

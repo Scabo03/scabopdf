@@ -78,6 +78,21 @@
 import UIKit
 import ScaboCore
 
+/// Il coordinatore dei segnalibri per il container del testo (§ 5.1): la reading view gli chiede se
+/// un elemento è già marcato e gli instrada le azioni personalizzate (aggiungi/modifica/rimuovi). Lo
+/// implementa il view controller, che ha lo store e la finestra di creazione. `weak` per rompere il
+/// ciclo di retain col view controller.
+protocol ReadingBookmarkCoordinator: AnyObject {
+    /// Il segnalibro che marca l'elemento con questo id-segmento, o `nil` se non ce n'è.
+    func existingBookmark(forSegmentId id: String) -> Bookmark?
+    /// Apre la finestra di creazione segnalibro (§ 5.7) per l'elemento indicato.
+    func addBookmark(segmentId: String, orderIndex: Int, segmentText: String)
+    /// Apre la finestra di modifica del segnalibro esistente.
+    func editBookmark(_ bookmark: Bookmark)
+    /// Rimuove il segnalibro (con l'annuncio VoiceOver).
+    func removeBookmark(_ bookmark: Bookmark)
+}
+
 /// `UILabel` che porta con sé il `ContentSegment` da cui è stato costruito, così i
 /// test possono ispezionare la corrispondenza segmento→elemento accessibile.
 final class SegmentLabel: UILabel {
@@ -88,6 +103,25 @@ final class SegmentLabel: UILabel {
     /// ricordare l'ultima posizione di lettura, così il rientro nel testo (dall'interfaccia) torna
     /// dove l'utente era, non al primissimo elemento.
     var onBecomeFocused: (() -> Void)?
+
+    /// La reading view proprietaria (debole): fornisce le azioni-segnalibro SU RICHIESTA, quando
+    /// VoiceOver interroga l'elemento a fuoco. NON è un closure per-etichetta né un array
+    /// pre-costruito: sui volumi enormi non aggiunge peso per-elemento (le azioni si costruiscono
+    /// solo per l'elemento correntemente a fuoco). Vedi la nota di memoria in `makeLabel`.
+    weak var owner: ContinuousReadingView?
+
+    /// Indice di lettura 0-based dell'elemento nel flusso, cablato alla costruzione: così la
+    /// costruzione delle azioni-segnalibro a fuoco è O(1), senza scandire tutte le etichette (sui
+    /// volumi enormi, ~47k elementi, una scansione lineare a ogni swipe sarebbe percepibile).
+    var readingIndex: Int = 0
+
+    /// Azioni personalizzate VoiceOver (swipe verticale, § 5.1): calcolate PIGRAMENTE dall'owner solo
+    /// quando VoiceOver le chiede per l'elemento a fuoco. `nil` (nessun owner o nessun coordinatore,
+    /// es. nei test) → nessuna azione, comportamento storico invariato.
+    override var accessibilityCustomActions: [UIAccessibilityCustomAction]? {
+        get { owner?.bookmarkActions(for: self) }
+        set { /* di sola-lettura: le azioni derivano dallo stato dei segnalibri */ }
+    }
 
     init(segment: ContentSegment) {
         self.segment = segment
@@ -218,6 +252,54 @@ final class ContinuousReadingView: UIView {
     /// player condiviso; i test iniettano una spia.
     var signalPlayer: SignalPlaying = SignalPlayer.shared
 
+    /// Il coordinatore dei segnalibri (§ 5.1), impostato dal view controller solo quando il
+    /// documento è reale (id non vuoto). `nil` → nessuna azione-segnalibro (test, comportamento
+    /// storico invariato). `weak`: il view controller possiede la view, non viceversa.
+    weak var bookmarkCoordinator: ReadingBookmarkCoordinator?
+
+    /// Costruisce le azioni-segnalibro per l'elemento a fuoco (§ 5.1). Chiamato PIGRAMENTE dal getter
+    /// di `SegmentLabel.accessibilityCustomActions`, quindi solo per l'elemento correntemente
+    /// interrogato da VoiceOver: nessun costo per-elemento sui volumi enormi. Elemento non marcato →
+    /// "aggiungi segnalibro"; elemento marcato → "modifica" + "rimuovi".
+    func bookmarkActions(for label: SegmentLabel) -> [UIAccessibilityCustomAction]? {
+        guard let coordinator = bookmarkCoordinator else { return nil }
+        let segment = label.segment
+        if let bookmark = coordinator.existingBookmark(forSegmentId: segment.id) {
+            return [
+                UIAccessibilityCustomAction(name: "Modifica segnalibro") { [weak coordinator] _ in
+                    coordinator?.editBookmark(bookmark); return true
+                },
+                UIAccessibilityCustomAction(name: "Rimuovi segnalibro") { [weak coordinator] _ in
+                    coordinator?.removeBookmark(bookmark); return true
+                },
+            ]
+        }
+        return [
+            UIAccessibilityCustomAction(name: "Aggiungi segnalibro") { [weak coordinator] _ in
+                coordinator?.addBookmark(
+                    segmentId: segment.id, orderIndex: label.readingIndex, segmentText: segment.text)
+                return true
+            },
+        ]
+    }
+
+    /// Risolve l'ancora di un segnalibro (§ 5.6) in una posizione nello stream corrente: per id
+    /// esatto del segmento, poi per id-nodo base (senza suffisso di granularità `#k`), infine
+    /// ripiega sull'indice di fallback clampato (degradazione ragionevole, § 2.5). Usato per il
+    /// salto al segnalibro dalla finestra Segnalibri.
+    func indexOfSegment(anchorId: String, hint: Int) -> Int {
+        if let i = segmentLabels.firstIndex(where: { $0.segment.id == anchorId }) { return i }
+        let base = Self.baseNodeId(anchorId)
+        if let i = segmentLabels.firstIndex(where: { Self.baseNodeId($0.segment.id) == base }) { return i }
+        return min(max(0, hint), max(0, segmentLabels.count - 1))
+    }
+
+    /// L'id-nodo base di un id-segmento (toglie l'eventuale suffisso di granularità `#k`).
+    static func baseNodeId(_ segmentId: String) -> String {
+        segmentId.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
+            .first.map(String.init) ?? segmentId
+    }
+
     // MARK: - Metrica di lettura
 
     private enum Metrics {
@@ -315,6 +397,8 @@ final class ContinuousReadingView: UIView {
         lastFocusedElement = nil
         lastFocusedRole = nil
         segmentLabels = segments.map { makeLabel(for: $0) }
+        // Indice di lettura cablato: azioni-segnalibro a fuoco in O(1) (vedi `SegmentLabel.readingIndex`).
+        for (i, label) in segmentLabels.enumerated() { label.readingIndex = i }
         segmentLabels.forEach { documentContainer.addSubview($0) }
 
         // ── Il cuore del vincolo sacro ──────────────────────────────────────────
@@ -327,6 +411,9 @@ final class ContinuousReadingView: UIView {
 
     private func makeLabel(for segment: ContentSegment) -> SegmentLabel {
         let label = SegmentLabel(segment: segment)
+        // Owner debole per le azioni-segnalibro calcolate su richiesta (§ 5.1): nessun peso
+        // per-elemento sui volumi enormi (le azioni si costruiscono solo per l'elemento a fuoco).
+        label.owner = self
         // Frame manuali (l'impaginazione per misura posa le label a coordinate).
         label.translatesAutoresizingMaskIntoConstraints = true
         label.numberOfLines = 0
