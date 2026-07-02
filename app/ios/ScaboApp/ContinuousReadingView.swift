@@ -283,6 +283,43 @@ final class ContinuousReadingView: UIView {
         ]
     }
 
+    /// Apre l'editor di creazione/modifica per un elemento (§ 5.7), CONVERGENDO sullo stesso percorso
+    /// dell'azione personalizzata VoiceOver: se l'elemento è già marcato apre la MODIFICA, altrimenti
+    /// la CREAZIONE — sempre attraverso lo stesso coordinatore, quindi lo stesso
+    /// `BookmarkEditorViewController` e lo stesso `addBookmark`/`updateBookmark`, con lo stesso
+    /// ritorno di fuoco. È il punto d'ingresso condiviso: sia l'azione VoiceOver sia il long press
+    /// (accesso non-VoiceOver) finiscono qui, non su strade parallele.
+    func presentBookmarkEditor(for label: SegmentLabel) {
+        guard let coordinator = bookmarkCoordinator else { return }
+        let segment = label.segment
+        if let bookmark = coordinator.existingBookmark(forSegmentId: segment.id) {
+            coordinator.editBookmark(bookmark)
+        } else {
+            coordinator.addBookmark(
+                segmentId: segment.id, orderIndex: label.readingIndex, segmentText: segment.text)
+        }
+    }
+
+    /// Long press (§ 5.7, accesso NON-VoiceOver): individua l'elemento sotto il dito e apre lo stesso
+    /// editor dell'azione personalizzata. Reagisce solo a `.began` (una volta per pressione).
+    ///
+    /// Convivenza col vincolo sovrano dello swipe orizzontale (§ 2.2): il recognizer è UNO solo,
+    /// condiviso; richiede il dito fermo (entro `allowableMovement`, ~10pt) per `minimumPressDuration`
+    /// (0.5s), quindi qualunque swipe — che per definizione si muove — lo fa fallire e lascia vincere
+    /// il paging dello scroll. Nessun `require(toFail:)` (bloccherebbe una pressione ferma) e nessuna
+    /// simultaneità: i due gesti sono mutuamente esclusivi per natura (movimento vs immobilità), e
+    /// `delaysTouches*` = false garantisce zero latenza su tap e swipe. Con VoiceOver attivo il gesto
+    /// è intercettato da VoiceOver; qui usciamo comunque subito, così resta l'azione personalizzata.
+    @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
+        guard gesture.state == .began else { return }
+        guard !UIAccessibility.isVoiceOverRunning else { return }
+        guard bookmarkCoordinator != nil else { return }
+        let point = gesture.location(in: documentContainer)
+        guard let label = segmentLabels.first(where: { $0.frame.contains(point) }) else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        presentBookmarkEditor(for: label)
+    }
+
     /// Risolve l'ancora di un segnalibro (§ 5.6) in una posizione nello stream corrente: per id
     /// esatto del segmento, poi per id-nodo base (senza suffisso di granularità `#k`), infine
     /// ripiega sull'indice di fallback clampato (degradazione ragionevole, § 2.5). Usato per il
@@ -344,6 +381,17 @@ final class ContinuousReadingView: UIView {
         // attraversa gli `accessibilityElements`. Frame gestito a mano in relayout.
         documentContainer.isAccessibilityElement = false
         scrollView.addSubview(documentContainer)
+
+        // UN SOLO recognizer condiviso per il long press (§ 5.7, accesso non-VoiceOver): niente
+        // peso per-elemento. Sta sul container del contenuto, così `location(in:)` mappa direttamente
+        // ai frame dei segmenti. Convive col paging orizzontale senza toccarlo (vedi `handleLongPress`):
+        // 0.5s a dito fermo → apre l'editor; ogni swipe lo fa fallire e lo scroll vince. Nessun
+        // ritardo introdotto su tap/swipe.
+        let longPress = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+        longPress.minimumPressDuration = 0.5
+        longPress.delaysTouchesBegan = false
+        longPress.delaysTouchesEnded = false
+        documentContainer.addGestureRecognizer(longPress)
 
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: topAnchor),
@@ -557,6 +605,13 @@ final class ContinuousReadingView: UIView {
     /// Vero se il container si espone come elemento foglia. DEVE essere falso.
     var isDocumentContainerAnAccessibilityElement: Bool {
         documentContainer.isAccessibilityElement
+    }
+
+    /// Il recognizer di long press per la creazione segnalibro (§ 5.7), per verificarne nei test la
+    /// configurazione «swipe-safe» (durata + niente ritardo su tap/swipe) e l'unicità.
+    var longPressGestureForTesting: UILongPressGestureRecognizer? {
+        documentContainer.gestureRecognizers?
+            .compactMap { $0 as? UILongPressGestureRecognizer }.first
     }
 
     /// Numero di pagine VISIVE prodotte dall'impaginazione corrente (0 se vuoto).
