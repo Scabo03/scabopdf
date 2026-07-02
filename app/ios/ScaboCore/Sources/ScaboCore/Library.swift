@@ -289,16 +289,23 @@ public struct LibraryState: Codable, Equatable, Sendable {
     /// i tag non servono davvero.
     public var tags: [Tag]?
 
+    /// Lo stato dello split screen (§ 11.9), o `nil` se nessuno split è attivo. OPZIONALE/additivo
+    /// per la retro-compatibilità (una libreria di una versione precedente non ha la chiave → nessun
+    /// reset). Alla riapertura, se presente, l'app ripristina lo split (§ 2.5 / § 11.9).
+    public var splitState: SplitState?
+
     public init(
         documents: [ArchivedDocument] = [],
         workspaces: [Workspace] = [],
         lastOpenDocumentId: String? = nil,
-        tags: [Tag]? = nil
+        tags: [Tag]? = nil,
+        splitState: SplitState? = nil
     ) {
         self.documents = documents
         self.workspaces = workspaces
         self.lastOpenDocumentId = lastOpenDocumentId
         self.tags = tags
+        self.splitState = splitState
     }
 }
 
@@ -471,6 +478,10 @@ public final class LibraryStore {
         state.documents.removeAll { $0.id == id }
         removeAllCollocations(of: id)
         if state.lastOpenDocumentId == id { state.lastOpenDocumentId = nil }
+        // Uno split che referenzia il documento eliminato non è più valido (§ 2.5, degradazione).
+        if let split = state.splitState, split.leftDocumentId == id || split.rightDocumentId == id {
+            state.splitState = nil
+        }
         persist()
     }
 
@@ -512,6 +523,18 @@ public final class LibraryStore {
     }
 
     public var lastOpenDocumentId: String? { state.lastOpenDocumentId }
+
+    // MARK: Split screen (§ 11.9)
+
+    /// Lo stato dello split screen persistito, o `nil` se nessuno split è attivo.
+    public var splitState: SplitState? { state.splitState }
+
+    /// Imposta (o azzera con `nil`) lo stato dello split (§ 11.9). No-op se invariato.
+    public func setSplitState(_ split: SplitState?) {
+        guard state.splitState != split else { return }
+        state.splitState = split
+        persist()
+    }
 
     // MARK: Mutazioni — contenitori
 

@@ -194,6 +194,23 @@ enum DocumentOpener {
             doctrineContent: doctrineContent,
             quickConsultTree: quickConsultTree)
         reader.modalPresentationStyle = .fullScreen
+        // Split da dentro il file (§ 11.1): il reader si chiude, si sceglie la seconda metà dal
+        // presentatore, e lo split parte con QUESTO documento a sinistra. Instradato dal presentatore
+        // per unificare l'uscita con l'attivazione dalla Home (il documento che resta si riapre lì).
+        reader.onSplitRequested = { [weak presenter] in
+            guard let presenter else { return }
+            presenter.dismiss(animated: true) {
+                DocumentChooserViewController.present(from: presenter) { rightId in
+                    SplitScreenViewController.present(
+                        leftDocumentId: doc.id, rightDocumentId: rightId, restoring: nil, from: presenter
+                    ) { survivorId in
+                        presenter.dismiss(animated: true) {
+                            DocumentOpener.open(documentId: survivorId, from: presenter, onClosed: onClosed)
+                        }
+                    }
+                }
+            }
+        }
         reader.onBack = { [weak presenter] in
             // Tornando alla Home/contenitore, l'ultimo-documento-aperto si azzera: un avvio a
             // freddo dalla Home non riaprirà un lettore (§ 2.5, degradazione ragionevole).
@@ -201,6 +218,78 @@ enum DocumentOpener {
             presenter?.dismiss(animated: true) { onClosed?() }
         }
         presentRobustly(reader, from: presenter)
+    }
+
+    // MARK: - Metà EMBEDDED per lo split screen (§ 11)
+
+    /// Costruisce una reading view EMBEDDED (§ 11) per un documento, da usare come metà dello split.
+    /// Riusa la stessa politica di `open` (cache se disponibile; per i volumi ENORMI granularità
+    /// grossa, niente Dottrina/albero; altrimenti rielabora dal PDF d'archivio). `onPositionChanged`
+    /// è inoltrato al padre split per la sincronizzazione dei regimi (§ 11.4/§ 11.5). Ritorna `nil`
+    /// (via completion) se il documento o il suo PDF non sono disponibili.
+    static func loadEmbeddedHalf(
+        documentId id: String,
+        from presenter: UIViewController,
+        onPositionChanged: @escaping (Int) -> Void,
+        completion: @escaping (ContinuousReadingViewController?) -> Void
+    ) {
+        guard let doc = service.store.document(id: id) else { completion(nil); return }
+        let large = doc.sourcePageCount > Self.LARGE_DOCUMENT_PAGE_THRESHOLD
+
+        if let cached = service.loadCache(forDocumentId: id),
+           !large || cached.contentTarget == Self.LARGE_DOCUMENT_GRANULARITY {
+            completion(makeEmbeddedReader(
+                doc: doc, content: cached.content, pageMap: cached.pageMap,
+                doctrine: large ? nil : cached.doctrineContent,
+                tree: large ? nil : cached.quickConsultTree, onPositionChanged: onPositionChanged))
+            return
+        }
+
+        guard service.hasArchivedPDF(forDocumentId: id) else { completion(nil); return }
+        let target = large ? Self.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
+        let processingVC = ProcessingViewController(
+            fileURL: service.archivedPDFURL(forDocumentId: id), sourceName: doc.title,
+            granularityTarget: target, buildDoctrine: !large)
+        processingVC.onOutcome = { [weak presenter] outcome in
+            presenter?.dismiss(animated: true) {
+                switch outcome {
+                case .success(let document, let content, let doctrineContent):
+                    let pageMap = buildPageMap(document)
+                    let tree = large ? nil : quickConsultTreeIfAvailable(document)
+                    service.writeCache(content, pageMap: pageMap,
+                                       doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
+                                       contentTarget: target, forDocumentId: id)
+                    completion(makeEmbeddedReader(
+                        doc: doc, content: content, pageMap: pageMap,
+                        doctrine: large ? nil : doctrineContent, tree: tree, onPositionChanged: onPositionChanged))
+                case .cancelled, .failure:
+                    completion(nil)
+                }
+            }
+        }
+        presenter.present(processingVC, animated: true)
+    }
+
+    /// Costruisce il VC reading in modalità embedded per una metà (§ 11), cablando la persistenza
+    /// della posizione (per-documento, § 2.5) e inoltrando il cambio posizione al padre split.
+    private static func makeEmbeddedReader(
+        doc: ArchivedDocument, content: PaginatedContent, pageMap: [String: Int],
+        doctrine: PaginatedContent?, tree: [QuickConsultNode]?,
+        onPositionChanged: @escaping (Int) -> Void
+    ) -> ContinuousReadingViewController {
+        let reader = ContinuousReadingViewController(
+            content: content, sourceName: doc.title, documentId: doc.id,
+            initialReadingPosition: doc.readingPosition,
+            onPositionChanged: { index in
+                service.store.updateReadingPosition(id: doc.id, position: index)
+                onPositionChanged(index)
+            },
+            sourcePageCount: doc.sourcePageCount,
+            showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
+            sourcePage: sourcePageProvider(pageMap),
+            doctrineContent: doctrine, quickConsultTree: tree, embedded: true)
+        service.store.recordOpened(id: doc.id)
+        return reader
     }
 
     /// Presenta il lettore in modo robusto: se il presentatore ha già QUALCOSA di presentato

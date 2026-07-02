@@ -339,6 +339,60 @@ final class ContinuousReadingView: UIView {
             .first.map(String.init) ?? segmentId
     }
 
+    // MARK: - Navigazione per lo split (§ 11.4 / § 11.5) — indice, pagina, unità strutturale
+
+    /// Numero di elementi (segmenti) resi.
+    var elementCount: Int { segmentLabels.count }
+
+    /// Il primo elemento (indice) della pagina visiva indicata, o `nil` se fuori range / non
+    /// impaginato. Per il regime "segui-pagina" (§ 11.5).
+    func firstElementIndex(ofVisualPage page: Int) -> Int? {
+        guard page >= 0, page < pageStartElementIndices.count else { return nil }
+        return pageStartElementIndices[page]
+    }
+
+    /// L'unità strutturale (0-based) a cui appartiene l'elemento: il numero di intestazioni fino a
+    /// quell'elemento incluso. Per il regime "segui-livello" (§ 11.5). Un documento senza intestazioni
+    /// ha una sola unità (0).
+    func structuralUnitIndex(ofElementAt index: Int) -> Int {
+        guard index >= 0, index < segmentLabels.count else { return 0 }
+        var unit = 0
+        for i in 0...index where Self.isHeadingRole(segmentLabels[i].segment.role) { unit += 1 }
+        // L'unità 0 è "prima della prima intestazione"; ogni intestazione apre l'unità successiva.
+        return max(0, unit - (Self.isHeadingRole(segmentLabels[index].segment.role) ? 0 : 0))
+    }
+
+    /// Numero totale di unità strutturali (intestazioni), minimo 1.
+    var structuralUnitCount: Int {
+        let headings = segmentLabels.reduce(0) { $0 + (Self.isHeadingRole($1.segment.role) ? 1 : 0) }
+        return max(1, headings)
+    }
+
+    /// Porta in vista (scroll VISIVO) l'elemento indicato SENZA spostare il fuoco VoiceOver: è la
+    /// sincronizzazione del follower nello split (§ 11.4), dove il fuoco resta sulla metà-guida e la
+    /// metà che segue si allinea visivamente. Ricorda anche la posizione, così quando il fuoco entra
+    /// nella metà-follower vi trova il punto sincronizzato.
+    func revealElement(atIndex index: Int) {
+        guard index >= 0, index < segmentLabels.count else { return }
+        layoutIfNeeded()
+        guard let page = visualPageIndex(ofElementAt: index) else { return }
+        scrollView.setContentOffset(CGPoint(x: CGFloat(page) * bounds.width, y: 0), animated: false)
+        presetReadingPosition(toIndex: index)
+    }
+
+    /// Il primo elemento (indice) dell'unità strutturale indicata (l'intestazione che la apre), o
+    /// `nil` se fuori range. Unità 0 = inizio documento.
+    func firstElementIndex(ofUnit unit: Int) -> Int? {
+        guard !segmentLabels.isEmpty else { return nil }
+        if unit <= 0 { return 0 }
+        var seen = 0
+        for (i, label) in segmentLabels.enumerated() where Self.isHeadingRole(label.segment.role) {
+            seen += 1
+            if seen == unit { return i }
+        }
+        return segmentLabels.count - 1
+    }
+
     // MARK: - Sottolineature (§ 6) — resa grafica additiva, solo-visiva
 
     /// I segmenti CORRENTEMENTE resi, in ordine (per la finestra di selezione a due fasi § 6.2, che

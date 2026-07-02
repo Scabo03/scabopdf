@@ -84,6 +84,10 @@ final class ContinuousReadingViewController: UIViewController {
     /// Azione del tasto Indietro: torna alla Home. Impostata dal presentatore.
     var onBack: (() -> Void)?
 
+    /// Richiesta di split screen da dentro il file (§ 11.1), impostata dal presentatore. Attiva solo
+    /// full-screen su iPad (mai in una metà già embedded).
+    var onSplitRequested: (() -> Void)?
+
     /// Id del documento (per la persistenza della posizione di lettura). Vuoto se non pertinente
     /// (es. test che istanziano il lettore senza libreria).
     private let documentId: String
@@ -166,6 +170,7 @@ final class ContinuousReadingViewController: UIViewController {
         sourcePage: ((String) -> Int?)? = nil,
         doctrineContent: PaginatedContent? = nil,
         quickConsultTree: [QuickConsultNode]? = nil,
+        embedded: Bool = false,
         signalPlayer: SignalPlaying = SignalPlayer.shared
     ) {
         self.content = content
@@ -179,9 +184,17 @@ final class ContinuousReadingViewController: UIViewController {
         self.showOriginalPages = showOriginalPages
         self.sourcePage = sourcePage
         self.doctrineContent = doctrineContent
+        self.embedded = embedded
         self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
     }
+
+    /// Modalità EMBEDDED (§ 11): quando `true`, il VC è una METÀ dello split e NON gestisce da sé il
+    /// sigillo del container radice, la modalità, il fuoco né il riaggancio VoiceOver — tutto ciò lo
+    /// coordina il `SplitScreenViewController` padre sui 5-6 container globali. Rende, impagina,
+    /// cambia layout, persiste posizione e coordina segnalibri/sottolineature come sempre. A `false`
+    /// (default) il comportamento full-screen è INVARIATO byte-per-byte (rete B).
+    private let embedded: Bool
 
     deinit {
         if let token = voiceOverObserver {
@@ -229,10 +242,14 @@ final class ContinuousReadingViewController: UIViewController {
         // quando VoiceOver si riattiva mentre questa schermata è in primo piano, il fuoco non deve
         // cadere sul primo elemento del file. Si osserva il cambio di stato e si riporta il fuoco
         // dove l'utente era (ritorno diretto al segmento). Vedi `voiceOverStatusChanged`.
-        voiceOverObserver = NotificationCenter.default.addObserver(
-            forName: UIAccessibility.voiceOverStatusDidChangeNotification,
-            object: nil, queue: .main
-        ) { [weak self] _ in self?.voiceOverStatusChanged() }
+        // Embedded (§ 11): il riaggancio VoiceOver lo coordina il padre split (l'ancora al tasto
+        // Indietro della singola metà ruberebbe il fuoco all'altra); non osservare qui.
+        if !embedded {
+            voiceOverObserver = NotificationCenter.default.addObserver(
+                forName: UIAccessibility.voiceOverStatusDidChangeNotification,
+                object: nil, queue: .main
+            ) { [weak self] _ in self?.voiceOverStatusChanged() }
+        }
         // Si entra leggendo: il testo è il container attivo (modale). Nessun fuoco forzato qui:
         // alla comparsa VoiceOver si posa sul primo elemento (o sulla posizione ripristinata).
         activateTextContainer(restoreFocus: false)
@@ -245,8 +262,12 @@ final class ContinuousReadingViewController: UIViewController {
         // mischia col parlato VoiceOver d'ingresso senza sopprimerlo (sessione `.mixWithOthers`).
         guard !didPlayModeSignal else { return }
         didPlayModeSignal = true
-        signalPlayer.play(.mode1)
-        restoreReadingPositionIfNeeded()
+        // Embedded (§ 11): niente segnale di Layout per metà (due metà = doppio suono) né ripristino
+        // fuoco (lo fa il padre split quando la metà diventa attiva). L'indicatore di pagina sì.
+        if !embedded {
+            signalPlayer.play(.mode1)
+            restoreReadingPositionIfNeeded()
+        }
         updatePageIndicator()
     }
 
@@ -303,7 +324,11 @@ final class ContinuousReadingViewController: UIViewController {
             focusTarget = readingView.element(atIndex: 0) ?? readingView
         }
         activateTextContainer(restoreFocus: false)
-        UIAccessibility.post(notification: .screenChanged, argument: focusTarget)
+        // Embedded (§ 11): il fuoco lo governa il padre split (fuoco unico sui 6 container); non
+        // rubarlo qui al cambio Layout della singola metà.
+        if !embedded {
+            UIAccessibility.post(notification: .screenChanged, argument: focusTarget)
+        }
     }
 
     // MARK: - Consultazione Rapida (§ 8): vista ad albero collassabile
@@ -518,6 +543,10 @@ final class ContinuousReadingViewController: UIViewController {
     /// di lettura (non al primo): è la correzione del reset di posizione, che vale ANCHE qui perché
     /// ora l'unica via di rientro nel testo è lo scrub (la giunzione di swipe è stata rimossa).
     private func activateTextContainer(restoreFocus: Bool) {
+        // Embedded (§ 11): il sigillo del radice e la modalità li governa il padre split sui 6
+        // container globali. La singola metà NON deve dichiararsi modale (renderebbe irraggiungibili
+        // l'altra metà e la barra di split). No-op qui.
+        guard !embedded else { return }
         view.accessibilityElements = [readingView]
         interfaceBar.accessibilityViewIsModal = false
         readingView.accessibilityViewIsModal = true
@@ -532,6 +561,7 @@ final class ContinuousReadingViewController: UIViewController {
     /// strutturale → lo swipe resta confinato fra [Indietro, titolo] e non rientra nel testo), col
     /// flag modale sull'interfaccia come rinforzo. Porta il fuoco sul tasto Indietro.
     private func activateInterfaceContainer() {
+        guard !embedded else { return }  // § 11: la modalità la governa il padre split.
         view.accessibilityElements = [interfaceBar]
         readingView.accessibilityViewIsModal = false
         interfaceBar.accessibilityViewIsModal = true
@@ -554,6 +584,11 @@ final class ContinuousReadingViewController: UIViewController {
         interfaceBar.setBookmarksAvailable(true)
         interfaceBar.onBookmarks = { [weak self] in self?.openBookmarksWindow() }
         refreshUnderlines()
+        // Split screen da dentro il file (§ 11.1): solo full-screen su iPad, mai in una metà embedded.
+        if !embedded, UIDevice.current.userInterfaceIdiom == .pad {
+            interfaceBar.setSplitAvailable(true)
+            interfaceBar.onSplit = { [weak self] in self?.onSplitRequested?() }
+        }
     }
 
     /// (Ri)costruisce la mappa id-segmento → intervalli di parole dalle `Underline` dello store e la
@@ -611,6 +646,15 @@ final class ContinuousReadingViewController: UIViewController {
             UIAccessibility.post(notification: .announcement, argument: message)
         }
     }
+
+    // MARK: - API per lo split screen (§ 11): il padre compone e coordina i 6 container
+
+    /// Il container del TESTO di questa metà (per l'arrangiamento globale dei container e il fuoco).
+    var textContainer: ContinuousReadingView { readingView }
+    /// Il container della BARRA di questa metà (limitata alla metà, § 11.2).
+    var barContainer: ReadingInterfaceBar { interfaceBar }
+    /// Indice di lettura corrente in questa metà (per il rilevamento guida/segue, § 11.6).
+    var currentReadingIndex: Int? { readingView.currentReadingElementIndex }
 
     // MARK: - Introspezione per i test (struttura dei due container + posizione)
 

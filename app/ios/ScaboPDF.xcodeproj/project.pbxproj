@@ -18,6 +18,8 @@
 		5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000063 /* RealPdfBenchTests.swift */; };
 		5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */; };
 		5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */; };
+		5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */; };
+		5CABC04E0000000000000086 /* SplitScreenWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +44,8 @@
 		5CABC04E0000000000000063 /* RealPdfBenchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RealPdfBenchTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkGestureWiringTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnderlineRenderingTests.swift; sourceTree = "<group>"; };
+		5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SplitMemoryProbeTests.swift; sourceTree = "<group>"; };
+		5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SplitScreenWiringTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -101,6 +105,8 @@
 				5CABC04E0000000000000063 /* RealPdfBenchTests.swift */,
 				5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */,
 				5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */,
+				5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */,
+				5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -254,6 +260,8 @@
 				5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */,
 				5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */,
 				5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */,
+				5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */,
+				5CABC04E0000000000000086 /* SplitScreenWiringTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -47,7 +47,18 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
             image: UIImage(systemName: "tag"), style: .plain, target: self, action: #selector(tagsTapped))
         tagsItem.accessibilityLabel = "Tag"
         tagsItem.accessibilityHint = "Gestisci i tag e trova i segnalibri per tag"
-        navigationItem.leftBarButtonItem = tagsItem
+
+        // Split screen (§ 11.1): attivabile dalla Home, SOLO su iPad. Su iPhone non si offre.
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let splitItem = UIBarButtonItem(
+                image: UIImage(systemName: "rectangle.split.2x1"), style: .plain,
+                target: self, action: #selector(splitTapped))
+            splitItem.accessibilityLabel = "Affianca due documenti"
+            splitItem.accessibilityHint = "Apre due documenti in split screen"
+            navigationItem.leftBarButtonItems = [tagsItem, splitItem]
+        } else {
+            navigationItem.leftBarButtonItem = tagsItem
+        }
 
         tableView.dataSource = self
         tableView.delegate = self
@@ -83,6 +94,26 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     @objc private func tagsTapped() {
         navigationController?.pushViewController(
             TagsScreenViewController(store: service.store), animated: true)
+    }
+
+    /// Attivazione split dalla Home (§ 11.1): si scelgono i due documenti (sinistra, poi destra),
+    /// poi si presenta lo split. All'uscita (chiusura di una metà) il documento che resta si apre a
+    /// schermo intero.
+    @objc private func splitTapped() {
+        DocumentChooserViewController.present(from: self) { [weak self] leftId in
+            guard let self else { return }
+            DocumentChooserViewController.present(from: self) { [weak self] rightId in
+                guard let self else { return }
+                SplitScreenViewController.present(
+                    leftDocumentId: leftId, rightDocumentId: rightId, restoring: nil, from: self
+                ) { [weak self] survivorId in
+                    self?.dismiss(animated: true) {
+                        guard let self else { return }
+                        DocumentOpener.open(documentId: survivorId, from: self) { [weak self] in self?.reload() }
+                    }
+                }
+            }
+        }
     }
 
     @objc private func newWorkspaceTapped() {

@@ -71,11 +71,31 @@ final class ReadingInterfaceBar: UIView {
     /// Azione del pulsante Segnalibri (impostata dal controller).
     var onBookmarks: (() -> Void)?
 
+    /// Pulsante Split screen (§ 11.1, attivazione da dentro un file): apre lo split con questo
+    /// documento in una metà. Solo iPad, solo full-screen (mai in una metà già embedded).
+    let splitButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "rectangle.split.2x1"), for: .normal)
+        b.accessibilityLabel = "Affianca"
+        b.accessibilityHint = "Apre questo documento in split screen accanto a un altro"
+        b.isHidden = true
+        return b
+    }()
+
+    /// Azione del pulsante Split (impostata dal controller).
+    var onSplit: (() -> Void)?
+
     /// Mostra/nasconde il pulsante Segnalibri (§ 5.4). Il controller lo abilita solo per un
     /// documento reale (id non vuoto); nei test senza libreria resta nascosto e l'interfaccia è
     /// identica a prima.
     func setBookmarksAvailable(_ available: Bool) {
         bookmarksButton.isHidden = !available
+        refreshAccessibilityElements()
+    }
+
+    /// Mostra/nasconde il pulsante Split (§ 11.1). Il controller lo abilita solo full-screen su iPad.
+    func setSplitAvailable(_ available: Bool) {
+        splitButton.isHidden = !available
         refreshAccessibilityElements()
     }
 
@@ -148,7 +168,7 @@ final class ReadingInterfaceBar: UIView {
     /// Lo stack di destra impacchetta indicatore-pagina e controlli-quick: si mostra l'uno o gli
     /// altri secondo il Layout attivo (uno stack collassa gli arranged hidden).
     private lazy var rightStack: UIStackView = {
-        let stack = UIStackView(arrangedSubviews: [bookmarksButton, quickControlsStack, pageIndicatorStack])
+        let stack = UIStackView(arrangedSubviews: [splitButton, bookmarksButton, quickControlsStack, pageIndicatorStack])
         stack.axis = .horizontal
         stack.spacing = 12
         stack.alignment = .center
@@ -220,6 +240,7 @@ final class ReadingInterfaceBar: UIView {
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         bookmarksButton.addTarget(self, action: #selector(bookmarksTapped), for: .touchUpInside)
+        splitButton.addTarget(self, action: #selector(splitTapped), for: .touchUpInside)
         resetStructureButton.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
         prevExpandedButton.addTarget(self, action: #selector(prevTapped), for: .touchUpInside)
         nextExpandedButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
@@ -237,6 +258,7 @@ final class ReadingInterfaceBar: UIView {
     /// presenti — il box pagina ORIGINALE e infine quello di VISUALIZZAZIONE (§ 4.3).
     private func refreshAccessibilityElements() {
         var elements: [NSObject] = [backButton, layoutSelectorButton]
+        if !splitButton.isHidden { elements.append(splitButton) }
         if !bookmarksButton.isHidden { elements.append(bookmarksButton) }
         if !quickControlsStack.isHidden {
             elements.append(resetStructureButton)
@@ -353,6 +375,10 @@ final class ReadingInterfaceBar: UIView {
 
     @objc private func bookmarksTapped() {
         onBookmarks?()
+    }
+
+    @objc private func splitTapped() {
+        onSplit?()
     }
 
     override func accessibilityPerformEscape() -> Bool {
