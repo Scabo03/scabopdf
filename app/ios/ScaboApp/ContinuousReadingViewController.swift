@@ -69,9 +69,23 @@
 //
 
 import UIKit
+import os
 import ScaboCore
 
 final class ContinuousReadingViewController: UIViewController {
+
+    /// Logging TEMPORANEO e disattivabile per tracciare sul DEVICE la sequenza reale del toggle di
+    /// VoiceOver (il Simulator non esegue VoiceOver). Metti a `true`, riproduci il bug, e leggi in
+    /// Console (subsystem `com.scabo.scabopdf`, categoria `focus`): all'evento di riaccensione stampa
+    /// la pagina scrollata LETTA ORA (che sul device può essere già 0 per il reset) contro la
+    /// posizione REALE tracciata (`sticky`), e ogni ri-affermazione. Lasciare `false` in produzione.
+    private static let focusDebugLogging = false
+    private static let focusLog = Logger(subsystem: "com.scabo.scabopdf", category: "focus")
+    private func flog(_ message: @autoclosure () -> String) {
+        guard Self.focusDebugLogging else { return }
+        let text = message()
+        Self.focusLog.debug("\(text, privacy: .public)")
+    }
 
     // MARK: - Container del testo e dell'interfaccia
 
@@ -160,6 +174,13 @@ final class ContinuousReadingViewController: UIViewController {
     private var voiceOverRestoreTarget = 0
     private var protectionSawReset = false
     private var protectionGeneration = 0
+
+    /// La posizione di lettura REALE dell'utente, mantenuta di CONTINUO (paging visivo via
+    /// `onUserScroll`, navigazione VoiceOver via `onReadingPositionChanged`), aggiornata solo per
+    /// indici > 0 e solo fuori protezione. È l'ANCORA immune al reset: alla riaccensione di VoiceOver
+    /// si ripristina QUESTA, non la pagina letta in quell'istante (che sul device può essere già stata
+    /// azzerata dal reset → 0). È la differenza chiave dai tentativi delle build 27/28.
+    private var stickyReadingPosition = 0
 
     /// Il ripristino della posizione avviene una sola volta, alla prima comparsa.
     private var didRestorePosition = false
@@ -251,8 +272,17 @@ final class ContinuousReadingViewController: UIViewController {
             if self.currentLayout == .continuous {
                 self.continuousPosition = index
                 self.onPositionChanged?(index)
+                // Ancora reale immune al reset: aggiornata solo per indici > 0 (uno 0 sarebbe il
+                // reset di VoiceOver, mai una navigazione reale all'inizio via fuoco).
+                if index > 0 { self.stickyReadingPosition = index }
             }
             self.updatePageIndicator()
+        }
+        // Paging guidato dall'utente (anche a VoiceOver spento): tiene aggiornata l'ancora reale.
+        readingView.onUserScroll = { [weak self] index in
+            guard let self, !self.isProtectingReadingPosition, self.currentLayout == .continuous,
+                  index > 0 else { return }
+            self.stickyReadingPosition = index
         }
         // Ricalcolo dell'impaginazione visiva (rotazione, Dynamic Type) → aggiorna il totale pagine.
         readingView.onPaginationChanged = { [weak self] in self?.updatePageIndicator() }
@@ -265,6 +295,7 @@ final class ContinuousReadingViewController: UIViewController {
         // Posizione di lettura ricordata: la si preimposta come ultima posizione (senza spostare
         // ancora il fuoco) così il rientro nel testo e il ripristino alla comparsa vi puntano.
         readingView.presetReadingPosition(toIndex: initialReadingPosition)
+        stickyReadingPosition = max(0, initialReadingPosition)
         // Riaggancio di VoiceOver in lettura (§ 2.5, caso distinto dalla riapertura del documento):
         // quando VoiceOver si riattiva mentre questa schermata è in primo piano, il fuoco non deve
         // cadere sul primo elemento del file. Si osserva il cambio di stato e si riporta il fuoco
@@ -459,22 +490,15 @@ final class ContinuousReadingViewController: UIViewController {
     /// il salvataggio dello 0 spurio e si contrasta il reset in modo EVENT-HOOKED (non a cronometro).
     @objc private func voiceOverStatusChanged() {
         guard isViewLoaded, view.window != nil, UIAccessibility.isVoiceOverRunning else { return }
-        beginReadingPositionProtection(target: currentRealReadingIndex())
+        // DIAGNOSI: sul device la pagina letta ORA può essere già 0 (reset avvenuto prima della
+        // notifica); l'ancora reale `sticky` invece regge. Si ripristina QUEST'ULTIMA.
+        flog("VO reactivation | live currentVisualPage=\(self.readingView.currentVisualPage) "
+             + "liveIndex=\(self.readingView.currentReadingElementIndex.map(String.init) ?? "nil") "
+             + "STICKY=\(self.stickyReadingPosition)")
+        beginReadingPositionProtection(target: stickyReadingPosition)
     }
 
     // MARK: - Protezione/ripristino della posizione durante transizioni (bug VoiceOver on/off + interruzioni)
-
-    /// Il vero punto di lettura dell'utente in questo istante: la pagina attualmente SCROLLATA (vale
-    /// sia a VoiceOver spento — paging visivo — sia acceso — VoiceOver tiene lo scroll sul fuoco). Se
-    /// l'elemento a fuoco è coerente con quella pagina lo si preferisce (più preciso).
-    private func currentRealReadingIndex() -> Int {
-        let page = readingView.currentVisualPage
-        if let focused = readingView.currentReadingElementIndex,
-           readingView.visualPageIndex(ofElementAt: focused) == page {
-            return focused
-        }
-        return readingView.firstElementIndex(ofVisualPage: page) ?? 0
-    }
 
     /// Apre una finestra di PROTEZIONE della posizione `target` (§ 2.5). Durante la finestra ogni
     /// `onReadingPositionChanged` con indice ≠ target è il reset automatico di VoiceOver: non viene
@@ -485,7 +509,11 @@ final class ContinuousReadingViewController: UIViewController {
     /// la finestra si chiude comunque prima non appena il reset è stato visto e contrastato.
     private static let voiceOverProtectionWindow: TimeInterval = 1.5
     private func beginReadingPositionProtection(target: Int) {
-        guard currentLayout == .continuous, target > 0 else { return }
+        guard currentLayout == .continuous, target > 0 else {
+            flog("protection SKIPPED (target=\(target) layout=\(String(describing: self.currentLayout)))")
+            return
+        }
+        flog("protection BEGIN target=\(target)")
         voiceOverRestoreTarget = target
         protectionSawReset = false
         isProtectingReadingPosition = true
@@ -504,6 +532,7 @@ final class ContinuousReadingViewController: UIViewController {
     /// ri-affermazione è atterrata) si persiste la posizione REALE; altrimenti è il reset di
     /// VoiceOver → NON si persiste lo 0 spurio e si ri-porta il fuoco alla `target`.
     private func handleProtectedPositionUpdate(_ index: Int) {
+        flog("protected update index=\(index) target=\(self.voiceOverRestoreTarget)")
         updatePageIndicator()
         if index == voiceOverRestoreTarget {
             if currentLayout == .continuous {
@@ -536,9 +565,9 @@ final class ContinuousReadingViewController: UIViewController {
     /// Continua (l'unica posizione persistita, § 2.5).
     private func snapshotPositionForInterruption() {
         guard currentLayout == .continuous, view.window != nil else { return }
-        if let index = readingView.currentReadingElementIndex, index > 0 {
-            positionBeforeInterruption = index
-        }
+        // L'ancora reale (immune ai reset) è la fonte più affidabile; ripiega sull'indice a fuoco.
+        let index = stickyReadingPosition > 0 ? stickyReadingPosition : (readingView.currentReadingElementIndex ?? 0)
+        if index > 0 { positionBeforeInterruption = index }
     }
 
     /// Al ritorno in primo piano (`didBecomeActive`) ripristina la posizione fotografata, con la
@@ -812,8 +841,10 @@ final class ContinuousReadingViewController: UIViewController {
     /// Simula la riaccensione di VoiceOver aprendo la finestra di protezione della posizione (nel
     /// Simulator VoiceOver è spento, quindi il gestore reale non scatterebbe). Per i test.
     func beginVoiceOverProtectionForTesting() {
-        beginReadingPositionProtection(target: currentRealReadingIndex())
+        beginReadingPositionProtection(target: stickyReadingPosition)
     }
+    /// L'ancora reale tracciata (per i test): dev'essere la posizione vera, non l'eventuale 0 del reset.
+    var stickyReadingPositionForTesting: Int { stickyReadingPosition }
     /// Vero se la protezione della posizione è attiva (per i test).
     var isProtectingReadingPositionForTesting: Bool { isProtectingReadingPosition }
     /// Forza l'aggiornamento dell'indicatore di pagina (per i test, senza ciclo di vita reale).

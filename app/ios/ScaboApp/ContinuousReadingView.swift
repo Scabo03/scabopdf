@@ -242,6 +242,13 @@ final class ContinuousReadingView: UIView {
     /// aggiornato. Additivo: chi non lo imposta non è notificato.
     var onPaginationChanged: (() -> Void)?
 
+    /// Notifica un paging GUIDATO DALL'UTENTE (trascinamento/decelerazione), con l'indice del primo
+    /// elemento della pagina raggiunta. Serve al view controller a tenere aggiornata la posizione
+    /// REALE di lettura anche a VoiceOver spento (paging visivo) e a distinguerla dai reset
+    /// PROGRAMMATICI (che non passano di qui): è la chiave per non leggere una posizione già azzerata
+    /// dal reset di VoiceOver alla riaccensione. Additivo: chi non lo imposta non è notificato.
+    var onUserScroll: ((Int) -> Void)?
+
     /// Preimposta la posizione di lettura ripristinata SENZA spostare il fuoco: registra l'elemento
     /// come ultima posizione, così il successivo `screenChanged` del view controller vi porta il
     /// fuoco. Sicuro anche prima che le pagine visive siano calcolate.
@@ -525,6 +532,9 @@ final class ContinuousReadingView: UIView {
         // Niente aggiustamento da safe area: i confini di pagina devono allinearsi
         // esattamente alla larghezza del viewport, senza offset.
         scrollView.contentInsetAdjustmentBehavior = .never
+        // Delegate per tracciare il paging GUIDATO DALL'UTENTE (`onUserScroll`): serve al view
+        // controller a mantenere la posizione reale aggiornata di continuo. Non tocca il paging.
+        scrollView.delegate = self
         addSubview(scrollView)
 
         // È un CONTAINER, non un elemento foglia: VoiceOver non lo mette a fuoco, ne
@@ -876,5 +886,17 @@ final class ContinuousReadingView: UIView {
         case SECTION_DIVIDER_ROLE: return .headline
         default: return .body
         }
+    }
+}
+
+// MARK: - Tracciamento del paging guidato dall'utente
+
+extension ContinuousReadingView: UIScrollViewDelegate {
+    /// Aggiorna la posizione reale SOLO quando lo scroll è guidato dall'utente (trascinamento o
+    /// decelerazione): i reset PROGRAMMATICI di VoiceOver (`setContentOffset`) NON sono `isDragging`
+    /// e quindi non falsano la posizione tracciata.
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView.isDragging || scrollView.isDecelerating else { return }
+        onUserScroll?(firstElementIndex(ofVisualPage: currentVisualPage) ?? 0)
     }
 }

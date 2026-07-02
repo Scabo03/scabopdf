@@ -141,6 +141,46 @@ final class FocusRestoreTests: XCTestCase {
         XCTAssertGreaterThan(rv.currentVisualPage, 0)
     }
 
+    // MARK: - Ordine del DEVICE: il reset azzera lo scroll PRIMA della notifica → l'ancora regge
+
+    /// Modella la sequenza reale sospettata sul device (che il Simulator non esegue): alla
+    /// riaccensione VoiceOver azzera scroll E fuoco a inizio file PRIMA che la notifica di stato
+    /// arrivi. In quel momento una lettura "dal vivo" della pagina scrollata darebbe 0 (ed è ciò che
+    /// falliva nella build 28: `target=0` → nessuna protezione). L'ANCORA reale (`sticky`), aggiornata
+    /// di continuo e immune ai reset programmatici, regge invece a N → il ripristino atterra a N.
+    func test_deviceOrder_resetBeforeNotification_stickyAnchorSurvives_restoresToN() {
+        let content = PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: manySegments(40))],
+                                       totalSegments: 40)
+        let vc = ContinuousReadingViewController(
+            content: content, documentId: "", initialReadingPosition: 30, signalPlayer: SilentSignals())
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 300))
+        window.rootViewController = vc
+        window.makeKeyAndVisible()
+        vc.loadViewIfNeeded()
+        vc.view.layoutIfNeeded()
+        vc.viewDidAppear(false)
+        let rv = vc.textContainerForTesting
+        let pageOf30 = rv.visualPageIndex(ofElementAt: 30)
+        XCTAssertEqual(rv.currentVisualPage, pageOf30)
+
+        // (1) IL RESET del device, PRIMA della notifica: VoiceOver porta scroll E fuoco a inizio file.
+        rv.revealElement(atIndex: 0)                                   // scroll programmatico a pagina 0
+        rv.segmentLabels[0].accessibilityElementDidBecomeFocused()     // fuoco a element 0 (non protetto ancora)
+
+        // Una lettura "dal vivo" ora darebbe 0 — MA l'ancora reale ha retto a 30 (è la differenza).
+        XCTAssertEqual(rv.currentVisualPage, 0, "lo scroll è a inizio file (reset simulato)")
+        XCTAssertEqual(rv.currentReadingElementIndex, 0, "il fuoco è a inizio file")
+        XCTAssertEqual(vc.stickyReadingPositionForTesting, 30,
+                       "l'ancora reale NON è stata azzerata dal reset (indici 0 e scroll programmatico ignorati)")
+
+        // (2) Ora arriva la notifica di riaccensione: si protegge/ripristina la posizione ANCORA (30).
+        vc.beginVoiceOverProtectionForTesting()
+        XCTAssertTrue(vc.isProtectingReadingPositionForTesting, "target=sticky>0 → protezione attiva")
+
+        XCTAssertEqual(rv.currentVisualPage, pageOf30, "ripristinato alla posizione reale, non a 0")
+        XCTAssertGreaterThan(rv.currentVisualPage, 0)
+    }
+
     private func spinMainLoop() {
         // Gli osservatori sono su `queue: .main` → il blocco gira al prossimo giro di run loop.
         RunLoop.main.run(until: Date().addingTimeInterval(0.15))
