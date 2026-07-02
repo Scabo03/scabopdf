@@ -153,6 +153,14 @@ final class ContinuousReadingViewController: UIViewController {
     /// il fuoco (e la posizione ricordata) a inizio file.
     private var positionBeforeInterruption: Int?
 
+    /// Protezione della posizione durante una transizione di stato di VoiceOver / interruzione (vedi
+    /// `beginReadingPositionProtection`): finestra attiva, posizione da difendere, se il reset è già
+    /// stato visto, e un contatore di generazione per invalidare timer di chiusura scaduti.
+    private var isProtectingReadingPosition = false
+    private var voiceOverRestoreTarget = 0
+    private var protectionSawReset = false
+    private var protectionGeneration = 0
+
     /// Il ripristino della posizione avviene una sola volta, alla prima comparsa.
     private var didRestorePosition = false
 
@@ -230,6 +238,14 @@ final class ContinuousReadingViewController: UIViewController {
         // l'indicatore di pagina in toolbar (§ 4.3, silenzioso: nessun annuncio, § 4.5).
         readingView.onReadingPositionChanged = { [weak self] index in
             guard let self else { return }
+            // Durante una transizione di stato di VoiceOver, ogni cambio di fuoco è SOSPETTO: è il
+            // reset automatico che rispedirebbe il fuoco a inizio file, e il suo salvataggio a 0
+            // sovrascriverebbe la posizione reale (radice del bug). Lo si intercetta e contrasta,
+            // senza mai persistere lo 0 spurio.
+            if self.isProtectingReadingPosition {
+                self.handleProtectedPositionUpdate(index)
+                return
+            }
             // La posizione si PERSISTE solo in Lettura Continua (l'indice di Dottrina Inline è di
             // un altro flusso e non deve corrompere il punto di lettura salvato, § 2.5).
             if self.currentLayout == .continuous {
@@ -435,32 +451,89 @@ final class ContinuousReadingViewController: UIViewController {
     /// piano, VoiceOver — ricostruendo l'albero di accessibilità — atterrerebbe sul PRIMO elemento
     /// del container del testo (il primo segmento del file), facendo perdere il segno.
     ///
-    /// Il collaudo su dispositivo ha ESCLUSO il ritorno diretto al segmento (il fuoco veniva
-    /// comunque sbalzato a inizio documento): si adotta perciò l'ANCORA FORZATA al tasto Indietro,
-    /// decisa e definitiva. A ogni riattivazione si sposta il fuoco sul tasto Indietro in alto a
-    /// sinistra; da lì l'utente fa scrub e rientra nel container del testo DOVE era (il rientro via
-    /// scrub ripristina l'ultima posizione, vedi `activateTextContainer(restoreFocus:)`), senza che
-    /// il fuoco entri mai nel testo all'inizio del file. Nessuna eccezione. Si posta SUBITO e di
-    /// nuovo dopo un breve ritardo, per vincere con certezza la corsa col fuoco automatico di
-    /// VoiceOver alla riattivazione.
+    /// Alla RIACCENSIONE di VoiceOver (interruttore o triplo click), VoiceOver ricostruisce l'albero
+    /// e sposta il fuoco al PRIMO elemento del testo. Quel fuoco emette `onReadingPositionChanged(0)`
+    /// che, se non intercettato, SOVRASCRIVE la posizione reale con 0 (in memoria e nello store):
+    /// poi ogni ripristino leggerebbe 0. La correzione è la PROTEZIONE della posizione durante la
+    /// transizione (vedi `beginReadingPositionProtection`): si congela la posizione reale, si sopprime
+    /// il salvataggio dello 0 spurio e si contrasta il reset in modo EVENT-HOOKED (non a cronometro).
     @objc private func voiceOverStatusChanged() {
-        guard UIAccessibility.isVoiceOverRunning, isViewLoaded, view.window != nil else { return }
-        UIAccessibility.post(notification: .screenChanged, argument: reengagementTarget())
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self, UIAccessibility.isVoiceOverRunning, self.view.window != nil else { return }
-            UIAccessibility.post(notification: .screenChanged, argument: self.reengagementTarget())
+        guard isViewLoaded, view.window != nil, UIAccessibility.isVoiceOverRunning else { return }
+        beginReadingPositionProtection(target: currentRealReadingIndex())
+    }
+
+    // MARK: - Protezione/ripristino della posizione durante transizioni (bug VoiceOver on/off + interruzioni)
+
+    /// Il vero punto di lettura dell'utente in questo istante: la pagina attualmente SCROLLATA (vale
+    /// sia a VoiceOver spento — paging visivo — sia acceso — VoiceOver tiene lo scroll sul fuoco). Se
+    /// l'elemento a fuoco è coerente con quella pagina lo si preferisce (più preciso).
+    private func currentRealReadingIndex() -> Int {
+        let page = readingView.currentVisualPage
+        if let focused = readingView.currentReadingElementIndex,
+           readingView.visualPageIndex(ofElementAt: focused) == page {
+            return focused
+        }
+        return readingView.firstElementIndex(ofVisualPage: page) ?? 0
+    }
+
+    /// Apre una finestra di PROTEZIONE della posizione `target` (§ 2.5). Durante la finestra ogni
+    /// `onReadingPositionChanged` con indice ≠ target è il reset automatico di VoiceOver: non viene
+    /// mai persistito e viene contrastato ri-portando alla `target`. La difesa è EVENT-HOOKED — agisce
+    /// a ogni evento sbagliato per tutta la durata — quindi robusta alla corsa: non dipende dal
+    /// beccare un singolo istante come il vecchio ritardo fisso 0,4/0,5 s. Il timer di chiusura è solo
+    /// un TETTO di sicurezza, ampio rispetto alla latenza del reset (che è di poche centinaia di ms);
+    /// la finestra si chiude comunque prima non appena il reset è stato visto e contrastato.
+    private static let voiceOverProtectionWindow: TimeInterval = 1.5
+    private func beginReadingPositionProtection(target: Int) {
+        guard currentLayout == .continuous, target > 0 else { return }
+        voiceOverRestoreTarget = target
+        protectionSawReset = false
+        isProtectingReadingPosition = true
+        protectionGeneration &+= 1
+        let generation = protectionGeneration
+        // Ripristino immediato (scroll VoiceOver-indipendente + fuoco); la difesa vera è quella
+        // event-hooked in `handleProtectedPositionUpdate`.
+        readingView.goToElement(atIndex: target, focus: true)
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.voiceOverProtectionWindow) { [weak self] in
+            guard let self, self.protectionGeneration == generation else { return }
+            self.endReadingPositionProtection()
         }
     }
 
-    /// L'ancora del riaggancio: SEMPRE il tasto Indietro (scelta definitiva, vedi sopra).
-    private func reengagementTarget() -> NSObject { interfaceBar.backButton }
+    /// Un cambio di fuoco durante la finestra di protezione: se è la `target` (la nostra
+    /// ri-affermazione è atterrata) si persiste la posizione REALE; altrimenti è il reset di
+    /// VoiceOver → NON si persiste lo 0 spurio e si ri-porta il fuoco alla `target`.
+    private func handleProtectedPositionUpdate(_ index: Int) {
+        updatePageIndicator()
+        if index == voiceOverRestoreTarget {
+            if currentLayout == .continuous {
+                continuousPosition = index
+                onPositionChanged?(index)
+            }
+            if protectionSawReset { endReadingPositionProtection() }
+        } else {
+            protectionSawReset = true
+            readingView.goToElement(atIndex: voiceOverRestoreTarget, focus: true)
+        }
+    }
 
-    // MARK: - Ripristino dopo interruzione di sistema (bug 1)
+    private func endReadingPositionProtection() {
+        guard isProtectingReadingPosition else { return }
+        isProtectingReadingPosition = false
+        // Alla chiusura, garantisci che la posizione reale sia quella persistita (se il reset l'aveva
+        // soppressa nel mezzo, qui si riscrive quella giusta).
+        if currentLayout == .continuous, let idx = readingView.currentReadingElementIndex,
+           idx == voiceOverRestoreTarget {
+            continuousPosition = idx
+            onPositionChanged?(idx)
+        }
+    }
+
+    // MARK: - Ripristino dopo interruzione di sistema
 
     /// Fotografa la posizione di lettura corrente PRIMA di un'interruzione (`willResignActive`): quando
-    /// l'interruzione si chiude, VoiceOver ha già rispedito il fuoco (e la posizione ricordata) a
-    /// inizio file, quindi al ritorno non ci sarebbe più nulla di valido da cui ripartire. Solo in
-    /// Lettura Continua (l'unica posizione persistita, § 2.5).
+    /// l'interruzione si chiude, VoiceOver ha già rispedito il fuoco a inizio file. Solo in Lettura
+    /// Continua (l'unica posizione persistita, § 2.5).
     private func snapshotPositionForInterruption() {
         guard currentLayout == .continuous, view.window != nil else { return }
         if let index = readingView.currentReadingElementIndex, index > 0 {
@@ -468,13 +541,13 @@ final class ContinuousReadingViewController: UIViewController {
         }
     }
 
-    /// Al ritorno in primo piano (`didBecomeActive`) ripristina la posizione fotografata (bug 1),
-    /// con lo stesso meccanismo sano del salto (scroll + fuoco ri-affermato). Ripristina anche la
-    /// persistenza: il reset ne aveva salvato l'inizio, il ripristino vi riscrive la posizione giusta.
+    /// Al ritorno in primo piano (`didBecomeActive`) ripristina la posizione fotografata, con la
+    /// STESSA protezione event-hooked della riaccensione di VoiceOver (così un reset tardivo del fuoco
+    /// non ri-sovrascrive 0 dopo il ripristino).
     private func restoreAfterInterruption() {
         guard isViewLoaded, view.window != nil, currentLayout == .continuous else { return }
         guard let index = positionBeforeInterruption, index > 0 else { return }
-        restoreReadingFocus(toIndex: index, raceRobust: true)
+        beginReadingPositionProtection(target: index)
     }
 
     // MARK: - Indicatore di pagina (§ 4.3)
@@ -736,9 +809,13 @@ final class ContinuousReadingViewController: UIViewController {
     var restoredPositionTargetForTesting: NSObject? { readingView.element(atIndex: initialReadingPosition) }
     /// L'indice di posizione di lettura corrente esposto dalla view, per i test.
     var currentReadingPositionForTesting: Int? { readingView.currentReadingElementIndex }
-    /// L'elemento su cui il riaggancio di VoiceOver riporta il fuoco: SEMPRE il tasto Indietro
-    /// (ancora definitiva). Per i test.
-    var reengagementTargetForTesting: NSObject? { reengagementTarget() }
+    /// Simula la riaccensione di VoiceOver aprendo la finestra di protezione della posizione (nel
+    /// Simulator VoiceOver è spento, quindi il gestore reale non scatterebbe). Per i test.
+    func beginVoiceOverProtectionForTesting() {
+        beginReadingPositionProtection(target: currentRealReadingIndex())
+    }
+    /// Vero se la protezione della posizione è attiva (per i test).
+    var isProtectingReadingPositionForTesting: Bool { isProtectingReadingPosition }
     /// Forza l'aggiornamento dell'indicatore di pagina (per i test, senza ciclo di vita reale).
     func updatePageIndicatorForTesting() { updatePageIndicator() }
     /// Il layout attualmente reso (per i test del selettore).

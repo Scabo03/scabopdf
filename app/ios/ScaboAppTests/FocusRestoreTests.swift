@@ -107,6 +107,40 @@ final class FocusRestoreTests: XCTestCase {
         XCTAssertGreaterThan(rv.currentVisualPage, 0)
     }
 
+    // MARK: - Bug aperto: spegnere/riaccendere VoiceOver a metà lettura non torna a inizio file
+
+    func test_voiceOverReactivation_protectsPosition_notPersistZero_andRestoresScroll() {
+        var persisted: [Int] = []
+        let content = PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: manySegments(40))],
+                                       totalSegments: 40)
+        let vc = ContinuousReadingViewController(
+            content: content, documentId: "", initialReadingPosition: 30,
+            onPositionChanged: { persisted.append($0) }, signalPlayer: SilentSignals())
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 300))
+        window.rootViewController = vc
+        window.makeKeyAndVisible()
+        vc.loadViewIfNeeded()
+        vc.view.layoutIfNeeded()
+        vc.viewDidAppear(false)
+
+        let rv = vc.textContainerForTesting
+        let expected = rv.visualPageIndex(ofElementAt: 30)
+        XCTAssertEqual(rv.currentVisualPage, expected, "si legge a metà file (pagina di 30)")
+        persisted.removeAll()
+
+        // Riaccensione di VoiceOver: si apre la protezione sulla posizione reale (~30).
+        vc.beginVoiceOverProtectionForTesting()
+        XCTAssertTrue(vc.isProtectingReadingPositionForTesting)
+
+        // VoiceOver rispedisce il fuoco a inizio file: emette onReadingPositionChanged(0).
+        rv.segmentLabels[0].accessibilityElementDidBecomeFocused()
+
+        XCTAssertFalse(persisted.contains(0), "lo 0 spurio del reset NON viene mai persistito")
+        XCTAssertEqual(rv.currentReadingElementIndex, 30, "posizione reale protetta, non inizio file")
+        XCTAssertEqual(rv.currentVisualPage, expected, "scroll ri-portato alla posizione, non a 0")
+        XCTAssertGreaterThan(rv.currentVisualPage, 0)
+    }
+
     private func spinMainLoop() {
         // Gli osservatori sono su `queue: .main` → il blocco gira al prossimo giro di run loop.
         RunLoop.main.run(until: Date().addingTimeInterval(0.15))

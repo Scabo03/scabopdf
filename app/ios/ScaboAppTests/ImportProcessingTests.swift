@@ -364,30 +364,39 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertEqual(vc.currentReadingPositionForTesting, 6)
     }
 
-    // MARK: - Riaggancio di VoiceOver in lettura: ANCORA al tasto Indietro (definitiva)
+    // MARK: - Riaccensione di VoiceOver: protezione e ripristino della posizione (non più inizio file)
 
-    func test_reader_voiceOverReengagement_anchorsToBackButton_evenAfterReadingSegment() {
-        let vc = makeLoadedReader(sampleContent(6))
+    func test_reader_voiceOverReactivation_protectsPosition_andSuppressesSpuriousZeroSave() {
+        // L'ancora fissa al tasto Indietro (vecchia scelta) NON risolveva il caso: alla riaccensione
+        // VoiceOver rispedisce il fuoco a inizio file e il salvataggio a 0 sovrascriveva la posizione.
+        // Ora si protegge la posizione reale e si sopprime lo 0 spurio.
+        let content = sampleContent(6)
+        var persisted: [Int] = []
+        let vc = ContinuousReadingViewController(
+            content: content, documentId: "", initialReadingPosition: 0,
+            onPositionChanged: { persisted.append($0) }, signalPlayer: SignalPlayerSpy())
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
         vc.viewDidAppear(false)
         let labels = vc.textContainerForTesting.segmentLabels
 
-        // L'utente legge fino a un elemento centrale, poi VoiceOver si riattiva.
+        // L'utente legge fino a un elemento centrale (fuoco reale).
         labels[3].accessibilityElementDidBecomeFocused()
+        XCTAssertEqual(persisted.last, 3, "la lettura reale persiste la posizione 3")
+        persisted.removeAll()
 
-        // Scelta definitiva: il riaggancio si ancora SEMPRE al tasto Indietro, MAI a un segmento
-        // (niente ritorno diretto). Da lì l'utente scruba e rientra nel testo dove era.
-        XCTAssertTrue(vc.reengagementTargetForTesting === vc.interfaceContainerForTesting.backButton,
-                      "il riaggancio ancora al tasto Indietro")
-        XCTAssertFalse(vc.reengagementTargetForTesting === labels[3], "mai ritorno diretto al segmento")
-        XCTAssertFalse(vc.reengagementTargetForTesting === labels[0], "mai il primo elemento del file")
-    }
+        // Riaccensione di VoiceOver: si apre la protezione sulla posizione reale.
+        vc.beginVoiceOverProtectionForTesting()
+        XCTAssertTrue(vc.isProtectingReadingPositionForTesting)
 
-    func test_reader_voiceOverReengagement_anchorsToBackButton_whenInterfaceActive() {
-        let vc = makeLoadedReader(sampleContent(4))
-        vc.viewDidAppear(false)
-        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape())
-        XCTAssertTrue(vc.reengagementTargetForTesting === vc.interfaceContainerForTesting.backButton,
-                      "anche con l'interfaccia attiva il riaggancio si ancora al tasto Indietro")
+        // VoiceOver rispedisce il fuoco a inizio file (reset): NON deve persistere 0, e deve
+        // ri-portare alla posizione reale.
+        labels[0].accessibilityElementDidBecomeFocused()
+
+        XCTAssertFalse(persisted.contains(0), "lo 0 spurio del reset NON viene mai salvato")
+        XCTAssertEqual(vc.textContainerForTesting.currentReadingElementIndex, 3,
+                       "la posizione reale è ripristinata, non inizio file")
     }
 
     // MARK: - Indicatore di pagina in toolbar: due box separati (§ 4.3)
