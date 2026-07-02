@@ -58,6 +58,13 @@ final class SplitScreenViewController: UIViewController {
     private var isSyncing = false
     private var lastLeaderIndex: [SplitSide: Int] = [:]
 
+    /// Ripristino dopo interruzione di sistema (bug 1), PER-CONTAINER: alla ripresa si ripristina il
+    /// container ATTIVO (non sempre testo A, § 2.3). La posizione di ciascuna metà è fotografata alla
+    /// sospensione (il reset di VoiceOver la azzera nel mezzo). Osservatori rimossi in deinit.
+    private var willResignObserver: NSObjectProtocol?
+    private var didBecomeActiveObserver: NSObjectProtocol?
+    private var snapshotBySide: [SplitSide: Int] = [:]
+
     private static let barHeight: CGFloat = 44
     private static let dividerWidth: CGFloat = 8
 
@@ -137,8 +144,46 @@ final class SplitScreenViewController: UIViewController {
         // Persistenza (§ 11.9): lo split è attivo → registralo per la riapertura.
         store.setSplitState(split)
 
+        // Ripristino dopo interruzione di sistema (bug 1), nel container ATTIVO.
+        willResignObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.snapshotForInterruption() }
+        didBecomeActiveObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.reassertAfterInterruption() }
+
         // All'ingresso comanda la metà sinistra: il suo testo è il container attivo.
         setActive(0)
+    }
+
+    deinit {
+        for token in [willResignObserver, didBecomeActiveObserver] {
+            if let token { NotificationCenter.default.removeObserver(token) }
+        }
+    }
+
+    /// Fotografa la posizione di lettura di ENTRAMBE le metà prima di un'interruzione.
+    private func snapshotForInterruption() {
+        guard view.window != nil else { return }
+        for side in [SplitSide.left, .right] {
+            if let idx = childVC(side).currentReadingIndex, idx > 0 { snapshotBySide[side] = idx }
+        }
+    }
+
+    /// Alla ripresa: riallinea lo scroll di entrambe le metà (VoiceOver-indipendente) e riporta il
+    /// fuoco nel container ATTIVO (§ 2.3: quello giusto, non sempre testo A), col punto fotografato.
+    private func reassertAfterInterruption() {
+        guard isViewLoaded, view.window != nil else { return }
+        for side in [SplitSide.left, .right] {
+            if let idx = snapshotBySide[side], idx > 0 {
+                childVC(side).textContainer.goToElement(atIndex: idx, focus: false)  // scroll + preset
+            }
+        }
+        setActive(activeIndex)  // fuoco nel container attivo (ora al punto fotografato)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.view.window != nil else { return }
+            self.setActive(self.activeIndex)
+        }
     }
 
     override func viewDidLayoutSubviews() {

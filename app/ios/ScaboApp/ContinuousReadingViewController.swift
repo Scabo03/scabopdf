@@ -142,6 +142,17 @@ final class ContinuousReadingViewController: UIViewController {
     /// Osservatore del cambio di stato di VoiceOver (riaggancio in lettura). Rimosso in deinit.
     private var voiceOverObserver: NSObjectProtocol?
 
+    /// Osservatori di sospensione/ripresa dell'app, per il RIPRISTINO dopo interruzione di sistema
+    /// (bug 1: un pop-up AirPods/alert, chiudendosi, fa rispedire il fuoco VoiceOver al primo
+    /// elemento = inizio file). Rimossi in deinit. Solo full-screen (nello split ripristina il padre).
+    private var willResignObserver: NSObjectProtocol?
+    private var didBecomeActiveObserver: NSObjectProtocol?
+
+    /// La posizione di lettura fotografata PRIMA di un'interruzione, per riproporla al ritorno. La si
+    /// cattura su `willResignActive` perché quando l'interruzione si chiude VoiceOver ha già azzerato
+    /// il fuoco (e la posizione ricordata) a inizio file.
+    private var positionBeforeInterruption: Int?
+
     /// Il ripristino della posizione avviene una sola volta, alla prima comparsa.
     private var didRestorePosition = false
 
@@ -197,8 +208,8 @@ final class ContinuousReadingViewController: UIViewController {
     private let embedded: Bool
 
     deinit {
-        if let token = voiceOverObserver {
-            NotificationCenter.default.removeObserver(token)
+        for token in [voiceOverObserver, willResignObserver, didBecomeActiveObserver] {
+            if let token { NotificationCenter.default.removeObserver(token) }
         }
     }
 
@@ -249,6 +260,14 @@ final class ContinuousReadingViewController: UIViewController {
                 forName: UIAccessibility.voiceOverStatusDidChangeNotification,
                 object: nil, queue: .main
             ) { [weak self] _ in self?.voiceOverStatusChanged() }
+            // Bug 1: ripristino dopo interruzione di sistema. Fotografa la posizione alla sospensione
+            // e la ripropone alla ripresa (il reset di VoiceOver avviene nel mezzo). Solo full-screen.
+            willResignObserver = NotificationCenter.default.addObserver(
+                forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
+            ) { [weak self] _ in self?.snapshotPositionForInterruption() }
+            didBecomeActiveObserver = NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+            ) { [weak self] _ in self?.restoreAfterInterruption() }
         }
         // Si entra leggendo: il testo è il container attivo (modale). Nessun fuoco forzato qui:
         // alla comparsa VoiceOver si posa sul primo elemento (o sulla posizione ripristinata).
@@ -436,6 +455,28 @@ final class ContinuousReadingViewController: UIViewController {
     /// L'ancora del riaggancio: SEMPRE il tasto Indietro (scelta definitiva, vedi sopra).
     private func reengagementTarget() -> NSObject { interfaceBar.backButton }
 
+    // MARK: - Ripristino dopo interruzione di sistema (bug 1)
+
+    /// Fotografa la posizione di lettura corrente PRIMA di un'interruzione (`willResignActive`): quando
+    /// l'interruzione si chiude, VoiceOver ha già rispedito il fuoco (e la posizione ricordata) a
+    /// inizio file, quindi al ritorno non ci sarebbe più nulla di valido da cui ripartire. Solo in
+    /// Lettura Continua (l'unica posizione persistita, § 2.5).
+    private func snapshotPositionForInterruption() {
+        guard currentLayout == .continuous, view.window != nil else { return }
+        if let index = readingView.currentReadingElementIndex, index > 0 {
+            positionBeforeInterruption = index
+        }
+    }
+
+    /// Al ritorno in primo piano (`didBecomeActive`) ripristina la posizione fotografata (bug 1),
+    /// con lo stesso meccanismo sano del salto (scroll + fuoco ri-affermato). Ripristina anche la
+    /// persistenza: il reset ne aveva salvato l'inizio, il ripristino vi riscrive la posizione giusta.
+    private func restoreAfterInterruption() {
+        guard isViewLoaded, view.window != nil, currentLayout == .continuous else { return }
+        guard let index = positionBeforeInterruption, index > 0 else { return }
+        restoreReadingFocus(toIndex: index, raceRobust: true)
+    }
+
     // MARK: - Indicatore di pagina (§ 4.3)
 
     /// Ricalcola e applica l'indicatore di pagina in toolbar: pagina di visualizzazione corrente su
@@ -466,9 +507,10 @@ final class ContinuousReadingViewController: UIViewController {
     private func restoreReadingPositionIfNeeded() {
         guard !didRestorePosition else { return }
         didRestorePosition = true
-        guard initialReadingPosition > 0,
-              let target = readingView.element(atIndex: initialReadingPosition) else { return }
-        UIAccessibility.post(notification: .screenChanged, argument: target)
+        guard initialReadingPosition > 0 else { return }
+        // Meccanismo sano: SCROLL visivo (onora la posizione ANCHE a VoiceOver spento — prima con il
+        // solo `screenChanged` la riapertura senza VoiceOver restava a inizio file) + fuoco VoiceOver.
+        readingView.goToElement(atIndex: initialReadingPosition, focus: true)
     }
 
     private func embedContainers() {
@@ -621,8 +663,23 @@ final class ContinuousReadingViewController: UIViewController {
         if currentLayout != .continuous { switchLayout(to: .continuous) }
         let index = readingView.indexOfSegment(anchorId: anchorSegmentId, hint: hint)
         activateTextContainer(restoreFocus: false)
-        if let element = readingView.element(atIndex: index) {
-            UIAccessibility.post(notification: .screenChanged, argument: element)
+        // Salto ROBUSTO (§ 5.4): SCROLL visivo (onorato anche a VoiceOver spento — era il difetto:
+        // prima solo `screenChanged`, no-op senza VoiceOver → si restava a inizio file) + fuoco,
+        // ri-affermato dopo un istante per vincere la corsa col reset del fuoco alla chiusura del
+        // modale della finestra Segnalibri.
+        restoreReadingFocus(toIndex: index, raceRobust: true)
+    }
+
+    /// Ripristino/salto ROBUSTO a una posizione di lettura (§ 2.5 / § 5.4), col meccanismo sano dello
+    /// scrub: SCROLL visivo (VoiceOver-indipendente) + fuoco. `raceRobust` ripete il fuoco dopo un
+    /// istante per vincere il ripristino automatico di VoiceOver dopo la chiusura di un modale o di
+    /// un'interfaccia di sistema, che altrimenti rispedisce il fuoco al primo elemento (inizio file).
+    private func restoreReadingFocus(toIndex index: Int, raceRobust: Bool) {
+        readingView.goToElement(atIndex: index, focus: true)
+        guard raceRobust, UIAccessibility.isVoiceOverRunning else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+            guard let self, self.view.window != nil, self.currentLayout == .continuous else { return }
+            self.readingView.goToElement(atIndex: index, focus: true)
         }
     }
 

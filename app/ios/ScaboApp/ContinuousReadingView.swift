@@ -380,6 +380,27 @@ final class ContinuousReadingView: UIView {
         presetReadingPosition(toIndex: index)
     }
 
+    /// Porta la reading view all'elemento di indice `index` col meccanismo SANO (lo stesso che rende
+    /// corretto lo scrub toolbar→testo): SCROLL visivo indipendente da VoiceOver — così la posizione
+    /// è onorata ANCHE a VoiceOver spento — e, se `focus` e VoiceOver è attivo, vi posta il fuoco su
+    /// un elemento CONCRETO. I percorsi di ripristino/salto (posizione iniziale, salto al segnalibro,
+    /// ripristino dopo interruzione) prima si affidavano al SOLO `screenChanged`, che a VoiceOver
+    /// spento non fa nulla (niente scroll → inizio file) ed è scavalcato dal reset automatico di
+    /// VoiceOver dopo la chiusura di un modale/interfaccia di sistema. Questo metodo colma entrambe.
+    func goToElement(atIndex index: Int, focus: Bool) {
+        guard index >= 0, index < segmentLabels.count else { return }
+        revealElement(atIndex: index)
+        if focus, UIAccessibility.isVoiceOverRunning {
+            UIAccessibility.post(notification: .screenChanged, argument: segmentLabels[index])
+        }
+    }
+
+    /// La pagina visiva attualmente in vista (dallo scroll offset), per i test del posizionamento.
+    var currentVisualPage: Int {
+        guard bounds.width > 0 else { return 0 }
+        return Int((scrollView.contentOffset.x / bounds.width).rounded())
+    }
+
     /// Il primo elemento (indice) dell'unità strutturale indicata (l'intestazione che la apre), o
     /// `nil` se fuori range. Unità 0 = inizio documento.
     func firstElementIndex(ofUnit unit: Int) -> Int? {
