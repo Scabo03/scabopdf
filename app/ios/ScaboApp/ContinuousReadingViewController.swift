@@ -544,14 +544,28 @@ final class ContinuousReadingViewController: UIViewController {
     /// predisposto per iCloud/Mac; nessuno store parallelo.
     private var libraryStore: LibraryStore { LibraryService.shared.store }
 
-    /// Aggancia il coordinatore dei segnalibri al container del testo e mostra il pulsante
-    /// Segnalibri in toolbar. Solo per un documento reale (id non vuoto): nei test senza libreria
-    /// tutto resta invariato (nessuna azione, pulsante nascosto).
+    /// Aggancia il coordinatore degli strumenti sull'elemento (segnalibri § 5 + sottolineature § 6),
+    /// mostra il pulsante Segnalibri in toolbar e applica la resa grafica delle sottolineature
+    /// esistenti. Solo per un documento reale (id non vuoto): nei test senza libreria tutto resta
+    /// invariato (nessuna azione, pulsante nascosto, nessun underline).
     private func setUpBookmarks() {
         guard !documentId.isEmpty else { return }
-        readingView.bookmarkCoordinator = self
+        readingView.elementCoordinator = self
         interfaceBar.setBookmarksAvailable(true)
         interfaceBar.onBookmarks = { [weak self] in self?.openBookmarksWindow() }
+        refreshUnderlines()
+    }
+
+    /// (Ri)costruisce la mappa id-segmento → intervalli di parole dalle `Underline` dello store e la
+    /// passa alla reading view per la resa grafica (§ 6.5). Chiamata all'avvio e dopo ogni mutazione.
+    private func refreshUnderlines() {
+        var map: [String: [ClosedRange<Int>]] = [:]
+        for underline in libraryStore.underlines(documentId: documentId) {
+            for span in underline.spans {
+                map[span.segmentId, default: []].append(span.startWord...span.endWord)
+            }
+        }
+        readingView.setUnderlineRanges(map)
     }
 
     /// Apre la finestra dei Segnalibri del documento (§ 5.4). È un container modale (§ 2.3); alla
@@ -640,9 +654,9 @@ final class ContinuousReadingViewController: UIViewController {
     func switchLayoutForTesting(to layout: LayoutId) { switchLayout(to: layout) }
 }
 
-// MARK: - ReadingBookmarkCoordinator (§ 5.1 / § 5.7)
+// MARK: - ReadingElementCoordinator (§ 5 segnalibri / § 6 sottolineature)
 
-extension ContinuousReadingViewController: ReadingBookmarkCoordinator {
+extension ContinuousReadingViewController: ReadingElementCoordinator {
 
     func existingBookmark(forSegmentId id: String) -> Bookmark? {
         libraryStore.bookmarks(documentId: documentId).first { $0.anchorSegmentId == id }
@@ -680,5 +694,154 @@ extension ContinuousReadingViewController: ReadingBookmarkCoordinator {
         libraryStore.deleteBookmark(documentId: documentId, bookmarkId: bookmark.id)
         announceAndReturnFocus(
             "Segnalibro rimosso.", toSegmentId: bookmark.anchorSegmentId, hint: bookmark.orderIndexHint)
+    }
+
+    // MARK: Menù d'azione dei vedenti (long press, § 5 + § 6)
+
+    /// Costruisce e presenta il menù unico sull'elemento: voci di segnalibro (§ 5) e di
+    /// sottolineatura (§ 6) secondo lo stato. Il menù assorbe il pop-up di conflitto § 6.3 (è esso
+    /// stesso la disambiguazione fra aggiungi/modifica/elimina). Su iPad il popover si ancora al dito.
+    func presentElementMenu(segmentId: String, orderIndex: Int, segmentText: String, sourcePoint: CGPoint) {
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+
+        // Segnalibro (§ 5).
+        if let bookmark = existingBookmark(forSegmentId: segmentId) {
+            sheet.addAction(UIAlertAction(title: "Modifica segnalibro", style: .default) { [weak self] _ in
+                self?.editBookmark(bookmark)
+            })
+            sheet.addAction(UIAlertAction(title: "Rimuovi segnalibro", style: .destructive) { [weak self] _ in
+                self?.removeBookmark(bookmark)
+            })
+        } else {
+            sheet.addAction(UIAlertAction(title: "Aggiungi segnalibro", style: .default) { [weak self] _ in
+                self?.addBookmark(segmentId: segmentId, orderIndex: orderIndex, segmentText: segmentText)
+            })
+        }
+
+        // Sottolineatura (§ 6): solo-vedenti, nessuna azione VoiceOver.
+        let touching = libraryStore.underlinesTouching(documentId: documentId, segmentId: segmentId)
+        sheet.addAction(UIAlertAction(title: "Aggiungi sottolineatura", style: .default) { [weak self] _ in
+            self?.startUnderlineCreation(atSegmentIndex: orderIndex)
+        })
+        if !touching.isEmpty {
+            sheet.addAction(UIAlertAction(title: "Modifica sottolineatura", style: .default) { [weak self] _ in
+                self?.startUnderlineModify(touching)
+            })
+            sheet.addAction(UIAlertAction(title: "Elimina sottolineatura", style: .destructive) { [weak self] _ in
+                self?.startUnderlineDelete(touching)
+            })
+        }
+
+        sheet.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+
+        // iPad: l'action sheet è un popover, va ancorato. Lo puntiamo al dito nella reading view.
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = readingView
+            popover.sourceRect = CGRect(origin: sourcePoint, size: CGSize(width: 1, height: 1))
+        }
+        present(sheet, animated: true)
+    }
+
+    // MARK: Sottolineature — creazione / modifica / eliminazione (§ 6.2 / § 6.3 / § 6.4)
+
+    /// Apre la finestra di selezione a due fasi per creare una nuova sottolineatura (§ 6.2), con le
+    /// parole già coperte da altre sottolineature bloccate (§ 6.3). Al termine `addUnderline` la
+    /// registra (rete di sicurezza sulla non-sovrapposizione) e la resa grafica si aggiorna.
+    private func startUnderlineCreation(atSegmentIndex startIndex: Int) {
+        let segments = readingView.currentSegments
+        guard startIndex >= 0, startIndex < segments.count else { return }
+        UnderlineSelectionViewController.present(
+            from: self, segments: segments, startIndex: startIndex,
+            blockedIntervals: blockedIntervalsProvider(excluding: nil)
+        ) { [weak self] spans, preview in
+            guard let self else { return false }
+            let created = self.libraryStore.addUnderline(
+                documentId: self.documentId, spans: spans, preview: preview) != nil
+            if created { self.refreshUnderlines(); self.announceUnderline("Sottolineatura aggiunta.") }
+            return created
+        }
+    }
+
+    /// § 6.3 "Modifica": se l'elemento ha una sola sottolineatura la modifica direttamente (la nuova
+    /// selezione sostituisce la precedente); se ne ha più d'una, prima una lista di scelta.
+    private func startUnderlineModify(_ candidates: [Underline]) {
+        chooseUnderline(candidates, title: "Quale sottolineatura modificare?") { [weak self] chosen in
+            guard let self else { return }
+            let segments = self.readingView.currentSegments
+            let startIndex = segments.firstIndex { $0.id == chosen.spans.first?.segmentId }
+                ?? self.readingView.indexOfSegment(anchorId: chosen.spans.first?.segmentId ?? "", hint: 0)
+            UnderlineSelectionViewController.present(
+                from: self, segments: segments, startIndex: startIndex,
+                blockedIntervals: self.blockedIntervalsProvider(excluding: chosen.id)
+            ) { spans, preview in
+                let ok = self.libraryStore.replaceUnderline(
+                    documentId: self.documentId, underlineId: chosen.id, spans: spans)
+                _ = preview  // la preview di una modifica resta quella originale (§ 6.4 lista invariata)
+                if ok { self.refreshUnderlines(); self.announceUnderline("Sottolineatura modificata.") }
+                return ok
+            }
+        }
+    }
+
+    /// § 6.4 eliminazione: se l'elemento ha una sola sottolineatura chiede conferma diretta; se più
+    /// d'una, prima la lista di scelta, poi la conferma.
+    private func startUnderlineDelete(_ candidates: [Underline]) {
+        chooseUnderline(candidates, title: "Quale sottolineatura eliminare?") { [weak self] chosen in
+            self?.confirmDeleteUnderline(chosen)
+        }
+    }
+
+    private func confirmDeleteUnderline(_ underline: Underline) {
+        let alert = UIAlertController(
+            title: "Elimina sottolineatura",
+            message: "La sottolineatura «\(underline.preview)» sarà eliminata.",
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Elimina", style: .destructive) { [weak self] _ in
+            guard let self else { return }
+            self.libraryStore.deleteUnderline(documentId: self.documentId, underlineId: underline.id)
+            self.refreshUnderlines()
+            self.announceUnderline("Sottolineatura eliminata.")
+        })
+        present(alert, animated: true)
+    }
+
+    /// Se una sola sottolineatura, passa direttamente; se più d'una, presenta la lista di scelta
+    /// (§ 6.3 / § 6.4), identificata dall'anteprima.
+    private func chooseUnderline(
+        _ candidates: [Underline], title: String, then handle: @escaping (Underline) -> Void
+    ) {
+        guard candidates.count > 1 else {
+            if let only = candidates.first { handle(only) }
+            return
+        }
+        let sheet = UIAlertController(title: title, message: nil, preferredStyle: .actionSheet)
+        for underline in candidates {
+            sheet.addAction(UIAlertAction(title: underline.preview, style: .default) { _ in handle(underline) })
+        }
+        sheet.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+        }
+        present(sheet, animated: true)
+    }
+
+    /// Fornisce, per ogni id-segmento, gli intervalli di parole già coperti da sottolineature
+    /// esistenti (da bloccare nella finestra di selezione, § 6.3), escludendo quella in modifica.
+    private func blockedIntervalsProvider(excluding excludedId: String?) -> (String) -> [ClosedRange<Int>] {
+        let underlines = libraryStore.underlines(documentId: documentId).filter { $0.id != excludedId }
+        return { segmentId in
+            underlines.flatMap { $0.spans }
+                .filter { $0.segmentId == segmentId }
+                .map { $0.startWord...$0.endWord }
+        }
+    }
+
+    /// Annuncio VoiceOver additivo di conferma per le operazioni di sottolineatura. Nota: la
+    /// sottolineatura è solo-vedenti, ma un breve annuncio non fa male se VoiceOver è attivo; il
+    /// contenuto di lettura non è toccato (additivo, fuori dallo stream).
+    private func announceUnderline(_ message: String) {
+        UIAccessibility.post(notification: .announcement, argument: message)
     }
 }

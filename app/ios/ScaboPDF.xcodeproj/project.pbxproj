@@ -17,6 +17,7 @@
 		5CABC04E0000000000000060 /* GranularityWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000061 /* GranularityWiringTests.swift */; };
 		5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000063 /* RealPdfBenchTests.swift */; };
 		5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */; };
+		5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +41,7 @@
 		5CABC04E0000000000000061 /* GranularityWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GranularityWiringTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000063 /* RealPdfBenchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RealPdfBenchTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkGestureWiringTests.swift; sourceTree = "<group>"; };
+		5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnderlineRenderingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -98,6 +100,7 @@
 				5CABC04E0000000000000061 /* GranularityWiringTests.swift */,
 				5CABC04E0000000000000063 /* RealPdfBenchTests.swift */,
 				5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */,
+				5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -250,6 +253,7 @@
 				5CABC04E0000000000000060 /* GranularityWiringTests.swift in Sources */,
 				5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */,
 				5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */,
+				5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -68,6 +68,12 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// tag (`LibraryState.tags`): il segnalibro porta solo i riferimenti, mai copie del nome.
     public var bookmarks: [Bookmark]?
 
+    /// Le sottolineature del documento (§ 6): strumento SOLO-VISIVO e SOLO-VEDENTI (decisione di
+    /// prodotto), dati personali UNICI del file (§ 12.6). OPZIONALE per la stessa ragione di
+    /// `bookmarks`: `nil` = nessuna sottolineatura, e l'assenza della chiave non rompe la decodifica
+    /// delle librerie di versioni precedenti (retro-compatibilità additiva → nessun reset).
+    public var underlines: [Underline]?
+
     public init(
         id: String,
         title: String,
@@ -78,7 +84,8 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         readingPosition: Int = 0,
         warnings: [String] = [],
         isHiddenFromRecents: Bool? = nil,
-        bookmarks: [Bookmark]? = nil
+        bookmarks: [Bookmark]? = nil,
+        underlines: [Underline]? = nil
     ) {
         self.id = id
         self.title = title
@@ -90,6 +97,7 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         self.warnings = warnings
         self.isHiddenFromRecents = isHiddenFromRecents
         self.bookmarks = bookmarks
+        self.underlines = underlines
     }
 }
 
@@ -165,6 +173,57 @@ public struct Tag: Codable, Equatable, Sendable {
         self.id = id
         self.name = name
     }
+}
+
+// MARK: - Sottolineatura (§ 6) — solo visiva, solo vedenti
+
+/// La copertura di una sottolineatura DENTRO un singolo elemento di testo: un intervallo di parole
+/// (inclusivo) nel segmento indicato. Le parole sono indicizzate come `WordTokenizer.wordRanges`
+/// (runs di non-spazio), la stessa tokenizzazione usata dalla resa grafica e dalla finestra di
+/// selezione, così l'indice di parola qui e il glifo sottolineato a schermo coincidono sempre.
+public struct UnderlineSpan: Codable, Equatable, Sendable {
+    /// Id del `ContentSegment` (id-nodo Layer 1) coperto da questo span.
+    public var segmentId: String
+    /// Indice della prima parola coperta (0-based, inclusivo).
+    public var startWord: Int
+    /// Indice dell'ultima parola coperta (0-based, inclusivo). `== startWord` per una parola sola.
+    public var endWord: Int
+
+    public init(segmentId: String, startWord: Int, endWord: Int) {
+        self.segmentId = segmentId
+        self.startWord = startWord
+        self.endWord = endWord
+    }
+}
+
+/// Una sottolineatura (§ 6): un'estensione di parole, eventualmente su più blocchi consecutivi. È
+/// rappresentata come lista di `UnderlineSpan` per-segmento (uno span per un solo blocco; più span,
+/// uno per blocco, per l'estensione multi-blocco). Questa forma rende la non-sovrapposizione (§ 6.3)
+/// e la resa grafica PURE e indipendenti dall'ordine di lettura: lo store confronta gli intervalli
+/// per-segmento senza dover conoscere la sequenza dei segmenti (che vive nella reading view).
+///
+/// Niente tag, niente lista/vista globale (§ 6.1): la sottolineatura si ritrova solo visivamente
+/// (resa grafica) o apponendovi un segnalibro. È persistente per documento (§ 2.5 / § 6.5).
+public struct Underline: Codable, Equatable, Sendable {
+    /// Identità stabile (UUID).
+    public var id: String
+    /// Gli intervalli di parole coperti, uno per blocco (§ 6.2, mono/multi-parola/multi-blocco).
+    public var spans: [UnderlineSpan]
+    /// Anteprima delle prime parole sottolineate, per la lista di scelta di modifica/eliminazione
+    /// quando un elemento ne contiene più d'una (§ 6.3 / § 6.4).
+    public var preview: String
+    /// Quando è stata creata.
+    public var createdAt: Date
+
+    public init(id: String, spans: [UnderlineSpan], preview: String, createdAt: Date) {
+        self.id = id
+        self.spans = spans
+        self.preview = preview
+        self.createdAt = createdAt
+    }
+
+    /// Gli id dei segmenti toccati da questa sottolineatura.
+    public var segmentIds: [String] { spans.map { $0.segmentId } }
 }
 
 // MARK: - Contenitori organizzativi (tre livelli, § 12.2)
@@ -817,6 +876,107 @@ extension LibraryStore {
         let known = Set(tags().map { $0.id })
         var seen = Set<String>()
         return ids.filter { known.contains($0) && seen.insert($0).inserted }
+    }
+}
+
+// MARK: - Sottolineature (§ 6.2 / § 6.3 / § 6.4)
+
+extension LibraryStore {
+
+    /// Tutte le sottolineature di un documento, in ordine di creazione. Vuoto se il documento non
+    /// esiste o non ne ha.
+    public func underlines(documentId: String) -> [Underline] {
+        document(id: documentId)?.underlines ?? []
+    }
+
+    /// Le sottolineature che toccano un dato segmento (per il menù di stato, le liste di scelta di
+    /// modifica/eliminazione, e il blocco delle parole già coperte nella finestra di selezione).
+    public func underlinesTouching(documentId: String, segmentId: String) -> [Underline] {
+        underlines(documentId: documentId).filter { $0.segmentIds.contains(segmentId) }
+    }
+
+    /// Aggiunge una sottolineatura (§ 6.2) e restituisce il record con id minted, oppure `nil` se il
+    /// documento non esiste, gli span sono vuoti/degeneri, o si **sovrappone** a una esistente
+    /// (§ 6.3, neanche parzialmente). La finestra di selezione previene già la sovrapposizione
+    /// bloccando le parole coperte; questa guardia è la rete di sicurezza del modello.
+    @discardableResult
+    public func addUnderline(documentId: String, spans: [UnderlineSpan], preview: String) -> Underline? {
+        guard let di = state.documents.firstIndex(where: { $0.id == documentId }) else { return nil }
+        let normalized = Self.normalizedSpans(spans)
+        guard !normalized.isEmpty else { return nil }
+        let existing = state.documents[di].underlines ?? []
+        guard !Self.spansOverlapAny(normalized, existing) else { return nil }
+        let underline = Underline(id: makeId(), spans: normalized, preview: preview, createdAt: now())
+        var all = existing
+        all.append(underline)
+        state.documents[di].underlines = all
+        persist()
+        return underline
+    }
+
+    /// Sostituisce gli span di una sottolineatura esistente (§ 6.3, "Modifica": la nuova rimpiazza
+    /// la precedente). La sovrapposizione è controllata ESCLUDENDO la sottolineatura stessa (che sta
+    /// per essere sostituita). Ritorna `false` se il documento/sottolineatura non esistono, gli span
+    /// sono degeneri, o si sovrappongono ad ALTRE.
+    @discardableResult
+    public func replaceUnderline(documentId: String, underlineId: String, spans: [UnderlineSpan]) -> Bool {
+        guard let di = state.documents.firstIndex(where: { $0.id == documentId }),
+              var all = state.documents[di].underlines,
+              let ui = all.firstIndex(where: { $0.id == underlineId }) else { return false }
+        let normalized = Self.normalizedSpans(spans)
+        guard !normalized.isEmpty else { return false }
+        let others = all.enumerated().filter { $0.offset != ui }.map { $0.element }
+        guard !Self.spansOverlapAny(normalized, others) else { return false }
+        all[ui].spans = normalized
+        state.documents[di].underlines = all
+        persist()
+        return true
+    }
+
+    /// Elimina una sottolineatura (§ 6.4).
+    public func deleteUnderline(documentId: String, underlineId: String) {
+        guard let di = state.documents.firstIndex(where: { $0.id == documentId }),
+              var all = state.documents[di].underlines else { return }
+        let before = all.count
+        all.removeAll { $0.id == underlineId }
+        guard all.count != before else { return }
+        state.documents[di].underlines = all
+        persist()
+    }
+
+    /// Vero se gli `spans` candidati si sovrappongono a una qualunque sottolineatura data (§ 6.3):
+    /// due span si sovrappongono se condividono un segmento e i loro intervalli di parole
+    /// (inclusivi) si intersecano.
+    public func underlinesOverlap(
+        _ spans: [UnderlineSpan], with underlines: [Underline]
+    ) -> Bool {
+        Self.spansOverlapAny(Self.normalizedSpans(spans), underlines)
+    }
+
+    // MARK: Helpers puri sull'overlap (testabili)
+
+    /// Normalizza gli span: scarta i degeneri (indici negativi o `end < start`), ordina start/end.
+    static func normalizedSpans(_ spans: [UnderlineSpan]) -> [UnderlineSpan] {
+        spans.compactMap { span in
+            let lo = min(span.startWord, span.endWord)
+            let hi = max(span.startWord, span.endWord)
+            guard lo >= 0 else { return nil }
+            return UnderlineSpan(segmentId: span.segmentId, startWord: lo, endWord: hi)
+        }
+    }
+
+    static func spansOverlapAny(_ spans: [UnderlineSpan], _ underlines: [Underline]) -> Bool {
+        for underline in underlines {
+            for candidate in spans {
+                for existing in underline.spans where existing.segmentId == candidate.segmentId {
+                    // Intervalli inclusivi che si intersecano.
+                    if candidate.startWord <= existing.endWord, existing.startWord <= candidate.endWord {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
     }
 }
 

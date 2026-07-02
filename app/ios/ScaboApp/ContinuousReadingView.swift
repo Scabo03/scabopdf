@@ -78,11 +78,16 @@
 import UIKit
 import ScaboCore
 
-/// Il coordinatore dei segnalibri per il container del testo (§ 5.1): la reading view gli chiede se
-/// un elemento è già marcato e gli instrada le azioni personalizzate (aggiungi/modifica/rimuovi). Lo
-/// implementa il view controller, che ha lo store e la finestra di creazione. `weak` per rompere il
-/// ciclo di retain col view controller.
-protocol ReadingBookmarkCoordinator: AnyObject {
+/// Il coordinatore degli strumenti sull'elemento di testo (§ 5 segnalibri, § 6 sottolineature): la
+/// reading view gli chiede lo stato (segnalibro esistente) e gli instrada le azioni. Lo implementa
+/// il view controller, che ha lo store e le finestre modali. `weak` per rompere il ciclo di retain.
+///
+/// Due vie d'accesso distinte convergono qui: le **azioni personalizzate VoiceOver** (solo per i
+/// segnalibri — § 5.1) usano `existingBookmark`/`addBookmark`/`editBookmark`/`removeBookmark`; il
+/// **long press** dei vedenti (§ 5 + § 6) apre `presentElementMenu`, il menù unico con le voci
+/// applicabili di segnalibro E sottolineatura. Le sottolineature NON hanno azioni VoiceOver
+/// (decisione di prodotto: strumento solo-visivo/solo-vedenti).
+protocol ReadingElementCoordinator: AnyObject {
     /// Il segnalibro che marca l'elemento con questo id-segmento, o `nil` se non ce n'è.
     func existingBookmark(forSegmentId id: String) -> Bookmark?
     /// Apre la finestra di creazione segnalibro (§ 5.7) per l'elemento indicato.
@@ -91,6 +96,10 @@ protocol ReadingBookmarkCoordinator: AnyObject {
     func editBookmark(_ bookmark: Bookmark)
     /// Rimuove il segnalibro (con l'annuncio VoiceOver).
     func removeBookmark(_ bookmark: Bookmark)
+    /// Presenta il menù d'azione dei vedenti sull'elemento (§ 5 + § 6): voci di segnalibro e di
+    /// sottolineatura secondo lo stato. `sourcePoint` è la posizione del dito nel sistema di
+    /// coordinate della reading view (per l'ancoraggio del popover su iPad).
+    func presentElementMenu(segmentId: String, orderIndex: Int, segmentText: String, sourcePoint: CGPoint)
 }
 
 /// `UILabel` che porta con sé il `ContentSegment` da cui è stato costruito, così i
@@ -252,17 +261,18 @@ final class ContinuousReadingView: UIView {
     /// player condiviso; i test iniettano una spia.
     var signalPlayer: SignalPlaying = SignalPlayer.shared
 
-    /// Il coordinatore dei segnalibri (§ 5.1), impostato dal view controller solo quando il
-    /// documento è reale (id non vuoto). `nil` → nessuna azione-segnalibro (test, comportamento
-    /// storico invariato). `weak`: il view controller possiede la view, non viceversa.
-    weak var bookmarkCoordinator: ReadingBookmarkCoordinator?
+    /// Il coordinatore degli strumenti sull'elemento (§ 5 / § 6), impostato dal view controller solo
+    /// quando il documento è reale (id non vuoto). `nil` → nessuna azione (test, comportamento storico
+    /// invariato). `weak`: il view controller possiede la view, non viceversa.
+    weak var elementCoordinator: ReadingElementCoordinator?
 
-    /// Costruisce le azioni-segnalibro per l'elemento a fuoco (§ 5.1). Chiamato PIGRAMENTE dal getter
-    /// di `SegmentLabel.accessibilityCustomActions`, quindi solo per l'elemento correntemente
-    /// interrogato da VoiceOver: nessun costo per-elemento sui volumi enormi. Elemento non marcato →
-    /// "aggiungi segnalibro"; elemento marcato → "modifica" + "rimuovi".
+    /// Costruisce le azioni-segnalibro VoiceOver per l'elemento a fuoco (§ 5.1). Chiamato PIGRAMENTE
+    /// dal getter di `SegmentLabel.accessibilityCustomActions`, quindi solo per l'elemento
+    /// correntemente interrogato da VoiceOver: nessun costo per-elemento sui volumi enormi. Elemento
+    /// non marcato → "aggiungi segnalibro"; elemento marcato → "modifica" + "rimuovi". Le
+    /// sottolineature NON compaiono qui: sono solo-vedenti (via long press), non hanno azioni VoiceOver.
     func bookmarkActions(for label: SegmentLabel) -> [UIAccessibilityCustomAction]? {
-        guard let coordinator = bookmarkCoordinator else { return nil }
+        guard let coordinator = elementCoordinator else { return nil }
         let segment = label.segment
         if let bookmark = coordinator.existingBookmark(forSegmentId: segment.id) {
             return [
@@ -283,25 +293,17 @@ final class ContinuousReadingView: UIView {
         ]
     }
 
-    /// Apre l'editor di creazione/modifica per un elemento (§ 5.7), CONVERGENDO sullo stesso percorso
-    /// dell'azione personalizzata VoiceOver: se l'elemento è già marcato apre la MODIFICA, altrimenti
-    /// la CREAZIONE — sempre attraverso lo stesso coordinatore, quindi lo stesso
-    /// `BookmarkEditorViewController` e lo stesso `addBookmark`/`updateBookmark`, con lo stesso
-    /// ritorno di fuoco. È il punto d'ingresso condiviso: sia l'azione VoiceOver sia il long press
-    /// (accesso non-VoiceOver) finiscono qui, non su strade parallele.
-    func presentBookmarkEditor(for label: SegmentLabel) {
-        guard let coordinator = bookmarkCoordinator else { return }
-        let segment = label.segment
-        if let bookmark = coordinator.existingBookmark(forSegmentId: segment.id) {
-            coordinator.editBookmark(bookmark)
-        } else {
-            coordinator.addBookmark(
-                segmentId: segment.id, orderIndex: label.readingIndex, segmentText: segment.text)
-        }
+    /// Apre il menù d'azione dei vedenti sull'elemento (§ 5 + § 6): instrada al coordinatore, che
+    /// costruisce le voci di segnalibro e sottolineatura secondo lo stato. Punto d'ingresso unico del
+    /// long press. `sourcePoint` è nel sistema di coordinate della reading view (per il popover iPad).
+    func openElementMenu(for label: SegmentLabel, sourcePoint: CGPoint) {
+        elementCoordinator?.presentElementMenu(
+            segmentId: label.segment.id, orderIndex: label.readingIndex,
+            segmentText: label.segment.text, sourcePoint: sourcePoint)
     }
 
-    /// Long press (§ 5.7, accesso NON-VoiceOver): individua l'elemento sotto il dito e apre lo stesso
-    /// editor dell'azione personalizzata. Reagisce solo a `.began` (una volta per pressione).
+    /// Long press (§ 5 + § 6, accesso NON-VoiceOver): individua l'elemento sotto il dito e apre il
+    /// menù d'azione (segnalibro + sottolineatura). Reagisce solo a `.began` (una volta per pressione).
     ///
     /// Convivenza col vincolo sovrano dello swipe orizzontale (§ 2.2): il recognizer è UNO solo,
     /// condiviso; richiede il dito fermo (entro `allowableMovement`, ~10pt) per `minimumPressDuration`
@@ -309,15 +311,15 @@ final class ContinuousReadingView: UIView {
     /// il paging dello scroll. Nessun `require(toFail:)` (bloccherebbe una pressione ferma) e nessuna
     /// simultaneità: i due gesti sono mutuamente esclusivi per natura (movimento vs immobilità), e
     /// `delaysTouches*` = false garantisce zero latenza su tap e swipe. Con VoiceOver attivo il gesto
-    /// è intercettato da VoiceOver; qui usciamo comunque subito, così resta l'azione personalizzata.
+    /// è intercettato da VoiceOver; qui usciamo comunque subito, così restano le azioni personalizzate.
     @objc private func handleLongPress(_ gesture: UILongPressGestureRecognizer) {
         guard gesture.state == .began else { return }
         guard !UIAccessibility.isVoiceOverRunning else { return }
-        guard bookmarkCoordinator != nil else { return }
+        guard elementCoordinator != nil else { return }
         let point = gesture.location(in: documentContainer)
         guard let label = segmentLabels.first(where: { $0.frame.contains(point) }) else { return }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        presentBookmarkEditor(for: label)
+        openElementMenu(for: label, sourcePoint: gesture.location(in: self))
     }
 
     /// Risolve l'ancora di un segnalibro (§ 5.6) in una posizione nello stream corrente: per id
@@ -335,6 +337,79 @@ final class ContinuousReadingView: UIView {
     static func baseNodeId(_ segmentId: String) -> String {
         segmentId.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)
             .first.map(String.init) ?? segmentId
+    }
+
+    // MARK: - Sottolineature (§ 6) — resa grafica additiva, solo-visiva
+
+    /// I segmenti CORRENTEMENTE resi, in ordine (per la finestra di selezione a due fasi § 6.2, che
+    /// ha bisogno dei blocchi consecutivi per le frecce `<`/`>`).
+    var currentSegments: [ContentSegment] { segmentLabels.map { $0.segment } }
+
+    /// Mappa id-segmento → intervalli di parole (inclusivi) da sottolineare. La costruisce il view
+    /// controller una volta per render/mutazione dalle `Underline` dello store; qui è solo consumata.
+    private var underlineRangesBySegmentId: [String: [ClosedRange<Int>]] = [:]
+
+    /// Gli id dei segmenti a cui è attualmente applicato l'`attributedText` sottolineato: serve a
+    /// ripristinare a testo puro quelli che non lo sono più (sottolineatura eliminata/modificata).
+    private var styledSegmentIds: Set<String> = []
+
+    /// Colore/spessore della sottolineatura (dettaglio grafico, regime UI): riga spessa color testo,
+    /// ben visibile come strumento di marcatura per chi vede.
+    private static let underlineStyle = NSUnderlineStyle.thick
+
+    /// Imposta gli intervalli da sottolineare e (ri)applica la resa grafica. Chiamata dal view
+    /// controller all'avvio e dopo ogni mutazione delle sottolineature.
+    func setUnderlineRanges(_ map: [String: [ClosedRange<Int>]]) {
+        underlineRangesBySegmentId = map
+        applyUnderlineStyling()
+    }
+
+    /// (Ri)applica l'`attributedText` sottolineato ai soli segmenti interessati, e ripristina a testo
+    /// puro quelli non più sottolineati. Additiva: **`accessibilityLabel` è ri-asserito identico**
+    /// (rete A, il parlato non cambia). Tocca solo le etichette in mappa o già stilizzate → nessun
+    /// costo per-elemento sul resto (i segmenti sottolineati sono pochissimi).
+    private func applyUnderlineStyling() {
+        let shouldStyle = Set(underlineRangesBySegmentId.filter { !$0.value.isEmpty }.keys)
+        for label in segmentLabels {
+            let id = label.segment.id
+            if let intervals = underlineRangesBySegmentId[id], !intervals.isEmpty {
+                label.attributedText = Self.underlinedAttributedString(
+                    for: label.segment, intervals: intervals)
+                // Rete A: il parlato resta esattamente quello (l'attributedText NON lo ridefinisce).
+                label.accessibilityLabel = Self.intendedAccessibilityLabel(for: label.segment)
+            } else if styledSegmentIds.contains(id) {
+                // Non più sottolineato: torna al testo puro (path storico).
+                label.attributedText = nil
+                label.text = label.segment.text
+                label.accessibilityLabel = Self.intendedAccessibilityLabel(for: label.segment)
+            }
+        }
+        styledSegmentIds = shouldStyle
+    }
+
+    /// Costruisce l'`attributedText` di un segmento con l'attributo `.underlineStyle` sugli intervalli
+    /// di parole indicati. L'underline è un ATTRIBUTO del testo (non una riga disegnata a parte):
+    /// così resta sotto i glifi esatti a qualunque corpo carattere e con qualunque a-capo, senza
+    /// calcoli geometrici (§ 6.5, requisito Dynamic Type). Il font è quello scalato corrente del ruolo.
+    static func underlinedAttributedString(
+        for segment: ContentSegment, intervals: [ClosedRange<Int>]
+    ) -> NSAttributedString {
+        let text = segment.text
+        let font = UIFont.preferredFont(forTextStyle: textStyle(for: segment.role))
+        let attributed = NSMutableAttributedString(
+            string: text, attributes: [.font: font, .foregroundColor: UIColor.label])
+        let words = WordTokenizer.wordRanges(text)
+        guard !words.isEmpty else { return attributed }
+        for interval in intervals {
+            let lo = max(0, interval.lowerBound)
+            let hi = min(words.count - 1, interval.upperBound)
+            guard lo <= hi else { continue }
+            let charRange = words[lo].lowerBound..<words[hi].upperBound
+            let nsRange = NSRange(charRange, in: text)
+            attributed.addAttribute(.underlineStyle, value: underlineStyle.rawValue, range: nsRange)
+            attributed.addAttribute(.underlineColor, value: UIColor.label, range: nsRange)
+        }
+        return attributed
     }
 
     // MARK: - Metrica di lettura
@@ -407,8 +482,14 @@ final class ContinuousReadingView: UIView {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.lastViewport = .zero
-            self?.setNeedsLayout()
+            guard let self else { return }
+            // Il corpo carattere è cambiato: ricostruisci la resa dell'underline col font SCALATO
+            // corrente, così la riga resta sotto i glifi giusti a qualunque dimensione (§ 6.5, nota
+            // dello sviluppatore su Dynamic Type). L'underline è un ATTRIBUTO del testo, posato dal
+            // renderer sotto i glifi esatti: ri-derivandolo col nuovo font l'allineamento è garantito.
+            self.applyUnderlineStyling()
+            self.lastViewport = .zero
+            self.setNeedsLayout()
         }
     }
 
@@ -455,6 +536,11 @@ final class ContinuousReadingView: UIView {
         // deterministico e il container resta unico per costruzione, attraverso ogni
         // pagina visiva.
         documentContainer.accessibilityElements = segmentLabels
+
+        // Riapplica la resa grafica delle sottolineature (§ 6) alle nuove etichette (il re-render le
+        // ha ricostruite). Additiva e solo-visiva: non tocca `accessibilityLabel`.
+        styledSegmentIds = []
+        applyUnderlineStyling()
     }
 
     private func makeLabel(for segment: ContentSegment) -> SegmentLabel {
@@ -487,10 +573,10 @@ final class ContinuousReadingView: UIView {
         // Composizione del parlato: [intro verbale] + [rinfresco di contesto] + [testo].
         // Quando un segnale-nota è presente, SOSTITUISCE l'intro verbale ("Nota lunga.")
         // ma il rinfresco di contesto (§ 7.4/§ 7.5) RESTA: è il recap della frase del
-        // richiamo, additivo, mai sostitutivo del contenuto (rete A).
-        label.accessibilityLabel = noteSignal == nil
-            ? Self.spokenText(for: segment)
-            : Self.spoken(intro: "", segment: segment)
+        // richiamo, additivo, mai sostitutivo del contenuto (rete A). L'etichetta parlata è
+        // calcolata da `intendedAccessibilityLabel` e ri-asserita identica quando un segmento
+        // riceve la resa visiva della sottolineatura (§ 6): il parlato NON cambia di un byte.
+        label.accessibilityLabel = Self.intendedAccessibilityLabel(for: segment)
 
         // Tratto header per heading/divisori: navigazione per intestazioni nel
         // rotore, SENZA introdurre confini allo swipe.
@@ -658,6 +744,16 @@ final class ContinuousReadingView: UIView {
     /// contesto (se nota differita) + testo. Le parti vuote sono omesse.
     static func spokenText(for segment: ContentSegment) -> String {
         spoken(intro: segment.acousticIntro, segment: segment)
+    }
+
+    /// L'etichetta accessibile INTESA per un segmento — l'unica fonte del parlato, usata sia da
+    /// `makeLabel` sia dalla riapplicazione della resa visiva delle sottolineature (§ 6), così il
+    /// parlato è byte-identico con o senza underline (rete A). Una nota vera col segnale acustico
+    /// perde solo l'intro verbale (§ 10.4), il contenuto resta.
+    static func intendedAccessibilityLabel(for segment: ContentSegment) -> String {
+        noteSignal(for: segment) == nil
+            ? spokenText(for: segment)
+            : spoken(intro: "", segment: segment)
     }
 
     /// Compone il parlato con un `intro` esplicito (vuoto quando il segnale-nota lo
