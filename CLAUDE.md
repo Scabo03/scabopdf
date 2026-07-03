@@ -41,6 +41,8 @@ These rules are absolute. They override any other behavior, default, or conventi
 
 **Commit hygiene.** Formatting fixes, cleanups, or any incidental changes not strictly part of the task you're working on go into a **dedicated housekeeping commit**, never bundled with the task commit. If you notice preexisting drift along the way, commit it separately first with a clear message (e.g. "Apply ruff format to file.py (preexisting drift)") so the task commit stays focused and the git log stays readable.
 
+**Commit & push workflow.** Completing a task means committing and pushing it yourself: once the work is done, `git commit` and then `git push origin <branch>` are normal parts of wrapping up, **not** actions to get separately authorized. Do not wait for a separate go-ahead to commit or to push. The one decision that always stays explicitly with the user is the **TestFlight upload** (build + upload): that is never automatic and must be requested/confirmed every time. This supersedes the old "push manuale a discrezione utente, non automatico" rule (recorded in older `docs/CARRYOVER.md` entries), which came from the abandoned Ubuntu/multi-PC setup where pushing was unreliable; on the stable local Mac it is obsolete.
+
 **Pre-commit hook is active.** A local `.pre-commit-config.yaml` runs `ruff check`, `ruff format --check`, `mypy --strict` and `pytest tests/unit` on every `git commit`. Activate it once after cloning with `pipeline/.venv/bin/pre-commit install`; see `docs/DEVELOPMENT.md` for the full bootstrap. Bypassing it with `--no-verify` is reserved for emergencies and must be paired with a follow-up commit that restores the gate.
 
 ## Decisioni di design rinviate
