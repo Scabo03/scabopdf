@@ -352,3 +352,37 @@ sul 2-2018, 830→**871** sul 4-2020 — +146 piazzate al richiamo). Rete B: ogn
 `isRivistaDpc==false` → `pageItems` byte-identico (Estratto, Marotta, Mandrioli, Torrente, Mosconi,
 Patriarca, Appunti, DeJure verificati byte-identici pre/post). Unit: `RivistaDpcRecoveryTests`
 (porta, recupero sotto-corpo, glossa-in-alto conservata, nota-in-colonna invariata, gating).
+
+## 12. Persistenza della posizione e reset del fuoco VoiceOver — build 27-29 (+ bug accantonato)
+
+Meccanismo della reading view, non delle note; qui perché è la stessa `ContinuousReadingView` del
+piazzamento. Il flusso raggiunge una posizione **non-iniziale** (riapertura § 2.5, salto al
+segnalibro § 5.4, ripristino dopo interruzione) con un solo meccanismo SANO — lo stesso dello scrub
+toolbar→testo: **scroll VoiceOver-indipendente** (`goToElement(atIndex:focus:)` = `setContentOffset`
+sulla pagina dell'elemento + preset posizione) **+** fuoco `screenChanged`. Prima si usava il SOLO
+`screenChanged`, che a VoiceOver **spento** non fa nulla (niente scroll → inizio file: era il bug del
+**salto-segnalibro**, chiuso in **build 27** — confermato dall'utente che ora atterra) ed è scavalcato
+dal reset automatico di VoiceOver dopo la chiusura di un modale o di un'interruzione.
+
+**Ancora immune al reset (build 29).** La posizione reale è mantenuta di **continuo** in
+`stickyReadingPosition` (view controller), aggiornata dal **paging dell'utente**
+(`ContinuousReadingView.onUserScroll`, gated `isDragging || isDecelerating` → i reset **programmatici**
+non la falsano) e dalla **navigazione VoiceOver** (`onReadingPositionChanged`, solo indici **> 0** → il
+fuoco-0 del reset non la falsa). Alla riaccensione di VoiceOver / al ritorno da interruzione si
+ripristina QUESTA ancora, **non** la pagina letta in quell'istante (che sul device è già stata azzerata
+dal reset → 0; era la causa del fallimento delle build 27/28 in-place, il cui target veniva letto a 0).
+Regressione: `FocusRestoreTests` modella l'**ordine del device** (reset PRIMA della notifica) e verifica
+che l'ancora regga a N mentre una lettura live darebbe 0. Interruzione di sistema (build 27): snapshot
+su `willResignActive` → restore su `didBecomeActive`.
+
+**Bug ACCANTONATO — riattivazione VoiceOver IN-PLACE.** Spegnere/riaccendere VoiceOver in **foreground**
+riporta scroll e fuoco a inizio file. Diagnosi definitiva: VoiceOver mette a fuoco l'elemento 0 e azzera
+lo scroll **prima/insieme** alla notifica; il *target-letto-a-0* è corretto (build 29), ma resta la
+**"guerra sul fuoco"** — VoiceOver ri-impone l'elemento 0 dopo il ripristino — **non risolvibile con API
+pubbliche in-place**. **Nessuna perdita di contenuto.** Via d'uso che preserva: passare per l'**App
+Switcher** (background) e rientrare da lì cattura la posizione pre-reset (`willResignActive`) → funziona
+per costruzione. Vie **già fallite, da non ritentare**: ritorno diretto al segmento, àncora al tasto
+Indietro, re-post a tempo fisso, protezione con target da lettura live post-reset. Logging `os_log`
+disattivabile (`focusDebugLogging`) lasciato per tracciare la sequenza reale sul device. Gli strumenti di
+studio (segnalibri/tag § 5, sottolineature § 6) e lo split screen § 11 (parcheggiato per il tetto di
+memoria) sono documentati in `docs/CARRYOVER.md` § STATO build 24-29.

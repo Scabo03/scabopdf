@@ -96,7 +96,45 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
 - **Build 19 il 2026-06-29** (recupero delle note della dottrina DeJure: separazione della
   zona-note via etichetta "Note:" + aggancio per-articolo delle endnote; Concause 96/98 note
   piazzate al richiamo, Cartabia ~455/468; Dottrina Inline si abilita su quei volumi; commit
-  `d32bccf`, Delivery UUID `ff07b1be-034b-4e5c-be2c-f8f50934de2b`). Il prossimo run produrrà 20.
+  `d32bccf`, Delivery UUID `ff07b1be-034b-4e5c-be2c-f8f50934de2b`).
+- **Build 20 il 2026-06-30** (Layout **Consultazione Rapida** §8: vista nativa ad albero collassabile
+  a 5 livelli + chiusura del modulo codici; commit `50c05b2`).
+- **Build 21-23 (saga crash apertura → memoria), 2026-06-30/07-01** (numeri↔commit ricostruiti dai
+  commit; build 20 confermata da `docs/CARRYOVER.md`): la build 20 crashava all'apertura → **21**
+  cache retrocompatibile, niente rielaborazione forzata (`b81b508`); crash secco + stato di
+  presentazione instabile → **22** avvio sempre su Home + apertura robusta (`e4069e3`); il **Codice
+  civile** (2697 pp → ~47k segmenti = ~47k UILabel vivi, picco ~865 MB) espelleva l'app → **23**
+  apertura alleggerita a **granularità grossa** gated >1500 pp (`9ee43de`, −~40% sul picco). Tampone,
+  non struttura: la radice memoria resta aperta.
+- **Build 24 il 2026-07-01** (**segnalibri + tag** §5 end-to-end: azioni VoiceOver, finestra di
+  creazione, finestra Segnalibri del documento con filtro-tag, schermata Tag globali dalla Home con
+  vista per-tag cross-libreria; modello dati in ScaboCore sullo store esistente, campi additivi
+  opzionali → nessun reset librerie; commit `5d122bb`, Delivery UUID
+  `e26cfa6b-234d-4bd0-b33a-b1d7217ac24e`).
+- **Build 25 il 2026-07-02** (**long press** per creare segnalibro — accesso non-VoiceOver, §5.7 — +
+  **sottolineature** §6 versione ridotta solo-visive/solo-vedenti: modello a intervalli di parole,
+  menù dal long press, finestra di selezione a due fasi tap-only, resa via `attributedText` con
+  `accessibilityLabel` invariato; due commit `8517ff1` + `1411c1a`, Delivery UUID
+  `2bc33f0a-4bfd-4729-ac18-ae15184b8959`. È 25 e non 24 per l'auto-incremento della lane: 24 era
+  già occupata).
+- **Build 26 il 2026-07-02** (**split screen** §11 iPad: due reading view affiancate, tre regimi di
+  parallelizzazione, linea di divisione, 6 container di accessibilità; **branch `feature/split-screen`**
+  commit `3f436fc`, Delivery UUID `bb258d39-fca1-46ef-abda-b2414abdeadb`). **PARCHEGGIATO** — fragile
+  sul tetto di memoria (due reading view vive); da riprendere nel lavoro su peso/rendering.
+- **Build 27 il 2026-07-02** (fix persistenza/focus: il **salto al segnalibro ora ATTERRA** — scroll
+  VoiceOver-indipendente — + ripristino della posizione dopo interruzione di sistema, snapshot su
+  `willResignActive`; **branch `fix/reading-focus-restore`** commit `7d2583f`, Delivery UUID
+  `25956743-ea7e-472b-9f03-a46ac0168372`).
+- **Build 28 il 2026-07-02** (finestra di protezione event-hooked contro il salvataggio di posizione
+  **0 spurio** del reset VoiceOver; commit `de3c172`, Delivery UUID
+  `3f0c216f-22d8-4e85-ac27-5e295186dce9`).
+- **Build 29 il 2026-07-02** (**ancora di posizione immune al reset** — `stickyReadingPosition`, non
+  più lettura live post-reset — alla riaccensione di VoiceOver; commit `5ee3d2b`, Delivery UUID
+  `f1c00236-f8de-4a3b-aeba-230eaeacb8cb`). Il bug **toggle VoiceOver in-place** resta **accantonato**
+  (diagnosi definitiva in `docs/CARRYOVER.md` e `docs/NOTES_BINDING.md` §12).
+- **Nota branch**: `main` è fermo a `1411c1a` = **build 25**. Le build 26-29 vivono sui branch
+  `feature/split-screen` (26) e `fix/reading-focus-restore` (27-29, che parte dallo split). Nessun
+  merge in `main` eseguito. **Il prossimo run produrrà 30.**
 
 ## Unico punto eventualmente manuale
 
