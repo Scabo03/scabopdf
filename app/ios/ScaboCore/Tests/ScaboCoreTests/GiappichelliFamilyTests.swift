@@ -123,6 +123,56 @@ final class GiappichelliFamilyTests: XCTestCase {
         XCTAssertEqual(n[0].type, .NOTE, "gate off: invariato")
     }
 
+    // MARK: - furniture: testatina VERSO "<folio> <romano>. <titolo>"
+
+    func test_versoHeader_norm_stripsFolio() {
+        XCTAssertEqual(
+            giappichelliVersoHeaderNorm("14 II. Le origini del nostro sistema di giustizia amministrativa"),
+            "II. Le origini del nostro sistema di giustizia amministrativa")
+        // non-verso: nessuna norma
+        XCTAssertNil(giappichelliVersoHeaderNorm("§ 4. Le origini 7"))     // recto, non verso
+        XCTAssertNil(giappichelliVersoHeaderNorm("14. Autore, opera cit."))  // nota numerata (niente romano)
+        XCTAssertNil(giappichelliVersoHeaderNorm("14 comma 2 dell’articolo"))  // niente romano+punto
+    }
+
+    func test_versoHeader_recurring_reclassified() {
+        // la stessa testatina verso su più pagine verso (folio diverso, norma identica) → furniture
+        let title = "Le origini del nostro sistema di giustizia amministrativa"
+        var n = (0..<7).map { note("\(14 + $0 * 2) II. \(title)", "v\($0)", page: 14 + $0 * 2) }
+        let c = reclassifyGiappichelliRunningHeaders(&n, prof(true))
+        XCTAssertEqual(c, 7)
+        XCTAssertTrue(n.allSatisfy { $0.type == .ARTIFACT_RUNNING_HEADER })
+        XCTAssertTrue(n.allSatisfy { $0.length_category == nil })
+    }
+
+    func test_versoHeader_singleOccurrence_notTouched() {
+        // una sola occorrenza (norma NON ricorrente): prudenza, resta NOTE — potrebbe essere
+        // una rara riga di contenuto "N romano." e non una testatina di capitolo.
+        var n = [note("14 II. Le origini del nostro sistema", "v", page: 14)]
+        let c = reclassifyGiappichelliRunningHeaders(&n, prof(true))
+        XCTAssertEqual(c, 0)
+        XCTAssertEqual(n[0].type, .NOTE)
+    }
+
+    func test_versoHeader_gatedOff_noOp() {
+        let title = "Le origini del nostro sistema"
+        var n = (0..<3).map { note("\(14 + $0 * 2) II. \(title)", "v\($0)") }
+        let c = reclassifyGiappichelliRunningHeaders(&n, prof(false))
+        XCTAssertEqual(c, 0)
+        XCTAssertTrue(n.allSatisfy { $0.type == .NOTE }, "gate off: invariato")
+    }
+
+    func test_realNote_openingWithNumber_notVersoFurniture() {
+        // una nota vera numerata "14. ..." (o "14 Autore") NON è testatina verso (niente romano)
+        var n = [
+            note("14. ANTOLISEI, Manuale di diritto penale, Milano 2003, p. 51", "a", page: 5),
+            note("14. ANTOLISEI, Manuale di diritto penale, Milano 2003, p. 51", "b", page: 7),
+        ]
+        let c = reclassifyGiappichelliRunningHeaders(&n, prof(true))
+        XCTAssertEqual(c, 0, "nota numerata: mai furniture verso")
+        XCTAssertTrue(n.allSatisfy { $0.type == .NOTE })
+    }
+
     // MARK: - heading: recognizeGiappichelliParaTitles
 
     func test_paragraphTitle_promoted_toHeading4() {

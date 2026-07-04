@@ -1691,17 +1691,49 @@ func splitGiappichelliBodyRun(_ lines: [LineSummary]) -> [GenItem] {
     return out
 }
 
-/// Reclassifica le testatine correnti "§ N. Titolo … <pagina>" (che il size-only colloca in
-/// NOTE → falso-"Nota.") a ARTIFACT_RUNNING_HEADER (non-letto, vedi NON_READ_ROLES). GATED
-/// famiglia: altrove no-op, nodi invariati. Solo NOTE (mai corpo). Conserva il nodo (cambia
-/// solo il TIPO → conteggio invariato → zip NoteBinding↔pageItems intatto). Il numero di pagina
-/// in coda è la firma-furniture: un titolo di sezione vero non lo porta, una nota vera non apre
-/// con "§ N.".
+/// Testatina corrente VERSO "<folio> <romano-capitolo>. <titolo di capitolo>" (es.
+/// "14 II. Le origini del nostro sistema di giustizia amministrativa"): il numero di pagina
+/// del libro in testa + il numero di capitolo in romano + il titolo del capitolo. È l'altra
+/// faccia della testatina §N (recto): il recto porta il § della sezione, il verso il capitolo.
+/// Anch'essa più piccola del corpo → il size-only la mette in NOTE → falso-"Nota.".
+private let GIAPPICHELLI_VERSO_HEADER_RE = try! NSRegularExpression(
+    pattern: "^\\d{1,4}\\s+[IVXLCDM]+\\.\\s+\\S")
+/// Folio in testa alla testatina verso, da togliere per la NORMA di ricorrenza (cambia
+/// pagina per pagina; il resto — "romano. titolo" — è identico su ogni pagina verso del capitolo).
+private let GIAPPICHELLI_VERSO_FOLIO_RE = try! NSRegularExpression(pattern: "^\\d{1,4}\\s+")
+
+/// Norma di una testatina verso (folio tolto), o nil se non è una testatina verso.
+func giappichelliVersoHeaderNorm(_ text: String) -> String? {
+    let t = jsTrim(text)
+    let r = NSRange(t.startIndex..<t.endIndex, in: t)
+    guard GIAPPICHELLI_VERSO_HEADER_RE.firstMatch(in: t, range: r) != nil else { return nil }
+    return GIAPPICHELLI_VERSO_FOLIO_RE.stringByReplacingMatches(in: t, range: r, withTemplate: "")
+}
+
+/// Reclassifica le testatine correnti a ARTIFACT_RUNNING_HEADER (non-letto, vedi NON_READ_ROLES).
+/// GATED famiglia: altrove no-op, nodi invariati. Solo NOTE (mai corpo). Conserva il nodo (cambia
+/// solo il TIPO → conteggio invariato → zip NoteBinding↔pageItems intatto). Due formati:
+///  • RECTO "§ N. Titolo … <pagina>": firma-furniture = il numero di pagina in coda (un titolo di
+///    sezione vero non lo porta, una nota vera non apre con "§ N."). Riconoscimento per pattern.
+///  • VERSO "<folio> <romano-capitolo>. <titolo>": firma-furniture = la NORMA (folio tolto)
+///    RICORRE su ≥2 pagine verso del capitolo (una nota vera non ricorre mai identica). La
+///    ricorrenza è la guardia che distingue la testatina di capitolo da una rara riga "N romano."
+///    di contenuto.
 func reclassifyGiappichelliRunningHeaders(_ nodes: inout [NodeDict], _ profile: Profile) -> Int {
     guard profile.isGiappichelliPhotoshop else { return 0 }
+    // Passo 1: conta la ricorrenza delle norme verso fra i nodi NOTE.
+    var versoNormCounts: [String: Int] = [:]
+    for n in nodes where n.type == .NOTE {
+        if let norm = giappichelliVersoHeaderNorm(n.text ?? "") { versoNormCounts[norm, default: 0] += 1 }
+    }
+    let versoHeaders = Set(versoNormCounts.filter { $0.value >= 2 }.map { $0.key })
+    // Passo 2: reclassifica recto (pattern) + verso (norma ricorrente).
     var reclassified = 0
     for i in nodes.indices where nodes[i].type == .NOTE {
-        if giappichelliIsSectionHeader(nodes[i].text ?? "") {
+        let text = nodes[i].text ?? ""
+        let isRecto = giappichelliIsSectionHeader(text)
+        let isVerso = giappichelliVersoHeaderNorm(text).map { versoHeaders.contains($0) } ?? false
+        if isRecto || isVerso {
             nodes[i].type = .ARTIFACT_RUNNING_HEADER
             nodes[i].length_category = nil
             reclassified += 1
