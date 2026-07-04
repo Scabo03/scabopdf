@@ -66,6 +66,20 @@ let RIVISTA_DPC_TRIM_HEIGHT = 814.0
 /// abbastanza da non collidere con nessun'altra geometria del corpus.
 let RIVISTA_DPC_TRIM_TOLERANCE = 12.0
 
+/// Firma della famiglia Giappichelli/Photoshop (foglia-pacchetto gated
+/// `isGiappichelliPhotoshop`). Il producer è la chiave portante: "Adobe Photoshop …
+/// Image Conversion" è unico nel corpus a questa filiera e separa la famiglia dai
+/// volumi che condividono la sola geometria 482×680 (Torrente/Elementi UE = PDFsharp,
+/// Patriarca = producer vuoto, 1720-951X = itext) e dall'Estratto (Acrobat). Il
+/// frammento "Adobe Photoshop" copre sia la variante "for Windows" sia "for Macintosh".
+let GIAPPICHELLI_PS_PRODUCER_FRAGMENT = "Adobe Photoshop"
+/// Geometria della famiglia (pt): corroborazione della firma producer.
+let GIAPPICHELLI_PS_TRIM_WIDTH = 482.0
+let GIAPPICHELLI_PS_TRIM_HEIGHT = 680.0
+/// Tolleranza sul formato (pt): assorbe la deriva dell'estrattore restando lontana da
+/// ogni altra geometria del corpus.
+let GIAPPICHELLI_PS_TRIM_TOLERANCE = 8.0
+
 /// RGB distance beyond which a colour counts as "distinct from body".
 let COLOR_DISTANCE_MIN = 100.0
 /// Min RGB saturation (max−min channel) for a colour to read as structural.
@@ -193,6 +207,18 @@ struct Profile {
     /// due codici. Quando vero, `pageItems` riconosce i trigger d'articolo allo span e
     /// li promuove a HEADING_4 navigabili. Dove è falso → no-op, byte-identico ovunque.
     var isCodici: Bool = false
+    /// Gate della foglia-pacchetto famiglia Giappichelli/Photoshop: vero SOLO sui volumi
+    /// prodotti dalla filiera "Adobe Photoshop -- Image Conversion" a geometria ~482×680
+    /// (Lezioni di giustizia amministrativa, Mandrioli 1-4, Mercato finanziario/unico,
+    /// Diritto penale Appunti/Lineamenti, Costituzionale, Nomofanie). La firma producer
+    /// esclude per costruzione l'Estratto (Acrobat) e i volumi PDFsharp/itext/empty che
+    /// condividono la sola geometria 482×680 (Torrente, Elementi UE, Patriarca, 1720-951X).
+    /// Quando vero, `pageItems` promuove i titoli di paragrafo "§ N. Titolo" a HEADING_4 e
+    /// `assembleDocument` toglie dal parlato le testatine correnti "§ N. Titolo <pagina>".
+    /// Le regole sono keyed sul marcatore § (presente solo su Lezioni nella famiglia) →
+    /// gli altri volumi della filiera restano byte-identici per assenza di occorrenze.
+    /// Dove è falso → no-op, byte-identico ovunque.
+    var isGiappichelliPhotoshop: Bool = false
 }
 
 // MARK: - The plugin
@@ -288,6 +314,11 @@ public final class GenericPlugin: ExtractionPlugin {
         // cap-caratteri della furniture e finita come NOTE → ARTIFACT_RUNNING_HEADER (non-letta).
         // GATED Estratto: no-op (e nodi invariati) sugli altri volumi.
         let runningHeaders = reclassifyEstrattoRunningHeaders(&nodes, profile)
+        // Testatina corrente "§ N. Titolo <pagina>" della famiglia Giappichelli/Photoshop
+        // (ripetuta in cima a ogni pagina, size-only la colloca in NOTE → falso-"Nota.").
+        // → ARTIFACT_RUNNING_HEADER (non-letta). GATED famiglia: no-op altrove; keyed sul
+        // numero di pagina in coda (le intestazioni di sezione VERE non lo portano).
+        let giappichelliHeaders = reclassifyGiappichelliRunningHeaders(&nodes, profile)
         var warnings = [
             "plugin:generic:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
         ]
@@ -297,6 +328,10 @@ public final class GenericPlugin: ExtractionPlugin {
         }
         if runningHeaders > 0 {
             warnings.append("plugin:generic:estratto_running_headers_reclassified_\(runningHeaders)")
+        }
+        if giappichelliHeaders > 0 {
+            warnings.append(
+                "plugin:generic:giappichelli_running_headers_reclassified_\(giappichelliHeaders)")
         }
         if profile.bodySize == 0 {
             warnings.append("plugin:generic:no_font_information_all_body")
@@ -434,9 +469,23 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
             && (extraction.producer ?? "").contains(CODICI_PRODUCER_FRAGMENT)
             && bodySize >= 6.5 && bodySize <= 8.5
 
+    // Gate della foglia-pacchetto famiglia Giappichelli/Photoshop: producer
+    // "Adobe Photoshop … Image Conversion" (unico nel corpus a questa filiera) +
+    // geometria ~482×680. Il producer è portante: da solo separa la famiglia dai
+    // volumi che condividono la sola geometria (Torrente/Elementi UE = PDFsharp,
+    // Patriarca = empty, 1720-951X = itext) e dall'Estratto (Acrobat). La geometria è
+    // corroborazione. Il font (SimonciniGaramondStd) NON è usabile: on-device PDFKit
+    // ripiega su "Helvetica" per ogni span (vedi debt-lowlevel-font-extraction).
+    let isGiappichelliPhotoshop =
+        (extraction.producer ?? "").contains(GIAPPICHELLI_PS_PRODUCER_FRAGMENT)
+            && abs(pageW - GIAPPICHELLI_PS_TRIM_WIDTH) <= GIAPPICHELLI_PS_TRIM_TOLERANCE
+            && abs(pageH - GIAPPICHELLI_PS_TRIM_HEIGHT) <= GIAPPICHELLI_PS_TRIM_TOLERANCE
+            && bodySize > 0
+
     return Profile(
         bodySize: bodySize, bodyColor: bodyColor,
-        isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc, isCodici: isCodici)
+        isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc, isCodici: isCodici,
+        isGiappichelliPhotoshop: isGiappichelliPhotoshop)
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
@@ -1368,9 +1417,13 @@ func pageItems(
     // Foglia titoli-Estratto (gated): converte i titoli capitolo/paragrafo nascosti nei run
     // di corpo in heading. No-op (byte-identico) sui volumi non-Estratto.
     let withEstratto = recognizeEstrattoTitles(items, profile)
+    // Foglia paragrafi-Giappichelli (gated famiglia Photoshop): promuove i titoli di
+    // paragrafo "§ N. Titolo" nascosti nei run di corpo a HEADING_4 navigabili. No-op
+    // (byte-identico) dove il gate è falso e sui volumi della famiglia senza marcatore §.
+    let withGiappichelli = recognizeGiappichelliParaTitles(withEstratto, profile)
     // Foglia 1 dei Codici (gated): promuove i trigger d'articolo a HEADING_4 navigabili.
     // No-op (byte-identico) sui volumi non-codice.
-    return profile.isCodici ? recognizeCodiciArticles(withEstratto, profile) : withEstratto
+    return profile.isCodici ? recognizeCodiciArticles(withGiappichelli, profile) : withGiappichelli
 }
 
 /// Emits the nodes for one page from `pageItems`: headings as standalone nodes,
@@ -1546,6 +1599,109 @@ func reclassifyEstrattoRunningHeaders(_ nodes: inout [NodeDict], _ profile: Prof
     var reclassified = 0
     for i in nodes.indices where nodes[i].type == .NOTE {
         if headers.contains(estrattoHeaderNormalize(nodes[i].text ?? "")) {
+            nodes[i].type = .ARTIFACT_RUNNING_HEADER
+            nodes[i].length_category = nil
+            reclassified += 1
+        }
+    }
+    return reclassified
+}
+
+// MARK: - Foglia-pacchetto famiglia Giappichelli/Photoshop (GATED isGiappichelliPhotoshop)
+//
+// Filiera "Adobe Photoshop -- Image Conversion" a geometria ~482×680 (Lezioni di giustizia
+// amministrativa, Mandrioli 1-4, Mercato finanziario/unico, Diritto penale Appunti/Lineamenti,
+// Costituzionale, Nomofanie). Due foglie indipendenti, entrambe keyed sul marcatore § (che nel
+// corpus della famiglia compare SOLO su Lezioni → gli altri volumi restano byte-identici per
+// assenza di occorrenze, verificato al banco):
+//   • furniture: la testatina corrente "§ N. Titolo … <pagina>" (ripetuta in cima a ogni pagina,
+//     più piccola del corpo → il size-only la mette in NOTE → falso-"Nota.") → ARTIFACT_RUNNING_HEADER.
+//     Discriminatore vs intestazione VERA: il numero di pagina in coda (l'intestazione non lo porta).
+//     Opera SOLO su nodi NOTE (mai sul corpo). Conserva il conteggio nodi (solo il tipo cambia →
+//     zip pageItems↔NoteBinding intatto), come reclassifyEstrattoRunningHeaders.
+//   • heading: il titolo di paragrafo "§ N. Titolo" (a taglia-corpo → il size-only lo lascia in
+//     BODY, non navigabile) → HEADING_4. Opera sulle righe dei run di corpo in pageItems (stessa
+//     sorgente di NoteBinding), come recognizeEstrattoTitles.
+// GATED su isGiappichelliPhotoshop: dove è falso, entrambe sono no-op (byte-identico).
+
+/// Testatina corrente di sezione: "§ N. Titolo … <numero di pagina>". Il numero in coda
+/// (1-4 cifre, isolato) è il discriminatore vs il titolo di sezione VERO, che non lo porta.
+private let GIAPPICHELLI_SECTION_HEADER_RE = try! NSRegularExpression(
+    pattern: "^§\\s*\\d+\\.\\s+\\S.*\\s\\d{1,4}$")
+/// Titolo di paragrafo: "§ N." + una MAIUSCOLA/apice/parentesi d'apertura (l'incipit del titolo).
+private let GIAPPICHELLI_SECTION_TITLE_RE = try! NSRegularExpression(
+    pattern: "^§\\s*\\d+\\.\\s+[A-ZÀ-Ý«“\"'(]")
+
+/// Vero se la riga è una testatina corrente di sezione "§ N. Titolo … <pagina>".
+func giappichelliIsSectionHeader(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    return GIAPPICHELLI_SECTION_HEADER_RE.firstMatch(
+        in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) != nil
+}
+
+/// Vero se la riga è un titolo di paragrafo "§ N. Titolo" (da promuovere a heading).
+/// Guardie di precisione: NON una testatina (niente numero di pagina in coda), un SOLO
+/// marcatore § (esclude la testatina raddoppiata nel corpo "§ N. … § N. …"), NIENTE
+/// virgolette caporali «…» (una frase di corpo che CITA un "§ N" di legge apre una
+/// citazione tra caporali — es. Mandrioli "§ 8. In accoglimento…, «il giudice…» —; un
+/// titolo di sezione non cita mai), lunghezza da titolo (≤ HEADING_MAX_CHARS), incipit
+/// MAIUSCOLO/apice.
+func giappichelliIsSectionTitle(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    guard t.utf16.count <= HEADING_MAX_CHARS else { return false }
+    guard t.filter({ $0 == "§" }).count == 1 else { return false }
+    guard !t.contains("«"), !t.contains("»") else { return false }
+    let range = NSRange(t.startIndex..<t.endIndex, in: t)
+    guard GIAPPICHELLI_SECTION_HEADER_RE.firstMatch(in: t, range: range) == nil else { return false }
+    return GIAPPICHELLI_SECTION_TITLE_RE.firstMatch(in: t, range: range) != nil
+}
+
+/// Pre-passo GATED (foglia heading-Giappichelli): promuove i titoli di paragrafo "§ N. Titolo"
+/// nascosti nei run di corpo a HEADING_4. No-op se il gate è falso o non ci sono marcatori §.
+func recognizeGiappichelliParaTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+    guard profile.isGiappichelliPhotoshop else { return items }
+    var out: [GenItem] = []
+    for item in items {
+        if case let .run(.body, lines) = item {
+            out.append(contentsOf: splitGiappichelliBodyRun(lines))
+        } else {
+            out.append(item)
+        }
+    }
+    return out
+}
+
+/// Spezza un run di corpo nei titoli di paragrafo "§ N. Titolo" (→ HEADING_4) + corpo.
+/// Ogni riga-titolo è promossa singolarmente (precision-first: mai assorbire corpo in un
+/// titolo — il titolo di sezione è a taglia-corpo, quindi il confine non è deducibile
+/// dalla taglia; una rara continuazione su seconda riga resta corpo).
+func splitGiappichelliBodyRun(_ lines: [LineSummary]) -> [GenItem] {
+    var out: [GenItem] = []
+    var buf: [LineSummary] = []
+    func flush() { if !buf.isEmpty { out.append(.run(.body, buf)); buf = [] } }
+    for sm in lines {
+        if giappichelliIsSectionTitle(sm.text) {
+            flush()
+            out.append(.heading(sm, level: 4))
+        } else {
+            buf.append(sm)
+        }
+    }
+    flush()
+    return out
+}
+
+/// Reclassifica le testatine correnti "§ N. Titolo … <pagina>" (che il size-only colloca in
+/// NOTE → falso-"Nota.") a ARTIFACT_RUNNING_HEADER (non-letto, vedi NON_READ_ROLES). GATED
+/// famiglia: altrove no-op, nodi invariati. Solo NOTE (mai corpo). Conserva il nodo (cambia
+/// solo il TIPO → conteggio invariato → zip NoteBinding↔pageItems intatto). Il numero di pagina
+/// in coda è la firma-furniture: un titolo di sezione vero non lo porta, una nota vera non apre
+/// con "§ N.".
+func reclassifyGiappichelliRunningHeaders(_ nodes: inout [NodeDict], _ profile: Profile) -> Int {
+    guard profile.isGiappichelliPhotoshop else { return 0 }
+    var reclassified = 0
+    for i in nodes.indices where nodes[i].type == .NOTE {
+        if giappichelliIsSectionHeader(nodes[i].text ?? "") {
             nodes[i].type = .ARTIFACT_RUNNING_HEADER
             nodes[i].length_category = nil
             reclassified += 1
