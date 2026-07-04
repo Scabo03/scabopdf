@@ -444,7 +444,8 @@ func reclassifyBibliographyEntries(_ segments: [ContentSegment]) -> [ContentSegm
 /// pagina (`mergeNoteContinuations`, mattone 2/3 esteso al regime note).
 public func granularizeBody(
     _ rawSegments: [ContentSegment],
-    target: Int = DEFAULT_GRANULARITY_TARGET
+    target: Int = DEFAULT_GRANULARITY_TARGET,
+    holdSectionBibliography: Bool = false
 ) -> [ContentSegment] {
     let segments = mergeNoteContinuations(rawSegments)
     var out: [ContentSegment] = []
@@ -501,7 +502,60 @@ public func granularizeBody(
     // Post-passo: le voci di bibliografia in corpo-piccolo (NOTE senza richiamo + pattern
     // autore-maiuscoletto) sono riconosciute alla radice come LETTERATURA — dopo la ricucitura
     // delle note spezzate, così una bibliografia cross-pagina già unita è riconosciuta intera.
-    return reclassifyBibliographyEntries(out)
+    let withLetteratura = reclassifyBibliographyEntries(out)
+    // Trattenimento della bibliografia di sezione fino a fine sezione — abilitato solo per la
+    // famiglia Giappichelli/Photoshop (Lezioni), no-op altrove. Permutazione pura (rete A).
+    return holdSectionBibliography
+        ? holdGiappichelliSectionBibliography(withLetteratura)
+        : withLetteratura
+}
+
+/// Ruoli che aprono una sezione/capitolo (confine strutturale): i quattro livelli di heading
+/// e il sommario di capitolo. Al confine, la bibliografia trattenuta della sezione appena
+/// chiusa esce (prima del titolo che apre la sezione successiva).
+private let GIAPPICHELLI_SECTION_BOUNDARY_ROLES: Set<String> = [
+    SemanticCategory.HEADING_1.rawValue, SemanticCategory.HEADING_2.rawValue,
+    SemanticCategory.HEADING_3.rawValue, SemanticCategory.HEADING_4.rawValue,
+    SemanticCategory.CHAPTER_SUMMARY.rawValue,
+]
+
+/// Trattiene la bibliografia di sezione fino a FINE SEZIONE (Lezioni di giustizia amm.va).
+/// Sul libro ogni § si apre con la sua nota bibliografica (o la trova a metà del discorso):
+/// qui il blocco LETTERATURA viene TRATTENUTO e ri-emesso appena prima del titolo che apre la
+/// sezione successiva (o a fondo documento se è l'ultima), così il discorso della sezione scorre
+/// intero e la bibliografia arriva in coda con il suo earcon.
+///
+/// È una PERMUTAZIONE PURA dei segmenti — rete A per costruzione: ogni segmento compare
+/// esattamente una volta, nessun testo è toccato (né perso, né duplicato, né spezzato). Il corpo
+/// attorno al blocco spostato si ricuce da sé: i segmenti di corpo, già distinti a monte, restano
+/// invariati e diventano adiacenti dove prima c'era la bibliografia in mezzo.
+///
+/// GUARDIA d'isolamento: agisce solo se il documento ha titoli di paragrafo § (HEADING_4 a firma
+/// §, prodotti solo dalla foglia gated di build 30 → nella famiglia solo Lezioni li ha). Sui
+/// volumi della famiglia a note numerate (niente §) è un no-op → byte-identici.
+func holdGiappichelliSectionBibliography(_ segments: [ContentSegment]) -> [ContentSegment] {
+    let letteratura = SemanticCategory.LETTERATURA.rawValue
+    let heading4 = SemanticCategory.HEADING_4.rawValue
+    let hasSectionMarkers = segments.contains {
+        $0.role == heading4 && giappichelliIsSectionTitle($0.text)
+    }
+    guard hasSectionMarkers else { return segments }
+    var out: [ContentSegment] = []
+    out.reserveCapacity(segments.count)
+    var pending: [ContentSegment] = []   // bibliografia trattenuta della sezione corrente
+    for seg in segments {
+        if GIAPPICHELLI_SECTION_BOUNDARY_ROLES.contains(seg.role) {
+            out.append(contentsOf: pending)   // fine sezione: la bibliografia esce prima del titolo
+            pending.removeAll(keepingCapacity: true)
+            out.append(seg)
+        } else if seg.role == letteratura {
+            pending.append(seg)               // trattieni fino a fine sezione
+        } else {
+            out.append(seg)
+        }
+    }
+    out.append(contentsOf: pending)           // ultima sezione: bibliografia a fondo documento
+    return out
 }
 
 /// Granularizza un singolo run di corpo (testi di `BODY` consecutivi della stessa

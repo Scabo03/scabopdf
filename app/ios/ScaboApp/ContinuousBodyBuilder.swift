@@ -56,7 +56,13 @@ enum ContinuousBodyBuilder {
         from document: ScabopdfDocument,
         target: Int = DEFAULT_GRANULARITY_TARGET
     ) -> [ContentSegment] {
-        granularizeBody(buildLayout(document, .continuous), target: target)
+        // Trattenimento della bibliografia di sezione fino a fine sezione: abilitato solo per la
+        // famiglia Giappichelli/Photoshop (via `editorial_family`), e internamente ristretto a
+        // Lezioni dalla presenza dei titoli § (no-op sui volumi-famiglia a note numerate).
+        granularizeBody(
+            buildLayout(document, .continuous),
+            target: target,
+            holdSectionBibliography: document.profile.editorial_family == GIAPPICHELLI_PHOTOSHOP_FAMILY)
     }
 
     /// Corpo paginato pronto per `ContinuousReadingView.render(_:)`. La

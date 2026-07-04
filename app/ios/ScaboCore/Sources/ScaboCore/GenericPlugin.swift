@@ -79,6 +79,12 @@ let GIAPPICHELLI_PS_TRIM_HEIGHT = 680.0
 /// Tolleranza sul formato (pt): assorbe la deriva dell'estrattore restando lontana da
 /// ogni altra geometria del corpus.
 let GIAPPICHELLI_PS_TRIM_TOLERANCE = 8.0
+/// `editorial_family` propagato sul documento quando `isGiappichelliPhotoshop` è vero.
+/// È il canale con cui il flag di famiglia (interno al `Profile`) raggiunge lo strato
+/// dei segmenti di lettura, dove `bodySegments` lo consuma per abilitare — solo sulla
+/// famiglia — il trattenimento della bibliografia di sezione. Additivo: nessun consumatore
+/// esistente lo legge (il cerotto è su `profile_id`), quindi cambiarlo è inerte sul parlato.
+public let GIAPPICHELLI_PHOTOSHOP_FAMILY = "giappichelli_photoshop"
 
 /// RGB distance beyond which a colour counts as "distinct from body".
 let COLOR_DISTANCE_MIN = 100.0
@@ -365,7 +371,9 @@ public final class GenericPlugin: ExtractionPlugin {
             ),
             profile: DocumentProfileDict(
                 profile_id: "generic",
-                editorial_family: "generic",
+                // `profile_id` resta "generic" (il cerotto anti-"Nota." dipende da questo);
+                // `editorial_family` porta la firma di famiglia allo strato dei segmenti.
+                editorial_family: profile.isGiappichelliPhotoshop ? GIAPPICHELLI_PHOTOSHOP_FAMILY : "generic",
                 genre: "unknown",
                 confidence: matches(extraction)
             ),
