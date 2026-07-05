@@ -651,3 +651,100 @@ final class ImportProcessingTests: XCTestCase {
         }
     }
 }
+
+// MARK: - Parità dell'estrazione a flusso (byte-identica al caricamento tutto-insieme)
+//
+// L'ESTRAZIONE A FLUSSO (chunk piccolo → `PDFDocument` riaperto per chunk + `autoreleasepool` per
+// pagina) produce un `PdfExtraction` BYTE-IDENTICO al caricamento storico "tutto insieme" (chunk
+// enorme, un solo documento). Il chunking è SOLO gestione della memoria: la logica per-pagina è
+// invariata e ogni pagina è estratta una volta, in ordine. Entrambe le estrazioni leggono lo STESSO
+// file → l'eventuale non-determinismo della generazione del PDF è irrilevante. (Classe qui e non in
+// un file a sé perché il target di test usa referenze esplicite.)
+
+final class PdfExtractionParityTests: XCTestCase {
+
+    static func makeMultiPagePDF(pages: Int) -> URL {
+        let pageRect = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("scabo_parity_\(pages)_\(UUID().uuidString).pdf")
+        try? renderer.writePDF(to: url) { ctx in
+            for p in 0..<pages {
+                ctx.beginPage()
+                var y: CGFloat = 60
+                let blocks: [(String, CGFloat, Bool)] = [
+                    ("Capitolo \(p + 1) — Titolo della pagina \(p + 1).", 18, true),
+                    ("Primo paragrafo della pagina \(p + 1): testo deterministico con parole sufficienti a occupare più righe nella colonna stretta.", 11, false),
+                    ("Secondo paragrafo: \(p * 7 % 13) casi e \(p) riferimenti nella pagina \(p + 1).", 11, false),
+                    ("\(p + 1). Cfr. art. \(100 + p) c.c. sulla questione della pagina.", 8, false),
+                ]
+                for (text, size, bold) in blocks {
+                    let font: UIFont = bold ? .boldSystemFont(ofSize: size) : .systemFont(ofSize: size)
+                    (text as NSString).draw(at: CGPoint(x: 72, y: y),
+                                            withAttributes: [.font: font, .foregroundColor: UIColor.black])
+                    y += size + 14
+                }
+            }
+        }
+        return url
+    }
+
+    private func extract(_ url: URL, chunk: Int) throws -> PdfExtraction? {
+        try PdfKitExtractor().extract(
+            fromUri: url.absoluteString, onPageExtracted: { _, _ in }, isCancelled: { false },
+            chunkPages: chunk)
+    }
+
+    func test_streaming_producesIdenticalExtraction_asLoadAll_syntheticMultiPage() throws {
+        let url = Self.makeMultiPagePDF(pages: 120)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        let streamed = try extract(url, chunk: 4)          // 30 chunk, molti riaprimenti
+        let loadAll = try extract(url, chunk: 1_000_000)   // 1 chunk = caricamento tutto insieme
+        XCTAssertNotNil(streamed)
+        XCTAssertEqual(streamed, loadAll, "estrazione a flusso byte-identica al caricamento tutto-insieme")
+        XCTAssertEqual(streamed?.pages.count, 120)
+        XCTAssertEqual(streamed?.pageCount, 120)
+    }
+
+    func test_defaultProductionChunk_isIdentical_toLoadAll() throws {
+        let url = Self.makeMultiPagePDF(pages: 130)  // > STREAM_CHUNK_PAGES → esercita il chunking reale
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        let production = try PdfKitExtractor().extract(fromUri: url.absoluteString)  // default chunk
+        let loadAll = try extract(url, chunk: 1_000_000)
+        XCTAssertEqual(production, loadAll, "il chunk di produzione (default) è identico al tutto-insieme")
+    }
+
+    func test_progressCallback_firesOncePerPage_monotonic_acrossChunks() throws {
+        let url = Self.makeMultiPagePDF(pages: 45)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        var done: [Int] = []
+        _ = try PdfKitExtractor().extract(
+            fromUri: url.absoluteString,
+            onPageExtracted: { d, t in done.append(d); XCTAssertEqual(t, 45) },
+            isCancelled: { false }, chunkPages: 8)
+        XCTAssertEqual(done, Array(1...45), "un tick per pagina, monotòno, attraverso i confini di chunk")
+    }
+
+    func test_cancellation_midStream_yieldsNilNoPartial() throws {
+        let url = Self.makeMultiPagePDF(pages: 40)
+        addTeardownBlock { try? FileManager.default.removeItem(at: url) }
+        var seen = 0
+        let out = try PdfKitExtractor().extract(
+            fromUri: url.absoluteString,
+            onPageExtracted: { _, _ in seen += 1 },
+            isCancelled: { seen >= 10 }, chunkPages: 8)
+        XCTAssertNil(out, "cancellazione a metà flusso → nil, nessuna estrazione parziale spacciata per completa")
+    }
+
+    func test_streamingParity_onRealFixture_patriarca() throws {
+        let fixture = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("pipeline/tests/fixtures/private/patriarca_benazzo.pdf")
+        try XCTSkipUnless(FileManager.default.fileExists(atPath: fixture.path),
+                          "Fixture privato assente: \(fixture.path)")
+        let streamed = try extract(fixture, chunk: 10)
+        let loadAll = try extract(fixture, chunk: 1_000_000)
+        XCTAssertEqual(streamed, loadAll, "estrazione a flusso byte-identica sul PDF reale")
+    }
+}

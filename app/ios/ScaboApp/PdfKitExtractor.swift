@@ -60,6 +60,17 @@ import UIKit
 /// text + font size + bold + italic + resolved colour + page-local bbox.
 struct PdfKitExtractor: PdfExtracting {
 
+    /// Numero di pagine estratte per "chunk" prima di rilasciare il `PDFDocument` e riaprirne uno
+    /// fresco. È l'unico parametro dell'ESTRAZIONE A FLUSSO (gestione della memoria, non della logica):
+    /// PDFKit tiene in cache il contenuto di OGNI pagina toccata finché il `PDFDocument` è vivo, così su
+    /// un volume enorme (Codice civile, ~2697 pp) la cache cresce fino a ~1,6 GB — sul filo del tetto di
+    /// jetsam. Riaprendo un documento fresco ogni `STREAM_CHUNK_PAGES` pagine, la cache è limitata a un
+    /// chunk; con l'`autoreleasepool` per pagina (attributedString/selection transitorie) il picco
+    /// d'apertura crolla ben sotto il tetto. L'output resta byte-identico: cambia SOLO come il PDF è
+    /// tenuto in memoria, non cosa si estrae (provato da `PdfExtractionParityTests`: chunk piccolo ==
+    /// chunk enorme). Riaprire ~50 volte un PDF costa quanto ~50 parse dell'xref: trascurabile.
+    static let STREAM_CHUNK_PAGES = 50
+
     /// Extracts the PDF at `uri` (a local `file://` URI or a filesystem path)
     /// into a `PdfExtraction`. Throws an `NSError` carrying a readable Italian
     /// message when the path is invalid, the PDF cannot be opened, or it is
@@ -83,41 +94,81 @@ struct PdfKitExtractor: PdfExtracting {
         onPageExtracted: (_ done: Int, _ total: Int) -> Void,
         isCancelled: () -> Bool
     ) throws -> PdfExtraction? {
+        try extract(fromUri: uri, onPageExtracted: onPageExtracted, isCancelled: isCancelled,
+                    chunkPages: Self.STREAM_CHUNK_PAGES)
+    }
+
+    /// Variante parametrizzata sul `chunkPages` (estrazione a flusso). `chunkPages` è SOLO gestione
+    /// della memoria: con un chunk enorme (≥ pageCount) equivale al caricamento storico "tutto insieme"
+    /// (un solo documento), con un chunk piccolo si riapre un documento fresco ogni `chunkPages` pagine
+    /// per svuotare la cache di PDFKit. L'output `PdfExtraction` è IDENTICO qualunque sia `chunkPages`:
+    /// la logica per-pagina (`lines`/`spanBBox`/…) è invariata e ogni pagina è estratta una sola volta,
+    /// in ordine. È la superficie che `PdfExtractionParityTests` esercita per la prova byte-identica.
+    func extract(
+        fromUri uri: String,
+        onPageExtracted: (_ done: Int, _ total: Int) -> Void,
+        isCancelled: () -> Bool,
+        chunkPages: Int
+    ) throws -> PdfExtraction? {
         guard let url = Self.fileURL(from: uri) else {
             throw Self.makeError("Percorso del file PDF non valido.")
         }
-        guard let document = PDFDocument(url: url) else {
+        // Apertura "sonda": pageCount + metadati editoriali. Riusata come documento del PRIMO chunk.
+        guard let probe = PDFDocument(url: url) else {
             throw Self.makeError("Impossibile aprire il PDF. Potrebbe essere danneggiato.")
         }
-        if document.isLocked {
+        if probe.isLocked {
             throw Self.makeError("Il PDF è protetto da password e non può essere letto.")
         }
 
         // Metadati editoriali del documento (firma di famiglia auto-dichiarante per i
         // rami di corpus; il tronco Generic non li legge). Affiorati qui alle radici e
         // trasportati su `PdfExtraction`: dato in più, inerte finché un ramo non lo legge.
-        let attributes = document.documentAttributes
+        let attributes = probe.documentAttributes
         let producer = attributes?[PDFDocumentAttribute.producerAttribute] as? String
         let creator = attributes?[PDFDocumentAttribute.creatorAttribute] as? String
 
-        let pageCount = document.pageCount
+        let pageCount = probe.pageCount
         var pages: [PdfPageExtraction] = []
         pages.reserveCapacity(pageCount)
-        for index in 0..<pageCount {
+
+        let step = max(1, chunkPages)
+        var start = 0
+        // Il primo chunk riusa la sonda; i successivi aprono un documento FRESCO (la sonda è già
+        // rilasciata) così la cache pagine di PDFKit del chunk precedente viene svuotata.
+        var chunkDocument: PDFDocument? = probe
+        while start < pageCount {
             if isCancelled() { return nil }
-            guard let page = document.page(at: index) else {
-                onPageExtracted(index + 1, pageCount)
-                continue
+            let doc: PDFDocument
+            if let existing = chunkDocument {
+                doc = existing
+            } else if let reopened = PDFDocument(url: url) {
+                doc = reopened
+            } else {
+                throw Self.makeError("Impossibile riaprire il PDF durante l'estrazione.")
             }
-            let cropBox = page.bounds(for: .cropBox)
-            let lines = Self.lines(for: page, cropBox: cropBox)
-            pages.append(PdfPageExtraction(
-                pageIndex: index,
-                width: Double(cropBox.width),
-                height: Double(cropBox.height),
-                lines: lines
-            ))
-            onPageExtracted(index + 1, pageCount)
+
+            let end = min(start + step, pageCount)
+            for index in start..<end {
+                if isCancelled() { return nil }
+                // Pool per-pagina: drena le `attributedString`/`PDFSelection` transitorie subito, invece
+                // di lasciarle accumulare fino a fine estrazione. Il `PdfPageExtraction` (value type) è
+                // copiato in `pages`, FUORI dal pool: sopravvive al drenaggio.
+                autoreleasepool {
+                    guard let page = doc.page(at: index) else { return }
+                    let cropBox = page.bounds(for: .cropBox)
+                    let lines = Self.lines(for: page, cropBox: cropBox)
+                    pages.append(PdfPageExtraction(
+                        pageIndex: index,
+                        width: Double(cropBox.width),
+                        height: Double(cropBox.height),
+                        lines: lines
+                    ))
+                }
+                onPageExtracted(index + 1, pageCount)
+            }
+            start = end
+            chunkDocument = nil  // rilascia il documento del chunk → PDFKit svuota la cache pagine
         }
         if isCancelled() { return nil }
 
