@@ -124,8 +124,19 @@ final class SegmentCell: UICollectionViewCell {
     private(set) var segment: ContentSegment?
     private(set) var readingIndex: Int = 0
 
+    /// Vincolo di larghezza a PIENA pagina: senza di esso l'auto-dimensionamento del flow layout
+    /// dimensiona la cella alla larghezza del suo CONTENUTO (un segmento corto → cella stretta), e più
+    /// celle corte finirebbero AFFIANCATE sulla stessa riga — rompendo sia la resa visiva sia l'ORDINE
+    /// di lettura di VoiceOver (che segue la disposizione visiva). Fissando la larghezza, ogni cella
+    /// occupa una riga propria e solo l'altezza varia: impilamento verticale, ordine sequenziale.
+    private var widthConstraint: NSLayoutConstraint!
+
     override init(frame: CGRect) {
         super.init(frame: frame)
+
+        widthConstraint = contentView.widthAnchor.constraint(equalToConstant: UIScreen.main.bounds.width)
+        widthConstraint.priority = .required - 1  // evita conflitti coi vincoli transitori del self-sizing
+        widthConstraint.isActive = true
 
         pageMarker.translatesAutoresizingMaskIntoConstraints = false
         textLabel.numberOfLines = 0
@@ -162,11 +173,13 @@ final class SegmentCell: UICollectionViewCell {
         host: ContinuousReadingView,
         underlineIntervals: [ClosedRange<Int>]?,
         pageStart: Bool,
-        pageNumber: Int?
+        pageNumber: Int?,
+        width: CGFloat
     ) {
         self.segment = segment
         self.readingIndex = index
         self.host = host
+        if width > 0 { widthConstraint.constant = width }
 
         textLabel.font = UIFont.preferredFont(forTextStyle: ContinuousReadingView.textStyle(for: segment.role))
         // Resa visiva: underline additivo (rete A: il parlato NON cambia), altrimenti testo puro.
@@ -651,9 +664,12 @@ final class ContinuousReadingView: UIView {
         let intervals = underlineRangesBySegmentId[segment.id]
         let pageStart = isPageStart(index)
         let pageNumber = pageProvider?(segment.id)
+        // Piena larghezza: la cella occupa tutta la riga (solo l'altezza varia). Fallback a UIScreen
+        // finché il collection non ha bounds (es. cella costruita a mano nei test prima del layout).
+        let width = collectionView.bounds.width > 0 ? collectionView.bounds.width : UIScreen.main.bounds.width
         cell.configure(
             segment: segment, index: index, host: self,
-            underlineIntervals: intervals, pageStart: pageStart, pageNumber: pageNumber)
+            underlineIntervals: intervals, pageStart: pageStart, pageNumber: pageNumber, width: width)
     }
 
     private func isPageStart(_ index: Int) -> Bool {

@@ -107,6 +107,40 @@ final class ContinuousReadingViewTests: XCTestCase {
                        "le celle visibili seguono l'ordine di lettura dall'inizio")
     }
 
+    // MARK: - 2bis. Le celle sono a PIENA LARGHEZZA, impilate verticalmente (mai affiancate)
+
+    func test_cellsAreFullWidth_stackedVertically_notSideBySide() {
+        // Mix di segmenti CORTI (note) e LUNGHI (corpo): è il caso che, senza il vincolo di larghezza,
+        // faceva dimensionare le celle corte al loro contenuto e affiancarle — scombinando resa E
+        // ordine di lettura di VoiceOver (che segue la disposizione visiva).
+        let view = makeView(width: 320, height: 600)
+        let segs = [
+            bodySegment("b0", "Un paragrafo di corpo abbastanza lungo da occupare più di una riga nella colonna stretta."),
+            bodySegment("n1", "12.", role: "NOTE"),
+            bodySegment("n2", "3.", role: "NOTE"),
+            bodySegment("b1", "Altro corpo lungo, con testo sufficiente a occupare più righe di seguito nella colonna."),
+            bodySegment("n3", "cfr.", role: "NOTE"),
+        ]
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 600))
+        window.addSubview(view)
+        window.makeKeyAndVisible()
+        view.render(segs)
+        view.layoutIfNeeded()
+
+        let cells = view.exposedAccessibilityElements.compactMap { $0 as? SegmentCell }
+        XCTAssertGreaterThanOrEqual(cells.count, 3, "con la finestra alcune celle sono materializzate")
+        for c in cells {
+            XCTAssertEqual(c.frame.width, 320, accuracy: 1, "ogni cella è a piena larghezza — niente affiancamento")
+            XCTAssertEqual(c.frame.minX, 0, accuracy: 1, "allineata a sinistra, una per riga")
+        }
+        // Impilate verticalmente in ordine di lettura: nessuna coppia sulla STESSA riga.
+        let sorted = cells.sorted { $0.readingIndex < $1.readingIndex }
+        for i in 1..<sorted.count {
+            XCTAssertGreaterThanOrEqual(sorted[i].frame.minY, sorted[i - 1].frame.maxY - 0.5,
+                                        "la cella \(sorted[i].readingIndex) sta SOTTO la precedente, non affiancata")
+        }
+    }
+
     // MARK: - 3. Ogni segmento ha resa accessibile non vuota
 
     func test_everySegmentHasNonEmptyAccessibilityLabel() {
