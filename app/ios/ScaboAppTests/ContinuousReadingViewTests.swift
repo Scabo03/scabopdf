@@ -471,6 +471,72 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertEqual(ContinuousReadingView.spokenText(for: body), "Un paragrafo qualunque del corpo.")
     }
 
+    // MARK: - Navigazione per intestazioni: mappa dei livelli, indice, sequenza, per-livello
+
+    func test_headingLevel_mapsRolesToLevels() {
+        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_1"), 1)
+        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_2"), 2)
+        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_3"), 3)
+        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_4"), 4)
+        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "ARTICLE_HEADER"), 5, "l'articolo dei codici è il livello 5")
+        XCTAssertNil(ContinuousReadingView.headingLevel(for: "BODY"))
+        XCTAssertNil(ContinuousReadingView.headingLevel(for: "NOTE"))
+        XCTAssertNil(ContinuousReadingView.headingLevel(for: SECTION_DIVIDER_ROLE), "il divisore sintetico è fuori dal rotore")
+    }
+
+    func test_headingIndex_capturesAllHeadingsWithLevels_inOrder() {
+        let view = makeView()
+        view.render([
+            bodySegment("h1", "Libro", role: "HEADING_1"),
+            bodySegment("b0", "corpo"),
+            bodySegment("h2", "Titolo", role: "HEADING_2"),
+            bodySegment("a1", "Art. 1", role: "ARTICLE_HEADER"),
+            bodySegment("b1", "corpo"),
+            bodySegment("a2", "Art. 2", role: "ARTICLE_HEADER"),
+            bodySegment("h4", "Sezione", role: "HEADING_4"),
+        ])
+        XCTAssertEqual(view.headingIndex.map { $0.index }, [0, 2, 3, 5, 6])
+        XCTAssertEqual(view.headingIndex.map { $0.level }, [1, 2, 5, 5, 4])
+        XCTAssertEqual(view.headingLevelsPresent, [1, 2, 4, 5])
+    }
+
+    func test_nextHeadingIndex_sequence_anyLevel_forwardAndBackward() {
+        let view = makeView()
+        view.render([
+            bodySegment("h1", "Libro", role: "HEADING_1"),        // 0
+            bodySegment("b0", "corpo"),                            // 1
+            bodySegment("a1", "Art. 1", role: "ARTICLE_HEADER"),   // 2
+            bodySegment("b1", "corpo"),                            // 3
+            bodySegment("a2", "Art. 2", role: "ARTICLE_HEADER"),   // 4
+        ])
+        XCTAssertEqual(view.nextHeadingIndex(from: -1, level: nil, forward: true), 0)
+        XCTAssertEqual(view.nextHeadingIndex(from: 0, level: nil, forward: true), 2)
+        XCTAssertEqual(view.nextHeadingIndex(from: 2, level: nil, forward: true), 4)
+        XCTAssertNil(view.nextHeadingIndex(from: 4, level: nil, forward: true), "oltre l'ultimo titolo → nil")
+        XCTAssertEqual(view.nextHeadingIndex(from: 4, level: nil, forward: false), 2)
+        XCTAssertEqual(view.nextHeadingIndex(from: 2, level: nil, forward: false), 0)
+        XCTAssertNil(view.nextHeadingIndex(from: 0, level: nil, forward: false), "prima del primo → nil")
+    }
+
+    func test_nextHeadingIndex_perLevel_reachesOnlyThatLevel() {
+        let view = makeView()
+        view.render([
+            bodySegment("h1a", "Libro I", role: "HEADING_1"),     // 0  L1
+            bodySegment("a1", "Art. 1", role: "ARTICLE_HEADER"),   // 1  L5
+            bodySegment("a2", "Art. 2", role: "ARTICLE_HEADER"),   // 2  L5
+            bodySegment("h1b", "Libro II", role: "HEADING_1"),    // 3  L1
+            bodySegment("a3", "Art. 3", role: "ARTICLE_HEADER"),   // 4  L5
+        ])
+        // Livello 1: solo i due LIBRO.
+        XCTAssertEqual(view.nextHeadingIndex(from: -1, level: 1, forward: true), 0)
+        XCTAssertEqual(view.nextHeadingIndex(from: 0, level: 1, forward: true), 3)
+        XCTAssertNil(view.nextHeadingIndex(from: 3, level: 1, forward: true))
+        // Livello 5: solo gli articoli, saltando i LIBRO in mezzo.
+        XCTAssertEqual(view.nextHeadingIndex(from: 0, level: 5, forward: true), 1)
+        XCTAssertEqual(view.nextHeadingIndex(from: 2, level: 5, forward: true), 4, "salta il Libro II, va al prossimo articolo")
+        XCTAssertEqual(view.nextHeadingIndex(from: 4, level: 5, forward: false), 2)
+    }
+
     // MARK: - Helper PDF sintetici
 
     static func makeSyntheticSamplePDF() -> URL {

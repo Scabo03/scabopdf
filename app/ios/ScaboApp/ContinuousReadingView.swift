@@ -243,6 +243,13 @@ final class ContinuousReadingView: UIView {
     /// nozione di "pagina" nel verticale (Opzione A). Ricostruita a ogni render dalla `pageProvider`.
     private(set) var pageStartElementIndices: [Int] = []
 
+    /// Indice LEGGERO delle intestazioni (indice-di-lettura + livello), in ordine, costruito dal modello
+    /// dei segmenti a ogni render. È il dato che il rotore Intestazioni consulta per saltare a titoli
+    /// anche FUORI dalla finestra: i titoli non materializzati non sono elementi di accessibilità vivi
+    /// (nessun muro di memoria), ma i loro indice+livello vivono qui e il rotore li raggiunge scorrendo
+    /// e materializzando la sola cella bersaglio (meccanismo validato in Fase 0).
+    private(set) var headingIndex: [(index: Int, level: Int)] = []
+
     /// Indice dell'ultimo elemento messo a fuoco (o preimpostato), o `nil`. La posizione di lettura.
     private var lastFocusedIndex: Int?
 
@@ -365,6 +372,7 @@ final class ContinuousReadingView: UIView {
         lastFocusedIndex = nil
         lastFocusedRole = nil
         recomputePageStarts()
+        rebuildHeadingIndexAndRotors()
         collectionView.reloadData()
         onPaginationChanged?()
     }
@@ -554,6 +562,111 @@ final class ContinuousReadingView: UIView {
             if seen == unit { return i }
         }
         return segments.count - 1
+    }
+
+    // MARK: - Navigazione per intestazioni (rotore Intestazioni + per livello, § 2.4 — meccanica NATIVA)
+    //
+    // Si replica il comportamento nativo di VoiceOver esponendo i tipi di rotore DI SISTEMA `.heading`
+    // (tutte le intestazioni, in sequenza) e `.headingLevelN` (salto tra intestazioni dello STESSO
+    // livello). Entrambi poggiano sulla STESSA informazione — il livello di ciascun titolo — letto dal
+    // ruolo già prodotto dalla classificazione (non ridefinito qui). L'`itemSearchBlock` calcola il
+    // bersaglio dal `headingIndex` (che copre ANCHE i titoli fuori finestra), poi scorre e materializza
+    // la sola cella bersaglio (Fase 0): nessun titolo fuori finestra è un elemento di accessibilità vivo.
+
+    /// Livello (1…6) del ruolo se è un'intestazione navigabile dal rotore, o `nil`. Deriva dal ruolo
+    /// prodotto dalla classificazione: HEADING_1…4 → 1…4; ARTICLE_HEADER (l'articolo dei codici, sotto
+    /// le quattro divisioni LIBRO/TITOLO/CAPO/SEZIONE) → 5. `SECTION_DIVIDER` (contenitore editoriale
+    /// sintetico del backend XML AKN) è deliberatamente ESCLUSO dal rotore, coerente con l'intento
+    /// dichiarato in `RoleStyle` ("keeps them out of any future Headings rotor").
+    static func headingLevel(for role: String) -> Int? {
+        switch role {
+        case "HEADING_1": return 1
+        case "HEADING_2": return 2
+        case "HEADING_3": return 3
+        case "HEADING_4": return 4
+        case "ARTICLE_HEADER": return 5
+        default: return nil
+        }
+    }
+
+    private static func systemRotorType(forLevel level: Int?) -> UIAccessibilityCustomRotor.SystemRotorType {
+        switch level {
+        case 1: return .headingLevel1
+        case 2: return .headingLevel2
+        case 3: return .headingLevel3
+        case 4: return .headingLevel4
+        case 5: return .headingLevel5
+        case 6: return .headingLevel6
+        default: return .heading  // nil = rotore Intestazioni (tutti i livelli, in sequenza)
+        }
+    }
+
+    /// I livelli di intestazione presenti nel documento, in ordine (per esporre un rotore per-livello
+    /// solo per i livelli che esistono davvero).
+    var headingLevelsPresent: [Int] { Array(Set(headingIndex.map { $0.level })).sorted() }
+
+    /// Ricostruisce l'indice leggero delle intestazioni e (re)installa i rotori di sistema. Chiamata a
+    /// ogni render. Il rotore Intestazioni (`.heading`) c'è sempre; i rotori per-livello solo per i
+    /// livelli presenti.
+    private func rebuildHeadingIndexAndRotors() {
+        headingIndex = segments.enumerated().compactMap { i, s in
+            Self.headingLevel(for: s.role).map { (index: i, level: $0) }
+        }
+        var rotors = [headingRotor(level: nil)]  // .heading — tutte le intestazioni, in sequenza
+        for level in headingLevelsPresent {
+            rotors.append(headingRotor(level: level))  // .headingLevelN — stesso livello
+        }
+        collectionView.accessibilityCustomRotors = rotors
+    }
+
+    private func headingRotor(level: Int?) -> UIAccessibilityCustomRotor {
+        UIAccessibilityCustomRotor(systemType: Self.systemRotorType(forLevel: level)) { [weak self] predicate in
+            self?.headingSearch(predicate, level: level)
+        }
+    }
+
+    /// Cuore della navigazione: dato l'elemento a fuoco e la direzione (su/giù del rotore), trova il
+    /// titolo successivo/precedente (filtrato per livello se il rotore è per-livello) LEGGENDO il
+    /// `headingIndex` — quindi anche titoli lontanissimi fuori finestra — poi scorre e materializza la
+    /// cella bersaglio e la restituisce a VoiceOver. Da lì lo swipe elemento-per-elemento prosegue
+    /// continuo (la finestra si è ricostruita attorno all'atterraggio).
+    private func headingSearch(
+        _ predicate: UIAccessibilityCustomRotorSearchPredicate, level: Int?
+    ) -> UIAccessibilityCustomRotorItemResult? {
+        guard !headingIndex.isEmpty else { return nil }
+
+        // Indice corrente: la cella a fuoco se è nota, altrimenti l'ultima posizione ricordata, altrimenti
+        // il primo elemento visibile (o -1 → il primo titolo è "successivo").
+        let current: Int
+        if let cell = predicate.currentItem.targetElement as? SegmentCell {
+            current = cell.readingIndex
+        } else if let idx = lastFocusedIndex {
+            current = idx
+        } else {
+            current = (collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1
+        }
+
+        let forward = predicate.searchDirection == .next
+        guard let t = nextHeadingIndex(from: current, level: level, forward: forward) else {
+            return nil  // oltre l'ultimo / prima del primo titolo → fine
+        }
+
+        let ip = IndexPath(item: t, section: 0)
+        collectionView.scrollToItem(at: ip, at: .top, animated: false)
+        collectionView.layoutIfNeeded()
+        presetReadingPosition(toIndex: t)  // ricorda la posizione: lo swipe da qui è continuo
+        guard let cell = collectionView.cellForItem(at: ip) else { return nil }
+        return UIAccessibilityCustomRotorItemResult(targetElement: cell, targetRange: nil)
+    }
+
+    /// Indice-di-lettura del titolo successivo (`forward`) o precedente rispetto a `current`, filtrato
+    /// per `level` (nil = qualsiasi livello). Puro e testabile: è la logica di sequenza del rotore, che
+    /// legge il `headingIndex` (titoli anche fuori finestra) senza toccare celle o VoiceOver.
+    func nextHeadingIndex(from current: Int, level: Int?, forward: Bool) -> Int? {
+        let candidates = level == nil ? headingIndex : headingIndex.filter { $0.level == level }
+        return forward
+            ? candidates.first(where: { $0.index > current })?.index
+            : candidates.last(where: { $0.index < current })?.index
     }
 
     // MARK: - Sottolineature (§ 6) — resa additiva, solo-visiva, RIAPPLICATA al riuso
