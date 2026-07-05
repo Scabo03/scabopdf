@@ -56,7 +56,7 @@ final class ContinuousReadingViewTests: XCTestCase {
         ]
         let content = PaginatedContent(
             pages: [ContentPage(pageNumber: 1, segments: all)], totalSegments: all.count)
-        return (content, all.map { ContinuousReadingView.spokenText(for: $0) }, all.map { $0.id })
+        return (content, all.map { ContinuousReadingView.intendedAccessibilityLabel(for: $0) }, all.map { $0.id })
     }
 
     /// La cella riciclante configurata per l'indice dato: riflette la resa (testo, parlato, tratto).
@@ -164,18 +164,32 @@ final class ContinuousReadingViewTests: XCTestCase {
         }
     }
 
-    // MARK: - 5. Tratto header per heading, non per corpo
+    // MARK: - 5. Niente tratto .header sulle celle-titolo; la qualifica è nel parlato (per livello)
 
-    func test_headingRolesCarryHeaderTraitBodyDoesNot() {
+    func test_headings_haveNoHeaderTrait_butAreQualifiedInSpokenLabel() {
         let view = makeView()
         view.render([
             bodySegment("h1", "Titolo", role: "HEADING_1"),
             bodySegment("b1", "Corpo del testo."),
-            bodySegment("sd", "Sezione", role: SECTION_DIVIDER_ROLE),
+            bodySegment("a1", "Art. 415", role: "ARTICLE_HEADER"),
         ])
-        XCTAssertTrue(cell(view, 0).accessibilityTraits.contains(.header), "HEADING_1 è intestazione")
-        XCTAssertFalse(cell(view, 1).accessibilityTraits.contains(.header), "il corpo NON è intestazione")
-        XCTAssertTrue(cell(view, 2).accessibilityTraits.contains(.header), "SECTION_DIVIDER è intestazione")
+        // Nessuna cella espone `.header`: la navigazione titoli passa al rotore su misura, non al
+        // rotore Intestazioni incorporato (che vedrebbe solo la finestra).
+        XCTAssertFalse(cell(view, 0).accessibilityTraits.contains(.header), "il titolo NON espone .header")
+        XCTAssertFalse(cell(view, 1).accessibilityTraits.contains(.header))
+        XCTAssertFalse(cell(view, 2).accessibilityTraits.contains(.header), "l'articolo NON espone .header")
+        // La qualifica di intestazione è reintrodotta nel parlato, per livello.
+        XCTAssertEqual(cell(view, 0).accessibilityLabel, "Intestazione di livello 1. Titolo")
+        XCTAssertEqual(cell(view, 1).accessibilityLabel, "Corpo del testo.", "il corpo non è qualificato")
+        XCTAssertEqual(cell(view, 2).accessibilityLabel, "Articolo. Art. 415")
+    }
+
+    func test_headingQualifier_perLevel() {
+        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_1"), "Intestazione di livello 1.")
+        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_4"), "Intestazione di livello 4.")
+        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "ARTICLE_HEADER"), "Articolo.")
+        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "BODY"), "")
+        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: SECTION_DIVIDER_ROLE), "", "il divisore ha già il suo intro 'Sezione.'")
     }
 
     // MARK: - 6. Re-render sostituisce il modello (nessun residuo)

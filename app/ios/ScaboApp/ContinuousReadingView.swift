@@ -193,9 +193,14 @@ final class SegmentCell: UICollectionViewCell {
 
         // Resa accessibile: etichetta mai vuota, parlato byte-identico al modello storico.
         accessibilityLabel = ContinuousReadingView.intendedAccessibilityLabel(for: segment)
-        var traits: UIAccessibilityTraits = .staticText
-        if ContinuousReadingView.isHeadingRole(segment.role) { traits.insert(.header) }
-        accessibilityTraits = traits
+        // NIENTE tratto `.header` sulle celle-titolo. Se le celle lo esponessero, il rotore
+        // Intestazioni INCORPORATO di VoiceOver le scandirebbe — ma vede solo la finestra, quindi
+        // salterebbe in modo capriccioso i titoli fuori finestra (osservato al collaudo). Tolto
+        // `.header`, il rotore incorporato non ha nulla da scandire e la navigazione titoli passa
+        // interamente ai rotori su misura (`.heading`/`.headingLevelN`), che vedono TUTTI i titoli
+        // dal `headingIndex`. La qualifica di intestazione è reintrodotta nel parlato (vedi
+        // `headingQualifier`), così non si perde il segnale acustico "è un titolo, di livello N".
+        accessibilityTraits = .staticText
 
         // Stacco di pagina originale (Opzione A): visivo, muto per VoiceOver.
         pageMarker.isHidden = !pageStart
@@ -655,6 +660,10 @@ final class ContinuousReadingView: UIView {
         collectionView.scrollToItem(at: ip, at: .top, animated: false)
         collectionView.layoutIfNeeded()
         presetReadingPosition(toIndex: t)  // ricorda la posizione: lo swipe da qui è continuo
+        // Nota: su un salto LONTANO con celle auto-dimensionanti l'offset è stimato e la cella può non
+        // essere ancora materializzata (piccolo stagger + eventuale suono di "fine" al primo swipe).
+        // È il residuo della rifinitura perf "primo scroll sui giganti" (stima/cache delle altezze),
+        // fase successiva dedicata: qui non lo si forza per non aggiungere latenza senza risolverlo.
         guard let cell = collectionView.cellForItem(at: ip) else { return nil }
         return UIAccessibilityCustomRotorItemResult(targetElement: cell, targetRange: nil)
     }
@@ -800,9 +809,31 @@ final class ContinuousReadingView: UIView {
     /// L'etichetta accessibile INTESA per un segmento — l'unica fonte del parlato (byte-identica con o
     /// senza underline, rete A). Una nota vera col segnale acustico perde solo l'intro verbale (§ 10.4).
     static func intendedAccessibilityLabel(for segment: ContentSegment) -> String {
-        noteSignal(for: segment) == nil
+        let base = noteSignal(for: segment) == nil
             ? spokenText(for: segment)
             : spoken(intro: "", segment: segment)
+        // Reintroduzione della qualifica di intestazione NEL PARLATO (rimedio approvato): tolto il
+        // tratto `.header` dalle celle (perché il rotore Intestazioni incorporato non le scandisca),
+        // l'orecchio in lettura lineare perderebbe il segnale "è un titolo". Lo restituiamo qui,
+        // meglio ancora per livello, così il titolo suona qualificato senza reintrodurre `.header`.
+        let qualifier = headingQualifier(for: segment.role)
+        return qualifier.isEmpty ? base : "\(qualifier) \(base)"
+    }
+
+    /// Qualifica parlata anteposta a un titolo, per LIVELLO reale (letto dal ruolo prodotto dalla
+    /// classificazione). `ARTICLE_HEADER` → "Articolo." (l'articolo dei codici); HEADING_1…4 →
+    /// "Intestazione di livello N." Vuota per i non-titoli (e per `SECTION_DIVIDER`, che ha già il
+    /// suo intro "Sezione." e resta fuori dal rotore). Sostituisce l'annuncio nativo "intestazione"
+    /// perso con `.header`, differenziando i livelli come chiesto.
+    static func headingQualifier(for role: String) -> String {
+        switch role {
+        case "ARTICLE_HEADER": return "Articolo."
+        case "HEADING_1": return "Intestazione di livello 1."
+        case "HEADING_2": return "Intestazione di livello 2."
+        case "HEADING_3": return "Intestazione di livello 3."
+        case "HEADING_4": return "Intestazione di livello 4."
+        default: return ""
+        }
     }
 
     /// Compone `[intro] [memoryRefresh] [text]`, scartando le parti vuote. Il testo è sempre presente.
