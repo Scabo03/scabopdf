@@ -382,18 +382,16 @@ final class ContinuousReadingViewController: UIViewController {
         configureLayoutSelector()
         interfaceBar.setQuickControls(visible: false, canNavigate: false)
         signalPlayer.play(layout == .doctrine ? .mode3 : .mode1)
-        let focusTarget: Any
+        let focusIndex = (layout == .continuous) ? continuousPosition : 0
         if layout == .continuous {
             readingView.presetReadingPosition(toIndex: continuousPosition)
-            focusTarget = readingView.element(atIndex: continuousPosition) ?? readingView
-        } else {
-            focusTarget = readingView.element(atIndex: 0) ?? readingView
         }
         activateTextContainer(restoreFocus: false)
         // Embedded (§ 11): il fuoco lo governa il padre split (fuoco unico sui 6 container); non
-        // rubarlo qui al cambio Layout della singola metà.
+        // rubarlo qui al cambio Layout della singola metà. Ripristino per INDICE (celle riciclanti):
+        // `goToElement` scrolla e materializza la cella prima di posarvi il fuoco.
         if !embedded {
-            UIAccessibility.post(notification: .screenChanged, argument: focusTarget)
+            readingView.goToElement(atIndex: focusIndex, focus: true)
         }
     }
 
@@ -585,9 +583,9 @@ final class ContinuousReadingViewController: UIViewController {
     /// totale (sempre), più la pagina del file originale quando il toggle è attivo e il dato è
     /// disponibile (§ 4.2/§ 4.3). Silenzioso: aggiorna solo il valore, nessun annuncio (§ 4.5).
     private func updatePageIndicator() {
-        let total = readingView.visualPageCount
+        // Opzione A (verticale): niente più "pagina di visualizzazione" sintetica orizzontale; il
+        // senso di pagina è la pagina REALE del PDF (indicatore singolo + stacchi visivi nel flusso).
         let index = readingView.currentReadingElementIndex ?? max(0, initialReadingPosition)
-        let visualPage = (readingView.visualPageIndex(ofElementAt: index) ?? 0) + 1
         var originalCurrent: Int? = nil
         if showOriginalPages, sourcePageCount > 0,
            let segId = readingView.segmentId(atIndex: index),
@@ -595,8 +593,8 @@ final class ContinuousReadingViewController: UIViewController {
             originalCurrent = page
         }
         interfaceBar.setPageIndicator(
-            visualizationCurrent: total > 0 ? visualPage : 0,
-            visualizationTotal: total,
+            visualizationCurrent: 0,
+            visualizationTotal: 0,
             originalCurrent: originalCurrent,
             originalTotal: sourcePageCount,
             showOriginal: originalCurrent != nil)
@@ -645,6 +643,9 @@ final class ContinuousReadingViewController: UIViewController {
         // Scrub a due dita (escape): UNICA via di passaggio fra container nello scenario blindato.
         // Commuta quale container è modale, in entrambe le direzioni.
         readingView.onEscape = { [weak self] in self?.activateInterfaceContainer() }
+        // Stacchi visivi di pagina (Opzione A): la view pesca la pagina del file originale per
+        // id-segmento dalla stessa `sourcePage` dell'indicatore. `nil` → nessuno stacco.
+        readingView.pageProvider = sourcePage
         // Dall'interfaccia si rientra nel container ATTIVO: testo, oppure albero in Rapida.
         interfaceBar.onEscape = { [weak self] in
             guard let self else { return }
@@ -695,9 +696,14 @@ final class ContinuousReadingViewController: UIViewController {
         interfaceBar.accessibilityViewIsModal = false
         readingView.accessibilityViewIsModal = true
         if restoreFocus {
-            // Posizione ricordata se esiste, altrimenti il container del testo (→ primo elemento).
-            let target: Any = readingView.lastFocusedTextElement ?? readingView
-            UIAccessibility.post(notification: .screenChanged, argument: target)
+            // Ripristino per INDICE (le celle si riciclano: un riferimento a cella sarebbe stale):
+            // `goToElement` scrolla alla posizione ricordata e vi materializza+posa il fuoco. Se nessuna
+            // posizione è nota, si ripiega sul container del testo (→ primo elemento).
+            if let idx = readingView.currentReadingElementIndex {
+                readingView.goToElement(atIndex: idx, focus: true)
+            } else {
+                UIAccessibility.post(notification: .screenChanged, argument: readingView)
+            }
         }
     }
 
@@ -858,7 +864,7 @@ final class ContinuousReadingViewController: UIViewController {
     /// La vista ad albero (se creata), per i test.
     var quickConsultViewForTesting: QuickConsultView? { quickConsultView }
     /// Numero di segmenti correntemente resi (per verificare che lo switch cambi davvero il flusso).
-    var renderedSegmentCountForTesting: Int { readingView.segmentLabels.count }
+    var renderedSegmentCountForTesting: Int { readingView.renderedSegmentCount }
     /// Cambia layout come farebbe il selettore (per i test, senza UIMenu).
     func switchLayoutForTesting(to layout: LayoutId) { switchLayout(to: layout) }
 }

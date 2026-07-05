@@ -242,24 +242,23 @@ final class ImportProcessingTests: XCTestCase {
         let textElements = vc.textContainerForTesting.exposedAccessibilityElements
         XCTAssertEqual(textElements.count, content.totalSegments)
         for element in textElements {
-            XCTAssertTrue(element is SegmentLabel, "il container del testo espone solo segmenti")
+            XCTAssertTrue(element is SegmentCell, "il container del testo espone solo segmenti")
         }
 
-        // Container dell'INTERFACCIA: [Indietro, selettore Layout, box visualizzazione] — il
-        // selettore (§ 3.4) ha sostituito il titolo statico; l'indicatore (§ 4.3) resta dentro
-        // l'interfaccia (mai nel container del testo, così non interferisce con lo swipe). NESSUN
-        // elemento di testo qui.
-        vc.viewDidAppear(false)   // attiva l'indicatore di pagina (impaginazione disponibile)
+        // Container dell'INTERFACCIA: [Indietro, selettore Layout] — Opzione A verticale: caduta la
+        // pagina di visualizzazione sintetica, e con l'originale OFF (default qui) nessun box di
+        // pagina. Il selettore (§ 3.4) ha sostituito il titolo statico. NESSUN elemento di testo qui.
+        vc.viewDidAppear(false)
         let interface = vc.interfaceContainerForTesting
         let interfaceElements = (interface.accessibilityElements as? [NSObject]) ?? []
-        XCTAssertEqual(interfaceElements.count, 3, "interfaccia: Indietro, selettore Layout, box visualizzazione")
+        XCTAssertEqual(interfaceElements.count, 2, "interfaccia: Indietro, selettore Layout")
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.backButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.layoutSelectorButton })
-        XCTAssertTrue(interfaceElements.contains { ($0 as? UILabel) === interface.visualizationPageLabel })
+        XCTAssertTrue(interface.visualizationPageLabel.isHidden, "nessun box di visualizzazione nel verticale")
         XCTAssertEqual(interface.layoutSelectorButton.title(for: .normal), "Lettura Continua")
         XCTAssertEqual(interface.backButton.accessibilityLabel, "Indietro")
         for element in interfaceElements {
-            XCTAssertFalse(element is SegmentLabel, "nessun elemento di testo nell'interfaccia")
+            XCTAssertFalse(element is SegmentCell, "nessun elemento di testo nell'interfaccia")
         }
     }
 
@@ -321,23 +320,23 @@ final class ImportProcessingTests: XCTestCase {
         // l'utente era, non al primissimo elemento.
         let content = sampleContent(6)
         let vc = makeLoadedReader(content)
-        let labels = vc.textContainerForTesting.segmentLabels
-        XCTAssertGreaterThan(labels.count, 3)
+        let rv = vc.textContainerForTesting
+        XCTAssertGreaterThan(rv.currentSegments.count, 3)
 
-        // L'utente legge fino a un elemento centrale: VoiceOver lo mette a fuoco.
-        let middle = labels[3]
-        middle.accessibilityElementDidBecomeFocused()
-        XCTAssertTrue(vc.textFocusRestoreTargetForTesting === middle, "la posizione di lettura è ricordata")
+        // L'utente legge fino a un elemento centrale: VoiceOver lo mette a fuoco (per INDICE nel
+        // modello riciclante — niente più etichetta persistente da confrontare per identità).
+        rv.cellDidBecomeFocused(index: 3, segment: rv.currentSegments[3])
+        XCTAssertEqual(vc.currentReadingPositionForTesting, 3, "la posizione di lettura è ricordata")
 
         // Va all'interfaccia (scrub) e torna al testo (scrub).
-        XCTAssertTrue(vc.textContainerForTesting.accessibilityPerformEscape())      // testo → interfaccia
+        XCTAssertTrue(rv.accessibilityPerformEscape())                              // testo → interfaccia
         XCTAssertTrue(vc.interfaceContainerForTesting.accessibilityPerformEscape()) // interfaccia → testo
 
-        // Il rientro NON resetta: il bersaglio di ripristino è ancora l'elemento centrale.
-        XCTAssertTrue(vc.textFocusRestoreTargetForTesting === middle,
-                      "il rientro nel testo riporta dove l'utente era, non al primissimo elemento")
-        XCTAssertFalse(vc.textFocusRestoreTargetForTesting === labels[0],
-                       "non si torna al primo elemento")
+        // Il rientro NON resetta: la posizione ripristinata è ancora l'elemento centrale.
+        XCTAssertEqual(vc.currentReadingPositionForTesting, 3,
+                       "il rientro nel testo riporta dove l'utente era, non al primissimo elemento")
+        XCTAssertNotEqual(vc.currentReadingPositionForTesting, 0,
+                          "non si torna al primo elemento")
     }
 
     // MARK: - Posizione di lettura: ripristino all'apertura e notifica del cambio (§ 2.5)
@@ -353,13 +352,13 @@ final class ImportProcessingTests: XCTestCase {
         vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
         vc.view.layoutIfNeeded()
 
-        // Il bersaglio del ripristino è l'elemento all'indice 4 (la posizione ricordata).
-        let labels = vc.textContainerForTesting.segmentLabels
-        XCTAssertTrue(vc.restoredPositionTargetForTesting === labels[4],
-                      "all'apertura il fuoco si ripristina all'elemento della posizione ricordata")
+        // All'apertura la posizione si ripristina all'indice 4 (la posizione ricordata).
+        let rv = vc.textContainerForTesting
+        XCTAssertEqual(vc.currentReadingPositionForTesting, 4,
+                       "all'apertura la posizione si ripristina all'elemento ricordato")
 
         // Mettendo a fuoco un altro elemento, la posizione viene notificata per la persistenza.
-        labels[6].accessibilityElementDidBecomeFocused()
+        rv.cellDidBecomeFocused(index: 6, segment: rv.currentSegments[6])
         XCTAssertEqual(reported.last, 6, "il cambio di fuoco notifica l'indice della nuova posizione")
         XCTAssertEqual(vc.currentReadingPositionForTesting, 6)
     }
@@ -379,10 +378,10 @@ final class ImportProcessingTests: XCTestCase {
         vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
         vc.view.layoutIfNeeded()
         vc.viewDidAppear(false)
-        let labels = vc.textContainerForTesting.segmentLabels
+        let rv = vc.textContainerForTesting
 
         // L'utente legge fino a un elemento centrale (fuoco reale).
-        labels[3].accessibilityElementDidBecomeFocused()
+        rv.cellDidBecomeFocused(index: 3, segment: rv.currentSegments[3])
         XCTAssertEqual(persisted.last, 3, "la lettura reale persiste la posizione 3")
         persisted.removeAll()
 
@@ -392,7 +391,7 @@ final class ImportProcessingTests: XCTestCase {
 
         // VoiceOver rispedisce il fuoco a inizio file (reset): NON deve persistere 0, e deve
         // ri-portare alla posizione reale.
-        labels[0].accessibilityElementDidBecomeFocused()
+        rv.cellDidBecomeFocused(index: 0, segment: rv.currentSegments[0])
 
         XCTAssertFalse(persisted.contains(0), "lo 0 spurio del reset NON viene mai salvato")
         XCTAssertEqual(vc.textContainerForTesting.currentReadingElementIndex, 3,
@@ -401,21 +400,17 @@ final class ImportProcessingTests: XCTestCase {
 
     // MARK: - Indicatore di pagina in toolbar: due box separati (§ 4.3)
 
-    func test_pageIndicator_single_whenOriginalPagesOff() {
-        let vc = makeLoadedReader(sampleContent(3))   // sourcePageCount 0, toggle off → solo visualizzazione
+    func test_pageIndicator_noBoxes_whenOriginalPagesOff_verticalOptionA() {
+        let vc = makeLoadedReader(sampleContent(3))   // sourcePageCount 0, toggle off
         vc.viewDidAppear(false)
         let bar = vc.interfaceContainerForTesting
-        let total = vc.textContainerForTesting.visualPageCount
-        XCTAssertFalse(bar.visualizationPageLabel.isHidden, "il box visualizzazione è visibile")
-        XCTAssertTrue(bar.originalPageLabel.isHidden, "modalità singola: nessun box del file originale")
-        XCTAssertEqual(bar.visualizationPageLabel.text, "1 di \(total)")
-        XCTAssertEqual(bar.visualizationPageLabel.accessibilityLabel, "pagina 1 di \(total) di visualizzazione")
-        // È l'ultimo elemento del container d'interfaccia, dopo Indietro e titolo.
-        let elements = (bar.accessibilityElements as? [NSObject]) ?? []
-        XCTAssertTrue(elements.last === bar.visualizationPageLabel)
+        // Opzione A verticale: caduta la pagina di visualizzazione sintetica; con l'originale off,
+        // nessun indicatore di pagina.
+        XCTAssertTrue(bar.visualizationPageLabel.isHidden, "nessun box di visualizzazione nel verticale")
+        XCTAssertTrue(bar.originalPageLabel.isHidden, "originale off → nessun box del file originale")
     }
 
-    func test_pageIndicator_double_isTwoSeparateBoxes_withDistinctLabels() {
+    func test_pageIndicator_originalOnly_whenOn_verticalOptionA() {
         let vc = ContinuousReadingViewController(
             content: sampleContent(3), sourceName: "x.pdf", documentId: "d",
             initialReadingPosition: 0, onPositionChanged: nil,
@@ -425,22 +420,15 @@ final class ImportProcessingTests: XCTestCase {
         vc.view.layoutIfNeeded()
         vc.viewDidAppear(false)
         let bar = vc.interfaceContainerForTesting
-        let total = vc.textContainerForTesting.visualPageCount
 
-        // DUE box distinti, ciascuno con testo e etichetta VoiceOver propria.
-        XCTAssertFalse(bar.originalPageLabel.isHidden)
-        XCTAssertFalse(bar.visualizationPageLabel.isHidden)
+        // Opzione A verticale: UN solo box, quello del file originale; nessun box di visualizzazione.
+        XCTAssertFalse(bar.originalPageLabel.isHidden, "il box del file originale è visibile")
+        XCTAssertTrue(bar.visualizationPageLabel.isHidden, "nessun box di visualizzazione nel verticale")
         XCTAssertEqual(bar.originalPageLabel.text, "100 di 1985")
         XCTAssertEqual(bar.originalPageLabel.accessibilityLabel, "pagina 100 di 1985 del file originale")
-        XCTAssertEqual(bar.visualizationPageLabel.text, "1 di \(total)")
-        XCTAssertEqual(bar.visualizationPageLabel.accessibilityLabel, "pagina 1 di \(total) di visualizzazione")
 
-        // Sono due elementi accessibili a sé, in ordine originale → visualizzazione.
         let elements = (bar.accessibilityElements as? [NSObject]) ?? []
-        let iOrig = elements.firstIndex { $0 === bar.originalPageLabel }
-        let iVis = elements.firstIndex { $0 === bar.visualizationPageLabel }
-        XCTAssertNotNil(iOrig); XCTAssertNotNil(iVis)
-        XCTAssertTrue((iOrig ?? 0) < (iVis ?? 0), "il box originale precede quello di visualizzazione")
+        XCTAssertTrue(elements.contains { $0 === bar.originalPageLabel }, "il box originale è accessibile")
     }
 
     func test_buildPageMap_mapsNodeIdsToOneBasedPages() {
@@ -552,11 +540,11 @@ final class ImportProcessingTests: XCTestCase {
         // In dottrina, mettere a fuoco un segmento NON deve persistere la posizione (§ 2.5).
         vc.switchLayoutForTesting(to: .doctrine)
         saved.removeAll()
-        vc.textContainerForTesting.segmentLabels[5].accessibilityElementDidBecomeFocused()
+        do { let rv = vc.textContainerForTesting; rv.cellDidBecomeFocused(index: 5, segment: rv.currentSegments[5]) }
         XCTAssertTrue(saved.isEmpty, "in Dottrina Inline la posizione non è persistita (non corrompe il punto continua)")
         // In continua invece sì.
         vc.switchLayoutForTesting(to: .continuous)
-        vc.textContainerForTesting.segmentLabels[2].accessibilityElementDidBecomeFocused()
+        do { let rv = vc.textContainerForTesting; rv.cellDidBecomeFocused(index: 2, segment: rv.currentSegments[2]) }
         XCTAssertEqual(saved.last, 2, "in Lettura Continua la posizione è persistita")
     }
 

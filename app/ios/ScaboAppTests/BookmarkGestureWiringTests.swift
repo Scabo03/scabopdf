@@ -65,7 +65,7 @@ final class BookmarkGestureWiringTests: XCTestCase {
         let spy = SpyElementCoordinator()
         view.elementCoordinator = spy
 
-        view.openElementMenu(for: view.segmentLabels[1], sourcePoint: .zero)
+        view.openElementMenu(forSegmentAt: 1, sourcePoint: .zero)
 
         XCTAssertEqual(spy.menuPresented?.segmentId, "n1")
         XCTAssertEqual(spy.menuPresented?.orderIndex, 1, "usa l'indice di lettura cablato dell'elemento")
@@ -74,7 +74,7 @@ final class BookmarkGestureWiringTests: XCTestCase {
 
     func test_openElementMenu_isNoOp_withoutCoordinator() {
         let view = makeRenderedView()
-        view.openElementMenu(for: view.segmentLabels[0], sourcePoint: .zero)
+        view.openElementMenu(forSegmentAt: 0, sourcePoint: .zero)
         XCTAssertNil(view.elementCoordinator)
     }
 
@@ -86,11 +86,11 @@ final class BookmarkGestureWiringTests: XCTestCase {
         view.elementCoordinator = spy
 
         spy.existing = nil
-        let addActions = view.bookmarkActions(for: view.segmentLabels[0])
+        let addActions = view.bookmarkActions(forSegment: view.currentSegments[0], orderIndex: 0)
         XCTAssertEqual(addActions?.map { $0.name }, ["Aggiungi segnalibro"])
 
         spy.existing = Bookmark(id: "b", anchorSegmentId: "n0", orderIndexHint: 0, preview: "x", createdAt: Date())
-        let editActions = view.bookmarkActions(for: view.segmentLabels[0])
+        let editActions = view.bookmarkActions(forSegment: view.currentSegments[0], orderIndex: 0)
         XCTAssertEqual(editActions?.map { $0.name }, ["Modifica segnalibro", "Rimuovi segnalibro"])
     }
 }

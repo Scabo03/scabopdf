@@ -344,20 +344,19 @@ final class ReadingInterfaceBar: UIView {
         originalTotal: Int,
         showOriginal: Bool
     ) {
-        guard visualizationTotal > 0 else {
-            originalPageLabel.isHidden = true
+        // Box di visualizzazione e box del file originale sono INDIPENDENTI (Opzione A verticale: la
+        // pagina di visualizzazione sintetica cade — `visualizationTotal == 0` la nasconde — mentre la
+        // pagina del file originale resta l'unico indicatore, § 4).
+        if visualizationTotal > 0 {
+            visualizationPageLabel.text = "\(visualizationCurrent) di \(visualizationTotal)"
+            visualizationPageLabel.accessibilityLabel =
+                "pagina \(visualizationCurrent) di \(visualizationTotal) di visualizzazione"
+            visualizationPageLabel.isHidden = false
+        } else {
             visualizationPageLabel.isHidden = true
-            refreshAccessibilityElements()
-            return
         }
 
-        // Box di visualizzazione: sempre presente.
-        visualizationPageLabel.text = "\(visualizationCurrent) di \(visualizationTotal)"
-        visualizationPageLabel.accessibilityLabel =
-            "pagina \(visualizationCurrent) di \(visualizationTotal) di visualizzazione"
-        visualizationPageLabel.isHidden = false
-
-        // Box del file originale: solo in modalità doppia, con dato disponibile.
+        // Box del file originale: se richiesto e con dato disponibile.
         if showOriginal, let original = originalCurrent, originalTotal > 0 {
             originalPageLabel.text = "\(original) di \(originalTotal)"
             originalPageLabel.accessibilityLabel =

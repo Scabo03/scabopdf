@@ -46,12 +46,20 @@ final class UnderlineRenderingTests: XCTestCase {
         return true
     }
 
+    /// La cella riciclante configurata per l'indice dato, che riflette la resa corrente (underline
+    /// compreso). Nel modello finestrato la resa vive nella cella, riapplicata a ogni configurazione.
+    private func cell(_ view: ContinuousReadingView, _ index: Int) -> SegmentCell {
+        guard let c = view.makeConfiguredCellForTesting(at: index) else {
+            fatalError("nessuna cella configurabile all'indice \(index)")
+        }
+        return c
+    }
+
     func test_setUnderlineRanges_underlinesTheRightWords_only() {
         let view = makeRenderedView()
         // "uno due tre quattro": parole 1..2 = "due tre".
         view.setUnderlineRanges(["n1": [1...2]])
-        let label = view.segmentLabels[1]
-        let attributed = label.attributedText
+        let attributed = cell(view, 1).textLabel.attributedText
         XCTAssertNotNil(attributed, "il segmento sottolineato riceve un attributedText")
         // "uno " = 0..3, "due" inizia a 4, "tre" finisce a 10; "quattro" (11..) NON sottolineato.
         XCTAssertFalse(hasUnderline(attributed, atCharacter: 0), "«uno» non è sottolineato")
@@ -62,41 +70,42 @@ final class UnderlineRenderingTests: XCTestCase {
 
     func test_underline_doesNotChangeSpokenLabel_reteA() {
         let view = makeRenderedView()
-        let before = view.segmentLabels[1].accessibilityLabel
+        let before = cell(view, 1).accessibilityLabel
         view.setUnderlineRanges(["n1": [1...2]])
-        XCTAssertEqual(view.segmentLabels[1].accessibilityLabel, before,
+        XCTAssertEqual(cell(view, 1).accessibilityLabel, before,
                        "il parlato è invariato: l'underline è puramente visivo (rete A)")
-        XCTAssertEqual(view.segmentLabels[1].accessibilityLabel, "uno due tre quattro",
+        XCTAssertEqual(cell(view, 1).accessibilityLabel, "uno due tre quattro",
                        "resta esattamente il testo del segmento")
     }
 
     func test_nonUnderlinedSegment_staysPlainText() {
         let view = makeRenderedView()
         view.setUnderlineRanges(["n1": [0...0]])
-        XCTAssertTrue(hasNoUnderline(view.segmentLabels[0]), "n0 non è sottolineato")
-        XCTAssertEqual(view.segmentLabels[0].text, "alfa beta gamma")
+        XCTAssertTrue(hasNoUnderline(cell(view, 0).textLabel), "n0 non è sottolineato")
+        XCTAssertEqual(cell(view, 0).textLabel.text, "alfa beta gamma")
     }
 
     func test_removingRanges_revertsToPlainText() {
         let view = makeRenderedView()
         view.setUnderlineRanges(["n1": [1...2]])
-        XCTAssertTrue(hasUnderline(view.segmentLabels[1].attributedText, atCharacter: 4))
+        XCTAssertTrue(hasUnderline(cell(view, 1).textLabel.attributedText, atCharacter: 4))
         view.setUnderlineRanges([:])
-        XCTAssertTrue(hasNoUnderline(view.segmentLabels[1]), "rimosso l'intervallo → niente sottolineatura")
-        XCTAssertEqual(view.segmentLabels[1].text, "uno due tre quattro")
-        XCTAssertEqual(view.segmentLabels[1].accessibilityLabel, "uno due tre quattro")
+        XCTAssertTrue(hasNoUnderline(cell(view, 1).textLabel), "rimosso l'intervallo → niente sottolineatura")
+        XCTAssertEqual(cell(view, 1).textLabel.text, "uno due tre quattro")
+        XCTAssertEqual(cell(view, 1).accessibilityLabel, "uno due tre quattro")
     }
 
     func test_underline_survivesReRender() {
         let view = makeRenderedView()
         view.setUnderlineRanges(["n1": [1...2]])
-        // Re-render (es. cambio Layout) con gli stessi id: la resa deve riapplicarsi alle nuove label.
+        // Re-render (es. cambio Layout) con gli stessi id: la mappa sopravvive e la resa si riapplica
+        // alle celle al riuso/configurazione.
         view.render([
             ContentSegment(id: "n0", role: "BODY", text: "alfa beta gamma", lengthCategory: "", acousticIntro: ""),
             ContentSegment(id: "n1", role: "BODY", text: "uno due tre quattro", lengthCategory: "", acousticIntro: ""),
         ])
         view.layoutIfNeeded()
-        XCTAssertTrue(hasUnderline(view.segmentLabels[1].attributedText, atCharacter: 4),
-                      "dopo il re-render la sottolineatura è riapplicata alla nuova etichetta")
+        XCTAssertTrue(hasUnderline(cell(view, 1).textLabel.attributedText, atCharacter: 4),
+                      "dopo il re-render la sottolineatura è riapplicata alla nuova cella")
     }
 }
