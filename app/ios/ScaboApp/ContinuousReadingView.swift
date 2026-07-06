@@ -268,6 +268,18 @@ final class ContinuousReadingView: UIView {
     /// installa uno proprio, e i test devono ispezionare il nostro, non quello del sistema.
     private var longPressRecognizer: UILongPressGestureRecognizer?
 
+    // MARK: - Cache delle altezze (rifinitura perf)
+    //
+    // Un'altezza MISURATA per elemento, servita da `sizeForItemAt`, così l'offset di scroll è ESATTO
+    // su decine di migliaia di elementi. Dati LEGGERI — un `CGFloat` per elemento (~pochi byte),
+    // NON elementi di accessibilità vivi: la memoria non risale. `-1` = non ancora misurato (misura
+    // pigra al primo bisogno, poi in cache). L'etichetta di misura è una UILabel riusata configurata
+    // come quella della cella, così l'altezza combacia con la resa reale (niente clip né salti).
+    private var heightCache: [CGFloat] = []
+    private let sizingLabel = UILabel()
+    private var cachedMarkerHeight: CGFloat = 0
+    private var lastMeasuredWidth: CGFloat = 0
+
     // MARK: - Callback e collaboratori (impostati dal view controller)
 
     /// Azione di escape (scrub a due dita, § 2.3/§ 2.4): passa al container dell'interfaccia.
@@ -299,7 +311,11 @@ final class ContinuousReadingView: UIView {
         layout.scrollDirection = .vertical
         layout.minimumLineSpacing = 0
         layout.minimumInteritemSpacing = 0
-        layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
+        // NIENTE `estimatedItemSize`/self-sizing a runtime: l'altezza di ogni cella è MISURATA una
+        // volta e servita da `sizeForItemAt` (cache delle altezze). Così l'offset di scroll è esatto
+        // su decine di migliaia di elementi — il salto lontano atterra pronto e il primo scroll è
+        // fluido — senza auto-dimensionare cella per cella mentre si scorre (che causava tentennamento
+        // sul salto lungo e scatti al primo scroll dei giganti).
         collectionView = UICollectionView(frame: frame, collectionViewLayout: layout)
         super.init(frame: frame)
         setUp()
@@ -318,6 +334,11 @@ final class ContinuousReadingView: UIView {
 
     private func setUp() {
         backgroundColor = .systemBackground
+
+        // Etichetta di misura riusata, configurata come la `textLabel` della cella.
+        sizingLabel.numberOfLines = 0
+        sizingLabel.lineBreakMode = .byWordWrapping
+        sizingLabel.adjustsFontForContentSizeCategory = true
 
         collectionView.backgroundColor = .systemBackground
         collectionView.showsVerticalScrollIndicator = true
@@ -378,6 +399,7 @@ final class ContinuousReadingView: UIView {
         lastFocusedRole = nil
         recomputePageStarts()
         rebuildHeadingIndexAndRotors()
+        resetHeightCache()  // nuovo contenuto → nuove altezze da misurare
         collectionView.reloadData()
         onPaginationChanged?()
     }
@@ -799,6 +821,64 @@ final class ContinuousReadingView: UIView {
         return pageStartElementIndices.contains(index)
     }
 
+    // MARK: - Misura delle altezze (cache)
+
+    /// Altezza (misurata, in cache) della cella dell'elemento `index`. Replica esattamente la resa
+    /// della cella: inset verticali dello stack (8+8) + eventuale marcatore di pagina + altezza della
+    /// label per il testo alla larghezza della colonna. Misura pigra e in cache; prima che la larghezza
+    /// sia nota restituisce una stima innocua (ricalcolata al primo layout valido).
+    private func measuredHeight(at index: Int) -> CGFloat {
+        guard index >= 0, index < segments.count else { return 44 }
+        if index < heightCache.count, heightCache[index] >= 0 { return heightCache[index] }
+        let width = collectionView.bounds.width
+        guard width > 0 else { return 44 }
+        let labelWidth = max(1, width - 40)  // inset orizzontali dello stack: 20 + 20
+        let segment = segments[index]
+        sizingLabel.font = UIFont.preferredFont(forTextStyle: Self.textStyle(for: segment.role))
+        sizingLabel.text = segment.text
+        let labelH = ceil(sizingLabel.sizeThatFits(
+            CGSize(width: labelWidth, height: .greatestFiniteMagnitude)).height)
+        var markerH: CGFloat = 0
+        if isPageStart(index) {
+            if cachedMarkerHeight <= 0 { cachedMarkerHeight = computeMarkerHeight() }
+            markerH = cachedMarkerHeight
+        }
+        let h = 16 + markerH + labelH  // stack top 8 + bottom 8
+        if index < heightCache.count { heightCache[index] = h }
+        return h
+    }
+
+    private func resetHeightCache() {
+        heightCache = [CGFloat](repeating: -1, count: segments.count)
+    }
+
+    /// Altezza misurata dell'elemento (per i test: verifica che combaci con la resa reale della cella).
+    func measuredHeightForTesting(at index: Int) -> CGFloat { measuredHeight(at: index) }
+
+    /// Altezza (costante) del marcatore di pagina, misurata una volta per larghezza.
+    private func computeMarkerHeight() -> CGFloat {
+        let width = collectionView.bounds.width
+        guard width > 0 else { return 0 }
+        let marker = PageMarkerView(frame: .zero)
+        marker.setPageNumber(1)
+        let size = marker.systemLayoutSizeFitting(
+            CGSize(width: width - 40, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
+        return ceil(size.height)
+    }
+
+    /// Al cambio di larghezza (rotazione, split) le altezze cambiano: azzera la cache e ricalcola.
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let width = collectionView.bounds.width
+        if width > 0, width != lastMeasuredWidth {
+            lastMeasuredWidth = width
+            cachedMarkerHeight = 0
+            resetHeightCache()
+            collectionView.collectionViewLayout.invalidateLayout()
+        }
+    }
+
     // MARK: - Mappature ruolo → stile / semantica (INVARIATE: unica fonte del parlato)
 
     /// Testo che VoiceOver pronuncia: intro acustica (se presente) + rinfresco di contesto + testo.
@@ -888,8 +968,9 @@ extension ContinuousReadingView: UICollectionViewDataSource, UICollectionViewDel
     func collectionView(
         _ cv: UICollectionView, layout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
-        // Larghezza piena; l'altezza la determina l'auto-layout della cella (estimatedItemSize).
-        CGSize(width: cv.bounds.width, height: 44)
+        // Larghezza piena; altezza MISURATA e in cache (offset di scroll esatto → salto lontano pronto,
+        // primo scroll fluido, senza auto-dimensionamento a runtime).
+        CGSize(width: cv.bounds.width, height: measuredHeight(at: indexPath.item))
     }
 }
 

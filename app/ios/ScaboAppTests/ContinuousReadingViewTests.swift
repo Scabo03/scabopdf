@@ -184,6 +184,47 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertEqual(cell(view, 2).accessibilityLabel, "Articolo. Art. 415")
     }
 
+    // MARK: - Cache delle altezze: l'altezza misurata combacia con la resa reale (niente clip/gap)
+
+    func test_measuredHeight_matchesRealCellHeight_noClipOrGap() {
+        let width: CGFloat = 393
+        let view = makeView(width: width)
+        let segs = [
+            bodySegment("h", "Un titolo di capitolo", role: "HEADING_1"),
+            bodySegment("short", "Breve."),
+            bodySegment("long", String(repeating: "Frase di corpo che occupa parecchie righe nella colonna stretta. ", count: 8)),
+            bodySegment("art", "Art. 415 — Della cosa comune", role: "ARTICLE_HEADER"),
+        ]
+        view.render(segs)
+        window(view, width: width, height: 900)  // finestra + layout, così la larghezza è valida
+        view.layoutIfNeeded()
+
+        for i in segs.indices {
+            let measured = view.measuredHeightForTesting(at: i)
+            // Altezza REALE che la cella richiede per il suo contenuto, alla stessa larghezza.
+            let real = realCellHeight(view, at: i, width: width)
+            XCTAssertEqual(measured, real, accuracy: 2,
+                           "l'altezza misurata (\(measured)) combacia con la resa reale (\(real)) → niente clip né gap")
+        }
+    }
+
+    private func window(_ view: UIView, width: CGFloat, height: CGFloat) {
+        let w = UIWindow(frame: CGRect(x: 0, y: 0, width: width, height: height))
+        w.addSubview(view)
+        view.frame = w.bounds
+        w.makeKeyAndVisible()
+    }
+
+    /// Altezza naturale della cella configurata per l'elemento, alla larghezza data.
+    private func realCellHeight(_ view: ContinuousReadingView, at index: Int, width: CGFloat) -> CGFloat {
+        let c = cell(view, index)
+        c.frame = CGRect(x: 0, y: 0, width: width, height: 1)
+        c.layoutIfNeeded()
+        return c.contentView.systemLayoutSizeFitting(
+            CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel).height
+    }
+
     func test_headingQualifier_perLevel() {
         XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_1"), "Intestazione di livello 1.")
         XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_4"), "Intestazione di livello 4.")
