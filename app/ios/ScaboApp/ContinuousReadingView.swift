@@ -341,7 +341,12 @@ final class ContinuousReadingView: UIView {
         sizingLabel.adjustsFontForContentSizeCategory = true
 
         collectionView.backgroundColor = .systemBackground
-        collectionView.showsVerticalScrollIndicator = true
+        // §2.2 (swipe orizzontale mai ostacolato): l'indicatore di scorrimento verticale è una barra
+        // laterale puramente visiva che, dopo una cella molto alta (note lunghe dei testi normativi),
+        // VoiceOver aggancia come elemento ADJUSTABLE, intrappolando lo swipe (il gesto diventa
+        // micro-scorrimento invece di avanzamento elemento-per-elemento). Disattivarlo lo toglie
+        // dall'albero di accessibilità senza costo: non ha valore per VoiceOver. Emerso al gate AKN.
+        collectionView.showsVerticalScrollIndicator = false
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.contentInsetAdjustmentBehavior = .always
         collectionView.dataSource = self
