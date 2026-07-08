@@ -238,7 +238,10 @@ final class SplitScreenViewController: UIViewController {
         // "Indietro" della barra della metà = chiudi QUESTA metà (§ 11.1/§ 11.3), come la sua X.
         vc.onBack = { [weak self] in self?.confirmClose(keeping: side.other) }
         // Cambio posizione della metà (quando è la guida): sincronizza l'altra secondo il regime.
-        vc.textContainer.onReadingPositionChanged = { [weak self] index in
+        // Si usa l'hook DEDICATO del VC embedded (NON si sovrascrive `textContainer.
+        // onReadingPositionChanged`, che il VC usa per la propria persistenza/ancora/indicatore,
+        // § 11.9): così la metà continua a SALVARE la propria posizione mentre lo split la sincronizza.
+        vc.onEmbeddedReadingPositionChanged = { [weak self] index in
             self?.leaderMoved(side: side, index: index)
         }
     }

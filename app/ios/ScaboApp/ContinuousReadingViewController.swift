@@ -102,6 +102,14 @@ final class ContinuousReadingViewController: UIViewController {
     /// full-screen su iPad (mai in una metà già embedded).
     var onSplitRequested: (() -> Void)?
 
+    /// Notifica del cambio di posizione di lettura per lo split embedded (§ 11): il padre
+    /// `SplitScreenViewController` la imposta per SINCRONIZZARE la metà che segue (§ 11.4/§ 11.5).
+    /// È chiamata DOPO la logica interna della metà (persistenza § 2.5/§ 11.9, ancora, indicatore),
+    /// così comporre il lettore dentro lo split non disattiva più il tracciamento della metà — il
+    /// vecchio cablaggio sovrascriveva `readingView.onReadingPositionChanged` e la posizione di
+    /// ciascuna metà non veniva più salvata. `nil` a schermo intero → nessun effetto (rete B).
+    var onEmbeddedReadingPositionChanged: ((Int) -> Void)?
+
     /// Id del documento (per la persistenza della posizione di lettura). Vuoto se non pertinente
     /// (es. test che istanziano il lettore senza libreria).
     private let documentId: String
@@ -277,6 +285,11 @@ final class ContinuousReadingViewController: UIViewController {
                 if index > 0 { self.stickyReadingPosition = index }
             }
             self.updatePageIndicator()
+            // Split embedded (§ 11): notifica il padre PER SINCRONIZZARE la metà che segue, DOPO che
+            // questa metà ha aggiornato la propria posizione/ancora/persistenza. Comporre il lettore
+            // dentro lo split non disattiva più il tracciamento della metà (§ 11.9: la posizione di
+            // ciascun documento è persistente). `nil` a schermo intero → nessun effetto.
+            self.onEmbeddedReadingPositionChanged?(index)
         }
         // Paging guidato dall'utente (anche a VoiceOver spento): tiene aggiornata l'ancora reale.
         readingView.onUserScroll = { [weak self] index in
