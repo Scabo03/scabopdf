@@ -52,6 +52,61 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Arco PESO concluso + import normativo AKN consegnato → build ~30-35 su TestFlight — 2026-07-05/09
+
+> Questo blocco **supera** il "▶ STATO … build 24-29" immediatamente sotto: il **"prossimo arco di
+> lavoro: PESO DI MEMORIA E RENDERING"** lì indicato come *fronte aperto* è ora **chiuso**, e lo split
+> lì *parcheggiato* è stato ripreso e ripulito nel mondo a finestra. Il blocco sotto resta come storia
+> accurata **fino a build 29**; le sue proiezioni ("prossimo arco", "fronte aperto") non valgono più.
+
+**Arco peso di memoria e rendering — CONCLUSO (build ~30-34, 2026-07-05/08).** La radice nota dalla
+saga crash — il render di ~47.000 elementi VoiceOver vivi — è stata affrontata alla struttura, non col
+tampone. **Reading view verticale nativa a finestra scorrevole** che ricicla le celle (`72c3a8a`),
+celle a piena larghezza + ordine di lettura sul contenuto reale (`4a134e8`), **estrazione a flusso**
+per l'apertura robusta dei volumi enormi (`5aef936`), **navigazione per intestazioni** sulla finestra
+(rotore su misura per-livello, meccanica nativa — tolto `.header`, `2cf7705` + `4319750`), **cache
+delle altezze** per il salto lungo pronto e il primo scroll fluido sui giganti (`86a3cc7`). Poi il
+**cleanup dello split** (§11) nel mondo a finestra: trovato sostanzialmente pulito, un solo attrito di
+cablatura chiuso — la posizione di ciascuna metà torna a persistere §11.9 (`2260ed4`) = **build 34**.
+
+**Import normativo AKN — CONSEGNATO (build ~35, 2026-07-09, ultima su TestFlight).** Terzo produttore
+dietro il tipo `ScabopdfDocument` (non un secondo estrattore): un parser Swift che riusa tutto l'arco a
+valle **invariato**. (A, `28e241b`) `AknDetector` + `AknParser` + `AknXmlTree` in ScaboCore via
+`XMLParser` SAX, producono `ScabopdfDocument` diretto (schema 0.7.0) **senza `PdfExtraction` né
+plugin**, **parità 13/13 byte-per-byte** contro i baseline Python N-* (BEN_FORMATO, FRAGMENTED cp/cc,
+modifiche, container promulgativi, headless-first-paragraph). (B, `fbf6ab2`) rifinitura AKN-scoped su
+`[ContentSegment]` — i tre attriti del gate: note-mostro frazionate ≤ viewport §10.6 con earcon una
+volta per nota logica, numero-comma isolato accorpato, doppio "Modifica." eliminato; **non tocca
+`buildBaseSegments`** → Estratto byte-identico per costruzione. (C, `a99c3ba`) import e persistenza di
+prima classe: picker accetta `.xml` accanto a `.pdf`, dispatch sul formato verso orchestratore
+**parallelo** `AknDocumentProcessor` (riusa la schermata di avanzamento, **non ramifica** il flusso
+PDF), archivio generico della sorgente (`Archive/<id>.xml`), campo additivo `ArchivedDocument.
+sourceKind` (`'akn'`|nil=pdf), metadati-pagina neutralizzati (`sourcePageCount=0`); `AknBodyBuilder` =
+layout continuo → rifinitura AKN → paginazione, **senza `bindAndPlaceNotes`** (§7.2: le note AKN sono
+già legate strutturalmente come `authorialNote`) né `granularizeBody` (l'`ARTICLE_BODY` è unità
+normativa nativa). Corretto anche un **bug latente** della colla d'import (la copia temporanea era
+rimossa PRIMA dell'archiviazione → `storeSource` ora funziona sia per PDF sia per AKN).
+
+**Cosa copre l'import AKN, e cosa no.** Copre: atti **AKN vigenti (monovigente)**, BEN_FORMATO e il
+recupero FRAGMENTED (Codice Penale/Civile) via minting sintetico degli articoli. **Non** copre (già
+messo a verbale come rinviato, `docs/ANALYSIS_IMPORT_NORMATTIVA.md` § Fase 4): **ePub IPZS** (per i
+codici antichi FRAGMENTED, dove l'ePub è più ricco dell'AKN rotto), **versioni storiche multivigenti**,
+**binding URN dei rinvii** (i cross-reference portano un `href` URN oggi scartato — serve per "salta al
+riferimento", non blocca la lettura), un **campo di formato esplicito** per i filtri di ricerca §13.2
+(oggi `sourceKind` distingue solo akn/pdf a livello persistenza).
+
+**Confine PDF vs normativo (il firewall, rispettato).** Intoccati: `PdfKitExtractor`, i plugin,
+`buildDocumentFromPdf`, la classificazione visiva; a valle l'arco del peso, la reading view a finestra,
+lo split, i segnalibri/sottolineature e l'**Estratto blindato** (baseline byte-identica). Il percorso
+normativo vive in **file nuovi** e confluisce solo su `ScabopdfDocument`. Suite verde (ScaboCore 519).
+
+**Stato branch (verificato sui commit 2026-07-09).** `main` = `origin/main`, working tree pulito. Le
+sei feature-branch superstiti sono **interamente contenute in `main`** (0 commit avanti) — cancellabili
+o parcheggiabili senza perdita. L'arco AKN è stato committato **direttamente su `main`** (non c'è un
+branch `feat/akn-import`).
+
+---
+
 ## ▶ STATO — Strumenti di studio del reader (segnalibri, tag, sottolineature) + split screen + persistenza/focus → build 24-29 su TestFlight — 2026-07-01/02
 
 Sette build di Layer 2 sopra la Consultazione Rapida (build 20). Prima il **cerotto memoria** della saga crash (build 21-23), poi gli **strumenti di studio** (§5 segnalibri/tag build 24-25, §6 sottolineature build 25), lo **split screen** (§11 build 26, **parcheggiato**), e tre giri di **fix persistenza/focus** (build 27-29). Tutto **additivo**: il flusso di Lettura Continua e l'Estratto restano byte-identici a livello segmenti (**nessun file-pipeline toccato** in nessuna build — `git diff --name-only` filtrato vuoto ogni giro; `accessibilityLabel`/`spokenText` mai alterati).

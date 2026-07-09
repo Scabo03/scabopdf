@@ -385,4 +385,24 @@ per costruzione. Vie **già fallite, da non ritentare**: ritorno diretto al segm
 Indietro, re-post a tempo fisso, protezione con target da lettura live post-reset. Logging `os_log`
 disattivabile (`focusDebugLogging`) lasciato per tracciare la sequenza reale sul device. Gli strumenti di
 studio (segnalibri/tag § 5, sottolineature § 6) e lo split screen § 11 (parcheggiato per il tetto di
-memoria) sono documentati in `docs/CARRYOVER.md` § STATO build 24-29.
+memoria) sono documentati in `docs/CARRYOVER.md` § STATO build 24-29 e § STATO build ~30-35.
+
+## 13. Note normative AKN — legate alla struttura, `bindAndPlaceNotes` NON usato (import AKN, 2026-07-09)
+
+L'import normativo AKN (commit `28e241b`/`fbf6ab2`/`a99c3ba`) è il primo percorso in cui l'aggancio
+richiamo↔nota di questo capitolo **non si applica** — e per un motivo strutturale, non per una lacuna.
+Nel percorso PDF `bindAndPlaceNotes` (§ 2, § 3) fa due cose: **lega** il richiamo alla nota per identità
+del marcatore e **ri-piazza** la nota nel flusso (§ 7.3, testi discorsivi), perché nel PDF la nota è
+tipograficamente lontana dal richiamo e l'apparato è un blob a piè pagina. In AKN la nota è già un
+elemento **strutturale** — `<authorialNote>` → `NOTE` — annidato al punto giusto dell'albero dal parser
+(`AknParser`), con la sua `length_category` per il regime acustico § 7.4/7.5. Non c'è nulla da legare per
+euristica né da ri-piazzare: la posizione è quella del file. Perciò `AknBodyBuilder` costruisce il corpo
+con **layout continuo → rifinitura AKN (`AknSegments`) → paginazione**, saltando `bindAndPlaceNotes`
+(che richiederebbe un `PdfExtraction` inesistente e assumerebbe il documento **piatto** del Generic) e
+`granularizeBody` (l'`ARTICLE_BODY` è unità normativa nativa, non si spezza). Questo scioglie l'**attrito
+n.1** che `docs/ANALYSIS_IMPORT_NORMATTIVA.md` § 5 aveva segnalato sul seam delle note: la risposta è
+**non riusare il seam**, non adattarlo. La rifinitura `AknSegments` è AKN-scoped e opera solo su
+`[ContentSegment]` (mai su `buildBaseSegments`), quindi l'Estratto e il percorso PDF restano
+byte-identici per costruzione. Confini onesti (coerenti con § 5): il **binding URN** dei rinvii AKN
+(`href` sui cross-reference) resta **non implementato** — "salta al riferimento" è rinviato (§ Fase 4
+dell'analisi); non tocca la lettura sequenziale delle note, che è completa.

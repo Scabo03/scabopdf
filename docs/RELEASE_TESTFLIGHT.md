@@ -132,9 +132,34 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   più lettura live post-reset — alla riaccensione di VoiceOver; commit `5ee3d2b`, Delivery UUID
   `f1c00236-f8de-4a3b-aeba-230eaeacb8cb`). Il bug **toggle VoiceOver in-place** resta **accantonato**
   (diagnosi definitiva in `docs/CARRYOVER.md` e `docs/NOTES_BINDING.md` §12).
-- **Nota branch**: `main` è fermo a `1411c1a` = **build 25**. Le build 26-29 vivono sui branch
-  `feature/split-screen` (26) e `fix/reading-focus-restore` (27-29, che parte dallo split). Nessun
-  merge in `main` eseguito. **Il prossimo run produrrà 30.**
+- **Arco peso di memoria/rendering — build ~30-34, 2026-07-05/08.** Il "fronte aperto" delle build
+  24-29 (render di ~47k elementi VoiceOver vivi) è stato **chiuso**: reading view verticale nativa a
+  **finestra scorrevole** che ricicla le celle (`72c3a8a`), celle a piena larghezza + ordine di
+  lettura sul contenuto reale (`4a134e8`), **estrazione a flusso** per i volumi enormi (`5aef936`),
+  **navigazione per intestazioni** sulla finestra via rotore su misura per-livello (`2cf7705`,
+  `4319750`), **cache delle altezze** per il salto lungo e il primo scroll fluido sui giganti
+  (`86a3cc7`). Cleanup finale dello **split** nel mondo a finestra: la posizione di ciascuna metà
+  torna a persistere §11.9 (`2260ed4`) = **build 34** (confermata su TestFlight, 2026-07-08). I
+  numeri di build 30-33 ↔ commit sono **ricostruiti dai commit** (mappatura per-build e Delivery UUID
+  non registrati in questa nota; build 34 confermata).
+- **Import normativo AKN — build ~35, 2026-07-09 (ultima su TestFlight).** Swipe VoiceOver mai
+  ostacolato — indicatore di scorrimento disattivato §2.2 (`c96dafe`); parser AKN Swift in ScaboCore,
+  parità 13/13 sui baseline N-* (`28e241b`); rifinitura segmenti AKN, i tre attriti del gate
+  (`fbf6ab2`); import + persistenza di prima classe — picker `.xml`, orchestratore parallelo
+  `AknDocumentProcessor`, campo `ArchivedDocument.sourceKind` (`a99c3ba`). Percorso PDF/Estratto
+  intatti (file nuovi, confluenza su `ScabopdfDocument`).
+- **Stato branch corrente (verificato sui commit 2026-07-09).** `main` = `origin/main`, working tree
+  pulito, contiene **tutto** il lavoro fino all'import AKN. Le sei feature-branch superstiti
+  (`feat/streaming-extraction`, `feat/reading-vertical-collection`, `feat/heading-navigation`,
+  `feat/giappichelli-photoshop-family-leaf`, `feat/lezioni-verso-header-furniture`,
+  `feat/lezioni-section-bibliography-hold`) sono **interamente contenute in `main`** (0 commit avanti)
+  e possono essere cancellate o parcheggiate senza perdita. I branch `feature/split-screen` /
+  `fix/reading-focus-restore` citati nelle build 26-29 **non esistono più** (già assorbiti in `main`
+  ed eliminati). **Correzione di fatto:** una versione precedente di questa nota affermava «`main` è
+  fermo a `1411c1a` = build 25, le build 26-29 vivono su branch non mergiati, il prossimo run
+  produrrà 30» — era **stale/errata già alla scrittura** (i commit `3f436fc`/`7d2583f`/`de3c172`/
+  `5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso commit
+  `f2cda73`).
 
 ## Unico punto eventualmente manuale
 
