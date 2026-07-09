@@ -142,24 +142,41 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   torna a persistere §11.9 (`2260ed4`) = **build 34** (confermata su TestFlight, 2026-07-08). I
   numeri di build 30-33 ↔ commit sono **ricostruiti dai commit** (mappatura per-build e Delivery UUID
   non registrati in questa nota; build 34 confermata).
-- **Import normativo AKN — build ~35, 2026-07-09 (ultima su TestFlight).** Swipe VoiceOver mai
+- **Import normativo AKN — build 35, 2026-07-09.** Swipe VoiceOver mai
   ostacolato — indicatore di scorrimento disattivato §2.2 (`c96dafe`); parser AKN Swift in ScaboCore,
   parità 13/13 sui baseline N-* (`28e241b`); rifinitura segmenti AKN, i tre attriti del gate
   (`fbf6ab2`); import + persistenza di prima classe — picker `.xml`, orchestratore parallelo
   `AknDocumentProcessor`, campo `ArchivedDocument.sourceKind` (`a99c3ba`). Percorso PDF/Estratto
-  intatti (file nuovi, confluenza su `ScabopdfDocument`).
+  intatti (file nuovi, confluenza su `ScabopdfDocument`). **Numero confermato = 35**: al giro di
+  enablement TestFlight del 2026-07-09 `latest_testflight_build_number` ha restituito 35 come ultima
+  presente prima dell'upload — chiude la ricostruzione "~35" con il dato reale.
+- **Enablement TestFlight (installazione senza Modalità sviluppo) — build 36 + 37, 2026-07-09.** Giro
+  operativo di sola distribuzione (nessuna modifica di codice): confermato che la Modalità sviluppo
+  serve solo alle build lanciate da Xcode e che una build TestFlight (firma di distribuzione) si
+  installa come normale app, e verificata la configurazione picker/AKN (`[.pdf, .xml]`, `asCopy:true`,
+  export compliance `ITSAppUsesNonExemptEncryption=false`). Entrambe le build da `fd264a1` (= import
+  AKN + allineamento doc; **codice app identico alla 35**, delta solo-documentazione → binario di fatto
+  equivalente). **Build 36** (`fastlane beta` #1): archive+export OK, upload con **500 transitorio di
+  Apple** su `GET UPLOAD STATE (ASSET_DESCRIPTION)` (Delivery UUID `14942684-aa84-41e6-93fa-2c83d2c5c57c`)
+  — il binario è però stato **accettato** (il retry ha poi calcolato 37 come successivo). **Build 37**
+  (`fastlane beta` #2, retry): `UPLOAD SUCCEEDED with no errors`, Delivery UUID
+  `a3263764-2c4e-4ad0-9064-0e8ecb085085`, `fastlane.tools finished successfully`. **La build da
+  installare è la 37** (l'ultima, caricata pulita; la 36 può comparire su App Store Connect come
+  duplicato di codice identico).
 - **Stato branch corrente (verificato sui commit 2026-07-09).** `main` = `origin/main`, working tree
-  pulito, contiene **tutto** il lavoro fino all'import AKN. Le sei feature-branch superstiti
-  (`feat/streaming-extraction`, `feat/reading-vertical-collection`, `feat/heading-navigation`,
-  `feat/giappichelli-photoshop-family-leaf`, `feat/lezioni-verso-header-furniture`,
-  `feat/lezioni-section-bibliography-hold`) sono **interamente contenute in `main`** (0 commit avanti)
-  e possono essere cancellate o parcheggiate senza perdita. I branch `feature/split-screen` /
-  `fix/reading-focus-restore` citati nelle build 26-29 **non esistono più** (già assorbiti in `main`
-  ed eliminati). **Correzione di fatto:** una versione precedente di questa nota affermava «`main` è
-  fermo a `1411c1a` = build 25, le build 26-29 vivono su branch non mergiati, il prossimo run
-  produrrà 30» — era **stale/errata già alla scrittura** (i commit `3f436fc`/`7d2583f`/`de3c172`/
-  `5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso commit
-  `f2cda73`).
+  pulito, **nessun branch di feature residuo** (né in locale né su `origin`): l'unica ref è `main`. Le
+  sei feature-branch dell'arco peso/famiglie (`feat/streaming-extraction`,
+  `feat/reading-vertical-collection`, `feat/heading-navigation`, `feat/giappichelli-photoshop-family-leaf`,
+  `feat/lezioni-verso-header-furniture`, `feat/lezioni-section-bibliography-hold`) erano interamente
+  contenute in `main` (0 commit avanti, `git branch --merged main` le elencava) e sono state
+  **cancellate** (locale + `origin`) nel giro di manutenzione git del 2026-07-09, insieme al branch di
+  pulizia `chore/igiene-ricognizione-2026-07-09` (mergiato in `main` in fast-forward prima della
+  cancellazione). I branch `feature/split-screen` / `fix/reading-focus-restore` citati nelle build
+  26-29 non esistevano già più. **Correzione di fatto:** una versione precedente di questa nota
+  affermava «`main` è fermo a `1411c1a` = build 25, le build 26-29 vivono su branch non mergiati, il
+  prossimo run produrrà 30» — era **stale/errata già alla scrittura** (i commit `3f436fc`/`7d2583f`/
+  `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
+  commit `f2cda73`).
 
 ## Unico punto eventualmente manuale
 

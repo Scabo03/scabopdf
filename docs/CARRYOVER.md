@@ -52,7 +52,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Arco PESO concluso + import normativo AKN consegnato → build ~30-35 su TestFlight — 2026-07-05/09
+## ▶ STATO — Arco PESO concluso + import normativo AKN consegnato → build 30-37 su TestFlight — 2026-07-05/09
 
 > Questo blocco **supera** il "▶ STATO … build 24-29" immediatamente sotto: il **"prossimo arco di
 > lavoro: PESO DI MEMORIA E RENDERING"** lì indicato come *fronte aperto* è ora **chiuso**, e lo split
@@ -69,7 +69,7 @@ delle altezze** per il salto lungo pronto e il primo scroll fluido sui giganti (
 **cleanup dello split** (§11) nel mondo a finestra: trovato sostanzialmente pulito, un solo attrito di
 cablatura chiuso — la posizione di ciascuna metà torna a persistere §11.9 (`2260ed4`) = **build 34**.
 
-**Import normativo AKN — CONSEGNATO (build ~35, 2026-07-09, ultima su TestFlight).** Terzo produttore
+**Import normativo AKN — CONSEGNATO (build 35, 2026-07-09; enablement TestFlight 36+37 stesso giorno).** Terzo produttore
 dietro il tipo `ScabopdfDocument` (non un secondo estrattore): un parser Swift che riusa tutto l'arco a
 valle **invariato**. (A, `28e241b`) `AknDetector` + `AknParser` + `AknXmlTree` in ScaboCore via
 `XMLParser` SAX, producono `ScabopdfDocument` diretto (schema 0.7.0) **senza `PdfExtraction` né
@@ -100,10 +100,14 @@ riferimento", non blocca la lettura), un **campo di formato esplicito** per i fi
 lo split, i segnalibri/sottolineature e l'**Estratto blindato** (baseline byte-identica). Il percorso
 normativo vive in **file nuovi** e confluisce solo su `ScabopdfDocument`. Suite verde (ScaboCore 519).
 
-**Stato branch (verificato sui commit 2026-07-09).** `main` = `origin/main`, working tree pulito. Le
-sei feature-branch superstiti sono **interamente contenute in `main`** (0 commit avanti) — cancellabili
-o parcheggiabili senza perdita. L'arco AKN è stato committato **direttamente su `main`** (non c'è un
-branch `feat/akn-import`).
+**Stato branch (verificato sui commit 2026-07-09).** `main` = `origin/main`, working tree pulito,
+**nessun branch di feature residuo**. Le sei feature-branch dell'arco peso/famiglie erano interamente
+contenute in `main` (0 commit avanti) e sono state **cancellate** (locale + `origin`) nel giro di
+manutenzione git del 2026-07-09, insieme al branch di pulizia `chore/igiene-ricognizione-2026-07-09`
+(mergiato in `main` in fast-forward). L'arco AKN è stato committato **direttamente su `main`** (non c'è
+un branch `feat/akn-import`). Le build **36** e **37** del 2026-07-09 sono il giro di *enablement
+TestFlight* (installazione senza Modalità sviluppo): stesso codice app della 35, dettaglio in
+`docs/RELEASE_TESTFLIGHT.md`.
 
 ---
 
