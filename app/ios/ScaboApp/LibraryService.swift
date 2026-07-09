@@ -145,9 +145,34 @@ final class LibraryService {
         }
     }
 
-    /// Rimuove PDF e cache di un documento dal disco (chiamata all'eliminazione definitiva).
+    /// Rimuove sorgente (PDF o AKN) e cache di un documento dal disco (eliminazione definitiva).
     func deleteFiles(forDocumentId id: String) {
         try? fileManager.removeItem(at: archivedPDFURL(forDocumentId: id))
+        try? fileManager.removeItem(at: archivedSourceURL(forDocumentId: id, kind: "akn"))
         try? fileManager.removeItem(at: cacheURL(forDocumentId: id))
+    }
+
+    // MARK: - Archivio sorgente generico (PDF o AKN)
+
+    /// Percorso d'archivio della sorgente secondo il formato: `<id>.pdf` (default/PDF) o
+    /// `<id>.xml` (AKN). È la sorgente di verità da cui si rielabora quando la cache manca (§12.6).
+    func archivedSourceURL(forDocumentId id: String, kind: String?) -> URL {
+        let ext = (kind == "akn") ? "xml" : "pdf"
+        return archiveDir.appendingPathComponent("\(id).\(ext)")
+    }
+
+    /// Vero se la sorgente d'archivio del formato dato esiste (necessaria per rielaborare).
+    func hasArchivedSource(forDocumentId id: String, kind: String?) -> Bool {
+        fileManager.fileExists(atPath: archivedSourceURL(forDocumentId: id, kind: kind).path)
+    }
+
+    /// Copia la sorgente importata (copia temporanea) nell'archivio sotto l'id del documento,
+    /// con l'estensione del formato. Simmetrico a `storePDF` (§12.6).
+    func storeSource(from temporaryURL: URL, forDocumentId id: String, kind: String?) throws {
+        let destination = archivedSourceURL(forDocumentId: id, kind: kind)
+        if fileManager.fileExists(atPath: destination.path) {
+            try? fileManager.removeItem(at: destination)
+        }
+        try fileManager.copyItem(at: temporaryURL, to: destination)
     }
 }

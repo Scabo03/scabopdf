@@ -74,6 +74,13 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// delle librerie di versioni precedenti (retro-compatibilità additiva → nessun reset).
     public var underlines: [Underline]?
 
+    /// Formato/sorgente del documento: `"pdf"` (default storico) o `"akn"` (testo normativo
+    /// Akoma Ntoso importato da Normattiva). OPZIONALE per retro-compatibilità additiva: una
+    /// libreria di una versione precedente non ha la chiave, e `nil` significa PDF (l'unico
+    /// formato prima di questo campo). Serve a instradare la ri-elaborazione (dal PDF d'archivio
+    /// vs dall'XML AKN d'archivio, §12.6) e ai futuri filtri di ricerca per formato (§13.2).
+    public var sourceKind: String?
+
     public init(
         id: String,
         title: String,
@@ -85,7 +92,8 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         warnings: [String] = [],
         isHiddenFromRecents: Bool? = nil,
         bookmarks: [Bookmark]? = nil,
-        underlines: [Underline]? = nil
+        underlines: [Underline]? = nil,
+        sourceKind: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -98,6 +106,7 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         self.isHiddenFromRecents = isHiddenFromRecents
         self.bookmarks = bookmarks
         self.underlines = underlines
+        self.sourceKind = sourceKind
     }
 }
 
@@ -450,7 +459,8 @@ public final class LibraryStore {
         title: String,
         sourceFileName: String,
         sourcePageCount: Int,
-        warnings: [String] = []
+        warnings: [String] = [],
+        sourceKind: String? = nil
     ) -> ArchivedDocument {
         let doc = ArchivedDocument(
             id: makeId(),
@@ -460,7 +470,8 @@ public final class LibraryStore {
             lastOpenedAt: nil,
             sourcePageCount: sourcePageCount,
             readingPosition: 0,
-            warnings: warnings)
+            warnings: warnings,
+            sourceKind: sourceKind)
         state.documents.append(doc)
         persist()
         return doc

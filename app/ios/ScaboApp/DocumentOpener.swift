@@ -100,8 +100,8 @@ enum DocumentOpener {
             return
         }
 
-        // Percorso di rielaborazione: serve il PDF d'archivio.
-        guard service.hasArchivedPDF(forDocumentId: id) else {
+        // Percorso di rielaborazione: serve la sorgente d'archivio (PDF o XML AKN).
+        guard service.hasArchivedSource(forDocumentId: id, kind: doc.sourceKind) else {
             presentError(
                 "Il file di origine di questo documento non è più disponibile sul dispositivo, "
                 + "quindi non può essere riaperto. Reimportalo per leggerlo di nuovo.",
@@ -109,10 +109,13 @@ enum DocumentOpener {
             return
         }
 
+        let isAkn = doc.sourceKind == "akn"
         let target = large ? Self.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
-        let pdfURL = service.archivedPDFURL(forDocumentId: id)
+        let sourceURL = service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind)
+        let processor: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         let processingVC = ProcessingViewController(
-            fileURL: pdfURL, sourceName: doc.title, granularityTarget: target, buildDoctrine: !large)
+            fileURL: sourceURL, sourceName: doc.title, granularityTarget: target,
+            buildDoctrine: !large, processor: processor)
         processingVC.onOutcome = { [weak presenter] outcome in
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
@@ -374,7 +377,9 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
     func begin(from presenter: UIViewController) {
         self.presenter = presenter
         Self.active.insert(self)
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.pdf], asCopy: true)
+        // PDF + AKN (XML di Normattiva). L'import non-PDF è la piattaforma XML/EPUB (§12.8): qui si
+        // aggiunge l'XML AKN accanto al PDF; l'EPUB è un passo successivo.
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: [.pdf, .xml], asCopy: true)
         picker.delegate = self
         picker.allowsMultipleSelection = false
         presenter.present(picker, animated: true)
@@ -394,7 +399,9 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
     }
 
     private func startProcessing(originalURL: URL, presenter: UIViewController) {
-        guard let localCopy = copyIntoTemporary(originalURL) else {
+        // Dispatch sul formato: XML AKN → orchestratore AKN; altrimenti PDF (invariato).
+        let isAkn = originalURL.pathExtension.lowercased() == "xml"
+        guard let localCopy = copyIntoTemporary(originalURL, ext: isAkn ? "xml" : "pdf") else {
             DocumentOpener.presentError(
                 "Non è stato possibile leggere il file scelto. Riprova selezionandolo di nuovo.",
                 from: presenter)
@@ -403,12 +410,19 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         }
         let sourceName = originalURL.lastPathComponent
 
-        let processingVC = ProcessingViewController(fileURL: localCopy, sourceName: sourceName)
+        let processor: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
+        let processingVC = ProcessingViewController(
+            fileURL: localCopy, sourceName: sourceName, processor: processor)
         processingVC.onOutcome = { [weak self, weak presenter] outcome in
             presenter?.dismiss(animated: true) {
+                guard let self, let presenter else {
+                    try? FileManager.default.removeItem(at: localCopy); self?.finish(); return
+                }
+                // La copia temporanea è la sorgente dell'archiviazione (§12.6): va rimossa DOPO che
+                // `handleOutcome` l'ha copiata in archivio, non prima (correzione del cleanup).
+                self.handleOutcome(
+                    outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, presenter: presenter)
                 try? FileManager.default.removeItem(at: localCopy)
-                guard let self, let presenter else { self?.finish(); return }
-                self.handleOutcome(outcome, sourceName: sourceName, localCopy: localCopy, presenter: presenter)
             }
         }
         presenter.present(processingVC, animated: true)
@@ -418,30 +432,36 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         _ outcome: DocumentProcessor.Outcome,
         sourceName: String,
         localCopy: URL,
+        isAkn: Bool,
         presenter: UIViewController
     ) {
         let service = LibraryService.shared
+        let sourceKind: String? = isAkn ? "akn" : nil
         switch outcome {
         case .success(let document, let content, let doctrineContent):
             // Il titolo di default è il nome del file senza estensione (modificabile poi).
             let title = (sourceName as NSString).deletingPathExtension
+            // L'AKN non ha pagine fisiche (§4): sourcePageCount=0 → indicatore di pagina inerte.
+            let sourcePageCount = isAkn ? 0 : document.metadata.pages_pdf
             let doc = service.store.addDocument(
                 title: title.isEmpty ? sourceName : title,
                 sourceFileName: sourceName,
-                sourcePageCount: document.metadata.pages_pdf,
-                warnings: document.warnings)
-            // Archivia il PDF (sorgente di verità) e la cache del contenuto.
+                sourcePageCount: sourcePageCount,
+                warnings: document.warnings,
+                sourceKind: sourceKind)
+            // Archivia la sorgente (PDF o XML AKN, sorgente di verità §12.6) e la cache del contenuto.
             do {
-                try service.storePDF(from: localCopy, forDocumentId: doc.id)
+                try service.storeSource(from: localCopy, forDocumentId: doc.id, kind: sourceKind)
             } catch {
-                // L'archiviazione del PDF è fallita: il documento resta comunque apribile ora dalla
-                // cache, ma non rielaborabile in futuro. Si avvisa in prosa senza bloccare la lettura.
+                // L'archiviazione è fallita: il documento resta apribile ora dalla cache, ma non
+                // rielaborabile in futuro. Si avvisa in prosa senza bloccare la lettura.
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
             }
             let pageMap = DocumentOpener.buildPageMap(document)
             // Volume ENORME: apertura alleggerita (niente albero né Dottrina) e NON cachato — la
             // prossima apertura dai Recenti lo rielabora leggero (granularità grossa) via `open`.
-            let large = document.metadata.pages_pdf > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
+            // L'AKN non è mai "large" (sourcePageCount=0): la finestra della reading view lo regge.
+            let large = sourcePageCount > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
             let tree = large ? nil : DocumentOpener.quickConsultTreeIfAvailable(document)
             if !large {
                 service.writeCache(content, pageMap: pageMap,
@@ -464,9 +484,9 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         finish()
     }
 
-    private func copyIntoTemporary(_ source: URL) -> URL? {
+    private func copyIntoTemporary(_ source: URL, ext: String = "pdf") -> URL? {
         let destination = FileManager.default.temporaryDirectory
-            .appendingPathComponent("scabo_import_\(UUID().uuidString).pdf")
+            .appendingPathComponent("scabo_import_\(UUID().uuidString).\(ext)")
         do {
             try FileManager.default.copyItem(at: source, to: destination)
             return destination
