@@ -410,6 +410,25 @@ l'accessibilità incontra l'architettura appena costruita.
   completa, una leva su un documento. Se scatta in modo inaccettabile, **cambia
   tutto** (serve ri-misura incrementale) — e lo si scopre a costo minimo, prima di
   investire.
+
+  > **STATO — Fase 0 CHIUSA e mergiata in `main` (2026-07-10, commit `9691d0b`;
+  > build 38 collaudata su device).** La leva **dimensione-testo live** è acquisita:
+  > offset sulla scala Dynamic Type (integrata, non combattuta), font
+  > `compatibleWith` traits espliciti → **misurato == reso**, ri-misura completa via
+  > percorso cambio-larghezza con **posizione conservata**, e **sanamento
+  > dell'incoerenza Dynamic Type**. Criteri soddisfatti: posizione conservata
+  > (collaudo device sul Codice civile, caso peggiore), altezze combacianti (5
+  > categorie × 4 ruoli), **memoria permanente invariata** (cache = 8 byte/elemento;
+  > il picco della misura O(N) è transitorio e drena), **nessuna regressione** (636
+  > test verdi; Estratto byte-identico al freeze build-19 per costruzione — nessun
+  > file di pipeline/classificazione/emissione toccato). Il **criterio-tempo** è
+  > chiuso sull'**evidenza device** (zoom fluido, fuoco conservato, nessun crash):
+  > il costo O(N) è quello che l'apertura già paga e che il simulatore in debug
+  > gonfia. La **ri-misura incrementale** (misura del solo vicinato del fuoco +
+  > stima raffinata pigramente) resta un **rimedio in riserva, NON implementato**,
+  > da valutare solo se il device reale lo reclamerà all'uso. Le Fasi 1-3 sotto
+  > restano da avviare **solo dopo** che il maintainer avrà sciolto le sei decisioni
+  > di prodotto del § 11.
 - **Fase 1 — Le leve fini sullo stile di lettura.** «Stile di lettura risolto» in
   `ScaboCore`, letto da misura+configurazione in `ScaboApp`, per: **dimensione,
   spaziatura** (interlinea/lettere/parole/paragrafi/celle), **scelta font tra
