@@ -541,3 +541,321 @@ su scala, non per un gate a scelta manuale).
 Nessun codice di funzione, nessun branch di feature, nessuna build, nessun modello
 spedito, nessun cablaggio di distribuzione. Questo giro finisce qui, con questo
 documento. La decisione di procedere — e in quale forma — resta al maintainer.
+
+---
+
+# Estensione (2° giro di studio) — Il pannello dei modelli e le istruzioni per-file
+
+Seguito teorico del documento sopra, su due tasselli emersi dal maintainer,
+entrambi ancora di studio. Stesso metodo: verifica sui commit + ricerca web
+(Surya verificato allo stato di luglio 2026; Apple Platform Security). Nessuna
+implementazione. Queste due Parti **raffinano** le aree della Parte I (§ 3
+modelli, § 4 distribuzione, § 6 guardiani) e alimentano il ventaglio di decisioni
+(§ 7) e il piano (Parte II) **senza cambiare il gate**.
+
+---
+
+## Parte III — Il pannello dei modelli accessibile
+
+### III.1 Perché il pannello è la condizione di esistenza, non un accessorio
+
+L'utenza reale di ScaboPDF sono ciechi spesso poco pratici e poco a loro agio con
+questo mondo. Per loro, **procurarsi e gestire modelli locali da soli è il vero
+collo di bottiglia**: senza una via facilitata, l'ultrafocus non è «difficile», è
+*inutilizzabile*. Il pannello dei modelli non è quindi un di più: è la condizione
+perché l'officina esista per questa utenza. Va progettato con lo stesso rigore di
+accessibilità dei vincoli inderogabili del § 2 del prodotto.
+
+### III.2 Come funzionano gli strumenti tipo «OCR Lab» e cosa imitare
+
+**Onestà sull'identificazione.** «OCR Lab» come prodotto specifico **non è
+identificabile con certezza** dalle ricerche pubbliche: nessun tool noto con quel
+nome espone un pannello Surya/Ollama/Tesseract. Lo tratto come l'*esemplare di
+riferimento* che il maintainer ha in mente per una UX ben precisa, che è quella
+della classe dei **gestori di modelli locali**: LM Studio, Ollama (CLI + la nuova
+app GUI), Jan, GPT4All, e i front-end OCR (es. Ollama-OCR). Il pattern comune, e
+ciò che vale la pena imitare:
+
+- **un posto solo** dove trovare e scaricare i modelli (catalogo sfogliabile);
+- **download con un'azione**, poi **cache locale** e funzionamento **offline** una
+  volta scaricati;
+- **selezione esplicita** del modello da applicare (nel disegno del maintainer:
+  manuale, mai automatica).
+
+**Cosa manca a tutti, per un cieco poco pratico** (verificato):
+
+- I gestori **CLI** (`ollama pull`, `huggingface-cli`) sono una **doppia
+  barriera**: di navigabilità (Terminal + screen reader legge frasi parziali,
+  output non navigabile) e di *comprensione* (comandi da digitare).
+- I gestori **GUI** (LM Studio, Jan, GPT4All) sono Electron con VoiceOver
+  variabile, ma il muro vero è un altro: i cataloghi sono descritti in **gergo
+  ML** (7B, Q4\_K\_M, finestra di contesto, VRAM) che a chi non è del mestiere non
+  dice **nulla**.
+- **Nessuno** spiega *a cosa serve* un modello in prosa semplice legata a un
+  problema dell'utente, e **nessuno collega la diagnosi del proprio file alla
+  scelta del modello**. È esattamente il vuoto che ScaboPDF deve colmare — ed è la
+  ragione per cui il pannello, qui, deve essere di un'altra specie.
+
+### III.3 La cassetta d'attrezzi per sotto-task — catalogo reale, licenze, offline
+
+Non un modello unico ma **un attrezzo per ogni sotto-task**; l'utente abbina.
+Conferma trasversale: **tutti girano in locale in inferenza — nessun testo dei
+materiali esce**; unico tocco di rete il download pesi una-tantum (nessun dato
+utente), forzabile offline.
+
+**Surya, stato verificato (luglio 2026, v0.21.1).** «Surya 2» è un solo **VLM
+~650M** (architettura Qwen-style) che fa **OCR + layout + table** insieme, servito
+su Apple Silicon da **llama.cpp** (GGUF); la rilevazione delle righe e la
+rilevazione-errori-OCR restano piccoli modelli torch separati. Predittori reali:
+`surya_ocr`, `surya_layout`, `surya_table`, `surya_detect` (+ `surya_gui`). Due
+modalità OCR: *full-page* (una chiamata VLM a pagina, ritorna **layout + contenuto
+come blocchi HTML** — è l'«OCR + classificazione» che il maintainer chiama «Surya
+2.0») e *block-mode* (prima layout, poi OCR per blocco). **Licenza:** codice
+**Apache-2.0**; pesi «**modified AI Pubs Open RAIL-M — liberi per ricerca, uso
+personale e startup sotto i $5M** di funding/revenue», a pagamento oltre. Per
+ScaboPDF (progetto di accessibilità ampiamente sotto soglia) **i pesi sono
+usabili gratuitamente**; e poiché Surya gira sul Mac-officina (e i pesi si
+scaricano da HuggingFace, non si ridistribuiscono nel binario), la questione
+redistribuzione non si pone.
+
+**Un chiarimento importante sul «solo-estrazione».** Surya lavora su **immagini di
+pagina**: per un PDF **nativo** (con text-layer) l'estrazione del testo **non è
+compito di Surya** — è di PDFKit/PyMuPDF, che leggono il testo già presente.
+Ciò che Surya offre non è un «solo-estrazione testo» per i nativi, ma **layout-only**
+(`surya_layout`: struttura e ordine, senza ri-riconoscere il testo) e **OCR** (con
+o senza struttura). La mappa d'uso reale è quindi: *PDF nativo → estrattore
+(PDFKit/low-level) + classificatore*; *scansione → OCR (Surya/Vision/Tesseract) +
+layout/classificatore*.
+
+| Sotto-task | Strumenti reali | Licenza | Offline |
+|---|---|---|---|
+| **Estrazione** (PDF nativo) | PDFKit (on-device), estrattore low-level CGPDF (recupero nomi-font, debito noto), PyMuPDF (dev-time) | PDFKit di sistema; PyMuPDF AGPL (dev-time) | Sì |
+| **OCR** (scansioni) | Surya OCR (Apache/<$5M), **Apple Vision `VNRecognizeText`** (di sistema, gira anche sul mobile), Tesseract (Apache), docling-con-OCR (MIT), olmOCR (Apache) | quasi tutti aperti | Sì |
+| **Layout / classificazione / ordine** | Surya layout, **docling** (MIT, RT-DETR + reading order), **dots.ocr** (MIT), PaddleOCR PP-Structure (Apache) | MIT/Apache | Sì |
+| **Semantica** (ricucitura, coerenza, correttezza — il piano che Surya NON copre) | SLM testuali via Ollama/MLX: **Qwen3-4B** (Apache, 32K), **Phi-4-mini** (MIT, 128K), Gemma 2/3 (termini custom), Llama 3.2 3B (licenza custom) | Apache/MIT puliti; Gemma/Llama custom | Sì |
+
+Nota sull'italiano: sul piano semantico Qwen3 e Gemma hanno il profilo migliore;
+Phi-4-mini è il più pulito di licenza (MIT) ma italiano di seconda fascia.
+
+### III.4 Il pannello accessibile e l'anello diagnostica → descrizione → scelta
+
+**Dove vive.** Nell'**app macOS** (l'officina): lì girano i modelli pesanti e
+avvengono i download. Il mobile non scarica modelli pesanti (non li fa girare):
+resta sala di lettura del frutto.
+
+**L'anello, ancorato a decisioni di prodotto GIÀ prese.** Non è un impianto nuovo:
+estende `LAYER2_PRODUCT_DECISIONS § 12.9–12.11`.
+
+1. **La diagnostica parla** (§ 12.10 «referto di elaborazione permanente», in
+   **prosa comprensibile, mai "errore" secco»; § 12.9 annunci VoiceOver con suono
+   di avviso; i Guardiani del § 6). Dopo l'elaborazione di un file, se emerge un
+   punto incerto o strano, il referto **dice almeno il tipo di sospetto** e
+   **nomina il tipo di strumento** che servirebbe — *non* il modello preciso. Il
+   consiglio sta nella diagnostica, non nel pannello. Esempi in prosa:
+   «Questo file sembra una **scansione**: parte del testo potrebbe mancare —
+   servirebbe un **lettore di scansioni (OCR)**»; «Ho trovato **note che sembrano
+   spezzate tra le pagine** e non ricucite — servirebbe un **ricostruttore di
+   struttura**»; «In alcune pagine a **due colonne** l'ordine di lettura è
+   incerto».
+
+2. **Il pannello descrive** (catalogo **per ruolo**, non per gergo). Ogni modello
+   è presentato in **prosa semplice, per il problema che risolve**, raggruppato
+   per ruolo con un vocabolario che **coincide con quello dei sospetti**: «Lettore
+   di scansioni», «Ricostruttore di struttura e ordine», «Ricucitore del senso».
+   La schermata *spiega*, così è essa a insegnare l'abbinamento.
+
+3. **L'utente sceglie** (manuale). Abbina il ruolo indicato dalla diagnostica al
+   modello scaricato di quel ruolo e lo applica al prossimo lavoro. **È una nuova
+   classe di «correzione assistita»** (§ 12.11): non più solo accorpa/riclassifica/
+   ignora, ma anche «rielabora questo file con lo strumento X».
+
+**Accessibilità concreta del pannello** (requisiti, non implementazione): download
+come **una sola azione** con avanzamento annunciato e dimensione detta in prosa
+(«occupa circa 2 gigabyte»); **niente token, niente terminale, niente config**;
+model card in prosa, non gergo; stato dichiarato («una volta scaricato funziona
+senza internet»); e il perno dell'accessibilità cognitiva: **il vocabolario del
+sospetto e quello dei ruoli sono lo stesso**, così l'abbinamento è ovvio senza che
+il pannello dia consigli. Divisione dei compiti rispettata: la diagnostica
+consiglia (nomina il ruolo), il pannello descrive e lascia scegliere.
+
+---
+
+## Parte IV — Istruzioni per-file al posto del documento, e i canali locali
+
+### IV.1 L'idea e la domanda cardine
+
+Idea del maintainer: invece di spedire ai mobile il **documento** rielaborato (che
+porta il testo protetto), il Mac spedisce un pacchetto di **istruzioni specifiche
+per quel file** — le regole/parametri su come quel documento va trattato — che il
+mobile applica **localmente** al file che già possiede. Il mobile, aprendo quel
+file, riconosce che ci sono istruzioni dedicate arrivate dal Mac e applica quelle
+invece delle sue generiche. Così **il testo non viaggia**: sul cloud passerebbero
+solo istruzioni (metadati).
+
+**Domanda cardine (think harder):** le istruzioni per-file bastano perché il mobile
+riproduca da solo il frutto che il Mac ottiene col modello pesante? O il vero
+frutto (comprensione, ricucitura semantica) è qualcosa che un pacchetto di
+istruzioni non trasporta, perché richiederebbe il modello che sul mobile non gira?
+**La risposta non è sì/no: dipende dal sotto-task.**
+
+### IV.2 La decomposizione onesta per sotto-task
+
+Premessa decisiva: **il mobile ha già il PDF** (l'ha importato); ha il testo in
+locale. La domanda è se il frutto del Mac si può codificare come **operazioni
+posizionali** sul file — senza il modello e senza trasportare testo. Cinque strati,
+dal puramente strutturale al puramente testuale:
+
+1. **Instradamento dell'estrazione** («questo file è scansionato → OCR»; «i font
+   collassano in PDFKit → estrattore low-level»). Come istruzione è minuscola e
+   content-free. *Ma* è eseguibile sul mobile **solo se l'estrattore nominato gira
+   on-device**: per l'OCR instrada al massimo alla **Apple Vision** del mobile
+   (qualità mobile), **non evoca l'OCR-Surya del Mac**. → *Basta come indirizzo,
+   non trasporta la qualità superiore.*
+
+2. **Struttura su PDF nativo — classificazione (livelli di heading, furniture),
+   permutazione dell'ordine di lettura, aggancio delle note cross-pagina.** È **il
+   cuore di ultrafocus** (esattamente i due guardiani). L'istruzione è un elenco di
+   **etichette + permutazioni d'ordine + coppie di aggancio, ancorate a posizioni/
+   blocchi**. **Content-free per costruzione**: posizioni, bbox, indici, etichette
+   di categoria e ordini sono **fatti di layout, non espressione protetta**. E il
+   mobile la **riproduce esattamente senza modello**: se Mac e mobile condividono
+   la **stessa estrazione PDFKit deterministica**, gli indici di blocco coincidono,
+   e il mobile si limita a **rietichettare / riordinare / agganciare i propri
+   blocchi**. → **Lo sweet spot: frutto strutturale pieno, zero testo, mobile lo
+   riproduce.** Ed è ciò per cui l'ultrafocus esiste in primo luogo.
+
+3. **OCR di una scansione.** Qui il frutto **è** il testo (non c'era text-layer: il
+   modello l'ha creato). Trasportarlo significa spedire il testo = **materiale
+   protetto**. Una «mappa di correzione» sull'OCR-Vision del mobile è a livello di
+   carattere/parola = testo. → *Non trasportabile come istruzione content-free:* o
+   si spedisce il testo (canale locale), o il mobile fa self-OCR di qualità
+   inferiore.
+
+4. **Normalizzazione OCR su text-layer** (deifenazione, «196o»→«1960»,
+   «LrnaRATURA»→«LETTERATURA»). Porta **frammenti di testo minuscoli** (i token
+   corretti). Zona grigia *de minimis*: la deifenazione espressa come **giunzione
+   posizionale** è content-free; le sostituzioni che portano originale→normalizzato
+   portano testo (piccolo). → *Progettabile come content-free per la parte
+   posizionale; testo per la parte sostitutiva.*
+
+5. **Riscrittura semantica profonda** (raddrizzare una frase sconnessa perché torni
+   il senso). Il frutto **è testo nuovo** (un derivato dell'opera, anzi la sua
+   espressione migliorata). Trasportarlo = spedire testo protetto; il mobile non lo
+   riproduce senza il modello. → *Non trasportabile senza testo; modello
+   insostituibile.*
+
+**Il problema tecnico dell'indirizzamento** (dove l'eleganza può perdere colpi).
+Le istruzioni devono ancorarsi a qualcosa che il mobile **risolve dal proprio
+file**: indici di blocco condivisi (se Mac e mobile usano la stessa estrazione
+PDFKit) o geometria pagina+bbox. Se il Mac ha usato un estrattore **diverso**
+(Surya su una scansione) gli indici non mappano → fallback all'ancora **geometrica**
+(più sfumata, ma sempre content-free). La via più pulita: **Mac e mobile stessa
+estrazione PDFKit deterministica, e il modello pesante decide solo la struttura
+"sopra"** — così l'indirizzo cavalca l'estrattore condiviso e le istruzioni sono
+solo permutazioni/etichette di blocchi che entrambe le macchine producono identici.
+(Caso limite: se il modello **cambia la segmentazione** — spezza un blocco incollato
+— l'overlay deve descrivere la nuova segmentazione via bbox: ancora content-free,
+ma porta geometria oltre agli indici.)
+
+### IV.3 Alternativa o complemento?
+
+**Complemento, con una divisione di scopo netta.** Le istruzioni per-file
+**sostituiscono** la spedizione del documento **solo per la classe strutturale**
+(strati 1–2), che però è il **cuore** di ultrafocus. Per **OCR-testo** e
+**riscrittura semantica** (strati 3–5) **non sono un sostituto**: quel frutto *è*
+testo, e o viaggia come testo protetto o non viaggia. Ne segue una
+**distribuzione a due corsie**:
+
+- **Corsia 1 — istruzioni leggere, content-free (struttura):** su **iCloud
+  accettabile-per-costruzione** (vedi IV.4).
+- **Corsia 2 — frutto pieno, testo protetto (OCR di scansioni, semantica):** solo
+  **canale locale** (§ 4 e IV.5).
+
+### IV.4 Quanto alleggerisce davvero il copyright (think harder)
+
+**Alleggerisce genuinamente per la corsia strutturale.** Se sul cloud passano
+**solo istruzioni posizionali**, iCloud torna accettabile **non per fiducia** in
+Apple **ma perché non contiene materiale sensibile**: non c'è testo protetto da
+proteggere. È la trasformazione più elegante del vincolo — il cancello del § 4 si
+sposta da «Apple può leggere il contenuto?» a «qui non c'è contenuto».
+
+**Ma non è una scappatoia universale.** Non dissolve il copyright per l'OCR-testo e
+la semantica: quel frutto resta testo protetto e richiede la corsia locale.
+Venderla come «il testo non viaggia mai, punto» sarebbe **l'illusione** contro cui
+il maintainer mette in guardia: **vera per la corsia strutturale, falsa per quella
+testuale**.
+
+**Il test di onestà — ed è qui che si decide se la via regge.** La promessa «il
+testo non viaggia» regge **se e solo se lo schema delle istruzioni è provabilmente
+text-free**: solo posizioni, bbox, indici, etichette, ordini, coppie di aggancio.
+**Una mappa di ricucitura che cita frasi le conterrebbe** — e allora il testo
+viaggia. Il vincolo di design è netto: **vietare qualunque payload testuale nelle
+istruzioni; ancorare tutto a posizioni.** Il bello è che **il progetto ha già
+questa disciplina**: i `Report` di misura e `StructuralComparison` sono
+**content-free per costruzione** (solo conteggi/categorie, mai testo), e il log
+`Transformation` (posizione/originale/normalizzato) è già il modello di una
+modifica reversibile ancorata a posizione. Il pacchetto di istruzioni per-file è
+**un'estensione naturale** di quella macchina, e la **stessa disciplina content-free
+lo rende auditabile**: si può verificare meccanicamente che un pacchetto non porti
+testo prima di lasciarlo salire su iCloud.
+
+Un punto legale che rafforza la corsia 1: **posizioni, ordini di lettura ed
+etichette di layout non sono espressione protetta dell'opera** — sono fatti sulla
+sua impaginazione. Un overlay strutturale non è una riproduzione dell'opera; è una
+mappa di come leggerla. (La sola area da sorvegliare è la normalizzazione-token
+dello strato 4, che va tenuta posizionale o accettata come de minimis.)
+
+### IV.5 La mappa dei canali locali, incluso il peer-to-peer di prossimità
+
+Accanto a iCloud-solo-istruzioni (corsia 1), i canali locali (corsia 2, e volendo
+anche la 1):
+
+- **Cavo / Finder «Condivisione file»** — contenimento **massimo**: nessuna rete,
+  nessun metadato, nessun terzo.
+- **Network.framework + Bonjour + TLS-PSK** — LAN cifrata, **nessun server**; la
+  via moderna non deprecata (chiave derivata da una passphrase, senza certificati).
+- **Peer-to-peer di prossimità — il framework del gioco multi-dispositivo in tempo
+  reale.** È ciò che il maintainer indica: **MultipeerConnectivity** era *il*
+  framework Apple per il gioco/collaborazione a prossimità (Wi-Fi peer-to-peer +
+  Bluetooth, cifrato, senza internet né broker). **Stato attuale, da dire con
+  onestà: MultipeerConnectivity è ora deprecato** (iOS 26/27), e Apple indirizza a
+  **Network.framework**, che offre lo **stesso** trasporto peer-to-peer a prossimità
+  (`includePeerToPeer = true`, niente router necessario). Cioè: la *capability* che
+  il maintainer vuole attivare è reale, Apple-benedetta, cifrata, tutta sul link
+  radio/LAN locale, **senza server**; cambia solo l'API con cui la si realizza
+  (Network.framework al posto del Multipeer legacy). Cosa transita: il pacchetto
+  (istruzioni della corsia 1 **o** frutto pieno della corsia 2); non tocca mai un
+  server. **Fattibile e confermato.**
+- **AirDrop** — trasferimento manuale one-shot, offline (BLE + Wi-Fi peer-to-peer),
+  non programmabile come sessione app-to-app.
+
+Nota tecnica semplice: la «connessione di prossimità da gioco» e la «LAN cifrata»
+sono in fondo **lo stesso trasporto** (Network.framework peer-to-peer), con
+Multipeer come vecchia API di comodità. Un unico attrezzo di trasporto copre
+entrambe le letture del maintainer.
+
+### IV.6 Ricaduta sul ventaglio di decisioni (§ 7) e sul piano (Parte II)
+
+Il gate (Fase 0) **non cambia**: valida il guadagno consegnato. Le due Parti
+raffinano il seguito:
+
+- **Il pannello** è parte della **Fase 2** (l'officina macOS): non un modello unico
+  ma la cassetta d'attrezzi per sotto-task, con l'anello diagnostica→descrizione→
+  scelta come nuova «correzione assistita».
+- **L'overlay strutturale content-free** è una raffinatura della **Fase 3**
+  (distribuzione) e, meglio, un candidato a **fase-ponte piccola e isolata**: la
+  corsia 1 (istruzioni posizionali su file nativo, indici PDFKit condivisi) è molto
+  più piccola della distribuzione del frutto pieno e **prova da sola** che «il testo
+  non viaggia» — si può validare subito dopo il gate, prima di toccare la corsia 2.
+
+Aggiunte al ventaglio del § 7, da decidere dal maintainer:
+
+8. **Scopo dell'ultrafocus:** solo **strutturale** (allora la corsia 1
+   iCloud-per-costruzione basta e il copyright è quasi dissolto), o **anche
+   semantico** (allora serve la corsia 2 locale per il testo protetto)?
+9. **Canale locale della corsia 2:** cavo (massimo), Network.framework+TLS-PSK
+   (LAN cifrata), o peer-to-peer di prossimità (Network.framework, ex-Multipeer)?
+10. **Ancoraggio delle istruzioni:** vincolare Mac e mobile alla **stessa
+    estrazione PDFKit** (indirizzamento per indici, il più pulito) o ammettere
+    l'**ancora geometrica** per i casi in cui il Mac usa un estrattore migliore?
+
