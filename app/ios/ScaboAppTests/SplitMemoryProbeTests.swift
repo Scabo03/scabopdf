@@ -87,4 +87,57 @@ final class SplitMemoryProbeTests: XCTestCase {
         // Nessuna assert: la sonda serve a leggere i numeri.
         XCTAssertTrue(true)
     }
+
+    /// SONDA del gate accessibilità (Fase 0): quanto costa una RI-MISURA LIVE della dimensione del
+    /// testo a metà di un volume alla scala del Codice civile, e quanto risale la memoria. Misura il
+    /// tempo (ms) del cambio dimensione dal vivo (percorso reset-cache + invalidate + ripristino
+    /// posizione) e il footprint prima/dopo. Il "niente scatto" percepito è collaudo device (già
+    /// passato dal maintainer); questa sonda conferma che l'operazione è LIMITATA (non secondi) e che
+    /// la memoria NON risale per la ri-misura.
+    func test_probe_liveTextSizeRemeasure_timing_and_memory() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        window.makeKeyAndVisible()
+
+        // Scala: coarse (8k), medio (25k), fine/Codice-civile-worst (47k).
+        for count in [8_000, 25_000, 47_000] {
+            var footBefore = 0.0, msUp = 0.0, msDown = 0.0, footPeak = 0.0, pos = -1
+            autoreleasepool {
+                let view = ContinuousReadingView(frame: window.bounds)
+                window.addSubview(view)
+                view.render(syntheticContent(count))
+                view.layoutIfNeeded()
+                // Base nota (.large) e posizione a METÀ, come il collaudo del maintainer.
+                view.setTextSizeCategoryForTesting(.large)
+                view.layoutIfNeeded()
+                view.presetReadingPosition(toIndex: count / 2)
+                footBefore = footprintMB()
+
+                // Ri-misura LIVE (cronometro monotono): ingrandisci di 2 passi, poi rimpicciolisci.
+                let t0 = ProcessInfo.processInfo.systemUptime
+                view.changeTextSize(by: +2)
+                view.layoutIfNeeded()
+                msUp = (ProcessInfo.processInfo.systemUptime - t0) * 1000.0
+
+                let t1 = ProcessInfo.processInfo.systemUptime
+                view.changeTextSize(by: -2)
+                view.layoutIfNeeded()
+                msDown = (ProcessInfo.processInfo.systemUptime - t1) * 1000.0
+
+                footPeak = footprintMB()   // PICCO durante/subito dopo la ri-misura (prima del drain)
+                pos = view.currentReadingElementIndex ?? -1
+                XCTAssertEqual(view.currentReadingElementIndex, count / 2,
+                               "la ri-misura live conserva la posizione a metà")
+                view.removeFromSuperview()
+            }
+            // Footprint SETTLED: dopo il drain dell'autoreleasepool e la rimozione della vista. Separa
+            // il PICCO TRANSITORIO (allocazioni Text Kit della misura O(N), che drenano) dalla memoria
+            // PERMANENTE (la cache altezze è 8 byte/elemento → nessuna crescita stabile attesa).
+            let footSettled = footprintMB()
+            print(String(
+                format: "REMEASURE count=%d | prima=%.0f MB | +2 passi=%.0f ms, -2 passi=%.0f ms | PICCO=%.0f MB (transitorio %+.0f) | SETTLED=%.0f MB (permanente %+.0f) | pos=%d/%d",
+                count, footBefore, msUp, msDown, footPeak, footPeak - footBefore,
+                footSettled, footSettled - footBefore, pos, count / 2))
+        }
+        XCTAssertTrue(true)
+    }
 }

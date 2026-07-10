@@ -283,6 +283,61 @@ final class ContinuousReadingViewTests: XCTestCase {
         XCTAssertTrue(view.canDecreaseTextSize)
     }
 
+    /// Criterio del gate: a OGNI dimensione (piccolissima → AX5) e per OGNI ruolo, l'altezza misurata
+    /// (servita da `sizeForItemAt`) combacia con la resa reale della cella — niente clip, niente gap.
+    func test_textSize_measuredMatchesRender_acrossCategories_andRoles() {
+        let width: CGFloat = 393
+        let view = makeView(width: width)
+        let segs = [
+            bodySegment("h", "Un titolo di capitolo", role: "HEADING_1"),
+            bodySegment("short", "Breve."),
+            bodySegment("long", String(repeating: "Frase di corpo che occupa parecchie righe. ", count: 8)),
+            bodySegment("art", "Art. 415 — Della cosa comune", role: "ARTICLE_HEADER"),
+        ]
+        view.render(segs)
+        window(view, width: width, height: 900)
+        view.layoutIfNeeded()
+
+        let categories: [UIContentSizeCategory] = [
+            .extraSmall, .large, .extraExtraLarge, .accessibilityLarge, .accessibilityExtraExtraExtraLarge,
+        ]
+        for category in categories {
+            view.setTextSizeCategoryForTesting(category)
+            view.layoutIfNeeded()
+            for i in segs.indices {
+                let measured = view.measuredHeightForTesting(at: i)
+                let real = realCellHeight(view, at: i, width: width)
+                XCTAssertEqual(measured, real, accuracy: 2,
+                               "cat \(category.rawValue), seg \(i): misurato \(measured) == reso \(real)")
+            }
+        }
+    }
+
+    /// Sanamento Dynamic Type: il percorso condiviso (cambio dimensione E cambio Dynamic Type di
+    /// sistema) fa una ri-misura COMPLETA — la cache non conserva altezze stantie (era il bug: solo
+    /// reconfigureVisibleCells, senza reset cache → clip/gap fuori schermo).
+    func test_dynamicTypePath_fullRemeasure_noStaleCachedHeights() {
+        let width: CGFloat = 393
+        let view = makeView(width: width)
+        view.render([bodySegment("long", String(repeating: "Frase di corpo lunga a sufficienza. ", count: 10))])
+        window(view, width: width, height: 900)
+        view.layoutIfNeeded()
+
+        view.setTextSizeCategoryForTesting(.small)
+        view.layoutIfNeeded()
+        let hSmall = view.measuredHeightForTesting(at: 0)
+
+        // Stesso percorso `remeasurePreservingPosition` che usa l'osservatore Dynamic Type di sistema:
+        // l'altezza in cache deve riflettere la NUOVA dimensione, non restare quella vecchia.
+        view.setTextSizeCategoryForTesting(.accessibilityLarge)
+        view.layoutIfNeeded()
+        let hBig = view.measuredHeightForTesting(at: 0)
+
+        XCTAssertGreaterThan(hBig, hSmall, "ri-misura reale sul percorso Dynamic Type (cache resettata)")
+        XCTAssertEqual(hBig, realCellHeight(view, at: 0, width: width), accuracy: 2,
+                       "altezza ricalcolata combaciante con la resa (niente altezza stantia in cache)")
+    }
+
     func test_headingQualifier_perLevel() {
         XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_1"), "Intestazione di livello 1.")
         XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_4"), "Intestazione di livello 4.")
