@@ -225,6 +225,64 @@ final class ContinuousReadingViewTests: XCTestCase {
             withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel).height
     }
 
+    // MARK: - Leva "dimensione del testo" (Fase 0 accessibilità visiva)
+
+    /// Il gate architetturale: alla dimensione più grande la cella è più ALTA e — cruciale — l'altezza
+    /// MISURATA (in cache) combacia ancora con la RESA reale (nessun clip, nessun gap).
+    func test_textSize_largerCategory_increasesHeight_andStillMatchesRender() {
+        let width: CGFloat = 393
+        let view = makeView(width: width)
+        view.render([bodySegment("long",
+            String(repeating: "Frase di corpo che occupa parecchie righe nella colonna. ", count: 8))])
+        window(view, width: width, height: 900)
+        view.layoutIfNeeded()
+
+        view.setTextSizeCategoryForTesting(.large)
+        view.layoutIfNeeded()
+        let small = view.measuredHeightForTesting(at: 0)
+        XCTAssertEqual(small, realCellHeight(view, at: 0, width: width), accuracy: 2,
+                       "alla dimensione base l'altezza misurata combacia con la resa")
+
+        view.setTextSizeCategoryForTesting(.accessibilityExtraLarge)
+        view.layoutIfNeeded()
+        let large = view.measuredHeightForTesting(at: 0)
+        XCTAssertGreaterThan(large, small, "il testo più grande produce una cella più alta")
+        XCTAssertEqual(large, realCellHeight(view, at: 0, width: width), accuracy: 2,
+                       "anche alla nuova dimensione misurato == reso (niente clip né gap)")
+    }
+
+    /// Il cambio di dimensione DAL VIVO conserva la posizione di lettura (l'utente resta sull'elemento).
+    func test_textSize_changeLive_preservesReadingPosition() {
+        let view = makeView()
+        view.render(manyBodySegments(40))
+        window(view, width: 393, height: 852)
+        view.layoutIfNeeded()
+        view.presetReadingPosition(toIndex: 12)
+        XCTAssertEqual(view.currentReadingElementIndex, 12)
+        view.changeTextSize(by: +2)
+        XCTAssertEqual(view.currentReadingElementIndex, 12,
+                       "il cambio di dimensione dal vivo NON sbalza la posizione altrove né a inizio file")
+    }
+
+    /// La leva si ferma agli estremi della scala Dynamic Type (min standard `.extraSmall`, max AX5).
+    func test_textSize_clampsAtLadderEnds() {
+        let view = makeView()
+        view.render(manyBodySegments(4))
+        window(view, width: 393, height: 852)
+        view.layoutIfNeeded()
+
+        view.setTextSizeCategoryForTesting(.extraSmall)   // fondo scala
+        XCTAssertFalse(view.canDecreaseTextSize)
+        XCTAssertTrue(view.canIncreaseTextSize)
+        XCTAssertEqual(view.changeTextSize(by: -1), view.textSizeOffset,
+                       "al minimo un ulteriore -1 non cambia nulla")
+        XCTAssertFalse(view.canDecreaseTextSize)
+
+        view.setTextSizeCategoryForTesting(.accessibilityExtraExtraExtraLarge)  // AX5, cima scala
+        XCTAssertFalse(view.canIncreaseTextSize)
+        XCTAssertTrue(view.canDecreaseTextSize)
+    }
+
     func test_headingQualifier_perLevel() {
         XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_1"), "Intestazione di livello 1.")
         XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_4"), "Intestazione di livello 4.")

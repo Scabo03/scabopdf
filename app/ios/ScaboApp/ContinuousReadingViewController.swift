@@ -92,6 +92,10 @@ final class ContinuousReadingViewController: UIViewController {
     private let readingView = ContinuousReadingView()
     private let interfaceBar = ReadingInterfaceBar()
 
+    /// Store delle preferenze globali (dimensione del testo di lettura, Fase 0 accessibilità visiva).
+    /// `UserDefaults`-backed via ScaboCore; stesso confine di persistenza di tema/granularità.
+    private let prefsStore: KeyValueStore = UserDefaultsKeyValueStore()
+
     /// Contenuto di corpo da rendere (iniettato dal flusso di elaborazione).
     private let content: PaginatedContent
 
@@ -262,6 +266,9 @@ final class ContinuousReadingViewController: UIViewController {
         view.backgroundColor = .systemBackground
         embedContainers()
         wireContainers()
+        // Dimensione del testo (Fase 0 accessibilità visiva): applica l'offset globale salvato PRIMA
+        // del primo render, così la prima misura usa già la dimensione scelta (nessuno scatto d'avvio).
+        readingView.setInitialTextSizeOffset(getStoredReadingTextSizeOffset(prefsStore))
         readingView.render(content)
         // Persistenza della posizione di lettura (§ 2.5): ogni cambio di fuoco aggiorna lo store e
         // l'indicatore di pagina in toolbar (§ 4.3, silenzioso: nessun annuncio, § 4.5).
@@ -305,6 +312,9 @@ final class ContinuousReadingViewController: UIViewController {
         // Segnalibri e tag (§ 5): azioni personalizzate sugli elementi + pulsante Segnalibri in
         // toolbar. Attivi solo per un documento reale (id non vuoto).
         setUpBookmarks()
+        // Pulsanti dimensione del testo (Fase 0): sempre disponibili in lettura (indipendenti dalla
+        // libreria), cablati alla leva live della reading view.
+        setUpTextSize()
         // Posizione di lettura ricordata: la si preimposta come ultima posizione (senza spostare
         // ancora il fuoco) così il rientro nel testo e il ripristino alla comparsa vi puntano.
         readingView.presetReadingPosition(toIndex: initialReadingPosition)
@@ -752,6 +762,28 @@ final class ContinuousReadingViewController: UIViewController {
             interfaceBar.setSplitAvailable(true)
             interfaceBar.onSplit = { [weak self] in self?.onSplitRequested?() }
         }
+    }
+
+    // MARK: - Dimensione del testo (Fase 0 accessibilità visiva)
+
+    /// Cabla i pulsanti "dimensione del testo" (Fase 0): applicano il cambio DAL VIVO alla reading view
+    /// (ri-misura conservando la posizione), persistono l'offset globale, e aggiornano lo stato
+    /// abilitato dei pulsanti ai limiti della scala.
+    private func setUpTextSize() {
+        interfaceBar.setTextSizeControls(
+            available: true,
+            canDecrease: readingView.canDecreaseTextSize,
+            canIncrease: readingView.canIncreaseTextSize)
+        interfaceBar.onIncreaseTextSize = { [weak self] in self?.stepTextSize(by: +1) }
+        interfaceBar.onDecreaseTextSize = { [weak self] in self?.stepTextSize(by: -1) }
+    }
+
+    private func stepTextSize(by delta: Int) {
+        let newOffset = readingView.changeTextSize(by: delta)
+        setStoredReadingTextSizeOffset(prefsStore, newOffset)
+        interfaceBar.setTextSizeButtonsEnabled(
+            canDecrease: readingView.canDecreaseTextSize,
+            canIncrease: readingView.canIncreaseTextSize)
     }
 
     /// (Ri)costruisce la mappa id-segmento → intervalli di parole dalle `Underline` dello store e la

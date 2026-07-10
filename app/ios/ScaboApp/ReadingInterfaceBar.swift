@@ -85,6 +85,58 @@ final class ReadingInterfaceBar: UIView {
     /// Azione del pulsante Split (impostata dal controller).
     var onSplit: (() -> Void)?
 
+    // ── Dimensione del testo (Fase 0 accessibilità visiva) ────────────────────────────────────
+    // Due pulsanti — rimpicciolisci / ingrandisci — che cambiano la dimensione del testo del
+    // documento DAL VIVO. Vivono in QUESTO container d'interfaccia (chiuso): raggiungibili solo
+    // scrubando alla barra, mai dallo swipe di lettura (§ 2.2).
+
+    let decreaseTextSizeButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "textformat.size.smaller"), for: .normal)
+        b.accessibilityLabel = "Testo più piccolo"
+        b.accessibilityHint = "Riduce la dimensione del testo del documento"
+        b.isHidden = true
+        return b
+    }()
+    let increaseTextSizeButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "textformat.size.larger"), for: .normal)
+        b.accessibilityLabel = "Testo più grande"
+        b.accessibilityHint = "Aumenta la dimensione del testo del documento"
+        b.isHidden = true
+        return b
+    }()
+
+    /// Azioni dei pulsanti dimensione (impostate dal controller).
+    var onDecreaseTextSize: (() -> Void)?
+    var onIncreaseTextSize: (() -> Void)?
+
+    private lazy var textSizeStack: UIStackView = {
+        let stack = UIStackView(arrangedSubviews: [decreaseTextSizeButton, increaseTextSizeButton])
+        stack.axis = .horizontal
+        stack.spacing = 12
+        stack.alignment = .center
+        stack.isHidden = true
+        return stack
+    }()
+
+    /// Mostra/nasconde i pulsanti dimensione del testo e ne imposta lo stato abilitato ai limiti.
+    func setTextSizeControls(available: Bool, canDecrease: Bool = true, canIncrease: Bool = true) {
+        textSizeStack.isHidden = !available
+        decreaseTextSizeButton.isHidden = !available
+        increaseTextSizeButton.isHidden = !available
+        if available { setTextSizeButtonsEnabled(canDecrease: canDecrease, canIncrease: canIncrease) }
+        refreshAccessibilityElements()
+    }
+
+    /// Aggiorna il solo stato abilitato dei pulsanti dimensione (ai limiti della scala).
+    func setTextSizeButtonsEnabled(canDecrease: Bool, canIncrease: Bool) {
+        decreaseTextSizeButton.isEnabled = canDecrease
+        increaseTextSizeButton.isEnabled = canIncrease
+        decreaseTextSizeButton.accessibilityTraits = canDecrease ? .button : [.button, .notEnabled]
+        increaseTextSizeButton.accessibilityTraits = canIncrease ? .button : [.button, .notEnabled]
+    }
+
     /// Mostra/nasconde il pulsante Segnalibri (§ 5.4). Il controller lo abilita solo per un
     /// documento reale (id non vuoto); nei test senza libreria resta nascosto e l'interfaccia è
     /// identica a prima.
@@ -168,7 +220,7 @@ final class ReadingInterfaceBar: UIView {
     /// Lo stack di destra impacchetta indicatore-pagina e controlli-quick: si mostra l'uno o gli
     /// altri secondo il Layout attivo (uno stack collassa gli arranged hidden).
     private lazy var rightStack: UIStackView = {
-        let stack = UIStackView(arrangedSubviews: [splitButton, bookmarksButton, quickControlsStack, pageIndicatorStack])
+        let stack = UIStackView(arrangedSubviews: [splitButton, bookmarksButton, textSizeStack, quickControlsStack, pageIndicatorStack])
         stack.axis = .horizontal
         stack.spacing = 12
         stack.alignment = .center
@@ -241,6 +293,8 @@ final class ReadingInterfaceBar: UIView {
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         bookmarksButton.addTarget(self, action: #selector(bookmarksTapped), for: .touchUpInside)
         splitButton.addTarget(self, action: #selector(splitTapped), for: .touchUpInside)
+        decreaseTextSizeButton.addTarget(self, action: #selector(decreaseTextSizeTapped), for: .touchUpInside)
+        increaseTextSizeButton.addTarget(self, action: #selector(increaseTextSizeTapped), for: .touchUpInside)
         resetStructureButton.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
         prevExpandedButton.addTarget(self, action: #selector(prevTapped), for: .touchUpInside)
         nextExpandedButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
@@ -260,6 +314,8 @@ final class ReadingInterfaceBar: UIView {
         var elements: [NSObject] = [backButton, layoutSelectorButton]
         if !splitButton.isHidden { elements.append(splitButton) }
         if !bookmarksButton.isHidden { elements.append(bookmarksButton) }
+        if !decreaseTextSizeButton.isHidden { elements.append(decreaseTextSizeButton) }
+        if !increaseTextSizeButton.isHidden { elements.append(increaseTextSizeButton) }
         if !quickControlsStack.isHidden {
             elements.append(resetStructureButton)
             elements.append(prevExpandedButton)
@@ -286,6 +342,8 @@ final class ReadingInterfaceBar: UIView {
     @objc private func resetTapped() { onResetStructure?() }
     @objc private func prevTapped() { onPrevExpanded?() }
     @objc private func nextTapped() { onNextExpanded?() }
+    @objc private func decreaseTextSizeTapped() { onDecreaseTextSize?() }
+    @objc private func increaseTextSizeTapped() { onIncreaseTextSize?() }
 
     // MARK: - Selettore di Layout (§ 3.4)
 

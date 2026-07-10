@@ -82,7 +82,11 @@ final class PageMarkerView: UIView {
         line.translatesAutoresizingMaskIntoConstraints = false
         label.font = .preferredFont(forTextStyle: .caption2)
         label.textColor = .tertiaryLabel
-        label.adjustsFontForContentSizeCategory = true
+        // La dimensione è pilotata ESPLICITAMENTE dalla leva "dimensione del testo" (via
+        // `applyTextSizeTraits`), non dall'auto-adeguamento di UIKit: così lo stacco scala col corpo e
+        // la sua altezza (in cache) combacia sempre con la resa. Il cambio di Dynamic Type di sistema è
+        // gestito dalla reading view con una ri-misura completa (percorso cambio-larghezza).
+        label.adjustsFontForContentSizeCategory = false
         label.translatesAutoresizingMaskIntoConstraints = false
         addSubview(line)
         addSubview(label)
@@ -102,6 +106,12 @@ final class PageMarkerView: UIView {
 
     func setPageNumber(_ page: Int?) {
         label.text = page.map { "p. \($0)" } ?? ""
+    }
+
+    /// Applica allo stacco la categoria di dimensione testo EFFETTIVA (leva + Dynamic Type di
+    /// sistema), così il marcatore scala col corpo e la sua altezza resta congruente con la misura.
+    func applyTextSizeTraits(_ traits: UITraitCollection) {
+        label.font = .preferredFont(forTextStyle: .caption2, compatibleWith: traits)
     }
 }
 
@@ -141,7 +151,9 @@ final class SegmentCell: UICollectionViewCell {
         pageMarker.translatesAutoresizingMaskIntoConstraints = false
         textLabel.numberOfLines = 0
         textLabel.lineBreakMode = .byWordWrapping
-        textLabel.adjustsFontForContentSizeCategory = true
+        // Dimensione pilotata esplicitamente dalla leva (via `sizingTraits` in `configure`), non
+        // dall'auto-adeguamento di UIKit: garantisce misurato == reso (vedi PageMarkerView).
+        textLabel.adjustsFontForContentSizeCategory = false
         textLabel.textColor = .label
         textLabel.isAccessibilityElement = false
         textLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -174,18 +186,22 @@ final class SegmentCell: UICollectionViewCell {
         underlineIntervals: [ClosedRange<Int>]?,
         pageStart: Bool,
         pageNumber: Int?,
-        width: CGFloat
+        width: CGFloat,
+        sizingTraits: UITraitCollection
     ) {
         self.segment = segment
         self.readingIndex = index
         self.host = host
         if width > 0 { widthConstraint.constant = width }
 
-        textLabel.font = UIFont.preferredFont(forTextStyle: ContinuousReadingView.textStyle(for: segment.role))
+        // Font alla dimensione EFFETTIVA (leva + Dynamic Type di sistema), IDENTICO a quello con cui la
+        // reading view misura l'altezza (`measuredHeight`): è ciò che tiene misurato == reso.
+        textLabel.font = UIFont.preferredFont(
+            forTextStyle: ContinuousReadingView.textStyle(for: segment.role), compatibleWith: sizingTraits)
         // Resa visiva: underline additivo (rete A: il parlato NON cambia), altrimenti testo puro.
         if let intervals = underlineIntervals, !intervals.isEmpty {
             textLabel.attributedText = ContinuousReadingView.underlinedAttributedString(
-                for: segment, intervals: intervals)
+                for: segment, intervals: intervals, sizingTraits: sizingTraits)
         } else {
             textLabel.attributedText = nil
             textLabel.text = segment.text
@@ -202,9 +218,10 @@ final class SegmentCell: UICollectionViewCell {
         // `headingQualifier`), così non si perde il segnale acustico "è un titolo, di livello N".
         accessibilityTraits = .staticText
 
-        // Stacco di pagina originale (Opzione A): visivo, muto per VoiceOver.
+        // Stacco di pagina originale (Opzione A): visivo, muto per VoiceOver. Scala con la leva.
         pageMarker.isHidden = !pageStart
         pageMarker.setPageNumber(pageStart ? pageNumber : nil)
+        pageMarker.applyTextSizeTraits(sizingTraits)
     }
 
     /// Azioni-segnalibro costruite PIGRAMENTE dall'host solo per la cella a fuoco (§ 5.1): nessun peso
@@ -280,6 +297,58 @@ final class ContinuousReadingView: UIView {
     private var cachedMarkerHeight: CGFloat = 0
     private var lastMeasuredWidth: CGFloat = 0
 
+    // MARK: - Leva "dimensione del testo" (Fase 0 accessibilità visiva)
+    //
+    // Una sola leva applicabile DAL VIVO: la dimensione del testo del DOCUMENTO (solo il corpo reso —
+    // la chrome dell'interfaccia resta sul Dynamic Type di sistema). È un OFFSET in passi sulla scala
+    // delle categorie Dynamic Type a partire dalla dimensione di sistema, così si INTEGRA con la
+    // scelta dell'utente invece di combatterla (HIG Apple: Dynamic Type). La dimensione effettiva è
+    // calcolata `compatibleWith` una `UITraitCollection` esplicita, IDENTICA nella misura (label di
+    // misura) e nella resa (cella): è ciò che tiene l'altezza in cache combaciante con la resa reale
+    // (nessun clip/gap). Il cambio di dimensione — e il cambio di Dynamic Type di sistema — passano
+    // per lo STESSO percorso del cambio-larghezza (reset cache + invalidate) con ripristino posizione.
+
+    /// La scala ordinata delle categorie Dynamic Type, dalla più piccola standard di Apple alla massima
+    /// di accessibilità (AX5). Il minimo `.extraSmall` tiene il corpo ~14pt (sopra il minimo iOS di
+    /// 11pt, HIG Apple); il massimo AX5 supera ampiamente il 200% richiesto da WCAG 2.2 SC 1.4.4.
+    private static let categoryLadder: [UIContentSizeCategory] = [
+        .extraSmall, .small, .medium, .large, .extraLarge, .extraExtraLarge, .extraExtraExtraLarge,
+        .accessibilityMedium, .accessibilityLarge, .accessibilityExtraLarge,
+        .accessibilityExtraExtraLarge, .accessibilityExtraExtraExtraLarge,
+    ]
+
+    /// La dimensione di sistema corrente (Dynamic Type): la base da cui la leva scosta. Aggiornata
+    /// all'init e a ogni notifica di cambio Dynamic Type.
+    private var systemBaselineCategory: UIContentSizeCategory = .large
+
+    /// Offset della leva in passi sul ladder (0 = come il sistema; >0 più grande; <0 più piccolo).
+    private var textSizeOffsetSteps = 0
+
+    private func ladderIndex(of category: UIContentSizeCategory) -> Int {
+        Self.categoryLadder.firstIndex(of: category) ?? 3  // 3 = .large
+    }
+
+    /// L'indice sul ladder della dimensione di sistema risolta (mai `.unspecified`).
+    private var resolvedBaselineIndex: Int {
+        ladderIndex(of: systemBaselineCategory == .unspecified ? .large : systemBaselineCategory)
+    }
+
+    /// L'indice EFFETTIVO = base di sistema + offset leva, clampato agli estremi del ladder.
+    private var effectiveCategoryIndex: Int {
+        min(max(0, resolvedBaselineIndex + textSizeOffsetSteps), Self.categoryLadder.count - 1)
+    }
+
+    /// La categoria di dimensione testo EFFETTIVA (sistema + leva).
+    private var effectiveContentSizeCategory: UIContentSizeCategory {
+        Self.categoryLadder[effectiveCategoryIndex]
+    }
+
+    /// La `UITraitCollection` esplicita con cui si calcolano i font in MISURA e in RESA (identica nei
+    /// due → misurato == reso).
+    private var textSizeTraitCollection: UITraitCollection {
+        UITraitCollection(preferredContentSizeCategory: effectiveContentSizeCategory)
+    }
+
     // MARK: - Callback e collaboratori (impostati dal view controller)
 
     /// Azione di escape (scrub a due dita, § 2.3/§ 2.4): passa al container dell'interfaccia.
@@ -335,10 +404,15 @@ final class ContinuousReadingView: UIView {
     private func setUp() {
         backgroundColor = .systemBackground
 
-        // Etichetta di misura riusata, configurata come la `textLabel` della cella.
+        // Base della leva dimensione = dimensione di sistema corrente (Dynamic Type). L'offset parte a 0
+        // (nessuno scostamento) finché l'utente non muove la leva o il documento applica quello salvato.
+        systemBaselineCategory = UIApplication.shared.preferredContentSizeCategory
+
+        // Etichetta di misura riusata, configurata come la `textLabel` della cella. Dimensione pilotata
+        // esplicitamente (font impostato a ogni misura con `compatibleWith`), non auto-adeguata.
         sizingLabel.numberOfLines = 0
         sizingLabel.lineBreakMode = .byWordWrapping
-        sizingLabel.adjustsFontForContentSizeCategory = true
+        sizingLabel.adjustsFontForContentSizeCategory = false
 
         collectionView.backgroundColor = .systemBackground
         // §2.2 (swipe orizzontale mai ostacolato): l'indicatore di scorrimento verticale è una barra
@@ -370,12 +444,19 @@ final class ContinuousReadingView: UIView {
         collectionView.addGestureRecognizer(longPress)
         longPressRecognizer = longPress
 
-        // Ricalcola underline/stacchi al cambio Dynamic Type: le celle visibili si riconfigurano col
-        // font scalato corrente (l'underline è un attributo posato sotto i glifi esatti, § 6.5).
+        // Cambio di Dynamic Type di SISTEMA → aggiorna la base della leva e RI-MISURA COMPLETAMENTE
+        // conservando la posizione (Fase 0: sanamento dell'incoerenza latente). Prima qui si faceva
+        // SOLO `reconfigureVisibleCells()`, che riconfigurava le celle visibili col nuovo font ma NON
+        // azzerava la cache delle altezze: le altezze fuori schermo restavano quelle vecchie → clip/gap
+        // al ritorno. Ora si riusa lo stesso percorso del cambio-larghezza (reset cache + invalidate).
         contentSizeObserver = NotificationCenter.default.addObserver(
             forName: UIContentSizeCategory.didChangeNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            self?.reconfigureVisibleCells()
+        ) { [weak self] note in
+            guard let self else { return }
+            let newCategory = (note.userInfo?[UIContentSizeCategory.newValueUserInfoKey]
+                as? UIContentSizeCategory) ?? UIApplication.shared.preferredContentSizeCategory
+            self.systemBaselineCategory = newCategory
+            self.remeasurePreservingPosition()
         }
     }
 
@@ -731,10 +812,11 @@ final class ContinuousReadingView: UIView {
     /// di parole indicati. L'underline è un ATTRIBUTO del testo (§ 6.5): resta sotto i glifi esatti a
     /// qualunque corpo carattere e a-capo, senza calcoli geometrici.
     static func underlinedAttributedString(
-        for segment: ContentSegment, intervals: [ClosedRange<Int>]
+        for segment: ContentSegment, intervals: [ClosedRange<Int>],
+        sizingTraits: UITraitCollection = UITraitCollection(preferredContentSizeCategory: .large)
     ) -> NSAttributedString {
         let text = segment.text
-        let font = UIFont.preferredFont(forTextStyle: textStyle(for: segment.role))
+        let font = UIFont.preferredFont(forTextStyle: textStyle(for: segment.role), compatibleWith: sizingTraits)
         let attributed = NSMutableAttributedString(
             string: text, attributes: [.font: font, .foregroundColor: UIColor.label])
         let words = WordTokenizer.wordRanges(text)
@@ -818,7 +900,8 @@ final class ContinuousReadingView: UIView {
         let width = collectionView.bounds.width > 0 ? collectionView.bounds.width : UIScreen.main.bounds.width
         cell.configure(
             segment: segment, index: index, host: self,
-            underlineIntervals: intervals, pageStart: pageStart, pageNumber: pageNumber, width: width)
+            underlineIntervals: intervals, pageStart: pageStart, pageNumber: pageNumber, width: width,
+            sizingTraits: textSizeTraitCollection)
     }
 
     private func isPageStart(_ index: Int) -> Bool {
@@ -839,7 +922,8 @@ final class ContinuousReadingView: UIView {
         guard width > 0 else { return 44 }
         let labelWidth = max(1, width - 40)  // inset orizzontali dello stack: 20 + 20
         let segment = segments[index]
-        sizingLabel.font = UIFont.preferredFont(forTextStyle: Self.textStyle(for: segment.role))
+        sizingLabel.font = UIFont.preferredFont(
+            forTextStyle: Self.textStyle(for: segment.role), compatibleWith: textSizeTraitCollection)
         sizingLabel.text = segment.text
         let labelH = ceil(sizingLabel.sizeThatFits(
             CGSize(width: labelWidth, height: .greatestFiniteMagnitude)).height)
@@ -866,6 +950,7 @@ final class ContinuousReadingView: UIView {
         guard width > 0 else { return 0 }
         let marker = PageMarkerView(frame: .zero)
         marker.setPageNumber(1)
+        marker.applyTextSizeTraits(textSizeTraitCollection)
         let size = marker.systemLayoutSizeFitting(
             CGSize(width: width - 40, height: UIView.layoutFittingCompressedSize.height),
             withHorizontalFittingPriority: .required, verticalFittingPriority: .fittingSizeLevel)
@@ -882,6 +967,69 @@ final class ContinuousReadingView: UIView {
             resetHeightCache()
             collectionView.collectionViewLayout.invalidateLayout()
         }
+    }
+
+    // MARK: - Leva "dimensione del testo": applicazione live + ripristino posizione (Fase 0)
+
+    /// Imposta l'offset INIZIALE della dimensione del testo SENZA re-misura, per l'apertura (prima del
+    /// primo `render`): la misura successiva userà già la categoria giusta, senza uno scatto d'avvio.
+    func setInitialTextSizeOffset(_ steps: Int) {
+        textSizeOffsetSteps = steps
+    }
+
+    /// L'offset corrente della leva (per la persistenza globale).
+    var textSizeOffset: Int { textSizeOffsetSteps }
+
+    /// Vero se c'è ancora margine per ingrandire / rimpicciolire (per abilitare i pulsanti ai limiti).
+    var canIncreaseTextSize: Bool { effectiveCategoryIndex < Self.categoryLadder.count - 1 }
+    var canDecreaseTextSize: Bool { effectiveCategoryIndex > 0 }
+
+    /// Cambia la dimensione del testo DAL VIVO di `delta` passi sul ladder, riusando ESATTAMENTE il
+    /// percorso del cambio-larghezza (reset cache + invalidate) e CONSERVANDO la posizione di lettura.
+    /// Ritorna l'offset effettivo dopo il clamp (invariato — e nessuna re-misura — se già al limite).
+    @discardableResult
+    func changeTextSize(by delta: Int) -> Int {
+        let newIndex = min(max(0, effectiveCategoryIndex + delta), Self.categoryLadder.count - 1)
+        let newOffset = newIndex - resolvedBaselineIndex
+        guard newOffset != textSizeOffsetSteps else { return textSizeOffsetSteps }  // già al limite
+        textSizeOffsetSteps = newOffset
+        remeasurePreservingPosition()
+        return textSizeOffsetSteps
+    }
+
+    /// Ri-applica il layout dopo un cambio che altera le altezze (leva dimensione o Dynamic Type di
+    /// sistema): stessa meccanica del cambio-larghezza — azzera cache-marcatore e cache-altezze,
+    /// riconfigura le celle visibili col nuovo font, invalida il layout — poi RIPORTA la vista
+    /// sull'elemento dov'era (posizione di lettura conservata: l'utente non è sbalzato altrove né a
+    /// inizio file). L'offset di scroll è esatto perché le altezze sono MISURATE, non stimate.
+    private func remeasurePreservingPosition() {
+        let anchor = lastFocusedIndex
+            ?? collectionView.indexPathsForVisibleItems.map(\.item).min()
+            ?? 0
+        cachedMarkerHeight = 0
+        resetHeightCache()
+        reconfigureVisibleCells()
+        collectionView.collectionViewLayout.invalidateLayout()
+        collectionView.layoutIfNeeded()
+        guard anchor >= 0, anchor < segments.count else { return }
+        let ip = IndexPath(item: anchor, section: 0)
+        collectionView.scrollToItem(at: ip, at: .top, animated: false)
+        collectionView.layoutIfNeeded()
+        lastFocusedIndex = anchor
+        // Rientro del fuoco VoiceOver sullo STESSO elemento: non è un cambio di schermo, quindi
+        // `.layoutChanged` (riposiziona il fuoco senza semantica di nuova schermata), non `.screenChanged`.
+        if UIAccessibility.isVoiceOverRunning {
+            let target: Any = collectionView.cellForItem(at: ip) ?? collectionView
+            UIAccessibility.post(notification: .layoutChanged, argument: target)
+        }
+    }
+
+    /// Forza una dimensione effettiva nota (base data, offset azzerato) e ri-misura: per i test
+    /// deterministici, indipendenti dalla dimensione di sistema dell'host.
+    func setTextSizeCategoryForTesting(_ category: UIContentSizeCategory) {
+        systemBaselineCategory = category
+        textSizeOffsetSteps = 0
+        remeasurePreservingPosition()
     }
 
     // MARK: - Mappature ruolo → stile / semantica (INVARIATE: unica fonte del parlato)

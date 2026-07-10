@@ -83,6 +83,10 @@ public enum PreferenceKeys {
     /// Toggle globale "Mostra numero pagine file originale" (§ 4.2).
     public static let showOriginalPageNumbers = "@scabopdf/reading/showOriginalPages"
 
+    /// Offset GLOBALE della dimensione del testo di lettura (Fase 0 accessibilità visiva): passi sulla
+    /// scala Dynamic Type a partire dalla dimensione di sistema (0 = come il sistema, >0 più grande).
+    public static let readingTextSizeOffset = "@scabopdf/reading/textSizeOffset"
+
     /// Chiave per-documento della granularità, derivata dall'id del documento.
     public static func documentGranularityLevel(_ documentId: String) -> String {
         granularityLevelPrefix + documentId
@@ -99,6 +103,28 @@ public func getStoredShowOriginalPageNumbers(_ store: KeyValueStore) -> Bool {
 
 public func setStoredShowOriginalPageNumbers(_ store: KeyValueStore, _ enabled: Bool) {
     store.setItem(PreferenceKeys.showOriginalPageNumbers, enabled ? "1" : "0")
+}
+
+// MARK: - Dimensione del testo di lettura (Fase 0 accessibilità visiva)
+
+/// Limiti di sicurezza dell'offset globale della dimensione del testo (validazione dello store; il
+/// clamp fine alla scala Dynamic Type avviene nella reading view, che conosce la scala delle
+/// `UIContentSizeCategory`).
+public let READING_TEXT_SIZE_OFFSET_MIN = -11
+public let READING_TEXT_SIZE_OFFSET_MAX = 11
+
+/// Legge l'offset globale della dimensione del testo, validato e clampato. Un valore mancante o non
+/// numerico collassa a 0 (come il sistema), esattamente come gli altri default preferenze.
+public func getStoredReadingTextSizeOffset(_ store: KeyValueStore) -> Int {
+    guard let raw = store.getItem(PreferenceKeys.readingTextSizeOffset), let value = Int(raw) else {
+        return 0
+    }
+    return min(max(READING_TEXT_SIZE_OFFSET_MIN, value), READING_TEXT_SIZE_OFFSET_MAX)
+}
+
+public func setStoredReadingTextSizeOffset(_ store: KeyValueStore, _ offset: Int) {
+    let clamped = min(max(READING_TEXT_SIZE_OFFSET_MIN, offset), READING_TEXT_SIZE_OFFSET_MAX)
+    store.setItem(PreferenceKeys.readingTextSizeOffset, String(clamped))
 }
 
 /// Reads the stored theme selection, validating it against the closed vocabulary.
