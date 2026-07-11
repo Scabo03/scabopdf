@@ -464,3 +464,13 @@ In prosa, le scelte che questo studio non prende:
 
 **STOP.** Il giro finisce qui, con questo documento. Nessun codice, nessun branch,
 nessuna build. La decisione di procedere — e in quale forma — resta al maintainer.
+
+> **SEGUITO — giro di PROGETTAZIONE (2026-07-11).** Le sei decisioni di questo § 11
+> sono state raccolte e risolte in un disegno unico e coeso in
+> `docs/DESIGN_ACCESSIBILITA_VISIVA_LETTURA.md` (la doppia via aspetto temi/sistema
+> con la logica di precedenza, l'esito onesto della verifica sui filtri colore di
+> sistema, i quattro preset × assi con la risoluzione dei conflitti, l'innesto di
+> ogni leva sui due percorsi di ri-misura già provati, il pannello accessibile, il
+> filo WCAG AA). Restano **quattro** bivi di prodotto per il maintainer (§ 8 di quel
+> documento). Ancora nessun codice: dopo l'approvazione, un secondo giro implementa
+> il blocco intero.
