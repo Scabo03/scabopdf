@@ -51,6 +51,50 @@ let readingAppearanceTraitNotifications: [Notification.Name] = [
     UIAccessibility.grayscaleStatusDidChangeNotification,
 ]
 
+/// Una opzione di tema, presentata IDENTICA alla prima apertura (chooser accessibile)
+/// e nelle Impostazioni: Fonte dell'aspetto + preset fusi in una scelta esclusiva, con
+/// una descrizione parlata dell'EFFETTO (comprensibile senza vedere i colori).
+struct AppearanceOption {
+    let preset: ReadingPreset?  // nil = «Segui il sistema» (posizione A / followSystem)
+    let title: String
+    let subtitle: String
+}
+
+enum AppearanceOptions {
+    static let all: [AppearanceOption] = [
+        AppearanceOption(
+            preset: nil, title: "Segui il sistema",
+            subtitle: "L'app segue le impostazioni del tuo iPhone: chiaro o scuro, aumento del contrasto."),
+        AppearanceOption(
+            preset: .standard, title: "Scuro ad alto contrasto",
+            subtitle: "Sfondo scuro, testo chiaro ben leggibile. L'equilibrio predefinito."),
+        AppearanceOption(
+            preset: .comfort, title: "Chiaro e caldo, lettura riposante",
+            subtitle: "Sfondo color crema non bianco, testo più spaziato: per chi fatica a leggere o si stanca col contrasto forte."),
+        AppearanceOption(
+            preset: .ipovisione, title: "Testo grande, contrasto massimo",
+            subtitle: "Testo molto grande e contrasto massimo, elementi ben distinti: per chi ha bisogno di ingrandire."),
+        AppearanceOption(
+            preset: .calma, title: "Calma, poche distrazioni",
+            subtitle: "Aspetto sobrio, accenti attenuati, un elemento alla volta: per concentrarsi sulla lettura."),
+    ]
+
+    /// Applica l'opzione scelta alle preferenze (posizione A o B + preset).
+    static func apply(_ option: AppearanceOption, to prefs: KeyValueStore) {
+        if let preset = option.preset {
+            applyReadingPreset(prefs, preset)  // → appTheme + preset + spaziatura di partenza
+        } else {
+            setStoredAppearanceSource(prefs, .followSystem)
+        }
+    }
+
+    /// L'opzione corrisponde alla scelta corrente? (per la spunta).
+    static func isSelected(_ option: AppearanceOption, prefs: KeyValueStore) -> Bool {
+        if getStoredAppearanceSource(prefs) == .followSystem { return option.preset == nil }
+        return option.preset == getStoredReadingPreset(prefs)
+    }
+}
+
 enum ReadingAppearance {
 
     /// Costruisce lo stile di lettura risolto dai valori memorizzati + i trait di un

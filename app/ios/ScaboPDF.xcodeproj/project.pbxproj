@@ -21,6 +21,7 @@
 		5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */; };
 		5CABC04E0000000000000086 /* SplitScreenWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */; };
 		5CABC04E0000000000000088 /* FocusRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000089 /* FocusRestoreTests.swift */; };
+		5CABC04E000000000000008A /* AppearanceWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E000000000000008B /* AppearanceWiringTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +49,7 @@
 		5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SplitMemoryProbeTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SplitScreenWiringTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000089 /* FocusRestoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FocusRestoreTests.swift; sourceTree = "<group>"; };
+		5CABC04E000000000000008B /* AppearanceWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppearanceWiringTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -110,6 +112,7 @@
 				5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */,
 				5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */,
 				5CABC04E0000000000000089 /* FocusRestoreTests.swift */,
+				5CABC04E000000000000008B /* AppearanceWiringTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -266,6 +269,7 @@
 				5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */,
 				5CABC04E0000000000000086 /* SplitScreenWiringTests.swift in Sources */,
 				5CABC04E0000000000000088 /* FocusRestoreTests.swift in Sources */,
+				5CABC04E000000000000008A /* AppearanceWiringTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

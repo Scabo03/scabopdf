@@ -2,13 +2,14 @@
 //  SettingsViewController.swift
 //  ScaboApp
 //
-//  Le impostazioni GLOBALI dell'app (§ 2.5: vivono in un livello separato dal singolo documento):
-//  il tema (aspetto), la granularità di lettura predefinita per i testi discorsivi (§ 7.7), e il
-//  toggle "Mostra numero pagine file originale" (§ 4.2). Le scelte sono ricordate via il
-//  `KeyValueStore` radicato su `UserDefaults`. Il tema viene applicato subito alla finestra.
-//
-//  Accessibilità: liste standard con righe a spunta (tema, granularità) e un interruttore (pagine
-//  originali), tutte pienamente accessibili a VoiceOver; ogni opzione annuncia il proprio stato.
+//  Le impostazioni GLOBALI dell'app (§ 2.5). Il blocco «Aspetto della lettura» è il
+//  pannello del sistema di accessibilità visiva (design DESIGN_ACCESSIBILITA_VISIVA_LETTURA.md
+//  § 6): un'unica scelta esclusiva di tema (Fonte dell'aspetto + preset fusi in una
+//  lista), più gli assi (spaziatura, colore/segnali, guida di lettura), e una riga
+//  onesta sui filtri colore di sistema che l'app NON può rilevare. Seguono le voci
+//  storiche (granularità, pagine originali). Tutto pienamente accessibile a VoiceOver:
+//  ogni riga annuncia il proprio stato; niente menù numerati; l'anello descrizione→
+//  scelta è portato dai footer in prosa.
 //
 
 import UIKit
@@ -19,9 +20,21 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
     private var prefs: KeyValueStore { LibraryService.shared.prefs }
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
-    private let themes: [(ThemeSelection, String)] = [
-        (.system, "Sistema"), (.light, "Chiaro"), (.dark, "Scuro"), (.highContrast, "Alto contrasto"),
+    /// La lista ESCLUSIVA di tema (Fonte dell'aspetto + preset fusi), condivisa col chooser
+    /// di prima apertura: `AppearanceOptions.all`.
+
+    private let spacingRows: [(SpacingProfile, String)] = [
+        (.compact, "Compatta"),
+        (.standard, "Standard"),
+        (.comfortable, "Comoda — più spazio fra righe e parole"),
+        (.generous, "Generosa — massimo spazio"),
     ]
+
+    private let accentRows: [(AccentMode, String)] = [
+        (.standard, "Colori distinti (consigliato)"),
+        (.monochrome, "Senza colore — solo forma e contrasto"),
+    ]
+
     private let granularities: [(GranularityLevel, String)] = [
         (.fine, "Fine — 400 caratteri"),
         (.medium, "Media — 600 caratteri"),
@@ -29,7 +42,9 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         (.veryCoarse, "Piena — 1200 caratteri"),
     ]
 
-    private enum Section: Int, CaseIterable { case appearance, granularity, pages }
+    private enum Section: Int, CaseIterable {
+        case appearance, spacing, colorSignals, readingGuide, systemFilters, granularity, pages
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,6 +54,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "subtitle")
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
@@ -49,13 +65,17 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         ])
     }
 
-    // MARK: - Data
+    // MARK: - Struttura
 
     func numberOfSections(in tableView: UITableView) -> Int { Section.allCases.count }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch Section(rawValue: section)! {
-        case .appearance: return themes.count
+        case .appearance: return AppearanceOptions.all.count
+        case .spacing: return spacingRows.count
+        case .colorSignals: return accentRows.count
+        case .readingGuide: return 1
+        case .systemFilters: return 1
         case .granularity: return granularities.count
         case .pages: return 1
         }
@@ -63,7 +83,11 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch Section(rawValue: section)! {
-        case .appearance: return "Aspetto"
+        case .appearance: return "Aspetto della lettura"
+        case .spacing: return "Spaziatura del testo"
+        case .colorSignals: return "Colore e segnali"
+        case .readingGuide: return "Guida di lettura"
+        case .systemFilters: return "Filtri colore di sistema"
         case .granularity: return "Granularità di lettura predefinita"
         case .pages: return "Pagine del file originale"
         }
@@ -71,87 +95,146 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
 
     func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
         switch Section(rawValue: section)! {
+        case .appearance:
+            return "Scegli come vuoi leggere. Un preset sposta in blocco sfondo, contrasto e spaziatura; "
+                + "puoi poi affinare qui sotto. La scelta è sempre modificabile."
+        case .spacing:
+            return "Più spazio fra righe e parole aiuta chi fatica a leggere; meno spazio mostra più testo a schermata."
+        case .colorSignals:
+            return "L'app non affida mai un'informazione al solo colore: sottolineature, box delle modifiche e "
+                + "indicatori hanno sempre anche una forma o un'etichetta. «Senza colore» rinuncia del tutto alla tinta."
+        case .readingGuide:
+            return "Evidenzia l'elemento in lettura e attenua gli altri. È un aiuto alla concentrazione, non una cura."
+        case .systemFilters:
+            return "I filtri per il daltonismo (rosso/verde, verde/rosso, blu/giallo) si impostano da Impostazioni "
+                + "iOS. L'app non può rilevarli né controllarli, ma garantisce che nulla dipenda dal solo colore. "
+                + "Tocca qui per aprire le impostazioni di iOS."
         case .granularity:
             return "Quanto testo raggruppare in ogni elemento dei testi discorsivi (manuali, saggi). "
                 + "I testi normativi seguono la loro struttura nativa."
         case .pages:
-            return "Quando attivo, gli indicatori di pagina mostrano anche la pagina del PDF di "
-                + "origine, utile per le citazioni."
-        default: return nil
+            return "Quando attivo, gli indicatori di pagina mostrano anche la pagina del PDF di origine."
         }
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        var config = cell.defaultContentConfiguration()
-        config.textProperties.numberOfLines = 0
-        cell.accessoryView = nil
-        cell.accessoryType = .none
         switch Section(rawValue: indexPath.section)! {
         case .appearance:
-            let (selection, label) = themes[indexPath.row]
-            config.text = label
-            let current = getStoredThemeSelection(prefs)
-            cell.accessoryType = (selection == current) ? .checkmark : .none
-            cell.accessibilityTraits = (selection == current) ? [.button, .selected] : .button
+            let cell = tableView.dequeueReusableCell(withIdentifier: "subtitle", for: indexPath)
+            var config = UIListContentConfiguration.subtitleCell()
+            let row = AppearanceOptions.all[indexPath.row]
+            config.text = row.title
+            config.secondaryText = row.subtitle
+            config.textProperties.numberOfLines = 0
+            config.secondaryTextProperties.numberOfLines = 0
+            config.secondaryTextProperties.color = .secondaryLabel
+            cell.contentConfiguration = config
+            let selected = isAppearanceRowSelected(indexPath.row)
+            cell.accessoryType = selected ? .checkmark : .none
+            cell.accessibilityTraits = selected ? [.button, .selected] : .button
+            // L'etichetta VoiceOver è titolo + descrizione: comprensibile senza vedere i colori.
+            cell.accessibilityLabel = "\(row.title). \(row.subtitle)"
+            return cell
+
+        case .spacing:
+            let (level, label) = spacingRows[indexPath.row]
+            return checkmarkCell(label, selected: getStoredSpacingProfile(prefs) == level)
+
+        case .colorSignals:
+            let (mode, label) = accentRows[indexPath.row]
+            return checkmarkCell(label, selected: getStoredAccentMode(prefs) == mode)
+
+        case .readingGuide:
+            return switchCell(
+                "Guida di lettura", isOn: getStoredReadingGuide(prefs),
+                action: #selector(toggleReadingGuide(_:)))
+
+        case .systemFilters:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+            var config = cell.defaultContentConfiguration()
+            config.text = "Apri le impostazioni di iOS"
+            config.textProperties.color = .link
+            cell.contentConfiguration = config
+            cell.accessoryType = .none
+            cell.accessibilityTraits = .button
+            cell.accessibilityHint = "Apre Impostazioni iOS per i filtri colore"
+            return cell
+
         case .granularity:
             let (level, label) = granularities[indexPath.row]
-            config.text = label
-            let current = getStoredGranularityLevel(prefs)
-            cell.accessoryType = (level == current) ? .checkmark : .none
-            cell.accessibilityTraits = (level == current) ? [.button, .selected] : .button
+            return checkmarkCell(label, selected: getStoredGranularityLevel(prefs) == level)
+
         case .pages:
-            config.text = "Mostra numero pagine file originale"
-            let toggle = UISwitch()
-            toggle.isOn = getStoredShowOriginalPageNumbers(prefs)
-            toggle.addTarget(self, action: #selector(togglePages(_:)), for: .valueChanged)
-            toggle.accessibilityLabel = "Mostra numero pagine file originale"
-            cell.accessoryView = toggle
-            cell.selectionStyle = .none
+            return switchCell(
+                "Mostra numero pagine file originale", isOn: getStoredShowOriginalPageNumbers(prefs),
+                action: #selector(togglePages(_:)))
         }
-        cell.contentConfiguration = config
-        return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         switch Section(rawValue: indexPath.section)! {
         case .appearance:
-            let selection = themes[indexPath.row].0
-            setStoredThemeSelection(prefs, selection)
-            AppTheme.apply(selection, to: view.window)
+            AppearanceOptions.apply(AppearanceOptions.all[indexPath.row], to: prefs)
+            ReadingAppearance.applyToWindow(view.window, prefs: prefs)
+            tableView.reloadData()  // aggiorna spunte di aspetto E spaziatura (il preset la muove)
+        case .spacing:
+            setStoredSpacingProfile(prefs, spacingRows[indexPath.row].0)
             tableView.reloadSections(IndexSet(integer: indexPath.section), with: .none)
+        case .colorSignals:
+            setStoredAccentMode(prefs, accentRows[indexPath.row].0)
+            tableView.reloadSections(IndexSet(integer: indexPath.section), with: .none)
+        case .systemFilters:
+            if let url = URL(string: UIApplication.openSettingsURLString) {
+                UIApplication.shared.open(url)
+            }
         case .granularity:
-            let level = granularities[indexPath.row].0
-            setStoredGranularityLevel(prefs, level)
+            setStoredGranularityLevel(prefs, granularities[indexPath.row].0)
             tableView.reloadSections(IndexSet(integer: indexPath.section), with: .none)
-        case .pages:
+        case .readingGuide, .pages:
             break
         }
     }
 
+    // MARK: - Helper di cella
+
+    private func isAppearanceRowSelected(_ row: Int) -> Bool {
+        AppearanceOptions.isSelected(AppearanceOptions.all[row], prefs: prefs)
+    }
+
+    private func checkmarkCell(_ text: String, selected: Bool) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell")!
+        var config = cell.defaultContentConfiguration()
+        config.text = text
+        config.textProperties.numberOfLines = 0
+        cell.contentConfiguration = config
+        cell.accessoryView = nil
+        cell.accessoryType = selected ? .checkmark : .none
+        cell.accessibilityTraits = selected ? [.button, .selected] : .button
+        return cell
+    }
+
+    private func switchCell(_ text: String, isOn: Bool, action: Selector) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell")!
+        var config = cell.defaultContentConfiguration()
+        config.text = text
+        config.textProperties.numberOfLines = 0
+        cell.contentConfiguration = config
+        let toggle = UISwitch()
+        toggle.isOn = isOn
+        toggle.addTarget(self, action: action, for: .valueChanged)
+        toggle.accessibilityLabel = text
+        cell.accessoryView = toggle
+        cell.accessoryType = .none
+        cell.selectionStyle = .none
+        return cell
+    }
+
+    @objc private func toggleReadingGuide(_ sender: UISwitch) {
+        setStoredReadingGuide(prefs, sender.isOn)
+    }
+
     @objc private func togglePages(_ sender: UISwitch) {
         setStoredShowOriginalPageNumbers(prefs, sender.isOn)
-    }
-}
-
-// MARK: - Applicazione del tema alla finestra
-
-enum AppTheme {
-    /// Applica la selezione di tema allo stile dell'interfaccia della finestra. `highContrast`
-    /// ricade su scuro (i token ad alto contrasto del testo vivono nel motore di lettura,
-    /// `ThemeResolution`, non toccato qui).
-    static func apply(_ selection: ThemeSelection, to window: UIWindow?) {
-        guard let window else { return }
-        switch selection {
-        case .light: window.overrideUserInterfaceStyle = .light
-        case .dark, .highContrast: window.overrideUserInterfaceStyle = .dark
-        case .system: window.overrideUserInterfaceStyle = .unspecified
-        }
-    }
-
-    /// Applica il tema memorizzato (chiamata all'avvio).
-    static func applyStored(to window: UIWindow?) {
-        apply(getStoredThemeSelection(LibraryService.shared.prefs), to: window)
     }
 }
