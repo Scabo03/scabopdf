@@ -174,6 +174,10 @@ final class ContinuousReadingViewController: UIViewController {
     private var willResignObserver: NSObjectProtocol?
     private var didBecomeActiveObserver: NSObjectProtocol?
 
+    /// Osservatori dei trait di accessibilità visiva (Aumenta contrasto, Differentiate
+    /// Without Color, Scala di grigi): ri-risolvono lo stile di lettura dal vivo. Rimossi in deinit.
+    private var appearanceObservers: [NSObjectProtocol] = []
+
     /// La posizione di lettura fotografata PRIMA di un'interruzione, per riproporla al ritorno. La si
     /// cattura su `willResignActive` perché quando l'interruzione si chiude VoiceOver ha già azzerato
     /// il fuoco (e la posizione ricordata) a inizio file.
@@ -252,6 +256,7 @@ final class ContinuousReadingViewController: UIViewController {
         for token in [voiceOverObserver, willResignObserver, didBecomeActiveObserver] {
             if let token { NotificationCenter.default.removeObserver(token) }
         }
+        for token in appearanceObservers { NotificationCenter.default.removeObserver(token) }
     }
 
     @available(*, unavailable)
@@ -269,6 +274,16 @@ final class ContinuousReadingViewController: UIViewController {
         // Dimensione del testo (Fase 0 accessibilità visiva): applica l'offset globale salvato PRIMA
         // del primo render, così la prima misura usa già la dimensione scelta (nessuno scatto d'avvio).
         readingView.setInitialTextSizeOffset(getStoredReadingTextSizeOffset(prefsStore))
+        // Stile di lettura (accessibilità visiva): applica palette/spaziatura/differenziazione salvate
+        // PRIMA del primo render (nessuna ri-misura d'avvio) e registra gli osservatori dei trait di
+        // sistema per ri-risolverlo dal vivo (Aumenta contrasto / Differentiate / Scala di grigi).
+        applyReadingAppearance(live: false)
+        for name in readingAppearanceTraitNotifications {
+            let token = NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) {
+                [weak self] _ in self?.applyReadingAppearance(live: true)
+            }
+            appearanceObservers.append(token)
+        }
         readingView.render(content)
         // Persistenza della posizione di lettura (§ 2.5): ogni cambio di fuoco aggiorna lo store e
         // l'indicatore di pagina in toolbar (§ 4.3, silenzioso: nessun annuncio, § 4.5).
@@ -342,6 +357,37 @@ final class ContinuousReadingViewController: UIViewController {
         // Si entra leggendo: il testo è il container attivo (modale). Nessun fuoco forzato qui:
         // alla comparsa VoiceOver si posa sul primo elemento (o sulla posizione ripristinata).
         activateTextContainer(restoreFocus: false)
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Rientrando (es. dalle Impostazioni) le preferenze possono essere cambiate: ri-risolve e
+        // riapplica lo stile di lettura dal vivo (posizione conservata; ri-misura solo se la geometria
+        // è cambiata, altrimenti solo colore).
+        applyReadingAppearance(live: true)
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        // Cambio chiaro/scuro di sistema (posizione «Segui il sistema»): ri-risolve la palette.
+        if traitCollection.userInterfaceStyle != previous?.userInterfaceStyle {
+            applyReadingAppearance(live: true)
+        }
+    }
+
+    /// Risolve lo stile di lettura dai valori memorizzati + i trait correnti e lo applica alla reading
+    /// view (e ai colori di cornice), instradandolo sul percorso giusto. `live`: dopo l'apertura
+    /// (ri-misura con posizione conservata se serve); iniziale: senza ri-misura (il primo render misura).
+    private func applyReadingAppearance(live: Bool) {
+        let style = ReadingAppearance.style(prefs: prefsStore, traitCollection: traitCollection)
+        if live {
+            readingView.applyReadingStyle(style)
+        } else {
+            readingView.setInitialReadingStyle(style)
+        }
+        let bg = UIColor.fromHex(style.colors.background, fallback: .systemBackground)
+        view.backgroundColor = bg
+        interfaceBar.backgroundColor = bg
     }
 
     override func viewDidAppear(_ animated: Bool) {

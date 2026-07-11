@@ -379,6 +379,66 @@ final class ContinuousReadingViewTests: XCTestCase {
         }
     }
 
+    // MARK: - 8bis. Stile di lettura (accessibilità visiva): palette + spaziatura cablate
+
+    private func comfortGenerousStyle() -> ResolvedReadingStyle {
+        resolveReadingStyle(source: .appTheme, preset: .comfort, spacing: .generous,
+                            accent: .standard, readingGuide: false,
+                            traits: SystemAppearanceTraits(isDark: true))
+    }
+
+    /// misurato == reso ANCHE con spaziatura applicata (stesso builder in misura e resa).
+    func test_readingStyle_measuredMatchesRender_withSpacing() {
+        let width: CGFloat = 393
+        let view = makeView(width: width)
+        let segs = [
+            bodySegment("h", "Un titolo", role: "HEADING_1"),
+            bodySegment("long", String(repeating: "Frase di corpo su più righe nella colonna. ", count: 8)),
+        ]
+        view.render(segs)
+        window(view, width: width, height: 900)
+        view.applyReadingStyle(comfortGenerousStyle())
+        view.layoutIfNeeded()
+        for i in segs.indices {
+            let measured = view.measuredHeightForTesting(at: i)
+            let real = realCellHeight(view, at: i, width: width)
+            XCTAssertEqual(measured, real, accuracy: 2,
+                           "misurato (\(measured)) == reso (\(real)) con spaziatura")
+        }
+    }
+
+    /// Un cambio di spaziatura (geometria) alza la cella e resta misurato == reso.
+    func test_readingStyle_geometryChange_increasesHeight_andStillMatches() {
+        let width: CGFloat = 393
+        let view = makeView(width: width)
+        view.render([bodySegment("p", String(repeating: "Frase di corpo su più righe. ", count: 8))])
+        window(view, width: width, height: 900)
+        let compact = resolveReadingStyle(source: .appTheme, preset: .standard, spacing: .compact,
+                                          accent: .standard, readingGuide: false,
+                                          traits: SystemAppearanceTraits(isDark: true))
+        view.applyReadingStyle(compact)
+        view.layoutIfNeeded()
+        let hCompact = view.measuredHeightForTesting(at: 0)
+        view.applyReadingStyle(comfortGenerousStyle())  // interlinea 1,8 > 1,15
+        view.layoutIfNeeded()
+        let hGenerous = view.measuredHeightForTesting(at: 0)
+        XCTAssertGreaterThan(hGenerous, hCompact, "più interlinea → cella più alta")
+        XCTAssertEqual(hGenerous, realCellHeight(view, at: 0, width: width), accuracy: 2)
+    }
+
+    /// La palette è davvero cablata: lo sfondo della reading view diventa quello risolto (#0A0A0A).
+    func test_readingStyle_paletteApplied_backgroundColor() {
+        let view = makeView()
+        view.render([bodySegment("a", "Testo")])
+        let dark = resolveReadingStyle(source: .appTheme, preset: .standard, spacing: .standard,
+                                       accent: .standard, readingGuide: false,
+                                       traits: SystemAppearanceTraits(isDark: true))
+        view.applyReadingStyle(dark)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        XCTAssertTrue(view.backgroundColor?.getRed(&r, green: &g, blue: &b, alpha: &a) ?? false)
+        XCTAssertEqual(Double(r), 10.0 / 255.0, accuracy: 0.01, "sfondo = #0A0A0A risolto")
+    }
+
     // MARK: - 9. End-to-end da PDF sintetico: corpo E note (lette), in ordine
 
     func test_endToEnd_syntheticPdf_rendersBodyIncludingNotesInOrder() throws {
