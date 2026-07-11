@@ -1,5 +1,26 @@
 # Design — Sistema di accessibilità visiva della lettura
 
+> **STATO — IMPLEMENTATO come blocco coeso (2026-07-11, branch
+> `feature/visual-accessibility`).** Il maintainer ha approvato il design e sciolto
+> i quattro bivi del § 8: quattro preset (Calma inclusa), Comfort + «Aumenta
+> contrasto» = crema mantenuta + testo massimo, collisione d'accento risolta **alla
+> radice** con una **scelta tema alla prima apertura** (accenti sicuri per la
+> visione dei colori di serie), guida di lettura **inclusa ora**. In più, requisito
+> del maintainer: la schermata di prima apertura è **pienamente accessibile a
+> VoiceOver** (descrizioni parlate, comprensibile senza vedere i colori). Realizzato:
+> `ScaboCore/ReadingStyle.swift` (seam puro + palette Okabe-Ito verificate WCAG +
+> resolver con la precedenza del § 2), `Preferences` estese, `ReadingAppearance`
+> (ponte hex→UIColor + trait onesti + Fonte dell'aspetto sulla finestra),
+> `ContinuousReadingView` cablata (palette/spaziatura/box-ruolo mai-solo-colore/guida,
+> un unico builder in misura e resa → `misurato == reso`), `SettingsViewController`
+> riscritto + `FirstOpenThemeChooserViewController`. Reti verdi: **668 test**
+> (ScaboCore 548 + App 120), **Estratto byte-identico** al freeze build-19
+> (`c0e9877…eaedd`, verificato per costruzione e via shasum), AKN 13/13, memoria
+> invariata (nessuno stato per-elemento aggiunto). Nessun file di
+> pipeline/estrazione/classificazione/emissione toccato. **Branch di feature: nessun
+> merge senza il via del maintainer; build caricata su TestFlight per il collaudo.**
+
+
 **Giro di PROGETTAZIONE (su carta). Nessuna implementazione: nessun codice di
 funzione, nessun branch, nessuna build.** Documento di design coeso che siede
 sopra `docs/ANALYSIS_ACCESSIBILITA_VISIVA_LETTURA.md` (la fase esplorativa: la
