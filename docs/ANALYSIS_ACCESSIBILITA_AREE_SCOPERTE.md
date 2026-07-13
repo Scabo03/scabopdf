@@ -1,5 +1,37 @@
 # Analisi — Le aree di accessibilità ancora scoperte
 
+> **STATO — IMPLEMENTATO (2026-07-13, branch `feature/accessibility-conformance`,
+> impilato su `feature/visual-accessibility`; build 40 su TestFlight = build 39 +
+> questo giro).** Il maintainer ha approvato e sciolto i bivi (includere i 2.2;
+> entrambe le alternative note come OPZIONI; Fase 1 per prima). Chiusure verificate
+> **oggettivamente** (la condizione del giro: manca il giudice-utente → si prova con
+> l'audit e i test, non a mano):
+> - **Prerequisito 0 — la rete:** target UI-test `ScaboAppUITests` con
+>   `performAccessibilityAudit` su ogni schermata, **ora dentro `validate.sh`**
+>   (regressione permanente). Ha trovato 2 problemi reali sulle schermate esistenti:
+>   clip verticale dell'intestazione «Workspaces» (corretto) e un falso positivo di
+>   sistema sulla `UISearchBar` (soppresso in modo stretto e documentato).
+> - **2.1.1 Keyboard (A) → conforme:** `UIKeyCommand` per ogni azione di lettura
+>   (catalogo condiviso col pannello Impostazioni). **2.5.1 → conforme** (la
+>   sottolineatura, prima solo long-press, è ora una `accessibilityCustomAction` per
+>   gli AT non-VoiceOver). **2.5.8 → conforme** (bersagli barra ≥44pt).
+> - **3.1.1 Language (A) → conforme** (`accessibilityLanguage=it` sul contenuto +
+>   `developmentRegion=it`). **4.1.3 → conforme** (annunci ricerca + cambio Layout).
+>   **2.3.3** onorato (Reduce Motion).
+> - **Uditivo (mai-solo-suono):** l'identità NOTE, prima solo-suono, ha ora **due
+>   alternative opt-in** — etichetta parlata (ripristina «Nota.») e box visivo — senza
+>   togliere l'earcon a chi lo preferisce.
+> - **Pannello «Comandi da tastiera»** in Impostazioni (elenco descritto, accessibile).
+>   La **personalizzazione dei tasti non è offerta**: iOS non espone alle app un'API
+>   di remapping per-`UIKeyCommand` — detto con onestà.
+>
+> Il **registro dell'onestà** (Parte IV) resta valido: quanto sopra è **provato
+> tecnicamente**; restano **«conformi non validati sul campo»** (servono utenti reali)
+> l'efficienza di Switch Control sui giganti, il riconoscimento reale di Voice
+> Control, la percepibilità per l'ipovedente, la distinguibilità aptica, la
+> comprensibilità COGA, l'apprendibilità degli earcon. Estratto byte-identico
+> (`c0e9877`); nessun degrado di finestra/navigazione/split/AKN/arco peso/build 39.
+
 **Giro di RICERCA e RICOGNIZIONE. Nessuna implementazione: nessun codice di
 funzione, nessun branch, nessuna build.** Documento di studio fondato su
 documentazione ufficiale di massima autorevolezza (WCAG 2.1/2.2 coi success
