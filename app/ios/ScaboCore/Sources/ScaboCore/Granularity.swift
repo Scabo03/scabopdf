@@ -402,23 +402,79 @@ private let BIBLIO_CALL_MARKER = try! NSRegularExpression(
     pattern: "^\\s*[\\(\\[]?\\d{1,3}[\\.\\)]|^\\s*\\d{1,3}\\s+[A-ZÀ-Ý]")
 /// Autore in testa: AA.VV. / ID. / (iniziali) + cognome in MAIUSCOLETTO (≥3, accenti/'/-),
 /// seguito da virgola o spazio. Il maiuscoletto (tutte maiuscole) distingue la voce
-/// bibliografica dalla prosa Title-case.
+/// bibliografica dalla prosa Title-case. INVARIATO: è il predicato d'autore storico, e ogni
+/// voce che accettava continua ad accettarla byte-identica (rete B su tutti i volumi).
 private let BIBLIO_AUTHOR = try! NSRegularExpression(
     pattern: "^\\s*(AA\\.?\\s?VV\\.?|ID\\.|(?:[A-ZÀ-Ý]\\.\\s*){0,3}[A-ZÀ-Ý][A-ZÀ-Ý’'\\-]{2,})[,\\s]")
+
+/// Autore con PARTICELLA nobiliare/patronimica STACCATA da spazio ("DE NICTOLIS",
+/// "DE GIORGI CEZZI", "DE LEONARDIS", "DI MAJO", "DELLA CANANEA"): il token-cognome richiede
+/// ≥3 lettere, così la particella corta ("DE"/"DI", 2 lettere) faceva fallire il predicato
+/// storico e la voce restava NOTE (letta senza earcon). Questo è il RECUPERO addizionale: si
+/// applica SOLO quando l'autore storico NON matcha, e — a differenza di quello — è subordinato
+/// alla guardia di contenuto (vedi sotto), perché la particella è l'unico segnale nuovo e va
+/// tenuto stretto. Le particelle-omografe di articoli ("LA"/"LO"/"LE"/"LI") sono ESCLUSE
+/// (rischio "LA CORTE, in …"): insieme CHIUSO di particelle inequivoche. Le forme attaccate con
+/// apostrofo ("D'AMICO", "DELL'ACQUA") sono già coperte dal predicato storico (la classe di
+/// caratteri del cognome include l'apostrofo).
+private let BIBLIO_AUTHOR_PARTICLE = try! NSRegularExpression(
+    pattern: "^\\s*(?:[A-ZÀ-Ý]\\.\\s*){0,3}"
+        + "(?:DE|DI|DEL|DELLA|DELLE|DELLO|DEGLI|DEI|VAN|VON|DER|DEN)\\s+"
+        + "[A-ZÀ-Ý][A-ZÀ-Ý’'\\-]{2,}[,\\s]")
+
 /// Stilema bibliografico: strutturali (in/cit/a cura di/p./ss./trad), riviste/enciclopedie,
 /// e luogo di pubblicazione dopo virgola. Uno qualunque, in presenza dell'autore in testa.
 private let BIBLIO_STYLEME = try! NSRegularExpression(
     pattern: ",\\s+in\\s+|[\\s(]cit\\.|op\\.\\s*cit|a\\s+cura\\s+di|,\\s+pp?\\.\\s*\\d|\\b\\d+\\s+ss\\.|,\\s+trad\\.|in\\s+Enc\\.|in\\s+Dig\\.|in\\s+Riv\\.|in\\s+Foro\\b|in\\s+Giur\\.|in\\s+Giust\\.|,\\s+(?:Milano|Torino|Bologna|Padova|Roma|Napoli|Firenze|Genova|Venezia|Pisa|Bari|Giuffrè)\\b")
 
+/// Marcatore di nota IN LINEA "(N) Testo" (1–3 cifre fra parentesi, seguite da spazio e da un
+/// carattere): è la firma di un blocco di NOTE NUMERATE incollate dal salto pagina/estrazione
+/// che PORTANO CONTENUTO ("… p. 55. (59) Ciò implica … (60) Che potrebbe essere …"). Una VOCE
+/// di bibliografia pura non contiene MAI un tale marcatore in linea. È la guardia di contenuto:
+/// un blocco che porta contenuto non va mai degradato a bibliografia, anche se il suo incipit è
+/// una citazione d'autore. L'anno fra parentesi "(2019)" ha 4 cifre → escluso; "(5)." (a fine,
+/// senza spazio dopo) → escluso (serve spazio + prosa a seguire). Si applica al SOLO ramo di
+/// recupero-particella: il ramo storico resta invariato (rete B), il recupero nuovo è protetto.
+private let BIBLIO_INLINE_NOTE_MARKER = try! NSRegularExpression(
+    pattern: "\\(\\d{1,3}\\)\\s+\\S")
+
+/// Prosa DISCORSIVA: un confine di frase reale — un punto NON preceduto da una maiuscola (così
+/// non è un'abbreviazione "p."/"L."/"D." né una singola iniziale "A.") seguito da spazio, una
+/// parola in Title-case (maiuscola + minuscole) e altra prosa in minuscolo. È il segnale che il
+/// blocco PORTA CONTENUTO: una nota di piè che comincia con una citazione d'autore ma prosegue
+/// con un periodo discorsivo ("… cit., p. 1305. Un'identica disposizione si rinveniva …",
+/// Mandrioli vol. 3 nota 58, che il salto-pagina spezza dai suoi "(59)…(63)" perdendo così il
+/// marcatore in linea). Una LISTA di bibliografia è nominale: i suoi punti sono abbreviazioni o
+/// fine-voce, e dopo un ";" o un "." viene un cognome in MAIUSCOLETTO (tutte maiuscole) — che
+/// questo pattern NON cattura (richiede minuscole dopo la maiuscola iniziale). Guardia di
+/// contenuto del ramo di recupero-particella (mai degradare a bibliografia un blocco discorsivo).
+private let BIBLIO_DISCURSIVE_PROSE = try! NSRegularExpression(
+    pattern: "(?<![A-Z])\\.\\s+[A-ZÀ-Ý][a-zà-ÿ'’]+\\s+[a-zà-ÿ]")
+
 /// Vero se `text` è una VOCE DI BIBLIOGRAFIA (autore-maiuscoletto in testa + stilema), e NON
-/// una nota con richiamo (marcatore in testa → esclusa).
+/// una nota con richiamo (marcatore in testa → esclusa). Due rami d'autore: (1) il predicato
+/// STORICO, invariato — ogni voce che accettava resta accettata byte-identica su ogni volume;
+/// (2) il RECUPERO con particella staccata ("DE NICTOLIS"), applicato solo se il ramo storico
+/// non matcha e protetto da DUE guardie di contenuto — mai degradare a bibliografia un blocco
+/// che porta contenuto: (a) nessun marcatore di nota IN LINEA "(59) …" (blocco di note incollate
+/// non spezzato); (b) nessuna PROSA DISCORSIVA (periodo + Title-case + minuscolo) — copre il caso
+/// reale Mandrioli vol. 3 nota 58, che il salto-pagina spezza dai suoi "(59)…(63)" (perdendo il
+/// marcatore in linea) ma che resta prosa discorsiva ("… p. 1305. Un'identica disposizione si
+/// rinveniva …") e NON va promosso.
 func looksLikeBibliographyEntry(_ text: String) -> Bool {
     let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
     let ns = t as NSString
     let r = NSRange(location: 0, length: ns.length)
     if BIBLIO_CALL_MARKER.firstMatch(in: t, range: r) != nil { return false }
-    return BIBLIO_AUTHOR.firstMatch(in: t, range: r) != nil
-        && BIBLIO_STYLEME.firstMatch(in: t, range: r) != nil
+    guard BIBLIO_STYLEME.firstMatch(in: t, range: r) != nil else { return false }
+    // Ramo storico (invariato): accetta byte-identica ogni voce già riconosciuta.
+    if BIBLIO_AUTHOR.firstMatch(in: t, range: r) != nil { return true }
+    // Ramo di recupero-particella (nuovo): solo se lo storico non matcha, e con le due guardie
+    // di contenuto (blocco incollato non spezzato / prosa discorsiva → mai bibliografia).
+    if BIBLIO_AUTHOR_PARTICLE.firstMatch(in: t, range: r) != nil,
+       BIBLIO_INLINE_NOTE_MARKER.firstMatch(in: t, range: r) == nil,
+       BIBLIO_DISCURSIVE_PROSE.firstMatch(in: t, range: r) == nil { return true }
+    return false
 }
 
 /// Post-passo: riclassifica le voci di bibliografia (NOTE senza richiamo + pattern) in
