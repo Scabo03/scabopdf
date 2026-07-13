@@ -140,7 +140,7 @@ enum DocumentOpener {
                 }
             }
         }
-        presenter.present(processingVC, animated: true)
+        presenter.present(processingVC, animated: Motion.animated())
     }
 
     /// Riapertura all'AVVIO (§ 2.5): apre l'ultimo documento SOLO se il contenuto è in cache, così
@@ -270,7 +270,7 @@ enum DocumentOpener {
                 }
             }
         }
-        presenter.present(processingVC, animated: true)
+        presenter.present(processingVC, animated: Motion.animated())
     }
 
     /// Costruisce il VC reading in modalità embedded per una metà (§ 11), cablando la persistenza
@@ -301,9 +301,9 @@ enum DocumentOpener {
     /// all'apertura). Nessun force-unwrap; se anche il present fallisse, l'app resta sulla Home.
     static func presentRobustly(_ reader: UIViewController, from presenter: UIViewController) {
         if let existing = presenter.presentedViewController {
-            existing.dismiss(animated: false) { presenter.present(reader, animated: true) }
+            existing.dismiss(animated: false) { presenter.present(reader, animated: Motion.animated()) }
         } else {
-            presenter.present(reader, animated: true)
+            presenter.present(reader, animated: Motion.animated())
         }
     }
 
@@ -425,7 +425,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 try? FileManager.default.removeItem(at: localCopy)
             }
         }
-        presenter.present(processingVC, animated: true)
+        presenter.present(processingVC, animated: Motion.animated())
     }
 
     private func handleOutcome(

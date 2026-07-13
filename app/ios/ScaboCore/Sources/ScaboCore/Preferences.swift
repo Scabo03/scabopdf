@@ -98,6 +98,10 @@ public enum PreferenceKeys {
     public static let accentMode = "@scabopdf/reading/accent"
     /// Guida di lettura (comfort opt-in).
     public static let readingGuide = "@scabopdf/reading/readingGuide"
+    /// Note: annuncia a voce l'identità della nota (ripristina l'intro «Nota.»), mai-solo-suono.
+    public static let noteSpokenLabels = "@scabopdf/reading/noteSpokenLabels"
+    /// Note: riquadro visivo per le note (sordi vedenti).
+    public static let noteVisualBox = "@scabopdf/reading/noteVisualBox"
     /// Flag: la schermata di scelta tema alla prima apertura è stata completata.
     public static let firstOpenCompleted = "@scabopdf/firstOpenCompleted"
 
@@ -214,6 +218,24 @@ public func setStoredReadingGuide(_ store: KeyValueStore, _ enabled: Bool) {
     store.setItem(PreferenceKeys.readingGuide, enabled ? "1" : "0")
 }
 
+/// Note annunciate a voce (default `false`): ripristina l'intro «Nota.» — mai-solo-suono.
+public func getStoredNoteSpokenLabels(_ store: KeyValueStore) -> Bool {
+    store.getItem(PreferenceKeys.noteSpokenLabels) == "1"
+}
+
+public func setStoredNoteSpokenLabels(_ store: KeyValueStore, _ enabled: Bool) {
+    store.setItem(PreferenceKeys.noteSpokenLabels, enabled ? "1" : "0")
+}
+
+/// Riquadro visivo per le note (default `false`).
+public func getStoredNoteVisualBox(_ store: KeyValueStore) -> Bool {
+    store.getItem(PreferenceKeys.noteVisualBox) == "1"
+}
+
+public func setStoredNoteVisualBox(_ store: KeyValueStore, _ enabled: Bool) {
+    store.setItem(PreferenceKeys.noteVisualBox, enabled ? "1" : "0")
+}
+
 /// La schermata di scelta tema alla prima apertura è stata completata? (default `false`).
 public func getStoredFirstOpenCompleted(_ store: KeyValueStore) -> Bool {
     store.getItem(PreferenceKeys.firstOpenCompleted) == "1"
@@ -246,6 +268,8 @@ public func resolvedReadingStyle(
         spacing: getStoredSpacingProfile(store),
         accent: getStoredAccentMode(store),
         readingGuide: getStoredReadingGuide(store),
+        noteSpokenLabels: getStoredNoteSpokenLabels(store),
+        noteVisualBox: getStoredNoteVisualBox(store),
         traits: traits)
 }
 

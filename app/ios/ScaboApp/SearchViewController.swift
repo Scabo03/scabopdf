@@ -67,6 +67,12 @@ final class SearchViewController: UIViewController, UITableViewDataSource, UISea
             }
         }
         tableView.reloadData()
+        // Messaggio di stato (WCAG 4.1.3): quando si sta cercando, annuncia il numero di risultati
+        // senza rubare il fuoco. Silenzioso a query vuota (mostra tutto l'archivio, non è una ricerca).
+        if !trimmed.isEmpty {
+            let msg = results.isEmpty ? "Nessun risultato" : "\(results.count) risultati"
+            UIAccessibility.post(notification: .announcement, argument: msg)
+        }
     }
 
     func updateSearchResults(for searchController: UISearchController) {

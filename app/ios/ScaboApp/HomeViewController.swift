@@ -266,6 +266,7 @@ private final class WorkspacesHeaderView: UITableViewHeaderFooterView {
         title.setContentCompressionResistancePriority(.required, for: .vertical)
         title.translatesAutoresizingMaskIntoConstraints = false
         title.accessibilityTraits.insert(.header)
+        title.accessibilityLanguage = "en"  // «Workspaces» è un termine inglese (WCAG 3.1.2 Language of Parts)
 
         let button = UIButton(type: .system)
         var config = UIButton.Configuration.plain()

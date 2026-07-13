@@ -216,12 +216,19 @@ public struct ResolvedReadingStyle: Equatable, Sendable {
     /// «mai-solo-colore» (design § 3.1), non decorazione; è la sua PROMINENZA a
     /// variare con `differentiation`.
     public var showRoleBoxes: Bool
+    /// Se annunciare a voce l'identità delle NOTE (ripristina l'intro «Nota.»/«Nota lunga.» nel
+    /// `accessibilityLabel`, al posto del solo earcon): opzione per chi non sente / display braille.
+    /// Mai-solo-suono (gemello del mai-solo-colore). Opt-in: chi preferisce gli earcon resta com'è.
+    public var noteSpokenLabels: Bool
+    /// Se rendere le NOTE con un box visivo (come i ruoli-modifica): opzione per i sordi vedenti. Opt-in.
+    public var showNoteBox: Bool
 
     public init(
         colors: ReadingColors, isDark: Bool, lineHeightMultiple: Double,
         paragraphSpacingEm: Double, letterSpacingEm: Double, wordSpacingEm: Double,
         maxContentWidth: Double?, differentiation: DifferentiationLevel,
-        mutedAccents: Bool, readingGuide: Bool, showRoleBoxes: Bool
+        mutedAccents: Bool, readingGuide: Bool, showRoleBoxes: Bool,
+        noteSpokenLabels: Bool = false, showNoteBox: Bool = false
     ) {
         self.colors = colors
         self.isDark = isDark
@@ -234,6 +241,8 @@ public struct ResolvedReadingStyle: Equatable, Sendable {
         self.mutedAccents = mutedAccents
         self.readingGuide = readingGuide
         self.showRoleBoxes = showRoleBoxes
+        self.noteSpokenLabels = noteSpokenLabels
+        self.showNoteBox = showNoteBox
     }
 }
 
@@ -371,6 +380,8 @@ public func resolveReadingStyle(
     spacing: SpacingProfile,
     accent: AccentMode,
     readingGuide: Bool,
+    noteSpokenLabels: Bool = false,
+    noteVisualBox: Bool = false,
     traits: SystemAppearanceTraits
 ) -> ResolvedReadingStyle {
 
@@ -429,5 +440,6 @@ public func resolveReadingStyle(
         lineHeightMultiple: s.line, paragraphSpacingEm: s.paragraph,
         letterSpacingEm: s.letter, wordSpacingEm: s.word,
         maxContentWidth: maxWidth, differentiation: differentiation,
-        mutedAccents: muted, readingGuide: readingGuide, showRoleBoxes: true)
+        mutedAccents: muted, readingGuide: readingGuide, showRoleBoxes: true,
+        noteSpokenLabels: noteSpokenLabels, showNoteBox: noteVisualBox)
 }

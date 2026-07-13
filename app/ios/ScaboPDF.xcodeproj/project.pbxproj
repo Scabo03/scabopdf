@@ -23,6 +23,7 @@
 		5CABC04E0000000000000088 /* FocusRestoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000089 /* FocusRestoreTests.swift */; };
 		5CABC04E000000000000008A /* AppearanceWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E000000000000008B /* AppearanceWiringTests.swift */; };
 		A95A1DA272651B33A52AD8D0 /* AccessibilityAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CACA7BF60CBF8618630012BB /* AccessibilityAuditUITests.swift */; };
+		C539E11B306FE6AC0C7F5809 /* MotorAccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71972E1431CAD5A4434B45C1 /* MotorAccessibilityTests.swift */; };
 		EAB3841D743855972BD02B55 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA7381B73C5CC5F8BCBA5DE7 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -60,6 +61,7 @@
 		5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SplitScreenWiringTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000089 /* FocusRestoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FocusRestoreTests.swift; sourceTree = "<group>"; };
 		5CABC04E000000000000008B /* AppearanceWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppearanceWiringTests.swift; sourceTree = "<group>"; };
+		71972E1431CAD5A4434B45C1 /* MotorAccessibilityTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotorAccessibilityTests.swift; sourceTree = "<group>"; };
 		BA7381B73C5CC5F8BCBA5DE7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		CACA7BF60CBF8618630012BB /* AccessibilityAuditUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AccessibilityAuditUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -142,6 +144,7 @@
 				5CABC04E0000000000000087 /* SplitScreenWiringTests.swift */,
 				5CABC04E0000000000000089 /* FocusRestoreTests.swift */,
 				5CABC04E000000000000008B /* AppearanceWiringTests.swift */,
+				71972E1431CAD5A4434B45C1 /* MotorAccessibilityTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -278,9 +281,10 @@
 			};
 			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "ScaboPDF" */;
 			compatibilityVersion = "Xcode 12.0";
-			developmentRegion = en;
+			developmentRegion = it;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				it,
 				en,
 				Base,
 			);
@@ -348,6 +352,7 @@
 				5CABC04E0000000000000086 /* SplitScreenWiringTests.swift in Sources */,
 				5CABC04E0000000000000088 /* FocusRestoreTests.swift in Sources */,
 				5CABC04E000000000000008A /* AppearanceWiringTests.swift in Sources */,
+				C539E11B306FE6AC0C7F5809 /* MotorAccessibilityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
