@@ -135,6 +135,25 @@ livello — [[debt-lowlevel-font-extraction]]) che però aiuterebbe solo il caso
 accettare il limite (raccomandato). **Nessuna implementazione in Tempo B: il "no" misurato vale più di
 una pezza larga.** ScaboCore 557/557 invariata.
 
+**Titoli spezzati RISOLTI — `consolidateAdjacentHeadings` (2026-07-14 notte, branch `feat/heading-fusion`,
+commit `7b56960`, NON mergiato).** Il candidato meccanico n.1 dell'inventario è chiuso. Capacità
+posizionale dentro `pageItems`: due heading adiacenti dello stesso livello si fondono in un titolo
+intero SOLO se geometria+stile dicono che sono la stessa riga andata a capo (stesso corpo/grassetto/
+corsivo/colore, interlinea singola = baseline-delta ≈ una riga, stesso margine-sx o centro; riga-1
+senza punto forte, riga-2 senza marcatore né cifra iniziale [uccide i falsi-positivi del TOC "463 15."],
+niente leader puntinato, lunghezza di un titolo; re-àncora all'ultima riga per titoli a ≥3 righe).
+**Metodo:** dump geometria diagnostico dei 40 volumi (test `headingGeomDump`, additivo) → calibrazione
+dei predicati → ispezione semantica di OGNI coppia fusa sui volumi del maintainer + Patriarca (74) →
+**zero titoli distinti fusi** (regola d'oro: mai inghiottire un punto di navigazione). **Rete di delta**
+(before=main / after): navigazione = esattamente −#fusioni per volume (Lezioni −12, Mandrioli 3 −10,
+Patriarca −74, Marrone −27, Lineamenti −20, Mercato fin −10, Compendio −8, Marotta −5, Mosconi −4,
+Torrente −4, Estratto −1 [titolo-libro; i titoli-capitolo già fusi non regrediti]); **rete A/C = 0**
+e **nessun testo di titolo perso** ovunque; **Rivista DPC 575→575 ESCLUSA** (abstract classificati
+heading dal size-only → falsi-positivi non provabili zero, gated `isRivistaDpc`); controllo Appunti
+byte-identico. Assorbe come caso generale la fusione capitolo dell'Estratto (resta, gated). +16 test
+HeadingFusionTests; ScaboCore 573/573. Ascolta di diverso: navigare per intestazioni su Lezioni/
+Mandrioli e sentire i titoli **interi** invece che spezzati in due. → **TestFlight build 41** (in corso).
+
 **Giro di perfezionamento conservativo — INVENTARIO fenomeni aperti, tutti ARCHIVIATI con misura
 (2026-07-14 sera).** Vedi `docs/INVENTARIO_CLASSIFICAZIONE_APERTI.md`. Postura: non rompere il buono
 inseguendo il marginale; nel dubbio archivia. Nessun codice toccato (suite 557/557). Decisioni:
