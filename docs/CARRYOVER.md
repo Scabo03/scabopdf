@@ -93,6 +93,39 @@ lettere(ESTRATTO), parità estrazione-vs-PDF vero — la fedeltà non si tratta)
 catturata su tutto il corpus come baseline di delta (Tempo 2 di questo giro). L'Estratto è ora un caso di studio come gli altri;
 i suoi titoli spezzati sono un **bersaglio** da riparare, non una condizione da preservare.
 
+**Fronte nuova architettura (Tempo 3) — branch `feat/classification-phenomena` (NON mergiato,
+attende il via del maintainer).** Due capacità per-fenomeno introdotte, ciascuna con la sua rete
+di delta (dump di lettura before/after su 18 volumi ri-resi: tutti i portatori di LETTERATURA +
+controlli; codici e volumi senza LETTERATURA provabilmente non toccati). Fedeltà: rete A (0
+lettere perse) + rete C (0 fabbricate) ovunque.
+(1) **Capacità di-BLOCCO trasversale — guardia di contenuto universale `BIBLIO_INTERNAL_XREF`**
+(commit `c708785`, `Granularity.swift`): una NOTE con rinvio interno a un'altra nota/paragrafo
+("v. oltre, la nota 15 del §", "In proposito v. … alla nota 28") porta contenuto → mai
+bibliografia; applicata a entrambi i rami (la guardia di prosa-discorsiva resta confinata al ramo
+particella perché ambigua coi sottotitoli dei libri, es. "L'interesse legittimo. Storia e teoria").
+DELTA: cambia SOLO Mandrioli vol. 3, −4 LETTERATURA→NOTE (le 4 note discorsive con rinvio
+interno); Lezioni 97 voci INTATTE; ogni altro volume byte-identico. Chiude il difetto del
+rilevatore universale di bibliografia. Giudizio semantico: le 4 prendevano l'earcon "bibliografia"
+sbagliato → ora lette come note. (Residuo onesto: le note-contenuto SENZA rinvio interno restano
+LETTERATURA — es. Mandrioli vol. 3 nota #1, lista citazionale con glue "Con riferimento a…, v." —
+sono in larga parte bibliografia e l'earcon è difendibile; il caso pienamente ambiguo nota-vs-
+contenuto è la grande capacità rinviata.)
+(2) **Capacità di-VOLUME (firma-di-formato `isEstrattoChrome`) — fusione "CAPITOLO N" + titolo**
+(commit `2c6c689`, `GenericPlugin.swift` `recognizeEstrattoTitles`): i titoli di capitolo
+dell'Estratto erano spezzati in due HEADING_2 (marcatore + titolo) → doppie voci-fantasma nella
+navigazione. Ora fusi in un solo HEADING_2 ("CAPITOLO I LA NOZIONE…"). Fusione DENTRO pageItems →
+zip item↔nodo 1:1, stat di aggancio note IDENTICHE. DELTA: cambia SOLO l'Estratto (HEADING_2 −4,
+segs 2740→2736, rete A/C = 0); ogni altro volume byte-identico. Chiude il bersaglio dei titoli
+spezzati dell'Estratto.
+**Rinviato (con evidenza):** (a) famiglia Giappichelli fuori-gate (Mandrioli 3/4, Lineamenti,
+Nomofanie) — misurato che le foglie di famiglia sono §-specifiche e quei volumi non hanno §, quindi
+il beneficio pratico dell'inclusione è ~nullo (Lineamenti/Nomofanie byte-identici nella rete di
+delta); ciò che serve loro è la capacità nota-vs-contenuto, non le foglie §. (b) La grande capacità
+**nota-vs-contenuto** (hard core, migliaia di blocchi cross-famiglia): un discriminatore regex
+pulito non separa "biblio con sottotitolo" da "nota-contenuto con citazioni" (la prosa-discorsiva
+demoterebbe 20 voci genuine di Lezioni); serve un segnale più forte (lessico di verbi finiti, o una
+misura di densità-citazioni-vs-prosa) — capacità dedicata di un giro futuro. ScaboCore 557/557.
+
 ---
 
 ## ▶ STATO — Arco PESO concluso + import normativo AKN consegnato → build 30-37 su TestFlight — 2026-07-05/09
