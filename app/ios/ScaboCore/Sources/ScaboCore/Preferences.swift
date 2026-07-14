@@ -87,6 +87,20 @@ public enum PreferenceKeys {
     /// scala Dynamic Type a partire dalla dimensione di sistema (0 = come il sistema, >0 più grande).
     public static let readingTextSizeOffset = "@scabopdf/reading/textSizeOffset"
 
+    // Sistema di accessibilità visiva (design DESIGN_ACCESSIBILITA_VISIVA_LETTURA.md).
+    /// Fonte dell'aspetto: `followSystem` (A) o `appTheme` (B).
+    public static let appearanceSource = "@scabopdf/reading/appearanceSource"
+    /// Preset di lettura esclusivo (standard/comfort/ipovisione/calma).
+    public static let readingPreset = "@scabopdf/reading/preset"
+    /// Profilo di spaziatura (compact/standard/comfortable/generous).
+    public static let spacingProfile = "@scabopdf/reading/spacing"
+    /// Modalità accento (standard/monochrome).
+    public static let accentMode = "@scabopdf/reading/accent"
+    /// Guida di lettura (comfort opt-in).
+    public static let readingGuide = "@scabopdf/reading/readingGuide"
+    /// Flag: la schermata di scelta tema alla prima apertura è stata completata.
+    public static let firstOpenCompleted = "@scabopdf/firstOpenCompleted"
+
     /// Chiave per-documento della granularità, derivata dall'id del documento.
     public static func documentGranularityLevel(_ documentId: String) -> String {
         granularityLevelPrefix + documentId
@@ -125,6 +139,114 @@ public func getStoredReadingTextSizeOffset(_ store: KeyValueStore) -> Int {
 public func setStoredReadingTextSizeOffset(_ store: KeyValueStore, _ offset: Int) {
     let clamped = min(max(READING_TEXT_SIZE_OFFSET_MIN, offset), READING_TEXT_SIZE_OFFSET_MAX)
     store.setItem(PreferenceKeys.readingTextSizeOffset, String(clamped))
+}
+
+// MARK: - Sistema di accessibilità visiva (Fonte dell'aspetto, preset, assi)
+
+/// Default prima che l'utente scelga: `followSystem` (l'app rispecchia il sistema).
+public let DEFAULT_APPEARANCE_SOURCE: AppearanceSource = .followSystem
+/// Default del preset (equilibrio generalista).
+public let DEFAULT_READING_PRESET: ReadingPreset = .standard
+/// Default dello spaziatura (moderata).
+public let DEFAULT_SPACING_PROFILE: SpacingProfile = .standard
+/// Default dell'accento (sicuro per la visione dei colori).
+public let DEFAULT_ACCENT_MODE: AccentMode = .standard
+
+/// Fonte dell'aspetto memorizzata (default `followSystem`). Validata contro il
+/// vocabolario chiuso; un valore mancante/sconosciuto collassa al default.
+public func getStoredAppearanceSource(_ store: KeyValueStore) -> AppearanceSource {
+    if let raw = store.getItem(PreferenceKeys.appearanceSource),
+       let value = AppearanceSource(rawValue: raw) {
+        return value
+    }
+    return DEFAULT_APPEARANCE_SOURCE
+}
+
+public func setStoredAppearanceSource(_ store: KeyValueStore, _ value: AppearanceSource) {
+    store.setItem(PreferenceKeys.appearanceSource, value.rawValue)
+}
+
+/// Preset di lettura memorizzato (default `standard`).
+public func getStoredReadingPreset(_ store: KeyValueStore) -> ReadingPreset {
+    if let raw = store.getItem(PreferenceKeys.readingPreset),
+       let value = ReadingPreset(rawValue: raw) {
+        return value
+    }
+    return DEFAULT_READING_PRESET
+}
+
+public func setStoredReadingPreset(_ store: KeyValueStore, _ value: ReadingPreset) {
+    store.setItem(PreferenceKeys.readingPreset, value.rawValue)
+}
+
+/// Profilo di spaziatura memorizzato (default `standard`).
+public func getStoredSpacingProfile(_ store: KeyValueStore) -> SpacingProfile {
+    if let raw = store.getItem(PreferenceKeys.spacingProfile),
+       let value = SpacingProfile(rawValue: raw) {
+        return value
+    }
+    return DEFAULT_SPACING_PROFILE
+}
+
+public func setStoredSpacingProfile(_ store: KeyValueStore, _ value: SpacingProfile) {
+    store.setItem(PreferenceKeys.spacingProfile, value.rawValue)
+}
+
+/// Modalità accento memorizzata (default `standard`).
+public func getStoredAccentMode(_ store: KeyValueStore) -> AccentMode {
+    if let raw = store.getItem(PreferenceKeys.accentMode),
+       let value = AccentMode(rawValue: raw) {
+        return value
+    }
+    return DEFAULT_ACCENT_MODE
+}
+
+public func setStoredAccentMode(_ store: KeyValueStore, _ value: AccentMode) {
+    store.setItem(PreferenceKeys.accentMode, value.rawValue)
+}
+
+/// Guida di lettura memorizzata (default `false`).
+public func getStoredReadingGuide(_ store: KeyValueStore) -> Bool {
+    store.getItem(PreferenceKeys.readingGuide) == "1"
+}
+
+public func setStoredReadingGuide(_ store: KeyValueStore, _ enabled: Bool) {
+    store.setItem(PreferenceKeys.readingGuide, enabled ? "1" : "0")
+}
+
+/// La schermata di scelta tema alla prima apertura è stata completata? (default `false`).
+public func getStoredFirstOpenCompleted(_ store: KeyValueStore) -> Bool {
+    store.getItem(PreferenceKeys.firstOpenCompleted) == "1"
+}
+
+public func setStoredFirstOpenCompleted(_ store: KeyValueStore, _ done: Bool) {
+    store.setItem(PreferenceKeys.firstOpenCompleted, done ? "1" : "0")
+}
+
+/// Applica in blocco un preset: scrive il preset E i valori di PARTENZA dei suoi assi
+/// (spaziatura), lasciandoli poi regolabili singolarmente (design § 4.1: il preset è
+/// un punto di partenza, non un lucchetto). Imposta anche la Fonte dell'aspetto su
+/// `appTheme` (posizione B), perché scegliere un preset È scegliere un tema dell'app.
+public func applyReadingPreset(_ store: KeyValueStore, _ preset: ReadingPreset) {
+    setStoredAppearanceSource(store, .appTheme)
+    setStoredReadingPreset(store, preset)
+    setStoredSpacingProfile(store, preset.startingSpacing)
+    // Calma suggerisce la guida di lettura; gli altri preset non la forzano.
+    if preset == .calma { setStoredReadingGuide(store, true) }
+}
+
+/// Costruisce lo stile di lettura risolto dai valori memorizzati + i trait di
+/// sistema. Un solo punto che unisce preferenze e stato di sistema per la reading view.
+public func resolvedReadingStyle(
+    _ store: KeyValueStore, traits: SystemAppearanceTraits
+) -> ResolvedReadingStyle {
+    resolveReadingStyle(
+        source: getStoredAppearanceSource(store),
+        preset: getStoredReadingPreset(store),
+        spacing: getStoredSpacingProfile(store),
+        accent: getStoredAccentMode(store),
+        readingGuide: getStoredReadingGuide(store),
+        traits: traits)
 }
 
 /// Reads the stored theme selection, validating it against the closed vocabulary.

@@ -140,6 +140,13 @@ final class SegmentCell: UICollectionViewCell {
     /// di lettura di VoiceOver (che segue la disposizione visiva). Fissando la larghezza, ogni cella
     /// occupa una riga propria e solo l'altezza varia: impilamento verticale, ordine sequenziale.
     private var widthConstraint: NSLayoutConstraint!
+    /// Inset orizzontali dello stack, mutabili per cappare la misura (preset Comfort, design § 4.3).
+    private var stackLeading: NSLayoutConstraint!
+    private var stackTrailing: NSLayoutConstraint!
+    /// Barra d'accento del ruolo apparato: il secondo segnale NON cromatico
+    /// («mai-solo-colore», design § 3.1). Conta la sua PRESENZA/posizione (una barra a
+    /// contrasto di luminanza al lato del testo), non solo la tinta.
+    private let roleBar = UIView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -164,11 +171,27 @@ final class SegmentCell: UICollectionViewCell {
         stack.addArrangedSubview(pageMarker)
         stack.addArrangedSubview(textLabel)
         contentView.addSubview(stack)
+        stackLeading = stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20)
+        stackTrailing = stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20)
         NSLayoutConstraint.activate([
             stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
             stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
-            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            stackLeading, stackTrailing,
+        ])
+
+        // Barra d'accento del ruolo: hugga la colonna di testo (6pt a sinistra), alta come lo stack.
+        // Larghezza 4pt (SPECS § A.4: accento laterale sinistro max 4pt). Nascosta di default; mostrata
+        // per i ruoli apparato solo quando è applicato uno stile di lettura.
+        roleBar.translatesAutoresizingMaskIntoConstraints = false
+        roleBar.isHidden = true
+        roleBar.layer.cornerRadius = 1.5
+        roleBar.isAccessibilityElement = false
+        contentView.addSubview(roleBar)
+        NSLayoutConstraint.activate([
+            roleBar.trailingAnchor.constraint(equalTo: stack.leadingAnchor, constant: -6),
+            roleBar.topAnchor.constraint(equalTo: stack.topAnchor),
+            roleBar.bottomAnchor.constraint(equalTo: stack.bottomAnchor),
+            roleBar.widthAnchor.constraint(equalToConstant: 4),
         ])
 
         // La cella È l'elemento accessibile foglia: le sotto-viste (testo, marcatore) non sono esposte.
@@ -187,24 +210,45 @@ final class SegmentCell: UICollectionViewCell {
         pageStart: Bool,
         pageNumber: Int?,
         width: CGFloat,
-        sizingTraits: UITraitCollection
+        sizingTraits: UITraitCollection,
+        style: ResolvedReadingStyle? = nil,
+        horizontalInset: CGFloat = 20,
+        isReadingFocus: Bool = false
     ) {
         self.segment = segment
         self.readingIndex = index
         self.host = host
         if width > 0 { widthConstraint.constant = width }
+        stackLeading.constant = horizontalInset
+        stackTrailing.constant = -horizontalInset
 
         // Font alla dimensione EFFETTIVA (leva + Dynamic Type di sistema), IDENTICO a quello con cui la
         // reading view misura l'altezza (`measuredHeight`): è ciò che tiene misurato == reso.
         textLabel.font = UIFont.preferredFont(
             forTextStyle: ContinuousReadingView.textStyle(for: segment.role), compatibleWith: sizingTraits)
-        // Resa visiva: underline additivo (rete A: il parlato NON cambia), altrimenti testo puro.
-        if let intervals = underlineIntervals, !intervals.isEmpty {
-            textLabel.attributedText = ContinuousReadingView.underlinedAttributedString(
-                for: segment, intervals: intervals, sizingTraits: sizingTraits)
+
+        if let style {
+            // Percorso CON stile: palette + spaziatura + underline in un unico attributed string,
+            // costruito dallo STESSO builder che usa la misura (`measuredHeight`) → misurato == reso.
+            textLabel.textColor = ContinuousReadingView.textColor(for: segment.role, style: style)
+            textLabel.attributedText = ContinuousReadingView.styledAttributedString(
+                for: segment, style: style, sizingTraits: sizingTraits, underlineIntervals: underlineIntervals)
+            ContinuousReadingView.applyRoleBoxAndGuide(
+                bar: roleBar, contentView: contentView, textLabel: textLabel,
+                segment: segment, style: style, isReadingFocus: isReadingFocus)
         } else {
-            textLabel.attributedText = nil
-            textLabel.text = segment.text
+            // Percorso STORICO (test senza stile applicato): resa byte-identica a prima.
+            textLabel.textColor = .label
+            roleBar.isHidden = true
+            contentView.backgroundColor = nil
+            textLabel.alpha = 1
+            if let intervals = underlineIntervals, !intervals.isEmpty {
+                textLabel.attributedText = ContinuousReadingView.underlinedAttributedString(
+                    for: segment, intervals: intervals, sizingTraits: sizingTraits)
+            } else {
+                textLabel.attributedText = nil
+                textLabel.text = segment.text
+            }
         }
 
         // Resa accessibile: etichetta mai vuota, parlato byte-identico al modello storico.
@@ -323,6 +367,11 @@ final class ContinuousReadingView: UIView {
 
     /// Offset della leva in passi sul ladder (0 = come il sistema; >0 più grande; <0 più piccolo).
     private var textSizeOffsetSteps = 0
+
+    /// Lo stile di lettura risolto corrente (accessibilità visiva: palette, spaziatura,
+    /// differenziazione, guida). `nil` finché non applicato (test unitari): in quel caso
+    /// la resa resta quella storica (colori di sistema, nessuna spaziatura).
+    private var readingStyle: ResolvedReadingStyle?
 
     private func ladderIndex(of category: UIContentSizeCategory) -> Int {
         Self.categoryLadder.firstIndex(of: category) ?? 3  // 3 = .large
@@ -539,8 +588,14 @@ final class ContinuousReadingView: UIView {
 
     /// Chiamata dalla cella al fuoco: aggiorna la posizione e fa scattare gli earcon (§ 10.4/§ 10.5).
     func cellDidBecomeFocused(index: Int, segment: ContentSegment) {
+        let previous = lastFocusedIndex
         lastFocusedIndex = index
         onReadingPositionChanged?(index)
+        // Guida di lettura: sposta l'evidenziazione sul nuovo elemento (attenua gli altri).
+        // Solo-visiva, economica (celle visibili), inerte all'ordine di lettura VoiceOver.
+        if readingStyle?.readingGuide == true, previous != index {
+            reconfigureVisibleCells()
+        }
         if let noteSignal = Self.noteSignal(for: segment) {
             signalPlayer.play(noteSignal)
         }
@@ -808,6 +863,56 @@ final class ContinuousReadingView: UIView {
         collectionView.reconfigureItems(at: visible)
     }
 
+    // MARK: - Stile di lettura (accessibilità visiva): applicazione + instradamento
+
+    /// Applica uno stile di lettura risolto. Instrada sul percorso GIUSTO (design § 5.2):
+    /// se cambia la GEOMETRIA (spaziatura, cap misura) → percorso ri-misura (reset cache
+    /// + posizione conservata, come la leva dimensione); se cambia solo il COLORE
+    /// (palette, accenti, guida) → riconfigurazione delle celle visibili (economica). Il
+    /// colore di sfondo si applica sempre (economico).
+    func applyReadingStyle(_ style: ResolvedReadingStyle) {
+        let old = readingStyle
+        readingStyle = style
+        let bg = UIColor.fromHex(style.colors.background, fallback: .systemBackground)
+        backgroundColor = bg
+        collectionView.backgroundColor = bg
+        if Self.geometryChanged(from: old, to: style) {
+            remeasurePreservingPosition()
+        } else {
+            reconfigureVisibleCells()
+        }
+    }
+
+    /// Imposta lo stile INIZIALE senza ri-misura, per l'apertura (prima del primo
+    /// `render`): la misura successiva userà già lo stile giusto, senza uno scatto
+    /// d'avvio (stesso schema di `setInitialTextSizeOffset`, Fase 0).
+    func setInitialReadingStyle(_ style: ResolvedReadingStyle) {
+        readingStyle = style
+        let bg = UIColor.fromHex(style.colors.background, fallback: .systemBackground)
+        backgroundColor = bg
+        collectionView.backgroundColor = bg
+    }
+
+    /// Lo stile di lettura corrente (per l'app: colori di barra, coerenza chrome).
+    var currentReadingStyle: ResolvedReadingStyle? { readingStyle }
+
+    private static func geometryChanged(from a: ResolvedReadingStyle?, to b: ResolvedReadingStyle) -> Bool {
+        guard let a else { return true }
+        return a.lineHeightMultiple != b.lineHeightMultiple
+            || a.paragraphSpacingEm != b.paragraphSpacingEm
+            || a.letterSpacingEm != b.letterSpacingEm
+            || a.wordSpacingEm != b.wordSpacingEm
+            || a.maxContentWidth != b.maxContentWidth
+    }
+
+    /// Inset orizzontale effettivo: 20pt di base, più il margine per centrare la colonna
+    /// quando il preset cappa la misura (Comfort) e la larghezza la supera (design § 4.3).
+    private func horizontalInset(forWidth width: CGFloat) -> CGFloat {
+        let base: CGFloat = 20
+        guard let maxW = readingStyle?.maxContentWidth, width > CGFloat(maxW) else { return base }
+        return base + (width - CGFloat(maxW)) / 2
+    }
+
     /// Costruisce l'`attributedText` di un segmento con l'attributo `.underlineStyle` sugli intervalli
     /// di parole indicati. L'underline è un ATTRIBUTO del testo (§ 6.5): resta sotto i glifi esatti a
     /// qualunque corpo carattere e a-capo, senza calcoli geometrici.
@@ -901,7 +1006,9 @@ final class ContinuousReadingView: UIView {
         cell.configure(
             segment: segment, index: index, host: self,
             underlineIntervals: intervals, pageStart: pageStart, pageNumber: pageNumber, width: width,
-            sizingTraits: textSizeTraitCollection)
+            sizingTraits: textSizeTraitCollection,
+            style: readingStyle, horizontalInset: horizontalInset(forWidth: width),
+            isReadingFocus: index == lastFocusedIndex)
     }
 
     private func isPageStart(_ index: Int) -> Bool {
@@ -920,11 +1027,21 @@ final class ContinuousReadingView: UIView {
         if index < heightCache.count, heightCache[index] >= 0 { return heightCache[index] }
         let width = collectionView.bounds.width
         guard width > 0 else { return 44 }
-        let labelWidth = max(1, width - 40)  // inset orizzontali dello stack: 20 + 20
+        let inset = horizontalInset(forWidth: width)
+        let labelWidth = max(1, width - 2 * inset)  // inset orizzontali (base 20, o cap misura)
         let segment = segments[index]
-        sizingLabel.font = UIFont.preferredFont(
-            forTextStyle: Self.textStyle(for: segment.role), compatibleWith: textSizeTraitCollection)
-        sizingLabel.text = segment.text
+        // La misura usa lo STESSO builder della resa: con stile → attributed (palette+spaziatura);
+        // senza stile → testo puro (resa storica). In entrambi i casi misurato == reso.
+        if let style = readingStyle {
+            sizingLabel.attributedText = Self.styledAttributedString(
+                for: segment, style: style, sizingTraits: textSizeTraitCollection,
+                underlineIntervals: underlineRangesBySegmentId[segment.id])
+        } else {
+            sizingLabel.font = UIFont.preferredFont(
+                forTextStyle: Self.textStyle(for: segment.role), compatibleWith: textSizeTraitCollection)
+            sizingLabel.attributedText = nil
+            sizingLabel.text = segment.text
+        }
         let labelH = ceil(sizingLabel.sizeThatFits(
             CGSize(width: labelWidth, height: .greatestFiniteMagnitude)).height)
         var markerH: CGFloat = 0
@@ -1101,6 +1218,113 @@ final class ContinuousReadingView: UIView {
         case SECTION_DIVIDER_ROLE: return .headline
         default: return .body
         }
+    }
+
+    // MARK: - Stile di lettura risolto: resa unificata (RESA + MISURA)
+
+    /// Colore del TESTO per ruolo. I titoli prendono l'accento heading (segnale
+    /// strutturale, contrasto verificato); il corpo e i ruoli apparato restano sul testo
+    /// primario (leggibilità), col segnale portato dalla barra + intro parlata. Calma
+    /// («accenti spenti») usa il testo primario anche per i titoli.
+    static func textColor(for role: String, style: ResolvedReadingStyle) -> UIColor {
+        let primary = UIColor.fromHex(style.colors.textPrimary)
+        if style.mutedAccents { return primary }
+        if isHeadingRole(role) { return UIColor.fromHex(style.colors.accentHeading, fallback: primary) }
+        return primary
+    }
+
+    /// Colore della barra d'accento del ruolo apparato (distinta per ruolo).
+    static func roleBarColor(for role: String, style: ResolvedReadingStyle) -> UIColor {
+        let c = style.colors
+        let hex: String
+        switch role {
+        case "AMENDMENT": hex = c.accentWarning
+        case "QUOTED_TEXT_OLD": hex = c.accentProcedural
+        case "QUOTED_TEXT_NEW": hex = c.accentHeading
+        case "UPDATE_BLOCK": hex = c.accentLink
+        default: hex = c.accentHeading  // SECTION_DIVIDER e altri
+        }
+        return UIColor.fromHex(hex, fallback: UIColor.fromHex(c.textPrimary))
+    }
+
+    /// Barra + tinta del box-ruolo («mai-solo-colore») e guida di lettura. Solo-colore,
+    /// nessun cambio d'altezza: la barra vive nell'inset, la tinta è di fondo.
+    static func applyRoleBoxAndGuide(
+        bar: UIView, contentView: UIView, textLabel: UILabel,
+        segment: ContentSegment, style: ResolvedReadingStyle, isReadingFocus: Bool
+    ) {
+        let role = segment.role
+        let boxed = style.showRoleBoxes && (BOXED_ROLES.contains(role) || role == SECTION_DIVIDER_ROLE)
+        if boxed {
+            bar.backgroundColor = roleBarColor(for: role, style: style)
+            bar.isHidden = false
+            contentView.backgroundColor = style.mutedAccents
+                ? nil : UIColor.fromHex(style.colors.backgroundSecondary, fallback: .clear)
+        } else {
+            bar.isHidden = true
+            contentView.backgroundColor = nil
+        }
+        // Guida di lettura: evidenzia il fuoco, attenua gli altri (NON lampeggiante, WCAG 2.2.2).
+        if style.readingGuide {
+            if isReadingFocus {
+                contentView.backgroundColor = UIColor.fromHex(style.colors.backgroundSecondary, fallback: .clear)
+                textLabel.alpha = 1.0
+            } else {
+                textLabel.alpha = 0.5
+            }
+        } else {
+            textLabel.alpha = 1.0
+        }
+    }
+
+    /// L'UNICO builder dell'attributed string (palette + spaziatura + underline): usato
+    /// in RESA (cella) e in MISURA (`measuredHeight`) → l'altezza in cache combacia con la
+    /// resa reale. La dimensione del font viene dai `sizingTraits` (leva Fase 0, invariata).
+    static func styledAttributedString(
+        for segment: ContentSegment, style: ResolvedReadingStyle,
+        sizingTraits: UITraitCollection, underlineIntervals: [ClosedRange<Int>]?
+    ) -> NSAttributedString {
+        let text = segment.text
+        let font = UIFont.preferredFont(forTextStyle: textStyle(for: segment.role), compatibleWith: sizingTraits)
+        let size = font.pointSize
+        let para = NSMutableParagraphStyle()
+        para.alignment = .natural  // a sinistra, mai giustificato (WCAG 1.4.8 / BDA)
+        para.lineBreakMode = .byWordWrapping
+        para.lineHeightMultiple = CGFloat(style.lineHeightMultiple)
+        para.paragraphSpacing = CGFloat(style.paragraphSpacingEm) * size
+        let color = textColor(for: segment.role, style: style)
+        let letterKern = CGFloat(style.letterSpacingEm) * size
+        var attrs: [NSAttributedString.Key: Any] = [
+            .font: font, .foregroundColor: color, .paragraphStyle: para,
+        ]
+        if letterKern != 0 { attrs[.kern] = letterKern }
+        let attributed = NSMutableAttributedString(string: text, attributes: attrs)
+        // Spaziatura parole (BDA: parole ≈3,5× lettere): kern extra sui caratteri-spazio.
+        let wordExtra = CGFloat(style.wordSpacingEm) * size
+        if wordExtra != 0 {
+            let ns = text as NSString
+            ns.enumerateSubstrings(
+                in: NSRange(location: 0, length: ns.length), options: .byComposedCharacterSequences
+            ) { sub, range, _, _ in
+                if sub == " " { attributed.addAttribute(.kern, value: letterKern + wordExtra, range: range) }
+            }
+        }
+        // Underline additivo (rete A: il parlato non cambia); lo SPESSORE è il segnale
+        // non-cromatico (WCAG 1.4.1), non la sola tinta.
+        if let intervals = underlineIntervals, !intervals.isEmpty {
+            let words = WordTokenizer.wordRanges(text)
+            if !words.isEmpty {
+                for interval in intervals {
+                    let lo = max(0, interval.lowerBound), hi = min(words.count - 1, interval.upperBound)
+                    guard lo <= hi else { continue }
+                    let charRange = words[lo].lowerBound..<words[hi].upperBound
+                    let nsr = NSRange(charRange, in: text)
+                    attributed.addAttribute(.underlineStyle, value: underlineStyle.rawValue, range: nsr)
+                    attributed.addAttribute(.underlineColor, value: color, range: nsr)
+                }
+            }
+        }
+        return attributed
     }
 }
 

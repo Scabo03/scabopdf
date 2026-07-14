@@ -21,10 +21,25 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // lo si riapre al punto di lettura (§ 2.5, riapertura nello stato di chiusura).
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
-        let tabBar = RootTabBarController()
-        window.rootViewController = tabBar
         self.window = window
-        AppTheme.applyStored(to: window)
+        let prefs = LibraryService.shared.prefs
+
+        // Prima apertura (design accessibilità visiva): l'utente sceglie il tema con una schermata
+        // PIENAMENTE ACCESSIBILE, PRIMA di aver configurato qualsiasi cosa. La si radica come
+        // rootViewController (nessun problema di timing di presentazione modale); alla scelta si
+        // applica l'aspetto e si passa alla Home. La scelta resta modificabile dalle Impostazioni.
+        if getStoredFirstOpenCompleted(prefs) {
+            window.rootViewController = RootTabBarController()
+        } else {
+            let chooser = FirstOpenThemeChooserViewController(prefs: prefs) { [weak window] in
+                guard let window else { return }
+                ReadingAppearance.applyToWindow(window, prefs: LibraryService.shared.prefs)
+                window.rootViewController = RootTabBarController()  // niente animazione vistosa (SPECS § A.4)
+            }
+            window.rootViewController = UINavigationController(rootViewController: chooser)
+        }
+        // Il tema memorizzato è applicato alla finestra (posizione B → chiaro/scuro forzato; A → sistema).
+        ReadingAppearance.applyToWindow(window, prefs: prefs)
         window.makeKeyAndVisible()
 
         // Avvio SEMPRE sulla Home stabile. La riapertura automatica dell'ultimo documento
