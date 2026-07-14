@@ -93,8 +93,12 @@ lettere(ESTRATTO), parità estrazione-vs-PDF vero — la fedeltà non si tratta)
 catturata su tutto il corpus come baseline di delta (Tempo 2 di questo giro). L'Estratto è ora un caso di studio come gli altri;
 i suoi titoli spezzati sono un **bersaglio** da riparare, non una condizione da preservare.
 
-**Fronte nuova architettura (Tempo 3) — branch `feat/classification-phenomena` (NON mergiato,
-attende il via del maintainer).** Due capacità per-fenomeno introdotte, ciascuna con la sua rete
+**Fronte nuova architettura (Tempo 3) — ACQUISITE in main** (2026-07-14 sera, FF-merge del branch
+`feat/classification-phenomena`, HEAD `bc143f4`; branch cancellato). **Nuovo baseline Estratto:** i
+titoli di capitolo fusi (HEADING_2 −4, "CAPITOLO I LA NOZIONE…") sono l'**impronta di rendering
+aggiornata** dell'Estratto — un miglioramento voluto, NON una regressione; il freeze byte-identico
+build-19 (`c0e9877…`) è superato per l'Estratto (vedi cambio di regime, Tempo 2). Due capacità
+per-fenomeno introdotte, ciascuna con la sua rete
 di delta (dump di lettura before/after su 18 volumi ri-resi: tutti i portatori di LETTERATURA +
 controlli; codici e volumi senza LETTERATURA provabilmente non toccati). Fedeltà: rete A (0
 lettere perse) + rete C (0 fabbricate) ovunque.
