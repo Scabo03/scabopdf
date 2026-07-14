@@ -220,6 +220,59 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 
+    // MARK: - Dump GEOMETRIA heading (diagnostico, per progettare la fusione posizionale)
+
+    private struct HeadingGeom: Codable {
+        let page: Int; let seq: Int   // seq = indice dell'item nella pagina (per l'adiacenza)
+        let level: Int; let size: Double; let bold: Bool; let italic: Bool; let color: String
+        let x0: Double; let x1: Double; let yTop: Double; let yBottom: Double; let text: String
+    }
+    private struct HeadingGeomDump: Codable { let pdf: String; let headings: [HeadingGeom] }
+
+    /// Diagnostico (solo banco): per ogni PDF, esegue la STESSA `pageItems` della pipeline reale
+    /// (stesso `estimateProfile`/`detectFurniture`/`frontMatterRegionLimit`/`detectApparatus`) e
+    /// dumpa, in ordine di lettura, ogni `.heading` con la sua GEOMETRIA (pagina, indice-item,
+    /// livello, corpo, stile, x0/x1/yTop/yBottom, testo). Serve a misurare fuori-processo il
+    /// predicato di fusione posizionale PRIMA di toccare la produzione. `XCTSkip` senza richiesta.
+    func test_headingGeomDump_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_HGEOM_REQUEST"]
+            ?? "/tmp/scabo_hgeom_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta hgeom in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let extractor = PdfKitExtractor()
+        let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[hgeom] assente, salto: \(path)"); continue
+            }
+            let ex = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+            let profile = estimateProfile(ex)
+            let furniture = detectFurniture(ex)
+            let fmMax = frontMatterRegionLimit(ex.pageCount)
+            let apparatus = detectApparatus(ex, furniture)
+            var out: [HeadingGeom] = []
+            for page in ex.pages {
+                let items = pageItems(page, profile, furniture, fmMax, apparatus)
+                for (i, item) in items.enumerated() {
+                    if case let .heading(sm, level) = item {
+                        out.append(HeadingGeom(
+                            page: page.pageIndex, seq: i, level: level, size: sm.fontSize,
+                            bold: sm.bold, italic: sm.italic, color: sm.color,
+                            x0: sm.x0, x1: sm.x1, yTop: sm.yTop, yBottom: sm.yBottom, text: sm.text))
+                    }
+                }
+            }
+            let stem = (name as NSString).deletingPathExtension
+            try enc.encode(HeadingGeomDump(pdf: name, headings: out))
+                .write(to: URL(fileURLWithPath: req.outDir + "/\(stem).hgeom.json"))
+            print("[hgeom] \(name): \(out.count) heading → \(stem).hgeom.json")
+        }
+    }
+
     // MARK: - REGRESSIONE cache build 20: retrocompatibilità formato 3 (niente rielaborazione forzata)
 
     /// Prova che una cache di FORMATO 3 (build 19, senza l'albero) è ancora LEGGIBILE dalla build

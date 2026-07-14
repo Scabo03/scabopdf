@@ -1460,7 +1460,99 @@ func pageItems(
     let withGiappichelli = recognizeGiappichelliParaTitles(withEstratto, profile)
     // Foglia 1 dei Codici (gated): promuove i trigger d'articolo a HEADING_4 navigabili.
     // No-op (byte-identico) sui volumi non-codice.
-    return profile.isCodici ? recognizeCodiciArticles(withGiappichelli, profile) : withGiappichelli
+    let withCodici = profile.isCodici
+        ? recognizeCodiciArticles(withGiappichelli, profile) : withGiappichelli
+    // Fusione posizionale dei titoli spezzati su più righe (universale, esclusa la Rivista DPC):
+    // due heading adiacenti dello stesso livello si fondono in un unico titolo SOLO se geometria
+    // e stile dicono che sono la stessa riga andata a capo. Precisione > recupero: nel dubbio non
+    // fonde (un titolo distinto inghiottito = punto di navigazione perso, danno peggiore del
+    // difetto). Sta DENTRO pageItems → `appendPageNodes` e `bindAndPlaceNotes` la vedono → zip 1:1.
+    return consolidateAdjacentHeadings(withCodici, profile)
+}
+
+// ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────
+//
+// Il difetto: un titolo di capitolo/sezione andato a capo diventa DUE nodi heading adiacenti
+// dello stesso livello ("LE ORIGINI DEL NOSTRO SISTEMA" + "DI GIUSTIZIA AMMINISTRATIVA") → in
+// navigazione per intestazioni compaiono due voci-troncone. Qui si fondono, ma il segnale NON è
+// il testo (che sovraconta e mescola titolo+autore+abstract): è la POSIZIONE e lo STILE. Misurato
+// sul corpus (40 volumi, dump geometria): con queste guardie zero titoli distinti fusi sui volumi
+// coperti; la Rivista DPC è ESCLUSA (le sue righe di abstract sono heading dal size-only e non se
+// ne può provare zero-falsi-positivi). Vedi docs/ e il referto del giro.
+
+/// Interlinea singola: baseline-delta ≈ una riga (una riga andata a capo, non un salto).
+let HEADING_FUSE_BASELINE_RATIO_LO = 0.55
+let HEADING_FUSE_BASELINE_RATIO_HI = 1.35
+let HEADING_FUSE_SIZE_TOLERANCE = 0.6
+let HEADING_FUSE_X0_TOLERANCE = 3.0
+let HEADING_FUSE_CENTER_TOLERANCE = 8.0
+let HEADING_FUSE_MAX_LEN = 220
+
+/// Riga-1 chiude una frase/titolo (punto forte finale) → non è una riga andata a capo.
+private let HEADING_TERMINAL_PUNCT = try! NSRegularExpression(pattern: "[.!?:;»”)]\\s*$")
+/// Riga-2 apre un NUOVO item (numero, "PAG ITEM.", romano, lettera-paren, bullet, §, keyword di
+/// struttura) → non è la continuazione di un titolo, è un titolo distinto: MAI fondere.
+private let HEADING_LINE2_MARKER = try! NSRegularExpression(
+    pattern: "^\\s*(\\(?\\d{1,3}[.)]|\\d{1,4}\\s+\\d{1,3}[.)]|[IVXLCDM]{1,5}[.)]|[A-Z]\\)"
+        + "|[-–—•∙·]\\s|§\\s*\\d|CAPITOLO\\b|SEZIONE\\b|TITOLO\\b|CAPO\\b|PARTE\\b"
+        + "|Capitolo\\b|Sezione\\b|Parte\\b)")
+/// Riga-2 inizia con una CIFRA (numero di pagina di una voce d'indice / nuovo item): mai una
+/// continuazione di titolo (che inizia sempre con una lettera). Chiude i falsi-positivi del TOC.
+private let HEADING_LINE2_STARTS_DIGIT = try! NSRegularExpression(pattern: "^\\s*[0-9]")
+/// Leader puntinato = voce d'indice (table of contents): mai un titolo di corpo.
+private let HEADING_DOTTED_LEADER = try! NSRegularExpression(
+    pattern: "[.\u{2026}\u{00B7}](\\s?[.\u{2026}\u{00B7}]){3,}")
+
+/// Vero se `a` (riga sopra) e `b` (riga sotto) sono la STESSA riga di titolo andata a capo, per
+/// geometria e stile. Conservativo: ogni dubbio → falso (non fondere).
+func headingsShouldFuse(_ a: LineSummary, _ b: LineSummary) -> Bool {
+    // stile IDENTICO (corpo, grassetto, corsivo, colore)
+    guard abs(a.fontSize - b.fontSize) <= HEADING_FUSE_SIZE_TOLERANCE,
+          a.bold == b.bold, a.italic == b.italic, a.color == b.color else { return false }
+    // interlinea SINGOLA: baseline-delta ≈ una riga (non un salto di titolo/paragrafo)
+    let lineHeight = max(a.yTop - a.yBottom, 0.001)
+    let baselineRatio = (a.yTop - b.yTop) / lineHeight
+    guard baselineRatio >= HEADING_FUSE_BASELINE_RATIO_LO,
+          baselineRatio <= HEADING_FUSE_BASELINE_RATIO_HI else { return false }
+    // allineamento: stesso margine sinistro OPPURE stesso centro (titolo centrato)
+    let centerA = (a.x0 + a.x1) / 2, centerB = (b.x0 + b.x1) / 2
+    guard abs(a.x0 - b.x0) <= HEADING_FUSE_X0_TOLERANCE
+        || abs(centerA - centerB) <= HEADING_FUSE_CENTER_TOLERANCE else { return false }
+    // riga-1 non chiude; riga-2 non apre un nuovo item né inizia con cifra
+    guard !regexHits(HEADING_TERMINAL_PUNCT, a.text.trimmingCharacters(in: .whitespacesAndNewlines))
+    else { return false }
+    guard !regexHits(HEADING_LINE2_MARKER, b.text),
+          !regexHits(HEADING_LINE2_STARTS_DIGIT, b.text) else { return false }
+    // nessuna voce d'indice (leader puntinato) su nessuna delle due
+    guard !regexHits(HEADING_DOTTED_LEADER, a.text),
+          !regexHits(HEADING_DOTTED_LEADER, b.text) else { return false }
+    // lunghezza combinata di UN titolo, non di due
+    guard a.text.utf16.count + b.text.utf16.count <= HEADING_FUSE_MAX_LEN else { return false }
+    return true
+}
+
+/// Fonde le catene di heading adiacenti dello stesso livello che sono un unico titolo andato a
+/// capo (anche a ≥3 righe: si re-àncora all'ultima riga fisica per il controllo d'interlinea).
+/// Esclude la Rivista DPC. Rete A: `mergedLine` unisce i testi con lo spazio giusto (o de-sillaba
+/// il trattino di fine riga), nessuna lettera persa. Zip note intatto (gira dentro `pageItems`).
+func consolidateAdjacentHeadings(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+    guard !profile.isRivistaDpc else { return items }
+    var out: [GenItem] = []
+    var lastLine: LineSummary?   // ultima riga FISICA dell'heading in coda a `out`
+    for item in items {
+        guard case let .heading(sm, level) = item else {
+            out.append(item); lastLine = nil; continue
+        }
+        if case let .heading(prev, prevLevel)? = out.last,
+           let prevLast = lastLine, prevLevel == level,
+           headingsShouldFuse(prevLast, sm) {
+            out[out.count - 1] = .heading(mergedLine([prev, sm]), level: prevLevel)
+            lastLine = sm
+        } else {
+            out.append(item); lastLine = sm
+        }
+    }
+    return out
 }
 
 /// Emits the nodes for one page from `pageItems`: headings as standalone nodes,
