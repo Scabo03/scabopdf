@@ -1233,22 +1233,51 @@ func estrattoIsCapitoloMarker(_ text: String) -> Bool {
 /// Il titolo di capitolo è promosso SOLO se il blocco precedente è "CAPITOLO N" (spec:
 /// "il blocco MAIUSCOLO subito dopo il nodo CAPITOLO N"): esclude mezzotitoli/occhielli di
 /// front-matter (es. il titolo del libro in copertina) che non seguono un CAPITOLO.
+/// Le righe costituenti di un GenItem (per fondere il marcatore CAPITOLO col titolo di capitolo).
+func genItemLines(_ item: GenItem) -> [LineSummary] {
+    switch item {
+    case .heading(let sm, _): return [sm]
+    case .run(_, let lines): return lines
+    case .apparatus(_, let lines): return lines
+    }
+}
+
 func recognizeEstrattoTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
     guard profile.isEstrattoChrome, profile.bodySize > 0 else { return items }
     let body = profile.bodySize
     var out: [GenItem] = []
-    var afterCapitolo = false
+    // Il marcatore "CAPITOLO N" viene TRATTENUTO (non emesso subito): se il blocco che segue
+    // promuove il titolo di capitolo (HEADING_2), i due si FONDONO in un unico heading
+    // "CAPITOLO N <titolo>" — così la navigazione per intestazioni mostra UNA voce per capitolo,
+    // non due tronconi dello stesso livello. Se non segue un titolo, il CAPITOLO trattenuto esce
+    // invariato. La fusione avviene DENTRO `pageItems` (via questo pre-passo): `appendPageNodes` e
+    // `bindAndPlaceNotes` la vedono entrambi → lo zip item↔nodo resta 1:1 e allineato (rete B note).
+    var pendingCapitolo: GenItem? = nil
     for item in items {
-        if estrattoIsCapitoloMarker(estrattoItemText(item)) {   // "CAPITOLO N" → arma la promozione
-            out.append(item); afterCapitolo = true; continue
+        if estrattoIsCapitoloMarker(estrattoItemText(item)) {   // "CAPITOLO N" → trattieni
+            if let p = pendingCapitolo { out.append(p) }         // CAPITOLO consecutivo senza titolo
+            pendingCapitolo = item
+            continue
         }
         if case let .run(.body, lines) = item {
-            out.append(contentsOf: splitEstrattoBodyRun(lines, body, afterCapitolo: afterCapitolo))
+            let split = splitEstrattoBodyRun(lines, body, afterCapitolo: pendingCapitolo != nil)
+            if let cap = pendingCapitolo, let first = split.first,
+               case let .heading(titleSm, level) = first, level == 2 {
+                // FUSIONE: CAPITOLO N + titolo di capitolo → un solo HEADING_2 (testo unito;
+                // rete A: nessuna lettera persa, solo concatenazione con spazio).
+                out.append(.heading(mergedLine(genItemLines(cap) + [titleSm]), level: 2))
+                out.append(contentsOf: split.dropFirst())
+            } else {
+                if let cap = pendingCapitolo { out.append(cap) }
+                out.append(contentsOf: split)
+            }
+            pendingCapitolo = nil
         } else {
+            if let cap = pendingCapitolo { out.append(cap); pendingCapitolo = nil }
             out.append(item)
         }
-        afterCapitolo = false
     }
+    if let cap = pendingCapitolo { out.append(cap) }
     return out
 }
 

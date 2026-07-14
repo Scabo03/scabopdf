@@ -57,16 +57,32 @@ final class EstrattoTitlesTests: XCTestCase {
 
     // MARK: - riconoscimento (gated on)
 
-    func test_chapterTitle_promoted_twoLinesMerged_afterCapitolo() {
+    func test_chapterTitle_fusedWithCapitolo_singleHeading() {
+        // FUSIONE: "CAPITOLO N" + titolo di capitolo → UN solo HEADING_2 (non due tronconi in
+        // navigazione). Il testo unisce marcatore + titolo; rete A: nessuna lettera persa.
         let items: [GenItem] = [
             .run(.note, [ln("CAPITOLO I", 9.65)]),                 // marcatore CAPITOLO N
             .run(.body, [ln("LA NOZIONE DI PROVVEDIMENTO E LA SUA PERDURANTE", 12.48),
                          ln("ATTUALITÀ NELL’ODIERNA REALTÀ GIURIDICA E FATTUALE", 12.48)])]
         let out = recognizeEstrattoTitles(items, prof(true))
-        XCTAssertEqual(out.count, 2)               // CAPITOLO (invariato) + titolo (heading)
-        guard case .heading(let sm, let lvl) = out[1] else { return XCTFail("atteso heading capitolo") }
+        XCTAssertEqual(out.count, 1)               // UN heading fuso
+        guard case .heading(let sm, let lvl) = out[0] else { return XCTFail("atteso heading capitolo") }
         XCTAssertEqual(lvl, 2)
-        XCTAssertTrue(sm.text.contains("LA NOZIONE") && sm.text.contains("ATTUALITÀ"), "due righe unite")
+        XCTAssertTrue(sm.text.contains("CAPITOLO I"), "marcatore fuso nel titolo")
+        XCTAssertTrue(sm.text.contains("LA NOZIONE") && sm.text.contains("ATTUALITÀ"), "titolo a due righe unito")
+    }
+
+    func test_chapterMarker_withoutFollowingTitle_emittedAlone() {
+        // "CAPITOLO N" seguito da corpo NON-titolo (nessuna promozione) → il marcatore esce
+        // invariato (nessuna fusione forzata, nessun corpo perso).
+        let items: [GenItem] = [
+            .run(.note, [ln("CAPITOLO I", 9.65)]),
+            .run(.body, [ln("Testo di corpo normale che non è un titolo di capitolo.", 12.0)])]
+        let out = recognizeEstrattoTitles(items, prof(true))
+        XCTAssertEqual(out.count, 2)               // CAPITOLO + corpo, distinti
+        guard case .run(.note, let cl) = out[0] else { return XCTFail("marcatore CAPITOLO invariato") }
+        XCTAssertEqual(cl.first?.text, "CAPITOLO I")
+        guard case .run(.body, _) = out[1] else { return XCTFail("corpo invariato") }
     }
 
     func test_chapterTitle_notPromoted_withoutPrecedingCapitolo() {
