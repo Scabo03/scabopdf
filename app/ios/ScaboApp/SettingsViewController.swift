@@ -43,7 +43,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
     ]
 
     private enum Section: Int, CaseIterable {
-        case appearance, spacing, colorSignals, readingGuide, systemFilters, granularity, pages
+        case appearance, spacing, colorSignals, readingGuide, notes, systemFilters, keyboard, granularity, pages
     }
 
     override func viewDidLoad() {
@@ -75,7 +75,9 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         case .spacing: return spacingRows.count
         case .colorSignals: return accentRows.count
         case .readingGuide: return 1
+        case .notes: return 2
         case .systemFilters: return 1
+        case .keyboard: return 1
         case .granularity: return granularities.count
         case .pages: return 1
         }
@@ -87,7 +89,9 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         case .spacing: return "Spaziatura del testo"
         case .colorSignals: return "Colore e segnali"
         case .readingGuide: return "Guida di lettura"
+        case .notes: return "Note (per chi non sente)"
         case .systemFilters: return "Filtri colore di sistema"
+        case .keyboard: return "Tastiera"
         case .granularity: return "Granularità di lettura predefinita"
         case .pages: return "Pagine del file originale"
         }
@@ -105,6 +109,13 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
                 + "indicatori hanno sempre anche una forma o un'etichetta. «Senza colore» rinuncia del tutto alla tinta."
         case .readingGuide:
             return "Evidenzia l'elemento in lettura e attenua gli altri. È un aiuto alla concentrazione, non una cura."
+        case .notes:
+            return "Di norma l'identità di una nota è affidata a un suono (earcon). Chi non sente può "
+                + "farla annunciare a voce (torna l'intro «Nota.», utile anche col display braille) e/o "
+                + "darle un riquadro visivo. Chi preferisce i suoni può lasciare tutto spento: nulla cambia."
+        case .keyboard:
+            return "Con una tastiera esterna puoi leggere e navigare senza gesti. L'elenco dei comandi "
+                + "è qui perché i tasti sono altrimenti invisibili."
         case .systemFilters:
             return "I filtri per il daltonismo (rosso/verde, verde/rosso, blu/giallo) si impostano da Impostazioni "
                 + "iOS. L'app non può rilevarli né controllarli, ma garantisce che nulla dipenda dal solo colore. "
@@ -149,6 +160,16 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
                 "Guida di lettura", isOn: getStoredReadingGuide(prefs),
                 action: #selector(toggleReadingGuide(_:)))
 
+        case .notes:
+            if indexPath.row == 0 {
+                return switchCell(
+                    "Annuncia le note a voce", isOn: getStoredNoteSpokenLabels(prefs),
+                    action: #selector(toggleNoteSpoken(_:)))
+            }
+            return switchCell(
+                "Riquadro visivo per le note", isOn: getStoredNoteVisualBox(prefs),
+                action: #selector(toggleNoteBox(_:)))
+
         case .systemFilters:
             let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
             var config = cell.defaultContentConfiguration()
@@ -158,6 +179,16 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
             cell.accessoryType = .none
             cell.accessibilityTraits = .button
             cell.accessibilityHint = "Apre Impostazioni iOS per i filtri colore"
+            return cell
+
+        case .keyboard:
+            let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+            var config = cell.defaultContentConfiguration()
+            config.text = "Comandi da tastiera"
+            cell.contentConfiguration = config
+            cell.accessoryType = .disclosureIndicator
+            cell.accessibilityTraits = .button
+            cell.accessibilityHint = "Apre l'elenco dei comandi da tastiera"
             return cell
 
         case .granularity:
@@ -188,10 +219,12 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
             if let url = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(url)
             }
+        case .keyboard:
+            navigationController?.pushViewController(KeyboardCommandsViewController(), animated: true)
         case .granularity:
             setStoredGranularityLevel(prefs, granularities[indexPath.row].0)
             tableView.reloadSections(IndexSet(integer: indexPath.section), with: .none)
-        case .readingGuide, .pages:
+        case .readingGuide, .notes, .pages:
             break
         }
     }
@@ -232,6 +265,14 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
 
     @objc private func toggleReadingGuide(_ sender: UISwitch) {
         setStoredReadingGuide(prefs, sender.isOn)
+    }
+
+    @objc private func toggleNoteSpoken(_ sender: UISwitch) {
+        setStoredNoteSpokenLabels(prefs, sender.isOn)
+    }
+
+    @objc private func toggleNoteBox(_ sender: UISwitch) {
+        setStoredNoteVisualBox(prefs, sender.isOn)
     }
 
     @objc private func togglePages(_ sender: UISwitch) {

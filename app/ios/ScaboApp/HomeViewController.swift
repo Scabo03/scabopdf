@@ -62,6 +62,9 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
         tableView.dataSource = self
         tableView.delegate = self
+        // Intestazioni di sezione auto-dimensionanti (l'intestazione "Workspaces" cresce col Dynamic
+        // Type senza clip del testo): serve una stima > 0 perché `automaticDimension` funzioni.
+        tableView.estimatedSectionHeaderHeight = 44
         tableView.register(LibraryRowCell.self, forCellReuseIdentifier: LibraryRowCell.reuseId)
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "empty")
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -257,8 +260,13 @@ private final class WorkspacesHeaderView: UITableViewHeaderFooterView {
         title.text = "Workspaces"
         title.font = UIFont.preferredFont(forTextStyle: .headline)
         title.adjustsFontForContentSizeCategory = true
+        title.numberOfLines = 0
+        // Non comprimere mai il testo sotto la sua altezza intrinseca: evita il clip verticale
+        // dell'intestazione (rilevato dall'audit di accessibilità come «Text clipped»).
+        title.setContentCompressionResistancePriority(.required, for: .vertical)
         title.translatesAutoresizingMaskIntoConstraints = false
         title.accessibilityTraits.insert(.header)
+        title.accessibilityLanguage = "en"  // «Workspaces» è un termine inglese (WCAG 3.1.2 Language of Parts)
 
         let button = UIButton(type: .system)
         var config = UIButton.Configuration.plain()

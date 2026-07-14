@@ -196,6 +196,9 @@ final class SegmentCell: UICollectionViewCell {
 
         // La cella È l'elemento accessibile foglia: le sotto-viste (testo, marcatore) non sono esposte.
         isAccessibilityElement = true
+        // Lingua del contenuto = italiano (WCAG 3.1.1): VoiceOver e il display braille rendono il testo
+        // giuridico in italiano anche su un device configurato in un'altra lingua (niente mispronuncia).
+        accessibilityLanguage = "it"
     }
 
     @available(*, unavailable)
@@ -251,8 +254,10 @@ final class SegmentCell: UICollectionViewCell {
             }
         }
 
-        // Resa accessibile: etichetta mai vuota, parlato byte-identico al modello storico.
-        accessibilityLabel = ContinuousReadingView.intendedAccessibilityLabel(for: segment)
+        // Resa accessibile: etichetta mai vuota. Con l'opzione «note a voce» l'intro della nota è
+        // ripristinata (mai-solo-suono); default OFF → parlato byte-identico al modello storico.
+        accessibilityLabel = ContinuousReadingView.intendedAccessibilityLabel(
+            for: segment, restoreNoteIntro: style?.noteSpokenLabels ?? false)
         // NIENTE tratto `.header` sulle celle-titolo. Se le celle lo esponessero, il rotore
         // Intestazioni INCORPORATO di VoiceOver le scandirebbe — ma vede solo la finestra, quindi
         // salterebbe in modo capriccioso i titoli fuori finestra (osservato al collaudo). Tolto
@@ -273,7 +278,20 @@ final class SegmentCell: UICollectionViewCell {
     override var accessibilityCustomActions: [UIAccessibilityCustomAction]? {
         get {
             guard let segment else { return nil }
-            return host?.bookmarkActions(forSegment: segment, orderIndex: readingIndex)
+            var actions = host?.bookmarkActions(forSegment: segment, orderIndex: readingIndex) ?? []
+            // La SOTTOLINEATURA è dichiarata solo-vedenti (§6): NON esposta a VoiceOver. Ma per gli
+            // altri AT non-gestuali (Voice Control / Switch Control / Full Keyboard Access), per cui
+            // `isVoiceOverRunning` è falso, la si rende raggiungibile senza il long-press: un'azione
+            // che apre gli strumenti dell'elemento (segnalibro + sottolineatura). WCAG 2.5.1 / 2.1.1.
+            if !UIAccessibility.isVoiceOverRunning, let host {
+                let index = readingIndex
+                let center = CGPoint(x: bounds.midX, y: bounds.midY)
+                actions.append(UIAccessibilityCustomAction(name: "Strumenti elemento") { [weak host] _ in
+                    host?.openElementMenu(forSegmentAt: index, sourcePoint: center)
+                    return true
+                })
+            }
+            return actions.isEmpty ? nil : actions
         }
         set { /* sola lettura: derivano dallo stato dei segnalibri */ }
     }
@@ -596,7 +614,9 @@ final class ContinuousReadingView: UIView {
         if readingStyle?.readingGuide == true, previous != index {
             reconfigureVisibleCells()
         }
-        if let noteSignal = Self.noteSignal(for: segment) {
+        // Earcon-nota: soppresso quando l'utente ha scelto «note annunciate a voce» (l'identità della
+        // nota è già nel parlato/braille → niente doppio segnale). Altrimenti resta com'era (§10.4).
+        if readingStyle?.noteSpokenLabels != true, let noteSignal = Self.noteSignal(for: segment) {
             signalPlayer.play(noteSignal)
         }
         // Earcon di blocco bibliografico: una volta all'INGRESSO del blocco LETTERATURA.
@@ -839,6 +859,46 @@ final class ContinuousReadingView: UIView {
         return forward
             ? candidates.first(where: { $0.index > current })?.index
             : candidates.last(where: { $0.index < current })?.index
+    }
+
+    // MARK: - Supporto ai comandi da tastiera (accessibilità motoria, WCAG 2.1.1)
+    //
+    // Alternative NON-gestuali allo scroll a trascinamento e allo swipe VoiceOver. Si AGGIUNGONO:
+    // lo swipe elemento-per-elemento di VoiceOver resta intatto (è l'anima dell'app per i ciechi).
+
+    /// Scorre di ~una schermata (lettura da tastiera). Non sposta il fuoco VoiceOver.
+    func scrollByViewport(forward: Bool) {
+        guard collectionView.bounds.height > 0 else { return }
+        let delta = max(40, collectionView.bounds.height * 0.85) * (forward ? 1 : -1)
+        let minY = -collectionView.adjustedContentInset.top
+        let maxY = max(minY, collectionView.contentSize.height - collectionView.bounds.height
+            + collectionView.adjustedContentInset.bottom)
+        let y = min(max(minY, collectionView.contentOffset.y + delta), maxY)
+        collectionView.setContentOffset(CGPoint(x: 0, y: y), animated: false)
+        if let top = collectionView.indexPathsForVisibleItems.map(\.item).min() {
+            presetReadingPosition(toIndex: top)
+        }
+    }
+
+    /// Salta all'intestazione successiva/precedente (equivalente da tastiera del rotore Intestazioni).
+    /// Ritorna `true` se un titolo è stato trovato e raggiunto.
+    @discardableResult
+    func goToAdjacentHeading(forward: Bool) -> Bool {
+        let current = lastFocusedIndex ?? (collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0)
+        guard let target = nextHeadingIndex(from: current, level: nil, forward: forward) else { return false }
+        goToElement(atIndex: target, focus: UIAccessibility.isVoiceOverRunning)
+        return true
+    }
+
+    /// L'indice dell'elemento "corrente" per le azioni da tastiera: l'ultimo a fuoco, o il primo visibile.
+    var currentOrTopIndex: Int {
+        lastFocusedIndex ?? (collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0)
+    }
+
+    /// Testo del segmento all'indice dato (per costruire azioni segnalibro/strumenti da tastiera).
+    func segmentText(atIndex index: Int) -> String? {
+        guard index >= 0, index < segments.count else { return nil }
+        return segments[index].text
     }
 
     // MARK: - Sottolineature (§ 6) — resa additiva, solo-visiva, RIAPPLICATA al riuso
@@ -1158,8 +1218,11 @@ final class ContinuousReadingView: UIView {
 
     /// L'etichetta accessibile INTESA per un segmento — l'unica fonte del parlato (byte-identica con o
     /// senza underline, rete A). Una nota vera col segnale acustico perde solo l'intro verbale (§ 10.4).
-    static func intendedAccessibilityLabel(for segment: ContentSegment) -> String {
-        let base = noteSignal(for: segment) == nil
+    static func intendedAccessibilityLabel(for segment: ContentSegment, restoreNoteIntro: Bool = false) -> String {
+        // Di default una nota vera «perde» l'intro verbale perché la porta l'earcon (§10.4). Con
+        // l'opzione «note annunciate a voce» (mai-solo-suono) l'intro «Nota.»/«Nota lunga.» è
+        // ripristinata nell'etichetta, così un display braille o chi non sente la riceve come TESTO.
+        let base = (noteSignal(for: segment) == nil || restoreNoteIntro)
             ? spokenText(for: segment)
             : spoken(intro: "", segment: segment)
         // Reintroduzione della qualifica di intestazione NEL PARLATO (rimedio approvato): tolto il
@@ -1242,6 +1305,7 @@ final class ContinuousReadingView: UIView {
         case "QUOTED_TEXT_OLD": hex = c.accentProcedural
         case "QUOTED_TEXT_NEW": hex = c.accentHeading
         case "UPDATE_BLOCK": hex = c.accentLink
+        case "NOTE": hex = c.accentNote
         default: hex = c.accentHeading  // SECTION_DIVIDER e altri
         }
         return UIColor.fromHex(hex, fallback: UIColor.fromHex(c.textPrimary))
@@ -1254,7 +1318,11 @@ final class ContinuousReadingView: UIView {
         segment: ContentSegment, style: ResolvedReadingStyle, isReadingFocus: Bool
     ) {
         let role = segment.role
-        let boxed = style.showRoleBoxes && (BOXED_ROLES.contains(role) || role == SECTION_DIVIDER_ROLE)
+        // Le NOTE ottengono un box visivo SOLO se l'utente ha scelto l'opzione «riquadro visivo per
+        // le note» (default OFF): serve i sordi vedenti (mai-solo-suono), senza toccare gli altri.
+        let noteBoxed = style.showNoteBox && role == "NOTE"
+        let boxed = noteBoxed
+            || (style.showRoleBoxes && (BOXED_ROLES.contains(role) || role == SECTION_DIVIDER_ROLE))
         if boxed {
             bar.backgroundColor = roleBarColor(for: role, style: style)
             bar.isHidden = false

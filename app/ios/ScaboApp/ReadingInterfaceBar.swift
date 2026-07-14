@@ -298,6 +298,18 @@ final class ReadingInterfaceBar: UIView {
         resetStructureButton.addTarget(self, action: #selector(resetTapped), for: .touchUpInside)
         prevExpandedButton.addTarget(self, action: #selector(prevTapped), for: .touchUpInside)
         nextExpandedButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
+
+        // Bersagli di tocco ≥ 44×44 pt (HIG Apple; WCAG 2.5.8 [2.2] chiede ≥ 24pt): i pulsanti a icona
+        // erano altrimenti sotto misura. L'altezza riempie la barra (44pt); la larghezza minima 44 è sui
+        // pulsanti a icona (quelli testuali sono già larghi). Verificato da unit test sui frame resi.
+        let iconButtons = [bookmarksButton, splitButton, decreaseTextSizeButton, increaseTextSizeButton,
+                           resetStructureButton, prevExpandedButton, nextExpandedButton]
+        for b in iconButtons {
+            b.widthAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        }
+        for b in [backButton, layoutSelectorButton] + iconButtons {
+            b.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+        }
         // Menù iniziale (solo Lettura Continua finché il controller non lo configura).
         configureLayoutSelector(current: .continuous, doctrineAvailable: false,
                                 quickAvailable: false, onSelect: { _ in })

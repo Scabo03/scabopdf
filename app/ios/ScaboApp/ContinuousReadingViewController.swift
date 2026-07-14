@@ -365,6 +365,10 @@ final class ContinuousReadingViewController: UIViewController {
         // riapplica lo stile di lettura dal vivo (posizione conservata; ri-misura solo se la geometria
         // è cambiata, altrimenti solo colore).
         applyReadingAppearance(live: true)
+        // Comandi da tastiera (WCAG 2.1.1): il controller diventa first responder così i suoi
+        // `keyCommands` sono attivi (anche al rientro da un push). Full-screen soltanto: nello split
+        // il first responder unico lo coordina il padre. Non ridefinisce nessun gesto VoiceOver.
+        if !embedded { becomeFirstResponder() }
     }
 
     override func traitCollectionDidChange(_ previous: UITraitCollection?) {
@@ -388,6 +392,60 @@ final class ContinuousReadingViewController: UIViewController {
         let bg = UIColor.fromHex(style.colors.background, fallback: .systemBackground)
         view.backgroundColor = bg
         interfaceBar.backgroundColor = bg
+    }
+
+    // MARK: - Comandi da tastiera (WCAG 2.1.1) — alternative NON-gestuali, si AGGIUNGONO allo swipe
+
+    override var canBecomeFirstResponder: Bool { true }
+
+    override var keyCommands: [UIKeyCommand]? {
+        KeyboardCommandsCatalog.reading.map { spec in
+            let cmd = UIKeyCommand(
+                title: spec.title, action: Self.selector(forCommandId: spec.id),
+                input: spec.input, modifierFlags: spec.modifiers)
+            cmd.discoverabilityTitle = spec.title  // mostrata nell'HUD tenendo premuto ⌘
+            cmd.wantsPriorityOverSystemBehavior = true
+            return cmd
+        }
+    }
+
+    private static func selector(forCommandId id: String) -> Selector {
+        switch id {
+        case "scrollForward": return #selector(kbScrollForward)
+        case "scrollBack": return #selector(kbScrollBack)
+        case "nextHeading": return #selector(kbNextHeading)
+        case "prevHeading": return #selector(kbPrevHeading)
+        case "textLarger": return #selector(kbTextLarger)
+        case "textSmaller": return #selector(kbTextSmaller)
+        case "bookmark": return #selector(kbToggleBookmark)
+        case "elementTools": return #selector(kbElementTools)
+        default: return #selector(kbBack)
+        }
+    }
+
+    @objc private func kbScrollForward() { readingView.scrollByViewport(forward: true) }
+    @objc private func kbScrollBack() { readingView.scrollByViewport(forward: false) }
+    @objc private func kbNextHeading() { readingView.goToAdjacentHeading(forward: true) }
+    @objc private func kbPrevHeading() { readingView.goToAdjacentHeading(forward: false) }
+    @objc private func kbTextLarger() { stepTextSize(by: +1) }
+    @objc private func kbTextSmaller() { stepTextSize(by: -1) }
+    @objc private func kbBack() { onBack?() }
+
+    /// Segnalibro sull'elemento in lettura da tastiera (equivalente dell'azione VoiceOver/long-press).
+    @objc private func kbToggleBookmark() {
+        let index = readingView.currentOrTopIndex
+        guard let id = readingView.segmentId(atIndex: index),
+              let text = readingView.segmentText(atIndex: index) else { return }
+        if let existing = existingBookmark(forSegmentId: id) {
+            removeBookmark(existing)
+        } else {
+            addBookmark(segmentId: id, orderIndex: index, segmentText: text)
+        }
+    }
+
+    /// Menu strumenti (segnalibro + sottolineatura) sull'elemento in lettura, da tastiera.
+    @objc private func kbElementTools() {
+        readingView.openElementMenu(forSegmentAt: readingView.currentOrTopIndex, sourcePoint: view.center)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -451,6 +509,10 @@ final class ContinuousReadingViewController: UIViewController {
         configureLayoutSelector()
         interfaceBar.setQuickControls(visible: false, canNavigate: false)
         signalPlayer.play(layout == .doctrine ? .mode3 : .mode1)
+        // Messaggio di stato (WCAG 4.1.3): il cambio di Layout era confermato dal solo earcon; ora è
+        // annunciato anche a voce (per chi non sente / display braille), senza rubare il fuoco.
+        let layoutName = (layout == .doctrine) ? "Dottrina inline" : "Lettura continua"
+        UIAccessibility.post(notification: .announcement, argument: "Layout: \(layoutName)")
         let focusIndex = (layout == .continuous) ? continuousPosition : 0
         if layout == .continuous {
             readingView.presetReadingPosition(toIndex: continuousPosition)

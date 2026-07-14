@@ -24,6 +24,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
         let prefs = LibraryService.shared.prefs
 
+        #if DEBUG
+        // Affordance SOLO per gli UI-test (guardata `DEBUG` → assente in Release/TestFlight): riporta
+        // lo stato di prima apertura, così l'audit di accessibilità parte deterministico dal chooser.
+        if CommandLine.arguments.contains("-uiTestFreshStart") {
+            setStoredFirstOpenCompleted(prefs, false)
+            setStoredAppearanceSource(prefs, .followSystem)
+        }
+        #endif
+
         // Prima apertura (design accessibilità visiva): l'utente sceglie il tema con una schermata
         // PIENAMENTE ACCESSIBILE, PRIMA di aver configurato qualsiasi cosa. La si radica come
         // rootViewController (nessun problema di timing di presentazione modale); alla scelta si
