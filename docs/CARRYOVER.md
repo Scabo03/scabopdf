@@ -52,6 +52,49 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Consolidamento in main (build 39/40 + lezioni) + cambio di regime Estratto — 2026-07-14
+
+**Consolidamento (Tempo 1).** Tre branch mergiati in `main` nell'ordine: `feature/visual-accessibility`
+(build 39, accessibilità visiva) → `feature/accessibility-conformance` (build 40, aree scoperte:
+tastiera/gesti/note/lingua/movimento) → `feat/lezioni-bibliography-particle-recall` (bibliografie
+cognome-particella + rete C). Merge commit `dd710f0`, `e942d7d`, `d9c71f3` — conflict-free (main aveva
+solo 2 commit docs divergenti su file disgiunti). Reti pre-merge: ScaboCore 554/554 verde, ScaboApp unit
+126 (6 bench skip) verde. Committato `docs/ANALYSIS_CLASSIFICATION_ARCHITECTURE.md` (lo studio
+architetturale). Branch confluiti cancellati (locale + origin).
+
+**⚠ VOCE APERTA — audit UI Dynamic Type (da chiarire in un giro futuro, NON ora).**
+`AccessibilityAuditUITests.testAccessibilityAudit_reachableScreens` fallisce con **3 rilievi
+`.dynamicType` ("Dynamic Type font sizes are partially unsupported", auditType 65536) su CIASCUNA** delle
+tre schermate a tab — **Home, Ricerca, Impostazioni** (9 rilievi totali); «Prima apertura (scelta tema)»
+e «Comandi da tastiera» passano **puliti**. Caratteristiche: gli elementi segnalati sono **tutti nil**
+(nessun elemento/frame/label attribuibile); le label d'autore delle tre schermate usano già
+correttamente `preferredFont(forTextStyle:)` + `adjustsFontForContentSizeCategory`; gira su runtime
+**iOS 26.5** fresco (warning duplicate-class `UIAccessibilityLoaderWebShared`). Diagnosi: **verosimile
+rumore dell'audit iOS 26.5 su controlli di sistema** (tab bar / nav bar / search bar), **non** una
+regressione d'autore; il lavoro è già validato sul campo (build 39/40 su TestFlight). Il merge è stato
+autorizzato dal maintainer nonostante il rilievo (opzione "procedi").
+**Perché resta aperta e non la ignoriamo:** l'audit è la rete che sostituisce il collaudo umano
+mancante; una rete che suona un allarme falso in modo permanente si logora (ci si abitua a ignorarla, e
+il giorno che suona per un motivo vero non la si ascolta). **Da decidere in un giro dedicato:** o
+sopprimere il rilievo in modo **mirato e documentato** (come il falso positivo già soppresso della
+`UISearchBar` `textClipped`, `AccessibilityAuditUITests.swift:76`), o risolverlo davvero.
+**Baseline di riferimento perché l'audit resti UTILIZZABILE nel frattempo:** lo stato NOTO è
+esattamente «3 `.dynamicType` nil su ciascuna di Home/Ricerca/Impostazioni; tutte le altre schermate
+pulite». Un giro futuro che veda **più di 9 rilievi, o rilievi di tipo diverso, o su schermate diverse**
+= un problema **nuovo e vero** da guardare. (Nessuna modifica all'audit fatta ora, per non toccare la
+UI di accessibilità appena consolidata.)
+
+**Cambio di regime Estratto (Tempo 2).** Il freeze byte-identico dell'Estratto (sha256 `c0e9877…`)
+**cessa di essere un divieto e diventa una misura**: proteggeva un rendering NOTO, non BUONO (l'Estratto
+ha difetti reali — molti titoli spezzati in due → doppie voci-fantasma nella navigazione per
+intestazioni). Nuovo metro: **gamba meccanica** irrinunciabile (reti α/β/C: lettere(LETTO) ⊆
+lettere(ESTRATTO), parità estrazione-vs-PDF vero — la fedeltà non si tratta) + **gamba semantica**
+(giudizio di senso sul rendering reso, via Simulator/ispezione). Fotografia di base del rendering
+catturata su tutto il corpus come baseline di delta (Tempo 2 di questo giro). L'Estratto è ora un caso di studio come gli altri;
+i suoi titoli spezzati sono un **bersaglio** da riparare, non una condizione da preservare.
+
+---
+
 ## ▶ STATO — Arco PESO concluso + import normativo AKN consegnato → build 30-37 su TestFlight — 2026-07-05/09
 
 > Questo blocco **supera** il "▶ STATO … build 24-29" immediatamente sotto: il **"prossimo arco di
