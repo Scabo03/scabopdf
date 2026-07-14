@@ -498,6 +498,71 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 
+    // MARK: - RETE C — il testo LETTO è un sottoinsieme (a lettere) del testo ESTRATTO
+    //
+    // Chiude il buco storico della rete A: la rete A confrontava il PRIMA/DOPO di un intervento
+    // sulla pipeline, ma non ha mai confrontato il testo LETTO dall'app col testo GREZZO ESTRATTO
+    // a basso livello (PDFKit). Questa rete lo fa, per ogni volume della richiesta, in modo
+    // deterministico e ON-DEVICE (nessun oracolo esterno): riduce entrambe le parti al MULTISET
+    // di LETTERE (ordine, spazi, trattini e cifre-marcatore irrilevanti) e verifica l'invariante
+    //
+    //     lettere(LETTO) ⊆ lettere(ESTRATTO)
+    //
+    // cioè l'app NON FABBRICA né DUPLICA mai contenuto: ogni lettera letta viene dall'estrazione.
+    // Il verso opposto (ESTRATTO ∖ LETTO) è la FURNITURE rimossa di proposito (testatine, folii,
+    // colophon, cifre di richiamo) e NON è un errore: lo si riporta solo per visibilità.
+    //
+    // NB: questa rete non può — e non deve — cogliere un ERRATA DELLA FONTE (una parola che il PDF
+    // stesso non contiene, come "danni" a p. 424 di Lezioni): quella parola non è nell'estrazione
+    // perché non è nel PDF, e riprodurre fedelmente la fonte è il principio fondativo del progetto.
+    // La fedeltà dell'ESTRAZIONE rispetto al PDF vero (PDFKit vs ground-truth) è un CONTROLLO
+    // OFFLINE separato (parità-lettere vs PyMuPDF), verificato letter-perfect su 8 volumi.
+    private func letterMultiset(_ text: String) -> [Character: Int] {
+        let ligatures: [Character: String] = [
+            "ﬁ": "fi", "ﬂ": "fl", "ﬀ": "ff", "ﬃ": "ffi", "ﬄ": "ffl", "ﬅ": "st", "ﬆ": "st"]
+        var counts: [Character: Int] = [:]
+        for scalarSource in text.precomposedStringWithCanonicalMapping {
+            let expanded = ligatures[scalarSource].map(Array.init) ?? [scalarSource]
+            for ch in expanded where ch.isLetter {
+                for low in String(ch).lowercased() { counts[low, default: 0] += 1 }
+            }
+        }
+        return counts
+    }
+
+    /// Rete C: per ogni PDF della richiesta, esegue la pipeline REALE fino ai segmenti di lettura
+    /// e verifica che il multiset di lettere del testo LETTO sia un sottoinsieme di quello del
+    /// testo ESTRATTO (nessuna lettera fabbricata/duplicata). `XCTSkip` senza richiesta.
+    func test_readingSubsetOfExtraction_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_SUBSET_REQUEST"]
+            ?? "/tmp/scabo_subset_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta subset in \(reqPath): rete C non invocata.")
+        }
+        let extractor = PdfKitExtractor()
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[rete-C] assente, salto: \(path)"); continue
+            }
+            let ex = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+            let extractedText = ex.pages.flatMap { $0.lines.map { summarizeLine($0).text } }
+                .joined(separator: "\n")
+            let placed = bindAndPlaceNotes(buildDocumentFromPdf(ex, sourceName: name), ex)
+            let readText = ContinuousBodyBuilder.bodySegments(from: placed.document, granularity: .fine)
+                .map { $0.text }.joined(separator: " ")
+            let extracted = letterMultiset(extractedText)
+            let read = letterMultiset(readText)
+            var fabricated = 0, furniture = 0
+            for (ch, c) in read { fabricated += max(0, c - (extracted[ch] ?? 0)) }
+            for (ch, c) in extracted { furniture += max(0, c - (read[ch] ?? 0)) }
+            print("[rete-C] \(name): fabbricate(LETTO∖ESTRATTO)=\(fabricated)  furniture(ESTRATTO∖LETTO)=\(furniture)")
+            XCTAssertEqual(fabricated, 0,
+                "\(name): l'app ha letto \(fabricated) lettere NON presenti nell'estrazione (fabbricazione/duplicazione)")
+        }
+    }
+
     /// Esegue il recon marcatore sulla pipeline PDFKit reale per i PDF della
     /// richiesta (path fisso, fuori repo) e scrive un JSON compatto per volume.
     /// `XCTSkip` se non c'è richiesta (le run normali non fanno nulla).
