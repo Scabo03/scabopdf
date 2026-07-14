@@ -16,7 +16,7 @@ ScaboCore 557/557 invariata). Esito: **tutti archiviati, con misura** — vedi s
 | 1 | Bibliografia vs nota-contenuto (continuo) | 140 gold; ogni segnale degrada genuini | **ARCHIVIATO** (già) | semantico — `ANALYSIS_NOTA_VS_BIBLIOGRAFIA.md`; è per l'ultrafocus |
 | 2 | Note incollate "(N)" cross-famiglia | ~8.248 (codici 4.7k, Mandrioli3/4 2.7k, DeJure, EdD) | **ARCHIVIATO** | tocca la pipeline-note CONDIVISA (largo); beneficio scarso (testo tutto letto); "(N)" ambiguo con richiami inline |
 | 3 | Furniture/testatine ricorrenti | **0 residuo reale** (filtro header-like ≥5×) | **ARCHIVIATO** (non-difetto) | il rilevatore position-lock funziona; la Rivista ha la sua foglia e non lascia residuo |
-| 4 | Titoli spezzati in due (heading adiacenti stesso livello) | corpus-wide (Rivista 342, Patriarca 163, Lineamenti 59; manuali del maintainer: Lezioni 12, Mandrioli 9-12) | **ARCHIVIATO** (candidato futuro n.1) | meccanico ma richiede POSIZIONE+STILE (stessa pagina/gap/corpo) + validazione su 40 volumi = zona larga/esito incerto |
+| 4 | Titoli spezzati in due (heading adiacenti stesso livello) | corpus-wide (Rivista 342, Patriarca 163, Lineamenti 59; manuali del maintainer: Lezioni 12, Mandrioli 9-12) | **RISOLTO** (2026-07-14, branch `feat/heading-fusion`) | `consolidateAdjacentHeadings` posizionale dentro pageItems; guardie calibrate sul dump geometria; zero falsi-positivi provati; Rivista esclusa |
 | 5 | Famiglia Giappichelli fuori-gate (Mandrioli 3/4, Lineamenti, Nomofanie) | byte-identici nella rete di delta | **ARCHIVIATO** | beneficio ~nullo: le foglie di famiglia sono §-specifiche e quei volumi non hanno § |
 | 6 | MARGINAL_GLOSS esclusi dalla lettura | Torrente 1790, Mosconi 441, Mandrioli 1 282 | **ARCHIVIATO** (scelta di prodotto) | sono marginalia genuine (parole-chiave a margine), ridondanti col corpo, escluse PER DESIGN (`GLOSSE_LATERALI.md`); leggerle è decisione di prodotto, distinguere ridondante-vs-unico è semantico |
 
@@ -47,7 +47,17 @@ ricorrenti ≥5) trova **0 residuo** su tutti i volumi Generic-family e sulla Ri
 universale (position-lock) fa il suo lavoro; la Rivista ha la sua foglia dedicata e non lascia
 residuo. **Nulla da fare.**
 
-### 4 — Titoli spezzati in due → ARCHIVIATO (candidato futuro n.1)
+### 4 — Titoli spezzati in due → RISOLTO (2026-07-14, giro dedicato, branch `feat/heading-fusion`)
+Costruito `consolidateAdjacentHeadings` (posizionale, dentro `pageItems`). Segnale = geometria+stile
+(stesso livello/pagina/corpo/grassetto/corsivo/colore, interlinea singola, stesso margine-sx o
+centro; riga-1 senza punto forte, riga-2 senza marcatore né cifra iniziale, niente leader, lunghezza
+di un titolo; re-àncora all'ultima riga per i titoli a ≥3 righe). Misurato sul dump geometria dei 40
+volumi + ispezione semantica di ogni coppia fusa sui volumi del maintainer + Patriarca (74) →
+**zero titoli distinti fusi**. Delta navigazione = esattamente −#fusioni per volume (Lezioni −12,
+Mandrioli 3 −10, Patriarca −74, Marrone −27, Lineamenti −20, …); rete A/C = 0 e nessun testo di
+titolo perso ovunque. Rivista DPC **esclusa** (abstract classificati heading dal size-only → falsi-
+positivi non provabili zero). Vedi il referto del giro. Testo storico per confronto:
+
 Il fenomeno che ho chiuso per l'Estratto (titoli capitolo "CAPITOLO N" + titolo → un heading) è
 **corpus-wide**: heading multi-riga spezzati in più nodi (Rivista 342, Patriarca 163, Lineamenti 59;
 e sui manuali che il maintainer legge: **Lezioni 12, Mandrioli 9-12** — es. "LE ORIGINI DEL NOSTRO
