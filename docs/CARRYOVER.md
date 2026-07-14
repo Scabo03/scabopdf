@@ -121,6 +121,20 @@ navigazione. Ora fusi in un solo HEADING_2 ("CAPITOLO I LA NOZIONE…"). Fusione
 zip item↔nodo 1:1, stat di aggancio note IDENTICHE. DELTA: cambia SOLO l'Estratto (HEADING_2 −4,
 segs 2740→2736, rete A/C = 0); ogni altro volume byte-identico. Chiude il bersaglio dei titoli
 spezzati dell'Estratto.
+**Nocciolo duro nota-vs-bibliografia — MISURATO (Tempo A, 2026-07-14 sera), esito "no motivato".**
+Vedi `docs/ANALYSIS_NOTA_VS_BIBLIOGRAFIA.md`. Nessun discriminatore regge oltre a `BIBLIO_INTERNAL_XREF`
+(già in produzione). Fatto strutturale: **0 note non-numerate di forma bibliografica restano NOTE**
+sugli 8 manuali → nessuna bibliografia genuina è "persa"; le note dei manuali che portano
+riferimenti sono note NUMERATE (apparato, correttamente NOTE) e sono per lo più MISTE (tema+riferimenti,
+citazione+annotazione). Candidati bocciati con numeri: verbi naive degradano **40/140 voci gold**
+(omografo "Stato"); verbi d'azione raffinati degradano ≥1 voce genuina (Estratto CAPACCIOLI-list) per
+curarne ~1; promozione per "forma bibliografica" (203 Mandrioli 3 + 114 Estratto) scambia contenuto per
+bibliografia in massa (ispezione semantica del campione). La distinzione è un **continuo**, non un
+confine netto. Cosa servirebbe: un segnale non-testuale (tipografia, via l'estrattore CGPDF a basso
+livello — [[debt-lowlevel-font-extraction]]) che però aiuterebbe solo il caso già gestito; oppure
+accettare il limite (raccomandato). **Nessuna implementazione in Tempo B: il "no" misurato vale più di
+una pezza larga.** ScaboCore 557/557 invariata.
+
 **Rinviato (con evidenza):** (a) famiglia Giappichelli fuori-gate (Mandrioli 3/4, Lineamenti,
 Nomofanie) — misurato che le foglie di famiglia sono §-specifiche e quei volumi non hanno §, quindi
 il beneficio pratico dell'inclusione è ~nullo (Lineamenti/Nomofanie byte-identici nella rete di
