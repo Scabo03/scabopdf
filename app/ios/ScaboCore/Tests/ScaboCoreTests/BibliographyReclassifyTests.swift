@@ -104,12 +104,38 @@ final class BibliographyReclassifyTests: XCTestCase {
             "DE NICTOLIS, Riti speciali di cognizione, Bologna 2012. MENCHINI, Processo, in Dir. proc. amm., 1999, p. 921 ss."))
     }
 
-    func test_biblio_historicBranch_unaffectedByContentGuard() {
-        // Il ramo STORICO (autore senza particella) è INVARIATO: non è soggetto alla guardia di
-        // contenuto (rete B su tutti i volumi). Una voce storica con incipit-citazione resta
-        // accettata esattamente come prima, anche se contenesse un marcatore in linea.
+    func test_biblio_historicBranch_unaffectedByInlineAndProseGuards() {
+        // Il ramo STORICO NON è soggetto alle guardie di marcatore-in-linea né di prosa-discorsiva
+        // (quelle sono confinate al ramo particella). Una voce storica con incipit-citazione resta
+        // accettata anche se contenesse un marcatore in linea o un sottotitolo.
         XCTAssertTrue(looksLikeBibliographyEntry(
-            "BENVENUTI, Giustizia amministrativa, in Enc. dir., Milano 1970, p. 589 ss. (5) v. anche Corte cost."))
+            "BENVENUTI, Giustizia amministrativa, in Enc. dir., Milano 1970, p. 589 ss. (5) anche Corte cost."))
+        // sottotitolo del libro (prosa-discorsiva-like) su ramo storico → resta bibliografia
+        XCTAssertTrue(looksLikeBibliographyEntry(
+            "SCOCA, L’interesse legittimo. Storia e teoria, Torino 2017, p. 405 ss."))
+    }
+
+    // MARK: - GUARDIA DI CONTENUTO UNIVERSALE: rinvio interno a un'altra nota/paragrafo ≠ bibliografia
+
+    func test_biblio_internalXref_contentNote_notBibliography() {
+        // Casi reali Mandrioli vol. 3: note discorsive che iniziano con una citazione ma rinviano
+        // all'apparato interno del volume ("v. oltre, la nota N", "In proposito v. … alla nota N").
+        // Una voce di bibliografia non rinvia MAI a "la nota N" del proprio volume. → mai biblio.
+        XCTAssertFalse(looksLikeBibliographyEntry(
+            "BAGNATI, Il procedimento, cit., p. 83). In proposito v. anche C. Cost. 3 novembre 2005 n. 410, cit., già richiamata retro, alla nota 28. Di regola, il rigetto della domanda non potrà fondarsi sul rilievo della litispendenza."))
+        XCTAssertFalse(looksLikeBibliographyEntry(
+            "MANCALEONI e, ancora, Trib. Verona 24 novembre 2023, già cit. retro, alla nota 22. In caso di parte incapace, alla procedura di mediazione dovrebbe partecipare il tutore."))
+        XCTAssertFalse(looksLikeBibliographyEntry(
+            "GABELLINI, op. cit., p. 41; su ciò v. oltre, la nota 208 nel § 71, dove si chiarisce il punto."))
+    }
+
+    func test_biblio_internalXref_pureLists_stillBibliography() {
+        // Una LISTA di bibliografia pura, anche lunga e con sottotitoli, NON rinvia mai a "la nota N"
+        // interna → resta bibliografia (le 97 voci di Lezioni non sono toccate dalla guardia xref).
+        XCTAssertTrue(looksLikeBibliographyEntry(
+            "AA.VV., Amministrare e giudicare. Trasformazioni ordinamentali, a cura di Cerbo, Napoli 2022; BENVENUTI, Autotutela, in Enc. dir., vol. IV, Milano 1959, p. 537 ss."))
+        XCTAssertTrue(looksLikeBibliographyEntry(
+            "SANDULLI, Manuale di diritto amministrativo, 15a ediz., Napoli 1989, pp. 105 ss. e 134 ss.; SCOCA, L’interesse legittimo. Storia e teoria, Torino 2017, p. 405 ss."))
     }
 
     // MARK: - predicato (negativi: l'altra direzione, nota vera / non-bibliografia)

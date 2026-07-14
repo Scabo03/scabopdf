@@ -451,23 +451,43 @@ private let BIBLIO_INLINE_NOTE_MARKER = try! NSRegularExpression(
 private let BIBLIO_DISCURSIVE_PROSE = try! NSRegularExpression(
     pattern: "(?<![A-Z])\\.\\s+[A-ZÀ-Ý][a-zà-ÿ'’]+\\s+[a-zà-ÿ]")
 
+/// RINVIO INTERNO a un'altra nota / paragrafo del volume — un dispositivo di prosa di piè:
+/// "v. oltre, la nota 15 del §", "In proposito v. anche … alla nota 28", "retro, alla nota 22".
+/// Una VOCE di bibliografia (autore, opera, in Riv., p. N ss.; …) non rinvia MAI a "la nota N"
+/// del proprio volume: cita opere, non l'apparato interno. È perciò un segnale robusto e
+/// trasversale che il blocco PORTA CONTENUTO (una nota discorsiva, non una lista di citazioni) —
+/// da NON degradare a bibliografia. GUARDIA DI CONTENUTO UNIVERSALE: applicata a entrambi i rami
+/// (storico e particella), a differenza della guardia di prosa-discorsiva (che è ambigua con i
+/// SOTTOTITOLI dei libri — "L'interesse legittimo. Storia e teoria" — e resta perciò confinata al
+/// solo ramo particella). Empiricamente, sul corpus di 40 volumi, colpisce SOLO le note-contenuto
+/// di Mandrioli vol. 3 con rinvio interno; ZERO su ogni altro volume, incluse le 97 voci
+/// genuine di bibliografia di Lezioni.
+private let BIBLIO_INTERNAL_XREF = try! NSRegularExpression(
+    pattern: "(?:\\bv\\.|\\bcfr\\.|\\bvedi|\\bsi\\s+veda)\\s+(?:anche\\s+)?(?:oltre|retro|supra|infra)\\b"
+        + "|(?:oltre|retro|supra|infra),?\\s+(?:al|alla|il|la)\\s+(?:nota|§|par\\.|cap\\.|capitolo|sezione)\\b"
+        + "|\\balla\\s+nota\\s+\\d"
+        + "|\\bnota\\s+\\d+\\s+(?:del|nel)\\s+§"
+        + "|\\bIn\\s+proposito\\s+v\\.")
+
 /// Vero se `text` è una VOCE DI BIBLIOGRAFIA (autore-maiuscoletto in testa + stilema), e NON
-/// una nota con richiamo (marcatore in testa → esclusa). Due rami d'autore: (1) il predicato
-/// STORICO, invariato — ogni voce che accettava resta accettata byte-identica su ogni volume;
-/// (2) il RECUPERO con particella staccata ("DE NICTOLIS"), applicato solo se il ramo storico
-/// non matcha e protetto da DUE guardie di contenuto — mai degradare a bibliografia un blocco
-/// che porta contenuto: (a) nessun marcatore di nota IN LINEA "(59) …" (blocco di note incollate
-/// non spezzato); (b) nessuna PROSA DISCORSIVA (periodo + Title-case + minuscolo) — copre il caso
-/// reale Mandrioli vol. 3 nota 58, che il salto-pagina spezza dai suoi "(59)…(63)" (perdendo il
-/// marcatore in linea) ma che resta prosa discorsiva ("… p. 1305. Un'identica disposizione si
-/// rinveniva …") e NON va promosso.
+/// una nota con richiamo (marcatore in testa → esclusa) né una NOTA DISCORSIVA con rinvio interno
+/// (guardia di contenuto universale `BIBLIO_INTERNAL_XREF`). Due rami d'autore: (1) il predicato
+/// STORICO — ogni voce già riconosciuta resta accettata, ma ora protetta anch'essa dalla guardia
+/// universale di rinvio-interno (chiude le note-contenuto di Mandrioli vol. 3 che iniziavano con
+/// una citazione ma rinviano a "la nota N"); (2) il RECUPERO con particella staccata
+/// ("DE NICTOLIS"), con in più le due guardie del giro precedente (nessun marcatore in linea
+/// "(59) …"; nessuna prosa discorsiva) confinate a questo ramo perché la prosa-discorsiva è
+/// ambigua coi sottotitoli e va tenuta stretta.
 func looksLikeBibliographyEntry(_ text: String) -> Bool {
     let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
     let ns = t as NSString
     let r = NSRange(location: 0, length: ns.length)
     if BIBLIO_CALL_MARKER.firstMatch(in: t, range: r) != nil { return false }
     guard BIBLIO_STYLEME.firstMatch(in: t, range: r) != nil else { return false }
-    // Ramo storico (invariato): accetta byte-identica ogni voce già riconosciuta.
+    // Guardia di contenuto UNIVERSALE: un rinvio interno a un'altra nota/paragrafo → nota
+    // discorsiva, mai bibliografia (entrambi i rami).
+    if BIBLIO_INTERNAL_XREF.firstMatch(in: t, range: r) != nil { return false }
+    // Ramo storico: accetta ogni voce già riconosciuta (ora oltre la guardia universale).
     if BIBLIO_AUTHOR.firstMatch(in: t, range: r) != nil { return true }
     // Ramo di recupero-particella (nuovo): solo se lo storico non matcha, e con le due guardie
     // di contenuto (blocco incollato non spezzato / prosa discorsiva → mai bibliografia).
