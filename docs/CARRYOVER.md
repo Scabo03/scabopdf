@@ -135,6 +135,21 @@ livello — [[debt-lowlevel-font-extraction]]) che però aiuterebbe solo il caso
 accettare il limite (raccomandato). **Nessuna implementazione in Tempo B: il "no" misurato vale più di
 una pezza larga.** ScaboCore 557/557 invariata.
 
+**Giro di perfezionamento conservativo — INVENTARIO fenomeni aperti, tutti ARCHIVIATI con misura
+(2026-07-14 sera).** Vedi `docs/INVENTARIO_CLASSIFICAZIONE_APERTI.md`. Postura: non rompere il buono
+inseguendo il marginale; nel dubbio archivia. Nessun codice toccato (suite 557/557). Decisioni:
+(1) biblio-vs-contenuto = semantico, già archiviato; (2) **note incollate "(N)"** (~8.248, cross-famiglia)
+= pipeline-note condivisa (largo) + testo tutto letto (beneficio scarso) + "(N)" ambiguo → archivia;
+(3) **furniture/testatine** = **0 residuo reale** (filtro header-like), il rilevatore funziona → non-difetto;
+(4) **titoli spezzati in due** (heading adiacenti stesso livello) = corpus-wide (Rivista 342, Patriarca 163,
+Lezioni 12, Mandrioli 9-12) e difetto REALE di navigazione, ma la fusione sicura richiede posizione+stile
++ validazione su 40 volumi (zona larga/esito da provare) → **archiviato come candidato meccanico n.1 per
+un giro dedicato** (macchina `consolidateAdjacentHeadings` posizionale dentro `pageItems`); (5) Giappichelli
+fuori-gate = beneficio nullo (foglie §-specifiche, quei volumi senza §); (6) **MARGINAL_GLOSS** esclusi
+(Torrente 1790, Mosconi 441, Mandrioli1 282) = marginalia genuine escluse **per design** (`GLOSSE_LATERALI.md`),
+non perdita d'apparato → scelta di prodotto, non difetto. Fidelità: nessun contenuto perso oltre le
+esclusioni-per-design.
+
 **Rinviato (con evidenza):** (a) famiglia Giappichelli fuori-gate (Mandrioli 3/4, Lineamenti,
 Nomofanie) — misurato che le foglie di famiglia sono §-specifiche e quei volumi non hanno §, quindi
 il beneficio pratico dell'inclusione è ~nullo (Lineamenti/Nomofanie byte-identici nella rete di
