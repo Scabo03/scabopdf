@@ -152,7 +152,7 @@ e **nessun testo di titolo perso** ovunque; **Rivista DPC 575→575 ESCLUSA** (a
 heading dal size-only → falsi-positivi non provabili zero, gated `isRivistaDpc`); controllo Appunti
 byte-identico. Assorbe come caso generale la fusione capitolo dell'Estratto (resta, gated). +16 test
 HeadingFusionTests; ScaboCore 573/573. Ascolta di diverso: navigare per intestazioni su Lezioni/
-Mandrioli e sentire i titoli **interi** invece che spezzati in due. → **TestFlight build 41** (in corso).
+Mandrioli e sentire i titoli **interi** invece che spezzati in due. → **TestFlight build 41** (2026-07-14, UPLOAD SUCCEEDED, Delivery UUID acb7a1df-1ce2-486e-a9e1-d2ac6b3bacfc; branch feat/heading-fusion, NON mergiato — attende collaudo/via del maintainer).
 
 **Giro di perfezionamento conservativo — INVENTARIO fenomeni aperti, tutti ARCHIVIATI con misura
 (2026-07-14 sera).** Vedi `docs/INVENTARIO_CLASSIFICAZIONE_APERTI.md`. Postura: non rompere il buono
