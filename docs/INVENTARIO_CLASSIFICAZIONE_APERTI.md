@@ -89,6 +89,17 @@ risolto dal suo plugin). Se il maintainer volesse **leggere** le marginalia è u
 prodotto**; distinguere una gloss ridondante da un contenuto unico a margine è **semantico**. Il
 classificatore è universale (largo). **Non è un difetto meccanico.**
 
+## Aggiunta 2026-07-18 — giro su «Il mercato finanziario» (Lener) e sul contatore di pagina
+
+| # | Fenomeno | Misura | Decisione | Ragione |
+|---|---|---|---|---|
+| 7 | Contatore di pagina sbagliato su tutti i volumi | Lezioni 18% esatti, err. medio 2,4 pp, max 12; Mercato fin./Mandrioli/Estratto ~74% | **RISOLTO** | la pagina era dato del NODO: ogni fetta di paragrafo ricucito ereditava la pagina della testa → ora è dato del SEGMENTO (`ContentSegment.sourcePage`). Dopo: 99-100% esatti, err. max 1 pagina |
+| 8 | Titoli a rientro sporgente non fusi | Lener 6 titoli (3 tagliati a metà parola) | **RISOLTO** | due modi di allineamento in più (rientro sporgente ≤20pt; parola spezzata dal trattino). Rete di delta 40 volumi: 7 fusioni nuove, tutte corrette |
+| 9 | Titolo con punto INTERNO ("5. La crisi … informato." + "Dissonanze…") | Lener 1 | **ARCHIVIATO** | fonderlo richiede di distinguere un punto interno al titolo da un punto che lo chiude — **semantico**. La guardia del punto forte è la più preziosa contro la fusione di due titoli distinti: non si tocca |
+| 10 | Etichetta "CAPITOLO N" inghiottita nel corpo | Lener **5 capitoli su 5** (2 come BODY isolato, 3 incollate in coda a un paragrafo) | **ARCHIVIATO** (candidato n.1 del prossimo giro) | difetto REALE di navigazione, e meccanico. Ma su questo volume l'etichetta è a corpo-testo, quindi il size-only la chiama BODY: promuoverla tocca il classificatore UNIVERSALE, condiviso con la famiglia codici che ha migliaia di LIBRO/TITOLO/CAPO → zona larga, esito da provare. Servirebbe o una **firma-di-formato** per Lener, o una capacità gated, con la sua rete di delta e l'ispezione di ogni cambiamento |
+| 11 | Indice e frontespizio rumorosi | Lener: 6 voci di navigazione dal frontespizio; indice letto come BODY con i numeri di pagina mescolati; 2 folii ("Indice IX") letti come NOTE | **ARCHIVIATO** | è la resa del front-matter, materia di `ANALYSIS_INDICE_TOC.md`; beneficio modesto (front matter, non lettura), zona di prodotto non meccanica |
+| 12 | Note di Lener "fuori ordine" | 436/440 marcatori agganciati, 4 non agganciati; 351 note lunghe DIFFERITE | **NON-DIFETTO** | l'apparente disordine è il regime note del prodotto (§7.4): le note lunghe sono differite e rilette dopo il paragrafo, con rinfresco di contesto. L'aggancio è quasi perfetto |
+
 ## Quadro onesto — cosa resta aperto e di chi è materia
 
 - **Meccanico, per un giro dedicato futuro:** la **fusione dei titoli spezzati** (n.4) con la macchina

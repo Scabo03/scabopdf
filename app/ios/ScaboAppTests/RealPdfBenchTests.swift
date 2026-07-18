@@ -273,12 +273,13 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 
-    // MARK: - REGRESSIONE cache build 20: retrocompatibilità formato 3 (niente rielaborazione forzata)
+    // MARK: - Cache: round-trip del formato corrente, degrado sicuro di quelli superati
 
-    /// Prova che una cache di FORMATO 3 (build 19, senza l'albero) è ancora LEGGIBILE dalla build
-    /// nuova (niente invalidazione → niente rielaborazione forzata all'apertura, la causa del crash
-    /// sul dispositivo). E che il documento si apre dalla cache riletta (Consultazione Rapida
-    /// disabilitata, tree=nil, ma Lettura Continua funziona). Round-trip anche del formato 4.
+    /// Round-trip pieno del formato corrente (albero + mappa pagine PER SEGMENTO, il dato che
+    /// alimenta l'indicatore di pagina), e degrado SICURO di una cache superata o corrotta: si
+    /// legge `nil` → il documento viene rielaborato, mai un decode forzato o un crash. È ciò che
+    /// resta valido della lezione della build 20, ora che la tolleranza al formato 3 è stata
+    /// ritirata di proposito (vedi `minReadableCacheFormatVersion`).
     func test_cache_obsoleteFormat_degradesToReprocess_neverCrashes() throws {
         let path = corpusDir + "/Marotta.pdf"
         guard FileManager.default.fileExists(atPath: path) else { throw XCTSkip("corpus assente") }
