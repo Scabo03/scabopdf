@@ -32,6 +32,79 @@ final class HeadingFusionTests: XCTestCase {
 
     // MARK: - predicato geometrico (positivi/negativi)
 
+    // MARK: - rientro sporgente e parola spezzata (i due modi aggiunti per «Il mercato finanziario»)
+
+    /// Rientro sporgente: il numero del paragrafo sporge a sinistra, la continuazione rientra di un
+    /// filo. Né il margine sinistro né il centro tornano (la riga 2 è molto più corta), ma è la
+    /// stessa riga andata a capo. Geometria misurata sul volume: rientro costante di 14,2pt.
+    func test_shouldFuse_hangingIndentContinuation() {
+        let a = hl("2. Doveri informativi dell’intermediario, regole di condotta e regole",
+                   x0: 65, x1: 400, yTop: 300)
+        let b = hl("di validità", x0: 79.2, x1: 140, yTop: 285)
+        XCTAssertTrue(headingsShouldFuse(a, b), "rientro di 14,2pt = continuazione")
+    }
+
+    /// Il tetto del rientro è stretto: oltre, non è più una continuazione.
+    func test_shouldNotFuse_indentTooLarge() {
+        let a = hl("2. Doveri informativi dell’intermediario, regole di condotta e regole",
+                   x0: 65, x1: 400, yTop: 300)
+        let b = hl("di validità", x0: 130, x1: 190, yTop: 285)
+        XCTAssertFalse(headingsShouldFuse(a, b), "rientro di 65pt: altro livello, non continuazione")
+    }
+
+    /// Rientro a SINISTRA (la riga 2 sporge oltre la riga 1): non è il rientro di continuazione.
+    func test_shouldNotFuse_outdentToTheLeft() {
+        let a = hl("Un titolo qualsiasi che prosegue", x0: 120, x1: 400, yTop: 300)
+        let b = hl("una riga sotto ma sporgente", x0: 100, x1: 260, yTop: 285)
+        XCTAssertFalse(headingsShouldFuse(a, b))
+    }
+
+    /// Parola spezzata dal trattino di fine riga: segnale più forte di qualunque geometria — una
+    /// parola tagliata a metà non può aprire un titolo distinto. Vale anche fuori allineamento.
+    func test_shouldFuse_wordSplitByHyphen_evenWhenMisaligned() {
+        let a = hl("5. Deficit informativi e invalidità delle de-", x0: 51, x1: 400, yTop: 300)
+        let b = hl("libere assembleari", x0: 107.7, x1: 200, yTop: 285)
+        XCTAssertTrue(headingsShouldFuse(a, b))
+    }
+
+    /// …ma solo se la riga 2 riprende in MINUSCOLO: un trattino seguito da maiuscola è un trattino
+    /// vero (composto, incidentale), non una sillabazione.
+    func test_shouldNotFuse_hyphenFollowedByUppercase() {
+        let a = hl("Il diritto pubblico-", x0: 51, x1: 400, yTop: 300)
+        let b = hl("Introduzione al corso", x0: 107.7, x1: 250, yTop: 285)
+        XCTAssertFalse(headingsShouldFuse(a, b))
+    }
+
+    /// Le altre guardie restano sovrane anche per i due modi nuovi: una riga 2 che apre un nuovo
+    /// item non si fonde nemmeno se rientrata.
+    func test_shouldNotFuse_hangingIndentButLine2OpensNewItem() {
+        let a = hl("1. La prestazione dei servizi di investimento", x0: 65, x1: 400, yTop: 300)
+        let b = hl("2. Doveri informativi dell’intermediario", x0: 79.2, x1: 380, yTop: 285)
+        XCTAssertFalse(headingsShouldFuse(a, b), "la riga 2 è un titolo distinto numerato")
+    }
+
+    /// E la riga 1 che chiude con punto forte non si fonde nemmeno col rientro: è la guardia che
+    /// tiene separati due titoli distinti, e resta intatta (caso archiviato del volume Lener).
+    func test_shouldNotFuse_hangingIndentButLine1Terminates() {
+        let a = hl("5. La crisi del paradigma della razionalità dell’investitore informato.",
+                   x0: 65, x1: 400, yTop: 300)
+        let b = hl("Dissonanze cognitive e attività metacognitiva dell’investitore",
+                   x0: 79.2, x1: 380, yTop: 285)
+        XCTAssertFalse(headingsShouldFuse(a, b))
+    }
+
+    /// Il testo fuso è de-sillabato: nessuna parola resta spezzata nella navigazione.
+    func test_fusedText_isDehyphenated() {
+        let items: [GenItem] = [
+            .heading(hl("2. Informazione al mercato. Efficienza infor-", x0: 65, x1: 400, yTop: 300),
+                     level: 3),
+            .heading(hl("mativa ed efficienza valutativa", x0: 79.2, x1: 250, yTop: 285), level: 3),
+        ]
+        XCTAssertEqual(headingTexts(fuse(items)),
+                       ["2. Informazione al mercato. Efficienza informativa ed efficienza valutativa"])
+    }
+
+
     func test_shouldFuse_genuineWrap_centered() {
         // due righe di UN titolo centrato, interlinea singola (baseline-delta ≈ una riga)
         let a = hl("LE ORIGINI DEL NOSTRO SISTEMA", yTop: 501)

@@ -1487,6 +1487,13 @@ let HEADING_FUSE_SIZE_TOLERANCE = 0.6
 let HEADING_FUSE_X0_TOLERANCE = 3.0
 let HEADING_FUSE_CENTER_TOLERANCE = 8.0
 let HEADING_FUSE_MAX_LEN = 220
+/// Rientro sporgente: la riga di continuazione rientra a DESTRA di un filo costante, perché il
+/// numero del paragrafo sporge a sinistra ("2. Duplicità dei piani…" / "  teresse collettivo…").
+/// È una convenzione tipografica reale (misurata: rientro costante di 14,2pt su «Il mercato
+/// finanziario»), che l'allineamento a sinistra e quello al centro non riconoscono — il centro
+/// non torna perché la seconda riga è molto più corta della prima. Tetto stretto: oltre questo
+/// non è più un rientro di continuazione ma un'altra colonna o un altro livello.
+let HEADING_FUSE_HANGING_INDENT_MAX = 20.0
 
 /// Riga-1 chiude una frase/titolo (punto forte finale) → non è una riga andata a capo.
 private let HEADING_TERMINAL_PUNCT = try! NSRegularExpression(pattern: "[.!?:;»”)]\\s*$")
@@ -1514,13 +1521,25 @@ func headingsShouldFuse(_ a: LineSummary, _ b: LineSummary) -> Bool {
     let baselineRatio = (a.yTop - b.yTop) / lineHeight
     guard baselineRatio >= HEADING_FUSE_BASELINE_RATIO_LO,
           baselineRatio <= HEADING_FUSE_BASELINE_RATIO_HI else { return false }
-    // allineamento: stesso margine sinistro OPPURE stesso centro (titolo centrato)
+    // Allineamento — quattro modi, tutti soggetti a ogni altra guardia:
+    //  • stesso margine sinistro (titolo a bandiera);
+    //  • stesso centro (titolo centrato);
+    //  • RIENTRO SPORGENTE: la riga 2 rientra a destra di un filo, perché il numero del paragrafo
+    //    sporge a sinistra. Né il margine né il centro tornano, ma è la stessa riga andata a capo;
+    //  • PAROLA SPEZZATA dal trattino di fine riga con la riga 2 che riprende in minuscolo. Questo
+    //    modo prescinde dall'allineamento perché il segnale è più forte di qualunque geometria:
+    //    una parola tagliata a metà NON può essere l'inizio di un titolo distinto.
     let centerA = (a.x0 + a.x1) / 2, centerB = (b.x0 + b.x1) / 2
+    let aTrimmed = a.text.trimmingCharacters(in: .whitespacesAndNewlines)
+    let indent = b.x0 - a.x0
+    let splitWord = endsWithLetterHyphenG(aTrimmed)
+        && (b.text.trimmingCharacters(in: .whitespacesAndNewlines).first?.isLowercase ?? false)
     guard abs(a.x0 - b.x0) <= HEADING_FUSE_X0_TOLERANCE
-        || abs(centerA - centerB) <= HEADING_FUSE_CENTER_TOLERANCE else { return false }
+        || abs(centerA - centerB) <= HEADING_FUSE_CENTER_TOLERANCE
+        || (indent > 0 && indent <= HEADING_FUSE_HANGING_INDENT_MAX)
+        || splitWord else { return false }
     // riga-1 non chiude; riga-2 non apre un nuovo item né inizia con cifra
-    guard !regexHits(HEADING_TERMINAL_PUNCT, a.text.trimmingCharacters(in: .whitespacesAndNewlines))
-    else { return false }
+    guard !regexHits(HEADING_TERMINAL_PUNCT, aTrimmed) else { return false }
     guard !regexHits(HEADING_LINE2_MARKER, b.text),
           !regexHits(HEADING_LINE2_STARTS_DIGIT, b.text) else { return false }
     // nessuna voce d'indice (leader puntinato) su nessuna delle due
