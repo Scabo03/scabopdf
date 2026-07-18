@@ -38,15 +38,25 @@ final class LibraryService {
     private let cacheDir: URL
 
     /// Versione del formato di cache SCRITTA dalle nuove elaborazioni.
-    private static let cacheFormatVersion = 4
-    /// Versione minima LEGGIBILE. Il formato 3 (build 19, senza l'albero della Consultazione
-    /// Rapida) è RETROCOMPATIBILE col 4: `content`/`pageMap`/`doctrineContent` hanno la stessa
-    /// forma, il campo `quickConsultTree` è opzionale (nil sul 3 → Consultazione Rapida non
-    /// disponibile per quel documento finché non viene rielaborato). Accettare il 3 evita di
-    /// invalidare TUTTE le cache all'aggiornamento: senza questo, ogni documento già in cache
-    /// verrebbe RIELABORATO all'apertura — un picco di memoria che sul dispositivo espelle l'app
-    /// (regressione build 20). Con questo, i documenti cachati si aprono leggeri come in build 19.
-    private static let minReadableCacheFormatVersion = 3
+    private static let cacheFormatVersion = 5
+    /// Versione minima LEGGIBILE.
+    ///
+    /// STORIA, perché questa costante è delicata. Fino al formato 4 valeva 3, deliberatamente: il 3
+    /// (build 19) è retrocompatibile col 4 e accettarlo evitava di invalidare TUTTE le cache
+    /// all'aggiornamento — senza quella tolleranza ogni documento già in cache veniva RIELABORATO
+    /// all'apertura, un picco di memoria che sul dispositivo espellette l'app (regressione build 20).
+    ///
+    /// Il formato 5 la alza a 5, e questa volta l'invalidazione è VOLUTA e sanzionata dal
+    /// maintainer. La ragione è che il difetto che chiude non è rimediabile a cache ferma: la
+    /// pagina del file originale è passata da dato del NODO a dato del SEGMENTO (vedi
+    /// `ContentSegment.sourcePage`), e la mappa esatta per le fette dei paragrafi ricuciti
+    /// attraverso il salto pagina può nascere solo da una rielaborazione. Ogni documento si
+    /// rielabora UNA volta, alla sua prima apertura, uno alla volta e su azione dell'utente —
+    /// esattamente il percorso già esercitato di un documento non in cache. Il muro di memoria
+    /// della build 20 (il render di ~47k etichette vive) non esiste più: la reading view è a
+    /// finestra scorrevole, l'estrazione è a flusso e i volumi enormi si aprono in modalità
+    /// leggera. Resta il picco TRANSITORIO dell'estrazione, lo stesso di un'importazione.
+    private static let minReadableCacheFormatVersion = 5
 
     private init() {
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -87,7 +97,9 @@ final class LibraryService {
     private struct CachedContent: Codable {
         var formatVersion: Int
         var content: PaginatedContent
-        /// Mappa id-nodo → pagina del file originale (1-based), per l'indicatore doppio (§ 4.3).
+        /// Mappa → pagina del file originale (1-based), per l'indicatore (§ 4.3). Dal formato 5
+        /// porta due strati: id-nodo (storico) e, sopra, id-SEGMENTO per le fette `<idNodo>#<k>`
+        /// dei paragrafi ricuciti attraverso il salto pagina, che è l'unico strato esatto per loro.
         var pageMap: [String: Int]
         /// Flusso Dottrina Inline (§ 10), `nil` se il documento non ha note. Aggiunto al formato 3.
         var doctrineContent: PaginatedContent?

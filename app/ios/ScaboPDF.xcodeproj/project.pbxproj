@@ -16,6 +16,7 @@
 		5CABC04E0000000000000050 /* ImportProcessingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000051 /* ImportProcessingTests.swift */; };
 		5CABC04E0000000000000060 /* GranularityWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000061 /* GranularityWiringTests.swift */; };
 		5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000063 /* RealPdfBenchTests.swift */; };
+		5CABC04E00000000000000A2 /* PageIndicatorProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E00000000000000A3 /* PageIndicatorProbeTests.swift */; };
 		5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */; };
 		5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */; };
 		5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */; };
@@ -55,6 +56,7 @@
 		5CABC04E0000000000000051 /* ImportProcessingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ImportProcessingTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000061 /* GranularityWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GranularityWiringTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000063 /* RealPdfBenchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RealPdfBenchTests.swift; sourceTree = "<group>"; };
+		5CABC04E00000000000000A3 /* PageIndicatorProbeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PageIndicatorProbeTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkGestureWiringTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnderlineRenderingTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SplitMemoryProbeTests.swift; sourceTree = "<group>"; };
@@ -138,6 +140,7 @@
 				5CABC04E0000000000000051 /* ImportProcessingTests.swift */,
 				5CABC04E0000000000000061 /* GranularityWiringTests.swift */,
 				5CABC04E0000000000000063 /* RealPdfBenchTests.swift */,
+				5CABC04E00000000000000A3 /* PageIndicatorProbeTests.swift */,
 				5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */,
 				5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */,
 				5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */,
@@ -346,6 +349,7 @@
 				5CABC04E0000000000000050 /* ImportProcessingTests.swift in Sources */,
 				5CABC04E0000000000000060 /* GranularityWiringTests.swift in Sources */,
 				5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */,
+				5CABC04E00000000000000A2 /* PageIndicatorProbeTests.swift in Sources */,
 				5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */,
 				5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */,
 				5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */,

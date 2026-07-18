@@ -85,7 +85,11 @@ private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
         // Il rinfresco è annotato sui nodi nota differiti da `bindAndPlaceNotes`; vuoto
         // altrove. Vale solo per il testo PROPRIO del nodo (le note sono foglie senza
         // figli, quindi `segmentFor(node, node.text)`), non per gli slice di un padre.
-        memoryRefresh: (text == (node.text ?? "")) ? (node.memoryRefresh ?? "") : ""
+        memoryRefresh: (text == (node.text ?? "")) ? (node.memoryRefresh ?? "") : "",
+        // Pagina del file originale (1-based) del nodo di provenienza: `page_index` è 0-based
+        // (convenzione PyMuPDF/PDFKit). I nodi del Generic nascono PER PAGINA, quindi qui il
+        // dato è esatto; è la ricucitura cross-pagina a valle che deve mantenerlo per fetta.
+        sourcePage: node.page_index + 1
     )
 }
 

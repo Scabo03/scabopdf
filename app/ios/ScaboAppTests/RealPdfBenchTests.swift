@@ -279,7 +279,7 @@ final class RealPdfBenchTests: XCTestCase {
     /// nuova (niente invalidazione → niente rielaborazione forzata all'apertura, la causa del crash
     /// sul dispositivo). E che il documento si apre dalla cache riletta (Consultazione Rapida
     /// disabilitata, tree=nil, ma Lettura Continua funziona). Round-trip anche del formato 4.
-    func test_cache_format3_isReadable_noForcedReprocess() throws {
+    func test_cache_obsoleteFormat_degradesToReprocess_neverCrashes() throws {
         let path = corpusDir + "/Marotta.pdf"
         guard FileManager.default.fileExists(atPath: path) else { throw XCTSkip("corpus assente") }
         let ex = try PdfKitExtractor().extract(fromUri: URL(fileURLWithPath: path).absoluteString)
@@ -291,32 +291,39 @@ final class RealPdfBenchTests: XCTestCase {
         let url = svc.cacheURLForTesting(forDocumentId: id)
         defer { try? FileManager.default.removeItem(at: url) }
 
-        // 1. Formato 4 (nuovo, con albero): round-trip pieno.
-        svc.writeCache(content, pageMap: [:], doctrineContent: nil, quickConsultTree: tree, contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: id)
-        let loaded4 = svc.loadCache(forDocumentId: id)
-        XCTAssertNotNil(loaded4, "cache formato 4 leggibile")
-        XCTAssertNotNil(loaded4?.quickConsultTree, "formato 4 porta l'albero")
+        // 1. Formato CORRENTE: round-trip pieno, con l'albero e con la mappa pagine per SEGMENTO.
+        let pageMap = DocumentOpener.buildPageMap(document, content: content)
+        svc.writeCache(content, pageMap: pageMap, doctrineContent: nil, quickConsultTree: tree,
+                       contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: id)
+        let loaded = svc.loadCache(forDocumentId: id)
+        XCTAssertNotNil(loaded, "cache del formato corrente leggibile")
+        XCTAssertNotNil(loaded?.quickConsultTree, "il formato corrente porta l'albero")
+        XCTAssertEqual(loaded?.content.totalSegments, content.totalSegments)
+        // La mappa riletta porta lo strato per SEGMENTO (fette `#k` con la loro pagina esatta):
+        // è il dato che l'indicatore di pagina consuma, e deve sopravvivere al round-trip.
+        let sliceKeys = (loaded?.pageMap.keys.filter { $0.contains("#") }) ?? []
+        XCTAssertFalse(sliceKeys.isEmpty, "la mappa in cache porta la pagina per fetta di paragrafo")
 
-        // 2. Declassa il file a FORMATO 3 (come lo scriveva la build 19: niente quickConsultTree).
+        // 2. Declassa il file a un formato SUPERATO (come lo scriveva la build 19).
         var json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
         json["formatVersion"] = 3
         json.removeValue(forKey: "quickConsultTree")
         try JSONSerialization.data(withJSONObject: json).write(to: url)
 
-        // 3. La build nuova DEVE ancora leggerlo (niente rielaborazione forzata) — questa è la fix.
-        let loaded3 = svc.loadCache(forDocumentId: id)
-        XCTAssertNotNil(loaded3, "REGRESSIONE: formato 3 (build 19) DEVE restare leggibile → niente reprocess forzato")
-        XCTAssertNil(loaded3?.quickConsultTree, "formato 3 non ha l'albero (Consultazione Rapida disabilitata)")
-        XCTAssertEqual(loaded3?.content.totalSegments, content.totalSegments, "contenuto integro dalla cache formato 3")
+        // 3. Un formato superato NON è più accettato: si degrada a `nil` → il documento viene
+        //    rielaborato UNA volta alla sua prima apertura. La tolleranza storica al formato 3
+        //    (installata dopo il crash della build 20) è stata RITIRATA di proposito: la mappa
+        //    pagine per segmento non è ricostruibile a cache ferma, e il muro di memoria che
+        //    motivava la tolleranza — il render di ~47k etichette vive — non esiste più (reading
+        //    view a finestra, estrazione a flusso, modalità leggera per i volumi enormi).
+        //    Ciò che questo test continua a garantire è il PUNTO CRITICO di allora: un formato
+        //    non leggibile non deve MAI far crashare, deve solo far rielaborare.
+        XCTAssertNil(svc.loadCache(forDocumentId: id),
+                     "un formato superato si degrada a rielaborazione, non a un decode forzato")
 
-        // 4. Il documento si apre dalla cache formato 3 riletta (Lettura Continua, quick disabilitata).
-        let vc = ContinuousReadingViewController(
-            content: loaded3!.content, sourceName: "Marotta.pdf", documentId: id,
-            quickConsultTree: loaded3!.quickConsultTree, signalPlayer: SignalPlayerSpy())
-        vc.loadViewIfNeeded(); vc.view.frame = CGRect(x: 0, y: 0, width: 834, height: 1194); vc.view.layoutIfNeeded()
-        vc.viewDidAppear(false)
-        XCTAssertFalse(vc.quickAvailableForTesting, "quick disabilitata su cache formato 3 (nessun albero)")
-        XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "apre in Lettura Continua")
+        // 4. E una cache CORROTTA si degrada allo stesso modo, senza eccezioni.
+        try Data("{ non è json valido".utf8).write(to: url)
+        XCTAssertNil(svc.loadCache(forDocumentId: id), "cache corrotta → nil, mai crash")
     }
 
     // MARK: - Aggancio note sulla pipeline reale: precisione + non-distruttività

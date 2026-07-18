@@ -452,6 +452,83 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertEqual(map["node_1"], 5, "i figli sono mappati ricorsivamente")
     }
 
+    /// Lo strato per SEGMENTO sovrascrive quello per nodo: è l'unico esatto per le fette di un
+    /// paragrafo ricucito attraverso il salto pagina, che stanno su pagine diverse dalla testa.
+    func test_buildPageMap_segmentLayerOverridesNodeLayer() {
+        let doc = ScabopdfDocument(
+            schema_version: "0.7.0", document_id: "d",
+            metadata: DocumentMetadata(pages_pdf: 20, page_size_pt: [595, 842], source_pdf_filename: "x.pdf"),
+            profile: DocumentProfileDict(
+                profile_id: "generic", editorial_family: "generic", genre: "unknown", confidence: 0.05),
+            structure: [NodeDict(id: "node_9", type: .BODY, page_index: 9, text: "corpo")])
+        let content = PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: [
+            ContentSegment(id: "node_9#0", role: "BODY", text: "a", lengthCategory: "",
+                           acousticIntro: "", sourcePage: 10),
+            ContentSegment(id: "node_9#1", role: "BODY", text: "b", lengthCategory: "",
+                           acousticIntro: "", sourcePage: 11),
+            ContentSegment(id: "node_9#2", role: "BODY", text: "c", lengthCategory: "",
+                           acousticIntro: "", sourcePage: 12),
+        ])], totalSegments: 3)
+        let map = DocumentOpener.buildPageMap(doc, content: content)
+
+        XCTAssertEqual(map["node_9"], 10, "lo strato per nodo resta come ripiego")
+        XCTAssertEqual(map["node_9#0"], 10)
+        XCTAssertEqual(map["node_9#1"], 11, "la fetta successiva sta sulla pagina dove comincia")
+        XCTAssertEqual(map["node_9#2"], 12)
+    }
+
+    /// Il toggle "pagine del file originale" è ACCESO per difetto: con l'Opzione A verticale è
+    /// l'unico indicatore rimasto, e un default spento lasciava la barra senza orientamento.
+    func test_showOriginalPages_defaultsOn_andRespectsAnExplicitOff() {
+        let store = InMemoryKeyValueStore()
+        XCTAssertTrue(getStoredShowOriginalPageNumbers(store), "mai espressa → acceso")
+        setStoredShowOriginalPageNumbers(store, false)
+        XCTAssertFalse(getStoredShowOriginalPageNumbers(store), "spenta di proposito → resta spenta")
+        setStoredShowOriginalPageNumbers(store, true)
+        XCTAssertTrue(getStoredShowOriginalPageNumbers(store))
+    }
+
+    /// Senza pagine fisiche (sorgente AKN: `sourcePageCount = 0`) l'indicatore resta inerte anche
+    /// col toggle acceso: non si mostra una pagina che il documento non ha.
+    func test_pageIndicator_inert_whenSourceHasNoPhysicalPages_akn() {
+        let vc = ContinuousReadingViewController(
+            content: sampleContent(3), sourceName: "atto.xml", documentId: "d",
+            initialReadingPosition: 0, onPositionChanged: nil,
+            sourcePageCount: 0, showOriginalPages: true, sourcePage: { _ in 1 })
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
+        vc.viewDidAppear(false)
+        XCTAssertTrue(vc.interfaceContainerForTesting.originalPageLabel.isHidden,
+                      "AKN non ha pagine fisiche → nessun box di pagina")
+    }
+
+    /// L'indicatore dichiara la pagina del SEGMENTO che orienta ora, non quella d'apertura: se il
+    /// segmento a fuoco cambia, il numero cambia con lui.
+    func test_pageIndicator_followsTheSegmentInFocus() {
+        let pages = ["s0": 10, "s1": 11, "s2": 12]
+        let content = PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: [
+            ContentSegment(id: "s0", role: "BODY", text: "primo", lengthCategory: "", acousticIntro: ""),
+            ContentSegment(id: "s1", role: "BODY", text: "secondo", lengthCategory: "", acousticIntro: ""),
+            ContentSegment(id: "s2", role: "BODY", text: "terzo", lengthCategory: "", acousticIntro: ""),
+        ])], totalSegments: 3)
+        let vc = ContinuousReadingViewController(
+            content: content, sourceName: "x.pdf", documentId: "d",
+            initialReadingPosition: 0, onPositionChanged: nil,
+            sourcePageCount: 500, showOriginalPages: true, sourcePage: { pages[$0] })
+        vc.loadViewIfNeeded()
+        vc.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+        vc.view.layoutIfNeeded()
+        vc.viewDidAppear(false)
+        let bar = vc.interfaceContainerForTesting
+        XCTAssertEqual(bar.originalPageLabel.text, "10 di 500")
+
+        vc.textContainerForTesting.presetReadingPosition(toIndex: 2)
+        vc.updatePageIndicatorForTesting()
+        XCTAssertEqual(bar.originalPageLabel.text, "12 di 500",
+                       "il contatore segue il segmento, non resta sulla pagina d'apertura")
+    }
+
     // MARK: - Selettore di Layout (§ 3.4 / § 10): Continua ⇄ Dottrina Inline
 
     private func makeReader(continuous: PaginatedContent, doctrine: PaginatedContent?) -> ContinuousReadingViewController {

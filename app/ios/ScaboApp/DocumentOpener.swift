@@ -121,7 +121,8 @@ enum DocumentOpener {
                 guard let presenter else { return }
                 switch outcome {
                 case .success(let document, let content, let doctrineContent):
-                    let pageMap = buildPageMap(document)
+                    let pageMap = buildPageMap(document, content: content,
+                                               doctrineContent: doctrineContent)
                     let tree = large ? nil : quickConsultTreeIfAvailable(document)
                     // Cache SEMPRE, ma per gli enormi è la versione LEGGERA (content a granularità
                     // grossa, niente albero né Dottrina, `contentTarget` marcato): la prossima
@@ -257,7 +258,8 @@ enum DocumentOpener {
             presenter?.dismiss(animated: true) {
                 switch outcome {
                 case .success(let document, let content, let doctrineContent):
-                    let pageMap = buildPageMap(document)
+                    let pageMap = buildPageMap(document, content: content,
+                                               doctrineContent: doctrineContent)
                     let tree = large ? nil : quickConsultTreeIfAvailable(document)
                     service.writeCache(content, pageMap: pageMap,
                                        doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
@@ -311,7 +313,17 @@ enum DocumentOpener {
 
     /// Costruisce la mappa id-nodo → pagina del file originale (1-based) dall'albero del documento.
     /// `page_index` è 0-based (convenzione PyMuPDF); l'indicatore mostra la pagina 1-based.
-    static func buildPageMap(_ document: ScabopdfDocument) -> [String: Int] {
+    /// La mappa porta DUE strati, e l'ordine conta:
+    /// 1. lo strato per NODO (id-nodo → pagina), che copre ogni segmento non affettato;
+    /// 2. sopra, lo strato per SEGMENTO costruito dai flussi di lettura già impaginati, che è
+    ///    l'unico esatto per le fette `<idNodo>#<k>` di un paragrafo ricucito attraverso il salto
+    ///    pagina — quelle fette stanno su pagine diverse dalla testa del paragrafo, e con il solo
+    ///    strato per nodo l'indicatore restava indietro di tutte le pagine attraversate.
+    static func buildPageMap(
+        _ document: ScabopdfDocument,
+        content: PaginatedContent? = nil,
+        doctrineContent: PaginatedContent? = nil
+    ) -> [String: Int] {
         var map: [String: Int] = [:]
         func walk(_ nodes: [NodeDict]) {
             for node in nodes {
@@ -320,13 +332,23 @@ enum DocumentOpener {
             }
         }
         walk(document.structure)
+        for flow in [content, doctrineContent] {
+            guard let flow else { continue }
+            for page in flow.pages {
+                for segment in page.segments {
+                    if let p = segment.sourcePage { map[segment.id] = p }
+                }
+            }
+        }
         return map
     }
 
-    /// Risolve la pagina del file originale di un segmento. I segmenti granularizzati portano un id
-    /// `<idNodo>#<k>`: si risale all'id del nodo (prima del `#`) per la lookup nella mappa.
+    /// Risolve la pagina del file originale di un segmento: prima la voce ESATTA del segmento
+    /// (strato 2), poi — per le cache costruite prima dello strato per segmento — l'id del nodo
+    /// (prima del `#`), che è il comportamento storico.
     private static func sourcePageProvider(_ pageMap: [String: Int]) -> (String) -> Int? {
         { segmentId in
+            if let exact = pageMap[segmentId] { return exact }
             let base = segmentId.split(separator: "#", maxSplits: 1,
                                        omittingEmptySubsequences: false).first.map(String.init) ?? segmentId
             return pageMap[base]
@@ -457,7 +479,8 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 // rielaborabile in futuro. Si avvisa in prosa senza bloccare la lettura.
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
             }
-            let pageMap = DocumentOpener.buildPageMap(document)
+            let pageMap = DocumentOpener.buildPageMap(document, content: content,
+                                                      doctrineContent: doctrineContent)
             // Volume ENORME: apertura alleggerita (niente albero né Dottrina) e NON cachato — la
             // prossima apertura dai Recenti lo rielabora leggero (granularità grossa) via `open`.
             // L'AKN non è mai "large" (sourcePageCount=0): la finestra della reading view lo regge.

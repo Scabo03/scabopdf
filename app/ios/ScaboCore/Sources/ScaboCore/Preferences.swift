@@ -113,10 +113,17 @@ public enum PreferenceKeys {
 
 // MARK: - Toggle pagine del file originale (§ 4.2)
 
-/// Legge il toggle globale "Mostra numero pagine file originale" (§ 4.2). Default `false`
-/// (disattivato): finché l'utente non lo chiede, l'app mostra solo la pagina di visualizzazione.
+/// Legge il toggle globale "Mostra numero pagine file originale" (§ 4.2). Default `true` quando
+/// la preferenza non è mai stata espressa; resta `false` solo se l'utente l'ha spenta di proposito.
+///
+/// Il default era `false` quando accanto c'era SEMPRE la "pagina di visualizzazione" e questo
+/// toggle aggiungeva una seconda informazione. Con l'Opzione A verticale la pagina di
+/// visualizzazione non esiste più (il flusso non ha pagine di impaginazione): la pagina del file
+/// è rimasta l'UNICO indicatore, e un default spento lasciava la barra senza alcun orientamento —
+/// il contatore semplicemente non compariva. Acceso per difetto, spegnibile esplicitamente.
 public func getStoredShowOriginalPageNumbers(_ store: KeyValueStore) -> Bool {
-    store.getItem(PreferenceKeys.showOriginalPageNumbers) == "1"
+    guard let raw = store.getItem(PreferenceKeys.showOriginalPageNumbers) else { return true }
+    return raw == "1"
 }
 
 public func setStoredShowOriginalPageNumbers(_ store: KeyValueStore, _ enabled: Bool) {

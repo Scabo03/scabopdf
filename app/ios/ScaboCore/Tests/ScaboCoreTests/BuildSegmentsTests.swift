@@ -52,7 +52,9 @@ final class BuildSegmentsTests: XCTestCase {
             role: "BODY",
             text: "reale",
             lengthCategory: "",
-            acousticIntro: ""
+            acousticIntro: "",
+            // `page_index` 0-based → pagina 1 del file (vedi `ContentSegment.sourcePage`).
+            sourcePage: 1
         ))
     }
 

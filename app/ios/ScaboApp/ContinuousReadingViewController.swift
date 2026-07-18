@@ -315,7 +315,12 @@ final class ContinuousReadingViewController: UIViewController {
         }
         // Paging guidato dall'utente (anche a VoiceOver spento): tiene aggiornata l'ancora reale.
         readingView.onUserScroll = { [weak self] index in
-            guard let self, !self.isProtectingReadingPosition, self.currentLayout == .continuous,
+            guard let self else { return }
+            // L'indicatore segue anche lo SCORRIMENTO, non solo il fuoco di VoiceOver: a VoiceOver
+            // spento non c'è alcun cambio di fuoco, e il contatore restava congelato sulla pagina
+            // d'apertura per tutta la lettura.
+            self.updatePageIndicator()
+            guard !self.isProtectingReadingPosition, self.currentLayout == .continuous,
                   index > 0 else { return }
             self.stickyReadingPosition = index
         }
@@ -716,7 +721,9 @@ final class ContinuousReadingViewController: UIViewController {
     private func updatePageIndicator() {
         // Opzione A (verticale): niente più "pagina di visualizzazione" sintetica orizzontale; il
         // senso di pagina è la pagina REALE del PDF (indicatore singolo + stacchi visivi nel flusso).
-        let index = readingView.currentReadingElementIndex ?? max(0, initialReadingPosition)
+        // L'elemento di riferimento è quello che ORIENTA ora: il segmento a fuoco con VoiceOver, il
+        // primo visibile senza. Mai una stima proporzionale sullo scroll.
+        let index = readingView.orientationElementIndex ?? max(0, initialReadingPosition)
         var originalCurrent: Int? = nil
         if showOriginalPages, sourcePageCount > 0,
            let segId = readingView.segmentId(atIndex: index),

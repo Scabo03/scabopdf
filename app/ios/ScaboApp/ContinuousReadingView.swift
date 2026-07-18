@@ -890,6 +890,24 @@ final class ContinuousReadingView: UIView {
         return true
     }
 
+    /// L'indice dell'elemento che ORIENTA l'utente in questo istante — quello di cui l'indicatore
+    /// deve dichiarare la pagina.
+    ///
+    /// È l'elemento a FUOCO quando il fuoco è ancora IN VISTA — con VoiceOver è il segmento che si
+    /// sta ascoltando, e dopo un salto (segnalibro, intestazione, ripristino) è il punto raggiunto.
+    /// Altrimenti è il PRIMO VISIBILE in cima alla finestra: è il caso di chi scorre col dito, dove
+    /// il vecchio fuoco è uscito dallo schermo (senza VoiceOver non si muove affatto) e seguirlo
+    /// terrebbe il contatore congelato sulla pagina d'apertura.
+    ///
+    /// La discriminante è la VISIBILITÀ, non lo stato di VoiceOver: così la regola è la stessa per
+    /// chi ascolta e per chi guarda, e non dipende da un flag che i test non possono muovere.
+    var orientationElementIndex: Int? {
+        let visible = collectionView.indexPathsForVisibleItems.map(\.item)
+        if let focused = lastFocusedIndex, visible.contains(focused) { return focused }
+        if let top = visible.min() { return top }
+        return lastFocusedIndex
+    }
+
     /// L'indice dell'elemento "corrente" per le azioni da tastiera: l'ultimo a fuoco, o il primo visibile.
     var currentOrTopIndex: Int {
         lastFocusedIndex ?? (collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0)

@@ -57,6 +57,16 @@ public struct ContentSegment: Codable, Equatable, Sendable {
     /// differita. È testo RIPETUTO in aggiunta (rete A): non sostituisce il contenuto.
     /// Calcolato da `bindAndPlaceNotes` (vedi `MemoryRefresh.swift`).
     public var memoryRefresh: String
+    /// Pagina del FILE originale (1-based) su cui questo segmento è realmente stampato, o `nil`
+    /// quando la nozione non si applica (sorgente AKN, senza pagine fisiche).
+    ///
+    /// È un dato del SEGMENTO, non del nodo, e questa è la sua ragion d'essere. Nel modello a
+    /// flusso un paragrafo viene ricucito attraverso il salto pagina e poi affettato in blocchi di
+    /// lettura (`node_X#k`): tutte le fette ereditavano la pagina della TESTA del paragrafo, così
+    /// l'indicatore restava indietro di tutte le pagine attraversate (misurato: fino a 12 pagine
+    /// su «Lezioni di giustizia amministrativa»). Portando la pagina sul segmento, ogni fetta
+    /// dichiara la pagina su cui il suo testo comincia davvero.
+    public var sourcePage: Int?
 
     public init(
         id: String,
@@ -64,7 +74,8 @@ public struct ContentSegment: Codable, Equatable, Sendable {
         text: String,
         lengthCategory: String,
         acousticIntro: String,
-        memoryRefresh: String = ""
+        memoryRefresh: String = "",
+        sourcePage: Int? = nil
     ) {
         self.id = id
         self.role = role
@@ -72,6 +83,7 @@ public struct ContentSegment: Codable, Equatable, Sendable {
         self.lengthCategory = lengthCategory
         self.acousticIntro = acousticIntro
         self.memoryRefresh = memoryRefresh
+        self.sourcePage = sourcePage
     }
 }
 

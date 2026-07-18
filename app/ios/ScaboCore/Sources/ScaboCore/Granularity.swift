@@ -526,15 +526,18 @@ public func granularizeBody(
     let segments = mergeNoteContinuations(rawSegments)
     var out: [ContentSegment] = []
     var runTexts: [String] = []
+    var runPages: [Int?] = []
     var runIdBase: String?
     var heldApparatus: [ContentSegment] = []   // note trattenute mentre il run è aperto
 
     func flushRun() {
         if let base = runIdBase, !runTexts.isEmpty {
-            out.append(contentsOf: granularizeRun(runTexts, idBase: base, target: target))
+            out.append(contentsOf: granularizeRun(
+                runTexts, pages: runPages, idBase: base, target: target))
         }
         out.append(contentsOf: heldApparatus)   // l'apparato trattenuto va DOPO il paragrafo
         runTexts = []
+        runPages = []
         runIdBase = nil
         heldApparatus = []
     }
@@ -544,10 +547,13 @@ public func granularizeBody(
             if runTexts.isEmpty {
                 runIdBase = segment.id
                 runTexts = [segment.text]
+                runPages = [segment.sourcePage]
             } else if heldApparatus.isEmpty {
                 runTexts.append(segment.text)   // corpo adiacente: comportamento invariato
+                runPages.append(segment.sourcePage)
             } else if bodyContinues(segment.text) {
                 runTexts.append(segment.text)   // continuazione OLTRE l'apparato trattenuto
+                runPages.append(segment.sourcePage)
             } else if let frag = wordTailFragmentInHeld(
                         heldApparatus, openRunLast: runTexts.last) {
                 // MATTONE 3: fra l'apparato trattenuto c'è la CODA DELLA PAROLA SPEZZATA +
@@ -561,10 +567,12 @@ public func granularizeBody(
                 runTexts[runTexts.count - 1] = String(last.dropLast()) + frag.completion
                 heldApparatus.remove(at: frag.index)
                 runTexts.append(segment.text)   // stessa unità: la frase prosegue
+                runPages.append(segment.sourcePage)
             } else {
                 flushRun()                       // metà seguente NON è continuazione: chiudi
                 runIdBase = segment.id
                 runTexts = [segment.text]
+                runPages = [segment.sourcePage]
             }
         } else if HOLDABLE_APPARATUS_ROLES.contains(segment.role),
                   let last = runTexts.last, bodyRunOpens(last) {
@@ -638,47 +646,86 @@ func holdGiappichelliSectionBibliography(_ segments: [ContentSegment]) -> [Conte
 /// unità strutturale). Concatena, segmenta in frasi, raggruppa in blocchi ~target
 /// senza mai spezzare una frase. Gli id dei blocchi sono deterministici e stabili
 /// (`<idBase>#<k>`), così lo stesso input produce sempre lo stesso output.
-private func granularizeRun(_ texts: [String], idBase: String, target: Int) -> [ContentSegment] {
+private func granularizeRun(
+    _ texts: [String], pages: [Int?], idBase: String, target: Int
+) -> [ContentSegment] {
     // Giunzione DE-SILLABANTE: se una metà finisce con lettera+trattino e la successiva
     // inizia in minuscolo, è sillabazione di fine riga → si assorbe il trattino e si
     // concatena senza spazio ("giu-" + "stizia" → "giustizia"); altrimenti spazio
     // (comportamento invariato: il trattino+uppercase resta com'era, niente distorsioni).
     var joined = ""
-    for raw in texts {
+    // Confini di provenienza: offset (in caratteri di `joined`) a cui comincia ciascuna metà
+    // di origine, con la sua pagina del file. È la traccia che permette a ogni fetta di
+    // dichiarare la pagina su cui il suo testo comincia DAVVERO, invece della pagina della
+    // testa del paragrafo ricucito.
+    var partStarts: [(offset: Int, page: Int?)] = []
+    for (i, raw) in texts.enumerated() {
         let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         if t.isEmpty { continue }
+        let page = i < pages.count ? pages[i] : nil
         if joined.isEmpty {
+            partStarts.append((0, page))
             joined = t
         } else if endsWithLetterHyphenG(joined), let first = t.first, first.isLowercase {
-            joined = String(joined.dropLast()) + t
+            joined = String(joined.dropLast())
+            partStarts.append((joined.count, page))   // la coda de-sillabata apre la metà nuova
+            joined += t
         } else {
-            joined += " " + t
+            joined += " "
+            partStarts.append((joined.count, page))
+            joined += t
         }
     }
     let sentences = splitIntoSentences(joined)
     if sentences.isEmpty { return [] }
 
-    var blocks: [String] = []
-    var current = ""
+    /// Pagina della metà di origine che copre l'offset dato (l'ultima che comincia non oltre).
+    func page(atOffset offset: Int) -> Int? {
+        var found: Int? = partStarts.first?.page
+        for p in partStarts {
+            if p.offset <= offset { found = p.page } else { break }
+        }
+        return found
+    }
+
+    // Offset di ciascuna frase dentro `joined`: le frasi sono sottostringhe di `joined` prodotte
+    // in ordine, quindi un cursore che avanza le localizza senza ambiguità.
+    var sentenceOffsets: [Int] = []
+    var cursor = joined.startIndex
     for sentence in sentences {
+        if let r = joined.range(of: sentence, range: cursor..<joined.endIndex) {
+            sentenceOffsets.append(joined.distance(from: joined.startIndex, to: r.lowerBound))
+            cursor = r.upperBound
+        } else {
+            sentenceOffsets.append(joined.distance(from: joined.startIndex, to: cursor))
+        }
+    }
+
+    var blocks: [(text: String, offset: Int)] = []
+    var current = ""
+    var currentOffset = 0
+    for (i, sentence) in sentences.enumerated() {
         if current.isEmpty {
             current = sentence
+            currentOffset = sentenceOffsets[i]
         } else if current.count + 1 + sentence.count <= target {
             current += " " + sentence
         } else {
-            blocks.append(current)
+            blocks.append((current, currentOffset))
             current = sentence  // una frase più lunga del target resta intera (blocco a sé)
+            currentOffset = sentenceOffsets[i]
         }
     }
-    if !current.isEmpty { blocks.append(current) }
+    if !current.isEmpty { blocks.append((current, currentOffset)) }
 
-    return blocks.enumerated().map { index, text in
+    return blocks.enumerated().map { index, block in
         ContentSegment(
             id: "\(idBase)#\(index)",
             role: SemanticCategory.BODY.rawValue,
-            text: text,
+            text: block.text,
             lengthCategory: "",
-            acousticIntro: acousticIntroFor(SemanticCategory.BODY.rawValue, "")
+            acousticIntro: acousticIntroFor(SemanticCategory.BODY.rawValue, ""),
+            sourcePage: page(atOffset: block.offset)
         )
     }
 }
