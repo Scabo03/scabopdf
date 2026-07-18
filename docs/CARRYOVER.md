@@ -154,6 +154,64 @@ byte-identico. Assorbe come caso generale la fusione capitolo dell'Estratto (res
 HeadingFusionTests; ScaboCore 573/573. Ascolta di diverso: navigare per intestazioni su Lezioni/
 Mandrioli e sentire i titoli **interi** invece che spezzati in due. → **TestFlight build 41** (2026-07-14, UPLOAD SUCCEEDED, Delivery UUID acb7a1df-1ce2-486e-a9e1-d2ac6b3bacfc; branch feat/heading-fusion, NON mergiato — attende collaudo/via del maintainer).
 
+**Contatore di pagina RIPARATO ALLA RADICE + fusione titoli estesa (2026-07-18, branch
+`feat/heading-fusion`, commits `f021f41` + `4588170`, → TestFlight build 43).**
+
+*Questione 1 — il contatore di pagina.* Il maintainer: «non funziona quasi mai e sbaglia di
+tantissimo, su tutti i volumi». Tre cause distinte, tutte figlie del passaggio alla reading view a
+finestra (Opzione A verticale), misurate con una sonda additiva (`PageIndicatorProbeTests`) che
+confronta l'indicatore con la pagina su cui il testo è DAVVERO stampato — verità di terreno presa
+dall'estrazione PDFKit, nessun oracolo esterno.
+(a) **RADICE**: la pagina era un dato del NODO. Nel flusso un paragrafo viene ricucito attraverso il
+salto pagina e poi affettato in blocchi `node_X#k`: ogni fetta ereditava la pagina della TESTA, così
+l'indicatore restava indietro di tutte le pagine attraversate. PRIMA: Lezioni **18% esatti**, errore
+medio 2,4 pagine, **max 12**; Mercato finanziario 74%, Mandrioli 3 73%, Estratto 77%. Ora
+`ContentSegment.sourcePage` porta la pagina sul SEGMENTO e la provenienza attraversa ricucitura e
+affettatura (ogni blocco dichiara la pagina su cui COMINCIA). DOPO: Mercato finanziario **100%**,
+Lezioni/Mandrioli/Estratto **99%**, errore **max 1 pagina**.
+(b) L'indicatore era **spento per difetto**: il toggle "pagine del file originale" nacque come
+aggiunta accanto alla pagina di visualizzazione, che l'Opzione A ha eliminato — restava a governare
+l'UNICO indicatore, spento. Ora acceso per difetto, spegnibile.
+(c) Non seguiva lo **scorrimento**: si aggiornava solo al cambio di fuoco VoiceOver, quindi a
+VoiceOver spento restava congelato sulla pagina d'apertura. Ora l'elemento di riferimento è quello
+che orienta davvero — il segmento a fuoco finché è in vista, altrimenti il primo visibile — e si
+aggiorna anche allo scroll. Mai una stima proporzionale.
+**Cache**: la mappa esatta per fetta non è ricostruibile a cache ferma → formato 5 e **ritiro della
+tolleranza al formato 3** (ogni volume si rielabora UNA volta alla prima apertura). Scelta
+esplicitamente sanzionata dal maintainer: il muro di memoria che motivava quella tolleranza (render
+di ~47k etichette vive, crash build 20) non esiste più. Il test di guardia resta, spostato sul punto
+che conta: formato superato o corrotto → rielaborazione, MAI un crash.
+**Casi limite**: AKN inerte (nessuna pagina fisica, `sourcePageCount=0`); split invariato (ogni metà
+aggiorna sul proprio fuoco/scroll); dopo salto a segnalibro/intestazione il fuoco è in vista e vince;
+cambio dimensione testo e rotazione già coperti da `onPaginationChanged`. Le **retrocessioni** di
+pagina aumentano (Estratto 51→102) e sono CORRETTE: una nota differita porta la pagina su cui è
+stampata, che precede il punto in cui viene riletta.
+
+*Questione 2 — «Il mercato finanziario» (Lener) poco affinato.* Prima cosa esclusa: **la fusione
+della build 41 non lo ha danneggiato** — le sue 10 fusioni ispezionate una per una ricompongono
+titoli andati a capo, con la giusta de-sillabazione; zero titoli distinti fusi. Il difetto è che la
+fusione si FERMAVA troppo presto: questo editore usa il **rientro sporgente** (numero che sporge a
+sinistra, continuazione rientrata di 14,2pt costanti), forma che né l'allineamento a sinistra (±3pt)
+né quello al centro (±8pt) riconoscono. Sei titoli restavano in due tronconi, tre **tagliati a metà
+parola**. Aggiunti due modi di allineamento: rientro sporgente (tetto stretto 20pt) e parola spezzata
+dal trattino con ripresa in minuscolo (segnale più forte di qualunque geometria). **Rete di delta sui
+40 volumi**: 7 fusioni nuove in tutto, tutte guardate — Mercato finanziario −5, 1720-951X −1
+("…delle de-"+"libere assembleari"), Patriarca −1 ("…del colle-"+"gio sindacale"); ogni altro volume
+byte-identico, Rivista DPC ancora esclusa. Rete A titoli 0/40 volumi alterati; rete C su 8 volumi 0
+lettere fabbricate.
+**Archiviati con misura** (vedi `docs/INVENTARIO_CLASSIFICAZIONE_APERTI.md` §7-12): il titolo con
+punto INTERNO ("5. La crisi … informato." + "Dissonanze…") — fonderlo richiede il senso del testo e
+la guardia del punto forte è la più preziosa contro la fusione di titoli distinti, non si tocca;
+**"CAPITOLO N" inghiottito nel corpo su 5 capitoli su 5** — difetto reale e meccanico di navigazione,
+ma su questo volume l'etichetta è a corpo-testo e promuoverla tocca il classificatore universale
+condiviso con la famiglia codici (migliaia di LIBRO/TITOLO/CAPO): **è il candidato n.1 del prossimo
+giro**, con firma-di-formato o capacità gated e la sua rete di delta; indice e frontespizio rumorosi
+(front matter, materia di `ANALYSIS_INDICE_TOC.md`). **Non-difetto**: le note "fuori ordine" sono il
+regime note del prodotto (§7.4) — 436/440 marcatori agganciati, le lunghe differite per progetto.
+
+Reti: ScaboCore **589/589**, ScaboApp **132/132**. → **TestFlight build 43** (UPLOAD SUCCEEDED,
+Delivery UUID 2dc424a8-8cb2-413c-9904-697355b15e1d; branch `feat/heading-fusion`, NON mergiato).
+
 **Giro di perfezionamento conservativo — INVENTARIO fenomeni aperti, tutti ARCHIVIATI con misura
 (2026-07-14 sera).** Vedi `docs/INVENTARIO_CLASSIFICAZIONE_APERTI.md`. Postura: non rompere il buono
 inseguendo il marginale; nel dubbio archivia. Nessun codice toccato (suite 557/557). Decisioni:
