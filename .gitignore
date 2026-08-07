@@ -45,3 +45,6 @@ pipeline/tests/fixtures/private/
 # captures, full node/segment dumps, per-PDF reports). Copyright-encumbered like
 # the fixtures; only content-free baseline reports are committed, deliberately.
 test-output-private/
+
+# Estratti scratch temporanei (documentazione allegabile, non parte del repo)
+ultrafocus_extracts/
