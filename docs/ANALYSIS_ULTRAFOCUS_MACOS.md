@@ -78,7 +78,10 @@ SwiftPM separata, **solo-Foundation** (nessun import PDFKit/UIKit/SwiftUI), con
 `Package.swift` motiva la scelta: «the same logic serves a future MuPDF-based
 extractor and **a possible macOS build**». I suoi 146 test unitari girano **già
 oggi sull'host macOS** via `swift test`, senza Simulatore né daemon di
-accessibilità. Contiene tutta la logica deterministica di Layer 2:
+accessibilità. *(Aggiornamento 2026-08-07: i test sull'host sono diventati
+**589**, tutti verdi in ~5 s — la crescita viene dai rami di classificazione e
+plugin, dalla macchina delle note, dal parser AKN, dalla fusione dei titoli e
+dalla scaffolding di misura; vedi Parte V.)* Contiene tutta la logica deterministica di Layer 2:
 
 - il **modello comune** `ScabopdfDocument` e i tipi di schema (`SchemaTypes`),
   con caricamento e validazione (`DocumentLoader`, `DocumentValidation`,
@@ -97,8 +100,10 @@ accessibilità. Contiene tutta la logica deterministica di Layer 2:
   `CorpusBaselines` (vedi § 6 — è la fondazione dei guardiani);
 - **il seam dell'estrattore**: `PdfExtraction.swift`.
 
-**`ScaboApp` — presentazione iOS, da riscrivere per una UI Mac.** Sono i ~137
-file Swift dell'app: view controller UIKit (`ContinuousReadingViewController`,
+**`ScaboApp` — presentazione iOS, da riscrivere per una UI Mac.** Sono i 39
+file Swift dell'app *(misura 2026-08-07: 33 importano UIKit, 6 no; il «~137»
+di prima ricomprendeva evidentemente anche ScaboCore e i test — vedi Parte V)*:
+view controller UIKit (`ContinuousReadingViewController`,
 `ContainerViewController`, `SplitScreenViewController`…), la reading view
 riciclante a finestra, i gesti, le azioni VoiceOver mobile, la barra di lettura,
 segnalibri/tag/sottolineature UI, gli earcon audio, e l'estrattore concreto
@@ -138,7 +143,7 @@ non far uscire il testo.
 
 | Componente | Natura | Verdetto condivisione macOS |
 |---|---|---|
-| `ScaboCore` (modello, classificazione, AKN, rendering-dato, note, misura, seam) | Foundation puro | **Condivisibile as-is** (già `.macOS(.v12)`, 146 test verdi su host) |
+| `ScaboCore` (modello, classificazione, AKN, rendering-dato, note, misura, seam) | Foundation puro | **Condivisibile as-is** (già `.macOS(.v12)`, 589 test verdi su host al 2026-08-07) |
 | `PdfKitExtractor` | PDFKit (cross-platform) | Portabile con basso attrito |
 | Reading view, gesti, VoiceOver mobile, earcon, VC UIKit | UIKit / iOS | **Da riscrivere** per una UI Mac (ma l'officina non ne ha bisogno) |
 | Guardiani (aggancio dei casi dubbi) | — | **Da costruire**; fondazione content-free già presente |
@@ -859,3 +864,239 @@ Aggiunte al ventaglio del § 7, da decidere dal maintainer:
     estrazione PDFKit** (indirizzamento per indici, il più pulito) o ammettere
     l'**ancora geometrica** per i casi in cui il Mac usa un estrattore migliore?
 
+
+---
+
+# Parte V — Verifica di apertura arco (2026-08-07)
+
+Giro di apertura della fase macOS: ricognizione riverificata sui fatti di oggi,
+Triple Take rimesso in moto e misurato, banco del gate preparato, catena del
+gate accertata su carta, fatti esterni aggiornati. Nessuna implementazione.
+Ambiente reale al momento della verifica: macOS **26.5.1**, Xcode **26.6**
+(il piano parlava di 26.5: divergenza minore, solo ambiente).
+
+## V.1 La ricognizione della Parte I, punto per punto
+
+**ScaboCore — CONFERMATO.** Libreria SwiftPM separata (`app/ios/ScaboCore`),
+39 file sorgente, **tutti e soli `import Foundation`** (zero PDFKit, UIKit,
+SwiftUI, AppKit — verificato a grep sull'intero albero `Sources/`);
+`platforms: [.iOS(.v15), .macOS(.v12)]` invariato.
+
+**Test su host — CONFERMATO nel fatto, DIVERGENTE nel numero.** `swift test`
+sull'host macOS: **589 test, 0 fallimenti, ~4,7 s** (più la testata di parità
+13/13). Il documento diceva 146: la crescita (+443) è sana e viene dai fronti
+chiusi nel frattempo — i rami di classificazione e i plugin di famiglia
+(Generic/Codici/DeJure/RivistaDpc/Cortina/UserNotes e le riclassificazioni),
+la macchina delle note (binding, continuazioni, cucitura cross-page,
+granularità), il parser AKN, la fusione dei titoli (HeadingFusion 24), gli
+store (libreria/segnalibri/sottolineature), stile e temi, e la scaffolding di
+misura (StructuralComparison 24, Report 6). A lato, la rete dell'app:
+ScaboApp **132/132** (8 skip = fixture private assenti dal checkout).
+
+**Il seam — CONFERMATO, con la forma di oggi.** `PdfExtracting` è invariato
+(`extract(fromUri:) throws -> PdfExtraction`). Il dato di confine, campo per
+campo: `PdfExtraction{version(=2), pageCount, pages, producer?, creator?}`;
+`PdfPageExtraction{pageIndex(0-based), width, height, lines}`;
+`PdfTextLine{spans, bbox}`; `PdfSpan{text, fontSize, bold, italic,
+color("#rrggbb"), bbox}`; `BBox{x,y,width,height}` con origine basso-sinistra
+e Codable in forma array `[x,y,w,h]`. La precisazione utile all'officina: la
+struttura è **pagina → riga → span** (il documento riassumeva «per-pagina,
+per-span»); `producer`/`creator` sono i segnali di famiglia auto-dichiaranti.
+Non c'è il **nome del font** (debito noto CGPDF low-level).
+
+**Scaffolding di misura content-free — CONFERMATA per costruzione.**
+`StructuralComparison` (310 righe), `Report` (227), `CorpusBaselines` (116):
+nessun accesso a campi testo (grep su `.text`/`node.content`/`segment.text`:
+zero occorrenze); i tipi di referto portano solo categorie, conteggi, delta,
+bande EXACT/CLOSE/DIVERGENT, istogrammi e timing. I punti dove il testo
+*potrebbe* trapelare, guardati uno a uno: (a) `ContentFreeReport.document.
+warnings` — i warning sono vocabolario chiuso con interpolazioni **solo
+numeriche** (verificati tutti i siti di emissione in AknParser e nei plugin);
+(b) `pdfFilename`/`pdfSizeBytes` — metadati, non contenuto; (c) `ReportDump`
+è dichiaratamente text-bearing ma è l'artefatto separato mai committato
+(`*.scabopdf.json` è nel gitignore globale). Il log `Transformation`
+(`TransformationDict` in SchemaTypes) porta frammenti origine/normalizzato:
+vive DENTRO il Document (che è già text-bearing), non nei referti.
+
+**I due guardiani — CONFERMATO: non costruiti.** Nessun simbolo «guardian» nel
+codice app; `validate.sh` dichiara ancora «I guardiani su contenuto-perso e
+ordine di lettura arriveranno col gradino 2»; `CHECKUP_SALUTE § 5.4` invariato;
+le due condizioni di riattivazione del percorso pesante in
+`SWIFT_MIGRATION_PLAN § 0.4` (perdita di contenuto vero / ordine
+irrecuperabile) sono testualmente quelle.
+
+**Il peso della parte iOS — MISURATO.** `ScaboApp` = **39 file** di produzione
+(non ~137: quel numero ricomprendeva evidentemente ScaboCore e i test; oggi
+ScaboCore 39 sorgenti + ~55 file di test, ScaboAppTests 15, UITests 1).
+**33/39 importano UIKit**: view controller (Container/ContinuousReading/Split/
+Home/Processing/Settings/Search/Bookmarks/Tags/…), reading view riciclante,
+barra di lettura, dialoghi libreria, tema/aspetto, gesti e azioni VoiceOver.
+I 6 senza UIKit: `DocumentProcessor`, `AknDocumentProcessor`,
+`ContinuousBodyBuilder` (wrapper sottile su ScaboCore), `LibraryService`,
+`LibraryFormatting`, `AudioSignals`. `PdfKitExtractor` importa UIKit **solo
+per `UIColor`** (2 punti, risoluzione colore): la portabilità Mac «a basso
+attrito» è confermata (typealias condizionale verso `NSColor`/AppKit o
+CoreGraphics puro). Un'interfaccia Mac vera costerebbe la riscrittura dei 33
+file UIKit; **l'officina non ne ha bisogno** — la catena documento→segmenti è
+tutta in ScaboCore più un wrapper di 100 righe.
+
+## V.2 Triple Take — stato reale e misura
+
+**Intatto e funzionante; nessun cantiere.** Inventario verificato:
+`~/Developer/scabopdf-triple-take/` con `originals/` (**32 PDF**) +
+`originals_new/` (**8 PDF**) = **40 volumi**; harness a tre poli costruito
+(`harness/`: `pdfkit-extract` Swift CLI, pacchetto `ttx`, run_batch/run_volume);
+referti in `discovery/` (incl. `_DOCLING_TEST`, `_REGOLE_NOTE` col ground-truth
+del capitolo NOTE, `_TARATURA`); dump del banco on-device in `bench_out/`.
+Ambienti Python integri: `scabopdf-tools-venv` (Python 3.13.13, surya-ocr
+0.20.0, PyMuPDF 1.27.2.3, torch 2.12.0) e `scabopdf-docling-venv` (docling
+2.103.0, torch 2.12.1 con MPS). `llama-server` Homebrew presente. **Pesi già
+in cache** (`~/.cache/huggingface/hub`): Surya-2 GGUF 1,4 GB + docling
+layout-heron e docling-models (totale cache 1,9 GB) — niente da riscaricare.
+
+**Misura reale docling (detection, `do_ocr=False`, MPS), rifatta oggi su 6
+pagine vere:** mediana **~0,1 s/pagina** a caldo; prima pagina 1,9 s
+(caricamento pesi); un outlier 9,9 s su una pagina con tabella (TableFormer/
+compilazione MPS). Conferma l'ordine di grandezza ~0,1–0,2 s/pag del referto
+storico. **Offline verificato**: giro riuscito con `HF_HUB_OFFLINE=1
+TRANSFORMERS_OFFLINE=1`. Surya layout: gira, offline, ~2 s la singola pagina
+più ~1 s di spawn del server llama.cpp (installata 0.20.0; upstream è a
+0.22.1 — aggiornamento non necessario per il gate).
+
+**Contenimento riverificato coi fatti:** il workspace è fuori repo e
+`git add -f` di un suo file **rifiuta** («outside repository»); nel repo
+`.gitignore` copre `*.pdf` e `*.scabopdf.json` globalmente, più
+`ultrafocus_extracts/` e `test-output-private/` (provato con file-sonda:
+`check-ignore` li intercetta). Nessun PDF, fixture derivata o risultato con
+testo può entrare in git per costruzione.
+
+## V.3 Il banco del gate — pronto
+
+I casi non sono stati cercati: sono quelli già nominati dalla documentazione,
+**riverificati oggi sui PDF reali** e fotografati con la pipeline on-device di
+`main` (build 43) via `RealPdfBenchTests.test_readingFidelityDump_fromRequest`.
+Sei casi: i tre di Delitti in prima pagina (254-255 didascalia/controesempio
+L1; 33-34 figure-bound; 168-169 nota-`*` + tabella), un **MULTIPAGE vero**
+(Lineamenti P. speciale 46-47, con 8 riserve censite), l'**ordine a due
+colonne dense** dell'indice analitico del Codice penale (p. 2518 sgg.,
+territorio dichiarato non-verificato dal giro indici), e la Rivista DPC 2-2018
+come **caso di controllo** (apparato sporgente già recuperato on-device:
+boundSamePage=1256 riconfermato). L'elenco content-free con la fotografia di
+base è in **`docs/ULTRAFOCUS_GATE_BENCH.md`**; le schede complete (con testo)
+vivono nel workspace:
+`~/Developer/scabopdf-triple-take/ultrafocus_bench/schede/SCHEDE_GATE.md`,
+con le pagine-caso estratte in `…/pages/` e i dump in `…/ondevice/`.
+
+## V.4 La catena minima del gate — accertata su carta
+
+**Scoperta che accorcia la catena.** Il banco `RealPdfBenchTests` dumpa già,
+per volume intero, sia l'estrazione (`.lines.json` = `PdfExtraction` in JSON)
+sia il documento (`.scabopdf.json`) sia i segmenti di lettura
+(`.reading.json`: ruolo, categoria di lunghezza, innesco acustico, testo). E
+le **cinque funzioni dell'intera catena sono `public` in ScaboCore**:
+`buildDocumentFromPdf`, `bindAndPlaceNotes`, `buildLayout`, `granularizeBody`,
+`paginate` (il `ContinuousBodyBuilder` dell'app è un wrapper di ~100 righe).
+Quindi la catena del gate non attraversa ScaboApp.
+
+**Quale innesto per il gate.** I due innesti del § 5 restano entrambi validi,
+ma per il gate **il livello di documento è quello necessario**: la cucitura
+MULTIPAGE è per decisione esclusa dal deterministico on-device, quindi un
+`PdfExtraction` migliorato che ripassa dallo *stesso* classificatore non la
+produrrebbe mai (l'innesto a estrazione non cattura la cucitura; catturarla lì
+significherebbe falsificare gli indici di pagina). L'ordine (caso codici) è
+invece naturale a livello di estrazione. La via più corta che copre entrambi:
+**un esecutore unico con doppio punto d'ingresso** — carica `lines.json`
+(eventualmente permutato/risegmentato dal frutto docling) *oppure* un
+documento corretto, e in ogni caso prosegue con
+`bindAndPlaceNotes → buildLayout → granularizeBody` fino ai segmenti.
+
+**Cosa va scritto nel giro dopo, e dove.** Due pezzi, entrambi nel workspace
+fuori-repo (`ultrafocus_bench/`), nessuno dei due tocca ScaboApp:
+1. il **fusore** (Python, accanto al harness ttx): trasforma i verdetti
+   docling/Surya sulle pagine-caso in operazioni posizionali — permutazioni
+   d'ordine, risegmentazioni, coppie di fusione nota, rietichettature
+   (didascalia≠nota, tabella≠nota) — applicate al `lines.json` o al documento
+   catturato; ~200-300 righe;
+2. il **runner** (eseguibile SwiftPM fuori repo con dipendenza `path:` su
+   `app/ios/ScaboCore`): applica le operazioni, esegue la catena ScaboCore e
+   emette il `reading.json` rielaborato, confrontabile col dump di base;
+   ~150-250 righe.
+
+**Il pezzo nascosto c'è, ed è la consegna all'orecchio, non la catena dati.**
+L'app su iPad importa **solo `.pdf` e `.xml` (AKN)**: non esiste un percorso
+d'import per un documento elaborato, e `Info.plist` non espone il container
+(`UIFileSharingEnabled` assente), quindi il cavo da solo non basta con la
+build TestFlight. Tre vie reali, in ordine di costo: (a) **build di sviluppo
+via cavo + iniezione nel container** del file di cache
+(`Cache/<id>.json`, formato 5) con Xcode/devicectl — zero modifiche all'app ma
+fragile (id del documento e formato cache da rispettare, iPad in Developer
+Mode); (b) **mini-aggancio d'import dev-only** in ScaboApp (~30 righe: aprire
+un `.scabopdf.json` dal picker) — robusto e riusabile, ma tocca l'app: è una
+decisione del maintainer per il giro del gate; (c) ascolto **sul Simulatore**
+via dump — utile in officina, ma non è l'orecchio VoiceOver reale su iPad.
+Il giudizio può comunque **cominciare dal confronto dei dump** (base vs
+rielaborato) prima di qualunque consegna su dispositivo.
+
+## V.5 Fatti esterni riverificati (fonti primarie, 2026-08-07)
+
+- **Surya**: 0.22.1 (20-07-2026), sempre VLM ~650M «Qwen3.5-style» via
+  llama.cpp/Metal; codice Apache-2.0, pesi RAIL-M con soglia **$5M invariata**
+  — attenzione alla **clausola non-compete** nel MODEL_LICENSE (irrilevante per
+  ScaboPDF, da sapere). Sostanzialmente invariato.
+- **docling**: 2.118.1 (07-08-2026), MIT invariata, pipeline detection
+  invariata nella sostanza col layout model evoluto a **Heron (RT-DETRv2)**;
+  novità: Granite-Docling-258M (Apache) e donazione alla Linux Foundation.
+  Compatibile col nostro uso; l'installato 2.103.0 basta per il gate.
+- **MLX-Swift**: librerie migrate nel repo dedicato `ml-explore/mlx-swift-lm`;
+  registro VLM/LLM confermato e ampliato. Trappola licenze confermata:
+  Qwen2.5-VL-3B e Qwen2.5-3B ancora research-only; **Qwen3-VL 2B/4B/8B e
+  Qwen3-4B testuale Apache-2.0** (novità: esiste anche la taglia 2B pulita).
+- **Apple Foundation Models**: disponibile da macOS 26 (questa macchina è
+  26.5.1: percorso utilizzabile qui); finestra ~4.096 token su OS 26.x, con
+  API `contextSize` back-deployed da 26.4. WWDC 2026: su **OS 27** modello
+  ricostruito con **8.192 token** e capacità vision, più PCC 32K. La riserva
+  «finestra 4K» del § 3 vale finché si resta su 26.x.
+- **MultipeerConnectivity**: deprecazione **formalizzata a 27.0** su tutte le
+  piattaforme («Use Network Framework instead»); via consigliata:
+  Network.framework peer-to-peer con Wi-Fi Aware e DeviceDiscoveryUI. Conferma
+  la linea del § 4.c/IV.5.
+- **iCloud ADP**: **disponibile in Italia** (pagina di supporto italiana
+  aggiornata 04-2026), requisiti invariati (2FA, metodo di recupero, OS
+  minimi); restrizione confinata al Regno Unito. Il § 4.b resta valido.
+
+Nessuna conclusione del documento va ribaltata; le uniche correzioni di
+sostanza sono i numeri della base condivisa (589 test; 39 file app) e la
+precisazione che la finestra 8K dei Foundation Models richiede OS 27.
+
+## V.6 Stato di prontezza
+
+**Pronto per il giro del gate:**
+- ScaboCore condivisibile e verde su host (589 test, ~5 s); seam confermato;
+  catena documento→segmenti tutta `public`;
+- Triple Take operativo e offline, pesi in cache, docling ~0,1 s/pag misurato
+  oggi; contenimento provato coi fatti;
+- banco del gate pronto: 6 casi verificati sui PDF, fotografia di base
+  on-device scattata da `main` (dump per 4 volumi), schede complete nel
+  workspace e versione content-free in `docs/ULTRAFOCUS_GATE_BENCH.md`;
+- casella di posta consolidata in **`docs/ULTRAFOCUS_INBOX.md`** con la somma
+  strutturale/testuale.
+
+**Da fare nel giro del gate (in quest'ordine):**
+1. il fusore Python dei verdetti (workspace, ~200-300 righe);
+2. il runner SwiftPM fuori-repo su ScaboCore (~150-250 righe);
+3. rielaborare i 6 casi e confrontare i `reading.json` (delta content-free a
+   corredo);
+4. decidere la via di consegna all'orecchio (container-inject vs mini-hook
+   dev-only vs solo-dump) — è l'unica decisione che può toccare ScaboApp;
+5. il giudizio VoiceOver del maintainer sui casi, contro la verità delle
+   schede.
+
+**La somma che comanda (dettaglio in `ULTRAFOCUS_INBOX.md`):** il carico
+dell'ultrafocus è **quasi interamente strutturale nel frutto** — MULTIPAGE,
+L2/L3, desync, ordine/segmentazione dei codici, didascalie e tabelle nel
+settore-note, e persino il nocciolo semantico bibliografia-vs-nota, il cui
+giudizio richiede il modello ma il cui frutto è un'etichetta per nodo. Il
+frutto genuinamente testuale è confinato a un volume OCR nel corpus attuale e
+a una capacità (riscrittura profonda) mai richiesta. L'inclinazione motivata:
+partire **solo strutturale** (corsia 1, istruzioni content-free), con la
+corsia 2 progettata e in riserva. La decisione resta al maintainer.

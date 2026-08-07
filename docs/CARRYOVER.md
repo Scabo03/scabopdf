@@ -221,6 +221,50 @@ maintainer: funziona**. Gli otto commit (build 41 + 43) sono stati fusi in `main
 **ScaboApp 132/132** (8 skip = fixture private). Branch eliminato in locale e sul remoto. **Non resta
 nulla in sospeso su questo fronte.**
 
+**APERTURA ARCO ULTRAFOCUS — giro di ricognizione/verifica/misura/preparazione (2026-08-07, solo
+documentazione, nessun codice).** La ricognizione di `ANALYSIS_ULTRAFOCUS_MACOS.md` è stata
+riverificata punto per punto sul codice di oggi (nuova **Parte V** in coda al documento): ScaboCore
+confermato Foundation-only e macOS-ready (589 test verdi su host in ~5 s — era «146» nel documento,
+corretto), seam `PdfExtracting`/`PdfExtraction` confermato con la forma pagina→riga→span, scaffolding
+di misura confermata content-free per costruzione (nessun accesso a testo; warnings a vocabolario
+chiuso solo-numerico), guardiani confermati non costruiti con le decisioni fondanti invariate, peso
+iOS misurato (ScaboApp = 39 file, 33 UIKit; il «~137» del documento ricomprendeva ScaboCore e i
+test; `PdfKitExtractor` usa UIKit solo per `UIColor` in 2 punti). **Triple Take verificato sul
+campo**: workspace intatto (40 PDF: 32 `originals/` + 8 `originals_new/`), venv integri, pesi in
+cache (1,9 GB), docling rimesso in moto **offline** e misurato oggi (~0,1 s/pag mediana a caldo su
+MPS, 1,9 s prima pagina), Surya idem; contenimento provato coi fatti (`git add -f` rifiuta; `*.pdf`
+e `*.scabopdf.json` gitignorati). **Banco del gate PRONTO**: i 6 casi (Delitti 254-255 / 33-34 /
+168-169; Lineamenti 46-47 MULTIPAGE vero + 8 riserve; indice analitico Codice penale p. 2518 sgg. a
+due colonne; Rivista DPC 2-2018 come controllo) riverificati sui PDF reali e fotografati con la
+pipeline on-device di `main` via `test_readingFidelityDump_fromRequest` — versione content-free in
+**`docs/ULTRAFOCUS_GATE_BENCH.md`**, schede complete (con testo) nel workspace
+`ultrafocus_bench/schede/`. Reperti nuovi della fotografia: le didascalie di figura sono lette come
+segmenti «Nota.» autonomi; la tabella di Delitti p. 169 è fusa in una «Nota lunga» con la nota-`*`;
+la coda del MULTIPAGE Lineamenti 46-47 arriva **prima** della testa nell'ordine di lettura con
+innesco vuoto; l'indice analitico del CP è disordinato (sotto-voci staccate e fuori alfabeto).
+**Catena del gate accertata su carta** (Parte V.4): le cinque funzioni della catena
+documento→segmenti sono tutte `public` in ScaboCore; il banco dumpa già `.lines.json` +
+`.scabopdf.json` + `.reading.json`; per la cucitura MULTIPAGE serve l'innesto a livello di
+documento (quello a estrazione non la cattura per costruzione); da scrivere nel giro dopo solo un
+fusore Python (~200-300 righe) e un runner SwiftPM fuori-repo con dipendenza `path:` su ScaboCore
+(~150-250 righe), niente in ScaboApp. **Pezzo nascosto scoperto**: la consegna all'orecchio su iPad
+— l'app importa solo `.pdf`/`.xml`, niente file-sharing del container; le vie sono
+container-inject su build dev via cavo, o un mini-hook d'import dev-only (~30 righe, decisione
+maintainer), o il solo confronto dei dump in officina. **Casella di posta consolidata** in
+**`docs/ULTRAFOCUS_INBOX.md`**: tutte le voci rimandate all'officina con misura e strato; la somma
+dice che il carico è **quasi interamente strutturale nel frutto** (anche bibliografia-vs-nota:
+giudizio semantico Mac-side, frutto = etichetta content-free); il testuale genuino è confinato a un
+volume OCR (EdD L'azienda) e alla riscrittura mai richiesta → l'inclinazione registrata è partire
+solo-strutturale (corsia 1), corsia 2 in riserva; la decisione resta al maintainer. Fatti esterni
+riverificati su fonti primarie (Parte V.5): Surya 0.22.1 con soglia $5M invariata (nuova clausola
+non-compete nei pesi, irrilevante per noi); docling 2.118.1 MIT (layout Heron/RT-DETRv2);
+Qwen3-VL 2B/4B/8B e Qwen3-4B Apache (le taglie 3B di Qwen2.5 restano research-only); Foundation
+Models disponibili su questo Mac (26.5.1) con finestra ~4K — gli 8K annunciati richiedono OS 27;
+Multipeer deprecato formalmente a 27.0 → Network.framework (+ Wi-Fi Aware/DeviceDiscoveryUI); iCloud
+ADP disponibile in Italia, restrizioni solo UK. Nota d'igiene: in `app/ios/` esiste una directory
+spuria `SCR=` (creata il 13-07 da un comando malformato, contiene solo path vuoti sotto
+`/private/tmp`): da cancellare in un giro qualsiasi.
+
 **Giro di perfezionamento conservativo — INVENTARIO fenomeni aperti, tutti ARCHIVIATI con misura
 (2026-07-14 sera).** Vedi `docs/INVENTARIO_CLASSIFICAZIONE_APERTI.md`. Postura: non rompere il buono
 inseguendo il marginale; nel dubbio archivia. Nessun codice toccato (suite 557/557). Decisioni:

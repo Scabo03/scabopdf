@@ -107,7 +107,11 @@ classificatore è universale (largo). **Non è un difetto meccanico.**
   rete di delta, non "di sfuggita". Eventualmente lo **splitter delle note incollate** (n.2) come
   capacità per-plugin.
 - **Semantico, materia dell'ultrafocus / modelli locali (macOS):** bibliografia-vs-contenuto (n.1);
-  la ridondanza delle marginalia (n.6, se mai si volesse leggerle selettivamente).
+  la ridondanza delle marginalia (n.6, se mai si volesse leggerle selettivamente). *(Aggiornamento
+  2026-08-07: con l'apertura dell'arco ultrafocus queste voci — insieme a MULTIPAGE, L2/L3,
+  scansioni/OCR, desync e al resto del rimandato — sono ora consolidate nella casella di posta
+  dell'officina, `docs/ULTRAFOCUS_INBOX.md`, con misura e strato per ciascuna. Quella è la lista
+  viva da spuntare; questo inventario resta il verbale del giro di perfezionamento.)*
 - **Non-difetti (nulla da fare):** furniture (n.3, il rilevatore funziona); famiglia fuori-gate (n.5,
   beneficio nullo).
 - **Fidelità:** nessun difetto nascosto — nessun contenuto perso oltre le esclusioni-per-design
