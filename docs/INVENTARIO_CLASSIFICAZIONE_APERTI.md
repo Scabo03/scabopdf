@@ -47,7 +47,7 @@ ricorrenti ≥5) trova **0 residuo** su tutti i volumi Generic-family e sulla Ri
 universale (position-lock) fa il suo lavoro; la Rivista ha la sua foglia dedicata e non lascia
 residuo. **Nulla da fare.**
 
-### 4 — Titoli spezzati in due → RISOLTO (2026-07-14, giro dedicato, branch `feat/heading-fusion`)
+### 4 — Titoli spezzati in due → RISOLTO (2026-07-14, giro dedicato, branch `feat/heading-fusion`; confluito in `main` e chiuso il 2026-08-07)
 Costruito `consolidateAdjacentHeadings` (posizionale, dentro `pageItems`). Segnale = geometria+stile
 (stesso livello/pagina/corpo/grassetto/corsivo/colore, interlinea singola, stesso margine-sx o
 centro; riga-1 senza punto forte, riga-2 senza marcatore né cifra iniziale, niente leader, lunghezza

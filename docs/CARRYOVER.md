@@ -136,7 +136,7 @@ accettare il limite (raccomandato). **Nessuna implementazione in Tempo B: il "no
 una pezza larga.** ScaboCore 557/557 invariata.
 
 **Titoli spezzati RISOLTI — `consolidateAdjacentHeadings` (2026-07-14 notte, branch `feat/heading-fusion`,
-commit `7b56960`, NON mergiato).** Il candidato meccanico n.1 dell'inventario è chiuso. Capacità
+commit `7b56960`; branch confluito in `main` il 2026-08-07).** Il candidato meccanico n.1 dell'inventario è chiuso. Capacità
 posizionale dentro `pageItems`: due heading adiacenti dello stesso livello si fondono in un titolo
 intero SOLO se geometria+stile dicono che sono la stessa riga andata a capo (stesso corpo/grassetto/
 corsivo/colore, interlinea singola = baseline-delta ≈ una riga, stesso margine-sx o centro; riga-1
@@ -152,7 +152,7 @@ e **nessun testo di titolo perso** ovunque; **Rivista DPC 575→575 ESCLUSA** (a
 heading dal size-only → falsi-positivi non provabili zero, gated `isRivistaDpc`); controllo Appunti
 byte-identico. Assorbe come caso generale la fusione capitolo dell'Estratto (resta, gated). +16 test
 HeadingFusionTests; ScaboCore 573/573. Ascolta di diverso: navigare per intestazioni su Lezioni/
-Mandrioli e sentire i titoli **interi** invece che spezzati in due. → **TestFlight build 41** (2026-07-14, UPLOAD SUCCEEDED, Delivery UUID acb7a1df-1ce2-486e-a9e1-d2ac6b3bacfc; branch feat/heading-fusion, NON mergiato — attende collaudo/via del maintainer).
+Mandrioli e sentire i titoli **interi** invece che spezzati in due. → **TestFlight build 41** (2026-07-14, UPLOAD SUCCEEDED, Delivery UUID acb7a1df-1ce2-486e-a9e1-d2ac6b3bacfc; branch feat/heading-fusion → poi confluito in `main` e chiuso il 2026-08-07 dopo collaudo su dispositivo del maintainer).
 
 **Contatore di pagina RIPARATO ALLA RADICE + fusione titoli estesa (2026-07-18, branch
 `feat/heading-fusion`, commits `f021f41` + `4588170`, → TestFlight build 43).**
@@ -210,7 +210,16 @@ giro**, con firma-di-formato o capacità gated e la sua rete di delta; indice e 
 regime note del prodotto (§7.4) — 436/440 marcatori agganciati, le lunghe differite per progetto.
 
 Reti: ScaboCore **589/589**, ScaboApp **132/132**. → **TestFlight build 43** (UPLOAD SUCCEEDED,
-Delivery UUID 2dc424a8-8cb2-413c-9904-697355b15e1d; branch `feat/heading-fusion`, NON mergiato).
+Delivery UUID 2dc424a8-8cb2-413c-9904-697355b15e1d; branch `feat/heading-fusion` → poi **confluito in `main` e chiuso** il 2026-08-07, vedi nota sotto).
+
+**Branch `feat/heading-fusion` CONFLUITO in `main` e CHIUSO (2026-08-07).** La build 43 (fusione dei
+titoli spezzati e a rientro sporgente, contatore di pagina che dichiara la pagina reale del segmento,
+giro Lener + relativi aggiornamenti di CARRYOVER e INVENTARIO) è stata **collaudata sul dispositivo dal
+maintainer: funziona**. Gli otto commit (build 41 + 43) sono stati fusi in `main` in **fast-forward**
+(storia lineare preservata, nessuno schiacciamento né rebase): `main` `034a07a` → `7ef546e`, pushato su
+`origin/main` (HEAD combacia). Suite riverificate su `main` post-merge: **ScaboCore 589/589**,
+**ScaboApp 132/132** (8 skip = fixture private). Branch eliminato in locale e sul remoto. **Non resta
+nulla in sospeso su questo fronte.**
 
 **Giro di perfezionamento conservativo — INVENTARIO fenomeni aperti, tutti ARCHIVIATI con misura
 (2026-07-14 sera).** Vedi `docs/INVENTARIO_CLASSIFICAZIONE_APERTI.md`. Postura: non rompere il buono
