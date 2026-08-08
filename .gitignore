@@ -48,3 +48,7 @@ test-output-private/
 
 # Estratti scratch temporanei (documentazione allegabile, non parte del repo)
 ultrafocus_extracts/
+
+# Buste-frammento dell'officina ultrafocus (portano il testo dei volumi):
+# non devono mai entrare in git, ovunque compaiano.
+*.scabofrag.json

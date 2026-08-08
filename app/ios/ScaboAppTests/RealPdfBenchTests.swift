@@ -184,6 +184,34 @@ final class RealPdfBenchTests: XCTestCase {
         return LineDump(pageCount: extraction.pageCount, pages: pages)
     }
 
+    /// Dump dell'ESTRAZIONE PIENA (`PdfExtraction` Codable, non il vettore-segnale
+    /// ridotto di `lineDump`): serve all'officina ultrafocus, che impacchetta la
+    /// busta della porta d'import di sviluppo con la STESSA estrazione che l'app
+    /// ha prodotto (l'aggancio note della catena a valle la richiede). Additivo,
+    /// stesso meccanismo a file-richiesta; `XCTSkip` senza richiesta.
+    func test_extractionDump_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_EXTRACTION_REQUEST"]
+            ?? "/tmp/scabo_extraction_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta di dump estrazione in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(
+            atPath: req.outDir, withIntermediateDirectories: true)
+        let extractor = PdfKitExtractor()
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[extraction-dump] assente, salto: \(path)"); continue
+            }
+            let extraction = try extractor.extract(fromUri: URL(fileURLWithPath: path).absoluteString)
+            let stem = (name as NSString).deletingPathExtension
+            try JSONEncoder().encode(extraction)
+                .write(to: URL(fileURLWithPath: req.outDir + "/\(stem).extraction.json"))
+            print("[extraction-dump] \(name): \(extraction.pageCount) pagine → \(stem).extraction.json")
+        }
+    }
+
     /// Pezzo Swift del comando di verifica-fedeltà: per ogni PDF della richiesta,
     /// esegue la pipeline REALE e scrive il `ScabopdfDocument` come JSON (Codable →
     /// testo + struttura) in `outDir` (fuori repo). `XCTSkip` se non c'è richiesta

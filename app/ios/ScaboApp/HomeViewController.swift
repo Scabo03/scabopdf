@@ -60,6 +60,18 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
             navigationItem.leftBarButtonItem = tagsItem
         }
 
+        #if DEBUG
+        // Porta d'import di sviluppo dell'arco ultrafocus (debito temporaneo, vedi
+        // UltrafocusDevImport.swift): assente per costruzione dalle build Release.
+        let ultrafocusItem = UIBarButtonItem(
+            image: UIImage(systemName: "wrench.and.screwdriver"), style: .plain,
+            target: self, action: #selector(ultrafocusTapped))
+        ultrafocusItem.accessibilityLabel = "Ultrafocus, porta di sviluppo"
+        ultrafocusItem.accessibilityHint = "Apre un frammento rielaborato dall'officina Mac"
+        navigationItem.leftBarButtonItems =
+            (navigationItem.leftBarButtonItems ?? []) + [ultrafocusItem]
+        #endif
+
         tableView.dataSource = self
         tableView.delegate = self
         // Intestazioni di sezione auto-dimensionanti (l'intestazione "Workspaces" cresce col Dynamic
@@ -89,6 +101,14 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     }
 
     // MARK: - Azioni
+
+    #if DEBUG
+    @objc private func ultrafocusTapped() {
+        let nav = UINavigationController(
+            rootViewController: UltrafocusDevImportViewController(style: .insetGrouped))
+        present(nav, animated: true)
+    }
+    #endif
 
     @objc private func importTapped() {
         DocumentOpener.startImport(from: self, into: nil) { [weak self] in self?.reload() }
