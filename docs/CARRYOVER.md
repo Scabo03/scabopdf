@@ -221,6 +221,45 @@ maintainer: funziona**. Gli otto commit (build 41 + 43) sono stati fusi in `main
 **ScaboApp 132/132** (8 skip = fixture private). Branch eliminato in locale e sul remoto. **Non resta
 nulla in sospeso su questo fronte.**
 
+**ULTRAFOCUS, PRIMO GIRO COSTRUTTIVO — porta d'import dev + fusore + runner + prima/dopo sui sei
+casi (2026-08-08).** **Inquadramento nuovo, che governa l'arco:** il gate non decide più SE fare
+l'ultrafocus (si fa comunque: il valore vero è sui materiali sconosciuti futuri, fuori dalle
+famiglie tarate); misura QUANTO guadagno c'è e DOVE, e il banco attuale — volumi su cui l'app è già
+brava — misura nella condizione più severa per il modello; appena ci sarà un volume fuori famiglia
+va aggiunto al banco (procedura pronta in `ultrafocus_bench/README.md`). **Costruito (per durare):**
+(1) la **porta d'import di sviluppo** — `ScaboApp/UltrafocusDevImport.swift` + bottone Home, tutto
+`#if DEBUG`, apre una busta {documento grezzo + estrazione} e percorre la STESSA catena di
+`DocumentProcessor`; niente libreria/cache/posizioni; **provata l'assenza dalla Release sul
+binario** (0 simboli; Debug 12 come controllo); **DEBITO TEMPORANEO da rimuovere a fine arco**
+(`ULTRAFOCUS_INBOX § D.6-bis`); più il test additivo `test_extractionDump_fromRequest` (il
+`.lines.json` storico è ridotto, alla busta serve la `PdfExtraction` piena); (2) il **fusore**
+(`ultrafocus_bench/fusore/`, Python fuori repo): verdetti docling → operazioni SOLO posizionali
+(rietichetta / fondi / sposta righe), guardia-marcatore deterministica sopra il modello, **rete di
+fedeltà** a multinsieme di parole che blocca l'artefatto se rotta — verde su tutti i casi (84k/393k/
+1.68M/213k parole); (3) il **runner** (`ultrafocus_bench/runner/`, SwiftPM fuori repo su ScaboCore
+via path): `build`/`segments`/`envelope`, **parità provata con l'app 4589/4589 segmenti identici**
+sul volume di controllo. **Esito sui sei casi** (dettaglio in `ULTRAFOCUS_GATE_BENCH.md`):
+didascalie Delitti 254-255 e 33-34 → BODY senza falso «Nota.» (migliora); tabella+nota-`*` 168-169 →
+falso «Nota lunga.» sparito, ma la nota-`*` non è ancora nota autonoma (capacità bind registrata,
+`INBOX § D.6-ter`) (migliora a metà); **MULTIPAGE vero Lineamenti 46-47 RICUCITO** — una sola «Nota
+lunga.» di 135 parole, coda orfana sparita, rete parole identica (il bersaglio storico, migliora
+nettamente); indice CP: voci-NOTE 267→0, sotto-voci attaccate, 24 cifre di pagina recuperate
+(migliora); DPC controllo IDENTICO byte-per-byte. **Due scoperte che correggono il progetto:** (a)
+l'aggancio note ricava le note dall'ESTRAZIONE con uno zip posizionale per pagina nodo↔blocco →
+a documento sono sicure solo operazioni slot-preserving; le fusioni MULTIPAGE si fanno a livello di
+estrazione (la prima versione documento-level perdeva la coda: 105 parole, intercettate dalla rete
+di confronto e riprogettata) — il § V.4 diceva l'opposto, corretto in Parte VI; (b) sull'indice CP
+l'estrazione era GIÀ colonna-corretta: il male era il piazzamento delle false NOTE, il guadagno del
+modello è di ETICHETTA, non d'ordine (scheda del caso 5 corretta). Un mislabel docling REALE (nota
+vera etichettata `caption` su Delitti p.255) è stato fermato dalla guardia-marcatore: il modello
+propone, il determinismo dispone. **Contenimento provato coi fatti:** `git add -f` dal workspace
+rifiuta; `*.scabopdf.json` ignorato; scoperto che un frammento `.json` generico NON sarebbe stato
+ignorato → suffisso dedicato `*.scabofrag.json` aggiunto al `.gitignore` e provato con sonda;
+docling girato con `HF_HUB_OFFLINE=1`. **Ascolto pronto:** 4 coppie di frammenti OGGI/NUOVA +
+`PROCEDURA_ASCOLTO.md` (build dev via cavo + `devicectl copy`, o AirDrop + «Scegli un file…») +
+`SCALETTA_ASCOLTO.md` caso per caso in `ultrafocus_bench/fragments/`. Reti finali: ScaboCore
+**589/589**, ScaboApp **133 (0 fail, 9 skip** = 8 fixture + il nuovo dump senza richiesta**)**.
+
 **APERTURA ARCO ULTRAFOCUS — giro di ricognizione/verifica/misura/preparazione (2026-08-07, solo
 documentazione, nessun codice).** La ricognizione di `ANALYSIS_ULTRAFOCUS_MACOS.md` è stata
 riverificata punto per punto sul codice di oggi (nuova **Parte V** in coda al documento): ScaboCore

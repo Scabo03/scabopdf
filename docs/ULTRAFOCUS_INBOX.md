@@ -43,6 +43,15 @@ diversa» (CARRYOVER, § C del capitolo NOTE).
   **prima** della testa. `stitchedCrossPage=0` sul volume.
 - **Strato:** STRUTTURALE — il frutto è una coppia di aggancio/fusione fra
   blocchi che il mobile già possiede (istruzione posizionale, corsia 1).
+- **Aggiornamento 2026-08-08 (primo giro costruttivo):** la ricucitura è stata
+  DIMOSTRATA in officina sul caso 46-47 — a livello di ESTRAZIONE (spostamento
+  delle 7 righe della coda in coda alla pagina A, documento ricostruito dalla
+  classificazione dell'app): una sola nota «Nota lunga.», orfana sparita, rete
+  parole identica. La variante documento-level è stata scartata sul campo
+  (rompe lo zip posizionale dell'aggancio note — vedi
+  `ULTRAFOCUS_GATE_BENCH.md`, scoperta architetturale). La voce resta aperta
+  come capacità di produzione (istruzioni per-file, scala oltre il caso
+  singolo), ma il come è accertato.
 
 ### A.2 L2 — saldatura senza successione
 
@@ -154,6 +163,13 @@ codici non erano stati verificati.
   fuori sequenza alfabetica, frammenti che aprono con soli numeri di pagina,
   sotto-voci classificate NOTE. È il caso d'ordine scelto per il banco del gate.
 - **Strato:** STRUTTURALE — pura permutazione d'ordine + rietichettatura.
+- **Aggiornamento 2026-08-08 — diagnosi corretta dal banco:** l'estrazione
+  PDFKit dell'indice è GIÀ colonna-corretta (2,0 salti di colonna/pagina,
+  fisiologico); il disordine udibile veniva dalle voci classificate NOTE e
+  spostate dal piazzamento. Il rimedio dimostrato è la rietichettatura
+  NOTE→BODY gated dal verdetto docling «zero footnote sulla pagina» (277 nodi;
+  voci-NOTE nel flusso 267→0; 24 cifre di pagina recuperate; nessun carattere
+  perso). Non è un problema d'ordine: è un problema di etichetta.
 
 ### C.3 Settore-note sporco: didascalie di figura e tabelle lette come «Nota.»
 
@@ -205,6 +221,29 @@ Rinviata per decisione di prodotto alla fase Mac (`LAYER2_PRODUCT_DECISIONS
 vincolante, deliberatamente ultima. Fatti esterni riverificati il 2026-08-07
 (ADP disponibile in Italia; Multipeer deprecato a 27.0, via consigliata
 Network.framework; dettagli in `ANALYSIS_ULTRAFOCUS_MACOS.md`, Parte V).
+
+### D.6-bis DEBITO TEMPORANEO DA RIMUOVERE A FINE ARCO: la porta d'import di sviluppo
+
+Introdotta il 2026-08-08 (primo giro costruttivo) perché il maintainer possa
+ascoltare i frammenti rielaborati sull'iPad: `ScaboApp/UltrafocusDevImport.swift`
+(un file, interamente `#if DEBUG`) + un bottone `#if DEBUG` nella Home
+(`HomeViewController`) + il test additivo di cattura
+`test_extractionDump_fromRequest` in `RealPdfBenchTests`. Assente per
+costruzione dalle build Release/TestFlight (provato sul binario: 0 simboli in
+Release, 12 in Debug). Non tocca import esistente, libreria, persistenza; la
+catena di lettura è identica a quella di `DocumentProcessor`. **A fine arco:
+rimuovere il file, il bottone e questa voce.** (Il test di cattura può
+restare: è banco, non porta.) Uso in una riga: buste `*.scabofrag.json` in
+`Documents/UltrafocusFragments` del container (o «Scegli un file…»), Home →
+«Ultrafocus, porta di sviluppo».
+
+### D.6-ter Capacità futura nel bind: nota a marcatore-simbolo come nota autonoma
+
+Emersa dal caso 3 del banco: staccare la nota-`*` dalla tabella richiederebbe
+di inserire un nodo, ma lo zip posizionale nodo↔blocchi dell'aggancio note
+non lo consente dall'esterno; la sede giusta è la macchina del bind
+(riconoscere `*`/`†`/`‡` come apertura-nota, regola già ADOTTATA come
+principio al capitolo NOTE). Strato: STRUTTURALE.
 
 ### D.6 Debito abilitante: estrattore low-level CGPDF (nomi-font)
 

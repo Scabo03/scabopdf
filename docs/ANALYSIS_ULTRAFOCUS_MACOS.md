@@ -1100,3 +1100,100 @@ frutto genuinamente testuale è confinato a un volume OCR nel corpus attuale e
 a una capacità (riscrittura profonda) mai richiesta. L'inclinazione motivata:
 partire **solo strutturale** (corsia 1, istruzioni content-free), con la
 corsia 2 progettata e in riserva. La decisione resta al maintainer.
+
+---
+
+# Parte VI — Primo giro costruttivo (2026-08-08): la catena esiste e ha girato
+
+## VI.0 Nota di progetto — l'inquadramento nuovo del gate
+
+Il maintainer ha corretto la natura del gate, e la correzione governa tutto
+l'arco: **l'ultrafocus non è più sotto condizione**. La fase si farà comunque,
+perché il suo valore vero non sta sui manuali del corpus — dove le regole di
+famiglia sono state affilate per mesi e la base deterministica è già brava —
+ma sui **materiali sconosciuti** che l'app incontrerà in futuro, dove nessuna
+regola esiste e solo un modello che guarda la pagina può salvare la lettura.
+Il banco quindi **misura quanto guadagno c'è e dove**, per decidere priorità
+e impieghi, non se procedere. Corollario onesto: il banco attuale è fatto di
+volumi su cui l'app è già tarata — misura il guadagno **nella condizione più
+severa per il modello e più clemente per la base**. Quando arriveranno
+materiali estranei e mai visti, il banco va esteso con **almeno un volume
+fuori famiglia**: è il terreno dove l'ultrafocus vale davvero, e accoglierlo
+è già predisposto (procedura in sei passi in `ultrafocus_bench/README.md`).
+Ciò che si costruisce da qui in poi non è usa-e-getta: è il primo pezzo
+dell'officina.
+
+## VI.1 Cosa esiste ora, e dove
+
+- **La porta d'import di sviluppo** (unico tocco a ScaboApp):
+  `UltrafocusDevImport.swift` + bottone Home, tutto `#if DEBUG`. Apre una
+  busta {documento grezzo + estrazione} e percorre la STESSA catena di
+  `DocumentProcessor` (aggancio note → impaginazione → Dottrina se ci sono
+  note); niente libreria, niente cache, niente posizioni salvate. **Prova
+  d'assenza dalla distribuzione fatta sul binario**: build Release senza
+  alcun simbolo/stringa della porta (0 occorrenze), build Debug col simbolo
+  (12) come controllo positivo. Registrata come **debito temporaneo** da
+  rimuovere a fine arco (`ULTRAFOCUS_INBOX.md § D.6-bis`).
+- **Il fusore** (officina, fuori repo):
+  `ultrafocus_bench/fusore/fusore.py` + `casi.json` + `comparatore.py`.
+  Deriva dai verdetti docling operazioni SOLO posizionali (rietichetta,
+  fondi, sposta righe; nessun campo testuale libero entra dal modello), con
+  la **guardia-marcatore** deterministica sopra il modello e la **rete di
+  fedeltà** (multinsieme di parole identico, pena uscita senza artefatto).
+- **Il runner** (officina, fuori repo): eseguibile SwiftPM
+  `ultrafocus_bench/runner` con dipendenza di percorso su ScaboCore;
+  sotto-comandi `build`/`segments`/`envelope`. **Parità provata con l'app**:
+  4589/4589 segmenti identici col dump del banco Simulatore sul volume di
+  controllo. Ricalcola il regime acustico delle note toccate con le stesse
+  soglie dell'app (replica dichiarata di `lengthCategoryFor`).
+- **La cattura dell'estrazione piena**: test additivo
+  `test_extractionDump_fromRequest` nel banco (`RealPdfBenchTests`), perché
+  il `.lines.json` storico è un vettore-segnale ridotto e la busta della
+  porta richiede la `PdfExtraction` vera.
+- **I frammenti d'ascolto**: 4 coppie OGGI/NUOVA (`*.scabofrag.json`,
+  suffisso dedicato e gitignorato ovunque) con `PROCEDURA_ASCOLTO.md` e
+  `SCALETTA_ASCOLTO.md` in `ultrafocus_bench/fragments/`.
+
+## VI.2 Le due scoperte che correggono il progetto
+
+1. **Lo zip posizionale decide gli innesti.** L'aggancio note ricava le
+   singole note dall'estrazione con uno zip posizionale per pagina fra nodi e
+   blocchi: a livello di documento sono sicure solo operazioni
+   slot-preserving (rietichettature); fusioni e spostamenti vanno fatti a
+   livello di ESTRAZIONE, lasciando ricostruire il documento alla
+   classificazione dell'app. Il § V.4 diceva «per la cucitura serve l'innesto
+   a documento»: il campo ha mostrato il contrario (la prima versione
+   documento-level perdeva la coda dal flusso: 105 parole, intercettate dalla
+   rete di confronto). Ricaduta sulla Parte IV: le istruzioni per-file della
+   corsia 1 devono parlare **il linguaggio dell'estrazione** (righe, pagine,
+   permutazioni) per le fusioni, e quello delle etichette per i nodi.
+2. **Sul corpus noto il guadagno del modello è di ETICHETTA più che di
+   ordine.** L'indice del Codice penale era già colonna-corretto
+   nell'estrazione; ciò che rompeva la lettura era il piazzamento delle voci
+   classificate NOTE. Il verdetto docling che vale è «questa pagina non ha
+   note» / «questo blocco è didascalia/tabella» — e va sempre passato dalla
+   guardia deterministica (un mislabel docling reale, la nota vera etichettata
+   `caption` su Delitti p. 255, è stato fermato dalla guardia-marcatore).
+
+## VI.3 Esito sui sei casi (dettaglio in `ULTRAFOCUS_GATE_BENCH.md`)
+
+Migliorano: didascalie (2 casi, «Nota.» sparito), MULTIPAGE vero (nota
+ricucita in un solo segmento, orfana sparita — il bersaglio storico),
+indice CP (0 voci-NOTE da 267, cifre recuperate). Migliora a metà: tabella+
+nota-`*` (falso «Nota lunga.» sparito; il distacco della nota-`*` richiede
+una capacità nel bind, registrata). Controllo DPC: identico byte-per-byte.
+Reti: fedeltà del fusore verde ovunque; a livello di segmenti lettere+cifre
+identiche (Delitti, Lineamenti, DPC) o superiori alla base (CP, +24 cifre
+recuperate). ScaboCore 589/589, ScaboApp verde con la porta compilata.
+
+## VI.4 Giudizio sul guadagno (per le priorità dell'officina)
+
+Sul corpus noto il guadagno **netto** sta dove la base non ha il segnale:
+didascalie/tabelle nel settore-note (il modello VEDE la figura e la tabella,
+la geometria del testo no) e la ricucitura MULTIPAGE (esclusa per decisione
+dal deterministico). Il guadagno sull'ORDINE, che era l'aspettativa storica,
+sui volumi noti è già coperto dalla base — se ne riparla sui materiali fuori
+famiglia. Priorità suggerite: (1) portare il giudizio all'orecchio del
+maintainer (frammenti pronti); (2) primo volume fuori famiglia appena
+disponibile; (3) la capacità bind per le note-simbolo; (4) solo dopo, la
+scala (istruzioni per-file su più casi per volume).

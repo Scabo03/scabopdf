@@ -40,3 +40,50 @@ Il gate è superato su un caso quando la lettura rielaborata, ascoltata con
 VoiceOver, è materialmente migliore della base on-device **e** i casi di
 controllo (n. 6, Delitti 43-44) non regrediscono; a corredo, i delta
 content-free di `StructuralComparison`.
+
+---
+
+## Esito del primo giro costruttivo (2026-08-08) — prima/dopo sui sei casi
+
+La catena è stata costruita ed eseguita: fusore (officina Python fuori repo,
+verdetti docling → operazioni posizionali), runner SwiftPM fuori repo su
+ScaboCore (stessa catena dell'app, parità provata: 4589/4589 segmenti
+identici col banco Simulatore sul volume di controllo), porta d'import di
+sviluppo nell'app (solo build Debug, assente per costruzione dalla Release —
+provato sul binario: 0 simboli in Release, 12 in Debug). Rete di fedeltà del
+fusore verde su tutti i casi (multinsieme di parole identico: Delitti 84.019,
+Lineamenti 392.979, Codice penale 1.675.938, DPC 212.601). Il confronto
+content-free completo è in `ultrafocus_bench/fused/CONFRONTO.md` (workspace);
+i frammenti d'ascolto (coppie OGGI/NUOVA per 4 volumi) con procedura e
+scaletta sono in `ultrafocus_bench/fragments/`.
+
+| # | Caso | Prima (misurato) | Dopo (misurato) | Esito |
+|---|---|---|---|---|
+| 1 | Delitti 254-255, didascalia | segmento NOTE, innesco «Nota.» | BODY senza innesco; note 14 e 15 intatte (la 15 protetta dalla guardia-marcatore contro un mislabel docling reale) | **Migliora** |
+| 2 | Delitti 33-34, didascalia | NOTE, «Nota.» | BODY senza innesco | **Migliora** |
+| 3 | Delitti 168-169, tabella+nota-`*` | un segmento NOTE «Nota lunga.» (tabella e nota insieme) | BODY alla posizione di stampa, senza falso innesco; la nota-`*` NON è ancora una nota autonoma (servirebbe una capacità nel bind: registrata) | **Migliora a metà** |
+| 4 | Lineamenti 46-47, MULTIPAGE vero | testa troncata «Nota.» + coda orfana senza innesco che arriva PRIMA della testa | UNA nota ricucita «Nota lunga.» (135 parole), differita da regime; orfana sparita; rete parole IDENTICA | **Migliora nettamente** (il bersaglio storico) |
+| 5 | CP indice analitico | 267 segmenti-voce annunciati «Nota.» e dislocati dal piazzamento | 0 voci-NOTE; voci attaccate e in alfabeto; 24 cifre di pagina RECUPERATE (la base le inghiottiva); nessun carattere perso | **Migliora** — con REPERTO: l'estrazione era GIÀ colonna-corretta; il male era il piazzamento delle false note, non l'ordine |
+| 6 | Rivista DPC (controllo) | — | flusso IDENTICO byte-per-byte (4.589 segmenti) | **Nessuna regressione** |
+
+**Scoperta architetturale del giro (vincola gli innesti).** L'aggancio note
+dell'app ricava le singole note dall'ESTRAZIONE, con uno zip posizionale per
+pagina fra nodi del documento e blocchi estratti. Conseguenza: a livello di
+documento sono sicure solo le operazioni che non inseriscono né rimuovono
+nodi (rietichettature); le fusioni MULTIPAGE si fanno a livello di
+ESTRAZIONE (spostamento di righe) lasciando che il runner ricostruisca il
+documento con la classificazione dell'app. La prima versione documento-level
+della ricucitura faceva sparire la coda dal flusso (105 parole): la rete di
+confronto l'ha intercettata ed è stata riprogettata. Il documento-madre
+diceva «per la cucitura serve l'innesto a documento»: è vero il contrario.
+
+**Correzione alla scheda del caso 5.** L'ipotesi «interleave delle colonne
+nell'estrazione» è falsificata: l'estrazione PDFKit dell'indice è già
+colonna-corretta (2,0 salti/pagina, fisiologico). Il disordine udibile veniva
+dalle voci classificate NOTE e mosse dal piazzamento. Il verdetto utile del
+modello qui è di ETICHETTA («su questa pagina non ci sono note»: docling non
+vede footnote), non di ordine.
+
+**Aggiungere un volume nuovo (anche fuori famiglia)** è predisposto: la
+procedura in sei passi è in `ultrafocus_bench/README.md` (cattura col banco,
+pagine-caso, docling offline, voce in `casi.json`, fusione con rete, buste).
