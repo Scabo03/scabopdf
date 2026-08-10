@@ -254,6 +254,34 @@ public func bindAndPlaceNotes(
     if profile.isEstrattoChrome {
         stats.stitchedCrossPage = stitchCrossPageFootnotes(
             document.structure, &footnoteNodeById, &footnotesInNoteOrder)
+    } else {
+        // ── 2b-bis. Salvataggio SAME-PAGE per tutte le famiglie (2026-08-12) ──────
+        // L'over-split di `splitFootnotes` su un numero spurio a inizio riga (un
+        // riferimento di pagina «cit., p. | 137 sgg.», il rinvio normativo
+        // «…dall'art. | 11 lett. c) l. …» delle note di aggiornamento dei codici)
+        // produce una falsa nota numerata annunciata «Nota.». Il rimedio è la
+        // stessa ricucitura-per-identità dell'Estratto, RISTRETTA alla stessa
+        // pagina (niente cross-pagina: resta materia del capitolo NOTE/ultrafocus)
+        // e con la GUARDIA DI SUCCESSIONE in più: una coda il cui numero "torna"
+        // nella successione delle note (testa+1, o seguita dal proprio successore)
+        // è una nota VERA che apre con numero+minuscola («39 van den Aardweg…» su
+        // Rivista DPC) e non si fonde MAI. Il gate storico all'Estratto era
+        // confinamento prudenziale senza misura (commit 2bd48b1: «altrove no-op»);
+        // la misura è la rete di delta a 40 volumi di questo giro.
+        // DUE restrizioni in più rispetto all'Estratto, entrambe nate dalla rete
+        // di delta a 40 volumi: (a) si ricuce SOLO DENTRO LO STESSO nodo-run —
+        // l'over-split è un artefatto di `splitFootnotes` dentro un run, e il
+        // flatten cross-nodo accoppia colonne interfogliate fabbricando frasi
+        // (LETTERATURA a due colonne dell'EdD); (b) i CODICI restano esclusi —
+        // il loro apparato note a due colonne interfoglia le righe già dentro
+        // l'estrazione e ogni ricucitura per identità vi fabbrica parole
+        // («magdificato»): la causa vera è l'interfoliazione, materia del
+        // plugin codici/officina (ULTRAFOCUS_INBOX), non di una pezza qui.
+        if !profile.isCodici {
+            stats.stitchedCrossPage = stitchCrossPageFootnotes(
+                document.structure, &footnoteNodeById, &footnotesInNoteOrder,
+                allowCrossPage: false, withinNodeOnly: true)
+        }
     }
 
     // ── 3. Aggancio richiamo↔nota con scope e guardia di successione ──────────────
@@ -376,14 +404,32 @@ public func bindAndPlaceNotes(
 /// di nota, così due note distinte non si fondono MAI). De-sillaba la parola spezzata
 /// ("pub-"|"blicistica" → "pubblicistica") e ricomputa `length_category` (la testa cresce).
 /// Gestisce catene (nota su 3+ pagine) tramite `tailPage`. Ritorna il numero di code fuse.
+/// Primo numero intero (max 4 cifre) all'inizio del testo, o nil. Per la
+/// guardia di successione del salvataggio same-page.
+private func leadingInt(_ s: String) -> Int? {
+    var digits = ""
+    for ch in jsTrim(s) {
+        if ch.isNumber, digits.count < 4 { digits.append(ch) } else { break }
+    }
+    return digits.isEmpty ? nil : Int(digits)
+}
+
 func stitchCrossPageFootnotes(
     _ structure: [NodeDict],
     _ footnoteNodeById: inout [String: NodeDict],
-    _ footnotesInNoteOrder: inout [String: [String]]
+    _ footnotesInNoteOrder: inout [String: [String]],
+    allowCrossPage: Bool = true,
+    withinNodeOnly: Bool = false
 ) -> Int {
+    // `withinNodeOnly` (salvataggio same-page non-Estratto): la catena di
+    // fusione non attraversa mai il confine fra nodi-run — un marcatore vuoto
+    // separa i gruppi nel flatten, così testa e coda di nodi diversi non sono
+    // mai adiacenti. L'Estratto (false) conserva il flatten storico integrale.
     var flat: [String] = []
     for node in structure where node.type == .NOTE || node.type == .EDITORIAL_NOTE {
-        flat.append(contentsOf: footnotesInNoteOrder[node.id] ?? [])
+        let ids = footnotesInNoteOrder[node.id] ?? []
+        if withinNodeOnly, !flat.isEmpty, !ids.isEmpty { flat.append("") }
+        flat.append(contentsOf: ids)
     }
     guard flat.count >= 2 else { return 0 }
 
@@ -393,6 +439,17 @@ func stitchCrossPageFootnotes(
     var count = 0
     for i in 1..<flat.count {
         let fid = flat[i]
+        if fid.isEmpty {
+            // Confine di nodo-run (withinNodeOnly): la testa corrente non può
+            // assorbire nulla oltre il confine.
+            headFid = ""
+            continue
+        }
+        guard !headFid.isEmpty else {
+            headFid = fid
+            tailPage = footnoteNodeById[fid]?.page_index ?? Int.min
+            continue
+        }
         guard let cur = footnoteNodeById[fid], let head = footnoteNodeById[headFid] else { continue }
         let a = (head.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let b = (cur.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -400,7 +457,24 @@ func stitchCrossPageFootnotes(
         // spurio nel testo della nota, es. "…cordi 69" | "le norme…"): in entrambi i casi la
         // testa deve APRIRE e la coda CONTINUARE (guardie invariate, anti-fusione: una nota
         // NUOVA apre col suo numero → `noteContinuation` la esclude → mai fuse due note distinte).
-        if cur.page_index == tailPage || cur.page_index == tailPage + 1,
+        let pageOk = cur.page_index == tailPage
+            || (allowCrossPage && cur.page_index == tailPage + 1)
+        // Guardia di successione (solo percorso non-Estratto, `allowCrossPage`
+        // false): se il numero in testa alla coda combacia con testa+1, o il
+        // footnote SEGUENTE combacia con coda+1, la coda è una nota vera in
+        // successione → mai fusa. (L'Estratto conserva il comportamento
+        // calibrato e verificato del commit 2bd48b1, byte-identico.)
+        var successionSaysNewNote = false
+        if !allowCrossPage, let codaN = leadingInt(b) {
+            if let headN = noteOpening(a), codaN == headN + 1 {
+                successionSaysNewNote = true
+            }
+            if i + 1 < flat.count, let nxt = footnoteNodeById[flat[i + 1]],
+               let nextN = leadingInt(nxt.text ?? ""), nextN == codaN + 1 {
+                successionSaysNewNote = true
+            }
+        }
+        if pageOk, !successionSaysNewNote,
            noteOpensForContinuation(a), noteContinuation(b) {
             let merged: String
             if endsWithLetterHyphenG(a), let f = b.first, f.isLowercase {
