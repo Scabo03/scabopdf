@@ -64,7 +64,13 @@ private func aknWordWrap(_ text: String, target: Int) -> [String] {
 
 /// Frazione di una singola NOTE lunga in celle ≤ target, a confini di frase (con
 /// fallback a parola per frasi troppo lunghe). Prima cella: ruolo NOTE con l'intro
-/// (earcon una volta); continuazioni: NOTE_CONTINUATION senza intro.
+/// (earcon una volta); continuazioni: NOTE_CONTINUATION senza intro. `sourcePage`
+/// è propagato su ogni cella (nil sul percorso AKN: identico a prima).
+///
+/// Nato AKN-scoped (§10.6, "note-mostro"); dal 2026-08-10 è il meccanismo UNICO
+/// di frazionamento delle note lunghe, riusato dall'arco ultrafocus per le note
+/// ricucite (decisione di prodotto: stesso regime delle note normative lunghe —
+/// stessa soglia, stesso spezzamento, regime acustico a livello di NOTA LOGICA).
 private func aknFractionNote(_ seg: ContentSegment, target: Int) -> [ContentSegment] {
     let sentences = splitIntoSentences(seg.text)
     guard !sentences.isEmpty else { return [seg] }
@@ -94,12 +100,33 @@ private func aknFractionNote(_ seg: ContentSegment, target: Int) -> [ContentSegm
             return ContentSegment(
                 id: "\(seg.id)#0", role: seg.role, text: text,
                 lengthCategory: seg.lengthCategory, acousticIntro: seg.acousticIntro,
-                memoryRefresh: seg.memoryRefresh)
+                memoryRefresh: seg.memoryRefresh, sourcePage: seg.sourcePage)
         }
         return ContentSegment(
             id: "\(seg.id)#\(i)", role: SemanticCategory.NOTE_CONTINUATION.rawValue,
-            text: text, lengthCategory: "", acousticIntro: "")
+            text: text, lengthCategory: "", acousticIntro: "", sourcePage: seg.sourcePage)
     }
+}
+
+/// Frazionamento delle note lunghe di un flusso di segmenti: ogni segmento NOTE
+/// più lungo di `target` diventa celle ≤ target (prima cella NOTE con intro e
+/// regime; continuazioni NOTE_CONTINUATION mute). È il Passo 2 di
+/// `refineAknSegments`, esposto da solo perché l'arco ultrafocus lo applica
+/// anche al flusso continuo dei frammenti ricuciti (porta d'import + runner
+/// d'officina) — stesso criterio, nessuna variante. Il percorso PDF normale
+/// NON lo invoca: nessun cambiamento per i volumi importati normalmente.
+public func fractionLongNoteSegments(
+    _ segments: [ContentSegment], target: Int = DEFAULT_GRANULARITY_TARGET
+) -> [ContentSegment] {
+    var out: [ContentSegment] = []
+    for seg in segments {
+        if seg.role == SemanticCategory.NOTE.rawValue, seg.text.count > target {
+            out += aknFractionNote(seg, target: target)
+        } else {
+            out.append(seg)
+        }
+    }
+    return out
 }
 
 /// Post-passo di rifinitura del flusso di segmenti per il percorso AKN. Vedi la
@@ -137,14 +164,6 @@ public func refineAknSegments(
             text: m, lengthCategory: "", acousticIntro: ""))
     }
 
-    // Passo 2 — frazionamento delle note lunghe.
-    var out: [ContentSegment] = []
-    for seg in merged {
-        if seg.role == SemanticCategory.NOTE.rawValue, seg.text.count > noteTarget {
-            out += aknFractionNote(seg, target: noteTarget)
-        } else {
-            out.append(seg)
-        }
-    }
-    return out
+    // Passo 2 — frazionamento delle note lunghe (meccanismo condiviso).
+    return fractionLongNoteSegments(merged, target: noteTarget)
 }

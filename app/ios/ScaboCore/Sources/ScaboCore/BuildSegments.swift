@@ -95,11 +95,18 @@ private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
 
 // MARK: - Solo le note VERE annunciano "Nota." (passo finale, solo backend Generic)
 
-/// Profilo dei documenti prodotti dal classificatore euristico size-only (il
-/// Generic PDF). È l'UNICO backend che può collassare in `NOTE` una testatina o un
-/// titolo di sezione in maiuscoletto a taglia inferiore al corpo; i backend
-/// strutturati (AKN, EPUB) emettono note semanticamente vere e non vanno toccati.
-private let HEURISTIC_NOTE_PROFILE_ID = "generic"
+/// Profili dei documenti prodotti dal classificatore euristico size-only (il
+/// Generic PDF e i rami di famiglia che ne ereditano la macchina delle note).
+/// Sono i SOLI backend che possono collassare in `NOTE` materiale che nota non è
+/// (testatine, titoli in maiuscoletto, didascalie di figura, tabelle a corpo
+/// ridotto); i backend strutturati (AKN, EPUB) emettono note semanticamente vere
+/// e non vanno toccati. Esteso il 2026-08-10 (arco ultrafocus, giudizio contro
+/// PDF sul banco Delitti) da `generic` solo a `generic` + `raffaello_cortina`:
+/// il ramo Cortina usa la stessa macchina size-only e le sue false-«Nota.»
+/// (didascalie p.34/p.255, tabella p.169 di Delitti) sono lo stesso fenomeno.
+/// L'estensione agli altri rami di famiglia va misurata con la propria rete di
+/// delta prima di essere decisa (registrata in ULTRAFOCUS_INBOX).
+private let HEURISTIC_NOTE_PROFILE_IDS: Set<String> = ["generic", "raffaello_cortina"]
 
 /// Simboli di richiamo di nota ammessi a inizio testo (oltre al numerico).
 private let NOTE_SYMBOL_MARKERS: Set<Character> = ["*", "†", "‡", "§", "¶"]
@@ -249,7 +256,7 @@ public func buildBaseSegments(_ doc: ScabopdfDocument) -> [ContentSegment] {
     // Passo finale, solo per il backend euristico (Generic): le testatine / titoli
     // di sezione collassati in NOTE dal classificatore size-only non devono
     // annunciare "Nota.". Vedi `suppressCollapsedHeadingNoteIntros`.
-    return doc.profile.profile_id == HEURISTIC_NOTE_PROFILE_ID
+    return HEURISTIC_NOTE_PROFILE_IDS.contains(doc.profile.profile_id)
         ? suppressCollapsedHeadingNoteIntros(out)
         : out
 }

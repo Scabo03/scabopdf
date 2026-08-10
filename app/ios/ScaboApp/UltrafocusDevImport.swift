@@ -192,13 +192,21 @@ final class UltrafocusDevImportViewController: UITableViewController, UIDocument
         let content: PaginatedContent
         var doctrineContent: PaginatedContent?
         do {
-            content = try ContinuousBodyBuilder.bodyPaginatedContent(
-                from: document, target: DEFAULT_GRANULARITY_TARGET)
+            // Decisione di prodotto (2026-08-10): le note lunghe ricucite
+            // dall'ultrafocus seguono il regime delle note normative lunghe —
+            // stesso meccanismo (`fractionLongNoteSegments`, soglia = granularità
+            // corpo, prima cella con innesco e regime, continuazioni mute).
+            content = try paginate(
+                fractionLongNoteSegments(
+                    ContinuousBodyBuilder.bodySegments(from: document)),
+                DEFAULT_SEGMENTS_PER_PAGE)
             if hasNotes {
                 let doctrineDoc = bindAndPlaceNotes(
                     raw, extraction, placement: .doctrineInline).document
-                doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContent(
-                    from: doctrineDoc, target: DEFAULT_GRANULARITY_TARGET)
+                doctrineContent = try paginate(
+                    fractionLongNoteSegments(
+                        ContinuousBodyBuilder.bodySegments(from: doctrineDoc)),
+                    DEFAULT_SEGMENTS_PER_PAGE)
             }
         } catch {
             return .failure("Impaginazione fallita: " + (error as NSError).localizedDescription)

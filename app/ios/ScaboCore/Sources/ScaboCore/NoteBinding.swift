@@ -554,9 +554,43 @@ private func endsWithLetterHyphenChars(_ chars: [Character]) -> Bool {
 
 // MARK: - Spezzettamento delle note fuse
 
+/// Marcatori-SIMBOLO d'apertura di nota: la regola adottata al capitolo NOTE
+/// (decisione 19-06-2026, verdetto § C.2) come riconoscitore GENERALE di
+/// apertura-nota: «un blocco che apre con `*`/`†`/`‡` è nota distinta, non
+/// continuazione». Set deliberatamente ristretto ai tre simboli della regola:
+/// NIENTE `§`/`¶`, che nei testi giuridici aprono rinvii a paragrafi, non note
+/// (quelli restano nel set largo di `textOpensWithNoteMarker`, che serve solo
+/// a NON sopprimere l'innesco, mai a spezzare).
+private let NOTE_OPENING_SYMBOLS: Set<Character> = ["*", "†", "‡"]
+
+/// Vero se la riga apre una nota con marcatore-simbolo: `*`/`†`/`‡` seguito da
+/// whitespace E da TESTO sulla stessa riga («* Dati presentati…»). Due guardie,
+/// entrambe necessarie (calibrate sulla rete di delta a 40 volumi):
+///  • lo spazio dopo il simbolo evita i falsi inneschi su token che iniziano
+///    col simbolo senza esserne il marcatore ("**", "*testo");
+///  • il TESTO dopo il simbolo esclude il simbolo NUDO su riga propria, che
+///    non è un'apertura ma un segno ambiguo (nelle tabelle delle sostanze del
+///    Codice penale ogni voce chiude con un "*" di colonna su riga propria:
+///    senza questa guardia diventavano decine di finte note «Nota.» da un
+///    carattere — regressione intercettata dalla rete). Nel dubbio, non si
+///    spezza: il simbolo nudo resta assorbito dove stava.
+func noteSymbolOpening(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    guard t.count >= 3, let first = t.first, NOTE_OPENING_SYMBOLS.contains(first) else {
+        return false
+    }
+    let afterSymbol = t.dropFirst()
+    guard let second = afterSymbol.first, second.isWhitespace else { return false }
+    return !afterSymbol.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+}
+
 /// Spezza un run NOTE (più note a piè di pagina fuse dal Generic) nelle singole
-/// note, riconoscendo l'apertura per il numero a inizio riga. Una testa senza
-/// marcatore è una continuazione cross-page (openingNumber nil).
+/// note, riconoscendo l'apertura per il numero a inizio riga O per il
+/// marcatore-simbolo (`noteSymbolOpening`, regola del capitolo NOTE). Una testa
+/// senza marcatore è una continuazione cross-page (openingNumber nil); una
+/// nota-simbolo ha anch'essa openingNumber nil (nessun numero da agganciare:
+/// resta non-agganciata e viene letta in posizione col suo innesco), ma apre
+/// una nota NUOVA — non viene mai assorbita in ciò che precede.
 func splitFootnotes(_ lines: [LineSummary], page: Int) -> [Footnote] {
     var result: [Footnote] = []
     var current: [LineSummary] = []
@@ -579,6 +613,13 @@ func splitFootnotes(_ lines: [LineSummary], page: Int) -> [Footnote] {
             flush()
             current = [line]
             currentOpening = n
+        } else if noteSymbolOpening(line.text) {
+            // Apertura a marcatore-simbolo: nota NUOVA senza numero (regola
+            // del capitolo NOTE). openingNumber resta nil: niente aggancio
+            // numerico, lettura in posizione con l'innesco suo.
+            flush()
+            current = [line]
+            currentOpening = nil
         } else {
             current.append(line)
         }
