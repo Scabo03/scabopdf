@@ -106,7 +106,17 @@ private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
 /// (didascalie p.34/p.255, tabella p.169 di Delitti) sono lo stesso fenomeno.
 /// L'estensione agli altri rami di famiglia va misurata con la propria rete di
 /// delta prima di essere decisa (registrata in ULTRAFOCUS_INBOX).
-private let HEURISTIC_NOTE_PROFILE_IDS: Set<String> = ["generic", "raffaello_cortina"]
+/// Esteso il 2026-08-12 (terzo giro ultrafocus) a `codici` e `rivista_dpc`,
+/// ciascuno con la propria rete di delta a corpus intero: sui codici la
+/// soppressione toglie il falso «Nota.» alle voci degli indici analitici, alle
+/// tavole del front-matter e alle code orfane (le note vere restano annunciate:
+/// aprono con «(N)» o coi simboli, anche parentesizzati multipli — vedi
+/// `textOpensWithNoteMarker`); su Rivista DPC toglie il falso «Nota.» a
+/// colophon, folii e code di continuazione. `user_notes` resta fuori: zero
+/// segmenti candidati sul corpus (censimento 2026-08-12), nessun beneficio.
+private let HEURISTIC_NOTE_PROFILE_IDS: Set<String> = [
+    "generic", "raffaello_cortina", "codici", "rivista_dpc",
+]
 
 /// Simboli di richiamo di nota ammessi a inizio testo (oltre al numerico).
 private let NOTE_SYMBOL_MARKERS: Set<Character> = ["*", "†", "‡", "§", "¶"]
@@ -117,7 +127,19 @@ private let NOTE_SYMBOL_MARKERS: Set<Character> = ["*", "†", "‡", "§", "¶"
 /// in `NOTE` dal classificatore size-only.
 func textOpensWithNoteMarker(_ text: String) -> Bool {
     if noteOpening(text) != nil { return true }
-    if let first = jsTrim(text).first, NOTE_SYMBOL_MARKERS.contains(first) { return true }
+    let t = jsTrim(text)
+    if let first = t.first, NOTE_SYMBOL_MARKERS.contains(first) { return true }
+    // Marcatore-simbolo PARENTESIZZATO, anche multiplo: «(*)», «(**)», …
+    // «(******)». È la convenzione dei codici Giuffrè (la Tabella dei Ministeri
+    // e le note di aggiornamento la usano per esteso, verificato su CP p.10):
+    // sono note VERE e il loro innesco «Nota.» non va mai soppresso. Aggiunto
+    // il 2026-08-12 insieme all'estensione della soppressione ai profili
+    // codici/rivista_dpc — senza questo riconoscimento la soppressione avrebbe
+    // ammutolito centinaia di note vere (difetto-silenzio).
+    if let first = t.first, first == "(" || first == "[" {
+        let second = t.dropFirst().first
+        if let second, NOTE_SYMBOL_MARKERS.contains(second) { return true }
+    }
     return false
 }
 
