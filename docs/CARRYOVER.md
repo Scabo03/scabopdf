@@ -221,6 +221,36 @@ maintainer: funziona**. Gli otto commit (build 41 + 43) sono stati fusi in `main
 **ScaboApp 132/132** (8 skip = fixture private). Branch eliminato in locale e sul remoto. **Non resta
 nulla in sospeso su questo fronte.**
 
+**TRE DIFETTI MECCANICI DELLA MACCHINA DELLE NOTE — un giro a tre voci, una alla volta, ciascuna
+con la sua rete di delta a 40 volumi (2026-08-12).** **Voce 1 (tabella muta Delitti 168-169):
+NON-DIFETTO documentato** — su pagina la tabella è a 9,0 pt come le didascalie (note vere 8-8,6):
+ogni promozione per taglia trascinerebbe le didascalie a BODY e rifarebbe la rottura della
+ricucitura del paragrafo; il muto è la resa deterministica giusta, il ruolo pieno resta alla
+corsia officina (INBOX § D.6-septies). **Voce 2 (false note numeriche, INBOX D.6-quater): CHIUSA**
+(commit `2c4b356`) — censimento 1146 candidati; archeologia: il gate all'Estratto era confinamento
+prudenziale senza misura (2bd48b1); estensione nella forma più stretta dopo che la delta ha
+intercettato DUE regressioni e le ha curate: (a) sui CODICI l'apparato note a due colonne è
+interfogliato riga-per-riga già nell'estrazione e la ricucitura fabbricava parole («magdificato»)
+→ codici ESCLUSI e causa profonda registrata (INBOX § D.6-sexies, ~736 code false: materia plugin
+codici/officina, non pezza); (b) la LETTERATURA a due colonne dell'EdD fabbricava FRASI via fusioni
+cross-nodo → restrizione dentro-lo-stesso-nodo-run. Guardia di successione a difesa delle note
+vere numero+minuscola («39 van den Aardweg…» DPC). Esito: 14 volumi migliorano (code false nelle
+teste, corpi risanati, su DPC tre note vere 13/15/16 che la base fondeva ora SEPARATE), zero
+fabbricato, zero perso; residuo dichiarato: code dopo abbreviazioni fuori set («(Cass. |» sui
+Mandrioli, ~220) non ricucite — estensione del set decisione a parte. **Voce 3 (soppressione
+falsi «Nota.», INBOX D.6-quinquies): CHIUSA** (questo commit) — pre-verifica su CP p.10 (Tabella
+Ministeri: richiami `(*)…(******)` con note vere) → PRIMA esteso `textOpensWithNoteMarker` ai
+marcatori-simbolo parentesizzati multipli, POI soppressione estesa a `codici` e `rivista_dpc`
+(`user_notes` esclusa: censimento zero candidati). Giudizio per classe su 4394 eventi codici:
+ZERO note vere ammutolite; soppressioni solo su code di continuazione (1785+1274), voci d'indice
+«— …», tavole/etichette/titoli collassati; su DeJure ed Elementi UE il riconoscitore `(*)` ha
+RESTITUITO l'annuncio a note editoriali vere. Le 267 voci-NOTE dell'indice analitico CP ora mute
+(il dislocamento resta officina). **Verifiche trasversali:** navigazione invariata 40/40; volume
+di controllo Marotta BYTE-IDENTICO sull'intero giro; 19/40 volumi cambiati, tutti nelle classi
+giudicate; ScaboCore 589/589 e ScaboApp verdi a ogni passo. **Metodo:** giudice = Code contro il
+PDF (pre-verifica su pagina prima di ogni intervento; delta giudicata evento per evento dopo).
+Nessuna domanda d'orecchio emersa.
+
 **ULTRAFOCUS, SECONDO GIRO — chiusure on-device, frazionamento note ricucite, giudizio contro il
 PDF (2026-08-10).** **Due decisioni del maintainer applicate:** (1) METODO — ascolto manuale
 annullato; il giudice della struttura è Code CONTRO IL PDF (la pagina è l'arbitro), maintainer

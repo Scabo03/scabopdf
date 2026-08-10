@@ -266,24 +266,48 @@ Codice penale diventavano finte note): col fix, 38/40 volumi byte-identici e
 divergenze giudicate solo sui due Cortina. La nota-`*` di Delitti 168-169 è
 ora autonoma con «Nota.» on-device. Dettaglio in `ULTRAFOCUS_GATE_BENCH.md`.
 
-### D.6-quater Reperto nuovo: over-split numerico su riferimento di pagina («137 sgg.»)
+### D.6-quater Over-split numerico su riferimento di pagina — ✅ CHIUSA (2026-08-12)
 
-Scoperto dal giudizio contro PDF (2026-08-10), PREESISTENTE: su Delitti la
-coda «137 sgg.» della nota 13 apre un falso footnote «137» annunciato «Nota.»
-(l'apertura numerica scatta su cifre+spazio+minuscola a inizio riga). Il
-salvataggio same-page esiste già (`stitchCrossPageFootnotes`, cura questo
-identico caso) ma è gated all'Estratto: l'estensione ad altre famiglie va
-misurata con la propria rete di delta. Strato: STRUTTURALE.
+Salvataggio same-page esteso a tutte le famiglie tranne i codici (commit
+`2c4b356`), nella forma stretta calibrata da tre giri di delta a 40 volumi:
+solo same-page, solo dentro lo stesso nodo-run, con guardia di successione
+(una coda il cui numero torna nella successione è una nota vera e non si
+fonde mai). 14 volumi migliorano, zero fabbricazioni, zero perdite; dettaglio
+e regressioni intercettate/curate in `ULTRAFOCUS_GATE_BENCH.md`, terzo giro.
+Residuo dichiarato: le code che riprendono dopo un'abbreviazione fuori dal
+set («(Cass. | 22 novembre…»» sui Mandrioli, ~220 casi) non aprono la testa e
+restano non ricucite — estendere il set `NOTE_CONT_NUMBER_ABBR` («cass»?) è
+una decisione a parte, con la sua delta.
 
-### D.6-quinquies Estensione della soppressione inneschi alle altre famiglie
+### D.6-quinquies Estensione della soppressione inneschi — ✅ CHIUSA (2026-08-12)
 
-La soppressione dei falsi «Nota.» (NOTE che non aprono con marcatore) è ora
-attiva su `generic` + `raffaello_cortina` (2026-08-10). Le altre famiglie del
-classificatore size-only (codici, dejure, giappichelli_photoshop…) restano
-fuori: sull'indice del Codice penale la stessa soppressione risolverebbe
-on-device le 267 false «Nota.» che oggi si curano via officina. Da misurare
-con una rete di delta dedicata per famiglia prima di decidere. Strato:
-STRUTTURALE.
+Estesa a `codici` e `rivista_dpc` (con il riconoscimento preliminare dei
+marcatori-simbolo parentesizzati anche multipli «(*)…(******)», senza il
+quale le note vere dei codici sarebbero state ammutolite); `user_notes`
+esclusa (censimento: zero candidati). Giudizio per classe sui 4394 eventi
+codici: zero note vere ammutolite; navigazione invariata 40/40. Le famiglie
+con profilo proprio restanti (`user_notes`, futuri plugin) si valutano
+ciascuna col proprio censimento quando avranno candidati.
+
+### D.6-sexies Causa profonda: apparato note dei codici interfogliato a due colonne
+
+Scoperta dalla rete di delta del terzo giro (2026-08-12): nelle note di
+aggiornamento dei codici Giuffrè le righe delle due colonne arrivano
+INTERFOGLIATE già nell'estrazione PDFKit (riga colonna-A, riga colonna-B,
+…): le false note numeriche («11 lett. c) …») ne sono la manifestazione, e
+qualunque ricucitura per identità vi fabbrica parole («magdificato» =
+«mag-»+«dificato» di note diverse). Per questo i codici sono esclusi dal
+salvataggio same-page. Il rimedio vero è a monte (ordine per colonna del
+settore-note nell'estrazione, o verdetto docling per pagina): materia del
+plugin codici / corsia officina. Misura: ~736 code false censite sui due
+volumi. Strato: STRUTTURALE (ordine).
+
+### D.6-septies Non-difetto registrato: la tabella muta di Delitti 168-169
+
+Chiusa come residuo accettabile (2026-08-12): tabella a 9,0 pt come le
+didascalie (note vere a 8-8,6) — ogni promozione per taglia trascinerebbe le
+didascalie a BODY e romperebbe di nuovo la ricucitura del paragrafo. Il muto
+è la resa deterministica giusta; il ruolo pieno resta alla corsia officina.
 
 ### D.6 Debito abilitante: estrattore low-level CGPDF (nomi-font)
 

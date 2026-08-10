@@ -171,3 +171,74 @@ sola — over-split dell'apertura numerica su un riferimento di pagina a inizio
 riga, PREESISTENTE al giro (verificato sulla fotografia prima); il rimedio
 naturale è il salvataggio same-page già esistente ma gated all'Estratto —
 registrato in ULTRAFOCUS_INBOX, non toccato qui (regola d'oro).
+
+---
+
+## Terzo giro (2026-08-12) — tre difetti meccanici, una voce alla volta, giudice contro il PDF
+
+**Voce 1 — la tabella muta di Delitti 168-169: chiusa come NON-DIFETTO
+documentato.** Accertamento su pagina: la tabella è a 9,0 pt, le note vere a
+8-8,6 pt, il corpo a 11,5 — ma **le didascalie di figura sono anch'esse a
+9,0 pt**: qualunque promozione per taglia della banda 9 pt trascinerebbe le
+didascalie a BODY e rifarebbe la rottura della ricucitura del paragrafo
+curata nel giro scorso. Il muto (ruolo NOTE senza annuncio, tenuto e riemesso
+fuori dal periodo aperto) è la resa deterministica giusta del materiale
+interposto non-nota; il ruolo pieno (tabella = contenuto con la sua nota)
+resta alla corsia officina (verdetto docling). Nessun codice, più rischio che
+guadagno a toccare.
+
+**Voce 2 — le false note numeriche (INBOX D.6-quater): CHIUSA** (commit
+`2c4b356`). Pre-verifica: su pagina, «137 sgg.» è il riferimento «p. 137
+sgg.» andato a capo della nota 13 (le note della pagina sono 11-12-13);
+censimento corpus: **1146 candidati** `numero+minuscola` a inizio nota, il
+grosso su codici (736), Mandrioli (220), Riviste, Compendio, manuali;
+archeologia: il gate all'Estratto del salvataggio-per-identità era
+confinamento prudenziale senza misura (commit `2bd48b1`, «altrove no-op»).
+Estensione nella forma più stretta, calibrata da TRE giri di delta a 40
+volumi che hanno intercettato e curato due regressioni:
+1. prima versione (same-page + guardia di successione): sui CODICI
+   fabbricava parole («magdificato») — l'apparato note a due colonne è
+   interfogliato riga-per-riga già nell'estrazione, ogni ricucitura per
+   identità vi accoppia colonne diverse. **Causa profonda riconosciuta e
+   registrata** (nuova voce INBOX): non si maschera con una pezza; codici
+   ESCLUSI (byte-identici).
+2. seconda versione: la LETTERATURA a due colonne dell'EdD fabbricava FRASI
+   (parole vere accoppiate male, invisibili al detector di parole) via
+   fusioni cross-nodo → aggiunta la restrizione **dentro-lo-stesso-nodo-run**
+   (l'over-split è un artefatto di `splitFootnotes` dentro il run).
+La **guardia di successione** protegge le note vere che aprono con
+numero+minuscola: una coda il cui numero torna nella successione (testa+1, o
+seguita dal proprio successore) non si fonde mai — senza, «39 van den
+Aardweg…» (nota vera, Rivista DPC) sarebbe stata inghiottita in silenzio.
+Delta finale: 14 volumi migliorano (code false fuse nelle teste, regimi
+aggiornati, corpi «Propo-|sto» risanati; su DPC il salvataggio ha SEPARATO
+tre note vere 13/15/16 che la base fondeva), zero token fabbricati, zero
+parole perse; neutro documentato: un numero di richiamo stampato («17»,
+Compendio) prima rimosso dal ramo coda-di-parola ora letto (default di
+prodotto). Famiglie escluse: **codici** (motivo sopra).
+
+**Voce 3 — soppressione dei falsi «Nota.» estesa (INBOX D.6-quinquies):
+CHIUSA, con perimetro dal censimento.** Pre-verifica su pagina: CP p. 10, la
+Tabella dei Ministeri usa richiami `(*)…(******)` con note vere sotto — la
+soppressione nuda avrebbe ammutolito centinaia di note vere (il
+difetto-silenzio): PRIMA è stato esteso `textOpensWithNoteMarker` ai
+marcatori-simbolo parentesizzati anche multipli. Censimento per famiglia dei
+NOTE-senza-marcatore annunciati: codici 2586+1808, Rivista DPC 2+38,
+user_notes 0. Estensione a **codici** e **rivista_dpc**; **user_notes
+escluso** (zero candidati, nessun beneficio). Delta dedicata: 7 volumi
+toccati, tutti a solo-innesco (zero parole); giudizio per classe sui 4394
+eventi dei codici: **zero note vere ammutolite** (nessun evento su aperture
+numero/simbolo/(simbolo)), soppressioni solo su code di continuazione
+(1785+1274), voci d'indice «— …» (180+13), tavole/etichette/titoli collassati
+(«ALLEGATI», «TRIBUNALE COLLEGIALE»…) e frammenti; su DeJure e su Elementi
+UE il riconoscitore `(*)` ha RESTITUITO l'annuncio a note editoriali vere che
+la soppressione generica ammutoliva. Le 267 voci-NOTE dell'indice analitico
+del CP ora sono mute (il dislocamento da piazzamento resta materia
+officina/plugin codici, come da INBOX).
+
+**Verifiche trasversali di fine giro:** punti di navigazione
+(HEADING/ARTICLE_HEADER/TOC/INDEX/CHAPTER_SUMMARY) invariati su **40/40**
+volumi; volume di controllo **Marotta byte-identico** sull'intero giro;
+lettere+cifre mai perse su alcun volume; ScaboCore 589/589 e ScaboApp verdi a
+ogni passo. Sull'intero giro cambiano 19 volumi su 40, tutti nelle classi
+giudicate sopra.
