@@ -1197,3 +1197,40 @@ famiglia. Priorità suggerite: (1) portare il giudizio all'orecchio del
 maintainer (frammenti pronti); (2) primo volume fuori famiglia appena
 disponibile; (3) la capacità bind per le note-simbolo; (4) solo dopo, la
 scala (istruzioni per-file su più casi per volume).
+
+---
+
+# Parte VII — Secondo giro costruttivo (2026-08-10): chiusure on-device e nuovo metodo di verifica
+
+Due decisioni del maintainer governano da qui in avanti. **Metodo:** il
+giudice della struttura è Code, contro il PDF originale — la pagina stampata
+è l'unico arbitro; niente più scalette d'ascolto né certificazioni manuali di
+cose verificabili meccanicamente; il maintainer si interpella solo per
+domande d'orecchio, in una riga. **Prodotto:** le note lunghe ricucite
+seguono il regime già adottato per le note normative lunghe (frazionamento a
+celle con regime acustico a livello di nota logica).
+
+Esito del giro (dettaglio e giudizio caso per caso in
+`ULTRAFOCUS_GATE_BENCH.md`, secondo giro): tre modifiche di prodotto —
+frazionamento condiviso (`fractionLongNoteSegments`, dal meccanismo AKN,
+applicato dalla catena ultrafocus; percorso normale intatto; AKN
+byte-identico), capacità marcatore-simbolo nell'aggancio note (debito
+D.6-ter chiuso; una regressione vera sulle tabelle del Codice penale
+intercettata dalla rete di delta e curata con la guardia simbolo+testo),
+soppressione dei falsi «Nota.» estesa al profilo Cortina (la sede giusta
+della «sillabazione residua»: la diagnosi vera era la rietichettatura a BODY
+che rompeva la ricucitura del paragrafo). **Rete di delta a corpus intero:
+38/40 volumi byte-identici, lettere+cifre identiche su 40/40**, divergenze
+solo sui due Cortina e tutte giudicate. **I casi 1-2-3 del banco si chiudono
+interamente on-device**; il caso 4 (MULTIPAGE) è ricucito+frazionato via
+officina e verificato contro la pagina (una sola nota, nessuna fusione di
+note distinte); il caso 5 resta il dimostratore dell'officina
+(rietichettatura docling-gated); il controllo DPC è byte-identico.
+
+Lettura d'insieme che si rafforza: sul corpus noto la parte maggiore del
+guadagno si consegna **portando nel deterministico i principi che il banco fa
+emergere** (regola marcatore-simbolo, soppressione per famiglia), col modello
+locale come rivelatore dei casi e la rete di delta come cancello; l'officina
+resta necessaria dove il deterministico non può sapere (la cucitura
+MULTIPAGE, i verdetti per-pagina docling sull'indice). Il terreno vero del
+modello resta il fuori-famiglia, ancora assente dal banco.

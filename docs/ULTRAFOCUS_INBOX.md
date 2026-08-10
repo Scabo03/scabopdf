@@ -17,6 +17,12 @@
 >
 > Le voci si spuntano qui man mano che l'officina le lavora. La fotografia di
 > base dei casi del gate è in `docs/ULTRAFOCUS_GATE_BENCH.md`.
+>
+> **Metodo di verifica (deciso dal maintainer, 2026-08-10):** il giudice della
+> struttura è Code, contro il PDF originale (la pagina è l'arbitro); niente
+> scalette d'ascolto né certificazioni manuali di cose verificabili
+> meccanicamente. Il maintainer si interpella solo per una domanda che
+> l'orecchio può decidere e la misura no, posta in una riga.
 
 ---
 
@@ -52,6 +58,12 @@ diversa» (CARRYOVER, § C del capitolo NOTE).
   `ULTRAFOCUS_GATE_BENCH.md`, scoperta architetturale). La voce resta aperta
   come capacità di produzione (istruzioni per-file, scala oltre il caso
   singolo), ma il come è accertato.
+- **Aggiornamento 2026-08-10:** applicata la decisione di prodotto sul
+  frazionamento — la nota ricucita lunga segue il regime delle note normative
+  lunghe (`fractionLongNoteSegments`, meccanismo AKN §10.6 promosso a
+  condiviso): sul caso 46-47 la nota logica è ora cella-testa «Nota lunga.» +
+  2 continuazioni mute contigue. Verificato contro la pagina stampata che la
+  ricucitura corrisponde a UNA nota (p. 47 non porta altre note).
 
 ### A.2 L2 — saldatura senza successione
 
@@ -183,6 +195,13 @@ tabelle risucchiate), viste ora anche nel flusso di lettura.
 - **Misura:** 3 casi verificati su Delitti (pp. 33-34, 168-169, 254-255);
   censimento completo non fatto.
 - **Strato:** STRUTTURALE (rietichettatura: didascalia ≠ nota; tabella ≠ nota).
+- **✅ CHIUSA ON-DEVICE per la famiglia Cortina (2026-08-10):** soppressione
+  degli inneschi estesa a `raffaello_cortina` + capacità marcatore-simbolo:
+  didascalie e tabella senza falso «Nota.», nota-`*` autonoma, paragrafi a
+  cavallo pagina ricuciti (le rietichettature del fusore sono state RIMOSSE:
+  interponendo BODY rompevano la ricucitura del corpo — vedi
+  `ULTRAFOCUS_GATE_BENCH.md`, secondo giro). Per le altre famiglie vedi
+  § D.6-quinquies.
 
 ## D. Le corsie testuali e l'infrastruttura
 
@@ -237,13 +256,34 @@ restare: è banco, non porta.) Uso in una riga: buste `*.scabofrag.json` in
 `Documents/UltrafocusFragments` del container (o «Scegli un file…»), Home →
 «Ultrafocus, porta di sviluppo».
 
-### D.6-ter Capacità futura nel bind: nota a marcatore-simbolo come nota autonoma
+### D.6-ter Capacità nel bind: nota a marcatore-simbolo — ✅ CHIUSA (2026-08-10)
 
-Emersa dal caso 3 del banco: staccare la nota-`*` dalla tabella richiederebbe
-di inserire un nodo, ma lo zip posizionale nodo↔blocchi dell'aggancio note
-non lo consente dall'esterno; la sede giusta è la macchina del bind
-(riconoscere `*`/`†`/`‡` come apertura-nota, regola già ADOTTATA come
-principio al capitolo NOTE). Strato: STRUTTURALE.
+Implementata in `splitFootnotes` (ScaboCore/NoteBinding): `*`/`†`/`‡` aprono
+una nota autonoma quando seguiti da spazio E testo sulla stessa riga. La
+seconda guardia è nata dalla rete di delta a 40 volumi, che ha intercettato
+una regressione vera (i `*` nudi di colonna nelle tabelle delle sostanze del
+Codice penale diventavano finte note): col fix, 38/40 volumi byte-identici e
+divergenze giudicate solo sui due Cortina. La nota-`*` di Delitti 168-169 è
+ora autonoma con «Nota.» on-device. Dettaglio in `ULTRAFOCUS_GATE_BENCH.md`.
+
+### D.6-quater Reperto nuovo: over-split numerico su riferimento di pagina («137 sgg.»)
+
+Scoperto dal giudizio contro PDF (2026-08-10), PREESISTENTE: su Delitti la
+coda «137 sgg.» della nota 13 apre un falso footnote «137» annunciato «Nota.»
+(l'apertura numerica scatta su cifre+spazio+minuscola a inizio riga). Il
+salvataggio same-page esiste già (`stitchCrossPageFootnotes`, cura questo
+identico caso) ma è gated all'Estratto: l'estensione ad altre famiglie va
+misurata con la propria rete di delta. Strato: STRUTTURALE.
+
+### D.6-quinquies Estensione della soppressione inneschi alle altre famiglie
+
+La soppressione dei falsi «Nota.» (NOTE che non aprono con marcatore) è ora
+attiva su `generic` + `raffaello_cortina` (2026-08-10). Le altre famiglie del
+classificatore size-only (codici, dejure, giappichelli_photoshop…) restano
+fuori: sull'indice del Codice penale la stessa soppressione risolverebbe
+on-device le 267 false «Nota.» che oggi si curano via officina. Da misurare
+con una rete di delta dedicata per famiglia prima di decidere. Strato:
+STRUTTURALE.
 
 ### D.6 Debito abilitante: estrattore low-level CGPDF (nomi-font)
 

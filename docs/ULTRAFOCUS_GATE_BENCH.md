@@ -87,3 +87,87 @@ vede footnote), non di ordine.
 **Aggiungere un volume nuovo (anche fuori famiglia)** è predisposto: la
 procedura in sei passi è in `ultrafocus_bench/README.md` (cattura col banco,
 pagine-caso, docling offline, voce in `casi.json`, fusione con rete, buste).
+
+---
+
+## Secondo giro costruttivo (2026-08-10) — chiusure on-device e giudizio contro il PDF
+
+**Cambio di metodo, deciso dal maintainer e qui registrato.** La procedura di
+ascolto manuale caso per caso è annullata: la continuità dello swipe è
+garantita per costruzione dai container di accessibilità, e categorie/annunci/
+regimi acustici sono quelli collaudati da trenta build — l'ultrafocus
+rietichetta con etichette esistenti, non ne inventa. **Il giudice della
+struttura è Code, contro il PDF originale**: si apre la pagina e si accerta
+che ciò che l'app produce corrisponda alla verità della pagina (mai le due
+versioni confrontate fra loro come opinioni). Il maintainer viene interpellato
+solo per una domanda che l'orecchio può decidere e la misura no, posta in una
+riga. Le scalette d'ascolto sono archiviate
+(`ultrafocus_bench/fragments/_archivio_ascolto_manuale/`); il modo rapido per
+rifare il giudizio è `ultrafocus_bench/fusore/COME_RIFARE_IL_GIUDIZIO.md`.
+
+**Tre modifiche di prodotto (ScaboCore/porta), con rete di delta a corpus intero:**
+
+1. **Frazionamento delle note lunghe ricucite** (decisione di prodotto
+   applicata): il meccanismo delle note normative lunghe (`aknFractionNote`,
+   §10.6 — soglia = granularità corpo, spezza a confini di frase, prima cella
+   NOTE con innesco e regime della NOTA LOGICA, continuazioni
+   NOTE_CONTINUATION mute) è promosso a funzione condivisa
+   `fractionLongNoteSegments` e applicato dall'intera catena ultrafocus
+   (porta d'import + runner) a ogni frammento. Il percorso d'import normale
+   NON lo invoca: zero cambiamenti per i volumi importati normalmente
+   (differenza inevitabile registrata: nel frammento frazionano tutte le note
+   lunghe, non solo le ricucite — le ricucite non sono distinguibili a valle,
+   e il regime è comunque quello già collaudato su AKN). AKN byte-identico
+   (refactor puro; parità 13/13 verde).
+2. **Capacità marcatore-simbolo nell'aggancio note** (chiude il debito
+   D.6-ter): `splitFootnotes` riconosce `*`/`†`/`‡` come apertura di nota
+   (la regola generale adottata al capitolo NOTE), con DUE guardie calibrate
+   dalla rete di delta: simbolo seguito da spazio E da testo sulla stessa
+   riga. La seconda guardia è nata da una **regressione vera intercettata
+   dalla rete**: nelle tabelle delle sostanze stupefacenti del Codice penale
+   ogni voce chiude con un `*` nudo su riga propria — senza guardia
+   diventavano decine di finte note «Nota.» da un carattere. Col fix il
+   Codice penale è tornato **byte-identico**.
+3. **Soppressione degli inneschi estesa al profilo `raffaello_cortina`**
+   (sede giusta della sillabazione residua, Parte 3): la diagnosi vera non
+   era una asimmetria di de-sillabazione ma la rietichettatura a BODY del
+   fusore che, interponendosi, rompeva la ricucitura del paragrafo a cavallo
+   pagina (il meccanismo TRATTIENE l'apparato NOTE interposto e lo riemette
+   dopo il paragrafo — tollera le NOTE, non i BODY). Rimedio: niente
+   rietichettature nel fusore per le didascalie; la soppressione degli
+   inneschi (già di prodotto per `generic`, stessa macchina note size-only)
+   estesa a Cortina. **I casi 1-2-3 del banco si chiudono così interamente
+   ON-DEVICE, senza officina.**
+
+**Rete di delta sull'intero corpus (40 volumi, prima/dopo): 38 byte-identici.**
+Lettere+cifre identiche su tutti i 40. Divergono solo i due volumi Cortina,
+e ogni evento è stato giudicato: su Delitti ~50 soppressioni di falsi
+«Nota.» (didascalie di figura, crediti delle illustrazioni, titoli di sezione
+maiuscoli collassati, code di paragrafo con la cifra di richiamo, code di
+continuazione) più lo split tabella/nota-`*`; su Pubblico ministero 4
+soppressioni della stessa classe (code minuscole con cifra di richiamo).
+Nessuna nota vera ha perso l'annuncio; nessun punto di navigazione toccato
+(conteggi HEADING/ARTICLE_HEADER/TOC identici ovunque). Famiglie escluse:
+nessuna (la regressione codici è stata curata con la guardia, non con
+un'esclusione).
+
+**Giudizio strutturale contro il PDF, caso per caso** (verità = la pagina):
+
+| # | Caso | La pagina dice | Base di oggi (pre-giro) | Ultrafocus/on-device ora | Verdetto |
+|---|---|---|---|---|---|
+| 1 | Delitti 254-255 | nota 14 chiusa; didascalia di figura; nota 15 | didascalia annunciata «Nota.» | didascalia senza annuncio, letta DOPO il paragrafo ricucito («senso.» intero); note 14/15 intatte | **Corrisponde la nuova** (certezza alta) — chiuso ON-DEVICE |
+| 2 | Delitti 33-34 | didascalia legata alla figura; il paragrafo del corpo prosegue oltre pagina | didascalia «Nota.»; paragrafo ricucito | didascalia senza annuncio dopo il paragrafo; «democrazia» ricucita | **Corrisponde la nuova** (alta) — chiuso ON-DEVICE |
+| 3 | Delitti 168-169 | tabella statistica (contenuto) + nota-`*` (nota vera) | un'unica «Nota lunga.» con tabella e nota insieme | tabella senza falso annuncio; **nota-`*` autonoma con «Nota.»** | **Corrisponde la nuova** (alta) — chiuso ON-DEVICE; residuo: la tabella resta ruolo NOTE muto (non-annuncio, non falso annuncio) |
+| 4 | Lineamenti 46-47 | **UNA** nota (12) che continua su p.47: verificato sulla stampa — le uniche righe a corpo-nota di p.47 sono le 7 della continuazione, senza marcatore e senza nessuna nota 13 sulla pagina → nessun rischio di due note fuse | testa troncata «Nota.» + coda orfana PRIMA della testa | nota logica ricucita e **frazionata da regime**: cella-testa «Nota lunga.» + 2 continuazioni mute contigue; orfana sparita | **Corrisponde la nuova** (alta, con verifica diretta della pagina sul rischio di fusione silenziosa) |
+| 5 | CP indice analitico | colonne alfabetiche, sotto-voci attaccate alla voce-madre | sotto-voci staccate/dislocate, 267 false «Nota.», cifre inghiottite | alfabeto monotono (sonda Abitazione→Aborto→Abuso→Affidamento→Aggravanti), sotto-voci NEL segmento della voce-madre, 0 «Nota.», 24 cifre recuperate; navigazione identica (5622 ARTICLE_HEADER, heading invariati) | **Corrisponde la nuova** (alta) — rimedio via officina (rietichettatura docling-gated) |
+| 6 | Rivista DPC (controllo) | — | — | flusso identico byte-per-byte | **Nessuna regressione** |
+
+**Esiti negativi, con la stessa nettezza:** (a) la regressione bare-`*` sul
+Codice penale (decine di finte note) — introdotta dalla prima versione della
+capacità, intercettata dalla rete di delta, curata con la guardia
+simbolo+testo, CP byte-identico dopo; (b) reperto preesistente scoperto dal
+giudizio: su Delitti la coda «137 sgg.» della nota 13 è annunciata «Nota.» da
+sola — over-split dell'apertura numerica su un riferimento di pagina a inizio
+riga, PREESISTENTE al giro (verificato sulla fotografia prima); il rimedio
+naturale è il salvataggio same-page già esistente ma gated all'Estratto —
+registrato in ULTRAFOCUS_INBOX, non toccato qui (regola d'oro).

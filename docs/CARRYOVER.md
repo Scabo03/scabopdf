@@ -221,6 +221,44 @@ maintainer: funziona**. Gli otto commit (build 41 + 43) sono stati fusi in `main
 **ScaboApp 132/132** (8 skip = fixture private). Branch eliminato in locale e sul remoto. **Non resta
 nulla in sospeso su questo fronte.**
 
+**ULTRAFOCUS, SECONDO GIRO — chiusure on-device, frazionamento note ricucite, giudizio contro il
+PDF (2026-08-10).** **Due decisioni del maintainer applicate:** (1) METODO — ascolto manuale
+annullato; il giudice della struttura è Code CONTRO IL PDF (la pagina è l'arbitro), maintainer
+interpellato solo per domande d'orecchio in una riga (scalette archiviate in
+`ultrafocus_bench/fragments/_archivio_ascolto_manuale/`; procedura rapida in
+`fusore/COME_RIFARE_IL_GIUDIZIO.md`); (2) PRODOTTO — le note lunghe ricucite si frazionano col
+regime delle note normative lunghe. **Tre modifiche di prodotto** (ScaboCore + porta): (a)
+`fractionLongNoteSegments` promossa da AknSegments a meccanismo condiviso (stessa soglia 400, frasi,
+cella-testa con innesco e regime di NOTA LOGICA, continuazioni NOTE_CONTINUATION mute; applicata da
+porta+runner a tutti i frammenti; percorso d'import normale INTATTO; AKN byte-identico, parità
+13/13); (b) **capacità marcatore-simbolo** in `splitFootnotes` (`*`/`†`/`‡` aprono nota — regola del
+capitolo NOTE) con DUE guardie: simbolo+spazio+TESTO sulla stessa riga — la seconda nata da una
+**regressione vera intercettata dalla rete di delta** (i `*` nudi di colonna nelle tabelle delle
+sostanze del CP diventavano decine di finte «Nota.» da 1 carattere; col fix CP torna
+byte-identico); (c) **soppressione dei falsi «Nota.» estesa a `raffaello_cortina`** — la diagnosi
+vera della "sillabazione residua" era che la rietichettatura a BODY del fusore rompeva la
+ricucitura del paragrafo a cavallo pagina (che TRATTIENE le NOTE interposte ma non i BODY); rimosse
+le rietichettature dal fusore, la soppressione fa il lavoro nella sede giusta. **Rete di delta a
+corpus intero: 38/40 byte-identici, lettere+cifre identiche 40/40**; divergono solo i due Cortina,
+ogni evento giudicato (~50 falsi «Nota.» soppressi su Delitti: didascalie, crediti, titoli
+collassati, code con cifra di richiamo; 4 su Pubblico ministero; nessuna nota vera ha perso
+l'annuncio; navigazione intatta ovunque). **Giudizio contro il PDF sui sei casi** (tabella completa
+in ULTRAFOCUS_GATE_BENCH): casi 1-2-3 Delitti **CHIUSI ON-DEVICE** (didascalie e tabella senza
+falso innesco, nota-`*` autonoma «Nota.», paragrafi «senso.»/«democrazia» ricuciti, note 14/15
+intatte); caso 4 Lineamenti ricucito+frazionato («Nota lunga.» + 2 continuazioni mute) e
+**verificato sulla stampa che è UNA nota sola** (p. 47 non porta altre note: nessuna fusione
+silenziosa); caso 5 CP via officina (alfabeto monotono, sotto-voci nel segmento della voce-madre,
+0 false «Nota.», 24 cifre recuperate, navigazione identica 5622 ARTICLE_HEADER); caso 6 DPC
+identico byte-per-byte. **Reperto preesistente scoperto dal giudizio:** over-split numerico su
+Delitti («137 sgg.» della nota 13 → falso footnote «137» con «Nota.», preesistente — il salvataggio
+same-page esiste ma è Estratto-gated: INBOX § D.6-quater). INBOX aggiornata: D.6-ter CHIUSA
+(capacità simbolo), C.3 chiusa per Cortina, nuove D.6-quater (over-split) e D.6-quinquies
+(estensione soppressione alle altre famiglie, da misurare — sull'indice CP risolverebbe on-device
+le 267 false «Nota.»). Buste rigenerate (6: Delitti e DPC a versione unica, Lineamenti e CP
+OGGI/NUOVA). Contenimento provato con sonde (workspace fuori repo; `*.scabofrag.json`/
+`*.scabopdf.json`/`*.pdf` intercettati). Reti finali: ScaboCore **589/589**, ScaboApp **133 (0
+fail, 8 skip)**. Nessuna domanda d'orecchio emersa in questo giro.
+
 **ULTRAFOCUS, PRIMO GIRO COSTRUTTIVO — porta d'import dev + fusore + runner + prima/dopo sui sei
 casi (2026-08-08).** **Inquadramento nuovo, che governa l'arco:** il gate non decide più SE fare
 l'ultrafocus (si fa comunque: il valore vero è sui materiali sconosciuti futuri, fuori dalle
