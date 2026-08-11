@@ -337,6 +337,57 @@ func noteContinuation(_ s: String) -> Bool {
     return false
 }
 
+/// Citazioni di giurisprudenza che ATTENDONO UNA DATA a seguire ("Cass." → "25 ottobre
+/// 2001, n. 13196"; "C. Cost." → "26 maggio 2020 n. 145"). A differenza delle
+/// abbreviazioni di `NOTE_CONT_NUMBER_ABBR` (che attendono un numero e le cui code sono
+/// sempre cifre di pagina/volume), queste aprono SOLO se la coda è una data — la
+/// restrizione neutralizza per costruzione la sentinella "39 van den Aardweg" (una nota
+/// NUOVA non inizia mai con una data nuda) e confina la fusione ai richiami spezzati dal
+/// salto pagina delle note dei manuali (misurato: 16 casi, tutti su Mandrioli 3/4; zero
+/// sugli altri 39 volumi, Estratto e codici compresi).
+let NOTE_CONT_COURT_ABBR: Set<String> = ["cass", "cost"]
+
+/// Vero se `s` finisce con una citazione di giurisprudenza ("… Cass." / "… C. Cost.").
+/// Ultima parola alfabetica prima del punto finale ∈ `NOTE_CONT_COURT_ABBR`.
+func headEndsWithCourtCitation(_ s: String) -> Bool {
+    let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard t.last == "." else { return false }
+    var word = ""
+    for ch in t.dropLast().reversed() {
+        if ch.isLetter { word.append(ch) } else { break }
+    }
+    return NOTE_CONT_COURT_ABBR.contains(String(word.reversed()).lowercased())
+}
+
+/// Marcatore di data italiana in testa alla coda: giorno 1–31 (con eventuale "°") +
+/// nome di mese. È il discriminante che fa aprire una testa che finisce con "Cass."/"Cost."
+/// solo su una vera continuazione di citazione datata.
+private let NOTE_TAIL_DATE_RE = try! NSRegularExpression(
+    pattern: "^\\s*(3[01]|[12]?\\d)°?\\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|"
+        + "luglio|agosto|settembre|ottobre|novembre|dicembre)\\b",
+    options: [.caseInsensitive])
+
+/// Vero se la coda `s` inizia con una data italiana ("25 ottobre 2001…").
+func tailStartsWithDate(_ s: String) -> Bool {
+    let t = s.trimmingCharacters(in: .whitespacesAndNewlines)
+    let ns = t as NSString
+    return NOTE_TAIL_DATE_RE.firstMatch(in: t, range: NSRange(location: 0, length: ns.length)) != nil
+}
+
+/// La coda `tail` continua la testa `head`? Predicato di ricucitura condiviso dai due
+/// percorsi (mergeNoteContinuations cross-pagina e stitchCrossPageFootnotes). Vero se la
+/// coda è una CONTINUAZIONE (`noteContinuation`, che esclude i marcatori di nota nuova) E
+/// la testa APRE: o per abbreviazione-che-attende-numero (`noteOpensForContinuation`), o
+/// perché finisce con una citazione di giurisprudenza ("Cass."/"C. Cost.") E la coda è una
+/// DATA (`tailStartsWithDate`). Anti-fusione invariata: una nota nuova apre col proprio
+/// marcatore → `noteContinuation` la esclude → due note distinte non si fondono MAI.
+func noteTailContinuesHead(head: String, tail: String) -> Bool {
+    guard noteContinuation(tail) else { return false }
+    if noteOpensForContinuation(head) { return true }
+    if headEndsWithCourtCitation(head), tailStartsWithDate(tail) { return true }
+    return false
+}
+
 /// Pre-passo (mattone 2/3 esteso al regime note): ricuce le note spezzate dal salto
 /// pagina. Fonde un segmento NOTE nel NOTE immediatamente precedente quando il primo APRE
 /// e il secondo lo CONTINUA (vedi guardie). De-sillaba se la prima metà finisce in
@@ -348,7 +399,7 @@ func mergeNoteContinuations(_ segments: [ContentSegment]) -> [ContentSegment] {
     var out: [ContentSegment] = []
     for seg in segments {
         if seg.role == NOTE, let prev = out.last, prev.role == NOTE,
-           noteOpensForContinuation(prev.text), noteContinuation(seg.text) {
+           noteTailContinuesHead(head: prev.text, tail: seg.text) {
             let a = prev.text.trimmingCharacters(in: .whitespacesAndNewlines)
             let b = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
             let merged: String

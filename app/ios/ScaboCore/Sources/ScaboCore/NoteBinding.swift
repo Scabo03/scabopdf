@@ -475,7 +475,7 @@ func stitchCrossPageFootnotes(
             }
         }
         if pageOk, !successionSaysNewNote,
-           noteOpensForContinuation(a), noteContinuation(b) {
+           noteTailContinuesHead(head: a, tail: b) {
             let merged: String
             if endsWithLetterHyphenG(a), let f = b.first, f.isLowercase {
                 merged = String(a.dropLast()) + b           // de-sillabazione
