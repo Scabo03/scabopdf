@@ -242,3 +242,45 @@ volumi; volume di controllo **Marotta byte-identico** sull'intero giro;
 lettere+cifre mai perse su alcun volume; ScaboCore 589/589 e ScaboApp verdi a
 ogni passo. Sull'intero giro cambiano 19 volumi su 40, tutti nelle classi
 giudicate sopra.
+
+---
+
+## Quarto giro (2026-08-11) — la mappa della divisione del lavoro + due interventi
+
+**Movimento 1 — la mappa (deliverable durevole).** Prodotto
+`docs/MAPPA_DIVISIONE_LAVORO.md`: il quadro d'insieme, prima assente in forma
+unitaria, di dove vive ogni capacità e ogni difetto, a quale livello dell'albero
+(tronco/generico/ramo/foglia gated/foglia di lettura/cerotto/officina, verificati
+sul codice), e — la colonna nuova — **cosa vede l'utente senza Mac** (✅ tutti /
+◑ solo-materiali / ✗ scoperto). Registrato in `LAYER2_PRODUCT_DECISIONS.md § 0-bis`
+il principio permanente: a parità di sicurezza la via on-device batte l'officina,
+perché l'officina serve solo chi ha un Mac. Conto onesto: il carico
+dell'ultrafocus è quasi tutto strutturale nel frutto; l'irriducibile vero misurato
+è la bibliografia-vs-contenuto (gold 140) e l'OCR; diverse voci erano all'officina
+per **prudenza**, non per necessità.
+
+**Movimento 2, intervento A — citazioni di giurisprudenza datate (CHIUSO
+on-device, commit `ba2c2b5`).** Estrattore delta a 40 volumi ricostruito
+(`run_corpus.sh` + estrazioni ricatturate). Censimento sul before: la coda che
+riprende dopo «Cass.»/«C. Cost.» apre solo se è una DATA → predicato condiviso
+`noteTailContinuesHead`, set `{cass, cost}`. Sentinella cercata e neutralizzata
+per costruzione (una nota nuova non inizia mai con una data nuda: «39 van den
+Aardweg» non è una data). Rete di delta: **16 fusioni, tutte Mandrioli 3 (9) e 4
+(7)** + 4 su EdD; 37/40 byte-identici (Estratto e codici compresi); attrezzo
+token-fabbricati = **0 fabbricati, 0 parole perse/comparse**; navigazione
+invariata; ScaboCore 589/589. Chiude INBOX D.6-quater.
+
+**Movimento 2, intervento B — interfoliazione a due colonne dei codici (CHIUSO
+come diagnosi + progetto).** I codici sono materiale quotidiano di tutti
+(Mac-less compresi): la voce dell'officina a costo-utente più alto, quindi
+indagata a fondo prima di rassegnarsi. Accertato sulle estrazioni reali: il
+difetto **fabbrica parole** («pree)finanziamento») su ~4% delle pagine (rete C,
+non cosmetico); i codici sono a lettura colonna-maggiore e una **partizione
+stabile per colonna della banda-corpo** de-interfoglia correttamente ed è
+identità sulle pagine pulite (dimostrato). Ma una realizzazione sicura e validata
+è **più grande di un giro** (gutter ambiguo, bande header/corpo/footer da
+modellare, banda fuzzy 2-4-run, e nessun cancello identità-lettere sulla
+validazione → giudizio pagina-per-pagina su ~80-120 pagine di materiale
+quotidiano). Chiuso in `docs/DIAGNOSI_CODICI_COLONNE.md` **senza scrivere codice**
+(regola: non lasciare lavoro a metà). Utente senza Mac: scoperto oggi, ma
+«officina in attesa del progetto», non «per necessità».

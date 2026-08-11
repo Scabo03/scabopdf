@@ -14,6 +14,43 @@
 
 ---
 
+## 0-bis. Principio di collocazione app-vs-officina (l'utente senza Mac)
+
+> Decisione di prodotto permanente introdotta il 2026-08-11 (quarto giro
+> ultrafocus). Vale da qui in avanti su tutto il progetto e per chiunque ci
+> lavorerà dopo. Il quadro d'insieme operativo è in
+> `docs/MAPPA_DIVISIONE_LAVORO.md`.
+
+Una parte degli utenti di ScaboPDF non avrà mai un Mac, quindi non avrà mai
+l'ultrafocus (la rielaborazione Mac-side con modello locale). Ne segue che
+**mandare un difetto all'officina macOS non è una scelta neutra**: è una cura che
+esiste solo per una parte dell'utenza. Il criterio di collocazione di un difetto
+cambia di conseguenza: non si sceglie più soltanto *dove il difetto si risolve
+meglio*, ma si pesa anche *quanti utenti restano scoperti* da quella scelta.
+
+Le regole, in ordine di precedenza:
+
+1. **La regola d'oro resta intatta.** Nel dubbio non si tocca. Una pezza che
+   rovina materiali genuini è inaccettabile **anche se servirebbe molti utenti**.
+2. **A parità di sicurezza, la via on-device batte l'officina.** Una cura
+   parziale ma prudente che gira su ogni telefono può valere più di una cura
+   completa che richiede una macchina che l'utente non possiede.
+3. **All'officina si va per necessità, non per comodità.** Ciò che resta
+   Mac-side deve restarci perché non esiste alternativa sicura on-device (per
+   esempio: il frutto è testo nuovo protetto da copyright, o il giudizio è
+   irriducibilmente semantico e misurato tale), non perché l'officina è comoda
+   per chi sviluppa.
+
+Conseguenza operativa: ogni volta che una sessione valuta se un difetto sia
+«materia dell'officina», deve chiedersi esplicitamente se esista una via
+on-device parziale ma sicura, e — se esiste — preferirla. Diverse voci date per
+acquisite all'officina si sono rivelate, alla prova, collocate lì per prudenza e
+non per irriducibilità (il salvataggio same-page delle false note, la ricucitura
+delle citazioni datate, la soppressione dei falsi «Nota.», e — come progetto —
+l'interfoliazione a due colonne dei codici): sono tornate, o torneranno,
+on-device. Il conto onesto «quanto è irriducibile vs quanto è prudenza» va tenuto
+aggiornato nella mappa.
+
 ## 1. Identità del progetto e scopo del documento
 
 ### 1.1 Identità del progetto

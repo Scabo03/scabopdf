@@ -274,10 +274,20 @@ solo same-page, solo dentro lo stesso nodo-run, con guardia di successione
 (una coda il cui numero torna nella successione è una nota vera e non si
 fonde mai). 14 volumi migliorano, zero fabbricazioni, zero perdite; dettaglio
 e regressioni intercettate/curate in `ULTRAFOCUS_GATE_BENCH.md`, terzo giro.
-Residuo dichiarato: le code che riprendono dopo un'abbreviazione fuori dal
-set («(Cass. | 22 novembre…»» sui Mandrioli, ~220 casi) non aprono la testa e
-restano non ricucite — estendere il set `NOTE_CONT_NUMBER_ABBR` («cass»?) è
-una decisione a parte, con la sua delta.
+Residuo **CHIUSO on-device (2026-08-11, quarto giro, commit `ba2c2b5`)**: le
+code che riprendono dopo una citazione di giurisprudenza («(Cass. | 25 ottobre
+2001, n. 13196)») ora aprono la testa, ma **solo se la coda è una DATA** —
+predicato condiviso `noteTailContinuesHead`, set `NOTE_CONT_COURT_ABBR =
+{cass, cost}`. La restrizione alla data neutralizza per costruzione la
+sentinella «39 van den Aardweg» (una nota nuova non inizia mai con una data
+nuda). Misura (rete di delta a 40 volumi): **16 fusioni, tutte su Mandrioli 3
+(9) e Mandrioli 4 (7)** — materiale di studio del maintainer — più 4
+continuazioni bibliografiche datate su EdD; 37/40 byte-identici (Estratto e
+codici compresi), zero token fabbricati, zero parole perse, navigazione
+invariata ovunque. Il «~220» era stima larga; il fenomeno abbreviazione-datata
+misurato è ~16. Le abbreviazioni complete («ss.», «cit.», «ibidem») restano
+fuori (una coda a seguire è un NUOVO marcatore); «ord.» resta fuori
+(chiude una citazione, non l'apre); «lgs.» resta fuori (rischio codici).
 
 ### D.6-quinquies Estensione della soppressione inneschi — ✅ CHIUSA (2026-08-12)
 
@@ -301,6 +311,28 @@ salvataggio same-page. Il rimedio vero è a monte (ordine per colonna del
 settore-note nell'estrazione, o verdetto docling per pagina): materia del
 plugin codici / corsia officina. Misura: ~736 code false censite sui due
 volumi. Strato: STRUTTURALE (ordine).
+
+- **Diagnosi on-device approfondita (2026-08-11, quarto giro):** indagata la
+  via on-device richiesta dal principio dell'utente-senza-Mac (i codici li usa
+  chiunque, Mac o no). **La via esiste ed è sicura in linea di principio, ma è
+  un progetto a sé, non una pezza di un giro.** Accertamenti sulle estrazioni
+  reali: l'interfoliazione è **localizzata** (~92% delle pagine sono già
+  colonna-corrette; ~4% interfogliate — ~90-120 penale, ~50-70 civile);
+  il gutter x0 è pulito ma con banda ambigua (170-182: capilettera, testatine
+  «CEDU», liste «Ministero»); i codici sono a lettura **colonna-maggiore**, e
+  una **partizione stabile per colonna della banda-corpo** de-interfoglia
+  correttamente ed è identità sulle pagine pulite (dimostrato su pagina 2480).
+  L'interfoliazione danneggia il CONTENUTO, non solo l'earcon: fabbrica parole
+  («pree)finanziamento») → rete C. Ostacoli a una realizzazione di un giro:
+  calibrazione gutter, modello bande header/corpo/footer, banda fuzzy 2-4-run
+  (impaginati speciali vs interfoliazione vera), e **assenza del cancello
+  identità-lettere** sulla validazione (il riordino cambia la de-sillabazione →
+  giudizio pagina-per-pagina contro il PDF su ~80-120 pagine di materiale
+  quotidiano). Chiuso come **diagnosi + progetto** in
+  `docs/DIAGNOSI_CODICI_COLONNE.md`; nessun codice scritto (regola: non
+  lasciare lavoro a metà). **Utente senza Mac: scoperto oggi** — la voce
+  dell'officina a costo-utente più alto, ma «officina in attesa del progetto»,
+  non «officina per necessità semantica».
 
 ### D.6-septies Non-difetto registrato: la tabella muta di Delitti 168-169
 
