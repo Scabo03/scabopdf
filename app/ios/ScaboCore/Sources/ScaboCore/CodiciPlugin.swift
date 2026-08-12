@@ -396,6 +396,107 @@ func recognizeCodiciArticles(_ items: [GenItem], _ profile: Profile) -> [GenItem
     return out
 }
 
+// MARK: - Foglia 4 dei codici: de-interfoliazione delle due colonne (gated isCodici)
+//
+// PROBLEMA. Su ~4% delle pagine dei due codici l'estrazione PDFKit consegna le
+// righe delle DUE colonne ALTERNATE (riga sinistra, riga destra, riga sinistra,
+// …). La ricomposizione delle parole sillabate incolla allora frammenti di
+// colonne diverse e FABBRICA parole inesistenti («pree» = «pre-»+«e)»,
+// «prolisente» = «proli-»+«sente») — violazione della rete di fedeltà C. Sul
+// ~92% delle pagine l'estrazione è già colonna-corretta (colonna sinistra
+// intera per y, poi destra).
+//
+// CURA. Partizione STABILE per colonna: [righe della colonna sinistra nel loro
+// ordine] + [righe della colonna destra nel loro ordine]. I codici sono a
+// lettura colonna-maggiore, quindi questa partizione ricostruisce l'ordine di
+// stampa; ed è IDENTITÀ sulle pagine già colonna-corrette (la colonna destra è
+// già un blocco contiguo → la partizione non la muove). NON un ordinamento per
+// y, che riordinerebbe testatine e folii rompendo la byte-identità.
+//
+// GUTTER calibrato dall'istogramma x0 dei due codici (357pt di larghezza): la
+// colonna destra del CORPO inizia a x0 = 184; la banda [181,183] è vuota; tutto
+// ciò che sta sotto 182 (colonna sinistra a 31, testatine centrate, capilettera,
+// la testatina di destra «CEDU» a 170, e la colonna destra della TABELLA dei
+// ministeri a 180.2) resta «non-destra». Il gutter a 182 separa quindi la
+// colonna-destra-di-CORPO da tutto il resto, ed esclude per costruzione la
+// tabella-ministeri (impaginato speciale, non interfoliazione).
+//
+// RILEVATORE. Una pagina è interfogliata quando ha ≥3 GIUNZIONI DI SILLABA FRA
+// COLONNE DIVERSE (riga che finisce con «-» seguita da una riga dell'altra
+// colonna): è il segnale DIRETTO della fabbricazione, esclude le tabelle (le
+// celle non sillabano fra colonne), le pagine pulite (≤2: i confini di flusso
+// legittimi corpo/note) e le testatine-folio (non hanno «-»). Calibrato sui due
+// codici: flagga 61 pagine del penale e 24 del civile, tutte zipper veri
+// (colonna destra in ≥3 blocchi); zero pagine pulite. La banda «2 giunzioni»
+// (pagine pulite corpo+note) è lasciata come residuo dichiarato, non toccata.
+
+let CODICI_COLUMN_GUTTER_X = 182.0
+let CODICI_INTERLEAVE_MIN_COUPLINGS = 3
+
+/// 0 = colonna sinistra (e tutto ciò che non è colonna-destra-di-corpo),
+/// 1 = colonna destra del corpo (x0 ≥ gutter).
+func codiciLineColumn(_ line: PdfTextLine) -> Int {
+    line.bbox.x >= CODICI_COLUMN_GUTTER_X ? 1 : 0
+}
+
+/// Vero se la pagina è interfogliata (≥ soglia di giunzioni di sillaba fra
+/// colonne diverse). Conta sulle righe con contenuto.
+func codiciPageIsInterleaved(_ page: PdfPageExtraction) -> Bool {
+    let lines = page.lines.filter { !$0.spans.isEmpty }
+    guard lines.count >= 4 else { return false }
+    var couplings = 0
+    for i in 0..<(lines.count - 1) {
+        let text = lines[i].spans.map { $0.text }.joined()
+            .trimmingCharacters(in: .whitespaces)
+        if text.hasSuffix("-"), codiciLineColumn(lines[i]) != codiciLineColumn(lines[i + 1]) {
+            couplings += 1
+            if couplings >= CODICI_INTERLEAVE_MIN_COUPLINGS { return true }
+        }
+    }
+    return false
+}
+
+/// GUARDIA ANTI-DESYNC (residuo dichiarato). Una riga di PROSA (nota/corpo, fs in
+/// [6.0, 8.2]) il cui x0 cade nella terra di nessuno fra le colonne [90, gutter)
+/// è quasi sempre vittima del desync geometrico di PDFKit (INBOX A.5: bbox errato
+/// che sposta la coda di una colonna): il gutter la misclassifica come colonna
+/// sbagliata, e il riordino accoppierebbe male le sillabe fabbricando parole
+/// (es. «prostitu-»|«munire» → «prostitumunire» su p.1810 del penale, dove la
+/// coda «zione» della colonna destra è estratta a x0=157.8). Una pagina con anche
+/// una sola riga di prosa così NON si riordina: la sicurezza dei codici (materiale
+/// quotidiano) viene prima della copertura totale. Le intestazioni centrate
+/// (fs ≥ 8.5) e i numeri d'articolo (fs 9) non sono prosa → non attivano la
+/// guardia. Misura: esclude 16 pagine del penale e 8 del civile (residuo),
+/// azzerando le fabbricazioni sulle pagine curate.
+func codiciPageHasStrandedProse(_ page: PdfPageExtraction) -> Bool {
+    for line in page.lines where !line.spans.isEmpty {
+        let fontSize = line.spans[0].fontSize
+        let x0 = line.bbox.x
+        if fontSize >= 6.0, fontSize <= 8.2, x0 >= 90.0, x0 < CODICI_COLUMN_GUTTER_X {
+            return true
+        }
+    }
+    return false
+}
+
+/// De-interfoglia le sole pagine interfogliate E prive di prosa desincronizzata,
+/// con una partizione stabile per colonna. Le altre pagine (non interfogliate, o
+/// con una riga di prosa nella terra di nessuno) sono ritornate INVARIATE
+/// (identità). Idempotente: una pagina già partizionata ha la colonna destra
+/// contigua → non è più interfogliata → invariata. Nessuna riga persa (la
+/// partizione include tutte le righe, anche quelle con spans vuoti). Gated dal
+/// chiamante (invocata solo in contesto isCodici).
+func deinterleaveCodiciColumns(_ extraction: PdfExtraction) -> PdfExtraction {
+    var out = extraction
+    for i in out.pages.indices
+    where codiciPageIsInterleaved(out.pages[i]) && !codiciPageHasStrandedProse(out.pages[i]) {
+        let lines = out.pages[i].lines
+        out.pages[i].lines = lines.filter { codiciLineColumn($0) == 0 }
+            + lines.filter { codiciLineColumn($0) == 1 }
+    }
+    return out
+}
+
 // MARK: - Il plugin
 
 public final class CodiciPlugin: ExtractionPlugin {
@@ -406,8 +507,11 @@ public final class CodiciPlugin: ExtractionPlugin {
         estimateProfile(extraction).isCodici ? CODICI_CONFIDENCE : 0.0
     }
 
-    public func build(_ extraction: PdfExtraction, sourceName: String) -> ScabopdfDocument {
-        let profile = estimateProfile(extraction)
+    public func build(_ rawExtraction: PdfExtraction, sourceName: String) -> ScabopdfDocument {
+        let profile = estimateProfile(rawExtraction)
+        // De-interfoliazione delle due colonne PRIMA di ogni consumo (furniture,
+        // pageItems, assemble): l'intera catena vede l'ordine colonna-maggiore.
+        let extraction = deinterleaveCodiciColumns(rawExtraction)
         let furniture = detectFurniture(extraction)
         let fmMax = frontMatterRegionLimit(extraction.pageCount)
         let apparatus = detectApparatus(extraction, furniture)
@@ -422,13 +526,14 @@ public final class CodiciPlugin: ExtractionPlugin {
     }
 
     public func build(
-        _ extraction: PdfExtraction,
+        _ rawExtraction: PdfExtraction,
         sourceName: String,
         onPageClassified: (_ done: Int, _ total: Int) -> Void,
         isCancelled: () -> Bool
     ) -> ScabopdfDocument? {
         if isCancelled() { return nil }
-        let profile = estimateProfile(extraction)
+        let profile = estimateProfile(rawExtraction)
+        let extraction = deinterleaveCodiciColumns(rawExtraction)
         if isCancelled() { return nil }
         let furniture = detectFurniture(extraction)
         if isCancelled() { return nil }

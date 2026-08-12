@@ -166,6 +166,11 @@ public func bindAndPlaceNotes(
     var footnoteIdsByArticle: [Int: [Int: [String]]] = [:]
 
     let profile = estimateProfile(extraction)
+    // De-interfoliazione delle due colonne dei codici: DEVE combaciare con
+    // quella applicata da CodiciPlugin.build, così lo zip nodi↔pageItems e
+    // l'estrazione delle note (splitFootnotes) vedono lo stesso ordine. Pura,
+    // idempotente, gated isCodici → byte-identica ovunque il flag sia falso.
+    let extraction = profile.isCodici ? deinterleaveCodiciColumns(extraction) : extraction
     let furniture = detectFurniture(extraction)
     let body = profile.bodySize
 
