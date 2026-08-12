@@ -107,6 +107,39 @@ cima alla destra; guasto di sola posizione, testo intatto; cross-producer.
   on-device non ha punto operativo pulito (recall ~47 %, FP 11-17 %) →
   «non flaggare», accettato come disordine locale innocuo on-device.
 - **Strato:** STRUTTURALE — puro ordine.
+- **Diagnosi approfondita (2026-08-12, sesto giro — dedicato al desync).**
+  Indagate le 24 pagine che la cura dei codici (D.6-sexies) lascia come residuo
+  «prosa desincronizzata». **Verdetto contro l'oracolo PyMuPDF: è un difetto
+  dell'ESTRATTORE, non della pagina.** Le 24 si decompongono in: **~21 pagine di
+  testatina centrata** (PARTE/LIBRO/TITOLO/sezione a x0≈146: l'oracolo le colloca
+  identiche, Δ≈0 — NON sono desync, sono state escluse solo perché la guardia
+  grezza flaggava la testatina in banda-mediana); **2 union-artifact** (p.1810
+  penale, p.1083 civile: l'estrattore FONDE due righe fisiche in una e la seconda
+  è mis-posizionata a sinistra — «zione…» corretta a 183.5 ma la coda «mente ai
+  loro uffici…» estratta a 157.8; l'oracolo conferma 183.5); **1 tabella di
+  corrispondenza** (p.1135 civile, dove PDFKit sposta «Articolo» di −70pt,
+  33.8→104). Il censimento cross-corpus della firma (primo-span lontano da
+  union-minX) conferma il carattere **sistemico e cross-producer**: 61 righe su
+  EdD (OCR), 16-25 su Patriarca/Torrente/Costituzionale, sparse su quasi tutti i
+  volumi — è un artefatto di `PDFSelection.bounds` di PDFKit, non dei codici.
+  **Nessuna via on-device sicura nel ramo codici.** Tentate e FALSITE due cure:
+  (a) classificare la colonna per il primo-span-sostanziale invece che per
+  l'union-minX (fa migrare ~20 testatine TITOLO, non è chirurgico); (b) recuperare
+  le pagine-testatina più il sort per y dentro la colonna — ma la rete NET1 sul
+  runner reale scopre che **il recupero di p.507 fabbrica «dapmodif»**
+  («…v. dapprima l'art.… conv., con modif.…» → «…v. dapmodif.»): la fabbricazione
+  nasce nell'AGGANCIO NOTE a valle del riordino, non nell'ordine delle righe (né
+  la partizione né il sort per y la tolgono). Distinguere geometricamente una
+  pagina-testatina sicura da una con desync nascosto nell'apparato note non è
+  affidabile. **Collocazione della cura: ESTRATTORE (radice protetta — il salto
+  di qualità è MuPDF, cfr. `PdfKitExtractor.swift` e il piano di migrazione)
+  oppure OFFICINA (un modello che guarda la pagina e decide la colonna).** Nel
+  ramo codici la via sicura non esiste, quindi non si forza (regola d'oro).
+  Diagnosi completa in `docs/DIAGNOSI_CODICI_COLONNE.md` § 6. Codice INVARIATO
+  (build 44 resta lo stato buono). **Utente senza Mac: scoperto** su 24 pagine
+  (~0.9% dei due codici), MA non peggiorato (identità) e con danno limitato (le
+  ~21 testatine hanno il corpo interfogliato come prima; i 2 union-artifact + la
+  tabella sono rari). La cura vera è l'upgrade dell'estrattore.
 
 ## B. I semantici dell'inventario
 

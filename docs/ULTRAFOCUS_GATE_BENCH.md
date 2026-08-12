@@ -329,3 +329,43 @@ byte-identici. Cura **45 penale + 16 civile** pagine; residuo desync **16 + 8**
 (dichiarato, non peggiorato: identità sulle pagine escluse). ScaboCore 589/589.
 La causa a monte (desync PDFKit A.5) resta la sola parte scoperta, ed è materia
 dell'estrattore, non del riordino.
+
+---
+
+## Sesto giro (2026-08-12) — il residuo desync: diagnosi, nessuna cura forzata
+
+Giro dedicato al disallineamento geometrico dell'estrazione (INBOX A.5), la
+causa delle 24 pagine che la cura dei codici lascia come residuo. **Movimento 1
+(diagnosi) prima di qualunque cura**, perché la natura del fenomeno comanda dove
+va la cura.
+
+**Diagnosi (contro l'oracolo PyMuPDF): è un difetto dell'ESTRATTORE.** Le 24
+pagine si decompongono in ~21 testatine centrate (PARTE/LIBRO/TITOLO a x0≈146,
+l'oracolo le conferma Δ≈0 — NON desync, solo flaggate dalla guardia grezza), 2
+union-artifact (PDFKit fonde due righe fisiche e mis-posiziona la seconda a
+sinistra: «zione…» a 183.5 corretta, coda «mente…» a 157.8; oracolo conferma
+183.5), 1 tabella di corrispondenza (PDFKit sposta «Articolo» di −70pt). Il
+censimento cross-corpus della firma conferma il carattere **sistemico e
+cross-producer** (61 righe su EdD OCR, 25 su Costituzionale, 17 su Torrente, 16
+su Patriarca…): è un artefatto di `PDFSelection.bounds`/`attributedString` di
+PDFKit, non dei codici.
+
+**Movimento 2 — nessuna via on-device sicura nel ramo codici.** Tentate e
+falsite due cure: (a) classificare la colonna per il primo-span-sostanziale
+(migra ~20 testatine TITOLO, non chirurgico); (b) guardia raffinata
+(union-artifact + tabella) per recuperare le pagine-testatina più il sort per y
+dentro la colonna — ma **NET1 sul runner reale scopre che il recupero di p.507
+fabbrica «dapmodif»** («…v. dapprima l'art.… conv., con modif.…» →
+«…v. dapmodif.»): la fabbricazione nasce nell'AGGANCIO NOTE a valle del riordino,
+non nell'ordine delle righe (né la partizione né il sort per y la tolgono).
+Distinguere geometricamente una pagina-testatina sicura da una con desync
+nascosto nell'apparato note non è affidabile, e una sola pagina che scombina
+l'apparato di un codice quotidiano è inaccettabile (prudenza doppia sui codici).
+
+**Esito: diagnosi documentata, codice INVARIATO (build 44 resta lo stato buono).**
+La cura vera è alla radice: **upgrade dell'estrattore** (MuPDF, il soffitto di
+qualità del piano di migrazione) o **officina** (un modello che decide la colonna
+di appartenenza). Residuo 24 pagine (~0.9% dei due codici): utente senza Mac
+scoperto lì, ma non peggiorato (identità) e con danno limitato. Diagnosi completa
+in `docs/DIAGNOSI_CODICI_COLONNE.md` § 6; A.5 aggiornata nell'INBOX. ScaboCore
+589/589 invariato. Nessuna nuova build.

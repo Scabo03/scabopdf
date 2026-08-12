@@ -157,3 +157,84 @@ codici**:
 - **Priorità**: alta, perché i codici li usano tutti (Mac-less compresi) e il
   difetto danneggia il contenuto (non solo un earcon). Ma da fare bene, in un
   giro dedicato, non di sfuggita.
+
+## 6. Il residuo desync — diagnosi (sesto giro, 2026-08-12)
+
+Giro dedicato al residuo di 24 pagine (16 penale + 8 civile) che la cura lascia
+come «prosa desincronizzata». **Prima la diagnosi (la natura del fenomeno comanda
+la collocazione), poi la decisione.**
+
+### 6.1 Che cosa sono davvero le 24 pagine (contro l'oracolo PyMuPDF)
+
+Confrontando, riga per riga, le coordinate dell'estrattore dell'app con quelle
+dell'oracolo offline sulla stessa pagina:
+
+- **~21 pagine di TESTATINA CENTRATA** (PARTE SECONDA, LIBRO QUINTO, TITOLO,
+  sezione…, a x0≈146-150): **l'oracolo le colloca identiche (Δ≈0)**. NON sono
+  desync — sono state escluse dalla guardia grezza solo perché una testatina
+  centrata cade in banda-mediana [90,182). Il loro corpo È interfogliato (per
+  questo la pagina è flaggata), ma la testatina è a posto.
+- **2 pagine UNION-ARTIFACT** (p.1810 penale, p.1083 civile): l'estrattore FONDE
+  due righe fisiche in una sola riga d'estrazione, e la SECONDA riga fisica è
+  mis-posizionata a sinistra. Es. p.1810: `spans=[(«zione, né obbligarle…»,
+  x0=183.5), («mente ai loro uffici…», x0=157.8)]`. La testa (`spans[0]`) è
+  corretta nella colonna destra (l'oracolo conferma 183.5); la coda a 157.8 è
+  desincronizzata. Il classificatore di colonna usa il bordo sinistro dell'union
+  bbox (min = 157.8) → mette la riga a sinistra → il riordino fabbrica
+  «prostitumunire».
+- **1 TABELLA di corrispondenza** (p.1135 civile, «Articolo N → paragrafo M»):
+  qui l'estrattore sbaglia DAVVERO le coordinate (sposta «Articolo» di −70pt,
+  33.8→104, l'oracolo dice 33.8). È un impaginato 2-D che il riordino
+  colonna-maggiore scombina comunque.
+
+### 6.2 Estrattore o pagina? — ESTRATTORE (e cross-producer)
+
+L'oracolo colloca correttamente ciò che PDFKit sbaglia: è un difetto della
+**lettura del PDF** (`PDFSelection.bounds(for:)` restituisce un rect sbagliato
+per certi span, e `attributedString` fonde due righe fisiche senza «\n»), non
+una stranezza editoriale della pagina. Il censimento della firma
+(primo-span lontano dall'union-minX oltre 10pt) **fuori dai codici** conferma il
+carattere sistemico: 61 righe su EdD (OCR Times), 25 su Manuale Costituzionale,
+17 su Torrente, 16 su Patriarca, e a sparire su quasi ogni volume (2-10). È
+l'A.5 «cross-producer» dell'INBOX, ora isolato con precisione: un artefatto di
+PDFKit, non dei codici. **Portata molto maggiore di 24 pagine** — ma rara per
+volume, e il ramo codici non può curarla per gli altri volumi (usano un altro
+classificatore di colonna).
+
+### 6.3 Perché nel ramo codici la via sicura non esiste
+
+Due cure on-device tentate e **falsite dalle quattro reti**:
+
+1. **Classificare la colonna per il primo-span-sostanziale** invece che per
+   l'union-minX. Corregge i 2 union-artifact, ma NON è chirurgico: fa migrare
+   ~20 righe-testatina «TITOLO I - Dei delitti…» (union 167 → primo-span 189),
+   perturbando pagine già curate. Scartata.
+2. **Guardia raffinata (union-artifact + tabella) per recuperare le
+   pagine-testatina, più sort per y dentro la colonna.** NET2/NET3 verdi, ma
+   **NET1 sul runner reale scopre la fabbricazione «dapmodif» su p.507**: il
+   recupero della pagina cambia l'AGGANCIO NOTE a valle, e la nota
+   «…v. dapprima l'art.… conv., con modif., in l. 24 aprile 2020…» viene
+   ricomposta in «…v. dapmodif., in l. 24 aprile 2020…». La fabbricazione nasce
+   nel binding delle note, NON nell'ordine delle righe: né la partizione stabile
+   né il sort per y la tolgono (verificato). Distinguere geometricamente una
+   pagina-testatina sicura da una con desync nascosto nell'apparato note **non è
+   affidabile** — e una sola pagina che scombina l'apparato di un codice
+   quotidiano è inaccettabile (regola d'oro, prudenza doppia sui codici).
+
+### 6.4 Collocazione della cura e residuo
+
+- **Cura: ESTRATTORE o OFFICINA.** Il difetto è alla radice (PDFKit). La
+  correzione generale e sicura è l'**upgrade dell'estrattore** (MuPDF, il
+  «soffitto di qualità» già previsto in `PdfKitExtractor.swift` e nel piano di
+  migrazione): eliminerebbe il desync a monte per OGNI volume e recupererebbe le
+  24 pagine. In alternativa, un modello Mac-side che guarda la pagina e decide la
+  colonna di appartenenza (officina). Nel **ramo codici** la via sicura NON
+  esiste (§ 6.3) → non si forza.
+- **Codice INVARIATO** questo giro (build 44 resta lo stato buono). Nessuna riga
+  scritta: non si lascia lavoro a metà, non si spedisce una cura che scombina i
+  codici.
+- **Residuo: 24 pagine (~0.9% dei due codici).** Utente senza Mac: **scoperto**
+  lì, ma **non peggiorato** (le pagine restano identiche a prima) e con danno
+  **limitato** (le ~21 testatine hanno il corpo interfogliato come già oggi; i 2
+  union-artifact e la tabella sono rari). La cura vera arriva con l'estrattore
+  migliore, non con una pezza nel ramo.

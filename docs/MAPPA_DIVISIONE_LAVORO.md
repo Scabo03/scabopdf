@@ -105,7 +105,7 @@ Mac** e se **esiste una via on-device parziale ma sicura**.
 | **B.1 bibliografia vs nota-contenuto** | earcon «bibliografia» vs «Nota» | di-blocco, **giudizio semantico** | **NO — irriducibile misurato** (gold 140, «no motivato») | ✗ scoperto (ma il frutto è un'etichetta; `BIBLIO_INTERNAL_XREF` copre il caso netto) |
 | **A.2/A.3 L2/L3** — bande di confidenza dello split | dubbio per costruzione | strutturale, giudizio di senso | NO — richiede il modello locale | ✗ scoperto (raro, basso danno; il cerotto azzera i falsi) |
 | **A.4 scansioni/OCR** | nessun text-layer | **testuale** | NO — richiede OCR (frutto È testo) | ✗ scoperto (1 volume nel corpus: EdD azienda) |
-| **A.5 desync indici 2-colonne (PDFKit)** | coda colonna sx in cima a dx | strutturale (ordine) | detector senza punto operativo pulito → «non flaggare» | ✗ scoperto ma **innocuo** (~2%, testo intatto) |
+| **A.5 desync geometrico PDFKit** | l'estrattore mis-posiziona span / fonde righe fisiche (oracolo conferma) — **difetto dell'estrattore, cross-producer** | strutturale (radice) | **NO nel ramo** (diagnosi 6° giro): union-artifact + note-scramble non distinguibili con regole; cura = estrattore (MuPDF) o officina | ✗ scoperto — residuo codici 24 pp (~0.9%), non peggiorato; la cura è alla radice |
 | **C.2 ordine/etichetta indici analitici codici** | voci-indice classificate NOTE e dislocate | strutturale — **etichetta, non ordine** | il **muto** è già on-device (D.6-quinquies); la ri-etichetta piena usa il verdetto docling | ◑/✗ parziale (il falso «Nota.» è già tolto) |
 | **C.1 fusione miglior ordine + segmentazione (gate)** | scelta canonica multi-estrattore | strutturale | NO on-device (docling è Mac-side) | ✗ scoperto |
 | **B.3 titolo con punto interno (Lener)** | 2 titoli non fusi | di-blocco, semantico | NO — distingue punto interno da punto di chiusura | ✗ scoperto (1 caso) |
@@ -186,8 +186,12 @@ Contando il **peso reale** (casi misurati), non il numero di voci:
   (`302b32b`): cura 45+16 pagine con quattro reti di fedeltà, residuo desync
   16+8 dichiarato. La voce a costo-utente più alto è ora coperta per la maggior
   parte delle pagine interfogliate. Resta scoperta solo la coda del **desync
-  PDFKit A.5** (bbox errato che strand-a una riga di prosa fra le colonne), che
-  è materia dell'estrattore, non del riordino.
+  PDFKit A.5**: il sesto giro (dedicato) l'ha diagnosticato come **difetto
+  dell'ESTRATTORE** (oracolo PyMuPDF: PDFKit mis-posiziona span / fonde righe
+  fisiche; cross-producer). Nel ramo codici NON c'è via sicura (le due cure
+  tentate falliscono: il recupero delle pagine-testatina fabbrica «dapmodif» nel
+  binding note) → la cura è alla radice (MuPDF) o all'officina; residuo 24 pp
+  invariato. Vedi `DIAGNOSI_CODICI_COLONNE.md` § 6.
 - **A.1 MULTIPAGE** — strutturale, parziale già dimostrata on-device.
 - **C.2 indici codici** — si è rivelato un problema di **etichetta**, non di
   ordine; il muto è già on-device.
