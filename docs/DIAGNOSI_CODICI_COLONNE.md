@@ -1,5 +1,16 @@
 # Diagnosi + progetto — interfoliazione a due colonne dell'apparato dei codici
 
+> **✅ REALIZZATO E CHIUSO ON-DEVICE il 2026-08-12 (quinto giro, commit
+> `302b32b`).** Il progetto qui specificato è stato costruito e validato con le
+> quattro reti: `deinterleaveCodiciColumns` (ramo `codici`), rilevatore a ≥3
+> giunzioni di sillaba fra colonne, gutter=182, guardia anti-desync. Cura 45+16
+> pagine, residuo dichiarato 16+8 (vittime del desync PDFKit A.5). NET1 (parole
+> inesistenti, lessico 898k): cura 853+325 tipi, zero nonword incollati nuovi.
+> NET2 (conservazione caratteri): identica sui due codici. NET3 (oracolo
+> PyMuPDF): 0 char persi/comparsi su 85 pagine. NET4 (lettura semantica): zero
+> dubbi. 38/40 byte-identici; navigazione articoli corretta (+3 civile
+> recuperati). Il testo qui sotto resta la diagnosi originale del quarto giro.
+>
 > Creato il 2026-08-11, quarto giro ultrafocus, movimento 2 intervento B.
 > Chiusura come **diagnosi documentata + specifica di progetto** (non come
 > codice): la via on-device esiste ed è sicura in linea di principio, ma una

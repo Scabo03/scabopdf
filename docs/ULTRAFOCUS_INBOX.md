@@ -334,6 +334,28 @@ volumi. Strato: STRUTTURALE (ordine).
   dell'officina a costo-utente più alto, ma «officina in attesa del progetto»,
   non «officina per necessità semantica».
 
+- **✅ CHIUSA ON-DEVICE (2026-08-12, quinto giro, commit `302b32b`).** Il
+  progetto è stato realizzato: `deinterleaveCodiciColumns` (ramo `codici`, gated
+  `isCodici`) fa la partizione stabile per colonna della banda-corpo sulle sole
+  pagine interfogliate. **Rilevatore** = ≥3 giunzioni di sillaba fra colonne
+  (segnale diretto della fabbricazione; esclude tabelle, pagine pulite e
+  testatine-folio); **gutter=182** calibrato dall'istogramma x0 (colonna destra
+  a 184, banda [181,183] vuota — esclude di per sé la tabella-ministeri a 180.2);
+  **guardia anti-desync**: le pagine con una riga di prosa nella terra di nessuno
+  [90,182) (vittime del desync PDFKit A.5) NON si riordinano → **residuo
+  dichiarato**. **Quattro reti** (la lettera identica non fa da cancello): NET1
+  parole inesistenti (lessico 898k) — cura 853+325 tipi, zero nonword incollati
+  nuovi (solo lacune di lessico: latino `sexies`/`duodecies`, `Eurojust`,
+  svedese di diritto comparato, composti); NET2 conservazione caratteri identica
+  sui due codici; NET3 oracolo PyMuPDF 0 char persi/comparsi su tutte le 85
+  pagine; NET4 lettura semantica delle pagine cambiate contro il PDF, zero dubbi.
+  Cura **45 penale + 16 civile**, residuo **16 + 8** (desync). 38/40 volumi
+  byte-identici; navigazione articoli corretta (10 testatine penale risanate, +3
+  articoli civile RECUPERATI da testatine mangled tipo «7. …corpora1.
+  Indicazione…»). **Utente senza Mac: coperto** sulle pagine curate (~72% delle
+  interfogliate); residuo desync dichiarato. La causa a monte (desync PDFKit A.5)
+  resta la sola parte non risolvibile senza estrattore migliore.
+
 ### D.6-septies Non-difetto registrato: la tabella muta di Delitti 168-169
 
 Chiusa come residuo accettabile (2026-08-12): tabella a 9,0 pt come le

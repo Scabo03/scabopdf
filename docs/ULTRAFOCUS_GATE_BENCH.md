@@ -284,3 +284,48 @@ validazione → giudizio pagina-per-pagina su ~80-120 pagine di materiale
 quotidiano). Chiuso in `docs/DIAGNOSI_CODICI_COLONNE.md` **senza scrivere codice**
 (regola: non lasciare lavoro a metà). Utente senza Mac: scoperto oggi, ma
 «officina in attesa del progetto», non «per necessità».
+
+---
+
+## Quinto giro (2026-08-12) — la cura dei codici a due colonne, con quattro reti
+
+Il giro dedicato interamente all'interfoliazione dei codici (il progetto
+specificato dal quarto giro). **Cura costruita e validata** (commit `302b32b`):
+`deinterleaveCodiciColumns` (ramo `codici`, gated `isCodici`) fa la **partizione
+stabile per colonna della banda-corpo** sulle sole pagine interfogliate,
+applicata identica in `CodiciPlugin.build` e in `bindAndPlaceNotes` così lo zip
+nodi↔pageItems resta coerente.
+
+**Prima misura, poi codice.** Rilevatore = **≥3 giunzioni di sillaba fra colonne
+diverse** (il segnale DIRETTO della fabbricazione: esclude tabelle — le celle non
+sillabano fra colonne — pagine pulite e testatine-folio). **Gutter=182**
+calibrato dall'istogramma x0 (colonna destra di corpo a 184, banda [181,183]
+vuota; esclude di per sé la tabella-ministeri a 180.2). **Guardia anti-desync**:
+le pagine con una riga di prosa nella terra di nessuno [90,182) — vittime del
+desync PDFKit (INBOX A.5: bbox errato, es. la coda «zione» a x0=157.8 su p.1810)
+— NON si riordinano (fabbricherebbero «prostitumunire»); residuo dichiarato.
+
+**Le quattro reti** (la lettera identica NON fa da cancello: il riordino cambia
+la de-sillabazione). NET1 parole inesistenti (lessico italiano 898k del
+pipeline, `net1_nonexistent.py`): cura **853 tipi penale + 325 civile**, e i soli
+token nuovi sono lacune di lessico (latino `sexies`/`duodecies`, `Eurojust`,
+svedese di diritto comparato, composti `fotoriprodotta`) — **zero nonword
+incollati** (le prime versioni fabbricavano `prostitumunire`/`disposicui`/
+`dapmodif`, tutte da pagine desync, azzerate dalla guardia). NET2 conservazione
+caratteri: **identica** sui due codici. NET3 oracolo PyMuPDF offline: **0 char
+persi/comparsi** su tutte le 85 pagine. NET4 lettura semantica contro il PDF
+(articolo→rubrica, commi in ordine, elenchi in ordine alfabetico italiano —
+h-i-l-m senza j/k — note attaccate, transizione a fondo colonna): lette per
+intero le 3+2 pagine più interfogliate, una con note d'aggiornamento, una a
+soglia minima, i 7 flag automatici (tutti falsi allarmi: `lett. a)` inline,
+`a-bis)`, liste multiple), e 2595 pagine non toccate come controllo negativo
+(identità) — **zero dubbi**.
+
+**Delta a 40 volumi: 38 byte-identici** (solo i 2 codici cambiano, gated).
+Navigazione articoli **corretta**: 10 testatine del penale risanate (da mangled
+tipo «7. …corpora1. Indicazione…» a pulite), **+3 articoli del civile
+RECUPERATI** (erano nascosti dentro testatine mangled). Estratto e Marotta
+byte-identici. Cura **45 penale + 16 civile** pagine; residuo desync **16 + 8**
+(dichiarato, non peggiorato: identità sulle pagine escluse). ScaboCore 589/589.
+La causa a monte (desync PDFKit A.5) resta la sola parte scoperta, ed è materia
+dell'estrattore, non del riordino.

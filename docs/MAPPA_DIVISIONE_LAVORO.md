@@ -100,7 +100,7 @@ Mac** e se **esiste una via on-device parziale ma sicura**.
 
 | Voce (INBOX) | Che difetto è | Strato | On-device sicura? | Utente senza Mac |
 |---|---|---|---|---|
-| **D.6-sexies — interfoliazione apparato codici** | l'estrazione fabbrica parole («pree)finanziamento») su ~4% di pagine dei 2 codici | strutturale (ordine) | **SÌ, ma è un progetto** (vedi § 3) | ✗ scoperto — **la voce a costo più alto** |
+| **D.6-sexies — interfoliazione apparato codici** | l'estrazione fabbrica parole («pree)finanziamento») su ~4% di pagine dei 2 codici | strutturale (ordine) | **✅ FATTA on-device (2026-08-12)** — partizione per colonna gated codici, cura 45+16 pagine | ✅ **coperto** sulle pagine curate; residuo desync 16+8 dichiarato |
 | **A.1 MULTIPAGE** — nota spezzata senza ripresa | testa troncata + coda orfana | strutturale | parziale già dimostrata on-device; il cross-pagina senza marcatore resta | ✗ parzialmente scoperto |
 | **B.1 bibliografia vs nota-contenuto** | earcon «bibliografia» vs «Nota» | di-blocco, **giudizio semantico** | **NO — irriducibile misurato** (gold 140, «no motivato») | ✗ scoperto (ma il frutto è un'etichetta; `BIBLIO_INTERNAL_XREF` copre il caso netto) |
 | **A.2/A.3 L2/L3** — bande di confidenza dello split | dubbio per costruzione | strutturale, giudizio di senso | NO — richiede il modello locale | ✗ scoperto (raro, basso danno; il cerotto azzera i falsi) |
@@ -180,10 +180,14 @@ Contando il **peso reale** (casi misurati), non il numero di voci:
 - **C.1 gate multi-estrattore** — docling è Mac-side per costruzione.
 
 **Collocato all'officina per PRUDENZA, non per irriducibilità:**
-- **D.6-sexies interfoliazione codici** — la via on-device è dimostrata; era
-  «materia del plugin codici/officina» per prudenza. **Riclassificato:
-  on-device-costruibile come progetto** (§ 3). È la scoperta di mappa più
-  importante del giro: la voce a costo-utente più alto non è irriducibile.
+- **D.6-sexies interfoliazione codici** — era «materia del plugin
+  codici/officina» per prudenza. Il quarto giro l'ha riclassificato
+  «on-device-costruibile»; **il quinto giro l'ha COSTRUITO on-device**
+  (`302b32b`): cura 45+16 pagine con quattro reti di fedeltà, residuo desync
+  16+8 dichiarato. La voce a costo-utente più alto è ora coperta per la maggior
+  parte delle pagine interfogliate. Resta scoperta solo la coda del **desync
+  PDFKit A.5** (bbox errato che strand-a una riga di prosa fra le colonne), che
+  è materia dell'estrattore, non del riordino.
 - **A.1 MULTIPAGE** — strutturale, parziale già dimostrata on-device.
 - **C.2 indici codici** — si è rivelato un problema di **etichetta**, non di
   ordine; il muto è già on-device.
