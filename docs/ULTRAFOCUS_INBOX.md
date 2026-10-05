@@ -389,6 +389,14 @@ volumi. Strato: STRUTTURALE (ordine).
   interfogliate); residuo desync dichiarato. La causa a monte (desync PDFKit A.5)
   resta la sola parte non risolvibile senza estrattore migliore.
 
+### D.7 Titoli di paragrafo non riconosciuti — ✅ CURATA ON-DEVICE (2026-10-05)
+
+Dal resoconto d'uso del maintainer (il difetto «più intollerabile»): causa prima il canale
+intestazioni solo tipografico (`docs/DIAGNOSI_INTESTAZIONI.md`). Curata nel tronco col canale dei
+titoli numerati, più salto nota↔testo e abbreviazioni (`docs/CURA_INTESTAZIONI.md`). Non è
+materia d'officina: tutti i segnali stanno nell'estrazione PDFKit. **Utente senza Mac: coperto.**
+Aperto: il canale «riga isolata» per le dispense monotipografiche (prossimo giro, on-device).
+
 ### D.6-septies Non-difetto registrato: la tabella muta di Delitti 168-169
 
 Chiusa come residuo accettabile (2026-08-12): tabella a 9,0 pt come le

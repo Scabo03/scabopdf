@@ -84,6 +84,9 @@ Legenda colonna «utente senza Mac»:
 | Nota a marcatore-simbolo `*`/`†`/`‡` e `(*)…(******)` | nota (`splitFootnotes`) | Cortina, codici, DPC | — | ✅ tutti |
 | Soppressione falsi «Nota.» (testatine/didascalie/tabelle collassate) | cerotto + estensioni | generic, Cortina, codici, DPC | codici | ✅ tutti (famiglie con profilo) |
 | Bibliografia cognome-particella → LETTERATURA | foglia di lettura (`reclassifyBibliographyEntries`) | Lezioni 90, Mandrioli, Estratto… | Lezioni, Mandrioli | ✅ tutti |
+| **Titoli di paragrafo numerati** «N.»/«N.M.»/«N.M.K.» a taglia «piccola» (+4…+9%) o a taglia-corpo (2026-10-05) | tronco (`recognizeNumberedTitles` in pageItems) | 24 volumi (Rizzo, Magnani, DPC, Mandrioli, Mosconi, …) | **Rizzo, DPC, Magnani** | ✅ tutti |
+| **Salto nota ↔ testo del richiamo** (§ 7.12, 2026-10-05) | lettura (`noteCallLinks` + azioni VoiceOver) | tutti i volumi con note agganciate | tutti | ✅ tutti |
+| Abbreviazioni delle citazioni (lista chiusa arricchita, 2026-10-05) | lettura (`SENTENCE_ABBREVIATIONS`) | 43 volumi (spezzature false 908 → 104) | Lezioni, codici | ✅ tutti |
 | Riconoscimento articoli codici → ARTICLE_HEADER (navigabile) | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
 | Gerarchia LIBRO/TITOLO/CAPO/SEZIONE + Consultazione Rapida | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
 | Recupero apparato DPC (note sporgenti a margine sx) | ramo `rivistaDpc` | 2 riviste | — | ◑ solo-materiali |

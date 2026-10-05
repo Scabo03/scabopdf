@@ -52,6 +52,25 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Cura dei titoli di paragrafo numerati + abbreviazioni + salto nota↔testo → build 45 — 2026-10-05
+
+Riferimento completo: `docs/CURA_INTESTAZIONI.md`. **Canale dei titoli numerati** nel tronco
+(`NumberedTitles.swift`, dentro `pageItems`): numerazione puntata a profondità arbitraria come
+segnale primario, taglia del NUMERO ≥ corpo×1,03 come supporto, titoli multipli a taglia-corpo solo
+se corti o a rientro sporgente fra due stacchi; guardie su apertura di blocco, indici, testatine,
+abbreviazioni; gate spento su codici e Rivista DPC; livello relativo alla gerarchia già emessa.
+**2.519 titoli nuovi su 52 volumi, tutti verificati, 0 falsi**; richiamo dei numerati 0 → 100% su
+Rizzo (indice stampato 60/60), Magnani, DPC 1-3, Mosconi, Costituzionale (96-99% sugli altri).
+**Cascata misurata:** nota lunga, mediana richiamo→lettura Rizzo 37,5 → 3 pagine, Mandrioli 3
+43 → 4, Mosconi 47 → 2, Magnani 11 → 1 (residuo sezioni lunghe: decisione di prodotto). **Abbreviazioni:**
+24 sigle aggiunte con giustificazione per voce, spezzature false 908 → 104, 12 frasi che non si
+chiudono più. **Salto nota↔testo** (§ 7.12) costruito: azioni VoiceOver «Vai al testo del richiamo» /
+«Vai alla nota N», 1.157/1.157 salti corretti sulla vista reale. Fedeltà: lettere identiche
+ovunque. Cache formato 6 (rielaborazione una tantum). ScaboCore 619/619, ScaboApp 133 (9 skip) + UI
+audit verdi.
+
+---
+
 ## ▶ STATO — Diagnosi del riconoscimento dei titoli (resoconto di due mesi d'uso) — 2026-10-05
 
 Giro di sola DIAGNOSI, nessun codice di prodotto. Documenti: `docs/DIAGNOSI_INTESTAZIONI.md` (cause,

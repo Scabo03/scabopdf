@@ -8,6 +8,10 @@
 > (40 storici + 12 del maintainer), rete A/C a lettere, conteggi di navigazione volume per
 > volume, lettura contro la pagina stampata.
 
+> **Stato al 2026-10-05:** voci **1** (titoli numerati), **3** (salto nota↔richiamo) e **6**
+> (abbreviazioni) **fatte** — `docs/CURA_INTESTAZIONI.md`. Aperte: 2 (dispense), 4 (testatine
+> Rizzo), 5 (decisione di prodotto sul differimento).
+
 ## 1. Canale «titolo numerato» nel tronco — il guadagno più grande
 
 **Che cosa.** Un secondo canale di intestazione in `classify`/`pageItems` (Generic, tronco),

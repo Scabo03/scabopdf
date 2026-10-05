@@ -1,5 +1,10 @@
 # Diagnosi — il riconoscimento dei titoli di paragrafo e di sezione
 
+> **✅ CURATO (voci 1, 3, 6 della proposta) il 2026-10-05** — vedi `docs/CURA_INTESTAZIONI.md`:
+> canale dei titoli numerati nel tronco (richiamo 0 → ~100% dei numerati, 0 falsi su 2.519 nuovi
+> verificati), cascata note Rizzo 37,5 → 3 pagine, salto nota↔testo costruito, abbreviazioni
+> 908 → 104 spezzature false. Il testo sotto resta la diagnosi originale.
+
 > Giro di DIAGNOSI del 2026-10-05, aperto dal resoconto di due mesi d'uso reale del
 > maintainer (build 44). Nessuna riga di codice di prodotto scritta. Codice a HEAD
 > `dde2dad` (= codice di `ccc6db9`, verificato al byte nel giro d'ambiente).
