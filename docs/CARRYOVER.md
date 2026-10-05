@@ -52,6 +52,41 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Verifica d'ambiente dopo il salto macOS 27 / Xcode 27 / Swift 6.4 + prova del ponte MCP verso Xcode — 2026-10-05
+
+Giro di sola verifica dopo due mesi di fermo, **codice di prodotto invariato** (HEAD di partenza
+`ccc6db9`, build 44 su TestFlight resta lo stato buono), nessuna build. Referto completo:
+`docs/VERIFICA_AMBIENTE_XCODE27.md`.
+
+**Nuova base d'ambiente** (sostituisce macOS 26.5.1 / Xcode 26.6): macOS 27.0.1, Xcode 27.0
+(27A266a), Swift 6.4, SDK iOS 27.0; runtime Simulator iOS 26.5 + iOS 27.0 (quest'ultimo NON era
+installato, contrariamente a quanto atteso: scaricato in questo giro). Progetto non toccato da Xcode
+(Swift 5 mode, floor iOS 15.0, `LastUpgradeCheck = 1210`, nessuna migrazione proposta).
+
+**Passo 1 — il terreno regge: VERDE.** ScaboCore 589/589 (0 avvisi); ScaboApp 133 eseguiti, 0 falliti,
+9 saltati (banco a file-richiesta) su iPhone 16 / iOS 26.5; audit UI ora **verde** sullo stesso runtime
+(la voce aperta `.dynamicType` qui sotto va riletta: è cambiato il motore di audit, non l'app). Avvisi:
+solo rumore (AppIntents, `ld` XCTest 17.0 nei bundle di test) e 3 deprecazioni `contentEdgeInsets`;
+nessun futuro errore. Confronto di rendering in tre reti che separano compilatore, estrattore e catena:
+**R1** runner Swift 6.4 sulle estrazioni della generazione precedente → `reading.json` e `.doc.json`
+**40/40 identici al byte** a `delta/before_C`; **R2** estrazione PDFKit ricatturata su iOS 26.5
+(Marotta, Estratto, due codici, Mandrioli 3) **5/5 identica** in forma canonica; **R3** dump di lettura
+dell'app sul simulatore **5/5 identico** alla replica host sulle estrazioni vecchie. Il freeze storico
+dell'Estratto `c0e9877…` non è riproducibile perché **superato per decisione** (cambio di regime del
+14 luglio); il riferimento operativo è la fotografia di HEAD, identica. Catena di rilascio in piedi:
+credenziali in `~/Developer/private_keys/` (non `~/private_keys`), certificato e profilo match validi
+fino al 2027-05-30, repo certs raggiungibile, fastlane avviabile.
+
+**Passo 2 — ponte MCP `xcrun mcpbridge`: SPENTO E RIMOSSO.** Build e lettura problemi equivalenti a
+`xcodebuild`; test peggio (legati alla destinazione attiva dell'IDE); interazione col simulatore solo
+su iOS 27+, senza tratti né navigazione per elementi, inservibile per la lettura contro il PDF a
+volume intero. Un solo dialogo d'autorizzazione misurato (prima connessione, rimasto orfano). Unica
+informazione nuova: nella reading view di Marotta su iOS 27 un elemento «Intestazione di livello 1.»
+vuoto che il dump non ha — annotato, da attribuire. Pacchetto `uikit-app-modernization` di Xcode 27
+pertinente solo in minima parte (2 `UIScreen.main` in `ContinuousReadingView`), non applicato.
+
+---
+
 ## ▶ STATO — Consolidamento in main (build 39/40 + lezioni) + cambio di regime Estratto — 2026-07-14
 
 **Consolidamento (Tempo 1).** Tre branch mergiati in `main` nell'ordine: `feature/visual-accessibility`

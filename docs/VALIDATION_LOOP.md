@@ -74,6 +74,19 @@ Se mancano, lo script fallisce con un messaggio esplicito (exit 2), non con un
 errore oscuro: Xcode in `/Applications/Xcode.app`, il runtime Simulator
 **iOS 26.5** installato, e un device **iPhone 16** su quel runtime.
 
+## Base d'ambiente corrente (accertata il 2026-10-05)
+
+macOS **27.0.1**, Xcode **27.0** (27A266a), Swift **6.4**, SDK iOS 27.0. Runtime
+Simulator installati: **iOS 26.5** (quello del loop, lo stesso su cui è stata
+collaudata la build 44) e **iOS 27.0**. Numeri attesi su questa base: ScaboCore
+**589/589**; ScaboApp **133 eseguiti, 0 falliti, 9 saltati** (i test del banco a
+file-richiesta, che saltano senza una richiesta in `/tmp`); ScaboAppUITests
+**1/1 verde** (l'audit, prima rosso con 9 rilievi `.dynamicType` noti, passa col
+motore di audit di Xcode 27). Attenzione: con il target UI nello scheme,
+`parse_summary` legge l'ultima riga «Executed» e quindi stampa per la suite app il
+conteggio dei test UI (1); il verdetto verde/rosso resta corretto. Referto
+completo del passaggio di generazione: `docs/VERIFICA_AMBIENTE_XCODE27.md`.
+
 ## Perché NON è agganciato a un hook git
 
 Scelta deliberata: il loop è **separato e invocabile a mano** (o da CI), non
