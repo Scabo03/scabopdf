@@ -52,6 +52,30 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Diagnosi del riconoscimento dei titoli (resoconto di due mesi d'uso) — 2026-10-05
+
+Giro di sola DIAGNOSI, nessun codice di prodotto. Documenti: `docs/DIAGNOSI_INTESTAZIONI.md` (cause,
+numeri, cascata, salto nota↔testo, abbreviazioni) e `docs/PROPOSTA_CURA_INTESTAZIONI.md` (cura ordinata).
+Materiale nuovo del maintainer (Rizzo, DPC 1-3, Magnani, sette dispense Pages/Word/Google Docs) copiato in
+`scabopdf-triple-take/originals_maint/` (fuori repo, contenimento provato con sonda).
+
+**Causa prima:** il riconoscimento delle intestazioni è solo tipografico (`classify`, `GenericPlugin.swift:758`:
+taglia ≥ 1,12 × corpo, colore, o grassetto ≥ 1,04 — grassetto che PDFKit perde sulle filiere editoriali). Sulle
+dispense (monotipografiche) il titolo non è mai candidato e la pagina diventa un solo blocco: **0/186** titoli
+Pages/Word. Sui manuali il titolo di paragrafo sta a +4…+9% del corpo: **0%** sotto la soglia (Rizzo 0/52,
+Magnani 0/72, DPC «N.M.» 0/44, Mandrioli/Mosconi/Lineamenti/Costituzionale ~0%); «buoni» solo i volumi con
+foglia su misura (Estratto, Lezioni §) o grassetto conservato (Patriarca). L'informazione utile (stacco, riga
+corta senza punto, numerazione «N.»/«N.M.» + delta di taglia) arriva intatta dall'estrazione. Cancello
+Giappichelli: DPC e Rizzo ne sono fuori (geometria; producer riscritto da iPad) ma non è la leva — Magnani è
+dentro e fa 0/72 (foglia §-only). **Cascata:** le note lunghe si differiscono al prossimo nodo intestazione →
+Rizzo oggi mediana **37,5 pagine** fra richiamo e nota (≈9.300 parole), 3-4 con i titoli; Mandrioli 3 43→3-4,
+Mosconi 47→2-3. **Salto nota↔testo (§ 7.12): mai costruito** (provato a runtime: sulla nota solo «Aggiungi
+segnalibro»). Abbreviazioni: 919 spezzature false (codici 537, Lezioni 87 «Cons. ‖ Stato»). Proposta n.1:
+canale «titolo numerato + taglia ≥ 1,03 × corpo» nel tronco (richiamo stimato ~100%, precisione ~100% sulle
+pagine di corpo).
+
+---
+
 ## ▶ STATO — Verifica d'ambiente dopo il salto macOS 27 / Xcode 27 / Swift 6.4 + prova del ponte MCP verso Xcode — 2026-10-05
 
 Giro di sola verifica dopo due mesi di fermo, **codice di prodotto invariato** (HEAD di partenza
