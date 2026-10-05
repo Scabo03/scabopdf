@@ -52,7 +52,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Cura dei titoli di paragrafo numerati + abbreviazioni + salto nota↔testo → build 45 — 2026-10-05
+## ▶ STATO — Cura dei titoli di paragrafo numerati + abbreviazioni + salto nota↔testo (build 45 pronta, caricamento bloccato da contratto Apple) — 2026-10-05
 
 Riferimento completo: `docs/CURA_INTESTAZIONI.md`. **Canale dei titoli numerati** nel tronco
 (`NumberedTitles.swift`, dentro `pageItems`): numerazione puntata a profondità arbitraria come
@@ -68,6 +68,12 @@ chiudono più. **Salto nota↔testo** (§ 7.12) costruito: azioni VoiceOver «Va
 «Vai alla nota N», 1.157/1.157 salti corretti sulla vista reale. Fedeltà: lettere identiche
 ovunque. Cache formato 6 (rielaborazione una tantum). ScaboCore 619/619, ScaboApp 133 (9 skip) + UI
 audit verdi.
+**Rilascio:** archivio Release ed esportazione dell'IPA firmata riusciti (Xcode 27, build 45), ma il
+caricamento su TestFlight è **rifiutato da App Store Connect**: «A required agreement is missing or
+has expired» (`Spaceship::ProgramLicenseAgreementUpdated`) — il contratto del Programma
+sviluppatori aggiornato va accettato dall'intestatario dell'account su developer.apple.com /
+App Store Connect. Dopo la firma basta rilanciare la procedura consolidata (`fastlane beta` con
+`SCABO_BUILD_NUMBER` tolto): il numero si calcola da sé (45).
 
 ---
 

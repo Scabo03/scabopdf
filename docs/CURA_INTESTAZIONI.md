@@ -159,6 +159,11 @@ Formato di cache 5 → **6**: ogni volume già importato si rielabora **una volt
 apertura (come col formato 5, build 43). Senza invalidazione i volumi in cache non mostrerebbero la
 cura.
 
+Build 45: archivio Release ed esportazione IPA firmata riusciti con Xcode 27; caricamento su
+TestFlight rifiutato da App Store Connect per contratto del Programma sviluppatori da accettare
+(«A required agreement is missing or has expired»). Dopo la firma dell'intestatario: `fastlane
+beta` con `SCABO_BUILD_NUMBER` tolto.
+
 ## 8. Residui e annotato (non toccato)
 
 - **Dispense monotipografiche** (Pages/Word): 0/186 invariato — è il canale «riga isolata», prossimo
