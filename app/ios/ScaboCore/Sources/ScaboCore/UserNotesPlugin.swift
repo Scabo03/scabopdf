@@ -187,6 +187,9 @@ public final class UserNotesPlugin: ExtractionPlugin {
                 out.append(NodeDict(
                     id: nextId(), type: userHeadingCategory(level),
                     page_index: page.pageIndex, text: sm.text, level: level))
+            case .numberedTitle(let sm, let depth):
+                out.append(numberedTitleNode(
+                    sm, depth: depth, page: page.pageIndex, preceding: out, id: nextId()))
             case .run(.body, let lines):
                 var bodyAcc: [String] = []
                 func flushBody() {

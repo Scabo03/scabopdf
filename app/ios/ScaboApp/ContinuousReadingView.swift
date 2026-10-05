@@ -278,7 +278,9 @@ final class SegmentCell: UICollectionViewCell {
     override var accessibilityCustomActions: [UIAccessibilityCustomAction]? {
         get {
             guard let segment else { return nil }
-            var actions = host?.bookmarkActions(forSegment: segment, orderIndex: readingIndex) ?? []
+            // Salto nota ↔ testo del richiamo (§ 7.12): per primi, sono le azioni di lettura.
+            var actions = host?.noteJumpActions(forIndex: readingIndex) ?? []
+            actions += host?.bookmarkActions(forSegment: segment, orderIndex: readingIndex) ?? []
             // La SOTTOLINEATURA è dichiarata solo-vedenti (§6): NON esposta a VoiceOver. Ma per gli
             // altri AT non-gestuali (Voice Control / Switch Control / Full Keyboard Access), per cui
             // `isVoiceOverRunning` è falso, la si rende raggiungibile senza il long-press: un'azione
@@ -333,6 +335,8 @@ final class ContinuousReadingView: UIView {
     /// (nessun muro di memoria), ma i loro indice+livello vivono qui e il rotore li raggiunge scorrendo
     /// e materializzando la sola cella bersaglio (meccanismo validato in Fase 0).
     private(set) var headingIndex: [(index: Int, level: Int)] = []
+    /// Legami nota ↔ segmento del richiamo (§ 7.12), calcolati a ogni render (`noteCallLinks`).
+    private(set) var noteLinks = NoteCallLinks()
 
     /// Indice dell'ultimo elemento messo a fuoco (o preimpostato), o `nil`. La posizione di lettura.
     private var lastFocusedIndex: Int?
@@ -552,6 +556,7 @@ final class ContinuousReadingView: UIView {
         lastFocusedRole = nil
         recomputePageStarts()
         rebuildHeadingIndexAndRotors()
+        noteLinks = noteCallLinks(segments)
         resetHeightCache()  // nuovo contenuto → nuove altezze da misurare
         collectionView.reloadData()
         onPaginationChanged?()
@@ -665,6 +670,28 @@ final class ContinuousReadingView: UIView {
     }
 
     // MARK: - Azioni sull'elemento (§ 5 / § 6)
+
+    /// Azioni di salto nota ↔ testo (§ 7.12) per l'elemento di indice dato: sulla nota «Vai al
+    /// testo del richiamo»; sul blocco che richiama note «Vai alla nota N» (una per nota). Il salto
+    /// usa `goToElement` (scroll + fuoco VoiceOver sulla cella materializzata). Nessun legame
+    /// riscontrato → nessuna azione (un salto sbagliato è peggio di nessun salto).
+    func noteJumpActions(forIndex index: Int) -> [UIAccessibilityCustomAction] {
+        var actions: [UIAccessibilityCustomAction] = []
+        if let call = noteLinks.callOfNote[index] {
+            actions.append(UIAccessibilityCustomAction(name: "Vai al testo del richiamo") { [weak self] _ in
+                self?.goToElement(atIndex: call, focus: true); return true
+            })
+        }
+        for note in noteLinks.notesOfCall[index] ?? [] where note < segments.count {
+            let number = segments[note].text.prefix(while: { $0.isNumber || $0 == "(" || $0 == ")" })
+                .filter { $0.isNumber }
+            let name = number.isEmpty ? "Vai alla nota" : "Vai alla nota \(number)"
+            actions.append(UIAccessibilityCustomAction(name: name) { [weak self] _ in
+                self?.goToElement(atIndex: note, focus: true); return true
+            })
+        }
+        return actions
+    }
 
     /// Costruisce le azioni-segnalibro VoiceOver per il segmento a fuoco (§ 5.1).
     func bookmarkActions(forSegment segment: ContentSegment, orderIndex: Int) -> [UIAccessibilityCustomAction]? {

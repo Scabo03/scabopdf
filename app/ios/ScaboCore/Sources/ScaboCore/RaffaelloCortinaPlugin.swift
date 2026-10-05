@@ -182,6 +182,9 @@ public final class RaffaelloCortinaPlugin: ExtractionPlugin {
                 out.append(NodeDict(
                     id: nextId(), type: headingCategory(level),
                     page_index: page.pageIndex, text: sm.text, level: level))
+            case .numberedTitle(let sm, let depth):
+                out.append(numberedTitleNode(
+                    sm, depth: depth, page: page.pageIndex, preceding: out, id: nextId()))
             case .run(let role, let lines):
                 if role == .note,
                    isSectionSubtitle(lines, pageHeight: page.height, columnWidth: colWidth) {

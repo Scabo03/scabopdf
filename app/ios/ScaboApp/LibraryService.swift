@@ -38,7 +38,7 @@ final class LibraryService {
     private let cacheDir: URL
 
     /// Versione del formato di cache SCRITTA dalle nuove elaborazioni.
-    private static let cacheFormatVersion = 5
+    private static let cacheFormatVersion = 6
     /// Versione minima LEGGIBILE.
     ///
     /// STORIA, perché questa costante è delicata. Fino al formato 4 valeva 3, deliberatamente: il 3
@@ -56,7 +56,14 @@ final class LibraryService {
     /// della build 20 (il render di ~47k etichette vive) non esiste più: la reading view è a
     /// finestra scorrevole, l'estrazione è a flusso e i volumi enormi si aprono in modalità
     /// leggera. Resta il picco TRANSITORIO dell'estrazione, lo stesso di un'importazione.
-    private static let minReadableCacheFormatVersion = 5
+    ///
+    /// Il formato 6 (2026-10-05, cura dei titoli di paragrafo) la alza a 6 per la stessa ragione:
+    /// il canale dei titoli numerati cambia la STRUTTURA (nuove intestazioni, blocchi spezzati al
+    /// titolo, note lunghe lette a fine paragrafo invece che a fine capitolo) e la lista delle
+    /// abbreviazioni cambia i confini di frase. Nulla di questo è ricavabile da una cache ferma:
+    /// senza invalidazione i volumi già importati non mostrerebbero la cura. Ogni documento si
+    /// rielabora UNA volta, alla prima apertura, come col formato 5.
+    private static let minReadableCacheFormatVersion = 6
 
     private init() {
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!

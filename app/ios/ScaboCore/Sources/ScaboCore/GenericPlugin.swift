@@ -1151,6 +1151,9 @@ enum RunRole { case body, note, gloss }
 /// shared verbatim by `appendPageNodes` (the build path) and `NoteBinding`.
 enum GenItem {
     case heading(LineSummary, level: Int)
+    /// Titolo NUMERATO riconosciuto dal canale del tronco (`recognizeNumberedTitles`): il livello
+    /// di navigazione si risolve all'emissione sui nodi precedenti (`numberedTitleLevel`).
+    case numberedTitle(LineSummary, depth: Int)
     case run(RunRole, [LineSummary])
     /// Apparato di front-matter (colophon → ARTIFACT_STAMP, indice → TOC_GENERAL):
     /// una pagina intera, scartata dal flusso letto ma conservata nell'albero.
@@ -1218,6 +1221,7 @@ func mergedLine(_ lines: [LineSummary]) -> LineSummary {
 func estrattoItemText(_ item: GenItem) -> String {
     switch item {
     case .heading(let sm, _): return sm.text
+    case .numberedTitle(let sm, _): return sm.text
     case .run(_, let lines): return joinLines(lines.map { $0.text })
     case .apparatus(_, let lines): return joinLines(lines.map { $0.text })
     }
@@ -1237,6 +1241,7 @@ func estrattoIsCapitoloMarker(_ text: String) -> Bool {
 func genItemLines(_ item: GenItem) -> [LineSummary] {
     switch item {
     case .heading(let sm, _): return [sm]
+    case .numberedTitle(let sm, _): return [sm]
     case .run(_, let lines): return lines
     case .apparatus(_, let lines): return lines
     }
@@ -1462,12 +1467,16 @@ func pageItems(
     // No-op (byte-identico) sui volumi non-codice.
     let withCodici = profile.isCodici
         ? recognizeCodiciArticles(withGiappichelli, profile) : withGiappichelli
+    // Canale dei TITOLI NUMERATI (tronco, universale salvo codici e Rivista DPC): promuove i
+    // titoli «N.»/«N.M.»/… nascosti nei run di corpo, spezzando il run (vedi NumberedTitles.swift).
+    let withNumbered = recognizeNumberedTitles(
+        withCodici, profile, colWidth: columnKnown ? max(0, colX1 - colX0) : 0, colX1: colX1)
     // Fusione posizionale dei titoli spezzati su più righe (universale, esclusa la Rivista DPC):
     // due heading adiacenti dello stesso livello si fondono in un unico titolo SOLO se geometria
     // e stile dicono che sono la stessa riga andata a capo. Precisione > recupero: nel dubbio non
     // fonde (un titolo distinto inghiottito = punto di navigazione perso, danno peggiore del
     // difetto). Sta DENTRO pageItems → `appendPageNodes` e `bindAndPlaceNotes` la vedono → zip 1:1.
-    return consolidateAdjacentHeadings(withCodici, profile)
+    return consolidateAdjacentHeadings(withNumbered, profile)
 }
 
 // ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────
@@ -1595,6 +1604,9 @@ func appendPageNodes(
                 text: sm.text,
                 level: level
             ))
+        case .numberedTitle(let sm, let depth):
+            out.append(numberedTitleNode(
+                sm, depth: depth, page: page.pageIndex, preceding: out, id: nextId()))
         case .run(let role, let lines):
             let text = joinLines(lines.map { $0.text })
             let category: SemanticCategory

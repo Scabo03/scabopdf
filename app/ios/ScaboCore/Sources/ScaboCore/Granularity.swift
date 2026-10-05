@@ -833,6 +833,38 @@ let SENTENCE_ABBREVIATIONS: Set<String> = [
     // organi / soggetti
     "trib", "cass", "sez", "rel", "ord", "decr", "dott", "prof", "avv", "sig",
     "spa", "srl", "s.p.a", "s.r.l", "sec", "secc",
+    // ── Estensione 2026-10-05 (cura intestazioni, voce abbreviazioni) ─────────────────────
+    // Solo sigle delle CITAZIONI giuridiche italiane che nel corpus reale (52 volumi) sono
+    // seguite quasi sempre dalla continuazione della citazione (data, numero, «Stato», città)
+    // e quasi mai da un attacco di frase. Tra parentesi: occorrenze seguite da continuazione
+    // / da attacco di frase. Escluse di proposito perché chiudono spesso una frase: «c.p.a.»
+    // (33/32), «t.u.f.» (107/48), «civ.» (35/13), «pr.» (principium: alla rete di delta 12
+    // spezzature curate contro 4 frasi chiuse male), «UE», «CEDU», «lav.». Ogni voce aggiunta è una
+    // parola dopo la quale la frase non si chiude più: lista corta e sicura.
+    "cons",    // Cons. Stato, Cons. St. (920/6)
+    "st",      // Cons. St., St. lav. (37/2)
+    "un",      // Cass. Sez. un. 1464-1983 (412/0)
+    "sent",    // sent. 203/1989, Sent. A e B (373/1)
+    "reg",     // reg. (UE) n., reg. Consob (484/1)
+    "c.d", "cd", // c.d. Legge Pinto, cd. Jobs Act — «cosiddetto» (1302/7)
+    "d.p.r",   // d.P.R. 22 dicembre 1986 (882/1)
+    "r.d.l",   // r.d.l. 20 … (59/0)
+    "g.u",     // G.U. 27 dicembre 1947 (715/1)
+    "gazz", "uff", // Gazz. Uff. (19/0)
+    "d.m",     // d.m. 12 gennaio 2001 (496/0)
+    "att",     // disp. att. 2, att. min. 24 (1126/24)
+    "min",     // att. min. 24, circ. Min. Lav. (403/2)
+    "nt",      // nt. 7 — nota (1034/2)
+    "conf",    // conf. Cass. — conforme (206/1)
+    "spec",    // spec. 33 ss. — specialmente (141/0)
+    "app",     // App. Milano — Corte d'appello (225/1)
+    "pen",     // Cass. pen. Sez. III (82/2)
+    "giur",    // Giur. it., Quot. giur. (96/2)
+    "dir",     // Riv. dir. proc., dir. 70/50/CEE (217/1)
+    "proc",    // Riv. dir. proc. (17/0)
+    "giust",   // Giust. civ. 6 (67/0)
+    "ult",     // ult. cit., da ult. Cass. (48/0)
+    "ud", "dep", "rv", // ud. 21/06/2016, dep. 30/09/2016, Rv. 235793 (86/0)
 ]
 
 /// Caratteri di chiusura ammessi dopo il terminatore e prima dello spazio.
