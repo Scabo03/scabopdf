@@ -178,6 +178,15 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 46 — 2026-10-06, commit `a749894` (giro «generazioni del lettore», `docs/GENERAZIONI_LETTORE.md`).** `fastlane beta`
+  con `SCABO_BUILD_NUMBER` unset → ultima su App Store Connect 45 → **46**; archive+export OK su Xcode 27, `UPLOAD SUCCEEDED
+  with no errors`, Delivery UUID `86ce5c6a-0060-4fd2-b292-d84af60040bd`, `fastlane.tools finished successfully`. Reti verdi
+  su ENTRAMBE le generazioni (iOS 26.5 identità assoluta; iOS 27 7 volumi/509 segmenti con lettere identiche): cura dei
+  confini di parola persi da PDFKit 27 e dei segnaposto U+FFFC; etichetta di generazione sui documenti. **Note di rilascio
+  (da scrivere in TestFlight «Cosa testare», la lane non le invia):** i libri già aperti restano letti come prima (la cache non
+  si rielabora); per sentire la cura su un libro, reimportarlo. Il referto di elaborazione mostra ora con quale versione di
+  sistema e build dell'app il libro è stato letto.
+
 ## Unico punto eventualmente manuale
 
 Nessuno, di norma: l'autenticazione è la **chiave API** (non Apple ID), già su disco. Serve solo

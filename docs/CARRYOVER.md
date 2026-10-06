@@ -72,6 +72,8 @@ additivi), scritta a ogni elaborazione, mostrata nel referto; cache al formato 6
 indipendente eseguita e assorbita (guardie più forti, storia git ripulita dai frammenti di testo). ScaboCore 640/640; ScaboApp
 133 (9 skip) + UI 1/1 su 26.5 e 27. Residui: 128 spazi su Patriarca (ambiguità, fusioni di riga PDFKit), 19 «Pag. N» Marrone.
 Politica di rielaborazione post-aggiornamento: proposta in § 5 del documento, non applicata.
+**Rilascio:** build **46** caricata su TestFlight il 2026-10-06 (`UPLOAD SUCCEEDED`, Delivery UUID `86ce5c6a-…`): i libri in
+cache restano letti come prima, reimportare per sentire la cura.
 
 ---
 
