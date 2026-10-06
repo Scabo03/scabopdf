@@ -52,3 +52,9 @@ ultrafocus_extracts/
 # Buste-frammento dell'officina ultrafocus (portano il testo dei volumi):
 # non devono mai entrare in git, ovunque compaiano.
 *.scabofrag.json
+
+# Uscite di build dei pacchetti SwiftPM della linea Mac (app/macos/*, ramo feat/mac-base): restano nel working
+# tree quando si cambia ramo e non devono mai entrare in un commit su main.
+app/macos/**/build/
+app/macos/**/.build/
+app/macos/**/.swiftpm/

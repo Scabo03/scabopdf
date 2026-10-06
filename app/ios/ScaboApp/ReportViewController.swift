@@ -52,7 +52,7 @@ final class ReportViewController: UIViewController, UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0: return 2                                   // riepilogo (nome file, pagine)
+        case 0: return 3                                   // riepilogo (nome file, pagine, generazione del lettore)
         default: return max(document.warnings.count, 1)    // avvisi (o "nessun avviso")
         }
     }
@@ -75,9 +75,14 @@ final class ReportViewController: UIViewController, UITableViewDataSource {
             if indexPath.row == 0 {
                 config.text = "File di origine"
                 config.secondaryText = document.sourceFileName
-            } else {
+            } else if indexPath.row == 1 {
                 config.text = "Pagine del file originale"
                 config.secondaryText = "\(document.sourcePageCount)"
+            } else {
+                // Etichetta di generazione (docs/GENERAZIONI_LETTORE.md): il lettore PDF di sistema
+                // cambia fra versioni; questa dice con quale il contenuto in cache è stato letto.
+                config.text = "Letto con il lettore di sistema"
+                config.secondaryText = SystemGeneration.describe(document)
             }
         } else if document.warnings.isEmpty {
             config.text = "Nessun avviso."

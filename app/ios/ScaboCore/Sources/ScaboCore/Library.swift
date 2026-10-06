@@ -81,6 +81,21 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// vs dall'XML AKN d'archivio, §12.6) e ai futuri filtri di ricerca per formato (§13.2).
     public var sourceKind: String?
 
+    /// ETICHETTA DI GENERAZIONE (giro «generazioni del lettore», 2026-10-06, docs/GENERAZIONI_LETTORE.md):
+    /// la versione del sistema operativo con cui il documento è stato ELABORATO l'ultima volta
+    /// (es. «iOS 27.0.1»). Il lettore PDF di sistema cambia fra generazioni (iOS 26.5 ≠ iOS 27 sul
+    /// 7 % delle pagine) e la cache si invalida solo per numero di formato: una libreria può quindi
+    /// mescolare libri letti con generazioni diverse, e ogni indicazione d'ascolto deve dire con quale.
+    /// Si aggiorna a ogni elaborazione (importazione o rielaborazione), mai alla sola apertura dalla
+    /// cache. OPZIONALE per retro-compatibilità additiva: `nil` = «non registrata» (elaborato prima
+    /// che l'etichetta esistesse). Non tocca la cache né il suo formato.
+    public var processedSystemVersion: String?
+    /// Quando è avvenuta l'ultima elaborazione (stessa regola di `processedSystemVersion`).
+    public var processedAt: Date?
+    /// Build dell'app (CFBundleVersion) che ha fatto l'elaborazione: distingue, a pari sistema, un libro
+    /// elaborato prima di una cura dell'estrazione da uno elaborato dopo. Stessa regola degli altri due.
+    public var processedAppBuild: String?
+
     public init(
         id: String,
         title: String,
@@ -93,7 +108,10 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         isHiddenFromRecents: Bool? = nil,
         bookmarks: [Bookmark]? = nil,
         underlines: [Underline]? = nil,
-        sourceKind: String? = nil
+        sourceKind: String? = nil,
+        processedSystemVersion: String? = nil,
+        processedAt: Date? = nil,
+        processedAppBuild: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -107,6 +125,9 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         self.bookmarks = bookmarks
         self.underlines = underlines
         self.sourceKind = sourceKind
+        self.processedSystemVersion = processedSystemVersion
+        self.processedAt = processedAt
+        self.processedAppBuild = processedAppBuild
     }
 }
 
@@ -504,6 +525,17 @@ public final class LibraryStore {
         // Riaprire un documento lo riporta fra i recenti: un documento appena aperto è recente.
         state.documents[i].isHiddenFromRecents = false
         state.lastOpenDocumentId = id
+        persist()
+    }
+
+    /// Registra un'ELABORAZIONE del documento (importazione o rielaborazione dal file d'archivio):
+    /// annota la versione di sistema del lettore PDF usato e l'istante. Non si chiama alla sola
+    /// apertura dalla cache: l'etichetta descrive il contenuto in cache, non l'ultima lettura.
+    public func recordProcessed(id: String, systemVersion: String, appBuild: String? = nil) {
+        guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
+        state.documents[i].processedSystemVersion = systemVersion
+        state.documents[i].processedAt = now()
+        state.documents[i].processedAppBuild = appBuild
         persist()
     }
 

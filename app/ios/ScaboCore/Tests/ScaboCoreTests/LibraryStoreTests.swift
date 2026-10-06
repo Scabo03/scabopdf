@@ -123,6 +123,50 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertNil(doc?.isHiddenFromRecents, "chiave assente → nil (= visibile nei recenti)")
     }
 
+    // MARK: - Etichetta di generazione (docs/GENERAZIONI_LETTORE.md)
+
+    func test_recordProcessed_setsSystemVersionAndInstant_notTouchedByOpen() {
+        let store = makeStore()
+        let d = store.addDocument(title: "T", sourceFileName: "t.pdf", sourcePageCount: 3)
+        XCTAssertNil(store.document(id: d.id)?.processedSystemVersion, "mai elaborato con etichetta → nil")
+        store.recordProcessed(id: d.id, systemVersion: "iOS 27.0.1", appBuild: "46")
+        XCTAssertEqual(store.document(id: d.id)?.processedSystemVersion, "iOS 27.0.1")
+        XCTAssertEqual(store.document(id: d.id)?.processedAppBuild, "46")
+        let t1 = store.document(id: d.id)?.processedAt
+        XCTAssertNotNil(t1)
+        store.recordOpened(id: d.id)   // la sola apertura dalla cache non cambia l'etichetta
+        XCTAssertEqual(store.document(id: d.id)?.processedSystemVersion, "iOS 27.0.1")
+        XCTAssertEqual(store.document(id: d.id)?.processedAt, t1)
+        store.recordProcessed(id: d.id, systemVersion: "iOS 26.5")   // rielaborazione: si aggiorna
+        XCTAssertEqual(store.document(id: d.id)?.processedSystemVersion, "iOS 26.5")
+        XCTAssertNotEqual(store.document(id: d.id)?.processedAt, t1)
+        store.recordProcessed(id: "inesistente", systemVersion: "iOS 27.0.1")   // no-op
+        XCTAssertEqual(store.allDocuments().count, 1)
+    }
+
+    func test_archivedDocument_decodesWithoutGenerationLabel_backwardCompatible() {
+        // Una libreria salvata PRIMA dell'etichetta non ha le chiavi: deve decodificare, con nil.
+        let json = Data("""
+        {"id":"x","title":"T","sourceFileName":"x.pdf","importedAt":"2026-01-01T00:00:00Z",\
+        "sourcePageCount":3,"readingPosition":7,"warnings":[]}
+        """.utf8)
+        let doc = try? JSONDecoder.library.decode(ArchivedDocument.self, from: json)
+        XCTAssertNotNil(doc)
+        XCTAssertNil(doc?.processedSystemVersion, "chiave assente → nil (= non registrata)")
+        XCTAssertNil(doc?.processedAt)
+        XCTAssertNil(doc?.processedAppBuild)
+    }
+
+    func test_generationLabel_roundTripsThroughPersistence() {
+        let persistence = InMemoryLibraryPersistence()
+        let store = makeStore(persistence: persistence)
+        let d = store.addDocument(title: "T", sourceFileName: "t.pdf", sourcePageCount: 3)
+        store.recordProcessed(id: d.id, systemVersion: "iOS 27.0.1")
+        let reloaded = LibraryStore(persistence: persistence)
+        XCTAssertEqual(reloaded.document(id: d.id)?.processedSystemVersion, "iOS 27.0.1")
+        XCTAssertEqual(reloaded.document(id: d.id)?.processedAt, store.document(id: d.id)?.processedAt)
+    }
+
     // MARK: - Archivio vs collocazioni (§ 12.6)
 
     func test_addCollocation_doesNotDuplicateInSamePlace() {

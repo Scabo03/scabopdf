@@ -130,6 +130,8 @@ enum DocumentOpener {
                     service.writeCache(content, pageMap: pageMap,
                                        doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
                                        contentTarget: target, forDocumentId: id)
+                    // Etichetta di generazione: con quale lettore di sistema è stato elaborato.
+                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
                     service.store.recordOpened(id: id)
                     presentReader(content: content, document: doc, pageMap: pageMap,
                                   doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
@@ -264,6 +266,7 @@ enum DocumentOpener {
                     service.writeCache(content, pageMap: pageMap,
                                        doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
                                        contentTarget: target, forDocumentId: id)
+                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
                     completion(makeEmbeddedReader(
                         doc: doc, content: content, pageMap: pageMap,
                         doctrine: large ? nil : doctrineContent, tree: tree, onPositionChanged: onPositionChanged))
@@ -491,6 +494,8 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                                    doctrineContent: doctrineContent, quickConsultTree: tree,
                                    contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id)
             }
+            // Etichetta di generazione (anche per l'enorme non cachato: è comunque stato elaborato ora).
+            service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
             if let destination { service.store.addCollocation(documentId: doc.id, to: destination) }
             service.store.recordOpened(id: doc.id)
             onImported?()
