@@ -135,6 +135,11 @@ cima alla destra; guasto di sola posizione, testo intatto; cross-producer.
   di qualità è MuPDF, cfr. `PdfKitExtractor.swift` e il piano di migrazione)
   oppure OFFICINA (un modello che guarda la pagina e decide la colonna).** Nel
   ramo codici la via sicura non esiste, quindi non si forza (regola d'oro).
+  **Aggiornamento 2026-10-06 (giro generazioni):** le fusioni di riga di PDFKit (due righe fisiche in
+  una) compaiono anche fuori dai codici e cambiano fra generazioni: su 26.5 incollano una glossa
+  marginale alla riga di corpo (Mandrioli 2 p73, con fabbricazione di una parola) e una testatina al
+  paragrafo (Torrente p454) dove la 27 le separa; su 27 restano 21 fusioni di riga su Patriarca che la
+  cura dei confini di parola non tocca (`docs/GENERAZIONI_LETTORE.md` § 4.5). Sempre estrattore.
   Diagnosi completa in `docs/DIAGNOSI_CODICI_COLONNE.md` § 6. Codice INVARIATO
   (build 44 resta lo stato buono). **Utente senza Mac: scoperto** su 24 pagine
   (~0.9% dei due codici), MA non peggiorato (identità) e con danno limitato (le
@@ -396,6 +401,17 @@ intestazioni solo tipografico (`docs/DIAGNOSI_INTESTAZIONI.md`). Curata nel tron
 titoli numerati, più salto nota↔testo e abbreviazioni (`docs/CURA_INTESTAZIONI.md`). Non è
 materia d'officina: tutti i segnali stanno nell'estrazione PDFKit. **Utente senza Mac: coperto.**
 Aperto: il canale «riga isolata» per le dispense monotipografiche (prossimo giro, on-device).
+
+### D.8-bis Generazioni del lettore di sistema — ✅ DOPPIA RETE + CURA `Tc` (2026-10-06)
+
+Il lettore PDFKit cambia fra iOS 26.5 e iOS 27 (7 % delle pagine). Giudicato contro la pagina
+(`docs/GENERAZIONI_LETTORE.md` § 3): la 27 è per lo più migliore (sommari numerati, articoli CC, note
+false, indice Mosconi) e peggiore su due punti curati nel tronco — le parole incollate dove lo spazio
+nasce dal solo `Tc` (tracking InDesign: Patriarca) e i segnaposto d'immagine U+FFFC letti come
+intestazioni vuote — e uno non curato (19 falsi «Pag. N» su Marrone, difetto a monte). Reti a doppio
+riferimento (27 principale, 26.5 secondario) con comando unico `app/ios/scripts/rete_generazioni.sh`.
+**Strato: STRUTTURALE** (radice). Resta all'officina/estrattore: le fusioni di riga di PDFKit (A.5)
+e le incollature non-`Tc` (Torrente 10, Lezioni storia 6, 122 residue su Patriarca).
 
 ### D.6-septies Non-difetto registrato: la tabella muta di Delitti 168-169
 
