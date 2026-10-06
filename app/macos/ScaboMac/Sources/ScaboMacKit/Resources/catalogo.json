@@ -76,7 +76,7 @@
       },
       "provenienza": {
         "indirizzo": "https://huggingface.co/ibm-granite/granite-docling-258M",
-        "versione": "258M, pesi ufficiali per llama.cpp",
+        "versione": "258M, pesi ufficiali",
         "editore": "IBM"
       },
       "provvisoria": true
@@ -101,7 +101,7 @@
       },
       "provenienza": {
         "indirizzo": "https://huggingface.co/zai-org/GLM-OCR",
-        "versione": "pesi ufficiali per llama.cpp (ggml-org)",
+        "versione": "pesi ufficiali dell'editore",
         "editore": "Zhipu AI"
       },
       "provvisoria": true
@@ -110,7 +110,7 @@
       "id": "apple-vision-documenti",
       "nome": "Struttura dei documenti di Apple",
       "ruolo": "ricostruttore_struttura_ordine",
-      "descrizione": "Riconosce paragrafi, elenchi e tabelle in una pagina con lo strumento già presente in macOS 26. Niente da scaricare. Non distingue le note a piè di pagina né i livelli dei titoli.",
+      "descrizione": "Riconosce paragrafi ed elenchi in una pagina, e a volte le tabelle, con lo strumento già presente in macOS 26. Niente da scaricare. Non distingue le note a piè di pagina né i livelli dei titoli.",
       "dimensioneByte": 0,
       "licenza": "Incluso in macOS, senza costi aggiuntivi.",
       "motore": "sistema_apple",
@@ -236,7 +236,7 @@
       },
       "provenienza": {
         "indirizzo": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF",
-        "versione": "pesi ufficiali",
+        "versione": "pesi ufficiali dell'editore",
         "editore": "Alibaba Qwen"
       },
       "provvisoria": true
@@ -261,7 +261,7 @@
       },
       "provenienza": {
         "indirizzo": "https://huggingface.co/Qwen/Qwen3-4B",
-        "versione": "conversione pubblicata dalla comunità, 2,28 gigabyte",
+        "versione": "pagina ufficiale del modello; la dimensione indicata è quella della versione compressa pubblicata dalla comunità",
         "editore": "Alibaba Qwen"
       },
       "provvisoria": true
@@ -286,7 +286,7 @@
       },
       "provenienza": {
         "indirizzo": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
-        "versione": "conversione pubblicata dalla comunità",
+        "versione": "pagina ufficiale del modello; la dimensione indicata è quella della versione compressa pubblicata dalla comunità",
         "editore": "Microsoft"
       },
       "provvisoria": true

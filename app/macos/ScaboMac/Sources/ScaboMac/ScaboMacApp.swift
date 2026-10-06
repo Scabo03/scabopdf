@@ -38,15 +38,17 @@ struct ScaboMacApp: App {
     @MainActor
     static func makeModel() -> PanelViewModel {
         let catalog: ModelCatalog
+        var problema: String?
         do {
             catalog = try CatalogLoader.loadBundled()
         } catch {
-            // Catalogo malformato o assente: l'app si apre comunque, con un catalogo vuoto e la spiegazione.
-            // (La validazione è coperta dai test; qui si degrada in prosa invece di andare in crash.)
-            NSLog("%@", Testi.catalogoProblemaAvvio((error as? CatalogError)?.spiegazione ?? Testi.catalogoMalformato))
+            // Catalogo malformato o assente: l'app si apre comunque, con un catalogo vuoto e la spiegazione in prosa
+            // MOSTRATA in testa al pannello (e nel registro di sistema), mai un crash né un silenzio.
+            problema = (error as? CatalogError)?.spiegazione ?? Testi.catalogoMalformato
+            NSLog("%@", Testi.catalogoProblemaAvvio(problema!))
             catalog = ModelCatalog(schemaVersione: ModelCatalog.schemaVersioneCorrente, aggiornatoIl: "", voci: [])
         }
         let service = SimulatedModelService(catalog: catalog)
-        return PanelViewModel(service: service, announcer: VoiceOverAnnouncer())
+        return PanelViewModel(service: service, announcer: VoiceOverAnnouncer(), problemaCatalogo: problema)
     }
 }

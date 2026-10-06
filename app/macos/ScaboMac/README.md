@@ -1,12 +1,12 @@
 # ScaboMac — lo scheletro dell'app macOS di ScaboPDF (l'officina)
 
-Primo pezzo del prodotto Mac, nato nel giro «linea Mac» del 2026-10-05/06. Compila, si lancia, si naviga da
-tastiera e con VoiceOver, ed è costruito come pacchetto SwiftPM **fratello** dell'app iOS: dipende da `ScaboCore`
+Primo pezzo del prodotto Mac, nato nel giro «linea Mac» del 2026-10-05/06. Compila, si lancia, è progettato per
+la navigazione da tastiera e con VoiceOver (non ancora provata a orecchio), ed è costruito come pacchetto SwiftPM **fratello** dell'app iOS: dipende da `ScaboCore`
 (`../../ios/ScaboCore`) e non tocca `ScaboPDF.xcodeproj`.
 
 ## Come si compila, si prova e si apre
 
-- Test unitari: `swift test` (nella cartella di questo file). 33 test: catalogo e cataloghi malformati, stati del
+- Test unitari: `swift test` (nella cartella di questo file). 35 test: catalogo e cataloghi malformati, stati del
   servizio, annunci (testo e frequenza), anti-gergo, verifiche reali, accessibilità strutturale (2 saltati, vedi sotto).
 - App pronta da aprire: `scripts/build_app.sh` → `build/ScaboMac.app`, con sandbox attiva e firma locale
   («Apple Development» se presente nel keychain, altrimenti ad hoc). Poi `open build/ScaboMac.app`.
@@ -50,11 +50,11 @@ scripts/build_app.sh, Info.plist, ScaboMac.entitlements   assemblaggio del bundl
   rotore «Intestazioni»); ogni voce è un gruppo chiuso con riassunto (nome, ruolo, stato, dimensione, provvisoria)
   e le sue azioni come pulsanti; lo stato è sempre una frase, mai solo un colore; nessuna animazione con «Riduci
   movimento»; colori di sistema (seguono «Aumenta contrasto»); il focus torna sulla voce dopo ogni cambio di stato
-  (`focusRichiesto` → `@AccessibilityFocusState`).
+  (`focusRichiesto` → `@AccessibilityFocusState`); all'apertura il focus va all'intestazione del ruolo su cui l'utente aveva lavorato l'ultima volta (`ruoloAperto`, ricordato con il `KeyValueStore` di ScaboCore).
 - Ordine in cui VoiceOver incontra gli elementi:
   - Finestra principale: intestazione di livello 1 «ScaboPDF — officina» → due frasi di spiegazione → pulsante
-    «Apri il pannello degli strumenti» (Cmd+Shift+M).
-  - Pannello: intestazione di livello 1 «Strumenti dell'officina» → avviso di simulazione → spazio libero →
+    «Apri il pannello degli strumenti» (la scorciatoia Cmd+Shift+M sta nel menu «Strumenti»).
+  - Pannello: intestazione di livello 1 «Strumenti dell'officina» → eventuale problema del catalogo (in prosa) → avviso di simulazione → spazio libero →
     frase sulle voci provvisorie → per ciascun ruolo, nell'ordine Lettore di scansioni, Ricostruttore di struttura
     e ordine, Ricucitore del senso: intestazione di livello 2 con il nome del ruolo → frase che lo spiega → le voci.
     Ogni voce: riassunto del gruppo → nome (e «voce provvisoria») → stato in parole (→ barra di avanzamento se in
@@ -73,7 +73,9 @@ UI richiedono la «modalità automazione», da abilitare a mano con autenticazio
 di sistema a schermo (accaduto il 2026-10-05). Ripiego adottato: test strutturale in-process
 (`AccessibilitaVisteTests`) che interroga l'albero NSAccessibility delle viste ospitate in una finestra — ma SwiftUI
 non costruisce quei nodi senza un cliente di accessibilità collegato, quindi i due test si dichiarano saltati con
-il motivo; l'ordine degli elementi è documentato qui sopra ed è da confermare a orecchio.
+il motivo. **Quindi oggi nessun test che gira verifica la struttura delle viste**: l'accessibilità è verificata per
+lettura del codice e per i test unitari su testi, stati, azioni e annunci; l'ordine degli elementi è documentato qui
+sopra ed è da confermare a orecchio.
 
 ## Sistema minimo
 

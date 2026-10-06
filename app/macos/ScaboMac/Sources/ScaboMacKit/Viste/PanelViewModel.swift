@@ -21,6 +21,8 @@ public final class PanelViewModel: ObservableObject {
     public let prefs: KeyValueStore
 
     @Published public private(set) var states: [String: ModelState] = [:]
+    /// Spiegazione in prosa di un problema del catalogo all'avvio (nil se il catalogo è valido): la vista la mostra in testa.
+    @Published public private(set) var problemaCatalogo: String?
     @Published public private(set) var spazioLiberoInParole: String = Testi.spazioLiberoSconosciuto
     /// Voce di cui si sta chiedendo conferma di rimozione (nil = nessuna).
     @Published public var confermaRimozionePer: String?
@@ -37,7 +39,8 @@ public final class PanelViewModel: ObservableObject {
     public var isSimulation: Bool { service.isSimulation }
 
     public init(service: ModelService, announcer: Announcing, policy: AnnouncementPolicy = AnnouncementPolicy(),
-                prefs: KeyValueStore = UserDefaultsKeyValueStore()) {
+                prefs: KeyValueStore = UserDefaultsKeyValueStore(), problemaCatalogo: String? = nil) {
+        self.problemaCatalogo = problemaCatalogo
         self.service = service
         self.announcer = announcer
         self.policy = policy
@@ -118,6 +121,8 @@ public final class PanelViewModel: ObservableObject {
     }
 
     public func esegui(_ azione: Azione, su entry: CatalogEntry) {
+        // Il ruolo su cui l'utente lavora viene ricordato fra le sessioni (la vista vi riporta il focus all'apertura).
+        if ruoloAperto != entry.ruolo { ruoloAperto = entry.ruolo }
         switch azione {
         case .scarica, .verificaSistema: scarica(entry.id)
         case .annulla: annulla(entry.id)

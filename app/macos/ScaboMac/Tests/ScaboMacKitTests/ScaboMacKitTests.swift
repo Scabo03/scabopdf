@@ -240,6 +240,21 @@ final class AnnunciTests: XCTestCase {
         XCTAssertEqual(m.azioni(per: sys), [.verificaSistema])
     }
 
+    func test_problemaDiCatalogo_arrivaAlPannello_inProsa() throws {
+        let vuoto = ModelCatalog(schemaVersione: 1, aggiornatoIl: "", voci: [])
+        let m = PanelViewModel(service: SimulatedModelService(catalog: vuoto), announcer: RecordingAnnouncer(),
+                               prefs: InMemoryKeyValueStore(), problemaCatalogo: Testi.catalogoMalformato)
+        XCTAssertEqual(m.problemaCatalogo, Testi.catalogoMalformato)
+        XCTAssertNil(Gergo.contieneGergo(Testi.catalogoProblemaAvvio(Testi.catalogoMalformato)))
+    }
+
+    func test_ruoloAperto_siAggiorna_quandoLUtenteAgisce() throws {
+        let (m, _, _, e) = try make()
+        XCTAssertNil(m.ruoloAperto)
+        m.esegui(.scarica, su: e)
+        XCTAssertEqual(m.ruoloAperto, e.ruolo)
+    }
+
     func test_ruoloAperto_ricordatoNellePreferenze() throws {
         let prefs = InMemoryKeyValueStore()
         let c = try CatalogLoader.loadBundled()

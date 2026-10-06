@@ -15,6 +15,7 @@
 //  pannello, Tab raggiunge il primo pulsante «Scarica», Spazio lo attiva, Tab raggiunge «Annulla lo scaricamento».
 //
 
+import ScaboMacKit
 import XCTest
 
 final class ScaboMacUITests: XCTestCase {
@@ -24,7 +25,7 @@ final class ScaboMacUITests: XCTestCase {
         app.launch()
         try app.performAccessibilityAudit()
         app.typeKey("m", modifierFlags: [.command, .shift])
-        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts[Testi.ruoloLettoreScansioni].firstMatch.waitForExistence(timeout: 3), "il pannello deve essere aperto")
         try app.performAccessibilityAudit()
     }
 

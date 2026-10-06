@@ -131,9 +131,9 @@ public enum Testi {
         "Non c'è abbastanza spazio sul disco: servono \(serve), ne restano \(libero). Libera spazio e poi premi Riprova."
     }
     public static let erroreConnessioneAssente =
-        "Il Mac non è collegato a internet. Collegalo e poi premi Riprova: lo scaricamento riprenderà da dove si era fermato."
+        "Il Mac non è collegato a internet. Collegalo e poi premi Riprova per scaricare di nuovo."
     public static let erroreScaricamentoInterrotto =
-        "Lo scaricamento si è interrotto prima di finire. Premi Riprova: riprenderà da dove si era fermato, senza ricominciare."
+        "Lo scaricamento si è interrotto prima di finire. Nulla di incompleto è rimasto sul disco: premi Riprova per scaricare di nuovo."
     public static let erroreFileDanneggiato =
         "Il file scaricato non corrisponde a quello pubblicato: potrebbe essersi rovinato durante lo scaricamento. "
         + "È stato cancellato; premi Riprova per scaricarlo di nuovo."

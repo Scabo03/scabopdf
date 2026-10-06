@@ -8,10 +8,11 @@
 //  attivo, colori di sistema (rispettano «Aumenta contrasto»).
 //
 //  Ordine in cui VoiceOver incontra gli elementi (dall'alto): titolo del pannello (intestazione di livello 1)
-//  → avviso di simulazione → spazio libero → per ogni ruolo: intestazione di livello 2 con il nome del ruolo,
-//  frase che lo spiega, poi le voci; ogni voce: riassunto (nome, ruolo, stato, dimensione, provvisoria) →
-//  pulsante «Dettagli» che apre le sette righe di dettaglio → pulsanti delle azioni → eventuale richiesta
-//  di conferma della rimozione con i suoi due pulsanti.
+//  → eventuale problema del catalogo → avviso di simulazione → spazio libero → frase sulle voci provvisorie →
+//  per ogni ruolo: intestazione di livello 2 con il nome del ruolo, frase che lo spiega, poi le voci; ogni voce:
+//  riassunto del gruppo (nome, ruolo, stato, dimensione, provvisoria) → nome (e «voce provvisoria») → stato in parole
+//  (→ barra di avanzamento se in scaricamento) → descrizione → «Dettagli» che apre le sette righe → pulsanti delle
+//  azioni → eventuale richiesta di conferma della rimozione con i suoi due pulsanti. Lo stesso ordine è nel README.
 //
 
 import SwiftUI
@@ -30,6 +31,15 @@ public struct ModelsPanelView: View {
                     .font(.title)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityHeading(.h1)
+                if let problema = model.problemaCatalogo {
+                    Label(Testi.catalogoProblemaAvvio(problema), systemImage: "exclamationmark.octagon")
+                        .font(.callout)
+                        .padding(8)
+                        .background(Color(nsColor: .controlBackgroundColor))
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(Testi.catalogoProblemaAvvio(problema))
+                        .accessibilityIdentifier("problemaCatalogo")
+                }
                 if model.isSimulation {
                     Label(Testi.simulazioneAvviso, systemImage: "exclamationmark.triangle")
                         .font(.callout)
@@ -53,6 +63,10 @@ public struct ModelsPanelView: View {
         .onReceive(model.$focusRichiesto) { id in
             if let id { focusId = id; model.focusRichiesto = nil }
         }
+        .onAppear {
+            // All'apertura il focus di VoiceOver va all'intestazione del ruolo su cui l'utente aveva lavorato l'ultima volta.
+            if let r = model.ruoloAperto { focusId = "ruolo.\(r.rawValue)" }
+        }
     }
 
     @ViewBuilder
@@ -62,6 +76,8 @@ public struct ModelsPanelView: View {
                 .font(.title2)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityHeading(.h2)
+                .accessibilityFocused($focusId, equals: "ruolo.\(ruolo.rawValue)")
+                .accessibilityIdentifier("ruolo.\(ruolo.rawValue)")
             Text(ruolo.spiegazione).font(.body)
             ForEach(model.catalog.voci(per: ruolo)) { entry in
                 CatalogEntryView(model: model, entry: entry, focusId: $focusId)
@@ -168,7 +184,6 @@ public struct MainWindowView: View {
             Text(Testi.finestraSpiegazione1)
             Text(Testi.finestraSpiegazione2)
             Button(Testi.apriPannello, action: apriPannello)
-                .keyboardShortcut("m", modifiers: [.command, .shift])
                 .accessibilityHint(Testi.apriPannelloAiuto)
                 .accessibilityIdentifier("apriPannello")
         }
