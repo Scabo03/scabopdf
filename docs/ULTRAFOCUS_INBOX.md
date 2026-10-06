@@ -449,7 +449,7 @@ della libreria del maintainer — oggi non lo sono.
 Giro «linea Mac» (ramo `feat/mac-base`, non fuso): scheletro `app/macos/ScaboMac` (pannello degli strumenti simulato, catalogo versionato,
 sandbox), `docs/MAC_BASE.md`, `docs/MAC_FACILITAZIONE_MODELLI.md`, Parte VIII dell'analisi. **Reperto di prima grandezza**: l'estrazione PDFKit
 cambia fra iOS 26.5 e iOS 27 sul 7 % delle pagine (spazi fra parole, ordine), con le pagine difficili sovra-rappresentate, e la lettura cambia
-sul 71 % dei volumi (2,3 % dei segmenti, 54 titoli in più, articoli e note toccati); Mac e telefono della stessa generazione coincidono. Le
+sul 71 % dei volumi (2,3 % dei segmenti, 56 titoli in più — uno su Marotta, volume di controllo —, articoli e note toccati); Mac e telefono della stessa generazione coincidono. Le
 istruzioni per-file (Parte IV) vanno quindi ancorate con un'impronta per pagina e un'identità da contenuto (oggi l'id è un UUID casuale).
 **Decisioni pendenti**: riferimento delle reti (26.5 / 27 / entrambi); forma della lettura su Mac (Catalyst, build nel laboratorio da provare a
 orecchio, o nativa); record App Store (stesso o separato: irreversibile); opzione A/B/C della facilitazione (`MAC_FACILITAZIONE_MODELLI.md` § 5).

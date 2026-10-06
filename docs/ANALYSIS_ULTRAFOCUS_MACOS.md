@@ -1254,7 +1254,7 @@ Riassunto; i dettagli con le etichette di prova stanno in `docs/MAC_BASE.md` e `
   **iOS 26.5 e iOS 27 coincidono solo su 15**, con il 7 % delle pagine divergenti (spazi fra parole, ordine delle righe) e le pagine difficili
   sovra-rappresentate (indice del Codice penale: 50 %). La frattura corre fra generazioni di sistema, non fra Mac e telefono.
 - **Parità di lettura** (stessa catena): macOS 27 → iOS 27 identica su 51/52 volumi; iOS 26.5 → iOS 27 identica su 15/52, 2,34 % dei segmenti
-  cambiati, 54 titoli in più, articoli dei codici ±, note −5, lettere di scarto 7.414 su Mosconi. Non giudicate contro la pagina.
+  cambiati, 56 titoli in più (uno anche su Marotta, volume di controllo), articoli dei codici ±, note −5 su 2 volumi, lettere di scarto 7.414 su Mosconi. Non giudicate contro la pagina.
 - **Identità del documento**: è un UUID casuale per importazione; non ricalcolabile sul Mac. Serve un'impronta da contenuto.
 - **Runner dell'officina**: parità con la catena dell'app riconfermata a HEAD (Marotta identico; DPC identica a meno del frazionamento dichiarato).
 
@@ -1262,7 +1262,7 @@ Riassunto; i dettagli con le etichette di prova stanno in `docs/MAC_BASE.md` e `
 
 Cinque vie misurate con la stessa scheda. Verificati sul campo: Vision documenti (20 pagine, 0,1–0,5 s/pagina, 917/1.220 blocchi concordi con
 docling, ordine discorde su 4 pagine a due colonne, niente note), modello di sistema Apple (disponibile, italiano, contesto 8.192, 1,4 s una
-ricucitura sintetica), llama.cpp in sandbox senza rete (Qwen3-0.6B: 0,26 s di caricamento, 956 MB, 64 token/s). **Non eseguite** (decisione del
+ricucitura sintetica), llama.cpp in sandbox senza rete (Qwen3-0.6B: 0,26 s di caricamento, 956 MB, 64 token/s; ripetuto fuori sandbox con uscita salvata). **Non eseguite** (decisione del
 maintainer dopo l'incidente): MLX-Swift in sandbox, conversione del layout docling, ambiente uv. Nessun candidato nativo ha numeri sulle pagine
 dei volumi: docling e Surya restano gli unici con numeri.
 
@@ -1282,7 +1282,7 @@ smentita ma va ristretta**: un solo motore incorporato, catalogo chiuso di pesi 
 principale minima, pannello degli strumenti nelle Impostazioni e da menu (Cmd+Shift+M), catalogo versionato (11 voci, 3 ruoli con le parole
 della diagnostica) con validazione in prosa, servizio dei modelli dietro interfaccia con implementazione dichiaratamente simulata (reali: spazio
 su disco, compatibilità, disponibilità degli strumenti Apple), annunciatore dietro interfaccia, stringhe in un posto solo con test anti-gergo;
-33 test unitari. I test d'interfaccia XCUITest sono scritti ma non eseguibili (serve un progetto Xcode e la modalità automazione con
+35 test unitari (2 saltati con motivo). I test d'interfaccia XCUITest sono scritti ma non eseguibili (serve un progetto Xcode e la modalità automazione con
 autenticazione).
 
 ## VIII.5 L'incidente del 2026-10-05

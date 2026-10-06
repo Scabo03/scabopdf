@@ -103,9 +103,10 @@ validazione sul banco; (10) inserimento nel flusso dell'officina; (11) costo in 
    un pacchetto Apple); Llama 3.2 multimodale non concesso a chi ha sede nell'UE; **Surya 2**: pesi Open RAIL-M modificata, soglia 5 milioni
    di dollari, **clausola di non concorrenza senza soglia**, «share-alike» esteso agli output, potere del licenziante di limitare l'uso «remotely
    or otherwise» (https://github.com/datalab-to/surya/blob/master/MODEL_LICENSE) — per un'app che trasforma scansioni in testo strutturato è il
-   rischio più alto del dossier; le schede delle conversioni comunitarie riportano licenze **sbagliate** (sempre risalire all'originale).
+   rischio più alto del dossier; le le schede delle conversioni comunitarie riportano licenze **sbagliate** (sempre risalire all'originale).
 6. **Contenimento**: in sandbox senza `network.client` l'esecuzione è offline per costruzione. **Misurato (1)**: llama.cpp in un'app sandbox
-   senza permesso di rete ha caricato un modello e risposto senza aprire alcun socket (`nettop` 0 byte, `lsof -i` vuoto); Vision e il modello di
+   senza permesso di rete ha caricato un modello e risposto senza che fosse osservato alcun socket (`nettop` 0 byte, `lsof -i` vuoto, campionamento
+   ogni 0,5 s; in sandbox senza `network.client` la rete è esclusa per costruzione); Vision e il modello di
    sistema Apple: 0 byte dal processo (il modello di sistema gira in un demone di sistema: la misura sul processo non copre il demone — (4)).
    Nessuna telemetria nelle librerie mlx-swift-lm (grep sul tarball 3.32.3) (2×1); lo scaricamento da Hugging Face rivela indirizzo e modello al
    loro server (3).
@@ -113,16 +114,18 @@ validazione sul banco; (10) inserimento nel flusso dell'officina; (11) costo in 
    Mac M1+ (2); llama.cpp xcframework 62 MB. Requisiti: Apple Silicon; macOS 13.3+ (llama.cpp), 14+ (MLX-Swift), 26+ (Vision documenti, modello
    di sistema), 27 (Core AI, novità WWDC26: formato `.aimodel`, protocollo `LanguageModel` — (2×1) https://developer.apple.com/documentation/coreai).
 8. **Manutenzione**: alta. mlx-swift-lm 3.x è una versione maggiore con rotture; mlx-swift 0.32.2 faceva andare in crash le app al lancio su
-   sistemi < 26.4 (2×1); l'API multimodale di llama.cpp si dichiara «experimental and subject to many BREAKING CHANGES» (2×2: scheda + intestazione
-   letta); il modello di sistema Apple cambia a ogni versione di macOS (tre in dodici mesi) (2×1). **Un difetto accertato nel codice**: il
+   sistemi < 26.4 (2×1); l'API multimodale di llama.cpp si dichiara «experimental and subject to many BREAKING CHANGES» (2×1: scheda e intestazione
+   lette dalla stessa ricerca); il modello di sistema Apple cambia a ogni versione di macOS (tre in dodici mesi) (2×1). **Un difetto accertato nel codice**: il
    processore Idefics3 di mlx-swift-lm inserisce un solo token immagine, quindi Granite-Docling «supportato dal registro» con ogni probabilità non
    funziona in MLX-Swift (2×1, codice letto).
 9. **Validazione sul banco**: **nessun candidato nativo ha numeri sulle pagine dei volumi.** Misure del giro (1), tutte su testo sintetico o
-   su pagine del banco senza giudizio di qualità: Vision documenti su 20 pagine (0,1–0,5 s/pagina a caldo, 23 s la prima; 917/1.220 blocchi
-   coincidono con docling; ordine discorde su 4 pagine a due colonne su 12; nessuna classe per le note; la tabella di Delitti p. 169 non riconosciuta);
-   modello di sistema Apple (disponibile, italiano fra 24 lingue, **contesto 8.192** su questo Mac — scioglie la contraddizione 4.096/8.192 delle
+   su pagine del banco senza giudizio di qualità: Vision documenti su 20 pagine (0,1–0,5 s/pagina a caldo; due pagine fredde da 22,7 e 23,9 s, la prima di ciascun gruppo; 917 dei
+   1.220 blocchi di docling hanno un paragrafo Vision gemello, Vision ne produce 1.327; ordine discorde su 4 pagine a due colonne su 12; nessuna
+   classe per le note; la tabella di Delitti p. 169 non riconosciuta; file `prove2/vision/concordanza_docling.txt`);
+   modello di sistema Apple (disponibile, italiano fra 24 lingue, **contesto 8.192** su questo Mac (uscita in `prove2/fm/fm_output.txt`) — scioglie la contraddizione 4.096/8.192 delle
    fonti Apple a favore dell'hardware; ricucitura di una parola spezzata in 1,43 s, giudizio sì/no in 0,23 s); llama.cpp con Qwen3-0.6B
-   (caricamento 0,26 s, 64 token/s, risposta corretta). **(4, prova non eseguita)**: MLX-Swift in sandbox; conversione del layout docling;
+   (in sandbox senza rete il 05: caricamento 0,26 s, 956 MB, 64 token/s, letti a terminale e non salvati; ripetuto il 06 a riga di comando fuori
+   sandbox con uscita salvata in `prove2/llama/llama_output.txt`: 0,24 s, 955 MB, 67,7 token/s, risposta corretta, uscita pulita). **(4, prova non eseguita)**: MLX-Swift in sandbox; conversione del layout docling;
    caricamento da Swift.
 10. **Flusso**: ingresso del file → diagnosi (guardiani, non costruiti) → rielaborazione dentro l'app → istruzioni per-file → consegna al telefono.
     È l'unica via in cui tutto resta nello stesso processo sandbox.

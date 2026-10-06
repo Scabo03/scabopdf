@@ -56,7 +56,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 Giro su ramo dedicato, `main` invariato a `9d65fef`, build 45 su TestFlight in collaudo. Documenti: `docs/MAC_BASE.md`,
 `docs/MAC_FACILITAZIONE_MODELLI.md`, Parte VIII di `docs/ANALYSIS_ULTRAFOCUS_MACOS.md`, voce D.8 di `docs/ULTRAFOCUS_INBOX.md`.
-**Scheletro** `app/macos/ScaboMac` (pacchetto fratello su ScaboCore, macOS 14+, sandbox, 33 test; pannello degli strumenti con scaricamento
+**Scheletro** `app/macos/ScaboMac` (pacchetto fratello su ScaboCore, macOS 14+, sandbox, 35 test; pannello degli strumenti con scaricamento
 SIMULATO e dichiarato). **Catalyst compila** senza errori (build nel laboratorio per la prova a orecchio). **Reperto**: l'estrazione PDFKit e la
 lettura cambiano fra iOS 26.5 e iOS 27 (7 % delle pagine, 71 % dei volumi, 2,3 % dei segmenti; pagine difficili sovra-rappresentate); Mac e
 telefono della stessa generazione coincidono. **Incidente** 2026-10-05: blocco comportamentale di macOS durante le prove di codice di terzi,

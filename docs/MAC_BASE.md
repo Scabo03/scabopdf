@@ -89,18 +89,19 @@ Catalyst del § 3, che le evita.
   stata ispezionata** (il pannello Apri non si lascia pilotare dalla sonda; la prova passa al maintainer).
 - **Modalità «iPad su Mac»**: la destinazione «My Mac (Designed for iPad)» esiste; la compilazione fallisce per mancanza di un profilo
   di provisioning che includa questo Mac («requires a provisioning profile»), e una build firmata ad hoc non si apre («incorrect
-  executable format»). I profili di sviluppo presenti sul Mac contengono un solo dispositivo, non questo Mac. Registrarlo sul portale è
+  executable format») — messaggi letti a terminale il 2026-10-05; il log è stato sovrascritto dal tentativo successivo, quindi questa
+  riga vale (1) senza file di prova conservato. I profili di sviluppo presenti sul Mac contengono un solo dispositivo, non questo Mac. Registrarlo sul portale è
   escluso dal giro. **Residuo dichiarato.** Via alternativa senza sviluppo: la build TestFlight iOS si può installare su Mac Apple
   Silicon dall'app TestFlight per Mac, se in App Store Connect non è stata esclusa la disponibilità su Mac (2) Apple, pagina sopra
   citata; (4) se l'esclusione sia attiva per ScaboPDF.
-- **Bersaglio macOS nativo** su ScaboCore: lo scheletro di questo giro (`app/macos/ScaboMac`) compila, si lancia in sandbox, 33 test.
+- **Bersaglio macOS nativo** su ScaboCore: lo scheletro di questo giro (`app/macos/ScaboMac`) compila, si lancia in sandbox, 35 test (33 verdi, 2 saltati con motivo; log in `logs/scabomac_swift_test.log`).
 
 ### 3.2 Il confronto
 
 | Criterio | iPad su Mac (così com'è) | Mac Catalyst | macOS nativo su ScaboCore |
 |---|---|---|---|
 | (1) Costo | 0 (solo distribuzione) | **~0,2 giri** per compilare; 1–2 per rifinire menu, finestre, suggerimenti; da misurare la lettura | officina: 1 giro (fatto); lettura: 12–16 giri |
-| (2) VoiceOver su Mac | la stessa app iPad con il «ponte» di Apple: nessun menu, finestra fissa, gesti simulati; i suggerimenti sono quelli del tocco (3) | etichette e intestazioni passano (1); navigazione VO+frecce elemento per elemento senza i raggruppamenti pensati per Mac (2, WWDC20 10117); la vista a finestra scorrevole va provata a orecchio (**4**) | si progetta per il Mac dalla nascita: gruppi, rotori, menu, annunci con priorità; nessun vicolo cieco per costruzione |
+| (2) VoiceOver su Mac | la stessa app iPad con il «ponte» di Apple: nessun menu, finestra fissa, gesti simulati; i suggerimenti sono quelli del tocco (3) | etichette e intestazioni passano (1); navigazione VO+frecce elemento per elemento senza i raggruppamenti pensati per Mac (2 via riassunto della sessione WWDC20 10117, trascrizione non letta); la vista a finestra scorrevole va provata a orecchio (**4**) | si progetta per il Mac dalla nascita: gruppi, rotori, menu, annunci con priorità; nessun vicolo cieco per costruzione |
 | (3) Ospitare l'officina (processi accanto, XPC, scaricamenti in sfondo, accesso ai file) | no: contenitore iOS, niente XPC né aiutanti | sì ma con limiti (sandbox obbligatoria, API AppKit solo quelle esposte a Catalyst) | **sì, pieno** |
 | (4) Store, TestFlight, Developer ID | solo tramite il record iOS (nessuna build Mac) | Mac App Store/TestFlight (sandbox) o Developer ID | tutti e tre |
 | (5) Si perde / si guadagna | si guadagna subito una lettura su Mac; si perde ogni integrazione con l'officina | si guadagna la lettura intera a costo quasi nullo; si perde la naturalezza Mac | si guadagna l'officina e una lettura Mac vera; si perde tempo (la lettura va riscritta) |
@@ -112,7 +113,7 @@ La **lettura su Mac** si ottiene prima e meglio con **Catalyst** (compila oggi, 
 build nel laboratorio; una lettura nativa Mac si valuterà solo se Catalyst non regge all'orecchio. La modalità iPad su Mac resta il
 ripiego senza sviluppo. Le due forme possono convivere nello stesso record o in due record: decisione del maintainer (§ 7).
 
-## 4. Prove sul campo (1)
+## 4. Prove sul campo (1 — i file di prova stanno in `~/Developer/scabopdf-mac-lab/`: `logs/`, `prova4_parita/`, `prova6_parita_runner/confronto_app_runner.txt`)
 
 ### 4.1 Prova 1 — l'app iOS sul Mac
 Vedi § 3.1: iPad su Mac non lanciabile senza registrare il Mac; Catalyst lanciata e ispezionata (prima apertura, Home, Impostazioni, Ricerca, pannello Apri). I test UI XCUITest sotto Catalyst non girano: su macOS richiedono la «modalità automazione» con autenticazione (`automationmodetool enable-automationmode-without-authentication`, chiede la password dell'amministratore); il tentativo ha lasciato un dialogo di sistema a schermo.
@@ -134,7 +135,7 @@ e simulatore iOS 27.0 (test di banco `test_extractionDump_fromRequest`, non modi
 | Coppia | Volumi identici | Pagine divergenti | Natura |
 |---|---|---|---|
 | **macOS 27 ↔ iOS 27** | **50/52** | **155/22.626** | solo 2 volumi: EdD «L'azienda» (scansione OCR; riquadri con scarto ≤ 1,63 pt su 61 pagine, 1 a-capo diverso) e Manuale di Diritto Costituzionale (93 pagine con **segmentazione degli span** diversa a testo e riquadri identici). Testo delle righe identico su 22.625 pagine su 22.626; **zero differenze di colore** (l'adattatore è validato). |
-| **iOS 26.5 ↔ iOS 27** | **15/52** | **1.579/22.626 (7 %)** | 781 pagine differiscono per **soli spazi fra parole** (7.479 spazi presenti su 26.5 e assenti su 27, 115 il contrario; spostamenti di punti dei puntini di conduzione); 363 pagine stessi caratteri in **ordine diverso**; 42 solo ordine delle righe; 11 pagine con 14 caratteri diversi (13 «caratteri di sostituzione oggetto» su iOS 27). Divergono anche taglia (416 pagine), grassetto (331), corsivo (305), colore (383) — quasi tutte su Marrone (679/684 pagine). |
+| **iOS 26.5 ↔ iOS 27** | **15/52** | **1.579/22.626 (7 %)** | 781 pagine differiscono per **soli spazi fra parole** (7.479 spazi presenti su 26.5 e assenti su 27, 115 il contrario; spostamenti di punti dei puntini di conduzione); 363 pagine stessi caratteri in **ordine diverso**; 422 solo ordine delle righe (415 su Marrone); 11 pagine con 14 caratteri diversi (13 «caratteri di sostituzione oggetto» su iOS 27). Divergono anche taglia (416 pagine), grassetto (331), corsivo (305), colore (383) — quasi tutte su Marrone (679/684 pagine). |
 | macOS 27 ↔ iOS 26.5 | 15/52 | 1.670 | come sopra (la differenza è la generazione, non la macchina) |
 
 **La frattura corre fra generazioni di sistema, non fra Mac e telefono.** E le pagine difficili sono le più colpite: sull'indice analitico
@@ -145,7 +146,7 @@ Lineamenti (didascalie, MULTIPAGE) sono identiche.
 Concordanza 26.5 = **99,42 %**, 27 = **98,89 %**; per pagina, 27 è meglio su 397, peggio su 359, pari su 25. iOS 27 corregge spazi spuri
 (Mercato unico: 130 pagine, concordanza 68.060 → 68.713) e ne perde altrove (Patriarca: 242 pagine, 139.328 → 138.276). Su **71 pagine**
 iOS 27 perde più del 10 % dei confini di parola, 49 delle quali più della metà: quasi tutte nei sommari a puntini dei due codici (pagine
-11–28) e nell'indice del Codice civile (2691–2694).
+11–28) e nell'indice del Codice civile (2691–2694) (`prova4_parita/oracolo_spazi_pagine.txt`).
 
 ### 4.5 Parità di lettura fra sistemi (stessa catena, estrazioni diverse)
 
@@ -154,7 +155,7 @@ Runner dell'officina ricompilato a HEAD (in una copia nel laboratorio) sui 52 vo
 
 | Coppia | Letture identiche | Segmenti cambiati (rimossi+aggiunti) | Pagine toccate |
 |---|---|---|---|
-| **macOS 27 → iOS 27** | **51/52** | **4 su 230.211** (EdD «L'azienda»: 1 segmento diverso, lettere identiche) | 1 |
+| **macOS 27 → iOS 27** | **51/52** | **4 su 230.211** (EdD «L'azienda»: 1 segmento rimosso, 3 aggiunti di cui una NOTE; lettere+cifre identiche) | 1 |
 | **iOS 26.5 → iOS 27** | **15/52** | **5.396 su 230.211 (2,34 %)** | 1.497 |
 
 Per famiglia (iOS 26.5 → iOS 27), le più toccate:
@@ -166,14 +167,15 @@ Per famiglia (iOS 26.5 → iOS 27), le più toccate:
 | generic · Adobe Photoshop Windows (13 volumi: Mandrioli, Lineamenti, Costituzionale, Mercato unico…) | 13 | 945 | +2 | 0 | 0 | 37 |
 | codici · PDFsharp (CP, CC) | 2 | 413 | 0 | **+2** (ART +4/−2) | 0 | 0 |
 | user_notes · Google Docs m132 (Istituzioni privato II) | 1 | 204 | **+34 HEADING_2** | 0 | 0 | 0 |
-| generic · Adobe PDF Library 10 (Mosconi, Compendio, Lezioni storia) | 3 | 85 | −1 | 0 | −2 | **7.414** |
-| generic · PDFsharp (Elementi UE, tesauro) | 2 | 66 | 0 | 0 | −3 | 100 |
+| generic · Adobe PDF Library 10 (Mosconi, Compendio, tesauro) | 3 | 85 | −1 | 0 | −2 | **7.414** |
+| generic · PDFsharp (Elementi UE, Torrente) | 2 | 66 | 0 | 0 | −3 | 100 |
 
-Capacità toccate: **titoli** (54 intestazioni in più su iOS 27: Marrone +19 HEADING_1, Istituzioni privato II +34 HEADING_2 — la cura
-dei titoli numerati risponde a spazi e segmentazione diversi), **articoli** dei codici (+2 netti, 4 aggiunti e 2 rimossi), **note** (−5 netti su
-3 volumi), **lettere+cifre** (Mosconi: 7.414 di scarto — testo che entra o esce dal flusso di lettura per una classificazione diversa, non
-giudicato contro la pagina), e i volumi di **controllo**: Marotta cambia 6 segmenti, l'Estratto 3. Invariati: i 4 DeJure (Aspose), 2 Photoshop
-Macintosh, 4 dispense Pages/Google Docs. **Le differenze non sono state giudicate contro la pagina**: sono quantificate e localizzate.
+Capacità toccate: **titoli** (+56 intestazioni nette su iOS 27: Marrone +19 HEADING_1, Istituzioni privato II +34 HEADING_2, +2 Photoshop
+Windows, +1 Marotta, +1 Nomofanie/Lezioni storia, −1 Mosconi — la cura dei titoli numerati risponde a spazi e segmentazione diversi),
+**articoli** dei codici (+2 netti, 4 aggiunti e 2 rimossi), **note** (−5 netti su 2 volumi: Mosconi −2, Elementi UE −3), **lettere+cifre**
+(Mosconi: 7.414 di scarto — testo che entra o esce dal flusso di lettura per una classificazione diversa, non giudicato contro la pagina), e i
+volumi di **controllo**: **Marotta cambia 13 segmenti su 6 pagine e guadagna un HEADING_1**, l'Estratto 6 segmenti su 4 pagine. Identici (15):
+i 4 DeJure (Aspose), 2 Photoshop Macintosh, 2 Photoshop Windows, 3 dispense Pages, 2 Google Docs, 1 Word, 1 iText. **Le differenze non sono state giudicate contro la pagina**: sono quantificate e localizzate.
 
 Conseguenza per la linea iPad: **tutte le reti sono tarate su iOS 26.5**; un telefono su iOS 27 produce letture diverse sul 71 % dei volumi
 (2,3 % dei segmenti). Il riferimento delle reti va deciso (§ 7).
@@ -189,7 +191,7 @@ dell'estrazione, invece, vale solo entro la stessa generazione di PDFKit (§ 4.4
 Dump di lettura dell'app (simulatore iOS 26.5, `test_readingFidelityDump_fromRequest`) contro il runner a HEAD sulla stessa estrazione:
 **Marotta 1.991/1.991 segmenti identici**; Rivista DPC 2-2018 4.565 (app) contro 5.117 (runner), con **tutti i 167 blocchi diversi che sono
 frazionamenti delle note lunghe** (`fractionLongNoteSegments`, che il runner applica e l'app no: regime dichiarato ad agosto), testo concatenato
-identico. Parità confermata a meno del frazionamento dichiarato.
+identico. Parità confermata a meno del frazionamento dichiarato (`prova6_parita_runner/confronto_app_runner.txt`: 167 blocchi diversi, 167 frazionamenti).
 
 ## 5. Conseguenze per le istruzioni per-file (Parte IV dell'analisi)
 
