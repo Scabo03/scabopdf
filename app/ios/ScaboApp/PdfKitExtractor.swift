@@ -187,6 +187,20 @@ struct PdfKitExtractor: PdfExtracting {
         guard let attributed = page.attributedString, attributed.length > 0 else {
             return plainLines(for: page)
         }
+        let raw = rawLines(for: page, attributed: attributed, cropBox: cropBox)
+        // Due cure pure di ScaboCore, applicate subito dopo l'estrazione (giro «generazioni del
+        // lettore», docs/GENERAZIONI_LETTORE.md): (1) i segnaposto d'immagine U+FFFC che PDFKit 27
+        // emette e che in lettura diventavano intestazioni vuote; (2) i confini di parola che PDFKit 27
+        // perde ignorando il `Tc` (tracking InDesign), ricostruiti dal flusso di contenuto letto con
+        // CoreGraphics: solo spazi inseriti, allineamento esatto, mai altro. Su iOS 26.5 entrambe
+        // sono identità (nessun U+FFFC; gli spazi ci sono già).
+        let cleaned = removingObjectReplacementCharacters(raw)
+        guard let ref = page.pageRef else { return cleaned }
+        return repairWordBoundaries(cleaned, runs: PdfContentGlyphRuns.runs(for: ref)).lines
+    }
+
+    /// Le righe come le dà PDFKit (il cuore trapiantato, verbatim): run uniformi → span, "\n" → riga.
+    private static func rawLines(for page: PDFPage, attributed: NSAttributedString, cropBox: CGRect) -> [PdfTextLine] {
 
         let full = attributed.string as NSString
         var result: [PdfTextLine] = []
