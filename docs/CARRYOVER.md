@@ -52,6 +52,20 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Linea Mac aperta: scheletro dell'app macOS, parità fra sistemi, facilitazione dei modelli — 2026-10-05/06 (ramo `feat/mac-base`, NON fuso)
+
+Giro su ramo dedicato, `main` invariato a `9d65fef`, build 45 su TestFlight in collaudo. Documenti: `docs/MAC_BASE.md`,
+`docs/MAC_FACILITAZIONE_MODELLI.md`, Parte VIII di `docs/ANALYSIS_ULTRAFOCUS_MACOS.md`, voce D.8 di `docs/ULTRAFOCUS_INBOX.md`.
+**Scheletro** `app/macos/ScaboMac` (pacchetto fratello su ScaboCore, macOS 14+, sandbox, 33 test; pannello degli strumenti con scaricamento
+SIMULATO e dichiarato). **Catalyst compila** senza errori (build nel laboratorio per la prova a orecchio). **Reperto**: l'estrazione PDFKit e la
+lettura cambiano fra iOS 26.5 e iOS 27 (7 % delle pagine, 71 % dei volumi, 2,3 % dei segmenti; pagine difficili sovra-rappresentate); Mac e
+telefono della stessa generazione coincidono. **Incidente** 2026-10-05: blocco comportamentale di macOS durante le prove di codice di terzi,
+accertato falso allarme; regola permanente: nessun binario scaricato si esegue senza fonte ufficiale + impronta pubblicata (o compilazione dal
+tag) e firma dove esiste. **Decisioni al maintainer**: riferimento delle reti (26.5/27), forma della lettura su Mac, record App Store, opzione di
+facilitazione A/B/C. Referto completo nel laboratorio: `~/Developer/scabopdf-mac-lab/referto/REFERTO_GIRO_MAC.md`.
+
+---
+
 ## ▶ STATO — Cura dei titoli di paragrafo numerati + abbreviazioni + salto nota↔testo → build 45 su TestFlight — 2026-10-05
 
 Riferimento completo: `docs/CURA_INTESTAZIONI.md`. **Canale dei titoli numerati** nel tronco

@@ -152,6 +152,8 @@ non far uscire il testo.
 
 ### 3. I modelli locali (area 2)
 
+> *Nota di rimando (2026-10-06):* la tensione fra questo paragrafo (vie di integrazione spedibili) e la Parte III (catalogo con strumenti Python) è sciolta nella **Parte VIII**, § VIII.3.
+
 Ricerca su fonti primarie (repo, model card) più i dati empirici del maintainer.
 **Conferma preliminare, che è il cardine del vincolo:** *tutti* i motori
 considerati **girano interamente in locale in inferenza — nessuno invia il
@@ -602,6 +604,8 @@ ciò che vale la pena imitare:
   ragione per cui il pannello, qui, deve essere di un'altra specie.
 
 ### III.3 La cassetta d'attrezzi per sotto-task — catalogo reale, licenze, offline
+
+> *Nota di rimando (2026-10-06):* il catalogo è stato riletto alla luce delle regole Apple e della regola perpetua nel giro «linea Mac»: vedi **Parte VIII** e `docs/MAC_FACILITAZIONE_MODELLI.md`; il catalogo versionato dell'app Mac è in `app/macos/ScaboMac/Sources/ScaboMacKit/Resources/catalogo.json`.
 
 Non un modello unico ma **un attrezzo per ogni sotto-task**; l'utente abbina.
 Conferma trasversale: **tutti girano in locale in inferenza — nessun testo dei
@@ -1234,3 +1238,58 @@ locale come rivelatore dei casi e la rete di delta come cancello; l'officina
 resta necessaria dove il deterministico non può sapere (la cucitura
 MULTIPAGE, i verdetti per-pagina docling sull'indice). Il terreno vero del
 modello resta il fuori-famiglia, ancora assente dal banco.
+
+---
+
+# Parte VIII — Il giro «linea Mac» (2026-10-05/06): base dell'app Mac, facilitazione dei modelli, scheletro
+
+Riassunto; i dettagli con le etichette di prova stanno in `docs/MAC_BASE.md` e `docs/MAC_FACILITAZIONE_MODELLI.md`.
+
+## VIII.1 Cosa è stato accertato
+
+- **Nulla di Mac-specifico esisteva** nel progetto; ScaboCore è già il nucleo condiviso (619 test su host).
+- **Catalyst compila** l'app iOS attuale senza errori con una sola impostazione; la build Release firmata in locale è nel laboratorio per la
+  prova a orecchio. La modalità «iPad su Mac» richiede di registrare il Mac sul portale: residuo dichiarato.
+- **Parità d'estrazione** (52 volumi, 22.626 pagine): macOS 27 e iOS 27 coincidono su 50 volumi (testo delle righe identico su 22.625 pagine);
+  **iOS 26.5 e iOS 27 coincidono solo su 15**, con il 7 % delle pagine divergenti (spazi fra parole, ordine delle righe) e le pagine difficili
+  sovra-rappresentate (indice del Codice penale: 50 %). La frattura corre fra generazioni di sistema, non fra Mac e telefono.
+- **Parità di lettura** (stessa catena): macOS 27 → iOS 27 identica su 51/52 volumi; iOS 26.5 → iOS 27 identica su 15/52, 2,34 % dei segmenti
+  cambiati, 54 titoli in più, articoli dei codici ±, note −5, lettere di scarto 7.414 su Mosconi. Non giudicate contro la pagina.
+- **Identità del documento**: è un UUID casuale per importazione; non ricalcolabile sul Mac. Serve un'impronta da contenuto.
+- **Runner dell'officina**: parità con la catena dell'app riconfermata a HEAD (Marotta identico; DPC identica a meno del frazionamento dichiarato).
+
+## VIII.2 La facilitazione
+
+Cinque vie misurate con la stessa scheda. Verificati sul campo: Vision documenti (20 pagine, 0,1–0,5 s/pagina, 917/1.220 blocchi concordi con
+docling, ordine discorde su 4 pagine a due colonne, niente note), modello di sistema Apple (disponibile, italiano, contesto 8.192, 1,4 s una
+ricucitura sintetica), llama.cpp in sandbox senza rete (Qwen3-0.6B: 0,26 s di caricamento, 956 MB, 64 token/s). **Non eseguite** (decisione del
+maintainer dopo l'incidente): MLX-Swift in sandbox, conversione del layout docling, ambiente uv. Nessun candidato nativo ha numeri sulle pagine
+dei volumi: docling e Surya restano gli unici con numeri.
+
+## VIII.3 La contraddizione fra Parte I e Parte III: sciolta
+
+Le due Parti parlano di piani diversi: la Parte I di ciò che può stare in un'app dello store (nativo), la Parte III di ciò che ha numeri sul
+banco (Python). La linea è: **i motori Python restano strumenti validati del banco e non entrano nel prodotto** (regola perpetua); il catalogo del
+prodotto li elenca al più con motore «programma accanto all'app» e stato «validato sul banco»; i candidati nativi entrano come voci provvisorie,
+«non misurato», finché non hanno numeri. Le regole Apple vigenti (testo dell'8 giugno 2026, letto) non vietano lo scaricamento di pesi come risorse
+— prassi di almeno tre app Mac native sullo store e documentazione Apple (Background Assets nomina i modelli) — ma restano un margine
+d'interpretazione su 2.4.5(iv) e nessuna pronuncia di App Review. L'ipotesi «app nativa compatibile con lo store, Python al banco» **non è
+smentita ma va ristretta**: un solo motore incorporato, catalogo chiuso di pesi a licenza pulita, numeri sulle pagine prima di ogni promessa.
+
+## VIII.4 Lo scheletro
+
+`app/macos/ScaboMac`: pacchetto SwiftPM fratello su ScaboCore, macOS 14+, sandbox attiva, identificativo `com.scabo.scabopdf.mac`; finestra
+principale minima, pannello degli strumenti nelle Impostazioni e da menu (Cmd+Shift+M), catalogo versionato (11 voci, 3 ruoli con le parole
+della diagnostica) con validazione in prosa, servizio dei modelli dietro interfaccia con implementazione dichiaratamente simulata (reali: spazio
+su disco, compatibilità, disponibilità degli strumenti Apple), annunciatore dietro interfaccia, stringhe in un posto solo con test anti-gergo;
+33 test unitari. I test d'interfaccia XCUITest sono scritti ma non eseguibili (serve un progetto Xcode e la modalità automazione con
+autenticazione).
+
+## VIII.5 L'incidente del 2026-10-05
+
+Durante le prove di collegamento la protezione comportamentale di macOS ha chiuso la sessione («blocked scripted malware execution», senza
+file); una sonda impacchettata come app andava in crash all'uscita e il dialogo di sistema proponeva di riaprirla in ciclo. Accertato in sola
+lettura: falso allarme quanto alla presenza di malware (nessun file; tutti i download con impronta uguale a quella ufficiale; nessuna
+persistenza; repo intatto); regola scattata non determinabile. Da qui le regole nuove del giro (nessuna sonda come app, nessun tasto sintetico,
+nessun dialogo chiuso, salvataggio prima dei passi a rischio) e la regola permanente sui binari: fonte ufficiale più impronta pubblicata o
+compilazione dai sorgenti al tag; la firma dove a monte esiste.
