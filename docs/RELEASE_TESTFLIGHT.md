@@ -190,8 +190,9 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
-- **Build 47 — 2026-10-07 (giro «testatine», `docs/TESTATINE_MISURA_STRUTTURA.md`).** Vedi la coda di questa nota dopo il
-  caricamento. Prima build con le note per i tester inviate dalla lane.
+- **Build 47 — 2026-10-07, commit `1f1fdc7` (giro «testatine», `docs/TESTATINE_MISURA_STRUTTURA.md`).** UPLOAD SUCCEEDED,
+  Delivery UUID `2be6f4c9-ac99-4fa6-972a-f5d1b90f6686`; processing Apple concluso alle 04:32 e **note per i tester scritte in «Cosa
+  testare» dalla lane** («Successfully set the changelog for build», prima volta). Prossimo numero: 48.
 - **Build 46 — 2026-10-06, commit `a749894` (giro «generazioni del lettore», `docs/GENERAZIONI_LETTORE.md`).** `fastlane beta`
   con `SCABO_BUILD_NUMBER` unset → ultima su App Store Connect 45 → **46**; archive+export OK su Xcode 27, `UPLOAD SUCCEEDED
   with no errors`, Delivery UUID `86ce5c6a-0060-4fd2-b292-d84af60040bd`, `fastlane.tools finished successfully`. Reti verdi
