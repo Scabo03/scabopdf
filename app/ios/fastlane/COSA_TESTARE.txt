@@ -1,17 +1,25 @@
-Build 48 — le annotazioni seguono il testo, e l'offerta di rielaborazione
+Build 49 — i titoli delle dispense, dei manuali e dei codici
 
 Cosa è cambiato
-- Segnalibri, sottolineature e il punto in cui sei arrivato ora sono legati al testo, non alla posizione: se un libro viene letto di nuovo con una versione migliore dell'app, restano sul passo giusto.
-- Se un'annotazione non si ritrova con sicurezza, l'app non la sposta a caso: il segnalibro resta in fondo alla lista dei segnalibri con la scritta «da ricollocare», e con un doppio tocco ti porta all'inizio della pagina da cui veniva, dicendolo. Una sottolineatura non ritrovata resta salvata ma non si vede più. Non si cancella nulla.
-- Piccola correzione: in Nomofanie, dove il lettore di sistema incollava il titolo in testa alla pagina alle lettere di un elenco, la lettera dell'elenco non si perde più.
+- Dispense scritte con Pages, Word o Google Docs (appunti compresi): i titoli ora si trovano nella navigazione per intestazioni, ciascuno al suo livello, e il testo è diviso nei paragrafi dell'autore invece che in blocchi tutti uguali. Non si perde più l'etichetta «CAP.» dei capitoli, né qualche parola in cima alla pagina che prima veniva scambiata per una testatina.
+- Torrente: i titoli dei paragrafi col segno di paragrafo (più di 700) sono ora intestazioni.
+- Mandrioli-Carratta (quattro volumi), Magnani e Mosconi-Campiglio: le «Sezioni» sono ora intestazioni.
+- Codice penale e Codice civile: il titolo con cui si apre ogni legge complementare è ora un'intestazione di terzo livello. Con il rotore si salta da una legge all'altra.
+- Rivista DPC 2018 e 2020: gli abstract in spagnolo e in inglese non sono più letti riga per riga come titoli. Nella dispensa di Scoca l'elenco degli autori non è più un titolo.
+- Tornano letti alcuni titoli e alcune righe che sparivano insieme a una testatina: cinque titoli in Costituzionale, un numero di paragrafo in Elementi di diritto UE e, su iPad con iOS 26, 61 righe di fine pagina in Marrone. In quei punti si sente anche la testatina o il piè «Pag.», a volte attaccato all'ultima parola: meglio sentirlo che perdere il testo.
+- Gli indirizzi web stampati sul retro di copertina non sono più titoli.
 
-L'offerta di rielaborazione
-- I libri aperti con le build precedenti non hanno ancora le cure delle build 45-48 (titoli dei paragrafi numerati, parole non più incollate, titolo corrente e numero di pagina non più letti come testo, annotazioni legate al testo). Ora l'app te lo offre.
-- Nella Home, in alto, compare la riga «Lettura migliore disponibile per …libri». Doppio tocco: si apre l'elenco. Doppio tocco su un libro: l'app ti spiega cosa cambia, quanto tempo serve e cosa succede alle tue annotazioni. Niente parte da solo.
-- Per rielaborare: doppio tocco su «Rielabora…» e poi conferma. Si può anche dalle opzioni del libro (il tasto a tre puntini): «Lettura migliore disponibile…».
-- Conviene accettare per avere le cure delle build precedenti su tutta la libreria, un libro alla volta.
-- Alla fine l'app ti dice quante annotazioni sono al loro posto e quante sono da ricollocare, e ti chiede se tenere la nuova lettura o tornare a quella di prima. Finché non scegli, la lettura di prima resta sul dispositivo: dalle opzioni del libro puoi sempre tornarci, e le annotazioni fatte nel frattempo vengono con te. Tenere la nuova lettura chiede una conferma, perché cancella quella di prima.
+Quali libri
+- Dispense e appunti: DPC vol 1, 2 e 3, Estratto e Lezioni Travi (Pages); Appunti DPC (Word); Scoca (Google Docs); Diritto processuale civile vol. 3; Teoria generale del diritto; Voce Imprenditore.
+- Manuali: Torrente, Mandrioli-Carratta 1-4, Magnani, Mosconi-Campiglio, Costituzionale, Elementi di diritto UE; Marrone solo su iPad con iOS 26.
+- Codici: penale e civile. Riviste: DPC 2018 e 2020.
+- Tutti gli altri libri si leggono esattamente come prima.
 
-Le annotazioni che hai già
-- Non si perdono. La prima volta che apri un libro con questa build, l'app lega al testo le annotazioni che già ci sono; poi, se rielabori, le ritrova nel testo nuovo.
-- Se un libro non era mai stato riaperto e la sua lettura salvata manca, le sue annotazioni compaiono come «da ricollocare».
+Per i libri già aperti
+- Basta accettare l'offerta «Lettura migliore disponibile»: dalla Home (la riga in alto) o dalle opzioni del libro, il tasto a tre puntini. L'app spiega cosa cambia e chiede conferma.
+- Le annotazioni seguono il testo. Quelle che l'app non ritrova con sicurezza restano «da ricollocare»: non si spostano a caso e non si cancella nulla. Fino alla scelta, la lettura di prima resta sul dispositivo.
+
+Cosa resta per il prossimo giro
+- Nei manuali i livelli dei titoli: a volte il capitolo e i suoi paragrafi stanno allo stesso livello, o un paragrafo finisce al quarto livello.
+- Nei codici, dentro le leggi che hanno TITOLI e CAPI propri, la Consultazione Rapida non mette ancora le parti sotto il titolo della legge.
+- Le testatine e i piè fusi con una riga di testo: si sentono ancora in pochi punti.

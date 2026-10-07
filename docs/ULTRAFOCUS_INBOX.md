@@ -394,13 +394,27 @@ volumi. Strato: STRUTTURALE (ordine).
   interfogliate); residuo desync dichiarato. La causa a monte (desync PDFKit A.5)
   resta la sola parte non risolvibile senza estrattore migliore.
 
-### D.7 Titoli di paragrafo non riconosciuti — ✅ CURATA ON-DEVICE (2026-10-05)
+### D.7 Titoli di paragrafo non riconosciuti — ✅ CHIUSA (2026-10-05 numerati; 2026-10-07 dispense, build 49)
 
 Dal resoconto d'uso del maintainer (il difetto «più intollerabile»): causa prima il canale
 intestazioni solo tipografico (`docs/DIAGNOSI_INTESTAZIONI.md`). Curata nel tronco col canale dei
 titoli numerati, più salto nota↔testo e abbreviazioni (`docs/CURA_INTESTAZIONI.md`). Non è
 materia d'officina: tutti i segnali stanno nell'estrazione PDFKit. **Utente senza Mac: coperto.**
-Aperto: il canale «riga isolata» per le dispense monotipografiche (prossimo giro, on-device).
+Chiusa la parte aperta il 2026-10-07 (`docs/TITOLI_MONOTIPOGRAFICI.md`): il canale dei documenti
+monotipografici (dispense Pages/Word/Google Docs, firma di formato, 44 → 570/580 titoli, paragrafi
+dell'editor), con la **misura dei titoli** (verità indipendente, prova al contrario) che ne dà il peso; nello
+stesso giro i titoli «§ N.» in grassetto (Torrente), le sezioni in maiuscoletto, i titoli d'apertura delle
+leggi nei codici. Resta aperta la parte dei livelli: D.10.
+
+### D.10 Livelli dei titoli nei manuali — APERTA (diagnosi e disegno 2026-10-07)
+
+Il livello di un titolo numerato si fissa all'emissione; le etichette in maiuscoletto («CAPITOLO I») diventano
+titolo solo dopo, e il titolo del capitolo prende H3 per taglia: l'unità etichetta + titolo occupa due livelli,
+il § scende a H4 e il sotto-§ resta a H4. Cura disegnata e simulata (non applicata): fusione dell'unità in un solo
+titolo al livello della parola-chiave prima dei titoli numerati, più il livello relativo; 24 manuali, ~690 livelli,
+ritrovati 2.814 → 3.578 col metro «a unità» (`docs/TITOLI_MONOTIPOGRAFICI.md` § 6). Da fare con la verifica sulla
+pagina livello per livello e col metro corretto. Il tetto H4 reale (cinque livelli) chiede una decisione: quinto
+livello = schema. **Strato: STRUTTURALE**, tutto on-device.
 
 ### D.8-ter Testatine e piè di pagina — ✅ MISURA DI STRUTTURA + CURA NEL TRONCO (2026-10-07)
 

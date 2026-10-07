@@ -87,7 +87,12 @@ Legenda colonna «utente senza Mac»:
 | **Titoli di paragrafo numerati** «N.»/«N.M.»/«N.M.K.» a taglia «piccola» (+4…+9%) o a taglia-corpo (2026-10-05) | tronco (`recognizeNumberedTitles` in pageItems) | 24 volumi (Rizzo, Magnani, DPC, Mandrioli, Mosconi, …) | **Rizzo, DPC, Magnani** | ✅ tutti |
 | **Salto nota ↔ testo del richiamo** (§ 7.12, 2026-10-05) | lettura (`noteCallLinks` + azioni VoiceOver) | tutti i volumi con note agganciate | tutti | ✅ tutti |
 | Abbreviazioni delle citazioni (lista chiusa arricchita, 2026-10-05) | lettura (`SENTENCE_ABBREVIATIONS`) | 43 volumi (spezzature false 908 → 104) | Lezioni, codici | ✅ tutti |
+| **Titoli e paragrafi dei documenti monotipografici** (dispense Pages/Word/Google Docs, 2026-10-07) | foglia del tronco Generic accesa dalla firma di formato (+ ramo appunti) | 10 documenti | dispense | ✅ tutti (dove la firma c'è) |
+| **Titoli «§ N.» in grassetto pieno e sezioni in maiuscoletto** (2026-10-07) | tronco (canale numerato, `promoteSectionLabels`) | Torrente, Mandrioli 1-4, Magnani, Mosconi | **Mandrioli, Magnani** | ✅ tutti |
+| **Guardia «paragrafo colorato»** del canale a colore; indirizzo web mai titolo (2026-10-07) | tronco (`pageItems`, `classify`) | Riviste DPC, Scoca, 5 retri di copertina | — | ✅ tutti |
+| **Riga fusa col contenuto mai tolta dalla riga del folio** (2026-10-07) | tronco (`detectFurniture`) | Costituzionale, Elementi UE, Marrone (26.5) | — | ✅ tutti |
 | Riconoscimento articoli codici → ARTICLE_HEADER (navigabile) | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
+| **Titolo d'apertura delle leggi complementari → H3** (2026-10-07) | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
 | Gerarchia LIBRO/TITOLO/CAPO/SEZIONE + Consultazione Rapida | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
 | Recupero apparato DPC (note sporgenti a margine sx) | ramo `rivistaDpc` | 2 riviste | — | ◑ solo-materiali |
 | Titoli § → HEADING_4, testatine § → furniture | foglia gated Giappichelli | Lezioni, Mercato fin, +5 | **Lezioni** | ◑ solo-materiali |

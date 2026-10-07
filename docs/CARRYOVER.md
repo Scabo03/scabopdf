@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.39 (7 ottobre 2026 sera, giro «titoli e testatine»: **misura dei titoli** con verità indipendente (indice stampato, segnalibri, tipografia, geometria), affidabilità per volume e prova al contrario; **canale dei documenti monotipografici** (dispense Pages/Word/Google Docs: titoli e paragrafi dalla firma di formato, 44 → 570/580); titoli d'apertura delle leggi complementari nei codici a H3; «§ N.» in grassetto (Torrente 0 → 707) e sezioni in maiuscoletto; guardia «paragrafo colorato» (abstract DPC); regressione della build 47 trovata e curata (righe fuse col contenuto: Marrone 26.5, Costituzionale, Elementi); offerta di rielaborazione a 49. Vedi STATO del 2026-10-07 sera)
 > Versione: 2.38 (7 ottobre 2026 pomeriggio, giro «ancore»: censimento delle identità instabili; ANCORE PER CONTENUTO di segnalibri, sottolineature e posizione (impronte del testo normalizzato, nessun testo dei volumi); rete fissa sulle annotazioni con prova al contrario (0 ricollocazioni sbagliate su entrambe le generazioni); OFFERTA DI RIELABORAZIONE (due gesti, ritorno alla lettura precedente); rifinitura Nomofanie; principio § 12.14; **build 48 su TestFlight** (commit `0f3ec7b`, Delivery UUID 67466ea7…, note scritte dalla lane). Vedi STATO del 2026-10-07 pomeriggio)
 > Versione: 2.37 (7 ottobre 2026, giro «testatine e piè di pagina»: diagnosi Rizzo/Marrone/Mandrioli, **misura di struttura** con verità PyMuPDF indipendente e prova al contrario, cura nel tronco — riga del folio, tetto 120 per i canali ancorati, etichette di struttura BODY → intestazione — su entrambe le generazioni; accertamento sulle annotazioni (NON sopravvivono alla rielaborazione: id sequenziali) + progetto dell'offerta di rielaborazione; note «Cosa testare» automatiche dalla lane `beta`; decisione § 12.13; **build 47 su TestFlight** (commit `1f1fdc7`, Delivery UUID 2be6f4c9…, note scritte dalla lane). Vedi STATO del 2026-10-07)
 > Versione: 2.36 (6 ottobre 2026, giro «generazioni del lettore di sistema»: doppia rete iOS 27/26.5, cura dei confini di parola persi da PDFKit 27 e dei segnaposto U+FFFC, etichetta di generazione sui documenti — `docs/GENERAZIONI_LETTORE.md`).
@@ -54,6 +55,41 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
 
 ---
+
+## ▶ STATO — Titoli e testatine: misura dei titoli, dispense monotipografiche, codici, manuali, righe fuse → build 49 — 2026-10-07 (sera)
+
+**Documenti:** `docs/TITOLI_MONOTIPOGRAFICI.md` (misura § 1, dispense § 2, codici § 3, rifiniture § 4, testatine § 5,
+manuali § 6). Referto: `~/Developer/scabopdf-gen-lab/referto/REFERTO_TITOLI.md`. Strumenti: `app/ios/scripts/generazioni/
+misura_titoli.py` (nuovo); nel laboratorio `strumenti/batteria.sh <foto>` (doppia rete + misure + parole + annotazioni in un
+colpo), `strumenti/letture_lista.sh`, `strumenti/controllo_testo_volumi.py <intervallo>` (controllo prima del push: sequenze
+di 5 parole delle letture contro le righe aggiunte dai commit).
+
+**Fatto.** (0) Linea di base b48 = foto ancore; misura di struttura 719/803. (1) **Misura dei titoli**: 40 volumi misurati, 6
+parziali, 6 NON misurati; b48 iOS 27 ritrovati 3.496/7.050, indice 1.943/3.186, inventati 540 + 306; prova al contrario
+(canali spenti → 0; innocuo → identico). (2) **Dispense monotipografiche** (`MonoTitles.swift`): firma di formato (non
+elenco di programmi) nel tronco e nel ramo appunti, calibrazione degli stacchi per documento, titoli e paragrafi; 10 volumi
+cambiano, 42 identici al byte su entrambe le generazioni; 44 → 570/580 titoli, 581/581 paragrafi interi dell'editor
+(albero di struttura, MCID qualificati per pagina), 2.280 confini su confini dell'editor, 0 dentro. (3) **Codici**: titolo
+d'apertura degli atti ristampati → H3 (decisione del manutentore), +213 penale, +93 civile, indice 927 → 1.058/1.235.
+(4) **Guardia «paragrafo colorato»** (abstract DPC −333 titoli falsi, elenco autori Scoca) e **indirizzi web** non più
+titoli (5). (5) **Righe fuse** (voce 3): il 92-98 % delle 719/803 righe è artefatto del metro; residuo vero 16/96. La riga
+del folio della build 47 toglieva righe fuse col contenuto: curato (`lineJoinsDisjointRows`), tornano 5 titoli di
+Costituzionale, un numero di Elementi UE e 61 righe di Marrone su 26.5. (6) **Manuali**: «§ N.» in grassetto pieno
+(Torrente 0 → 707/725, indice 0 → 668/772) e sezioni in maiuscoletto (Mandrioli +43, Magnani +7, Mosconi +1).
+(7) Offerta di rielaborazione a `latestCureBuild` 49 col testo delle cure. **Reti finali (foto `fin1`)**: cambiano 23
+volumi su iOS 27 e 24 su 26.5 (+Marrone), esattamente quelli attesi; Marotta identico; oracolo invariato; titoli ritrovati
+3.496 → 4.778 (27) e 3.465 → 4.747 (26.5), indice 1.943 → 2.649, inventati 540 → 216; annotazioni 0 sbagliate su entrambe;
+ScaboCore 727, ScaboApp 133 su 26.5 e 27; vista di lettura sul Simulatore iOS 27 pulita su 8 volumi (etichette, rotore,
+goToElement) e Marrone su 26.5 in app = runner.
+
+**Residui (dettaglio nel referto).** Livelli dei manuali (fusione dell'unità etichetta + titolo e livello relativo: disegno
+e simulazione pronti, 24 volumi, ~690 livelli — prossimo giro, col metro «a unità»); tetto H4 reale (quinto livello =
+schema, decisione); titoli DeJure in grassetto e sommario di Patriarca (regole simulate, non applicate); frontespizi
+(chiusi con diagnosi); righe fuse da spezzare (C2) e metro di struttura da correggere (C3); Marrone 26.5: il piè «Pag.»
+torna letto, 32 volte attaccato all'ultima parola (A.5, come prima della build 47); DPC: 4 composti inglesi uniti senza il
+trattino lessicale; titoli bianchi su fascia verde della DPC mai letti (serve sapere del riempimento: estrattore); voce 5
+«Breve storia» p. 13 = A.5; codici: note dei titoli di legge lette nel punto della pagina (19 misurate) e livello H3 vs H1
+(decisione). Basi del laboratorio ancora a `b48`: promuovere a `fin1` dopo l'ascolto della build 49.
 
 ## ▶ STATO — Ancore per contenuto, rete sulle annotazioni, offerta di rielaborazione → build 48 — 2026-10-07 (pomeriggio)
 
