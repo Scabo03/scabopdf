@@ -415,7 +415,12 @@ le testatine che PDFKit fonde con la prima riga di corpo (27) e il piè di Marro
 quando la testatina ripete il titolo stampato nella stessa pagina. Aperto in D.9: le ancore per contenuto
 delle annotazioni, prerequisito dell'offerta di rielaborazione (`docs/RIELABORAZIONE_PROGETTO.md`).
 
-### D.9 Annotazioni non sopravvivono alla rielaborazione — ⛔ PREREQUISITO dell'offerta (2026-10-07)
+### D.9 Annotazioni non sopravvivono alla rielaborazione — ✅ ANCORE PER CONTENUTO + OFFERTA (2026-10-07, build 48)
+
+Chiuso nel giro «ancore» (`docs/ANCORE_ANNOTAZIONI.md`): ancore a impronte, rete fissa sulle annotazioni (0 ricollocazioni
+sbagliate su entrambe le generazioni, con prova al contrario), offerta di rielaborazione costruita. Resta sotto la storia.
+
+#### (storia) D.9 prima della cura
 
 Provato sul Simulatore (`AnnotationStabilityProbeTests`): gli id dei nodi sono un contatore sequenziale,
 una riga in più o in meno a monte li fa scalare tutti; segnalibri, sottolineature e posizione di lettura
