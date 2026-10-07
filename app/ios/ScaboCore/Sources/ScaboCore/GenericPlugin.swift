@@ -188,9 +188,11 @@ let FOLIO_ROW_MAX_CHARS = 90
 let FOLIO_ROW_MIN_PAGES = 5
 /// Frazione minima di pagine per lo slot (si usa il massimo fra questa e `FOLIO_ROW_MIN_PAGES`).
 let FOLIO_ROW_MIN_FRACTION = 0.05
-/// Tetto di lunghezza per i canali ANCORATI (testatina topmost, ricorrenza generalizzata, riga del
-/// folio): la guardia σ≈0 su ≥3 pagine rende superfluo il tetto stretto di 60, che resta per i
-/// canali per sola ricorrenza di banda e colore.
+/// Tetto di lunghezza per i canali ANCORATI TOPMOST o col folio (testatina topmost, riga del
+/// folio): lì la guardia σ≈0 su ≥3 pagine PIÙ la posizione (riga più in alto, o quota del folio)
+/// rende superfluo il tetto stretto di 60, che resta per i canali di banda e colore E per la
+/// ricorrenza generalizzata non-topmost (dove una riga lunga ancorata è il titolo di un atto
+/// ristampato in testa a più pagine, non una testatina).
 let ANCHORED_FURNITURE_MAX_CHARS = 120
 
 // ── Testatina corrente "separata per posizione" — ramo Riviste (porta DPC) ──────
@@ -691,7 +693,11 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
             // (le intestazioni vere sono PIÙ GRANDI → escluse), in banda ALTA o BASSA (non
             // solo topmost), per norma roman-aware. Esclusa chi apre una regione d'apparato
             // (come il mattone 1). Risolta dopo il ciclo con l'ancoraggio σ.
-            if isSubstantial(sm.text),
+            // Questo canale NON è topmost e resta al tetto corto FURNITURE_MAX_CHARS: una riga lunga
+            // non-topmost ancorata a σ≈0 su 3 pagine è il TITOLO di un atto stampato più volte in testa
+            // alla pagina (Codice penale: una legge in stralcio in tre sezioni, titolo di tre righe),
+            // non una testatina — col tetto a 120 ne perdeva le righe 2 e 3 (visto in rete, 2026-10-07).
+            if shortEnough, isSubstantial(sm.text),
                bodySizeForFurniture <= 0 || sm.fontSize <= bodySizeForFurniture + 0.3,
                yFrac >= FURNITURE_TOP_BAND || yFrac <= FURNITURE_BOTTOM_BAND,
                !opensExcludedApparatusRegion(sm.text),
@@ -743,9 +749,16 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     }
     if !slotRows.isEmpty {
         var rowsByPage: [Int: [BandRow]] = [:]
-        for r in bandRows { rowsByPage[r.page, default: []].append(r) }
+        var excludedKeys: Set<String> = []
+        for r in bandRows {
+            rowsByPage[r.page, default: []].append(r)
+            if r.excluded { excludedKeys.insert(r.key) }
+        }
         for folio in slotRows {
-            furniture.insert(folio.key)
+            // La riga-folio che APRE una regione d'apparato esclusa («Indice della giurisprudenza 587») resta: il
+            // rilevatore d'apparato la usa per aprire la regione (le cui pagine sono escluse dalla lettura); toglierla
+            // qui farebbe LEGGERE l'indice (regressione vista su Mosconi: +325 segmenti di indice).
+            if !excludedKeys.contains(folio.key) { furniture.insert(folio.key) }
             for r in rowsByPage[folio.page] ?? [] where r.key != folio.key && r.substantial && !r.excluded
                 && abs(r.yFrac - folio.yFrac) < RUNNING_HEADER_POSITION_LOCK {
                 furniture.insert(r.key)
