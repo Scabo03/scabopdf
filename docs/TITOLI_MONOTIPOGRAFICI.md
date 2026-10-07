@@ -286,3 +286,46 @@ rilevatore di pagina-sommario). **Scoperta da segnalare**: il titolo italiano di
 l'autore e l'affiliazione sono testo bianco su una fascia verde; `pageItems` scarta il testo quasi bianco
 (ancore invisibili), quindi non sono mai letti (123 righe nel 2018, 80 nel 2020). Non è curabile senza sapere
 che sotto il testo c'è un riempimento colorato: capacità d'estrattore che oggi manca.
+
+## 5. Testatine e piè ancora letti (voce 3)
+
+**Censimento (campo, letture b48 = disp11 sui 42 volumi editoriali; verifiche su un campione casuale di 12
+pagine e circa 15 mirate).** Le 719 (iOS 27) / 803 (26.5) righe «lette come contenuto» della misura di
+struttura sono per il 92-98 % un artefatto del metro:
+
+| Causa | iOS 27 | iOS 26.5 |
+|---|---|---|
+| testatina tolta; la misura conta il titolo vero omonimo sulla pagina (Mandrioli 1-4, Codice civile, Lezioni, Costituzionale, Codice penale) | 347 | 347 |
+| testatina tolta; le sue parole compaiono in un nodo corto di corpo o di nota | 190 | 193 |
+| folio nudo tolto; le sue cifre compaiono in una nota (DPC 1-3) | 123 | 123 |
+| riga tenuta ma non letta (indice, sommario: ruoli esclusi dal flusso) | 34 | 35 |
+| errori della verità (contenuto ricorrente alla stessa quota; numeri di nota presi per folio) | 16 | 16 |
+| **residuo vero** contato dalla misura | **9** | **89** |
+| residuo vero non contato (testatina fusa con contenuto, letta) | 7 | 7 |
+
+Il residuo vero (16 righe su iOS 27, 96 su 26.5) sono fusioni di PDFKit fra una riga di banda e una riga di
+contenuto — Marrone su 26.5 col piè «Pag. N-M» fuso con l'ultima riga di corpo (72 letture a metà frase),
+Costituzionale con la testatina fusa a un titolo vero, una riga di Lezioni e una del Codice penale — più i
+folii romani del front-matter (Patriarca 5, Elementi UE 2 su 26.5) e due righe tipografiche dell'EdD.
+
+**Regressione trovata e curata (regola d'oro).** Il canale della riga del folio (build 47) toglieva per
+posizione ogni riga di banda alla quota del folio, o col folio come ultimo token: quando PDFKit aveva fuso
+quella riga con una riga di contenuto, toglieva anche il contenuto. Su entrambe le generazioni Costituzionale
+perdeva 2 titoli di sezione e 3 titoli di riquadro, Elementi UE un numero di paragrafo; su iOS 26.5 Marrone
+perdeva 61 righe di corpo (le ultime righe di pagina col piè fuso, che stavano tutte alla stessa quota e
+facevano da sole uno «slot»). **Cura** (`lineJoinsDisjointRows`, tronco): una riga i cui span con testo
+stanno su fasce verticali disgiunte è una fusione di due righe fisiche, e il canale della riga del folio non
+la toglie mai; il richiamo in apice e il capolettera si sovrappongono alla fascia e non contano. Meglio la
+testatina letta che il contenuto perso. Test: `FusedRowFurnitureTests` (2, con prova al contrario).
+**Reti (runner, entrambe le generazioni):** cambiano solo Elementi UE (+43 lettere e cifre), Costituzionale
+(+371) e, su 26.5, Marrone (+4.115); nessuna lettera tolta in nessun volume; nessun titolo cambiato. Il
+contenuto restituito, letto parola per parola: il numero di paragrafo, i cinque titoli e le 61 righe di
+corpo, ciascuno con la testatina o il piè fusi, che tornano letti come prima della build 47.
+
+**Non curato in questo giro (dichiarato).** Spezzare la riga fusa nelle sue righe fisiche prima della mobilia
+(toglierebbe le testatine e i piè fusi lasciando il contenuto): cambia confini e ordine di righe di sommario e
+di lettere d'elenco fuse in banda in sei volumi, e va validata con la doppia rete e il confronto parola per
+parola — prossimo giro. Correggere il metro (`misura_struttura.py`: leggere solo i segmenti letti, una riga di
+banda è letta se apre o chiude il testo della pagina o sta dentro una riga letta più lunga; escludere dal
+folio i numeri di nota e le voci d'indice), con la prova al contrario rifatta: stima 719 → ~16 e 803 → ~96
+(dedotto dal censimento). Folii romani del front-matter (7 righe) e le due righe dell'EdD: peso basso.

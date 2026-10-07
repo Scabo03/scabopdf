@@ -590,6 +590,23 @@ private func opensExcludedApparatusRegion(_ text: String) -> Bool {
     regexHits(backMatterNameIndexHeadingRegex, text) || regexHits(frontMatterTocHeadingRegex, text)
 }
 
+/// La riga di PDFKit unisce due righe FISICHE: gli span con testo stanno su fasce verticali disgiunte (nessuna
+/// sovrapposizione oltre mezzo punto). Succede quando PDFKit fonde la testatina o il piè con una riga di contenuto
+/// (Marrone su iOS 26.5: l'ultima riga di corpo + «Pag.» + folio; Costituzionale: la testatina + un titolo vero).
+/// Un richiamo in apice o un capolettera si sovrappongono alla fascia della riga e non contano.
+func lineJoinsDisjointRows(_ line: PdfTextLine) -> Bool {
+    let bands = line.spans.filter { !jsTrim($0.text).isEmpty }
+        .map { (low: $0.bbox.y, high: $0.bbox.y + $0.bbox.height) }
+        .sorted { $0.low < $1.low }
+    guard bands.count >= 2 else { return false }
+    var high = bands[0].high
+    for band in bands.dropFirst() {
+        if band.low >= high - 0.5 { return true }
+        high = max(high, band.high)
+    }
+    return false
+}
+
 func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // Dimensione del corpo, per la guardia anti-falso-positivo del canale generalizzato:
     // testatine/folii/footer sono ≤ corpo; le INTESTAZIONI (capitolo/sezione) sono PIÙ GRANDI.
@@ -621,9 +638,10 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     var recurCandidatesByNorm: [String: [RecurLine]] = [:]
     // Riga del folio: folii nudi e folii fusi (primo/ultimo token) con la loro quota; righe di banda
     // con la loro quota, per trovare chi condivide la riga del folio.
-    struct FusedFolioLine { let key: String; let page: Int; let yFrac: Double; let value: Int }
+    struct FusedFolioLine { let key: String; let page: Int; let yFrac: Double; let value: Int; var joinsRows = false }
     var fusedFolioLines: [FusedFolioLine] = []
-    struct BandRow { let key: String; let page: Int; let yFrac: Double; let substantial: Bool; let excluded: Bool }
+    struct BandRow { let key: String; let page: Int; let yFrac: Double; let substantial: Bool; let excluded: Bool
+        var joinsRows = false }
     var bandRows: [BandRow] = []
     var bareFolioRows: [FusedFolioLine] = []
 
@@ -671,7 +689,8 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                 if let first = toks.first, let last = toks.last {
                     for tok in Set([String(first), String(last)]) where tok.utf16.count <= 4 && tok.allSatisfy({ $0.isASCII && $0.isNumber }) {
                         if let value = Int(tok) {
-                            fusedFolioLines.append(FusedFolioLine(key: key, page: page.pageIndex, yFrac: yFrac, value: value))
+                            fusedFolioLines.append(FusedFolioLine(key: key, page: page.pageIndex, yFrac: yFrac, value: value,
+                                                                  joinsRows: lineJoinsDisjointRows(line)))
                             offsetPages[value - page.pageIndex, default: []].insert(page.pageIndex)
                         }
                     }
@@ -681,7 +700,8 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                 // meglio una testatina letta che una lettera d'elenco persa.
                 bandRows.append(BandRow(key: key, page: page.pageIndex, yFrac: yFrac, substantial: isSubstantial(sm.text),
                                         excluded: opensExcludedApparatusRegion(sm.text)
-                                            || carriesBodyListMarkers(line, bodySize: bodySizeForFurniture)))
+                                            || carriesBodyListMarkers(line, bodySize: bodySizeForFurniture),
+                                        joinsRows: lineJoinsDisjointRows(line)))
             }
             // I canali ancorati accettano righe fino a ANCHORED_FURNITURE_MAX_CHARS; sopra, nulla.
             if sm.text.utf16.count > ANCHORED_FURNITURE_MAX_CHARS { continue }
@@ -783,8 +803,12 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
             // La riga-folio che APRE una regione d'apparato esclusa («Indice della giurisprudenza 587») resta: il
             // rilevatore d'apparato la usa per aprire la regione (le cui pagine sono escluse dalla lettura); toglierla
             // qui farebbe LEGGERE l'indice (regressione vista su Mosconi: +325 segmenti di indice).
-            if !excludedKeys.contains(folio.key) { furniture.insert(folio.key) }
-            for r in rowsByPage[folio.page] ?? [] where r.key != folio.key && r.substantial && !r.excluded
+            // Regola d'oro (giro «titoli e testatine»): una riga che PDFKit ha fuso con una riga di CONTENUTO (fasce
+            // verticali disgiunte, `lineJoinsDisjointRows`) non si toglie mai — toglierla intera cancellava il
+            // contenuto (Marrone su iOS 26.5: 64 righe di corpo col «Pag.» in coda; Costituzionale: cinque titoli
+            // veri sotto la testatina; Elementi UE: un numero di paragrafo). Meglio la testatina letta.
+            if !excludedKeys.contains(folio.key), !folio.joinsRows { furniture.insert(folio.key) }
+            for r in rowsByPage[folio.page] ?? [] where r.key != folio.key && r.substantial && !r.excluded && !r.joinsRows
                 && abs(r.yFrac - folio.yFrac) < RUNNING_HEADER_POSITION_LOCK {
                 furniture.insert(r.key)
             }
