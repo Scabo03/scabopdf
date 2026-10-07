@@ -28,11 +28,11 @@
 //  Ogni editor marca la struttura con lo spazio verticale, ma ognuno a modo suo: Pages solo con una riga
 //  vuota prima dei titoli (nessuno stacco di paragrafo); Word con uno stacco di paragrafo di ~8 pt e
 //  righe vuote più grandi; Google Docs con ~18-20 pt fra paragrafi e ~52 pt prima dei titoli. Si misura
-//  il passo normale fra le righe (moda), le classi di stacco oltre il passo, e la classe di PARAGRAFO
-//  (la più frequente, se compare su ≥ 5 % delle coppie di righe). Senza classe di paragrafo, la riga
-//  vuota marca i TITOLI solo se dopo di essa arriva per lo più una testa breve chiusa da una riga che
-//  riparte in maiuscola; altrimenti (appunti dove la riga vuota separa i paragrafi) diventa lo stacco di
-//  paragrafo e i titoli chiedono uno stacco maggiore.
+//  il passo normale fra le righe (moda), le classi di stacco oltre il passo, e la classe più frequente.
+//  Questa marca i TITOLI (stile Pages: la riga vuota sta solo prima dei titoli) se è RARA (< 15 % delle
+//  coppie di righe) e se dopo di essa arriva per lo più (≥ 50 %) un blocco con forma di titolo; altrimenti
+//  è lo stacco di PARAGRAFO (Word, Google Docs, appunti dove la riga vuota separa i paragrafi) e i titoli
+//  chiedono uno stacco maggiore (paragrafo + max(2 pt; 25 %)).
 //
 //  ── Il titolo (precisione prima del richiamo) ───────────────────────────────────────────────
 //
@@ -416,8 +416,12 @@ func paragraphRestarts(_ text: String) -> Bool {
 }
 
 /// Il paragrafo precedente chiude una frase e il seguente apre (maiuscola, cifra, virgolette, elenco).
+/// Un punto dopo un'abbreviazione («art.», «cfr.», «d.P.R.», un'iniziale) non chiude la frase: la stessa regola
+/// della granularità (`SENTENCE_ABBREVIATIONS`), così uno stacco casuale fra «art.» e il suo numero non spezza mai il
+/// paragrafo (testo OCR incollato: interlinea irregolare).
 private func paragraphBoundary(previous: String, next: String) -> Bool {
-    guard hits(MONO_STRONG_END, jsTrim(previous)), let c = jsTrim(next).first else { return false }
+    let p = jsTrim(previous)
+    guard hits(MONO_STRONG_END, p), !monoEndsWithAbbreviation(p), let c = jsTrim(next).first else { return false }
     return (c.isLetter && c.isUppercase) || c.isNumber || "«\"“(-–—•".contains(c)
 }
 

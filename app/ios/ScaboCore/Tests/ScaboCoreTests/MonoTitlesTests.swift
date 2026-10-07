@@ -333,6 +333,13 @@ final class MonoTitlesTests: XCTestCase {
                                    ("della riga", 120, 18), ("continua dopo lo stacco fino al punto.", 400, 0)]
                                    + gpara(0, 5) + gpara(0, 6))
         XCTAssertEqual(bodies(items(e, page: 0)).count, 3, "mai spezzare una frase: lo stacco a metà frase non divide")
+        // uno stacco casuale dopo un'abbreviazione («art.», «cfr.», una sigla puntata) non chiude la frase
+        for abbreviation in ["fittizia, l'art.", "fittizia, cfr.", "fittizia d.P.R."] {
+            var f = gdocsDocument()
+            f.pages[0] = gdocsPage(0, [("Un paragrafo di prova che cita una norma \(abbreviation)", 450, 0),
+                                       ("12 e poi prosegue fino al punto finale.", 400, 18)] + gpara(0, 5) + gpara(0, 6))
+            XCTAssertEqual(bodies(items(f, page: 0)).count, 3, "dopo «\(abbreviation)» la frase continua")
+        }
     }
 
     func test_titleShape_rejections() {
