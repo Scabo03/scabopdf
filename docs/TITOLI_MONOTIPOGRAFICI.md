@@ -380,3 +380,31 @@ dell'app): 24 volumi, 326 unità fuse, circa 690 livelli cambiati, ritrovati 2.8
 voci). Tocca i livelli di quasi tutti i manuali: va fatta con la sua verifica sulla pagina, livello per livello,
 e col metro corretto — prossimo giro. Restano anche il tetto H4 reale (cinque livelli in Costituzionale,
 Patriarca, Lineamenti, Magnani, Rizzo): un quinto livello tocca lo schema, scelta del manutentore.
+
+### 4.2 Un indirizzo da solo non è un titolo (tronco)
+
+Cinque titoli falsi erano indirizzi web su una riga a sé, grandi o colorati (il sito dell'editore sul retro di
+copertina di Mandrioli 3 e 4 e di Costituzionale, quello delle due Riviste). `classify` ora rende corpo un
+verdetto di titolo quando la riga è soltanto un indirizzo web o di posta; una riga di nota che porta un
+indirizzo resta nota. Reti (runner, entrambe le generazioni): cambiano solo i cinque volumi, un titolo tolto
+ciascuno, lettere identiche. Test: `UrlHeadingTests` (2).
+
+### 4.3 Dichiarati per il prossimo giro (diagnosi fatte, regole simulate)
+
+- **Titoli DeJure in grassetto a taglia di corpo** (sezioni numerate delle Dottrine, titoli delle massime: 64
+  + 97 + 3 persi). Una foglia sotto la porta DeJure (blocco ≥ 80 % in grassetto, taglia di corpo, ≤ 3 righe e
+  200 caratteri, non l'etichetta «Note:») li prende tutti e soli (47 sezioni, 104 titoli di massima, 3 in
+  ST+MM, identici sulle due generazioni). Il ramo DeJure costruisce oggi col Generic e ritocca i nodi: la
+  foglia chiede una porta DeJure nel profilo, al livello delle righe.
+- **Sommario iniziale di Patriarca** (105 titoli falsi sulle pagine senza corpo): le voci hanno il numero di
+  pagina IN TESTA, che il rilevatore dei sommari senza puntini non conosce. Una seconda forma di voce (numero
+  nudo in testa, crescente nella pagina, con astensione sulle pagine con un blocco di prosa) porta a
+  TOC_GENERAL solo le pagine 5-16 di Patriarca (85 titoli tolti), uguale sulle due generazioni; effetto da
+  dichiarare: quelle pagine non sono più lette, come i sommari di Mandrioli e Marotta.
+- **Frontespizi** (titolo del libro spezzato in più H1, autori ed editori come titoli: Torrente, Compendio,
+  Mandrioli, Marotta, Rizzo e altri): una regola «frontespizio» toccherebbe i titoli veri delle pagine
+  d'apertura di capitolo e di parte. Chiusa con diagnosi.
+- **Voce 5, «Breve storia» p. 13**: lo spazio fra l'elisione corsiva e la parola in tondo nasce in PDFKit 27
+  (correzione corsivo→tondo di 0,099 em, nessun glifo spazio nel PDF). Fra i casi comuni alle due generazioni
+  almeno quattro sono spazi veri della fonte: una regola testuale li cancellerebbe. Residuo d'estrattore
+  (A.5), si riapre con l'estrattore di basso livello che legge le larghezze dei glifi.

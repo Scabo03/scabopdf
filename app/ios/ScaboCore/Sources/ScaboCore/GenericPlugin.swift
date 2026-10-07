@@ -1000,7 +1000,22 @@ func coloredParagraphLineIndices(_ lines: [LineSummary], _ profile: Profile, pag
     return out
 }
 
+/// Riga che è SOLO un indirizzo web o di posta (colophon, retro di copertina): mai un titolo, anche se grande o
+/// colorata (giro «titoli e testatine»: cinque titoli falsi così su Mandrioli 3-4, due Riviste, Costituzionale).
+private let URL_OR_MAIL_LINE_RE = try! NSRegularExpression(
+    pattern: "^\\s*(?:(?:https?://|www\\.)\\S+|[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+)\\s*$", options: [.caseInsensitive])
+
 func classify(_ line: LineSummary, _ profile: Profile) -> Kind {
+    let kind = classifyByTypography(line, profile)
+    // Un indirizzo da solo non è mai un titolo; resta corpo (le note che lo portano a capo restano note).
+    if case .heading = kind,
+       URL_OR_MAIL_LINE_RE.firstMatch(in: line.text, range: NSRange(line.text.startIndex..<line.text.endIndex, in: line.text)) != nil {
+        return .body
+    }
+    return kind
+}
+
+private func classifyByTypography(_ line: LineSummary, _ profile: Profile) -> Kind {
     let bodySize = profile.bodySize
     let short = line.text.utf16.count <= HEADING_MAX_CHARS
     let ratio = (bodySize > 0 && line.fontSize > 0) ? line.fontSize / bodySize : 0.0
