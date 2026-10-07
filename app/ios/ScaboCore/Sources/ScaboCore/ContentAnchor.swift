@@ -285,6 +285,20 @@ public final class ContentAnchorIndex {
 
     public var count: Int { segments.count }
 
+    /// Vero se il segmento con id `segmentId` ha esattamente il contenuto descritto dall'ancora (stessa
+    /// impronta intera). È la VERIFICA a contenuto fermo: un'annotazione il cui id punta a un segmento con
+    /// un'altra impronta non è al suo posto (rielaborazione interrotta, id riusati) e va riancorata.
+    public func anchor(_ anchor: ContentAnchor, matchesSegmentId segmentId: String) -> Bool {
+        guard let i = indexById[segmentId] else { return false }
+        return wholeDigests[i] == anchor.whole
+    }
+
+    private lazy var indexById: [String: Int] = {
+        var m: [String: Int] = [:]
+        for (i, s) in segments.enumerated() where m[s.id] == nil { m[s.id] = i }
+        return m
+    }()
+
     // MARK: Coniare
 
     /// L'ancora del segmento di indice `index`.

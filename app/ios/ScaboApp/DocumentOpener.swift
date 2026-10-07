@@ -91,6 +91,20 @@ enum DocumentOpener {
     /// solo se c'è qualcosa da coniare.
     static func mintMissingAnchors(documentId: String, in index: ContentAnchorIndex) {
         guard let doc = service.store.document(id: documentId) else { return }
+        // Prima la VERIFICA (§ 12.14 «al suo posto, verificato»): se un'annotazione punta per id a un segmento
+        // che non ha il contenuto della sua ancora, si riancora tutto per contenuto.
+        if AnnotationReanchoring.needsReanchoring(
+            bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
+            readingAnchor: doc.readingAnchor, in: index) {
+            let out = AnnotationReanchoring.reanchor(
+                bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
+                readingAnchor: doc.readingAnchor, in: index)
+            service.store.applyAnnotationState(
+                documentId: documentId, bookmarks: out.bookmarks, underlines: out.underlines,
+                readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
+                readingPositionIsApproximate: out.readingPositionIsApproximate ? true : doc.readingPositionIsApproximate)
+            return mintMissingAnchors(documentId: documentId, in: index)
+        }
         let out = AnnotationReanchoring.mintMissingAnchors(
             bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
             readingAnchor: doc.readingAnchor, in: index)

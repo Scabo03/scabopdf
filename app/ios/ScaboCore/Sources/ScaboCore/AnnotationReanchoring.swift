@@ -147,6 +147,29 @@ public enum AnnotationReanchoring {
             readingAnchor: newReadingAnchor, readingPositionIsApproximate: approximate, report: report)
     }
 
+    /// VERIFICA a contenuto fermo (a ogni apertura): vero se almeno un'annotazione con ancora punta, per id,
+    /// a un segmento che NON ha il contenuto della sua ancora — cioè non è al suo posto (rielaborazione
+    /// interrotta fra la scrittura della cache e il riancoraggio, o id riusati). In quel caso il chiamante
+    /// riancora tutto per contenuto. Le annotazioni senza ancora non contano qui (le conia `mintMissingAnchors`).
+    public static func needsReanchoring(
+        bookmarks: [Bookmark], underlines: [Underline], readingPosition: Int, readingAnchor: ContentAnchor?,
+        in index: ContentAnchorIndex
+    ) -> Bool {
+        for b in bookmarks where b.isOrphan != true {
+            if let a = b.anchor, !index.anchor(a, matchesSegmentId: b.anchorSegmentId) { return true }
+        }
+        for u in underlines where u.isOrphan != true {
+            for span in u.spans {
+                if let q = span.anchor, !index.anchor(q.segment, matchesSegmentId: span.segmentId) { return true }
+            }
+        }
+        if let a = readingAnchor, index.segments.indices.contains(readingPosition),
+           !index.anchor(a, matchesSegmentId: index.segments[readingPosition].id) {
+            return true
+        }
+        return false
+    }
+
     /// Conia le ancore MANCANTI a contenuto fermo (apertura dalla cache o subito dopo l'elaborazione
     /// che ha prodotto questi stessi segmenti): gli id correnti sono ancora veri, quindi l'ancora si
     /// prende dal segmento a cui l'annotazione punta. È la migrazione, gratuita, delle annotazioni

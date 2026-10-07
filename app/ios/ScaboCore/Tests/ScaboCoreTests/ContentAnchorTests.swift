@@ -375,4 +375,23 @@ final class ContentAnchorTests: XCTestCase {
                         "lo stesso id ora indica un altro passo: l'orfana non blocca")
         XCTAssertEqual(store.underlines(documentId: d.id).count, 2, "l'orfana resta salvata")
     }
+
+    func test_verification_detectsAnnotationsWhoseIdNoLongerHoldsTheirContent() throws {
+        let old = ContentAnchorIndex(segments: flow())
+        let b = Bookmark(id: "b", anchorSegmentId: "node_5", orderIndexHint: 5, preview: "", createdAt: Date(),
+                         anchor: old.anchor(forIndex: 5))
+        // Contenuto fermo: tutto al suo posto.
+        XCTAssertFalse(AnnotationReanchoring.needsReanchoring(bookmarks: [b], underlines: [], readingPosition: 5,
+                                                              readingAnchor: old.anchor(forIndex: 5), in: old))
+        // Cache nuova ma riancoraggio mai avvenuto (app chiusa a metà): node_5 ora è un altro passo.
+        var shifted = flow(); shifted.remove(at: 0)
+        let new = ContentAnchorIndex(segments: shifted.enumerated().map { i, s in
+            ContentSegment(id: "node_\(i)", role: s.role, text: s.text, lengthCategory: "", acousticIntro: "", sourcePage: s.sourcePage) })
+        XCTAssertTrue(AnnotationReanchoring.needsReanchoring(bookmarks: [b], underlines: [], readingPosition: 0,
+                                                             readingAnchor: nil, in: new))
+        let out = AnnotationReanchoring.reanchor(bookmarks: [b], underlines: [], readingPosition: 0, readingAnchor: nil, in: new)
+        XCTAssertEqual(out.bookmarks[0].anchorSegmentId, "node_4", "ritrovato per contenuto")
+        XCTAssertFalse(AnnotationReanchoring.needsReanchoring(bookmarks: out.bookmarks, underlines: [], readingPosition: 0,
+                                                              readingAnchor: nil, in: new))
+    }
 }
