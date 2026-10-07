@@ -26,7 +26,7 @@ enum ReprocessOffer {
 
     /// Generazioni validate dalla doppia rete della build in uso, e l'ultima build che porta una cura da
     /// offrire. Da aggiornare nel giro che valida una nuova generazione o introduce una cura.
-    static let policy = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 48)
+    static let policy = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 49)
 
     /// Le cure portate dalle build, in parole semplici, per dire «cosa cambia».
     static let cures: [(build: Int, text: String)] = [
@@ -34,6 +34,11 @@ enum ReprocessOffer {
         (46, "le parole che il lettore di sistema incollava insieme vengono separate"),
         (47, "il titolo corrente e il numero di pagina in testa e in fondo alle pagine non vengono più letti come testo"),
         (48, "le annotazioni seguono il testo, e nelle testatine fuse con un elenco non si perde più la lettera dell'elenco"),
+        (49, "nelle dispense scritte con Pages, Word o Google Docs i titoli si trovano nella navigazione per intestazioni "
+            + "e il testo è diviso nei suoi paragrafi; nei codici i titoli delle leggi complementari sono intestazioni; "
+            + "nei manuali si trovano i titoli dei paragrafi col segno di paragrafo e le sezioni; tornano letti i titoli "
+            + "e le righe di testo che sparivano insieme a una testatina; gli abstract colorati delle riviste e gli "
+            + "indirizzi web non sono più letti come titoli"),
     ]
 
     private static var service: LibraryService { .shared }
