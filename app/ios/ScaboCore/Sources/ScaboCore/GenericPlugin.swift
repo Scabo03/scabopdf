@@ -355,6 +355,9 @@ public final class GenericPlugin: ExtractionPlugin {
         // serve zittirle a valle. In posizione (conteggio/ordine invariati).
         var nodes = nodes
         let reclass = reclassifyCleanFamilies(&nodes)
+        // Sezioni in maiuscoletto («Sezione prima – TITOLO», «SEZ. I: TITOLO») rimaste corpo o nota → HEADING_3.
+        // Non nei documenti monotipografici (il loro canale ha già le sue parole-chiave).
+        let sections = profile.mono == nil ? promoteSectionLabels(&nodes) : 0
         // Testatina corrente ricorrente (titolo capitolo recto, lunga, ripetuta) sfuggita al
         // cap-caratteri della furniture e finita come NOTE → ARTIFACT_RUNNING_HEADER (non-letta).
         // GATED Estratto: no-op (e nodi invariati) sugli altri volumi.
@@ -370,6 +373,9 @@ public final class GenericPlugin: ExtractionPlugin {
         if reclass.summary + reclass.heading > 0 {
             warnings.append(
                 "plugin:generic:reclassified_chapter_summary_\(reclass.summary)_structure_heading_\(reclass.heading)")
+        }
+        if sections > 0 {
+            warnings.append("plugin:generic:section_labels_\(sections)")
         }
         if runningHeaders > 0 {
             warnings.append("plugin:generic:estratto_running_headers_reclassified_\(runningHeaders)")
@@ -1944,6 +1950,42 @@ private func structHeadingLevel(_ keyword: String) -> Int {
     case "SEZIONE": return 3
     default: return 2  // CAPITOLO, CAPO
     }
+}
+
+// ── Sezioni in maiuscoletto (giro «titoli e testatine», 2026-10-07) ──
+//
+// «Sezione prima – I PROCEDIMENTI …» (Mandrioli, 12 pt su corpo 11: sotto la soglia di taglia dei titoli) e
+// «SEZ. I: …» (Magnani, a volte letta come nota) restavano corpo: `STRUCT_HEADING_RE` vuole la parola-chiave
+// tutta maiuscola e non conosce «SEZ.». Un nodo di corpo o di nota che apre con «Sezione»/«Sez.» (maiuscole o
+// minuscole) + un ordinale (romano, cifra, ordinale in lettere) + il titolo, lungo al più 140 caratteri e col
+// titolo almeno al 60 % in maiuscolo, è l'intestazione della sezione: HEADING_3. Il titolo in maiuscolo esclude
+// le citazioni («sez. V, 12 marzo …») e le righe di testo a lettere miste.
+private let SECTION_LABEL_RE = try! NSRegularExpression(
+    pattern: "^(?:sezione|sez\\.)\\s+(?:[ivxlcdm]+(?:-bis|-ter)?|\\d+|primo|prima|secondo|seconda|terzo|terza|quarto|quarta|"
+        + "quinto|quinta|sesto|sesta|settimo|settima|ottavo|ottava|nono|nona|decimo|decima|unico|unica)\\b"
+        + "\\s*[.:\u{2013}\u{2014}-]?\\s*(\\S.*)$",
+    options: [.caseInsensitive])
+let SECTION_LABEL_MAX_LEN = 140
+let SECTION_LABEL_MIN_CAPS = 0.6
+
+/// Promuove a HEADING_3 le sezioni in maiuscoletto rimaste corpo o nota (vedi sopra). Ritorna quante.
+func promoteSectionLabels(_ nodes: inout [NodeDict]) -> Int {
+    var count = 0
+    for i in nodes.indices where nodes[i].type == .BODY || nodes[i].type == .NOTE {
+        let t = (nodes[i].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard t.utf16.count <= SECTION_LABEL_MAX_LEN,
+              let m = SECTION_LABEL_RE.firstMatch(in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)),
+              let r = Range(m.range(at: 1), in: t) else { continue }
+        let letters = t[r].filter { $0.isLetter }
+        guard !letters.isEmpty,
+              Double(letters.filter { $0.isUppercase }.count) / Double(letters.count) >= SECTION_LABEL_MIN_CAPS
+        else { continue }
+        nodes[i].type = .HEADING_3
+        nodes[i].level = 3
+        nodes[i].length_category = nil
+        count += 1
+    }
+    return count
 }
 
 /// Riclassifica in posizione i nodi NOTE che il classificatore size-only ha collassato

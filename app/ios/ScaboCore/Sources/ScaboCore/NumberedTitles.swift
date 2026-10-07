@@ -90,6 +90,21 @@ private let NUMBERED_TITLE_LEADER_RE = try! NSRegularExpression(
 /// Punteggiatura forte che chiude un blocco (la riga dopo può aprire un titolo).
 private let BLOCK_END_RE = try! NSRegularExpression(pattern: "[.!?:;»”)\\]]\\s*$")
 
+/// Titolo di paragrafo «§ N.» composto INTERAMENTE IN GRASSETTO a taglia di corpo (Torrente: «§ » a 10,98,
+/// numero e titolo a 11,47 grassetto corsivo, corpo 11,5). Il canale numerato lo rifiuta (profondità 1 a taglia
+/// di corpo: mai); qui il segnale è il grassetto pieno, conservato sul dispositivo per questa pipeline. Ammette
+/// «-bis»/«-ter»… e la minuscola dopo il numero.
+private let BOLD_PARAGRAPH_TITLE_RE = try! NSRegularExpression(
+    pattern: "^\\s*§\\s*\\d{1,4}(?:\\s?[-\u{2013}]\\s?(?:bis|ter|quater|quinquies|sexies|septies|octies|novies|decies))?\\.\\s+\\S")
+/// Righe massime di un titolo «§ N.» in grassetto.
+let BOLD_PARAGRAPH_TITLE_MAX_LINES = 3
+
+/// Tutti gli span con lettere sono in grassetto (e ce n'è almeno uno).
+private func lettersAllBold(_ sm: LineSummary) -> Bool {
+    let letterSpans = sm.spans.filter { $0.text.contains { $0.isLetter } }
+    return !letterSpans.isEmpty && letterSpans.allSatisfy { $0.bold }
+}
+
 /// Profondità della numerazione puntata in apertura (`"5.3.1. Titolo"` → 3), o nil.
 func numberedTitleDepth(_ text: String) -> Int? {
     let t = jsTrim(text)
@@ -198,6 +213,22 @@ func recognizeNumberedTitles(
         while i < lines.count {
             let sm = lines[i]
             let prev: LineSummary? = i > 0 ? lines[i - 1] : nil
+            // Titolo «§ N.» tutto in grassetto, a taglia di corpo, staccato dalla riga sopra (o in testa al run):
+            // + le righe di continuazione in grassetto, al più tre righe in tutto. Profondità 1.
+            if matches(BOLD_PARAGRAPH_TITLE_RE, sm.text), lettersAllBold(sm), textReachesBody(sm, body: body),
+               sm.text.utf16.count <= HEADING_MAX_CHARS,
+               prev.map({ $0.yBottom - sm.yTop > max($0.height, sm.height) * 0.5 }) ?? true {
+                var parts = [sm]
+                var j = i + 1
+                while j < lines.count, parts.count < BOLD_PARAGRAPH_TITLE_MAX_LINES,
+                      lettersAllBold(lines[j]), !matches(BOLD_PARAGRAPH_TITLE_RE, lines[j].text) {
+                    parts.append(lines[j]); j += 1
+                }
+                flush()
+                out.append(.numberedTitle(parts.count == 1 ? sm : mergedLine(parts), depth: 1))
+                i = j
+                continue
+            }
             guard let depth = numberedTitleDepth(sm.text),
                   sm.text.utf16.count <= HEADING_MAX_CHARS,
                   isSubstantial(sm.text),

@@ -329,3 +329,54 @@ parola — prossimo giro. Correggere il metro (`misura_struttura.py`: leggere so
 banda è letta se apre o chiude il testo della pagina o sta dentro una riga letta più lunga; escludere dal
 folio i numeri di nota e le voci d'indice), con la prova al contrario rifatta: stima 719 → ~16 e 803 → ~96
 (dedotto dal censimento). Folii romani del front-matter (7 righe) e le due righe dell'EdD: peso basso.
+
+## 6. Manuali: titoli «§ N.» in grassetto, sezioni in maiuscoletto, livelli (voce 2)
+
+**Diagnosi (campo; codice).** Tre cause distinte.
+- **Torrente, «§ N.» persi (725 titoli veri, 0 ritrovati, 0/772 voci d'indice).** Ogni titolo di paragrafo è
+  composto tutto in grassetto corsivo a taglia di corpo («§ » a 10,98, numero e titolo a 11,47, corpo 11,5),
+  centrato, staccato dal corpo; il grassetto si conserva sul dispositivo per questa pipeline (identico su 27 e
+  26.5). Il canale numerato lo rifiuta: profondità 1 a taglia di corpo è «mai», lo span «§» è sotto la soglia
+  di taglia, e 17 titoli «-bis/-ter» e 5 con la minuscola dopo il numero non passano la regex.
+- **Sezioni in maiuscoletto perse.** Mandrioli «Sezione prima – TITOLO» a 12 pt su corpo 11 (sotto la soglia di
+  taglia), Magnani «SEZ. I: TITOLO» (a volte letta come nota), Mosconi una: `STRUCT_HEADING_RE` vuole la
+  parola-chiave tutta maiuscola e non conosce «SEZ.».
+- **Livelli schiacciati al quarto.** Il livello di un titolo numerato si fissa all'emissione guardando i nodi
+  già emessi; le etichette in maiuscoletto («CAPITOLO I») diventano titolo solo dopo (famiglie pulite), mentre
+  il titolo del capitolo, più grande, prende H3 per taglia. L'unità «etichetta + titolo» occupa così due
+  livelli, il § finisce a H4 e il sotto-§ resta a H4 per il tetto. Le unità etichetta + titolo stanno in 24
+  manuali: titolo un livello sotto l'etichetta (Mandrioli 1-4, Magnani, Mercato finanziario, Pubblico ministero,
+  Lezioni storia), allo stesso livello (Compendio, Mercato unico, Lineamenti, Mosconi, Patriarca), invertite
+  (Rizzo, Appunti di penale, Marotta, DPC 1-3), o col titolo perso in testa al corpo (Torrente, Breve storia,
+  Elementi UE).
+
+**Cura (due casi su tre).**
+- **«§ N.» in grassetto pieno** (`NumberedTitles.swift`, nel canale numerato): riga che apre con «§ N.» (anche
+  «-bis/-ter», anche minuscola dopo il numero), con tutti gli span di lettere in grassetto, testo a taglia di
+  corpo, staccata dalla riga sopra o in testa al run → titolo numerato di profondità 1, con le righe di
+  continuazione tutte in grassetto (al più tre righe). Sul corpus scatta solo su Torrente: le righe «§» in
+  grassetto di Marrone sono già titoli per colore e non stanno nei run di corpo.
+- **Sezioni** (`promoteSectionLabels`, dopo le famiglie pulite, non nei documenti monotipografici): nodo di
+  corpo o di nota che apre con «Sezione»/«Sez.» (maiuscole o minuscole) + ordinale (romano, cifra, in
+  lettere) + titolo, al più 140 caratteri, titolo almeno al 60 % in maiuscolo → HEADING_3. Il maiuscolo
+  esclude le citazioni («sez. V, 12 marzo …») e le righe a lettere miste.
+
+Test: `ManualTitlesTests` (5).
+
+**Reti (runner, entrambe le generazioni, identiche).** Cambiano 7 volumi; lettere e cifre identiche; nessun
+titolo tolto, nessun livello cambiato. Titoli in più: Torrente 707, Mandrioli 1-4 10/15/7/11, Magnani 7,
+Mosconi 1. Misura: Torrente ritrovati 0 → 707/725 e indice 0 → 668/772; Mandrioli 1-4 ritrovati
+100/115/106/83 → 110/130/113/94, indice +8/+13/+5/+4; Magnani 89 → 96, indice 119 → 126; inventati invariati
+ovunque. Pagine lette contro il PDF: 11 titoli di Torrente (i due più lunghi su tre righe, un «-bis»), 3 sezioni
+di Mandrioli, 3 di Magnani, quella di Mosconi: tutti veri.
+
+**Non curato in questo giro: i livelli (dichiarato, con il disegno pronto).** La cura dei livelli è la fusione
+dell'«unità di struttura» — etichetta in maiuscoletto + titolo che la segue sulla stessa pagina, centrato
+sull'etichetta o tutto maiuscolo, mai numerato — in un solo titolo al livello della parola-chiave, prima che i
+titoli numerati ricevano il loro livello, più il livello relativo (il primo titolo numerato sotto un titolo non
+numerato va un livello sotto, non «livello + profondità»). Simulata sui nodi delle letture (non codice
+dell'app): 24 volumi, 326 unità fuse, circa 690 livelli cambiati, ritrovati 2.814 → 3.578 e indice 1.704 →
+2.451 col metro reso «a unità» (il metro attuale abbina uno a uno e conterebbe etichetta e titolo come due
+voci). Tocca i livelli di quasi tutti i manuali: va fatta con la sua verifica sulla pagina, livello per livello,
+e col metro corretto — prossimo giro. Restano anche il tetto H4 reale (cinque livelli in Costituzionale,
+Patriarca, Lineamenti, Magnani, Rizzo): un quinto livello tocca lo schema, scelta del manutentore.
