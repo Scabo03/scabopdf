@@ -124,6 +124,17 @@ final class ContinuousReadingViewController: UIViewController {
 
     /// Notifica del cambio di posizione di lettura, inoltrata alla persistenza dal presentatore.
     private let onPositionChanged: ((Int) -> Void)?
+    /// ANCORE PER CONTENUTO (ContentAnchor.swift): l'indice del flusso continuo, costruito in coda al
+    /// primo passaggio (fuori dal thread principale: sui codici costa centinaia di millisecondi) e poi
+    /// usato per coniare l'ancora di ogni segnalibro, sottolineatura e salvataggio di posizione. Finché
+    /// non è pronto, la posizione si salva senza ancora (la prossima la porterà) e il conio esplicito
+    /// (segnalibro/sottolineatura) lo costruisce al volo. Il `box` condiviso lo espone a chi ha
+    /// costruito il VC (DocumentOpener) per i salvataggi di posizione.
+    private var anchorIndex: ContentAnchorIndex?
+    private let anchorBox: ReaderAnchorBox?
+    /// Chiamato una volta, sul thread principale, quando l'indice è pronto: il chiamante conia le
+    /// ancore mancanti delle annotazioni esistenti a contenuto fermo (migrazione gratuita).
+    var onAnchorIndexReady: ((ContentAnchorIndex) -> Void)?
 
     /// Numero di pagine del PDF di origine, per l'indicatore doppio (§ 4.3). 0 = non pertinente.
     private let sourcePageCount: Int
@@ -227,8 +238,10 @@ final class ContinuousReadingViewController: UIViewController {
         doctrineContent: PaginatedContent? = nil,
         quickConsultTree: [QuickConsultNode]? = nil,
         embedded: Bool = false,
-        signalPlayer: SignalPlaying = SignalPlayer.shared
+        signalPlayer: SignalPlaying = SignalPlayer.shared,
+        anchorBox: ReaderAnchorBox? = nil
     ) {
+        self.anchorBox = anchorBox
         self.content = content
         self.quickConsultTree = quickConsultTree
         self.documentTitle = sourceName
@@ -268,6 +281,7 @@ final class ContinuousReadingViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        buildAnchorIndexAsync()
         view.backgroundColor = .systemBackground
         embedContainers()
         wireContainers()
@@ -905,7 +919,7 @@ final class ContinuousReadingViewController: UIViewController {
     /// passa alla reading view per la resa grafica (§ 6.5). Chiamata all'avvio e dopo ogni mutazione.
     private func refreshUnderlines() {
         var map: [String: [ClosedRange<Int>]] = [:]
-        for underline in libraryStore.underlines(documentId: documentId) {
+        for underline in libraryStore.underlines(documentId: documentId) where underline.isOrphan != true {
             for span in underline.spans {
                 map[span.segmentId, default: []].append(span.startWord...span.endWord)
             }
@@ -918,8 +932,8 @@ final class ContinuousReadingViewController: UIViewController {
     private func openBookmarksWindow() {
         BookmarksWindowViewController.present(
             from: self, store: libraryStore, documentId: documentId
-        ) { [weak self] anchorId, hint in
-            self?.jumpToBookmark(anchorSegmentId: anchorId, hint: hint)
+        ) { [weak self] bookmark in
+            self?.jumpToBookmark(bookmark)
         }
     }
 
@@ -927,6 +941,35 @@ final class ContinuousReadingViewController: UIViewController {
     /// continuo (Consultazione Rapida) o in Dottrina Inline (indici di un altro flusso), si torna
     /// prima a Lettura Continua, così il segnalibro atterra su un elemento reso e coerente con l'id
     /// con cui è stato creato.
+    private func jumpToBookmark(_ bookmark: Bookmark) {
+        if bookmark.isOrphan == true {
+            jumpToOrphanBookmark(bookmark)
+            return
+        }
+        jumpToBookmark(anchorSegmentId: bookmark.anchorSegmentId, hint: bookmark.orderIndexHint)
+    }
+
+    /// Un segnalibro ORFANO (§ 12.14: il passo non è stato ritrovato dopo una rielaborazione) non si
+    /// risolve per id — sarebbe il salto silenzioso che si vuole escludere. Si porta l'utente
+    /// all'inizio della pagina d'origine e lo si dice.
+    private func jumpToOrphanBookmark(_ bookmark: Bookmark) {
+        if currentLayout != .continuous { switchLayout(to: .continuous) }
+        let segments = readingView.currentSegments
+        let index: Int
+        if let page = bookmark.originalPage, let i = segments.firstIndex(where: { sourcePage?($0.id) == page }) {
+            index = i
+        } else {
+            index = min(max(0, bookmark.orderIndexHint), max(0, segments.count - 1))
+        }
+        activateTextContainer(restoreFocus: false)
+        restoreReadingFocus(toIndex: index, raceRobust: true)
+        let where_ = bookmark.originalPage.map { "all'inizio della pagina \($0)" } ?? "vicino al punto di prima"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            UIAccessibility.post(notification: .announcement,
+                                 argument: "Segnalibro da ricollocare: il passo non è stato ritrovato dopo la rielaborazione. Ti porto \(where_).")
+        }
+    }
+
     private func jumpToBookmark(anchorSegmentId: String, hint: Int) {
         if currentLayout != .continuous { switchLayout(to: .continuous) }
         let index = readingView.indexOfSegment(anchorId: anchorSegmentId, hint: hint)
@@ -952,6 +995,52 @@ final class ContinuousReadingViewController: UIViewController {
     }
 
     /// Anteprima (prime parole) dell'elemento marcato, per la lista dei segnalibri (§ 5.4).
+    // MARK: - Ancore per contenuto (ContentAnchor.swift)
+
+    private func buildAnchorIndexAsync() {
+        guard anchorIndex == nil else { return }
+        let segments = content.pages.flatMap { $0.segments }
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let index = ContentAnchorIndex(segments: segments)
+            DispatchQueue.main.async {
+                guard let self, self.anchorIndex == nil else { return }
+                self.anchorIndex = index
+                self.anchorBox?.index = index
+                self.onAnchorIndexReady?(index)
+            }
+        }
+    }
+
+    /// L'indice, costruito al volo se la coda asincrona non ha ancora finito (un conio esplicito non
+    /// deve mai uscire senza ancora).
+    private func ensureAnchorIndex() -> ContentAnchorIndex {
+        if let anchorIndex { return anchorIndex }
+        let index = ContentAnchorIndex(segments: content.pages.flatMap { $0.segments })
+        anchorIndex = index
+        anchorBox?.index = index
+        return index
+    }
+
+    private func contentAnchor(forSegmentId id: String, hint: Int) -> ContentAnchor? {
+        let index = ensureAnchorIndex()
+        if index.segments.indices.contains(hint), index.segments[hint].id == id { return index.anchor(forIndex: hint) }
+        guard let i = index.segments.firstIndex(where: { $0.id == id }) else { return nil }
+        return index.anchor(forIndex: i)
+    }
+
+    private func spansWithAnchors(_ spans: [UnderlineSpan]) -> [UnderlineSpan] {
+        let index = ensureAnchorIndex()
+        var idToIndex: [String: Int] = [:]
+        for (i, s) in index.segments.enumerated() where idToIndex[s.id] == nil { idToIndex[s.id] = i }
+        return spans.map { span in
+            var out = span
+            if let i = idToIndex[span.segmentId] {
+                out.anchor = index.quoteAnchor(forIndex: i, startWord: span.startWord, endWord: span.endWord)
+            }
+            return out
+        }
+    }
+
     private static func previewText(_ text: String, wordLimit: Int = 12) -> String {
         let words = text.split(whereSeparator: { $0.isWhitespace })
         let head = words.prefix(wordLimit).map(String.init).joined(separator: " ")
@@ -1047,7 +1136,8 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
             guard let self else { return }
             self.libraryStore.addBookmark(
                 documentId: self.documentId, anchorSegmentId: segmentId, orderIndexHint: orderIndex,
-                name: name, preview: preview, originalPage: page, tagIds: tagIds)
+                name: name, preview: preview, originalPage: page, tagIds: tagIds,
+                anchor: self.contentAnchor(forSegmentId: segmentId, hint: orderIndex))
             self.announceAndReturnFocus("Segnalibro aggiunto.", toSegmentId: segmentId, hint: orderIndex)
         }
     }
@@ -1131,7 +1221,7 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
         ) { [weak self] spans, preview in
             guard let self else { return false }
             let created = self.libraryStore.addUnderline(
-                documentId: self.documentId, spans: spans, preview: preview) != nil
+                documentId: self.documentId, spans: self.spansWithAnchors(spans), preview: preview) != nil
             if created { self.refreshUnderlines(); self.announceUnderline("Sottolineatura aggiunta.") }
             return created
         }
@@ -1150,7 +1240,7 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
                 blockedIntervals: self.blockedIntervalsProvider(excluding: chosen.id)
             ) { spans, preview in
                 let ok = self.libraryStore.replaceUnderline(
-                    documentId: self.documentId, underlineId: chosen.id, spans: spans)
+                    documentId: self.documentId, underlineId: chosen.id, spans: self.spansWithAnchors(spans))
                 _ = preview  // la preview di una modifica resta quella originale (§ 6.4 lista invariata)
                 if ok { self.refreshUnderlines(); self.announceUnderline("Sottolineatura modificata.") }
                 return ok

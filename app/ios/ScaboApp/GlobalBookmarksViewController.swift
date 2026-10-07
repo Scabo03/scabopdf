@@ -126,6 +126,8 @@ final class GlobalBookmarksViewController: UIViewController, UITableViewDataSour
         DocumentOpener.open(
             documentId: item.document.id, from: self,
             focusAnchor: .init(anchorSegmentId: item.bookmark.anchorSegmentId,
-                               orderIndexHint: item.bookmark.orderIndexHint))
+                               orderIndexHint: item.bookmark.orderIndexHint,
+                               isOrphan: item.bookmark.isOrphan == true,
+                               originalPage: item.bookmark.originalPage))
     }
 }

@@ -46,6 +46,9 @@ enum DocumentOpener {
     struct BookmarkFocus {
         let anchorSegmentId: String
         let orderIndexHint: Int
+        /// Segnalibro orfano (§ 12.14): non si risolve per id, si apre all'inizio della pagina d'origine.
+        var isOrphan: Bool = false
+        var originalPage: Int? = nil
     }
 
     /// Risolve l'ancora di un segnalibro in una posizione (indice di lettura 0-based) nel contenuto:
@@ -54,10 +57,30 @@ enum DocumentOpener {
     /// degradazione ragionevole se il nodo non è nello stream corrente).
     static func resolveAnchorIndex(_ content: PaginatedContent, anchor: BookmarkFocus) -> Int {
         let segments = content.pages.flatMap { $0.segments }
+        if anchor.isOrphan {
+            if let page = anchor.originalPage, let i = segments.firstIndex(where: { $0.sourcePage == page }) { return i }
+            return min(max(0, anchor.orderIndexHint), max(0, segments.count - 1))
+        }
         if let i = segments.firstIndex(where: { $0.id == anchor.anchorSegmentId }) { return i }
         let base = baseNodeId(anchor.anchorSegmentId)
         if let i = segments.firstIndex(where: { baseNodeId($0.id) == base }) { return i }
         return min(max(0, anchor.orderIndexHint), max(0, segments.count - 1))
+    }
+
+    /// Conia le ancore per contenuto MANCANTI delle annotazioni del documento, a contenuto fermo (il
+    /// flusso appena presentato è quello su cui gli id correnti sono veri): è la migrazione gratuita
+    /// delle annotazioni create prima delle ancore (docs/ANCORE_ANNOTAZIONI.md). Una sola scrittura,
+    /// solo se c'è qualcosa da coniare.
+    static func mintMissingAnchors(documentId: String, in index: ContentAnchorIndex) {
+        guard let doc = service.store.document(id: documentId) else { return }
+        let out = AnnotationReanchoring.mintMissingAnchors(
+            bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
+            readingAnchor: doc.readingAnchor, in: index)
+        guard out.minted > 0 else { return }
+        service.store.applyAnnotationState(
+            documentId: documentId, bookmarks: out.bookmarks, underlines: out.underlines,
+            readingPosition: doc.readingPosition, readingAnchor: out.readingAnchor,
+            readingPositionIsApproximate: doc.readingPositionIsApproximate)
     }
 
     /// L'id-nodo base di un id-segmento, togliendo l'eventuale suffisso di granularità `#k`.
@@ -186,19 +209,22 @@ enum DocumentOpener {
         // Posizione iniziale: il segnalibro se si apre a uno (§ 5.6), altrimenti il punto ricordato.
         let initialPosition = focusAnchor.map { resolveAnchorIndex(content, anchor: $0) }
             ?? doc.readingPosition
+        let anchors = ReaderAnchorBox()
         let reader = ContinuousReadingViewController(
             content: content,
             sourceName: doc.title,
             documentId: doc.id,
             initialReadingPosition: initialPosition,
             onPositionChanged: { index in
-                service.store.updateReadingPosition(id: doc.id, position: index)
+                service.store.updateReadingPosition(id: doc.id, position: index, anchor: anchors.anchor(forIndex: index))
             },
             sourcePageCount: doc.sourcePageCount,
             showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
             sourcePage: sourcePageProvider(pageMap),
             doctrineContent: doctrineContent,
-            quickConsultTree: quickConsultTree)
+            quickConsultTree: quickConsultTree,
+            anchorBox: anchors)
+        reader.onAnchorIndexReady = { index in mintMissingAnchors(documentId: doc.id, in: index) }
         reader.modalPresentationStyle = .fullScreen
         // Split da dentro il file (§ 11.1): il reader si chiude, si sceglie la seconda metà dal
         // presentatore, e lo split parte con QUESTO documento a sinistra. Instradato dal presentatore
@@ -285,17 +311,19 @@ enum DocumentOpener {
         doctrine: PaginatedContent?, tree: [QuickConsultNode]?,
         onPositionChanged: @escaping (Int) -> Void
     ) -> ContinuousReadingViewController {
+        let anchors = ReaderAnchorBox()
         let reader = ContinuousReadingViewController(
             content: content, sourceName: doc.title, documentId: doc.id,
             initialReadingPosition: doc.readingPosition,
             onPositionChanged: { index in
-                service.store.updateReadingPosition(id: doc.id, position: index)
+                service.store.updateReadingPosition(id: doc.id, position: index, anchor: anchors.anchor(forIndex: index))
                 onPositionChanged(index)
             },
             sourcePageCount: doc.sourcePageCount,
             showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
             sourcePage: sourcePageProvider(pageMap),
-            doctrineContent: doctrine, quickConsultTree: tree, embedded: true)
+            doctrineContent: doctrine, quickConsultTree: tree, embedded: true, anchorBox: anchors)
+        reader.onAnchorIndexReady = { index in mintMissingAnchors(documentId: doc.id, in: index) }
         service.store.recordOpened(id: doc.id)
         return reader
     }
@@ -538,19 +566,22 @@ extension DocumentOpener {
         from presenter: UIViewController,
         onImported: (() -> Void)?
     ) {
+        let anchors = ReaderAnchorBox()
         let reader = ContinuousReadingViewController(
             content: content,
             sourceName: doc.title,
             documentId: doc.id,
             initialReadingPosition: doc.readingPosition,
             onPositionChanged: { index in
-                service.store.updateReadingPosition(id: doc.id, position: index)
+                service.store.updateReadingPosition(id: doc.id, position: index, anchor: anchors.anchor(forIndex: index))
             },
             sourcePageCount: doc.sourcePageCount,
             showOriginalPages: getStoredShowOriginalPageNumbers(service.prefs),
             sourcePage: sourcePageProvider(pageMap),
             doctrineContent: doctrineContent,
-            quickConsultTree: quickConsultTree)
+            quickConsultTree: quickConsultTree,
+            anchorBox: anchors)
+        reader.onAnchorIndexReady = { index in mintMissingAnchors(documentId: doc.id, in: index) }
         reader.modalPresentationStyle = .fullScreen
         reader.onBack = { [weak presenter] in
             service.store.setLastOpenDocument(id: nil)

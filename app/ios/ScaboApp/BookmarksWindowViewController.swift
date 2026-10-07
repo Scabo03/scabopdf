@@ -22,7 +22,7 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
     private let store: LibraryStore
     private let documentId: String
     /// Salto al punto del segnalibro: `(ancora, indice-di-fallback)`. Eseguito dopo la chiusura.
-    private let onJump: (_ anchorSegmentId: String, _ orderIndexHint: Int) -> Void
+    private let onJump: (_ bookmark: Bookmark) -> Void
 
     private let tagGrid = TagGridView()
     private let tableView = UITableView(frame: .zero, style: .plain)
@@ -34,7 +34,7 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
         from presenter: UIViewController,
         store: LibraryStore,
         documentId: String,
-        onJump: @escaping (_ anchorSegmentId: String, _ orderIndexHint: Int) -> Void
+        onJump: @escaping (_ bookmark: Bookmark) -> Void
     ) {
         let vc = BookmarksWindowViewController(store: store, documentId: documentId, onJump: onJump)
         let nav = UINavigationController(rootViewController: vc)
@@ -44,7 +44,7 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
 
     private init(
         store: LibraryStore, documentId: String,
-        onJump: @escaping (_ anchorSegmentId: String, _ orderIndexHint: Int) -> Void
+        onJump: @escaping (_ bookmark: Bookmark) -> Void
     ) {
         self.store = store
         self.documentId = documentId
@@ -114,7 +114,9 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
     }
 
     private func reloadList() {
-        filtered = store.bookmarks(documentId: documentId, filteredByAnyTag: tagGrid.selectedTagIds)
+        // Le orfane (non ritrovate dall'ultima rielaborazione, § 12.14) stanno in coda, dichiarate.
+        let all = store.bookmarks(documentId: documentId, filteredByAnyTag: tagGrid.selectedTagIds)
+        filtered = all.filter { $0.isOrphan != true } + all.filter { $0.isOrphan == true }
         let hasAny = !store.bookmarks(documentId: documentId).isEmpty
         emptyLabel.isHidden = !filtered.isEmpty
         emptyLabel.text = hasAny
@@ -153,7 +155,7 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: false)
         let bm = filtered[indexPath.row]
-        dismiss(animated: true) { [onJump] in onJump(bm.anchorSegmentId, bm.orderIndexHint) }
+        dismiss(animated: true) { [onJump] in onJump(bm) }
     }
 
     // Azioni di swipe per l'utente vedente (parallele alle azioni VoiceOver).
@@ -202,6 +204,7 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
 
     private func subtitle(for bm: Bookmark) -> String? {
         var parts: [String] = []
+        if bm.isOrphan == true { parts.append("Da ricollocare") }
         if bm.name != nil, !bm.preview.isEmpty { parts.append(bm.preview) }
         if let page = bm.originalPage { parts.append("pagina \(page)") }
         let tagNames = tagNames(for: bm)
@@ -211,6 +214,9 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
 
     private func accessibleLabel(for bm: Bookmark) -> String {
         var parts: [String] = [bm.displayTitle]
+        if bm.isOrphan == true {
+            parts.append("da ricollocare: il passo non è stato ritrovato dopo la rielaborazione, il salto porta all'inizio della pagina d'origine")
+        }
         if let page = bm.originalPage { parts.append("pagina \(page) del file originale") }
         let tagNames = tagNames(for: bm)
         if !tagNames.isEmpty { parts.append("tag: " + tagNames.joined(separator: ", ")) }

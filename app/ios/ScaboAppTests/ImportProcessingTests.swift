@@ -909,6 +909,37 @@ final class AnnotationStabilityProbeTests: XCTestCase {
         XCTAssertNotEqual(byText?.id, anchored.id)
     }
 
+    /// CONTROPROVA della cura (giro «ancore», 2026-10-07): la stessa rielaborazione che spostava il
+    /// segnalibro per id lo lascia AL SUO POSTO con l'ancora per contenuto, e la posizione di lettura
+    /// pure. Il caso che non si può ritrovare (il passo tolto) è dichiarato orfano, non spostato.
+    func test_reprocessing_contentAnchors_keepBookmarkAndPositionOnTheSameText_andDeclareOrphans() throws {
+        let before = buildDocumentFromPdf(extraction(withExtraLine: true), sourceName: "libro.pdf")
+        let after = buildDocumentFromPdf(extraction(withExtraLine: false), sourceName: "libro.pdf")
+        func segments(_ doc: ScabopdfDocument) -> [ContentSegment] {
+            doc.structure.map { ContentSegment(id: $0.id, role: $0.type.rawValue, text: $0.text ?? "", lengthCategory: "",
+                                               acousticIntro: "", memoryRefresh: "", sourcePage: $0.page_index + 1) }
+        }
+        let oldIndex = ContentAnchorIndex(segments: segments(before))
+        let newIndex = ContentAnchorIndex(segments: segments(after))
+        let anchoredAt = try XCTUnwrap(oldIndex.segments.firstIndex { $0.text.contains("estuario") })
+        let removedAt = try XCTUnwrap(oldIndex.segments.firstIndex { $0.text.contains("Avvertenza") })
+        let positionAt = try XCTUnwrap(oldIndex.segments.firstIndex { $0.text.contains("isola") })
+        let kept = Bookmark(id: "k", anchorSegmentId: oldIndex.segments[anchoredAt].id, orderIndexHint: anchoredAt,
+                            preview: "", createdAt: Date(), anchor: oldIndex.anchor(forIndex: anchoredAt))
+        let gone = Bookmark(id: "g", anchorSegmentId: oldIndex.segments[removedAt].id, orderIndexHint: removedAt,
+                            preview: "", createdAt: Date(), anchor: oldIndex.anchor(forIndex: removedAt))
+        let out = AnnotationReanchoring.reanchor(bookmarks: [kept, gone], underlines: [], readingPosition: positionAt,
+                                                 readingAnchor: oldIndex.anchor(forIndex: positionAt), in: newIndex)
+        XCTAssertEqual(out.report.bookmarksRelocated, 1)
+        XCTAssertEqual(out.report.bookmarksOrphaned, 1)
+        let relocated = try XCTUnwrap(out.bookmarks.first { $0.id == "k" })
+        XCTAssertNotEqual(relocated.anchorSegmentId, kept.anchorSegmentId, "l'id è cambiato…")
+        XCTAssertTrue(newIndex.segments[relocated.orderIndexHint].text.contains("estuario"), "…ma il passo è lo stesso")
+        XCTAssertEqual(out.bookmarks.first { $0.id == "g" }?.isOrphan, true, "il passo tolto è dichiarato, non spostato")
+        XCTAssertTrue(newIndex.segments[out.readingPosition].text.contains("isola"))
+        XCTAssertFalse(out.readingPositionIsApproximate)
+    }
+
     func test_reprocessing_readingPositionIsASegmentIndex_itShiftsWithEveryNodeRemovedBefore() {
         let before = buildDocumentFromPdf(extraction(withExtraLine: true), sourceName: "libro.pdf")
         let after = buildDocumentFromPdf(extraction(withExtraLine: false), sourceName: "libro.pdf")
