@@ -87,3 +87,128 @@ misura_titoli.py <dir_letture> <lista.json> <out.md> [--corpus DIR] [--json OUT.
 `--corpus` punta ai PDF originali (default `~/Developer/scabopdf-triple-take`). L'uscita `.md` ha una riga
 per volume e il totale dei soli volumi misurati; il `.json` porta pagine e identificativi dei casi, per il
 giudizio sulla pagina.
+
+## 2. Il canale dei documenti monotipografici (voce 1: le dispense)
+
+Codice: `ScaboCore/MonoTitles.swift` (firma, calibrazione, titoli, paragrafi, livello), aggancio in
+`GenericPlugin` (`estimateProfile`, `pageItems`, `detectFurniture`, `assembleDocument`), nel ramo appunti
+(`UserNotesPlugin`) e in Cortina (solo emissione del nuovo caso `GenItem.monoTitle`), granularità
+(`BuildSegments` + `Granularity`). Test: `MonoTitlesTests` (29).
+
+### 2.1 Diagnosi (sulla pagina e nel codice)
+
+In una dispensa titolo e corpo hanno la stessa taglia, lo stesso stile, lo stesso colore: il
+classificatore del tronco (taglia, colore, grassetto) non vede mai un titolo e la pagina diventa un solo
+blocco di corpo, che la granularità ritaglia a ~400 caratteri. Misura a build 48 sui 10 documenti
+monotipografici del corpus: 511 dei 580 titoli geometrici persi (campo). Dati del 5 ottobre ricontrollati
+sulle righe (campo): Pages non stacca i paragrafi e mette una riga vuota (un passo in più) prima dei
+titoli; Word stacca i paragrafi di ~8 pt (passo 39-40 → 48) e usa righe vuote più grandi; Google Docs
+~18-20 pt fra paragrafi e ~52 pt prima dei titoli. Seconda scoperta: nei documenti monotipografici i due
+canali di ricorrenza a poche pagine della mobilia (testatina in cima, ricorrenza generalizzata) toglievano
+testo vero — le etichette «CAP. N» dei capitoli (riga a sé per PDFKit) e parole di corpo che aprono la
+pagina a 40-47 pt su tre pagine alla stessa quota (campo, 9 parole su 2 dispense).
+
+### 2.2 La cura
+
+**Firma di formato, non elenco di programmi** (decisione del manutentore). Il canale vive come foglia del
+tronco Generic e si accende solo dove lo stile dominante (taglia a mezzo punto, grassetto, corsivo,
+colore) copre ≥ 99 % dei caratteri delle righe con lettere e gli stili secondari stanno su al più
+max(2, 5 %) delle pagine. Si applica anche nel ramo appunti (Google Docs), accanto alle regole esistenti
+(le parole-chiave degli appunti hanno la precedenza). Margine misurato sui 52 volumi, identico sulle due
+generazioni (campo, `reti/firma_monotipografica_b48.txt`): i 10 monotipografici hanno quota 99,62-100 % e
+0-2 pagine con uno stile secondario; il non monotipografico più vicino (appunti Google Docs con titoli in
+altro stile) ha il 13,8 % di pagine con stile secondario; i volumi editoriali dal 18,3 % in su. Dove la
+firma non scatta il canale è un no-op **per costruzione** (`profile.mono == nil`).
+
+**Calibrazione per documento.** Passo modale fra le righe (pari alla più piccola), tolleranza
+max(1,5 pt; 8 % del passo), classi di stacco oltre il passo (± max(2 pt; 10 %)). La classe più frequente
+marca i TITOLI (stile Pages) solo se è rara (< 15 % delle coppie di righe) e ≥ 50 % dei blocchi dopo di
+essa hanno forma di titolo; altrimenti è lo stacco di PARAGRAFO e i titoli chiedono uno stacco maggiore
+(paragrafo + max(2 pt; 25 %)).
+
+**Titolo** (precisione prima del richiamo): blocco breve (≤ 160 caratteri) isolato in alto da uno
+stacco maggiore dello stacco di paragrafo, chiuso in basso, senza punteggiatura finale (salvo una sigla),
+che non finisce con «di»/«che»/«e», non è voce d'elenco né nota, non contiene due frasi, non porta la
+sillabazione dell'OCR, non è un colophon né un elenco di soli numeri («Capp. 1, 2, 3…»). Stile Pages: la
+testa cresce sulle righe che la continuano (minuscola, cifra, parola funzionale o sigla in coda, titolo
+tutto maiuscolo su riga tutta maiuscola; al più 6 righe) e si chiude sulla prima riga che riparte in
+maiuscola. Stile Word/Google Docs: il titolo è il paragrafo dell'editor (≤ 3 righe) seguito da un
+paragrafo che riparte. Dove una prova è indiretta — in cima alla pagina la riga vuota si deduce dalla
+pagina precedente chiusa e più corta; in fondo la chiusura la dà la pagina seguente che riparte in
+maiuscola — la testa deve anche finire CORTA (prima del margine destro meno un decimo della colonna),
+salvo che dichiari una struttura (CAP., PARTE, Sezione) o sia tutta maiuscola: una testa piena fino al
+margine è l'inizio di un paragrafo che va a capo. In cima alla pagina, stile Word/Google Docs, il blocco
+vale solo se lo segue lo stacco di paragrafo, o se dichiara una struttura (parte e capitolo impilati). Una
+riga fuori stile classificata nota che dichiara una struttura («CAP. 4 – …» composta più piccola) è il
+titolo del capitolo.
+
+**Righe fisiche.** PDFKit spezza una riga in pezzi («CAP. 2», «-», «TITOLO») e su iOS 26.5 può emetterne
+uno dopo la riga sotto: i pezzi alla stessa linea di base (± 1 pt), che non si sovrappongono, tornano
+nella loro riga ordinati da sinistra a destra, ma solo se emessi entro due righe fisiche (misurato: mai
+oltre 2 sui 10 documenti). Una colonna destra arriva dopo l'intera colonna sinistra e resta fuori
+finestra: due colonne non si intrecciano mai (test dedicato, con prova al contrario).
+
+**Livello.** Una parola-chiave di struttura dà il suo livello (PARTE/LIBRO/TITOLO 1, CAPITOLO/CAP./CAPO
+2, SEZIONE/SEZ. 3); altrimenti il titolo sta un livello sotto l'ultima intestazione a parola-chiave, o al
+livello dell'ultimo titolo; senza nulla prima, 2.
+
+**Paragrafo.** Dove l'editor marca lo stacco di paragrafo e il paragrafo precedente chiude una frase
+mentre il seguente riparte (maiuscola, cifra, virgolette, elenco), il blocco di corpo si spezza: cambiano
+i confini degli elementi, mai le lettere, e una frase non si spezza mai. La granularità rispetta il
+confine grazie alla famiglia `monotipografico` del documento: `buildBaseSegments` marca il corpo che
+segue un corpo della stessa pagina (`ContentSegment.opensParagraph`, campo transitorio fuori da
+`CodingKeys` e dall'uguaglianza) e `granularizeBody` chiude lì il blocco. **Il formato della cache non
+cambia**: la cache conserva i segmenti già granularizzati, il segno vive solo fra le due funzioni.
+
+**Mobilia.** Nei documenti monotipografici i due canali di ricorrenza a poche pagine non si applicano;
+restano i canali a soglia alta e i folii. Nel dubbio non si toglie testo.
+
+### 2.3 Alternative scartate
+
+- Elenco dei programmi di produzione: escluso dalla decisione del manutentore, e un salvataggio da iPad
+  riscrive il produttore.
+- Una soglia di stacco unica per tutti: i tre editor marcano la struttura con stacchi diversi.
+- «La classe di stacco più frequente, se ≥ 5 %, è il paragrafo»: in una dispensa Pages fitta di titoli
+  toglieva tutti i titoli; sostituita da forma + rarità, verificata su 10 documenti.
+- La guardia della riga corta ovunque: toglieva il solo titolo falso trovato (inizio di paragrafo in cima
+  alla pagina) ma costava 16 titoli veri a 40 pt, dove anche un titolo breve riempie la riga; ristretta ai
+  casi a prova indiretta.
+- Raggruppare per linea di base su tutta la pagina: avrebbe intrecciato due colonne; finestra di 3 righe.
+- L'albero di struttura del PDF sul dispositivo: PDFKit non lo espone, e Pages marca ogni paragrafo
+  come titolo.
+
+### 2.4 Reti (estrazioni `b48`, letture `disp12`, entrambe le generazioni)
+
+- **Doppia rete**: per generazione 42 volumi identici al byte e 10 diversi, esattamente la famiglia
+  `monotipografico`; Marotta identico; oracolo dei confini di parola invariato; parità 26.5 → 27 da 16
+  a 18 volumi identici.
+- **Bilancio delle lettere e diff parola per parola**: nessuna lettera persa; +164 lettere restituite
+  dalla mobilia (12 etichette «CAP. N», 9 parole di corpo); riordini in 2 volumi su iOS 27 e 4 su
+  iOS 26.5, tutti giudicati sulla pagina (pezzi della stessa riga che PDFKit emetteva fuori posto).
+- **Oracolo dell'editore** (albero di struttura del PDF letto con PyMuPDF, MCID qualificati per pagina —
+  la prima versione via pdfium attribuiva alla pagina MCID della pagina precedente): sugli 8 documenti con
+  albero, 581/581 titoli sono un paragrafo intero dell'editor e 2.280 confini di nodo cadono su confini
+  dell'editor, 0 dentro un paragrafo, su entrambe le generazioni. Richiamo dei confini: Google Docs
+  1.108/1.118, Word 453/480, appunti processuale civile 411/416; Pages 27-94 su 79-281 per volume perché
+  Pages non marca lo stacco di paragrafo (nessun segnale verticale: per scelta non si spezza). Sui 2
+  documenti senza albero, 20/20 confini a campione corretti sulla pagina.
+- **Misura dei titoli** sui 10 (verità geometrica, 8 misurati): ritrovati 44 → **570/580** su entrambe le
+  generazioni; persi 10, di cui 3 errori della verità (una riga di copertina che elenca numeri di
+  capitolo, un inizio di paragrafo in cima alla pagina, una frase di corpo) e 7 titoli che la regola
+  tralascia per prudenza (punto finale, prima riga del documento, titolo di 153 caratteri, titolo in fondo
+  alla pagina che arriva al margine, frasi di passaggio senza isolamento netto); inventati 14, tutti titoli
+  veri a parola-chiave in cima alla pagina che la verità geometrica non conta (13 c'erano già a build 48).
+  Sui 52 volumi: ritrovati 3.496 → 4.022 (iOS 27) e 3.465 → 3.991 (26.5), inventati +1 (lo stesso
+  titolo di capitolo vero), voci d'indice, gerarchie appiattite e inversioni invariate.
+- **Parole inesistenti** (lessico 898k): 0 nuove, 0 sparite, su entrambe le generazioni. **Misura di
+  struttura** invariata (719 / 803 righe di mobilia lette come contenuto).
+- **Rete sulle annotazioni** (`rete_annotazioni.sh disp12`): righe rosse 0 su entrambe le generazioni;
+  catena attuale 2.815/2.860 segnalibri ricollocati, 45 orfani dichiarati (0 evitabili), **0
+  ricollocazioni sbagliate**; citazioni 0 sbagliate; prove al contrario 0 sbagliate.
+- **Suite**: ScaboCore 708/708; ScaboApp 134 su iPhone 16 iOS 26.5 e iOS 27, 0 falliti.
+- **Lettura dell'app** sul Simulatore iOS 27 (iPad Pro 11 M5, banco dell'app + sonda della vista
+  temporanea): segmenti dell'app identici al runner su 9 volumi del campione (Rizzo identico in
+  lettere+cifre e titoli: il runner separa le continuazioni di nota, come nei giri precedenti); nella
+  `ContinuousReadingView` 0 etichette vuote, 0 etichette diverse da quella voluta, ogni titolo con la
+  qualifica del suo livello, voci del rotore = titoli, tutte raggiungibili con `goToElement`, nessun libro
+  che finisce su un titolo. 12 pagine lette contro il PDF: nessun veto.

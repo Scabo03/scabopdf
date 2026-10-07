@@ -27,9 +27,19 @@ final class FurnitureFrontMatterTests: XCTestCase {
     }
     private func doc(_ special: [Int: [PdfTextLine]]) -> PdfExtraction {
         let pages = (0..<40).map { i in
-            page(i, special[i] ?? [ln("Riga di corpo filler unica numero \(i).", yTop: 450)])
+            page(i, (special[i] ?? [ln("Riga di corpo filler unica numero \(i).", yTop: 450)]) + [editorialNote(i)])
         }
         return PdfExtraction(version: 2, pageCount: pages.count, pages: pages)
+    }
+    /// Un volume editoriale ha sempre un secondo stile su molte pagine (note, testatine più piccole): senza,
+    /// il documento sintetico sarebbe MONOTIPOGRAFICO e i canali di ricorrenza a poche pagine non si
+    /// applicherebbero (MonoTitles.swift). Nota a 8 pt a metà pagina e a quota variabile, in coda alle righe
+    /// (gli indici delle righe verificate non cambiano): non è mobilia per nessun canale.
+    private func editorialNote(_ i: Int) -> PdfTextLine {
+        let words = ["alfa", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"]
+        let bbox = BBox(x: 50, y: 250 + Double(i % 7) * 13, width: 200, height: 9)
+        return PdfTextLine(spans: [PdfSpan(text: "nota editoriale \(words[i % words.count]) di prova", fontSize: 8,
+                                           bold: false, italic: false, color: "#000000", bbox: bbox)], bbox: bbox)
     }
 
     // MARK: - helper puri

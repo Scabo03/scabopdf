@@ -211,7 +211,7 @@ public func bindAndPlaceNotes(
             break  // le glosse laterali non sono note: niente aggancio (apparato note ripulito)
         case .apparatus:
             break  // apparato di front-matter: non è né corpo né nota
-        case .heading, .numberedTitle:
+        case .heading, .numberedTitle, .monoTitle:
             break
         }
     }

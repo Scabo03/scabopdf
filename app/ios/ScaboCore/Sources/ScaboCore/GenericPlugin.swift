@@ -259,6 +259,11 @@ struct Profile {
     /// gli altri volumi della filiera restano byte-identici per assenza di occorrenze.
     /// Dove è falso → no-op, byte-identico ovunque.
     var isGiappichelliPhotoshop: Bool = false
+    /// Firma di formato «documento monotipografico» (una sola taglia e un solo stile sulla quasi totalità
+    /// delle righe: dispense Pages/Word/Google Docs) con la calibrazione degli stacchi del documento.
+    /// Quando c'è, `pageItems` riconosce titoli e paragrafi dalla geometria (MonoTitles.swift). Dove è
+    /// nil (tutti i volumi editoriali) → no-op, byte-identico per costruzione.
+    var mono: MonoCalibration? = nil
 }
 
 // MARK: - The plugin
@@ -376,6 +381,9 @@ public final class GenericPlugin: ExtractionPlugin {
         if profile.bodySize == 0 {
             warnings.append("plugin:generic:no_font_information_all_body")
         }
+        if profile.mono != nil {
+            warnings.append("plugin:generic:monotypographic_format")
+        }
         if furnitureCount > 0 {
             warnings.append("plugin:generic:furniture_lines_removed_\(furnitureCount)")
         }
@@ -407,7 +415,9 @@ public final class GenericPlugin: ExtractionPlugin {
                 profile_id: "generic",
                 // `profile_id` resta "generic" (il cerotto anti-"Nota." dipende da questo);
                 // `editorial_family` porta la firma di famiglia allo strato dei segmenti.
-                editorial_family: profile.isGiappichelliPhotoshop ? GIAPPICHELLI_PHOTOSHOP_FAMILY : "generic",
+                // `monotipografico`: la granularità rispetta i paragrafi dell'editor (buildBaseSegments).
+                editorial_family: profile.isGiappichelliPhotoshop ? GIAPPICHELLI_PHOTOSHOP_FAMILY
+                    : (profile.mono != nil ? MONOTYPOGRAPHIC_FAMILY : "generic"),
                 genre: "unknown",
                 confidence: matches(extraction)
             ),
@@ -430,10 +440,12 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
     var linesBySize: [Double: Int] = [:]
     var colorCounts: [String: Int] = [:]
     var colorOrder: [String] = []
+    var styleCensus = MonoStyleCensus()
 
     for page in extraction.pages {
         for line in page.lines {
             let sm = summarizeLine(line)
+            styleCensus.add(sm, page: page.pageIndex)
             if sm.fontSize > 0 {
                 let key = (sm.fontSize * 2).rounded(.toNearestOrAwayFromZero) / 2 // 0.5pt buckets
                 linesBySize[key, default: 0] += 1
@@ -524,10 +536,15 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
             && abs(pageH - GIAPPICHELLI_PS_TRIM_HEIGHT) <= GIAPPICHELLI_PS_TRIM_TOLERANCE
             && bodySize > 0
 
+    // Firma di formato del documento monotipografico (MonoTitles.swift): la calibrazione degli stacchi si
+    // calcola SOLO se la firma regge — sui volumi editoriali la firma cade al primo controllo, senza costo.
+    let mono = bodySize > 0 && isMonotypographic(styleCensus, pageCount: extraction.pages.count)
+        ? monotypographicCalibration(extraction) : nil
+
     return Profile(
         bodySize: bodySize, bodyColor: bodyColor,
         isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc, isCodici: isCodici,
-        isGiappichelliPhotoshop: isGiappichelliPhotoshop)
+        isGiappichelliPhotoshop: isGiappichelliPhotoshop, mono: mono)
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
@@ -780,7 +797,16 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // posizione ancorata — esclude per costruzione note a piè (in basso) e sotto-titoli di
     // sezione collassati dalla normalizzazione cifre (mai la riga più in alto). Verificato
     // a ZERO falsi positivi su corpo/note su 10 volumi reali (banco PDFKit).
-    for (_, candidates) in headerCandidatesByNorm where candidates.count >= RUNNING_HEADER_MIN_PAGES {
+    // Documento MONOTIPOGRAFICO (dispense, MonoTitles.swift): i due canali di ricorrenza a poche pagine
+    // (testatina in cima, ricorrenza generalizzata) NON si applicano. A taglie grandi (40-47 pt) una parola
+    // sola occupa la prima riga della pagina: se la stessa parola apre la pagina su tre pagine alla stessa
+    // quota, il canale la scambiava per testatina e la TOGLIEVA dal corpo (nove parole di corpo su due
+    // dispense), e toglieva l'etichetta «CAP. N» dei capitoli (riga a sé per PDFKit). Sui 10 documenti
+    // monotipografici del corpus tutte le rimozioni di questi due canali erano falsi; le testatine vere di un
+    // documento monotipografico sarebbero comunque nello stesso stile del corpo e restano ai canali a soglia
+    // alta (banda/colore ≥ 15 %, maggioranza ≥ 50 %) e ai folii. Nel dubbio non si toglie testo.
+    let monotypographic = profileForFurniture.mono != nil
+    for (_, candidates) in headerCandidatesByNorm where !monotypographic && candidates.count >= RUNNING_HEADER_MIN_PAGES {
         let ys = candidates.map { $0.yFrac }
         let mean = ys.reduce(0, +) / Double(ys.count)
         let variance = ys.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(ys.count)
@@ -798,7 +824,7 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // (raggruppata nella stessa norma), il suo outlier alza σ oltre LOCK e l'intera norma NON
     // è rimossa (conservativo: si manca la mobilia ma non si tocca mai il contenuto). Sul
     // campione reale i running-header sono a σ=0.0000 (nessun outlier) → presi senza perdita.
-    for (_, lines) in recurCandidatesByNorm {
+    for (_, lines) in recurCandidatesByNorm where !monotypographic {
         let pages = Set(lines.map { $0.page })
         guard pages.count >= FURNITURE_RECUR_MIN_PAGES else { continue }
         let ys = lines.map { $0.yFrac }
@@ -1276,6 +1302,10 @@ enum GenItem {
     /// Titolo NUMERATO riconosciuto dal canale del tronco (`recognizeNumberedTitles`): il livello
     /// di navigazione si risolve all'emissione sui nodi precedenti (`numberedTitleLevel`).
     case numberedTitle(LineSummary, depth: Int)
+    /// Titolo di un documento MONOTIPOGRAFICO riconosciuto dalla geometria (`recognizeMonoTitles`): il
+    /// livello si risolve all'emissione (`monoTitleLevel`), da una parola-chiave di struttura o dai nodi
+    /// precedenti.
+    case monoTitle(LineSummary, keywordLevel: Int?)
     case run(RunRole, [LineSummary])
     /// Apparato di front-matter (colophon → ARTIFACT_STAMP, indice → TOC_GENERAL):
     /// una pagina intera, scartata dal flusso letto ma conservata nell'albero.
@@ -1344,6 +1374,7 @@ func estrattoItemText(_ item: GenItem) -> String {
     switch item {
     case .heading(let sm, _): return sm.text
     case .numberedTitle(let sm, _): return sm.text
+    case .monoTitle(let sm, _): return sm.text
     case .run(_, let lines): return joinLines(lines.map { $0.text })
     case .apparatus(_, let lines): return joinLines(lines.map { $0.text })
     }
@@ -1364,6 +1395,7 @@ func genItemLines(_ item: GenItem) -> [LineSummary] {
     switch item {
     case .heading(let sm, _): return [sm]
     case .numberedTitle(let sm, _): return [sm]
+    case .monoTitle(let sm, _): return [sm]
     case .run(_, let lines): return lines
     case .apparatus(_, let lines): return lines
     }
@@ -1593,12 +1625,15 @@ func pageItems(
     // titoli «N.»/«N.M.»/… nascosti nei run di corpo, spezzando il run (vedi NumberedTitles.swift).
     let withNumbered = recognizeNumberedTitles(
         withCodici, profile, colWidth: columnKnown ? max(0, colX1 - colX0) : 0, colX1: colX1)
+    // Canale dei documenti MONOTIPOGRAFICI (dispense Pages/Word/Google Docs): titoli e paragrafi dagli
+    // stacchi verticali dell'editor. No-op (byte-identico) dove la firma di formato non c'è.
+    let withMono = recognizeMonoTitles(withNumbered, page: page, profile)
     // Fusione posizionale dei titoli spezzati su più righe (universale, esclusa la Rivista DPC):
     // due heading adiacenti dello stesso livello si fondono in un unico titolo SOLO se geometria
     // e stile dicono che sono la stessa riga andata a capo. Precisione > recupero: nel dubbio non
     // fonde (un titolo distinto inghiottito = punto di navigazione perso, danno peggiore del
     // difetto). Sta DENTRO pageItems → `appendPageNodes` e `bindAndPlaceNotes` la vedono → zip 1:1.
-    return consolidateAdjacentHeadings(withNumbered, profile)
+    return consolidateAdjacentHeadings(withMono, profile)
 }
 
 // ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────
@@ -1729,6 +1764,9 @@ func appendPageNodes(
         case .numberedTitle(let sm, let depth):
             out.append(numberedTitleNode(
                 sm, depth: depth, page: page.pageIndex, preceding: out, id: nextId()))
+        case .monoTitle(let sm, let keywordLevel):
+            out.append(monoTitleNode(
+                sm, keywordLevel: keywordLevel, page: page.pageIndex, preceding: out, id: nextId()))
         case .run(let role, let lines):
             let text = joinLines(lines.map { $0.text })
             let category: SemanticCategory

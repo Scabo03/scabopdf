@@ -595,6 +595,11 @@ public func granularizeBody(
 
     for segment in segments {
         if GRANULARIZABLE_ROLES.contains(segment.role) {
+            if segment.opensParagraph, !runTexts.isEmpty {
+                // Paragrafo dell'editor (documento monotipografico, vedi MonoTitles.swift): il blocco
+                // precedente si chiude qui, mai ricucito attraverso il confine.
+                flushRun()
+            }
             if runTexts.isEmpty {
                 runIdBase = segment.id
                 runTexts = [segment.text]

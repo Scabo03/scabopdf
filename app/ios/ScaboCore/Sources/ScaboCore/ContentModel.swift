@@ -67,6 +67,22 @@ public struct ContentSegment: Codable, Equatable, Sendable {
     /// su «Lezioni di giustizia amministrativa»). Portando la pagina sul segmento, ogni fetta
     /// dichiara la pagina su cui il suo testo comincia davvero.
     public var sourcePage: Int?
+    /// Questo segmento di CORPO apre un PARAGRAFO dell'editor (documento monotipografico: Pages, Word,
+    /// Google Docs). `granularizeBody` chiude qui il blocco precedente invece di ricucire il corpo. Campo
+    /// INTERNO e TRANSITORIO: assente da `CodingKeys` (la cache e il suo formato non cambiano) e
+    /// dall'uguaglianza; vive solo fra `buildBaseSegments` e `granularizeBody`, che produce blocchi nuovi
+    /// sempre a `false`. Vedi MonoTitles.swift.
+    public var opensParagraph: Bool = false
+
+    private enum CodingKeys: String, CodingKey {
+        case id, role, text, lengthCategory, acousticIntro, memoryRefresh, sourcePage
+    }
+
+    public static func == (a: ContentSegment, b: ContentSegment) -> Bool {
+        a.id == b.id && a.role == b.role && a.text == b.text && a.lengthCategory == b.lengthCategory
+            && a.acousticIntro == b.acousticIntro && a.memoryRefresh == b.memoryRefresh
+            && a.sourcePage == b.sourcePage
+    }
 
     public init(
         id: String,

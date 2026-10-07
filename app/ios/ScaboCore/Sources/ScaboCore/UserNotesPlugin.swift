@@ -190,6 +190,9 @@ public final class UserNotesPlugin: ExtractionPlugin {
             case .numberedTitle(let sm, let depth):
                 out.append(numberedTitleNode(
                     sm, depth: depth, page: page.pageIndex, preceding: out, id: nextId()))
+            case .monoTitle(let sm, let keywordLevel):
+                out.append(monoTitleNode(
+                    sm, keywordLevel: keywordLevel, page: page.pageIndex, preceding: out, id: nextId()))
             case .run(.body, let lines):
                 var bodyAcc: [String] = []
                 func flushBody() {
@@ -248,6 +251,9 @@ public final class UserNotesPlugin: ExtractionPlugin {
         if profile.bodySize == 0 {
             warnings.append("plugin:user_notes:no_font_information_all_body")
         }
+        if profile.mono != nil {
+            warnings.append("plugin:user_notes:monotypographic_format")
+        }
         if furnitureCount > 0 {
             warnings.append("plugin:user_notes:furniture_lines_removed_\(furnitureCount)")
         }
@@ -264,7 +270,8 @@ public final class UserNotesPlugin: ExtractionPlugin {
             ),
             profile: DocumentProfileDict(
                 profile_id: "user_notes",
-                editorial_family: "user_generated",
+                // `monotipografico`: la granularità rispetta i paragrafi dell'editor (buildBaseSegments).
+                editorial_family: profile.mono != nil ? MONOTYPOGRAPHIC_FAMILY : "user_generated",
                 genre: "appunti",
                 confidence: matches(extraction)
             ),

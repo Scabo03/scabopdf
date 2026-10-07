@@ -275,6 +275,17 @@ public func buildBaseSegments(_ doc: ScabopdfDocument) -> [ContentSegment] {
             pushReversed(expand(node))
         }
     }
+    // Documento MONOTIPOGRAFICO (dispense): un corpo che segue un corpo della STESSA pagina apre un
+    // paragrafo dell'editor — sulla pagina il canale di MonoTitles.swift crea confini corpo|corpo solo agli
+    // stacchi di paragrafo a frase chiusa. La granularità li rispetta (`opensParagraph`). Altrove no-op.
+    if doc.profile.editorial_family == MONOTYPOGRAPHIC_FAMILY {
+        let bodyRole = SemanticCategory.BODY.rawValue
+        for i in out.indices.dropFirst()
+        where out[i].role == bodyRole && out[i - 1].role == bodyRole
+            && out[i].sourcePage != nil && out[i].sourcePage == out[i - 1].sourcePage {
+            out[i].opensParagraph = true
+        }
+    }
     // Passo finale, solo per il backend euristico (Generic): le testatine / titoli
     // di sezione collassati in NOTE dal classificatore size-only non devono
     // annunciare "Nota.". Vedi `suppressCollapsedHeadingNoteIntros`.
