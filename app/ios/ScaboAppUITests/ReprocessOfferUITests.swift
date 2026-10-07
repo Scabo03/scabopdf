@@ -96,10 +96,18 @@ final class ReprocessOfferUITests: XCTestCase {
         XCTAssertTrue(keep.waitForExistence(timeout: 5))
         audit(app, screen: "Conferma: tenere la nuova lettura")
         keep.tap()
-        app.navigationBars.buttons.element(boundBy: 0).tap()
-        XCTAssertFalse(app.cells["home.offer"].waitForExistence(timeout: 3), "tenuta la nuova lettura, l'offerta non c'è più")
+        // Aspetta che conferma ed esito si siano chiusi (le animazioni hanno tempi diversi fra 26.5 e 27).
+        let gone = NSPredicate(format: "exists == false")
+        expectation(for: gone, evaluatedWith: app.staticTexts["Rielaborazione conclusa"])
+        waitForExpectations(timeout: 10)
+        let back = app.navigationBars["Lettura migliore"].buttons.element(boundBy: 0)
+        XCTAssertTrue(back.waitForExistence(timeout: 5))
+        back.tap()
+        let tags = app.navigationBars.buttons["Tag"]
+        XCTAssertTrue(tags.waitForExistence(timeout: 10), "di nuovo in Home")
+        XCTAssertFalse(app.cells["home.offer"].exists, "tenuta la nuova lettura, l'offerta non c'è più")
 
-        app.navigationBars.buttons["Tag"].tap()
+        tags.tap()
         let tag = app.cells.containing(NSPredicate(format: "label CONTAINS %@", "Importante")).firstMatch
         XCTAssertTrue(tag.waitForExistence(timeout: 5))
         tag.tap()
