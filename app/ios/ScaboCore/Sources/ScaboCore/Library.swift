@@ -572,6 +572,15 @@ public final class LibraryStore {
         persist()
     }
 
+    /// Rimette l'etichetta di generazione com'era (ritorno alla lettura precedente, Reprocessing.swift).
+    public func restoreProcessedLabel(id: String, systemVersion: String?, appBuild: String?, at: Date?) {
+        guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
+        state.documents[i].processedSystemVersion = systemVersion
+        state.documents[i].processedAppBuild = appBuild
+        state.documents[i].processedAt = at
+        persist()
+    }
+
     /// Rimuove il documento dalla sola sezione Recenti (operazione di SOLA LISTA): non tocca
     /// l'archivio, le collocazioni, né la posizione di lettura. Riaprendolo, tornerà fra i recenti.
     public func removeFromRecents(id: String) {
