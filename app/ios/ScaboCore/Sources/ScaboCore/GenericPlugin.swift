@@ -903,19 +903,81 @@ func rivistaRunningHeaderFurniture(_ extraction: PdfExtraction) -> Set<String> {
 
 // MARK: - Classification
 
+/// Candidata del canale a colore (D4): riga corta, sostanziale, di colore saturo e lontano da quello del
+/// corpo, a taglia almeno ≈ corpo.
+func isColorHeadingCandidate(_ line: LineSummary, _ profile: Profile) -> Bool {
+    let ratio = (profile.bodySize > 0 && line.fontSize > 0) ? line.fontSize / profile.bodySize : 0.0
+    return line.text.utf16.count <= HEADING_MAX_CHARS
+        && isSubstantial(line.text)
+        && isSaturated(line.color)
+        && colorDistance(line.color, profile.bodyColor) > COLOR_DISTANCE_MIN
+        && (ratio == 0 || ratio >= COLOR_HEADING_MIN_RATIO)
+}
+
+// ── Guardia «paragrafo colorato» del canale a colore (giro «titoli e testatine», 2026-10-07) ──
+//
+// Il canale a colore promuove a titolo ogni riga candidata, perché la soglia «corta» (120 caratteri) la
+// supera anche una riga piena di paragrafo. Un PARAGRAFO tutto colorato a taglia di corpo — gli abstract
+// tradotti della Rivista DPC, un elenco di autori in link blu — diventava una pila di titoli di livello 3,
+// uno per riga (misura dei titoli: 252 + 173 inventati nelle due Riviste). Una sequenza di ≥ 3 righe
+// consecutive candidate, dello stesso colore e della stessa taglia, a passo di riga normale (≤ 1,6 × la
+// taglia), a taglia di corpo (< 1,12 × corpo) e con ≥ 2 righe che arrivano al margine destro della colonna,
+// è un paragrafo: resta corpo, letta. Il vincolo di taglia salva i titoli colorati su tre righe a taglia
+// maggiore del corpo; quello delle righe piene, i titoli colorati che vanno a capo corti.
+let COLORED_PARAGRAPH_MIN_LINES = 3
+let COLORED_PARAGRAPH_MIN_FULL_LINES = 2
+let COLORED_PARAGRAPH_MAX_PITCH_RATIO = 1.6
+let COLORED_PARAGRAPH_MAX_SIZE_RATIO = 1.12
+
+/// Indici (in `lines`, già senza mobilia) delle righe candidate al canale a colore che formano un paragrafo
+/// colorato (vedi sopra): restano corpo.
+func coloredParagraphLineIndices(_ lines: [LineSummary], _ profile: Profile, pageWidth: Double) -> Set<Int> {
+    let body = profile.bodySize
+    guard body > 0, lines.count >= COLORED_PARAGRAPH_MIN_LINES else { return [] }
+    let flags = lines.map { isColorHeadingCandidate($0, profile) }
+    guard flags.filter({ $0 }).count >= COLORED_PARAGRAPH_MIN_LINES else { return [] }
+    // colonna della pagina: bordo destro al 90° percentile e bordo sinistro minimo delle righe a taglia di
+    // corpo (con meno di tre, l'estensione di tutte le righe)
+    let bodyLines = lines.filter { abs($0.fontSize - body) < 0.6 }
+    let colX0: Double, colX1: Double
+    if bodyLines.count >= 3 {
+        let x1s = bodyLines.map { $0.x1 }.sorted()
+        colX1 = x1s[Int(0.9 * Double(x1s.count - 1))]
+        colX0 = bodyLines.map { $0.x0 }.min() ?? 0
+    } else {
+        colX1 = lines.map { $0.x1 }.max() ?? pageWidth
+        colX0 = lines.map { $0.x0 }.min() ?? 0
+    }
+    var out: Set<Int> = []
+    var i = 0
+    while i < lines.count {
+        guard flags[i] else { i += 1; continue }
+        var j = i + 1
+        while j < lines.count, flags[j], lines[j].color == lines[i].color,
+              abs(lines[j].fontSize - lines[i].fontSize) < 0.5,
+              lines[j - 1].yBottom - lines[j].yBottom > 0,
+              lines[j - 1].yBottom - lines[j].yBottom <= COLORED_PARAGRAPH_MAX_PITCH_RATIO * lines[i].fontSize {
+            j += 1
+        }
+        let group = Array(i..<j)
+        let full = group.filter { lines[$0].x1 >= colX1 - 0.10 * (colX1 - colX0) }.count
+        let bodySized = group.allSatisfy { lines[$0].fontSize / body < COLORED_PARAGRAPH_MAX_SIZE_RATIO }
+        if group.count >= COLORED_PARAGRAPH_MIN_LINES, full >= COLORED_PARAGRAPH_MIN_FULL_LINES, bodySized {
+            out.formUnion(group)
+        }
+        i = j
+    }
+    return out
+}
+
 func classify(_ line: LineSummary, _ profile: Profile) -> Kind {
     let bodySize = profile.bodySize
-    let bodyColor = profile.bodyColor
     let short = line.text.utf16.count <= HEADING_MAX_CHARS
     let ratio = (bodySize > 0 && line.fontSize > 0) ? line.fontSize / bodySize : 0.0
 
     // Colour-distinct, substantial, at-least-body-size short lines are heading
     // candidates regardless of size (D4).
-    let colorHeading = short
-        && isSubstantial(line.text)
-        && isSaturated(line.color)
-        && colorDistance(line.color, bodyColor) > COLOR_DISTANCE_MIN
-        && (ratio == 0 || ratio >= COLOR_HEADING_MIN_RATIO)
+    let colorHeading = isColorHeadingCandidate(line, profile)
 
     if colorHeading {
         if ratio >= HEADING_2_RATIO { return .heading(level: 1) }
@@ -1581,8 +1643,10 @@ func pageItems(
         runLines.append(sm)
     }
 
-    for sm in summaries {  // già filtrate: niente furniture, niente anchor invisibili
-        switch classify(sm, profile) {
+    // Le righe di un paragrafo colorato restano corpo (guardia del canale a colore, vedi sopra).
+    let coloredParagraph = coloredParagraphLineIndices(summaries, profile, pageWidth: page.width)
+    for (lineIndex, sm) in summaries.enumerated() {  // già filtrate: niente furniture, niente anchor invisibili
+        switch coloredParagraph.contains(lineIndex) ? .body : classify(sm, profile) {
         case .heading(let level):
             flushRun()
             items.append(.heading(sm, level: level))

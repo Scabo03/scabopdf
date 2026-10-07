@@ -258,3 +258,31 @@ nel suo punto della pagina, qualche articolo dopo; nessuna nota persa. **Livello
 leggi che hanno al loro interno TITOLO (H2) o CAPO (H3) la Consultazione Rapida e il rotore mostrano il titolo
 dell'atto allo stesso livello o sotto le sue divisioni interne (penale: 77 leggi con CAPO, 33 con TITOLO;
 civile: 47 e 24); con l'atto a H1, come il LIBRO, l'annidamento sarebbe pulito — decisione al manutentore.
+
+## 4. Rifiniture (voce 6)
+
+### 4.1 Guardia «paragrafo colorato» del canale a colore (tronco)
+
+**Diagnosi (campo).** Il canale a colore (D4, `classify`) promuove a titolo ogni riga corta (≤ 120 caratteri),
+sostanziale, di colore saturo e lontano dal corpo: la soglia «corta» la supera anche una riga piena di
+paragrafo. Nelle due Riviste DPC gli abstract tradotti (blu, arancio) erano letti riga per riga, ciascuna
+come «Intestazione di livello 3» (misura: 252 + 173 inventati); in Scoca l'elenco degli autori in link blu
+era un H3 di 283 caratteri.
+
+**Cura.** In `pageItems`, prima della classificazione: una sequenza di ≥ 3 righe consecutive candidate al
+canale, dello stesso colore e della stessa taglia, a passo di riga normale (≤ 1,6 × la taglia), a taglia di
+corpo (< 1,12 × corpo) e con ≥ 2 righe che arrivano al margine destro della colonna, è un paragrafo e resta
+corpo (`coloredParagraphLineIndices`). Il vincolo di taglia salva i titoli colorati su tre righe più grandi
+del corpo (senza di esso cadeva un titolo vero di Marrone); quello delle righe piene, i titoli colorati
+brevi. Test: `ColoredParagraphGuardTests` (4, con prova al contrario).
+
+**Reti (runner, entrambe le generazioni).** Cambiano solo le due Riviste e Scoca; lettere e cifre identiche;
+titoli tolti 209 (DPC 2018) e 124 (DPC 2020), tutti righe d'abstract, più l'elenco degli autori di Scoca
+(la «Premessa» che lo seguiva sale da H3 a H2, non avendo più un titolo prima); inventati nella misura
+252 → 49 e 173 → 52, ritrovati invariati (197, 160). Pagina letta contro il PDF: la pagina degli abstract
+della DPC 2018 (i titoli tradotti restano titoli, gli abstract tornano corpo). Residuo: le voci dei sommari
+delle Riviste (pp. 6-9) spezzate una per riga e le righe di front-matter restano titoli (servirebbe un
+rilevatore di pagina-sommario). **Scoperta da segnalare**: il titolo italiano di ogni articolo della DPC,
+l'autore e l'affiliazione sono testo bianco su una fascia verde; `pageItems` scarta il testo quasi bianco
+(ancore invisibili), quindi non sono mai letti (123 righe nel 2018, 80 nel 2020). Non è curabile senza sapere
+che sotto il testo c'è un riempimento colorato: capacità d'estrattore che oggi manca.
