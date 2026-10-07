@@ -110,11 +110,18 @@ final class GlobalBookmarksViewController: UIViewController, UITableViewDataSour
         config.text = item.bookmark.displayTitle
         var sub = item.document.title
         if let page = item.bookmark.originalPage { sub += " · pagina \(page)" }
+        let orphan = item.bookmark.isOrphan == true
+        if orphan { sub = "Da ricollocare · " + sub }
         config.secondaryText = sub
+        config.secondaryTextProperties.numberOfLines = 0
+        config.textProperties.numberOfLines = 0
         cell.contentConfiguration = config
         cell.accessibilityTraits = .button
         var label = "\(item.bookmark.displayTitle), in \(item.document.title)"
         if let page = item.bookmark.originalPage { label += ", pagina \(page)" }
+        if orphan {
+            label += ", da ricollocare: il passo non è stato ritrovato dopo la rielaborazione, il salto porta all'inizio della pagina d'origine"
+        }
         cell.accessibilityLabel = label
         cell.accessibilityHint = "Doppio tap per aprire il documento al segnalibro"
         return cell

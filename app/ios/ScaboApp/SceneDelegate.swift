@@ -31,6 +31,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             setStoredFirstOpenCompleted(prefs, false)
             setStoredAppearanceSource(prefs, .followSystem)
         }
+        if CommandLine.arguments.contains("-uiTestSeedReprocess") {
+            setStoredFirstOpenCompleted(prefs, true)
+            UITestSeeding.applyIfRequested()
+        }
         #endif
 
         // Prima apertura (design accessibilità visiva): l'utente sceglie il tema con una schermata

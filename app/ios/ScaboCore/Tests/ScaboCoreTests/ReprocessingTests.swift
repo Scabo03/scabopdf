@@ -28,6 +28,11 @@ final class ReprocessingTests: XCTestCase {
         XCTAssertNil(policy.reason(for: doc(build: "40"), currentSystemVersion: "iPadOS 28.0"))
     }
 
+    func test_processedByTheBuildInUse_isNotOfferedTheCure() {
+        XCTAssertNil(policy.reason(for: doc(build: "1"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "1"))
+        XCTAssertEqual(policy.reason(for: doc(build: "1"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "48"), .cure)
+    }
+
     func test_akn_neverOffered() {
         XCTAssertNil(policy.reason(for: doc("akn", build: "40"), currentSystemVersion: "iPadOS 27.0.1"))
     }

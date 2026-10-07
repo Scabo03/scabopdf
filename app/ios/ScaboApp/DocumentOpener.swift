@@ -67,6 +67,24 @@ enum DocumentOpener {
         return min(max(0, anchor.orderIndexHint), max(0, segments.count - 1))
     }
 
+    /// Riancora annotazioni e posizione di un documento sul contenuto appena elaborato (sul thread
+    /// chiamante: qui si usa solo quando l'apertura ha dovuto rielaborare, evento raro). Ritorna il
+    /// documento aggiornato. Nessuna annotazione → nessun lavoro.
+    @discardableResult
+    static func reanchorAfterProcessing(documentId: String, content: PaginatedContent) -> ArchivedDocument? {
+        guard let doc = service.store.document(id: documentId) else { return nil }
+        let hasAnything = !(doc.bookmarks ?? []).isEmpty || !(doc.underlines ?? []).isEmpty || doc.readingPosition > 0
+        guard hasAnything else { return doc }
+        let out = AnnotationReanchoring.reanchor(
+            bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
+            readingAnchor: doc.readingAnchor, in: ContentAnchorIndex(segments: content.pages.flatMap { $0.segments }))
+        service.store.applyAnnotationState(
+            documentId: documentId, bookmarks: out.bookmarks, underlines: out.underlines,
+            readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
+            readingPositionIsApproximate: out.readingPositionIsApproximate ? true : nil)
+        return service.store.document(id: documentId)
+    }
+
     /// Conia le ancore per contenuto MANCANTI delle annotazioni del documento, a contenuto fermo (il
     /// flusso appena presentato è quello su cui gli id correnti sono veri): è la migrazione gratuita
     /// delle annotazioni create prima delle ancore (docs/ANCORE_ANNOTAZIONI.md). Una sola scrittura,
@@ -102,11 +120,12 @@ enum DocumentOpener {
             return
         }
 
-        // I volumi ENORMI si aprono ALLEGGERITI (granularità grossa, niente Dottrina Inline né
-        // Consultazione Rapida all'apertura) per stare nel budget di memoria del dispositivo, e
-        // NON usano la cache (quella scritta da build precedenti è a granularità fine = pesante):
-        // si rielaborano leggeri ogni apertura. La Lettura Continua — il default, ciò che serve
-        // per leggere il volume — non ha bisogno né dell'albero né del flusso Dottrina.
+        // I volumi ENORMI (oltre LARGE_DOCUMENT_PAGE_THRESHOLD pagine: i codici) si aprono ALLEGGERITI
+        // (granularità grossa, niente Dottrina Inline né Consultazione Rapida) per stare nel budget di
+        // memoria del dispositivo. Usano la cache SOLO se è già quella leggera (`contentTarget` marcato);
+        // una cache pesante di build precedenti si rielabora UNA volta, leggera, e da lì in poi si
+        // riapre dalla cache come ogni altro libro. Nessun volume si rielabora a ogni apertura. La
+        // Lettura Continua — il default — non ha bisogno né dell'albero né del flusso Dottrina.
         let large = doc.sourcePageCount > Self.LARGE_DOCUMENT_PAGE_THRESHOLD
 
         // Percorso veloce: contenuto in cache → lettore immediato. Per i volumi ENORMI si usa la
@@ -156,6 +175,9 @@ enum DocumentOpener {
                     // Etichetta di generazione: con quale lettore di sistema è stato elaborato.
                     service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
                     service.store.recordOpened(id: id)
+                    // La cache mancava (o era illeggibile): il contenuto è nuovo, gli id di prima non valgono.
+                    // Le annotazioni si riancorano per contenuto (§ 12.14): mai per id.
+                    let doc = reanchorAfterProcessing(documentId: id, content: content) ?? doc
                     presentReader(content: content, document: doc, pageMap: pageMap,
                                   doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
                                   focusAnchor: focusAnchor, from: presenter, onClosed: onClosed)
@@ -226,6 +248,13 @@ enum DocumentOpener {
             anchorBox: anchors)
         reader.onAnchorIndexReady = { index in mintMissingAnchors(documentId: doc.id, in: index) }
         reader.modalPresentationStyle = .fullScreen
+        // Posizione ritrovata solo per pagina dopo una rielaborazione (§ 12.14): lo si dice.
+        if focusAnchor == nil, doc.readingPositionIsApproximate == true {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                UIAccessibility.post(notification: .announcement,
+                                     argument: "Dopo la rielaborazione il punto in cui eri arrivato non è stato ritrovato con sicurezza: riparti dall'inizio della stessa pagina.")
+            }
+        }
         // Split da dentro il file (§ 11.1): il reader si chiude, si sceglie la seconda metà dal
         // presentatore, e lo split parte con QUESTO documento a sinistra. Instradato dal presentatore
         // per unificare l'uscita con l'attivazione dalla Home (il documento che resta si riapre lì).

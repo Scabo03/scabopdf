@@ -362,4 +362,17 @@ final class ContentAnchorTests: XCTestCase {
         XCTAssertEqual(r.index, 30_000)
         XCTAssertLessThan(built, 5.0, "indice su 47k segmenti costruito in \(built) s")
     }
+
+    func test_orphanUnderline_neverBlocksOrTouchesTheNewSegments() throws {
+        let store = LibraryStore(persistence: InMemoryLibraryPersistence())
+        let d = store.addDocument(title: "t", sourceFileName: "t.pdf", sourcePageCount: 1)
+        let u = try XCTUnwrap(store.addUnderline(documentId: d.id, spans: [UnderlineSpan(segmentId: "node_1", startWord: 0, endWord: 3)], preview: ""))
+        var orphan = u; orphan.isOrphan = true
+        store.applyAnnotationState(documentId: d.id, bookmarks: [], underlines: [orphan], readingPosition: 0,
+                                   readingAnchor: nil, readingPositionIsApproximate: nil)
+        XCTAssertTrue(store.underlinesTouching(documentId: d.id, segmentId: "node_1").isEmpty)
+        XCTAssertNotNil(store.addUnderline(documentId: d.id, spans: [UnderlineSpan(segmentId: "node_1", startWord: 1, endWord: 2)], preview: ""),
+                        "lo stesso id ora indica un altro passo: l'orfana non blocca")
+        XCTAssertEqual(store.underlines(documentId: d.id).count, 2, "l'orfana resta salvata")
+    }
 }

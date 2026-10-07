@@ -169,6 +169,59 @@ final class LibraryService {
         try? fileManager.removeItem(at: archivedPDFURL(forDocumentId: id))
         try? fileManager.removeItem(at: archivedSourceURL(forDocumentId: id, kind: "akn"))
         try? fileManager.removeItem(at: cacheURL(forDocumentId: id))
+        discardPreviousReading(forDocumentId: id)
+    }
+
+    // MARK: - Lettura precedente (offerta di rielaborazione, § 12.13 / § 12.14)
+    //
+    // Prima di una rielaborazione la cache corrente diventa `<id>.prev.json` e lo stato delle
+    // annotazioni (`ReadingSnapshot`) si salva in `<id>.prev-state.json`. Restano finché l'utente non
+    // conferma la nuova lettura; «Torna alla lettura precedente» li rimette esattamente com'erano.
+
+    private func previousCacheURL(_ id: String) -> URL { cacheDir.appendingPathComponent("\(id).prev.json") }
+    private func previousStateURL(_ id: String) -> URL { cacheDir.appendingPathComponent("\(id).prev-state.json") }
+
+    /// Vero se il documento ha una lettura precedente in attesa di conferma.
+    func hasPreviousReading(forDocumentId id: String) -> Bool {
+        fileManager.fileExists(atPath: previousStateURL(id).path)
+    }
+
+    /// Mette da parte la cache corrente (se c'è) e la fotografia dello stato. Una sola lettura
+    /// precedente: se ne esisteva già una non confermata, si tiene quella PIÙ VECCHIA (è la lettura
+    /// da cui l'utente era partito).
+    func stashPreviousReading(_ snapshot: ReadingSnapshot, forDocumentId id: String) throws {
+        guard !hasPreviousReading(forDocumentId: id) else { return }
+        let cache = cacheURL(forDocumentId: id)
+        if fileManager.fileExists(atPath: cache.path) {
+            try? fileManager.removeItem(at: previousCacheURL(id))
+            try fileManager.copyItem(at: cache, to: previousCacheURL(id))
+        }
+        let enc = JSONEncoder()
+        try enc.encode(snapshot).write(to: previousStateURL(id), options: .atomic)
+    }
+
+    func previousReadingSnapshot(forDocumentId id: String) -> ReadingSnapshot? {
+        guard let data = try? Data(contentsOf: previousStateURL(id)) else { return nil }
+        return try? JSONDecoder().decode(ReadingSnapshot.self, from: data)
+    }
+
+    /// Rimette la cache precedente al suo posto (o, se non c'era, toglie quella nuova: il libro si
+    /// rielaborerà all'apertura come prima). Ritorna la fotografia dello stato da ripristinare.
+    func restorePreviousCache(forDocumentId id: String) -> ReadingSnapshot? {
+        guard let snapshot = previousReadingSnapshot(forDocumentId: id) else { return nil }
+        let cache = cacheURL(forDocumentId: id)
+        try? fileManager.removeItem(at: cache)
+        if fileManager.fileExists(atPath: previousCacheURL(id).path) {
+            try? fileManager.moveItem(at: previousCacheURL(id), to: cache)
+        }
+        try? fileManager.removeItem(at: previousStateURL(id))
+        return snapshot
+    }
+
+    /// Conferma la nuova lettura: la precedente si cancella.
+    func discardPreviousReading(forDocumentId id: String) {
+        try? fileManager.removeItem(at: previousCacheURL(id))
+        try? fileManager.removeItem(at: previousStateURL(id))
     }
 
     // MARK: - Archivio sorgente generico (PDF o AKN)

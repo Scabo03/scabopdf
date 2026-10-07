@@ -1295,7 +1295,7 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
     /// Fornisce, per ogni id-segmento, gli intervalli di parole già coperti da sottolineature
     /// esistenti (da bloccare nella finestra di selezione, § 6.3), escludendo quella in modifica.
     private func blockedIntervalsProvider(excluding excludedId: String?) -> (String) -> [ClosedRange<Int>] {
-        let underlines = libraryStore.underlines(documentId: documentId).filter { $0.id != excludedId }
+        let underlines = libraryStore.underlines(documentId: documentId).filter { $0.id != excludedId && $0.isOrphan != true }
         return { segmentId in
             underlines.flatMap { $0.spans }
                 .filter { $0.segmentId == segmentId }

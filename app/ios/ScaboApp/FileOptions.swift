@@ -84,6 +84,24 @@ enum FileOptions {
                 }
         })
 
+        // Offerta di rielaborazione (§ 12.13): si apre la spiegazione, mai l'elaborazione diretta.
+        if let fresh = service.store.document(id: doc.id) {
+            if service.hasPreviousReading(forDocumentId: doc.id) {
+                sheet.addAction(UIAlertAction(title: "Tieni la nuova lettura", style: .default) { _ in
+                    ReprocessOffer.confirmNewReading(doc.id); onChanged()
+                })
+                sheet.addAction(UIAlertAction(title: "Torna alla lettura precedente", style: .default) { _ in
+                    ReprocessOffer.revertToPrevious(doc.id); onChanged()
+                })
+            } else if ReprocessOffer.reason(for: fresh) != nil,
+                      service.hasArchivedSource(forDocumentId: doc.id, kind: fresh.sourceKind) {
+                sheet.addAction(UIAlertAction(title: "Lettura migliore disponibile…", style: .default) { [weak presenter] _ in
+                    guard let presenter else { return }
+                    ReprocessOffer.presentOffer(for: fresh, from: presenter, onDone: onChanged)
+                })
+            }
+        }
+
         sheet.addAction(UIAlertAction(title: "Referto di elaborazione", style: .default) { [weak presenter] _ in
             guard let presenter, let fresh = service.store.document(id: doc.id) else { return }
             let report = ReportViewController(document: fresh)

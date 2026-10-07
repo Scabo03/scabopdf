@@ -47,20 +47,22 @@ public struct ReprocessingPolicy: Sendable {
         return validatedSystemMajors.contains(m)
     }
 
-    /// Perché il documento riceve l'offerta, o `nil` se non la riceve.
-    public func reason(for doc: ArchivedDocument, currentSystemVersion: String) -> ReprocessingReason? {
+    /// Perché il documento riceve l'offerta, o `nil` se non la riceve. Un documento elaborato dalla
+    /// STESSA build in uso (`currentAppBuild`) ha già tutte le sue cure: niente offerta per la cura.
+    public func reason(for doc: ArchivedDocument, currentSystemVersion: String, currentAppBuild: String? = nil) -> ReprocessingReason? {
         guard (doc.sourceKind ?? "pdf") == "pdf" else { return nil }
         guard currentGenerationIsValidated(currentSystemVersion: currentSystemVersion) else { return nil }
         let build = doc.processedAppBuild.flatMap { Int($0) }
-        if build == nil || build! < latestCureBuild { return .cure }
+        let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
+        if !sameBuild, build == nil || build! < latestCureBuild { return .cure }
         if let was = Self.major(of: doc.processedSystemVersion), let now = Self.major(of: currentSystemVersion), was != now {
             return .systemUpdate
         }
         return nil
     }
 
-    public func eligibleDocuments(_ docs: [ArchivedDocument], currentSystemVersion: String) -> [ArchivedDocument] {
-        docs.filter { reason(for: $0, currentSystemVersion: currentSystemVersion) != nil }
+    public func eligibleDocuments(_ docs: [ArchivedDocument], currentSystemVersion: String, currentAppBuild: String? = nil) -> [ArchivedDocument] {
+        docs.filter { reason(for: $0, currentSystemVersion: currentSystemVersion, currentAppBuild: currentAppBuild) != nil }
     }
 }
 

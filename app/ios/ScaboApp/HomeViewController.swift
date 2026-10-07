@@ -27,7 +27,9 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     private var recents: [ArchivedDocument] = []
     private var workspaces: [Workspace] = []
 
-    private enum Section: Int, CaseIterable { case recents, workspaces }
+    private enum Section: Int, CaseIterable { case offer, recents, workspaces }
+    /// Libri che possono ricevere la lettura migliore (+ quelli in attesa di conferma): § 12.13.
+    private var offerCount = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -95,6 +97,7 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     }
 
     private func reload() {
+        offerCount = ReprocessOffer.eligibleDocuments().count + ReprocessOffer.pendingConfirmation().count
         recents = service.store.recents(limit: 5)
         workspaces = service.store.state.workspaces
         tableView.reloadData()
@@ -195,6 +198,7 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch Section(rawValue: section)! {
+        case .offer: return offerCount > 0 ? 1 : 0                // riga discreta, solo se c'è qualcosa
         case .recents: return recents.count                       // sezione assente se vuota (header nil)
         case .workspaces: return max(workspaces.count, 1)         // almeno la riga "nessun workspace"
         }
@@ -202,6 +206,7 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch Section(rawValue: section)! {
+        case .offer: return nil
         case .recents: return recents.isEmpty ? nil : "Recenti"
         case .workspaces: return nil   // header custom (con il tasto Nuovo workspace)
         }
@@ -218,12 +223,17 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch Section(rawValue: indexPath.section)! {
+        case .offer:
+            return offerCell(at: indexPath)
         case .recents:
             return fileCell(recents[indexPath.row], at: indexPath)
         case .workspaces:
             if workspaces.isEmpty {
                 let cell = tableView.dequeueReusableCell(withIdentifier: "empty", for: indexPath)
                 var config = cell.defaultContentConfiguration()
+                cell.accessoryType = .none
+                cell.accessibilityTraits = .none
+                cell.accessibilityIdentifier = nil
                 config.text = "Nessun workspace"
                 config.secondaryText = "Crea un workspace per organizzare i tuoi documenti."
                 config.textProperties.numberOfLines = 0
@@ -234,6 +244,31 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
             }
             return workspaceCell(workspaces[indexPath.row], at: indexPath)
         }
+    }
+
+    /// La riga dell'offerta di rielaborazione (§ 12.13): apre l'elenco, non rielabora nulla da sé.
+    /// Cella standard a più righe (niente testo tagliato), selezionabile con un doppio tap.
+    private func offerCell(at indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "empty", for: indexPath)
+        let n = offerCount
+        var config = cell.defaultContentConfiguration()
+        config.text = n == 1 ? "Lettura migliore disponibile per un libro" : "Lettura migliore disponibile per \(n) libri"
+        config.secondaryText = "Apre l'elenco: ogni libro si rielabora solo se lo scegli tu."
+        config.textProperties.numberOfLines = 0
+        config.secondaryTextProperties.numberOfLines = 0
+        config.image = UIImage(systemName: "arrow.triangle.2.circlepath")
+        cell.contentConfiguration = config
+        cell.accessoryType = .disclosureIndicator
+        cell.selectionStyle = .default
+        cell.accessibilityTraits = .button
+        cell.accessibilityIdentifier = "home.offer"
+        return cell
+    }
+
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: false)
+        guard Section(rawValue: indexPath.section) == .offer else { return }
+        navigationController?.pushViewController(ReprocessListViewController(style: .insetGrouped), animated: true)
     }
 
     private func fileCell(_ doc: ArchivedDocument, at indexPath: IndexPath) -> UITableViewCell {

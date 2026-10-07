@@ -1022,7 +1022,8 @@ extension LibraryStore {
     /// Le sottolineature che toccano un dato segmento (per il menù di stato, le liste di scelta di
     /// modifica/eliminazione, e il blocco delle parole già coperte nella finestra di selezione).
     public func underlinesTouching(documentId: String, segmentId: String) -> [Underline] {
-        underlines(documentId: documentId).filter { $0.segmentIds.contains(segmentId) }
+        // Un'orfana porta id di segmento della lettura precedente, che ora indicano altri passi: non tocca nulla.
+        underlines(documentId: documentId).filter { $0.isOrphan != true && $0.segmentIds.contains(segmentId) }
     }
 
     /// Aggiunge una sottolineatura (§ 6.2) e restituisce il record con id minted, oppure `nil` se il
@@ -1035,7 +1036,7 @@ extension LibraryStore {
         let normalized = Self.normalizedSpans(spans)
         guard !normalized.isEmpty else { return nil }
         let existing = state.documents[di].underlines ?? []
-        guard !Self.spansOverlapAny(normalized, existing) else { return nil }
+        guard !Self.spansOverlapAny(normalized, existing.filter { $0.isOrphan != true }) else { return nil }
         let underline = Underline(id: makeId(), spans: normalized, preview: preview, createdAt: now())
         var all = existing
         all.append(underline)
@@ -1055,7 +1056,7 @@ extension LibraryStore {
               let ui = all.firstIndex(where: { $0.id == underlineId }) else { return false }
         let normalized = Self.normalizedSpans(spans)
         guard !normalized.isEmpty else { return false }
-        let others = all.enumerated().filter { $0.offset != ui }.map { $0.element }
+        let others = all.enumerated().filter { $0.offset != ui && $0.element.isOrphan != true }.map { $0.element }
         guard !Self.spansOverlapAny(normalized, others) else { return false }
         all[ui].spans = normalized
         state.documents[di].underlines = all

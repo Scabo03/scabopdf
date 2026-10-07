@@ -52,7 +52,7 @@ final class ReportViewController: UIViewController, UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0: return 3                                   // riepilogo (nome file, pagine, generazione del lettore)
+        case 0: return 4                                   // riepilogo (nome file, pagine, generazione del lettore, lettura migliore)
         default: return max(document.warnings.count, 1)    // avvisi (o "nessun avviso")
         }
     }
@@ -78,11 +78,24 @@ final class ReportViewController: UIViewController, UITableViewDataSource {
             } else if indexPath.row == 1 {
                 config.text = "Pagine del file originale"
                 config.secondaryText = "\(document.sourcePageCount)"
-            } else {
+            } else if indexPath.row == 2 {
                 // Etichetta di generazione (docs/GENERAZIONI_LETTORE.md): il lettore PDF di sistema
                 // cambia fra versioni; questa dice con quale il contenuto in cache è stato letto.
                 config.text = "Letto con il lettore di sistema"
                 config.secondaryText = SystemGeneration.describe(document)
+            } else {
+                // Offerta di rielaborazione (§ 12.13): lo stato, in parole semplici. Si agisce dalle
+                // opzioni del file o dalla Home; qui si informa soltanto.
+                config.text = "Lettura migliore"
+                if LibraryService.shared.hasPreviousReading(forDocumentId: document.id) {
+                    config.secondaryText = "Rielaborato: la lettura di prima è ancora sul dispositivo, in attesa che tu scelga quale tenere (dalle opzioni del libro)."
+                } else if ReprocessOffer.reason(for: document) != nil {
+                    config.secondaryText = "Disponibile: si può rielaborare dalle opzioni del libro."
+                } else if !ReprocessOffer.policy.currentGenerationIsValidated(currentSystemVersion: SystemGeneration.current) {
+                    config.secondaryText = "Questa versione del sistema non è ancora stata verificata dall'app: per ora nessuna rielaborazione."
+                } else {
+                    config.secondaryText = "Il libro è già letto con la versione più recente."
+                }
             }
         } else if document.warnings.isEmpty {
             config.text = "Nessun avviso."

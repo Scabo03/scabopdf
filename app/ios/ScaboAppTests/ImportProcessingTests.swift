@@ -953,3 +953,60 @@ final class AnnotationStabilityProbeTests: XCTestCase {
         }
     }
 }
+
+/// La lettura precedente dell'offerta di rielaborazione (LibraryService): messa da parte, ripristinata,
+/// confermata. Giro «ancore», docs/ANCORE_ANNOTAZIONI.md § 5.
+final class PreviousReadingStorageTests: XCTestCase {
+    func test_stashRestoreAndDiscard_previousReading() throws {
+        let service = LibraryService.shared
+        let doc = service.store.addDocument(title: "prova", sourceFileName: "prova.pdf", sourcePageCount: 1)
+        defer { service.deleteFiles(forDocumentId: doc.id); service.store.deleteDocumentFromArchive(id: doc.id) }
+        let seg = ContentSegment(id: "node_0", role: "BODY", text: "alba brezza collina", lengthCategory: "", acousticIntro: "")
+        let content = PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: [seg])], totalSegments: 1)
+        service.writeCache(content, pageMap: [:], doctrineContent: nil, quickConsultTree: nil, contentTarget: 0, forDocumentId: doc.id)
+        service.store.recordProcessed(id: doc.id, systemVersion: "iOS 27.0", appBuild: "45")
+        let snap = try XCTUnwrap(service.store.readingSnapshot(documentId: doc.id))
+        try service.stashPreviousReading(snap, forDocumentId: doc.id)
+        XCTAssertTrue(service.hasPreviousReading(forDocumentId: doc.id))
+        // Nuova lettura scritta sopra.
+        let newSeg = ContentSegment(id: "node_0", role: "BODY", text: "testo nuovo", lengthCategory: "", acousticIntro: "")
+        service.writeCache(PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: [newSeg])], totalSegments: 1),
+                           pageMap: [:], doctrineContent: nil, quickConsultTree: nil, contentTarget: 0, forDocumentId: doc.id)
+        service.store.recordProcessed(id: doc.id, systemVersion: "iOS 27.0", appBuild: "48")
+        // Una seconda messa da parte NON sovrascrive la lettura di partenza.
+        try service.stashPreviousReading(try XCTUnwrap(service.store.readingSnapshot(documentId: doc.id)), forDocumentId: doc.id)
+        // Ritorno: cache e etichetta di prima.
+        let restored = try XCTUnwrap(service.restorePreviousCache(forDocumentId: doc.id))
+        service.store.restore(restored, documentId: doc.id)
+        XCTAssertEqual(service.loadCache(forDocumentId: doc.id)?.content.pages.first?.segments.first?.text, "alba brezza collina")
+        XCTAssertEqual(service.store.document(id: doc.id)?.processedAppBuild, "45")
+        XCTAssertFalse(service.hasPreviousReading(forDocumentId: doc.id))
+        // Conferma: la precedente sparisce.
+        try service.stashPreviousReading(try XCTUnwrap(service.store.readingSnapshot(documentId: doc.id)), forDocumentId: doc.id)
+        service.discardPreviousReading(forDocumentId: doc.id)
+        XCTAssertFalse(service.hasPreviousReading(forDocumentId: doc.id))
+    }
+}
+
+/// La finestra Segnalibri del lettore dichiara le orfane (§ 12.14): in coda, con «da ricollocare» nell'etichetta.
+final class OrphanBookmarkWindowTests: XCTestCase {
+    func test_orphanBookmark_isLastAndDeclaredToVoiceOver() throws {
+        let store = LibraryStore(persistence: InMemoryLibraryPersistence())
+        let d = store.addDocument(title: "t", sourceFileName: "t.pdf", sourcePageCount: 3)
+        store.addBookmark(documentId: d.id, anchorSegmentId: "node_1", orderIndexHint: 1, preview: "primo", originalPage: 1)
+        store.addBookmark(documentId: d.id, anchorSegmentId: "node_2", orderIndexHint: 2, preview: "secondo", originalPage: 2)
+        var bms = store.bookmarks(documentId: d.id)
+        bms[0].isOrphan = true
+        store.applyAnnotationState(documentId: d.id, bookmarks: bms, underlines: [], readingPosition: 0,
+                                   readingAnchor: nil, readingPositionIsApproximate: nil)
+        let vc = BookmarksWindowViewController.makeForTesting(store: store, documentId: d.id)
+        vc.loadViewIfNeeded()
+        let table = try XCTUnwrap(vc.view.subviews.compactMap { $0 as? UITableView }.first
+            ?? vc.view.subviews.flatMap { $0.subviews }.compactMap { $0 as? UITableView }.first)
+        XCTAssertEqual(table.numberOfRows(inSection: 0), 2)
+        let first = vc.tableView(table, cellForRowAt: IndexPath(row: 0, section: 0))
+        let last = vc.tableView(table, cellForRowAt: IndexPath(row: 1, section: 0))
+        XCTAssertFalse(first.accessibilityLabel?.contains("da ricollocare") ?? true)
+        XCTAssertTrue(last.accessibilityLabel?.contains("da ricollocare") ?? false, "l'orfana è in coda e dichiarata")
+    }
+}

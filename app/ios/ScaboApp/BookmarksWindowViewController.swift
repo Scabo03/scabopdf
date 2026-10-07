@@ -42,6 +42,11 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
         presenter.present(nav, animated: true)
     }
 
+    /// Per i test: la finestra senza presentarla.
+    static func makeForTesting(store: LibraryStore, documentId: String) -> BookmarksWindowViewController {
+        BookmarksWindowViewController(store: store, documentId: documentId, onJump: { _ in })
+    }
+
     private init(
         store: LibraryStore, documentId: String,
         onJump: @escaping (_ bookmark: Bookmark) -> Void
