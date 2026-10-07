@@ -6,7 +6,7 @@ Cosa è cambiato
 
 Su quali libri si sente
 - Rizzo, La causalità civile: le testatine di capitolo non sono più lette come note.
-- Marrone, Istituzioni di diritto romano: il piè di pagina «Pag. …» non è più un'intestazione di primo livello.
+- Marrone, Istituzioni di diritto romano: il piè di pagina «Pag. …» non è più un'intestazione di primo livello. Su iPad con iOS 26 può ancora capitare di sentirlo in coda a una frase, dove il lettore di sistema lo incolla al testo: lo sappiamo, non dipende dall'app.
 - Mandrioli-Carratta (tutti e quattro i volumi), Lineamenti di parte speciale, Compendio di procedura penale, Patriarca-Benazzo, Nomofanie, Lezioni di storia della codificazione, Codice penale: meno testatine lette, qualche capitolo o libro in più fra le intestazioni.
 
 Da sapere

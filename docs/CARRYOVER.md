@@ -59,7 +59,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 **Documenti:** `docs/TESTATINE_MISURA_STRUTTURA.md` (diagnosi, misura, cura, reti), `docs/RIELABORAZIONE_PROGETTO.md` (accertamento
 + progetto, nessun codice di prodotto), `docs/LAYER2_PRODUCT_DECISIONS.md` § 12.13 (politica dell'offerta di rielaborazione),
 `docs/RELEASE_TESTFLIGHT.md` (note per i tester obbligatorie). Laboratorio fuori repo `~/Developer/scabopdf-gen-lab/`
-(referto `referto/REFERTO_TESTATINE.md`, reti `reti/*testatine3*`, misura `reti/misura_struttura_*`).
+(referto `referto/REFERTO_TESTATINE.md`, reti `reti/*testatine5*`, misura `reti/misura_struttura_*`).
 
 **Fatto (1).** Diagnosi sulla pagina: Rizzo = testatine lunghe 66-70 caratteri fermate dal tetto 60 prima dei canali ancorati
 (→ NOTE, 89); Marrone = piè «Pag. N» più grande del corpo, frammentato in 4 norme dalla fusione col folio, rifiutato dal canale
@@ -69,19 +69,21 @@ PyMuPDF (folio per progressione, ricorrenza ancorata ≥ 8 lettere, ≥ 10 % pag
 «NON misurato» per folii assenti/romani), prova al contrario (mobilia spenta → 25.883 lette; cambiamento innocuo → identica).
 **Cura nel tronco** (`detectFurniture`): riga del folio (slot ≥ max(5, 5 %) pagine, co-riga ≤ 90, mai la riga che apre una regione
 d'apparato esclusa — regressione Mosconi vista e corretta), tetto 120 per i soli canali ancorati, `reclassifyCleanFamilies` sui
-BODY «CAPITOLO/PARTE/…». Lette come contenuto 1.853 → 719 (27), 1.977 → 869 (26.5). Reti verdi su entrambe le generazioni: 23
-volumi cambiano, 0 parole inesistenti nuove, oracolo invariato, Marotta cambia di proposito (+2 H2) e nello stesso modo, 34
-righe fuori banda tutte giudicate (33 righe d'indirizzo dell'editore sui frontespizi Marrone + 1 falso allarme). Codice penale:
-H1 4 → 15 (LIBRO), H3 532 → 516 (testatine di legge con folio fuso, false). App iOS 27 = runner su 7 volumi del campione.
+BODY «CAPITOLO/PARTE/…». Pavimento dello scarto folio−pagina della riga del folio = 5 % (slot), non 15 %: Marrone è una
+ristampa in cinque tomi con folio che riparte (trovato dalla revisione indipendente: 38 falsi H1 su 26.5). Lette come contenuto
+1.853 → 719 (27), 1.977 → 803 (26.5). Reti verdi su entrambe le generazioni: 23 volumi cambiano, 0 parole inesistenti nuove,
+oracolo invariato, Marotta cambia di proposito (+2 H2) e nello stesso modo; **diff parola per parola** di ogni blocco perso:
+1.236 in banda, 141 ricomposti, 21 ricollocati, 2 persi (Nomofanie: testatina fusa da PDFKit con le lettere di un elenco, A.5).
+Codice penale: H1 4 → 15 (LIBRO), H3 532 → 516 (testatine di legge con folio fuso, false). App iOS 27 = runner su 7 volumi.
 **Annotazioni (1)**: `AnnotationStabilityProbeTests` (3 test) provano che reimportare crea una copia senza annotazioni e che
 rielaborare sposta in silenzio segnalibri, sottolineature e posizione (id `node_N` sequenziali). **Nessuna offerta finché le
 ancore per contenuto non esistono** (progetto § 2). **Note TestFlight**: `fastlane/COSA_TESTARE.txt` obbligatorio, lane si ferma
 senza; `changelog:` + attesa del processing; lane `note_tester` di prova.
 
 **Residui e prossimi passi.** (a) Ancore per contenuto (impronta del segmento) + rete sulle annotazioni sui 52 volumi, prima
-dell'offerta; (b) testatine fuse da PDFKit 27 con la prima riga di corpo (> 90) restano lette: dipendono da A.5; (c) Lezioni
+dell'offerta; (b) testatine fuse da PDFKit con la prima riga di corpo (> 90, 27) e il piè «Pag.» di Marrone fuso con l'ultima riga di corpo (26.5, 43 segmenti) restano letti: dipendono da A.5; (c) Lezioni
 storia 68 e Mandrioli con HEADING_4 contate «lette» = limite del metro (testatina = titolo del paragrafo nella stessa pagina);
-(d) promuovere le basi del laboratorio alla fotografia `testatine3` dopo l'accettazione del maintainer; (e) folii romani non
+(d) promuovere le basi del laboratorio alla fotografia `testatine5` dopo l'accettazione del maintainer; (e) folii romani non
 misurati.
 
 ## ▶ STATO — Generazioni del lettore di sistema: doppia rete iOS 27 / 26.5, cura dei confini di parola, etichetta di generazione — 2026-10-06

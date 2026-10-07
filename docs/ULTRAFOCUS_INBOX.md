@@ -409,9 +409,9 @@ Marrone letto come H1 avevano tre meccanismi diversi (tetto 60 prima dei canali 
 delle norme + guardia di taglia; titolo del paragrafo che cambia ogni pagina) e un segnale comune: il
 **folio** sulla stessa riga. Curati nel tronco (`docs/TESTATINE_MISURA_STRUTTURA.md` § 3) con la riga del
 folio, il tetto 120 per i canali ancorati e le etichette di struttura BODY → intestazione; lette come
-contenuto 1.853 → 719 (27). Prima **misura di struttura** con verità indipendente (PyMuPDF), affidabilità
+contenuto 1.853 → 719 (27), 1.977 → 803 (26.5). Prima **misura di struttura** con verità indipendente (PyMuPDF), affidabilità
 dichiarata per volume e prova al contrario. **Strato: STRUTTURALE** (radice). Restano all'officina/estrattore:
-le testatine che PDFKit 27 fonde con la prima riga di corpo (A.5), i folii romani, e il limite del metro
+le testatine che PDFKit fonde con la prima riga di corpo (27) e il piè di Marrone fuso con l'ultima riga di corpo (26.5, 43 segmenti) (A.5), i folii romani, e il limite del metro
 quando la testatina ripete il titolo stampato nella stessa pagina. Aperto in D.9: le ancore per contenuto
 delle annotazioni, prerequisito dell'offerta di rielaborazione (`docs/RIELABORAZIONE_PROGETTO.md`).
 

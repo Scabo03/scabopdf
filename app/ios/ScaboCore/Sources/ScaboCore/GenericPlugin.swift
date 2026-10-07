@@ -162,10 +162,10 @@ let FURNITURE_TOP_BAND = 0.72
 let FURNITURE_BOTTOM_BAND = 0.28
 
 // ── Riga del folio + testatine lunghe (giro «testatine», 2026-10-07, docs/TESTATINE_MISURA_STRUTTURA.md) ──
-// La misura di struttura (verità PyMuPDF indipendente) ha censito 4.516 righe-mobilia lette come
-// contenuto sui 52 volumi (iOS 27): Rizzo 94 testatine di capitolo lette «Nota.», Marrone 148 piè di
-// pagina «Pag. N-M» letti come intestazioni di primo livello, Mandrioli 3 oltre 300 testatine di
-// paragrafo lette NOTE. Tre cause, tutte nel tronco: (a) il tetto di 60 caratteri è un `continue` che
+// La misura di struttura (verità PyMuPDF indipendente) ha censito 1.853 righe-mobilia lette come
+// contenuto sui 52 volumi (iOS 27; 1.977 su 26.5): Rizzo 90 testatine di capitolo lette «Nota.», Marrone
+// 154 piè di pagina «Pag. N-M» letti come intestazioni di primo livello (148), Mandrioli 3 197 testatine
+// di paragrafo lette NOTE/HEADING_4. Tre cause, tutte nel tronco: (a) il tetto di 60 caratteri è un `continue` che
 // precede ANCHE i canali ancorati (σ≈0 su ≥3 pagine), così una testatina di capitolo lunga 66-70
 // caratteri non è mai candidata; (b) la testatina che porta il TITOLO DEL PARAGRAFO cambia ogni 1-2
 // pagine e nessun canale di ricorrenza può prenderla; (c) il piè di pagina più grande del corpo
@@ -740,8 +740,12 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // Secondo passo: ogni riga-folio in uno slot è mobilia (fusa: la testatina intera), e con lei ogni
     // altra riga di banda della stessa pagina sulla stessa quota (|Δ| < LOCK), sostanziale, corta, che
     // non apre una regione d'apparato.
-    let folioRows = (bareFolioRows + fusedFolioLines).filter { folioOffsets.contains($0.value - $0.page) }
+    // Lo scarto folio−pagina della riga del folio ha il pavimento dello SLOT (5 %), non quello del canale
+    // folio (15 %): la quota ancorata è già la guardia. Serve quando il folio stampato riparte più volte nel
+    // volume (Marrone: ristampa in cinque tomi, cinque scarti da ~45-77 pagine, sotto il 15 % su iOS 26.5).
     let slotMinPages = max(FOLIO_ROW_MIN_PAGES, Int((Double(extraction.pageCount) * FOLIO_ROW_MIN_FRACTION).rounded(.up)))
+    let rowOffsets = Set(offsetPages.compactMap { $0.value.count >= slotMinPages ? $0.key : nil })
+    let folioRows = (bareFolioRows + fusedFolioLines).filter { rowOffsets.contains($0.value - $0.page) }
     var slotRows: [FusedFolioLine] = []
     for row in folioRows {
         let near = folioRows.filter { abs($0.yFrac - row.yFrac) < RUNNING_HEADER_POSITION_LOCK }
