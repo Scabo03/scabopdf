@@ -87,8 +87,9 @@ enum FileOptions {
         // Offerta di rielaborazione (§ 12.13): si apre la spiegazione, mai l'elaborazione diretta.
         if let fresh = service.store.document(id: doc.id) {
             if service.hasPreviousReading(forDocumentId: doc.id) {
-                sheet.addAction(UIAlertAction(title: "Tieni la nuova lettura", style: .default) { _ in
-                    ReprocessOffer.confirmNewReading(doc.id); onChanged()
+                sheet.addAction(UIAlertAction(title: "Tieni la nuova lettura", style: .default) { [weak presenter] _ in
+                    guard let presenter else { return }
+                    ReprocessOffer.askToKeepNewReading(doc.id, from: presenter, onDone: onChanged)
                 })
                 sheet.addAction(UIAlertAction(title: "Torna alla lettura precedente", style: .default) { _ in
                     ReprocessOffer.revertToPrevious(doc.id); onChanged()

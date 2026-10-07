@@ -156,6 +156,13 @@ enum DocumentOpener {
             return
         }
 
+        // Una cache c'è ma non si usa (volume enorme con la cache pesante delle build precedenti): prima di
+        // rielaborare, le annotazioni ricevono l'ancora su quel contenuto (fermo, gli id sono veri), così il
+        // riancoraggio dopo l'elaborazione le ritrova invece di dichiararle tutte orfane.
+        if let stale = service.loadCache(forDocumentId: id) {
+            mintMissingAnchors(documentId: id, in: ContentAnchorIndex(segments: stale.content.pages.flatMap { $0.segments }))
+        }
+
         // Percorso di rielaborazione: serve la sorgente d'archivio (PDF o XML AKN).
         guard service.hasArchivedSource(forDocumentId: id, kind: doc.sourceKind) else {
             presentError(

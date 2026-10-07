@@ -2,15 +2,15 @@ Build 48 — le annotazioni seguono il testo, e l'offerta di rielaborazione
 
 Cosa è cambiato
 - Segnalibri, sottolineature e il punto in cui sei arrivato ora sono legati al testo, non alla posizione: se un libro viene letto di nuovo con una versione migliore dell'app, restano sul passo giusto.
-- Se un'annotazione non si ritrova con sicurezza, l'app non la sposta a caso: il segnalibro resta in fondo alla lista dei segnalibri con la scritta «da ricollocare», e toccandolo ti porta all'inizio della pagina da cui veniva, dicendolo. Non si cancella nulla.
+- Se un'annotazione non si ritrova con sicurezza, l'app non la sposta a caso: il segnalibro resta in fondo alla lista dei segnalibri con la scritta «da ricollocare», e con un doppio tocco ti porta all'inizio della pagina da cui veniva, dicendolo. Una sottolineatura non ritrovata resta salvata ma non si vede più. Non si cancella nulla.
 - Piccola correzione: in Nomofanie, dove il lettore di sistema incollava il titolo in testa alla pagina alle lettere di un elenco, la lettera dell'elenco non si perde più.
 
 L'offerta di rielaborazione
-- I libri aperti con le build precedenti non hanno ancora le cure delle build 46, 47 e 48 (parole non più incollate, titolo corrente e numero di pagina non più letti come testo, annotazioni legate al testo). Ora l'app te lo offre.
-- Nella Home, in alto, compare la riga «Lettura migliore disponibile per …libri». Toccala: si apre l'elenco. Tocca un libro: l'app ti spiega cosa cambia, quanto tempo serve e cosa succede alle tue annotazioni. Niente parte da solo.
-- Per rielaborare tocca «Rielabora…» e poi conferma. Si può anche dalle opzioni del libro (il tasto a tre puntini): «Lettura migliore disponibile…».
+- I libri aperti con le build precedenti non hanno ancora le cure delle build 45-48 (titoli dei paragrafi numerati, parole non più incollate, titolo corrente e numero di pagina non più letti come testo, annotazioni legate al testo). Ora l'app te lo offre.
+- Nella Home, in alto, compare la riga «Lettura migliore disponibile per …libri». Doppio tocco: si apre l'elenco. Doppio tocco su un libro: l'app ti spiega cosa cambia, quanto tempo serve e cosa succede alle tue annotazioni. Niente parte da solo.
+- Per rielaborare: doppio tocco su «Rielabora…» e poi conferma. Si può anche dalle opzioni del libro (il tasto a tre puntini): «Lettura migliore disponibile…».
 - Conviene accettare per avere le cure delle build precedenti su tutta la libreria, un libro alla volta.
-- Alla fine l'app ti dice quante annotazioni sono al loro posto e quante sono da ricollocare, e ti chiede se tenere la nuova lettura o tornare a quella di prima. Finché non scegli, la lettura di prima resta sul dispositivo: dalle opzioni del libro puoi sempre tornarci.
+- Alla fine l'app ti dice quante annotazioni sono al loro posto e quante sono da ricollocare, e ti chiede se tenere la nuova lettura o tornare a quella di prima. Finché non scegli, la lettura di prima resta sul dispositivo: dalle opzioni del libro puoi sempre tornarci, e le annotazioni fatte nel frattempo vengono con te. Tenere la nuova lettura chiede una conferma, perché cancella quella di prima.
 
 Le annotazioni che hai già
 - Non si perdono. La prima volta che apri un libro con questa build, l'app lega al testo le annotazioni che già ci sono; poi, se rielabori, le ritrova nel testo nuovo.

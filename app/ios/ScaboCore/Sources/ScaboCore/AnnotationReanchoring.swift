@@ -181,11 +181,14 @@ public enum AnnotationReanchoring {
         var idToIndex: [String: Int] = [:]
         for (i, s) in index.segments.enumerated() where idToIndex[s.id] == nil { idToIndex[s.id] = i }
         var minted = 0
+        // Mai su un'ORFANA: il suo id non porta più il suo contenuto, un'ancora coniata lì la «ricollocherebbe»
+        // sul passo sbagliato alla prossima rielaborazione.
         let newBookmarks = bookmarks.map { b -> Bookmark in
-            guard b.anchor == nil, let i = idToIndex[b.anchorSegmentId], let a = index.anchor(forIndex: i) else { return b }
+            guard b.anchor == nil, b.isOrphan != true, let i = idToIndex[b.anchorSegmentId], let a = index.anchor(forIndex: i) else { return b }
             var c = b; c.anchor = a; minted += 1; return c
         }
         let newUnderlines = underlines.map { u -> Underline in
+            guard u.isOrphan != true else { return u }
             var c = u
             c.spans = u.spans.map { span in
                 guard span.anchor == nil, let i = idToIndex[span.segmentId],

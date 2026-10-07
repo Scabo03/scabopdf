@@ -49,8 +49,19 @@ enum ReprocessOffer {
             .sorted { ($0.lastOpenedAt ?? .distantPast) > ($1.lastOpenedAt ?? .distantPast) }
     }
 
+    /// Libri rielaborati in attesa della scelta. Una copia precedente rimasta da un'elaborazione INTERROTTA
+    /// (app chiusa prima della fine: l'etichetta è ancora quella della fotografia, la cache non è stata
+    /// sostituita) non è una scelta da fare: si cancella qui, il libro è rimasto com'era.
     static func pendingConfirmation() -> [ArchivedDocument] {
-        service.store.allDocuments().filter { service.hasPreviousReading(forDocumentId: $0.id) }
+        service.store.allDocuments().filter { doc in
+            guard service.hasPreviousReading(forDocumentId: doc.id) else { return false }
+            if let snap = service.previousReadingSnapshot(forDocumentId: doc.id),
+               snap.processedAt == doc.processedAt, snap.processedAppBuild == doc.processedAppBuild {
+                service.discardPreviousReading(forDocumentId: doc.id)
+                return false
+            }
+            return true
+        }
     }
 
     /// Cosa cambia, per questo libro.
@@ -105,8 +116,9 @@ enum ReprocessOffer {
             title: doc.title,
             message: "Questo libro è stato rielaborato e la lettura di prima è ancora sul dispositivo.",
             preferredStyle: .actionSheet)
-        sheet.addAction(UIAlertAction(title: "Tieni la nuova lettura", style: .default) { _ in
-            confirmNewReading(doc.id); onDone()
+        sheet.addAction(UIAlertAction(title: "Tieni la nuova lettura", style: .default) { [weak presenter] _ in
+            guard let presenter else { return }
+            askToKeepNewReading(doc.id, from: presenter, onDone: onDone)
         })
         sheet.addAction(UIAlertAction(title: "Torna alla lettura precedente", style: .default) { _ in
             revertToPrevious(doc.id); onDone()
@@ -118,15 +130,36 @@ enum ReprocessOffer {
 
     // MARK: Esecuzione
 
+    /// «Tieni la nuova lettura» cancella la lettura di prima: si chiede conferma in una schermata dell'app
+    /// (testo grande pieno), con «Annulla» per primo e in evidenza.
+    static func askToKeepNewReading(_ id: String, from presenter: UIViewController, onDone: @escaping () -> Void) {
+        ReprocessConfirmViewController.present(
+            from: presenter, identifier: "confirm.keep",
+            question: "Tenere la nuova lettura?",
+            explanation: "La lettura di prima verrà cancellata dal dispositivo e non potrai più tornarci. Le tue annotazioni restano.",
+            actionTitle: "Tieni la nuova lettura") {
+                confirmNewReading(id); onDone()
+            }
+    }
+
     static func confirmNewReading(_ id: String) {
         service.discardPreviousReading(forDocumentId: id)
         UIAccessibility.post(notification: .announcement, argument: "Nuova lettura confermata. La lettura precedente è stata cancellata.")
     }
 
+    /// Torna alla lettura di prima. Le annotazioni fatte DOPO la rielaborazione non si perdono (§ 12.14): si
+    /// riancorano sul contenuto ripristinato, o restano dichiarate «da ricollocare».
     static func revertToPrevious(_ id: String) {
         guard let snapshot = service.restorePreviousCache(forDocumentId: id) else { return }
-        service.store.restore(snapshot, documentId: id)
-        UIAccessibility.post(notification: .announcement, argument: "Sei tornato alla lettura precedente, con le annotazioni com'erano.")
+        let restored = service.loadCache(forDocumentId: id).map { ContentAnchorIndex(segments: $0.content.pages.flatMap { $0.segments }) }
+        let r = service.store.restore(snapshot, documentId: id, restoredContent: restored)
+        var msg = "Sei tornato alla lettura precedente."
+        if r.carried > 0 {
+            msg += r.orphaned == 0
+                ? " Anche le annotazioni fatte dopo la rielaborazione sono al loro posto."
+                : " Delle annotazioni fatte dopo la rielaborazione, \(r.orphaned) sono da ricollocare."
+        }
+        UIAccessibility.post(notification: .announcement, argument: msg)
     }
 
     /// Rielabora il libro: conia le ancore mancanti sul contenuto di adesso, mette da parte la lettura
@@ -326,17 +359,13 @@ final class ReprocessOfferViewController: ReprocessTextViewController {
         UIAccessibility.post(notification: .screenChanged, argument: heading)
     }
 
-    /// Secondo gesto, distinto: un avviso di conferma il cui pulsante preferito è «Annulla».
+    /// Secondo gesto, distinto: una schermata di conferma con «Annulla» per primo e in evidenza.
     private func askConfirmation() {
-        let alert = UIAlertController(
-            title: "Confermi la rielaborazione?",
-            message: "«\(document.title)» verrà letto di nuovo. La lettura di adesso resta sul dispositivo finché non confermi quella nuova.",
-            preferredStyle: .alert)
-        let cancel = UIAlertAction(title: "Annulla", style: .cancel)
-        alert.addAction(cancel)
-        alert.addAction(UIAlertAction(title: "Rielabora", style: .default) { [weak self] _ in self?.start() })
-        alert.preferredAction = cancel
-        present(alert, animated: true)
+        ReprocessConfirmViewController.present(
+            from: self, identifier: "confirm.reprocess",
+            question: "Confermi la rielaborazione?",
+            explanation: "«\(document.title)» verrà letto di nuovo. La lettura di adesso resta sul dispositivo finché non confermi quella nuova.",
+            actionTitle: "Rielabora") { [weak self] in self?.start() }
     }
 
     private func start() {
@@ -346,6 +375,58 @@ final class ReprocessOfferViewController: ReprocessTextViewController {
         dismiss(animated: true) {
             ReprocessOffer.run(documentId: id, from: presenter) { _ in onDone() }
         }
+    }
+}
+
+// MARK: - La conferma (secondo gesto)
+
+/// Conferma d'una scelta che conta: domanda, spiegazione, «Annulla» per primo e in evidenza, poi l'azione.
+/// Schermata dell'app (non un avviso di sistema) per avere il testo grande pieno e l'audit d'accessibilità.
+final class ReprocessConfirmViewController: ReprocessTextViewController {
+    private let question: String
+    private let explanation: String
+    private let actionTitle: String
+    private let identifier: String
+    private let onConfirm: () -> Void
+    private var heading: UILabel?
+
+    static func present(from presenter: UIViewController, identifier: String, question: String, explanation: String,
+                        actionTitle: String, onConfirm: @escaping () -> Void) {
+        let vc = ReprocessConfirmViewController(identifier: identifier, question: question, explanation: explanation,
+                                                actionTitle: actionTitle, onConfirm: onConfirm)
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .formSheet
+        presenter.present(nav, animated: Motion.animated())
+    }
+
+    private init(identifier: String, question: String, explanation: String, actionTitle: String, onConfirm: @escaping () -> Void) {
+        self.identifier = identifier
+        self.question = question
+        self.explanation = explanation
+        self.actionTitle = actionTitle
+        self.onConfirm = onConfirm
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) non supportato.") }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "Conferma"
+        heading = addHeading(question)
+        addParagraph(explanation, identifier: "\(identifier).text")
+        addButton("Annulla", prominent: true, identifier: "\(identifier).cancel") { [weak self] in self?.dismiss(animated: true) }
+        addButton(actionTitle, prominent: false, identifier: "\(identifier).ok") { [weak self] in
+            guard let self else { return }
+            let onConfirm = self.onConfirm
+            self.dismiss(animated: true) { onConfirm() }
+        }
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        UIAccessibility.post(notification: .screenChanged, argument: heading)
     }
 }
 
@@ -376,7 +457,7 @@ final class ReprocessResultViewController: ReprocessTextViewController {
         addParagraph(ReprocessOffer.resultText(report, positionApproximate: positionApproximate), identifier: "result.text")
         addButton("Tieni la nuova lettura", prominent: true, identifier: "result.keep") { [weak self] in
             guard let self else { return }
-            ReprocessOffer.confirmNewReading(self.documentId); self.close()
+            ReprocessOffer.askToKeepNewReading(self.documentId, from: self) { [weak self] in self?.close() }
         }
         addButton("Torna alla lettura precedente", prominent: false, identifier: "result.revert") { [weak self] in
             guard let self else { return }
@@ -410,8 +491,9 @@ final class ReprocessListViewController: UITableViewController {
     }
 
     private func reload() {
-        eligible = ReprocessOffer.eligibleDocuments()
         pending = ReprocessOffer.pendingConfirmation()
+        let pendingIds = Set(pending.map { $0.id })
+        eligible = ReprocessOffer.eligibleDocuments().filter { !pendingIds.contains($0.id) }
         tableView.reloadData()
     }
 

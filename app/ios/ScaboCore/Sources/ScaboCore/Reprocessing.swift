@@ -99,13 +99,34 @@ extension LibraryStore {
         document(id: documentId).map { ReadingSnapshot(document: $0, takenAt: takenAt) }
     }
 
-    /// Ripristina esattamente lo stato fotografato (torna alla lettura precedente).
-    public func restore(_ snapshot: ReadingSnapshot, documentId: String) {
+    /// Ripristina lo stato fotografato (torna alla lettura precedente). Le annotazioni create DOPO la fotografia
+    /// non si perdono mai (§ 12.14): se è dato l'indice del contenuto ripristinato, si riancorano lì; altrimenti
+    /// restano, dichiarate orfane. Ritorna quante annotazioni nuove erano e quante sono finite orfane.
+    @discardableResult
+    public func restore(_ snapshot: ReadingSnapshot, documentId: String, restoredContent: ContentAnchorIndex? = nil) -> (carried: Int, orphaned: Int) {
+        let current = document(id: documentId)
+        let oldB = Set(snapshot.bookmarks.map { $0.id }), oldU = Set(snapshot.underlines.map { $0.id })
+        var newerB = (current?.bookmarks ?? []).filter { !oldB.contains($0.id) }
+        var newerU = (current?.underlines ?? []).filter { !oldU.contains($0.id) }
+        var orphaned = 0
+        if !newerB.isEmpty || !newerU.isEmpty {
+            if let index = restoredContent {
+                let out = AnnotationReanchoring.reanchor(bookmarks: newerB, underlines: newerU, readingPosition: 0,
+                                                         readingAnchor: nil, in: index)
+                newerB = out.bookmarks; newerU = out.underlines
+                orphaned = out.report.orphanCount
+            } else {
+                newerB = newerB.map { var b = $0; b.isOrphan = true; return b }
+                newerU = newerU.map { var u = $0; u.isOrphan = true; return u }
+                orphaned = newerB.count + newerU.count
+            }
+        }
         applyAnnotationState(
-            documentId: documentId, bookmarks: snapshot.bookmarks, underlines: snapshot.underlines,
+            documentId: documentId, bookmarks: snapshot.bookmarks + newerB, underlines: snapshot.underlines + newerU,
             readingPosition: snapshot.readingPosition, readingAnchor: snapshot.readingAnchor,
             readingPositionIsApproximate: snapshot.readingPositionIsApproximate)
         restoreProcessedLabel(id: documentId, systemVersion: snapshot.processedSystemVersion,
                               appBuild: snapshot.processedAppBuild, at: snapshot.processedAt)
+        return (newerB.count + newerU.count, orphaned)
     }
 }

@@ -41,8 +41,9 @@ suggerimento) adattato a due vincoli nostri: nessun testo nell'ancora, tolleranz
 `exact` 1,0 (impronta intera) · `contained` 0,95 (il vecchio testo sta **a un'estremità** di un segmento nuovo più lungo
 di almeno 64 lettere: fusione) · `headAndTail` 0,9 (stessa testa e stessa coda, interno diverso: ordine delle righe) ·
 `headOnly` 0,8 (il nuovo segmento è un **pezzo iniziale** del vecchio, ≥ 128 lettere, verificato sulla scala di prefissi:
-spezzatura). Soglia 0,8. **Ogni** riscontro, anche esatto, vale solo entro ±2 pagine dalla pagina d'origine (±1 sotto le 64
-lettere) e mai su un candidato senza pagina; fra gemelli identici nella finestra decide il rango **solo** se la finestra ne
+spezzatura). Soglia 0,8. Quando la pagina d'origine è nota (sempre, per i PDF: il corpus non ha segmenti senza pagina),
+**ogni** riscontro, anche esatto, vale solo entro ±2 pagine (±1 sotto le 64 lettere) e mai su un candidato senza pagina;
+senza pagina d'origine un riscontro esatto unico è accettato ovunque; fra gemelli identici nella finestra decide il rango **solo** se la finestra ne
 ha ancora lo stesso numero. Tutto il resto — sola coda, testo corto non ritrovato, candidati equivalenti, gemello sparito,
 riscontro lontano — è **orfano**.
 
@@ -57,22 +58,28 @@ comuni). Esito finale: zero ricollocazioni sbagliate (§ 4).
 ricomposte → normalizzazione; ordine delle righe → `headAndTail`; nodi spezzati/fusi → `headOnly`/`contained`; testatine
 tolte → orfane (sono testo che non c'è più); titoli nuovi → nessun effetto (non si ancora nulla a un testo che non c'era).
 
-**Compromesso sul testo** (3). L'ancora pensata per viaggiare fra iPad e Mac porta solo impronte irreversibili, ruolo,
-pagina e indici: nessun testo dei volumi (verificato: un test controlla che il JSON dell'ancora non contenga il testo). Il
+**Compromesso sul testo** (3). L'ancora pensata per viaggiare fra iPad e Mac porta solo impronte, ruolo, pagina e indici:
+nessun testo dei volumi (verificato: un test controlla che il JSON delle ancore di segmento e di citazione non contenga
+nessuna parola del testo). Le impronte non sono un segreto: per un testo breve (una citazione di poche lettere, un titolo
+corto) si possono indovinare per dizionario — non è una riproduzione, ma va saputo. Il
 prezzo: non si misura una somiglianza «quasi uguale» (Levenshtein, ricerca sfocata) — una finestra coincide o no. Lo si
 compensa con più finestre e con la scala; il residuo è un tasso di orfane più alto di quello di un'ancora a testo pieno,
-che però si dichiara sempre. Il campo `preview` del segnalibro (12 parole) resta nella libreria locale come oggi; quando
-le annotazioni viaggeranno, andrà escluso dal canale o sostituito dal nome dato dall'utente (decisione futura, § 9 del
-referto).
+che però si dichiara sempre. I campi `preview` del segnalibro (12 parole) e della sottolineatura (10 parole) restano nella
+libreria locale come oggi; quando le annotazioni viaggeranno, andranno esclusi dal canale o sostituiti dal nome dato
+dall'utente (decisione futura, § 10 del referto).
 
 **Migrazione** (1, test): le annotazioni create prima delle ancore ricevono l'ancora gratis alla prima apertura dalla cache
-(contenuto fermo: gli id sono ancora veri) e prima di ogni rielaborazione offerta. Quelle che non l'hanno (libro mai
+(contenuto fermo: gli id sono ancora veri), prima di ogni rielaborazione offerta e prima della rielaborazione unica dei
+volumi enormi con la cache pesante delle build precedenti; mai su un'orfana. A ogni apertura, inoltre, una **verifica**
+confronta l'impronta del segmento puntato con quella dell'ancora e, al primo disaccordo (rielaborazione interrotta), riancora
+tutto per contenuto. Quelle che non l'hanno (libro mai
 riaperto, cache mancante) diventano **orfane**, mai risolte per id. Niente codice di compatibilità permanente: i campi sono
 opzionali additivi della libreria; il formato della cache resta 6.
 
 **Costo** (1 sul Mac, 4 sul dispositivo): costruzione dell'indice in coda a ogni apertura, fuori dal thread principale;
 sul corpus, mediana ~70 ms, massimo ~1,4 s (codici, ~47.000 segmenti), misurati dal runner di rilascio sul Mac. Memoria:
-tre stringhe esadecimali per segmento (~10 MB sui codici). Sul dispositivo non misurato.
+tre impronte per segmento più il testo normalizzato di ogni segmento (l'indice lo tiene per le fusioni): dell'ordine della
+dimensione del testo del libro. Sul dispositivo né tempo né memoria sono misurati (4).
 
 **Alternative scartate.** (a) Id stabili nel Layer 1 (hash del contenuto come id del nodo): cambierebbe il formato della
 cache e i confronti byte-identici delle reti, e non risolve fusioni e spezzature. (b) Ancora a testo pieno (W3C puro, con
@@ -84,7 +91,7 @@ continuo invita a ricollocare «quasi» sicuro — il contrario della taratura s
 
 Conio all'apertura (indice in coda), a ogni segnalibro, sottolineatura e salvataggio di posizione (anche nelle metà dello
 split); conio delle ancore mancanti a contenuto fermo; riancoraggio quando l'apertura ha dovuto rielaborare (cache assente)
-e nell'offerta. Orfane: segnalibri in coda alla lista con «Da ricollocare» (anche nell'etichetta VoiceOver), stessa
+e nell'offerta; verifica a ogni apertura. Le citazioni si cercano solo a confini di parola. Orfane: segnalibri in coda alla lista con «Da ricollocare» (anche nell'etichetta VoiceOver), stessa
 dichiarazione nella vista globale per tag; il salto a un'orfana porta all'inizio della pagina d'origine e lo annuncia;
 sottolineature orfane salvate, non rese, mai d'ostacolo a una sottolineatura nuova; posizione non ritrovata → inizio della
 pagina, annunciato alla riapertura.
@@ -124,12 +131,16 @@ Il fuoco parte dal titolo. Accettare richiede **due gesti**: «Rielabora…» e 
 preferito è «Annulla». Prima di elaborare: conio delle ancore mancanti sul contenuto di adesso, poi la cache diventa
 `<id>.prev.json` e lo stato (annotazioni, posizione, etichetta) `<id>.prev-state.json`. Elaborazione nella schermata
 dedicata (§ 12.9); riancoraggio fuori dal thread principale; esito in parole semplici con tre scelte: «Tieni la nuova
-lettura», «Torna alla lettura precedente», «Decidi più tardi». Annullamento o errore: il libro resta esattamente com'era.
+lettura» (con conferma: cancella la lettura di prima), «Torna alla lettura precedente» (le annotazioni fatte nel frattempo
+non si perdono: si riancorano sul contenuto di prima o restano «da ricollocare»), «Decidi più tardi». Annullamento o errore:
+il libro resta esattamente com'era; una copia precedente rimasta da un'elaborazione interrotta si riconosce (etichetta
+invariata) e si cancella da sola.
 
 Prove (1): 6 test ScaboCore sulla politica e sul ritorno; test app sulla copia precedente (messa da parte, ritorno,
-conferma; una seconda messa da parte non sovrascrive la lettura di partenza); test d'interfaccia su iPhone 16 iOS 27 con
-audit di accessibilità su Home con l'offerta, elenco, offerta, conferma, esito e vista dei segnalibri con un'orfana (§ 7
-del referto per l'esito su entrambe le generazioni).
+conferma; una seconda messa da parte non sovrascrive la lettura di partenza; il ritorno non perde le annotazioni nuove);
+test d'interfaccia su iPhone 16 iOS 26.5 e iOS 27 con audit di accessibilità su Home con l'offerta, elenco, offerta,
+conferme, esito e vista dei segnalibri con un'orfana. Sugli avvisi di sistema si sopprimono solo i rilievi su viste interne
+che XCUI non risolve (elemento nullo); un rilievo su un elemento risolto resta un fallimento.
 
 ## 6. Rifinitura Nomofanie (Parte 5)
 
@@ -146,3 +157,7 @@ generazioni; blocchi persi rispetto alla base 2 → **0**; misura invariata (719
   lettura precedente o rifacendole).
 - Costo dell'indice sul dispositivo non misurato (4).
 - L'offerta rielabora un libro alla volta (scelta voluta: niente rielaborazioni a raffica su un dispositivo con poca memoria).
+- Rischi teorici di ricollocazione sicura nel posto sbagliato, non osservati nella rete: un gemello identico che sparisce
+  mentre un altro compare nella stessa finestra (il conteggio torna e il rango può indicare l'altro); una chiusura dell'app
+  fra la scrittura della cache e il riancoraggio quando le annotazioni non avevano ancora l'ancora e mancava la cache.
+- Riancoraggio sul thread principale quando l'apertura di un volume enorme rielabora (una volta): ~1,4 s sul Mac.

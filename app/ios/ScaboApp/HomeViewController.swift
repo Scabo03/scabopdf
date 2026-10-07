@@ -30,6 +30,8 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     private enum Section: Int, CaseIterable { case offer, recents, workspaces }
     /// Libri che possono ricevere la lettura migliore (+ quelli in attesa di conferma): § 12.13.
     private var offerCount = 0
+    private var offerEligible = 0
+    private var offerPending = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -97,7 +99,9 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     }
 
     private func reload() {
-        offerCount = ReprocessOffer.eligibleDocuments().count + ReprocessOffer.pendingConfirmation().count
+        offerPending = ReprocessOffer.pendingConfirmation().count   // pulisce anche le copie di elaborazioni interrotte
+        offerEligible = ReprocessOffer.eligibleDocuments().filter { !service.hasPreviousReading(forDocumentId: $0.id) }.count
+        offerCount = offerEligible + offerPending
         recents = service.store.recents(limit: 5)
         workspaces = service.store.state.workspaces
         tableView.reloadData()
@@ -250,9 +254,15 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     /// Cella standard a più righe (niente testo tagliato), selezionabile con un doppio tap.
     private func offerCell(at indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "empty", for: indexPath)
-        let n = offerCount
         var config = cell.defaultContentConfiguration()
-        config.text = n == 1 ? "Lettura migliore disponibile per un libro" : "Lettura migliore disponibile per \(n) libri"
+        var parts: [String] = []
+        if offerEligible > 0 {
+            parts.append(offerEligible == 1 ? "Lettura migliore disponibile per un libro" : "Lettura migliore disponibile per \(offerEligible) libri")
+        }
+        if offerPending > 0 {
+            parts.append(offerPending == 1 ? "un libro rielaborato da confermare" : "\(offerPending) libri rielaborati da confermare")
+        }
+        config.text = parts.joined(separator: "; ")
         config.secondaryText = "Apre l'elenco: ogni libro si rielabora solo se lo scegli tu."
         config.textProperties.numberOfLines = 0
         config.secondaryTextProperties.numberOfLines = 0

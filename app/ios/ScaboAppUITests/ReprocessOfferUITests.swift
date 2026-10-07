@@ -49,19 +49,19 @@ final class ReprocessOfferUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["offer.annotations"].exists)
         audit(app, screen: "Offerta di rielaborazione")
 
-        // Primo gesto: «Rielabora…» apre la conferma; «Annulla» non fa partire nulla.
+        // Primo gesto: «Rielabora…» apre la conferma; «Annulla» (primo e in evidenza) non fa partire nulla.
         accept.tap()
-        let alert = app.alerts.firstMatch
-        XCTAssertTrue(alert.waitForExistence(timeout: 5))
-        audit(app, screen: "Conferma della rielaborazione", systemAlert: true)
-        alert.buttons["Annulla"].tap()
+        let cancel = app.buttons["confirm.reprocess.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        audit(app, screen: "Conferma della rielaborazione")
+        cancel.tap()
         XCTAssertTrue(accept.waitForExistence(timeout: 5), "annullare lascia l'offerta aperta, nulla è partito")
         XCTAssertFalse(app.staticTexts["Rielaborazione conclusa"].exists)
 
         // Secondo gesto, voluto: parte.
         accept.tap()
-        XCTAssertTrue(alert.waitForExistence(timeout: 5))
-        alert.buttons["Rielabora"].tap()
+        XCTAssertTrue(app.buttons["confirm.reprocess.ok"].waitForExistence(timeout: 5))
+        app.buttons["confirm.reprocess.ok"].tap()
 
         let done = app.staticTexts["Rielaborazione conclusa"]
         XCTAssertTrue(done.waitForExistence(timeout: 120), "la rielaborazione si conclude")
@@ -87,9 +87,15 @@ final class ReprocessOfferUITests: XCTestCase {
         app.cells.containing(NSPredicate(format: "label CONTAINS %@", "Libro di prova")).firstMatch.tap()
         XCTAssertTrue(app.buttons["offer.accept"].waitForExistence(timeout: 5))
         app.buttons["offer.accept"].tap()
-        app.alerts.firstMatch.buttons["Rielabora"].tap()
+        XCTAssertTrue(app.buttons["confirm.reprocess.ok"].waitForExistence(timeout: 5))
+        app.buttons["confirm.reprocess.ok"].tap()
         XCTAssertTrue(app.staticTexts["Rielaborazione conclusa"].waitForExistence(timeout: 120))
         app.buttons["result.keep"].tap()
+        // Secondo gesto anche qui: tenere la nuova lettura cancella quella di prima.
+        let keep = app.buttons["confirm.keep.ok"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 5))
+        audit(app, screen: "Conferma: tenere la nuova lettura")
+        keep.tap()
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertFalse(app.cells["home.offer"].waitForExistence(timeout: 3), "tenuta la nuova lettura, l'offerta non c'è più")
 
@@ -104,23 +110,21 @@ final class ReprocessOfferUITests: XCTestCase {
 
     // MARK: - Audit (stesso criterio di AccessibilityAuditUITests)
 
-    /// `systemAlert`: l'avviso di conferma è un `UIAlertController` di sistema (lo stesso componente di tutte
-    /// le conferme dell'app, letto nativamente da VoiceOver). L'audit vi trova rilievi su viste INTERNE che
-    /// XCUI non riesce nemmeno a risolvere (elemento nullo) e sul testo dinamico: non sono controllabili
-    /// dall'autore. Solo sull'audit dell'avviso si sopprimono `dynamicType` e i rilievi senza elemento;
-    /// un rilievo su un elemento risolto (titolo, messaggio, pulsanti) resta un fallimento.
     @available(iOS 17.0, *)
-    private func audit(_ app: XCUIApplication, screen: String, systemAlert: Bool = false) {
+    private func audit(_ app: XCUIApplication, screen: String) {
         var report: [String] = []
         do {
             try app.performAccessibilityAudit { issue in
                 let el = issue.element
                 if issue.auditType == .textClipped, el?.elementType == .searchField { return true }
-                if systemAlert, issue.auditType == .dynamicType || el == nil { return true }
                 report.append("• [\(issue.auditType.rawValue)] \(issue.compactDescription) — «\(el?.label ?? "?")» type:\(el.map { "\($0.elementType.rawValue)" } ?? "?")")
                 return false
             }
-        } catch {}
+        } catch {
+            // L'audit lancia quando un rilievo non è gestito (già nel resoconto); se il resoconto è vuoto, il
+            // lancio è un errore dell'audit stesso: non deve passare in silenzio.
+            if report.isEmpty { XCTFail("Audit su «\(screen)» non eseguito: \(error)") }
+        }
         XCTAssertTrue(report.isEmpty, "Audit accessibilità FALLITO su «\(screen)» (\(report.count)):\n" + report.joined(separator: "\n"))
     }
 }

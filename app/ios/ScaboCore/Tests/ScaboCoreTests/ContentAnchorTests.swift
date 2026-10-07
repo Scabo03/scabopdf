@@ -394,4 +394,31 @@ final class ContentAnchorTests: XCTestCase {
         XCTAssertFalse(AnnotationReanchoring.needsReanchoring(bookmarks: out.bookmarks, underlines: [], readingPosition: 0,
                                                               readingAnchor: nil, in: new))
     }
+
+    func test_quote_neverMatchesInsideALongerWord() throws {
+        let old = ContentAnchorIndex(segments: [seg("node_0", "Il porto di mare accoglie le barche dei pescatori all'alba, prima che il sole scaldi il molo.")])
+        let q = try XCTUnwrap(old.quoteAnchor(forIndex: 0, startWord: 1, endWord: 1))   // «porto»
+        // La parola è sparita; le stesse lettere restano solo DENTRO una parola più lunga: orfana, non lì.
+        let new = ContentAnchorIndex(segments: [seg("node_0", "Il trasporto di mare accoglie le barche dei pescatori all'alba, prima che il sole scaldi il molo.")])
+        XCTAssertNil(new.resolve(q))
+    }
+
+    func test_anchorsCarryNoText_neitherSegmentNorQuote() throws {
+        let index = ContentAnchorIndex(segments: flow())
+        let a = try XCTUnwrap(index.anchor(forIndex: 2))
+        let q = try XCTUnwrap(index.quoteAnchor(forIndex: 2, startWord: 4, endWord: 6))
+        let json = String(decoding: try JSONEncoder().encode(a), as: UTF8.self) + String(decoding: try JSONEncoder().encode(q), as: UTF8.self)
+        for word in WordTokenizer.words(flow()[2].text) where word.count >= 4 {
+            XCTAssertFalse(json.lowercased().contains(TextFingerprint.normalize(word)), "nessuna parola del testo nell'ancora")
+        }
+    }
+
+    func test_mintMissingAnchors_neverOnOrphans() {
+        let index = ContentAnchorIndex(segments: flow())
+        let orphan = Bookmark(id: "o", anchorSegmentId: "node_2", orderIndexHint: 2, preview: "", createdAt: Date(), isOrphan: true)
+        let out = AnnotationReanchoring.mintMissingAnchors(bookmarks: [orphan], underlines: [], readingPosition: 0,
+                                                           readingAnchor: index.anchor(forIndex: 0), in: index)
+        XCTAssertNil(out.bookmarks[0].anchor)
+        XCTAssertEqual(out.minted, 0)
+    }
 }

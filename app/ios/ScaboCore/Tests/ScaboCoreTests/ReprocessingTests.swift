@@ -56,4 +56,27 @@ final class ReprocessingTests: XCTestCase {
         XCTAssertEqual(back.processedAppBuild, "47")
         XCTAssertNil(back.readingPositionIsApproximate)
     }
+
+    func test_revert_neverDropsAnnotationsMadeAfterTheSnapshot() throws {
+        let store = LibraryStore(persistence: InMemoryLibraryPersistence())
+        let d = store.addDocument(title: "t", sourceFileName: "t.pdf", sourcePageCount: 3)
+        store.addBookmark(documentId: d.id, anchorSegmentId: "node_1", orderIndexHint: 1, preview: "vecchio")
+        let snap = try XCTUnwrap(store.readingSnapshot(documentId: d.id))
+        let seg = ContentSegment(id: "node_9", role: "BODY", text: "Un paragrafo nuovo abbastanza lungo da avere un'impronta di testa e di coda ben distinte fra loro.", lengthCategory: "", acousticIntro: "", sourcePage: 1)
+        let newIndex = ContentAnchorIndex(segments: [seg])
+        store.addBookmark(documentId: d.id, anchorSegmentId: "node_9", orderIndexHint: 0, preview: "nuovo", originalPage: 1,
+                          anchor: newIndex.anchor(forIndex: 0))
+        // Contenuto ripristinato che contiene lo stesso paragrafo (con un altro id): il segnalibro nuovo lo segue.
+        let oldSeg = ContentSegment(id: "node_3", role: "BODY", text: seg.text, lengthCategory: "", acousticIntro: "", sourcePage: 1)
+        let r = store.restore(snap, documentId: d.id, restoredContent: ContentAnchorIndex(segments: [oldSeg]))
+        XCTAssertEqual(r.carried, 1); XCTAssertEqual(r.orphaned, 0)
+        let bms = store.bookmarks(documentId: d.id)
+        XCTAssertEqual(bms.count, 2, "nessuna annotazione persa tornando indietro")
+        XCTAssertEqual(bms.first { $0.preview == "nuovo" }?.anchorSegmentId, "node_3")
+        // Senza contenuto ripristinato: resta, dichiarata orfana.
+        store.addBookmark(documentId: d.id, anchorSegmentId: "node_9", orderIndexHint: 0, preview: "altro")
+        let r2 = store.restore(snap, documentId: d.id)
+        XCTAssertEqual(store.bookmarks(documentId: d.id).first { $0.preview == "altro" }?.isOrphan, true)
+        XCTAssertGreaterThan(r2.carried, 0)
+    }
 }

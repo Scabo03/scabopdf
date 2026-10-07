@@ -98,8 +98,9 @@ public enum TextFingerprint {
         return (chars, words)
     }
 
-    /// SHA-256 del testo (UTF-8), i primi 16 byte in esadecimale (32 caratteri). Irreversibile: non
-    /// porta il testo e può viaggiare.
+    /// SHA-256 del testo (UTF-8), i primi 16 byte in esadecimale (32 caratteri). Non porta il testo e può
+    /// viaggiare; per i testi BREVI (una citazione di poche lettere, un titolo corto) l'impronta si può
+    /// indovinare per dizionario: non è una riproduzione del testo, ma non è nemmeno un segreto.
     public static func digest(_ text: String) -> String {
         let hash = SHA256.hash(data: Data(text.utf8))
         return hash.prefix(16).map { String(format: "%02x", $0) }.joined()
@@ -472,8 +473,13 @@ public final class ContentAnchorIndex {
         let L = quote.quoteLength
         guard L > 0, chars.count >= L else { return nil }
         var hits: [Int] = []
-        for p in 0...(chars.count - L) where TextFingerprint.digest(chars[p..<(p + L)]) == quote.quote {
-            hits.append(p)
+        // Solo a CONFINI DI PAROLA: la citazione comincia all'inizio di una parola e finisce alla fine di una
+        // parola. Le stesse lettere dentro una parola più lunga non sono la citazione (revisione indipendente).
+        for p in 0...(chars.count - L) {
+            let startsWord = p == 0 || words[p - 1] != words[p]
+            let endsWord = p + L == chars.count || words[p + L - 1] != words[p + L]
+            guard startsWord, endsWord else { continue }
+            if TextFingerprint.digest(chars[p..<(p + L)]) == quote.quote { hits.append(p) }
         }
         if hits.count > 1 {
             let ctx = TextFingerprint.contextLength
