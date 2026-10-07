@@ -950,6 +950,27 @@ Una funzione collega l'app a iCloud per **sincronizzare i dati fra i dispositivi
 
 ---
 
+### 12.13 Rielaborazione dei libri dopo un aggiornamento di sistema o una cura (decisione del 2026-10-07)
+
+Il lettore PDF di sistema cambia fra versioni di iOS e la cache dell'app non si rielabora da sola; una cura dell'estrazione
+o della classificazione, allo stesso modo, non raggiunge i libri già in cache. **Decisione di prodotto approvata dal
+maintainer:** l'app **offre** la rielaborazione dei libri, **non la impone mai**, e la offre in due casi: dopo un
+aggiornamento di sistema, **solo quando la nuova versione è passata dalla doppia rete** del progetto (iOS 27 principale,
+iOS 26.5 secondario: una versione nuova non è «giudicata» finché un giro non la promuove), e **dopo una cura
+dell'estrazione o della classificazione**, perché un utente poco pratico non saprà mai di dover reimportare un libro.
+L'offerta usa l'etichetta di generazione e di build che ogni documento porta dal 2026-10-06 (versione di sistema, build
+dell'app, istante dell'elaborazione).
+
+**Condizione inderogabile prima di costruirla:** deve essere **dimostrato** che segnalibri, tag, sottolineature e posizione
+di lettura sopravvivono alla rielaborazione. L'accertamento del 2026-10-07 (`docs/RIELABORAZIONE_PROGETTO.md` § 1) ha mostrato
+che oggi NON sopravvivono in modo sicuro: gli id dei nodi sono sequenziali e una sola riga in più o in meno a monte li fa
+scalare tutti, così un segnalibro atterra su un altro passo in silenzio. Prima dell'offerta vanno costruite le ancore per
+contenuto (§ 2 di quel documento) e la rete che le prova sui 52 volumi. Un'ancora che non si ritrova si **dichiara** all'utente
+(«da ricollocare»), mai si salta altrove in silenzio e mai si cancella. Fino ad allora la reimportazione resta l'unica via, e
+le note per i tester devono dire che crea una copia nuova senza le annotazioni della vecchia.
+
+---
+
 ## 13. Ricerca testuale
 
 ### 13.1 Sistema duplice

@@ -402,6 +402,28 @@ titoli numerati, più salto nota↔testo e abbreviazioni (`docs/CURA_INTESTAZION
 materia d'officina: tutti i segnali stanno nell'estrazione PDFKit. **Utente senza Mac: coperto.**
 Aperto: il canale «riga isolata» per le dispense monotipografiche (prossimo giro, on-device).
 
+### D.8-ter Testatine e piè di pagina — ✅ MISURA DI STRUTTURA + CURA NEL TRONCO (2026-10-07)
+
+Le testatine di pagina lette come riga a sé (Rizzo → NOTE, Mandrioli → NOTE/H4) e il piè «Pag. N» di
+Marrone letto come H1 avevano tre meccanismi diversi (tetto 60 prima dei canali ancorati; frammentazione
+delle norme + guardia di taglia; titolo del paragrafo che cambia ogni pagina) e un segnale comune: il
+**folio** sulla stessa riga. Curati nel tronco (`docs/TESTATINE_MISURA_STRUTTURA.md` § 3) con la riga del
+folio, il tetto 120 per i canali ancorati e le etichette di struttura BODY → intestazione; lette come
+contenuto 1.853 → 719 (27). Prima **misura di struttura** con verità indipendente (PyMuPDF), affidabilità
+dichiarata per volume e prova al contrario. **Strato: STRUTTURALE** (radice). Restano all'officina/estrattore:
+le testatine che PDFKit 27 fonde con la prima riga di corpo (A.5), i folii romani, e il limite del metro
+quando la testatina ripete il titolo stampato nella stessa pagina. Aperto in D.9: le ancore per contenuto
+delle annotazioni, prerequisito dell'offerta di rielaborazione (`docs/RIELABORAZIONE_PROGETTO.md`).
+
+### D.9 Annotazioni non sopravvivono alla rielaborazione — ⛔ PREREQUISITO dell'offerta (2026-10-07)
+
+Provato sul Simulatore (`AnnotationStabilityProbeTests`): gli id dei nodi sono un contatore sequenziale,
+una riga in più o in meno a monte li fa scalare tutti; segnalibri, sottolineature e posizione di lettura
+atterrano altrove **in silenzio** se il libro viene rielaborato con una catena diversa. La reimportazione
+crea una copia nuova senza annotazioni. Rimedio progettato (impronta del segmento + risoluzione a tre passi +
+«da ricollocare» dichiarato + rete sui 52 volumi) in `docs/RIELABORAZIONE_PROGETTO.md` § 2; l'offerta di
+rielaborazione (§ 12.13) non si costruisce prima.
+
 ### D.8-bis Generazioni del lettore di sistema — ✅ DOPPIA RETE + CURA `Tc` (2026-10-06)
 
 Il lettore PDFKit cambia fra iOS 26.5 e iOS 27 (7 % delle pagine). Giudicato contro la pagina
