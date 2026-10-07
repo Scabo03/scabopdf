@@ -95,6 +95,12 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// Build dell'app (CFBundleVersion) che ha fatto l'elaborazione: distingue, a pari sistema, un libro
     /// elaborato prima di una cura dell'estrazione da uno elaborato dopo. Stessa regola degli altri due.
     public var processedAppBuild: String?
+    /// Ancora per contenuto della posizione di lettura (il segmento a `readingPosition`): dopo una
+    /// rielaborazione la posizione si ritrova per contenuto, non per indice (ContentAnchor.swift).
+    public var readingAnchor: ContentAnchor?
+    /// Vero se l'ultima rielaborazione ha ritrovato la posizione solo per PAGINA (l'ancora era sotto
+    /// soglia): la riapertura lo dice. `nil`/`false` = posizione verificata.
+    public var readingPositionIsApproximate: Bool?
 
     public init(
         id: String,
@@ -111,8 +117,12 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         sourceKind: String? = nil,
         processedSystemVersion: String? = nil,
         processedAt: Date? = nil,
-        processedAppBuild: String? = nil
+        processedAppBuild: String? = nil,
+        readingAnchor: ContentAnchor? = nil,
+        readingPositionIsApproximate: Bool? = nil
     ) {
+        self.readingAnchor = readingAnchor
+        self.readingPositionIsApproximate = readingPositionIsApproximate
         self.id = id
         self.title = title
         self.sourceFileName = sourceFileName
@@ -160,6 +170,16 @@ public struct Bookmark: Codable, Equatable, Sendable {
     public var tagIds: [String]
     /// Quando è stato creato (ordinamento secondario e referto).
     public var createdAt: Date
+    /// ANCORA PER CONTENUTO (ContentAnchor.swift): impronte del testo normalizzato del segmento marcato.
+    /// È ciò che fa sopravvivere il segnalibro a una rielaborazione; `anchorSegmentId` e
+    /// `orderIndexHint` sono la posizione CORRENTE, aggiornata a ogni ricollocazione. `nil` solo per i
+    /// segnalibri creati prima delle ancore e non ancora aperti dalla cache (si coniano alla prima
+    /// apertura, finché il contenuto è fermo).
+    public var anchor: ContentAnchor?
+    /// Vero se l'ultima rielaborazione NON ha ritrovato il segmento sopra soglia: il segnalibro resta
+    /// in lista, dichiarato «da ricollocare», e il salto porta alla pagina d'origine. Mai un salto
+    /// silenzioso (§ 12.14). `nil`/`false` = al suo posto.
+    public var isOrphan: Bool?
 
     public init(
         id: String,
@@ -169,7 +189,9 @@ public struct Bookmark: Codable, Equatable, Sendable {
         preview: String,
         originalPage: Int? = nil,
         tagIds: [String] = [],
-        createdAt: Date
+        createdAt: Date,
+        anchor: ContentAnchor? = nil,
+        isOrphan: Bool? = nil
     ) {
         self.id = id
         self.anchorSegmentId = anchorSegmentId
@@ -179,6 +201,8 @@ public struct Bookmark: Codable, Equatable, Sendable {
         self.originalPage = originalPage
         self.tagIds = tagIds
         self.createdAt = createdAt
+        self.anchor = anchor
+        self.isOrphan = isOrphan
     }
 
     /// Etichetta da mostrare nella lista: il nome se l'utente gliel'ha dato, altrimenti l'anteprima
@@ -218,11 +242,15 @@ public struct UnderlineSpan: Codable, Equatable, Sendable {
     public var startWord: Int
     /// Indice dell'ultima parola coperta (0-based, inclusivo). `== startWord` per una parola sola.
     public var endWord: Int
+    /// Ancora per contenuto della citazione (segmento + impronta delle parole sottolineate con
+    /// contesto): fa sopravvivere lo span a una rielaborazione (ContentAnchor.swift).
+    public var anchor: QuoteAnchor?
 
-    public init(segmentId: String, startWord: Int, endWord: Int) {
+    public init(segmentId: String, startWord: Int, endWord: Int, anchor: QuoteAnchor? = nil) {
         self.segmentId = segmentId
         self.startWord = startWord
         self.endWord = endWord
+        self.anchor = anchor
     }
 }
 
@@ -244,12 +272,17 @@ public struct Underline: Codable, Equatable, Sendable {
     public var preview: String
     /// Quando è stata creata.
     public var createdAt: Date
+    /// Vero se l'ultima rielaborazione non ha ritrovato TUTTI gli span sopra soglia: la sottolineatura
+    /// resta salvata ma non si rende, finché il libro non torna alla lettura precedente o l'utente
+    /// non la rifà (§ 12.14).
+    public var isOrphan: Bool?
 
-    public init(id: String, spans: [UnderlineSpan], preview: String, createdAt: Date) {
+    public init(id: String, spans: [UnderlineSpan], preview: String, createdAt: Date, isOrphan: Bool? = nil) {
         self.id = id
         self.spans = spans
         self.preview = preview
         self.createdAt = createdAt
+        self.isOrphan = isOrphan
     }
 
     /// Gli id dei segmenti toccati da questa sottolineatura.
@@ -549,11 +582,31 @@ public final class LibraryStore {
     }
 
     /// Aggiorna la posizione di lettura ricordata (§ 2.5). No-op se invariata (evita scritture).
-    public func updateReadingPosition(id: String, position: Int) {
+    public func updateReadingPosition(id: String, position: Int, anchor: ContentAnchor? = nil) {
         guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
         let clamped = max(0, position)
-        guard state.documents[i].readingPosition != clamped else { return }
+        let anchorChanged = anchor != nil && anchor != state.documents[i].readingAnchor
+        guard state.documents[i].readingPosition != clamped || anchorChanged
+              || state.documents[i].readingPositionIsApproximate == true else { return }
         state.documents[i].readingPosition = clamped
+        if let anchor { state.documents[i].readingAnchor = anchor }
+        // L'utente ha letto fino a qui: la posizione torna verificata.
+        state.documents[i].readingPositionIsApproximate = nil
+        persist()
+    }
+
+    /// Sostituisce in blocco annotazioni e posizione di un documento con l'esito di un riancoraggio
+    /// (AnnotationReanchoring) o del conio delle ancore mancanti. Una sola scrittura.
+    public func applyAnnotationState(
+        documentId: String, bookmarks: [Bookmark], underlines: [Underline],
+        readingPosition: Int, readingAnchor: ContentAnchor?, readingPositionIsApproximate: Bool?
+    ) {
+        guard let i = state.documents.firstIndex(where: { $0.id == documentId }) else { return }
+        state.documents[i].bookmarks = bookmarks.isEmpty ? (state.documents[i].bookmarks == nil ? nil : []) : bookmarks
+        state.documents[i].underlines = underlines.isEmpty ? (state.documents[i].underlines == nil ? nil : []) : underlines
+        state.documents[i].readingPosition = max(0, readingPosition)
+        state.documents[i].readingAnchor = readingAnchor
+        state.documents[i].readingPositionIsApproximate = readingPositionIsApproximate
         persist()
     }
 
@@ -864,7 +917,8 @@ extension LibraryStore {
         name: String? = nil,
         preview: String,
         originalPage: Int? = nil,
-        tagIds: [String] = []
+        tagIds: [String] = [],
+        anchor: ContentAnchor? = nil
     ) -> Bookmark? {
         guard let di = state.documents.firstIndex(where: { $0.id == documentId }) else { return nil }
         let validTagIds = existingTagIds(from: tagIds)
@@ -877,7 +931,8 @@ extension LibraryStore {
             preview: preview,
             originalPage: originalPage,
             tagIds: validTagIds,
-            createdAt: now())
+            createdAt: now(),
+            anchor: anchor)
         var bms = state.documents[di].bookmarks ?? []
         bms.append(bookmark)
         state.documents[di].bookmarks = bms
@@ -1027,7 +1082,7 @@ extension LibraryStore {
             let lo = min(span.startWord, span.endWord)
             let hi = max(span.startWord, span.endWord)
             guard lo >= 0 else { return nil }
-            return UnderlineSpan(segmentId: span.segmentId, startWord: lo, endWord: hi)
+            return UnderlineSpan(segmentId: span.segmentId, startWord: lo, endWord: hi, anchor: span.anchor)
         }
     }
 
