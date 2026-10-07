@@ -234,6 +234,12 @@ func normalizeCodiciStructure(_ nodes: inout [NodeDict])
             nodes[i].type = .HEADING_4; nodes[i].level = 4; nodes[i].length_category = nil; n.sezione += 1
         } else if nodes[i].type == .HEADING_4, codiciReMatches(codiciArticleHeadStartRe, t) {
             nodes[i].type = .ARTICLE_HEADER; nodes[i].level = nil; nodes[i].length_category = nil; n.article += 1
+        } else if nodes[i].type.rawValue.hasPrefix("HEADING_"), t.hasPrefix("TITOLO "),
+                  !codiciReMatches(codiciStructRe, t) {
+            // «TITOLO» seguito da una parola, non da un numero romano, non è una divisione del codice: è una
+            // materia della sezione LEGGI che comincia con la parola «titolo» (es. il titolo esecutivo), che la
+            // foglia delle famiglie pulite promuove a H1 quando resta sola. Resta corpo, letta.
+            nodes[i].type = .BODY; nodes[i].level = nil; nodes[i].length_category = nil
         }
     }
     // 2. Fusione del sottotitolo nel TITOLO (etichetta unica e informativa per l'albero).
@@ -342,6 +348,13 @@ func splitCodiciArticleRun(_ lines: [LineSummary], _ body: Double, role: RunRole
             i = j
             continue
         }
+        // Foglia 5 — il titolo d'apertura di un atto ristampato (solo nel corpo): HEADING_3.
+        if role == .body, let end = codiciLawTitleEnd(lines, from: i, body) {
+            flush()
+            out.append(.heading(mergedLine(Array(lines[i..<end])), level: CODICI_LAW_TITLE_LEVEL))
+            i = end
+            continue
+        }
         // Il trigger d'articolo vale solo nel corpo (le note non aprono articoli).
         guard role == .body, codiciArticleTrigger(lines[i], body) else {
             buf.append(lines[i]); i += 1; continue
@@ -377,6 +390,97 @@ func splitCodiciArticleRun(_ lines: [LineSummary], _ body: Double, role: RunRole
     }
     flush()
     return out
+}
+
+// MARK: - Foglia 5 dei codici: il titolo d'apertura delle leggi complementari ristampate
+//
+// Ogni atto ristampato (nella sezione LEGGI, e le poche ristampe prima di essa: il decreto di coordinamento,
+// la legge delega, le disposizioni di attuazione) si apre col suo titolo: la citazione dell'atto (sigla +
+// data + numero, o atto dell'Unione «Reg. (UE) n. …»), il trattino, il titolo, il rinvio «(G.U. …)». Sulla
+// pagina è alla taglia del corpo, in grassetto (perso sul dispositivo), al margine sinistro della PAGINA
+// (x0 ≈ 31, contro 39,7 degli articoli e ≥ 72 delle materie centrate) e largo quanto la pagina: è l'unica
+// riga dei codici che attraversa il canalino fra le colonne. Finiva in testa o in coda a un BODY, mai nel
+// rotore. Decisione del manutentore (giro «titoli e testatine», 2026-10-07): titolo di TERZO livello.
+// Simulato sulle due generazioni prima di scriverlo: penale 213 titoli, civile 93, nessun falso; mancano
+// i 3 titoli del penale che PDFKit scombina (A.5).
+
+let CODICI_LAW_TITLE_LEVEL = 3
+/// La prima riga sta al margine della pagina (titoli a 31, articoli a 39,7, materie da 72).
+let CODICI_LAW_TITLE_MAX_X0 = 36.0
+/// …e attraversa il canalino (nessuna riga di colonna arriva oltre il gutter + 5).
+let CODICI_LAW_TITLE_MIN_X1 = CODICI_COLUMN_GUTTER_X + 5
+/// Una riga «piena» arriva al margine destro della pagina: il titolo continua sotto.
+let CODICI_LAW_TITLE_FULL_X1 = 322.0
+/// Taglia del corpo: il sommario e l'indice cronologico ripetono le stesse citazioni a 6 pt.
+let CODICI_LAW_TITLE_SIZE_TOLERANCE = 0.25
+let CODICI_LAW_TITLE_MAX_ROWS = 12
+
+private let codiciLawMonths = "gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre"
+private let codiciLawSigla = "(?:L\\.(?:\\s?cost\\.)?|Legge(?:\\s+costituzionale)?|D\\.\\s?lgs\\.|D\\.\\s?l\\.|D\\.\\s?m\\.|"
+    + "D\\.\\s?P\\.\\s?R\\.|D\\.\\s?P\\.\\s?C\\.\\s?M\\.|R\\.\\s?d\\.(?:\\s?l\\.)?|Regio\\s+decreto(?:-legge)?|"
+    + "Decreto(?:-legge|\\s+legislativo|\\s+del\\s+Presidente\\s+della\\s+Repubblica)?)"
+/// Atto nazionale: sigla, giorno (anche «1°»/«1o»), mese, anno, numero facoltativo, poi il trattino del titolo
+/// o «, conv.» (decreto-legge convertito).
+let codiciLawNationalRe = try! NSRegularExpression(
+    pattern: "^\(codiciLawSigla)\\s+\\d{1,2}(?:°|o)?\\s+(?:\(codiciLawMonths))\\s+\\d{4}(?:,\\s+n\\.\\s*\\d+(?:/\\d+)?)?"
+        + "(?:\\.\\s*[\u{2013}\u{2014}\u{2012}\u{2015}-]|,\\s*conv\\.)")
+/// Atto dell'Unione: «Reg.», «Dir.», «Dec.», «Regolamento», «Direttiva», «Decisione» (anche «quadro»),
+/// «(UE)»/«(CE)»/«(CEE)»/«(Euratom)», «n. NNNN/NN».
+let codiciLawEuRe = try! NSRegularExpression(
+    pattern: "^(?:Reg\\.|Dec\\.|Dir\\.|Regolamento|Direttiva|Decisione)\\s+(?:quadro\\s+)?"
+        + "(?:\\((?:UE|CE|CEE|Euratom)\\)\\s+)?(?:n\\.\\s*)?\\d{2,4}/\\d+")
+
+/// Vero se la riga apre citando un atto (nazionale o dell'Unione).
+func codiciOpensLawCitation(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    return codiciReMatches(codiciLawNationalRe, t) || codiciReMatches(codiciLawEuRe, t)
+}
+
+/// Taglia del primo span con testo (il grassetto è perso: si guarda la taglia).
+private func codiciFirstSpanSize(_ sm: LineSummary) -> Double {
+    sm.spans.first(where: { !jsTrim($0.text).isEmpty })?.fontSize ?? sm.fontSize
+}
+
+/// Riga FISICA da `i`: PDFKit può spezzare la prima riga in due pezzi sulla stessa linea di base (la
+/// citazione e il resto dal trattino), a pochi punti l'uno dall'altro. Ritorna l'indice dopo l'ultimo pezzo,
+/// il testo unito e il margine destro.
+private func codiciPhysicalRow(_ lines: [LineSummary], from i: Int) -> (end: Int, text: String, x1: Double) {
+    var j = i + 1
+    var x1 = lines[i].x1
+    var parts = [jsTrim(lines[i].text)]
+    while j < lines.count, abs(lines[j].yBottom - lines[j - 1].yBottom) <= 1.0,
+          lines[j].x0 - lines[j - 1].x1 >= 0, lines[j].x0 - lines[j - 1].x1 <= 8 {
+        parts.append(jsTrim(lines[j].text)); x1 = max(x1, lines[j].x1); j += 1
+    }
+    return (j, parts.joined(separator: " "), x1)
+}
+
+/// Se a `i` si apre il titolo di un atto ristampato, ritorna l'indice dopo la sua ultima riga.
+func codiciLawTitleEnd(_ lines: [LineSummary], from i: Int, _ body: Double) -> Int? {
+    let first = lines[i]
+    guard body > 0, first.x0 < CODICI_LAW_TITLE_MAX_X0,
+          abs(codiciFirstSpanSize(first) - body) <= CODICI_LAW_TITLE_SIZE_TOLERANCE else { return nil }
+    let opening = codiciPhysicalRow(lines, from: i)
+    guard opening.x1 > CODICI_LAW_TITLE_MIN_X1, codiciOpensLawCitation(opening.text) else { return nil }
+    var text = opening.text
+    var lastX1 = opening.x1
+    var j = opening.end
+    var rows = 1
+    while j < lines.count, rows < CODICI_LAW_TITLE_MAX_ROWS {
+        let q = lines[j]
+        guard abs(q.x0 - first.x0) <= 2,
+              abs(codiciFirstSpanSize(q) - body) <= CODICI_LAW_TITLE_SIZE_TOLERANCE,
+              !codiciArticleTrigger(q, body), codiciStructuralLevel(q.text) == nil else { break }
+        // continua solo dopo una riga piena, o finché la parentesi «(G.U. …» resta aperta
+        let open = text.filter { $0 == "(" }.count > text.filter { $0 == ")" }.count
+        guard lastX1 >= CODICI_LAW_TITLE_FULL_X1 || open else { break }
+        let row = codiciPhysicalRow(lines, from: j)
+        text += " " + row.text
+        lastX1 = row.x1
+        j = row.end
+        rows += 1
+    }
+    return j
 }
 
 /// Foglia 1 dei codici (gated `isCodici`): converte i trigger d'articolo nascosti nei
@@ -579,6 +683,8 @@ public final class CodiciPlugin: ExtractionPlugin {
         if furnitureCount > 0 {
             warnings.append("plugin:codici:furniture_lines_removed_\(furnitureCount)")
         }
+        let lawTitles = nodes.filter { $0.type == .HEADING_3 && codiciOpensLawCitation($0.text ?? "") }.count
+        if lawTitles > 0 { warnings.append("plugin:codici:law_titles_\(lawTitles)") }
         return ScabopdfDocument(
             schema_version: SUPPORTED_SCHEMA_VERSION,
             document_id: slug(sourceName),

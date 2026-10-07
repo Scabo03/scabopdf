@@ -212,3 +212,49 @@ restano i canali a soglia alta e i folii. Nel dubbio non si toglie testo.
   `ContinuousReadingView` 0 etichette vuote, 0 etichette diverse da quella voluta, ogni titolo con la
   qualifica del suo livello, voci del rotore = titoli, tutte raggiungibili con `goToElement`, nessun libro
   che finisce su un titolo. 12 pagine lette contro il PDF: nessun veto.
+
+## 3. Codici: il titolo d'apertura degli atti ristampati (voce 4)
+
+Codice: `ScaboCore/CodiciPlugin.swift` (foglia 5 del ramo codici, `codiciLawTitleEnd`, dentro
+`splitCodiciArticleRun`). Test: `CodiciLawTitlesTests` (6). Decisione del manutentore: titolo di **terzo
+livello**.
+
+**Diagnosi (campo, entrambe le generazioni).** Ogni atto ristampato — le leggi complementari della sezione
+LEGGI e le poche ristampe prima di essa: il coordinamento del codice penale, la delega per il nuovo rito
+penale, l'attuazione dei due codici civili — si apre col suo titolo:
+citazione dell'atto, trattino, titolo, rinvio alla Gazzetta. Sulla pagina è alla taglia del corpo, in
+grassetto (perso sul dispositivo), al margine sinistro della pagina (x0 ≈ 31 contro 39,7 degli articoli e
+≥ 72 delle materie centrate) e largo quanto la pagina: è l'unica riga dei codici che attraversa il canalino
+fra le colonne. A build 48 nessuno era un titolo: 216 nel penale e 93 nel civile finivano in testa o in coda
+a un BODY (mai nel rotore). Le testatine di legge in maiuscolo a 9,98 pt erano già mobilia.
+
+**Cura.** Prima riga: taglia del primo span = corpo ± 0,25, x0 < 36, riga fisica (pezzi alla stessa linea
+di base, PDFKit ne spezza alcune in due) che va oltre il canalino + 5, testo che apre citando un
+atto nazionale (sigla, giorno anche «1°/1o», mese, anno, numero facoltativo, poi il trattino o «, conv.») o
+dell'Unione («Reg./Dir./Dec.» o per esteso, «(UE)», «n. NNNN/NN»). Righe seguenti: stesso margine, taglia
+del corpo, non articolo né intestazione di struttura, e solo dopo una riga piena o finché la parentesi della
+Gazzetta resta aperta (al più 12 righe). Il titolo diventa `HEADING_3` con le sue righe unite come nel corpo:
+lettere e ordine invariati. La guardia di taglia è quella che regge: il sommario e l'indice cronologico
+ripetono le stesse citazioni a 6 pt. Effetto laterale corretto nel ramo: isolata dal titolo, una materia
+che comincia con la parola «titolo» (il titolo esecutivo) veniva promossa a H1 dalla foglia delle famiglie
+pulite; nei codici «TITOLO» seguito da una parola e non da un numero romano resta corpo.
+
+**Alternative scartate.** Il grassetto (perso sul dispositivo); una regola solo testuale (le stesse
+citazioni stanno nel corpo, nelle note, nel sommario); la deduplicazione «prima occorrenza» (le testatine
+di legge sono già mobilia; ogni ristampa apre uno stralcio sotto una materia diversa).
+
+**Reti (runner, estrazioni `b48`, entrambe le generazioni).** Cambiano solo i due codici; lettere e cifre
+identiche; titoli +213 nel penale e +93 nel civile, più 2 intestazioni «PARTE I» vere di due testi unici
+rimaste sole sotto il titolo dell'atto; nessun titolo tolto, nessun livello cambiato; voci d'indice stampato
+ritrovate 927 → 1.058/1.235 (penale 270 → 362, civile 657 → 696); misura di struttura dei due codici
+invariata; parole inesistenti 0. Pagine lette contro il PDF: 22 titoli (i quattro prima della sezione LEGGI,
+il più lungo e il più corto, i due «PARTE I», la materia tornata corpo, il resto a caso), nessun falso.
+
+**Residui.** 3 titoli del penale che PDFKit scombina (A.5); 6 aperture che non cominciano con una citazione
+d'atto; «(Stralcio)» resta una riga di corpo sotto il titolo. **Note dei titoli**: 49 titoli del penale e 29
+del civile portano un richiamo «(N)»; l'aggancio delle note cerca i richiami solo nel corpo, quindi per
+almeno 19 di queste note (misurate: 13 penale, 6 civile) la nota non segue più subito il titolo ma è letta
+nel suo punto della pagina, qualche articolo dopo; nessuna nota persa. **Livello**: con il titolo a H3, nelle
+leggi che hanno al loro interno TITOLO (H2) o CAPO (H3) la Consultazione Rapida e il rotore mostrano il titolo
+dell'atto allo stesso livello o sotto le sue divisioni interne (penale: 77 leggi con CAPO, 33 con TITOLO;
+civile: 47 e 24); con l'atto a H1, come il LIBRO, l'annidamento sarebbe pulito — decisione al manutentore.
