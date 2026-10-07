@@ -830,3 +830,95 @@ final class PdfExtractionParityTests: XCTestCase {
         XCTAssertEqual(streamed, loadAll, "estrazione a flusso byte-identica sul PDF reale")
     }
 }
+
+// MARK: - Sopravvivenza delle annotazioni alla reimportazione e alla rielaborazione (giro «testatine», 2026-10-07)
+//
+// Accertamento richiesto dal maintainer prima di qualunque offerta di rielaborazione (docs/RIELABORAZIONE_PROGETTO.md):
+// che cosa succede OGGI a segnalibri, sottolineature e posizione di lettura quando un libro è reimportato, e che cosa
+// succederebbe se fosse rielaborato dallo stesso file d'archivio con una catena anche solo leggermente diversa. Le
+// prove usano una libreria in memoria e documenti costruiti dal Generic su un'estrazione sintetica (nessun PDF).
+final class AnnotationStabilityProbeTests: XCTestCase {
+
+    private func line(_ text: String, y: Double, size: Double = 11) -> PdfTextLine {
+        let span = PdfSpan(text: text, fontSize: size, bold: false, italic: false, color: "#000000",
+                           bbox: BBox(x: 60, y: y, width: 380, height: size + 1))
+        return PdfTextLine(spans: [span], bbox: span.bbox)
+    }
+
+    /// Un volumetto sintetico di 3 pagine con testi distinti per pagina (parole, non solo cifre: righe diverse solo
+    /// per cifre collassano nella stessa norma). La versione «prima» ha sulla prima pagina una riga in più (un
+    /// avviso editoriale), che una cura potrebbe togliere o fondere: basta UN nodo in meno a monte perché tutti gli
+    /// id dei nodi seguenti scalino di uno.
+    private func extraction(withExtraLine: Bool) -> PdfExtraction {
+        let words = [["alba", "brezza", "collina"], ["duna", "estuario", "faro"], ["golfo", "isola", "lago"]]
+        var pages: [PdfPageExtraction] = []
+        for p in 0..<3 {
+            var lines: [PdfTextLine] = []
+            if withExtraLine && p == 0 { lines.append(line("Avvertenza editoriale", y: 640, size: 14)) }
+            for (k, w) in words[p].enumerated() {
+                lines.append(line("Il paragrafo \(w) racconta della \(w) con parole sufficienti a formare un periodo intero.", y: 560 - Double(k) * 60))
+            }
+            pages.append(PdfPageExtraction(pageIndex: p, width: 480, height: 680, lines: lines))
+        }
+        return PdfExtraction(version: 2, pageCount: 3, pages: pages)
+    }
+
+    func test_reimport_mintsNewDocumentIdentity_annotationsStayOnTheOldCopy() {
+        var counter = 0
+        let store = LibraryStore(persistence: InMemoryLibraryPersistence(),
+                                 makeId: { counter += 1; return "id\(counter)" }, now: { Date(timeIntervalSince1970: 1) })
+        let first = store.addDocument(title: "Libro", sourceFileName: "libro.pdf", sourcePageCount: 3)
+        store.addBookmark(documentId: first.id, anchorSegmentId: "node_7", orderIndexHint: 7, preview: "…")
+        store.addUnderline(documentId: first.id, spans: [UnderlineSpan(segmentId: "node_7", startWord: 0, endWord: 2)], preview: "…")
+        store.updateReadingPosition(id: first.id, position: 42)
+        // Reimportare lo stesso file crea un documento NUOVO: identità casuale, nessuna annotazione.
+        let second = store.addDocument(title: "Libro", sourceFileName: "libro.pdf", sourcePageCount: 3)
+        XCTAssertNotEqual(first.id, second.id)
+        XCTAssertEqual(store.bookmarks(documentId: first.id).count, 1)
+        XCTAssertEqual(store.bookmarks(documentId: second.id).count, 0, "la copia nuova nasce senza segnalibri")
+        XCTAssertNil(store.document(id: second.id)?.underlines ?? nil, "…senza sottolineature")
+        XCTAssertEqual(store.document(id: second.id)?.readingPosition, 0, "…e dall'inizio")
+    }
+
+    func test_reprocessing_nodeIdsShift_whenAnEarlierNodeDisappears_anchorResolvesToAnotherPassage() {
+        // Oggi: id-nodo sequenziali in ordine di documento ("node_N"). Se una cura toglie un nodo PRIMA del
+        // segnalibro (qui la riga in più della prima pagina), tutti gli id successivi scalano di uno e lo STESSO id
+        // indica un altro passo: il segnalibro si risolve lì, in silenzio, senza alcun ripiego sull'indice.
+        let before = buildDocumentFromPdf(extraction(withExtraLine: true), sourceName: "libro.pdf")
+        let after = buildDocumentFromPdf(extraction(withExtraLine: false), sourceName: "libro.pdf")
+        // Nodo ancorato: un paragrafo della seconda pagina nella versione «prima».
+        guard let anchored = before.structure.first(where: { ($0.text ?? "").contains("estuario") }) else {
+            return XCTFail("paragrafo di prova non trovato")
+        }
+        let sameIdAfter = after.structure.first(where: { $0.id == anchored.id })
+        XCTAssertNotNil(sameIdAfter)
+        XCTAssertNotEqual(sameIdAfter?.text ?? nil, anchored.text, "lo stesso id-nodo indica un altro passo dopo la rielaborazione")
+        // Con il contenuto in segmenti: il risolutore trova l'id (quello sbagliato) e NON usa l'indice di ripiego.
+        func content(_ doc: ScabopdfDocument) -> PaginatedContent {
+            let segs = doc.structure.map { ContentSegment(id: $0.id, role: $0.type.rawValue, text: $0.text ?? "", lengthCategory: "", acousticIntro: "", memoryRefresh: "") }
+            return PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: segs)], totalSegments: segs.count)
+        }
+        let anchor = DocumentOpener.BookmarkFocus(anchorSegmentId: anchored.id, orderIndexHint: 0)
+        let i = DocumentOpener.resolveAnchorIndex(content(after), anchor: anchor)
+        XCTAssertNotEqual(content(after).pages[0].segments[i].text, anchored.text, "il salto atterra su un passo diverso")
+        // Un ancoraggio per CONTENUTO lo ritroverebbe: il passo esiste ancora, con un altro id. Il testo del nodo può
+        // cambiare ai bordi fra una versione e l'altra: l'impronta va presa su una porzione stabile del testo (le
+        // parole dell'elemento marcato), non sull'uguaglianza intera — è la via del progetto.
+        let byText = after.structure.first(where: { ($0.text ?? "").contains("estuario") })
+        XCTAssertNotNil(byText, "il passo esiste ancora, con un altro id: ritrovabile dal testo")
+        XCTAssertNotEqual(byText?.id, anchored.id)
+    }
+
+    func test_reprocessing_readingPositionIsASegmentIndex_itShiftsWithEveryNodeRemovedBefore() {
+        let before = buildDocumentFromPdf(extraction(withExtraLine: true), sourceName: "libro.pdf")
+        let after = buildDocumentFromPdf(extraction(withExtraLine: false), sourceName: "libro.pdf")
+        // Posizione = indice: il passo letto per ultimo nella versione «prima»…
+        let position = before.structure.firstIndex(where: { ($0.text ?? "").contains("isola") })!
+        // …nella versione «dopo» quell'indice indica un passo diverso, o non esiste più (qui: oltre la fine).
+        if position < after.structure.count {
+            XCTAssertNotEqual(after.structure[position].text, before.structure[position].text)
+        } else {
+            XCTAssertLessThan(after.structure.count, position + 1, "l'indice ricordato cade oltre la fine del documento rielaborato")
+        }
+    }
+}

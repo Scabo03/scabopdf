@@ -81,7 +81,7 @@ if [ "$CAPTURE" = 1 ]; then
   rm -f /tmp/scabo_extraction_request.json
 else
   for g in "${GENS[@]}"; do
-    GEN="${g##*:}"; n=$(find "$LAB/estrazioni/${TAG}_$GEN" -name '*.extraction.json' 2>/dev/null | wc -l | tr -d ' ')
+    GEN="${g##*:}"; n=$(find -L "$LAB/estrazioni/${TAG}_$GEN" -name '*.extraction.json' 2>/dev/null | wc -l | tr -d ' ')
     say "[1] cattura saltata (--no-capture): riuso $LAB/estrazioni/${TAG}_$GEN, estrazioni=$n/$N_ATTESI"
     [ "$n" = "$N_ATTESI" ] || { echo "estrazioni mancanti per $GEN"; exit 2; }
   done

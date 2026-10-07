@@ -161,6 +161,38 @@ let FURNITURE_RECUR_MIN_PAGES = 3
 let FURNITURE_TOP_BAND = 0.72
 let FURNITURE_BOTTOM_BAND = 0.28
 
+// ── Riga del folio + testatine lunghe (giro «testatine», 2026-10-07, docs/TESTATINE_MISURA_STRUTTURA.md) ──
+// La misura di struttura (verità PyMuPDF indipendente) ha censito 4.516 righe-mobilia lette come
+// contenuto sui 52 volumi (iOS 27): Rizzo 94 testatine di capitolo lette «Nota.», Marrone 148 piè di
+// pagina «Pag. N-M» letti come intestazioni di primo livello, Mandrioli 3 oltre 300 testatine di
+// paragrafo lette NOTE. Tre cause, tutte nel tronco: (a) il tetto di 60 caratteri è un `continue` che
+// precede ANCHE i canali ancorati (σ≈0 su ≥3 pagine), così una testatina di capitolo lunga 66-70
+// caratteri non è mai candidata; (b) la testatina che porta il TITOLO DEL PARAGRAFO cambia ogni 1-2
+// pagine e nessun canale di ricorrenza può prenderla; (c) il piè di pagina più grande del corpo
+// (Marrone, 16 pt blu) frammentato in quattro norme da PDFKit (con/senza folio fuso, con/senza
+// intervallo) resta sotto il pavimento del 15 % e il canale ancorato lo rifiuta per taglia.
+// Il segnale che le unisce è il FOLIO: la testatina sta sulla stessa riga del numero di pagina (fuso
+// come primo/ultimo token — Rizzo, Mandrioli, Marrone su iOS 27 — oppure come riga a parte alla stessa
+// quota — Marrone su iOS 26.5, Patriarca, Nomofanie, Elementi UE). Il folio è riconosciuto per
+// PROGRESSIONE (v = pagina + scarto stabile su ≥ `FOLIO_ROW_MIN_PAGES`) e la sua quota è ANCORATA
+// (σ < LOCK fra le pagine): una riga di corpo non condivide mai la quota ancorata del folio (censito
+// sul corpus: zero righe lunghe di corpo sulla riga del folio; le sole righe > 90 caratteri sono fusioni
+// di PDFKit di testatina + prima riga, lasciate stare dal tetto). Un titolo vero non porta il numero
+// della propria pagina come primo o ultimo token alla quota del folio. Attenzione speciale della rete:
+// un titolo vero ripetuto scambiato per testatina; un numero di pagina vero nel corpo (rinvio) tolto —
+// la quota ancorata in banda alta/bassa esclude il corpo, e il rinvio non sta sulla riga del folio.
+/// Lunghezza massima di una riga sulla riga del folio perché sia mobilia (la testatina più lunga del
+/// corpus è 73 caratteri; sopra 90 è una fusione di PDFKit con il corpo e non si tocca).
+let FOLIO_ROW_MAX_CHARS = 90
+/// Pagine distinte minime su cui una quota di folio deve ricorrere ancorata perché sia uno «slot».
+let FOLIO_ROW_MIN_PAGES = 5
+/// Frazione minima di pagine per lo slot (si usa il massimo fra questa e `FOLIO_ROW_MIN_PAGES`).
+let FOLIO_ROW_MIN_FRACTION = 0.05
+/// Tetto di lunghezza per i canali ANCORATI (testatina topmost, ricorrenza generalizzata, riga del
+/// folio): la guardia σ≈0 su ≥3 pagine rende superfluo il tetto stretto di 60, che resta per i
+/// canali per sola ricorrenza di banda e colore.
+let ANCHORED_FURNITURE_MAX_CHARS = 120
+
 // ── Testatina corrente "separata per posizione" — ramo Riviste (porta DPC) ──────
 // La Rivista DPC ha testatine correnti (il titolo dell'articolo, ripetuto in cima a
 // ogni pagina della sezione) che SFUGGONO al position-lock σ qui sopra per un motivo
@@ -568,6 +600,13 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // roman-aware. Risolta dopo il ciclo col cluster di posizione (vedi FURNITURE_*).
     struct RecurLine { let key: String; let page: Int; let yFrac: Double }
     var recurCandidatesByNorm: [String: [RecurLine]] = [:]
+    // Riga del folio: folii nudi e folii fusi (primo/ultimo token) con la loro quota; righe di banda
+    // con la loro quota, per trovare chi condivide la riga del folio.
+    struct FusedFolioLine { let key: String; let page: Int; let yFrac: Double; let value: Int }
+    var fusedFolioLines: [FusedFolioLine] = []
+    struct BandRow { let key: String; let page: Int; let yFrac: Double; let substantial: Bool; let excluded: Bool }
+    var bandRows: [BandRow] = []
+    var bareFolioRows: [FusedFolioLine] = []
 
     func track(_ map: inout [String: Set<Int>], _ norm: String, _ pageIndex: Int) {
         map[norm, default: []].insert(pageIndex)
@@ -595,20 +634,41 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                 if let value = Int(jsTrim(sm.text)) {
                     folioCandidates.append(FolioCandidate(key: key, page: page.pageIndex, value: value))
                     offsetPages[value - page.pageIndex, default: []].insert(page.pageIndex)
+                    let yFracBare = height > 0 ? sm.yTop / height : 0.5
+                    if yFracBare >= TOP_BAND || yFracBare <= BOTTOM_BAND {
+                        bareFolioRows.append(FusedFolioLine(key: key, page: page.pageIndex, yFrac: yFracBare, value: value))
+                    }
                 }
                 continue
             }
             // General majority-recurrence applies at any length.
             generalCandidates.append(Candidate(key: key, norm: norm))
             track(&generalPages, norm, page.pageIndex)
-            // Band / colour furniture are short headers/footers/markers only.
-            if sm.text.utf16.count > FURNITURE_MAX_CHARS { continue }
             let yFrac = height > 0 ? sm.yTop / height : 0.5
-            if yFrac >= TOP_BAND || yFrac <= BOTTOM_BAND {
+            // Riga del folio: una riga in banda alta/bassa il cui PRIMO o ULTIMO token è un intero
+            // (folio fuso alla testatina). Giudicata dopo il ciclo per progressione + quota ancorata.
+            if yFrac >= TOP_BAND || yFrac <= BOTTOM_BAND, sm.text.utf16.count <= FOLIO_ROW_MAX_CHARS {
+                let toks = sm.text.split(separator: " ", omittingEmptySubsequences: true)
+                if let first = toks.first, let last = toks.last {
+                    for tok in Set([String(first), String(last)]) where tok.utf16.count <= 4 && tok.allSatisfy({ $0.isASCII && $0.isNumber }) {
+                        if let value = Int(tok) {
+                            fusedFolioLines.append(FusedFolioLine(key: key, page: page.pageIndex, yFrac: yFrac, value: value))
+                            offsetPages[value - page.pageIndex, default: []].insert(page.pageIndex)
+                        }
+                    }
+                }
+                bandRows.append(BandRow(key: key, page: page.pageIndex, yFrac: yFrac, substantial: isSubstantial(sm.text),
+                                        excluded: opensExcludedApparatusRegion(sm.text)))
+            }
+            // I canali ancorati accettano righe fino a ANCHORED_FURNITURE_MAX_CHARS; sopra, nulla.
+            if sm.text.utf16.count > ANCHORED_FURNITURE_MAX_CHARS { continue }
+            // Band / colour furniture are short headers/footers/markers only.
+            let shortEnough = sm.text.utf16.count <= FURNITURE_MAX_CHARS
+            if shortEnough, yFrac >= TOP_BAND || yFrac <= BOTTOM_BAND {
                 bandCandidates.append(Candidate(key: key, norm: norm))
                 track(&bandPages, norm, page.pageIndex)
             }
-            if isSaturated(sm.color) {
+            if shortEnough, isSaturated(sm.color) {
                 colorCandidates.append(Candidate(key: key, norm: norm))
                 track(&colorPages, norm, page.pageIndex)
             }
@@ -668,6 +728,29 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     let folioOffsets = Set(offsetPages.compactMap { $0.value.count >= minPages ? $0.key : nil })
     for c in folioCandidates where folioOffsets.contains(c.value - c.page) {
         furniture.insert(c.key)
+    }
+    // Riga del folio (vedi FOLIO_ROW_*). Primo passo: le righe-folio per progressione (nude o fuse) con
+    // la loro quota. Uno SLOT è una quota a cui i folii ricorrono ancorati (σ < LOCK) su ≥ pagine minime.
+    // Secondo passo: ogni riga-folio in uno slot è mobilia (fusa: la testatina intera), e con lei ogni
+    // altra riga di banda della stessa pagina sulla stessa quota (|Δ| < LOCK), sostanziale, corta, che
+    // non apre una regione d'apparato.
+    let folioRows = (bareFolioRows + fusedFolioLines).filter { folioOffsets.contains($0.value - $0.page) }
+    let slotMinPages = max(FOLIO_ROW_MIN_PAGES, Int((Double(extraction.pageCount) * FOLIO_ROW_MIN_FRACTION).rounded(.up)))
+    var slotRows: [FusedFolioLine] = []
+    for row in folioRows {
+        let near = folioRows.filter { abs($0.yFrac - row.yFrac) < RUNNING_HEADER_POSITION_LOCK }
+        if Set(near.map { $0.page }).count >= slotMinPages { slotRows.append(row) }
+    }
+    if !slotRows.isEmpty {
+        var rowsByPage: [Int: [BandRow]] = [:]
+        for r in bandRows { rowsByPage[r.page, default: []].append(r) }
+        for folio in slotRows {
+            furniture.insert(folio.key)
+            for r in rowsByPage[folio.page] ?? [] where r.key != folio.key && r.substantial && !r.excluded
+                && abs(r.yFrac - folio.yFrac) < RUNNING_HEADER_POSITION_LOCK {
+                furniture.insert(r.key)
+            }
+        }
     }
     // Testatine correnti di capitolo (NUOVO canale, indipendente dal pavimento del 15%).
     // Una candidata-testatina ricorrente su >= RUNNING_HEADER_MIN_PAGES pagine e ANCORATA
@@ -1701,13 +1784,19 @@ private func structHeadingLevel(_ keyword: String) -> Int {
 /// Riclassifica in posizione i nodi NOTE che il classificatore size-only ha collassato
 /// ma che dichiarano il proprio ruolo: SOMMARIO → CHAPTER_SUMMARY, intestazione di
 /// struttura → HEADING_n. Conta i retag per le warning. Deterministica, additiva.
+///
+/// Dal giro «testatine» (2026-10-07) il ramo dell'intestazione di struttura vale anche per i nodi
+/// BODY: l'etichetta di capitolo in maiuscoletto («CAPITOLO II», «PARTE PRIMA», taglia 13-14 pt ma
+/// spezzata in tre span) finiva BODY e, una volta tolta la testatina corrente che la precedeva, la
+/// granularità la accodava senza punto alla frase precedente (Mandrioli 1 e 3). Come intestazione
+/// resta un elemento proprio e navigabile. Stessa firma e stessa guardia di lunghezza del ramo NOTE.
 func reclassifyCleanFamilies(_ nodes: inout [NodeDict]) -> (summary: Int, heading: Int) {
     var summaryCount = 0
     var headingCount = 0
-    for i in nodes.indices where nodes[i].type == .NOTE {
+    for i in nodes.indices where nodes[i].type == .NOTE || nodes[i].type == .BODY {
         let t = (nodes[i].text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let range = NSRange(t.startIndex..<t.endIndex, in: t)
-        if SOMMARIO_HEADING_RE.firstMatch(in: t, range: range) != nil {
+        if nodes[i].type == .NOTE, SOMMARIO_HEADING_RE.firstMatch(in: t, range: range) != nil {
             nodes[i].type = .CHAPTER_SUMMARY
             nodes[i].length_category = nil  // non è una nota: niente regime acustico
             summaryCount += 1
