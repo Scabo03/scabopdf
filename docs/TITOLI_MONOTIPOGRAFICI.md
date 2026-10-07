@@ -26,7 +26,11 @@ titoli **inventati** — e nel **livello**.
 | **Tipografia vera** | riga nella colonna del corpo, fuori dalle bande, corta, a taglia ≥ corpo + 0,4 pt, oppure tutta in grassetto quando il corpo non lo è, numerata o isolata; classe di livello = rango della taglia e grassetto | volumi editoriali (PyMuPDF conserva font e grassetti che PDFKit perde sul dispositivo) |
 | **Geometria** (documenti monotipografici) | blocco di ≤ 3 righe e ≤ 160 caratteri isolato da uno stacco maggiore dello stacco di paragrafo, senza punteggiatura finale, non voce d'elenco | dispense: volutamente più larga della regola dell'app, così ciò che l'app tralascia per prudenza resta contato come perso |
 
-Verificate a campione sulle pagine renderizzate (circa 30 pagine nel giro). Limiti noti della verità
+Verificate a campione sulle pagine renderizzate (circa 30 pagine nel giro). **Avvertenza (revisione
+indipendente):** la verità geometrica non è indipendente dall'app — riprende un'euristica simile a quella del
+canale (≤ 160 caratteri, niente punto finale, testa alla Pages) — quindi sulle dispense il «ritrovati» è accordo
+fra due implementazioni vicine, non richiamo su una verità esterna. Per le dispense le prove indipendenti sono
+l'albero di struttura dell'editor dentro il PDF (§ 2.4) e la lettura sulla pagina. Limiti noti della verità
 geometrica, contati come «persi» anche quando l'app fa bene a non promuoverli: una riga di copertina che
 elenca numeri di capitolo, l'inizio di un paragrafo in cima alla pagina che va a capo su una riga in
 maiuscola, una frase di corpo senza punto.
@@ -62,7 +66,7 @@ ma «parziale (solo indice stampato)» se la tipografia ne vede meno della metà
 
 Pesi reali che la misura ha messo in fila (iOS 27): dispense monotipografiche 511 dei 580 titoli
 geometrici persi; Torrente circa 712 titoli «§ N.» persi e 0/772 voci d'indice; Rivista DPC 252 inventati nel
-corpo + 173 su pagine senza corpo; Mandrioli titoli di Sezione in maiuscoletto persi e livelli schiacciati
+corpo e 173 nella DPC 2020, entrambi nel corpo (19 + 1 su pagine senza corpo); Mandrioli titoli di Sezione in maiuscoletto persi e livelli schiacciati
 (s2≡s3 → H4); Magnani «SEZ.» in maiuscoletto persi; Lineamenti 97 persi, Storia della codificazione 52,
 Elementi UE indice 28/98, Compendio 81; falsi titoli di frontespizio (Patriarca 105 su pagine senza corpo,
 Torrente, Rizzo); sezioni DeJure DT/MM; codici (sola verità d'indice) civile 657/800 e penale 270/435.
@@ -76,6 +80,9 @@ Officina `controprova_titoli/` (copie di ScaboCore compilate in un runner propri
   ritrovati **0**/7.050, voci d'indice **0**/3.186, inventati 0. Restano accesi i rami codici, DeJure e
   Rivista: per questo i volumi a sola verità d'indice (i codici) ritrovano ancora 917/1.838 voci.
 - **cambiamento innocuo** (un commento): letture 52/52 identiche al byte, misura identica.
+
+Limite dichiarato: la prova al contrario è stata eseguita solo su iOS 27 e solo nel verso dei titoli persi; manca
+un guasto che inietti titoli falsi per vedere accendersi gli «inventati».
 
 ### 1.7 Uso
 
@@ -118,7 +125,9 @@ max(2, 5 %) delle pagine. Si applica anche nel ramo appunti (Google Docs), accan
 generazioni (campo, `reti/firma_monotipografica_b48.txt`): i 10 monotipografici hanno quota 99,62-100 % e
 0-2 pagine con uno stile secondario; il non monotipografico più vicino (appunti Google Docs con titoli in
 altro stile) ha il 13,8 % di pagine con stile secondario; i volumi editoriali dal 18,3 % in su. Dove la
-firma non scatta il canale è un no-op **per costruzione** (`profile.mono == nil`).
+firma non scatta il canale è un no-op **per costruzione** (`profile.mono == nil`). Margine sottile sulla sola
+quota: due documenti non monotipografici stanno a 0,9898 e 0,9921, esclusi dal criterio delle pagine; sotto le
+40 pagine quel criterio ammette 2 pagine, e resta solo la quota (rischio futuro, nessun effetto sul corpus).
 
 **Calibrazione per documento.** Passo modale fra le righe (pari alla più piccola), tolleranza
 max(1,5 pt; 8 % del passo), classi di stacco oltre il passo (± max(2 pt; 10 %)). La classe più frequente
@@ -186,12 +195,17 @@ restano i canali a soglia alta e i folii. Nel dubbio non si toglie testo.
   dalla mobilia (12 etichette «CAP. N», 9 parole di corpo); riordini in 2 volumi su iOS 27 e 4 su
   iOS 26.5, tutti giudicati sulla pagina (pezzi della stessa riga che PDFKit emetteva fuori posto).
 - **Oracolo dell'editore** (albero di struttura del PDF letto con PyMuPDF, MCID qualificati per pagina —
-  la prima versione via pdfium attribuiva alla pagina MCID della pagina precedente): sugli 8 documenti con
-  albero, 581/581 titoli sono un paragrafo intero dell'editor e 2.280 confini di nodo cadono su confini
-  dell'editor, 0 dentro un paragrafo, su entrambe le generazioni. Richiamo dei confini: Google Docs
-  1.108/1.118, Word 453/480, appunti processuale civile 411/416; Pages 27-94 su 79-281 per volume perché
-  Pages non marca lo stacco di paragrafo (nessun segnale verticale: per scelta non si spezza). Sui 2
-  documenti senza albero, 20/20 confini a campione corretti sulla pagina.
+  la prima versione via pdfium attribuiva alla pagina MCID della pagina precedente). Sul codice finale (dopo la
+  correzione delle abbreviazioni, sotto), entrambe le generazioni: sugli 8 documenti con albero tutti i titoli
+  sono un paragrafo intero dell'editor e dei 2.268 confini di nodo 2.267 cadono su confini dell'editor, 0
+  dentro un paragrafo, 1 non mappabile. Richiamo dei confini: Google Docs 1.101/1.118, Word 449/480, appunti
+  processuale civile 408/416; Pages 27-96 su 79-281 per volume perché Pages non marca lo stacco di paragrafo
+  (nessun segnale verticale: per scelta non si spezza). **Correzione dopo la revisione indipendente:** il mio
+  campione di 20 confini sui 2 documenti senza albero era tutto corretto, ma il controllo esaustivo del
+  revisore ha trovato confini a metà frase nella voce dell'EdD incollata da OCR (uno stacco casuale dopo
+  «art.», «cfr.», una sigla puntata). Ora `paragraphBoundary` usa la regola delle abbreviazioni della
+  granularità: confini corpo|corpo a frase non chiusa o dopo un'abbreviazione sui 10 documenti 50 → 0 su
+  entrambe le generazioni (alla base erano 0), lettere e titoli invariati.
 - **Misura dei titoli** sui 10 (verità geometrica, 8 misurati): ritrovati 44 → **570/580** su entrambe le
   generazioni; persi 10, di cui 3 errori della verità (una riga di copertina che elenca numeri di
   capitolo, un inizio di paragrafo in cima alla pagina, una frase di corpo) e 7 titoli che la regola
@@ -247,7 +261,9 @@ di legge sono già mobilia; ogni ristampa apre uno stralcio sotto una materia di
 identiche; titoli +213 nel penale e +93 nel civile, più 2 intestazioni «PARTE I» vere di due testi unici
 rimaste sole sotto il titolo dell'atto; nessun titolo tolto, nessun livello cambiato; voci d'indice stampato
 ritrovate 927 → 1.058/1.235 (penale 270 → 362, civile 657 → 696); misura di struttura dei due codici
-invariata; parole inesistenti 0. Pagine lette contro il PDF: 22 titoli (i quattro prima della sezione LEGGI,
+invariata; parole inesistenti 0. La misura conta più «inventati» (penale 560 → 647, civile 797 → 823): sono i
+titoli di legge che l'indice stampato non elenca (la verità d'indice è l'unica dei codici) più le due «PARTE I»;
+letti sulla pagina, non sono falsi. Pagine lette contro il PDF: 22 titoli (i quattro prima della sezione LEGGI,
 il più lungo e il più corto, i due «PARTE I», la materia tornata corpo, il resto a caso), nessun falso.
 
 **Residui.** 3 titoli del penale che PDFKit scombina (A.5); 6 aperture che non cominciano con una citazione
@@ -287,11 +303,39 @@ l'autore e l'affiliazione sono testo bianco su una fascia verde; `pageItems` sca
 (ancore invisibili), quindi non sono mai letti (123 righe nel 2018, 80 nel 2020). Non è curabile senza sapere
 che sotto il testo c'è un riempimento colorato: capacità d'estrattore che oggi manca.
 
+### 4.2 Un indirizzo da solo non è un titolo (tronco)
+
+Cinque titoli falsi erano indirizzi web su una riga a sé, grandi o colorati (il sito dell'editore sul retro di
+copertina di Mandrioli 3 e 4 e di Costituzionale, quello delle due Riviste). `classify` ora rende corpo un
+verdetto di titolo quando la riga è soltanto un indirizzo web o di posta; una riga di nota che porta un
+indirizzo resta nota. Reti (runner, entrambe le generazioni): cambiano solo i cinque volumi, un titolo tolto
+ciascuno, lettere identiche. Test: `UrlHeadingTests` (2).
+
+### 4.3 Dichiarati per il prossimo giro (diagnosi fatte, regole simulate)
+
+- **Titoli DeJure in grassetto a taglia di corpo** (sezioni numerate delle Dottrine, titoli delle massime: 64
+  + 97 + 3 persi). Una foglia sotto la porta DeJure (blocco ≥ 80 % in grassetto, taglia di corpo, ≤ 3 righe e
+  200 caratteri, non l'etichetta «Note:») li prende tutti e soli (47 sezioni, 104 titoli di massima, 3 in
+  ST+MM, identici sulle due generazioni). Il ramo DeJure costruisce oggi col Generic e ritocca i nodi: la
+  foglia chiede una porta DeJure nel profilo, al livello delle righe.
+- **Sommario iniziale di Patriarca** (105 titoli falsi sulle pagine senza corpo): le voci hanno il numero di
+  pagina IN TESTA, che il rilevatore dei sommari senza puntini non conosce. Una seconda forma di voce (numero
+  nudo in testa, crescente nella pagina, con astensione sulle pagine con un blocco di prosa) porta a
+  TOC_GENERAL solo le pagine 5-16 di Patriarca (85 titoli tolti), uguale sulle due generazioni; effetto da
+  dichiarare: quelle pagine non sono più lette, come i sommari di Mandrioli e Marotta.
+- **Frontespizi** (titolo del libro spezzato in più H1, autori ed editori come titoli: Torrente, Compendio,
+  Mandrioli, Marotta, Rizzo e altri): una regola «frontespizio» toccherebbe i titoli veri delle pagine
+  d'apertura di capitolo e di parte. Chiusa con diagnosi.
+- **Voce 5, «Breve storia» p. 13**: lo spazio fra l'elisione corsiva e la parola in tondo nasce in PDFKit 27
+  (correzione corsivo→tondo di 0,099 em, nessun glifo spazio nel PDF). Fra i casi comuni alle due generazioni
+  almeno quattro sono spazi veri della fonte: una regola testuale li cancellerebbe. Residuo d'estrattore
+  (A.5), si riapre con l'estrattore di basso livello che legge le larghezze dei glifi.
+
 ## 5. Testatine e piè ancora letti (voce 3)
 
 **Censimento (campo, letture b48 = disp11 sui 42 volumi editoriali; verifiche su un campione casuale di 12
 pagine e circa 15 mirate).** Le 719 (iOS 27) / 803 (26.5) righe «lette come contenuto» della misura di
-struttura sono per il 92-98 % un artefatto del metro:
+struttura sono un artefatto del metro per il 98,7 % su iOS 27 e l'88,9 % su 26.5:
 
 | Causa | iOS 27 | iOS 26.5 |
 |---|---|---|
@@ -366,7 +410,8 @@ Test: `ManualTitlesTests` (5).
 **Reti (runner, entrambe le generazioni, identiche).** Cambiano 7 volumi; lettere e cifre identiche; nessun
 titolo tolto, nessun livello cambiato. Titoli in più: Torrente 707, Mandrioli 1-4 10/15/7/11, Magnani 7,
 Mosconi 1. Misura: Torrente ritrovati 0 → 707/725 e indice 0 → 668/772; Mandrioli 1-4 ritrovati
-100/115/106/83 → 110/130/113/94, indice +8/+13/+5/+4; Magnani 89 → 96, indice 119 → 126; inventati invariati
+100/115/106/83 → 110/130/112/93 sul codice finale (in 3 e 4 la verità tipografica contava come titolo vero il
+sito web del retro di copertina, tolto in § 4.2: errore della verità), indice +8/+13/+5/+4; Magnani 89 → 96, indice 119 → 126; inventati invariati
 ovunque. Pagine lette contro il PDF: 11 titoli di Torrente (i due più lunghi su tre righe, un «-bis»), 3 sezioni
 di Mandrioli, 3 di Magnani, quella di Mosconi: tutti veri.
 
@@ -380,31 +425,3 @@ dell'app): 24 volumi, 326 unità fuse, circa 690 livelli cambiati, ritrovati 2.8
 voci). Tocca i livelli di quasi tutti i manuali: va fatta con la sua verifica sulla pagina, livello per livello,
 e col metro corretto — prossimo giro. Restano anche il tetto H4 reale (cinque livelli in Costituzionale,
 Patriarca, Lineamenti, Magnani, Rizzo): un quinto livello tocca lo schema, scelta del manutentore.
-
-### 4.2 Un indirizzo da solo non è un titolo (tronco)
-
-Cinque titoli falsi erano indirizzi web su una riga a sé, grandi o colorati (il sito dell'editore sul retro di
-copertina di Mandrioli 3 e 4 e di Costituzionale, quello delle due Riviste). `classify` ora rende corpo un
-verdetto di titolo quando la riga è soltanto un indirizzo web o di posta; una riga di nota che porta un
-indirizzo resta nota. Reti (runner, entrambe le generazioni): cambiano solo i cinque volumi, un titolo tolto
-ciascuno, lettere identiche. Test: `UrlHeadingTests` (2).
-
-### 4.3 Dichiarati per il prossimo giro (diagnosi fatte, regole simulate)
-
-- **Titoli DeJure in grassetto a taglia di corpo** (sezioni numerate delle Dottrine, titoli delle massime: 64
-  + 97 + 3 persi). Una foglia sotto la porta DeJure (blocco ≥ 80 % in grassetto, taglia di corpo, ≤ 3 righe e
-  200 caratteri, non l'etichetta «Note:») li prende tutti e soli (47 sezioni, 104 titoli di massima, 3 in
-  ST+MM, identici sulle due generazioni). Il ramo DeJure costruisce oggi col Generic e ritocca i nodi: la
-  foglia chiede una porta DeJure nel profilo, al livello delle righe.
-- **Sommario iniziale di Patriarca** (105 titoli falsi sulle pagine senza corpo): le voci hanno il numero di
-  pagina IN TESTA, che il rilevatore dei sommari senza puntini non conosce. Una seconda forma di voce (numero
-  nudo in testa, crescente nella pagina, con astensione sulle pagine con un blocco di prosa) porta a
-  TOC_GENERAL solo le pagine 5-16 di Patriarca (85 titoli tolti), uguale sulle due generazioni; effetto da
-  dichiarare: quelle pagine non sono più lette, come i sommari di Mandrioli e Marotta.
-- **Frontespizi** (titolo del libro spezzato in più H1, autori ed editori come titoli: Torrente, Compendio,
-  Mandrioli, Marotta, Rizzo e altri): una regola «frontespizio» toccherebbe i titoli veri delle pagine
-  d'apertura di capitolo e di parte. Chiusa con diagnosi.
-- **Voce 5, «Breve storia» p. 13**: lo spazio fra l'elisione corsiva e la parola in tondo nasce in PDFKit 27
-  (correzione corsivo→tondo di 0,099 em, nessun glifo spazio nel PDF). Fra i casi comuni alle due generazioni
-  almeno quattro sono spazi veri della fonte: una regola testuale li cancellerebbe. Residuo d'estrattore
-  (A.5), si riapre con l'estrattore di basso livello che legge le larghezze dei glifi.
