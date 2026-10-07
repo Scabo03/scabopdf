@@ -64,8 +64,8 @@ ma «parziale (solo indice stampato)» se la tipografia ne vede meno della metà
 | inventati: corpo + pagine senza corpo | 540 + 306 | 538 + 306 |
 | gerarchie appiattite / inversioni | 23 / 0 | 23 / 0 |
 
-Pesi reali che la misura ha messo in fila (iOS 27): dispense monotipografiche 511 dei 580 titoli
-geometrici persi; Torrente circa 712 titoli «§ N.» persi e 0/772 voci d'indice; Rivista DPC 252 inventati nel
+Pesi reali che la misura ha messo in fila (iOS 27): dispense monotipografiche 536 dei 580 titoli
+geometrici persi (44 ritrovati); Torrente circa 712 titoli «§ N.» persi e 0/772 voci d'indice; Rivista DPC 252 inventati nel
 corpo e 173 nella DPC 2020, entrambi nel corpo (19 + 1 su pagine senza corpo); Mandrioli titoli di Sezione in maiuscoletto persi e livelli schiacciati
 (s2≡s3 → H4); Magnani «SEZ.» in maiuscoletto persi; Lineamenti 97 persi, Storia della codificazione 52,
 Elementi UE indice 28/98, Compendio 81; falsi titoli di frontespizio (Patriarca 105 su pagine senza corpo,
@@ -107,7 +107,7 @@ Codice: `ScaboCore/MonoTitles.swift` (firma, calibrazione, titoli, paragrafi, li
 In una dispensa titolo e corpo hanno la stessa taglia, lo stesso stile, lo stesso colore: il
 classificatore del tronco (taglia, colore, grassetto) non vede mai un titolo e la pagina diventa un solo
 blocco di corpo, che la granularità ritaglia a ~400 caratteri. Misura a build 48 sui 10 documenti
-monotipografici del corpus: 511 dei 580 titoli geometrici persi (campo). Dati del 5 ottobre ricontrollati
+monotipografici del corpus: 536 dei 580 titoli geometrici persi, 44 ritrovati (campo). Dati del 5 ottobre ricontrollati
 sulle righe (campo): Pages non stacca i paragrafi e mette una riga vuota (un passo in più) prima dei
 titoli; Word stacca i paragrafi di ~8 pt (passo 39-40 → 48) e usa righe vuote più grandi; Google Docs
 ~18-20 pt fra paragrafi e ~52 pt prima dei titoli. Seconda scoperta: nei documenti monotipografici i due
@@ -263,8 +263,9 @@ rimaste sole sotto il titolo dell'atto; nessun titolo tolto, nessun livello camb
 ritrovate 927 → 1.058/1.235 (penale 270 → 362, civile 657 → 696); misura di struttura dei due codici
 invariata; parole inesistenti 0. La misura conta più «inventati» (penale 560 → 647, civile 797 → 823): sono i
 titoli di legge che l'indice stampato non elenca (la verità d'indice è l'unica dei codici) più le due «PARTE I»;
-letti sulla pagina, non sono falsi. Pagine lette contro il PDF: 22 titoli (i quattro prima della sezione LEGGI,
-il più lungo e il più corto, i due «PARTE I», la materia tornata corpo, il resto a caso), nessun falso.
+letti sulla pagina, non sono falsi. Pagine lette contro il PDF: 21 titoli di legge su 21 pagine, 10 del penale e 11 del civile (i quattro prima
+della sezione LEGGI, il più lungo e il più corto, il resto a caso), più le due «PARTE I» e la materia tornata
+corpo sulle stesse pagine; nessun falso.
 
 **Residui.** 3 titoli del penale che PDFKit scombina (A.5); 6 aperture che non cominciano con una citazione
 d'atto; «(Stralcio)» resta una riga di corpo sotto il titolo. **Note dei titoli**: 49 titoli del penale e 29
