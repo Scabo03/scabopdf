@@ -77,12 +77,14 @@ titoli (5). (5) **Righe fuse** (voce 3): il 98,7 % (27) e l'88,9 % (26.5) delle 
 del folio della build 47 toglieva righe fuse col contenuto: curato (`lineJoinsDisjointRows`), tornano 5 titoli di
 Costituzionale, un numero di Elementi UE e 61 righe di Marrone su 26.5. (6) **Manuali**: «§ N.» in grassetto pieno
 (Torrente 0 → 707/725, indice 0 → 668/772) e sezioni in maiuscoletto (Mandrioli +43, Magnani +7, Mosconi +1).
-(7) Offerta di rielaborazione a `latestCureBuild` 49 col testo delle cure. **Reti finali (foto `fin1`)**: cambiano 23
+(7) Offerta di rielaborazione a `latestCureBuild` 49 col testo delle cure (per «alcuni libri»). **Reti finali (foto `fin2`,
+codice finale dopo la revisione)**: cambiano 23
 volumi su iOS 27 e 24 su 26.5 (+Marrone), esattamente quelli attesi; Marotta identico; oracolo invariato; titoli ritrovati
-3.496 → 4.778 (27) e 3.465 → 4.747 (26.5), indice 1.943 → 2.649, inventati 540 → 216; annotazioni 0 sbagliate su entrambe;
-ScaboCore 727, ScaboApp 133 su 26.5 e 27; vista di lettura sul Simulatore iOS 27 pulita su 8 volumi (etichette, rotore,
-goToElement) e Marrone su 26.5 in app = runner. Annotazioni: 0 sbagliate, ma le orfane stanno quasi tutte nelle dispense
-(segnalibri 47/167, citazioni 94/396 a `fin1`), dove i segmenti cambiano di più: dichiarato nelle note.
+3.496 → 4.778 (27) e 3.465 → 4.747 (26.5), indice 1.943 → 2.649, inventati 540 → 216; annotazioni 0 sbagliate su entrambe
+(catena 2.803/2.873 e 2.790/2.860, 70 orfane dichiarate); ScaboCore 727, ScaboApp 133 su 26.5 e 27; vista di lettura sul Simulatore iOS 27 pulita su 8 volumi (etichette, rotore,
+goToElement) e Marrone su 26.5 in app = runner; sul codice finale la sonda della vista (iOS 27) è rifatta sui 5 volumi cambiati
+dalla correzione delle abbreviazioni più Marotta: 0 etichette vuote o diverse, rotore 457/457, app = runner. Annotazioni: 0 sbagliate, ma le orfane stanno quasi tutte nelle dispense
+(segnalibri 46/167, citazioni 90/396 a `fin2`), dove i segmenti cambiano di più: dichiarato nelle note.
 
 **Residui (dettaglio nel referto).** Livelli dei manuali (fusione dell'unità etichetta + titolo e livello relativo: disegno
 e simulazione pronti, 24 volumi, ~690 livelli — prossimo giro, col metro «a unità»); tetto H4 reale (quinto livello =
@@ -91,7 +93,7 @@ schema, decisione); titoli DeJure in grassetto e sommario di Patriarca (regole s
 torna letto, attaccato all'ultima parola in 44 delle 61 righe restituite (A.5, come prima della build 47); DPC: 4 composti inglesi uniti senza il
 trattino lessicale; titoli bianchi su fascia verde della DPC mai letti (serve sapere del riempimento: estrattore); voce 5
 «Breve storia» p. 13 = A.5; codici: note dei titoli di legge lette nel punto della pagina (19 misurate) e livello H3 vs H1
-(decisione). Basi del laboratorio ancora a `b48`: promuovere a `fin1` dopo l'ascolto della build 49.
+(decisione). Basi del laboratorio ancora a `b48`: promuovere a `fin2` dopo l'ascolto della build 49.
 
 ## ▶ STATO — Ancore per contenuto, rete sulle annotazioni, offerta di rielaborazione → build 48 — 2026-10-07 (pomeriggio)
 
