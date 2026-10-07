@@ -19,12 +19,21 @@
 //    sillabazione, segnaposto d'immagine spariscono: così le differenze reali fra le generazioni del
 //    lettore (spazi fra parole, sillabazioni ricomposte, U+FFFC) non toccano l'impronta;
 //  - tre impronte per segmento: `whole` (tutto il testo normalizzato), `head` (le prime
-//    `edgeLength` lettere) e `tail` (le ultime). Testa e coda reggono ai nodi SPEZZATI o FUSI da una
-//    cura: un vecchio segmento inglobato in uno nuovo si ritrova perché testa e coda compaiono
-//    nel nuovo alla distanza giusta; un vecchio segmento spezzato in due si ritrova dalla testa;
+//    `edgeLength` = 64 lettere) e `tail` (le ultime). Testa e coda reggono ai nodi SPEZZATI o FUSI da
+//    una cura: un vecchio segmento inglobato in uno nuovo si ritrova perché testa e coda compaiono nel
+//    nuovo alla distanza giusta E all'inizio o alla fine del nuovo (una fusione incolla, non
+//    inserisce nel mezzo: un titolo citato dentro un sommario non è una fusione); un vecchio segmento
+//    spezzato in due si ritrova dalla testa, purché il nuovo sia PIÙ CORTO del vecchio (è un pezzo di
+//    esso), lungo almeno 128 lettere e ne condivida il prefisso verificato sulla SCALA di impronte
+//    (128/256/512/1024 lettere): due voci di bibliografia dello stesso autore condividono 64 lettere,
+//    non 256. La fusione, a sua volta, deve aggiungere almeno 64 lettere: una testatina corrente che
+//    ripete il titolo del paragrafo più il folio non è una fusione del titolo. Sotto le 64 lettere vale
+//    solo l'impronta intera: la rete sulle annotazioni (prova «orfana») ha mostrato che con finestre di
+//    32 lettere i titoli brevi e le note formulari si «ritrovavano» nei loro simili vicini;
 //  - la posizione (pagina del file originale, indice di lettura, rango fra i segmenti identici
-//    della stessa pagina) è SUGGERIMENTO e disambiguatore, mai prova: due «(Omissis).» sulla stessa
-//    pagina si distinguono per rango solo se la pagina ne ha ancora lo stesso numero.
+//    nella finestra di pagine) è SUGGERIMENTO e disambiguatore, mai prova: due «(Omissis).» a
+//    poche pagine si distinguono per rango solo se la finestra ne ha ancora lo stesso numero; se
+//    uno dei gemelli è sparito, l'ancora è orfana (il superstite potrebbe essere l'altro).
 //  È il modello delle annotazioni web del W3C (TextQuoteSelector: testo esatto + contesto, con un
 //  TextPositionSelector come suggerimento) adattato a due vincoli nostri: niente testo dei volumi
 //  nell'ancora (per la regola sul diritto d'autore, quando le annotazioni viaggeranno fra iPad e
@@ -39,7 +48,11 @@
 //  stessa fine, interno diverso: ordine delle righe) · `headOnly` 0,8 (spezzatura). Sotto la soglia
 //  `relocationThreshold` = 0,8 — cioè sola coda, o nessuna impronta, o CANDIDATI AMBIGUI — l'ancora
 //  è orfana e resta tale finché l'utente non la ricolloca. L'ambiguità è orfana per costruzione: una
-//  testatina ricorrente marcata per sbaglio non si «ricolloca» su un'altra pagina.
+//  testatina ricorrente marcata per sbaglio non si «ricolloca» su un'altra pagina. E OGNI riscontro,
+//  anche esatto, vale solo entro una finestra di pagine dalla pagina d'origine (±2; ±1 per i testi
+//  corti): un libro non sposta un passo di cento pagine, mentre i codici ripetono alla lettera la
+//  stessa nota in cento punti — la rete sulle annotazioni (prova al contrario «orfana») ha mostrato che
+//  senza la finestra un passo tolto si «ritrovava», sicuro e sbagliato, nel suo gemello lontano.
 //
 //  Costo: una passata sui segmenti (normalizzazione + tre SHA-256) all'apertura dell'indice; sui
 //  codici (~47.000 segmenti) è dell'ordine delle centinaia di millisecondi, misurato dalla rete.
@@ -51,8 +64,9 @@ import Foundation
 // MARK: - Impronte
 
 public enum TextFingerprint {
-    /// Lunghezza delle finestre di testa e coda (lettere normalizzate).
-    public static let edgeLength = 32
+    /// Lunghezza delle finestre di testa e coda (lettere normalizzate). 64: sotto, i titoli brevi e le
+    /// note formulari dei codici si confondono con i loro simili; sopra, i riscontri parziali reggono.
+    public static let edgeLength = 64
     /// Lunghezza del contesto (prefisso/suffisso) delle citazioni delle sottolineature.
     public static let contextLength = 16
 
@@ -113,17 +127,23 @@ public struct ContentAnchor: Codable, Equatable, Sendable {
     public var whole: String
     public var head: String
     public var tail: String
-    /// Rango (0-based) fra i segmenti con la STESSA impronta intera sulla stessa pagina originale,
-    /// e quanti sono in tutto: disambiguano i testi identici ripetuti nella pagina.
-    public var pageOccurrence: Int
-    public var pageOccurrenceCount: Int
+    /// Scala di impronte dei prefissi di 128, 256, 512, 1024 lettere (solo quelli che il testo copre):
+    /// verifica che un segmento più corto sia davvero un PEZZO iniziale del vecchio (spezzatura).
+    public var prefixLadder: [String]
+    /// Rango (0-based) fra i segmenti con la STESSA impronta intera nella finestra di pagine attorno
+    /// alla pagina d'origine (±`partialMatchPageWindow`, ±`shortTextPageWindow` per i testi corti),
+    /// e quanti sono in tutto: disambiguano i testi identici ripetuti a poche pagine (le note ripetute
+    /// alla lettera dei codici). Alla risoluzione il rango vale solo se la finestra ne ha ancora lo
+    /// stesso numero; altrimenti l'ancora è orfana.
+    public var windowRank: Int
+    public var windowCount: Int
     /// Indice di lettura alla creazione: suggerimento e fallback dichiarato, mai prova.
     public var orderIndexHint: Int
 
     public static let currentVersion = 1
 
     public init(version: Int = ContentAnchor.currentVersion, role: String, sourcePage: Int?, length: Int,
-                whole: String, head: String, tail: String, pageOccurrence: Int, pageOccurrenceCount: Int,
+                whole: String, head: String, tail: String, prefixLadder: [String] = [], windowRank: Int, windowCount: Int,
                 orderIndexHint: Int) {
         self.version = version
         self.role = role
@@ -132,8 +152,9 @@ public struct ContentAnchor: Codable, Equatable, Sendable {
         self.whole = whole
         self.head = head
         self.tail = tail
-        self.pageOccurrence = pageOccurrence
-        self.pageOccurrenceCount = pageOccurrenceCount
+        self.prefixLadder = prefixLadder
+        self.windowRank = windowRank
+        self.windowCount = windowCount
         self.orderIndexHint = orderIndexHint
     }
 }
@@ -204,11 +225,18 @@ public struct QuoteResolution: Equatable, Sendable {
 public final class ContentAnchorIndex {
     /// Soglia di ricollocazione: sotto, l'ancora è orfana (vedi la scala in testa al file).
     public static let relocationThreshold = 0.8
-    /// Finestra di pagine entro cui un riscontro PARZIALE (fusione, spezzatura, interno diverso) è
-    /// ammesso: oltre, l'ancora è orfana. Le fusioni fra pagine spostano l'attribuzione di una pagina.
+    /// Finestra di pagine entro cui un riscontro — anche ESATTO — è ammesso quando la pagina d'origine
+    /// è nota: oltre, l'ancora è orfana («ritrovato solo lontano dalla pagina»). Le fusioni fra pagine
+    /// spostano l'attribuzione di una pagina; un passo non migra mai di cento. Un candidato SENZA
+    /// pagina non passa il filtro (prudenza: non si sa dove sia).
     public static let partialMatchPageWindow = 2
     /// Finestra di pagine per i testi CORTI (sotto `edgeLength`): un'impronta corta è debole.
     public static let shortTextPageWindow = 1
+    /// Lunghezze della scala di prefissi (`ContentAnchor.prefixLadder`).
+    public static let ladderLengths = [128, 256, 512, 1024]
+    /// Una fusione deve AGGIUNGERE almeno tante lettere: sotto, è una variante del segmento (testatina
+    /// con folio), non un segmento inglobato in un altro.
+    public static let containedMinExtraLength = 64
 
     public let segments: [ContentSegment]
     private let normalized: [String]
@@ -263,12 +291,28 @@ public final class ContentAnchorIndex {
     public func anchor(forIndex index: Int) -> ContentAnchor? {
         guard segments.indices.contains(index) else { return nil }
         let page = pageOf[index]
-        let same = (byWhole[wholeDigests[index]] ?? []).filter { pageOf[$0] == page }
-        let rank = same.firstIndex(of: index) ?? 0
+        let length = normalized[index].count
+        let window = Self.pageWindow(forLength: length)
+        let twins = (byWhole[wholeDigests[index]] ?? []).filter { Self.inWindow(pageOf[$0], of: page, window) }
+        let rank = twins.firstIndex(of: index) ?? 0
+        let n = normalized[index]
+        let ladder = Self.ladderLengths.filter { $0 <= length }.map { TextFingerprint.digest(n.prefix($0)) }
         return ContentAnchor(
-            role: segments[index].role, sourcePage: page, length: normalized[index].count,
-            whole: wholeDigests[index], head: headDigests[index], tail: tailDigests[index],
-            pageOccurrence: rank, pageOccurrenceCount: max(1, same.count), orderIndexHint: index)
+            role: segments[index].role, sourcePage: page, length: length,
+            whole: wholeDigests[index], head: headDigests[index], tail: tailDigests[index], prefixLadder: ladder,
+            windowRank: rank, windowCount: max(1, twins.count), orderIndexHint: index)
+    }
+
+    static func pageWindow(forLength length: Int) -> Int {
+        length <= TextFingerprint.edgeLength ? shortTextPageWindow : partialMatchPageWindow
+    }
+
+    /// Vero se `candidate` sta entro `window` pagine da `page`. Pagina d'origine ignota: tutto vale;
+    /// pagina del candidato ignota (con l'origine nota): non vale (non si sa dove sia).
+    static func inWindow(_ candidate: Int?, of page: Int?, _ window: Int) -> Bool {
+        guard let page else { return true }
+        guard let candidate else { return false }
+        return abs(candidate - page) <= window
     }
 
     /// L'ancora di una citazione: le parole `startWord...endWord` (indici `WordTokenizer`) del segmento.
@@ -297,8 +341,7 @@ public final class ContentAnchorIndex {
         // 1. Impronta intera uguale.
         let exact = byWhole[anchor.whole] ?? []
         if !exact.isEmpty {
-            let window = anchor.length <= TextFingerprint.edgeLength ? Self.shortTextPageWindow : nil
-            return pick(exact, anchor: anchor, level: .exact, pageWindow: window)
+            return pick(exact, anchor: anchor, level: .exact, pageWindow: Self.pageWindow(forLength: anchor.length))
         }
         // Un testo corto senza riscontro esatto non ha testa/coda distinte: orfano.
         guard anchor.length > TextFingerprint.edgeLength else {
@@ -312,14 +355,16 @@ public final class ContentAnchorIndex {
             return pick(Array(both).sorted(), anchor: anchor, level: .headAndTail,
                         pageWindow: Self.partialMatchPageWindow)
         }
-        // 3. Testa e coda DENTRO un segmento più lungo, alla distanza giusta (fusione).
+        // 3. Testa e coda DENTRO un segmento più lungo, alla distanza giusta e a un'estremità (fusione).
         let contained = containingCandidates(anchor)
         if !contained.isEmpty {
             return pick(contained, anchor: anchor, level: .contained, pageWindow: Self.partialMatchPageWindow)
         }
-        // 4. Sola testa all'inizio di un segmento (spezzatura: il segnalibro marca l'inizio).
-        if !heads.isEmpty {
-            return pick(Array(heads).sorted(), anchor: anchor, level: .headOnly,
+        // 4. Sola testa all'inizio di un segmento PIÙ CORTO del vecchio (spezzatura: il segnalibro marca
+        //    l'inizio e il nuovo segmento è un pezzo del vecchio), verificato sulla scala dei prefissi.
+        let splitHeads = heads.filter { isInitialPiece(normalized[$0], of: anchor) }
+        if !splitHeads.isEmpty {
+            return pick(Array(splitHeads).sorted(), anchor: anchor, level: .headOnly,
                         pageWindow: Self.partialMatchPageWindow)
         }
         if !tails.isEmpty { return .orphan("ritrovata solo la coda: sotto soglia") }
@@ -347,33 +392,31 @@ public final class ContentAnchorIndex {
     private func pick(_ candidates: [Int], anchor: ContentAnchor, level: AnchorMatchLevel,
                       pageWindow: Int?) -> AnchorResolution {
         var pool = candidates
-        if let window = pageWindow, let page = anchor.sourcePage {
-            pool = pool.filter { p in
-                guard let q = pageOf[p] else { return true }
-                return abs(q - page) <= window
-            }
+        if let window = pageWindow {
+            pool = pool.filter { Self.inWindow(pageOf[$0], of: anchor.sourcePage, window) }
             if pool.isEmpty { return .orphan("\(level.rawValue): ritrovato solo lontano dalla pagina") }
         }
-        if pool.count == 1 { return AnchorResolution(index: pool[0], level: level, reason: "\(level.rawValue): unico") }
-        // Più candidati: la stessa pagina originale decide…
-        if let page = anchor.sourcePage {
-            let same = pool.filter { pageOf[$0] == page }
-            if same.count == 1 {
-                return AnchorResolution(index: same[0], level: level, reason: "\(level.rawValue): unico nella pagina")
+        if level == .exact {
+            // Testi identici nella finestra: il rango vale solo se la finestra ne ha ancora lo stesso numero.
+            // Se un gemello è sparito (o ne è comparso uno), il superstite potrebbe essere l'altro: orfana.
+            if anchor.sourcePage != nil, anchor.windowCount > 1 || pool.count > 1 {
+                guard pool.count == anchor.windowCount, pool.indices.contains(anchor.windowRank) else {
+                    return .orphan("exact: \(pool.count) gemelli nella finestra, erano \(anchor.windowCount)")
+                }
+                return AnchorResolution(index: pool[anchor.windowRank], level: level,
+                                        reason: "exact: rango \(anchor.windowRank + 1) di \(pool.count) nella finestra")
             }
-            // …e fra testi identici sulla stessa pagina decide il rango, solo se la pagina ne ha ancora
-            // lo stesso numero (altrimenti il rango non dice nulla).
-            if level == .exact, same.count == anchor.pageOccurrenceCount, same.indices.contains(anchor.pageOccurrence) {
-                return AnchorResolution(index: same[anchor.pageOccurrence], level: level,
-                                        reason: "exact: rango \(anchor.pageOccurrence + 1) di \(same.count) nella pagina")
-            }
+            if pool.count == 1 { return AnchorResolution(index: pool[0], level: level, reason: "exact: unico") }
+            return .orphan("exact: \(pool.count) candidati equivalenti")
         }
+        if pool.count == 1 { return AnchorResolution(index: pool[0], level: level, reason: "\(level.rawValue): unico") }
         return .orphan("\(level.rawValue): \(pool.count) candidati equivalenti")
     }
 
-    /// I segmenti che CONTENGONO il vecchio testo: finestra di testa e finestra di coda alla distanza
-    /// `length - edgeLength`. Si cercano solo nei segmenti più lunghi del vecchio, nella finestra di
-    /// pagine (se la pagina è nota), per non pagare il costo su tutto il documento.
+    /// I segmenti che CONTENGONO il vecchio testo a un'ESTREMITÀ: finestra di testa e finestra di coda
+    /// alla distanza `length - edgeLength`, con il vecchio testo all'inizio o alla fine del nuovo (una
+    /// fusione incolla due segmenti, non ne inserisce uno nel mezzo di un altro). Si cercano solo nei
+    /// segmenti più lunghi del vecchio, nella finestra di pagine (se nota).
     private func containingCandidates(_ anchor: ContentAnchor) -> [Int] {
         let edge = TextFingerprint.edgeLength
         var out: [Int] = []
@@ -386,20 +429,26 @@ public final class ContentAnchorIndex {
         } else {
             range = Array(segments.indices)
         }
-        for i in range where normalized[i].count > anchor.length {
+        for i in range where normalized[i].count >= anchor.length + Self.containedMinExtraLength {
             let chars = Array(normalized[i])
             let last = chars.count - anchor.length
-            var p = 0
-            while p <= last {
-                if TextFingerprint.digest(chars[p..<(p + edge)]) == anchor.head,
-                   TextFingerprint.digest(chars[(p + anchor.length - edge)..<(p + anchor.length)]) == anchor.tail {
-                    out.append(i)
-                    break
-                }
-                p += 1
+            for p in [0, last] where TextFingerprint.digest(chars[p..<(p + edge)]) == anchor.head
+                && TextFingerprint.digest(chars[(p + anchor.length - edge)..<(p + anchor.length)]) == anchor.tail {
+                out.append(i)
+                break
             }
         }
         return out
+    }
+
+    /// Vero se `text` è un PEZZO INIZIALE del vecchio segmento: più corto, lungo almeno la prima tacca
+    /// della scala (128) e con il prefisso alla tacca più grande che copre uguale a quello del vecchio.
+    private func isInitialPiece(_ text: String, of anchor: ContentAnchor) -> Bool {
+        let n = text.count
+        guard n < anchor.length, let first = Self.ladderLengths.first, n >= first else { return false }
+        let k = Self.ladderLengths.lastIndex { $0 <= n } ?? 0
+        guard anchor.prefixLadder.indices.contains(k) else { return false }
+        return TextFingerprint.digest(text.prefix(Self.ladderLengths[k])) == anchor.prefixLadder[k]
     }
 
     /// Cerca la citazione nel segmento `index`: tutte le posizioni la cui finestra ha l'impronta della
