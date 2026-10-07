@@ -190,9 +190,13 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 48 — 2026-10-07, commit `0f3ec7b` (giro «ancore», `docs/ANCORE_ANNOTAZIONI.md`).** UPLOAD SUCCEEDED, Delivery UUID
+  `67466ea7-ad84-477f-9552-a603507aace0`; processing concluso alle 17:31, note per i tester scritte in «Cosa testare» dalla lane.
+  Prossimo numero: 49. Prima della prossima build: rete sulle annotazioni (`app/ios/scripts/rete_annotazioni.sh`) oltre alla
+  doppia rete, e aggiornare `ReprocessOffer.policy` (`latestCureBuild`) se la build porta una cura da offrire.
 - **Build 47 — 2026-10-07, commit `1f1fdc7` (giro «testatine», `docs/TESTATINE_MISURA_STRUTTURA.md`).** UPLOAD SUCCEEDED,
   Delivery UUID `2be6f4c9-ac99-4fa6-972a-f5d1b90f6686`; processing Apple concluso alle 04:32 e **note per i tester scritte in «Cosa
-  testare» dalla lane** («Successfully set the changelog for build», prima volta). Prossimo numero: 48.
+  testare» dalla lane** («Successfully set the changelog for build», prima volta). Prossimo numero: 48 (poi 49, vedi sopra).
 - **Build 46 — 2026-10-06, commit `a749894` (giro «generazioni del lettore», `docs/GENERAZIONI_LETTORE.md`).** `fastlane beta`
   con `SCABO_BUILD_NUMBER` unset → ultima su App Store Connect 45 → **46**; archive+export OK su Xcode 27, `UPLOAD SUCCEEDED
   with no errors`, Delivery UUID `86ce5c6a-0060-4fd2-b292-d84af60040bd`, `fastlane.tools finished successfully`. Reti verdi
