@@ -44,7 +44,7 @@ final class LibraryRowCell: UITableViewCell {
         backgroundColor = .clear
 
         var openConfig = UIButton.Configuration.plain()
-        openConfig.titleLineBreakMode = .byTruncatingTail
+        openConfig.titleLineBreakMode = .byWordWrapping   // va a capo: mai testo tagliato (audit WCAG, testo grande)
         openConfig.titleAlignment = .leading
         openConfig.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 8)
         openConfig.imagePadding = 12
