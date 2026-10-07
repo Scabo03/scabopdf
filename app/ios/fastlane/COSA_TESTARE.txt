@@ -4,20 +4,21 @@ Cosa è cambiato
 - Dispense scritte con Pages, Word o Google Docs (appunti compresi): i titoli ora si trovano nella navigazione per intestazioni, ciascuno al suo livello, e il testo è diviso nei paragrafi dell'autore invece che in blocchi tutti uguali. Non si perde più l'etichetta «CAP.» dei capitoli, né qualche parola in cima alla pagina che prima veniva scambiata per una testatina.
 - Torrente: i titoli dei paragrafi col segno di paragrafo (più di 700) sono ora intestazioni.
 - Mandrioli-Carratta (quattro volumi), Magnani e Mosconi-Campiglio: le «Sezioni» sono ora intestazioni.
-- Codice penale e Codice civile: il titolo con cui si apre ogni legge complementare è ora un'intestazione di terzo livello. Con il rotore si salta da una legge all'altra.
+- Codice penale e Codice civile: il titolo con cui si apre quasi ogni legge complementare è ora un'intestazione di terzo livello. Con il rotore si salta da una legge all'altra.
 - Rivista DPC 2018 e 2020: gli abstract in spagnolo e in inglese non sono più letti riga per riga come titoli. Nella dispensa di Scoca l'elenco degli autori non è più un titolo.
-- Tornano letti alcuni titoli e alcune righe che sparivano insieme a una testatina: cinque titoli in Costituzionale, un numero di paragrafo in Elementi di diritto UE e, su iPad con iOS 26, 61 righe di fine pagina in Marrone. In quei punti si sente anche la testatina o il piè «Pag.», a volte attaccato all'ultima parola: meglio sentirlo che perdere il testo.
+- Tornano letti alcuni titoli e alcune righe che sparivano insieme a una testatina: cinque titoli in Costituzionale, un numero di paragrafo in Elementi di diritto UE e, con iOS 26, 61 righe di fine pagina in Marrone. In quei punti si sente anche la testatina o il piè «Pag.», spesso attaccato all'ultima parola: meglio sentirlo che perdere il testo.
 - Gli indirizzi web stampati sul retro di copertina non sono più titoli.
 
 Quali libri
 - Dispense e appunti: DPC vol 1, 2 e 3, Estratto e Lezioni Travi (Pages); Appunti DPC (Word); Scoca (Google Docs); Diritto processuale civile vol. 3; Teoria generale del diritto; Voce Imprenditore.
-- Manuali: Torrente, Mandrioli-Carratta 1-4, Magnani, Mosconi-Campiglio, Costituzionale, Elementi di diritto UE; Marrone solo su iPad con iOS 26.
+- Manuali: Torrente, Mandrioli-Carratta 1-4, Magnani, Mosconi-Campiglio, Costituzionale, Elementi di diritto UE; Marrone solo con iOS 26.
 - Codici: penale e civile. Riviste: DPC 2018 e 2020.
 - Tutti gli altri libri si leggono esattamente come prima.
 
 Per i libri già aperti
 - Basta accettare l'offerta «Lettura migliore disponibile»: dalla Home (la riga in alto) o dalle opzioni del libro, il tasto a tre puntini. L'app spiega cosa cambia e chiede conferma.
-- Le annotazioni seguono il testo. Quelle che l'app non ritrova con sicurezza restano «da ricollocare»: non si spostano a caso e non si cancella nulla. Fino alla scelta, la lettura di prima resta sul dispositivo.
+- L'offerta compare per tutti i libri aperti prima di questa build, anche per quelli che non cambiano: per quei libri la nuova lettura è identica a quella di prima.
+- Le annotazioni seguono il testo. Quelle che l'app non ritrova con sicurezza restano «da ricollocare»: non si spostano a caso e non si cancella nulla. Nelle dispense, dove il testo è ora diviso in paragrafi e titoli, circa un segnalibro su quattro resta da ricollocare; una sottolineatura non ritrovata resta salvata ma non si vede. Fino alla scelta, la lettura di prima resta sul dispositivo.
 
 Cosa resta per il prossimo giro
 - Nei manuali i livelli dei titoli: a volte il capitolo e i suoi paragrafi stanno allo stesso livello, o un paragrafo finisce al quarto livello.

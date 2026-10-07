@@ -78,8 +78,10 @@ enum ReprocessOffer {
             text += "Questo libro è stato letto con \(was); ora il lettore di sistema è \(SystemGeneration.current), già verificato per questa versione dell'app. "
         }
         if !list.isEmpty {
-            text += "Da quando il libro è stato aperto la prima volta, l'app ha imparato a leggerlo meglio: "
-                + list.joined(separator: "; ") + "."
+            // Le cure valgono per alcuni tipi di libri, non per tutti: l'offerta lo dice, così chi ha un libro che non
+            // cambia non si aspetta una lettura diversa (revisione indipendente del giro «titoli e testatine»).
+            text += "Da quando il libro è stato aperto la prima volta, l'app ha imparato a leggere meglio alcuni libri: "
+                + list.joined(separator: "; ") + ". Se questo libro non è fra quelli, la nuova lettura resta uguale."
         }
         return text
     }
