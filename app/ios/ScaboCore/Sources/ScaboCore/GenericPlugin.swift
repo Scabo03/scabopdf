@@ -659,8 +659,12 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                         }
                     }
                 }
+                // Regola d'oro: una riga di banda che porta CONTENUTO in più — qui le lettere di un elenco del
+                // corpo che PDFKit ha fuso con la testatina (Nomofanie) — resta, anche se è sulla riga del folio:
+                // meglio una testatina letta che una lettera d'elenco persa.
                 bandRows.append(BandRow(key: key, page: page.pageIndex, yFrac: yFrac, substantial: isSubstantial(sm.text),
-                                        excluded: opensExcludedApparatusRegion(sm.text)))
+                                        excluded: opensExcludedApparatusRegion(sm.text)
+                                            || carriesBodyListMarkers(line, bodySize: bodySizeForFurniture)))
             }
             // I canali ancorati accettano righe fino a ANCHORED_FURNITURE_MAX_CHARS; sopra, nulla.
             if sm.text.utf16.count > ANCHORED_FURNITURE_MAX_CHARS { continue }
@@ -817,6 +821,24 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         furniture.formUnion(codiciFurnitureLines(extraction))
     }
     return furniture
+}
+
+private let LIST_MARKER_TOKEN_RE = try! NSRegularExpression(pattern: "^(?:[a-z]|[ivx]{1,4})\\)$")
+
+/// Vero se la riga ha uno span alla TAGLIA DEL CORPO (±0,3) fatto solo di marcatori d'elenco («a)», «b)»,
+/// «iv)»): è la firma di una fusione di PDFKit fra la testatina (più piccola) e le lettere di un elenco
+/// del corpo che stanno alla stessa quota (giro «ancore», Nomofanie pp. 62-63). Guardia la più stretta
+/// possibile: serve lo span a taglia di corpo E che contenga soltanto marcatori.
+func carriesBodyListMarkers(_ line: PdfTextLine, bodySize: Double) -> Bool {
+    guard bodySize > 0 else { return false }
+    for span in line.spans where abs(span.fontSize - bodySize) <= 0.3 {
+        let toks = span.text.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+        guard !toks.isEmpty else { continue }
+        if toks.allSatisfy({ LIST_MARKER_TOKEN_RE.firstMatch(in: $0, range: NSRange($0.startIndex..<$0.endIndex, in: $0)) != nil }) {
+            return true
+        }
+    }
+    return false
 }
 
 /// Testatine correnti della Rivista DPC che sfuggono al position-lock perché il TITOLO
