@@ -969,6 +969,23 @@ contenuto (§ 2 di quel documento) e la rete che le prova sui 52 volumi. Un'anco
 («da ricollocare»), mai si salta altrove in silenzio e mai si cancella. Fino ad allora la reimportazione resta l'unica via, e
 le note per i tester devono dire che crea una copia nuova senza le annotazioni della vecchia.
 
+**Stato (2026-10-07, build 48):** la condizione è soddisfatta — ancore per contenuto e rete sulle annotazioni con zero
+ricollocazioni sbagliate su entrambe le generazioni (`docs/ANCORE_ANNOTAZIONI.md`) — e l'offerta è costruita: riga in Home,
+opzione del libro, stato nel referto; due gesti per accettare; la lettura precedente resta sul dispositivo finché l'utente
+non sceglie quale tenere.
+
+### 12.14 Un'annotazione non si sposta mai in silenzio (principio, 2026-10-07)
+
+Segnalibri, sottolineature e posizione di lettura sono ancorati al **contenuto** (impronte del testo normalizzato, mai il
+testo stesso), non alla posizione nella sequenza dei nodi. Dopo **qualunque** rielaborazione — offerta, cache mancante,
+cura, altra generazione del lettore di sistema — ogni annotazione **o è al suo posto, verificato, oppure l'app lo dice**:
+il segnalibro non ritrovato sta in fondo alla lista come «da ricollocare» (anche per VoiceOver) e il salto porta all'inizio
+della pagina d'origine annunciandolo; la sottolineatura non ritrovata resta salvata ma non si mostra e non impedisce di
+farne una nuova; la posizione non ritrovata riparte dall'inizio della stessa pagina e lo si annuncia alla riapertura.
+Un'annotazione non si cancella mai per una rielaborazione, e non si ricolloca mai «quasi» sicura: la soglia è tarata sul
+danno (meglio un'orfana dichiarata che un passo sbagliato dato per certo). È il fondamento della futura sincronizzazione
+fra iPad e Mac: ciò che viaggia sono impronte, non testo dei volumi.
+
 ---
 
 ## 13. Ricerca testuale

@@ -1,15 +1,17 @@
-Build 47 — testatine e piè di pagina
+Build 48 — le annotazioni seguono il testo, e l'offerta di rielaborazione
 
 Cosa è cambiato
-- L'app riconosce meglio le righe che si ripetono su ogni pagina: il titolo del capitolo o del paragrafo in testa e il numero di pagina. Prima, in alcuni libri, venivano lette come una riga a sé, a volte annunciate come «Nota», oppure come un'intestazione di primo livello. Ora non entrano nel flusso di lettura e non compaiono fra le intestazioni.
-- Le etichette di capitolo e di parte («Capitolo secondo», «Parte prima») che prima erano lette come testo normale sono ora intestazioni: le trovate nella navigazione per intestazioni.
+- Segnalibri, sottolineature e il punto in cui sei arrivato ora sono legati al testo, non alla posizione: se un libro viene letto di nuovo con una versione migliore dell'app, restano sul passo giusto.
+- Se un'annotazione non si ritrova con sicurezza, l'app non la sposta a caso: il segnalibro resta in fondo alla lista dei segnalibri con la scritta «da ricollocare», e toccandolo ti porta all'inizio della pagina da cui veniva, dicendolo. Non si cancella nulla.
+- Piccola correzione: in Nomofanie, dove il lettore di sistema incollava il titolo in testa alla pagina alle lettere di un elenco, la lettera dell'elenco non si perde più.
 
-Su quali libri si sente
-- Rizzo, La causalità civile: le testatine di capitolo non sono più lette come note.
-- Marrone, Istituzioni di diritto romano: il piè di pagina «Pag. …» non è più un'intestazione di primo livello. Su iPad con iOS 26 può ancora capitare di sentirlo in coda a una frase, dove il lettore di sistema lo incolla al testo: lo sappiamo, non dipende dall'app.
-- Mandrioli-Carratta (tutti e quattro i volumi), Lineamenti di parte speciale, Compendio di procedura penale, Patriarca-Benazzo, Nomofanie, Lezioni di storia della codificazione, Codice penale: meno testatine lette, qualche capitolo o libro in più fra le intestazioni.
+L'offerta di rielaborazione
+- I libri aperti con le build precedenti non hanno ancora le cure delle build 46, 47 e 48 (parole non più incollate, titolo corrente e numero di pagina non più letti come testo, annotazioni legate al testo). Ora l'app te lo offre.
+- Nella Home, in alto, compare la riga «Lettura migliore disponibile per …libri». Toccala: si apre l'elenco. Tocca un libro: l'app ti spiega cosa cambia, quanto tempo serve e cosa succede alle tue annotazioni. Niente parte da solo.
+- Per rielaborare tocca «Rielabora…» e poi conferma. Si può anche dalle opzioni del libro (il tasto a tre puntini): «Lettura migliore disponibile…».
+- Conviene accettare per avere le cure delle build precedenti su tutta la libreria, un libro alla volta.
+- Alla fine l'app ti dice quante annotazioni sono al loro posto e quante sono da ricollocare, e ti chiede se tenere la nuova lettura o tornare a quella di prima. Finché non scegli, la lettura di prima resta sul dispositivo: dalle opzioni del libro puoi sempre tornarci.
 
-Da sapere
-- I libri già aperti restano letti come prima: l'app non li rielabora da sola.
-- Per sentire la novità su un libro bisogna reimportarlo dal file. Attenzione: la reimportazione crea una copia nuova del libro, senza i segnalibri, i tag e le sottolineature della copia vecchia e senza la posizione di lettura. La copia vecchia resta in libreria con tutto il suo.
-- Nel referto di elaborazione di ogni libro c'è una riga che dice con quale versione di sistema e quale build dell'app il libro è stato letto.
+Le annotazioni che hai già
+- Non si perdono. La prima volta che apri un libro con questa build, l'app lega al testo le annotazioni che già ci sono; poi, se rielabori, le ritrova nel testo nuovo.
+- Se un libro non era mai stato riaperto e la sua lettura salvata manca, le sue annotazioni compaiono come «da ricollocare».

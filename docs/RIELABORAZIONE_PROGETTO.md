@@ -1,5 +1,12 @@
 # Rielaborazione dei libri — accertamento sulle annotazioni e progetto dell'offerta
 
+> **Aggiornamento 2026-10-07 (giro «ancore», build 48): costruito.** Le ancore per contenuto (§ 2 di questo documento) e
+> l'offerta (§ 3) sono implementate e provate; il disegno definitivo diverge da quello proposto qui in tre punti: l'impronta
+> usa testa/coda di 64 lettere, una scala di prefissi e una finestra di ±2 pagine anche per i riscontri esatti (la rete ha
+> bocciato le varianti più permissive); la copia precedente resta finché l'utente non sceglie (non 30 giorni); le
+> annotazioni senza ancora diventano orfane dichiarate. Riferimento attuale: `docs/ANCORE_ANNOTAZIONI.md`; principio in
+> `LAYER2_PRODUCT_DECISIONS.md` § 12.14. Questo documento resta come accertamento e storia del progetto.
+
 > Giro del 2026-10-07. **Documento di progetto, senza codice di prodotto.** Politica approvata dal maintainer
 > (`docs/GENERAZIONI_LETTORE.md` § 5, ora registrata in `docs/LAYER2_PRODUCT_DECISIONS.md` § 12.13): offrire la rielaborazione
 > dei libri, mai imporla, solo dopo che la nuova versione di sistema è passata dalla doppia rete; **e la stessa offerta
