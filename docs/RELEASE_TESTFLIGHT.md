@@ -190,6 +190,13 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 49 — 2026-10-07, commit `6e9e551` (giro «titoli e testatine», `docs/TITOLI_MONOTIPOGRAFICI.md`).** `fastlane beta`
+  exit 0 (ultima su App Store Connect 48 → **49**; archivio incrementale in 20 s), UPLOAD SUCCEEDED, Delivery UUID
+  `b13c2c37-dd5d-494b-a1f4-cee911cb6d47`, «Successfully set the changelog for build» alle 23:14: note per i tester da
+  `app/ios/fastlane/COSA_TESTARE.txt` (3.056 caratteri, provate prima con `fastlane note_tester`). Archivio verificato dopo il
+  caricamento: `CFBundleVersion` 49 e nel binario i testi del codice finale (offerta riformulata, titoli di legge dei codici).
+  Reti verdi sulle due generazioni (foto `fin2`) e rete sulle annotazioni a 0 ricollocazioni sbagliate; `latestCureBuild` 49.
+  Prossimo numero: 50.
 - **Build 48 — 2026-10-07, commit `0f3ec7b` (giro «ancore», `docs/ANCORE_ANNOTAZIONI.md`).** UPLOAD SUCCEEDED, Delivery UUID
   `67466ea7-ad84-477f-9552-a603507aace0`; processing concluso alle 17:31, note per i tester scritte in «Cosa testare» dalla lane.
   Prossimo numero: 49. Prima della prossima build: rete sulle annotazioni (`app/ios/scripts/rete_annotazioni.sh`) oltre alla
