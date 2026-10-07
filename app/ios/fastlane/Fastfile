@@ -56,7 +56,34 @@ def install_signing(api_key)
   )
 end
 
+# Le note per i tester della build che si sta caricando. File di testo in italiano piano, nel repo,
+# riscritto a ogni build (il contenuto va in «Cosa testare» su TestFlight). Obbligatorio e non vuoto.
+def notes_path
+  candidates = [
+    (__dir__ ? File.expand_path("COSA_TESTARE.txt", __dir__) : nil),
+    File.expand_path("fastlane/COSA_TESTARE.txt"),
+    File.expand_path("COSA_TESTARE.txt"),
+  ].compact
+  candidates.find { |c| File.exist?(c) } || candidates.first
+end
+def testflight_notes!
+  path = notes_path
+  unless File.exist?(path)
+    UI.user_error!("Mancano le note per i tester: scrivi fastlane/COSA_TESTARE.txt (italiano piano) prima di caricare.")
+  end
+  notes = File.read(path).strip
+  UI.user_error!("fastlane/COSA_TESTARE.txt è vuoto: le note per i tester sono obbligatorie.") if notes.empty?
+  UI.user_error!("fastlane/COSA_TESTARE.txt supera i 4000 caratteri ammessi da TestFlight.") if notes.length > 4000
+  UI.message("Note per i tester (#{notes.length} caratteri):\n#{notes}")
+  notes
+end
+
 platform :ios do
+  desc "Controlla e stampa le note per i tester (fastlane/COSA_TESTARE.txt) senza caricare nulla."
+  lane :note_tester do
+    testflight_notes!
+  end
+
   desc "Installa (o, con MATCH_READONLY=false, rigenera) cert+profilo App Store via Match."
   lane :setup_signing do
     install_signing(asc_api_key)
@@ -66,6 +93,8 @@ platform :ios do
        "(-project, MAI -workspace: niente Pods/RN), esporta con ExportOptions.plist, " \
        "carica su TestFlight. NON rigenera la firma (match readonly di default)."
   lane :beta do
+    # 0) Note per i tester: si leggono per prime, così una build senza note non parte nemmeno.
+    changelog = testflight_notes!
     api_key = asc_api_key
 
     # 1) Firma: installa cert "Apple Distribution" + profilo "match AppStore
@@ -108,11 +137,20 @@ platform :ios do
       ].join(" ")
     )
 
-    # 4) Upload su TestFlight con la chiave API ASC. Non attende il processing Apple.
+    # 4) Note per i tester («Cosa testare»): OBBLIGATORIE per ogni build (decisione permanente del
+    #    maintainer, 2026-10-07). Vivono in fastlane/COSA_TESTARE.txt, italiano piano, aggiornate a ogni
+    #    build. Senza note la lane si ferma PRIMA dell'archive: niente build muta su TestFlight.
+    # 5) Upload su TestFlight con la chiave API ASC. ATTENDE il processing Apple (qualche minuto): è la
+    #    condizione perché le note finiscano nel campo «Cosa testare» della build (con
+    #    `skip_waiting_for_build_processing: true` fastlane non può scriverle).
     upload_to_testflight(
       api_key: api_key,
       app_identifier: APP_ID,
-      skip_waiting_for_build_processing: true
+      changelog: changelog,
+      skip_waiting_for_build_processing: false,
+      wait_processing_interval: 60,
+      distribute_external: false,
+      notify_external_testers: false
     )
   end
 end

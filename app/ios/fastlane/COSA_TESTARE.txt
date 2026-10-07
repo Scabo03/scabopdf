@@ -1,0 +1,15 @@
+Build 47 — testatine e piè di pagina
+
+Cosa è cambiato
+- L'app riconosce meglio le righe che si ripetono su ogni pagina: il titolo del capitolo o del paragrafo in testa e il numero di pagina. Prima, in alcuni libri, venivano lette come una riga a sé, a volte annunciate come «Nota», oppure come un'intestazione di primo livello. Ora non entrano nel flusso di lettura e non compaiono fra le intestazioni.
+- Le etichette di capitolo e di parte («Capitolo secondo», «Parte prima») che prima erano lette come testo normale sono ora intestazioni: le trovate nella navigazione per intestazioni.
+
+Su quali libri si sente
+- Rizzo, La causalità civile: le testatine di capitolo non sono più lette come note.
+- Marrone, Istituzioni di diritto romano: il piè di pagina «Pag. …» non è più un'intestazione di primo livello.
+- Mandrioli-Carratta (tutti e quattro i volumi), Lineamenti di parte speciale, Compendio di procedura penale, Patriarca-Benazzo, Nomofanie, Lezioni di storia della codificazione, Codice penale: meno testatine lette, qualche capitolo o libro in più fra le intestazioni.
+
+Da sapere
+- I libri già aperti restano letti come prima: l'app non li rielabora da sola.
+- Per sentire la novità su un libro bisogna reimportarlo dal file. Attenzione: la reimportazione crea una copia nuova del libro, senza i segnalibri, i tag e le sottolineature della copia vecchia e senza la posizione di lettura. La copia vecchia resta in libreria con tutto il suo.
+- Nel referto di elaborazione di ogni libro c'è una riga che dice con quale versione di sistema e quale build dell'app il libro è stato letto.

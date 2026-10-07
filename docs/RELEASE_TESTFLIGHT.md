@@ -51,6 +51,18 @@ fastlane beta
 Esito atteso: `... upload_to_testflight ...` → `UPLOAD SUCCEEDED` → `fastlane.tools finished
 successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di processing Apple.
 
+## Note per i tester («Cosa testare») — obbligatorie da build 47 (decisione permanente del maintainer, 2026-10-07)
+
+Ogni build caricata su TestFlight porta le note per i tester nel campo «Cosa testare», in italiano piano. La lane `beta`
+le legge da **`app/ios/fastlane/COSA_TESTARE.txt`** (file nel repo, riscritto a ogni build, ≤ 4.000 caratteri) e **si ferma
+prima dell'archive se il file manca o è vuoto**: niente build muta. Le note finiscono nel campo «Cosa testare» della build
+tramite `upload_to_testflight(changelog:)`, che per riuscirci deve **attendere il processing Apple** (qualche minuto:
+`skip_waiting_for_build_processing: false`, controllo ogni 60 s); prima della 47 la lane non attendeva e il campo restava
+vuoto, da riempire a mano. `fastlane note_tester` controlla e stampa le note senza caricare nulla. Struttura consigliata
+delle note: che cosa è cambiato; su quali libri si sente; che i libri già aperti restano letti come prima finché non vengono
+reimportati; che reimportare crea una copia nuova senza le annotazioni della vecchia (finché `docs/RIELABORAZIONE_PROGETTO.md`
+§ 2 non è costruito).
+
 ## Numero di build
 
 - La lane usa `ENV["SCABO_BUILD_NUMBER"]` **se presente** (anche stringa vuota = valore!), altrimenti
@@ -178,6 +190,8 @@ successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di 
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 47 — 2026-10-07 (giro «testatine», `docs/TESTATINE_MISURA_STRUTTURA.md`).** Vedi la coda di questa nota dopo il
+  caricamento. Prima build con le note per i tester inviate dalla lane.
 - **Build 46 — 2026-10-06, commit `a749894` (giro «generazioni del lettore», `docs/GENERAZIONI_LETTORE.md`).** `fastlane beta`
   con `SCABO_BUILD_NUMBER` unset → ultima su App Store Connect 45 → **46**; archive+export OK su Xcode 27, `UPLOAD SUCCEEDED
   with no errors`, Delivery UUID `86ce5c6a-0060-4fd2-b292-d84af60040bd`, `fastlane.tools finished successfully`. Reti verdi
