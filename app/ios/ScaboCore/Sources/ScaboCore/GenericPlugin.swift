@@ -264,6 +264,9 @@ struct Profile {
     /// Quando c'è, `pageItems` riconosce titoli e paragrafi dalla geometria (MonoTitles.swift). Dove è
     /// nil (tutti i volumi editoriali) → no-op, byte-identico per costruzione.
     var mono: MonoCalibration? = nil
+    /// Export DeJure (firma di `extractionIsDejure`, la stessa della porta del ramo): accende al livello delle righe la
+    /// foglia dei titoli in grassetto (DejureTitles.swift) e la guardia del timbro nel colophon di front-matter.
+    var isDejure: Bool = false
 }
 
 // MARK: - The plugin
@@ -360,8 +363,8 @@ public final class GenericPlugin: ExtractionPlugin {
         let sections = profile.mono == nil ? promoteSectionLabels(&nodes) : 0
         // Livelli dei manuali (D.10): classi d'unità, livello relativo dei titoli numerati, compattazione, tetto a 4.
         // Non nei monotipografici, nell'Estratto (struttura blindata) né nei DeJure (costruiti col Generic).
-        let manualLevels = profile.mono == nil && !profile.isEstrattoChrome
-            && dejurePlugin.matches(extraction) < DISPATCH_THRESHOLD ? normalizeManualLevels(&nodes) : 0
+        let manualLevels = profile.mono == nil && !profile.isEstrattoChrome && !profile.isDejure
+            ? normalizeManualLevels(&nodes) : 0
         // Testatina corrente ricorrente (titolo capitolo recto, lunga, ripetuta) sfuggita al
         // cap-caratteri della furniture e finita come NOTE → ARTIFACT_RUNNING_HEADER (non-letta).
         // GATED Estratto: no-op (e nodi invariati) sugli altri volumi.
@@ -557,7 +560,7 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
     return Profile(
         bodySize: bodySize, bodyColor: bodyColor,
         isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc, isCodici: isCodici,
-        isGiappichelliPhotoshop: isGiappichelliPhotoshop, mono: mono)
+        isGiappichelliPhotoshop: isGiappichelliPhotoshop, mono: mono, isDejure: extractionIsDejure(extraction))
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
@@ -1689,7 +1692,10 @@ func pageItems(
     // scartate dal flusso (vedi BuildSegments) ma conservate. La prefazione è prosa:
     // non è colophon (nessun ISBN/©) né indice (niente leader) → resta letta.
     if page.pageIndex < frontMatterMaxPage, !content.isEmpty {
-        if isFrontMatterColophon(content) { return [.apparatus(.ARTIFACT_STAMP, content)] }
+        // DeJure: il timbro «… © Copyright Giuffrè …» è mobilia che il ramo stacca da sé; da solo non fa della pagina un
+        // colophon (negli export brevi l'ultima pagina, che lo porta, spariva intera dalla lettura).
+        let colophonProbe = profile.isDejure ? content.filter { !isDejureStampLine($0.text) } : content
+        if isFrontMatterColophon(colophonProbe) { return [.apparatus(.ARTIFACT_STAMP, content)] }
         if isFrontMatterIndex(content) { return [.apparatus(.TOC_GENERAL, content)] }
     }
 
@@ -1833,8 +1839,10 @@ func pageItems(
     // fonde (un titolo distinto inghiottito = punto di navigazione perso, danno peggiore del
     // difetto). Sta DENTRO pageItems → `appendPageNodes` e `bindAndPlaceNotes` la vedono → zip 1:1.
     // Unità «etichetta + titolo» dei manuali (D.10): un titolo solo, livello fissato poi da `normalizeManualLevels`.
-    // No-op nei codici, nella DPC, nei monotipografici e nell'Estratto.
-    return fuseStructureUnits(consolidateAdjacentHeadings(withMono, profile), pageWidth: page.width, profile)
+    // No-op nei codici, nella DPC, nei monotipografici, nell'Estratto e nei DeJure.
+    // Titoli in grassetto a taglia di corpo degli export DeJure (DejureTitles.swift); no-op fuori da DeJure.
+    let withDejure = recognizeDejureBoldTitles(withMono, profile)
+    return fuseStructureUnits(consolidateAdjacentHeadings(withDejure, profile), pageWidth: page.width, profile)
 }
 
 // ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────

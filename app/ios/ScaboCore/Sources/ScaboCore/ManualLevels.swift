@@ -34,7 +34,7 @@
 //     invariato (misura in `docs/TITOLI_MONOTIPOGRAFICI.md`).
 //
 //  Gate: non nei codici, nella DPC, nei documenti monotipografici, nell'Estratto (struttura blindata dalla sua
-//  foglia), né nei DeJure (la parte 2 si chiama solo dove il chiamante lo decide).
+//  foglia), né nei DeJure (titoli e livelli dalla loro foglia, DejureTitles.swift).
 //
 
 import Foundation
@@ -132,7 +132,7 @@ private func manualMidX(_ lines: [LineSummary]) -> Double {
 
 /// Fonde l'etichetta sola e il titolo che la segue sulla stessa pagina in un titolo unico (vedi la testata).
 func fuseStructureUnits(_ items: [GenItem], pageWidth: Double, _ profile: Profile) -> [GenItem] {
-    guard !profile.isCodici, !profile.isRivistaDpc, profile.mono == nil, !profile.isEstrattoChrome else { return items }
+    guard !profile.isCodici, !profile.isRivistaDpc, profile.mono == nil, !profile.isEstrattoChrome, !profile.isDejure else { return items }
     let tolerance = max(8.0, 0.03 * pageWidth)
     var out: [GenItem] = []
     var i = 0

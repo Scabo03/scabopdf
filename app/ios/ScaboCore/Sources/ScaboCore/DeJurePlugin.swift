@@ -64,6 +64,22 @@ private func isDejureFooterLine(_ line: PdfTextLine) -> Bool {
     return DEJURE_FOOTER_REGEX.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) != nil
 }
 
+/// Firma DeJure a tre segnali, tutti necessari: producer Aspose, prima pagina Letter 612×792 (±6), piè «Pagina N di M»
+/// in una delle prime 8 pagine. Condivisa dalla porta del ramo (`DeJurePlugin.matches`) e dal profilo del tronco
+/// (`Profile.isDejure`, giro finale 2026-10-08), così le due porte non possono divergere.
+func extractionIsDejure(_ extraction: PdfExtraction) -> Bool {
+    let meta = ((extraction.producer ?? "") + " " + (extraction.creator ?? "")).lowercased()
+    guard meta.contains("aspose") else { return false }
+    guard let p = extraction.pages.first,
+          abs(p.width - 612.0) <= 6.0, abs(p.height - 792.0) <= 6.0 else { return false }
+    return extraction.pages.prefix(8).contains { $0.lines.contains(where: isDejureFooterLine) }
+}
+
+/// Riga del timbro DeJure («SERVIZIO GESTIONE RISORSE DOCUMENTARIE © Copyright Giuffrè …», anche spezzato su due righe).
+func isDejureStampLine(_ text: String) -> Bool {
+    text.contains("SERVIZIO GESTIONE RISORSE") || text.range(of: "Copyright Giuffr", options: .caseInsensitive) != nil
+}
+
 /// Vero se il testo di un nodo è furniture DeJure da sopprimere (timbro o banner).
 func isDejureFurnitureText(_ text: String) -> Bool {
     let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -77,23 +93,8 @@ public final class DeJurePlugin: ExtractionPlugin {
     // MARK: matches — gate congiunto a tre segnali
 
     public func matches(_ extraction: PdfExtraction) -> Double {
-        // 1) Producer auto-dichiarante: Aspose.PDF (solo i volumi DeJure nel corpus).
-        let meta = ((extraction.producer ?? "") + " " + (extraction.creator ?? "")).lowercased()
-        guard meta.contains("aspose") else { return 0.0 }
-        // 2) Geometria Letter 612×792.
-        guard let p = extraction.pages.first,
-              abs(p.width - 612.0) <= 6.0, abs(p.height - 792.0) <= 6.0 else { return 0.0 }
-        // 3) Piè "Pagina N di M" presente (discriminatore pulito; scansione delle righe grezze).
-        guard extractionHasDejureFooter(extraction) else { return 0.0 }
-        return 0.95
-    }
-
-    /// Vero se almeno una riga (su un campione delle prime pagine) è il piè "Pagina N di M".
-    private func extractionHasDejureFooter(_ extraction: PdfExtraction) -> Bool {
-        for page in extraction.pages.prefix(8) {
-            if page.lines.contains(where: isDejureFooterLine) { return true }
-        }
-        return false
+        // Producer Aspose + Letter 612×792 + piè "Pagina N di M" (firma condivisa con il profilo del tronco).
+        extractionIsDejure(extraction) ? 0.95 : 0.0
     }
 
     // MARK: build — delega al Generic, poi ritocca la sola furniture
