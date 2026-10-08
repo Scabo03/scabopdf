@@ -31,7 +31,9 @@ Affidabilità dichiarata per volume, mai verde per default (regole in quest'ordi
   verità tipografica con ≥ 10 titoli, confermata ≥ 80 % dall'oracolo dell'editore dove c'è: «misurato (tipografia…)»;
   ≥ 5 segnalibri: «parziale (solo segnalibri)»; altrimenti «NON misurato».
 Prova al contrario (docs): con il canale dei titoli spento la misura deve accendersi; con un cambiamento innocuo
-restare identica.
+restare identica; con titoli falsi iniettati devono accendersi gli inventati.
+Metro «a unità» (giro finale 2026-10-08, docs/TITOLI_MONOTIPOGRAFICI.md § 7.6): un'intestazione che fonde etichetta e
+titolo vale per entrambe le voci di verità della sua pagina (ritrovati) e conta una volta nella mappa dei livelli.
 
 Nessun testo dei volumi in uscita: solo conteggi, pagine, livelli, ruoli.
 Uso: misura_titoli.py <dir_letture> <lista.json> <out.md> [--corpus DIR] [--json OUT.json] [--esempi N]
@@ -509,6 +511,12 @@ def measure(vol, let_dir, corpus):
     for t in truth:
         j = find(t, app, used)
         if j is None:
+            # METRO «A UNITÀ» (giro finale 2026-10-08): un'intestazione dell'app che fonde etichetta e titolo
+            # (CAPITOLO I + titolo) assorbe anche la seconda voce di verità della stessa pagina se ne contiene il
+            # testo per intero; senza, l'unità fusa contava come un titolo trovato e uno perso.
+            nt = norm(t["text"])
+            j = next((k for k in used if app[k]["page"] == t["page"] and len(nt) >= 4 and nt in norm(app[k]["text"])), None)
+        if j is None:
             lost.append(t)
         else:
             used.add(j); found.append((t, app[j]))
@@ -534,7 +542,13 @@ def measure(vol, let_dir, corpus):
     if mode == "tipografica":
         sizes = sorted({t["size"] for t, _ in found}, reverse=True)
         rank = {s: i + 1 for i, s in enumerate(sizes)}
+        seen_ids = set()
         for t, a in found:
+            # metro «a unità»: due voci di verità nella STESSA intestazione (etichetta + titolo fusi) sono un'unità
+            # sola: conta solo la prima per la mappa dei livelli
+            if a["id"] in seen_ids:
+                continue
+            seen_ids.add(a["id"])
             lvl_map[f"t{rank[t['size']]}{'b' if t['bold'] else ''}"][a["level"]] += 1
     for o in ol:
         j = find(o, app)
