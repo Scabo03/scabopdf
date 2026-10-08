@@ -95,8 +95,14 @@ del giro, togliendo apposta il contenuto annotato 2 segnalibri (DPC 2020, ricoll
 MM 1, ST+MM 2) vengono ricollocati invece di restare orfani, perché il testo del titolo si ripete nel corpo (il titolo di massima
 è anche la prima frase della massima). È il rischio dichiarato in `ANCORE_ANNOTAZIONI.md` § 7, ora esercitato. I confronti reali
 restano verdi: catena 3.081/3.081 (iOS 27) e 3.068/3.068 (26.5) senza orfani, altra generazione e catena b44 a 0 sbagliate.
-Non curato (fase chiusa): da affrontare in apertura della fase successiva, prima di ogni nuova cura che tocchi titoli ripetuti
-nel corpo (per esempio: ricollocazione per contenimento solo fra segmenti dello stesso ruolo).
+**Curato lo stesso giorno** (commit «fix(ancore): un titolo ripetuto nel corpo non attira più l'ancora…», dettaglio in
+`ANCORE_ANNOTAZIONI.md` § 7.1): due regole decise quando l'ancora viene coniata, con campi opzionali (`containedElsewhere`: il
+testo già contenuto in un altro segmento della finestra non usa il riscontro per contenimento; `familyTwins`: gemelli esatti di
+un'altra famiglia di ruolo, rango e conteggio nella famiglia), più il giudice reso simmetrico per le citazioni orfane dei gemelli (prudente solo con un gemello davvero sostituito).
+Scartata la regola generale «stesso ruolo» (avrebbe reso orfane ricollocazioni giuste prodotte dalle cure 47-50 e fatto fallire
+la prova «scambio»). Rete contro le basi `v7`: **verde su entrambe le generazioni** (0 righe rosse); confronti reali invariati
+ancora per ancora (catena 3.081/3.081 e 3.068/3.068, altra generazione 30/22 orfane, b44 863/862, 0 sbagliate, nessuna orfana
+nuova); ScaboCore 776, ScaboAppTests 139; verifica indipendente senza rilievi bloccanti. Nessuna build: la cura entra nella prossima.
 
 ## ▶ STATO — Titoli e testatine: misura dei titoli, dispense monotipografiche, codici, manuali, righe fuse → build 49 — 2026-10-07 (sera)
 

@@ -161,3 +161,48 @@ generazioni; blocchi persi rispetto alla base 2 → **0**; misura invariata (719
   mentre un altro compare nella stessa finestra (il conteggio torna e il rango può indicare l'altro); una chiusura dell'app
   fra la scrittura della cache e il riancoraggio quando le annotazioni non avevano ancora l'ancora e mancava la cache.
 - Riancoraggio sul thread principale quando l'apertura di un volume enorme rielabora (una volta): ~1,4 s sul Mac.
+
+### 7.1 Testo del titolo ripetuto nel corpo (osservato e curato, 2026-10-08)
+
+**Osservato (campo).** Con le basi del laboratorio promosse alla foto `v7`, la prova al contrario «orfana» è diventata rossa su
+entrambe le generazioni, perché il campione sintetico comprende ora i titoli del giro finale:
+- **DPC 2020, 2 segnalibri su titoli d'articolo (H2).** Tolto il titolo, l'ancora finiva per contenimento nel blocco di corpo
+  della pagina prima (titolo + traduzioni), che lo ripete in testa. Quel blocco lo conteneva già quando l'ancora è nata: non è
+  una fusione.
+- **DeJure, 3 citazioni.** Erano su segmenti con gemelli identici nel volume (una riga di rinvio alla sentenza ripetuta tre
+  volte, una nota ripetuta nove), di cui la prova aveva sostituito un gemello. L'orfana è la prudenza voluta dei gemelli; il
+  giudice della rete la accettava per i segnalibri ma la contava come errore per le citazioni.
+
+**Cura.** Due regole decise quando l'ancora viene coniata, con due campi opzionali dell'ancora (`nil` nelle ancore coniate prima,
+che si comportano come prima; JSON identico per le ancore senza doppioni):
+1. `containedElsewhere`: il testo stava già a un'estremità di un altro segmento più lungo della finestra → il riscontro per
+   contenimento non vale per quell'ancora.
+2. `familyTwins`: gemelli esatti nella finestra con un'altra famiglia di ruolo (titoli contro tutto il resto: il titolo di una
+   massima DeJure è anche la prima frase del corpo) → rango e conteggio nella famiglia dell'ancora; se l'impronta resta solo
+   nell'altra famiglia, orfana.
+
+Nel giudice (`rete_annotazioni.py`), la citazione orfana nella prova «orfana» il cui segmento ha un gemello nel volume davvero
+sostituito dalla prova conta come prudente, come il segnalibro; la stessa condizione stretta vale ora per i segnalibri (prima
+bastava avere gemelli), su rilievo della verifica indipendente. Una ricollocazione sbagliata resta errore.
+
+**Scartata la regola generale «solo fra segmenti dello stesso ruolo».** Avrebbe reso orfane ricollocazioni giuste fra ruoli
+diversi prodotte dalle cure delle build 47-50: un'etichetta passata da corpo a titolo, le traduzioni della DPC passate da righe
+H3 al blocco di corpo. Avrebbe anche fatto fallire la prova «scambio», che porta un testo dentro un segmento di altro ruolo.
+
+**Reti (campo, foto `prom` contro le basi `v7`, entrambe le generazioni).**
+- Prova «orfana»: segnalibri sbagliati 2 → 0, citazioni sbagliate 3 → 0.
+- «Scambio» e «scorri»: invariate, verdi.
+- Confronti reali invariati ancora per ancora: catena 3.081/3.081 (iOS 27) e 3.068/3.068 (26.5), altra generazione 30 e 22
+  orfane, catena b44 863 e 862 orfane, 0 sbagliate. Nessuna orfana nuova.
+- Nella prova «orfana» cambiano esito 4 ancore per generazione: i 2 segnalibri della DPC diventano orfani; 2 segnalibri intatti
+  (DeJure ST+MM e Lezioni storia), prima orfani prudenti per un gemello dell'altra famiglia, ora si
+  ricollocano esatti e giusti.
+- Test: `ContentAnchorTests` (3 nuovi, con prova al contrario: con il campo azzerato torna il comportamento di prima); ScaboCore
+  776 e ScaboAppTests 139 (9 saltati) verdi.
+- Verifica indipendente (sotto-agente, solo diff e numeri): nessun rilievo bloccante; su 10.143 ancore coniate, 35 portano i campi
+  nuovi (28 gemelli di famiglia, 7 contenimento) e le altre hanno JSON identico; ancore vecchie riancorate col codice nuovo con
+  esiti identici in 624/624 esecuzioni. Rischi dichiarati: una fusione vera di un testo che stava già in testa a un blocco vicino
+  diventa orfana dichiarata (0,35 % delle ancore, nessuna perdita fra i 343 riscontri per contenimento della catena b44); un
+  elemento gemellato che una cura futura spostasse fra titolo e testo diventerebbe orfano invece di seguire il rango.
+
+La cura entra nella build successiva alla 50.

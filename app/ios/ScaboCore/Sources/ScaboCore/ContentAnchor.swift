@@ -140,12 +140,21 @@ public struct ContentAnchor: Codable, Equatable, Sendable {
     public var windowCount: Int
     /// Indice di lettura alla creazione: suggerimento e fallback dichiarato, mai prova.
     public var orderIndexHint: Int
+    /// Il testo stava GIÀ, a un'estremità, dentro un altro segmento della finestra quando l'ancora è stata coniata
+    /// (un titolo ripetuto in testa a un blocco più lungo: il titolo d'articolo della DPC e il blocco titolo +
+    /// traduzioni della pagina prima). Quel segmento non è una fusione: per questa ancora il riscontro per
+    /// contenimento non vale. `nil` nelle ancore coniate prima del 2026-10-08: comportamento invariato.
+    public var containedElsewhere: Bool?
+    /// Gemelli esatti nella finestra con un'altra FAMIGLIA di ruolo (titolo ↔ testo: il titolo di una massima
+    /// DeJure è anche la prima frase del suo corpo): rango e conteggio sono presi nella famiglia dell'ancora, che si
+    /// ritrova solo nella sua famiglia. `nil` nelle ancore coniate prima del 2026-10-08: comportamento invariato.
+    public var familyTwins: Bool?
 
     public static let currentVersion = 1
 
     public init(version: Int = ContentAnchor.currentVersion, role: String, sourcePage: Int?, length: Int,
                 whole: String, head: String, tail: String, prefixLadder: [String] = [], windowRank: Int, windowCount: Int,
-                orderIndexHint: Int) {
+                orderIndexHint: Int, containedElsewhere: Bool? = nil, familyTwins: Bool? = nil) {
         self.version = version
         self.role = role
         self.sourcePage = sourcePage
@@ -157,6 +166,8 @@ public struct ContentAnchor: Codable, Equatable, Sendable {
         self.windowRank = windowRank
         self.windowCount = windowCount
         self.orderIndexHint = orderIndexHint
+        self.containedElsewhere = containedElsewhere
+        self.familyTwins = familyTwins
     }
 }
 
@@ -308,15 +319,28 @@ public final class ContentAnchorIndex {
         let page = pageOf[index]
         let length = normalized[index].count
         let window = Self.pageWindow(forLength: length)
-        let twins = (byWhole[wholeDigests[index]] ?? []).filter { Self.inWindow(pageOf[$0], of: page, window) }
+        let allTwins = (byWhole[wholeDigests[index]] ?? []).filter { Self.inWindow(pageOf[$0], of: page, window) }
+        // Gemelli di un'altra famiglia di ruolo: il ruolo li distingue, rango e conteggio si prendono nella famiglia.
+        let family = Self.roleFamily(segments[index].role)
+        let familyTwins = allTwins.contains { Self.roleFamily(segments[$0].role) != family }
+        let twins = familyTwins ? allTwins.filter { Self.roleFamily(segments[$0].role) == family } : allTwins
         let rank = twins.firstIndex(of: index) ?? 0
+        // Il testo è già contenuto, a un'estremità, in un altro segmento della finestra: non sarà una fusione.
+        let containedElsewhere = length > TextFingerprint.edgeLength
+            && !containers(length: length, head: headDigests[index], tail: tailDigests[index], page: page).isEmpty
         let n = normalized[index]
         let ladder = Self.ladderLengths.filter { $0 <= length }.map { TextFingerprint.digest(n.prefix($0)) }
         return ContentAnchor(
             role: segments[index].role, sourcePage: page, length: length,
             whole: wholeDigests[index], head: headDigests[index], tail: tailDigests[index], prefixLadder: ladder,
-            windowRank: rank, windowCount: max(1, twins.count), orderIndexHint: index)
+            windowRank: rank, windowCount: max(1, twins.count), orderIndexHint: index,
+            containedElsewhere: containedElsewhere ? true : nil, familyTwins: familyTwins ? true : nil)
     }
+
+    /// Famiglia di ruolo che distingue i gemelli: i titoli (HEADING_n, ARTICLE_HEADER) da tutto il resto. Solo due
+    /// famiglie di proposito: le cure cambiano legittimamente il ruolo dentro il testo (nota ↔ corpo) e fra titoli
+    /// (i livelli), e la famiglia vale solo per le ancore che avevano un gemello dell'altra.
+    static func roleFamily(_ role: String) -> Int { role.hasPrefix("HEADING_") || role == "ARTICLE_HEADER" ? 1 : 0 }
 
     static func pageWindow(forLength length: Int) -> Int {
         length <= TextFingerprint.edgeLength ? shortTextPageWindow : partialMatchPageWindow
@@ -353,8 +377,17 @@ public final class ContentAnchorIndex {
     public func resolve(_ anchor: ContentAnchor) -> AnchorResolution {
         guard anchor.length > 0 else { return .orphan("ancora inerte: il segmento non aveva lettere") }
 
-        // 1. Impronta intera uguale.
-        let exact = byWhole[anchor.whole] ?? []
+        // 1. Impronta intera uguale. Con gemelli di un'altra famiglia di ruolo alla creazione, si cerca nella famiglia
+        //    dell'ancora: se l'impronta resta solo nell'altra famiglia, è il gemello, non l'elemento annotato.
+        let exactAll = byWhole[anchor.whole] ?? []
+        var exact = exactAll
+        if anchor.familyTwins == true {
+            let family = Self.roleFamily(anchor.role)
+            exact = exactAll.filter { Self.roleFamily(segments[$0].role) == family }
+            if exact.isEmpty, !exactAll.isEmpty {
+                return .orphan("exact: resta solo il gemello di un'altra famiglia di ruolo")
+            }
+        }
         if !exact.isEmpty {
             return pick(exact, anchor: anchor, level: .exact, pageWindow: Self.pageWindow(forLength: anchor.length))
         }
@@ -370,10 +403,14 @@ public final class ContentAnchorIndex {
             return pick(Array(both).sorted(), anchor: anchor, level: .headAndTail,
                         pageWindow: Self.partialMatchPageWindow)
         }
-        // 3. Testa e coda DENTRO un segmento più lungo, alla distanza giusta e a un'estremità (fusione).
-        let contained = containingCandidates(anchor)
-        if !contained.isEmpty {
-            return pick(contained, anchor: anchor, level: .contained, pageWindow: Self.partialMatchPageWindow)
+        // 3. Testa e coda DENTRO un segmento più lungo, alla distanza giusta e a un'estremità (fusione). Non se il testo
+        //    stava già dentro un altro segmento quando l'ancora è nata: quel segmento non è una fusione (giro finale
+        //    2026-10-08, prova al contrario della rete: tolto il titolo, l'ancora finiva nel blocco che lo ripeteva).
+        if anchor.containedElsewhere != true {
+            let contained = containingCandidates(anchor)
+            if !contained.isEmpty {
+                return pick(contained, anchor: anchor, level: .contained, pageWindow: Self.partialMatchPageWindow)
+            }
         }
         // 4. Sola testa all'inizio di un segmento PIÙ CORTO del vecchio (spezzatura: il segnalibro marca
         //    l'inizio e il nuovo segmento è un pezzo del vecchio), verificato sulla scala dei prefissi.
@@ -441,10 +478,16 @@ public final class ContentAnchorIndex {
     /// fusione incolla due segmenti, non ne inserisce uno nel mezzo di un altro). Si cercano solo nei
     /// segmenti più lunghi del vecchio, nella finestra di pagine (se nota).
     private func containingCandidates(_ anchor: ContentAnchor) -> [Int] {
+        containers(length: anchor.length, head: anchor.head, tail: anchor.tail, page: anchor.sourcePage)
+    }
+
+    /// I segmenti che contengono a un'estremità il testo di lunghezza `length` con impronte di testa e coda date
+    /// (vedi `containingCandidates`). `length` deve superare `edgeLength`.
+    private func containers(length: Int, head: String, tail: String, page sourcePage: Int?) -> [Int] {
         let edge = TextFingerprint.edgeLength
         var out: [Int] = []
         let range: [Int]
-        if let page = anchor.sourcePage {
+        if let page = sourcePage {
             range = segments.indices.filter { i in
                 guard let q = pageOf[i] else { return false }
                 return abs(q - page) <= Self.partialMatchPageWindow
@@ -452,11 +495,11 @@ public final class ContentAnchorIndex {
         } else {
             range = Array(segments.indices)
         }
-        for i in range where normalized[i].count >= anchor.length + Self.containedMinExtraLength {
+        for i in range where normalized[i].count >= length + Self.containedMinExtraLength {
             let chars = Array(normalized[i])
-            let last = chars.count - anchor.length
-            for p in [0, last] where TextFingerprint.digest(chars[p..<(p + edge)]) == anchor.head
-                && TextFingerprint.digest(chars[(p + anchor.length - edge)..<(p + anchor.length)]) == anchor.tail {
+            let last = chars.count - length
+            for p in [0, last] where TextFingerprint.digest(chars[p..<(p + edge)]) == head
+                && TextFingerprint.digest(chars[(p + length - edge)..<(p + length)]) == tail {
                 out.append(i)
                 break
             }

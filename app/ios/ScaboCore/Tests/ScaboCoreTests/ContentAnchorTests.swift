@@ -212,6 +212,52 @@ final class ContentAnchorTests: XCTestCase {
         XCTAssertEqual(r.index, 1)
     }
 
+    // Giro finale 2026-10-08: le due grinze della prova al contrario «orfana» della rete sulle annotazioni.
+    private let titoloLungo = "Il titolo di prova del saggio sul mulino e sulle chiuse della valle durante la piena di primavera"
+
+    func test_resolve_titleAlreadyContainedInALongerBlock_isOrphan_notRelocatedIntoTheBlock() throws {
+        let traduzione = "Un secondo testo di prova che traduce il titolo in un'altra lingua e lo allunga ben oltre il necessario."
+        let a = [seg("node_0", titoloLungo + " " + traduzione, page: 1),
+                 seg("node_1", titoloLungo, role: "HEADING_2", page: 2)] + flow().map { seg($0.id + "x", $0.text, role: $0.role, page: 3) }
+        let anchor = try XCTUnwrap(ContentAnchorIndex(segments: a).anchor(forIndex: 1))
+        XCTAssertEqual(anchor.containedElsewhere, true, "il titolo stava già in testa al blocco della pagina prima")
+        var b = a
+        b[1] = seg("node_1", "Testo neutro di prova che sostituisce il titolo tolto, abbastanza lungo da non somigliare a nulla.", role: "HEADING_2", page: 2)
+        XCTAssertNil(ContentAnchorIndex(segments: b).resolve(anchor).index, "tolto il titolo, l'ancora resta orfana")
+        // prova al contrario: un'ancora coniata prima (senza il campo) finiva nel blocco
+        var old = anchor; old.containedElsewhere = nil
+        XCTAssertEqual(ContentAnchorIndex(segments: b).resolve(old).index, 0)
+        XCTAssertEqual(ContentAnchorIndex(segments: b).resolve(old).level, .contained)
+    }
+
+    func test_resolve_twinsOfAnotherRoleFamily_areDistinguishedByTheRole() throws {
+        let a = [seg("node_0", titoloLungo, role: "HEADING_1", page: 1), seg("node_1", titoloLungo, page: 1),
+                 seg("node_2", "Una riga di prova che segue la massima e non ripete nulla del titolo, lunga quanto basta.", page: 1)]
+        let index = ContentAnchorIndex(segments: a)
+        let titolo = try XCTUnwrap(index.anchor(forIndex: 0)), corpo = try XCTUnwrap(index.anchor(forIndex: 1))
+        XCTAssertEqual(titolo.familyTwins, true)
+        XCTAssertEqual(corpo.windowCount, 1, "rango e conteggio nella famiglia")
+        var b = a
+        b[0] = seg("node_0", "Testo neutro di prova che sostituisce il titolo tolto, abbastanza lungo da non somigliare a nulla.", role: "HEADING_1", page: 1)
+        let nb = ContentAnchorIndex(segments: b)
+        XCTAssertEqual(nb.resolve(corpo).index, 1, "il gemello rimasto nel corpo è proprio quello annotato")
+        XCTAssertNil(nb.resolve(titolo).index, "il titolo tolto non passa al gemello del corpo")
+        // prova al contrario: senza la famiglia (ancora coniata prima) il superstite restava orfano
+        var oldCorpo = corpo; oldCorpo.familyTwins = nil; oldCorpo.windowCount = 2
+        XCTAssertNil(nb.resolve(oldCorpo).index)
+        // due gemelli della STESSA famiglia: la regola del rango resta com'era (nessuna famiglia registrata)
+        let same = ContentAnchorIndex(segments: [seg("n0", titoloLungo, page: 1), seg("n1", titoloLungo, page: 1)])
+        XCTAssertNil(try XCTUnwrap(same.anchor(forIndex: 0)).familyTwins)
+    }
+
+    func test_anchorWithoutTheNewFields_decodes_andEncodesWithoutThem() throws {
+        let a = try XCTUnwrap(ContentAnchorIndex(segments: flow()).anchor(forIndex: 1))
+        XCTAssertNil(a.containedElsewhere); XCTAssertNil(a.familyTwins)
+        let json = String(decoding: try JSONEncoder().encode(a), as: UTF8.self)
+        XCTAssertFalse(json.contains("containedElsewhere") || json.contains("familyTwins"), "ancore senza doppioni: JSON di prima")
+        XCTAssertEqual(try JSONDecoder().decode(ContentAnchor.self, from: Data(json.utf8)), a)
+    }
+
     func test_resolve_headOnly_requiresTheNewSegmentToBeAPieceOfTheOld() throws {
         let old = ContentAnchorIndex(segments: flow())
         let a = try XCTUnwrap(old.anchor(forIndex: 5))

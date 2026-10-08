@@ -104,6 +104,13 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
             swap_target[i], swap_target[j] = j, i
     sampled_sorted = sorted({b["index"] for b in S["bookmarks"]} | {q["index"] for q in S["quotes"]})
     orphan_expected = {i for k, i in enumerate(sampled_sorted) if k % 2 == 0} if atteso == "orfana" else set()
+    # gemelli di A per testo normalizzato: un'orfana è prudente solo se un SUO gemello è stato davvero sostituito
+    twin_idx = {}
+    for i_, s_ in enumerate(sa):
+        twin_idx.setdefault(ns(s_["text"]), []).append(i_)
+
+    def twin_replaced(i):
+        return any(j != i and j in orphan_expected for j in twin_idx.get(ns(sa[i]["text"]), []))
 
     for b, r in zip(S["bookmarks"], R["bookmarks"]):
         assert b["id"] == r["id"]
@@ -121,8 +128,8 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
             by_role_orphan[role] = by_role_orphan.get(role, 0) + 1
             if atteso == "orfana" and b["index"] not in orphan_expected:
                 # un testo con GEMELLI nel volume può diventare orfano se un gemello è stato sostituito: è la
-                # prudenza voluta (il superstite potrebbe essere l'altro), non un errore
-                if twins_a.get(a_text, 0) > 1:
+                # prudenza voluta (il superstite potrebbe essere l'altro), non un errore; senza gemello sostituito, errore
+                if twin_replaced(b["index"]):
                     prudent += 1
                 else:
                     wrong.append((b["id"], role, "orfana ma il testo era intatto (prova al contrario)"))
@@ -147,7 +154,7 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
         if not shares_window(a_text, b_text) or far:
             wrong.append((b["id"], role, f"ricollocata a {bi} ({r['level']}): nessuna finestra comune" + (" e pagina lontana" if far else "")))
 
-    q_wrong, q_orph, q_ok, q_glued = [], 0, 0, 0
+    q_wrong, q_orph, q_ok, q_glued, q_prudent = [], 0, 0, 0, 0
     for q, r in zip(S["quotes"], R["quotes"]):
         a_words = words(sa[q["index"]]["text"])[q["startWord"]:q["endWord"] + 1]
         a_norm = ns(" ".join(a_words))
@@ -159,7 +166,12 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
         if r.get("segmentIndex") is None:
             q_orph += 1
             if atteso == "orfana" and q["index"] not in orphan_expected:
-                q_wrong.append((q["id"], "orfana ma il testo era intatto"))
+                # come per i segnalibri: se il segmento ha GEMELLI nel volume e un gemello è stato sostituito, l'orfana è
+                # la prudenza voluta (il superstite potrebbe essere l'altro), non un errore (giro finale 2026-10-08)
+                if twin_replaced(q["index"]):
+                    q_prudent += 1
+                else:
+                    q_wrong.append((q["id"], "orfana ma il testo era intatto"))
             elif atteso in ("scambio", "scorri"):
                 q_wrong.append((q["id"], f"orfana ma attesa a {expected}"))
             continue
@@ -188,7 +200,7 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
         "indice_ms": R.get("indexBuildMs"),
         "segnalibri": nb, "ricollocati": relocated, "orfani": len(orphans), "orfane_evitabili": avoidable,
         "sbagliati": len(wrong), "orfane_prudenti": prudent, "livelli": levels, "orfani_per_ruolo": by_role_orphan, "campioni_per_ruolo": by_role_total,
-        "citazioni": nq, "citazioni_ok": q_ok, "citazioni_incollate": q_glued, "citazioni_orfane": q_orph, "citazioni_sbagliate": len(q_wrong),
+        "citazioni": nq, "citazioni_ok": q_ok, "citazioni_incollate": q_glued, "citazioni_orfane": q_orph, "citazioni_prudenti": q_prudent, "citazioni_sbagliate": len(q_wrong),
         "verdetto": verdict,
     }
     print(f"{label[:34]:34} [{row['atteso']:7}] segn {relocated:3}/{nb:3} ricoll, {len(orphans):3} orf ({avoidable} evitabili), "
