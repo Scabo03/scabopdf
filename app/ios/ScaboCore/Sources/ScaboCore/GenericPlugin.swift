@@ -717,7 +717,12 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                 bandCandidates.append(Candidate(key: key, norm: norm))
                 track(&bandPages, norm, page.pageIndex)
             }
-            if shortEnough, isSaturated(sm.color) {
+            // Sulla DPC i grandi numeri di paragrafo verdi («1.», «2.», a tre volte il corpo) ricorrono su molte
+            // pagine con la stessa norma: non sono marcatori di pagina ma l'inizio del titolo di paragrafo
+            // (foglia struttura DPC). Altrove invariato.
+            let dpcParagraphNumber = profileForFurniture.isRivistaDpc && bodySizeForFurniture > 0
+                && sm.fontSize >= DPC_PARAGRAPH_NUMBER_MIN_RATIO * bodySizeForFurniture
+            if shortEnough, isSaturated(sm.color), !dpcParagraphNumber {
                 colorCandidates.append(Candidate(key: key, norm: norm))
                 track(&colorPages, norm, page.pageIndex)
             }
@@ -1005,11 +1010,15 @@ func coloredParagraphLineIndices(_ lines: [LineSummary], _ profile: Profile, pag
 private let URL_OR_MAIL_LINE_RE = try! NSRegularExpression(
     pattern: "^\\s*(?:(?:https?://|www\\.)\\S+|[\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+)\\s*$", options: [.caseInsensitive])
 
+/// Riga che è soltanto un indirizzo web o di posta.
+func isUrlOrMailLine(_ text: String) -> Bool {
+    URL_OR_MAIL_LINE_RE.firstMatch(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text)) != nil
+}
+
 func classify(_ line: LineSummary, _ profile: Profile) -> Kind {
     let kind = classifyByTypography(line, profile)
     // Un indirizzo da solo non è mai un titolo; resta corpo (le note che lo portano a capo restano note).
-    if case .heading = kind,
-       URL_OR_MAIL_LINE_RE.firstMatch(in: line.text, range: NSRange(line.text.startIndex..<line.text.endIndex, in: line.text)) != nil {
+    if case .heading = kind, isUrlOrMailLine(line.text) {
         return .body
     }
     return kind
@@ -1614,7 +1623,9 @@ func pageItems(
     for (lineIndex, line) in page.lines.enumerated() {
         if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
         let sm = summarizeLine(line)
-        if isNearWhite(sm.color) { continue } // invisible white text (page anchors)
+        // Testo bianco: ancore invisibili (bianco su bianco) → tolte. Nella DPC il bianco è il testo della
+        // fascia verde (titoli, autori, gerenza): si legge (foglia struttura DPC, RivistaDpcStructure.swift).
+        if isNearWhite(sm.color), !(profile.isRivistaDpc && sm.fontSize >= DPC_WHITE_MIN_SIZE) { continue }
         content.append(sm)
     }
 
@@ -1674,23 +1685,47 @@ func pageItems(
     var items: [GenItem] = []
     var runRole: RunRole?
     var runLines: [LineSummary] = []
+    // Chiave di blocco del run (solo la foglia struttura DPC ne usa più d'una: due blocchi diversi non si
+    // fondono nello stesso nodo). Altrove è sempre 0 → comportamento invariato.
+    var runBlock = 0
+    var runKeepsHyphens = false
 
     func flushRun() {
         if let role = runRole, !runLines.isEmpty {
-            items.append(.run(role, runLines))
+            // Blocco DPC che conserva i trattini a fine riga (traduzioni dei titoli): una riga unica già unita.
+            items.append(.run(role, runKeepsHyphens && runLines.count > 1 ? [dpcMergedLine(runLines)] : runLines))
         }
         runRole = nil
         runLines = []
+        runBlock = 0
+        runKeepsHyphens = false
     }
-    func appendToRun(_ role: RunRole, _ sm: LineSummary) {
-        if let r = runRole, r != role { flushRun() }
+    func appendToRun(_ role: RunRole, _ sm: LineSummary, block: Int = 0, keepHyphens: Bool = false) {
+        if let r = runRole, r != role || runBlock != block { flushRun() }
         runRole = role
+        runBlock = block
+        runKeepsHyphens = keepHyphens
         runLines.append(sm)
     }
 
+    // Foglia struttura DPC (gated isRivistaDpc): titoli della fascia, traduzioni, paragrafi numerati.
+    // Vuota altrove → nessun effetto.
+    let dpcDecisions = dpcStructureDecisions(summaries, profile, pageHeight: page.height)
     // Le righe di un paragrafo colorato restano corpo (guardia del canale a colore, vedi sopra).
     let coloredParagraph = coloredParagraphLineIndices(summaries, profile, pageWidth: page.width)
     for (lineIndex, sm) in summaries.enumerated() {  // già filtrate: niente furniture, niente anchor invisibili
+        if let decision = dpcDecisions[lineIndex] {
+            switch decision {
+            case .heading(let level, let group):
+                flushRun()
+                items.append(.heading(dpcMergedLine(group.map { summaries[$0] }), level: level))
+            case .absorbed:
+                break
+            case .body(let block, let keepHyphens):
+                appendToRun(.body, sm, block: block, keepHyphens: keepHyphens)
+            }
+            continue
+        }
         switch coloredParagraph.contains(lineIndex) ? .body : classify(sm, profile) {
         case .heading(let level):
             flushRun()
