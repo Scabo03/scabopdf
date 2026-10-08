@@ -19,6 +19,15 @@ Affidabilità per volume: «misurato» se i folii coprono ≥ `FOLIO_COVERAGE_MI
 (folii non trovati)»; mai verde per default. Prova al contrario (da eseguire a parte, vedi docs): su un documento
 deliberatamente guastato la misura deve accendersi, su un cambiamento innocuo restare spenta.
 
+METRO CORRETTO (giro finale, voce 5): (i) si guardano solo i nodi dei RUOLI LETTI (i ruoli esclusi dal flusso — indice,
+sommario, timbro, glossa, testatina riclassificata — non contano: non sono letti); (ii) una riga-mobilia è «letta» se il suo
+testo APRE o CHIUDE il testo letto della pagina (entro pochi caratteri: un folio o un numero davanti) oppure sta dentro una riga
+di PDFKit più lunga (fusione con il contenuto) che è letta; (iii) se il testo della riga compare nella pagina anche altrove
+(il titolo stampato che la testatina ripete), conta come letta solo se il testo letto ne porta tante occorrenze quante le
+righe di PDFKit che lo contengono (nessuna tolta); (iv) un folio nudo è letto solo se è il primo o l'ultimo token del testo
+letto della pagina (non le cifre di una nota o di una voce d'indice); (v) nella verità un folio per progressione vale solo
+alla quota di uno SLOT (quota ancorata, σ < LOCK, su ≥ pagine minime): una riga di nota o una voce d'indice che comincia con un
+numero non è un folio anche se il numero coincide per caso con la progressione.
 Nessun testo dei volumi in uscita: solo conteggi, pagine, ruoli, lunghezze.
 Uso: misura_struttura.py <dir_estrazioni> <dir_letture> <lista.json> <out.md> [--corpus DIR] [--esempi N]
 """
@@ -96,12 +105,19 @@ def truth_lines(doc):
         # («Pag. #-#» del piè di pagina BIC): un frammento di nota non ricorre identico a quel tasso
         elif len(pages_k) >= max(10, int(round(n * 0.10))) and anchored and letters >= 2:
             recurring.add(k)
+    # slot dei folii: quote ancorate a cui ricorrono le righe-folio (σ < LOCK) su ≥ floor pagine
+    fy = sorted((y, pi) for pi, lines in enumerate(raw) for t, y, _ in lines if len(t) <= 90 and folio_at_edge(t, pi, good_offsets))
+    slots = []
+    for y, pi in fy:
+        near = [p for yy, p in fy if abs(yy - y) < LOCK]
+        if len(set(near)) >= floor: slots.append(y)
+    def in_slot(y): return any(abs(y - s) < LOCK for s in slots)
     folio_pages = 0
     for pi, lines in enumerate(raw):
         out = []
         has_folio = False
         for t, y, pz in lines:
-            is_folio = len(t) <= 90 and folio_at_edge(t, pi, good_offsets)
+            is_folio = len(t) <= 90 and folio_at_edge(t, pi, good_offsets) and in_slot(y)
             if is_folio: has_folio = True
             if is_folio or norm(t) in recurring:
                 out.append((t, y, is_folio, pz))
@@ -127,6 +143,9 @@ def app_view(extraction, doc_json):
         ext[p["pageIndex"]] = ["".join(s["text"] for s in l["spans"]) for l in p["lines"]]
     return ext, nodes
 
+STRUCT_RE = re.compile(r"^(PARTE|LIBRO|TITOLO|CAPITOLO|CAPO|SEZIONE)\s+([IVXLCDM]+|\d+|[A-ZÀ-Ù]+)\b", re.I)
+HITS = []
+NONESTR = []
 def measure(vol, ext_path, doc_path, corpus):
     pdf = os.path.join(corpus, vol)
     doc = fitz.open(pdf)
@@ -139,27 +158,72 @@ def measure(vol, ext_path, doc_path, corpus):
     recur_text = Counter(norm(l) for lines in ext.values() for l in lines)
     label_norms = {k for k, n in recur_text.items() if n >= max(10, int(round(len(ext) * 0.10)))}
     c = Counter(); roles = Counter(); pages_read = []; suspects = []
+    NON_READ = {"MARGINAL_GLOSS", "TOC_GENERAL", "ARTIFACT_STAMP", "INDEX_ENTRY", "ARTIFACT_RUNNING_HEADER"}
+    raw_nodes = defaultdict(list)
+    for nd in D["structure"]:
+        raw_nodes[nd["page_index"]].append((nd["type"], nd.get("text") or ""))
+    ext_lines = {p["pageIndex"]: p["lines"] for p in E["pages"]}
+    promoted_seen = set()
+    def occ(k, text):
+        k = k.replace("-", "")
+        return text.replace("-", "").count(k) if k else 0
     for pi, tl in enumerate(truth):
-        node_text = "".join(t for _, t in nodes.get(pi, []))
+        node_text = "".join(t for _, t in nodes.get(pi, []))          # tutti i nodi (verso opposto, invariato)
+        read_nodes = [(r, t) for r, t in raw_nodes.get(pi, []) if r not in NON_READ]
+        read_text = "".join(ns(t) for _, t in read_nodes)
+        read_tokens = " ".join(t for _, t in read_nodes).split()
+        plines = ext_lines.get(pi, [])
+        pl_text = ["".join(sp["text"] for sp in l["spans"]) for l in plines]
+        pl_ns = [ns(x) for x in pl_text]
+        page_ns = "".join(pl_ns)
+        Hp = (E["pages"][pi]["height"] if pi < len(E["pages"]) else 0) or 1
+        def covers(i, y):   # la riga di PDFKit sta alla quota della riga-verità
+            x0, yy, w, h = plines[i]["bbox"]; top = 1 - (yy + h) / Hp; bot = 1 - yy / Hp
+            return top - 0.012 <= y <= bot + 0.012
         for t, y, is_folio, pz in tl:
             key = ns(t)
             if not key: continue
             c["verita"] += 1
-            # la riga fisica è letta se uno dei suoi pezzi con lettere (o il folio nudo, se è l'unico pezzo) compare
-            # nel testo letto della pagina: PDFKit può tenere folio e titolo su righe separate
-            parts = [ns(x) for x in pz if re.search(r"[^\W\d_]", x)] or [key]
-            # Il pezzo con lettere compare in un NODO letto della pagina? Vale come «letta» solo se quel nodo
-            # è la testatina stessa (porta anche il folio della riga, oppure è lungo al più 1,5 volte la riga):
-            # una testatina che ripete il titolo stampato nella pagina non deve contare il titolo vero.
-            folio_tok = next((tok for tok in (t.split()[0], t.split()[-1]) if re.fullmatch(r"\d{1,4}", tok)), None) if is_folio else None
-            hit_role = None
-            for role, nt in nodes.get(pi, []):
-                for pt in parts:
-                    if present(pt, nt) and ((folio_tok and folio_tok in nt) or len(nt) <= 1.5 * len(key) + 10):
-                        hit_role = role; break
-                if hit_role: break
-            if hit_role is not None:
+            pieces = sorted((ns(x) for x in pz if len(re.findall(r"[^\W\d_]", x)) >= 2), key=len, reverse=True)
+            hit_role = None; fused_read = False; promoted = False
+            if pieces:
+                # le righe di PDFKit ALLA QUOTA della riga-verità che ne portano il testo: la riga dell'app che È la mobilia
+                p = pieces[0]
+                band = [i for i, k in enumerate(pl_ns) if k and covers(i, y) and (p in k or (len(p) > 14 and present(p, k)))]
+                for i in band:
+                    k = pl_ns[i]
+                    # testatina di STRUTTURA («TITOLO III - …») che il ramo promuove a intestazione alla prima occorrenza:
+                    # scelta di progetto (radice dell'albero), contata a parte
+                    if (STRUCT_RE.match(pl_text[i].strip()) and k not in promoted_seen
+                            and any(r.startswith("HEADING") and ns(tt).startswith(k) for r, tt in read_nodes)):
+                        promoted_seen.add(k)   # solo la PRIMA occorrenza: le successive lette sono testatine lette
+                        c["struttura_promossa"] += 1; promoted = True
+                        HITS.append((vol, pi + 1, "struttura_promossa", len(t))); break
+                    # letta se il testo INTERO di quella riga (folio compreso) è nel testo letto tante volte quante sono le righe
+                    # di PDFKit della pagina che lo contengono (la testatina che ripete un titolo o una frase del corpo non conta)
+                    # occorrenze nel testo di PDFKit della pagina (righe concatenate: una frase del corpo che va a capo conta)
+                    n_lines = occ(k, page_ns)
+                    if occ(k, read_text) >= max(1, n_lines):
+                        hit_role = next((r for r, tt in read_nodes if k.replace("-", "") in ns(tt).replace("-", "")), "?")
+                        fused_read = len(pl_text[i].strip()) > len(t) + 15
+                        if hit_role.startswith("HEADING") and STRUCT_RE.match(pl_text[i].strip()):
+                            c["struttura_promossa"] += 1; hit_role = None; promoted = True
+                            HITS.append((vol, pi + 1, "struttura_promossa", len(t))); break
+                        HITS.append((vol, pi + 1, hit_role + (":fusa" if fused_read else ""), len(t)))
+                        break
+                if not band: c["non_estratte_alla_quota"] += 1
+            else:
+                folio_tok = next((tok for tok in (t.split()[0], t.split()[-1]) if re.fullmatch(r"\d{1,4}", tok)), None)
+                if folio_tok and read_tokens:
+                    first = re.sub(r"\W", "", read_tokens[0]); lastt = re.sub(r"\W", "", read_tokens[-1])
+                    if folio_tok in (first, lastt):
+                        hit_role = next((r for r, tt in read_nodes if folio_tok in tt.split()), "?")
+                        HITS.append((vol, pi + 1, "folio:" + hit_role, len(t)))
+            if promoted:
+                pass
+            elif hit_role is not None:
                 c["lette"] += 1; roles[hit_role] += 1; pages_read.append(pi + 1)
+                if fused_read: c["lette_dentro_fusione"] += 1
             else:
                 c["riconosciute"] += 1
         # verso opposto: righe dell'app sulla pagina non lette e non nella verità
@@ -198,9 +262,12 @@ def main():
         c, roles, cov, rel, pr, sus, npages = measure(v, ext_path, doc_path, corpus)
         T["verita"] += c["verita"]; T["lette"] += c["lette"]; T["ric"] += c["riconosciute"]; T["sosp"] += c["tolte_fuori_verita"]
         if rel == "misurato": T["vol_misurati"] += 1
-        rs = ", ".join(f"{k} {n}" for k, n in roles.most_common(4))
+        rs = ", ".join(f"{k} {n}" for k, n in roles.most_common(4)) + (f" (dentro una fusione {c['lette_dentro_fusione']})" if c['lette_dentro_fusione'] else "")
+        T["fus"] += c["lette_dentro_fusione"]; T["strutt"] += c["struttura_promossa"]; T["nonestr"] += c["non_estratte_alla_quota"]
+        if c["non_estratte_alla_quota"]: NONESTR.append((os.path.basename(v)[:30], c["non_estratte_alla_quota"]))
         L.append(f"| {vi} | {os.path.basename(v)[:34]} | {npages} | {cov:.0%} | {rel} | {c['verita']} | {c['riconosciute']} | {c['lette']} | {rs} | {c['tolte_fuori_verita']} | {c['etichette_ricorrenti_tolte']} | {c['spostate_altrove']} | {' '.join(str(p) for p in sorted(set(pr))[:n_ex])} | {' '.join(str(p) for p in sorted(set(p for p, _ in sus))[:n_ex])} |\n")
-    L.append(f"\n**Totale**: volumi misurati {T['vol_misurati']}/{len(vols)}; righe-mobilia (verità) {T['verita']}; riconosciute {T['ric']}; lette come contenuto {T['lette']}; tolte fuori verità (sospette) {T['sosp']}.\n")
+    json.dump(HITS, open(out + ".lette.json", "w"), ensure_ascii=False)
+    L.append(f"\n**Totale**: volumi misurati {T['vol_misurati']}/{len(vols)}; righe-mobilia (verità) {T['verita']}; riconosciute {T['ric']}; lette come contenuto {T['lette']} (di cui dentro una fusione {T['fus']}); testatine di struttura promosse a titolo dal ramo (non contate) {T['strutt']}; tolte fuori verità (sospette) {T['sosp']}. Righe-verità senza una riga di PDFKit alla loro quota che ne porti il testo (contate fra le riconosciute: il testo può stare altrove) {T['nonestr']}: {NONESTR[:12]}.\n")
     open(out, "w").write("".join(L)); print("".join(L[-1:]))
 
 if __name__ == "__main__":

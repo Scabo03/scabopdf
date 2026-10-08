@@ -188,15 +188,17 @@ struct PdfKitExtractor: PdfExtracting {
             return plainLines(for: page)
         }
         let raw = rawLines(for: page, attributed: attributed, cropBox: cropBox)
-        // Due cure pure di ScaboCore, applicate subito dopo l'estrazione (giro «generazioni del
+        // Cure pure di ScaboCore, applicate subito dopo l'estrazione (giro «generazioni del
         // lettore», docs/GENERAZIONI_LETTORE.md): (1) i segnaposto d'immagine U+FFFC che PDFKit 27
         // emette e che in lettura diventavano intestazioni vuote; (2) i confini di parola che PDFKit 27
         // perde ignorando il `Tc` (tracking InDesign), ricostruiti dal flusso di contenuto letto con
         // CoreGraphics: solo spazi inseriti, allineamento esatto, mai altro. Su iOS 26.5 entrambe
-        // sono identità (nessun U+FFFC; gli spazi ci sono già).
+        // sono identità (nessun U+FFFC; gli spazi ci sono già). (3) Giro finale 2026-10-08: la riga che
+        // PDFKit fonde con la testatina o il piè torna alle sue righe fisiche (RowSplit.swift), DOPO la
+        // riparazione, che allinea i run a una e una sola riga di PDFKit. Lettere mai aggiunte né tolte.
         let cleaned = removingObjectReplacementCharacters(raw)
-        guard let ref = page.pageRef else { return cleaned }
-        return repairWordBoundaries(cleaned, runs: PdfContentGlyphRuns.runs(for: ref)).lines
+        let repaired = page.pageRef.map { repairWordBoundaries(cleaned, runs: PdfContentGlyphRuns.runs(for: $0)).lines } ?? cleaned
+        return splittingFusedBandRows(repaired, pageHeight: Double(cropBox.height))
     }
 
     /// Le righe come le dà PDFKit (il cuore trapiantato, verbatim): run uniformi → span, "\n" → riga.
