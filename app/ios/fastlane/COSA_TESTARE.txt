@@ -1,26 +1,25 @@
-Build 49 — i titoli delle dispense, dei manuali e dei codici
+Build 50 — l'ultimo giro su titoli e testatine prima della versione per Mac
 
 Cosa è cambiato
-- Dispense scritte con Pages, Word o Google Docs (appunti compresi): i titoli ora si trovano nella navigazione per intestazioni, ciascuno al suo livello, e il testo è diviso nei paragrafi dell'autore invece che in blocchi tutti uguali. Non si perde più l'etichetta «CAP.» dei capitoli, né qualche parola in cima alla pagina che prima veniva scambiata per una testatina.
-- Torrente: i titoli dei paragrafi col segno di paragrafo (più di 700) sono ora intestazioni.
-- Mandrioli-Carratta (quattro volumi), Magnani e Mosconi-Campiglio: le «Sezioni» sono ora intestazioni.
-- Codice penale e Codice civile: il titolo con cui si apre quasi ogni legge complementare è ora un'intestazione di terzo livello. Con il rotore si salta da una legge all'altra.
-- Rivista DPC 2018 e 2020: gli abstract in spagnolo e in inglese non sono più letti riga per riga come titoli. Nella dispensa di Scoca l'elenco degli autori non è più un titolo.
-- Tornano letti alcuni titoli e alcune righe che sparivano insieme a una testatina: cinque titoli in Costituzionale, un numero di paragrafo in Elementi di diritto UE e, con iOS 26, 61 righe di fine pagina in Marrone. In quei punti si sente anche la testatina o il piè «Pag.», spesso attaccato all'ultima parola: meglio sentirlo che perdere il testo.
-- Gli indirizzi web stampati sul retro di copertina non sono più titoli.
+- Manuali: l'etichetta del capitolo o della sezione («Capitolo secondo», «Sezione prima») e il titolo che la segue sono ora un'intestazione sola, e i livelli seguono per lo più l'indice stampato: la Parte sopra il Capitolo, il Capitolo sopra la Sezione, i paragrafi sotto il loro capitolo. Con il rotore delle intestazioni si scende livello per livello come nell'indice del libro.
+- Codici: il titolo con cui si apre ogni legge complementare è ora un'intestazione di primo livello, come i Libri del codice, e i Titoli e i Capi di quella legge stanno sotto di lei. Con il rotore delle intestazioni si salta da una legge all'altra e VoiceOver annuncia il primo livello. La riga «LEGGI COMPLEMENTARI» resta una riga letta.
+- Rivista DPC 2018 e 2020: si leggono i titoli degli articoli e delle sezioni, gli autori e le affiliazioni, scritti in bianco sulla fascia verde, che prima non si sentivano; i titoli dei paragrafi hanno il livello del sommario della rivista.
+- Patriarca-Benazzo: il sommario iniziale, con il numero di pagina davanti a ogni voce, non è più letto come una pila di titoli; si salta come i sommari degli altri manuali. La sua ultima pagina si legge ancora, perché porta anche un riquadro di testo.
+- DeJure: nelle dottrine le sezioni stampate in grassetto ora sono intestazioni dentro il loro articolo; nelle massime ciascuna si raggiunge col proprio titolo dalla navigazione. In Danni punitivi l'ultima pagina, che spariva, ora si legge. Nelle dottrine le note lunghe arrivano al termine della loro sezione, non più in coda all'articolo.
+- Testatine fuse: quando il lettore di sistema incolla la testatina o il numero di pagina a una riga di testo, ora la testatina si toglie e la riga si legge pulita. Con iOS 26 si sente soprattutto in Marrone: il piè «Pag.» non si attacca più all'ultima parola della pagina e tornano due righe che mancavano. Con iOS 26 e 27: quattro titoli liberati nel Manuale di diritto costituzionale, uno in Lezioni di giustizia amministrativa, un CAPO del Codice civile che spariva, e pochi altri punti.
 
 Quali libri
-- Dispense e appunti: DPC vol 1, 2 e 3, Estratto e Lezioni Travi (Pages); Appunti DPC (Word); Scoca (Google Docs); Diritto processuale civile vol. 3; Teoria generale del diritto; Voce Imprenditore.
-- Manuali: Torrente, Mandrioli-Carratta 1-4, Magnani, Mosconi-Campiglio, Costituzionale, Elementi di diritto UE; Marrone solo con iOS 26.
-- Codici: penale e civile. Riviste: DPC 2018 e 2020.
-- Tutti gli altri libri si leggono esattamente come prima.
+- Manuali: quasi tutti quelli con capitoli o paragrafi numerati (tra gli altri Torrente, Mandrioli-Carratta 1-4, Marotta, Mosconi-Campiglio, Lineamenti, Costituzionale, Compendio, Magnani, Elementi di diritto UE, Patriarca-Benazzo, tesauro), più Lezioni di giustizia amministrativa, Nomofanie e la voce EdD.
+- Codici penale e civile; Rivista DPC 2018 e 2020; i quattro DeJure; Marrone con iOS 26.
+- Le dispense e gli altri libri si leggono come prima.
 
 Per i libri già aperti
-- Basta accettare l'offerta «Lettura migliore disponibile»: dalla Home (la riga in alto) o dalle opzioni del libro, il tasto a tre puntini. L'app spiega cosa cambia e chiede conferma.
+- Basta accettare l'offerta «Lettura migliore disponibile»: dalla Home (la riga in alto) o dalle opzioni del libro, il tasto a tre puntini. L'app spiega cosa cambia e chiede conferma; fino alla scelta la lettura di prima resta sul dispositivo.
+- Le annotazioni seguono il testo; quelle che l'app non ritrova con sicurezza restano «da ricollocare», e non si cancella nulla. Nei manuali un segnalibro posato proprio sull'etichetta o sul titolo di un capitolo può restare da ricollocare, perché ora etichetta e titolo sono una cosa sola.
 - L'offerta compare per tutti i libri aperti prima di questa build, anche per quelli che non cambiano: per quei libri la nuova lettura è identica a quella di prima.
-- Le annotazioni seguono il testo. Quelle che l'app non ritrova con sicurezza restano «da ricollocare»: non si spostano a caso e non si cancella nulla. Nelle dispense, dove il testo è ora diviso in paragrafi e titoli, circa un segnalibro su quattro resta da ricollocare; una sottolineatura non ritrovata resta salvata ma non si vede. Fino alla scelta, la lettura di prima resta sul dispositivo.
+- Anche nelle massime DeJure e sulle pagine del sommario di Patriarca, che ora non si legge, qualche segnalibro può restare da ricollocare.
+- Nessun cambiamento di formato: i libri non si rielaborano da soli.
 
-Cosa resta per il prossimo giro
-- Nei manuali i livelli dei titoli: a volte il capitolo e i suoi paragrafi stanno allo stesso livello, o un paragrafo finisce al quarto livello.
-- Nei codici, dentro le leggi che hanno TITOLI e CAPI propri, la Consultazione Rapida non mette ancora le parti sotto il titolo della legge.
-- Le testatine e i piè fusi con una riga di testo: si sentono ancora in pochi punti.
+Cosa resta
+- Un tetto alla distanza delle note lunghe nelle sezioni molto lunghe e un gesto per ricollocare un'annotazione orfana: sono le prime voci del bilancio della fase mobile.
+- Il quinto livello di titolo non serve: nel corpus lo userebbe un libro solo.
