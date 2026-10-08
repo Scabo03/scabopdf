@@ -292,10 +292,14 @@ func normalizeManualLevels(_ nodes: inout [NodeDict]) -> Int {
             var assigned: Int?
             while let top = stack.last {
                 if top.depth == nil {
-                    // un titolo non numerato che non è un'unità e non sta sopra il numerato (stesso livello tipografico)
-                    // è un suo FRATELLO, non il genitore: è il titolo numerato a cui il lettore di sistema ha staccato il
-                    // numero (iOS 26.5, visto in rete). Le unità (CAPITOLO, SEZIONE…) restano sempre genitori.
-                    if !top.unit, top.level >= current { assigned = top.level; stack.removeLast(); break }
+                    // un titolo non numerato che non è un'unità e sta SOTTO il numerato (tipograficamente più piccolo) non è
+                    // né genitore né fratello: il numerato lo chiude (Marrone: il falso titolo «Nota» fra due «§» faceva
+                    // scendere tutti i «§» seguenti del capitolo, contro i segnalibri dell'editore).
+                    if !top.unit, top.level > current { stack.removeLast(); continue }
+                    // allo STESSO livello tipografico è un suo FRATELLO, non il genitore: è il titolo numerato a cui il
+                    // lettore di sistema ha staccato il numero (iOS 26.5, visto in rete). Le unità (CAPITOLO, SEZIONE…)
+                    // restano sempre genitori.
+                    if !top.unit, top.level == current { assigned = top.level; stack.removeLast(); break }
                     // un'intestazione non numerata più profonda di un numerato aperto che la precede (sottotitolo dentro
                     // il paragrafo) non è genitore del numerato seguente
                     if stack.dropLast().contains(where: { $0.depth != nil && $0.depth! <= d && $0.level < top.level }) {

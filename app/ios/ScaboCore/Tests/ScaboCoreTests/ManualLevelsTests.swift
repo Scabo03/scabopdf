@@ -53,6 +53,16 @@ final class ManualLevelsTests: XCTestCase {
         XCTAssertEqual(levels(parent), [1, 2, 3])
     }
 
+    func test_deeperUnnumberedHeading_isClosedByTheNextNumbered_notItsSibling() {
+        // un falso titolo più piccolo fra due paragrafi numerati (l'etichetta della sezione delle note) non deve far
+        // scendere i paragrafi seguenti: il numerato lo chiude e resta fratello del numerato di prima
+        var nodes = [h(1, "CAPITOLO I Titolo di prova del capitolo"), body(),
+                     h(2, "1. Primo paragrafo di prova"), body(), h(3, "Etichetta di prova"), body(),
+                     h(2, "2. Secondo paragrafo di prova"), body(), h(2, "3. Terzo paragrafo di prova"), body()]
+        normalizeManualLevels(&nodes)
+        XCTAssertEqual(levels(nodes), [1, 2, 3, 2, 2], "secondo e terzo numerato: fratelli del primo")
+    }
+
     func test_fragmentOfASplitNumberedTitle_staysAtItsLevel() {
         // «5. Titolo … punto.» + «seguito del titolo» (due nodi): il frammento non è genitore del «6.»
         var nodes = [h(2, "CAPITOLO II Capitolo di prova"), body(),
