@@ -128,14 +128,17 @@ final class FrontMatterTests: XCTestCase {
         XCTAssertTrue(readText(d).contains("Questo lavoro nasce"), "la prosa è LETTA (contenuto protetto)")
     }
 
-    // ── astensione: titolo di sommario SENZA struttura forte (numero in testa, Patriarca) ─
-    func test_initialTocTitleWithoutStructure_abstains_leftRead() {
+    // ── sommario col NUMERO DI PAGINA IN TESTA (Patriarca): decisione 3 del manutentore, giro finale 2026-10-08 ─
+    // Prima la forma era lasciata letta per astensione; ora numeri in testa crescenti dopo il titolo «Sommario» fanno
+    // della pagina un sommario non letto. L'astensione resta per la pagina con un blocco di prosa
+    // (LeadingPageNumberTocTests).
+    func test_initialTocWithLeadingPageNumbers_isContents_notRead() {
         var lines = [line("Sommario", size: 12)]
         for i in 0..<12 {
             lines.append(line("\(i * 10 + 5) Capitolo dedicato a un argomento di diritto commerciale", size: 10))
         }
         let d = doc([bodyPage(0), page(1, lines), bodyPage(2)])
-        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0, "titolo senza struttura (numero in testa) → astensione")
-        XCTAssertTrue(readText(d).contains("argomento di diritto commerciale"), "nel dubbio: letto")
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 1, "numeri di pagina in testa, crescenti, dopo il titolo → sommario")
+        XCTAssertFalse(readText(d).contains("argomento di diritto commerciale"), "il sommario non si legge")
     }
 }

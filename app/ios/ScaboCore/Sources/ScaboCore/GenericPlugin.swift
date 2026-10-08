@@ -1361,6 +1361,53 @@ func frontMatterTocHeadingPresent(_ content: [LineSummary]) -> Bool {
     }
 }
 
+/// Voce di sommario col NUMERO DI PAGINA IN TESTA («14 Capitolo II», «XIX Prefazione»): numero nudo (arabo fino a 4
+/// cifre o romano) seguito da spazio e da un testo che non comincia con un punto («1. Titolo» non è questa forma).
+private let leadingPageNumberEntryRegex = try! NSRegularExpression(
+    pattern: "^\\s*([0-9]{1,4}|[IVXLCDM]{1,7}|[ivxlcdm]{1,7})\\s+(?=\\S)(?!\\.)")
+
+/// Seconda forma di pagina-sommario (giro finale 2026-10-08, decisione 3 del manutentore): il sommario iniziale di un
+/// manuale che stampa il numero di pagina IN TESTA alla voce, senza puntini, che il rilevatore a «voce + numero in
+/// coda» non conosceva (le voci diventavano 85 titoli falsi). Tutte insieme: ≥ 6 righe; ≥ 10 righe, e ≥ 20 %, che
+/// aprono con un numero nudo; ≥ 5 numeri arabi in testa, NON decrescenti nell'ordine di lettura; nessun blocco di prosa
+/// (due righe piene consecutive senza numero in testa, staccate dalla riga sopra di almeno due passi): una pagina con
+/// un blocco di prosa resta letta (astensione).
+func isLeadingPageNumberTocStructured(_ content: [LineSummary]) -> Bool {
+    guard content.count >= INDEX_PAGE_MIN_LINES else { return false }
+    var leads = 0
+    var arabic: [Int] = []
+    var hasLead: [Bool] = []
+    for sm in content {
+        let t = sm.text
+        if let m = leadingPageNumberEntryRegex.firstMatch(in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) {
+            leads += 1
+            hasLead.append(true)
+            if let r = Range(m.range(at: 1), in: t), let v = Int(t[r]) { arabic.append(v) }
+        } else {
+            hasLead.append(false)
+        }
+    }
+    guard leads >= INDEX_PAGE_WEAK_MIN_ENTRIES,
+          Double(leads) / Double(content.count) >= INDEX_PAGE_WEAK_ENTRY_FRACTION,
+          arabic.count >= 5,
+          zip(arabic, arabic.dropFirst()).allSatisfy({ $1 >= $0 }) else { return false }
+    let right = content.map { $0.x1 }.max() ?? 0
+    let left = content.map { $0.x0 }.min() ?? 0
+    var gaps: [Double] = []
+    for i in 0..<(content.count - 1) {
+        let d = abs(content[i].yBottom - content[i + 1].yBottom)
+        if d > 1 { gaps.append(d) }
+    }
+    gaps.sort()
+    let pitch = gaps.isEmpty ? 12 : gaps[gaps.count / 2]
+    func full(_ k: Int) -> Bool { content[k].x1 >= right - 0.1 * (right - left) && !hasLead[k] }
+    for i in 1..<(content.count - 1) where full(i) && full(i + 1)
+        && (content[i - 1].yBottom - content[i].yBottom) >= 2 * pitch {
+        return false
+    }
+    return true
+}
+
 /// Pagine [0, fmMax) che sono un indice/sommario iniziale SENZA leader (il segnale a
 /// leader le manca). Regione aperta da un TITOLO di sommario CONFERMATO dalla struttura
 /// (≥ 10 righe-voce, riusa `isWeaklyBackMatterIndexStructured`), propagata finché la
@@ -1381,7 +1428,8 @@ func detectFrontMatterNoLeaderIndex(
             content.append(sm)
         }
         if content.isEmpty { continue }   // pagina vuota: regione invariata
-        let weak = isWeaklyBackMatterIndexStructured(content)
+        // Struttura d'indice: voce + numero in coda, oppure numero di pagina in testa alla voce.
+        let weak = isWeaklyBackMatterIndexStructured(content) || isLeadingPageNumberTocStructured(content)
         // Apre su titolo+struttura; continua su struttura; chiude su prosa (non-struttura).
         if (frontMatterTocHeadingPresent(content) && weak) || (inRegion && weak) {
             inRegion = true
