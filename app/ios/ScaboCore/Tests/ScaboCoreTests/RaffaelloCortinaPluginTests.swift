@@ -103,11 +103,12 @@ final class RaffaelloCortinaPluginTests: XCTestCase {
     }
 
     func test_build_promotesNumberedCapsSection() {
-        // Il maiuscoletto numerato di Pubblico ministero ("6. STRATEGIE…") va promosso.
+        // Il maiuscoletto numerato di Pubblico ministero ("6. QUARZI…", testo di prova) va promosso.
         let doc = raffaelloCortinaPlugin.build(
-            extraction([cortinaBodyPage(0, head: "6. STRATEGIE COMUNICATIVE DELLE PROCURE")]),
+            extraction([cortinaBodyPage(0, head: "6. QUARZI BLU DEL BANCO DI PROVA")]),
             sourceName: "pm.pdf")
-        XCTAssertTrue(doc.structure.contains { $0.type == .HEADING_4 && $0.text == "6. STRATEGIE COMUNICATIVE DELLE PROCURE" })
+        // Promosso a titolo. Il livello è relativo (livelli dei manuali, D.10): da solo nel documento, sta al primo.
+        XCTAssertTrue(doc.structure.contains { $0.type.rawValue.hasPrefix("HEADING_") && $0.text == "6. QUARZI BLU DEL BANCO DI PROVA" })
     }
 
     func test_build_doesNotPromoteMixedCaseShortLine() {

@@ -243,9 +243,15 @@ public final class RaffaelloCortinaPlugin: ExtractionPlugin {
         furnitureCount: Int,
         promotedSubtitles: Int
     ) -> ScabopdfDocument {
+        // Livelli dei manuali (D.10): Cortina usa `pageItems` (fusione delle unità), quindi anche il ricalcolo dei livelli.
+        var nodes = nodes
+        let manualLevels = profile.mono == nil ? normalizeManualLevels(&nodes) : 0
         var warnings = [
             "plugin:raffaello_cortina:heuristic_extraction_pages_\(extraction.pageCount)_nodes_\(nodes.count)",
         ]
+        if manualLevels > 0 {
+            warnings.append("plugin:raffaello_cortina:manual_levels_\(manualLevels)")
+        }
         if profile.bodySize == 0 {
             warnings.append("plugin:raffaello_cortina:no_font_information_all_body")
         }

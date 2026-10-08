@@ -358,6 +358,10 @@ public final class GenericPlugin: ExtractionPlugin {
         // Sezioni in maiuscoletto («Sezione prima – TITOLO», «SEZ. I: TITOLO») rimaste corpo o nota → HEADING_3.
         // Non nei documenti monotipografici (il loro canale ha già le sue parole-chiave).
         let sections = profile.mono == nil ? promoteSectionLabels(&nodes) : 0
+        // Livelli dei manuali (D.10): classi d'unità, livello relativo dei titoli numerati, compattazione, tetto a 4.
+        // Non nei monotipografici, nell'Estratto (struttura blindata) né nei DeJure (costruiti col Generic).
+        let manualLevels = profile.mono == nil && !profile.isEstrattoChrome
+            && dejurePlugin.matches(extraction) < DISPATCH_THRESHOLD ? normalizeManualLevels(&nodes) : 0
         // Testatina corrente ricorrente (titolo capitolo recto, lunga, ripetuta) sfuggita al
         // cap-caratteri della furniture e finita come NOTE → ARTIFACT_RUNNING_HEADER (non-letta).
         // GATED Estratto: no-op (e nodi invariati) sugli altri volumi.
@@ -376,6 +380,9 @@ public final class GenericPlugin: ExtractionPlugin {
         }
         if sections > 0 {
             warnings.append("plugin:generic:section_labels_\(sections)")
+        }
+        if manualLevels > 0 {
+            warnings.append("plugin:generic:manual_levels_\(manualLevels)")
         }
         if runningHeaders > 0 {
             warnings.append("plugin:generic:estratto_running_headers_reclassified_\(runningHeaders)")
@@ -1777,7 +1784,9 @@ func pageItems(
     // e stile dicono che sono la stessa riga andata a capo. Precisione > recupero: nel dubbio non
     // fonde (un titolo distinto inghiottito = punto di navigazione perso, danno peggiore del
     // difetto). Sta DENTRO pageItems → `appendPageNodes` e `bindAndPlaceNotes` la vedono → zip 1:1.
-    return consolidateAdjacentHeadings(withMono, profile)
+    // Unità «etichetta + titolo» dei manuali (D.10): un titolo solo, livello fissato poi da `normalizeManualLevels`.
+    // No-op nei codici, nella DPC, nei monotipografici e nell'Estratto.
+    return fuseStructureUnits(consolidateAdjacentHeadings(withMono, profile), pageWidth: page.width, profile)
 }
 
 // ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────
