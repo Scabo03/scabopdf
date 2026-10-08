@@ -156,3 +156,79 @@ ScaboCore 640/640; ScaboApp 136 eseguiti / 9 saltati / 0 falliti e audit UI 1/1 
 runner in lettere+cifre e nei conteggi di intestazioni (`reti/app_vs_runner_testatine5_ios27.txt`); le letture iOS 27 della
 fotografia `testatine5` sono byte-identiche a `testatine4` su tutti i 52 volumi (la terza correzione tocca solo la 26.5). Il formato della cache resta 6:
 i libri in cache restano letti come prima finché non vengono reimportati (note per i tester, build 47).
+
+## 6. Giro finale (2026-10-08): righe fuse separate nell'estrattore, metro corretto
+
+### 6.1 La cura (A.5): la riga fusa torna alle sue righe fisiche
+
+**Diagnosi (campo, § 5 di `TITOLI_MONOTIPOGRAFICI.md`).** Il residuo vero della misura erano fusioni di PDFKit fra una
+riga di banda (testatina, piè, folio) e una riga di contenuto, consegnate come una riga sola: il testo della riga fusa
+non ricorre e sfugge alla mobilia; la guardia `lineJoinsDisjointRows` (build 49) impedisce di togliere il contenuto
+insieme alla testatina, ma la testatina restava letta dentro il contenuto (Marrone su iOS 26.5: il piè «Pag. N-M» fuso
+con l'ultima riga di corpo, letto a metà frase).
+
+**Cura (`RowSplit.swift`, ScaboCore puro; aggancio in `PdfKitExtractor.lines`).** Dopo la riparazione dei confini di
+parola, una riga i cui span con testo stanno su fasce verticali disgiunte si riporta alle sue righe fisiche, dall'alto in
+basso, solo se: (1) le fasce sostanziali sono almeno due — un richiamo «(N)», un capolettera, cifre in apice più piccole o
+un numero nudo a metà pagina restano con la riga che li porta; (2) almeno una riga fisica sta nella banda alta o bassa
+della pagina (le soglie della mobilia): una fusione a metà pagina resta com'è; (3) se la riga intera non è quasi bianca,
+nessuna riga fisica lo diventa (`pageItems` scarterebbe testo oggi letto). Lettere mai aggiunte né tolte. Test:
+`RowSplitTests` (9; togliendo ciascuna delle sette guardie fallisce il suo test). Alternative scartate: spezzare ogni riga
+su fasce disgiunte, anche a metà pagina (tocca righe di contenuto lette bene, senza guadagno); spezzare nel riconoscimento
+della mobilia invece che nell'estrazione (la riga fusa resterebbe un pezzo solo per il resto della catena e la testatina
+tornerebbe dentro il contenuto letto). `lineJoinsDisjointRows` resta: protegge le righe che la guardia non spezza.
+
+Conseguenza: l'estrazione cambia sulle pagine con una fusione di banda, quindi la doppia rete è rifatta **con cattura**
+(fotografia `v5`). Il formato della cache non cambia; la rielaborazione offerta porta la cura ai libri già aperti.
+
+### 6.2 Il metro corretto (`misura_struttura.py`)
+
+Il metro di § 2 contava «letta» una riga-mobilia quando le sue parole comparivano in un nodo qualunque della pagina:
+il 98,7 % (iOS 27) e l'88,9 % (26.5) delle righe «lette» erano artefatti (§ 5 di `TITOLI_MONOTIPOGRAFICI.md`). Il metro
+nuovo: (i) guarda solo i nodi dei ruoli letti (indice, sommario, timbro, glossa e testatina riclassificata non contano);
+(ii) una riga-mobilia è letta se la riga di PDFKit **alla sua quota** che ne porta il testo è letta per intero, tante volte
+quante sono le righe della pagina che lo contengono (la testatina che ripete il titolo stampato o una frase del corpo non
+conta il titolo né la frase); (iii) un folio nudo è letto solo se è il primo o l'ultimo token del testo letto della
+pagina (non le cifre di una nota o di una voce d'indice); (iv) nella verità un folio per progressione vale solo alla quota
+di uno slot (ancorata, σ < 0,006, sulle pagine minime): una riga di nota o una voce d'indice che apre con un numero non è
+un folio anche se il numero coincide con la progressione; (v) la testatina di struttura («TITOLO III - …») che il ramo
+codici promuove a intestazione alla prima occorrenza è contata a parte (scelta di progetto, non lettura). In uscita, per
+volume, le righe lette dentro una fusione e un file `.lette.json` con pagina, ruolo e lunghezza (nessun testo).
+
+**Prova al contrario del metro nuovo (campo, iOS 27, letture del fork sulle estrazioni `b48`):** mobilia spenta → lette
+26.434 su 28.156 (la misura si accende); cambiamento innocuo → misura identica alla base (41). Dichiarato: la verità
+cambia poco (28.169 → 28.156 righe, le 13 righe di nota o d'indice non più prese per folio).
+
+### 6.3 Le reti della cura (campo, fotografia `v5` con cattura fresca su entrambe le generazioni)
+
+1. **L'estrazione cambia solo dove deve.** Confronto riga per riga della cattura `v5` con la `b48`
+   (`strumenti/giro_finale/verifica_cattura_split.py` nel laboratorio): ogni riga o è identica o è sostituita da righe
+   consecutive che ne portano esattamente gli span — iOS 27: 30 righe spezzate su 29 pagine; iOS 26.5: 198 su 194 (154 di
+   Marrone); **differenze inspiegate 0** su entrambe.
+2. **Doppia rete** (`logs/rete_v5.txt`): exit 0; rispetto alla fotografia precedente cambiano 9 volumi su iOS 27 e 11 su
+   26.5; scarto 26.5 → 27 da 3.652 a **3.230 segmenti (1,59 % → 1,40 %)**; oracolo dei confini di parola invariato su 27,
+   su 26.5 «altro» 8.485 → 8.363; Marotta identico.
+3. **Ogni differenza giudicata parola per parola contro la pagina** (`forkFuse/giudizio_split.py`, blocchi tolti cercati
+   fra le righe-mobilia della verità; i casi fuori verità guardati sulla pagina renderizzata): iOS 27 — 19 blocchi tolti
+   tutti testatine o folii (Costituzionale 14, Nomofanie 2 — nessuna lettera d'elenco persa —, Elementi UE, Lezioni,
+   DPC 2020); 1 blocco «fuori verità» che sulla pagina è la testatina col folio (Costituzionale p. 384: il titolo vero
+   «11.» in maiuscoletto, prima incollato alla testatina dentro il corpo, ora è un'intestazione); la coda di una glossa a
+   margine che PDFKit incollava a una riga di corpo torna nella glossa (Mandrioli 1 p. 240: la frase del corpo si legge
+   intera); **restituito** il «CAPO III» del Codice civile p. 559, che PDFKit incollava alla bandiera verticale «CODICE
+   CIVILE» e che spariva con lei; 5 titoli prima incollati alla testatina tornano intestazioni (Costituzionale 4, Lezioni
+   § 2). iOS 26.5 — gli stessi, più Marrone: 153 piè «Pag. N-M» col folio staccati dall'ultima parola della pagina (il
+   residuo accettato dalla decisione 4, § 12.15 di `LAYER2_PRODUCT_DECISIONS.md`, ora curato senza regole sul testo), 2 righe
+   di corpo restituite (pp. 371 e 401: erano fuse col piè e sparivano con lui) e un folio tolto da una voce d'indice
+   (p. 631, il folio della p. 635).
+4. **Metro corretto** (§ 6.2), prima → dopo: iOS 27 righe-mobilia lette come contenuto **36 → 18** (dentro una fusione 15 →
+   2), tolte fuori verità 179 → 178; iOS 26.5 **179 → 23** (dentro una fusione 155 → 4), 180 → 178.
+5. **Titoli** (metro «a unità»): ritrovati 4.775 → 4.780 e voci d'indice 2.690 → 2.695 (i titoli liberati dalle testatine),
+   inventati invariati (143 + 196 su iOS 27).
+6. **Parole fuori lessico**: iOS 27 nessuna nuova; iOS 26.5 le 12 «nuove» sono parole latine di Marrone prima incollate al
+   piè («…Pag.»), e spariscono 107 token incollati.
+7. **Annotazioni**: 0 ricollocazioni sbagliate su entrambe le generazioni; orfani dichiarati 321 → 321 (27), 322 → 323 (26.5).
+
+Residuo dichiarato (campo per la distribuzione, non giudicato riga per riga in questo giro): le 18 righe ancora lette su
+iOS 27 stanno in DeJure MM (4, ruolo nota), Mandrioli (4, corpo), DPC 2020 (4 intestazioni e 1 nota), EdD (3, di cui 2 dentro
+una fusione), Codice penale (1 intestazione), Patriarca (1 sommario di capitolo); su iOS 26.5 le stesse più Marrone (3 H1:
+i frontespizi di tomo senza folio, già dichiarati in § 4) e Torrente (2 dentro una fusione).

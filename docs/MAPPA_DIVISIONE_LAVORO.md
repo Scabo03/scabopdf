@@ -91,10 +91,15 @@ Legenda colonna «utente senza Mac»:
 | **Titoli «§ N.» in grassetto pieno e sezioni in maiuscoletto** (2026-10-07) | tronco (canale numerato, `promoteSectionLabels`) | Torrente, Mandrioli 1-4, Magnani, Mosconi | **Mandrioli, Magnani** | ✅ tutti |
 | **Guardia «paragrafo colorato»** del canale a colore; indirizzo web mai titolo (2026-10-07) | tronco (`pageItems`, `classify`) | Riviste DPC, Scoca, 5 retri di copertina | — | ✅ tutti |
 | **Riga fusa col contenuto mai tolta dalla riga del folio** (2026-10-07) | tronco (`detectFurniture`) | Costituzionale, Elementi UE, Marrone (26.5) | — | ✅ tutti |
+| **Livelli dei manuali: unità etichetta + titolo, livello relativo** (giro finale 2026-10-08) | tronco (`fuseStructureUnits` in pageItems, `normalizeManualLevels`) | 24 manuali + Lezioni, Nomofanie, EdD | **Mandrioli, Torrente, Marotta** | ✅ tutti |
+| **Righe fuse di banda separate nell'estrattore** (giro finale 2026-10-08) | radici (`RowSplit.swift`, agganciato in `PdfKitExtractor`) | 9 volumi su iOS 27, 11 su 26.5 (Marrone) | — | ✅ tutti |
+| **Sommario col numero di pagina in testa → non letto** (giro finale 2026-10-08) | tronco (`detectFrontMatterNoLeaderIndex`) | Patriarca | — | ✅ tutti |
 | Riconoscimento articoli codici → ARTICLE_HEADER (navigabile) | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
-| **Titolo d'apertura delle leggi complementari → H3** (2026-10-07) | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
+| **Titolo d'apertura delle leggi complementari → H1, come i Libri** (2026-10-07, livello dal giro finale 2026-10-08) | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
 | Gerarchia LIBRO/TITOLO/CAPO/SEZIONE + Consultazione Rapida | ramo `codici` | 2 codici | **codici** | ◑ solo-materiali |
 | Recupero apparato DPC (note sporgenti a margine sx) | ramo `rivistaDpc` | 2 riviste | — | ◑ solo-materiali |
+| **Titoli bianchi sulla fascia verde e livelli dal sommario stampato** (giro finale 2026-10-08) | ramo `rivistaDpc` (`RivistaDpcStructure.swift`) | 2 riviste | — | ◑ solo-materiali |
+| **Titoli DeJure in grassetto e ultima pagina degli export brevi** (giro finale 2026-10-08) | ramo `dejure` al livello delle righe (`DejureTitles.swift`, `Profile.isDejure`) | 4 DeJure | — | ◑ solo-materiali |
 | Titoli § → HEADING_4, testatine § → furniture | foglia gated Giappichelli | Lezioni, Mercato fin, +5 | **Lezioni** | ◑ solo-materiali |
 | Cromatura Estratto (CAPITOLO+titolo → heading) | foglia gated `isEstrattoChrome` | 1 (Estratto blindato) | — | ◑ solo-materiali |
 | Intestazioni line-level appunti | ramo `userNotes` | 4 appunti | — | ◑ solo-materiali |

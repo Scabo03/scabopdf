@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.40 (8 ottobre 2026, **giro finale della ripulizia mobile** su titoli e testatine, ultimo prima della fase Mac: titoli bianchi della DPC letti; livelli dei manuali (unità etichetta + titolo, livello relativo, verificati sull'indice stampato e sui segnalibri); leggi complementari al primo livello; sommario di Patriarca non letto; righe fuse di banda separate nell'estrattore e metro di struttura corretto; titoli DeJure in grassetto e ultima pagina degli export brevi; misura dei titoli «a unità» e prova al contrario nei due versi; bilancio di fase in `docs/BILANCIO_FASE_MOBILE.md`; **build 50 su TestFlight** (commit `14b1a9d` (caricata dal commit locale `a40f034`, riscritto solo per due frasi delle note nel repo dopo il controllo sul testo dei volumi: binario identico), Delivery UUID 0c534d4f…, note scritte dalla lane). Vedi STATO del 2026-10-08)
 > Versione: 2.39 (7 ottobre 2026 sera, giro «titoli e testatine»: **misura dei titoli** con verità indipendente (indice stampato, segnalibri, tipografia, geometria), affidabilità per volume e prova al contrario; **canale dei documenti monotipografici** (dispense Pages/Word/Google Docs: titoli e paragrafi dalla firma di formato, 44 → 570/580); titoli d'apertura delle leggi complementari nei codici a H3; «§ N.» in grassetto (Torrente 0 → 707) e sezioni in maiuscoletto; guardia «paragrafo colorato» (abstract DPC); regressione della build 47 trovata e curata (righe fuse col contenuto: Marrone 26.5, Costituzionale, Elementi); offerta di rielaborazione a 49; revisione indipendente: paragrafi spezzati dopo un'abbreviazione corretti, numeri e dichiarazioni allineati; **build 49 su TestFlight**. Vedi STATO del 2026-10-07 sera)
 > Versione: 2.38 (7 ottobre 2026 pomeriggio, giro «ancore»: censimento delle identità instabili; ANCORE PER CONTENUTO di segnalibri, sottolineature e posizione (impronte del testo normalizzato, nessun testo dei volumi); rete fissa sulle annotazioni con prova al contrario (0 ricollocazioni sbagliate su entrambe le generazioni); OFFERTA DI RIELABORAZIONE (due gesti, ritorno alla lettura precedente); rifinitura Nomofanie; principio § 12.14; **build 48 su TestFlight** (commit `0f3ec7b`, Delivery UUID 67466ea7…, note scritte dalla lane). Vedi STATO del 2026-10-07 pomeriggio)
 > Versione: 2.37 (7 ottobre 2026, giro «testatine e piè di pagina»: diagnosi Rizzo/Marrone/Mandrioli, **misura di struttura** con verità PyMuPDF indipendente e prova al contrario, cura nel tronco — riga del folio, tetto 120 per i canali ancorati, etichette di struttura BODY → intestazione — su entrambe le generazioni; accertamento sulle annotazioni (NON sopravvivono alla rielaborazione: id sequenziali) + progetto dell'offerta di rielaborazione; note «Cosa testare» automatiche dalla lane `beta`; decisione § 12.13; **build 47 su TestFlight** (commit `1f1fdc7`, Delivery UUID 2be6f4c9…, note scritte dalla lane). Vedi STATO del 2026-10-07)
@@ -55,6 +56,35 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
 
 ---
+
+## ▶ STATO — Giro finale della ripulizia mobile: DPC, livelli, codici, Patriarca, righe fuse, DeJure → build 50 — 2026-10-08
+
+**Documenti:** `docs/TITOLI_MONOTIPOGRAFICI.md` § 7 (voci 1-8), `docs/TESTATINE_MISURA_STRUTTURA.md` § 6 (righe fuse, metro
+corretto), **`docs/BILANCIO_FASE_MOBILE.md`** (chiuso e restante su titoli e testatine, voci aperte dell'app per peso,
+prerequisiti del Mac), `LAYER2_PRODUCT_DECISIONS.md` § 12.15 (le quattro decisioni). Referto:
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_GIRO_FINALE.md`. Strumenti nuovi nel laboratorio (`strumenti/giro_finale/`):
+`batteria_post.sh`, `verifica_cattura_split.py`, `navigazione.py`, `forkFuse/giudizio_split.py`, `forkLivelli/verifica_indice.py`,
+`forkControprova/`.
+
+**Fatto (commit, tutti con rete su iOS 27 e 26.5).** (1) DPC `ef26cb1`: il bianco della fascia è testo, lo scartava la regola
+delle ancore invisibili; foglia del ramo Riviste; articoli 19/19 e 11/11, sezioni 5/5 e 5/5 contro il sommario stampato.
+`dd4cb55`: headOnly solo con la testa unica nella finestra (ricollocazione sbagliata trovata dalla rete). (2) Livelli dei manuali
+`233f9ee` + `ace8986` (cascata di Marrone trovata contro i segnalibri e curata): contro l'indice stampato (3.430 voci, 26
+volumi) livello esatto 23 % → 66 % (33 % → 78 % con le Parti di Torrente), genitore giusto 83 % → 91 %; quinto livello: 22 voci in un volume → schema invariato.
+(3) Codici `c1b8d02`: titoli delle leggi complementari a H1. (4) Patriarca `2aceaaf`: 85 titoli falsi in meno. (5) Righe fuse
+`83a7f8f` (`RowSplit.swift` in `PdfKitExtractor`): cattura nuova `v5` diversa dalla `b48` solo per righe spezzate (27: 30, 26.5:
+198), righe-mobilia lette 36 → 18 (27) e 179 → 23 (26.5); Marrone 26.5 non legge più il piè «Pag.». (6) DeJure `dca99df`:
+titoli in grassetto navigabili, ultima pagina degli export brevi letta. (7) Misura dei titoli «a unità» `7ede2de` e prova al
+contrario nei due versi (spenti → 0; iniettati → inventati 3.999 + 431; innocuo → identica). (8) Rifiniture: dichiarate.
+
+**Reti finali (foto `v7` = codice definitivo, estrazioni `v5`):** doppia rete exit 0, scarto 26.5 → 27 1,40 %; titoli (27)
+ritrovati 4.922/7.050, indice 2.695/3.186, inventati 152 + 196; 26.5 ritrovati 4.891; righe-mobilia lette 18 (27) / 23 (26.5); parole fuori lessico nuove solo quelle giudicate (DPC, Marrone); annotazioni 0 ricollocazioni sbagliate su entrambe (orfani della catena 330/3.010 e 332/2.997). ScaboCore 773, ScaboApp 139 (9 saltati) + audit UI
+3 su iOS 26.5 e iOS 27. Vista iOS 27 su 8 volumi: 0 etichette vuote o diverse, rotore = titoli, app = runner.
+
+**Build 50:** caricata il 2026-10-08 alle 15:41 (commit `14b1a9d`): `fastlane beta` exit 0, UPLOAD SUCCEEDED, Delivery UUID `0c534d4f-e1fe-4a1c-ba9f-00bc7a82fb08`, note «Cosa testare» scritte dalla lane alle 15:43; `latestCureBuild` 50, formato della cache invariato. Prima del caricamento: revisione indipendente (9 punti) con rilievi corretti, `validate.sh` verde sul HEAD. Dettaglio in `docs/RELEASE_TESTFLIGHT.md`.
+
+**Residui:** in `docs/BILANCIO_FASE_MOBILE.md` § 1.3 e § 2. Basi del laboratorio da promuovere a `v7` (estrazioni `v5`) dopo
+l'ascolto della build 50.
 
 ## ▶ STATO — Titoli e testatine: misura dei titoli, dispense monotipografiche, codici, manuali, righe fuse → build 49 — 2026-10-07 (sera)
 

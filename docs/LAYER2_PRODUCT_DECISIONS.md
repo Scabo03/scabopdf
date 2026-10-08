@@ -986,6 +986,30 @@ Un'annotazione non si cancella mai per una rielaborazione, e non si ricolloca ma
 danno (meglio un'orfana dichiarata che un passo sbagliato dato per certo). È il fondamento della futura sincronizzazione
 fra iPad e Mac: ciò che viaggia sono impronte, non testo dei volumi.
 
+
+### 12.15 Struttura dei titoli: le quattro decisioni del giro finale mobile (2026-10-08)
+
+Decisioni del maintainer per l'ultimo giro su titoli e testatine prima della fase Mac (realizzazione e misure in
+`docs/TITOLI_MONOTIPOGRAFICI.md` § 7 e `docs/TESTATINE_MISURA_STRUTTURA.md` § 6).
+
+1. **Livelli dei manuali.** L'etichetta di struttura («CAPITOLO II», «Sezione prima») e il titolo che la segue sono
+   **un'unità sola**, al livello della sua classe (Parte sopra Capitolo sopra Sezione); un titolo numerato prende il
+   livello **relativo** al titolo che lo contiene. Il **quinto livello** si adotta solo se la misura mostra un caso forte,
+   e allora con tutte le conseguenze (schema, cache, ancore, reti). La misura ha trovato 22 voci d'indice vere al quinto
+   livello, tutte in un volume (0,6 % delle voci): caso debole. **Lo schema resta a quattro livelli**, e con lui il formato
+   della cache e le ancore; i numeri restano documentati per una scelta futura.
+2. **Codici.** Il titolo d'apertura di ogni **legge complementare** sta al **primo livello**, come i Libri del codice: una
+   legge complementare è un testo a sé, non un pezzo dell'ultimo Libro. La riga divisoria «LEGGI COMPLEMENTARI» della stampa
+   **resta una riga letta**, non un titolo: al primo livello farebbe scendere gli atti al secondo e farebbe collidere le loro
+   divisioni interne (Titolo, Capo, Sezione) col tetto dei quattro livelli. Una Parte o un Libro interni a un atto stanno
+   sotto il loro atto.
+3. **Sommari col numero di pagina in testa** (Patriarca e ogni manuale con la stessa forma): il sommario iniziale è un
+   **sommario non letto**, come i sommari a puntini; le sue voci non sono titoli. Una pagina del sommario che porta anche
+   contenuto vero (un riquadro di prosa) resta letta: nel dubbio non si toglie.
+4. **Marrone su iOS 26.5**: il piè «Pag. N-M» che PDFKit fonde con l'ultima riga di corpo è un **residuo accettato**, da
+   documentare e non da inseguire con regole sul testo. (Esito del giro: vedi `TESTATINE_MISURA_STRUTTURA.md` § 6, la
+   separazione delle righe fuse nell'estrattore lo tocca senza regole sul testo.)
+
 ---
 
 ## 13. Ricerca testuale

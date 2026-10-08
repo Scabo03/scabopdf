@@ -190,6 +190,13 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 50 — 2026-10-08, commit `14b1a9d` (caricata dal commit locale `a40f034`, riscritto solo per due frasi delle note nel repo dopo il controllo sul testo dei volumi: binario identico) (giro finale della ripulizia mobile, `docs/TITOLI_MONOTIPOGRAFICI.md` § 7,
+  `docs/BILANCIO_FASE_MOBILE.md`).** `fastlane beta` exit 0 (`CURRENT_PROJECT_VERSION` 50), UPLOAD SUCCEEDED, Delivery UUID
+  `0c534d4f-e1fe-4a1c-ba9f-00bc7a82fb08`, «Successfully set the changelog for build» alle 15:43: note da
+  `app/ios/fastlane/COSA_TESTARE.txt` (3.799 caratteri). Reti verdi sulle due generazioni (foto `v7`, cattura `v5` con
+  l'estrattore nuovo), annotazioni 0 ricollocazioni sbagliate, `validate.sh` verde sul HEAD (ScaboCore 773, ScaboAppTests 139
+  con 9 saltati, audit UI 3, iOS 26.5; su iOS 27 ScaboAppTests 139 e audit 3 sul codice uguale salvo commenti); `latestCureBuild` 50.
+  Prossimo numero: 51.
 - **Build 49 — 2026-10-07, commit `6e9e551` (giro «titoli e testatine», `docs/TITOLI_MONOTIPOGRAFICI.md`).** `fastlane beta`
   exit 0 (ultima su App Store Connect 48 → **49**; archivio incrementale in 20 s), UPLOAD SUCCEEDED, Delivery UUID
   `b13c2c37-dd5d-494b-a1f4-cee911cb6d47`, «Successfully set the changelog for build» alle 23:14: note per i tester da

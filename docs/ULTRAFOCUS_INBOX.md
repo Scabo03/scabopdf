@@ -140,6 +140,10 @@ cima alla destra; guasto di sola posizione, testo intatto; cross-producer.
   marginale alla riga di corpo (Mandrioli 2 p73, con fabbricazione di una parola) e una testatina al
   paragrafo (Torrente p454) dove la 27 le separa; su 27 restano 21 fusioni di riga su Patriarca che la
   cura dei confini di parola non tocca (`docs/GENERAZIONI_LETTORE.md` § 4.5). Sempre estrattore.
+  **Aggiornamento 2026-10-08 (giro finale):** le fusioni di riga che toccano la banda alta o bassa della pagina (testatina,
+  piè, folio, bandiera verticale dei codici) si separano ora nell'estrattore stesso (`RowSplit.swift`, dopo la riparazione
+  dei confini di parola; `docs/TESTATINE_MISURA_STRUTTURA.md` § 6). Restano il desync delle colonne e le fusioni a metà
+  pagina (glossa + corpo fuori dalle bande), lasciate per prudenza.
   Diagnosi completa in `docs/DIAGNOSI_CODICI_COLONNE.md` § 6. Codice INVARIATO
   (build 44 resta lo stato buono). **Utente senza Mac: scoperto** su 24 pagine
   (~0.9% dei due codici), MA non peggiorato (identità) e con danno limitato (le
@@ -406,7 +410,20 @@ dell'editor), con la **misura dei titoli** (verità indipendente, prova al contr
 stesso giro i titoli «§ N.» in grassetto (Torrente), le sezioni in maiuscoletto, i titoli d'apertura delle
 leggi nei codici. Resta aperta la parte dei livelli: D.10.
 
-### D.10 Livelli dei titoli nei manuali — APERTA (diagnosi e disegno 2026-10-07)
+### D.10 Livelli dei titoli nei manuali — ✅ CHIUSA (giro finale 2026-10-08, build 50)
+
+Curata con la decisione 1 del maintainer (`LAYER2_PRODUCT_DECISIONS.md` § 12.15, `docs/TITOLI_MONOTIPOGRAFICI.md` § 7.2):
+unità etichetta + titolo fusa in un titolo solo dentro `pageItems`, livello per classe d'unità e livello relativo dei
+titoli numerati in `normalizeManualLevels` (`ManualLevels.swift`). Contro l'indice stampato (3.430 voci, 26 volumi):
+livello esatto 23 % → 66 % (33 % → 78 % contando le Parti di Torrente), genitore giusto 83 % → 91 %, ordine relativo 93 % → 97 %;
+restano bassi Elementi UE, tesauro, Costituzionale e Mosconi; gerarchie appiattite 24 → 7.
+**Quinto livello: caso debole** (22 voci vere in un volume): schema, cache e ancore invariati. Nello stesso giro, chiuse
+con la loro rete: titoli bianchi della DPC (§ 7.1), titoli delle leggi complementari al primo livello (§ 7.3), sommario
+di Patriarca (§ 7.4), righe fuse di banda (D.8-ter, A.5), titoli DeJure in grassetto e ultima pagina degli export brevi
+(§ 7.5). Restano dichiarati in `TITOLI_MONOTIPOGRAFICI.md` § 7: frontespizi, la pagina 16 di Patriarca, le sezioni
+«in linea» di due articoli DeJure, la «Voce Imprenditore» (titoli a capoverso, 0/40).
+
+#### (storia) D.10 prima della cura
 
 Il livello di un titolo numerato si fissa all'emissione; le etichette in maiuscoletto («CAPITOLO I») diventano
 titolo solo dopo, e il titolo del capitolo prende H3 per taglia: l'unità etichetta + titolo occupa due livelli,
@@ -428,6 +445,10 @@ dichiarata per volume e prova al contrario. **Strato: STRUTTURALE** (radice). Re
 le testatine che PDFKit fonde con la prima riga di corpo (27) e il piè di Marrone fuso con l'ultima riga di corpo (26.5, 43 segmenti) (A.5), i folii romani, e il limite del metro
 quando la testatina ripete il titolo stampato nella stessa pagina. Aperto in D.9: le ancore per contenuto
 delle annotazioni, prerequisito dell'offerta di rielaborazione (`docs/RIELABORAZIONE_PROGETTO.md`).
+**Aggiornamento giro finale (2026-10-08, build 50):** le fusioni di banda (testatina, piè o folio fusi da PDFKit con
+una riga di contenuto) si separano ora nell'estrattore (`RowSplit.swift`, guardie per richiami, capilettera, numeri a metà
+pagina e testo bianco), e il metro è corretto (`docs/TESTATINE_MISURA_STRUTTURA.md` § 6): righe-mobilia lette come
+contenuto 36 → 18 (27) e 179 → 23 (26.5); il piè «Pag.» di Marrone su 26.5 non si legge più dentro l'ultima riga.
 
 ### D.9 Annotazioni non sopravvivono alla rielaborazione — ✅ ANCORE PER CONTENUTO + OFFERTA (2026-10-07, build 48)
 

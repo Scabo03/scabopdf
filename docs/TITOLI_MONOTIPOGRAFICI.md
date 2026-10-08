@@ -426,3 +426,205 @@ dell'app): 24 volumi, 326 unità fuse, circa 690 livelli cambiati, ritrovati 2.8
 voci). Tocca i livelli di quasi tutti i manuali: va fatta con la sua verifica sulla pagina, livello per livello,
 e col metro corretto — prossimo giro. Restano anche il tetto H4 reale (cinque livelli in Costituzionale,
 Patriarca, Lineamenti, Magnani, Rizzo): un quinto livello tocca lo schema, scelta del manutentore.
+
+## 7. Giro finale della ripulizia mobile (2026-10-08, partenza `0554042`, build 49)
+
+> Ultimo giro su titoli e testatine prima della fase Mac. Decisioni del manutentore in
+> `LAYER2_PRODUCT_DECISIONS.md` § 12.15. Officina: `~/Developer/scabopdf-gen-lab/` (letture `v1`…`v6`,
+> `reti/`, `strumenti/giro_finale/`, referto `referto/REFERTO_GIRO_FINALE.md`). Ogni voce è stata giudicata
+> sulle due generazioni (iOS 27 principale, iOS 26.5 secondaria) con il runner sulle estrazioni catturate
+> e, a campione, nella vista dell'app sul Simulatore iOS 27. Etichette di prova come in § 1.
+
+### 7.1 Rivista DPC: il testo bianco della fascia e i livelli (voce 1, commit `ef26cb1`)
+
+**Diagnosi (campo, entrambe le generazioni).** Il titolo d'articolo e di sezione, l'autore, l'affiliazione, la
+gerenza e alcune intestazioni di tabella della Rivista DPC sono **testo** bianco su una fascia verde, non
+un'immagine: PDFKit lo estrae e lo scartava il tronco con la regola delle ancore invisibili (`isNearWhite` in
+`pageItems`). Il giro precedente (§ 4.1) lo dava per non curabile senza sapere del riempimento sotto il testo:
+smentito, basta la porta di ramo. Censimento del bianco sui 52 volumi (`reti/censimento_bianco_*.json`): fuori
+dalla DPC la stessa regola toglie solo mobilia, copertine e ancore invisibili, quindi il tronco resta com'è.
+
+**Cura (foglia del ramo Riviste, porta `isRivistaDpc`, `RivistaDpcStructure.swift`).** Il bianco a 6 pt e oltre
+si legge; le righe bianche del titolo diventano un titolo solo, H1 sulla pagina d'apertura di sezione e H2
+sull'articolo; traduzioni grigie, autore e affiliazione restano corpo in blocchi propri; il grande numero verde
+si appaia per geometria al suo titolo di paragrafo (H3, H4 per «N.M.»), emesso dove il titolo comincia; il
+trattino lessicale a fine riga si conserva; il colorato a taglia di corpo e il nero più grande del corpo non
+sono titoli; il canale a colore della mobilia non prende più i numeri di paragrafo. Scartate: togliere la
+regola del bianco nel tronco (tornerebbero in lettura ancore e copertine di altri volumi); leggere il bianco
+come corpo senza struttura (i titoli d'articolo resterebbero fuori dalla navigazione).
+
+**Reti (campo).** Cambiano solo i due fascicoli DPC; 0 lettere perse, 419 + 293 parole restituite (conteggio del giro; la revisione indipendente, con un altro conteggio, ne trova circa 650 + 410, nessuna tolta); contro il
+sommario stampato articoli 19/19 e 11/11 a H2 alla pagina giusta, sezioni 5/5 e 5/5 a H1, voci dei sommari
+d'articolo 201/206 col numero e al livello (le 5 mancanti: 4 incongruenze della stampa, 1 artefatto del
+controllo); le parole fuori lessico nuove sono tutte parole del PDF; vista iOS 27 pulita, app = runner. Test:
+`RivistaDpcStructureTests` (13). **Effetto collaterale visto dalla rete sulle annotazioni e curato**
+(`dd4cb55`): la prova «orfana» col campione nuovo ha trovato nel Codice penale una ricollocazione headOnly
+sbagliata (la ristampa di un comma due pagine dopo, stessa testa); headOnly vale ora solo se la testa è unica
+nella finestra di ±2 pagine, altrimenti orfana dichiarata.
+
+### 7.2 Livelli dei manuali (voce 2, decisione 1, commit `233f9ee`)
+
+**Cura (`ManualLevels.swift`).** Parte 1, dentro `pageItems`: l'etichetta sola («CAPITOLO II», «Sezione prima»)
+e il titolo che la segue sulla stessa pagina — centrato, maiuscolo o a bandiera, mai numerato, mai un'altra
+unità — diventano un titolo solo; l'unità che va a capo in un titolo minuscolo si unisce; il titolo perso in
+testa al corpo si recupera. Parte 2, in `assembleDocument` di Generic e Cortina: livello per classe d'unità in
+ordine stretto PARTE < CAPITOLO < SEZIONE (il titolo solo su una pagina divisoria seguito da un'unità è una
+PARTE), titoli numerati relativi con la pila delle intestazioni aperte (un titolo non numerato allo stesso
+livello è un fratello, un'unità è sempre genitore), compattazione, tetto a 4. Solo dove ci sono unità o titoli
+numerati; non nei codici, nella DPC, nei monotipografici, nell'Estratto, nei DeJure. Test: `ManualLevelsTests`
+(13, con prove al contrario).
+
+**Verifica contro l'indice stampato (campo; `strumenti/giro_finale/forkLivelli/verifica_indice.py`, 3.430
+voci di 26 volumi, iOS 27 e 26.5 uguali).** Coppie di voci consecutive nello stesso ordine relativo 93 % → 97 %;
+genitore giusto 83 % → 91 %; livello esatto **23 % → 66 %** con lo strumento così com'è, **33 % → 78 %** contando le 13 Parti di
+Torrente, che l'indice stampato non porta come livello (correzione fatta a mano, non nello strumento; ricontrollata dalla
+revisione indipendente sulle letture finali). Volumi ancora bassi sul livello esatto: Elementi UE 7/33, tesauro 35/247,
+Costituzionale 302/423, Mosconi 111/155. Marotta cambia come
+previsto e corrisponde al suo indice (capitolo con etichetta e titolo in un'unità a H1, paragrafi a H2).
+
+**Misura dei titoli (campo).** Il metro di § 1 abbina uno a uno e conta l'unità fusa come un titolo trovato e
+uno perso: ritrovati 4.712 → 4.588 (iOS 27) è un artefatto. Con il metro «a unità» (adottato in
+`misura_titoli.py` in questo giro, § 7.6) ritrovati 4.771 → 4.775, voci d'indice 2.649 → 2.690, inventati
+145 + 291 → 143 + 281, **gerarchie appiattite 24 → 7**, inversioni 0. Tre cali apparenti, guardati uno per uno:
+tesauro −7 voci d'indice, Lineamenti −7, Mosconi −1 ritrovato — in `v1` erano abbinamenti spuri del metro (il
+prefisso di 30 caratteri di un'etichetta sola, o di un frammento di titolo di capitolo, contenuto per caso nel
+testo di un'altra voce); in `v2` l'intestazione è l'unità intera e la coincidenza sparisce. La sezione di
+Mosconi p. 513 era persa anche prima.
+
+**Regressione trovata dalla rete di navigazione e curata (campo, commit `ace8986`).** La verifica sull'indice stampato non
+copre Marrone (8 voci); i suoi 1.562 segnalibri sì. Dopo la cura i segnalibri di secondo livello, tutti paragrafi «§»,
+finivano 36 a H2 e 174 a H3 (gerarchia appiattita t2b≡t3b): il falso titolo «Nota» (il marcatore della sezione delle note,
+già H3 prima del giro) fra due «§» diventava fratello del «§» seguente, che scendeva al suo livello, e la cascata durava
+fino al capitolo dopo. La regola del fratello valeva anche per un non numerato più piccolo del numerato; ora un non numerato
+più piccolo è chiuso dal numerato che segue, e il fratello resta a pari livello (il titolo a cui il lettore di sistema stacca
+il numero). Sui 52 volumi cambia solo Marrone: segnalibri di secondo livello → H2 per 210 voci, come alla build 49. Test con
+prova al contrario. Mandrioli 3 e 4, segnalati anch'essi come «appiattiti», sono coerenti coi segnalibri (Parte H1, Capitolo
+H2, paragrafo H3, sotto-paragrafo H4): l'appiattimento viene da tre voci di front-matter al primo livello dei segnalibri.
+
+**Quinto livello (decisione 1, condizionata).** Voci d'indice al quinto livello vero, sui 26 volumi con un indice stampato
+leggibile: 22, tutte in un volume (Lineamenti), 0,6 % delle voci: caso debole (§ 6 citava cinque volumi con cinque livelli
+tipografici: misurati sull'indice, il quinto livello vero sta in uno solo). **Schema, formato della cache e ancore invariati.**
+
+**Residui dichiarati.** Nomofanie cambia solo per compattazione (capitoli H2 → H1), non verificato su un indice;
+i titoli spazzatura dell'OCR dell'EdD restano. Annotazioni: 0 ricollocazioni sbagliate, ma gli orfani dichiarati
+della rete salgono da 66 a 316 (iOS 27) / 317 (26.5): sono i segnalibri sintetici posati su un'etichetta o un
+titolo che ora è un'unità fusa (un segmento contenuto vale solo con almeno 64 lettere in più). Effetto reale: un
+segnalibro posato sull'etichetta o sul titolo di un'unità diventa «da ricollocare» dopo la rielaborazione.
+
+### 7.3 Codici: il titolo d'apertura di ogni legge complementare al primo livello (voce 3, decisione 2, commit `c1b8d02`)
+
+**Decisione e motivazione.** Il titolo d'apertura di ogni atto ristampato sale da H3 a H1, come i Libri del codice
+(`CODICI_LAW_TITLE_LEVEL = 1`). La stampa ha una pagina divisoria «LEGGI COMPLEMENTARI» e, nell'indice sommario,
+la voce d'insieme, poi le materie, poi gli atti. Metterla al primo livello e gli atti al secondo farebbe collidere
+le divisioni interne degli atti (TITOLO, CAPO, SEZIONE) col tetto di quattro livelli e salterebbe comunque la
+materia: la divisoria resta una riga letta e l'atto va al primo livello, dove annida pulito TITOLO > CAPO >
+SEZIONE > articolo. Dopo la divisoria una PARTE o un LIBRO interni a un atto scendono al secondo livello, sotto il
+loro atto (4 casi); prima della divisoria e senza divisoria nulla. Test in `CodiciLawTitlesTests` con prova al
+contrario.
+
+**Reti (campo, entrambe le generazioni identiche).** Cambiano solo i due codici, stessi segmenti, 0 lettere perse;
+penale H1 15 → 226 e H3 729 → 516, civile H1 12 → 103 e H3 802 → 709 (710 alla fine del giro, col CAPO restituito dalla voce 5), articoli invariati; le divisioni interne
+degli atti hanno l'atto fra gli antenati in 527/555 (penale) e 760/779 (civile), prima 0 e 9. Vista iOS 27 (sonda del
+giro finale, codice delle voci 1-6): Codice penale 1.059 intestazioni, rotore 6.681 elementi con gli articoli, 0 etichette
+vuote o diverse, salto a ogni elemento riuscito, app = runner in lettere e titoli. Dichiarato: per i documenti oltre 1.500
+pagine (i codici) l'app non costruisce l'albero della Consultazione Rapida (apertura leggera, build 23): la gerarchia nuova
+si percorre col rotore.
+
+### 7.4 Sommario iniziale di Patriarca (voce 4, decisione 3, commit `2aceaaf`)
+
+Seconda forma di pagina-sommario in `detectFrontMatterNoLeaderIndex` (`isLeadingPageNumberTocStructured`): almeno
+10 righe, e il 20 %, che aprono con un numero nudo; almeno 5 numeri arabi in testa non decrescenti; nessun blocco di
+prosa (con un blocco di prosa la pagina resta letta). **Reti (campo, entrambe le generazioni):** cambia solo
+Patriarca; le pagine 5-16 del PDF diventano TOC_GENERAL (sommario non letto, come quelli di Mandrioli e Marotta) e
+spariscono 85 titoli falsi (1 H1 e 84 H4); inventati su pagine senza corpo 281 → 196. Residuo: la pagina 17 del PDF resta
+letta perché porta il riquadro con l'attribuzione dei capitoli agli autori (contenuto vero): 13 voci restano
+titoli falsi; separarle chiede un'uscita per riga, non per pagina, del rilevatore d'apparato. Annotazioni: 0
+sbagliate, +5 orfani dichiarati (segnalibri sintetici sulle righe del sommario, ora non letto). Test:
+`LeadingPageNumberTocTests` (2, con prove al contrario) e il test di § FrontMatter aggiornato alla decisione.
+
+### 7.5 Righe fuse separate nell'estrattore (voce 5) e titoli DeJure (voce 6)
+
+**Righe fuse.** Cura, metro corretto e reti in `TESTATINE_MISURA_STRUTTURA.md` § 6. Sui titoli: tornano intestazioni il «CAPO III» del
+Codice civile (PDFKit lo incollava alla bandiera verticale della pagina e spariva con lei), 4 titoli di Costituzionale e il
+§ 2 di Lezioni (incollati alla testatina dentro il corpo); ritrovati 4.775 → 4.780, voci d'indice 2.690 → 2.695, inventati
+invariati. Con la voce 6 gli inventati nel corpo salgono 143 → 152 (+9, tutti DeJure e tutti titoli veri: sezioni del
+sommario, un titolo d'articolo, 7 titoli di massima su tre righe che la verità tipografica non conta).
+
+**DeJure: titoli in grassetto a taglia di corpo e ultima pagina degli export brevi — diagnosi (campo, § 4.3).** Nelle dottrine i titoli di sezione e nelle massime i titoli delle massime sono righe in
+grassetto alla taglia del corpo, dentro i run di corpo: il tronco riconosce i titoli dallo scarto di taglia e li leggeva come
+corpo. Il grassetto c'è nelle estrazioni di entrambe le generazioni; nei nodi non resta né il grassetto né il confine di
+riga, quindi la foglia lavora sulle righe. **Reperto fuori dai titoli, curato perché è contenuto perso:** negli export
+DeJure brevi l'ultima pagina, che porta il timbro «… © Copyright Giuffrè …», era presa per un colophon di front-matter e
+scartata intera (ST+MM: la fine della seconda massima e tutta la terza, circa 600 lettere, non si leggevano; un export di una
+pagina sola sarebbe sparito).
+
+**Cura.** Porta `Profile.isDejure` con la stessa firma a tre segnali della porta del ramo (`extractionIsDejure`, condivisa da
+`DeJurePlugin.matches`). Foglia `DejureTitles.swift` in `pageItems`, dopo i titoli numerati e monotipografici: blocco di
+righe consecutive a taglia di corpo, la prima almeno all'80 % in grassetto (60 % se apre con un numero di sezione: una
+locuzione latina in tondo dentro il titolo), le seguenti al 60 %, al più 3 righe e 260 caratteri, mai l'etichetta «Note:»
+(resta nel corpo, dove il ramo la cerca per separare le note); numerato → titolo numerato a livello relativo, non numerato →
+primo livello; il titolo d'articolo delle dottrine (grassetto appena più grande del corpo, oggi H4) sale al primo livello,
+così l'articolo contiene sezioni (2) e sottosezioni (3). Nel colophon di front-matter, sui DeJure, le righe del timbro non
+contano. I livelli dei manuali (§ 7.2) restano fuori dai DeJure. Scartate: un passaggio sui nodi (nessun grassetto né
+confine di riga); 200 caratteri (perde tre titoli di massima lunghi). Test: `DejureTitlesTests` (6, ogni regola con la sua
+prova al contrario).
+
+**Reti (campo, runner sulle estrazioni `v5`, entrambe le generazioni identiche).** Cambiano solo i 4 DeJure; lettere e
+cifre identiche nei tre volumi con titoli; note invariate (98 / 468 / 54). Concause: titolo d'articolo a H1 (in due nodi:
+la fusione del tronco non prende la terza riga, preesistente), 8 sezioni H2, 2 sottosezioni H3; Cartabia: 7 titoli
+d'articolo H1, 37 sezioni H2, 1 H3; MM: 104 titoli di massima H1; ST+MM: 3 titoli di massima H1 e l'ultima pagina letta
+(+583 lettere; resta non letto solo il timbro). Contro il sommario stampato di ogni articolo (rapporto del fork): Concause
+8 + 2 = 8 + 2; Cartabia articoli 1, 2, 4, 6, 7 uguali; articoli 3 e 5 con sezioni «in linea» non in grassetto → non prese
+(9 sezioni, residuo dichiarato). Effetto da dichiarare: nelle dottrine le note lunghe ora si leggono alla fine di ogni
+sezione e non più dell'articolo.
+
+### 7.6 La misura dei titoli: metro «a unità» e prova al contrario nei due versi (voce 7)
+
+**Metro «a unità» (adottato in `misura_titoli.py`).** Dopo la fusione delle unità (§ 7.2) un'intestazione dell'app
+porta etichetta e titolo; il metro uno-a-uno contava la seconda voce di verità della stessa pagina come persa. Ora una
+voce di verità non abbinata può essere assorbita da un'intestazione già abbinata **della stessa pagina** che ne
+contiene il testo per intero (almeno 4 caratteri normalizzati), e nella mappa dei livelli conta una volta sola.
+Rischio dichiarato: una voce corta contenuta per caso in un'intestazione più lunga della stessa pagina conterebbe come
+ritrovata. Prova al contrario del metro nuovo sulle letture guaste del fork (iOS 27): canali spenti → ritrovati 0, indice 0, inventati 0; titoli falsi iniettati → inventati 3.999 + 431, gli stessi del metro uno-a-uno; innocuo → inventati e indice identici, ritrovati 4.825 (il metro uno-a-uno ne conta 4.778 sulle stesse letture: 47 voci assorbite da un'intestazione della stessa pagina già abbinata — dedotto: titoli su due righe già fusi alla build 49).
+
+**Prova al contrario nei due versi (campo; vale per la misura dei titoli: per quella di struttura i versi provati sono
+mobilia spenta e cambiamento innocuo, non un contenuto tolto apposta; `strumenti/giro_finale/forkControprova/`, copie di ScaboCore a `0554042`,
+estrazioni `b48`, metro uno-a-uno, entrambe le generazioni).** Base iOS 27: ritrovati 4.778, indice 2.649/3.186,
+inventati 216 + 303.
+
+| guasto | gen | ritrovati | indice | inventati corpo + senza corpo |
+|---|---|---|---|---|
+| canali dei titoli spenti | 27 / 26.5 | **0** / **0** | 0 / 0 | 0 + 0 |
+| titoli falsi iniettati (prima riga di un run di prosa ogni 4) | 27 / 26.5 | 4.826 / 4.795 | 2.653 / 2.653 | **3.999** + 431 / **4.000** + 431 |
+| innocuo (un commento) | 27 / 26.5 | 4.778 / 4.747 | 2.649 / 2.649 | 216 + 303 / 214 + 303 |
+
+Iniettati 4.005 (27) / 4.008 (26.5) titoli falsi: la misura ne conta 3.911 / 3.914 come inventati, 48 come
+ritrovati (righe iniettate che coincidono con titoli veri incollati in testa a un run: il conteggio dei persi «in
+testa» cala in pari), circa 46 assorbiti da segnalibri, indice o verità su pagine vicine. Innocuo: letture 52/52
+identiche al byte e misura identica su entrambe. Chiude il limite dichiarato in § 1.6 (mancava il verso «inventati»
+e la 26.5).
+
+**Verità indipendenti per le dispense (campo; il limite resta).** Sui 10 documenti monotipografici nessun PDF ha
+segnalibri; nessun albero di struttura dell'editor distingue i titoli dal corpo (Google Docs e Word: tutto paragrafo,
+gli autori non hanno usato stili di titolo, da qui la loro natura monotipografica; Pages: tutto H1).
+L'albero dà solo i **confini di paragrafo**. Su questo si reggono due controlli: **condizione necessaria** (ogni
+titolo dell'app è un paragrafo intero dell'editor) 583/583 sugli 8 documenti con albero, su entrambe le generazioni;
+**verità semi-indipendente** (paragrafi dell'editor con la forma della verità geometrica): 596 a forma di titolo,
+583 titoli dell'app, accordo 516, disaccordi in prevalenza firme d'autore, ultimi elementi di pagina ed elenchi, non
+giudicati sulla pagina. Per «Teoria generale» resta solo la verità geometrica (non indipendente) più la lettura.
+**Scoperta:** la «Voce Imprenditore» (un OCR di voce EdD passato per Google Docs) ha un SOMMARIO stampato in prosa
+con 40 voci (7 sezioni e 33 paragrafi «N. Titolo. -» a capoverso): **l'app ne trova 0/40** e la misura la dava «NON
+misurato» — un perso totale che la misura non vedeva. Non curato (titoli a capoverso dentro il corpo, su un solo
+documento OCR): dichiarato, con la verità «sommario stampato in prosa» proposta per la misura (prototipo
+`forkControprova/sommario_imprenditore.py`).
+
+### 7.7 Rifiniture e residui (voce 8)
+
+- **«Breve storia» p. 13** (spazio fra l'elisione corsiva e la parola in tondo): resta residuo d'estrattore come dichiarato
+  in § 4.3 — nasce in PDFKit 27 senza glifo spazio nel PDF, e quattro spazi veri della fonte hanno la stessa forma; nessuna
+  regola sul testo è sicura.
+- **Trattino lessicale nella DPC** (4 composti inglesi uniti, § residui della build 49): curato nella voce 1
+  (`dpcJoinKeepingHyphens`).
+- **Note dei titoli di legge nei codici** lette nel punto della pagina (19 misurate): invariato, dichiarato.
+- **Frontespizi**, **folii romani del front-matter**, **le due righe tipografiche dell'EdD**: peso basso, dichiarati in
+  § 4.3 e § 5, non toccati.
