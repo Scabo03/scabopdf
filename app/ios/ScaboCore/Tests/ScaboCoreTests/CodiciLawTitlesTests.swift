@@ -3,7 +3,7 @@
 //  ScaboCoreTests
 //
 //  Ramo Codici — foglia 5: il titolo d'apertura di un atto ristampato (leggi complementari) diventa
-//  HEADING_3. Segnali solo del dispositivo: taglia del corpo (il grassetto è perso), margine sinistro della
+//  HEADING_1, come i Libri (decisione del giro finale, 2026-10-08; era HEADING_3). Segnali solo del dispositivo: taglia del corpo (il grassetto è perso), margine sinistro della
 //  pagina, riga che attraversa il canalino fra le colonne, citazione dell'atto in apertura. Testi di prova.
 //
 
@@ -38,7 +38,7 @@ final class CodiciLawTitlesTests: XCTestCase {
 
     // MARK: - Promosso
 
-    func test_lawTitle_twoRows_promotedToHeading3_materiaStaysBody() {
+    func test_lawTitle_twoRows_promotedToHeading1_materiaStaysBody() {
         let lines = [
             line("MATERIA DI PROVA", x0: 140, x1: 220, y: 500),
             line("L. 12 marzo 2001, n. 99. – Norme di prova per la disciplina di un istituto qualunque", x0: 31.2, x1: 326, y: 488),
@@ -47,7 +47,7 @@ final class CodiciLawTitlesTests: XCTestCase {
         ].map(sm)
         let items = splitCodiciArticleRun(lines, body)
         let h = headings(items)
-        XCTAssertEqual(h.first?.1, 3)
+        XCTAssertEqual(h.first?.1, 1)
         XCTAssertEqual(h.first?.0, "L. 12 marzo 2001, n. 99. – Norme di prova per la disciplina di un istituto qualunque e delle sue conseguenze (G.U. 1 aprile 2001, n. 76).")
         XCTAssertEqual(bodies(items).first, "MATERIA DI PROVA", "la materia centrata resta corpo, a sé")
         XCTAssertEqual(h.count, 2, "il titolo e l'articolo")
@@ -87,7 +87,7 @@ final class CodiciLawTitlesTests: XCTestCase {
         let items = splitCodiciArticleRun(lines, body)
         XCTAssertEqual(headings(items).first?.0, "L. 12 marzo 2001, n. 99. – Norme di prova (G.U. 1 aprile 2001, n. 76).")
         XCTAssertTrue(bodies(items).contains("(Stralcio)"), "lo stralcio resta corpo")
-        XCTAssertEqual(headings(items).map { $0.1 }, [3, 2], "titolo dell'atto, poi CAPO dalla foglia di struttura")
+        XCTAssertEqual(headings(items).map { $0.1 }, [1, 2], "titolo dell'atto (primo livello), poi CAPO dalla foglia di struttura")
     }
 
     // MARK: - Rifiutato
@@ -105,6 +105,21 @@ final class CodiciLawTitlesTests: XCTestCase {
         XCTAssertNil(codiciLawTitleEnd([sm(line("L. 12 MARZO 2001, N. 99", x0: 31.2, x1: 326, y: 520, size: 9.98))], from: 0, body))
         // citazione nel corpo dopo altre parole
         XCTAssertNil(codiciLawTitleEnd([sm(line("secondo la L. 12 marzo 2031, n. 99. – prova", x0: 31.2, x1: 326, y: 488))], from: 0, body))
+    }
+
+    func test_afterLeggiComplementariDivider_innerPartOfAnAct_goesUnderTheAct() {
+        func node(_ t: SemanticCategory, _ text: String) -> NodeDict { NodeDict(id: "n", type: t, page_index: 9, text: text, level: t == .BODY ? nil : 1) }
+        var nodes = [node(.HEADING_1, "LIBRO PRIMO - Libro di prova"), node(.BODY, "LEGGI COMPLEMENTARI"),
+                     node(.HEADING_1, "L. 12 marzo 2031, n. 99. – Legge di prova (G.U. 1 aprile 2031, n. 76)."),
+                     node(.HEADING_1, "PARTE I - Parte di prova dell'atto")]
+        _ = normalizeCodiciStructure(&nodes)
+        XCTAssertEqual(nodes.map { $0.type }, [.HEADING_1, .BODY, .HEADING_1, .HEADING_2], "la PARTE dell'atto va sotto l'atto")
+        // prova al contrario: senza la divisoria nessuna retrocessione
+        var noDivider = [node(.HEADING_1, "LIBRO PRIMO - Libro di prova"),
+                         node(.HEADING_1, "L. 12 marzo 2031, n. 99. – Legge di prova (G.U. 1 aprile 2031, n. 76)."),
+                         node(.HEADING_1, "PARTE I - Parte di prova dell'atto")]
+        _ = normalizeCodiciStructure(&noDivider)
+        XCTAssertEqual(noDivider.map { $0.type }, [.HEADING_1, .HEADING_1, .HEADING_1])
     }
 
     func test_noteRun_neverOpensLawTitle() {

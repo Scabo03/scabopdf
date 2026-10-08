@@ -242,6 +242,14 @@ func normalizeCodiciStructure(_ nodes: inout [NodeDict])
             nodes[i].type = .BODY; nodes[i].level = nil; nodes[i].length_category = nil
         }
     }
+    // 1-bis. Dopo la divisoria «LEGGI COMPLEMENTARI» il primo livello è dei titoli d'atto: una PARTE o un LIBRO interni
+    //    a un atto (testi unici, codici di settore ristampati) scendono al secondo, sotto il loro atto. Prima della
+    //    divisoria nessun cambiamento (il Libro che segue la delega o l'attuazione è del codice); senza divisoria, nulla.
+    if let divider = nodes.firstIndex(where: { $0.type == .BODY && jsTrim($0.text ?? "").uppercased() == "LEGGI COMPLEMENTARI" }) {
+        for i in nodes.indices where i > divider && nodes[i].type == .HEADING_1 && !codiciOpensLawCitation(nodes[i].text ?? "") {
+            nodes[i].type = .HEADING_2; nodes[i].level = 2
+        }
+    }
     // 2. Fusione del sottotitolo nel TITOLO (etichetta unica e informativa per l'albero).
     var fused: [NodeDict] = []
     fused.reserveCapacity(nodes.count)
@@ -400,11 +408,14 @@ func splitCodiciArticleRun(_ lines: [LineSummary], _ body: Double, role: RunRole
 // pagina è alla taglia del corpo, in grassetto (perso sul dispositivo), al margine sinistro della PAGINA
 // (x0 ≈ 31, contro 39,7 degli articoli e ≥ 72 delle materie centrate) e largo quanto la pagina: è l'unica
 // riga dei codici che attraversa il canalino fra le colonne. Finiva in testa o in coda a un BODY, mai nel
-// rotore. Decisione del manutentore (giro «titoli e testatine», 2026-10-07): titolo di TERZO livello.
-// Simulato sulle due generazioni prima di scriverlo: penale 213 titoli, civile 93, nessun falso; mancano
-// i 3 titoli del penale che PDFKit scombina (A.5).
+// rotore. Simulato sulle due generazioni prima di scriverlo: penale 213 titoli, civile 93, nessun falso; mancano
+// i 3 titoli del penale che PDFKit scombina (A.5). Livello — decisione del manutentore del giro finale
+// (2026-10-08): PRIMO, come i Libri, perché una legge complementare è un testo a sé e non un pezzo dell'ultimo
+// Libro (al terzo livello pendeva sotto l'ultimo TITOLO del Libro o dell'atto precedente). Così l'atto annida pulito
+// TITOLO (2) > CAPO (3) > SEZIONE (4) > articolo. La divisoria «LEGGI COMPLEMENTARI» della stampa resta una riga
+// letta: al primo livello farebbe scendere gli atti al secondo e farebbe collidere le loro divisioni interne.
 
-let CODICI_LAW_TITLE_LEVEL = 3
+let CODICI_LAW_TITLE_LEVEL = 1
 /// La prima riga sta al margine della pagina (titoli a 31, articoli a 39,7, materie da 72).
 let CODICI_LAW_TITLE_MAX_X0 = 36.0
 /// …e attraversa il canalino (nessuna riga di colonna arriva oltre il gutter + 5).
@@ -683,7 +694,7 @@ public final class CodiciPlugin: ExtractionPlugin {
         if furnitureCount > 0 {
             warnings.append("plugin:codici:furniture_lines_removed_\(furnitureCount)")
         }
-        let lawTitles = nodes.filter { $0.type == .HEADING_3 && codiciOpensLawCitation($0.text ?? "") }.count
+        let lawTitles = nodes.filter { $0.type == .HEADING_1 && codiciOpensLawCitation($0.text ?? "") }.count
         if lawTitles > 0 { warnings.append("plugin:codici:law_titles_\(lawTitles)") }
         return ScabopdfDocument(
             schema_version: SUPPORTED_SCHEMA_VERSION,
