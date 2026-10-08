@@ -83,8 +83,20 @@ ritrovati 4.922/7.050, indice 2.695/3.186, inventati 152 + 196; 26.5 ritrovati 4
 
 **Build 50:** caricata il 2026-10-08 alle 15:41 (commit `14b1a9d`): `fastlane beta` exit 0, UPLOAD SUCCEEDED, Delivery UUID `0c534d4f-e1fe-4a1c-ba9f-00bc7a82fb08`, note «Cosa testare» scritte dalla lane alle 15:43; `latestCureBuild` 50, formato della cache invariato. Prima del caricamento: revisione indipendente (9 punti) con rilievi corretti, `validate.sh` verde sul HEAD. Dettaglio in `docs/RELEASE_TESTFLIGHT.md`.
 
-**Residui:** in `docs/BILANCIO_FASE_MOBILE.md` § 1.3 e § 2. Basi del laboratorio da promuovere a `v7` (estrazioni `v5`) dopo
-l'ascolto della build 50.
+**Residui:** in `docs/BILANCIO_FASE_MOBILE.md` § 1.3 e § 2.
+
+**Basi del laboratorio promosse a `v7` (2026-10-08, su richiesta del maintainer, fase mobile chiusa).** `letture/base_<gen>` =
+foto `v7` (codice di `main`), `estrazioni/base_<gen>` = cattura `v5` (estrattore con le righe fuse separate); archiviate le basi
+precedenti come `letture/base_fin2_<gen>` (build 49) ed `estrazioni/base_20261006_<gen>`. Reti contro le basi nuove (foto
+`prom`, HEAD `32e3140`): doppia rete exit 0, letture identiche 52/52 su entrambe le generazioni (0 segmenti cambiati), Marotta
+identico senza «diverso atteso», scarto 26.5 → 27 1,40 %, parole fuori lessico nuove 0/0. **Rete sulle annotazioni ROSSA** (exit
+1), solo nella prova al contrario «orfana», identica sulle due generazioni: col campione sintetico nuovo, che comprende i titoli
+del giro, togliendo apposta il contenuto annotato 2 segnalibri (DPC 2020, ricollocati per contenimento) e 3 citazioni (DeJure
+MM 1, ST+MM 2) vengono ricollocati invece di restare orfani, perché il testo del titolo si ripete nel corpo (il titolo di massima
+è anche la prima frase della massima). È il rischio dichiarato in `ANCORE_ANNOTAZIONI.md` § 7, ora esercitato. I confronti reali
+restano verdi: catena 3.081/3.081 (iOS 27) e 3.068/3.068 (26.5) senza orfani, altra generazione e catena b44 a 0 sbagliate.
+Non curato (fase chiusa): da affrontare in apertura della fase successiva, prima di ogni nuova cura che tocchi titoli ripetuti
+nel corpo (per esempio: ricollocazione per contenimento solo fra segmenti dello stesso ruolo).
 
 ## ▶ STATO — Titoli e testatine: misura dei titoli, dispense monotipografiche, codici, manuali, righe fuse → build 49 — 2026-10-07 (sera)
 
