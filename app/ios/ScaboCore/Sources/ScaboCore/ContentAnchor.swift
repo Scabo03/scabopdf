@@ -377,6 +377,14 @@ public final class ContentAnchorIndex {
         }
         // 4. Sola testa all'inizio di un segmento PIÙ CORTO del vecchio (spezzatura: il segnalibro marca
         //    l'inizio e il nuovo segmento è un pezzo del vecchio), verificato sulla scala dei prefissi.
+        //    Solo se la testa è UNICA nella finestra di pagine: un passo ripetuto quasi alla lettera a poche pagine
+        //    (un comma e la sua ristampa nel testo previgente) ha la stessa testa e la sola testa non dice quale
+        //    dei due era. Visto nella prova al contrario della rete (giro finale 2026-10-08): tolto il testo
+        //    originale, la sua ristampa due pagine dopo veniva presa per il primo pezzo di una spezzatura.
+        let headsInWindow = heads.filter { Self.inWindow(pageOf[$0], of: anchor.sourcePage, Self.partialMatchPageWindow) }
+        if headsInWindow.count > 1 {
+            return .orphan("headOnly: la testa compare in \(headsInWindow.count) segmenti della finestra")
+        }
         let splitHeads = heads.filter { isInitialPiece(normalized[$0], of: anchor) }
         if !splitHeads.isEmpty {
             return pick(Array(splitHeads).sorted(), anchor: anchor, level: .headOnly,

@@ -186,6 +186,32 @@ final class ContentAnchorTests: XCTestCase {
         XCTAssertEqual(ContentAnchorIndex(segments: new).resolve(a).level, .orphan)
     }
 
+    func test_resolve_headOnly_refusesWhenTheHeadIsRepeatedInTheWindow() throws {
+        // Un passo ristampato quasi alla lettera due pagine dopo (stesse prime lettere, coda diversa): tolto il
+        // testo originale, la ristampa NON è il primo pezzo di una spezzatura. Regressione vista nella prova al
+        // contrario della rete sulle annotazioni (giro finale 2026-10-08).
+        let passage = "Quando il mulino di prova resta fermo per la piena, il mugnaio di prova annota sul quaderno verde le ore perse e le sacche di grano rimaste nel magazzino della valle"
+        func doc(original: String) -> [ContentSegment] {
+            [seg("node_0", "Primo paragrafo di prova che apre la pagina con parole neutre e abbastanza numerose da superare la testa.", page: 10),
+             seg("node_1", original, page: 10),
+             seg("node_2", "Secondo paragrafo di prova fra le due versioni, con altre parole neutre per riempire la pagina.", page: 11),
+             seg("node_3", passage + ".", page: 12),   // la ristampa: più corta del vecchio, stessa testa
+             seg("node_4", passage + " (testo previgente ristampato più lungo, con una coda che continua ancora).", page: 12)]
+        }
+        let old = ContentAnchorIndex(segments: doc(original: passage + " (9). Sei."))
+        let a = try XCTUnwrap(old.anchor(forIndex: 1))
+        // il testo originale sparisce: due segmenti della finestra hanno la stessa testa → orfana, mai la ristampa
+        let gone = doc(original: "Testo sostituito di prova con parole neutre e abbastanza lunghe da avere una testa e una coda distinte.")
+        XCTAssertEqual(ContentAnchorIndex(segments: gone).resolve(a).level, .orphan)
+        // prova al contrario: senza le ristampe nella finestra la stessa spezzatura si ricolloca
+        var split = Array(doc(original: passage + " (9). Sei.").prefix(3))
+        split[1] = seg("node_1", passage, page: 10)
+        split.insert(seg("node_1b", "(9). Sei.", page: 10), at: 2)
+        let r = ContentAnchorIndex(segments: split).resolve(a)
+        XCTAssertEqual(r.level, .headOnly)
+        XCTAssertEqual(r.index, 1)
+    }
+
     func test_resolve_headOnly_requiresTheNewSegmentToBeAPieceOfTheOld() throws {
         let old = ContentAnchorIndex(segments: flow())
         let a = try XCTUnwrap(old.anchor(forIndex: 5))
