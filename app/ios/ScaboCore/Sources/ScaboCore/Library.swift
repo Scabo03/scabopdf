@@ -102,6 +102,17 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// soglia): la riapertura lo dice. `nil`/`false` = posizione verificata.
     public var readingPositionIsApproximate: Bool?
 
+    /// IMPRONTA DEL CONTENUTO (giro «identità», 2026-10-11, DocumentFingerprint.swift): lo SHA-256
+    /// esadecimale dei byte della sorgente archiviata (PDF o XML AKN), uguale su ogni dispositivo per
+    /// lo stesso file. Riconosce lo stesso libro all'importazione (§ 12.8: «libro già presente») e
+    /// domani al ritorno del frutto dell'officina Mac (§ 12.12). NON sostituisce `id`: l'id resta
+    /// l'identità locale a cui sono legati archivio, cache e annotazioni, e due copie volute
+    /// dall'utente dello stesso file hanno la stessa impronta e id diversi. OPZIONALE/additivo come gli
+    /// altri campi: `nil` = non ancora calcolata (libreria di una versione precedente, o file d'archivio
+    /// mancante/illeggibile: il libro resta usabile). Si completa in sottofondo alla prima apertura
+    /// dell'app aggiornata, senza rielaborare nulla.
+    public var sourceSha256: String?
+
     public init(
         id: String,
         title: String,
@@ -119,10 +130,12 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         processedAt: Date? = nil,
         processedAppBuild: String? = nil,
         readingAnchor: ContentAnchor? = nil,
-        readingPositionIsApproximate: Bool? = nil
+        readingPositionIsApproximate: Bool? = nil,
+        sourceSha256: String? = nil
     ) {
         self.readingAnchor = readingAnchor
         self.readingPositionIsApproximate = readingPositionIsApproximate
+        self.sourceSha256 = sourceSha256
         self.id = id
         self.title = title
         self.sourceFileName = sourceFileName
@@ -514,7 +527,8 @@ public final class LibraryStore {
         sourceFileName: String,
         sourcePageCount: Int,
         warnings: [String] = [],
-        sourceKind: String? = nil
+        sourceKind: String? = nil,
+        sourceSha256: String? = nil
     ) -> ArchivedDocument {
         let doc = ArchivedDocument(
             id: makeId(),
@@ -525,7 +539,8 @@ public final class LibraryStore {
             sourcePageCount: sourcePageCount,
             readingPosition: 0,
             warnings: warnings,
-            sourceKind: sourceKind)
+            sourceKind: sourceKind,
+            sourceSha256: sourceSha256)
         state.documents.append(doc)
         persist()
         return doc
@@ -570,6 +585,37 @@ public final class LibraryStore {
         state.documents[i].processedAt = now()
         state.documents[i].processedAppBuild = appBuild
         persist()
+    }
+
+    // MARK: Impronta del contenuto (DocumentFingerprint.swift)
+
+    /// Registra l'impronta della sorgente archiviata. No-op se il documento non esiste o se l'impronta è
+    /// già quella (evita scritture). Una stringa malformata è rifiutata (non si registra mai un valore
+    /// che non sia un'impronta: `DocumentFingerprint.isWellFormed`).
+    public func setSourceSha256(id: String, _ sha256: String) {
+        guard DocumentFingerprint.isWellFormed(sha256),
+              let i = state.documents.firstIndex(where: { $0.id == id }),
+              state.documents[i].sourceSha256 != sha256 else { return }
+        state.documents[i].sourceSha256 = sha256
+        persist()
+    }
+
+    /// I documenti con quell'impronta: lo stesso file può essere in libreria in più copie volute
+    /// dall'utente (stessa impronta, id diversi). Vuoto se nessuno. Ordinati dal più recentemente
+    /// aperto (poi dal più recentemente importato): il primo è il candidato naturale da riaprire.
+    public func documents(withSourceSha256 sha256: String) -> [ArchivedDocument] {
+        state.documents
+            .filter { $0.sourceSha256 == sha256 }
+            .sorted {
+                let a = $0.lastOpenedAt ?? .distantPast, b = $1.lastOpenedAt ?? .distantPast
+                return a != b ? a > b : $0.importedAt > $1.importedAt
+            }
+    }
+
+    /// I documenti senza impronta (libreria di una versione precedente): la migrazione li completa in
+    /// sottofondo, uno alla volta, finché il file d'archivio c'è.
+    public func documentsWithoutSourceSha256() -> [ArchivedDocument] {
+        state.documents.filter { $0.sourceSha256 == nil }
     }
 
     /// Rimette l'etichetta di generazione com'era (ritorno alla lettura precedente, Reprocessing.swift).
