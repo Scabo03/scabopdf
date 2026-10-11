@@ -13,7 +13,10 @@
 //
 //  • IMPORTAZIONE (`startImport`): il tasto + (§ 12.8). Sceglie un PDF col picker di sistema, lo
 //    elabora, lo registra nell'archivio (con il referto dei warning, § 12.10), ne scrive la cache,
-//    lo colloca facoltativamente nel contenitore di destinazione, e apre il lettore.
+//    lo colloca facoltativamente nel contenitore di destinazione, e apre il lettore. PRIMA di
+//    elaborare, l'impronta del file (DocumentIdentity.swift) dice se è identico a un libro già in
+//    libreria: in quel caso l'app lo dice e propone di aprire quello che c'è già, con le sue
+//    annotazioni, oppure di importarlo come copia a parte (DuplicateImport.swift, § 12.8).
 //
 //  La POSIZIONE di lettura viene ripristinata e ri-registrata leggendo/scrivendo solo
 //  `ArchivedDocument.readingPosition`: il motore di lettura (ContinuousReadingView/Builder) è usato
@@ -450,6 +453,15 @@ enum DocumentOpener {
         controller.begin(from: presenter)
     }
 
+    #if DEBUG
+    /// SOLO per i test UI (assente in Release): avvia l'importazione di un file già scelto, senza il
+    /// picker di sistema, che XCUI non guida. Stesso flusso di `startImport` da lì in poi.
+    static func importFileForUITest(at url: URL, from presenter: UIViewController, onImported: (() -> Void)? = nil) {
+        let controller = ImportController(destination: nil, onImported: onImported)
+        controller.begin(withPickedFile: url, from: presenter)
+    }
+    #endif
+
     // MARK: - Errore in prosa (§ 12.10)
 
     static func presentError(_ message: String, from presenter: UIViewController) {
@@ -497,6 +509,15 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         startProcessing(originalURL: url, presenter: presenter)
     }
 
+    #if DEBUG
+    /// Come `begin` + scelta del file, ma con un file già dato (test UI).
+    func begin(withPickedFile url: URL, from presenter: UIViewController) {
+        self.presenter = presenter
+        Self.active.insert(self)
+        startProcessing(originalURL: url, presenter: presenter)
+    }
+    #endif
+
     func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
         finish()
     }
@@ -513,6 +534,39 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         }
         let sourceName = originalURL.lastPathComponent
 
+        // LIBRO GIÀ PRESENTE (§ 12.8): l'impronta del file, prima di elaborare. Un file identico a un
+        // libro in libreria non si rielabora in silenzio come copia nuova: l'app lo dice e propone di
+        // aprire quello che c'è già (scelta predefinita), o di importarlo come copia a parte.
+        DocumentIdentity.existingDocuments(matchingFileAt: localCopy) { [weak self, weak presenter] sha256, matches in
+            guard let self, let presenter else {
+                try? FileManager.default.removeItem(at: localCopy); self?.finish(); return
+            }
+            guard let existing = matches.first else {
+                self.process(localCopy: localCopy, sourceName: sourceName, isAkn: isAkn, sha256: sha256, presenter: presenter)
+                return
+            }
+            let onImported = self.onImported
+            DuplicateImportViewController.present(existing: existing, copies: matches.count, from: presenter) { [weak self, weak presenter] choice in
+                guard let self, let presenter else {
+                    try? FileManager.default.removeItem(at: localCopy); self?.finish(); return
+                }
+                switch choice {
+                case .openExisting:
+                    try? FileManager.default.removeItem(at: localCopy)
+                    self.finish()
+                    DocumentOpener.open(documentId: existing.id, from: presenter, onClosed: onImported)
+                case .importAsCopy:
+                    self.process(localCopy: localCopy, sourceName: sourceName, isAkn: isAkn, sha256: sha256, presenter: presenter)
+                case .cancel:
+                    try? FileManager.default.removeItem(at: localCopy)
+                    self.finish()
+                }
+            }
+        }
+    }
+
+    /// L'elaborazione nella schermata dedicata (§ 12.9), poi la registrazione (`handleOutcome`).
+    private func process(localCopy: URL, sourceName: String, isAkn: Bool, sha256: String?, presenter: UIViewController) {
         let processor: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         let processingVC = ProcessingViewController(
             fileURL: localCopy, sourceName: sourceName, processor: processor)
@@ -524,7 +578,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 // La copia temporanea è la sorgente dell'archiviazione (§12.6): va rimossa DOPO che
                 // `handleOutcome` l'ha copiata in archivio, non prima (correzione del cleanup).
                 self.handleOutcome(
-                    outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, presenter: presenter)
+                    outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256, presenter: presenter)
                 try? FileManager.default.removeItem(at: localCopy)
             }
         }
@@ -536,6 +590,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         sourceName: String,
         localCopy: URL,
         isAkn: Bool,
+        sha256: String?,
         presenter: UIViewController
     ) {
         let service = LibraryService.shared
@@ -559,6 +614,11 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 // L'archiviazione è fallita: il documento resta apribile ora dalla cache, ma non
                 // rielaborabile in futuro. Si avvisa in prosa senza bloccare la lettura.
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
+            }
+            // L'impronta del contenuto (DocumentIdentity.swift): calcolata sulla copia d'archivio, che è
+            // byte-identica al file importato; se l'archiviazione è fallita vale quella del file scelto.
+            if let fingerprint = DocumentIdentity.fingerprintOfArchivedSource(service.store.document(id: doc.id) ?? doc) ?? sha256 {
+                service.store.setSourceSha256(id: doc.id, fingerprint)
             }
             let pageMap = DocumentOpener.buildPageMap(document, content: content,
                                                       doctrineContent: doctrineContent)

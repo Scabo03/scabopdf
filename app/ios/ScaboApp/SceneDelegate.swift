@@ -31,7 +31,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             setStoredFirstOpenCompleted(prefs, false)
             setStoredAppearanceSource(prefs, .followSystem)
         }
-        if CommandLine.arguments.contains("-uiTestSeedReprocess") {
+        if CommandLine.arguments.contains("-uiTestSeedReprocess")
+            || CommandLine.arguments.contains("-uiTestSeedDuplicateImport") {
             setStoredFirstOpenCompleted(prefs, true)
             UITestSeeding.applyIfRequested()
         }
@@ -54,6 +55,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Il tema memorizzato è applicato alla finestra (posizione B → chiaro/scuro forzato; A → sistema).
         ReadingAppearance.applyToWindow(window, prefs: prefs)
         window.makeKeyAndVisible()
+
+        // Identità del documento (giro «identità», 2026-10-11): i libri già in libreria ricevono
+        // l'impronta del contenuto in sottofondo, uno alla volta, senza bloccare la lettura e senza
+        // rielaborare nulla. Serve a riconoscere lo stesso libro (importazione, e domani il Mac).
+        DocumentIdentity.fingerprintMissingDocumentsInBackground()
 
         // Avvio SEMPRE sulla Home stabile. La riapertura automatica dell'ultimo documento
         // all'avvio è DISABILITATA di proposito: presentare (e far leggere a VoiceOver) un

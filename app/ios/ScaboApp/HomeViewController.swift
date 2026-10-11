@@ -98,6 +98,18 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
         reload()
     }
 
+    #if DEBUG
+    /// Seme del test UI «libro già presente» (UITestSeeding.swift): la Home importa il file identico al
+    /// primo apparire, senza il picker di sistema. Assente in Release.
+    private var didRunDuplicateImportSeed = false
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard CommandLine.arguments.contains("-uiTestSeedDuplicateImport"), !didRunDuplicateImportSeed else { return }
+        didRunDuplicateImportSeed = true
+        DocumentOpener.importFileForUITest(at: UITestSeeding.duplicateImportFileURL, from: self) { [weak self] in self?.reload() }
+    }
+    #endif
+
     private func reload() {
         offerPending = ReprocessOffer.pendingConfirmation().count   // pulisce anche le copie di elaborazioni interrotte
         offerEligible = ReprocessOffer.eligibleDocuments().filter { !service.hasPreviousReading(forDocumentId: $0.id) }.count
