@@ -1,15 +1,17 @@
-Build 51 — segnalibri e citazioni sui titoli che ripetono parole del testo
+Build 52 — l'app riconosce un libro che hai già
 
 Cosa è cambiato
-- Segnalibri e sottolineature posati su un titolo che ripete parole del testo vicino: dopo una rielaborazione del libro, ora si ritrovano al posto giusto, oppure l'app li dichiara «da ricollocare» invece di spostarli in silenzio su un altro passo. È il caso del titolo di una massima DeJure, che è anche la prima frase del testo, e dei titoli degli articoli nella Rivista DPC, ripetuti nel blocco che segue.
-- Nient'altro: la lettura dei libri è identica alla build 50, verificata su tutti i volumi di prova con iOS 26 e iOS 27.
+- Se importi un file identico a un libro che hai già in libreria, l'app ora te lo dice prima di elaborare qualcosa e ti propone di aprire quello che hai già, con i suoi segnalibri, le sue sottolineature e il punto in cui eri arrivato. Puoi comunque importarlo come una copia a parte, che parte senza annotazioni, oppure annullare. La scelta è una schermata dell'app: VoiceOver la legge a partire dal titolo, poi la spiegazione, poi i tre pulsanti.
+- Al primo avvio l'app prepara in silenzio una cosa che servirà in futuro alla versione per Mac: un'impronta di ogni libro, calcolata dal suo file. Lo fa in sottofondo, senza toccare i libri né le annotazioni, senza rielaborare nulla e senza bloccare la lettura. Se il file di origine di un libro non c'è più, quel libro resta usabile come prima.
+- Dalla build 51: segnalibri e citazioni posati su un titolo che ripete parole del testo si ritrovano al posto giusto dopo una rielaborazione, oppure si dichiarano da ricollocare invece di spostarsi in silenzio.
 
 Quali libri
-- Si sente solo quando accetti una rielaborazione («Lettura migliore disponibile») o riapri un libro la cui lettura va rifatta; riguarda soprattutto i quattro DeJure e le due Riviste DPC. Gli altri libri si leggono come prima.
+- Tutti allo stesso modo. La lettura dei libri è identica alla build 50, verificata su tutti i volumi di prova con iOS 26 e iOS 27.
 
 Per i libri già aperti
-- Non serve fare niente di speciale: i libri non si rielaborano da soli e le annotazioni restano dove sono.
-- Un segnalibro o una sottolineatura creati da questa build in poi seguono già la regola nuova; quelli di prima la ricevono quando il libro viene rielaborato e l'annotazione ritrovata.
+- Non serve fare niente: nessun libro si rielabora da solo e le annotazioni restano dove sono.
+- Per provare la novità: importa di nuovo un libro che hai già. L'app deve dirtelo subito, senza far partire l'elaborazione, e proporre di aprire quello che hai già.
 
 Cosa resta
-- Un tetto alla distanza delle note lunghe nelle sezioni molto lunghe e un gesto per ricollocare un'annotazione orfana: sono le prime voci del bilancio della fase mobile.
+- Il passaggio del lavoro fatto sul Mac al dispositivo arriverà in un giro successivo, via AirDrop o cavo.
+- Un tetto alla distanza delle note lunghe e un gesto per ricollocare un'annotazione orfana restano le prime voci del bilancio della fase mobile.
