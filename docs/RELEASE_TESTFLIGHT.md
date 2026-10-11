@@ -190,6 +190,25 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 52 — 2026-10-11, commit `3d85836` (giro «identità del documento», `docs/CARRYOVER.md` STATO 2026-10-11,
+  `LAYER2_PRODUCT_DECISIONS.md` § 12.8 e § 12.12).** `fastlane beta` exit 0 (`CURRENT_PROJECT_VERSION` 52), UPLOAD SUCCEEDED,
+  Delivery UUID `649e3a88-a621-4033-a0f3-c26686560bcf`, caricata alle 21:33:18, «Successfully set the changelog for build» alle 21:35:24: note da
+  `app/ios/fastlane/COSA_TESTARE.txt` (1 784 caratteri). Porta l'impronta SHA-256 della sorgente archiviata
+  (`ArchivedDocument.sourceSha256`, migrazione in sottofondo al primo avvio) e la schermata «Libro già presente»
+  all'importazione. Reti: letture identiche al byte 52/52 su iOS 26.5 e iOS 27 (foto `b52` sulle estrazioni `b51`), Marotta
+  identico, rete sulle annotazioni 312/312 verdi per generazione con 0 ricollocazioni sbagliate; ScaboCore 793, ScaboAppTests 146
+  (9 saltati) su 26.5 e su 27, audit UI 6/6 su entrambe (3 di AccessibilityAudit/ReprocessOffer + 3 nuovi di DuplicateImport).
+  `latestCureBuild` invariato (50): la lettura non cambia. Prossimo numero: 53.
+- **Build 51 — 2026-10-11, commit `c3a2a10` (solo la cura delle ancore `397f38e` già su main + le note per i tester).**
+  `fastlane beta` exit 0 (`CURRENT_PROJECT_VERSION` 51), UPLOAD SUCCEEDED alle 20:56:54, Delivery UUID
+  `8c815312-7502-49fa-bc51-65a6fa701988`, processing concluso alle 20:58:58 e «Successfully set the changelog for build» alle
+  20:59:00: note da `app/ios/fastlane/COSA_TESTARE.txt` (1 373 caratteri). Reti prima del caricamento (foto `b51`, cattura nuova
+  su entrambe le generazioni): letture identiche alla base `v7` 52/52 su iOS 26.5 e su iOS 27, Marotta identico, scarto
+  26.5 → 27 1,40 %, oracolo invariato; misure dei titoli e di struttura invariate; parole fuori lessico 0/0; rete sulle
+  annotazioni 312/312 verdi per generazione con le tre prove al contrario e 0 ricollocazioni sbagliate; `validate.sh` verde
+  (ScaboCore 776, ScaboAppTests 139 con 9 saltati, audit UI 3) e ScaboAppTests 139 + audit 3 su iOS 27. Incidente
+  d'ambiente risolto prima del caricamento: il simulatore iOS 27 rifiutava di avviarsi («runtime path not found») per due
+  processi utente CoreSimulator stantii; riavviati, nessun sudo. `latestCureBuild` invariato (50).
 - **Build 50 — 2026-10-08, commit `14b1a9d` (caricata dal commit locale `a40f034`, riscritto solo per due frasi delle note nel repo dopo il controllo sul testo dei volumi: binario identico) (giro finale della ripulizia mobile, `docs/TITOLI_MONOTIPOGRAFICI.md` § 7,
   `docs/BILANCIO_FASE_MOBILE.md`).** `fastlane beta` exit 0 (`CURRENT_PROJECT_VERSION` 50), UPLOAD SUCCEEDED, Delivery UUID
   `0c534d4f-e1fe-4a1c-ba9f-00bc7a82fb08`, «Successfully set the changelog for build» alle 15:43: note da
