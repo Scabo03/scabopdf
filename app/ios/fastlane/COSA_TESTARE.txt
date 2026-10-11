@@ -1,25 +1,15 @@
-Build 50 — l'ultimo giro su titoli e testatine prima della versione per Mac
+Build 51 — segnalibri e citazioni sui titoli che ripetono parole del testo
 
 Cosa è cambiato
-- Manuali: l'etichetta del capitolo o della sezione («Capitolo secondo», «Sezione prima») e il titolo che la segue sono ora un'intestazione sola, e i livelli seguono per lo più l'indice stampato: la Parte sopra il Capitolo, il Capitolo sopra la Sezione, i paragrafi sotto il loro capitolo. Con il rotore delle intestazioni si scende livello per livello come nell'indice del libro.
-- Codici: il titolo con cui si apre ogni legge complementare è ora un'intestazione di primo livello, come i Libri del codice, e i Titoli e i Capi di quella legge stanno sotto di lei. Con il rotore delle intestazioni si salta da una legge all'altra e VoiceOver annuncia il primo livello. La riga «LEGGI COMPLEMENTARI» resta una riga letta.
-- Rivista DPC 2018 e 2020: si leggono i titoli degli articoli e delle sezioni, gli autori e le affiliazioni, scritti in bianco sulla fascia verde, che prima non si sentivano; i titoli dei paragrafi hanno il livello del sommario della rivista.
-- Patriarca-Benazzo: il sommario iniziale, con il numero di pagina davanti a ogni voce, non è più letto come una pila di titoli; si salta come i sommari degli altri manuali. La sua ultima pagina si legge ancora, perché porta anche un riquadro di testo.
-- DeJure: nelle dottrine le sezioni stampate in grassetto ora sono intestazioni dentro il loro articolo; nelle massime ciascuna si raggiunge col proprio titolo dalla navigazione. In Danni punitivi l'ultima pagina, che spariva, ora si legge. Nelle dottrine le note lunghe arrivano al termine della loro sezione, non più in coda all'articolo.
-- Testatine fuse: quando il lettore di sistema incolla la testatina o il numero di pagina a una riga di testo, ora la testatina si toglie e la riga si legge pulita. Con iOS 26 si sente soprattutto in Marrone: il piè «Pag.» non si attacca più all'ultima parola della pagina e tornano due righe che mancavano. Con iOS 26 e 27: quattro titoli liberati nel Manuale di diritto costituzionale, uno in Lezioni di giustizia amministrativa, un CAPO del Codice civile che spariva, e pochi altri punti.
+- Segnalibri e sottolineature posati su un titolo che ripete parole del testo vicino: dopo una rielaborazione del libro, ora si ritrovano al posto giusto, oppure l'app li dichiara «da ricollocare» invece di spostarli in silenzio su un altro passo. È il caso del titolo di una massima DeJure, che è anche la prima frase del testo, e dei titoli degli articoli nella Rivista DPC, ripetuti nel blocco che segue.
+- Nient'altro: la lettura dei libri è identica alla build 50, verificata su tutti i volumi di prova con iOS 26 e iOS 27.
 
 Quali libri
-- Manuali: quasi tutti quelli con capitoli o paragrafi numerati (tra gli altri Torrente, Mandrioli-Carratta 1-4, Marotta, Mosconi-Campiglio, Lineamenti, Costituzionale, Compendio, Magnani, Elementi di diritto UE, Patriarca-Benazzo, tesauro), più Lezioni di giustizia amministrativa, Nomofanie e la voce EdD.
-- Codici penale e civile; Rivista DPC 2018 e 2020; i quattro DeJure; Marrone con iOS 26.
-- Le dispense e gli altri libri si leggono come prima.
+- Si sente solo quando accetti una rielaborazione («Lettura migliore disponibile») o riapri un libro la cui lettura va rifatta; riguarda soprattutto i quattro DeJure e le due Riviste DPC. Gli altri libri si leggono come prima.
 
 Per i libri già aperti
-- Basta accettare l'offerta «Lettura migliore disponibile»: dalla Home (la riga in alto) o dalle opzioni del libro, il tasto a tre puntini. L'app spiega cosa cambia e chiede conferma; fino alla scelta la lettura di prima resta sul dispositivo.
-- Le annotazioni seguono il testo; quelle che l'app non ritrova con sicurezza restano «da ricollocare», e non si cancella nulla. Nei manuali un segnalibro posato proprio sull'etichetta o sul titolo di un capitolo può restare da ricollocare, perché ora etichetta e titolo sono una cosa sola.
-- L'offerta compare per tutti i libri aperti prima di questa build, anche per quelli che non cambiano: per quei libri la nuova lettura è identica a quella di prima.
-- Anche nelle massime DeJure e sulle pagine del sommario di Patriarca, che ora non si legge, qualche segnalibro può restare da ricollocare.
-- Nessun cambiamento di formato: i libri non si rielaborano da soli.
+- Non serve fare niente di speciale: i libri non si rielaborano da soli e le annotazioni restano dove sono.
+- Un segnalibro o una sottolineatura creati da questa build in poi seguono già la regola nuova; quelli di prima la ricevono quando il libro viene rielaborato e l'annotazione ritrovata.
 
 Cosa resta
 - Un tetto alla distanza delle note lunghe nelle sezioni molto lunghe e un gesto per ricollocare un'annotazione orfana: sono le prime voci del bilancio della fase mobile.
-- Il quinto livello di titolo non serve: nel corpus lo userebbe un libro solo.
