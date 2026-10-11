@@ -148,10 +148,10 @@ final class DocumentIdentityTests: XCTestCase {
         }
         wait(for: [none], timeout: 20)
 
-        // Copia a parte: stessa impronta, id diverso, annotazioni separate; poi il riconoscimento trova due copie.
-        let copy = service.store.addDocument(title: "libro (copia)", sourceFileName: "libro.pdf", sourcePageCount: 3,
-                                             sourceSha256: DocumentFingerprint.sha256Hex(of: bytes))
-        created.append(copy.id)
+        // Copia a parte: stesso file archiviato, stessa impronta, id diverso, annotazioni separate; poi il riconoscimento
+        // trova due copie (entrambe apribili: hanno il file d'archivio).
+        let copy = try addArchived(title: "libro (copia)", bytes: bytes)
+        service.store.setSourceSha256(id: copy.id, DocumentFingerprint.sha256Hex(of: bytes))
         service.store.recordOpened(id: copy.id)
         let two = expectation(description: "due copie")
         DocumentIdentity.existingDocuments(matchingFileAt: same) { _, matches in
@@ -166,6 +166,29 @@ final class DocumentIdentityTests: XCTestCase {
             XCTAssertNil(sha); XCTAssertTrue(matches.isEmpty); unreadable.fulfill()
         }
         wait(for: [unreadable], timeout: 20)
+    }
+
+    /// Un libro ormai non apribile (né file d'archivio né cache) non viene proposto come «già presente»: si evita
+    /// l'anello «Apri il libro che hai già» → «reimportalo» (rilievo della revisione indipendente).
+    func test_existingDocuments_skipsBooksThatCannotBeOpened_butKeepsBooksWithOnlyACache() throws {
+        let bytes = pattern(count: 50_000, seed: 17)
+        let sha = DocumentFingerprint.sha256Hex(of: bytes)
+        let ghost = service.store.addDocument(title: "fantasma", sourceFileName: "f.pdf", sourcePageCount: 2, sourceSha256: sha)
+        created.append(ghost.id)   // impronta sì, file d'archivio no, cache no
+        let cached = service.store.addDocument(title: "solo-cache", sourceFileName: "c.pdf", sourcePageCount: 2, sourceSha256: sha)
+        created.append(cached.id)  // impronta sì, file d'archivio no, cache sì → apribile
+        let seg = ContentSegment(id: "node_0", role: "BODY", text: "brezza sul lago", lengthCategory: "", acousticIntro: "")
+        service.writeCache(PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: [seg])], totalSegments: 1),
+                           pageMap: [:], doctrineContent: nil, quickConsultTree: nil, contentTarget: 0, forDocumentId: cached.id)
+        let same = try tempFile(bytes, ext: "pdf")
+        defer { try? FileManager.default.removeItem(at: same) }
+        let done = expectation(description: "riconoscimento")
+        DocumentIdentity.existingDocuments(matchingFileAt: same) { found, matches in
+            XCTAssertEqual(found, sha)
+            XCTAssertEqual(matches.map { $0.id }, [cached.id], "il fantasma non si propone; il libro con la cache sì")
+            done.fulfill()
+        }
+        wait(for: [done], timeout: 20)
     }
 
     func test_fingerprintOfArchivedSource_isNil_whenTheFileIsMissing_andNeverThrows() {

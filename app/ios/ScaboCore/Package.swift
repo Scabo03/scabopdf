@@ -10,10 +10,12 @@
 //   * the same logic serves a future MuPDF-based extractor and a possible
 //     macOS build (the extraction/classification seam is documented in
 //     `PdfExtraction.swift`, Piano § 10);
-//   * it imports ONLY Foundation — no PDFKit, no UIKit, no SwiftUI — so it
-//     builds and tests on the macOS host via `swift test` with no Simulator
-//     and no accessibility daemon (the sandbox can run it today, exactly like
-//     the existing non-UI `ScaboPDFExtractionTests` unit layer).
+//   * it imports ONLY Foundation (plus CryptoKit for SHA-256 fingerprints
+//     since 2026-10-07: content anchors and the document fingerprint) — no
+//     PDFKit, no UIKit, no SwiftUI — so it builds and tests on the macOS host
+//     via `swift test` with no Simulator and no accessibility daemon (the
+//     sandbox can run it today, exactly like the existing non-UI
+//     `ScaboPDFExtractionTests` unit layer).
 //
 // Deployment floor matches the app's target (iOS 15.0, the real minimum: the
 // app and reading view use only APIs available at iOS 15, and ScaboCore is pure

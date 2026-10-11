@@ -600,6 +600,20 @@ public final class LibraryStore {
         persist()
     }
 
+    /// Registra più impronte con UNA sola scrittura (la migrazione di una libreria intera). Stesse regole di
+    /// `setSourceSha256`: documenti ignoti e stringhe malformate sono ignorati; nessuna scrittura se nulla cambia.
+    public func setSourceSha256s(_ pairs: [(id: String, sha256: String)]) {
+        var changed = false
+        for (id, sha256) in pairs {
+            guard DocumentFingerprint.isWellFormed(sha256),
+                  let i = state.documents.firstIndex(where: { $0.id == id }),
+                  state.documents[i].sourceSha256 != sha256 else { continue }
+            state.documents[i].sourceSha256 = sha256
+            changed = true
+        }
+        if changed { persist() }
+    }
+
     /// I documenti con quell'impronta: lo stesso file può essere in libreria in più copie volute
     /// dall'utente (stessa impronta, id diversi). Vuoto se nessuno. Ordinati dal più recentemente
     /// aperto (poi dal più recentemente importato): il primo è il candidato naturale da riaprire.

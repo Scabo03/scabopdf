@@ -479,6 +479,9 @@ enum DocumentOpener {
 private final class ImportController: NSObject, UIDocumentPickerDelegate {
 
     private static var active = Set<ImportController>()
+    /// Vero mentre un'importazione sta controllando l'impronta del file scelto (prima dell'elaborazione o della schermata
+    /// «Libro già presente»): un secondo tocco su + in quell'istante non apre un secondo flusso (rilievo della revisione).
+    private static var identityCheckInProgress = false
 
     private let destination: ContainerRef?
     private let onImported: (() -> Void)?
@@ -490,6 +493,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
     }
 
     func begin(from presenter: UIViewController) {
+        guard !Self.identityCheckInProgress else { return }
         self.presenter = presenter
         Self.active.insert(self)
         // PDF + AKN (XML di Normattiva). L'import non-PDF è la piattaforma XML/EPUB (§12.8): qui si
@@ -512,6 +516,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
     #if DEBUG
     /// Come `begin` + scelta del file, ma con un file già dato (test UI).
     func begin(withPickedFile url: URL, from presenter: UIViewController) {
+        guard !Self.identityCheckInProgress else { return }
         self.presenter = presenter
         Self.active.insert(self)
         startProcessing(originalURL: url, presenter: presenter)
@@ -537,7 +542,9 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         // LIBRO GIÀ PRESENTE (§ 12.8): l'impronta del file, prima di elaborare. Un file identico a un
         // libro in libreria non si rielabora in silenzio come copia nuova: l'app lo dice e propone di
         // aprire quello che c'è già (scelta predefinita), o di importarlo come copia a parte.
+        Self.identityCheckInProgress = true
         DocumentIdentity.existingDocuments(matchingFileAt: localCopy) { [weak self, weak presenter] sha256, matches in
+            Self.identityCheckInProgress = false
             guard let self, let presenter else {
                 try? FileManager.default.removeItem(at: localCopy); self?.finish(); return
             }
@@ -546,6 +553,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 return
             }
             let onImported = self.onImported
+            let destination = self.destination
             DuplicateImportViewController.present(existing: existing, copies: matches.count, from: presenter) { [weak self, weak presenter] choice in
                 guard let self, let presenter else {
                     try? FileManager.default.removeItem(at: localCopy); self?.finish(); return
@@ -554,6 +562,9 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 case .openExisting:
                     try? FileManager.default.removeItem(at: localCopy)
                     self.finish()
+                    // Importando da dentro un contenitore, il libro che c'è già viene collocato anche lì (una collocazione
+                    // in più, mai un duplicato: § 12.6), come avrebbe fatto l'importazione.
+                    if let destination { LibraryService.shared.store.addCollocation(documentId: existing.id, to: destination) }
                     DocumentOpener.open(documentId: existing.id, from: presenter, onClosed: onImported)
                 case .importAsCopy:
                     self.process(localCopy: localCopy, sourceName: sourceName, isAkn: isAkn, sha256: sha256, presenter: presenter)
@@ -608,16 +619,20 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 warnings: document.warnings,
                 sourceKind: sourceKind)
             // Archivia la sorgente (PDF o XML AKN, sorgente di verità §12.6) e la cache del contenuto.
+            var archived = false
             do {
                 try service.storeSource(from: localCopy, forDocumentId: doc.id, kind: sourceKind)
+                archived = true
             } catch {
                 // L'archiviazione è fallita: il documento resta apribile ora dalla cache, ma non
                 // rielaborabile in futuro. Si avvisa in prosa senza bloccare la lettura.
                 service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
             }
-            // L'impronta del contenuto (DocumentIdentity.swift): calcolata sulla copia d'archivio, che è
-            // byte-identica al file importato; se l'archiviazione è fallita vale quella del file scelto.
-            if let fingerprint = DocumentIdentity.fingerprintOfArchivedSource(service.store.document(id: doc.id) ?? doc) ?? sha256 {
+            // L'impronta del contenuto (DocumentIdentity.swift): quella del file scelto, già calcolata prima
+            // dell'elaborazione (la copia d'archivio è byte-identica: la fa FileManager); se non c'era, si
+            // calcola sulla copia d'archivio. Se l'archiviazione è fallita il libro resta SENZA impronta:
+            // non si propone mai di «aprire» un libro che non ha più il suo file (rilievo della revisione).
+            if archived, let fingerprint = sha256 ?? DocumentIdentity.fingerprintOfArchivedSource(service.store.document(id: doc.id) ?? doc) {
                 service.store.setSourceSha256(id: doc.id, fingerprint)
             }
             let pageMap = DocumentOpener.buildPageMap(document, content: content,

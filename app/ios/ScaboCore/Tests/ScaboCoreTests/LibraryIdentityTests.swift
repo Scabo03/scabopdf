@@ -59,6 +59,27 @@ final class LibraryIdentityTests: XCTestCase {
         XCTAssertEqual(reloaded.document(id: d.id)?.sourceSha256, shaA)
     }
 
+    func test_setSourceSha256s_batch_isOneWrite_andSkipsUnknownOrMalformed() {
+        final class CountingPersistence: LibraryPersisting {
+            var data: Data?; var writes = 0
+            func load() -> Data? { data }
+            func save(_ data: Data) { self.data = data; writes += 1 }
+        }
+        let persistence = CountingPersistence()
+        let store = makeStore(persistence: persistence)
+        let a = store.addDocument(title: "A", sourceFileName: "a.pdf", sourcePageCount: 1)
+        let b = store.addDocument(title: "B", sourceFileName: "b.pdf", sourcePageCount: 1)
+        let before = persistence.writes
+        store.setSourceSha256s([(id: a.id, sha256: shaA), (id: b.id, sha256: shaB), (id: "ignoto", sha256: shaA), (id: a.id, sha256: "malformata")])
+        XCTAssertEqual(persistence.writes, before + 1, "una sola scrittura per tutto il blocco")
+        XCTAssertEqual(store.document(id: a.id)?.sourceSha256, shaA)
+        XCTAssertEqual(store.document(id: b.id)?.sourceSha256, shaB)
+        store.setSourceSha256s([(id: a.id, sha256: shaA)])
+        XCTAssertEqual(persistence.writes, before + 1, "nulla cambia → nessuna scrittura")
+        store.setSourceSha256s([])
+        XCTAssertEqual(persistence.writes, before + 1)
+    }
+
     func test_setSourceSha256_rejectsMalformed_andIgnoresUnknownDocument() {
         let store = makeStore()
         let d = store.addDocument(title: "Libro", sourceFileName: "l.pdf", sourcePageCount: 3)

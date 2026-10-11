@@ -13,12 +13,15 @@
 //
 //  Due compiti, entrambi su una coda seriale di sottofondo (le mutazioni dello store sempre sul main):
 //  - MIGRAZIONE: alla prima apertura dell'app aggiornata i libri già in libreria ricevono l'impronta in
-//    sottofondo, uno alla volta, senza bloccare la lettura e senza rielaborare nulla. Se il file
-//    d'archivio manca o è illeggibile il libro resta usabile senza impronta (`nil`), e la migrazione
-//    riprova a ogni avvio. Idempotente; un solo giro alla volta.
+//    sottofondo, uno alla volta, senza bloccare la lettura e senza rielaborare nulla; le impronte si
+//    registrano con UNA scrittura a fine giro. Se il file d'archivio manca o è illeggibile il libro
+//    resta usabile senza impronta (`nil`), e la migrazione riprova a ogni avvio. Idempotente; un solo
+//    giro alla volta (se l'app si chiude a metà, il giro seguente rifà il lavoro: nulla si perde).
 //  - IMPORTAZIONE: l'impronta del file scelto si calcola prima di elaborarlo; i libri senza impronta
 //    (migrazione non ancora finita) la ricevono qui, così un libro importato prima dell'aggiornamento
-//    è riconosciuto comunque.
+//    è riconosciuto comunque. Un libro ormai non apribile (né file d'archivio né lettura in
+//    cache) non viene proposto: altrimenti «Apri il libro che hai già» finirebbe in «reimportalo»,
+//    cioè in un anello (rilievo della revisione indipendente del 2026-10-11).
 //
 
 import Foundation
@@ -61,15 +64,17 @@ enum DocumentIdentity {
         guard !migrationRunning, !pending.isEmpty else { completion?(report); return }
         migrationRunning = true
         queue.async {
+            var computed: [(id: String, sha256: String)] = []
             for doc in pending {
                 if let sha = fingerprintOfArchivedSource(doc, service: service) {
                     report.computed += 1
-                    DispatchQueue.main.async { service.store.setSourceSha256(id: doc.id, sha) }
+                    computed.append((doc.id, sha))
                 } else {
                     report.skipped += 1
                 }
             }
             DispatchQueue.main.async {
+                service.store.setSourceSha256s(computed)   // una scrittura sola
                 migrationRunning = false
                 completion?(report)
             }
@@ -91,8 +96,11 @@ enum DocumentIdentity {
                 fingerprintOfArchivedSource(doc, service: service).map { (doc.id, $0) }
             }
             DispatchQueue.main.async {
-                for (id, value) in completed { service.store.setSourceSha256(id: id, value) }
-                let matches = sha.map { service.store.documents(withSourceSha256: $0) } ?? []
+                service.store.setSourceSha256s(completed.map { (id: $0.0, sha256: $0.1) })
+                // Solo i libri che si possono aprire davvero: dal file d'archivio o dalla lettura in cache.
+                let matches = (sha.map { service.store.documents(withSourceSha256: $0) } ?? []).filter {
+                    service.hasArchivedSource(forDocumentId: $0.id, kind: $0.sourceKind) || service.hasCache(forDocumentId: $0.id)
+                }
                 completion(sha, matches)
             }
         }

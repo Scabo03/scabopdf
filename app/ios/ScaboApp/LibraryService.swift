@@ -128,6 +128,11 @@ final class LibraryService {
     /// URL del file di cache di un documento (per i test: simulare una cache di formato vecchio).
     func cacheURLForTesting(forDocumentId id: String) -> URL { cacheURL(forDocumentId: id) }
 
+    /// Vero se esiste un file di cache (senza decodificarlo): un libro con la cache si apre anche senza il file d'archivio.
+    func hasCache(forDocumentId id: String) -> Bool {
+        fileManager.fileExists(atPath: cacheURL(forDocumentId: id).path)
+    }
+
     /// Contenuto + mappa pagine + (se presente) flusso Dottrina Inline in cache, o `nil` se
     /// assente/corrotto/di formato superato (→ si rielabora dal PDF d'archivio).
     func loadCache(forDocumentId id: String)
