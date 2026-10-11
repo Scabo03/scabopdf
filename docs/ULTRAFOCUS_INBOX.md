@@ -274,13 +274,21 @@ produzione (`StructuralComparison`/`Report`, verificata il 2026-08-07: nessun
 accesso a campi testo, warnings a vocabolario chiuso con interpolazioni solo
 numeriche). **Strato: STRUTTURALE** (referti di rapporti e conteggi).
 
-### D.5 Distribuzione del frutto
+### D.5 Distribuzione del frutto — ✅ DECISA (2026-10-11), da costruire
 
-Rinviata per decisione di prodotto alla fase Mac (`LAYER2_PRODUCT_DECISIONS
-§ 12.12`). Due corsie: istruzioni content-free su iCloud
-(accettabile-per-costruzione), frutto testuale solo canale locale. Rischio non
-vincolante, deliberatamente ultima. Fatti esterni riverificati il 2026-08-07
-(ADP disponibile in Italia; Multipeer deprecato a 27.0, via consigliata
+**Deciso dal maintainer (2026-10-11, `LAYER2_PRODUCT_DECISIONS.md` § 12.12):**
+il frutto passa dal Mac ai dispositivi **solo via AirDrop o cavo**, mai via
+iCloud né altri server; viaggia il **documento elaborato completo** (più le
+annotazioni, con una casella da spuntare o no), non le istruzioni per file: la
+corsia 1 «istruzioni content-free su iCloud» è superata insieme alla Parte IV
+dell'analisi. Il libro di destinazione si riconosce per l'**impronta del
+contenuto** (`ArchivedDocument.sourceSha256`, SHA-256 della sorgente
+archiviata, build 52). Trasporto e ricezione: giro successivo.
+
+*(storia)* Rinviata per decisione di prodotto alla fase Mac. Due corsie:
+istruzioni content-free su iCloud (accettabile-per-costruzione), frutto
+testuale solo canale locale. Fatti esterni riverificati il 2026-08-07 (ADP
+disponibile in Italia; Multipeer deprecato a 27.0, via consigliata
 Network.framework; dettagli in `ANALYSIS_ULTRAFOCUS_MACOS.md`, Parte V).
 
 ### D.6-bis DEBITO TEMPORANEO DA RIMUOVERE A FINE ARCO: la porta d'import di sviluppo

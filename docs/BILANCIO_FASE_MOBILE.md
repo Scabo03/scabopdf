@@ -105,7 +105,7 @@ chiedeva di nominare.
    stanno nel lettore a schermo intero; nello split non sono garantiti; il salto nota↔richiamo non ha un tasto. Lingua del
    documento dichiarata (3.1.1 conforme); lingua delle parti straniere (3.1.2) non valutata.
 8. **Importazione** (fonte: `DocumentOpener.swift`): solo dal selettore interno; niente «Apri con», niente estensione di
-   condivisione; reimportare crea una copia senza annotazioni.
+   condivisione. Reimportare un libro già presente ora lo dice e propone di aprire quello esistente (build 52, § 3.1).
 9. **Sincronizzazione iCloud**: nessun codice; rinviata alla fase Mac (§ 3).
 10. **Voci d'officina** (fonte: `MAPPA_DIVISIONE_LAVORO.md` § 2.2): senza Mac restano scoperte B.1, A.1, A.2/A.3, A.4, C.1, B.3;
     i guardiani di contenuto perso e d'ordine (D.4) sono decisi ma non costruiti.
@@ -118,18 +118,32 @@ chiedeva di nominare.
 
 ## 3. Prerequisiti della fase Mac
 
-### 3.1 Identità del documento ricavata dal contenuto (fonte)
+### 3.1 Identità del documento ricavata dal contenuto (fonte) — CHIUSO (2026-10-11, build 52)
 
-Oggi l'identità è un **UUID casuale** assegnato all'importazione (`Library.swift`, `makeId()` → `UUID().uuidString`) e dà
+**Chiuso.** L'impronta è lo SHA-256 dei byte della sorgente archiviata (PDF o XML), campo additivo e
+opzionale `ArchivedDocument.sourceSha256` (ScaboCore `DocumentFingerprint.swift`, lato app
+`DocumentIdentity.swift`); l'id locale resta intatto con i legami delle annotazioni. Migrazione in sottofondo
+alla prima apertura dell'app aggiornata, senza rielaborare; file d'archivio mancante → libro usabile senza
+impronta. Regola per due file con lo stesso contenuto: all'importazione l'app lo dice e propone di aprire il
+libro esistente (predefinito) o importa una copia a parte, stessa impronta e id diverso
+(`LAYER2_PRODUCT_DECISIONS.md` § 12.8). Impronta identica su host macOS e simulatore iOS per lo stesso file
+(test gemelli), letture identiche al byte sui 52 volumi. Dettagli in `CARRYOVER.md` (STATO 2026-10-11).
+
+*Com'era prima del giro:* l'identità era un **UUID casuale** assegnato all'importazione (`Library.swift`, `makeId()` → `UUID().uuidString`) e dà
 nome ad archivio, cache e copie precedenti (`LibraryService.swift`); segnalibri, sottolineature, posizione, split e stato
 della Consultazione Rapida sono legati a quell'id. Lo stesso PDF importato su iPad e su Mac avrebbe due identità: la
 sincronizzazione non saprebbe che è lo stesso libro, e reimportare crea una copia nuova senza annotazioni. Prerequisito:
 un'**impronta del contenuto** (SHA-256 dei byte del PDF, proposta in `MAC_BASE.md` sul ramo `feat/mac-base`, non fuso),
 con la migrazione degli id esistenti e la regola per due file con lo stesso contenuto.
 
-### 3.2 Le anteprime delle annotazioni non devono viaggiare (fonte)
+### 3.2 Le anteprime delle annotazioni non devono viaggiare (fonte) — SUPERATO dalla decisione 1 del 2026-10-11
 
-`Bookmark.preview` porta le prime 12 parole dell'elemento e `Underline.preview` le prime 10 parole sottolineate
+**Superato.** Il frutto dell'officina viaggia dal Mac ai dispositivi **solo via AirDrop o cavo**, mai via
+iCloud né altri server (`LAYER2_PRODUCT_DECISIONS.md` § 12.12): il canale è locale, quindi le anteprime dei
+segnalibri possono viaggiare come sono, insieme al documento elaborato completo e, a scelta, alle annotazioni.
+Il vincolo resta per repo, test, commit e referti.
+
+*Com'era prima del giro:* `Bookmark.preview` porta le prime 12 parole dell'elemento e `Underline.preview` le prime 10 parole sottolineate
 (`Library.swift`); le copie precedenti le conservano (`Reprocessing.swift`). Le ancore, invece, portano solo impronte
 (`ContentAnchor.swift`, con un test che lo verifica). Prerequisito: ciò che viaggia fra iPad e Mac sono impronte e nomi dati
 dall'utente, mai le anteprime (testo dei volumi); sul dispositivo che riceve l'anteprima si ricostruisce dal testo locale.
