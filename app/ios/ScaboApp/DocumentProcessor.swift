@@ -87,6 +87,9 @@ final class DocumentProcessor {
     enum Phase {
         case opening
         case extraction
+        /// Riconoscimento di tabelle e figure (risorse visive, `VisualRegionDetector`): la sonda di tutte le pagine
+        /// e il modello sulle sole pagine scelte dal prefiltro. Fra estrazione e classificazione.
+        case visualResources
         case classification
         case pagination
     }
@@ -106,6 +109,7 @@ final class DocumentProcessor {
             switch phase {
             case .opening: return "Apertura del documento"
             case .extraction: return "Estrazione del testo"
+            case .visualResources: return "Riconoscimento di tabelle e figure"
             case .classification: return "Riconoscimento della struttura"
             case .pagination: return "Impaginazione"
             }
@@ -116,9 +120,16 @@ final class DocumentProcessor {
     private let flag = CancellationFlag()
     private let workQueue = DispatchQueue(label: "scabopdf.document-processing", qos: .userInitiated)
     private var didComplete = false
+    /// Riconoscimento delle risorse visive (tabelle e figure). Spento solo nei test che non lo riguardano.
+    private let detectVisualResources: Bool
+    /// L'esito dell'ultimo riconoscimento (conteggi e tempi), leggibile dopo `completion` (registro, test).
+    private(set) var lastVisualDetection: VisualRegionDetector.Result?
+    /// Le decisioni della guardia sull'ultimo flusso costruito (Lettura Continua).
+    private(set) var lastVisualReport: VisualResourcesReport?
 
-    init(extractor: ProgressReportingPdfExtractor = PdfKitExtractor()) {
+    init(extractor: ProgressReportingPdfExtractor = PdfKitExtractor(), detectVisualResources: Bool = true) {
         self.extractor = extractor
+        self.detectVisualResources = detectVisualResources
     }
 
     /// Avvia l'elaborazione del file `fileURL` (una copia locale che il chiamante possiede) in
@@ -171,6 +182,26 @@ final class DocumentProcessor {
             guard let extraction else { finish(.cancelled); return }
             let pageCount = extraction.pageCount
 
+            // ── Fase 1-bis: risorse visive (tabelle e figure) ───────────────────────────────────────
+            // Sonda di tutte le pagine (millisecondi), modello sulle sole pagine scelte dal prefiltro. La barra resta
+            // dov'è (fine dell'estrazione): l'avanzamento reale si legge nelle pagine del modello (unità della fase).
+            // La fase si annuncia solo se il modello gira davvero (un libro senza grafica non sente una fase in più).
+            // Il modello si rilascia qui, prima della classificazione, per non sommare la sua memoria a quella del
+            // documento in costruzione.
+            var visualCandidates: [VisualRegionCandidate] = []
+            if self.detectVisualResources {
+                let parked = pageCount > 0 ? Double(pageCount) / Double(2 * pageCount + 1) : 0
+                let detection = VisualRegionDetector.detect(
+                    pdfURL: fileURL,
+                    onModelPage: { done, total in
+                        report(Progress(phase: .visualResources, unitsDone: done, unitsTotal: total, fraction: parked))
+                    },
+                    isCancelled: { self.flag.isCancelled })
+                self.lastVisualDetection = detection
+                visualCandidates = detection.candidates
+            }
+            if self.flag.isCancelled { finish(.cancelled); return }
+
             // ── Fase 2: classificazione (per pagina) ───────────────────────────────────────────
             let rawDocument = buildDocumentFromPdf(
                 extraction,
@@ -206,7 +237,11 @@ final class DocumentProcessor {
             let content: PaginatedContent
             var doctrineContent: PaginatedContent?
             do {
-                content = try ContinuousBodyBuilder.bodyPaginatedContent(from: document, target: granularityTarget)
+                let visual = visualCandidates.isEmpty ? nil : VisualInput(candidates: visualCandidates, extraction: extraction)
+                let (built, visualReport) = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
+                    from: document, target: granularityTarget, visual: visual)
+                content = built
+                self.lastVisualReport = visualReport
                 // Dottrina Inline (§ 10): SOLO se ci sono note E se `buildDoctrine` (per i volumi
                 // enormi lo si salta: è un secondo flusso da decine di migliaia di segmenti che
                 // raddoppierebbe la memoria all'apertura, e la Lettura Continua di default non lo
@@ -215,7 +250,8 @@ final class DocumentProcessor {
                 if hasNotes && buildDoctrine {
                     let doctrineDoc = bindAndPlaceNotes(
                         rawDocument, extraction, placement: .doctrineInline).document
-                    doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContent(from: doctrineDoc, target: granularityTarget)
+                    doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
+                        from: doctrineDoc, target: granularityTarget, visual: visual).content
                 }
             } catch {
                 finish(.failure(message: Self.proseMessage(from: error)))

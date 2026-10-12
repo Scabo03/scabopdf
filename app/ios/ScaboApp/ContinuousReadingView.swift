@@ -64,6 +64,13 @@ protocol ReadingElementCoordinator: AnyObject {
     /// Presenta il menù d'azione dei vedenti sull'elemento (§ 5 + § 6): voci di segnalibro e di
     /// sottolineatura secondo lo stato. `sourcePoint` è nel sistema di coordinate della reading view.
     func presentElementMenu(segmentId: String, orderIndex: Int, segmentText: String, sourcePoint: CGPoint)
+    /// «Estrai come immagine» (§ 7.9): ritaglia la regione della risorsa visiva e la offre al foglio di
+    /// condivisione di sistema (che comprende «Salva su File»). `sourceRect` è nella reading view (popover iPad).
+    func extractVisualResource(_ payload: VisualResourcePayload, label: String, sourceRect: CGRect)
+}
+
+extension ReadingElementCoordinator {
+    func extractVisualResource(_ payload: VisualResourcePayload, label: String, sourceRect: CGRect) {}
 }
 
 // MARK: - Marcatore di pagina originale (Opzione A): stacco visivo, MUTO per VoiceOver
@@ -278,8 +285,10 @@ final class SegmentCell: UICollectionViewCell {
     override var accessibilityCustomActions: [UIAccessibilityCustomAction]? {
         get {
             guard let segment else { return nil }
-            // Salto nota ↔ testo del richiamo (§ 7.12): per primi, sono le azioni di lettura.
-            var actions = host?.noteJumpActions(forIndex: readingIndex) ?? []
+            // Risorsa visiva (§ 7.9): «Estrai come immagine» e, se la regione ha testo, «Salta la risorsa».
+            var actions = host?.visualResourceActions(forIndex: readingIndex, sourceRect: host.map { convert(bounds, to: $0) } ?? .zero) ?? []
+            // Salto nota ↔ testo del richiamo (§ 7.12): sono le azioni di lettura.
+            actions += host?.noteJumpActions(forIndex: readingIndex) ?? []
             actions += host?.bookmarkActions(forSegment: segment, orderIndex: readingIndex) ?? []
             // La SOTTOLINEATURA è dichiarata solo-vedenti (§6): NON esposta a VoiceOver. Ma per gli
             // altri AT non-gestuali (Voice Control / Switch Control / Full Keyboard Access), per cui
@@ -693,6 +702,40 @@ final class ContinuousReadingView: UIView {
         return actions
     }
 
+    /// Azioni della RISORSA VISIVA per l'elemento di indice dato (§ 7.9, `docs/RISORSE_VISIVE.md`): «Estrai come
+    /// immagine» sempre; «Salta la risorsa» solo se la regione contiene testo, che resta comunque nel flusso subito
+    /// dopo (nessun testo diventa irraggiungibile: saltarlo è una scelta, non un obbligo).
+    func visualResourceActions(forIndex index: Int, sourceRect: CGRect) -> [UIAccessibilityCustomAction] {
+        guard index >= 0, index < segments.count, let payload = segments[index].visualResource else { return [] }
+        let label = segments[index].text
+        var actions = [UIAccessibilityCustomAction(name: "Estrai come immagine") { [weak self] _ in
+            self?.elementCoordinator?.extractVisualResource(payload, label: label, sourceRect: sourceRect)
+            return self?.elementCoordinator != nil
+        }]
+        if payload.containedElements > 0 {
+            actions.append(UIAccessibilityCustomAction(name: "Salta la risorsa") { [weak self] _ in
+                guard let self else { return false }
+                self.goToElement(atIndex: self.indexAfterVisualResource(at: index), focus: true)
+                return true
+            })
+        }
+        return actions
+    }
+
+    /// L'elemento subito dopo il testo della risorsa all'indice dato: si contano `containedElements` elementi
+    /// di testo dopo di lei, poi il primo che segue. Un'altra risorsa annunciata subito dopo di lei (due risorse sullo
+    /// stesso testo) si scavalca; ma se l'annuncio di un'altra risorsa cade DENTRO il suo testo (il flusso ha fuso il
+    /// testo di due tabelle vicine), il salto si ferma su quell'annuncio, che non va perso e si può saltare a sua volta.
+    func indexAfterVisualResource(at index: Int) -> Int {
+        guard index >= 0, index < segments.count, let payload = segments[index].visualResource else { return index }
+        var i = index + 1, counted = 0
+        while i < segments.count && counted < payload.containedElements {
+            if segments[i].visualResource == nil { counted += 1 } else if counted > 0 { return i }
+            i += 1
+        }
+        return min(i, max(0, segments.count - 1))
+    }
+
     /// Costruisce le azioni-segnalibro VoiceOver per il segmento a fuoco (§ 5.1).
     func bookmarkActions(forSegment segment: ContentSegment, orderIndex: Int) -> [UIAccessibilityCustomAction]? {
         guard let coordinator = elementCoordinator else { return nil }
@@ -831,7 +874,38 @@ final class ContinuousReadingView: UIView {
         for level in headingLevelsPresent {
             rotors.append(headingRotor(level: level))  // .headingLevelN — stesso livello
         }
+        // Risorse visive: i rotori di SISTEMA «Tabelle» e «Immagini», solo se il documento ne ha (stessa meccanica
+        // dei titoli: indice leggero, materializzazione della sola cella bersaglio).
+        visualIndex = segments.enumerated().compactMap { i, s in s.visualResource.map { (index: i, kind: $0.kind) } }
+        if visualIndex.contains(where: { $0.kind == .table }) { rotors.append(visualRotor(.table)) }
+        if visualIndex.contains(where: { $0.kind == .figure }) { rotors.append(visualRotor(.figure)) }
         collectionView.accessibilityCustomRotors = rotors
+    }
+
+    /// Indice leggero degli elementi «risorsa visiva» (indice di lettura, tipo).
+    private(set) var visualIndex: [(index: Int, kind: VisualResourceKind)] = []
+
+    private func visualRotor(_ kind: VisualResourceKind) -> UIAccessibilityCustomRotor {
+        UIAccessibilityCustomRotor(systemType: kind == .table ? .table : .image) { [weak self] predicate in
+            guard let self else { return nil }
+            let current: Int
+            if let cell = predicate.currentItem.targetElement as? SegmentCell { current = cell.readingIndex }
+            else if let idx = self.lastFocusedIndex { current = idx }
+            else { current = (self.collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1 }
+            guard let t = self.nextVisualIndex(from: current, kind: kind, forward: predicate.searchDirection == .next) else { return nil }
+            let ip = IndexPath(item: t, section: 0)
+            self.collectionView.scrollToItem(at: ip, at: .top, animated: false)
+            self.collectionView.layoutIfNeeded()
+            self.presetReadingPosition(toIndex: t)
+            guard let cell = self.collectionView.cellForItem(at: ip) else { return nil }
+            return UIAccessibilityCustomRotorItemResult(targetElement: cell, targetRange: nil)
+        }
+    }
+
+    /// Indice della risorsa visiva del tipo dato successiva (o precedente) a `current`. Puro e testabile.
+    func nextVisualIndex(from current: Int, kind: VisualResourceKind, forward: Bool) -> Int? {
+        let candidates = visualIndex.filter { $0.kind == kind }
+        return forward ? candidates.first(where: { $0.index > current })?.index : candidates.last(where: { $0.index < current })?.index
     }
 
     private func headingRotor(level: Int?) -> UIAccessibilityCustomRotor {
@@ -1086,6 +1160,11 @@ final class ContinuousReadingView: UIView {
     /// ripristino posizione: 0 = inizio file, N = scrollato alla posizione). Richiede una finestra.
     var topVisibleElementIndexForTesting: Int? {
         collectionView.indexPathsForVisibleItems.map(\.item).min()
+    }
+
+    /// I rotori di sistema installati sul container del testo (per i test).
+    var systemRotorTypesForTesting: [UIAccessibilityCustomRotor.SystemRotorType] {
+        (collectionView.accessibilityCustomRotors ?? []).map { $0.systemRotorType }
     }
 
     /// Costruisce e configura una cella per l'indice dato SENZA passare dal ciclo di riciclo: per i
@@ -1351,6 +1430,7 @@ final class ContinuousReadingView: UIView {
         case "QUOTED_TEXT_NEW": hex = c.accentHeading
         case "UPDATE_BLOCK": hex = c.accentLink
         case "NOTE": hex = c.accentNote
+        case VISUAL_RESOURCE_ROLE: hex = c.accentLink
         default: hex = c.accentHeading  // SECTION_DIVIDER e altri
         }
         return UIColor.fromHex(hex, fallback: UIColor.fromHex(c.textPrimary))

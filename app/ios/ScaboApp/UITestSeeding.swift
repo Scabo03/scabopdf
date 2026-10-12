@@ -9,6 +9,9 @@
 //  `-uiTestSeedDuplicateImport` crea lo stesso libro sintetico già in libreria (con impronta, cache e
 //  un segnalibro) e lascia in `tmp` una copia identica del suo PDF: la Home la «importa» al primo
 //  apparire, così il test UI percorre la schermata «Libro già presente» (DuplicateImport.swift).
+//  `-uiTestSeedVisualResource` crea un libro con una tabella già riconosciuta come risorsa visiva (giro 2026-10-12);
+//  `-uiTestSeedVisualResourceControl` crea lo stesso libro SENZA l'elemento «risorsa visiva» (stesso titolo, stessi
+//  paragrafi): il termine di paragone dell'audit di accessibilità.
 //
 
 #if DEBUG
@@ -23,6 +26,8 @@ enum UITestSeeding {
     static func applyIfRequested() {
         let args = CommandLine.arguments
         if args.contains("-uiTestSeedDuplicateImport") { seedDuplicateImport(); return }
+        if args.contains("-uiTestSeedVisualResourceControl") { seedVisualResource(withResource: false); return }
+        if args.contains("-uiTestSeedVisualResource") { seedVisualResource(withResource: true); return }
         guard args.contains("-uiTestSeedReprocess") else { return }
         let service = LibraryService.shared
         // Libreria pulita per un test deterministico.
@@ -74,6 +79,61 @@ enum UITestSeeding {
         service.store.recordOpened(id: doc.id)
         try? FileManager.default.removeItem(at: duplicateImportFileURL)
         try? pdf.write(to: duplicateImportFileURL)
+    }
+
+    /// Un libro con una TABELLA già riconosciuta (giro risorse visive, 2026-10-12): PDF sintetico con una tabella
+    /// disegnata (filetti e parole neutre) e una cache il cui flusso porta l'elemento «risorsa visiva» seguito dal testo
+    /// della tabella, come lo produce l'elaborazione. Elaborato da QUESTA build: nessuna offerta di rielaborazione.
+    /// Con `withResource == false` il flusso è lo stesso senza l'elemento «risorsa visiva» (controllo dell'audit).
+    private static func seedVisualResource(withResource: Bool) {
+        let service = LibraryService.shared
+        for d in service.store.allDocuments() {
+            service.store.deleteDocumentFromArchive(id: d.id)
+            service.deleteFiles(forDocumentId: d.id)
+        }
+        let doc = service.store.addDocument(title: "Libro con tabella", sourceFileName: "libro-con-tabella.pdf", sourcePageCount: 1)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("libro-con-tabella.pdf")
+        try? syntheticPdfWithTable().write(to: url)
+        try? service.storePDF(from: url, forDocumentId: doc.id)
+        let page = 1
+        func seg(_ id: String, _ role: String, _ text: String) -> ContentSegment {
+            ContentSegment(id: id, role: role, text: text, lengthCategory: "", acousticIntro: "", sourcePage: page)
+        }
+        let table = ContentSegment(
+            id: "vr_p0_0", role: VISUAL_RESOURCE_ROLE, text: "Tabella: Il raccolto per stagione", lengthCategory: "",
+            acousticIntro: acousticIntroFor(VISUAL_RESOURCE_ROLE, ""), memoryRefresh: "", sourcePage: page,
+            visualResource: VisualResourcePayload(kind: .table, pageIndex: 0, bbox: [60, 200, 360, 320], containedElements: 2))
+        let segments = [
+            seg("node_0", "HEADING_1", "Capitolo primo"),
+            seg("node_1", "BODY", "Il paragrafo che precede la tabella del raccolto."),
+        ] + (withResource ? [table] : []) + [
+            seg("node_2", "BODY", "Stagione Raccolto Primavera Grano"),
+            seg("node_3", "BODY", "Estate Orzo Autunno Uva"),
+            seg("node_4", "BODY", "Il paragrafo che segue la tabella."),
+        ]
+        service.writeCache(PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: segments)], totalSegments: segments.count),
+                           pageMap: [:], doctrineContent: nil, quickConsultTree: nil,
+                           contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id)
+        service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
+        service.store.recordOpened(id: doc.id)
+    }
+
+    private static func syntheticPdfWithTable() -> Data {
+        UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 420, height: 595)).pdfData { ctx in
+            ctx.beginPage()
+            let font = UIFont.systemFont(ofSize: 12)
+            ("Capitolo primo" as NSString).draw(at: CGPoint(x: 60, y: 70), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 16)])
+            ("Il paragrafo che precede la tabella del raccolto." as NSString).draw(at: CGPoint(x: 60, y: 120), withAttributes: [.font: font])
+            let cg = ctx.cgContext
+            cg.setStrokeColor(UIColor.black.cgColor); cg.setLineWidth(1)
+            for r in 0...3 { cg.move(to: CGPoint(x: 60, y: 200 + r * 40)); cg.addLine(to: CGPoint(x: 360, y: 200 + r * 40)) }
+            for c in 0...2 { cg.move(to: CGPoint(x: 60 + c * 150, y: 200)); cg.addLine(to: CGPoint(x: 60 + c * 150, y: 320)) }
+            cg.strokePath()
+            for (i, w) in ["Stagione", "Raccolto", "Primavera", "Grano", "Estate", "Orzo"].enumerated() {
+                (w as NSString).draw(at: CGPoint(x: 70 + (i % 2) * 150, y: 212 + (i / 2) * 40), withAttributes: [.font: font])
+            }
+            ("Il paragrafo che segue la tabella." as NSString).draw(at: CGPoint(x: 60, y: 360), withAttributes: [.font: font])
+        }
     }
 
     private static func syntheticPdf() -> Data {

@@ -45,6 +45,13 @@
 import Foundation
 import ScaboCore
 
+/// I candidati delle risorse visive di un PDF e l'estrazione da cui è nato il documento: quanto serve alla guardia e
+/// all'inserimento degli elementi «risorsa visiva» (`ScaboCore/VisualResources.swift`).
+struct VisualInput {
+    let candidates: [VisualRegionCandidate]
+    let extraction: PdfExtraction
+}
+
 /// Costruisce il contenuto di CORPO (granularizzato, note escluse) dal documento.
 enum ContinuousBodyBuilder {
 
@@ -74,6 +81,25 @@ enum ContinuousBodyBuilder {
         segmentsPerPage: Int = DEFAULT_SEGMENTS_PER_PAGE
     ) throws -> PaginatedContent {
         try paginate(bodySegments(from: document, target: target), segmentsPerPage)
+    }
+
+    /// Come `bodyPaginatedContent`, con le RISORSE VISIVE: ultimo passo prima dell'impaginazione, la guardia di
+    /// ScaboCore decide quali regioni del modello diventano risorse e ne inserisce l'elemento nel flusso (additivo:
+    /// il testo resta dov'era). `visual == nil` → identico a `bodyPaginatedContent`.
+    static func bodyPaginatedContentWithVisual(
+        from document: ScabopdfDocument,
+        target: Int = DEFAULT_GRANULARITY_TARGET,
+        segmentsPerPage: Int = DEFAULT_SEGMENTS_PER_PAGE,
+        visual: VisualInput?
+    ) throws -> (content: PaginatedContent, report: VisualResourcesReport?) {
+        var segments = bodySegments(from: document, target: target)
+        var report: VisualResourcesReport?
+        if let visual {
+            let out = insertingVisualResources(segments, candidates: visual.candidates, extraction: visual.extraction)
+            segments = out.segments
+            report = out.report
+        }
+        return (try paginate(segments, segmentsPerPage), report)
     }
 
     // ── Controllo dei quattro livelli (§ 7.7) ───────────────────────────────────────

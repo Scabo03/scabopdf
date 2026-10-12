@@ -26,7 +26,17 @@ enum ReprocessOffer {
 
     /// Generazioni validate dalla doppia rete della build in uso, e l'ultima build che porta una cura da
     /// offrire. Da aggiornare nel giro che valida una nuova generazione o introduce una cura.
-    static let policy = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 50)
+    /// La cura della build 53 (risorse visive) richiede iOS 17 (il modello d'impaginazione): sotto, l'ultima cura
+    /// resta la 50 e l'offerta non promette ciò che il dispositivo non può fare.
+    static var policy: ReprocessingPolicy {
+        ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: visualResourcesAvailable ? 53 : 50)
+    }
+
+    /// Vero se il dispositivo può riconoscere tabelle e figure (iOS 17 o successivo).
+    static var visualResourcesAvailable: Bool {
+        if #available(iOS 17.0, *) { return true }
+        return false
+    }
 
     /// Le cure portate dalle build, in parole semplici, per dire «cosa cambia».
     static let cures: [(build: Int, text: String)] = [
@@ -45,6 +55,8 @@ enum ReprocessOffer {
             + "titoli; nelle dottrine e nelle massime DeJure i titoli in grassetto si trovano nella navigazione e l'ultima "
             + "pagina degli export brevi si legge; la testatina che il lettore di sistema incollava a una riga di testo "
             + "non viene più letta"),
+        (53, "le tabelle e le figure sono riconosciute e annunciate come risorse visive, e si possono estrarre come "
+            + "immagine per farle descrivere; il testo che contengono resta leggibile come prima"),
     ]
 
     private static var service: LibraryService { .shared }
@@ -78,7 +90,7 @@ enum ReprocessOffer {
     /// Cosa cambia, per questo libro.
     static func whatChanges(_ doc: ArchivedDocument, reason: ReprocessingReason) -> String {
         let since = doc.processedAppBuild.flatMap { Int($0) } ?? 0
-        let list = cures.filter { $0.build > since }.map { $0.text }
+        let list = cures.filter { $0.build > since && $0.build <= policy.latestCureBuild }.map { $0.text }
         var text = ""
         if reason == .systemUpdate, let was = doc.processedSystemVersion {
             text += "Questo libro è stato letto con \(was); ora il lettore di sistema è \(SystemGeneration.current), già verificato per questa versione dell'app. "

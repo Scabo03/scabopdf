@@ -56,6 +56,15 @@ func physFootprintMB() -> Double {
     return kr == KERN_SUCCESS ? Double(info.phys_footprint) / 1024 / 1024 : -1
 }
 
+/// Il massimo di una grandezza campionata da un'altra coda (picco di memoria nei banchi).
+final class PeakBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var current: Double
+    init(_ initial: Double) { current = initial }
+    func update(_ v: Double) { lock.lock(); current = max(current, v); lock.unlock() }
+    var value: Double { lock.lock(); defer { lock.unlock() }; return current }
+}
+
 final class RealPdfBenchTests: XCTestCase {
 
     /// Cartella-corpus locale (fuori repo). Override via env `SCABO_CORPUS_DIR`.
@@ -144,6 +153,12 @@ final class RealPdfBenchTests: XCTestCase {
         let corpusDir: String
         let outDir: String
         let pdfs: [String]
+        /// Solo per `test_visualAppChainDump_fromRequest`: se presente, una fotografia della vista di lettura su ogni
+        /// elemento «risorsa visiva» (per il confronto a vista con la pagina stampata; fuori dal repo).
+        var snapshotDir: String? = nil
+        /// Solo per `test_visualAppChainDump_fromRequest`: salta l'elaborazione SENZA riconoscimento (niente tempi di
+        /// confronto né verifica d'identità: solo le fotografie e gli elementi).
+        var skipWithout: Bool? = nil
     }
 
     /// Path fisso della richiesta (concordato col driver). Override via env se mai
@@ -210,6 +225,204 @@ final class RealPdfBenchTests: XCTestCase {
                 .write(to: URL(fileURLWithPath: req.outDir + "/\(stem).extraction.json"))
             print("[extraction-dump] \(name): \(extraction.pageCount) pagine → \(stem).extraction.json")
         }
+    }
+
+    // MARK: - Risorse visive (giro 2026-10-12)
+
+    /// Pagine e tempi del riconoscimento, per volume (nessun testo).
+    private struct RegionsMeta: Codable {
+        let pageCount: Int
+        let modelPages: [Int]
+        let analyzedPages: Int
+        let candidates: Int
+        let probeSeconds: Double
+        let modelLoadSeconds: Double
+        let modelSeconds: Double
+        let skippedReason: String?
+    }
+
+    /// Le REGIONI del modello d'impaginazione per ogni PDF della richiesta, con la stessa catena dell'app
+    /// (`VisualRegionDetector`: sonda di tutte le pagine, prefiltro, modello sulle pagine scelte). Scrive accanto
+    /// all'estrazione `<stem>.regions.json` (i candidati, senza testo) e `<stem>.regions_meta.json` (pagine e tempi).
+    /// Il rendering del lettore di sistema cambia fra generazioni: le regioni si catturano nel simulatore di ciascuna.
+    /// Stesso meccanismo a file-richiesta; `XCTSkip` senza richiesta.
+    func test_visualRegionsDump_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_REGIONS_REQUEST"]
+            ?? "/tmp/scabo_regions_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta di regioni in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.sortedKeys]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[regions-dump] assente, salto: \(path)"); continue
+            }
+            let r = VisualRegionDetector.detect(pdfURL: URL(fileURLWithPath: path))
+            let stem = (name as NSString).deletingPathExtension
+            try enc.encode(r.candidates).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).regions.json"))
+            let meta = RegionsMeta(pageCount: r.pageCount, modelPages: r.modelPages, analyzedPages: r.analyzedPages,
+                                   candidates: r.candidates.count, probeSeconds: r.probeSeconds,
+                                   modelLoadSeconds: r.modelLoadSeconds, modelSeconds: r.modelSeconds,
+                                   skippedReason: r.skippedReason)
+            try enc.encode(meta).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).regions_meta.json"))
+            print(String(format: "[regions-dump] %@: %d pagine, al modello %d, candidati %d, sonda %.2f s, carico %.2f s, modello %.2f s%@",
+                         name, r.pageCount, r.modelPages.count, r.candidates.count, r.probeSeconds, r.modelLoadSeconds,
+                         r.modelSeconds, r.skippedReason.map { " (\($0))" } ?? ""))
+        }
+    }
+
+    /// Un elemento «risorsa visiva» del flusso dell'app, senza testo: posizione, tipo, pagina, riquadro e l'impronta
+    /// del primo segmento che lo segue (per confrontarlo con la lettura del runner).
+    private struct AppVisualElement: Codable {
+        let index: Int
+        let kind: String
+        let pageIndex: Int
+        let bbox: [Double]
+        let containedElements: Int
+        let nextSegmentDigest: String?
+    }
+    private struct AppVisualDump: Codable {
+        let pdf: String
+        let segments: Int
+        let visualElements: [AppVisualElement]
+        let doctrineSegments: Int?
+        let doctrineVisualElements: Int?
+        /// Elaborazione completa con il riconoscimento e senza (stesso volume, stesso simulatore, una dopo l'altra).
+        let seconds: Double
+        let secondsWithout: Double
+        let segmentsWithout: Int
+        /// Picco della memoria fisica del processo durante l'elaborazione (MB; nel simulatore è il processo del Mac:
+        /// valgono i delta fra le due elaborazioni, non i valori assoluti).
+        let peakMB: Double
+        let peakMBWithout: Double
+        let detection: RegionsMeta?
+    }
+
+    /// LA CATENA DELL'APP sulle risorse visive: per ogni PDF della richiesta, l'elaborazione completa
+    /// (`DocumentProcessor`, la stessa dell'importazione) e il dump senza testo degli elementi «risorsa visiva» del flusso
+    /// di Lettura Continua (e del loro numero in Dottrina Inline). Serve a provare che l'app inserisce le stesse risorse
+    /// che la rete calcola con il runner. `XCTSkip` senza richiesta.
+    func test_visualAppChainDump_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_VISUAL_APP_REQUEST"]
+            ?? "/tmp/scabo_visual_app_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta di catena dell'app in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.sortedKeys, .prettyPrinted]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[visual-app] assente, salto: \(path)"); continue
+            }
+            func run(_ visual: Bool) -> (DocumentProcessor, DocumentProcessor.Outcome?, Double, Double) {
+                let processor = DocumentProcessor(detectVisualResources: visual)
+                let done = expectation(description: "elaborazione \(name) \(visual)")
+                var outcome: DocumentProcessor.Outcome?
+                // Campionatore del picco di memoria, ogni 50 ms, su una coda propria.
+                let sampler = DispatchSource.makeTimerSource(queue: DispatchQueue(label: "scabo.bench.memoria"))
+                let peak = PeakBox(physFootprintMB())
+                sampler.schedule(deadline: .now(), repeating: .milliseconds(50))
+                sampler.setEventHandler { peak.update(physFootprintMB()) }
+                sampler.resume()
+                let t0 = Date()
+                processor.process(fileURL: URL(fileURLWithPath: path), sourceName: (name as NSString).lastPathComponent,
+                                  onProgress: { _ in }, completion: { outcome = $0; done.fulfill() })
+                wait(for: [done], timeout: 3600)
+                let elapsed = Date().timeIntervalSince(t0)
+                sampler.cancel()
+                return (processor, outcome, elapsed, peak.value)
+            }
+            let skip = req.skipWithout ?? false
+            let (_, plain, secondsWithout, peakWithout) = skip ? (DocumentProcessor(), nil, 0, 0) : run(false)
+            let (processor, outcome, seconds, peakWith) = run(true)
+            guard case .success(_, let content, let doctrine)? = outcome else {
+                XCTFail("[visual-app] \(name): elaborazione non riuscita"); continue
+            }
+            var plainContent = content
+            if !skip {
+                guard case .success(_, let pc, _)? = plain else { XCTFail("[visual-app] \(name): elaborazione senza riconoscimento non riuscita"); continue }
+                plainContent = PaginatedContent(pages: pc.pages, totalSegments: pc.totalSegments)
+            }
+            let segs = content.pages.flatMap { $0.segments }
+            var elements: [AppVisualElement] = []
+            for (i, s) in segs.enumerated() {
+                guard let v = s.visualResource else { continue }
+                let next = segs[(i + 1)...].first { $0.visualResource == nil }
+                elements.append(AppVisualElement(
+                    index: i, kind: v.kind.rawValue, pageIndex: v.pageIndex, bbox: v.bbox,
+                    containedElements: v.containedElements,
+                    nextSegmentDigest: next.map { TextFingerprint.digest(TextFingerprint.normalize($0.text).prefix(64)) }))
+            }
+            let d = processor.lastVisualDetection
+            let meta = d.map { RegionsMeta(pageCount: $0.pageCount, modelPages: $0.modelPages, analyzedPages: $0.analyzedPages,
+                                           candidates: $0.candidates.count, probeSeconds: $0.probeSeconds,
+                                           modelLoadSeconds: $0.modelLoadSeconds, modelSeconds: $0.modelSeconds,
+                                           skippedReason: $0.skippedReason) }
+            let docSegs = doctrine.map { $0.pages.flatMap { $0.segments } }
+            let plainSegs = skip ? segs.filter { $0.visualResource == nil } : plainContent.pages.flatMap { $0.segments }
+            // Il vincolo del giro sulla catena dell'app: tolti gli elementi «risorsa visiva», il flusso è quello di prima.
+            let stripped = segs.filter { $0.visualResource == nil }
+            XCTAssertEqual(stripped.map { $0.id }, plainSegs.map { $0.id }, "[visual-app] \(name): ordine degli elementi di testo cambiato")
+            XCTAssertEqual(stripped.map { $0.text }, plainSegs.map { $0.text }, "[visual-app] \(name): testo cambiato")
+            let dump = AppVisualDump(pdf: name, segments: segs.count, visualElements: elements,
+                                     doctrineSegments: docSegs?.count,
+                                     doctrineVisualElements: docSegs?.filter { $0.visualResource != nil }.count,
+                                     seconds: seconds, secondsWithout: secondsWithout, segmentsWithout: plainSegs.count,
+                                     peakMB: peakWith, peakMBWithout: peakWithout, detection: meta)
+            let stem = (name as NSString).deletingPathExtension
+            let dir = (req.outDir + "/" + stem as NSString).deletingLastPathComponent
+            try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            try enc.encode(dump).write(to: URL(fileURLWithPath: req.outDir + "/\(stem).visual_app.json"))
+            print(String(format: "[visual-app] %@: segmenti %d (senza %d), risorse visive %d, %.1f s (senza %.1f s), picco %.0f MB (senza %.0f MB)",
+                         name, segs.count, plainSegs.count, elements.count, seconds, secondsWithout, peakWith, peakWithout))
+            if let snapDir = req.snapshotDir, !elements.isEmpty {
+                snapshotVisualElements(content, elements: elements.map { $0.index }, stem: stem, dir: snapDir)
+            }
+        }
+    }
+
+    /// Fotografie della vista di lettura (iPad 11", verticale) con l'elemento «risorsa visiva» in cima: l'elemento
+    /// riquadrato e il testo che lo segue, come li vede chi legge. Più un indice JSON con le etichette lette
+    /// (elemento e i tre seguenti): CONTIENE TESTO del volume, quindi solo nel laboratorio, mai nel repo.
+    private func snapshotVisualElements(_ content: PaginatedContent, elements: [Int], stem: String, dir: String) {
+        let size = CGSize(width: 834, height: 1194)
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        let view = ContinuousReadingView(frame: window.bounds)
+        window.addSubview(view)
+        window.makeKeyAndVisible()
+        view.render(content)
+        view.layoutIfNeeded()
+        let segs = view.currentSegments
+        var index: [[String: Any]] = []
+        let base = (dir as NSString).appendingPathComponent(stem)
+        try? FileManager.default.createDirectory(atPath: (base as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+        for (k, i) in elements.enumerated() {
+            view.goToElement(atIndex: i, focus: false)
+            view.layoutIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+            // `layer.render`: nel processo di test la finestra non va a schermo e `drawHierarchy` darebbe un'immagine nera.
+            let image = UIGraphicsImageRenderer(bounds: window.bounds, format: {
+                let f = UIGraphicsImageRendererFormat(); f.scale = 1; return f }()).image { ctx in
+                UIColor.systemBackground.setFill(); ctx.fill(window.bounds)
+                view.layer.render(in: ctx.cgContext)
+            }
+            let file = base + "_vr\(k).png"
+            try? image.pngData()?.write(to: URL(fileURLWithPath: file))
+            let labels = (i..<min(segs.count, i + 4)).map { ContinuousReadingView.intendedAccessibilityLabel(for: segs[$0]) }
+            index.append(["k": k, "index": i, "page": (segs[i].visualResource?.pageIndex ?? -1) + 1,
+                          "kind": segs[i].visualResource?.kind.rawValue ?? "", "labels": labels])
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: index, options: [.prettyPrinted, .sortedKeys]) {
+            try? data.write(to: URL(fileURLWithPath: base + "_vr_indice.json"))
+        }
+        window.isHidden = true
     }
 
     /// Pezzo Swift del comando di verifica-fedeltà: per ogni PDF della richiesta,

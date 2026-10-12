@@ -28,6 +28,13 @@
 import UIKit
 import ScaboCore
 
+/// Una risorsa visiva fra il contenuto di un articolo (§ 7.9): l'annuncio e quanto serve all'estrazione.
+struct QuickVisualItem {
+    /// «Tabella» o «Figura», con la didascalia se c'è (il testo dell'elemento nel flusso).
+    let label: String
+    let payload: VisualResourcePayload
+}
+
 final class QuickConsultView: UIView {
 
     /// Una riga visibile dell'albero (intestazione o contenuto-foglia).
@@ -35,6 +42,8 @@ final class QuickConsultView: UIView {
         enum Kind {
             case heading(node: QuickConsultNode, hasChildren: Bool, isLeaf: Bool)
             case content(text: String)
+            /// Una risorsa visiva, subito prima del contenuto che porta il suo testo (come nel flusso).
+            case visual(item: QuickVisualItem)
         }
         let kind: Kind
         let depth: Int
@@ -58,13 +67,19 @@ final class QuickConsultView: UIView {
     var onEscape: (() -> Void)?
     /// Notifica al controller che lo stato dell'albero è cambiato (per la persistenza).
     var onExpansionChanged: ((Set<String>) -> Void)?
+    /// «Estrai come immagine» su una risorsa visiva: il controller ritaglia e offre il foglio di condivisione.
+    /// Il riquadro è nel sistema di coordinate dell'albero (popover iPad).
+    var onExtractVisual: ((QuickVisualItem, CGRect) -> Void)?
+    /// Le risorse visive da mostrare prima del contenuto di un nodo (per id del nodo-contenuto).
+    private let visualBefore: [String: [QuickVisualItem]]
 
     private static let cellId = "qc.cell"
 
     init(roots: [QuickConsultNode], nodeText: [String: String],
-         documentTitle: String, expanded: Set<String> = []) {
+         documentTitle: String, expanded: Set<String> = [], visualBefore: [String: [QuickVisualItem]] = [:]) {
         self.roots = roots
         self.nodeText = nodeText
+        self.visualBefore = visualBefore
         self.documentTitle = documentTitle
         self.expanded = expanded
         super.init(frame: .zero)
@@ -112,6 +127,9 @@ final class QuickConsultView: UIView {
             } else {
                 // Foglia espansa → mostra il contenuto dell'unità (rubrica, commi, note).
                 for cid in node.contentIds {
+                    for item in visualBefore[cid] ?? [] {
+                        out.append(Row(kind: .visual(item: item), depth: node.depth + 1, headingId: ""))
+                    }
                     if let text = nodeText[cid], !text.isEmpty {
                         out.append(Row(kind: .content(text: text), depth: node.depth + 1, headingId: ""))
                     }
@@ -205,6 +223,24 @@ final class QuickConsultView: UIView {
         quickConsultSummaryLabel(node)
     }
 
+    /// Etichette di accessibilità delle righe visibili, in ordine (per i test).
+    var rowLabelsForTesting: [String] {
+        rows.map { row in
+            switch row.kind {
+            case let .heading(node, _, _): return headingLabel(node)
+            case let .content(text): return text
+            case let .visual(item): return "Risorsa visiva. \(item.label)"
+            }
+        }
+    }
+
+    /// Espande l'intestazione con l'id dato (per i test, senza tocchi).
+    func expandForTesting(headingId: String) {
+        expanded.insert(headingId)
+        rebuildRows()
+        tableView.reloadData()
+    }
+
     /// Il primo elemento di accessibilità dell'albero (la prima cella), su cui posare il fuoco
     /// all'ingresso nel Layout. La table view, se non ancora layoutata, può non avere celle: in tal
     /// caso si ritorna la table view stessa (VoiceOver vi discende e si posa sul primo elemento).
@@ -269,11 +305,39 @@ extension QuickConsultView: UITableViewDataSource, UITableViewDelegate {
             cell.accessibilityTraits = .staticText
             cell.accessibilityValue = nil
             cell.accessibilityHint = nil
+        case let .visual(item):
+            // Come nel flusso: annunciata come risorsa visiva, con l'estrazione come azione (§ 7.9). Il testo che la
+            // regione contiene segue nella riga di contenuto, invariato.
+            config.text = "Risorsa visiva. \(item.label)"
+            config.image = UIImage(systemName: item.payload.kind == .table ? "tablecells" : "photo")
+            config.textProperties.font = UIFont.preferredFont(forTextStyle: .body)
+            cell.contentConfiguration = config
+            cell.accessibilityLabel = "Risorsa visiva. \(item.label)"
+            cell.accessibilityTraits = .staticText
+            cell.accessibilityValue = nil
+            cell.accessibilityHint = nil
+            cell.accessibilityCustomActions = [
+                UIAccessibilityCustomAction(name: "Estrai come immagine") { [weak self, weak cell] _ in
+                    guard let self, let cell else { return false }
+                    self.onExtractVisual?(item, cell.convert(cell.bounds, to: self))
+                    return self.onExtractVisual != nil
+                },
+            ]
+            return cell
         }
+        cell.accessibilityCustomActions = nil
         return cell
     }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // Tocco su una risorsa visiva: per chi non usa VoiceOver, la stessa estrazione dell'azione. Con VoiceOver la riga
+        // è testo (il doppio tocco non apre nulla di inatteso): l'estrazione è l'azione dichiarata «Estrai come immagine».
+        if indexPath.row < rows.count, case let .visual(item) = rows[indexPath.row].kind {
+            if !UIAccessibility.isVoiceOverRunning, let cell = tableView.cellForRow(at: indexPath) {
+                onExtractVisual?(item, cell.convert(cell.bounds, to: self))
+            }
+            return
+        }
         toggle(at: indexPath.row)
     }
 

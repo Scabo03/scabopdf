@@ -32,7 +32,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             setStoredAppearanceSource(prefs, .followSystem)
         }
         if CommandLine.arguments.contains("-uiTestSeedReprocess")
-            || CommandLine.arguments.contains("-uiTestSeedDuplicateImport") {
+            || CommandLine.arguments.contains("-uiTestSeedDuplicateImport")
+            || CommandLine.arguments.contains("-uiTestSeedVisualResource")
+            || CommandLine.arguments.contains("-uiTestSeedVisualResourceControl") {
             setStoredFirstOpenCompleted(prefs, true)
             UITestSeeding.applyIfRequested()
         }

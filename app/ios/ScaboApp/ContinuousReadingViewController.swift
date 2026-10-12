@@ -160,6 +160,9 @@ final class ContinuousReadingViewController: UIViewController {
     /// La vista ad albero della Consultazione Rapida, creata pigramente al primo ingresso nel
     /// Layout (è il TERZO container di accessibilità, alternativo al testo).
     private var quickConsultView: QuickConsultView?
+    /// Per i test: se impostato, riceve il foglio di condivisione di «Estrai come immagine» (e il file del ritaglio) AL
+    /// POSTO della presentazione, così nessuna interfaccia di sistema compare durante le prove.
+    var shareSheetInterceptorForTesting: ((UIActivityViewController, URL) -> Void)?
 
     /// Stato dell'albero (tendine espanse) persistito per documento (§ 2.5 / § 8.2).
     private lazy var quickExpandedState: Set<String> = loadQuickExpandedState()
@@ -573,7 +576,12 @@ final class ContinuousReadingViewController: UIViewController {
     /// la persistenza dello stato e l'escape verso l'interfaccia.
     private func makeQuickConsultView(_ roots: [QuickConsultNode]) -> QuickConsultView {
         let tree = QuickConsultView(roots: roots, nodeText: quickNodeText,
-                                    documentTitle: documentTitle, expanded: quickExpandedState)
+                                    documentTitle: documentTitle, expanded: quickExpandedState,
+                                    visualBefore: buildQuickVisualItems())
+        tree.onExtractVisual = { [weak self, weak tree] item, rect in
+            guard let self, let tree else { return }
+            self.extractVisualResource(item.payload, sourceView: tree, sourceRect: rect)
+        }
         tree.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tree)
         NSLayoutConstraint.activate([
@@ -595,12 +603,32 @@ final class ContinuousReadingViewController: UIViewController {
         return tree
     }
 
+    /// Le risorse visive del flusso di Lettura Continua, per id del nodo-contenuto che le segue (il primo segmento non
+    /// «risorsa visiva» dopo l'elemento; in coda al flusso, quello prima): nella Consultazione Rapida la risorsa compare
+    /// fra il contenuto dell'articolo nello stesso punto del flusso.
+    private func buildQuickVisualItems() -> [String: [QuickVisualItem]] {
+        let segments = content.pages.flatMap { $0.segments }
+        func baseId(_ id: String) -> String {
+            id.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? id
+        }
+        var out: [String: [QuickVisualItem]] = [:]
+        for (i, seg) in segments.enumerated() {
+            guard let payload = seg.visualResource else { continue }
+            let following = segments[(i + 1)...].first { $0.visualResource == nil }
+            let preceding = segments[..<i].last { $0.visualResource == nil }
+            guard let host = following ?? preceding else { continue }
+            out[baseId(host.id), default: []].append(QuickVisualItem(label: seg.text, payload: payload))
+        }
+        return out
+    }
+
     /// Costruisce la mappa id-nodo → testo dal flusso di Lettura Continua (i segmenti portano l'id
-    /// del nodo, eventualmente granularizzato `id#k`): per il contenuto delle foglie nell'albero.
+    /// del nodo, eventualmente granularizzato `id#k`): per il contenuto delle foglie nell'albero. Gli elementi
+    /// «risorsa visiva» non ci entrano: la Consultazione Rapida li mostra come righe a sé (`buildQuickVisualItems`).
     private func buildQuickNodeText() -> [String: String] {
         var map: [String: String] = [:]
         for page in content.pages {
-            for seg in page.segments {
+            for seg in page.segments where seg.visualResource == nil {
                 let base = seg.id.split(separator: "#", maxSplits: 1,
                                         omittingEmptySubsequences: false).first.map(String.init) ?? seg.id
                 if let existing = map[base] { map[base] = existing + " " + seg.text }
@@ -1112,6 +1140,8 @@ final class ContinuousReadingViewController: UIViewController {
     var quickAvailableForTesting: Bool { quickConsultTree != nil }
     /// La vista ad albero (se creata), per i test.
     var quickConsultViewForTesting: QuickConsultView? { quickConsultView }
+    /// Le risorse visive per nodo-contenuto che la Consultazione Rapida mostra (per i test).
+    var quickVisualItemsForTesting: [String: [QuickVisualItem]] { buildQuickVisualItems() }
     /// Numero di segmenti correntemente resi (per verificare che lo switch cambi davvero il flusso).
     var renderedSegmentCountForTesting: Int { readingView.renderedSegmentCount }
     /// Cambia layout come farebbe il selettore (per i test, senza UIMenu).
@@ -1169,6 +1199,14 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
     func presentElementMenu(segmentId: String, orderIndex: Int, segmentText: String, sourcePoint: CGPoint) {
         let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
 
+        // Risorsa visiva (§ 7.9): l'estrazione come immagine anche per chi non usa VoiceOver.
+        let segments = readingView.currentSegments
+        if orderIndex >= 0, orderIndex < segments.count, let payload = segments[orderIndex].visualResource {
+            sheet.addAction(UIAlertAction(title: "Estrai come immagine", style: .default) { [weak self] _ in
+                self?.extractVisualResource(payload, label: segmentText, sourceRect: CGRect(origin: sourcePoint, size: CGSize(width: 1, height: 1)))
+            })
+        }
+
         // Segnalibro (§ 5).
         if let bookmark = existingBookmark(forSegmentId: segmentId) {
             sheet.addAction(UIAlertAction(title: "Modifica segnalibro", style: .default) { [weak self] _ in
@@ -1205,6 +1243,45 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
             popover.sourceRect = CGRect(origin: sourcePoint, size: CGSize(width: 1, height: 1))
         }
         present(sheet, animated: true)
+    }
+
+    // MARK: Risorse visive — «Estrai come immagine» (§ 7.9)
+
+    /// Ritaglia la regione della risorsa dal PDF d'archivio (fuori dal thread principale) e offre il PNG al foglio di
+    /// condivisione di sistema. Un problema si dice in prosa, annunciato (§ 12.10).
+    func extractVisualResource(_ payload: VisualResourcePayload, label: String, sourceRect: CGRect) {
+        extractVisualResource(payload, sourceView: readingView, sourceRect: sourceRect)
+    }
+
+    /// Come sopra, con la vista a cui ancorare il popover (la reading view o l'albero della Consultazione Rapida).
+    func extractVisualResource(_ payload: VisualResourcePayload, sourceView: UIView, sourceRect: CGRect) {
+        let source = LibraryService.shared.archivedPDFURL(forDocumentId: documentId)
+        UIAccessibility.post(notification: .announcement, argument: "Preparo l'immagine.")
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let result = VisualResourceExport.makePNG(sourcePDF: source, payload: payload)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                switch result {
+                case .failure(let failure):
+                    UIAccessibility.post(notification: .announcement, argument: failure.prose)
+                case .success(let file):
+                    self.presentShareSheet(for: file, sourceView: sourceView, sourceRect: sourceRect)
+                }
+            }
+        }
+    }
+
+    /// Il foglio di condivisione di sistema con il solo ritaglio (comprende «Salva su File»). Su iPad è un popover
+    /// ancorato all'elemento. Alla chiusura il file temporaneo si toglie.
+    private func presentShareSheet(for file: URL, sourceView: UIView, sourceRect: CGRect) {
+        let share = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+        share.completionWithItemsHandler = { _, _, _, _ in VisualResourceExport.cleanUp() }
+        if let popover = share.popoverPresentationController {
+            popover.sourceView = sourceView
+            popover.sourceRect = sourceRect == .zero ? CGRect(x: sourceView.bounds.midX, y: sourceView.bounds.midY, width: 1, height: 1) : sourceRect
+        }
+        if let intercept = shareSheetInterceptorForTesting { intercept(share, file); return }
+        present(share, animated: true)
     }
 
     // MARK: Sottolineature — creazione / modifica / eliminazione (§ 6.2 / § 6.3 / § 6.4)
