@@ -410,6 +410,32 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(r.report.decisions.filter { $0.outcome == .notVisualLabel }.count, 1)
     }
 
+    /// Testo estraneo in TESTA al segmento (la prosa di un riquadro prima della tabella, nello stesso segmento) o una nota
+    /// che ripete una frase dell'intestazione: non è testo della risorsa e «Salta la risorsa» non lo supera (rilievi della
+    /// verifica della revisione indipendente).
+    func test_testoEstraneoInTesta_oNotaCheRipeteLIntestazione_nonSiSalta() {
+        let prose = "la prosa di prova del riquadro che precede la tabella e continua a lungo con parole qualsiasi e ancora"
+        let table = [line("voce della prova del raccolto", l: 60, t: 200, r: 540, b: 210),
+                     line("colonna alfa valore beta riga uno", l: 60, t: 212, r: 540, b: 222),
+                     line("colonna gamma valore delta riga due", l: 60, t: 224, r: 540, b: 234)]
+        let ex = extraction([[line(prose, l: 50, t: 100, r: 550, b: 112, size: 11)] + table])
+        // 1. La prosa e la tabella nello stesso segmento: annuncio prima del segmento, nessun salto.
+        let segs = [seg("s", "BODY", prose + " voce della prova del raccolto colonna alfa valore beta riga uno colonna gamma valore delta riga due", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["vr_p0_0", "s"])
+        XCTAssertEqual(r.segments[0].visualResource?.containedElements, 0)
+        // 2. Una nota fra le parti della tabella che porta una riga della regione e prosegue con il suo testo: il salto si
+        // ferma prima della nota (prima si fermava dopo l'ultima parte, scavalcandola).
+        let table2 = table + [line("rilevazione di fine anno", l: 60, t: 236, r: 300, b: 246)]
+        let note = "70 la rilevazione di fine anno e quella che la nota spiega a lungo con molte parole di prova e ancora altre parole qualsiasi"
+        let segs2 = [seg("h", "BODY", "voce della prova del raccolto colonna alfa valore beta riga uno", page: 1),
+                     seg("n", "NOTE", note, page: 1),
+                     seg("d", "BODY", "colonna gamma valore delta riga due", page: 1)]
+        let r2 = insertingVisualResources(segs2, candidates: [candidate("table", [55, 195, 545, 250])], extraction: extraction([table2]))
+        XCTAssertEqual(r2.segments.map { $0.id }, ["vr_p0_0", "h", "n", "d"])
+        XCTAssertEqual(r2.segments[0].visualResource?.containedElements, 1, "il salto non supera la nota")
+    }
+
     /// Una riga della tabella che il flusso porta anche in un segmento PRIMA (la didascalia della tabella precedente la
     /// contiene): la riga va al segmento vicino al grosso del testo della tabella, e la risorsa precede l'intestazione,
     /// non i dati della tabella precedente (caso misurato su una rivista, riprodotto con parole di prova).

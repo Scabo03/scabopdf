@@ -151,9 +151,33 @@ let VISUAL_MIN_MATCH_CHARS = 6
 /// tabella) che attraversa più pagine in un solo segmento, attribuito alla pagina dove comincia (misurato: lo schema di
 /// calcolo delle pene di CP pp. 2514-2517 è un solo segmento). Le pagine più vicine hanno sempre la precedenza.
 let VISUAL_MATCH_LOOKBACK_PAGES = 3
-/// Lettere (normalizzate) di testo estraneo oltre le quali l'ultimo segmento del testo contenuto non si salta: il segmento
-/// prosegue, dopo la tabella, con altro testo (circa una decina di parole).
-let VISUAL_SKIP_MAX_FOREIGN_TAIL = 60
+/// Lettere (normalizzate) di fila non coperte dalle righe della regione oltre le quali un segmento non è testo della
+/// risorsa per «Salta la risorsa» (circa una decina di parole): il salto non scavalca testo estraneo più lungo.
+let VISUAL_SKIP_MAX_FOREIGN_RUN = 60
+/// Le righe della regione che contano per la copertura di un segmento: almeno tante lettere (le celle più corte, numeri di
+/// una o due cifre, lasciano piccoli buchi, lontani dalla soglia).
+let VISUAL_SKIP_COVER_MIN_CHARS = 4
+
+/// La corsa più lunga di caratteri di `text` non coperti da occorrenze di `lines` (testi già normalizzati). In unità UTF-16
+/// (il testo normalizzato ha lettere e cifre: una lettera accentata è un'unità).
+func longestUncoveredRun(_ text: String, by lines: [String]) -> Int {
+    let ns = text as NSString
+    let n = ns.length
+    guard n > 0 else { return 0 }
+    var covered = [Bool](repeating: false, count: n)
+    for l in lines where !l.isEmpty {
+        var from = 0
+        while from < n {
+            let r = ns.range(of: l, options: [.literal], range: NSRange(location: from, length: n - from))
+            if r.location == NSNotFound { break }
+            for k in r.location..<(r.location + r.length) { covered[k] = true }
+            from = r.location + max(1, r.length)
+        }
+    }
+    var best = 0, run = 0
+    for c in covered { if c { run = 0 } else { run += 1; best = max(best, run) } }
+    return best
+}
 /// Oltre tante righe identiche sulla pagina, una riga è ambigua e non si usa la sua ripetizione per ritrovarla.
 let VISUAL_MAX_REPETITIONS = 4
 /// Ruoli che l'app assegna con CERTEZZA (segnali forti, deterministici): se il testo della regione è per la
@@ -524,13 +548,14 @@ public func insertingVisualResources(
         var contained = 0
         if let first = covered.min(), let last = covered.max() {
             at = first
-            // Il testo contenuto: i segmenti dal primo all'ultimo della regione, finché sono CONTIGUI. Un segmento conta se
-            // porta righe della regione o se tutto il suo testo sta nel testo della regione (il flusso spezza a volte una
-            // riga della tabella in due segmenti, come un numero d'intestazione sotto la sua etichetta); il primo segmento
-            // estraneo (gli articoli che il flusso legge fra le due parti di una tabella in colonna, il titolo dell'allegato
-            // che segue) ferma il conteggio, così «Salta la risorsa» non scavalca mai testo che non è della risorsa; la
-            // parte che segue resta testo ordinario, nello swipe come sempre (rilievo della revisione indipendente,
-            // codice penale p. 1604).
+            // Il testo contenuto (quello che «Salta la risorsa» supera): i segmenti dal primo all'ultimo della regione, finché
+            // sono CONTIGUI e sono testo della risorsa. Un segmento conta se tutto il suo testo sta nel testo della regione (il
+            // flusso spezza a volte una riga della tabella in due segmenti, come un numero d'intestazione sotto la sua
+            // etichetta), oppure se porta righe della regione e non contiene, in nessun punto, una corsa di testo estraneo di
+            // `VISUAL_SKIP_MAX_FOREIGN_RUN` lettere o più (circa dieci parole): la prosa di un riquadro prima della tabella, una
+            // nota d'articolo che ne ripete una frase, il capoverso che segue nello stesso segmento grosso. Il primo segmento
+            // che non conta ferma il conteggio; la parte che segue resta testo ordinario, nello swipe come sempre (rilievi
+            // della revisione indipendente: codice penale p. 1604, rivista p. 117, manuale p. 250).
             let carrying = Set(covered)
             // Il testo della risorsa: le righe della regione e quelle della sua didascalia (già detta nell'annuncio).
             let captionLines = c.captionBBox.flatMap { cap in
@@ -538,22 +563,14 @@ public func insertingVisualResources(
             } ?? []
             let regionLines = (lines + captionLines).map { TextFingerprint.normalize(summarizeLine($0).text) }
             let regionText = regionLines.joined()
-            var end = first
-            while end <= last, carrying.contains(end) || regionText.contains(flow.normalized(end)) { end += 1 }
-            // L'ultimo segmento del testo contenuto può proseguire, dopo la tabella, con testo estraneo (un segmento grosso
-            // che unisce la tabella al capoverso seguente: misurato nel codice penale alla granularità dei volumi enormi):
-            // allora il salto si ferma prima di lui, perché non scavalchi quel testo; se non resta nulla, niente salto.
-            if end > first {
-                let tail = flow.normalized(end - 1)
-                var regionEnd = 0
-                for n in regionLines where n.count >= VISUAL_MIN_MATCH_CHARS {
-                    if let r = tail.range(of: n, options: .backwards) {
-                        regionEnd = max(regionEnd, tail.distance(from: tail.startIndex, to: r.upperBound))
-                    }
-                }
-                let carriesLines = regionLines.contains { $0.count >= VISUAL_MIN_MATCH_CHARS && tail.contains($0) }
-                if carriesLines && tail.count - regionEnd >= VISUAL_SKIP_MAX_FOREIGN_TAIL { end -= 1 }
+            let coverLines = regionLines.filter { $0.count >= VISUAL_SKIP_COVER_MIN_CHARS }
+            func isResourceText(_ i: Int) -> Bool {
+                let t = flow.normalized(i)
+                if regionText.contains(t) { return true }
+                return carrying.contains(i) && longestUncoveredRun(t, by: coverLines) < VISUAL_SKIP_MAX_FOREIGN_RUN
             }
+            var end = first
+            while end <= last, isResourceText(end) { end += 1 }
             contained = end - first
         } else {
             // Senza testo nel flusso (figura, tabella che è un'immagine). In ordine: 1. la DIDASCALIA, se il flusso la porta:
