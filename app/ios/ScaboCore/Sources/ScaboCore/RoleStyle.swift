@@ -25,6 +25,8 @@ public let BOXED_ROLES: Set<String> = [
     "QUOTED_TEXT_OLD",
     "QUOTED_TEXT_NEW",
     "UPDATE_BLOCK",
+    // Risorsa visiva (tabella o figura annunciata, `VisualResources.swift`): riquadro anche per chi vede.
+    "VISUAL_RESOURCE",
 ]
 
 /// Layer-2 presentation role for the synthetic HEADING_1 containers the XML AKN
@@ -80,6 +82,8 @@ public func acousticIntroFor(_ role: String, _ lengthCategory: String) -> String
         return "Aggiornamento."
     case SECTION_DIVIDER_ROLE:
         return "Sezione."
+    case VISUAL_RESOURCE_ROLE:
+        return "Risorsa visiva."
     case "EDITORIAL_NOTE":
         return "Nota editoriale."
     case "NOTE":

@@ -73,15 +73,20 @@ public struct ContentSegment: Codable, Equatable, Sendable {
     /// dall'uguaglianza; vive solo fra `buildBaseSegments` e `granularizeBody`, che produce blocchi nuovi
     /// sempre a `false`. Vedi MonoTitles.swift.
     public var opensParagraph: Bool = false
+    /// Solo per il ruolo `VISUAL_RESOURCE`: tipo, pagina e riquadro della risorsa (per «Estrai come immagine»)
+    /// e quanti elementi seguenti portano il suo testo (per «Salta la risorsa»). Campo ADDITIVO e opzionale:
+    /// assente nelle cache scritte prima (decodifica a `nil`), nessun cambio del formato della cache.
+    /// Vedi `VisualResources.swift`.
+    public var visualResource: VisualResourcePayload? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case id, role, text, lengthCategory, acousticIntro, memoryRefresh, sourcePage
+        case id, role, text, lengthCategory, acousticIntro, memoryRefresh, sourcePage, visualResource
     }
 
     public static func == (a: ContentSegment, b: ContentSegment) -> Bool {
         a.id == b.id && a.role == b.role && a.text == b.text && a.lengthCategory == b.lengthCategory
             && a.acousticIntro == b.acousticIntro && a.memoryRefresh == b.memoryRefresh
-            && a.sourcePage == b.sourcePage
+            && a.sourcePage == b.sourcePage && a.visualResource == b.visualResource
     }
 
     public init(
@@ -91,7 +96,8 @@ public struct ContentSegment: Codable, Equatable, Sendable {
         lengthCategory: String,
         acousticIntro: String,
         memoryRefresh: String = "",
-        sourcePage: Int? = nil
+        sourcePage: Int? = nil,
+        visualResource: VisualResourcePayload? = nil
     ) {
         self.id = id
         self.role = role
@@ -100,6 +106,7 @@ public struct ContentSegment: Codable, Equatable, Sendable {
         self.acousticIntro = acousticIntro
         self.memoryRefresh = memoryRefresh
         self.sourcePage = sourcePage
+        self.visualResource = visualResource
     }
 }
 

@@ -1,0 +1,227 @@
+//
+//  VisualResourcesTests.swift
+//  ScaboCoreTests
+//
+//  Guardia e inserimento delle risorse visive (`VisualResources.swift`) su dati sintetici: righe e segmenti
+//  con parole di prova, mai testo di volumi.
+//
+
+import XCTest
+@testable import ScaboCore
+
+final class VisualResourcesTests: XCTestCase {
+
+    // Pagina 600×800 pt. Le righe si danno in coordinate ALTO-sinistra per comodità e si convertono.
+    private let W = 600.0, H = 800.0
+
+    private func line(_ text: String, l: Double, t: Double, r: Double, b: Double, size: Double = 10, spans: [PdfSpan]? = nil) -> PdfTextLine {
+        let box = BBox(x: l, y: H - b, width: r - l, height: b - t)
+        return PdfTextLine(spans: spans ?? [PdfSpan(text: text, fontSize: size, bold: false, italic: false, color: "#000000", bbox: box)], bbox: box)
+    }
+
+    private func extraction(_ pages: [[PdfTextLine]]) -> PdfExtraction {
+        PdfExtraction(version: 2, pageCount: pages.count,
+                      pages: pages.enumerated().map { PdfPageExtraction(pageIndex: $0.offset, width: W, height: H, lines: $0.element) })
+    }
+
+    private func seg(_ id: String, _ role: String = "BODY", _ text: String, page: Int) -> ContentSegment {
+        ContentSegment(id: id, role: role, text: text, lengthCategory: "", acousticIntro: acousticIntroFor(role, ""), sourcePage: page)
+    }
+
+    private func candidate(_ label: String, page: Int = 0, _ bbox: [Double], caption: [Double]? = nil,
+                           prev: [Double]? = nil, next: [Double]? = nil) -> VisualRegionCandidate {
+        VisualRegionCandidate(pageIndex: page, label: label, bbox: bbox, confidence: 0.9, captionBBox: caption,
+                              pageWidth: W, pageHeight: H, previousTextBBox: prev, nextTextBBox: next)
+    }
+
+    /// Pagina tipo: un capoverso, una tabella di tre righe, un altro capoverso.
+    private func paginaConTabella() -> (PdfExtraction, [ContentSegment]) {
+        let ex = extraction([[
+            line("primo capoverso di prova con parole qualsiasi", l: 50, t: 100, r: 550, b: 112, size: 11),
+            line("colonna alfa valore beta riga uno", l: 60, t: 200, r: 540, b: 210),
+            line("colonna gamma valore delta riga due", l: 60, t: 212, r: 540, b: 222),
+            line("colonna epsilon valore zeta riga tre", l: 60, t: 224, r: 540, b: 234),
+            line("secondo capoverso di prova dopo la tabella", l: 50, t: 300, r: 550, b: 312, size: 11),
+        ]])
+        let segs = [
+            seg("n1", "BODY", "primo capoverso di prova con parole qualsiasi", page: 1),
+            seg("n2", "NOTE", "colonna alfa valore beta riga uno colonna gamma valore delta riga due colonna epsilon valore zeta riga tre", page: 1),
+            seg("n3", "BODY", "secondo capoverso di prova dopo la tabella", page: 1),
+        ]
+        return (ex, segs)
+    }
+
+    func test_tabellaAccettata_elementoInseritoPrimaDelSuoTesto_testoIntatto() {
+        let (ex, segs) = paginaConTabella()
+        let (out, report) = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex)
+        XCTAssertEqual(out.count, 4)
+        XCTAssertEqual(out[1].role, VISUAL_RESOURCE_ROLE)
+        XCTAssertEqual(out[1].text, "Tabella")
+        XCTAssertEqual(out[1].acousticIntro, "Risorsa visiva.")
+        XCTAssertEqual(out[1].sourcePage, 1)
+        XCTAssertEqual(out[1].visualResource, VisualResourcePayload(kind: .table, pageIndex: 0, bbox: [55, 195, 545, 240], containedElements: 1))
+        // Nessun testo perso, spostato o cambiato: tolto l'elemento nuovo il flusso è identico.
+        XCTAssertEqual(out.filter { $0.role != VISUAL_RESOURCE_ROLE }, segs)
+        XCTAssertEqual(report.acceptedTables, 1)
+        XCTAssertEqual(report.decisions.first?.insertedAt, 1)
+    }
+
+    func test_didascaliaNelTestoDellElemento() {
+        var (ex, segs) = paginaConTabella()
+        ex.pages[0].lines.insert(line("prospetto di prova numero uno", l: 60, t: 180, r: 400, b: 190, size: 9), at: 1)
+        segs.insert(seg("c1", "NOTE", "prospetto di prova numero uno", page: 1), at: 1)
+        let (out, _) = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240], caption: [55, 178, 405, 192])], extraction: ex)
+        XCTAssertEqual(out.first { $0.role == VISUAL_RESOURCE_ROLE }?.text, "Tabella: prospetto di prova numero uno")
+        XCTAssertEqual(out.filter { $0.role != VISUAL_RESOURCE_ROLE }, segs)
+    }
+
+    func test_figuraSenzaTesto_collocataPrimaDelTestoCheSegue() {
+        let ex = extraction([[
+            line("testo prima della figura di prova", l: 50, t: 100, r: 550, b: 112, size: 11),
+            line("testo dopo la figura di prova", l: 50, t: 500, r: 550, b: 512, size: 11),
+        ]])
+        let segs = [seg("a", "BODY", "testo prima della figura di prova", page: 1), seg("b", "BODY", "testo dopo la figura di prova", page: 1)]
+        let c = candidate("picture", [100, 150, 500, 450], prev: [50, 100, 550, 112], next: [50, 500, 550, 512])
+        let (out, report) = insertingVisualResources(segs, candidates: [c], extraction: ex)
+        XCTAssertEqual(out.map { $0.id }, ["a", "vr_p0_0", "b"])
+        XCTAssertEqual(out[1].text, "Figura")
+        XCTAssertEqual(out[1].visualResource?.containedElements, 0)
+        XCTAssertEqual(report.acceptedFigures, 1)
+    }
+
+    func test_figuraSenzaAppigli_inizioDellaPagina() {
+        let ex = extraction([[line("pagina uno testo di prova", l: 50, t: 100, r: 550, b: 112, size: 11)], []])
+        let segs = [seg("a", "BODY", "pagina uno testo di prova", page: 1), seg("b", "BODY", "pagina tre testo di prova", page: 3)]
+        let (out, _) = insertingVisualResources(segs, candidates: [candidate("picture", page: 1, [100, 150, 500, 450])], extraction: ex)
+        XCTAssertEqual(out.map { $0.id }, ["a", "vr_p1_0", "b"])
+    }
+
+    func test_guardia_marcatoreDiNotaNellaRegione() {
+        var (ex, segs) = paginaConTabella()
+        ex.pages[0].lines[2] = line("1. nota di prova dentro la regione", l: 60, t: 212, r: 540, b: 222)
+        segs[1].text = "colonna alfa valore beta riga uno 1. nota di prova dentro la regione colonna epsilon valore zeta riga tre"
+        let (out, report) = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex)
+        XCTAssertEqual(out, segs)
+        XCTAssertEqual(report.decisions.first?.outcome, .noteMarkers)
+    }
+
+    func test_guardia_richiamoInApiceNellaRegione() {
+        var (ex, segs) = paginaConTabella()
+        let box = BBox(x: 60, y: H - 222, width: 480, height: 10)
+        ex.pages[0].lines[2] = PdfTextLine(spans: [
+            PdfSpan(text: "colonna gamma valore delta riga due", fontSize: 11, bold: false, italic: false, color: "#000000", bbox: box),
+            PdfSpan(text: "12", fontSize: 6, bold: false, italic: false, color: "#000000", bbox: box),
+        ], bbox: box)
+        segs[1].text = "colonna alfa valore beta riga uno colonna gamma valore delta riga due12 colonna epsilon valore zeta riga tre"
+        let (_, report) = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex)
+        XCTAssertEqual(report.decisions.first?.outcome, .noteMarkers)
+    }
+
+    func test_guardia_bloccoGiaClassificatoConCertezza() {
+        let (ex, base) = paginaConTabella()
+        var segs = base
+        segs[1].role = "TOC_GENERAL"
+        let (out, report) = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex)
+        XCTAssertEqual(out, segs)
+        XCTAssertEqual(report.decisions.first?.outcome, .certainBlock)
+        // Lo stesso testo come nota vera (apre con un marcatore) è certo; come nota «muta» no.
+        segs[1].role = "NOTE"; segs[1].text = "(3) " + segs[1].text
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex).report.decisions.first?.outcome, .certainBlock)
+    }
+
+    func test_guardia_paginaInteraEtichetteNonVisive() {
+        let (ex, segs) = paginaConTabella()
+        let r1 = insertingVisualResources(segs, candidates: [candidate("picture", [0, 0, 600, 790])], extraction: ex).report
+        XCTAssertEqual(r1.decisions.first?.outcome, .wholePage)
+        let r2 = insertingVisualResources(segs, candidates: [candidate("document_index", [55, 195, 545, 240])], extraction: ex).report
+        XCTAssertEqual(r2.decisions.first?.outcome, .notVisualLabel)
+    }
+
+    func test_duplicatoSovrappostoScartato() {
+        let (ex, segs) = paginaConTabella()
+        let (out, report) = insertingVisualResources(segs, candidates: [candidate("table", [55, 150, 545, 420]), candidate("picture", [56, 151, 544, 419])], extraction: ex)
+        XCTAssertEqual(out.filter { $0.role == VISUAL_RESOURCE_ROLE }.count, 1)
+        XCTAssertEqual(report.decisions.map { $0.outcome }, [.accepted, .duplicate])
+    }
+
+    func test_figuraPiccola_eArredo() {
+        let (ex, segs) = paginaConTabella()
+        // 40×40 pt su 600×800: 0,3 % della pagina (un logo)
+        let r = insertingVisualResources(segs, candidates: [candidate("picture", [400, 500, 440, 540])], extraction: ex).report
+        XCTAssertEqual(r.decisions.first?.outcome, .ornament)
+    }
+
+    func test_copertinaEUltimePagine_soloNeiVolumiLunghi() {
+        let pages: [[PdfTextLine]] = (0..<30).map { _ in [] }
+        let ex = extraction(pages)
+        let segs = [seg("a", "BODY", "testo di prova della prima pagina", page: 1)]
+        // riquadri diversi pagina per pagina, perché la regola della ricorrenza non entri in gioco
+        let fig = { (p: Int) in self.candidate("picture", page: p, [100 + Double(p), 150 + 5 * Double(p), 500, 600]) }
+        let r = insertingVisualResources(segs, candidates: [fig(0), fig(28), fig(29), fig(10)], extraction: ex).report
+        XCTAssertEqual(r.decisions.map { $0.outcome }, [.cover, .accepted, .cover, .cover])
+        // In un documento breve la prima e l'ultima pagina sono contenuto.
+        let corto = extraction((0..<3).map { _ in [] })
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [fig(0)], extraction: corto).report.decisions.first?.outcome, .accepted)
+    }
+
+    func test_figuraAttraversataDalTesto() {
+        // Un riquadro disegnato su parole del corpo: la riga esce dal riquadro a sinistra e a destra.
+        let ex = extraction([[line("riga di corpo con alcune parole evidenziate in mezzo alla frase", l: 50, t: 300, r: 550, b: 312, size: 11)]])
+        let segs = [seg("a", "BODY", "riga di corpo con alcune parole evidenziate in mezzo alla frase", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("picture", [200, 200, 400, 420])], extraction: ex).report
+        XCTAssertEqual(r.decisions.first?.outcome, .insideText)
+    }
+
+    func test_testoNonLetto_apparatoGiaRiconosciuto() {
+        // Le righe della regione non sono nel flusso (indice, sommario, glosse tolti dall'app per scelta).
+        let (ex, _) = paginaConTabella()
+        let segs = [seg("n1", "BODY", "primo capoverso di prova con parole qualsiasi", page: 1),
+                    seg("n3", "BODY", "secondo capoverso di prova dopo la tabella", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex).report
+        XCTAssertEqual(r.decisions.first?.outcome, .unreadText)
+    }
+
+    func test_tabellaDiSoloTesto_senzaDisegni() {
+        let (ex, segs) = paginaConTabella()
+        var c = candidate("table", [55, 195, 545, 240]); c.graphicsInside = 0
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).report.decisions.first?.outcome, .plainText)
+        c.graphicsInside = 4
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).report.decisions.first?.outcome, .accepted)
+        c.graphicsInside = nil   // non misurato: la regola non si applica
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).report.decisions.first?.outcome, .accepted)
+    }
+
+    func test_ricorrenza_soloPerLeFigure() {
+        let ex = extraction((0..<6).map { _ in [] })
+        let segs = (0..<6).map { seg("s\($0)", "BODY", "pagina \($0) testo di prova", page: $0 + 1) }
+        let figure = (1...3).map { candidate("picture", page: $0, [100, 100, 500, 300]) }
+        let tabelle = (1...3).map { candidate("table", page: $0, [100, 400, 500, 600]) }
+        let r = insertingVisualResources(segs, candidates: figure + tabelle, extraction: ex).report
+        XCTAssertEqual(r.decisions.filter { $0.candidate.label == "picture" }.map { $0.outcome }, [.recurring, .recurring, .recurring])
+        XCTAssertEqual(r.decisions.filter { $0.candidate.label == "table" }.map { $0.outcome }, [.accepted, .accepted, .accepted])
+    }
+
+    func test_nessunCandidato_flussoIdentico() {
+        let (ex, segs) = paginaConTabella()
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [], extraction: ex).segments, segs)
+    }
+
+    func test_segmentoConRisorsa_codificaAdditiva_cacheVecchiaLeggibile() throws {
+        let old = #"{"id":"n1","role":"BODY","text":"parole di prova","lengthCategory":"","acousticIntro":"","memoryRefresh":"","sourcePage":3}"#
+        let decoded = try JSONDecoder().decode(ContentSegment.self, from: Data(old.utf8))
+        XCTAssertNil(decoded.visualResource)
+        // Senza risorsa, la codifica non porta la chiave nuova: le cache restano identiche.
+        let reencoded = String(decoding: try JSONEncoder().encode(decoded), as: UTF8.self)
+        XCTAssertFalse(reencoded.contains("visualResource"))
+        let (ex, segs) = paginaConTabella()
+        let vr = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex).segments[1]
+        let back = try JSONDecoder().decode(ContentSegment.self, from: try JSONEncoder().encode(vr))
+        XCTAssertEqual(back, vr)
+    }
+
+    func test_ruoloDiPresentazioneNonECategoriaDelLayer1() {
+        XCTAssertNil(SemanticCategory(rawValue: VISUAL_RESOURCE_ROLE))
+        XCTAssertTrue(LAYER2_PRESENTATION_ONLY_ROLES.contains(VISUAL_RESOURCE_ROLE))
+        XCTAssertEqual(acousticIntroFor(VISUAL_RESOURCE_ROLE, ""), "Risorsa visiva.")
+    }
+}

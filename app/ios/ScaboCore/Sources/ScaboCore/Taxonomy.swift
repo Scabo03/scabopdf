@@ -192,4 +192,7 @@ public func isGenericProduced(_ category: SemanticCategory) -> Bool {
 /// Layer-2 presentation roles that are NOT Layer 1 SemanticCategory values.
 /// `SECTION_DIVIDER` is minted in the rendering layer (a later phase) for
 /// synthetic HEADING_1 containers; the Generic never emits it.
-public let LAYER2_PRESENTATION_ONLY_ROLES: [String] = ["SECTION_DIVIDER"]
+/// `VISUAL_RESOURCE` (2026-10-12) is the reading-flow element that announces a table or a figure
+/// recognised by the page-layout model and accepted by the deterministic guard (`VisualResources.swift`):
+/// it exists only in the segments, never in the Layer 1 document (schema 0.7.0 unchanged).
+public let LAYER2_PRESENTATION_ONLY_ROLES: [String] = ["SECTION_DIVIDER", "VISUAL_RESOURCE"]
