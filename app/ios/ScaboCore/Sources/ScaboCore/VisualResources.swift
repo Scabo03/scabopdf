@@ -289,15 +289,27 @@ func lineCarriesNoteMarker(_ line: PdfTextLine, bodySize: Double, inGrid: Bool =
 // MARK: - Indice del flusso
 
 /// Indice di ricerca sul flusso: testo normalizzato (lettere e cifre minuscole) e pagina d'origine.
-struct FlowIndex {
-    let normalized: [String]
+/// Il testo normalizzato si calcola PIGRAMENTE, solo per i segmenti delle pagine interrogate: un codice ha decine di migliaia
+/// di segmenti e le regioni stanno su poche pagine (misurato: normalizzare tutto il flusso del codice penale costava
+/// quasi un secondo a flusso).
+final class FlowIndex {
+    private let segments: [ContentSegment]
     let byPage: [Int: [Int]]
+    private var cache: [Int: String] = [:]
 
     init(_ segments: [ContentSegment]) {
-        normalized = segments.map { TextFingerprint.normalize($0.text) }
+        self.segments = segments
         var bp: [Int: [Int]] = [:]
         for (i, s) in segments.enumerated() { if let p = s.sourcePage { bp[p, default: []].append(i) } }
         byPage = bp
+    }
+
+    /// Il testo normalizzato (lettere e cifre minuscole) del segmento `i`.
+    func normalized(_ i: Int) -> String {
+        if let n = cache[i] { return n }
+        let n = TextFingerprint.normalize(segments[i].text)
+        cache[i] = n
+        return n
     }
 
     /// L'indice del primo segmento, fra quelli che cominciano sulla pagina `page1` (1-based) o su una delle
@@ -307,7 +319,7 @@ struct FlowIndex {
         let n = TextFingerprint.normalize(lineText)
         guard n.count >= VISUAL_MIN_MATCH_CHARS else { return nil }
         for p in stride(from: page1, through: page1 - VISUAL_MATCH_LOOKBACK_PAGES, by: -1) {
-            for i in byPage[p] ?? [] where normalized[i].contains(n) { return i }
+            for i in byPage[p] ?? [] where normalized(i).contains(n) { return i }
         }
         return nil
     }
@@ -330,7 +342,14 @@ public func insertingVisualResources(
     extraction: PdfExtraction
 ) -> (segments: [ContentSegment], report: VisualResourcesReport) {
     guard !candidates.isEmpty, !segments.isEmpty else { return (segments, VisualResourcesReport()) }
-    let bodySize = estimateProfile(extraction).bodySize
+    // La taglia del corpo serve solo alla guardia-marcatore: si stima alla prima regione che ne ha bisogno.
+    var bodySizeCache: Double?
+    func bodySize() -> Double {
+        if let b = bodySizeCache { return b }
+        let b = estimateProfile(extraction).bodySize
+        bodySizeCache = b
+        return b
+    }
     let flow = FlowIndex(segments)
     var pages: [Int: PdfPageExtraction] = [:]
     for p in extraction.pages { pages[p.pageIndex] = p }
@@ -372,7 +391,7 @@ public func insertingVisualResources(
             reject(.insideText); continue
         }
         let inGrid = (c.graphicsInside ?? 0) >= VISUAL_GRID_MIN_GRAPHICS
-        if lines.contains(where: { lineCarriesNoteMarker($0, bodySize: bodySize, inGrid: inGrid) }) { reject(.noteMarkers); continue }
+        if !lines.isEmpty, lines.contains(where: { lineCarriesNoteMarker($0, bodySize: bodySize(), inGrid: inGrid) }) { reject(.noteMarkers); continue }
         // Righe contenute → segmenti del flusso che le portano.
         let page1 = c.pageIndex + 1
         var matches: [(index: Int, chars: Int)] = []
