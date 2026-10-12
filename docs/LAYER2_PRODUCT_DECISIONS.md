@@ -427,6 +427,38 @@ L'utente, navigando le azioni personalizzate via swipe verticale sull'elemento, 
 
 La decisione di non leggere è onesta: ScaboPDF non capisce le immagini, non struttura le tabelle, non legge i flowchart. Offre allo utente lo strumento per portare quei contenuti dove possono essere elaborati con vera competenza. Una possibile evoluzione futura è l'integrazione diretta con servizi multimodali (l'app invia automaticamente la risorsa a un endpoint e legge la descrizione testuale ricevuta), ma è espressamente fuori scope della prima versione.
 
+**Decisione resa concreta (2026-10-12, giro «risorse visive», build 53; riferimento tecnico `docs/RISORSE_VISIVE.md`).**
+Il riconoscimento è sul dispositivo, anche sull'iPad (principio dell'utente senza Mac, § 0-bis): un modello
+d'impaginazione (Heron di docling, in Core ML, incorporato nell'app) gira durante l'elaborazione sulle sole pagine che
+hanno grafica fuori dall'ordinario, e una guardia deterministica decide quali regioni diventano risorse visive. Sono
+risorse visive le **tabelle** e le **figure** (schemi, diagrammi, flowchart, grafici, illustrazioni); le tabelle non
+sono lette cella per cella. Quattro vincoli del maintainer, tutti applicati:
+
+1. **Nessun testo può diventare irraggiungibile.** Un modello può sbagliare: la risorsa è annunciata come tale, ma il
+   testo che contiene resta raggiungibile. Forma scelta: **l'elemento è additivo**. Il flusso porta un elemento in più,
+   «Risorsa visiva. Tabella» (o «Figura»), con la didascalia se c'è, subito prima del testo della regione; quel testo
+   resta nel flusso esattamente dov'era, elemento per elemento, e si legge con lo swipe come prima. È la forma più
+   coerente con lo swipe integrale (§ 2.2): nulla esce dal container del testo, nulla si nasconde dietro un'azione, e
+   un errore del modello costa un annuncio in più, mai una parola. Per questo la frase iniziale di questa sezione («non
+   vengono letti in sequenza») è precisata: il testo della regione si legge in sequenza come prima (spesso è un elenco
+   in colonne che si capisce bene), e chi vuole la struttura visiva estrae l'immagine.
+2. **Il ritaglio contiene solo la regione della risorsa, mai pagine intere** (una regione oltre l'85 % della pagina
+   non si ritaglia).
+3. **L'estrazione passa dal foglio di condivisione di sistema** (che comprende «Salva su File»: il salvataggio chiesto
+   passa da lì, perché l'archivio dell'app conserva i libri, non le immagini): la responsabilità dell'uso è dell'utente
+   (§ 14.3).
+4. Le funzioni che già funzionano non cambiano: salto nota↔testo, segnalibri, sottolineature, Consultazione Rapida
+   (dove la risorsa compare fra il contenuto dell'articolo), posizione di lettura; l'elemento è trasparente per tutte.
+
+Le azioni dell'elemento diventano: **«Estrai come immagine»** (lo «scarica» di sopra: PNG a 300 punti per pollice
+verso il foglio di condivisione) e **«Salta la risorsa»** (l'«ignora» di sopra, solo quando la regione contiene testo;
+una figura senza testo è un elemento solo e lo swipe la supera; il salto non scavalca testo estraneo alla risorsa: si
+ferma prima di un segmento che ne contiene più di una decina di parole di fila).
+L'elemento dice anche, come valore, la pagina del file originale e, se la pagina ha più risorse, quale («2 di 5»). «Copia titolo» non è implementato: la didascalia si
+legge nell'annuncio e nel flusso. I rotori di sistema «Tabelle» e «Immagini» saltano da una risorsa all'altra. I libri
+già aperti ricevono la novità con l'offerta «Lettura migliore disponibile» (§ 12.13). Su iOS anteriore al 17 il modello
+non gira: nessuna risorsa visiva, la lettura resta quella di prima.
+
 ### 7.10 Casi pratici e box di approfondimento
 
 A distinzione delle risorse visive complesse trattate in sezione 7.9, i **box di approfondimento** (categoria EXAMPLE_BOX del Mosconi) sono testuali, in prosa continua, e funzionalmente sono note molto lunghe che il tipografo ha promosso a blocchi autonomi. Vanno letti come note lunghe: differiti a fine paragrafo numerato, annunciati con etichetta propria (per esempio *"Box di approfondimento: 864 caratteri, swipe per saltare"*), con memory refresh se rilevante.
@@ -490,7 +522,8 @@ Sulla **scheda operativa** annunciata:
 - *"salta"*.
 
 Sull'**elemento di apertura di risorsa visiva** (tabella, flowchart, schema sinottico):
-- *"scarica"*, *"ignora"*, *"copia titolo"* (vedi sezione 7.9).
+- *"scarica"*, *"ignora"*, *"copia titolo"* (vedi sezione 7.9). Dal 2026-10-12 (build 53): *"Estrai come immagine"* e,
+  quando la regione contiene testo, *"Salta la risorsa"*; il testo della regione resta nel flusso subito dopo.
 
 Sull'**elemento "fine del documento"** quando raggiunto:
 - *"torna all'inizio del documento"*.

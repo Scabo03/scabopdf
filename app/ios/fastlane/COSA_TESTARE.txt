@@ -1,17 +1,22 @@
-Build 52 — l'app riconosce un libro che hai già
+Build 53 — tabelle e figure
 
 Cosa è cambiato
-- Se importi un file identico a un libro che hai già in libreria, l'app ora te lo dice prima di elaborare qualcosa e ti propone di aprire quello che hai già, con i suoi segnalibri, le sue sottolineature e il punto in cui eri arrivato. Puoi comunque importarlo come una copia a parte, che parte senza annotazioni, oppure annullare. La scelta è una schermata dell'app: VoiceOver la legge a partire dal titolo, poi la spiegazione, poi i tre pulsanti.
-- Al primo avvio l'app prepara in silenzio una cosa che servirà in futuro alla versione per Mac: un'impronta di ogni libro, calcolata dal suo file. Lo fa in sottofondo, senza toccare i libri né le annotazioni, senza rielaborare nulla e senza bloccare la lettura. Se il file di origine di un libro non c'è più, quel libro resta usabile come prima.
-- Dalla build 51: segnalibri e citazioni posati su un titolo che ripete parole del testo si ritrovano al posto giusto dopo una rielaborazione, oppure si dichiarano da ricollocare invece di spostarsi in silenzio.
+- Le tabelle e le figure dei PDF (schemi, diagrammi, grafici, immagini) ora sono riconosciute e annunciate nella lettura come «Risorsa visiva. Tabella» oppure «Risorsa visiva. Figura», seguite dalla didascalia quando c'è e dalla pagina del file originale (con «1 di 3», «2 di 3» se sulla stessa pagina ce n'è più d'una).
+- Sulla risorsa visiva c'è l'azione «Estrai come immagine»: con VoiceOver scorri in alto o in basso fino all'azione e tocca due volte. L'app prepara un'immagine della sola tabella o figura, mai della pagina intera, e apre il foglio di condivisione: da lì puoi salvarla con «Salva su File» o mandarla a un'app che descrive le immagini, per fartela descrivere. L'uso che ne fai è sotto la tua responsabilità.
+- Il testo che la tabella contiene resta leggibile come prima, subito dopo l'annuncio: nessuna parola sparisce. Se non vuoi ascoltarlo, sulla risorsa c'è anche l'azione «Salta la risorsa».
+- Segnalibri e sottolineature si possono mettere anche sulla risorsa visiva. Nella Consultazione Rapida la tabella compare tra il contenuto dell'articolo, con la stessa azione.
+- Nel rotore di VoiceOver dovrebbero comparire le voci «Tabelle» e «Immagini», per saltare da una tabella all'altra e da un'immagine all'altra: dicci se le trovi e come si chiamano.
+- Senza VoiceOver, «Estrai come immagine» è nel menù che si apre tenendo premuto sull'elemento.
 
 Quali libri
-- Tutti allo stesso modo. La lettura dei libri è identica alla build 50, verificata su tutti i volumi di prova con iOS 26 e iOS 27.
+- Soprattutto codici con tabelle, riviste con grafici e tabelle statistiche, manuali con schemi. Nella maggior parte dei libri non cambia nulla: il resto della lettura è identico alla build 52, verificato su tutti i volumi di prova con iOS 26 e iOS 27.
+- Serve iPadOS 17 o successivo: sulle versioni precedenti la lettura resta com'era.
 
 Per i libri già aperti
-- Non serve fare niente: nessun libro si rielabora da solo e le annotazioni restano dove sono.
-- Per provare la novità: importa di nuovo un libro che hai già. L'app deve dirtelo subito, senza far partire l'elaborazione, e proporre di aprire quello che hai già.
+- Restano letti come prima. Nella Home la riga «Lettura migliore disponibile» propone di rielaborarli per avere le tabelle e le figure: segnalibri e sottolineature seguono il testo, e la lettura di prima resta sul dispositivo finché non scegli quale tenere.
 
-Cosa resta
-- Il passaggio del lavoro fatto sul Mac al dispositivo arriverà in un giro successivo, via AirDrop o cavo.
-- Un tetto alla distanza delle note lunghe e un gesto per ricollocare un'annotazione orfana restano le prime voci del bilancio della fase mobile.
+Altre piccole correzioni
+- Se importi un libro che hai già stando dentro un workspace o una cartella, «Apri il libro che hai già» lo mette anche lì, senza farne una copia.
+
+Una cosa da notare a orecchio
+- Quanto tempo ci mette a importare un libro grande rispetto a prima, per esempio un codice o un manuale con molti schemi. Durante l'importazione può comparire una fase in più, «Riconoscimento di tabelle e figure». Dicci se l'attesa ti sembra cambiata.

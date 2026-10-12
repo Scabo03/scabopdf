@@ -158,3 +158,24 @@ righe fuse. Le cure stanno in `PdfKitExtractor.swift` (target ScaboApp) e in Sca
 scarto 26.5 → 27 della build 50: 1,40 % dei segmenti. Prerequisito: una terza gamba della rete che catturi sul Mac con lo
 stesso estrattore e la stessa lista di 52 volumi, e la politica dell'offerta di rielaborazione estesa alle versioni di
 macOS (fonte: `Reprocessing.swift` ragiona in versioni iOS). Non verificato: le versioni di macOS precedenti alla 27.
+
+## 4. Risorse visive (giro del 2026-10-12, build 53)
+
+Riferimenti: `docs/RISORSE_VISIVE.md`, `LAYER2_PRODUCT_DECISIONS.md` § 7.9; referto
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_RISORSE_VISIVE.md`.
+
+- **Chiuso (campo).** Le tabelle e le figure dei PDF sono riconosciute sul dispositivo e annunciate come risorse visive
+  estraibili come immagine; il testo che contengono resta nel flusso (elemento additivo). Sui 52 volumi della rete: 110
+  risorse per generazione (86 tabelle, 24 figure) in 7 volumi, tutte vere contro la pagina; lettere e cifre identiche su
+  entrambe le generazioni; nessuna risorsa nelle famiglie dove l'app già batte il modello (note d'aggiornamento dei codici,
+  note DeJure, dispense); annotazioni senza ricollocazioni sbagliate.
+- **Costo (campo, dove detto stima).** L'app compressa passa da 2,2 a 153,9 MB (modello fp32 incorporato); fp16 e pesi
+  int8 misurati inservibili. Importazione nel simulatore (solo CPU del Mac, compilazione di debug): da +0,6 s (un
+  volume con una sola pagina grafica) a +44 s (un manuale con 127 pagine al modello); sul Mac nativo il modello è 8-10 volte
+  più veloce. Stima per un iPad con chip M (stima, da misurare): da meno di un secondo a 7-9 secondi in più.
+- **Restante.** Tabelle lette cella per cella (TableFormer non convertito); tempi e memoria sul dispositivo vero (stime dal
+  Mac e dal simulatore); rotori «Tabelle» e «Immagini» da sentire sul dispositivo; «Copia titolo» del § 7.9 non fatto;
+  nessun riconoscimento sotto iOS 17; dove il flusso fonde la tabella con altro testo, annuncio e salto stanno ai confini
+  del segmento; se il modello non si carica nemmeno sulla CPU il libro resta senza risorse (senza offerta automatica);
+  pagine ruotate escluse (0 nel corpus). Revisione indipendente del giro: due difetti veri corretti prima della build
+  (salto che poteva scavalcare testo non suo, risorse assenti dalla Consultazione Rapida) e sei minori.

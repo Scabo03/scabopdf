@@ -553,3 +553,19 @@ le voci di questa casella:
 - **Fuori dallo store:** nessun motivo strutturale residuo; comprerebbe solo Surya 2 (licenza non ridistribuibile) e il TableFormer di
   docling (struttura delle celle delle tabelle, convertibile in futuro con la stessa via di Heron).
 
+## F. Il giro «risorse visive» (2026-10-12, build 53): il primo frutto nativo dentro l'app
+
+Il modulo `app/ios/ScaboPageStructure` (Heron in Core ML fp32 + porti Swift di docling, condiviso con la futura app Mac) entra
+nell'app per iPad e riconosce sul dispositivo le **tabelle e le figure**, che la lettura annuncia come risorse visive
+estraibili come immagine; il testo che contengono resta nel flusso (`docs/RISORSE_VISIVE.md`, `LAYER2_PRODUCT_DECISIONS.md`
+§ 7.9). Conseguenze per le voci di questa casella:
+
+- **C.3 (didascalie e tabelle di Delitti):** le tabelle e le figure di Delitti in prima pagina sono ora risorse visive
+  annunciate, con la didascalia quando il modello la trova (6 su 10); il testo resta com'era (nessuna rietichettatura:
+  l'elemento è additivo).
+- **D.6-septies (la tabella muta di Delitti 168-169):** la tabella di p. 169 è ora annunciata come «Risorsa visiva. Tabella»
+  ed estraibile; il testo resta quello di prima (il «muto» resta la resa deterministica del testo, la struttura si prende
+  dall'immagine).
+- **C.1 (fusione ordine + segmentazione):** il modello e l'ordine nativi sono ora nel repo e nell'app; il fusore (~400 righe
+  Python) resta da portare: le risorse visive non lo usano (la guardia è deterministica, l'inserimento è additivo).
+- **Tabelle cella per cella:** TableFormer non convertito; resta la via futura per leggere la struttura delle celle.
