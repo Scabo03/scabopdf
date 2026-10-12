@@ -118,7 +118,10 @@ platform :ios do
     # 3) Archive + export. SOLO -project (niente workspace ⇒ niente Pods/RN). La firma
     #    di distribuzione è manuale e coerente con ExportOptions.plist: stesso cert e
     #    stesso profilo match sia in archive sia in export (il nome del profilo è la
-    #    convenzione match, già fissata in ExportOptions.plist).
+    #    convenzione match, già fissata in ExportOptions.plist). Dalla build 53 la firma
+    #    manuale (identità e profilo) sta nel PROGETTO, sul solo bersaglio ScaboApp in Release
+    #    per i build su dispositivo: passata qui come argomento globale toccava anche il bundle
+    #    di risorse del pacchetto ScaboPageStructure (il modello), che non accetta profili.
     build_app(
       project: "ScaboPDF.xcodeproj",
       scheme: "ScaboApp",
@@ -130,10 +133,7 @@ platform :ios do
       output_name: "ScaboApp.ipa",
       xcargs: [
         "CURRENT_PROJECT_VERSION=#{build_number}",
-        "CODE_SIGN_STYLE=Manual",
         "DEVELOPMENT_TEAM=#{TEAM_ID}",
-        %("CODE_SIGN_IDENTITY=Apple Distribution"),
-        %("PROVISIONING_PROFILE_SPECIFIER=match AppStore #{APP_ID}"),
       ].join(" ")
     )
 
