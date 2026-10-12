@@ -16,9 +16,14 @@
 #      se esiste) → `parita_<etichetta>_<gen>.md` privo di contenuto, e con le letture dell'ALTRA
 #      generazione → `parita_<etichetta>_265_27.md`;
 #   4. verifica che MAROTTA (volume di controllo) sia identico alla propria linea di base, per generazione;
-#   5. giudica i CONFINI DI PAROLA contro l'oracolo PyMuPDF (parole con lettere), per generazione.
+#   5. giudica i CONFINI DI PAROLA contro l'oracolo PyMuPDF (parole con lettere), per generazione;
+#   6. con `--risorse-visive` (giro 2026-10-12): cattura anche le REGIONI del modello d'impaginazione nello stesso
+#      passaggio (banco `test_visualRegionsDump_fromRequest`, la catena dell'app), produce una seconda lettura CON le
+#      regioni (`<stem>.rv.reading.json`, decisioni della guardia in `<stem>.visual.json`) e giudica che l'elemento
+#      «risorsa visiva» sia additivo: tolti gli elementi, la lettura è identica (`rete_risorse_visive.py`). Con
+#      SCABO_RV_GIUDICATE=<dir con le letture giudicate> ogni elemento è confrontato con quelli già giudicati.
 #
-# Uso:  app/ios/scripts/rete_generazioni.sh <etichetta> [--no-capture] [--all-pages] [--controllo-diverso-atteso]
+# Uso:  app/ios/scripts/rete_generazioni.sh <etichetta> [--no-capture] [--all-pages] [--controllo-diverso-atteso] [--risorse-visive]
 #   <etichetta>    nome della fotografia (es. `base`, `cura_spazi`): le uscite vanno in
 #                  <lab>/estrazioni/<etichetta>_<gen>/ e <lab>/letture/<etichetta>_<gen>/
 #   --no-capture   riusa estrazioni già catturate con questa etichetta (solo letture e giudici)
@@ -39,8 +44,8 @@ export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
 
 TAG="${1:-}"; [ -n "$TAG" ] || { echo "uso: $0 <etichetta> [--no-capture] [--all-pages]"; exit 2; }
 shift
-CAPTURE=1; ALLPAGES=""; CONTROLLO_ATTESO=0
-for a in "$@"; do case "$a" in --no-capture) CAPTURE=0;; --all-pages) ALLPAGES="--all";; --controllo-diverso-atteso) CONTROLLO_ATTESO=1;; esac; done
+CAPTURE=1; ALLPAGES=""; CONTROLLO_ATTESO=0; RV=0
+for a in "$@"; do case "$a" in --no-capture) CAPTURE=0;; --all-pages) ALLPAGES="--all";; --controllo-diverso-atteso) CONTROLLO_ATTESO=1;; --risorse-visive) RV=1;; esac; done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
@@ -70,15 +75,26 @@ if [ "$CAPTURE" = 1 ]; then
     RT="${g%%:*}"; GEN="${g##*:}"
     OUT="$LAB/estrazioni/${TAG}_$GEN"; mkdir -p "$OUT/originals" "$OUT/originals_new" "$OUT/originals_maint"
     SCABO_REQ_CORPUS="$CORPUS" SCABO_REQ_OUT="$OUT" SCABO_REQ_LISTA="$LISTA" "$PY" -c "import json, os; e = os.environ; print(json.dumps({'corpusDir': e['SCABO_REQ_CORPUS'], 'outDir': e['SCABO_REQ_OUT'], 'pdfs': json.load(open(e['SCABO_REQ_LISTA']))}))" > /tmp/scabo_extraction_request.json
+    ONLY=(-only-testing:ScaboAppTests/RealPdfBenchTests/test_extractionDump_fromRequest)
+    if [ "$RV" = 1 ]; then
+      cp /tmp/scabo_extraction_request.json /tmp/scabo_regions_request.json
+      ONLY+=(-only-testing:ScaboAppTests/RealPdfBenchTests/test_visualRegionsDump_fromRequest)
+    fi
     xcrun simctl shutdown all >/dev/null 2>&1
     xcodebuild test -project "$PROJECT" -scheme ScaboApp -destination "platform=iOS Simulator,name=$DEVICE,OS=$RT" \
-      -only-testing:ScaboAppTests/RealPdfBenchTests/test_extractionDump_fromRequest \
+      "${ONLY[@]}" \
       CODE_SIGNING_ALLOWED=NO -derivedDataPath "/tmp/scabo_dd_rete_$GEN" > "$LAB/logs/${TAG}_cattura_$GEN.log" 2>&1
     rc=$?; n=$(find "$OUT" -name '*.extraction.json' | wc -l | tr -d ' ')
     say "[1] cattura $GEN (iOS $RT): exit=$rc, estrazioni=$n/$N_ATTESI (log $LAB/logs/${TAG}_cattura_$GEN.log)"
     [ "$rc" = 0 ] && [ "$n" = "$N_ATTESI" ] || { RC=1; say "    ROSSO: cattura incompleta o fallita"; }
+    if [ "$RV" = 1 ]; then
+      nr=$(find "$OUT" -name '*.regions.json' | wc -l | tr -d ' ')
+      say "[1] regioni $GEN (iOS $RT): $nr/$N_ATTESI"
+      [ "$nr" = "$N_ATTESI" ] || { RC=1; say "    ROSSO: regioni incomplete"; }
+    fi
+    xcrun simctl shutdown all >/dev/null 2>&1
   done
-  rm -f /tmp/scabo_extraction_request.json
+  rm -f /tmp/scabo_extraction_request.json /tmp/scabo_regions_request.json
 else
   for g in "${GENS[@]}"; do
     GEN="${g##*:}"; n=$(find -L "$LAB/estrazioni/${TAG}_$GEN" -name '*.extraction.json' 2>/dev/null | wc -l | tr -d ' ')
@@ -112,6 +128,13 @@ for g in "${GENS[@]}"; do
       stem="$(basename "$ext" .extraction.json)"; n=$((n+1))
       "$R" build --extraction "$ext" --source-name "$stem.pdf" --out "$OUT/$sub/$stem.doc.json" >/dev/null 2>&1 || { err=1; say "    ERR build $GEN $sub/$stem"; }
       "$R" segments --document "$OUT/$sub/$stem.doc.json" --extraction "$ext" --out "$OUT/$sub/$stem.reading.json" >/dev/null 2>&1 || { err=1; say "    ERR segments $GEN $sub/$stem"; }
+      if [ "$RV" = 1 ]; then
+        reg="$SRC/$sub/$stem.regions.json"
+        [ -f "$reg" ] || { err=1; say "    ERR regioni assenti $GEN $sub/$stem"; continue; }
+        "$R" segments --document "$OUT/$sub/$stem.doc.json" --extraction "$ext" --regions "$reg" \
+          --visual-report "$OUT/$sub/$stem.visual.json" --visual-elements "$OUT/$sub/$stem.visual_elements.json" \
+          --out "$OUT/$sub/$stem.rv.reading.json" >/dev/null 2>&1 || { err=1; say "    ERR segments rv $GEN $sub/$stem"; }
+      fi
     done
   done
   say "[2] letture $GEN: $n volumi, exit=$err"
@@ -149,6 +172,18 @@ done
 SCABO_CORPUS="$CORPUS" "$PY" "$SCRIPT_DIR/generazioni/oracolo_parole.py" "$LAB/estrazioni/${TAG}_ios265" "$LAB/estrazioni/${TAG}_ios27" "$LISTA" "$LAB/reti/oracolo_${TAG}" $ALLPAGES > /dev/null; rc=$?
 say "[5] oracolo confini di parola: exit=$rc → $LAB/reti/oracolo_${TAG}_volumi.md"
 grep '^\*\*Totale' "$LAB/reti/oracolo_${TAG}_volumi.md" | sed 's/^/      /'
+
+# ── 6. risorse visive: additive (identità tolti gli elementi), per generazione ──────────────────
+if [ "$RV" = 1 ]; then
+  for g in "${GENS[@]}"; do
+    GEN="${g##*:}"; GIUD=()
+    [ -n "${SCABO_RV_GIUDICATE:-}" ] && GIUD=(--giudicate "${SCABO_RV_GIUDICATE//\{gen\}/$GEN}")
+    "$PY" "$SCRIPT_DIR/generazioni/rete_risorse_visive.py" "$LAB/letture/${TAG}_$GEN" "$LISTA" "$LAB/reti/risorse_visive_${TAG}_$GEN" "${GIUD[@]}" > /dev/null; rc=$?
+    say "[6] risorse visive $GEN: exit=$rc → $LAB/reti/risorse_visive_${TAG}_$GEN.md"
+    sed -n '3p;5p' "$LAB/reti/risorse_visive_${TAG}_$GEN.md" | sed 's/^/      /'
+    [ "$rc" = 0 ] || RC=1
+  done
+fi
 
 say ""; say "rete_generazioni $TAG: exit=$RC"
 exit $RC

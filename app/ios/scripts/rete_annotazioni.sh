@@ -9,6 +9,10 @@
 #   3. prova al contrario: tre perturbazioni della lettura A (orfana / scambio / scorri) con l'esito atteso;
 #   4. giudica (rete_annotazioni.py): ZERO ricollocazioni sbagliate; le orfane sono contate e dichiarate;
 #   5. tabella dei volumi la cui SEQUENZA DEI NODI cambia fra base e catena attuale (base vs <tag>): referto di build.
+#   6. con SCABO_ANNOT_RV=1 (giro «risorse visive», 2026-10-12): la catena attuale e l'altra generazione sono le letture
+#      CON le risorse visive (`<stem>.rv.reading.json` di rete_generazioni.sh --risorse-visive), e in più annotazioni
+#      coniate sulla lettura con le risorse (segnalibri anche sugli elementi «risorsa visiva») si riancorano sull'altra
+#      generazione con le risorse e sulla stessa lettura senza risorse (lì le ancore delle risorse devono restare orfane).
 # Il runner è quello del banco (SCABO_RUNNER_SRC), compilato contro lo ScaboCore di questo repo (a HEAD).
 # Esce 1 se un volume è ROSSO. Uscite: $LAB/reti/annotazioni_<tag>_*.md, $LAB/logs/rete_annotazioni_<tag>.txt.
 set -u
@@ -21,6 +25,7 @@ PY="${SCABO_TOOLS_PY:-$HOME/Developer/scabopdf-tools-venv/bin/python}"
 LISTA="${SCABO_LISTA:-$SCRIPT_DIR/generazioni/lista_volumi.json}"
 RUNNER_SRC="${SCABO_RUNNER_SRC:-$CORPUS/ultrafocus_bench/runner}"
 ALTRA="${SCABO_ALTRA_CATENA:-b44}"
+RVS=""; [ "${SCABO_ANNOT_RV:-0}" = 1 ] && RVS=".rv"
 read -r -a GENS <<< "${SCABO_GENS:-ios265 ios27}"
 JUDGE="$SCRIPT_DIR/generazioni/rete_annotazioni.py"
 mkdir -p "$LAB/reti" "$LAB/logs" "$LAB/annotazioni/$TAG"
@@ -64,7 +69,7 @@ for GEN in "${GENS[@]}"; do
     n=$((n+1))
     "$R" anchors --reading "$A" --per-role 12 --quotes 40 --seed 7 --out "$W/anchors.json" >> "$LOG" 2>&1 || { say "    ERR anchors $GEN $stem"; RC=1; continue; }
     # confronti
-    for cmp in "catena:$LAB/letture/${TAG}_$GEN/$stem.reading.json" "altra_gen:$LAB/letture/${TAG}_$OTHER/$stem.reading.json" "catena_$ALTRA:$LAB/letture/${ALTRA}_$GEN/$stem.reading.json"; do
+    for cmp in "catena:$LAB/letture/${TAG}_$GEN/$stem$RVS.reading.json" "altra_gen:$LAB/letture/${TAG}_$OTHER/$stem$RVS.reading.json" "catena_$ALTRA:$LAB/letture/${ALTRA}_$GEN/$stem.reading.json"; do
       name="${cmp%%:*}"; B="${cmp#*:}"; [ -f "$B" ] || { say "    (manca $name per $stem)"; continue; }
       "$R" reanchor --anchors "$W/anchors.json" --reading "$B" --out "$W/res_$name.json" >> "$LOG" 2>&1 || { say "    ERR reanchor $name $stem"; RC=1; continue; }
       "$PY" "$JUDGE" giudica "$A" "$W/anchors.json" "$B" "$W/res_$name.json" "$base" --out "$W/row_$name.json" >> "$LOG" 2>&1 || { rosso=$((rosso+1)); RC=1; }
@@ -76,6 +81,23 @@ lv=" ".join(f"{k}={v}" for k,v in sorted(r["livelli"].items()))
 print(f"| {r['volume'][:30]} | {name} | {r['segmenti_A']}/{r['segmenti_B']} | {r['ricollocati']}/{r['segnalibri']} | {r['orfani']} ({r['orfane_evitabili']}) | **{r['sbagliati']}** | {r['citazioni_ok']}+{r.get('citazioni_incollate',0)}/{r['citazioni_orfane']}/**{r['citazioni_sbagliate']}** | {lv} | {r['indice_ms']} | {r['verdetto']} |")
 PYEOF
     done
+    # risorse visive: annotazioni coniate sulla lettura CON le risorse (anche sugli elementi «risorsa visiva»)
+    if [ -n "$RVS" ] && [ -f "$LAB/letture/${TAG}_$GEN/$stem.rv.reading.json" ]; then
+      A2="$LAB/letture/${TAG}_$GEN/$stem.rv.reading.json"
+      "$R" anchors --reading "$A2" --per-role 12 --quotes 40 --seed 7 --out "$W/anchors_rv.json" >> "$LOG" 2>&1 || { say "    ERR anchors rv $GEN $stem"; RC=1; }
+      for cmp in "rv_altra_gen:$LAB/letture/${TAG}_$OTHER/$stem.rv.reading.json" "rv_senza_risorse:$LAB/letture/${TAG}_$GEN/$stem.reading.json"; do
+        name="${cmp%%:*}"; B="${cmp#*:}"; [ -f "$B" ] && [ -f "$W/anchors_rv.json" ] || continue
+        "$R" reanchor --anchors "$W/anchors_rv.json" --reading "$B" --out "$W/res_$name.json" >> "$LOG" 2>&1 || { say "    ERR reanchor $name $stem"; RC=1; continue; }
+        "$PY" "$JUDGE" giudica "$A2" "$W/anchors_rv.json" "$B" "$W/res_$name.json" "$base" --out "$W/row_$name.json" >> "$LOG" 2>&1 || { rosso=$((rosso+1)); RC=1; }
+        [ -f "$W/row_$name.json" ] || { say "    ERR giudizio $name $stem (riga mancante)"; echo "| $base | $name | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; continue; }
+        "$PY" - "$W/row_$name.json" "$name" >> "$MD" <<'PYEOF'
+import json,sys
+r=json.load(open(sys.argv[1])); name=sys.argv[2]
+lv=" ".join(f"{k}={v}" for k,v in sorted(r["livelli"].items()))
+print(f"| {r['volume'][:30]} | {name} | {r['segmenti_A']}/{r['segmenti_B']} | {r['ricollocati']}/{r['segnalibri']} | {r['orfani']} ({r['orfane_evitabili']}) | **{r['sbagliati']}** | {r['citazioni_ok']}+{r.get('citazioni_incollate',0)}/{r['citazioni_orfane']}/**{r['citazioni_sbagliate']}** | {lv} | {r['indice_ms']} | {r['verdetto']} |")
+PYEOF
+      done
+    fi
     # prove al contrario
     for modo in orfana scambio scorri; do
       "$PY" "$JUDGE" perturba "$A" "$W/anchors.json" "$modo" "$W/pert_$modo.reading.json" >> "$LOG" 2>&1 || { RC=1; continue; }

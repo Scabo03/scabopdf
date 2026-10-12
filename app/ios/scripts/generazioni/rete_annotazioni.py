@@ -12,12 +12,19 @@ Uso:
 
 Il giudizio NON ripete il meccanismo dell'ancora: dice che una ricollocazione è SBAGLIATA quando il passo ritrovato
 non condivide con l'originale nemmeno una finestra di 32 lettere normalizzate (oppure la citazione non ha le stesse
-parole), o quando sta a più di 2 pagine di distanza. «Orfana evitabile» = il testo originale esiste in B, uguale e
+parole), o quando sta a più di 2 pagine di distanza, o quando ATTRAVERSA il confine fra testo del libro ed elemento
+«risorsa visiva» (giro 2026-10-12: l'annuncio della risorsa ripete la didascalia, le lettere coinciderebbero). «Orfana evitabile» = il testo originale esiste in B, uguale e
 unico, ma l'ancora non l'ha ritrovato (misura di richiamo, informativa). Nessun testo dei volumi nell'uscita.
 """
 import json, sys, re
 
 EDGE = 32
+VR = "VISUAL_RESOURCE"
+
+
+def crosses(sa_seg, sb_seg) -> bool:
+    """Vero se la ricollocazione passa dal testo all'elemento «risorsa visiva» o viceversa."""
+    return (sa_seg.get("role") == VR) != (sb_seg.get("role") == VR)
 
 
 def ns(t: str) -> str:
@@ -150,6 +157,9 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
             if not (atteso == "scambio" and ns(sa[expected]["text"]) == ns(sa[b["index"]]["text"]) and ns(sb[bi]["text"]) == a_text):
                 wrong.append((b["id"], role, f"ricollocata a {bi}, attesa a {expected} (prova al contrario)"))
                 continue
+        if crosses(sa[b["index"]], sb[bi]):
+            wrong.append((b["id"], role, f"ricollocata a {bi}: attraversa il confine testo / risorsa visiva"))
+            continue
         far = a_page is not None and b_page is not None and abs(a_page - b_page) > 2
         if not shares_window(a_text, b_text) or far:
             wrong.append((b["id"], role, f"ricollocata a {bi} ({r['level']}): nessuna finestra comune" + (" e pagina lontana" if far else "")))
@@ -182,6 +192,9 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
             if not (atteso == "scambio" and ns(sa[expected]["text"]) == ns(sa[q["index"]]["text"])):
                 q_wrong.append((q["id"], f"ricollocata a {r['segmentIndex']}, attesa a {expected}"))
                 continue
+        if crosses(sa[q["index"]], sb[r["segmentIndex"]]):
+            q_wrong.append((q["id"], "attraversa il confine testo / risorsa visiva"))
+            continue
         b_words = words(sb[r["segmentIndex"]]["text"])[r["startWord"]:r["endWord"] + 1]
         b_norm = ns(" ".join(b_words))
         if b_norm == a_norm:
