@@ -432,9 +432,12 @@ public func insertingVisualResources(
     var perPageCount: [Int: Int] = [:]
 
     let recurring = recurringCandidateIndices(candidates)
+    // Ordine (pagina, alto, sinistra); un candidato malformato (riquadro senza quattro valori) non fa cadere l'ordinamento:
+    // la guardia lo scarta subito dopo.
+    func topLeft(_ c: VisualRegionCandidate) -> (Double, Double) { c.bbox.count == 4 ? (c.bbox[1], c.bbox[0]) : (0, 0) }
     let ordered = candidates.enumerated().sorted { a, b in
         a.element.pageIndex != b.element.pageIndex ? a.element.pageIndex < b.element.pageIndex
-            : (a.element.bbox[1], a.element.bbox[0], a.offset) < (b.element.bbox[1], b.element.bbox[0], b.offset)
+            : (topLeft(a.element).0, topLeft(a.element).1, a.offset) < (topLeft(b.element).0, topLeft(b.element).1, b.offset)
     }
     for (ci, c) in ordered {
         var d = VisualResourceDecision(candidate: c, outcome: .accepted, containedLines: 0, matchedLines: 0,
@@ -601,9 +604,16 @@ public func insertingVisualResources(
             if caption.count > 400 { caption = String(caption.prefix(400)) + "…" }
         }
         let text = caption.isEmpty ? kind.word : "\(kind.word): \(caption)"
+        // La pagina dell'elemento NEL FLUSSO: quella della regione, ma chiusa fra le pagine dei segmenti vicini, così le
+        // pagine restano monotone (un elemento inserito prima di un segmento fuso che comincia pagine prima non riporta
+        // indietro l'indicatore né gli stacchi; rilievo della revisione indipendente). La pagina vera della regione resta
+        // nel payload (ritaglio, valore annunciato).
+        var flowPage = page1
+        if let a = at, a < segments.count, let next = segments[a].sourcePage { flowPage = min(flowPage, next) }
+        if let a = at, a > 0, let prev = segments[a - 1].sourcePage { flowPage = max(flowPage, prev) }
         let segment = ContentSegment(
             id: "vr_p\(c.pageIndex)_\(k)", role: VISUAL_RESOURCE_ROLE, text: text, lengthCategory: "",
-            acousticIntro: acousticIntroFor(VISUAL_RESOURCE_ROLE, ""), memoryRefresh: "", sourcePage: page1,
+            acousticIntro: acousticIntroFor(VISUAL_RESOURCE_ROLE, ""), memoryRefresh: "", sourcePage: flowPage,
             visualResource: VisualResourcePayload(kind: kind, pageIndex: c.pageIndex, bbox: c.bbox, containedElements: contained))
         pending.append(Pending(at: at!, order: pending.count, segment: segment))
         d.containedElements = contained

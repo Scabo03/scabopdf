@@ -389,6 +389,27 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(r2.segments[0].visualResource?.containedElements, 1)
     }
 
+    /// Un elemento inserito prima di un segmento fuso che comincia pagine prima (il testo della tabella di pagina 3 sta in
+    /// un segmento che parte da pagina 1): nel flusso prende la pagina di quel segmento, così le pagine restano monotone;
+    /// la pagina vera della regione resta nel payload. Un candidato malformato non fa cadere l'ordinamento.
+    func test_paginaNelFlusso_monotona_eCandidatoMalformato() {
+        var pages: [[PdfTextLine]] = [[], [], []]
+        pages[2] = [line("colonna alfa valore beta riga uno", l: 60, t: 200, r: 540, b: 210),
+                    line("colonna gamma valore delta riga due", l: 60, t: 212, r: 540, b: 222)]
+        let ex = extraction(pages)
+        let segs = [seg("p0", "BODY", "un capoverso di prova della prima pagina", page: 1),
+                    seg("m", "BODY", "testo fuso fra le pagine colonna alfa valore beta riga uno colonna gamma valore delta riga due", page: 1)]
+        let ok = candidate("table", page: 2, [55, 195, 545, 230])
+        let bad = VisualRegionCandidate(pageIndex: 2, label: "table", bbox: [10, 20], confidence: 0.9, captionBBox: nil,
+                                        pageWidth: W, pageHeight: H, previousTextBBox: nil, nextTextBBox: nil)
+        let r = insertingVisualResources(segs, candidates: [bad, ok], extraction: ex)
+        let vr = r.segments.first { $0.role == VISUAL_RESOURCE_ROLE }
+        XCTAssertEqual(r.segments.map { $0.id }, ["p0", "vr_p2_0", "m"])
+        XCTAssertEqual(vr?.sourcePage, 1, "la pagina nel flusso non torna indietro")
+        XCTAssertEqual(vr?.visualResource?.pageIndex, 2, "la pagina vera della regione resta nel payload")
+        XCTAssertEqual(r.report.decisions.filter { $0.outcome == .notVisualLabel }.count, 1)
+    }
+
     /// Una riga della tabella che il flusso porta anche in un segmento PRIMA (la didascalia della tabella precedente la
     /// contiene): la riga va al segmento vicino al grosso del testo della tabella, e la risorsa precede l'intestazione,
     /// non i dati della tabella precedente (caso misurato su una rivista, riprodotto con parole di prova).
