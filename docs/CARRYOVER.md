@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.43 (12-13 ottobre 2026, giro «risorse visive»: il modulo d'impaginazione `app/ios/ScaboPageStructure` (Heron di docling in Core ML **fp32**, pesi 164 MB in Git LFS, porti Swift di docling, sonda grafica e prefiltro) entra nell'app per iPad; **tabelle e figure annunciate come risorse visive** con «Estrai come immagine» (ritaglio della sola regione al foglio di condivisione) e «Salta la risorsa», testo della regione sempre nel flusso (elemento additivo); guardia deterministica in ScaboCore tarata col giudizio contro la pagina (110 risorse per generazione, 86 tabelle e 24 figure, tutte vere); reti verdi sulle due generazioni (lettere e cifre identiche 52/52, annotazioni senza ricollocazioni sbagliate, misure invariate); revisione indipendente con verifica delle correzioni; **build 53 su TestFlight** (commit `dc2305f`, Delivery UUID `6f3ee37a…`, note scritte dalla lane). Documento `docs/RISORSE_VISIVE.md`; referto e laboratorio in `~/Developer/scabopdf-gen-lab/`. Vedi STATO del 2026-10-12)
 > Versione: 2.42 (12 ottobre 2026, giro «struttura nativa» — misura, senza toccare l'app: un'app Mac nativa compatibile con lo store riconosce la struttura delle pagine? **Sì**: il modello di impaginazione di docling (Heron, Apache-2.0) convertito in Core ML fp32 (164 MB) e fatto girare da un eseguibile Swift che porta in Swift il post-processing e l'ordine di lettura a regole di docling (porto identico a docling 35/35 pagine) trova sulle 34 pagine del banco (381 blocchi di verità giudicati da Code contro la pagina) note 41/76 contro 43 di docling, didascalie 2/2, tabelle 2/2, figure 4/4, titoli 22/47 contro 23, ordine 0,968 contro 0,993, in 42-44 ms/pagina, 0,36-0,41 GB, zero byte esterni; innestato nella catena del banco al posto di docling dà **letture identiche byte per byte** sui quattro casi del gate con le reti di fedeltà verdi. GLM-OCR non dà struttura (tutto testo), Granite-Docling perde note (7/76) e didascalie (0/2) e va in ripetizione, Vision non etichetta nulla. Tre decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.12 (pacchetto = file da aprire, scelta fra più copie, lettura del Mac accettata com'è). Documento `docs/MISURA_STRUTTURA_NATIVA.md`; referto e laboratorio in `~/Developer/scabopdf-mac-lab/struttura_nativa/`. Vedi STATO del 2026-10-12)
 > Versione: 2.41 (11 ottobre 2026, giro «identità del documento», primo pezzo della fase Mac che serve anche all'iPad: **build 51** su TestFlight con la sola cura delle ancore già su main (commit `c3a2a10`, Delivery UUID `8c815312…`, reti verdi su iOS 26.5 e iOS 27 con cattura nuova `b51`); **identità ricavata dal contenuto** = SHA-256 della sorgente archiviata come campo additivo `ArchivedDocument.sourceSha256` (ScaboCore `DocumentFingerprint.swift`, CryptoKit già importato dal giro «ancore»), id locale intatto, migrazione in sottofondo al primo avvio senza rielaborare, schermata «Libro già presente» all'importazione (apri l'esistente come scelta predefinita, copia a parte, annulla); impronta identica su host macOS e simulatore iOS sullo stesso file; letture identiche al byte 52/52 su entrambe le generazioni e rete sulle annotazioni verde; decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.8 e § 12.12 (il frutto dell'officina viaggia solo via AirDrop o cavo come documento completo: istruzioni per file superate); **build 52** su TestFlight (commit `3d85836`, Delivery UUID `649e3a88…`). Vedi STATO del 2026-10-11)
 > Versione: 2.40 (8 ottobre 2026, **giro finale della ripulizia mobile** su titoli e testatine, ultimo prima della fase Mac: titoli bianchi della DPC letti; livelli dei manuali (unità etichetta + titolo, livello relativo, verificati sull'indice stampato e sui segnalibri); leggi complementari al primo livello; sommario di Patriarca non letto; righe fuse di banda separate nell'estrattore e metro di struttura corretto; titoli DeJure in grassetto e ultima pagina degli export brevi; misura dei titoli «a unità» e prova al contrario nei due versi; bilancio di fase in `docs/BILANCIO_FASE_MOBILE.md`; **build 50 su TestFlight** (commit `14b1a9d` (caricata dal commit locale `a40f034`, riscritto solo per due frasi delle note nel repo dopo il controllo sul testo dei volumi: binario identico), Delivery UUID 0c534d4f…, note scritte dalla lane). Vedi STATO del 2026-10-08)
@@ -58,6 +59,109 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
 
 ---
+
+## ▶ STATO — Giro «risorse visive»: il modulo d'impaginazione nell'app, tabelle e figure annunciate ed estraibili → build 53 — 2026-10-12
+
+**Documenti:** `docs/RISORSE_VISIVE.md` (riferimento tecnico, privo di testo dei volumi), `LAYER2_PRODUCT_DECISIONS.md` § 7.9
+(decisione resa concreta, con il vincolo «nessun testo irraggiungibile» e la forma scelta) e § 7.12 (azioni),
+`ULTRAFOCUS_INBOX.md` § F, `BILANCIO_FASE_MOBILE.md` § 4, `RELEASE_TESTFLIGHT.md` (build 53), modulo
+`app/ios/ScaboPageStructure/README.md`. Referto e laboratorio (con nomi dei volumi e fotografie di pagine: NON diffondere):
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_RISORSE_VISIVE.md`, `~/Developer/scabopdf-gen-lab/risorse_visive/`.
+Partenza `ae5e306` (main = origin); arrivo `dc2305f` (codice della build 53) più il commit dei documenti che la registra, tutto su `origin/main`. Ramo `feat/mac-base` (`fa5f01e`) mai toccato.
+
+**Il modulo condiviso (campo).** `app/ios/ScaboPageStructure` (SwiftPM con le piattaforme dell'app, modello e analisi da iOS 17
+/ macOS 14; ScaboCore non lo importa e resta Foundation): Heron di docling in Core ML **fp32** incorporato (pesi 164 MB in **Git
+LFS**, unico file LFS; licenze Apache-2.0 e MIT e attribuzioni accanto), porti Swift del post-processing, dell'ordine di lettura
+e delle didascalie di docling, sonda grafica e prefiltro, ritaglio, riga di comando per le reti. Parità col prototipo del giro
+precedente: 563/563 regioni identiche sulle 34 pagine del banco, ordine identico a docling 36/36. Rendering diverso fra macOS,
+iOS 27 e 26.5 → regioni catturate per generazione nei simulatori.
+
+**fp32 contro fp16 e peso (campo).** fp16 cambia le regioni secondo l'unità di calcolo (visive 8/13 su CPU e Neural Engine) ed
+è inservibile nel simulatore; pesi int8 inservibili su ogni unità. Proposta: fp32 anche sull'iPad. Peso: l'app compressa passa
+da 2,2 a 153,9 MB (scompattata da 5,0 a 169,8 MB).
+
+**Nella lettura (campo).** Elemento ADDITIVO «Risorsa visiva. Tabella|Figura[: didascalia]» prima del testo della regione, che
+resta nel flusso; azioni «Estrai come immagine» (PNG della sola regione a 300 punti per pollice, foglio di condivisione con
+«Salva su File») e «Salta la risorsa»; rotori di sistema Tabelle e Immagini; righe nella Consultazione Rapida; segnalibri e
+sottolineature anche sulla risorsa; salto nota↔testo e ancore trasparenti (ScaboCore `272b16b`). Ruolo di presentazione
+`VISUAL_RESOURCE`: schema 0.7.0 invariato, cache formato 6 invariato. Offerta «Lettura migliore disponibile» con la cura 53
+(solo dove il dispositivo può riconoscere: iOS 17 o successivo).
+
+**Guardia (campo).** Taratura con giudizio contro la pagina sui 52 volumi: 111 risorse accettate dalle regioni dell'host (86
+tabelle, 25 figure; tutte vere, 2 decorative; nessun falso positivo); il giudizio delle 52 «tabelle» scartate ha mostrato che le
+29 scartate per «marcatori di nota» erano tabelle vere con griglia → guardia rifinita (`b6c511a`: griglia, testo fuso fra
+pagine, eco): +20 tabelle vere, escluse le 13 con richiami veri. Nessuna risorsa in note d'aggiornamento dei codici, note
+DeJure, dispense.
+
+**Reti (campo, rete finale `rv53k` sul codice definitivo `76e72d6`, catture `rv53`).** Letture senza risorse identiche alla base
+52/52 su iOS 26.5 e iOS 27 (0 segmenti cambiati su 230.160/230.112); identità con le risorse 52/52 su entrambe (Δ lettere e
+cifre 0), 110 elementi per generazione (86 tabelle, 24 figure) in 7 volumi con 60 elementi di testo contenuti (quelli che «Salta
+la risorsa» supera), tutti giudicati contro la pagina (l'unica risorsa giudicata che non arriva è una cornice decorativa che il
+prefiltro non sceglie); Marotta identico; scarto 26.5 → 27 1,40 % come la base; oracolo invariato (0,9880/0,9915); misure dei
+titoli e di struttura sulle letture con le risorse identiche alla base v7 su entrambe le generazioni; annotazioni 416/416 righe
+verdi per generazione, 0 ricollocazioni sbagliate, tre controprove pulite, le 65 annotazioni sulle risorse ritrovate sull'altra
+generazione e orfane (come devono) sulla lettura senza risorse. Catena dell'app (`DocumentProcessor`) = catena della rete con
+`--app-chain`: elementi identici 8/8 volumi su iOS 26.5, 7/7 volumi con risorse su iOS 27 (codice di `a3adb97`) e 3/3 volumi
+rifatti sul codice definitivo.
+
+**Controllo a vista e collocazione (campo).** Tutte le 110 risorse guardate nella vista di lettura dell'app accanto alla pagina:
+tutte vere; cinque tipi di errore di collocazione trovati e corretti in ScaboCore (`a3adb97`: righe ripetute sulla pagina,
+didascalia come àncora, ordine del modello corretto dalla geometria; `47d72b9`: ogni riga della regione al segmento vicino al
+grosso del suo testo, ripetizioni «k-esima → k-esima» solo se i conti tornano), 12 + 5 collocazioni cambiate riguardate una per
+una, tutte correzioni (le ultime 5 anche nella vista di lettura dell'app sul codice definitivo); «Salta la risorsa» si ferma
+sull'annuncio di un'altra risorsa che cada dentro il testo (4 casi su 110, dove il flusso fonde il testo di due tabelle).
+
+**Tempi e memoria (campo; stima dichiarata).** Elaborazione completa nel simulatore iOS 27 (solo CPU del Mac, debug), senza →
+con: codice penale 104,4 → 121,7 s, codice civile 97,3 → 106,4 s, Manuale di diritto costituzionale 14,2 → 58,6 s (127 pagine al
+modello), Rivista DPC 2-2018 9,9 → 23,1 s, Mandrioli vol. 4 12,0 → 30,0 s, gli altri volumi misurati fra +0,6 e +13 s; sonda 0,2
+ms a pagina; modello 0,35 s a pagina nel simulatore, 36-45 ms sul Mac nativo; +220-300 MB di picco col modello caricato (misurati da +218 a +297). Stima
+per un iPad con chip M: da meno di 1 s a 7-9 s in più.
+
+**Suite e audit (campo).** ScaboCore 829/829, ScaboPageStructure 19 (1 saltata). App, iPhone 16: iOS 26.5 ScaboAppTests 163 (11
+saltati, 0 falliti) e test UI 7/7 (`** TEST SUCCEEDED **`, exit 0); iOS 27 ScaboAppTests 163 (11 saltati, 0 falliti) e test UI
+7/7 (`** TEST SUCCEEDED **`, exit 0). La prova d'interfaccia confronta l'audit della lettura con la risorsa con lo stesso libro
+senza l'elemento: nessun rilievo aggiunto. L'audit della vista di lettura su iPhone (mai fatto prima) trova un rilievo
+**preesistente**: il selettore del layout «Lettura Continua» troncato in «L…» (`ReadingInterfaceBar`, codice del 29 giugno) —
+decisione al maintainer. Controllo del testo dei volumi prima del push: due righe di fixture copiate da un volume nei commit del
+giro, riscritte prima di pubblicare (storia locale riscritta, alberi identici verificati) e due righe preesistenti dal 5 ottobre
+neutralizzate in un commit di manutenzione.
+
+**Revisione indipendente (campo; referto § 8).** Confermati: nessun testo irraggiungibile, lettere e cifre identiche sui 52
+volumi su entrambe le generazioni, risorse tutte giudicate, guardia sulle famiglie protette, ScaboCore solo Foundation, licenze
+e attribuzioni, nessun ritaglio né testo dei volumi nel repo, note per i tester con le parole dell'app. Rilievi corretti: (1)
+«Salta la risorsa» scavalcava gli articoli che il flusso legge fra le due parti di una tabella in colonna (codice penale p.
+1604) → il salto comprende solo i segmenti contigui che sono testo della regione e si ferma prima del primo che contiene più di
+una decina di parole di fila estranee, in testa come in coda (`3e0c800`, `cc0a771`, `4d52b4b`: quest'ultimo dopo la verifica
+delle correzioni, che aveva trovato ancora una nota a p. 117 della rivista e la prosa di un riquadro a p. 250 del manuale); (2)
+nella Consultazione Rapida una risorsa seguita da un titolo non compariva → la risorsa sta nella sua unità (`18aad24`; 54/54
+mostrate nei cinque volumi che hanno la Consultazione Rapida; i codici non la hanno, per scelta precedente al giro); (3) pagine
+ruotate → escluse dal modello e dal ritaglio; (4) modello che non si carica → secondo tentativo sulla sola CPU, poi residuo
+dichiarato; (5) pagina dell'elemento che tornava indietro → monotona nel flusso (`37663c2`); (6) annunci identici di fila →
+valore «pagina N del file originale, k di n»; (7) robustezza: candidato malformato, tetto ai form XObject della sonda
+(`ed6b1b5`), niente sonda sotto iOS 17, un ritaglio per cartella; (8) numeri e rimandi allineati. Verifica delle correzioni
+dallo stesso revisore: corretti 2, 3, 5, 6, 7; in parte 1 (poi chiuso con `4d52b4b`), 4 (residuo dichiarato) e 8 (allineato).
+Nel verificare il rilievo 2 è emerso che i codici, dalla seconda apertura, l'app li rielabora alla granularità grossa (1.200):
+misurati anche così, stesse 56 risorse e stesse collocazioni nel testo salvo una (codice penale p. 716), app = rete a quella
+granularità.
+
+**Build 53 (campo).** `fastlane beta` dal commit `dc2305f`, exit 0: `CURRENT_PROJECT_VERSION` 53, UPLOAD SUCCEEDED alle 23:58:06 del 12
+ottobre, Delivery UUID `6f3ee37a-98ee-493b-bdf8-9a407554fc9a`, processing Apple concluso alle 00:01:13 del 13 e «Successfully set
+the changelog for build» alle 00:01:14 (note da `COSA_TESTARE.txt`, 2 505 caratteri). IPA 154,9 MB; nell'app archiviata i pesi
+del modello sono quelli veri (171 698 672 byte, impronta del NOTICE). Il primo tentativo si era fermato all'archiviazione (exit
+65, nessun caricamento): la firma passata come argomento globale della lane toccava il bundle di risorse del modello, che non
+accetta profili → firma di distribuzione sul solo bersaglio dell'app nel progetto (`dc2305f`, `RELEASE_TESTFLIGHT.md`).
+`latestCureBuild` 53 sui dispositivi con iOS 17 o successivo, 50 sotto. Prossimo numero: 54.
+
+**Decisioni aperte per il maintainer (al più tre, dal referto § 10).** (1) fp32 anche sull'iPad (proposta del giro; il
+download passa da circa 2 a circa 154 MB). (2) Quando riconoscere: all'importazione, com'è nella build 53, o in sottofondo dopo
+l'apertura — da decidere dopo aver sentito sull'iPad i tempi dei libri grandi. (3) Il selettore del layout troncato in «L…»
+su iPhone: correggerlo o lasciarlo (preesistente, fuori dal giro).
+
+**Residui dichiarati.** Tabelle non lette cella per cella (TableFormer non convertito); tempi e memoria sull'iPad vero da
+misurare (oggi stime dal Mac e dal simulatore); rotori «Tabelle» e «Immagini» da sentire sul dispositivo; «Copia titolo» del
+§ 7.9 non fatto; nessun riconoscimento sotto iOS 17; dove il flusso fonde il testo di più tabelle, annunci e salto stanno ai
+confini dei segmenti e più risorse senza didascalia di fila suonano uguali (codice civile pp. 1702-1703); le 13 tabelle con
+richiami veri restano solo testo per regola; la cornice decorativa di una pagina che il prefiltro non sceglie non arriva.
 
 ## ▶ STATO — Giro «struttura nativa»: la struttura delle pagine con strumenti nativi, verdetto per lo store — 2026-10-12
 

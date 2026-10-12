@@ -51,6 +51,12 @@ fastlane beta
 Esito atteso: `... upload_to_testflight ...` → `UPLOAD SUCCEEDED` → `fastlane.tools finished
 successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di processing Apple.
 
+**Firma (dalla build 53).** Identità «Apple Distribution» e profilo `match AppStore com.scabo.scabopdf` stanno nel progetto,
+sul solo bersaglio ScaboApp in Release e per i build su dispositivo (`[sdk=iphoneos*]`), con firma manuale; la lane passa
+solo `CURRENT_PROJECT_VERSION` e `DEVELOPMENT_TEAM`. Prima stavano negli argomenti globali di xcodebuild, che toccano anche
+il bundle di risorse del pacchetto `ScaboPageStructure` (il modello Core ML): un bundle di risorse non accetta profili e
+l'archiviazione si fermava con «does not support provisioning profiles» (commit `dc2305f`).
+
 ## Note per i tester («Cosa testare») — obbligatorie da build 47 (decisione permanente del maintainer, 2026-10-07)
 
 Ogni build caricata su TestFlight porta le note per i tester nel campo «Cosa testare», in italiano piano. La lane `beta`
@@ -190,6 +196,22 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 53 — 2026-10-12, commit `dc2305f` (giro «risorse visive», `docs/RISORSE_VISIVE.md`, `LAYER2_PRODUCT_DECISIONS.md` § 7.9;
+  porta anche i rilievi della revisione del giro «identità» già su main dopo la build 52, `39bbad6`).** Primo tentativo fermo
+  all'archiviazione (exit 65, nessun caricamento): la firma passata come argomento globale toccava il bundle di risorse del
+  modello; corretta in `dc2305f` (firma sul solo bersaglio dell'app, vedi sopra). `fastlane beta` exit
+  0 (`CURRENT_PROJECT_VERSION` 53), UPLOAD SUCCEEDED alle 23:58:06 del 12 ottobre, Delivery UUID `6f3ee37a-98ee-493b-bdf8-9a407554fc9a`, processing Apple concluso alle 00:01:13 del 13 ottobre e «Successfully set the changelog for build» alle 00:01:14: note da
+  `app/ios/fastlane/COSA_TESTARE.txt` (2 505 caratteri). Prima build con il modello d'impaginazione incorporato (Core ML fp32,
+  pesi 164 MB in Git LFS, caricati su `origin` col push di `e234782`): l'app compressa passa da circa 2 a circa 154 MB. Reti
+  prima del caricamento (foto `rv53k` sulle catture `rv53`, entrambe le generazioni, codice definitivo): letture senza risorse
+  identiche alla base `v7` 52/52 su iOS 26.5 e su iOS 27; identità con le risorse 52/52, lettere e cifre identiche, 110 risorse
+  per generazione (86 tabelle, 24 figure) tutte giudicate contro la pagina; Marotta identico; oracolo invariato; misure dei
+  titoli e di struttura invariate; annotazioni 416/416 verdi per generazione, 0 ricollocazioni sbagliate, tre prove al
+  contrario pulite; catena dell'app = catena della rete (anche alla granularità 1.200 dei codici). Suite: ScaboCore 830,
+  ScaboPageStructure 19 (1 saltata), ScaboAppTests 163 (11 saltati) e test UI 7 su iOS 26.5 e iOS 27 (iPhone 16), tutte
+  verdi. Revisione indipendente con verifica delle correzioni prima del caricamento. `latestCureBuild` 53 sui dispositivi che
+  possono riconoscere (iOS 17+), 50 sotto. IPA 154,9 MB; nell'app archiviata `weight.bin` di 171 698 672 byte con
+  l'impronta del NOTICE (`afc3e4a2…`). Prossimo numero: 54.
 - **Build 52 — 2026-10-11, commit `3d85836` (giro «identità del documento», `docs/CARRYOVER.md` STATO 2026-10-11,
   `LAYER2_PRODUCT_DECISIONS.md` § 12.8 e § 12.12).** `fastlane beta` exit 0 (`CURRENT_PROJECT_VERSION` 52), UPLOAD SUCCEEDED,
   Delivery UUID `649e3a88-a621-4033-a0f3-c26686560bcf`, caricata alle 21:33:18, «Successfully set the changelog for build» alle 21:35:24: note da
