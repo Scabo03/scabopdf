@@ -21,8 +21,9 @@
 // degrada senza risorse visive sui sistemi più vecchi.
 //
 // Licenze: il modello è un'opera derivata di `docling-project/docling-layout-heron` (Apache-2.0); i
-// porti Swift derivano da docling e docling-ibm-models (MIT). Testi e attribuzioni in `LICENSES/` e
-// in `NOTICE.md`.
+// porti Swift derivano da docling e docling-ibm-models (MIT). Testi e attribuzioni accanto al modello, in
+// `Sources/ScaboPageStructure/Resources/` (`LICENSE-Apache-2.0.txt`, `LICENSE-docling-MIT.txt`,
+// `NOTICE-HeronLayout.md`).
 import PackageDescription
 
 let package = Package(

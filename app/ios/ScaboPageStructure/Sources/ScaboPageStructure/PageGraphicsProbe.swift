@@ -78,6 +78,9 @@ public enum PageGraphicsProbe {
         var resources: [CGPDFDictionaryRef] = []
         var parentStreams: [CGPDFContentStreamRef] = []
         var depth = 0
+        /// Form XObject attraversati sulla pagina: oltre `maxFormVisits` la sonda smette di scendere (un PDF patologico
+        /// che richiama le stesse forme a cascata renderebbe la sonda esponenziale a ogni importazione).
+        var formVisits = 0
         // Il tracciato in costruzione, già in coordinate di pagina.
         var current: CGPoint? = nil
         var subpathStart: CGPoint? = nil
@@ -223,7 +226,9 @@ public enum PageGraphicsProbe {
                 guard CGPDFDictionaryGetName(d, "Subtype", &sub), let sn = sub else { return }
                 let subtype = String(cString: sn)
                 if subtype == "Image" { c.image(); return }
-                guard subtype == "Form", c.depth < 8, let parent = c.parentStreams.last else { return }
+                guard subtype == "Form", c.depth < 8, c.formVisits < PageGraphicsProbe.maxFormVisits,
+                      let parent = c.parentStreams.last else { return }
+                c.formVisits += 1
                 var formRes: CGPDFDictionaryRef? = nil
                 let pushed = CGPDFDictionaryGetDictionary(d, "Resources", &formRes)
                 if pushed, let fr = formRes { c.resources.append(fr) }
@@ -258,13 +263,16 @@ extension PageGraphicsProbe {
 
     /// Superficie minima (in frazione di pagina) di un'immagine perché la pagina vada al modello: sotto ci sono solo
     /// loghi, bolli e fregi. Sopra l'85 % è lo sfondo di una pagina scansionata o una tavola a tutta pagina: non conta.
+    /// Tetto ai form XObject attraversati per pagina (vedi `ProbeContext.formVisits`).
+    public static let maxFormVisits = 2_000
     public static let minImageFraction = 0.05
     public static let maxImageFraction = 0.85
     /// Quanti filetti orizzontali, verticali e riquadri IN PIÙ della pagina tipica del volume fanno pensare a una tabella o
     /// a uno schema. La pagina tipica è la moda di (orizzontali, verticali, riquadri) sulle pagine del volume: assorbe
     /// l'arredo che si ripete su ogni pagina (testatine filettate, linguette, filigrane disegnate).
     /// Misurato sui 52 volumi del corpus (giro «risorse visive», 2026-10-12): 556 pagine su 22.626 (2,5 %) vanno al
-    /// modello e coprono 93 delle 94 risorse accettate dalla guardia; l'esclusa è una tavola decorativa a tutta pagina.
+    /// modello e coprono 110 delle 111 risorse accettate dalla guardia sulle regioni di tutte le pagine; l'esclusa è una
+    /// cornice decorativa.
     public static let extraHorizontalRules = 5
     public static let extraVerticalRules = 3
     public static let extraRects = 2
