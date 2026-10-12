@@ -368,6 +368,27 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(r.segments[0].visualResource?.containedElements, 3)
     }
 
+    /// L'ultimo segmento del testo contenuto prosegue, dopo la tabella, con altro testo (un segmento grosso che unisce la
+    /// tabella al capoverso seguente): il salto non lo include, perché non scavalchi quel testo; la didascalia invece è
+    /// testo della risorsa (è già nell'annuncio) e non conta come estranea.
+    func test_codaEstranea_ilSaltoNonLaScavalca_laDidascaliaSi() {
+        let table = [line("colonna alfa valore beta riga uno", l: 60, t: 200, r: 540, b: 210),
+                     line("colonna gamma valore delta riga due", l: 60, t: 212, r: 540, b: 222)]
+        let prose = "un capoverso di prova dopo la tabella che continua a lungo con parole qualsiasi e ancora altre parole"
+        let ex = extraction([table + [line(prose, l: 50, t: 300, r: 550, b: 312, size: 11)]])
+        let segs = [seg("t", "BODY", "colonna alfa valore beta riga uno colonna gamma valore delta riga due " + prose, page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 230])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["vr_p0_0", "t"])
+        XCTAssertEqual(r.segments[0].visualResource?.containedElements, 0, "il salto non scavalca il capoverso")
+        // La stessa coda, ma è la didascalia della tabella: resta nel testo della risorsa.
+        let caption = "prospetto di prova del raccolto per stagione e per podere con valori in quintali"
+        let ex2 = extraction([table + [line(caption, l: 60, t: 232, r: 540, b: 242, size: 9)]])
+        let segs2 = [seg("t", "BODY", "colonna alfa valore beta riga uno colonna gamma valore delta riga due " + caption, page: 1)]
+        let r2 = insertingVisualResources(segs2, candidates: [candidate("table", [55, 195, 545, 230], caption: [55, 230, 545, 245])],
+                                          extraction: ex2)
+        XCTAssertEqual(r2.segments[0].visualResource?.containedElements, 1)
+    }
+
     /// Una riga della tabella che il flusso porta anche in un segmento PRIMA (la didascalia della tabella precedente la
     /// contiene): la riga va al segmento vicino al grosso del testo della tabella, e la risorsa precede l'intestazione,
     /// non i dati della tabella precedente (caso misurato su una rivista, riprodotto con parole di prova).

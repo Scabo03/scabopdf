@@ -151,6 +151,9 @@ let VISUAL_MIN_MATCH_CHARS = 6
 /// tabella) che attraversa più pagine in un solo segmento, attribuito alla pagina dove comincia (misurato: lo schema di
 /// calcolo delle pene di CP pp. 2514-2517 è un solo segmento). Le pagine più vicine hanno sempre la precedenza.
 let VISUAL_MATCH_LOOKBACK_PAGES = 3
+/// Lettere (normalizzate) di testo estraneo oltre le quali l'ultimo segmento del testo contenuto non si salta: il segmento
+/// prosegue, dopo la tabella, con altro testo (circa una decina di parole).
+let VISUAL_SKIP_MAX_FOREIGN_TAIL = 60
 /// Oltre tante righe identiche sulla pagina, una riga è ambigua e non si usa la sua ripetizione per ritrovarla.
 let VISUAL_MAX_REPETITIONS = 4
 /// Ruoli che l'app assegna con CERTEZZA (segnali forti, deterministici): se il testo della regione è per la
@@ -526,9 +529,28 @@ public func insertingVisualResources(
             // parte che segue resta testo ordinario, nello swipe come sempre (rilievo della revisione indipendente,
             // codice penale p. 1604).
             let carrying = Set(covered)
-            let regionText = lines.map { TextFingerprint.normalize(summarizeLine($0).text) }.joined()
+            // Il testo della risorsa: le righe della regione e quelle della sua didascalia (già detta nell'annuncio).
+            let captionLines = c.captionBBox.flatMap { cap in
+                cap.count == 4 ? (page?.lines ?? []).filter { lineCenterInside(topLeftBox($0.bbox, pageHeight: H), cap) } : nil
+            } ?? []
+            let regionLines = (lines + captionLines).map { TextFingerprint.normalize(summarizeLine($0).text) }
+            let regionText = regionLines.joined()
             var end = first
             while end <= last, carrying.contains(end) || regionText.contains(flow.normalized(end)) { end += 1 }
+            // L'ultimo segmento del testo contenuto può proseguire, dopo la tabella, con testo estraneo (un segmento grosso
+            // che unisce la tabella al capoverso seguente: misurato nel codice penale alla granularità dei volumi enormi):
+            // allora il salto si ferma prima di lui, perché non scavalchi quel testo; se non resta nulla, niente salto.
+            if end > first {
+                let tail = flow.normalized(end - 1)
+                var regionEnd = 0
+                for n in regionLines where n.count >= VISUAL_MIN_MATCH_CHARS {
+                    if let r = tail.range(of: n, options: .backwards) {
+                        regionEnd = max(regionEnd, tail.distance(from: tail.startIndex, to: r.upperBound))
+                    }
+                }
+                let carriesLines = regionLines.contains { $0.count >= VISUAL_MIN_MATCH_CHARS && tail.contains($0) }
+                if carriesLines && tail.count - regionEnd >= VISUAL_SKIP_MAX_FOREIGN_TAIL { end -= 1 }
+            }
             contained = end - first
         } else {
             // Senza testo nel flusso (figura, tabella che è un'immagine). In ordine: 1. la DIDASCALIA, se il flusso la porta:
