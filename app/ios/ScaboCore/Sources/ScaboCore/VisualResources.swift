@@ -151,6 +151,8 @@ let VISUAL_MIN_MATCH_CHARS = 6
 /// tabella) che attraversa più pagine in un solo segmento, attribuito alla pagina dove comincia (misurato: lo schema di
 /// calcolo delle pene di CP pp. 2514-2517 è un solo segmento). Le pagine più vicine hanno sempre la precedenza.
 let VISUAL_MATCH_LOOKBACK_PAGES = 3
+/// Oltre tante righe identiche sulla pagina, una riga è ambigua e non si usa la sua ripetizione per ritrovarla.
+let VISUAL_MAX_REPETITIONS = 4
 /// Ruoli che l'app assegna con CERTEZZA (segnali forti, deterministici): se il testo della regione è per la
 /// maggior parte in questi ruoli, la regione «coincide con un blocco già classificato» e non diventa risorsa.
 /// BODY e UNCLASSIFIED no (sono il ruolo di ripiego, dove finiscono proprio tabelle e figure); NOTE no a
@@ -324,6 +326,29 @@ final class FlowIndex {
         return nil
     }
 
+    /// Come sopra, ma per la `rank`-esima ripetizione della riga (0 = la prima): fra i segmenti che cominciano nelle
+    /// pagine della finestra, nell'ordine del flusso, il segmento che porta la `rank`-esima occorrenza. Serve alle righe
+    /// che la pagina ripete identiche (intestazioni di colonna di più tabelle, «Fonte: …» sotto due grafici): la k-esima
+    /// ripetizione nell'estrazione corrisponde alla k-esima nel flusso. Con `rank == 0` vale la ricerca per vicinanza.
+    func segmentContaining(_ lineText: String, page1: Int, rank: Int) -> Int? {
+        guard rank > 0 else { return segmentContaining(lineText, page1: page1) }
+        let n = TextFingerprint.normalize(lineText)
+        guard n.count >= VISUAL_MIN_MATCH_CHARS else { return nil }
+        // Solo fra i segmenti che cominciano sulla pagina: le ripetizioni si contano sulla pagina della regione.
+        var seen = 0
+        for i in byPage[page1] ?? [] {
+            let t = normalized(i)
+            var from = t.startIndex
+            while let r = t.range(of: n, range: from..<t.endIndex) {
+                if seen == rank { return i }
+                seen += 1
+                from = r.upperBound
+            }
+        }
+        // Il flusso non ne porta abbastanza sulla pagina (riga fusa con le pagine prima): vale la vicinanza.
+        return segmentContaining(lineText, page1: page1)
+    }
+
     /// Il primo segmento che comincia su questa pagina o dopo (per collocare una figura senza testo).
     func firstSegment(onOrAfter page1: Int, count: Int) -> Int? {
         let pages = byPage.keys.filter { $0 >= page1 }.sorted()
@@ -351,6 +376,33 @@ public func insertingVisualResources(
         return b
     }
     let flow = FlowIndex(segments)
+    // Le righe normalizzate di ogni pagina dell'estrazione, calcolate a richiesta: per contare quante volte una riga
+    // compare prima di sé nella finestra di pagine (la sua ripetizione), e ritrovare nel flusso la ripetizione giusta.
+    var normalizedLines: [Int: [String]] = [:]
+    func linesOf(_ pageIndex: Int) -> [String] {
+        if let l = normalizedLines[pageIndex] { return l }
+        let l = (pages[pageIndex]?.lines ?? []).map { TextFingerprint.normalize(summarizeLine($0).text) }
+        normalizedLines[pageIndex] = l
+        return l
+    }
+    /// La ripetizione della riga `n` SULLA SUA PAGINA: quante righe identiche la precedono. Vale solo per le ripetizioni
+    /// POCHE (da 2 a `VISUAL_MAX_REPETITIONS` righe identiche sulla pagina): una riga che si ripete molte volte (le celle
+    /// uguali di una tavola di concordanza fra articoli) è ambigua, e fra pagine diverse il flusso unisce e spezza le
+    /// righe diversamente dall'estrazione (misurato sulle tavole di concordanza dei codici): lì vale la vicinanza (0).
+    func repetitionRank(_ n: String, pageIndex: Int, lineIndex: Int) -> Int {
+        guard n.count >= VISUAL_MIN_MATCH_CHARS else { return 0 }
+        var before = 0, total = 0
+        for (k, t) in linesOf(pageIndex).enumerated() where t == n {
+            total += 1
+            if k < lineIndex { before += 1 }
+        }
+        return total >= 2 && total <= VISUAL_MAX_REPETITIONS ? before : 0
+    }
+    /// Il segmento che porta la riga di indice `lineIndex` della pagina, tenendo conto delle ripetizioni.
+    func segmentFor(pageIndex: Int, lineIndex: Int, text: String) -> Int? {
+        let n = TextFingerprint.normalize(text)
+        return flow.segmentContaining(text, page1: pageIndex + 1, rank: repetitionRank(n, pageIndex: pageIndex, lineIndex: lineIndex))
+    }
     var pages: [Int: PdfPageExtraction] = [:]
     for p in extraction.pages { pages[p.pageIndex] = p }
 
@@ -384,7 +436,8 @@ public func insertingVisualResources(
         }
         let page = pages[c.pageIndex]
         let H = page?.height ?? c.pageHeight
-        let lines = (page?.lines ?? []).filter { lineCenterInside(topLeftBox($0.bbox, pageHeight: H), c.bbox) }
+        let indexedLines = (page?.lines ?? []).enumerated().filter { lineCenterInside(topLeftBox($0.element.bbox, pageHeight: H), c.bbox) }
+        let lines = indexedLines.map { $0.element }
         d.containedLines = lines.count
         if kind == .table, lines.count >= 2, c.graphicsInside == 0 { reject(.plainText); continue }
         if kind == .figure, (page?.lines ?? []).contains(where: { lineCrossesRegion(topLeftBox($0.bbox, pageHeight: H), c.bbox) }) {
@@ -395,9 +448,9 @@ public func insertingVisualResources(
         // Righe contenute → segmenti del flusso che le portano.
         let page1 = c.pageIndex + 1
         var matches: [(index: Int, chars: Int)] = []
-        for line in lines {
+        for (k, line) in indexedLines {
             let text = summarizeLine(line).text
-            guard let i = flow.segmentContaining(text, page1: page1) else { continue }
+            guard let i = segmentFor(pageIndex: c.pageIndex, lineIndex: k, text: text) else { continue }
             matches.append((i, TextFingerprint.normalize(text).count))
         }
         // I segmenti che portano davvero il testo della regione (le eco escluse): per la collocazione e per il «blocco
@@ -429,15 +482,41 @@ public func insertingVisualResources(
             at = first
             contained = last - first + 1
         } else {
-            // Figura senza testo (o testo non ritrovato): subito prima del testo che il modello legge dopo,
-            // altrimenti subito dopo quello che legge prima, altrimenti all'inizio della pagina.
-            func anchorLines(_ box: [Double]?) -> [Int] {
-                guard let box, box.count == 4 else { return [] }
-                return (page?.lines ?? []).filter { lineCenterInside(topLeftBox($0.bbox, pageHeight: H), box) }
-                    .compactMap { flow.segmentContaining(summarizeLine($0).text, page1: page1) }
+            // Senza testo nel flusso (figura, tabella che è un'immagine). In ordine: 1. la DIDASCALIA, se il flusso la porta:
+            // la risorsa la precede se la didascalia sta sotto, la segue se sta sopra; 2. il testo che il modello legge
+            // dopo e poi quello che legge prima, CORRETTI dalla geometria (un blocco tutto sopra la regione la precede
+            // sulla pagina, uno tutto sotto la segue, qualunque cosa dica l'ordine del modello); 3. l'inizio della pagina.
+            // I segmenti che portano il testo di un blocco d'àncora, senza le eco (stesso filtro della regione): una frase
+            // ricorrente in coda alla didascalia (la stessa fonte dei dati sotto ogni grafico) non deve spostare la risorsa.
+            func anchorSegments(_ box: [Double]) -> [Int] {
+                let found: [(index: Int, chars: Int)] = (page?.lines ?? []).enumerated()
+                    .filter { lineCenterInside(topLeftBox($0.element.bbox, pageHeight: H), box) }
+                    .compactMap { pair in
+                        let text = summarizeLine(pair.element).text
+                        return segmentFor(pageIndex: c.pageIndex, lineIndex: pair.offset, text: text)
+                            .map { (index: $0, chars: TextFingerprint.normalize(text).count) }
+                    }
+                let kept = regionMatchClusters(found)
+                return found.map { $0.index }.filter { kept.contains($0) }
             }
-            if let next = anchorLines(c.nextTextBBox).min() { at = next }
-            else if let prev = anchorLines(c.previousTextBBox).max() { at = prev + 1 }
+            func isAbove(_ b: [Double]) -> Bool { b[3] <= c.bbox[1] + 1 }
+            func isBelow(_ b: [Double]) -> Bool { b[1] >= c.bbox[3] - 1 }
+            var follow: [Int] = []    // segmenti che la risorsa segue
+            var precede: [Int] = []   // segmenti che la risorsa precede
+            if let cap = c.captionBBox, cap.count == 4 {
+                let found = anchorSegments(cap)
+                if isAbove(cap) { follow = found } else { precede = found }
+            }
+            if follow.isEmpty && precede.isEmpty, let nb = c.nextTextBBox, nb.count == 4 {
+                let found = anchorSegments(nb)
+                if isAbove(nb) { follow = found } else { precede = found }
+            }
+            if follow.isEmpty && precede.isEmpty, let pb = c.previousTextBBox, pb.count == 4 {
+                let found = anchorSegments(pb)
+                if isBelow(pb) { precede = found } else { follow = found }
+            }
+            if let b = precede.min() { at = b }
+            else if let a = follow.max() { at = a + 1 }
             else { at = flow.firstSegment(onOrAfter: page1, count: segments.count) ?? segments.count }
         }
         let k = perPageCount[c.pageIndex, default: 0]

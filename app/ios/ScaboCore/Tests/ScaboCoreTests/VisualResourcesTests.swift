@@ -287,4 +287,55 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(d?.insertedAt, segs.count - 1, "prima del segmento che porta la tabella, non prima dell'eco")
         XCTAssertEqual(d?.containedElements, 1)
     }
+
+    // MARK: - Collocazione: ripetizioni, didascalie, geometria (controllo a vista del 2026-10-12)
+
+    /// Due tabelle sulla stessa pagina con la stessa riga d'intestazione: ciascuna risorsa precede il SUO testo, non
+    /// quello della prima tabella (caso misurato su una pagina di un codice: la stessa intestazione in tre tabelle).
+    func test_rigaRipetuta_ciascunaTabellaPrecedeIlSuoTesto() {
+        let head = "voce di prova del raccolto in quintali"
+        let ex = extraction([[
+            line(head, l: 60, t: 100, r: 540, b: 110), line("prima tabella valori alfa beta", l: 60, t: 112, r: 540, b: 122),
+            line("un capoverso di prova fra le due tabelle", l: 50, t: 200, r: 550, b: 212, size: 11),
+            line(head, l: 60, t: 300, r: 540, b: 310), line("seconda tabella valori gamma delta", l: 60, t: 312, r: 540, b: 322),
+        ]])
+        let segs = [seg("t1", "BODY", head + " prima tabella valori alfa beta", page: 1),
+                    seg("b1", "BODY", "un capoverso di prova fra le due tabelle", page: 1),
+                    seg("t2", "BODY", head + " seconda tabella valori gamma delta", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 95, 545, 125]), candidate("table", [55, 295, 545, 325])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["vr_p0_0", "t1", "b1", "vr_p0_1", "t2"])
+    }
+
+    /// Una figura senza testo con la didascalia SOTTO: la risorsa precede la didascalia (anche se il modello legge
+    /// prima un altro capoverso); con la didascalia SOPRA, la segue.
+    func test_figuraSenzaTesto_ancorataAllaDidascalia() {
+        let ex = extraction([[
+            line("capoverso sopra la figura di prova", l: 50, t: 100, r: 550, b: 112, size: 11),
+            line("figura uno didascalia di prova", l: 60, t: 420, r: 400, b: 430, size: 9),
+            line("capoverso dopo la didascalia", l: 50, t: 500, r: 550, b: 512, size: 11),
+        ]])
+        let segs = [seg("a", "BODY", "capoverso sopra la figura di prova", page: 1), seg("c", "BODY", "figura uno didascalia di prova", page: 1),
+                    seg("d", "BODY", "capoverso dopo la didascalia", page: 1)]
+        // Il modello direbbe «prima del capoverso sopra»: vince la didascalia.
+        var c = candidate("picture", [100, 150, 500, 410], caption: [55, 415, 405, 432], next: [45, 95, 555, 115])
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).segments.map { $0.id }, ["a", "vr_p0_0", "c", "d"])
+        // Didascalia sopra la figura: la risorsa la segue.
+        let ex2 = extraction([[
+            line("figura due didascalia sopra di prova", l: 60, t: 100, r: 400, b: 110, size: 9),
+            line("capoverso dopo la figura di prova", l: 50, t: 500, r: 550, b: 512, size: 11),
+        ]])
+        let segs2 = [seg("c", "BODY", "figura due didascalia sopra di prova", page: 1), seg("d", "BODY", "capoverso dopo la figura di prova", page: 1)]
+        c = candidate("picture", [100, 120, 500, 480], caption: [55, 95, 405, 112])
+        XCTAssertEqual(insertingVisualResources(segs2, candidates: [c], extraction: ex2).segments.map { $0.id }, ["c", "vr_p0_0", "d"])
+    }
+
+    /// L'ordine del modello mette dopo la tabella un'intestazione che sulla pagina sta tutta sopra: la risorsa segue
+    /// l'intestazione (CP p. 2179, l'allegato delle tabelle dei parametri forensi).
+    func test_anchoraDelModelloSopraLaRegione_laRisorsaLaSegue() {
+        let ex = extraction([[line("allegato unico tabelle di prova", l: 300, t: 40, r: 500, b: 60, size: 12),
+                              line("capoverso della pagina dopo", l: 50, t: 700, r: 550, b: 712, size: 11)]])
+        let segs = [seg("h", "HEADING_2", "allegato unico tabelle di prova", page: 1), seg("d", "BODY", "capoverso della pagina dopo", page: 1)]
+        let c = candidate("table", [60, 100, 500, 400], next: [295, 35, 505, 65])
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).segments.map { $0.id }, ["h", "vr_p0_0", "d"])
+    }
 }
