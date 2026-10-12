@@ -18,8 +18,8 @@ final class NoteJumpTests: XCTestCase {
 
     func test_inlineNote_linksToPrecedingTextWithCall() {
         let segs = [
-            s("BODY", "La teoria del doppio nesso causale è criticata 31."),
-            s("NOTE", "31 REALMONTE, op. cit., p. 160."),
+            s("BODY", "La tesi del raccolto anticipato è discussa 31."),
+            s("NOTE", "31 ROSSI, op. cit., p. 10."),
         ]
         let l = noteCallLinks(segs)
         XCTAssertEqual(l.callOfNote[1], 0)
@@ -37,7 +37,7 @@ final class NoteJumpTests: XCTestCase {
 
     func test_deferredNote_linksBackThroughRefreshPhrase() {
         let segs = [
-            s("HEADING_3", "1. La funzione della causalità."),
+            s("HEADING_3", "1. La stagione del raccolto."),
             s("BODY", "Paradigmatico è il caso in cui la responsabilità sia proporzionale 37, giacché la funzione…"),
             s("BODY", "Altro paragrafo senza richiami."),
             s("NOTE", "37 Anche per altri argomenti a favore…",
