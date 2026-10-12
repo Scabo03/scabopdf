@@ -1,0 +1,2 @@
+# Pesi del modello d'impaginazione (Core ML): file grande, in Git LFS (giro «risorse visive», 2026-10-12).
+app/ios/ScaboPageStructure/Sources/ScaboPageStructure/Resources/HeronLayout.mlmodelc/weights/weight.bin filter=lfs diff=lfs merge=lfs -text
