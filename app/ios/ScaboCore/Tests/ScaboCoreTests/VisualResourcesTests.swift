@@ -329,6 +329,45 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(insertingVisualResources(segs2, candidates: [c], extraction: ex2).segments.map { $0.id }, ["c", "vr_p0_0", "d"])
     }
 
+    /// Una tabella che il flusso legge in due parti con altro testo in mezzo (una colonna di articoli accanto alla
+    /// tabella): il testo contenuto è solo la prima sequenza contigua, così «Salta la risorsa» non scavalca il testo che non
+    /// è della risorsa; la seconda parte resta testo ordinario (rilievo della revisione indipendente).
+    func test_tabellaInDueParti_contenutoSoloLaPrimaSequenza() {
+        let ex = extraction([[
+            line("colonna alfa valore beta riga uno", l: 60, t: 200, r: 300, b: 210),
+            line("colonna gamma valore delta riga due", l: 60, t: 212, r: 300, b: 222),
+            line("colonna epsilon valore zeta riga tre", l: 60, t: 224, r: 300, b: 234),
+            line("colonna eta valore theta riga quattro", l: 60, t: 236, r: 300, b: 246),
+            line("articolo di prova accanto alla tabella", l: 320, t: 200, r: 550, b: 212, size: 11),
+        ]])
+        let segs = [seg("t1", "BODY", "colonna alfa valore beta riga uno colonna gamma valore delta riga due", page: 1),
+                    seg("x", "BODY", "articolo di prova accanto alla tabella", page: 1),
+                    seg("t2", "BODY", "colonna epsilon valore zeta riga tre colonna eta valore theta riga quattro", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 305, 250])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["vr_p0_0", "t1", "x", "t2"])
+        XCTAssertEqual(r.segments[0].visualResource?.containedElements, 1)
+        XCTAssertEqual(r.segments.filter { $0.role != VISUAL_RESOURCE_ROLE }, segs)
+    }
+
+    /// Il flusso spezza una riga d'intestazione in due segmenti (un numero sotto la sua etichetta, troppo corto per essere
+    /// ritrovato da solo): il segmento che porta solo testo della regione resta nel testo contenuto, e il salto supera
+    /// tutta la tabella, fino al capoverso che segue.
+    func test_segmentoConSoloTestoDellaRegione_restaNelContenuto() {
+        let ex = extraction([[
+            line("intestazione di prova", l: 60, t: 200, r: 300, b: 210),
+            line("2001", l: 60, t: 212, r: 120, b: 222),
+            line("riga uno valore alfa beta", l: 60, t: 224, r: 540, b: 234),
+            line("riga due valore gamma delta", l: 60, t: 236, r: 540, b: 246),
+            line("capoverso di prova dopo la tabella", l: 50, t: 300, r: 550, b: 312, size: 11),
+        ]])
+        let segs = [seg("h1", "BODY", "intestazione di prova", page: 1), seg("h2", "BODY", "2001", page: 1),
+                    seg("d", "BODY", "riga uno valore alfa beta riga due valore gamma delta", page: 1),
+                    seg("c", "BODY", "capoverso di prova dopo la tabella", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 250])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["vr_p0_0", "h1", "h2", "d", "c"])
+        XCTAssertEqual(r.segments[0].visualResource?.containedElements, 3)
+    }
+
     /// Una riga della tabella che il flusso porta anche in un segmento PRIMA (la didascalia della tabella precedente la
     /// contiene): la riga va al segmento vicino al grosso del testo della tabella, e la risorsa precede l'intestazione,
     /// non i dati della tabella precedente (caso misurato su una rivista, riprodotto con parole di prova).

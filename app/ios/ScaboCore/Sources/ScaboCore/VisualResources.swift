@@ -245,9 +245,10 @@ let VISUAL_CLUSTER_MIN_SHARE = 0.25
 /// I segmenti che portano DAVVERO il testo della regione. Si ordinano gli indici dei segmenti trovati, si spezzano in
 /// gruppi dove due indici consecutivi distano più di `VISUAL_CLUSTER_GAP`, e si tengono i gruppi che portano almeno
 /// `VISUAL_CLUSTER_MIN_SHARE` delle lettere ritrovate. Un gruppo piccolo e staccato è un'eco: la stessa riga in un'altra
-/// tabella della pagina o di una pagina vicina (misurato: le tavole di concordanza dei codici ripetono «Articolo 5,
-/// punto 1» di pagina in pagina; le tabelle statistiche ripetono i nomi dei distretti). Una tabella che il flusso legge
-/// in due parti separate da altri segmenti ha due gruppi grandi, e li tiene entrambi (CP p. 1604).
+/// tabella della pagina o di una pagina vicina (misurato: le tavole di concordanza dei codici ripetono le stesse celle
+/// di pagina in pagina; le tabelle statistiche ripetono i nomi dei distretti). Una tabella che il flusso legge in due
+/// parti separate da altri segmenti ha due gruppi grandi, e li tiene entrambi per la guardia (CP p. 1604); il testo
+/// contenuto, per il salto, è solo la prima sequenza contigua.
 func regionMatchClusters(_ matches: [(index: Int, chars: Int)]) -> Set<Int> {
     guard !matches.isEmpty else { return [] }
     var weight: [Int: Int] = [:]
@@ -517,7 +518,18 @@ public func insertingVisualResources(
         var contained = 0
         if let first = covered.min(), let last = covered.max() {
             at = first
-            contained = last - first + 1
+            // Il testo contenuto: i segmenti dal primo all'ultimo della regione, finché sono CONTIGUI. Un segmento conta se
+            // porta righe della regione o se tutto il suo testo sta nel testo della regione (il flusso spezza a volte una
+            // riga della tabella in due segmenti, come un numero d'intestazione sotto la sua etichetta); il primo segmento
+            // estraneo (gli articoli che il flusso legge fra le due parti di una tabella in colonna, il titolo dell'allegato
+            // che segue) ferma il conteggio, così «Salta la risorsa» non scavalca mai testo che non è della risorsa; la
+            // parte che segue resta testo ordinario, nello swipe come sempre (rilievo della revisione indipendente,
+            // codice penale p. 1604).
+            let carrying = Set(covered)
+            let regionText = lines.map { TextFingerprint.normalize(summarizeLine($0).text) }.joined()
+            var end = first
+            while end <= last, carrying.contains(end) || regionText.contains(flow.normalized(end)) { end += 1 }
+            contained = end - first
         } else {
             // Senza testo nel flusso (figura, tabella che è un'immagine). In ordine: 1. la DIDASCALIA, se il flusso la porta:
             // la risorsa la precede se la didascalia sta sotto, la segue se sta sopra; 2. il testo che il modello legge
