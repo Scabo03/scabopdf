@@ -952,6 +952,24 @@ Una funzione collega l'app a iCloud per **sincronizzare i dati fra i dispositivi
 
 **Distribuzione del frutto dell'officina Mac (decisione del maintainer, 2026-10-11).** Il risultato dell'ultrafocus passa dal Mac ai dispositivi mobili **solo via AirDrop o cavo**, mai via iCloud né altri server. In cambio può essere il **documento elaborato completo**, non istruzioni posizionali: **la via delle «istruzioni per file» (Parte IV dell'analisi ultrafocus, `ANALYSIS_ULTRAFOCUS_MACOS.md`) è superata.** Il pacchetto porta sempre il frutto dell'ultrafocus e, con una casella da spuntare o no, anche le annotazioni; poiché il canale è locale, le anteprime dei segnalibri possono viaggiare come sono. Il libro di destinazione si riconosce per l'**impronta del contenuto** (§ 12.8), uguale sul Mac e sul dispositivo per lo stesso file. Sul diritto d'autore: nessun blocco tecnico contro l'uso improprio; la responsabilità è dell'utente e lo dicono le condizioni d'uso (§ 14.3). Il vincolo sullo sviluppo resta invariato: nessun testo dei volumi in repo, test, commit o referti. Il trasporto e la ricezione si costruiscono in un giro successivo: qui si registra la decisione. La sincronizzazione iCloud descritta sopra resta rinviata e non riguarda il frutto dell'officina.
 
+**Ritorno del frutto sull'iPad: tre decisioni del maintainer (2026-10-12, registrate all'apertura del giro «struttura nativa»).**
+
+1. **Il pacchetto è un file da aprire.** Ciò che il Mac produce per un libro viaggia come **un solo file** che l'utente apre
+   sull'iPad (o sull'iPhone), in modo coerente con AirDrop e con il cavo: l'app lo riceve con «Apri con» o dal selettore di
+   file. **Nessun canale vivo via rete**: niente app in ascolto, niente scoperta di dispositivi, niente server locale. Il
+   riconoscimento del libro di destinazione resta quello dell'impronta del contenuto (§ 12.8).
+2. **Più copie dello stesso libro in libreria.** Se, quando il pacchetto arriva, in libreria c'è **una copia sola** di quel libro,
+   il frutto si applica a quella senza domande. Se le copie sono **più d'una** (copie volute, § 12.6 e § 12.8), l'app
+   **chiede a quale** applicarlo, in prosa piana e annunciata, proponendo **per prima la copia aperta più di recente** e dicendo
+   quante sono; le altre copie restano intatte.
+3. **La lettura del Mac si accetta così com'è.** Il pacchetto porta la lettura prodotta dal Mac e l'iPad **la adotta senza
+   rielaborarla** in locale: nessuna seconda elaborazione, nessuna fusione con la lettura dell'iPad. Se il pacchetto proviene
+   da una **versione dell'app diversa** da quella installata, l'iPad **lo dice in prosa** (che cosa è arrivato, da quale
+   versione, che cosa si può fare) invece di rompere o di scartare in silenzio. La **lettura precedente resta conservata**
+   sul dispositivo finché l'utente non conferma di tenere quella nuova, con lo stesso meccanismo e le stesse parole
+   dell'offerta «Lettura migliore disponibile» (§ 12.13): copia precedente, riancoraggio delle annotazioni per contenuto
+   (§ 12.14), esito dichiarato, ritorno possibile.
+
 ---
 
 ### 12.13 Rielaborazione dei libri dopo un aggiornamento di sistema o una cura (decisione del 2026-10-07)
