@@ -159,6 +159,9 @@ final class RealPdfBenchTests: XCTestCase {
         /// Solo per `test_visualAppChainDump_fromRequest`: salta l'elaborazione SENZA riconoscimento (niente tempi di
         /// confronto né verifica d'identità: solo le fotografie e gli elementi).
         var skipWithout: Bool? = nil
+        /// Solo per `test_visualAppChainDump_fromRequest`: la granularità del flusso (l'app elabora i volumi oltre
+        /// `DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD` pagine a `LARGE_DOCUMENT_GRANULARITY`, dalla seconda apertura).
+        var granularity: Int? = nil
     }
 
     /// Path fisso della richiesta (concordato col driver). Override via env se mai
@@ -300,6 +303,10 @@ final class RealPdfBenchTests: XCTestCase {
         let peakMB: Double
         let peakMBWithout: Double
         let detection: RegionsMeta?
+        /// Consultazione Rapida (se il volume la ha, come la apre l'app): risorse mostrate e risorse fuori dall'albero.
+        var quickConsultPlaced: Int? = nil
+        var quickConsultOutside: Int? = nil
+        var granularity: Int? = nil
     }
 
     /// LA CATENA DELL'APP sulle risorse visive: per ogni PDF della richiesta, l'elaborazione completa
@@ -333,6 +340,7 @@ final class RealPdfBenchTests: XCTestCase {
                 sampler.resume()
                 let t0 = Date()
                 processor.process(fileURL: URL(fileURLWithPath: path), sourceName: (name as NSString).lastPathComponent,
+                                  granularityTarget: req.granularity ?? DEFAULT_GRANULARITY_TARGET,
                                   onProgress: { _ in }, completion: { outcome = $0; done.fulfill() })
                 wait(for: [done], timeout: 3600)
                 let elapsed = Date().timeIntervalSince(t0)
@@ -342,7 +350,7 @@ final class RealPdfBenchTests: XCTestCase {
             let skip = req.skipWithout ?? false
             let (_, plain, secondsWithout, peakWithout) = skip ? (DocumentProcessor(), nil, 0, 0) : run(false)
             let (processor, outcome, seconds, peakWith) = run(true)
-            guard case .success(_, let content, let doctrine)? = outcome else {
+            guard case .success(let document, let content, let doctrine)? = outcome else {
                 XCTFail("[visual-app] \(name): elaborazione non riuscita"); continue
             }
             var plainContent = content
@@ -371,11 +379,17 @@ final class RealPdfBenchTests: XCTestCase {
             let stripped = segs.filter { $0.visualResource == nil }
             XCTAssertEqual(stripped.map { $0.id }, plainSegs.map { $0.id }, "[visual-app] \(name): ordine degli elementi di testo cambiato")
             XCTAssertEqual(stripped.map { $0.text }, plainSegs.map { $0.text }, "[visual-app] \(name): testo cambiato")
-            let dump = AppVisualDump(pdf: name, segments: segs.count, visualElements: elements,
+            var dump = AppVisualDump(pdf: name, segments: segs.count, visualElements: elements,
                                      doctrineSegments: docSegs?.count,
                                      doctrineVisualElements: docSegs?.filter { $0.visualResource != nil }.count,
                                      seconds: seconds, secondsWithout: secondsWithout, segmentsWithout: plainSegs.count,
                                      peakMB: peakWith, peakMBWithout: peakWithout, detection: meta)
+            dump.granularity = req.granularity
+            if let tree = DocumentOpener.quickConsultTreeIfAvailable(document) {
+                let placement = QuickVisualPlacement.build(segments: segs, tree: tree)
+                dump.quickConsultPlaced = placement.placedCount
+                dump.quickConsultOutside = placement.outside
+            }
             let stem = (name as NSString).deletingPathExtension
             let dir = (req.outDir + "/" + stem as NSString).deletingLastPathComponent
             try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)

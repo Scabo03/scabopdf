@@ -21,6 +21,7 @@
 import Foundation
 import CoreGraphics
 import PDFKit
+import os
 import ScaboCore
 import ScaboPageStructure
 
@@ -38,6 +39,19 @@ nonisolated enum VisualRegionDetector {
         var modelSeconds = 0.0
         /// Perché il modello non è girato (nessuna pagina scelta, sistema anteriore a iOS 17, modello assente, errore).
         var skippedReason: String?
+        /// Pagine scelte dal prefiltro ma ruotate: il modello non le vede (righe, regioni e ritaglio non sono ancora
+        /// trattati nello spazio ruotato; nei 52 volumi della rete le pagine ruotate sono 0).
+        var rotatedPagesSkipped = 0
+        /// Vero se il modello non si è caricato con le unità di calcolo chieste e gira sulla sola CPU (in fp32 stesso
+        /// risultato: 561/563 regioni identiche sull'host, scarti alla quarta cifra delle confidenze).
+        var cpuFallback = false
+    }
+
+    private static let log = Logger(subsystem: "com.scabo.scabopdf", category: "risorse-visive")
+
+    /// Le pagine scelte senza quelle ruotate (rotazione non multipla di 360°). Pura, per le prove.
+    static func excludingRotated(_ pages: [Int], rotation: (Int) -> Int32) -> [Int] {
+        pages.filter { ((Int(rotation($0)) % 360) + 360) % 360 == 0 }
     }
 
     /// Riconosce i candidati del PDF. `onModelPage(fatte, totali)` riporta l'avanzamento sulle pagine mandate al
@@ -52,6 +66,8 @@ nonisolated enum VisualRegionDetector {
         guard let cgDoc = CGPDFDocument(pdfURL as CFURL) else { result.skippedReason = "PDF non leggibile"; return result }
         let n = cgDoc.numberOfPages
         result.pageCount = n
+        // Sotto iOS 17 il modello non gira: nemmeno la sonda (sarebbe lavoro inutile a ogni importazione).
+        guard #available(iOS 17.0, macOS 14.0, *) else { result.skippedReason = "sistema anteriore a iOS 17"; return result }
         // 1-2. Sonda dell'intero documento e prefiltro.
         let t0 = Date()
         var profiles: [PageGraphicsProfile] = []
@@ -65,16 +81,27 @@ nonisolated enum VisualRegionDetector {
             profiles.append(profile)
         }
         result.probeSeconds = Date().timeIntervalSince(t0)
-        result.modelPages = PageGraphicsProbe.pagesForModel(profiles)
+        let chosen = PageGraphicsProbe.pagesForModel(profiles)
+        result.modelPages = Self.excludingRotated(chosen) { cgDoc.page(at: $0 + 1)?.rotationAngle ?? 0 }
+        result.rotatedPagesSkipped = chosen.count - result.modelPages.count
         guard !result.modelPages.isEmpty else { result.skippedReason = "nessuna pagina con grafica"; return result }
         // 3. Modello sulle sole pagine scelte.
-        guard #available(iOS 17.0, macOS 14.0, *) else { result.skippedReason = "sistema anteriore a iOS 17"; return result }
         guard let pdfDoc = PDFDocument(url: pdfURL) else { result.skippedReason = "PDF non leggibile"; return result }
         // La fase si annuncia qui (0 di N): da questo momento il modello lavora davvero.
         onModelPage(0, result.modelPages.count)
         let model: HeronLayoutModel
         do { model = try HeronLayoutModel.bundled(computeUnits: computeUnits) } catch {
-            result.skippedReason = "modello non disponibile"; return result
+            // Un secondo tentativo sulla sola CPU (per esempio se la GPU non ha risorse in quel momento).
+            Self.log.error("modello d'impaginazione non caricato (\(computeUnits.rawValue, privacy: .public)): \(error.localizedDescription, privacy: .public)")
+            guard computeUnits != .cpuOnly, let cpu = try? HeronLayoutModel.bundled(computeUnits: .cpuOnly) else {
+                // Il libro resta senza risorse visive (dichiarato in docs/RISORSE_VISIVE.md § 7): nessuna offerta
+                // automatica di rielaborazione: se il modello non parte, riproporla girerebbe a vuoto.
+                result.skippedReason = "modello non disponibile"
+                Self.log.error("riconoscimento di tabelle e figure non eseguito: modello non disponibile")
+                return result
+            }
+            model = cpu
+            result.cpuFallback = true
         }
         result.modelLoadSeconds = model.loadSeconds
         let analyzer = PageStructureAnalyzer(model: model)

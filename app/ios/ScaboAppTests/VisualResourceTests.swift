@@ -103,6 +103,17 @@ final class VisualResourceTests: XCTestCase {
         XCTAssertFalse(actionNames(view, 3).contains("Estrai come immagine"), "il testo della regione non porta l'estrazione")
     }
 
+    /// Il valore annunciato: la pagina vera della regione e, se la pagina ha più risorse, quale (annunci altrimenti
+    /// identici di fila si distinguono: rilievo della revisione indipendente).
+    func test_visualValue_saysThePage_andWhichOneOnThePage() {
+        let view = renderedView(flow())
+        XCTAssertEqual(view.visualResourceValue(forIndex: 2), "pagina 1 del file originale, 1 di 2")
+        XCTAssertEqual(view.visualResourceValue(forIndex: 6), "pagina 1 del file originale, 2 di 2")
+        XCTAssertNil(view.visualResourceValue(forIndex: 1), "nessun valore sugli altri elementi")
+        XCTAssertEqual(view.makeConfiguredCellForTesting(at: 2)?.accessibilityValue, "pagina 1 del file originale, 1 di 2")
+        XCTAssertNil(view.makeConfiguredCellForTesting(at: 1)?.accessibilityValue)
+    }
+
     func test_skip_landsOnFirstElementAfterTheContainedText() {
         let view = renderedView(flow())
         XCTAssertEqual(view.indexAfterVisualResource(at: 2), 5)
@@ -157,8 +168,9 @@ final class VisualResourceTests: XCTestCase {
         let vc = ContinuousReadingViewController(content: content(flow()), documentId: "", quickConsultTree: [leaf],
                                                  signalPlayer: SilentSignalsForVisual())
         let items = vc.quickVisualItemsForTesting
-        XCTAssertEqual(items["n2"]?.map { $0.label }, ["Tabella: Il raccolto per stagione"])
-        XCTAssertEqual(items["n5"]?.map { $0.label }, ["Figura"])
+        XCTAssertEqual(items.before["n2"]?.map { $0.label }, ["Tabella: Il raccolto per stagione"])
+        XCTAssertEqual(items.before["n5"]?.map { $0.label }, ["Figura"])
+        XCTAssertEqual(items.placedCount, 2)
         let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
         window.rootViewController = vc; window.makeKeyAndVisible(); vc.loadViewIfNeeded(); vc.view.layoutIfNeeded()
         vc.switchLayoutForTesting(to: .quick)
@@ -171,6 +183,48 @@ final class VisualResourceTests: XCTestCase {
         if let table, let text { XCTAssertEqual(table + 1, text, "la risorsa sta subito prima del contenuto col suo testo") }
         XCTAssertTrue(labels.contains("Risorsa visiva. Figura"))
         window.isHidden = true
+    }
+
+    /// Una risorsa seguita da un'intestazione (le tabelle in fondo a un allegato, prima della legge che segue) compare
+    /// nella sua unità, in coda ai contenuti; in un'unità che ha solo risorse, l'unità diventa apribile e le mostra; in
+    /// un'unità con sotto-unità, le sue risorse vengono prima dei figli (rilievo della revisione indipendente).
+    func test_quickConsult_resourceFollowedByHeading_staysInItsUnit() {
+        let segs = [seg("h1", "Allegato primo", role: "HEADING_2"),
+                    seg("c1", "Il testo dell'allegato."),
+                    visual(.table, id: "vr_p0_0", contained: 0),
+                    seg("h2", "Allegato secondo", role: "HEADING_2"),
+                    visual(.table, id: "vr_p0_1", contained: 0, bbox: [60, 400, 360, 500]),
+                    seg("h3", "Parte terza", role: "HEADING_1"),
+                    visual(.figure, id: "vr_p0_2", contained: 0, bbox: [60, 100, 360, 180]),
+                    seg("h4", "Capo primo", role: "HEADING_2"),
+                    seg("c4", "Il testo del capo.")]
+        let leaf1 = QuickConsultNode(role: "HEADING_2", depth: 1, title: "Allegato primo", headingId: "h1",
+                                     firstPage: 0, lastPage: 0, children: [], contentIds: ["c1"])
+        let leaf2 = QuickConsultNode(role: "HEADING_2", depth: 1, title: "Allegato secondo", headingId: "h2",
+                                     firstPage: 0, lastPage: 0, children: [], contentIds: [])
+        let leaf4 = QuickConsultNode(role: "HEADING_2", depth: 2, title: "Capo primo", headingId: "h4",
+                                     firstPage: 0, lastPage: 0, children: [], contentIds: ["c4"])
+        let parte = QuickConsultNode(role: "HEADING_1", depth: 1, title: "Parte terza", headingId: "h3",
+                                     firstPage: 0, lastPage: 0, children: [leaf4], contentIds: [])
+        let placement = QuickVisualPlacement.build(segments: segs, tree: [leaf1, leaf2, parte])
+        XCTAssertEqual(placement.placedCount, 3, "nessuna risorsa persa")
+        XCTAssertEqual(placement.inUnit["h1"]?.count, 1)
+        XCTAssertEqual(placement.inUnit["h2"]?.count, 1)
+        XCTAssertEqual(placement.inUnit["h3"]?.count, 1)
+        let tree = QuickConsultView(roots: [leaf1, leaf2, parte], nodeText: ["c1": "Il testo dell'allegato.", "c4": "Il testo del capo."],
+                                    documentTitle: "Libro", visual: placement)
+        tree.expandForTesting(headingId: "h1")
+        tree.expandForTesting(headingId: "h2")
+        tree.expandForTesting(headingId: "h3")
+        let labels = tree.rowLabelsForTesting
+        let a1 = labels.firstIndex(of: "Il testo dell'allegato.")
+        XCTAssertNotNil(a1)
+        if let a1 { XCTAssertEqual(labels[a1 + 1], "Risorsa visiva. Tabella", "in coda ai contenuti della sua unità") }
+        XCTAssertEqual(labels.filter { $0 == "Risorsa visiva. Tabella" }.count, 2, "anche l'unità con sole risorse si apre e la mostra")
+        // L'etichetta della «Parte» riassume anche i suoi figli: la riga del figlio è l'ultima che ne porta il titolo.
+        let fig = labels.firstIndex(of: "Risorsa visiva. Figura"), capo = labels.lastIndex { $0.contains("Capo primo") }
+        XCTAssertNotNil(fig); XCTAssertNotNil(capo)
+        if let fig, let capo { XCTAssertLessThan(fig, capo, "prima delle sotto-unità") }
     }
 
     // MARK: - Estrai come immagine
@@ -195,6 +249,55 @@ final class VisualResourceTests: XCTestCase {
         // Il file originale assente si dice in prosa.
         XCTAssertEqual(VisualResourceExport.makePNG(sourcePDF: URL(fileURLWithPath: "/nonesiste.pdf"), payload: payload).failure, .missingSource)
         XCTAssertFalse(VisualResourceExport.Failure.notCroppable.prose.isEmpty)
+    }
+
+    /// Due estrazioni ravvicinate non si tolgono il file a vicenda; alla chiusura di una condivisione si toglie solo il suo
+    /// ritaglio (rilievo della revisione indipendente).
+    func test_twoCrops_doNotRemoveEachOther() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("vr_due_\(UUID().uuidString).pdf")
+        try syntheticPDF().write(to: url)
+        defer { try? FileManager.default.removeItem(at: url); VisualResourceExport.cleanUp() }
+        let payload = VisualResourcePayload(kind: .table, pageIndex: 0, bbox: [60, 200, 360, 320], containedElements: 2)
+        guard case .success(let first) = VisualResourceExport.makePNG(sourcePDF: url, payload: payload),
+              case .success(let second) = VisualResourceExport.makePNG(sourcePDF: url, payload: payload) else {
+            return XCTFail("ritagli non riusciti")
+        }
+        XCTAssertNotEqual(first, second)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: first.path), "il primo ritaglio resta mentre si prepara il secondo")
+        VisualResourceExport.cleanUp(first)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: first.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: second.path), "chiudere una condivisione non toglie l'altro ritaglio")
+    }
+
+    /// Le pagine ruotate non vanno al modello e non si ritagliano (righe, regioni e ritaglio sono nello spazio non
+    /// ruotato della pagina; nei volumi della rete le pagine ruotate sono 0): rilievo della revisione indipendente.
+    func test_rotatedPage_isExcludedFromTheModel_andNotCropped() throws {
+        let doc = try XCTUnwrap(PDFDocument(data: syntheticTwoPagePDF()))
+        doc.page(at: 1)?.rotation = 90
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("vr_ruotata_\(UUID().uuidString).pdf")
+        XCTAssertTrue(doc.write(to: url))
+        defer { try? FileManager.default.removeItem(at: url); VisualResourceExport.cleanUp() }
+        let cg = try XCTUnwrap(CGPDFDocument(url as CFURL))
+        XCTAssertEqual(cg.page(at: 2)?.rotationAngle, 90)
+        XCTAssertEqual(VisualRegionDetector.excludingRotated([0, 1]) { cg.page(at: $0 + 1)?.rotationAngle ?? 0 }, [0])
+        XCTAssertEqual(VisualRegionDetector.excludingRotated([0, 1]) { $0 == 1 ? -270 : 360 }, [0])
+        let payload = VisualResourcePayload(kind: .table, pageIndex: 1, bbox: [60, 200, 360, 320], containedElements: 1)
+        XCTAssertEqual(VisualResourceExport.makePNG(sourcePDF: url, payload: payload).failure, .rotatedPage)
+        XCTAssertFalse(VisualResourceExport.Failure.rotatedPage.prose.isEmpty)
+        let upright = VisualResourcePayload(kind: .table, pageIndex: 0, bbox: [60, 200, 360, 320], containedElements: 1)
+        XCTAssertNil(VisualResourceExport.makePNG(sourcePDF: url, payload: upright).failure, "la pagina diritta si ritaglia")
+    }
+
+    private func syntheticTwoPagePDF() -> Data {
+        UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 420, height: 595)).pdfData { ctx in
+            for k in 0..<2 {
+                ctx.beginPage()
+                ("Pagina di prova \(k + 1)" as NSString).draw(at: CGPoint(x: 60, y: 70), withAttributes: [.font: UIFont.systemFont(ofSize: 12)])
+                let cg = ctx.cgContext
+                cg.setStrokeColor(UIColor.black.cgColor); cg.setLineWidth(1)
+                cg.stroke(CGRect(x: 60, y: 200, width: 300, height: 120))
+            }
+        }
     }
 
     func test_extractAction_handsTheCropToTheShareSheet_fromTheArchive() throws {

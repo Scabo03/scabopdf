@@ -35,6 +35,54 @@ struct QuickVisualItem {
     let payload: VisualResourcePayload
 }
 
+/// Dove la Consultazione Rapida mostra le risorse visive del flusso (§ 7.9). Ogni risorsa appartiene all'unità aperta nel
+/// flusso, cioè all'ultima intestazione dell'albero che la precede, come i contenuti (`buildQuickConsultTree`). Dentro
+/// l'unità sta prima del contenuto che la segue nel flusso; se dopo di lei viene un'intestazione (le tabelle in fondo a un
+/// allegato, prima della legge che segue) o se l'unità ha sotto-unità, sta nell'unità stessa: in coda ai contenuti di una
+/// foglia, prima dei figli di un'unità con sotto-unità (rilievo della revisione indipendente: una risorsa seguita da
+/// un'intestazione non compariva). Prima della prima intestazione resta fuori dall'albero, come il front-matter.
+struct QuickVisualPlacement {
+    /// Risorse da mostrare prima del contenuto (per id del nodo-contenuto, solo nelle foglie).
+    var before: [String: [QuickVisualItem]] = [:]
+    /// Risorse dell'unità senza un contenuto che le segua (per id dell'intestazione).
+    var inUnit: [String: [QuickVisualItem]] = [:]
+    /// Risorse prima della prima intestazione: fuori dall'albero.
+    var outside = 0
+
+    var placedCount: Int { before.values.reduce(0) { $0 + $1.count } + inUnit.values.reduce(0) { $0 + $1.count } }
+
+    static func build(segments: [ContentSegment], tree: [QuickConsultNode]) -> QuickVisualPlacement {
+        func baseId(_ id: String) -> String {
+            id.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? id
+        }
+        var isLeaf: [String: Bool] = [:], owner: [String: String] = [:]
+        func walk(_ n: QuickConsultNode) {
+            isLeaf[n.headingId] = n.children.isEmpty
+            for c in n.contentIds { owner[c] = n.headingId }
+            n.children.forEach(walk)
+        }
+        tree.forEach(walk)
+        var out = QuickVisualPlacement()
+        var unit: String?
+        for (i, seg) in segments.enumerated() {
+            guard let payload = seg.visualResource else {
+                let b = baseId(seg.id)
+                if isLeaf[b] != nil { unit = b }
+                continue
+            }
+            guard let unit else { out.outside += 1; continue }
+            let item = QuickVisualItem(label: seg.text, payload: payload)
+            let next = segments[(i + 1)...].first { $0.visualResource == nil }.map { baseId($0.id) }
+            if let next, owner[next] == unit, isLeaf[unit] == true {
+                out.before[next, default: []].append(item)
+            } else {
+                out.inUnit[unit, default: []].append(item)
+            }
+        }
+        return out
+    }
+}
+
 final class QuickConsultView: UIView {
 
     /// Una riga visibile dell'albero (intestazione o contenuto-foglia).
@@ -70,16 +118,16 @@ final class QuickConsultView: UIView {
     /// «Estrai come immagine» su una risorsa visiva: il controller ritaglia e offre il foglio di condivisione.
     /// Il riquadro è nel sistema di coordinate dell'albero (popover iPad).
     var onExtractVisual: ((QuickVisualItem, CGRect) -> Void)?
-    /// Le risorse visive da mostrare prima del contenuto di un nodo (per id del nodo-contenuto).
-    private let visualBefore: [String: [QuickVisualItem]]
+    /// Dove mostrare le risorse visive (prima di un contenuto, o nell'unità).
+    private let visual: QuickVisualPlacement
 
     private static let cellId = "qc.cell"
 
     init(roots: [QuickConsultNode], nodeText: [String: String],
-         documentTitle: String, expanded: Set<String> = [], visualBefore: [String: [QuickVisualItem]] = [:]) {
+         documentTitle: String, expanded: Set<String> = [], visual: QuickVisualPlacement = QuickVisualPlacement()) {
         self.roots = roots
         self.nodeText = nodeText
-        self.visualBefore = visualBefore
+        self.visual = visual
         self.documentTitle = documentTitle
         self.expanded = expanded
         super.init(frame: .zero)
@@ -122,18 +170,24 @@ final class QuickConsultView: UIView {
             out.append(Row(kind: .heading(node: node, hasChildren: hasChildren, isLeaf: isLeaf),
                            depth: node.depth, headingId: node.headingId))
             guard expanded.contains(node.headingId) else { return }
+            let unitVisual = (visual.inUnit[node.headingId] ?? []).map {
+                Row(kind: .visual(item: $0), depth: node.depth + 1, headingId: "")
+            }
             if hasChildren {
+                // Le risorse dell'unità (prima delle sue sotto-unità nel flusso) vengono prima dei figli.
+                out.append(contentsOf: unitVisual)
                 for child in node.children { appendNode(child) }
             } else {
-                // Foglia espansa → mostra il contenuto dell'unità (rubrica, commi, note).
+                // Foglia espansa → mostra il contenuto dell'unità (rubrica, commi, note), con le risorse visive al loro posto.
                 for cid in node.contentIds {
-                    for item in visualBefore[cid] ?? [] {
+                    for item in visual.before[cid] ?? [] {
                         out.append(Row(kind: .visual(item: item), depth: node.depth + 1, headingId: ""))
                     }
                     if let text = nodeText[cid], !text.isEmpty {
                         out.append(Row(kind: .content(text: text), depth: node.depth + 1, headingId: ""))
                     }
                 }
+                out.append(contentsOf: unitVisual)
             }
         }
         for root in roots { appendNode(root) }
@@ -274,7 +328,7 @@ extension QuickConsultView: UITableViewDataSource, UITableViewDelegate {
 
         switch row.kind {
         case let .heading(node, hasChildren, isLeaf):
-            let isExpandable = hasChildren || (isLeaf && !node.contentIds.isEmpty)
+            let isExpandable = hasChildren || (isLeaf && (!node.contentIds.isEmpty || visual.inUnit[node.headingId] != nil))
             config.text = node.title
             config.textProperties.font = headingFont(forDepth: row.depth)
             cell.contentConfiguration = config
@@ -314,7 +368,7 @@ extension QuickConsultView: UITableViewDataSource, UITableViewDelegate {
             cell.contentConfiguration = config
             cell.accessibilityLabel = "Risorsa visiva. \(item.label)"
             cell.accessibilityTraits = .staticText
-            cell.accessibilityValue = nil
+            cell.accessibilityValue = "pagina \(item.payload.pageIndex + 1) del file originale"
             cell.accessibilityHint = nil
             cell.accessibilityCustomActions = [
                 UIAccessibilityCustomAction(name: "Estrai come immagine") { [weak self, weak cell] _ in

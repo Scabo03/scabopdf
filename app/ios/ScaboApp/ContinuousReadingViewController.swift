@@ -577,7 +577,7 @@ final class ContinuousReadingViewController: UIViewController {
     private func makeQuickConsultView(_ roots: [QuickConsultNode]) -> QuickConsultView {
         let tree = QuickConsultView(roots: roots, nodeText: quickNodeText,
                                     documentTitle: documentTitle, expanded: quickExpandedState,
-                                    visualBefore: buildQuickVisualItems())
+                                    visual: buildQuickVisualItems())
         tree.onExtractVisual = { [weak self, weak tree] item, rect in
             guard let self, let tree else { return }
             self.extractVisualResource(item.payload, sourceView: tree, sourceRect: rect)
@@ -603,23 +603,10 @@ final class ContinuousReadingViewController: UIViewController {
         return tree
     }
 
-    /// Le risorse visive del flusso di Lettura Continua, per id del nodo-contenuto che le segue (il primo segmento non
-    /// «risorsa visiva» dopo l'elemento; in coda al flusso, quello prima): nella Consultazione Rapida la risorsa compare
-    /// fra il contenuto dell'articolo nello stesso punto del flusso.
-    private func buildQuickVisualItems() -> [String: [QuickVisualItem]] {
-        let segments = content.pages.flatMap { $0.segments }
-        func baseId(_ id: String) -> String {
-            id.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? id
-        }
-        var out: [String: [QuickVisualItem]] = [:]
-        for (i, seg) in segments.enumerated() {
-            guard let payload = seg.visualResource else { continue }
-            let following = segments[(i + 1)...].first { $0.visualResource == nil }
-            let preceding = segments[..<i].last { $0.visualResource == nil }
-            guard let host = following ?? preceding else { continue }
-            out[baseId(host.id), default: []].append(QuickVisualItem(label: seg.text, payload: payload))
-        }
-        return out
+    /// Dove la Consultazione Rapida mostra le risorse visive del flusso di Lettura Continua (`QuickVisualPlacement`):
+    /// nella stessa unità e nello stesso punto del flusso.
+    private func buildQuickVisualItems() -> QuickVisualPlacement {
+        QuickVisualPlacement.build(segments: content.pages.flatMap { $0.segments }, tree: quickConsultTree ?? [])
     }
 
     /// Costruisce la mappa id-nodo → testo dal flusso di Lettura Continua (i segmenti portano l'id
@@ -1140,8 +1127,8 @@ final class ContinuousReadingViewController: UIViewController {
     var quickAvailableForTesting: Bool { quickConsultTree != nil }
     /// La vista ad albero (se creata), per i test.
     var quickConsultViewForTesting: QuickConsultView? { quickConsultView }
-    /// Le risorse visive per nodo-contenuto che la Consultazione Rapida mostra (per i test).
-    var quickVisualItemsForTesting: [String: [QuickVisualItem]] { buildQuickVisualItems() }
+    /// Dove la Consultazione Rapida mostra le risorse visive (per i test).
+    var quickVisualItemsForTesting: QuickVisualPlacement { buildQuickVisualItems() }
     /// Numero di segmenti correntemente resi (per verificare che lo switch cambi davvero il flusso).
     var renderedSegmentCountForTesting: Int { readingView.renderedSegmentCount }
     /// Cambia layout come farebbe il selettore (per i test, senza UIMenu).
@@ -1275,7 +1262,7 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
     /// ancorato all'elemento. Alla chiusura il file temporaneo si toglie.
     private func presentShareSheet(for file: URL, sourceView: UIView, sourceRect: CGRect) {
         let share = UIActivityViewController(activityItems: [file], applicationActivities: nil)
-        share.completionWithItemsHandler = { _, _, _, _ in VisualResourceExport.cleanUp() }
+        share.completionWithItemsHandler = { _, _, _, _ in VisualResourceExport.cleanUp(file) }
         if let popover = share.popoverPresentationController {
             popover.sourceView = sourceView
             popover.sourceRect = sourceRect == .zero ? CGRect(x: sourceView.bounds.midX, y: sourceView.bounds.midY, width: 1, height: 1) : sourceRect

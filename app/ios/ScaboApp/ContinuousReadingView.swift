@@ -273,6 +273,9 @@ final class SegmentCell: UICollectionViewCell {
         // dal `headingIndex`. La qualifica di intestazione è reintrodotta nel parlato (vedi
         // `headingQualifier`), così non si perde il segnale acustico "è un titolo, di livello N".
         accessibilityTraits = .staticText
+        // Risorsa visiva (§ 7.9): la pagina vera della regione come valore e, se la pagina ne ha più d'una, quale: annunci
+        // altrimenti identici di fila si distinguono. Per ogni altro elemento nessun valore, come prima.
+        accessibilityValue = host.visualResourceValue(forIndex: index)
 
         // Stacco di pagina originale (Opzione A): visivo, muto per VoiceOver. Scala con la leva.
         pageMarker.isHidden = !pageStart
@@ -900,6 +903,20 @@ final class ContinuousReadingView: UIView {
             guard let cell = self.collectionView.cellForItem(at: ip) else { return nil }
             return UIAccessibilityCustomRotorItemResult(targetElement: cell, targetRange: nil)
         }
+    }
+
+    /// Il valore annunciato sull'elemento «risorsa visiva» all'indice dato: «pagina N del file originale» (la pagina vera
+    /// della regione, quella del ritaglio) e, se la pagina ha più risorse, quale («2 di 4», nell'ordine del flusso).
+    /// Rilievo della revisione indipendente: risorse senza didascalia di fila si annunciavano tutte uguali. `nil` per ogni
+    /// altro elemento.
+    func visualResourceValue(forIndex index: Int) -> String? {
+        guard index >= 0, index < segments.count, let payload = segments[index].visualResource else { return nil }
+        let samePage = visualIndex.filter { segments[$0.index].visualResource?.pageIndex == payload.pageIndex }
+        var value = "pagina \(payload.pageIndex + 1) del file originale"
+        if samePage.count > 1, let k = samePage.firstIndex(where: { $0.index == index }) {
+            value += ", \(k + 1) di \(samePage.count)"
+        }
+        return value
     }
 
     /// Indice della risorsa visiva del tipo dato successiva (o precedente) a `current`. Puro e testabile.
