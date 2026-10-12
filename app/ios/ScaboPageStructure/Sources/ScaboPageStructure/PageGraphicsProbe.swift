@@ -261,10 +261,10 @@ public enum PageGraphicsProbe {
 
 extension PageGraphicsProbe {
 
-    /// Superficie minima (in frazione di pagina) di un'immagine perché la pagina vada al modello: sotto ci sono solo
-    /// loghi, bolli e fregi. Sopra l'85 % è lo sfondo di una pagina scansionata o una tavola a tutta pagina: non conta.
     /// Tetto ai form XObject attraversati per pagina (vedi `ProbeContext.formVisits`).
     public static let maxFormVisits = 2_000
+    /// Superficie minima (in frazione di pagina) di un'immagine perché la pagina vada al modello: sotto ci sono solo
+    /// loghi, bolli e fregi. Sopra l'85 % è lo sfondo di una pagina scansionata o una tavola a tutta pagina: non conta.
     public static let minImageFraction = 0.05
     public static let maxImageFraction = 0.85
     /// Quanti filetti orizzontali, verticali e riquadri IN PIÙ della pagina tipica del volume fanno pensare a una tabella o
