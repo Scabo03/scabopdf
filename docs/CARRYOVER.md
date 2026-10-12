@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.42 (12 ottobre 2026, giro «struttura nativa» — misura, senza toccare l'app: un'app Mac nativa compatibile con lo store riconosce la struttura delle pagine? **Sì**: il modello di impaginazione di docling (Heron, Apache-2.0) convertito in Core ML fp32 (164 MB) e fatto girare da un eseguibile Swift che porta in Swift il post-processing e l'ordine di lettura a regole di docling (porto identico a docling 35/35 pagine) trova sulle 34 pagine del banco (381 blocchi di verità giudicati da Code contro la pagina) note 41/76 contro 43 di docling, didascalie 2/2, tabelle 2/2, figure 4/4, titoli 22/47 contro 23, ordine 0,968 contro 0,993, in 42-44 ms/pagina, 0,36-0,41 GB, zero byte esterni; innestato nella catena del banco al posto di docling dà **letture identiche byte per byte** sui quattro casi del gate con le reti di fedeltà verdi. GLM-OCR non dà struttura (tutto testo), Granite-Docling perde note (7/76) e didascalie (0/2) e va in ripetizione, Vision non etichetta nulla. Tre decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.12 (pacchetto = file da aprire, scelta fra più copie, lettura del Mac accettata com'è). Documento `docs/MISURA_STRUTTURA_NATIVA.md`; referto e laboratorio in `~/Developer/scabopdf-mac-lab/struttura_nativa/`. Vedi STATO del 2026-10-12)
 > Versione: 2.41 (11 ottobre 2026, giro «identità del documento», primo pezzo della fase Mac che serve anche all'iPad: **build 51** su TestFlight con la sola cura delle ancore già su main (commit `c3a2a10`, Delivery UUID `8c815312…`, reti verdi su iOS 26.5 e iOS 27 con cattura nuova `b51`); **identità ricavata dal contenuto** = SHA-256 della sorgente archiviata come campo additivo `ArchivedDocument.sourceSha256` (ScaboCore `DocumentFingerprint.swift`, CryptoKit già importato dal giro «ancore»), id locale intatto, migrazione in sottofondo al primo avvio senza rielaborare, schermata «Libro già presente» all'importazione (apri l'esistente come scelta predefinita, copia a parte, annulla); impronta identica su host macOS e simulatore iOS sullo stesso file; letture identiche al byte 52/52 su entrambe le generazioni e rete sulle annotazioni verde; decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.8 e § 12.12 (il frutto dell'officina viaggia solo via AirDrop o cavo come documento completo: istruzioni per file superate); **build 52** su TestFlight (commit `3d85836`, Delivery UUID `649e3a88…`). Vedi STATO del 2026-10-11)
 > Versione: 2.40 (8 ottobre 2026, **giro finale della ripulizia mobile** su titoli e testatine, ultimo prima della fase Mac: titoli bianchi della DPC letti; livelli dei manuali (unità etichetta + titolo, livello relativo, verificati sull'indice stampato e sui segnalibri); leggi complementari al primo livello; sommario di Patriarca non letto; righe fuse di banda separate nell'estrattore e metro di struttura corretto; titoli DeJure in grassetto e ultima pagina degli export brevi; misura dei titoli «a unità» e prova al contrario nei due versi; bilancio di fase in `docs/BILANCIO_FASE_MOBILE.md`; **build 50 su TestFlight** (commit `14b1a9d` (caricata dal commit locale `a40f034`, riscritto solo per due frasi delle note nel repo dopo il controllo sul testo dei volumi: binario identico), Delivery UUID 0c534d4f…, note scritte dalla lane). Vedi STATO del 2026-10-08)
 > Versione: 2.39 (7 ottobre 2026 sera, giro «titoli e testatine»: **misura dei titoli** con verità indipendente (indice stampato, segnalibri, tipografia, geometria), affidabilità per volume e prova al contrario; **canale dei documenti monotipografici** (dispense Pages/Word/Google Docs: titoli e paragrafi dalla firma di formato, 44 → 570/580); titoli d'apertura delle leggi complementari nei codici a H3; «§ N.» in grassetto (Torrente 0 → 707) e sezioni in maiuscoletto; guardia «paragrafo colorato» (abstract DPC); regressione della build 47 trovata e curata (righe fuse col contenuto: Marrone 26.5, Costituzionale, Elementi); offerta di rielaborazione a 49; revisione indipendente: paragrafi spezzati dopo un'abbreviazione corretti, numeri e dichiarazioni allineati; **build 49 su TestFlight**. Vedi STATO del 2026-10-07 sera)
@@ -57,6 +58,48 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
 
 ---
+
+## ▶ STATO — Giro «struttura nativa»: la struttura delle pagine con strumenti nativi, verdetto per lo store — 2026-10-12
+
+**Documenti:** `docs/MISURA_STRUTTURA_NATIVA.md` (metodo, tabelle, verdetto; privo di contenuto), `LAYER2_PRODUCT_DECISIONS.md` § 12.12
+(tre decisioni del maintainer sul ritorno del frutto: pacchetto = un file da aprire, niente canale vivo via rete; con una copia del libro
+si applica a quella, con più copie l'app chiede proponendo la più recente aperta; la lettura del Mac si accetta com'è, una versione diversa
+si dice in prosa, la lettura precedente resta fino alla conferma), `ULTRAFOCUS_INBOX.md` § E. Referto completo e laboratorio (uscite dei
+motori con testo: NON diffondere): `~/Developer/scabopdf-mac-lab/struttura_nativa/REFERTO_STRUTTURA_NATIVA.md`. **Codice dell'app
+intatto**; partenza `19c14bb`, `feat/mac-base` (`fa5f01e`) mai toccato; nessuna build.
+
+**Il banco (campo).** 34 pagine da 15 volumi (le 22 del giro OCR Lab + 12 nuove: Torrente 121/300, Mandrioli 3 p.23, CP p.10 tabella con
+note ad asterischi, Marrone 31/56, Costituzionale 41, Mosconi 84, DeJure DT Concause 42, appunti proc. civ. 67, dispensa Scoca 13, Delitti 5),
+verità di struttura costruita da Code contro la pagina stampata (381 blocchi: tipi, rettangoli, ordini; mai testo), metro di copertura
+d'area (trovato/confuso/perso/inventato) e tau d'ordine. Tutti i motori in `sandbox-exec` solo-localhost con sonda: **zero byte esterni**.
+
+**Il candidato nativo (campo).** Heron (`docling-project/docling-layout-heron`, Apache-2.0, safetensors sha256 = LFS) convertito al banco in
+Core ML con coremltools 9.0 (il primo tentativo falliva sulle ancore dinamiche; risolto con `anchor_image_size=[640,640]`); fp32 scelto
+perché coincide con PyTorch 767/767 rilevazioni sopra soglia (fp16: 2 diverse). Eseguibile Swift `HeronNative` (715 righe; Core ML +
+PDFKit + Foundation): resa 640×640, decodifica RT-DETR, righe PDFKit come celle, porto del `LayoutPostprocessor` e del
+`ReadingOrderPredictor` di docling (ordine identico a docling su 35/35 pagine sugli stessi elementi). Tempi: 0,2 s di avvio, 3,7 s la
+prima inferenza sul Mac (riscaldamento ANE, una volta per modello; poi 0,15 s), **42-44 ms/pagina** a caldo, 0,36-0,41 GB.
+
+**Numeri (campo, 34 pagine).** Note (76): Heron 41 trovate / 35 confuse (29 `list_item`, 6 `text`), docling 43, app oggi 56, Granite 7,
+GLM-OCR e Vision 0. Didascalie (2): Heron 2, docling 2, app 0 (→ nota), Granite 0. Tabelle (2): Heron 2, docling 2, Vision 1, app 0.
+Figure (4): Heron 4, docling 4. Titoli (47): Heron 22, docling 23, app 28 (le dispense monotipografiche 6/6 solo con l'app).
+Testatine/piè (62): Heron 43, app 48, docling 36. Ordine (tau): docling 0,993, Granite 0,989, GLM-OCR 0,976, Vision 0,975, Heron 0,968,
+app 0,869 (indice CP −0,33 per le voci-NOTE spostate dal piazzamento). Dove il nativo non vede, non vede neppure docling: note
+d'aggiornamento dei codici e note in linea (Marrone, DeJure) etichettate `list_item`/`text`, glosse marginali `text`, titoli delle
+dispense `text`.
+
+**Prova d'innesto (campo).** Verdetti di Heron nativo al posto di docling nel fusore del banco (Python) → runner su ScaboCore a HEAD:
+Delitti (guardie: nessuna operazione), Lineamenti 46-47 (7 righe della coda spostate, nota 12 ricucita, 0 NOTE orfane su p.47), indice CP
+2518-2639 (277 nodi rietichettati, 267 → 0 segmenti NOTE, 24 cifre recuperate, 0 parole alfabetiche nuove), DPC controllo identico:
+**letture identiche byte per byte a quelle ottenute con docling** su tutti e quattro i casi, reti di fedeltà verdi.
+
+**Verdetto.** Strada A confermata senza rinunce sulla struttura: Heron in Core ML + porto Swift (nessun motore di terzi oltre Core ML)
+sostituisce docling sul banco; GLM-OCR resta il lettore di scansioni (MIT) ma non dà struttura; Granite-Docling non consigliato; Vision
+solo lettore di righe. La via fuori dallo store non ha più un motivo strutturale (comprerebbe Surya 2, non ridistribuibile, e il
+TableFormer di docling, convertibile in futuro). Residui: TableFormer non portato (tabelle come regioni), fusore ancora in Python (~400
+righe da portare in Swift), verità di un solo giudice su 34 pagine, ricucitore del senso non misurato.
+
+**Revisione indipendente:** vedi referto § 7.
 
 ## ▶ STATO — Identità del documento ricavata dal contenuto: build 51 (cura delle ancore) e build 52 (impronta SHA-256, «libro già presente») — 2026-10-11
 

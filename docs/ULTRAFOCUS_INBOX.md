@@ -529,3 +529,27 @@ che viaggia. Così il vincolo copyright sulla distribuzione quasi si dissolve
 (sul canale non c'è contenuto). La corsia 2 locale resta progettata e in
 riserva, da attivare se e quando le scansioni diventeranno una parte reale
 della libreria del maintainer — oggi non lo sono.
+
+---
+
+## E. Il giro «struttura nativa» (2026-10-12): il verdetto sui motori per lo store
+
+Misura senza toccare l'app (`docs/MISURA_STRUTTURA_NATIVA.md`): un candidato nativo — Heron di docling in Core ML fp32 (Apache-2.0,
+164 MB) + porto Swift del post-processing e dell'ordine di lettura a regole di docling — eguaglia docling sul banco (note 41/76 contro
+43, didascalie 2/2, tabelle 2/2, figure 4/4, titoli 22/47 contro 23, ordine 0,968 contro 0,993) e **innestato nella catena del banco al
+posto di docling dà letture identiche byte per byte** sui casi del gate (Lineamenti MULTIPAGE, indice CP, Delitti, DPC). Conseguenze per
+le voci di questa casella:
+
+- **C.1 (fusione ordine + segmentazione):** il «verdetto docling» del gate è riproducibile in nativo; la via per il prodotto è Heron in
+  Core ML + porto Swift del fusore (~400 righe: rietichetta/fondi/sposta, guardia-marcatore, rete di fedeltà, ancoraggio per testo).
+- **A.4 (scansioni):** il lettore nativo di scansioni resta GLM-OCR via llama.cpp (MIT), che però non dà struttura: le etichette vengono
+  da Heron sulla stessa immagine, le regole dell'app fanno da guardia.
+- **A.5 / D.6-sexies (desync e interfoliazione dei codici):** Heron e docling leggono l'ordine giusto sulle pagine con desync (tau
+  1,0 su CP 1083 e CP 2518; 0,88-0,9 su CP 1810 e CC 559 dove anche la verità ha note interposte), ma **non etichettano le note
+  d'aggiornamento dei codici** (0 su 9: 8 `list_item`, 1 `text`): il verdetto utile sui codici è di ordine, non di etichetta.
+- **B.2 (glosse marginali):** nessun modello le distingue (sempre `text`); l'app oggi 9/11. Resta regola dell'app.
+- **Non modelli, regole:** titoli delle dispense monotipografiche (app 6/6, modelli 0/6), sezione «Note:» di DeJure (app 11/11,
+  modelli 0/11), note in linea di Marrone (tutti 0/9): materia del tronco e dei rami, non dell'officina.
+- **Fuori dallo store:** nessun motivo strutturale residuo; comprerebbe solo Surya 2 (licenza non ridistribuibile) e il TableFormer di
+  docling (struttura delle celle delle tabelle, convertibile in futuro con la stessa via di Heron).
+
