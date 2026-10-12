@@ -329,6 +329,43 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(insertingVisualResources(segs2, candidates: [c], extraction: ex2).segments.map { $0.id }, ["c", "vr_p0_0", "d"])
     }
 
+    /// Una riga della tabella che il flusso porta anche in un segmento PRIMA (la didascalia della tabella precedente la
+    /// contiene): la riga va al segmento vicino al grosso del testo della tabella, e la risorsa precede l'intestazione,
+    /// non i dati della tabella precedente (caso misurato su una rivista, riprodotto con parole di prova).
+    func test_rigaInPiuSegmenti_vaAlSegmentoVicinoAlGrossoDellaRegione() {
+        let ex = extraction([[
+            line("tabella prima didascalia sul raccolto per podere di prova", l: 60, t: 100, r: 540, b: 110),
+            line("podere di prova", l: 60, t: 300, r: 200, b: 310),
+            line("quintali raccolti nel podere alfa uno", l: 60, t: 312, r: 540, b: 322),
+            line("quintali raccolti nel podere beta due", l: 60, t: 324, r: 540, b: 334),
+            line("quintali raccolti nel podere gamma tre", l: 60, t: 336, r: 540, b: 346),
+        ]])
+        let segs = [seg("a", "BODY", "dati della prima tabella tabella prima didascalia sul raccolto per podere di prova", page: 1),
+                    seg("h", "BODY", "fonte di prova podere di prova", page: 1),
+                    seg("d", "BODY", "quintali raccolti nel podere alfa uno quintali raccolti nel podere beta due quintali raccolti nel podere gamma tre", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 295, 545, 350])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["a", "vr_p0_0", "h", "d"])
+        XCTAssertEqual(r.segments[1].visualResource?.containedElements, 2)
+    }
+
+    /// Una parola d'intestazione ripetuta nella tabella (due colonne «raccolto») che compare anche nella prosa prima:
+    /// i conti delle ripetizioni non tornano (il flusso la porta più volte dell'estrazione), quindi la ripetizione non
+    /// decide e vale la vicinanza al grosso del testo: la risorsa precede l'intestazione, non la prosa.
+    func test_ripetizioneAmbigua_nonTrascinaLaRisorsaNellaProsa() {
+        let ex = extraction([[
+            line("il raccolto di prova del podere e un altro raccolto di prova", l: 50, t: 100, r: 550, b: 112, size: 11),
+            line("raccolto", l: 60, t: 300, r: 150, b: 310), line("raccolto", l: 300, t: 300, r: 390, b: 310),
+            line("grano duro quintali venti", l: 60, t: 312, r: 540, b: 322),
+            line("orzo nudo quintali trenta", l: 60, t: 324, r: 540, b: 334),
+        ]])
+        let segs = [seg("p", "BODY", "il raccolto di prova del podere e un altro raccolto di prova", page: 1),
+                    seg("h", "BODY", "raccolto raccolto", page: 1),
+                    seg("d", "BODY", "grano duro quintali venti orzo nudo quintali trenta", page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 295, 545, 340])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["p", "vr_p0_0", "h", "d"])
+        XCTAssertEqual(r.segments[1].visualResource?.containedElements, 2)
+    }
+
     /// L'ordine del modello mette dopo la tabella un'intestazione che sulla pagina sta tutta sopra: la risorsa segue
     /// l'intestazione (CP p. 2179, l'allegato delle tabelle dei parametri forensi).
     func test_anchoraDelModelloSopraLaRegione_laRisorsaLaSegue() {
