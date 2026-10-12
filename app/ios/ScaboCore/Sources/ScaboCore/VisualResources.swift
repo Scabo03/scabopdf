@@ -147,6 +147,10 @@ let VISUAL_MAX_PAGE_FRACTION = 0.85
 /// Lunghezza minima (lettere e cifre) di una riga perché la si cerchi nel flusso: sotto, i riscontri sono
 /// ambigui (numeri di cella, sigle).
 let VISUAL_MIN_MATCH_CHARS = 6
+/// Quante pagine indietro si cerca il segmento che porta una riga: la continuità del corpo fonde un paragrafo (o una
+/// tabella) che attraversa più pagine in un solo segmento, attribuito alla pagina dove comincia (misurato: lo schema di
+/// calcolo delle pene di CP pp. 2514-2517 è un solo segmento). Le pagine più vicine hanno sempre la precedenza.
+let VISUAL_MATCH_LOOKBACK_PAGES = 3
 /// Ruoli che l'app assegna con CERTEZZA (segnali forti, deterministici): se il testo della regione è per la
 /// maggior parte in questi ruoli, la regione «coincide con un blocco già classificato» e non diventa risorsa.
 /// BODY e UNCLASSIFIED no (sono il ruolo di ripiego, dove finiscono proprio tabelle e figure); NOTE no a
@@ -170,6 +174,15 @@ let VISUAL_COVER_MIN_PAGES = 20
 let VISUAL_RECURRENCE_PAGES = 3
 /// Simboli di richiamo usati come apici.
 private let CALLOUT_SYMBOLS: Set<Character> = ["*", "†", "‡", "§", "¶"]
+/// Una regione con una GRIGLIA disegnata — almeno tanti oggetti dipinti (filetti di righe e colonne, riquadri) la
+/// toccano — è una tabella vera: nelle sue righe un numero in apertura è una cella (numero di riga, valore, data), non
+/// un marcatore di nota, e un numero fra parentesi di tre cifre è un rinvio (un articolo), non un richiamo. Contano
+/// solo i richiami inequivocabili: «(N)» con una o due cifre, «(*)», «[N]», apici a corpo ridotto. Misurato sui 52
+/// volumi (giudizio contro la pagina, 2026-10-12): le 29 regioni scartate per «marcatori di nota» erano tutte tabelle
+/// vere con almeno 6 disegni (tavole di concordanza, diritti di copia, stupefacenti, calcolo delle pene, statistiche).
+let VISUAL_GRID_MIN_GRAPHICS = 6
+/// Richiamo inequivocabile dentro una griglia: «(1)», «(12)», «(*)», «(**)», «[3]».
+private let RE_GRID_CALLOUT = try! NSRegularExpression(pattern: "\\((?:[0-9]{1,2}|\\*{1,6})\\)|\\[[0-9]{1,2}\\]")
 
 // MARK: - Geometria
 
@@ -222,15 +235,48 @@ private func intersection(_ a: [Double], _ b: [Double]) -> Double {
     return w > 0 && h > 0 ? w * h : 0
 }
 
+/// Distanza massima (in segmenti) fra due riscontri dello stesso gruppo.
+let VISUAL_CLUSTER_GAP = 2
+/// Quota minima delle lettere ritrovate perché un gruppo di riscontri appartenga alla regione: sotto, è un'eco.
+let VISUAL_CLUSTER_MIN_SHARE = 0.25
+
+/// I segmenti che portano DAVVERO il testo della regione. Si ordinano gli indici dei segmenti trovati, si spezzano in
+/// gruppi dove due indici consecutivi distano più di `VISUAL_CLUSTER_GAP`, e si tengono i gruppi che portano almeno
+/// `VISUAL_CLUSTER_MIN_SHARE` delle lettere ritrovate. Un gruppo piccolo e staccato è un'eco: la stessa riga in un'altra
+/// tabella della pagina o di una pagina vicina (misurato: le tavole di concordanza dei codici ripetono «Articolo 5,
+/// punto 1» di pagina in pagina; le tabelle statistiche ripetono i nomi dei distretti). Una tabella che il flusso legge
+/// in due parti separate da altri segmenti ha due gruppi grandi, e li tiene entrambi (CP p. 1604).
+func regionMatchClusters(_ matches: [(index: Int, chars: Int)]) -> Set<Int> {
+    guard !matches.isEmpty else { return [] }
+    var weight: [Int: Int] = [:]
+    for m in matches { weight[m.index, default: 0] += m.chars }
+    let total = weight.values.reduce(0, +)
+    let sorted = weight.keys.sorted()
+    var groups: [[Int]] = [[sorted[0]]]
+    for i in sorted.dropFirst() {
+        if i - groups[groups.count - 1].last! > VISUAL_CLUSTER_GAP { groups.append([i]) } else { groups[groups.count - 1].append(i) }
+    }
+    var kept = Set<Int>()
+    for g in groups where Double(g.reduce(0) { $0 + weight[$1]! }) >= VISUAL_CLUSTER_MIN_SHARE * Double(total) {
+        kept.formUnion(g)
+    }
+    return kept
+}
+
 // MARK: - Richiami e marcatori di nota
 
 /// Vero se la riga porta un richiamo o un marcatore di nota: apre con un marcatore (numero, «(N)», simbolo),
 /// oppure contiene un apice numerico o un simbolo di richiamo a corpo ridotto, oppure «(N)» a corpo di testo.
-func lineCarriesNoteMarker(_ line: PdfTextLine, bodySize: Double) -> Bool {
+/// Dentro una GRIGLIA (`inGrid`, vedi `VISUAL_GRID_MIN_GRAPHICS`) contano solo i richiami inequivocabili.
+func lineCarriesNoteMarker(_ line: PdfTextLine, bodySize: Double, inGrid: Bool = false) -> Bool {
     let sm = summarizeLine(line)
-    if textOpensWithNoteMarker(sm.text) { return true }
+    if inGrid {
+        let ns = sm.text as NSString
+        if RE_GRID_CALLOUT.firstMatch(in: sm.text, range: NSRange(location: 0, length: ns.length)) != nil { return true }
+    } else if textOpensWithNoteMarker(sm.text) { return true }
     if bodySize > 0 {
-        if !detectInlineMarkers([sm], body: bodySize).isEmpty { return true }
+        let inline = detectInlineMarkers([sm], body: bodySize)
+        if inGrid ? inline.contains(where: { $0.regime != .paren || $0.value < 100 }) : !inline.isEmpty { return true }
         for span in line.spans {
             let t = span.text.trimmingCharacters(in: .whitespacesAndNewlines)
             if !t.isEmpty, t.count <= 3, t.allSatisfy({ CALLOUT_SYMBOLS.contains($0) }),
@@ -254,12 +300,13 @@ struct FlowIndex {
         byPage = bp
     }
 
-    /// L'indice del primo segmento, fra quelli che cominciano sulla pagina `page1` (1-based) o su quella prima,
-    /// il cui testo contiene la riga. `nil` se la riga è troppo corta o non si ritrova.
+    /// L'indice del primo segmento, fra quelli che cominciano sulla pagina `page1` (1-based) o su una delle
+    /// `VISUAL_MATCH_LOOKBACK_PAGES` prima (le più vicine per prime), il cui testo contiene la riga. `nil` se la riga è
+    /// troppo corta o non si ritrova.
     func segmentContaining(_ lineText: String, page1: Int) -> Int? {
         let n = TextFingerprint.normalize(lineText)
         guard n.count >= VISUAL_MIN_MATCH_CHARS else { return nil }
-        for p in [page1, page1 - 1] {
+        for p in stride(from: page1, through: page1 - VISUAL_MATCH_LOOKBACK_PAGES, by: -1) {
             for i in byPage[p] ?? [] where normalized[i].contains(n) { return i }
         }
         return nil
@@ -324,17 +371,25 @@ public func insertingVisualResources(
         if kind == .figure, (page?.lines ?? []).contains(where: { lineCrossesRegion(topLeftBox($0.bbox, pageHeight: H), c.bbox) }) {
             reject(.insideText); continue
         }
-        if lines.contains(where: { lineCarriesNoteMarker($0, bodySize: bodySize) }) { reject(.noteMarkers); continue }
+        let inGrid = (c.graphicsInside ?? 0) >= VISUAL_GRID_MIN_GRAPHICS
+        if lines.contains(where: { lineCarriesNoteMarker($0, bodySize: bodySize, inGrid: inGrid) }) { reject(.noteMarkers); continue }
         // Righe contenute → segmenti del flusso che le portano.
         let page1 = c.pageIndex + 1
-        var covered: [Int] = []
-        var roleChars: [String: Int] = [:]
-        var certainChars = 0, totalChars = 0
+        var matches: [(index: Int, chars: Int)] = []
         for line in lines {
             let text = summarizeLine(line).text
             guard let i = flow.segmentContaining(text, page1: page1) else { continue }
+            matches.append((i, TextFingerprint.normalize(text).count))
+        }
+        // I segmenti che portano davvero il testo della regione (le eco escluse): per la collocazione e per il «blocco
+        // certo». Il «testo non letto» si giudica invece su tutti i riscontri: se la riga c'è, nel flusso c'è.
+        let kept = regionMatchClusters(matches)
+        let foundChars = matches.reduce(0) { $0 + $1.chars }
+        var covered: [Int] = []
+        var roleChars: [String: Int] = [:]
+        var certainChars = 0, totalChars = 0
+        for (i, n) in matches where kept.contains(i) {
             covered.append(i)
-            let n = TextFingerprint.normalize(text).count
             let s = segments[i]
             roleChars[s.role, default: 0] += n
             totalChars += n
@@ -346,7 +401,7 @@ public func insertingVisualResources(
         // Testo presente ma non letto (per la maggior parte): apparato che l'app ha già riconosciuto e tolto dal flusso.
         let significant = lines.map { TextFingerprint.normalize(summarizeLine($0).text).count }.filter { $0 >= VISUAL_MIN_MATCH_CHARS }
         let significantChars = significant.reduce(0, +)
-        if significantChars > 0, Double(totalChars) < 0.5 * Double(significantChars) { reject(.unreadText); continue }
+        if significantChars > 0, Double(foundChars) < 0.5 * Double(significantChars) { reject(.unreadText); continue }
         if totalChars > 0, Double(certainChars) >= 0.5 * Double(totalChars) { reject(.certainBlock); continue }
         // Collocazione.
         var at: Int?

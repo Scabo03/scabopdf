@@ -224,4 +224,67 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertTrue(LAYER2_PRESENTATION_ONLY_ROLES.contains(VISUAL_RESOURCE_ROLE))
         XCTAssertEqual(acousticIntroFor(VISUAL_RESOURCE_ROLE, ""), "Risorsa visiva.")
     }
+
+    // MARK: - Griglie, pagine fuse, eco (taratura del 2026-10-12 sulle 52 regioni «tabella» scartate)
+
+    /// Una tabella con righe numerate: i numeri d'apertura sono celle, non marcatori di nota — se la regione ha una
+    /// griglia disegnata. Senza griglia la regola prudente resta (potrebbe essere un apparato di note).
+    private func tabellaNumerata() -> (PdfExtraction, [ContentSegment]) {
+        let rows = ["12 sostanza alfa composto beta 25 3 75", "13 sostanza gamma composto delta 40 5 200",
+                    "14 sostanza epsilon composto zeta 10 2 20"]
+        let ex = extraction([[line("testo prima della tabella numerata di prova", l: 50, t: 100, r: 550, b: 112, size: 11)]
+            + rows.enumerated().map { line($0.element, l: 60, t: 200 + Double($0.offset) * 12, r: 540, b: 210 + Double($0.offset) * 12) }])
+        let segs = [seg("n1", "BODY", "testo prima della tabella numerata di prova", page: 1),
+                    seg("n2", "BODY", rows.joined(separator: " "), page: 1)]
+        return (ex, segs)
+    }
+
+    func test_righeNumerate_inUnaGriglia_nonSonoMarcatori() {
+        let (ex, segs) = tabellaNumerata()
+        var c = candidate("table", [55, 195, 545, 240]); c.graphicsInside = VISUAL_GRID_MIN_GRAPHICS
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).report.decisions.first?.outcome, .accepted)
+        c.graphicsInside = VISUAL_GRID_MIN_GRAPHICS - 1
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).report.decisions.first?.outcome, .noteMarkers)
+    }
+
+    func test_richiamoVero_inUnaGriglia_escludeLaRegione_ilRinvioATreCifreNo() {
+        var (ex, segs) = tabellaNumerata()
+        var c = candidate("table", [55, 195, 545, 240]); c.graphicsInside = 20
+        // «(318)» è un rinvio a un articolo: non esclude.
+        ex.pages[0].lines[2] = line("13 sostanza gamma composto (318) delta 40 5 200", l: 60, t: 212, r: 540, b: 222)
+        segs[1].text = segs[1].text.replacingOccurrences(of: "composto delta", with: "composto (318) delta")
+        XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).report.decisions.first?.outcome, .accepted)
+        // «(1)», «(*)» sono richiami: escludono anche dentro una griglia.
+        for callout in ["(1)", "(*)", "[2]"] {
+            ex.pages[0].lines[3] = line("14 sostanza epsilon \(callout) composto zeta 10 2 20", l: 60, t: 224, r: 540, b: 234)
+            XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).report.decisions.first?.outcome, .noteMarkers, callout)
+        }
+    }
+
+    /// Una tabella che la continuità del corpo ha fuso con le pagine prima: il suo testo sta in un segmento che comincia
+    /// due pagine prima, e va ritrovato lì (non è «testo non letto»).
+    func test_testoFusoConLePaginePrima_ritrovato() {
+        let rows = ["riga di prova uno della tabella fusa", "riga di prova due della tabella fusa"]
+        let pages: [[PdfTextLine]] = [[], [], rows.enumerated().map { line($0.element, l: 60, t: 200 + Double($0.offset) * 12, r: 540, b: 210 + Double($0.offset) * 12) }]
+        let segs = [seg("n1", "BODY", "testo della prima pagina e poi " + rows.joined(separator: " "), page: 1),
+                    seg("n2", "BODY", "un capoverso dopo la tabella", page: 3)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", page: 2, [55, 195, 545, 230])], extraction: extraction(pages))
+        XCTAssertEqual(r.report.decisions.first?.outcome, .accepted)
+        XCTAssertEqual(r.report.decisions.first?.insertedAt, 0)
+    }
+
+    /// Un'eco — la stessa riga in un segmento lontano — non sposta la risorsa: conta il gruppo che porta il testo.
+    func test_ecoLontana_nonSpostaLaRisorsa() {
+        // Cinque righe, una sola ripetuta altrove (nei volumi: una riga su venti-sessanta).
+        let rows = ["voce ripetuta alfa beta gamma", "seconda voce di prova delta", "terza voce di prova epsilon",
+                    "quarta voce di prova zeta eta", "quinta voce di prova theta iota"]
+        let ex = extraction([rows.enumerated().map { line($0.element, l: 60, t: 200 + Double($0.offset) * 8, r: 540, b: 207 + Double($0.offset) * 8) }])
+        var segs = [seg("e1", "BODY", "un capoverso che cita la voce ripetuta alfa beta gamma per caso", page: 1)]
+        segs += (2...6).map { seg("x\($0)", "BODY", "capoverso intermedio numero \($0) senza relazione", page: 1) }
+        segs.append(seg("t1", "BODY", rows.joined(separator: " "), page: 1))
+        let d = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 240])], extraction: ex).report.decisions.first
+        XCTAssertEqual(d?.outcome, .accepted)
+        XCTAssertEqual(d?.insertedAt, segs.count - 1, "prima del segmento che porta la tabella, non prima dell'eco")
+        XCTAssertEqual(d?.containedElements, 1)
+    }
 }
