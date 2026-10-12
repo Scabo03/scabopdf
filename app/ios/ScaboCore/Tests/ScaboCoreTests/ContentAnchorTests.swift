@@ -355,6 +355,50 @@ final class ContentAnchorTests: XCTestCase {
         XCTAssertNil(ContentAnchorIndex(segments: new).resolve(q))
     }
 
+    // MARK: - Risorse visive (giro 2026-10-12): due mondi distinti
+
+    /// La didascalia ripetuta nell'annuncio dell'elemento «risorsa visiva» non attira una sottolineatura fatta sul testo:
+    /// la citazione resta sul segmento di testo anche quando la risorsa gli sta accanto, e se il testo sparisce è orfana.
+    func test_quoteOnCaption_neverRelocatesToVisualResource() throws {
+        let caption = "Prospetto delle stagioni della valle con le date della semina e della raccolta."
+        let base = [seg("node_1", flow()[1].text, page: 3), seg("node_2", caption, page: 3), seg("node_5", flow()[5].text, page: 3)]
+        let old = ContentAnchorIndex(segments: base)
+        let q = try XCTUnwrap(old.quoteAnchor(forIndex: 1, startWord: 2, endWord: 5))
+        // Dopo la rielaborazione: la risorsa visiva entra subito prima del testo della regione.
+        var withVisual = base
+        withVisual.insert(seg("vr_p2_0", "Tabella: " + caption, role: VISUAL_RESOURCE_ROLE, page: 3), at: 1)
+        let r = try XCTUnwrap(ContentAnchorIndex(segments: withVisual).resolve(q))
+        XCTAssertEqual(withVisual[r.segmentIndex].id, "node_2")
+        // Il testo della didascalia sparisce: la citazione è orfana, non migra sull'annuncio.
+        var gone = withVisual; gone.remove(at: 2)
+        XCTAssertNil(ContentAnchorIndex(segments: gone).resolve(q))
+        // Il segmento ritrovato è spezzato e la citazione sta nel pezzo dopo la risorsa: si scavalca l'annuncio.
+        let pieceA = "Prospetto delle stagioni"
+        let pieceB = "della valle con le date della semina e della raccolta."
+        let qa = try XCTUnwrap(ContentAnchorIndex(segments: [seg("node_2", pieceA + " " + pieceB, page: 3)])
+            .quoteAnchor(forIndex: 0, startWord: 4, endWord: 7))
+        let split = [seg("node_2", pieceA, page: 3), seg("vr_p2_0", "Tabella: " + caption, role: VISUAL_RESOURCE_ROLE, page: 3),
+                     seg("node_2#1", pieceB, page: 3)]
+        if let rs = ContentAnchorIndex(segments: split).resolve(qa) {
+            XCTAssertNotEqual(split[rs.segmentIndex].role, VISUAL_RESOURCE_ROLE)
+        }
+    }
+
+    /// Un segnalibro sull'elemento «risorsa visiva» si ricolloca sulla risorsa, non sul testo che ne ripete le parole.
+    func test_bookmarkOnVisualResource_staysInItsWorld() throws {
+        let caption = "Prospetto delle stagioni della valle con le date della semina e della raccolta."
+        let flowA = [seg("vr_p2_0", "Tabella: " + caption, role: VISUAL_RESOURCE_ROLE, page: 3), seg("node_2", "Tabella: " + caption, page: 3)]
+        let a = try XCTUnwrap(ContentAnchorIndex(segments: flowA).anchor(forIndex: 0))
+        XCTAssertEqual(a.windowCount, 1)   // il gemello di testo non conta: è dell'altro mondo
+        let r = ContentAnchorIndex(segments: flowA).resolve(a)
+        XCTAssertEqual(r.index, 0)
+        // Tolta la risorsa (rielaborazione senza modello): orfana, non sul testo gemello.
+        XCTAssertNil(ContentAnchorIndex(segments: [flowA[1]]).resolve(a).index)
+        // E l'ancora nata sul testo non va sulla risorsa.
+        let t = try XCTUnwrap(ContentAnchorIndex(segments: flowA).anchor(forIndex: 1))
+        XCTAssertNil(ContentAnchorIndex(segments: [flowA[0]]).resolve(t).index)
+    }
+
     // MARK: - Riancoraggio completo
 
     func test_reanchor_relocatesOrphansAndCounts() throws {

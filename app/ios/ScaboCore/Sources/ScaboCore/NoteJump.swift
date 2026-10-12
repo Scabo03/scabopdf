@@ -98,13 +98,14 @@ public func noteCallLinks(_ segments: [ContentSegment]) -> NoteCallLinks {
                 // l'intestazione che apre la sezione. Oltre, non si cerca (e il costo resta
                 // limitato anche sui volumi giganti).
                 if role.hasPrefix("HEADING_") || role == SemanticCategory.ARTICLE_HEADER.rawValue { break }
-                if !isNoteRole(role), norm(j).contains(tail) { call = j; break }
+                if !isNoteRole(role), role != VISUAL_RESOURCE_ROLE, norm(j).contains(tail) { call = j; break }
                 j -= 1
             }
         } else {
-            // In linea: il segmento di testo subito prima del gruppo di note.
+            // In linea: il segmento di testo subito prima del gruppo di note. L'elemento «risorsa visiva» è additivo e
+            // trasparente: una figura collocata fra il blocco e le sue note non diventa il richiamo.
             var j = i - 1
-            while j >= 0, isNoteRole(segments[j].role) { j -= 1 }
+            while j >= 0, isNoteRole(segments[j].role) || segments[j].role == VISUAL_RESOURCE_ROLE { j -= 1 }
             if j >= 0 { call = j }
         }
         guard let c = call,

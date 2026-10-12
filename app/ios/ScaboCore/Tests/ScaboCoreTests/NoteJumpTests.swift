@@ -66,4 +66,27 @@ final class NoteJumpTests: XCTestCase {
         let segs = [s("BODY", "Testo che non richiama nulla."), s("NOTE", "12 Una nota orfana.")]
         XCTAssertTrue(noteCallLinks(segs).callOfNote.isEmpty)
     }
+
+    /// L'elemento «risorsa visiva» è additivo e trasparente: una figura collocata fra il blocco e le sue note in linea
+    /// non diventa il richiamo, e il legame resta col blocco (giro risorse visive, 2026-10-12).
+    func test_inlineNote_skipsVisualResourceElement() {
+        let segs = [
+            s("BODY", "La tesi del raccolto anticipato è discussa 31."),
+            s(VISUAL_RESOURCE_ROLE, "Figura: Schema del raccolto"),
+            s("NOTE", "31 ROSSI, op. cit., p. 10."),
+        ]
+        let l = noteCallLinks(segs)
+        XCTAssertEqual(l.callOfNote[2], 0)
+        XCTAssertEqual(l.notesOfCall[0], [2])
+        XCTAssertNil(l.notesOfCall[1])
+    }
+
+    func test_deferredNote_neverLinksToVisualResourceElement() {
+        let segs = [
+            s("HEADING_3", "1. La stagione del raccolto."),
+            s(VISUAL_RESOURCE_ROLE, "Tabella: la stagione del raccolto secondo la tesi prevalente 5"),
+            s("NOTE", "5 Così la tesi prevalente.", refresh: "la stagione del raccolto secondo la tesi prevalente"),
+        ]
+        XCTAssertNil(noteCallLinks(segs).callOfNote[2])
+    }
 }

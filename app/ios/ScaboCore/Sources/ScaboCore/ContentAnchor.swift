@@ -319,7 +319,10 @@ public final class ContentAnchorIndex {
         let page = pageOf[index]
         let length = normalized[index].count
         let window = Self.pageWindow(forLength: length)
-        let allTwins = (byWhole[wholeDigests[index]] ?? []).filter { Self.inWindow(pageOf[$0], of: page, window) }
+        let world = Self.isVisualWorld(segments[index].role)
+        let allTwins = (byWhole[wholeDigests[index]] ?? []).filter {
+            Self.inWindow(pageOf[$0], of: page, window) && Self.isVisualWorld(segments[$0].role) == world
+        }
         // Gemelli di un'altra famiglia di ruolo: il ruolo li distingue, rango e conteggio si prendono nella famiglia.
         let family = Self.roleFamily(segments[index].role)
         let familyTwins = allTwins.contains { Self.roleFamily(segments[$0].role) != family }
@@ -327,7 +330,7 @@ public final class ContentAnchorIndex {
         let rank = twins.firstIndex(of: index) ?? 0
         // Il testo è già contenuto, a un'estremità, in un altro segmento della finestra: non sarà una fusione.
         let containedElsewhere = length > TextFingerprint.edgeLength
-            && !containers(length: length, head: headDigests[index], tail: tailDigests[index], page: page).isEmpty
+            && !containers(length: length, head: headDigests[index], tail: tailDigests[index], page: page, visualWorld: world).isEmpty
         let n = normalized[index]
         let ladder = Self.ladderLengths.filter { $0 <= length }.map { TextFingerprint.digest(n.prefix($0)) }
         return ContentAnchor(
@@ -336,6 +339,11 @@ public final class ContentAnchorIndex {
             windowRank: rank, windowCount: max(1, twins.count), orderIndexHint: index,
             containedElsewhere: containedElsewhere ? true : nil, familyTwins: familyTwins ? true : nil)
     }
+
+    /// Il «mondo» di un ruolo per le ancore: l'elemento «risorsa visiva» (additivo, con l'annuncio e la didascalia) da
+    /// una parte, il testo del libro dall'altra. Un'ancora nata sul testo non si ricolloca mai su una risorsa visiva e
+    /// viceversa: la didascalia ripetuta nell'annuncio non deve attirare una sottolineatura fatta sul testo.
+    static func isVisualWorld(_ role: String) -> Bool { role == VISUAL_RESOURCE_ROLE }
 
     /// Famiglia di ruolo che distingue i gemelli: i titoli (HEADING_n, ARTICLE_HEADER) da tutto il resto. Solo due
     /// famiglie di proposito: le cure cambiano legittimamente il ruolo dentro il testo (nota ↔ corpo) e fra titoli
@@ -376,10 +384,12 @@ public final class ContentAnchorIndex {
     /// soglia, o con più candidati equivalenti, l'esito è `orphan` con la ragione.
     public func resolve(_ anchor: ContentAnchor) -> AnchorResolution {
         guard anchor.length > 0 else { return .orphan("ancora inerte: il segmento non aveva lettere") }
+        let world = Self.isVisualWorld(anchor.role)
+        let sameWorld: (Int) -> Bool = { Self.isVisualWorld(self.segments[$0].role) == world }
 
         // 1. Impronta intera uguale. Con gemelli di un'altra famiglia di ruolo alla creazione, si cerca nella famiglia
         //    dell'ancora: se l'impronta resta solo nell'altra famiglia, è il gemello, non l'elemento annotato.
-        let exactAll = byWhole[anchor.whole] ?? []
+        let exactAll = (byWhole[anchor.whole] ?? []).filter(sameWorld)
         var exact = exactAll
         if anchor.familyTwins == true {
             let family = Self.roleFamily(anchor.role)
@@ -396,8 +406,8 @@ public final class ContentAnchorIndex {
             return .orphan("testo corto non ritrovato")
         }
         // 2. Testa e coda alle estremità dello stesso segmento (interno diverso).
-        let heads = Set(byHead[anchor.head] ?? [])
-        let tails = Set(byTail[anchor.tail] ?? [])
+        let heads = Set((byHead[anchor.head] ?? []).filter(sameWorld))
+        let tails = Set((byTail[anchor.tail] ?? []).filter(sameWorld))
         let both = heads.intersection(tails)
         if !both.isEmpty {
             return pick(Array(both).sorted(), anchor: anchor, level: .headAndTail,
@@ -438,8 +448,15 @@ public final class ContentAnchorIndex {
         let seg = resolve(quote.segment)
         guard let idx = seg.index else { return nil }
         if let r = locate(quote, in: idx) { return QuoteResolution(segmentIndex: idx, startWord: r.0, endWord: r.1, level: seg.level) }
-        // Spezzatura: la citazione può stare nel segmento seguente o precedente della stessa pagina.
-        for neighbour in [idx + 1, idx - 1] where segments.indices.contains(neighbour) && pageOf[neighbour] == pageOf[idx] {
+        // Spezzatura: la citazione può stare nel segmento seguente o precedente della stessa pagina (dello stesso mondo:
+        // un elemento «risorsa visiva» frapposto si scavalca, non si guarda).
+        let world = Self.isVisualWorld(segments[idx].role)
+        func neighbour(_ step: Int) -> Int? {
+            var j = idx + step
+            while segments.indices.contains(j), Self.isVisualWorld(segments[j].role) != world { j += step }
+            return segments.indices.contains(j) ? j : nil
+        }
+        for neighbour in [neighbour(1), neighbour(-1)].compactMap({ $0 }) where pageOf[neighbour] == pageOf[idx] {
             if let r = locate(quote, in: neighbour) {
                 return QuoteResolution(segmentIndex: neighbour, startWord: r.0, endWord: r.1, level: .headOnly)
             }
@@ -478,12 +495,13 @@ public final class ContentAnchorIndex {
     /// fusione incolla due segmenti, non ne inserisce uno nel mezzo di un altro). Si cercano solo nei
     /// segmenti più lunghi del vecchio, nella finestra di pagine (se nota).
     private func containingCandidates(_ anchor: ContentAnchor) -> [Int] {
-        containers(length: anchor.length, head: anchor.head, tail: anchor.tail, page: anchor.sourcePage)
+        containers(length: anchor.length, head: anchor.head, tail: anchor.tail, page: anchor.sourcePage,
+                   visualWorld: Self.isVisualWorld(anchor.role))
     }
 
     /// I segmenti che contengono a un'estremità il testo di lunghezza `length` con impronte di testa e coda date
     /// (vedi `containingCandidates`). `length` deve superare `edgeLength`.
-    private func containers(length: Int, head: String, tail: String, page sourcePage: Int?) -> [Int] {
+    private func containers(length: Int, head: String, tail: String, page sourcePage: Int?, visualWorld: Bool) -> [Int] {
         let edge = TextFingerprint.edgeLength
         var out: [Int] = []
         let range: [Int]
@@ -495,7 +513,8 @@ public final class ContentAnchorIndex {
         } else {
             range = Array(segments.indices)
         }
-        for i in range where normalized[i].count >= length + Self.containedMinExtraLength {
+        for i in range where normalized[i].count >= length + Self.containedMinExtraLength
+            && Self.isVisualWorld(segments[i].role) == visualWorld {
             let chars = Array(normalized[i])
             let last = chars.count - length
             for p in [0, last] where TextFingerprint.digest(chars[p..<(p + edge)]) == head
