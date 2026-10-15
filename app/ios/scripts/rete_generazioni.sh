@@ -69,6 +69,21 @@ N_ATTESI=$("$PY" -c "import json; print(len(json.load(open('$LISTA'))))")
 
 say() { printf '%s\n' "$*"; }
 
+# Si spegne SOLO il simulatore usato per la generazione (nome $DEVICE, iOS $1), per UDID: mai «shutdown all», perché sullo
+# stesso Mac possono girare i simulatori di altre sessioni (giro «costruzione della linea Mac», 2026-10-16).
+sim_udid() {
+  "$PY" - "$DEVICE" "$1" <<'PYEOF'
+import json, subprocess, sys
+name, rt = sys.argv[1], sys.argv[2]
+out = subprocess.run(["xcrun", "simctl", "list", "devices", "-j"], capture_output=True, text=True).stdout
+key = "com.apple.CoreSimulator.SimRuntime.iOS-" + rt.replace(".", "-")
+for dev in json.loads(out)["devices"].get(key, []):
+    if dev["name"] == name and dev.get("isAvailable", True):
+        print(dev["udid"]); break
+PYEOF
+}
+shutdown_sim() { local u; u="$(sim_udid "$1")"; [ -n "$u" ] && xcrun simctl shutdown "$u" >/dev/null 2>&1; return 0; }
+
 # ── 1. cattura ───────────────────────────────────────────────────────────────────────────────────
 if [ "$CAPTURE" = 1 ]; then
   for g in "${GENS[@]}"; do
@@ -80,7 +95,7 @@ if [ "$CAPTURE" = 1 ]; then
       cp /tmp/scabo_extraction_request.json /tmp/scabo_regions_request.json
       ONLY+=(-only-testing:ScaboAppTests/RealPdfBenchTests/test_visualRegionsDump_fromRequest)
     fi
-    xcrun simctl shutdown all >/dev/null 2>&1
+    shutdown_sim "$RT"
     xcodebuild test -project "$PROJECT" -scheme ScaboApp -destination "platform=iOS Simulator,name=$DEVICE,OS=$RT" \
       "${ONLY[@]}" \
       CODE_SIGNING_ALLOWED=NO -derivedDataPath "/tmp/scabo_dd_rete_$GEN" > "$LAB/logs/${TAG}_cattura_$GEN.log" 2>&1
@@ -92,7 +107,7 @@ if [ "$CAPTURE" = 1 ]; then
       say "[1] regioni $GEN (iOS $RT): $nr/$N_ATTESI"
       [ "$nr" = "$N_ATTESI" ] || { RC=1; say "    ROSSO: regioni incomplete"; }
     fi
-    xcrun simctl shutdown all >/dev/null 2>&1
+    shutdown_sim "$RT"
   done
   rm -f /tmp/scabo_extraction_request.json /tmp/scabo_regions_request.json
 else
@@ -178,7 +193,8 @@ if [ "$RV" = 1 ]; then
   for g in "${GENS[@]}"; do
     GEN="${g##*:}"; GIUD=()
     [ -n "${SCABO_RV_GIUDICATE:-}" ] && GIUD=(--giudicate "${SCABO_RV_GIUDICATE//\{gen\}/$GEN}")
-    "$PY" "$SCRIPT_DIR/generazioni/rete_risorse_visive.py" "$LAB/letture/${TAG}_$GEN" "$LISTA" "$LAB/reti/risorse_visive_${TAG}_$GEN" "${GIUD[@]}" > /dev/null; rc=$?
+    # ${GIUD[@]+…}: con «set -u» la bash 3.2 di macOS tratta l'array vuoto come variabile non definita.
+    "$PY" "$SCRIPT_DIR/generazioni/rete_risorse_visive.py" "$LAB/letture/${TAG}_$GEN" "$LISTA" "$LAB/reti/risorse_visive_${TAG}_$GEN" ${GIUD[@]+"${GIUD[@]}"} > /dev/null; rc=$?
     say "[6] risorse visive $GEN: exit=$rc → $LAB/reti/risorse_visive_${TAG}_$GEN.md"
     sed -n '3p;5p' "$LAB/reti/risorse_visive_${TAG}_$GEN.md" | sed 's/^/      /'
     [ "$rc" = 0 ] || RC=1
