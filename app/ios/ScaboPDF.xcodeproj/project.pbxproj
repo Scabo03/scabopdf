@@ -10,6 +10,8 @@
 		F0BAA94FF589D04DB4649171 /* ScaboPageStructure in Frameworks */ = {isa = PBXBuildFile; productRef = 3B0961A87607C21A01D34CB3 /* ScaboPageStructure */; };
 		5CABC04E0000000000000003 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000002 /* ScaboCore */; };
 		5CABC04E0000000000000005 /* ScaboCore in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E0000000000000004 /* ScaboCore */; };
+		5CABC04E00000000000C0003 /* ScaboChain in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E00000000000C0002 /* ScaboChain */; };
+		5CABC04E00000000000C0005 /* ScaboChain in Frameworks */ = {isa = PBXBuildFile; productRef = 5CABC04E00000000000C0004 /* ScaboChain */; };
 		5CABC04E000000000000000B /* ScaboAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E000000000000000C /* ScaboAppTests.swift */; };
 		5CABC04E0000000000000020 /* PdfKitExtractorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000021 /* PdfKitExtractorTests.swift */; };
 		5CABC04E0000000000000030 /* PdfKitExplorationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000031 /* PdfKitExplorationTests.swift */; };
@@ -111,6 +113,7 @@
 			files = (
 				5CABC04E0000000000000003 /* ScaboCore in Frameworks */,
 				F0BAA94FF589D04DB4649171 /* ScaboPageStructure in Frameworks */,
+				5CABC04E00000000000C0003 /* ScaboChain in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +122,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CABC04E0000000000000005 /* ScaboCore in Frameworks */,
+				5CABC04E00000000000C0005 /* ScaboChain in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -249,6 +253,7 @@
 			packageProductDependencies = (
 				5CABC04E0000000000000002 /* ScaboCore */,
 				3B0961A87607C21A01D34CB3 /* ScaboPageStructure */,
+				5CABC04E00000000000C0002 /* ScaboChain */,
 			);
 			productName = ScaboApp;
 			productReference = 252450262FDB5D06009D756D /* ScaboApp.app */;
@@ -270,6 +275,7 @@
 			name = ScaboAppTests;
 			packageProductDependencies = (
 				5CABC04E0000000000000004 /* ScaboCore */,
+				5CABC04E00000000000C0004 /* ScaboChain */,
 			);
 			productName = ScaboAppTests;
 			productReference = 5CABC04E0000000000000006 /* ScaboAppTests.xctest */;
@@ -313,6 +319,7 @@
 			packageReferences = (
 				5CABC04E0000000000000001 /* XCLocalSwiftPackageReference "ScaboCore" */,
 				CA993A3737C22611915990E2 /* XCLocalSwiftPackageReference "ScaboPageStructure" */,
+				5CABC04E00000000000C0001 /* XCLocalSwiftPackageReference "ScaboChain" */,
 			);
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
@@ -799,6 +806,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ScaboPageStructure;
 		};
+		5CABC04E00000000000C0001 /* XCLocalSwiftPackageReference "ScaboChain" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ScaboChain;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -813,6 +824,14 @@
 		3B0961A87607C21A01D34CB3 /* ScaboPageStructure */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ScaboPageStructure;
+		};
+		5CABC04E00000000000C0002 /* ScaboChain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScaboChain;
+		};
+		5CABC04E00000000000C0004 /* ScaboChain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScaboChain;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

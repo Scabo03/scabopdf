@@ -1,6 +1,6 @@
 //
 //  VisualRegionDetector.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-10-16 nel bersaglio ScaboApp; condiviso con l'app Mac, logica invariata)
 //
 //  Il RICONOSCIMENTO DELLE RISORSE VISIVE durante l'elaborazione di un PDF (`LAYER2_PRODUCT_DECISIONS.md` § 7.9,
 //  `docs/RISORSE_VISIVE.md`). Tre passi, tutti sul dispositivo, nessun dato esce:
@@ -26,37 +26,39 @@ import ScaboCore
 import ScaboPageStructure
 
 /// Fuori dal main actor per costruzione: gira sulla coda di elaborazione di `DocumentProcessor`.
-nonisolated enum VisualRegionDetector {
+nonisolated public enum VisualRegionDetector {
 
     /// Esito del riconoscimento (conteggi e tempi per il registro; i candidati per la guardia).
-    struct Result {
-        var candidates: [VisualRegionCandidate] = []
-        var pageCount = 0
-        var modelPages: [Int] = []
-        var analyzedPages = 0
-        var probeSeconds = 0.0
-        var modelLoadSeconds = 0.0
-        var modelSeconds = 0.0
+    public struct Result {
+        public var candidates: [VisualRegionCandidate] = []
+        public var pageCount = 0
+        public var modelPages: [Int] = []
+        public var analyzedPages = 0
+        public var probeSeconds = 0.0
+        public var modelLoadSeconds = 0.0
+        public var modelSeconds = 0.0
         /// Perché il modello non è girato (nessuna pagina scelta, sistema anteriore a iOS 17, modello assente, errore).
-        var skippedReason: String?
+        public var skippedReason: String?
         /// Pagine scelte dal prefiltro ma ruotate: il modello non le vede (righe, regioni e ritaglio non sono ancora
         /// trattati nello spazio ruotato; nei 52 volumi della rete le pagine ruotate sono 0).
-        var rotatedPagesSkipped = 0
+        public var rotatedPagesSkipped = 0
         /// Vero se il modello non si è caricato con le unità di calcolo chieste e gira sulla sola CPU (in fp32 stesso
         /// risultato: 561/563 regioni identiche sull'host, scarti alla quarta cifra delle confidenze).
-        var cpuFallback = false
+        public var cpuFallback = false
+
+        public init() {}
     }
 
     private static let log = Logger(subsystem: "com.scabo.scabopdf", category: "risorse-visive")
 
     /// Le pagine scelte senza quelle ruotate (rotazione non multipla di 360°). Pura, per le prove.
-    static func excludingRotated(_ pages: [Int], rotation: (Int) -> Int32) -> [Int] {
+    public static func excludingRotated(_ pages: [Int], rotation: (Int) -> Int32) -> [Int] {
         pages.filter { ((Int(rotation($0)) % 360) + 360) % 360 == 0 }
     }
 
     /// Riconosce i candidati del PDF. `onModelPage(fatte, totali)` riporta l'avanzamento sulle pagine mandate al
     /// modello; `isCancelled` è consultato a ogni pagina.
-    static func detect(
+    public static func detect(
         pdfURL: URL,
         computeUnits: LayoutComputeUnits = .all,
         onModelPage: (Int, Int) -> Void = { _, _ in },

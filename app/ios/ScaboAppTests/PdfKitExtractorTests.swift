@@ -25,6 +25,7 @@ import UIKit
 import XCTest
 
 @testable import ScaboApp
+import ScaboChain
 import ScaboCore
 
 final class PdfKitExtractorTests: XCTestCase {

@@ -1,6 +1,6 @@
 //
 //  PdfContentGlyphRuns.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-10-16 nel bersaglio ScaboApp; condiviso con l'app Mac, logica invariata)
 //
 //  Lettura del FLUSSO DI CONTENUTO della pagina con CoreGraphics (CGPDFScanner), a fianco di PDFKit:
 //  per ogni operatore di testo (Tj / TJ / ' / ") restituisce i glifi decodificati e lo scarto in em

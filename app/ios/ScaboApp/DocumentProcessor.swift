@@ -4,9 +4,11 @@
 //
 //  Orchestratore dell'elaborazione di un PDF importato: estrazione → classificazione →
 //  impaginazione del corpo, FUORI dal main thread, con progresso REALE e cancellazione pulita.
-//  Vive nel target app perché orchestra la catena on-device (PdfKitExtractor → ScaboCore →
-//  ContinuousBodyBuilder); l'estrazione PDFKit resta confinata dietro il seam, l'orchestratore
-//  non importa PDFKit.
+//
+//  Dal 2026-10-16 (giro «costruzione della linea Mac») la CATENA vera e propria vive nel modulo condiviso
+//  ScaboChain (`ProcessingChain.run`), che la usa identica anche l'app Mac: qui resta l'involucro dell'app
+//  (coda di lavoro, avanzamento e esito consegnati sul main, bandiera d'annullamento, tipi letti dalla UI).
+//  L'ordine delle fasi, i controlli d'annullamento, i valori d'avanzamento e i messaggi sono quelli di prima.
 //
 //  ── Percentuale REALE, mai finta (principio di prodotto, § 12.9) ─────────────────────────────
 //
@@ -32,20 +34,8 @@
 //
 
 import Foundation
+import ScaboChain
 import ScaboCore
-
-/// Seam d'iniezione per l'estrazione progress-aware: permette ai test di sostituire PDFKit con un
-/// estrattore deterministico (numero di pagine noto, cancellazione controllata) senza Simulator
-/// né file reali. `PdfKitExtractor` vi si conforma con il metodo già definito.
-protocol ProgressReportingPdfExtractor {
-    func extract(
-        fromUri uri: String,
-        onPageExtracted: (_ done: Int, _ total: Int) -> Void,
-        isCancelled: () -> Bool
-    ) throws -> PdfExtraction?
-}
-
-extension PdfKitExtractor: ProgressReportingPdfExtractor {}
 
 /// Flag di cancellazione thread-safe (impostabile dal main, letto dal background).
 final class CancellationFlag {
@@ -91,6 +81,8 @@ final class DocumentProcessor {
         /// e il modello sulle sole pagine scelte dal prefiltro. Fra estrazione e classificazione.
         case visualResources
         case classification
+        /// Solo l'officina Mac (innesto dei verdetti del modello d'impaginazione): sull'iPad non accade mai.
+        case graft
         case pagination
     }
 
@@ -111,6 +103,7 @@ final class DocumentProcessor {
             case .extraction: return "Estrazione del testo"
             case .visualResources: return "Riconoscimento di tabelle e figure"
             case .classification: return "Riconoscimento della struttura"
+            case .graft: return "Riconoscimento della struttura delle pagine"
             case .pagination: return "Impaginazione"
             }
         }
@@ -143,14 +136,9 @@ final class DocumentProcessor {
         onProgress: @escaping (Progress) -> Void,
         completion: @escaping (Outcome) -> Void
     ) {
-        let uri = fileURL.absoluteString
-
         workQueue.async { [weak self] in
             guard let self else { return }
 
-            func report(_ progress: Progress) {
-                DispatchQueue.main.async { onProgress(progress) }
-            }
             func finish(_ outcome: Outcome) {
                 DispatchQueue.main.async {
                     guard !self.didComplete else { return }
@@ -159,121 +147,28 @@ final class DocumentProcessor {
                 }
             }
 
-            if self.flag.isCancelled { finish(.cancelled); return }
-            report(Progress(phase: .opening, unitsDone: 0, unitsTotal: 0, fraction: 0))
-
-            // ── Fase 1: estrazione (per pagina) ────────────────────────────────────────────────
-            let extraction: PdfExtraction?
-            do {
-                extraction = try self.extractor.extract(
-                    fromUri: uri,
-                    onPageExtracted: { done, total in
-                        let denom = Double(2 * total + 1)
-                        report(Progress(
-                            phase: .extraction, unitsDone: done, unitsTotal: total,
-                            fraction: denom > 0 ? Double(done) / denom : 0))
-                    },
-                    isCancelled: { self.flag.isCancelled }
-                )
-            } catch {
-                finish(.failure(message: Self.proseMessage(from: error)))
-                return
-            }
-            guard let extraction else { finish(.cancelled); return }
-            let pageCount = extraction.pageCount
-
-            // ── Fase 1-bis: risorse visive (tabelle e figure) ───────────────────────────────────────
-            // Sonda di tutte le pagine (millisecondi), modello sulle sole pagine scelte dal prefiltro. La barra resta
-            // dov'è (fine dell'estrazione): l'avanzamento reale si legge nelle pagine del modello (unità della fase).
-            // La fase si annuncia solo se il modello gira davvero (un libro senza grafica non sente una fase in più).
-            // Il modello si rilascia qui, prima della classificazione, per non sommare la sua memoria a quella del
-            // documento in costruzione.
-            var visualCandidates: [VisualRegionCandidate] = []
-            if self.detectVisualResources {
-                let parked = pageCount > 0 ? Double(pageCount) / Double(2 * pageCount + 1) : 0
-                let detection = VisualRegionDetector.detect(
-                    pdfURL: fileURL,
-                    onModelPage: { done, total in
-                        report(Progress(phase: .visualResources, unitsDone: done, unitsTotal: total, fraction: parked))
-                    },
-                    isCancelled: { self.flag.isCancelled })
-                self.lastVisualDetection = detection
-                visualCandidates = detection.candidates
-            }
-            if self.flag.isCancelled { finish(.cancelled); return }
-
-            // ── Fase 2: classificazione (per pagina) ───────────────────────────────────────────
-            let rawDocument = buildDocumentFromPdf(
-                extraction,
+            // La catena condivisa (ScaboChain), con le opzioni dell'iPad: niente innesto, niente frazionamento.
+            let outcome = ProcessingChain.run(
+                fileURL: fileURL,
                 sourceName: sourceName,
-                onPageClassified: { done, total in
-                    let denom = Double(2 * total + 1)
-                    report(Progress(
-                        phase: .classification, unitsDone: done, unitsTotal: total,
-                        fraction: denom > 0 ? Double(total + done) / denom : 1))
+                extractor: self.extractor,
+                options: ChainOptions(granularityTarget: granularityTarget, buildDoctrine: buildDoctrine,
+                                      detectVisualResources: self.detectVisualResources),
+                onProgress: { progress in
+                    let mapped = Progress(progress)
+                    DispatchQueue.main.async { onProgress(mapped) }
                 },
-                isCancelled: { self.flag.isCancelled }
-            )
-            guard let rawDocument else { finish(.cancelled); return }
-
-            // ── Aggancio e piazzamento delle note (capitolo NOTE) ──────────────────────────────
-            // Tra classificazione e impaginazione: aggancia ogni richiamo alla sua nota e
-            // riposiziona le note nell'albero (brevi a fine frase, lunghe a fine sezione, § 7.3).
-            // Le non agganciate restano in posizione (lette, mai perse). Richiede l'estrazione
-            // (i segnali di dimensione/parentesi degli span che la classificazione collassa).
-            // `document` è il piazzamento LETTURA CONTINUA (default, storico invariato).
-            let document = bindAndPlaceNotes(rawDocument, extraction).document
-            // Il documento ha note? (decide se Dottrina Inline è disponibile, § 10.3.)
-            let hasNotes = rawDocument.structure.contains {
-                $0.type == .NOTE || $0.type == .EDITORIAL_NOTE
+                onVisualDetection: { self.lastVisualDetection = $0 },
+                isCancelled: { self.flag.isCancelled })
+            switch outcome {
+            case .success(let result):
+                self.lastVisualReport = result.visualReport
+                finish(.success(document: result.document, content: result.content, doctrineContent: result.doctrineContent))
+            case .cancelled:
+                finish(.cancelled)
+            case .failure(let message):
+                finish(.failure(message: message))
             }
-
-            // ── Fase 3: impaginazione del corpo (passo finale unico) ───────────────────────────
-            if self.flag.isCancelled { finish(.cancelled); return }
-            report(Progress(
-                phase: .pagination, unitsDone: 0, unitsTotal: pageCount,
-                fraction: pageCount > 0 ? Double(2 * pageCount) / Double(2 * pageCount + 1) : 0.5))
-
-            let content: PaginatedContent
-            var doctrineContent: PaginatedContent?
-            do {
-                let visual = visualCandidates.isEmpty ? nil : VisualInput(candidates: visualCandidates, extraction: extraction)
-                let (built, visualReport) = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
-                    from: document, target: granularityTarget, visual: visual)
-                content = built
-                self.lastVisualReport = visualReport
-                // Dottrina Inline (§ 10): SOLO se ci sono note E se `buildDoctrine` (per i volumi
-                // enormi lo si salta: è un secondo flusso da decine di migliaia di segmenti che
-                // raddoppierebbe la memoria all'apertura, e la Lettura Continua di default non lo
-                // usa — vedi la gate sui volumi enormi in DocumentOpener). Stesso aggancio,
-                // piazzamento tutto-inline a fine frase del richiamo (§ 10.2).
-                if hasNotes && buildDoctrine {
-                    let doctrineDoc = bindAndPlaceNotes(
-                        rawDocument, extraction, placement: .doctrineInline).document
-                    doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
-                        from: doctrineDoc, target: granularityTarget, visual: visual).content
-                }
-            } catch {
-                finish(.failure(message: Self.proseMessage(from: error)))
-                return
-            }
-
-            // Guardia di contenuto minima (§ 12.10/12.11): se il PDF ha pagine ma non se ne è
-            // ricavato ALCUN testo (tipico delle scansioni di sole immagini senza livello di
-            // testo), aprire un lettore vuoto ingannerebbe l'utente. Si fallisce con prosa chiara
-            // anziché spacciare un documento monco per completo.
-            if pageCount > 0 && document.structure.isEmpty {
-                finish(.failure(message:
-                    "Il PDF è stato aperto, ma non contiene testo leggibile: con ogni probabilità "
-                    + "è una scansione di immagini priva del livello di testo. ScaboPDF non può "
-                    + "renderlo accessibile. Serve un PDF con testo selezionabile (o un passaggio "
-                    + "di OCR prima dell'importazione)."))
-                return
-            }
-
-            if self.flag.isCancelled { finish(.cancelled); return }
-            report(Progress(phase: .pagination, unitsDone: pageCount, unitsTotal: pageCount, fraction: 1.0))
-            finish(.success(document: document, content: content, doctrineContent: doctrineContent))
         }
     }
 
@@ -282,15 +177,20 @@ final class DocumentProcessor {
     func cancel() {
         flag.cancel()
     }
+}
 
-    /// Riduce un errore a una spiegazione in prosa italiana. Gli errori dell'estrattore portano
-    /// già un `localizedDescription` leggibile; il fallback copre il caso generico.
-    private static func proseMessage(from error: Error) -> String {
-        let described = (error as NSError).localizedDescription
-        if !described.isEmpty {
-            return described
+extension DocumentProcessor.Progress {
+    /// Dall'avanzamento della catena condivisa (stessi valori, fase per fase).
+    init(_ p: ChainProgress) {
+        let phase: DocumentProcessor.Phase
+        switch p.phase {
+        case .opening: phase = .opening
+        case .extraction: phase = .extraction
+        case .visualResources: phase = .visualResources
+        case .classification: phase = .classification
+        case .graft: phase = .graft
+        case .pagination: phase = .pagination
         }
-        return "Si è verificato un problema durante l'elaborazione del documento e non è stato "
-            + "possibile completarla."
+        self.init(phase: phase, unitsDone: p.unitsDone, unitsTotal: p.unitsTotal, fraction: p.fraction)
     }
 }

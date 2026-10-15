@@ -22,6 +22,7 @@
 
 import XCTest
 @testable import ScaboApp
+import ScaboChain
 @testable import ScaboCore
 
 final class PageIndicatorProbeTests: XCTestCase {

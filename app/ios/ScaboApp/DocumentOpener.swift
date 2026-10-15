@@ -25,6 +25,7 @@
 
 import UIKit
 import UniformTypeIdentifiers
+import ScaboChain
 import ScaboCore
 
 enum DocumentOpener {
@@ -35,11 +36,11 @@ enum DocumentOpener {
     /// stare nel budget di memoria del dispositivo. Empirica: il Codice civile (2697 pp, ~7900
     /// articoli, ~47k segmenti di lettura → ~47k UILabel = picco ~865 MB) è l'unico del corpus
     /// sopra soglia; ogni manuale sta sotto 900 pp, l'Estratto 465. Vedi il profiling di memoria.
-    static let LARGE_DOCUMENT_PAGE_THRESHOLD = 1500
+    static let LARGE_DOCUMENT_PAGE_THRESHOLD = ReadingAssembly.largeDocumentPageThreshold
     /// Granularità di lettura grossa per i volumi enormi (§ 7.6, valore ammesso): meno segmenti
     /// → meno etichette → meno memoria (e meno elementi d'accessibilità per VoiceOver). Rete-A
     /// safe: tutto il testo resta, solo raggruppato in blocchi più grandi.
-    static let LARGE_DOCUMENT_GRANULARITY = 1200
+    static let LARGE_DOCUMENT_GRANULARITY = ReadingAssembly.largeDocumentGranularity
 
     // MARK: - Apertura di un documento d'archivio (§ 2.5)
 
@@ -234,8 +235,7 @@ enum DocumentOpener {
     /// Costruisce l'albero della Consultazione Rapida dal documento, o `nil` se non c'è una
     /// gerarchia consultabile (§ 8.8) → il selettore mostrerà il layout disabilitato con motivo.
     static func quickConsultTreeIfAvailable(_ document: ScabopdfDocument) -> [QuickConsultNode]? {
-        let tree = buildQuickConsultTree(document)
-        return quickConsultAvailable(tree) ? tree : nil
+        ReadingAssembly.quickConsultTreeIfAvailable(document)   // spostata in ScaboChain (2026-10-16), invariata
     }
 
     /// Presenta il lettore al punto di lettura ricordato, cablando la persistenza della posizione,
@@ -408,23 +408,8 @@ enum DocumentOpener {
         content: PaginatedContent? = nil,
         doctrineContent: PaginatedContent? = nil
     ) -> [String: Int] {
-        var map: [String: Int] = [:]
-        func walk(_ nodes: [NodeDict]) {
-            for node in nodes {
-                map[node.id] = node.page_index + 1
-                if !node.children.isEmpty { walk(node.children) }
-            }
-        }
-        walk(document.structure)
-        for flow in [content, doctrineContent] {
-            guard let flow else { continue }
-            for page in flow.pages {
-                for segment in page.segments {
-                    if let p = segment.sourcePage { map[segment.id] = p }
-                }
-            }
-        }
-        return map
+        // Spostata in ScaboChain (2026-10-16, giro «costruzione della linea Mac»), invariata: la usa anche il Mac.
+        ReadingAssembly.buildPageMap(document, content: content, doctrineContent: doctrineContent)
     }
 
     /// Risolve la pagina del file originale di un segmento: prima la voce ESATTA del segmento

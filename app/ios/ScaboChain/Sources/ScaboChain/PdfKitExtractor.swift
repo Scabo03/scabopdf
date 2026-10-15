@@ -1,6 +1,6 @@
 //
 //  PdfKitExtractor.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-10-16 nel bersaglio ScaboApp)
 //
 //  The on-device PDF extractor (Piano di migrazione, banda POST-MAC punto 2).
 //  Opens a PDF with Apple PDFKit and produces the boundary value type
@@ -48,17 +48,36 @@
 //
 //  Compute puro: nessun requisito di main-thread; safe da chiamare off-main.
 //
+//  ── Condiviso con il Mac (giro «costruzione della linea Mac», 2026-10-16) ──
+//
+//  Il file è passato dal bersaglio dell'app al modulo ScaboChain SENZA cambiare la logica: l'app Mac lo
+//  riusa (le cure dell'estrazione non si duplicano). Le sole differenze di piattaforma sono confinate in
+//  tre funzioni qui sotto (`fontTraits`, `rgbComponents`, `whiteComponent`): su iOS chiamano esattamente le
+//  API di prima (UIFont/UIColor, `getRed` poi `getWhite`); su macOS le equivalenti di AppKit (NSFont/NSColor
+//  convertito nello spazio sRGB esteso o grigio, come l'adattatore provato nella parità del primo giro Mac:
+//  zero differenze di colore sui 52 volumi).
+//
 
 import Foundation
 import PDFKit
 import ScaboCore
+#if canImport(UIKit)
 import UIKit
+private typealias PlatformFont = UIFont
+private typealias PlatformColor = UIColor
+#elseif canImport(AppKit)
+import AppKit
+private typealias PlatformFont = NSFont
+private typealias PlatformColor = NSColor
+#endif
 
 /// Structured PDF text extraction via Apple PDFKit, behind the `PdfExtracting`
 /// seam. Produces the per-span schema (`version: 2`) that ScaboCore's classifier
 /// consumes: per page, laid-out lines, each a sequence of spans carrying
 /// text + font size + bold + italic + resolved colour + page-local bbox.
-struct PdfKitExtractor: PdfExtracting {
+public struct PdfKitExtractor: PdfExtracting {
+
+    public init() {}
 
     /// Numero di pagine estratte per "chunk" prima di rilasciare il `PDFDocument` e riaprirne uno
     /// fresco. È l'unico parametro dell'ESTRAZIONE A FLUSSO (gestione della memoria, non della logica):
@@ -69,13 +88,13 @@ struct PdfKitExtractor: PdfExtracting {
     /// d'apertura crolla ben sotto il tetto. L'output resta byte-identico: cambia SOLO come il PDF è
     /// tenuto in memoria, non cosa si estrae (provato da `PdfExtractionParityTests`: chunk piccolo ==
     /// chunk enorme). Riaprire ~50 volte un PDF costa quanto ~50 parse dell'xref: trascurabile.
-    static let STREAM_CHUNK_PAGES = 50
+    public static let STREAM_CHUNK_PAGES = 50
 
     /// Extracts the PDF at `uri` (a local `file://` URI or a filesystem path)
     /// into a `PdfExtraction`. Throws an `NSError` carrying a readable Italian
     /// message when the path is invalid, the PDF cannot be opened, or it is
     /// password-protected.
-    func extract(fromUri uri: String) throws -> PdfExtraction {
+    public func extract(fromUri uri: String) throws -> PdfExtraction {
         // Variante senza progresso/cancellazione: percorso storico, identico nel comportamento
         // (closures no-op, mai cancellato). Il `!` è sicuro per costruzione: con `isCancelled`
         // costante falso la variante progress-aware non ritorna mai `nil`.
@@ -89,7 +108,7 @@ struct PdfKitExtractor: PdfExtracting {
     /// se diventa vero, l'estrazione si ferma pulita e ritorna `nil` — nessuna estrazione parziale
     /// viene spacciata per completa. Gli errori di apertura (percorso non valido, PDF danneggiato,
     /// protetto da password) restano `throw` con messaggio in prosa italiana.
-    func extract(
+    public func extract(
         fromUri uri: String,
         onPageExtracted: (_ done: Int, _ total: Int) -> Void,
         isCancelled: () -> Bool
@@ -104,7 +123,7 @@ struct PdfKitExtractor: PdfExtracting {
     /// per svuotare la cache di PDFKit. L'output `PdfExtraction` è IDENTICO qualunque sia `chunkPages`:
     /// la logica per-pagina (`lines`/`spanBBox`/…) è invariata e ogni pagina è estratta una sola volta,
     /// in ordine. È la superficie che `PdfExtractionParityTests` esercita per la prova byte-identica.
-    func extract(
+    public func extract(
         fromUri uri: String,
         onPageExtracted: (_ done: Int, _ total: Int) -> Void,
         isCancelled: () -> Bool,
@@ -229,13 +248,11 @@ struct PdfKitExtractor: PdfExtracting {
             var size = 0.0
             var bold = false
             var italic = false
-            if let font = attrs[.font] as? UIFont {
+            if let font = attrs[.font] as? PlatformFont {
                 size = Double(font.pointSize)
-                let traits = font.fontDescriptor.symbolicTraits
-                bold = traits.contains(.traitBold)
-                italic = traits.contains(.traitItalic)
+                (bold, italic) = fontTraits(font)
             }
-            let colour = hexString(from: attrs[.foregroundColor] as? UIColor)
+            let colour = hexString(from: attrs[.foregroundColor] as? PlatformColor)
 
             // A run can span several laid-out lines: PDFKit separates them
             // with "\n".
@@ -314,17 +331,49 @@ struct PdfKitExtractor: PdfExtracting {
     }
 
     /// Resolves a colour to "#rrggbb". Absent colour (PDF default) → black.
-    private static func hexString(from color: UIColor?) -> String {
+    private static func hexString(from color: PlatformColor?) -> String {
         guard let color = color else { return "#000000" }
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        if color.getRed(&r, green: &g, blue: &b, alpha: &a) {
+        if let (r, g, b) = rgbComponents(color) {
             return hex(r, g, b)
         }
-        var w: CGFloat = 0
-        if color.getWhite(&w, alpha: &a) {
+        if let w = whiteComponent(color) {
             return hex(w, w, w)
         }
         return "#000000"
+    }
+
+    // MARK: - Platform (le sole righe diverse fra iOS e macOS)
+
+    /// Grassetto e corsivo dai tratti del font.
+    private static func fontTraits(_ font: PlatformFont) -> (bold: Bool, italic: Bool) {
+        let traits = font.fontDescriptor.symbolicTraits
+        #if canImport(UIKit)
+        return (traits.contains(.traitBold), traits.contains(.traitItalic))
+        #else
+        return (traits.contains(.bold), traits.contains(.italic))
+        #endif
+    }
+
+    /// Componenti RGB, o `nil` se il colore non è convertibile (iOS: `getRed`; macOS: sRGB esteso, che non solleva).
+    private static func rgbComponents(_ color: PlatformColor) -> (CGFloat, CGFloat, CGFloat)? {
+        #if canImport(UIKit)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        return color.getRed(&r, green: &g, blue: &b, alpha: &a) ? (r, g, b) : nil
+        #else
+        guard let c = color.usingColorSpace(.extendedSRGB) else { return nil }
+        return (c.redComponent, c.greenComponent, c.blueComponent)
+        #endif
+    }
+
+    /// Componente di grigio, o `nil` se il colore non è convertibile (iOS: `getWhite`; macOS: grigio gamma 2,2).
+    private static func whiteComponent(_ color: PlatformColor) -> CGFloat? {
+        #if canImport(UIKit)
+        var w: CGFloat = 0, a: CGFloat = 0
+        return color.getWhite(&w, alpha: &a) ? w : nil
+        #else
+        guard let c = color.usingColorSpace(.genericGamma22Gray) else { return nil }
+        return c.whiteComponent
+        #endif
     }
 
     private static func hex(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat) -> String {

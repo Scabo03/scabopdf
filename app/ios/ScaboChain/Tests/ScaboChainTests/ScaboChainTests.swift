@@ -1,0 +1,185 @@
+//
+//  ScaboChainTests.swift
+//  ScaboChainTests
+//
+//  Prove sull'host (macOS) della catena condivisa: l'estrattore con le sue cure gira sul Mac con la stessa lettura
+//  di taglia, tratti e colore; la catena con le opzioni dell'iPad non fraziona e non innesta; l'innesto e il
+//  frazionamento (solo Mac) si accendono solo a richiesta; l'annullamento è pulito. PDF sintetici disegnati al volo,
+//  con parole di prova: nessun testo dei volumi.
+//
+
+import CoreGraphics
+import CoreText
+import Foundation
+import ScaboCore
+import XCTest
+@testable import ScaboChain
+
+enum SyntheticPDF {
+    /// Scrive un PDF di `pages` pagine (595×842 pt) disegnate dal blocco (indice di pagina) e ne restituisce l'URL.
+    static func make(pages: Int = 1, _ draw: (CGContext, Int) -> Void) -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("sintetico-catena-\(UUID().uuidString).pdf")
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        let ctx = CGContext(url as CFURL, mediaBox: &box, nil)!
+        for p in 0..<pages {
+            ctx.beginPDFPage(nil)
+            draw(ctx, p)
+            ctx.endPDFPage()
+        }
+        ctx.closePDF()
+        return url
+    }
+
+    /// Una riga di testo neutro con font, taglia e colore dati.
+    static func text(_ ctx: CGContext, _ s: String, x: CGFloat, y: CGFloat, font name: String = "Helvetica",
+                     size: CGFloat = 11, color: CGColor = CGColor(red: 0, green: 0, blue: 0, alpha: 1)) {
+        let font = CTFontCreateWithName(name as CFString, size, nil)
+        let attr = NSAttributedString(string: s, attributes: [
+            NSAttributedString.Key(kCTFontAttributeName as String): font,
+            NSAttributedString.Key(kCTForegroundColorAttributeName as String): color,
+        ])
+        let line = CTLineCreateWithAttributedString(attr)
+        ctx.textPosition = CGPoint(x: x, y: y)
+        CTLineDraw(line, ctx)
+    }
+
+    /// Un documento di prova: un titolo in grassetto e qualche capoverso per pagina.
+    static func smallBook(pages: Int = 2) -> URL {
+        make(pages: pages) { ctx, p in
+            text(ctx, "Capitolo di prova \(p + 1)", x: 72, y: 760, font: "Helvetica-Bold", size: 16)
+            var y: CGFloat = 720
+            for k in 0..<12 {
+                text(ctx, "Questa è la riga \(k + 1) di un capoverso di prova della pagina \(p + 1), scritta per il banco.",
+                     x: 72, y: y)
+                y -= 16
+            }
+        }
+    }
+}
+
+final class EstrattoreSulMacTests: XCTestCase {
+
+    func test_tagliaTrattiEColore_comeSulTelefono() throws {
+        let url = SyntheticPDF.make { ctx, _ in
+            SyntheticPDF.text(ctx, "Riga nera di prova", x: 72, y: 760)
+            SyntheticPDF.text(ctx, "Riga rossa in grassetto", x: 72, y: 730, font: "Helvetica-Bold", size: 14,
+                              color: CGColor(red: 1, green: 0, blue: 0, alpha: 1))
+            SyntheticPDF.text(ctx, "Riga grigia in corsivo", x: 72, y: 700, font: "Helvetica-Oblique",
+                              color: CGColor(red: 0.5, green: 0.5, blue: 0.5, alpha: 1))
+        }
+        defer { try? FileManager.default.removeItem(at: url) }
+        let ex = try PdfKitExtractor().extract(fromUri: url.absoluteString)
+        XCTAssertEqual(ex.pageCount, 1)
+        let lines = ex.pages[0].lines
+        XCTAssertEqual(lines.count, 3)
+        let first = lines.map { $0.spans.first { !$0.text.trimmingCharacters(in: .whitespaces).isEmpty }! }
+        XCTAssertEqual(first[0].fontSize, 11, accuracy: 0.01)
+        XCTAssertFalse(first[0].bold)
+        XCTAssertEqual(first[0].color, "#000000")
+        XCTAssertEqual(first[1].fontSize, 14, accuracy: 0.01)
+        XCTAssertTrue(first[1].bold)
+        // I colori passano dalla conversione nello spazio sRGB (il PDF sintetico li scrive in RGB generico): il rosso
+        // resta rosso pieno, il grigio resta grigio neutro. L'uguaglianza esatta con iOS è materia della rete di parità
+        // sui 52 volumi (estrazione macOS contro iOS 27), non di un PDF sintetico.
+        XCTAssertTrue(first[1].color.hasPrefix("#FF"), first[1].color)
+        XCTAssertNotEqual(first[1].color, "#000000")
+        XCTAssertTrue(first[2].italic)
+        let g = first[2].color
+        XCTAssertEqual(g.count, 7)
+        XCTAssertEqual(g.dropFirst(1).prefix(2), g.dropFirst(3).prefix(2))
+        XCTAssertEqual(g.dropFirst(3).prefix(2), g.dropFirst(5).prefix(2))
+        XCTAssertNotEqual(g, "#000000")
+        // Coordinate della pagina, origine in basso a sinistra (convenzione del seam).
+        XCTAssertGreaterThan(lines[0].bbox.y, lines[1].bbox.y)
+    }
+
+    func test_estrazioneAFlusso_chunkPiccoloUgualeAChunkEnorme() throws {
+        let url = SyntheticPDF.smallBook(pages: 5)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let small = try PdfKitExtractor().extract(fromUri: url.absoluteString, onPageExtracted: { _, _ in },
+                                                  isCancelled: { false }, chunkPages: 2)
+        let big = try PdfKitExtractor().extract(fromUri: url.absoluteString, onPageExtracted: { _, _ in },
+                                                isCancelled: { false }, chunkPages: 1000)
+        XCTAssertEqual(small, big)
+    }
+}
+
+/// Un innesto di prova: non tocca nulla e scrive un referto; conta le chiamate.
+private final class InnestoDiProva: ChainGraft {
+    var calls = 0
+    func graft(extraction: PdfExtraction, rawDocument: ScabopdfDocument, pdfURL: URL, sourceName: String,
+               onPage: (Int, Int) -> Void, isCancelled: () -> Bool) -> ChainGraftOutput? {
+        calls += 1
+        onPage(1, 1)
+        return ChainGraftOutput(extraction: extraction, rawDocument: rawDocument, report: ["innesto di prova: 0 operazioni"])
+    }
+}
+
+final class CatenaTests: XCTestCase {
+
+    private func run(_ url: URL, _ options: ChainOptions, cancelled: Bool = false) -> (ChainOutcome, [ChainProgress]) {
+        var progress: [ChainProgress] = []
+        let out = ProcessingChain.run(fileURL: url, sourceName: "prova.pdf", extractor: PdfKitExtractor(),
+                                      options: options, onProgress: { progress.append($0) }, isCancelled: { cancelled })
+        return (out, progress)
+    }
+
+    func test_opzioniDellIpad_successo_avanzamentoMonotono_nessunInnesto() throws {
+        let url = SyntheticPDF.smallBook(pages: 3)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let (out, progress) = run(url, ChainOptions(detectVisualResources: false))
+        guard case .success(let r) = out else { return XCTFail("atteso successo, ottenuto \(out)") }
+        XCTAssertFalse(r.content.pages.flatMap { $0.segments }.isEmpty)
+        XCTAssertNil(r.graftReport)
+        XCTAssertEqual(progress.first?.phase, .opening)
+        XCTAssertEqual(progress.last?.fraction, 1.0)
+        XCTAssertFalse(progress.contains { $0.phase == .graft })
+        for (a, b) in zip(progress, progress.dropFirst()) { XCTAssertLessThanOrEqual(a.fraction, b.fraction) }
+    }
+
+    func test_innestoEFrazionamento_soloSeRichiesti() throws {
+        let url = SyntheticPDF.smallBook(pages: 2)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let graft = InnestoDiProva()
+        let (plain, _) = run(url, ChainOptions(detectVisualResources: false))
+        let (mac, progress) = run(url, ChainOptions(detectVisualResources: false, fractionLongNotes: true, graft: graft))
+        guard case .success(let a) = plain, case .success(let b) = mac else { return XCTFail("attesi due successi") }
+        XCTAssertEqual(graft.calls, 1)
+        XCTAssertEqual(b.graftReport, ["innesto di prova: 0 operazioni"])
+        XCTAssertTrue(progress.contains { $0.phase == .graft })
+        // Nessuna nota lunga e un innesto che non tocca nulla: la lettura è la stessa.
+        XCTAssertEqual(a.content, b.content)
+    }
+
+    func test_annullamento_nessunDocumentoParziale() throws {
+        let url = SyntheticPDF.smallBook(pages: 2)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let (out, _) = run(url, ChainOptions(detectVisualResources: false), cancelled: true)
+        guard case .cancelled = out else { return XCTFail("atteso annullamento, ottenuto \(out)") }
+    }
+
+    func test_pdfIllegibile_prosaNonSoloErrore() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("non-un-pdf-\(UUID().uuidString).pdf")
+        try Data("non è un PDF".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let (out, _) = run(url, ChainOptions(detectVisualResources: false))
+        guard case .failure(let message) = out else { return XCTFail("atteso fallimento, ottenuto \(out)") }
+        XCTAssertTrue(message.contains("PDF"))
+        XCTAssertFalse(message.lowercased() == "errore")
+    }
+
+    func test_mappaDellePagine_strati_nodoPoiSegmento() {
+        let doc = ScabopdfDocument(
+            schema_version: "0.7.0", document_id: "doc_prova",
+            metadata: DocumentMetadata(pages_pdf: 3, page_size_pt: [595, 842], source_pdf_filename: "prova.pdf"),
+            profile: DocumentProfileDict(profile_id: "generic", editorial_family: "generic", genre: "manuale", confidence: 1),
+            structure: [NodeDict(id: "node_1", type: .BODY, page_index: 0, text: "uno")])
+        let seg = ContentSegment(id: "node_1#1", role: "BODY", text: "uno", lengthCategory: "", acousticIntro: "", sourcePage: 2)
+        let content = PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: [seg])], totalSegments: 1)
+        let map = ReadingAssembly.buildPageMap(doc, content: content)
+        XCTAssertEqual(map["node_1"], 1)
+        XCTAssertEqual(map["node_1#1"], 2)
+        XCTAssertTrue(ReadingAssembly.isLarge(pageCount: 1501))
+        XCTAssertFalse(ReadingAssembly.isLarge(pageCount: 1500))
+    }
+}

@@ -40,6 +40,7 @@
 import XCTest
 import Darwin
 @testable import ScaboApp
+import ScaboChain
 @testable import ScaboCore
 
 /// Impronta di memoria fisica del processo (MB) — la metrica `phys_footprint` che iOS usa

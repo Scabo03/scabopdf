@@ -32,6 +32,7 @@
 #if DEBUG
 
 import UIKit
+import ScaboChain
 import ScaboCore
 import UniformTypeIdentifiers
 

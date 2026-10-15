@@ -12,6 +12,7 @@ import XCTest
 import PDFKit
 import ScaboCore
 @testable import ScaboApp
+import ScaboChain
 
 final class VisualResourceTests: XCTestCase {
 
