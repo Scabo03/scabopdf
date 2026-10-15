@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sandbox attiva fin d'ora. Nessun altro permesso: oggi l'app non scarica, non legge file dell'utente, non parla
+	     con altri processi. Quando lo scaricamento diventerà reale servirà com.apple.security.network.client; quando
+	     l'officina leggerà PDF servirà com.apple.security.files.user-selected.read-only. Si aggiungono allora, non prima. -->
+	<key>com.apple.security.app-sandbox</key><true/>
+</dict>
+</plist>

@@ -436,6 +436,25 @@ Politica di rielaborazione post-aggiornamento: proposta in § 5 del documento, n
 **Rilascio:** build **46** caricata su TestFlight il 2026-10-06 (`UPLOAD SUCCEEDED`, Delivery UUID `86ce5c6a-…`): i libri in
 cache restano letti come prima, reimportare per sentire la cura.
 
+## ▶ STATO — Linea Mac aperta: scheletro dell'app macOS, parità fra sistemi, facilitazione dei modelli — 2026-10-05/06 (ramo `feat/mac-base`, fuso in main il 2026-10-16)
+
+> *Nota d'integrazione (2026-10-16, giro «costruzione della linea Mac»):* il ramo è fuso in `main` con un merge che ne
+> conserva la storia; questa sezione resta come storia del giro. Superati dalle decisioni successive: le «istruzioni per
+> file» e il canale iCloud (§ 12.12, decisione del 2026-10-11: il frutto viaggia solo via AirDrop o cavo come documento
+> completo); il riferimento delle reti (doppio, iOS 27 principale e iOS 26.5 secondario, decisione del 2026-10-06);
+> l'identità da contenuto (fatta: build 52); il motore di struttura (Heron in Core ML, giri del 2026-10-12). Lo stato
+> corrente della linea Mac è nella sezione STATO del 2026-10-16.
+
+Giro su ramo dedicato, `main` invariato a `9d65fef`, build 45 su TestFlight in collaudo. Documenti: `docs/MAC_BASE.md`,
+`docs/MAC_FACILITAZIONE_MODELLI.md`, Parte VIII di `docs/ANALYSIS_ULTRAFOCUS_MACOS.md`, voce D.8 di `docs/ULTRAFOCUS_INBOX.md`.
+**Scheletro** `app/macos/ScaboMac` (pacchetto fratello su ScaboCore, macOS 14+, sandbox, 35 test; pannello degli strumenti con scaricamento
+SIMULATO e dichiarato). **Catalyst compila** senza errori (build nel laboratorio per la prova a orecchio). **Reperto**: l'estrazione PDFKit e la
+lettura cambiano fra iOS 26.5 e iOS 27 (7 % delle pagine, 71 % dei volumi, 2,3 % dei segmenti; pagine difficili sovra-rappresentate); Mac e
+telefono della stessa generazione coincidono. **Incidente** 2026-10-05: blocco comportamentale di macOS durante le prove di codice di terzi,
+accertato falso allarme; regola permanente: nessun binario scaricato si esegue senza fonte ufficiale + impronta pubblicata (o compilazione dal
+tag) e firma dove esiste. **Decisioni al maintainer**: riferimento delle reti (26.5/27), forma della lettura su Mac, record App Store, opzione di
+facilitazione A/B/C. Referto completo nel laboratorio: `~/Developer/scabopdf-mac-lab/referto/REFERTO_GIRO_MAC.md`.
+
 ---
 
 ## ▶ STATO — Cura dei titoli di paragrafo numerati + abbreviazioni + salto nota↔testo → build 45 su TestFlight — 2026-10-05

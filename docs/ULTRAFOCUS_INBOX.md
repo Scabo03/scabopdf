@@ -441,6 +441,23 @@ ritrovati 2.814 → 3.578 col metro «a unità» (`docs/TITOLI_MONOTIPOGRAFICI.m
 pagina livello per livello e col metro corretto. Il tetto H4 reale (cinque livelli) chiede una decisione: quinto
 livello = schema. **Strato: STRUTTURALE**, tutto on-device.
 
+### D.8 Linea Mac — scheletro dell'app, parità fra sistemi, decisioni pendenti (2026-10-06; ramo fuso in main il 2026-10-16)
+
+> *Nota d'integrazione (2026-10-16):* voce storica del primo giro Mac. Le decisioni pendenti qui elencate sono state prese
+> dopo: reti a doppio riferimento (2026-10-06), identità da contenuto (build 52), frutto via AirDrop o cavo come documento
+> completo (§ 12.12, 2026-10-11: le istruzioni per-file della Parte IV sono superate), motore di struttura Heron in Core ML
+> (§ E e § F). Restano aperte la forma della lettura su Mac e il record App Store. Lo stato corrente è nella voce § G.
+
+Giro «linea Mac» (ramo `feat/mac-base`, non fuso): scheletro `app/macos/ScaboMac` (pannello degli strumenti simulato, catalogo versionato,
+sandbox), `docs/MAC_BASE.md`, `docs/MAC_FACILITAZIONE_MODELLI.md`, Parte VIII dell'analisi. **Reperto di prima grandezza**: l'estrazione PDFKit
+cambia fra iOS 26.5 e iOS 27 sul 7 % delle pagine (spazi fra parole, ordine), con le pagine difficili sovra-rappresentate, e la lettura cambia
+sul 71 % dei volumi (2,3 % dei segmenti, 56 titoli in più — uno su Marotta, volume di controllo —, articoli e note toccati); Mac e telefono della stessa generazione coincidono. Le
+istruzioni per-file (Parte IV) vanno quindi ancorate con un'impronta per pagina e un'identità da contenuto (oggi l'id è un UUID casuale).
+**Decisioni pendenti**: riferimento delle reti (26.5 / 27 / entrambi); forma della lettura su Mac (Catalyst, build nel laboratorio da provare a
+orecchio, o nativa); record App Store (stesso o separato: irreversibile); opzione A/B/C della facilitazione (`MAC_FACILITAZIONE_MODELLI.md` § 5).
+**Prove rinviate** a un giro dedicato con la regola nuova sui binari: MLX-Swift in sandbox, conversione del layout docling, ambiente uv.
+**Debito nuovo**: `AudioSignals.swift` usa `AVAudioSession` (non disponibile su macOS nativo; lo è in Catalyst). Strato: STRUTTURALE (infrastruttura).
+
 ### D.8-ter Testatine e piè di pagina — ✅ MISURA DI STRUTTURA + CURA NEL TRONCO (2026-10-07)
 
 Le testatine di pagina lette come riga a sé (Rizzo → NOTE, Mandrioli → NOTE/H4) e il piè «Pag. N» di
