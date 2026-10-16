@@ -46,16 +46,29 @@ final class ReadingInterfaceBar: UIView {
     /// titolo statico (mostrava già il nome del layout). Vive in QUESTO container d'interfaccia,
     /// mai raggiungibile dallo swipe del testo (§ 2.2). È un `UIButton` con `UIMenu`: VoiceOver lo
     /// annuncia come pulsante a comparsa, ne legge il valore corrente, e la scelta è navigabile.
+    ///
+    /// Configurazione moderna (giro del 2026-10-16): il titolo VA A CAPO invece di troncarsi in «L…» e il pulsante cresce
+    /// in altezza con il testo grande (la barra passa a due righe quando non ci sta, `layoutSubviews`).
     let layoutSelectorButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.titleLabel?.font = UIFont.preferredFont(forTextStyle: .headline)
+        var config = UIButton.Configuration.plain()
+        config.titleLineBreakMode = .byWordWrapping
+        config.titleAlignment = .center
+        config.baseForegroundColor = .label
+        config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 8, bottom: 6, trailing: 8)
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var a = incoming
+            a.font = UIFont.preferredFont(forTextStyle: .headline)
+            return a
+        }
+        let button = UIButton(configuration: config)
         button.titleLabel?.adjustsFontForContentSizeCategory = true
-        button.titleLabel?.lineBreakMode = .byTruncatingTail
-        button.tintColor = .label
         button.translatesAutoresizingMaskIntoConstraints = false
         button.showsMenuAsPrimaryAction = true   // il doppio tap apre il menù, non un'azione separata
         return button
     }()
+
+    /// Il titolo visibile del selettore (il layout attivo).
+    var layoutSelectorTitle: String? { layoutSelectorButton.configuration?.title }
 
     /// Pulsante Segnalibri (§ 5.4): apre la finestra dei segnalibri del documento corrente. Vive in
     /// QUESTO container d'interfaccia (chiuso): mai raggiungibile dallo swipe di lettura (§ 2.2).
@@ -277,18 +290,68 @@ final class ReadingInterfaceBar: UIView {
         rightStack.setContentHuggingPriority(.required, for: .horizontal)
         rightStack.setContentCompressionResistancePriority(.required, for: .horizontal)
 
+        // Tre disposizioni (giro del 2026-10-16: sull'iPhone al selettore restavano 0 punti e si leggeva «L…»; sull'iPad lo
+        // stesso con il testo più grande). UNA RIGA quando tutto ci sta: Indietro a sinistra, selettore al centro, tasti e
+        // pagina a destra. DUE RIGHE quando non ci sta: sopra Indietro e accanto il selettore, sotto tasti e pagina. TRE RIGHE
+        // quando nemmeno Indietro e il selettore stanno affiancati (testo per l'accessibilità): Indietro, il selettore su una
+        // riga sua (va a capo fra le parole se serve), tasti e pagina. Indietro non si comprime mai; la barra cresce in
+        // altezza (il controller la vincola a un minimo, non a un'altezza fissa); l'ordine di VoiceOver non cambia.
+        backButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+        backButton.setContentHuggingPriority(.required, for: .vertical)
+        layoutSelectorButton.setContentCompressionResistancePriority(UILayoutPriority(999), for: .horizontal)
+        layoutSelectorButton.setContentHuggingPriority(UILayoutPriority(999), for: .vertical)
+        let compact = heightAnchor.constraint(equalToConstant: 44)
+        compact.priority = .defaultLow     // la barra resta bassa quando il contenuto lo permette
+        // Un pulsante che può andare a capo dichiara come larghezza naturale quella della parola più corta: senza questo
+        // vincolo il sistema lo stringerebbe a poche decine di punti. Larghezza minima = il titolo su una riga (aggiornata
+        // in `layoutSubviews`), appena sotto l'obbligo: scende solo quando la riga è davvero più stretta.
+        selectorMinWidth.priority = UILayoutPriority(999)
+        selectorMinWidth.isActive = true
         NSLayoutConstraint.activate([
             backButton.leadingAnchor.constraint(equalTo: layoutMarginsGuide.leadingAnchor),
-            backButton.centerYAnchor.constraint(equalTo: centerYAnchor),
-
             rightStack.trailingAnchor.constraint(equalTo: layoutMarginsGuide.trailingAnchor),
+            compact,
+            backButton.topAnchor.constraint(greaterThanOrEqualTo: topAnchor),
+            layoutSelectorButton.topAnchor.constraint(greaterThanOrEqualTo: topAnchor),
+            rightStack.topAnchor.constraint(greaterThanOrEqualTo: topAnchor),
+            backButton.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+            layoutSelectorButton.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+            rightStack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor),
+            layoutSelectorButton.leadingAnchor.constraint(greaterThanOrEqualTo: layoutMarginsGuide.leadingAnchor),
+            layoutSelectorButton.trailingAnchor.constraint(lessThanOrEqualTo: layoutMarginsGuide.trailingAnchor),
+            rightStack.leadingAnchor.constraint(greaterThanOrEqualTo: layoutMarginsGuide.leadingAnchor),
+        ])
+        let centeredOne = layoutSelectorButton.centerXAnchor.constraint(equalTo: centerXAnchor)
+        centeredOne.priority = .defaultHigh   // al centro quando può, mai a costo di sovrapporsi
+        oneRowConstraints = [
+            backButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             rightStack.centerYAnchor.constraint(equalTo: centerYAnchor),
-
-            layoutSelectorButton.centerXAnchor.constraint(equalTo: centerXAnchor),
             layoutSelectorButton.centerYAnchor.constraint(equalTo: centerYAnchor),
             layoutSelectorButton.leadingAnchor.constraint(greaterThanOrEqualTo: backButton.trailingAnchor, constant: 8),
             layoutSelectorButton.trailingAnchor.constraint(lessThanOrEqualTo: rightStack.leadingAnchor, constant: -8),
-        ])
+            centeredOne,
+        ]
+        let alignedWithBack = layoutSelectorButton.centerYAnchor.constraint(equalTo: backButton.centerYAnchor)
+        alignedWithBack.priority = .defaultHigh
+        twoRowConstraints = [
+            backButton.topAnchor.constraint(equalTo: topAnchor),
+            layoutSelectorButton.topAnchor.constraint(equalTo: topAnchor),
+            alignedWithBack,
+            layoutSelectorButton.leadingAnchor.constraint(equalTo: backButton.trailingAnchor, constant: 8),
+            rightStack.topAnchor.constraint(greaterThanOrEqualTo: backButton.bottomAnchor),
+            rightStack.topAnchor.constraint(greaterThanOrEqualTo: layoutSelectorButton.bottomAnchor),
+            rightStack.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ]
+        let centeredThree = layoutSelectorButton.centerXAnchor.constraint(equalTo: centerXAnchor)
+        centeredThree.priority = .defaultHigh
+        threeRowConstraints = [
+            backButton.topAnchor.constraint(equalTo: topAnchor),
+            layoutSelectorButton.topAnchor.constraint(equalTo: backButton.bottomAnchor),
+            centeredThree,
+            rightStack.topAnchor.constraint(equalTo: layoutSelectorButton.bottomAnchor),
+            rightStack.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ]
+        NSLayoutConstraint.activate(oneRowConstraints)
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
         bookmarksButton.addTarget(self, action: #selector(bookmarksTapped), for: .touchUpInside)
@@ -318,6 +381,76 @@ final class ReadingInterfaceBar: UIView {
         isAccessibilityElement = false
         accessibilityContainerType = .semanticGroup
         refreshAccessibilityElements()
+    }
+
+    // MARK: - Una, due o tre righe
+
+    enum Rows: Equatable { case one, two, three }
+    private lazy var selectorMinWidth = layoutSelectorButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 0)
+    private var oneRowConstraints: [NSLayoutConstraint] = []
+    private var twoRowConstraints: [NSLayoutConstraint] = []
+    private var threeRowConstraints: [NSLayoutConstraint] = []
+    /// Su quante righe è disposta la barra.
+    private(set) var rows: Rows = .one
+    /// Vero se la barra è su più righe (non ci stava in una).
+    var isTwoRows: Bool { rows != .one }
+
+    private func constraints(_ r: Rows) -> [NSLayoutConstraint] {
+        switch r {
+        case .one: return oneRowConstraints
+        case .two: return twoRowConstraints
+        case .three: return threeRowConstraints
+        }
+    }
+
+    private func use(_ r: Rows) {
+        guard r != rows else { return }
+        NSLayoutConstraint.deactivate(constraints(rows))
+        NSLayoutConstraint.activate(constraints(r))
+        rows = r
+        superview?.setNeedsLayout()   // l'altezza della barra cambia: la vista che la contiene si ridispone
+    }
+
+    /// La larghezza che un pulsante vuole su una riga sola.
+    private func singleLineWidth(_ b: UIButton) -> CGFloat {
+        b.sizeThatFits(CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)).width
+    }
+
+    /// Verifica SULLA DISPOSIZIONE REALE (le stime a priori sottovalutano i tasti di destra). In una riga: se il selettore
+    /// è schiacciato sotto la larghezza del suo titolo o tocca Indietro o i tasti, si passa a più righe. Su più righe: due
+    /// se Indietro e il selettore stanno affiancati, altrimenti tre; si torna a una quando tutto ci starebbe con un margine
+    /// (niente andirivieni).
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.width > 0 else { return }
+        let row = bounds.width - layoutMargins.left - layoutMargins.right
+        let back = singleLineWidth(backButton), selector = singleLineWidth(layoutSelectorButton)
+        if abs(selectorMinWidth.constant - selector) > 0.5 {
+            selectorMinWidth.constant = selector
+            super.layoutSubviews()
+        }
+        let multi: Rows = back + 8 + selector <= row ? .two : .three
+        switch rows {
+        case .one:
+            let squeezed = layoutSelectorButton.frame.width + 0.5 < selector
+            let touches = layoutSelectorButton.frame.intersects(backButton.frame)
+                || layoutSelectorButton.frame.intersects(rightStack.frame)
+            if squeezed || touches { use(multi); super.layoutSubviews() }
+        case .two, .three:
+            if back + 8 + selector + 8 + rightStack.frame.width + 16 <= row {
+                use(.one)
+            } else {
+                use(multi)
+            }
+            super.layoutSubviews()
+        }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.preferredContentSizeCategory != traitCollection.preferredContentSizeCategory {
+            setNeedsLayout()   // il testo più grande può non starci più in una riga (o starci di nuovo)
+        }
     }
 
     /// Aggiorna l'ordine di lettura del container: [Indietro, selettore Layout], poi — quando
@@ -397,7 +530,10 @@ final class ReadingInterfaceBar: UIView {
         layoutSelectorButton.menu = UIMenu(
             title: "Layout di lettura", children: [continuousAction, quickAction, doctrineAction])
         let name = LAYOUT_DISPLAY_NAMES[current] ?? "Lettura Continua"
-        layoutSelectorButton.setTitle(name, for: .normal)
+        var config = layoutSelectorButton.configuration ?? .plain()
+        config.title = name
+        layoutSelectorButton.configuration = config
+        setNeedsLayout()
         layoutSelectorButton.accessibilityLabel = "Layout di lettura, \(name)"
         layoutSelectorButton.accessibilityHint = "Doppio tap per scegliere il layout di lettura"
     }

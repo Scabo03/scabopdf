@@ -790,7 +790,8 @@ final class ContinuousReadingViewController: UIViewController {
             interfaceBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             interfaceBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             interfaceBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            interfaceBar.heightAnchor.constraint(equalToConstant: Self.interfaceBarHeight),
+            // Un minimo, non un'altezza fissa: la barra va su due righe quando non ci sta in una (giro del 2026-10-16).
+            interfaceBar.heightAnchor.constraint(greaterThanOrEqualToConstant: Self.interfaceBarHeight),
 
             readingView.topAnchor.constraint(equalTo: interfaceBar.bottomAnchor),
             readingView.leadingAnchor.constraint(equalTo: view.leadingAnchor),

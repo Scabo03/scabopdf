@@ -261,7 +261,7 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.decreaseTextSizeButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.increaseTextSizeButton })
         XCTAssertTrue(interface.visualizationPageLabel.isHidden, "nessun box di visualizzazione nel verticale")
-        XCTAssertEqual(interface.layoutSelectorButton.title(for: .normal), "Lettura Continua")
+        XCTAssertEqual(interface.layoutSelectorTitle, "Lettura Continua")
         XCTAssertEqual(interface.backButton.accessibilityLabel, "Indietro")
         for element in interfaceElements {
             XCTAssertFalse(element is SegmentCell, "nessun elemento di testo nell'interfaccia")
@@ -547,7 +547,7 @@ final class ImportProcessingTests: XCTestCase {
         XCTAssertEqual(vc.currentLayoutForTesting, .continuous, "default sempre Lettura Continua (§ 3.4)")
         XCTAssertTrue(vc.doctrineAvailableForTesting, "Dottrina Inline disponibile: il documento ha il flusso")
         XCTAssertEqual(vc.renderedSegmentCountForTesting, 3, "rende il flusso continua all'apertura")
-        XCTAssertEqual(vc.interfaceContainerForTesting.layoutSelectorButton.title(for: .normal), "Lettura Continua")
+        XCTAssertEqual(vc.interfaceContainerForTesting.layoutSelectorTitle, "Lettura Continua")
     }
 
     func test_layoutSelector_disabledWhenNoDoctrineContent() {
@@ -563,7 +563,7 @@ final class ImportProcessingTests: XCTestCase {
         vc.switchLayoutForTesting(to: .doctrine)
         XCTAssertEqual(vc.currentLayoutForTesting, .doctrine)
         XCTAssertEqual(vc.renderedSegmentCountForTesting, 7, "passa al flusso Dottrina Inline")
-        XCTAssertEqual(vc.interfaceContainerForTesting.layoutSelectorButton.title(for: .normal), "Dottrina Inline")
+        XCTAssertEqual(vc.interfaceContainerForTesting.layoutSelectorTitle, "Dottrina Inline")
         vc.switchLayoutForTesting(to: .continuous)
         XCTAssertEqual(vc.currentLayoutForTesting, .continuous)
         XCTAssertEqual(vc.renderedSegmentCountForTesting, 3, "torna al flusso Lettura Continua")

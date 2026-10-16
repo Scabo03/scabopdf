@@ -55,6 +55,60 @@ final class MotorAccessibilityTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(bar.backButton.frame.height, 44)
     }
 
+    // MARK: - Selettore del layout mai troncato (giro «costruzione della linea Mac», 2026-10-16)
+
+    /// La barra ospitata come nel lettore (in alto, larghezza piena, altezza MINIMA 44) e disposta.
+    private func hostedBar(width: CGFloat, category: UIContentSizeCategory) -> ReadingInterfaceBar {
+        let host = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 600))
+        let bar = ReadingInterfaceBar()
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        if #available(iOS 17.0, *) { host.traitOverrides.preferredContentSizeCategory = category }
+        host.addSubview(bar)
+        NSLayoutConstraint.activate([
+            bar.topAnchor.constraint(equalTo: host.topAnchor),
+            bar.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            bar.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+            bar.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+        ])
+        bar.setTextSizeControls(available: true)
+        bar.setBookmarksAvailable(true)
+        bar.setPageIndicator(visualizationCurrent: 0, visualizationTotal: 0, originalCurrent: 412, originalTotal: 1559, showOriginal: true)
+        let window = UIWindow(frame: host.frame)
+        window.addSubview(host)
+        window.isHidden = false
+        for _ in 0..<3 { host.setNeedsLayout(); host.layoutIfNeeded() }
+        return bar
+    }
+
+    /// «Lettura Continua» si leggeva «L…» sull'iPhone (al selettore restavano 0 punti) e, con il testo più grande, anche
+    /// sull'iPad: ora la barra va su due righe quando serve e il titolo va a capo. Mai troncato, a ogni larghezza e
+    /// dimensione del testo; sull'iPad 11 col testo normale la barra resta su una riga alta 44.
+    func test_selettoreDelLayout_maiTroncato_aOgniLarghezzaEDimensioneDelTesto() throws {
+        guard #available(iOS 17.0, *) else { throw XCTSkip("traitOverrides richiede iOS 17") }
+        for width in [320.0, 375.0, 393.0, 440.0, 744.0, 834.0, 1024.0] {
+            for category in [UIContentSizeCategory.large, .extraExtraExtraLarge, .accessibilityExtraExtraExtraLarge] {
+                let bar = hostedBar(width: width, category: category)
+                let title = try XCTUnwrap(bar.layoutSelectorButton.titleLabel)
+                let label = "larghezza \(Int(width)), \(category.rawValue)"
+                XCTAssertGreaterThan(title.bounds.width, 0, label)
+                let needed = title.sizeThatFits(CGSize(width: title.bounds.width, height: .greatestFiniteMagnitude))
+                XCTAssertLessThanOrEqual(needed.height, title.bounds.height + 1, "il titolo sta tutto: \(label)")
+                XCTAssertEqual(title.text, "Lettura Continua", label)
+                // Nessuna sovrapposizione fra il selettore, Indietro e i tasti.
+                XCTAssertFalse(bar.layoutSelectorButton.frame.intersects(bar.backButton.frame), label)
+                XCTAssertFalse(bar.layoutSelectorButton.frame.intersects(bar.decreaseTextSizeButton.convert(bar.decreaseTextSizeButton.bounds, to: bar)), label)
+                XCTAssertGreaterThanOrEqual(bar.backButton.frame.height, 44, label)
+                XCTAssertGreaterThanOrEqual(bar.backButton.frame.width + 0.5, bar.backButton.intrinsicContentSize.width, "Indietro mai compresso: \(label)")
+            }
+        }
+        let pad = hostedBar(width: 834, category: .large)
+        XCTAssertEqual(pad.rows, .one, "iPad 11, testo normale: una riga")
+        XCTAssertEqual(pad.bounds.height, 44, accuracy: 0.5)
+        let phone = hostedBar(width: 393, category: .large)
+        XCTAssertEqual(phone.rows, .two, "iPhone, testo normale: due righe")
+        XCTAssertEqual(phone.bounds.height, 88, accuracy: 0.5)
+    }
+
     // MARK: - Opzione «note annunciate a voce» (mai-solo-suono, WCAG 1.4.1/1.3.3 per analogia)
 
     private func noteSegment() -> ContentSegment {
