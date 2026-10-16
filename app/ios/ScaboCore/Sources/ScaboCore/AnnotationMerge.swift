@@ -114,7 +114,7 @@ public enum AnnotationMerge {
             // Unione: dalla prima parola più in alto all'ultima più in basso, fra la nuova e tutte quelle che tocca.
             let group = overlapping.map { underlines[$0] } + [u]
             guard let united = union(group, order: order, index: index, keepId: underlines[overlapping[0]].id,
-                                     createdAt: underlines[overlapping[0]].createdAt, preview: underlines[overlapping[0]].preview)
+                                     createdAt: underlines[overlapping[0]].createdAt)
             else {
                 // Non ricomponibile (un'ancora di citazione non si conia): si tiene la nuova come «da ricollocare».
                 var o = u
@@ -180,9 +180,10 @@ public enum AnnotationMerge {
 
     /// L'unione di più sottolineature sovrapposte: un'estensione contigua dalla prima parola all'ultima, con le ancore di
     /// citazione coniate sulla lettura (span per segmento come la finestra di selezione: primo segmento dalla parola
-    /// d'inizio alla fine, segmenti di mezzo interi, ultimo dall'inizio alla parola di fine).
+    /// d'inizio alla fine, segmenti di mezzo interi, ultimo dall'inizio alla parola di fine). L'anteprima si ricalcola
+    /// sull'estensione unita, come la calcola la finestra di selezione (prime dieci parole sottolineate).
     static func union(_ group: [Underline], order: [String: Int], index: ContentAnchorIndex, keepId: String,
-                      createdAt: Date, preview: String) -> Underline? {
+                      createdAt: Date) -> Underline? {
         let b = group.compactMap { bounds($0, order) }
         guard b.count == group.count, let start = b.map({ $0.start }).min(by: { $0 < $1 }),
               let end = b.map({ $0.end }).max(by: { $0 < $1 }) else { return nil }
@@ -196,6 +197,20 @@ public enum AnnotationMerge {
             spans.append(UnderlineSpan(segmentId: index.segments[seg].id, startWord: s, endWord: e, anchor: q))
         }
         guard !spans.isEmpty else { return nil }
-        return Underline(id: keepId, spans: spans, preview: preview, createdAt: createdAt)
+        return Underline(id: keepId, spans: spans, preview: preview(of: spans, in: index), createdAt: createdAt)
+    }
+
+    /// L'anteprima di una sottolineatura: le parole coperte, nell'ordine, ridotte alle prime dieci (la stessa regola della
+    /// finestra di selezione dell'app, `UnderlineSelectionViewController.computePreview`).
+    static func preview(of spans: [UnderlineSpan], in index: ContentAnchorIndex) -> String {
+        let byId = Dictionary(index.segments.map { ($0.id, $0.text) }, uniquingKeysWith: { a, _ in a })
+        var pieces: [String] = []
+        for span in spans {
+            guard let text = byId[span.segmentId] else { continue }
+            let words = WordTokenizer.words(text)
+            let lo = max(0, span.startWord), hi = min(words.count - 1, span.endWord)
+            if lo <= hi { pieces.append(words[lo...hi].joined(separator: " ")) }
+        }
+        return WordTokenizer.preview(pieces.joined(separator: " "), limit: 10)
     }
 }

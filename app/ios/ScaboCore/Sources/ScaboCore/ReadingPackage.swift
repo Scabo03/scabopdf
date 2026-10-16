@@ -88,12 +88,16 @@ public struct ReadingPackageHeader: Codable, Equatable, Sendable {
         public var hasQuickConsult: Bool
         /// Che cosa l'officina ha fatto in più (righe brevi, prive di testo: note ricucite, voci d'indice…).
         public var workshop: [String]
+        /// Gli stessi fatti in numeri, per la prosa dell'iPad (assenti = non detti): note spezzate fra due pagine e
+        /// ricucite; righe dell'indice analitico che l'app leggeva come note e il Mac legge come testo dell'indice.
+        public var stitchedNotes: Int?
+        public var relabeledIndexLines: Int?
 
         public init(cacheFormat: Int, contentTarget: Int, segments: Int, visualResources: Int, hasDoctrine: Bool,
-                    hasQuickConsult: Bool, workshop: [String]) {
+                    hasQuickConsult: Bool, workshop: [String], stitchedNotes: Int? = nil, relabeledIndexLines: Int? = nil) {
             self.cacheFormat = cacheFormat; self.contentTarget = contentTarget; self.segments = segments
             self.visualResources = visualResources; self.hasDoctrine = hasDoctrine; self.hasQuickConsult = hasQuickConsult
-            self.workshop = workshop
+            self.workshop = workshop; self.stitchedNotes = stitchedNotes; self.relabeledIndexLines = relabeledIndexLines
         }
     }
 
@@ -171,6 +175,8 @@ public enum ReadingPackageProblem: Error, Equatable, CustomStringConvertible {
     case newerFormat(found: Int, producer: String)
     /// La lettura è in un formato che l'app non sa aprire.
     case unsupportedReading(found: Int, producer: String)
+    /// Volume molto grande preparato a una granularità che l'app per quei volumi non usa (la scarterebbe all'apertura).
+    case largeVolumeGranularity(found: Int, expected: Int, producer: String)
 
     public var description: String { prose }
 
@@ -191,6 +197,11 @@ public enum ReadingPackageProblem: Error, Equatable, CustomStringConvertible {
             return "Questa lettura arriva da \(producer), che l'ha preparata in un formato (\(found)) diverso da quello che "
                 + "questa versione di ScaboPDF sa aprire. Nella libreria non è stato cambiato nulla. "
                 + "Aggiorna l'app che non è all'ultima versione, sul Mac o qui, poi prepara e manda di nuovo la lettura."
+        case .largeVolumeGranularity(let found, let expected, let producer):
+            return "Questa lettura arriva da \(producer) ed è di un volume molto grande, preparato a blocchi di \(found) "
+                + "caratteri: per i volumi così grandi questo dispositivo usa blocchi di \(expected) e, aprendo il libro, la "
+                + "sostituirebbe rielaborando il PDF. Nella libreria non è stato cambiato nulla. Prepara di nuovo la lettura "
+                + "con la finestra di ScaboPDF per Mac, che usa la stessa regola dell'iPad."
         }
     }
 }
@@ -200,6 +211,7 @@ public enum ReadingPackage {
     /// Scrive il pacchetto. `annotations == nil` (o vuote) → non incluse.
     public static func write(producer: ReadingPackageHeader.Producer, source: ReadingPackageHeader.Source,
                              reading: PackagedReading, cacheFormat: Int, workshop: [String],
+                             stitchedNotes: Int? = nil, relabeledIndexLines: Int? = nil,
                              annotations: PackagedAnnotations?, createdAt: Date = Date()) throws -> Data {
         let included = (annotations?.isEmpty == false) ? annotations : nil
         let body = ReadingPackageBody(reading: reading, annotations: included)
@@ -214,7 +226,8 @@ public enum ReadingPackage {
             producer: producer, createdAt: createdAt, source: source,
             reading: .init(cacheFormat: cacheFormat, contentTarget: reading.contentTarget, segments: segments,
                            visualResources: visual, hasDoctrine: reading.doctrineContent != nil,
-                           hasQuickConsult: reading.quickConsultTree != nil, workshop: workshop),
+                           hasQuickConsult: reading.quickConsultTree != nil, workshop: workshop,
+                           stitchedNotes: stitchedNotes, relabeledIndexLines: relabeledIndexLines),
             annotations: included.map { .init(bookmarks: $0.bookmarks.count, underlines: $0.underlines.count,
                                               hasPosition: $0.readingAnchor != nil) },
             payload: .init(encoding: "lzfse", length: compressed.count, sha256: sha256Hex(compressed)))

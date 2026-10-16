@@ -166,6 +166,98 @@ final class AnnotationMergeTests: XCTestCase {
         for (i, a) in placed.enumerated() { for b in placed[(i + 1)...] { XCTAssertFalse(AnnotationMerge.overlaps(a, b, [:].merging(idx.segments.enumerated().map { ($1.id, $0) }) { a, _ in a })) } }
     }
 
+    func test_unione_anteprimaRicalcolataSullEstensioneUnita() {
+        let idx = index()
+        let out = AnnotationMerge.merge(localBookmarks: [], localUnderlines: [underline("U1", seg: 0, 2, 5, in: idx)],
+                                        readingPosition: 0, readingAnchor: nil, incomingBookmarks: [],
+                                        incomingUnderlines: [underline("O", seg: 0, 4, 8, in: idx)], in: idx)
+        let united = out.underlines.first { $0.id == "U1" }!
+        let words = WordTokenizer.words(idx.segments[0].text)
+        XCTAssertEqual(united.preview, WordTokenizer.preview(words[2...8].joined(separator: " "), limit: 10))
+        XCTAssertNotEqual(united.preview, "anteprima")
+    }
+
+    func test_unione_suPiuSegmenti_contigua() {
+        let idx = index()
+        // Locale: fine del segmento 0 → inizio del 1. In arrivo: dentro il segmento 1, sovrapposta → un'estensione sola.
+        let local = Underline(id: "U", spans: [
+            UnderlineSpan(segmentId: idx.segments[0].id, startWord: 10, endWord: 16, anchor: idx.quoteAnchor(forIndex: 0, startWord: 10, endWord: 16)),
+            UnderlineSpan(segmentId: idx.segments[1].id, startWord: 0, endWord: 2, anchor: idx.quoteAnchor(forIndex: 1, startWord: 0, endWord: 2)),
+        ], preview: "anteprima", createdAt: Date(timeIntervalSince1970: 1_800_000_000))
+        let out = AnnotationMerge.merge(localBookmarks: [], localUnderlines: [local], readingPosition: 0, readingAnchor: nil,
+                                        incomingBookmarks: [], incomingUnderlines: [underline("I", seg: 1, 1, 6, in: idx)], in: idx)
+        XCTAssertEqual(out.underlines.count, 1)
+        XCTAssertEqual(out.underlines[0].spans.map { [$0.startWord, $0.endWord] }, [[10, 16], [0, 6]])
+        XCTAssertEqual(out.report.underlinesUnited, 1)
+    }
+
+    func test_fusioneRipetuta_nessunDoppione() {
+        let idx = index()
+        let local = [bookmark("L1", at: 0, name: "Mio", in: idx)]
+        let incoming = [bookmark("M1", at: 2, name: "Nuovo", in: idx)]
+        let lu = [underline("U1", seg: 0, 2, 5, in: idx)], iu = [underline("N", seg: 3, 1, 4, in: idx)]
+        let first = AnnotationMerge.merge(localBookmarks: local, localUnderlines: lu, readingPosition: 0, readingAnchor: nil,
+                                          incomingBookmarks: incoming, incomingUnderlines: iu, in: idx)
+        // Lo stesso pacchetto arriva di nuovo (riaperto due volte): nulla si aggiunge.
+        let second = AnnotationMerge.merge(localBookmarks: first.bookmarks, localUnderlines: first.underlines, readingPosition: 0,
+                                           readingAnchor: nil, incomingBookmarks: incoming, incomingUnderlines: iu, in: idx)
+        XCTAssertEqual(second.bookmarks.map { $0.id }, first.bookmarks.map { $0.id })
+        XCTAssertEqual(second.underlines.map { $0.id }, first.underlines.map { $0.id })
+        XCTAssertEqual(second.report.bookmarksMerged, 1)
+        XCTAssertEqual(second.report.underlinesDuplicate, 1)
+        XCTAssertEqual(second.report.bookmarksAdded + second.report.underlinesAdded, 0)
+    }
+
+    /// Prova a caso con semina fissa: 300 fusioni di sottolineature e segnalibri sintetici. Invarianti: nessuna
+    /// annotazione locale sparisce (per id), ogni annotazione in arrivo è contata in un esito, nessuna parola sta in due
+    /// sottolineature collocate, e ogni parola sottolineata prima (da una parte o dall'altra) resta sottolineata dopo.
+    func test_prova_aCaso_nessunaPerdita_nessunaSovrapposizione() {
+        let idx = index()
+        let order = Dictionary(idx.segments.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
+        let nwords = idx.segments.map { WordTokenizer.words($0.text).count }
+        var rng = UInt64(20261016)
+        func next(_ n: Int) -> Int { rng = rng &* 6364136223846793005 &+ 1442695040888963407; return Int((rng >> 33) % UInt64(n)) }
+        func covered(_ us: [Underline]) -> Set<String> {
+            var out = Set<String>()
+            for u in us where u.isOrphan != true { for sp in u.spans { for w in sp.startWord...sp.endWord { out.insert("\(sp.segmentId):\(w)") } } }
+            return out
+        }
+        func randomUnderlines(_ prefix: String, _ k: Int, disjoint: Bool) -> [Underline] {
+            var list: [Underline] = []
+            var tries = 0
+            while list.count < k, tries < 50 {
+                tries += 1
+                let seg = next(idx.segments.count), s = next(nwords[seg] - 1), e = min(nwords[seg] - 1, s + next(6))
+                let u = underline("\(prefix)\(list.count)", seg: seg, s, e, in: idx)
+                if disjoint, list.contains(where: { AnnotationMerge.overlaps($0, u, order) }) { continue }
+                list.append(u)
+            }
+            return list
+        }
+        var seen = AnnotationMergeReport()
+        for round in 0..<300 {
+            let lu = randomUnderlines("L\(round)-", 1 + next(4), disjoint: true)    // le locali non si sovrappongono già (§ 6.3)
+            let iu = randomUnderlines("I\(round)-", 1 + next(4), disjoint: true)
+            let lb = (0..<next(3)).map { bookmark("LB\(round)-\($0)", at: next(idx.segments.count), name: next(2) == 0 ? nil : "n\(next(3))", in: idx) }
+            let ib = (0..<next(3)).map { bookmark("IB\(round)-\($0)", at: next(idx.segments.count), name: next(2) == 0 ? nil : "n\(next(3))", in: idx) }
+            let out = AnnotationMerge.merge(localBookmarks: lb, localUnderlines: lu, readingPosition: 0, readingAnchor: nil,
+                                            incomingBookmarks: ib, incomingUnderlines: iu, in: idx)
+            // Nessuna locale sparisce: i segnalibri restano tutti; le sottolineature locali restano o per id o dentro un'unione.
+            for b in lb { XCTAssertTrue(out.bookmarks.contains { $0.id == b.id }, "round \(round)") }
+            XCTAssertEqual(out.report.incomingTotal, ib.count + iu.count, "round \(round)")
+            let placed = out.underlines.filter { $0.isOrphan != true }
+            for (i, a) in placed.enumerated() { for b in placed[(i + 1)...] { XCTAssertFalse(AnnotationMerge.overlaps(a, b, order), "round \(round)") } }
+            XCTAssertTrue(covered(lu).union(covered(iu)).isSubset(of: covered(out.underlines)), "round \(round)")
+            seen.underlinesUnited += out.report.underlinesUnited; seen.underlinesDuplicate += out.report.underlinesDuplicate
+            seen.underlinesAdded += out.report.underlinesAdded; seen.bookmarksMerged += out.report.bookmarksMerged
+            seen.bookmarksAdded += out.report.bookmarksAdded
+        }
+        // La prova esercita davvero ogni esito (non passa per vuoto).
+        XCTAssertGreaterThan(seen.underlinesUnited, 0); XCTAssertGreaterThan(seen.underlinesAdded, 0)
+        XCTAssertGreaterThan(seen.bookmarksMerged, 0); XCTAssertGreaterThan(seen.bookmarksAdded, 0)
+        print("prova a caso: unite \(seen.underlinesUnited), doppioni \(seen.underlinesDuplicate), aggiunte \(seen.underlinesAdded), segnalibri fusi \(seen.bookmarksMerged), aggiunti \(seen.bookmarksAdded)")
+    }
+
     func test_nienteDaFondere_annotazioniLocaliRiancorateSoltanto() {
         let old = index(["Una riga di testatina che sparisce.", ] + ReadingPackageTests.frasi)
         let new = index()
