@@ -1061,6 +1061,16 @@ di pagine contigue che il predicato dell'app già accetta (35 veri su 36 giudica
 del piazzamento esiste già sull'iPad, accesa solo sull'Estratto: la scelta fra riaccendere la ricucitura sul Mac e un
 percorso sull'iPad (che serve anche chi non ha il Mac) torna al maintainer; la ricucitura del Mac intanto resta spenta.
 
+**Tre decisioni del maintainer (2026-10-16 sera, registrate all'apertura del giro «cura delle note»).**
+
+1. **Le note spezzate fra pagine contigue si ricuciono sull'iPad**, con la guardia di successione, esclusi i codici. La
+   ricucitura del Mac resta spenta. Il principio è quello dell'utente senza Mac (§ 0-bis): la cura deve stare dove la
+   ricevono tutti, cioè nel codice condiviso da iPad, iPhone e Mac, non nell'officina.
+2. **Si curano i confini dei pezzi delle note lunghe** nel meccanismo condiviso (§ 10.6), partendo dalle iniziali separate
+   dal cognome.
+3. **Il segnale di chiusura della nota** (§ 10.6) si farà in un giro dedicato ai suoni, da certificare all'orecchio: non è
+   materia del giro che registra queste decisioni.
+
 ---
 
 ### 12.13 Rielaborazione dei libri dopo un aggiornamento di sistema o una cura (decisione del 2026-10-07)
