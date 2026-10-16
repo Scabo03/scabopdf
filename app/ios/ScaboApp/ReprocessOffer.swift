@@ -73,6 +73,8 @@ enum ReprocessOffer {
             + "immagine per farle descrivere; il testo che contengono resta leggibile come prima"),
         (55, "le note lunghe si leggono a pezzi, da ascoltare uno alla volta: si annuncia solo il primo pezzo e gli altri "
             + "seguono, come già avveniva per i testi normativi"),
+        (56, "molte note che si interrompevano a fine pagina e riprendevano più avanti si leggono intere, e le note lunghe "
+            + "sono divise in pezzi più naturali, di solito a fine frase"),
     ]
 
     private static var service: LibraryService { .shared }

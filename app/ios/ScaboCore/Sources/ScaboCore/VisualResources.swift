@@ -269,7 +269,7 @@ let VISUAL_NOTE_ROLES: Set<String> = [
     SemanticCategory.NOTE.rawValue, SemanticCategory.NOTE_CONTINUATION.rawValue, SemanticCategory.EDITORIAL_NOTE.rawValue,
 ]
 
-/// Vero se il segmento `i` è una NOTA VERA: una NOTE che si apre con il suo marcatore (la stessa prova del «blocco certo»),
+/// Vero se il segmento `i` è una NOTA VERA: una NOTE aperta dal suo marcatore (la stessa prova del «blocco certo»),
 /// o un pezzo di seguito di una tale nota (si guarda il primo pezzo). Una NOTE senza marcatore (le intestazioni di colonna
 /// a corpo minore che i codici classificano come note) non lo è.
 func isTrueNoteSegment(_ segments: [ContentSegment], _ i: Int) -> Bool {

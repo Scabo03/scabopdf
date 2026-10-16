@@ -159,7 +159,10 @@ public enum ProcessingChain {
     /// (sui dispositivi che possono riconoscere tabelle e figure), e il pacchetto del Mac lo porta: la lettura del Mac
     /// contiene le cure fino a qui. Si aggiorna nel giro che porta una cura nuova, una volta sola, qui.
     /// 55: le note lunghe frazionate anche quando l'iPad elabora da sé un PDF (giro del 2026-10-16).
-    public static let cureLevel = 55
+    /// 56: le note spezzate fra pagine contigue ricucite sull'iPad, e i pezzi delle note lunghe chiusi a fine frase
+    /// (giro «cura delle note», 2026-10-16 sera). Le letture del Mac preparate prima non hanno nessuna delle due: la cura
+    /// 56 si offre anche a loro.
+    public static let cureLevel = 56
 
     /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
     /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata

@@ -326,10 +326,12 @@ final class VisualResourceTests: XCTestCase {
 
     func test_offer_listsTheVisualResourcesCure_onDevicesThatCanRecognise() {
         guard ReprocessOffer.visualResourcesAvailable else { return }
-        // L'ultima cura è quella della catena (55 dal 2026-10-16: le note lunghe a pezzi); la cura delle risorse visive
-        // (53) resta nell'elenco ed è l'ultima che una lettura arrivata dal Mac può non avere.
+        // L'ultima cura è quella della catena (56 dal 2026-10-16 sera: note ricucite fra pagine e pezzi a fine frase); la
+        // cura delle risorse visive (53) resta nell'elenco. Una lettura arrivata dal Mac può non avere la 56 (preparata
+        // prima), mai la 55 (il Mac frazionava da sempre).
         XCTAssertEqual(ReprocessOffer.policy.latestCureBuild, ProcessingChain.cureLevel)
-        XCTAssertEqual(ReprocessOffer.policy.latestCureBuildForMacReadings, 53)
+        XCTAssertEqual(ReprocessOffer.policy.latestCureBuildForMacReadings, 56)
+        XCTAssertFalse(ProcessingChain.curesAlwaysInMacReadings.contains(56))
         XCTAssertTrue(ReprocessOffer.cures.contains { $0.build == 53 && $0.text.contains("risorse visive") })
     }
 }
