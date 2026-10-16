@@ -120,6 +120,15 @@ final class DocumentProcessor {
     /// Le decisioni della guardia sull'ultimo flusso costruito (Lettura Continua).
     private(set) var lastVisualReport: VisualResourcesReport?
 
+    /// Perché il riconoscimento di tabelle e figure dell'ultima elaborazione non è avvenuto (o non del tutto) per una
+    /// ragione da riprovare più avanti (memoria, modello: `VisualRegionDetector.retryableSkipReasons`); nil altrimenti.
+    /// Chi registra l'elaborazione la segna sul libro, e l'offerta di rielaborazione glielo propone (giro del 2026-10-16).
+    var visualResourcesMissingReason: String? {
+        guard let reason = lastVisualDetection?.skippedReason,
+              VisualRegionDetector.retryableSkipReasons.contains(reason) else { return nil }
+        return reason
+    }
+
     init(extractor: ProgressReportingPdfExtractor = PdfKitExtractor(), detectVisualResources: Bool = true) {
         self.extractor = extractor
         self.detectVisualResources = detectVisualResources

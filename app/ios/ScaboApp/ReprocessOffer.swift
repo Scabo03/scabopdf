@@ -109,6 +109,10 @@ enum ReprocessOffer {
         if doc.readingOrigin == ReadingOrigin.mac {
             text += "La lettura di adesso è arrivata dal Mac: rielaborando il libro qui, l'iPad la sostituisce con la sua. "
         }
+        if doc.visualResourcesSkipped != nil {
+            text += "L'ultima volta il riconoscimento di tabelle e figure non si è potuto fare, perché la memoria del dispositivo "
+                + "non bastava o il modello che riconosce l'impaginazione non si è caricato: rielaborando, l'app ci riprova. "
+        }
         if reason == .systemUpdate, let was = doc.processedSystemVersion {
             text += "Questo libro è stato letto con \(was); ora il lettore di sistema è \(SystemGeneration.current), già verificato per questa versione dell'app. "
         }
@@ -227,10 +231,12 @@ enum ReprocessOffer {
         // 3. Elaborazione nella schermata dedicata.
         let large = doc.sourcePageCount > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
         let target = large ? DocumentOpener.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
+        let processor = DocumentProcessor()
         let vc = ProcessingViewController(
             fileURL: service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind), sourceName: doc.title,
-            granularityTarget: target, buildDoctrine: !large, processor: DocumentProcessor())
+            granularityTarget: target, buildDoctrine: !large, processor: processor)
         vc.onOutcome = { [weak presenter] outcome in
+            let visualSkipped = processor.visualResourcesMissingReason
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
                 switch outcome {
@@ -239,7 +245,8 @@ enum ReprocessOffer {
                     let tree = large ? nil : DocumentOpener.quickConsultTreeIfAvailable(document)
                     service.writeCache(content, pageMap: pageMap, doctrineContent: large ? nil : doctrine,
                                        quickConsultTree: tree, contentTarget: target, forDocumentId: id)
-                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
+                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                                  visualResourcesSkipped: visualSkipped)
                     // 4. Riancoraggio sul testo nuovo (fuori dal thread principale: sui codici l'indice costa).
                     let segments = content.pages.flatMap { $0.segments }
                     let current = service.store.document(id: id) ?? doc

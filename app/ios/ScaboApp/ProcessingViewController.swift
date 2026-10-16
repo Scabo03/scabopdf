@@ -41,6 +41,12 @@ final class ProcessingViewController: UIViewController {
     private let buildDoctrine: Bool
     private let processor: DocumentProcessing
 
+    /// Il riconoscimento di tabelle e figure è saltato per una ragione da riprovare (memoria, modello)? Da leggere dopo
+    /// l'esito, per segnare il libro (`ArchivedDocument.visualResourcesSkipped`).
+    var visualResourcesMissingReason: String? {
+        (processor as? DocumentProcessor)?.visualResourcesMissingReason
+    }
+
     /// Player dei segnali acustici (seam per i test). Stati cablati: `loading` (in loop
     /// mentre l'elaborazione è in corso), `completion` (successo), `error` (fallimento).
     private let signalPlayer: SignalPlaying

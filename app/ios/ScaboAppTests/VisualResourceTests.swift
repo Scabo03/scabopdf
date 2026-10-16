@@ -331,6 +331,125 @@ final class VisualResourceTests: XCTestCase {
     }
 }
 
+// MARK: - Protezione della memoria (giro «costruzione della linea Mac», 2026-10-16)
+
+/// Il riconoscimento di tabelle e figure quando il modello d'impaginazione non si carica o la memoria scarseggia:
+/// l'elaborazione prosegue senza risorse visive, l'esito lo dice con una ragione da riprovare, il libro si segna e
+/// l'offerta di rielaborazione glielo propone. Il fallimento si SIMULA con `VisualRegionDetector.testing`.
+final class VisualResourcesMemoryTests: XCTestCase {
+
+    private var service: LibraryService { .shared }
+    private var created: [String] = []
+    private var files: [URL] = []
+
+    override func tearDown() {
+        VisualRegionDetector.testing = .init()
+        for id in created { service.deleteFiles(forDocumentId: id); service.store.deleteDocumentFromArchive(id: id) }
+        for f in files { try? FileManager.default.removeItem(at: f) }
+        created = []; files = []
+        super.tearDown()
+    }
+
+    /// Dieci pagine di testo neutro; la decima ha una tabella a filetti: il prefiltro manda al modello solo quella.
+    private func tenPagesOneTable() throws -> URL {
+        let data = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 420, height: 595)).pdfData { ctx in
+            let font = UIFont.systemFont(ofSize: 12)
+            for p in 0..<10 {
+                ctx.beginPage()
+                for k in 0..<12 {
+                    ("Riga \(k + 1) della pagina \(p + 1): il mulino sul fiume e le chiuse aperte di notte." as NSString)
+                        .draw(at: CGPoint(x: 40, y: 40 + k * 18), withAttributes: [.font: font])
+                }
+                if p == 9 {
+                    let cg = ctx.cgContext
+                    cg.setStrokeColor(UIColor.black.cgColor); cg.setLineWidth(1)
+                    for r in 0...5 { cg.move(to: CGPoint(x: 40, y: 300 + r * 40)); cg.addLine(to: CGPoint(x: 380, y: 300 + r * 40)) }
+                    for c in 0...3 { cg.move(to: CGPoint(x: 40 + c * 113, y: 300)); cg.addLine(to: CGPoint(x: 40 + c * 113, y: 500)) }
+                    cg.strokePath()
+                    for (i, w) in ["Stagione", "Raccolto", "Resa", "Primavera", "Grano", "Alta", "Estate", "Orzo", "Media"].enumerated() {
+                        (w as NSString).draw(at: CGPoint(x: 50 + (i % 3) * 113, y: 312 + (i / 3) * 40), withAttributes: [.font: font])
+                    }
+                }
+            }
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("memoria_\(UUID().uuidString).pdf")
+        try data.write(to: url)
+        files.append(url)
+        return url
+    }
+
+    func test_modelloNonCaricato_eMemoriaScarsa_ilRiconoscimentoSalta_eLoDice() throws {
+        guard #available(iOS 17.0, *) else { throw XCTSkip("il modello d'impaginazione richiede iOS 17") }
+        let url = try tenPagesOneTable()
+        let normal = VisualRegionDetector.detect(pdfURL: url)
+        XCTAssertEqual(normal.modelPages, [9], "il prefiltro manda al modello solo la pagina con la tabella")
+        XCTAssertNil(normal.skippedReason)
+        XCTAssertEqual(normal.analyzedPages, 1)
+
+        VisualRegionDetector.testing = .init(failModelLoad: true)
+        let failed = VisualRegionDetector.detect(pdfURL: url)
+        XCTAssertEqual(failed.skippedReason, VisualRegionDetector.modelUnavailableReason)
+        XCTAssertEqual(failed.analyzedPages, 0); XCTAssertTrue(failed.candidates.isEmpty)
+        XCTAssertTrue(VisualRegionDetector.retryableSkipReasons.contains(failed.skippedReason!))
+
+        VisualRegionDetector.testing = .init(availableMemoryBytes: 200 * 1024 * 1024)
+        let low = VisualRegionDetector.detect(pdfURL: url)
+        XCTAssertEqual(low.skippedReason, VisualRegionDetector.memoryBeforeLoadReason, "sotto la soglia il modello non si carica")
+        XCTAssertEqual(low.analyzedPages, 0)
+
+        VisualRegionDetector.testing = .init(availableMemoryBytes: 2_000 * 1024 * 1024, availableMemoryDuringModelBytes: 100 * 1024 * 1024)
+        let during = VisualRegionDetector.detect(pdfURL: url)
+        XCTAssertEqual(during.skippedReason, VisualRegionDetector.memoryDuringModelReason, "fra una pagina e l'altra il modello si ferma")
+        XCTAssertEqual(during.analyzedPages, 0)
+
+        VisualRegionDetector.testing = .init(availableMemoryBytes: 2_000 * 1024 * 1024)
+        XCTAssertNil(VisualRegionDetector.detect(pdfURL: url).skippedReason, "con memoria sufficiente il modello gira")
+    }
+
+    /// Il percorso dell'app: l'elaborazione senza modello PROSEGUE (nessuna chiusura, lettura completa), il libro si
+    /// segna, l'offerta di rielaborazione glielo propone con la spiegazione; una rielaborazione riuscita toglie il segno.
+    func test_elaborazioneSenzaModello_prosegue_segnaIlLibro_eLOffertaRiprova() throws {
+        guard #available(iOS 17.0, *) else { throw XCTSkip("il modello d'impaginazione richiede iOS 17") }
+        let url = try tenPagesOneTable()
+        func process() throws -> (outcome: DocumentProcessor.Outcome, missing: String?) {
+            let processor = DocumentProcessor()
+            let done = expectation(description: "elaborazione")
+            var out: DocumentProcessor.Outcome?
+            processor.process(fileURL: url, sourceName: "prova.pdf", onProgress: { _ in }) { out = $0; done.fulfill() }
+            wait(for: [done], timeout: 120)
+            return (try XCTUnwrap(out), processor.visualResourcesMissingReason)
+        }
+        VisualRegionDetector.testing = .init(failModelLoad: true)
+        let first = try process()
+        guard case .success(_, let content, _) = first.outcome else { return XCTFail("l'elaborazione deve proseguire") }
+        XCTAssertFalse(content.pages.flatMap { $0.segments }.isEmpty, "la lettura c'è, intera, senza risorse visive")
+        XCTAssertEqual(first.missing, VisualRegionDetector.modelUnavailableReason)
+
+        let doc = service.store.addDocument(title: "Prova memoria", sourceFileName: "prova.pdf", sourcePageCount: 10)
+        created.append(doc.id)
+        service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                      visualResourcesSkipped: first.missing)
+        let marked = try XCTUnwrap(service.store.document(id: doc.id))
+        XCTAssertEqual(marked.visualResourcesSkipped, VisualRegionDetector.modelUnavailableReason)
+        if ReprocessOffer.visualResourcesAvailable {
+            XCTAssertEqual(ReprocessOffer.policy.reason(for: marked, currentSystemVersion: SystemGeneration.current,
+                                                        currentAppBuild: SystemGeneration.appBuild), .cure,
+                           "anche elaborato da questa build, il libro riceve l'offerta di riprovare")
+            XCTAssertTrue(ReprocessOffer.whatChanges(marked, reason: .cure).contains("tabelle e figure"))
+        }
+
+        VisualRegionDetector.testing = .init()
+        let second = try process()
+        XCTAssertNil(second.missing)
+        service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                      visualResourcesSkipped: second.missing)
+        let cleared = try XCTUnwrap(service.store.document(id: doc.id))
+        XCTAssertNil(cleared.visualResourcesSkipped)
+        XCTAssertNil(ReprocessOffer.policy.reason(for: cleared, currentSystemVersion: SystemGeneration.current,
+                                                  currentAppBuild: SystemGeneration.appBuild), "riuscito il riconoscimento, nessuna offerta")
+    }
+}
+
 private extension Result {
     var failure: Failure? { if case .failure(let f) = self { return f }; return nil }
 }

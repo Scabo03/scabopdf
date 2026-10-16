@@ -120,6 +120,11 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// per una cura solo se la catena del Mac non la conteneva. OPZIONALE/additivo come gli altri campi.
     public var readingOrigin: String?
 
+    /// Perché all'ULTIMA elaborazione il riconoscimento di tabelle e figure non è avvenuto (o non del tutto) per una
+    /// ragione da riprovare: memoria del dispositivo scarsa, modello d'impaginazione non caricato (giro del 2026-10-16,
+    /// protezione della memoria). `nil` se è avvenuto o non serviva. L'offerta di rielaborazione lo propone di nuovo.
+    public var visualResourcesSkipped: String?
+
     public init(
         id: String,
         title: String,
@@ -139,9 +144,11 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         readingAnchor: ContentAnchor? = nil,
         readingPositionIsApproximate: Bool? = nil,
         sourceSha256: String? = nil,
-        readingOrigin: String? = nil
+        readingOrigin: String? = nil,
+        visualResourcesSkipped: String? = nil
     ) {
         self.readingOrigin = readingOrigin
+        self.visualResourcesSkipped = visualResourcesSkipped
         self.readingAnchor = readingAnchor
         self.readingPositionIsApproximate = readingPositionIsApproximate
         self.sourceSha256 = sourceSha256
@@ -588,12 +595,13 @@ public final class LibraryStore {
     /// Registra un'ELABORAZIONE del documento (importazione o rielaborazione dal file d'archivio):
     /// annota la versione di sistema del lettore PDF usato e l'istante. Non si chiama alla sola
     /// apertura dalla cache: l'etichetta descrive il contenuto in cache, non l'ultima lettura.
-    public func recordProcessed(id: String, systemVersion: String, appBuild: String? = nil) {
+    public func recordProcessed(id: String, systemVersion: String, appBuild: String? = nil, visualResourcesSkipped: String? = nil) {
         guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
         state.documents[i].processedSystemVersion = systemVersion
         state.documents[i].processedAt = now()
         state.documents[i].processedAppBuild = appBuild
         state.documents[i].readingOrigin = nil   // elaborato da questo dispositivo
+        state.documents[i].visualResourcesSkipped = visualResourcesSkipped
         persist()
     }
 
@@ -606,6 +614,7 @@ public final class LibraryStore {
         state.documents[i].processedAt = date
         state.documents[i].processedAppBuild = String(cureLevel)
         state.documents[i].readingOrigin = ReadingOrigin.mac
+        state.documents[i].visualResourcesSkipped = nil   // le risorse visive le ha cercate il Mac
         persist()
     }
 
@@ -656,12 +665,13 @@ public final class LibraryStore {
 
     /// Rimette l'etichetta di generazione com'era (ritorno alla lettura precedente, Reprocessing.swift).
     public func restoreProcessedLabel(id: String, systemVersion: String?, appBuild: String?, at: Date?,
-                                      readingOrigin: String? = nil) {
+                                      readingOrigin: String? = nil, visualResourcesSkipped: String? = nil) {
         guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
         state.documents[i].processedSystemVersion = systemVersion
         state.documents[i].processedAppBuild = appBuild
         state.documents[i].processedAt = at
         state.documents[i].readingOrigin = readingOrigin
+        state.documents[i].visualResourcesSkipped = visualResourcesSkipped
         persist()
     }
 

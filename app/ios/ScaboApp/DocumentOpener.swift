@@ -183,7 +183,8 @@ enum DocumentOpener {
         let processingVC = ProcessingViewController(
             fileURL: sourceURL, sourceName: doc.title, granularityTarget: target,
             buildDoctrine: !large, processor: processor)
-        processingVC.onOutcome = { [weak presenter] outcome in
+        processingVC.onOutcome = { [weak presenter, weak processingVC] outcome in
+            let visualSkipped = processingVC?.visualResourcesMissingReason
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
                 switch outcome {
@@ -198,7 +199,8 @@ enum DocumentOpener {
                                        doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
                                        contentTarget: target, forDocumentId: id)
                     // Etichetta di generazione: con quale lettore di sistema è stato elaborato.
-                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
+                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                                  visualResourcesSkipped: visualSkipped)
                     service.store.recordOpened(id: id)
                     // La cache mancava (o era illeggibile): il contenuto è nuovo, gli id di prima non valgono.
                     // Le annotazioni si riancorano per contenuto (§ 12.14): mai per id.
@@ -335,7 +337,8 @@ enum DocumentOpener {
         let processingVC = ProcessingViewController(
             fileURL: service.archivedPDFURL(forDocumentId: id), sourceName: doc.title,
             granularityTarget: target, buildDoctrine: !large)
-        processingVC.onOutcome = { [weak presenter] outcome in
+        processingVC.onOutcome = { [weak presenter, weak processingVC] outcome in
+            let visualSkipped = processingVC?.visualResourcesMissingReason
             presenter?.dismiss(animated: true) {
                 switch outcome {
                 case .success(let document, let content, let doctrineContent):
@@ -345,7 +348,8 @@ enum DocumentOpener {
                     service.writeCache(content, pageMap: pageMap,
                                        doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
                                        contentTarget: target, forDocumentId: id)
-                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
+                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                                  visualResourcesSkipped: visualSkipped)
                     completion(makeEmbeddedReader(
                         doc: doc, content: content, pageMap: pageMap,
                         doctrine: large ? nil : doctrineContent, tree: tree, onPositionChanged: onPositionChanged))
@@ -566,7 +570,8 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         let processor: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         let processingVC = ProcessingViewController(
             fileURL: localCopy, sourceName: sourceName, processor: processor)
-        processingVC.onOutcome = { [weak self, weak presenter] outcome in
+        processingVC.onOutcome = { [weak self, weak presenter, weak processingVC] outcome in
+            let visualSkipped = processingVC?.visualResourcesMissingReason
             presenter?.dismiss(animated: true) {
                 guard let self, let presenter else {
                     try? FileManager.default.removeItem(at: localCopy); self?.finish(); return
@@ -574,7 +579,8 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 // La copia temporanea è la sorgente dell'archiviazione (§12.6): va rimossa DOPO che
                 // `handleOutcome` l'ha copiata in archivio, non prima (correzione del cleanup).
                 self.handleOutcome(
-                    outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256, presenter: presenter)
+                    outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256, presenter: presenter,
+                    visualSkipped: visualSkipped)
                 try? FileManager.default.removeItem(at: localCopy)
             }
         }
@@ -587,7 +593,8 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         localCopy: URL,
         isAkn: Bool,
         sha256: String?,
-        presenter: UIViewController
+        presenter: UIViewController,
+        visualSkipped: String? = nil
     ) {
         let service = LibraryService.shared
         let sourceKind: String? = isAkn ? "akn" : nil
@@ -633,7 +640,8 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                                    contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id)
             }
             // Etichetta di generazione (anche per l'enorme non cachato: è comunque stato elaborato ora).
-            service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
+            service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                          visualResourcesSkipped: visualSkipped)
             if let destination { service.store.addCollocation(documentId: doc.id, to: destination) }
             service.store.recordOpened(id: doc.id)
             onImported?()

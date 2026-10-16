@@ -17,6 +17,13 @@
 //  anteriori al 17 il modello non si carica: nessuna risorsa, l'elaborazione prosegue come prima. Qualunque errore
 //  del modello su una pagina salta quella pagina: il riconoscimento non deve mai fermare un'importazione.
 //
+//  PROTEZIONE DELLA MEMORIA (giro «costruzione della linea Mac», 2026-10-16). Prima di caricare il modello si guarda
+//  quanta memoria il sistema concede ancora all'app (`os_proc_available_memory`, iOS): sotto la soglia il modello non
+//  si carica; fra una pagina e l'altra, sotto una soglia più bassa, si ferma (le pagine già viste restano). In entrambi
+//  i casi, e quando il modello non si carica, l'elaborazione prosegue senza (le altre) risorse visive e l'esito lo dice
+//  (`skippedReason` fra `retryableSkipReasons`): l'app segna il libro, e l'offerta di rielaborazione gli propone di
+//  riprovare. Le soglie e il fallimento del caricamento si simulano nei test con `testing`.
+//
 
 import Foundation
 import CoreGraphics
@@ -50,6 +57,51 @@ nonisolated public enum VisualRegionDetector {
     }
 
     private static let log = Logger(subsystem: "com.scabo.scabopdf", category: "risorse-visive")
+
+    /// Memoria che il sistema deve concedere ancora all'app per caricare il modello (byte). Il modello fp32 pesa 164 MB
+    /// e in uso arriva a circa 360 MB (misura del giro «struttura nativa» sul Mac); il resto è margine per il rendering
+    /// delle pagine e per l'elaborazione che continua.
+    public static let minimumAvailableMemoryToLoad: UInt64 = 600 * 1024 * 1024
+    /// Sotto questa soglia, fra una pagina e l'altra, il modello si ferma (le pagine già viste restano).
+    public static let minimumAvailableMemoryPerPage: UInt64 = 250 * 1024 * 1024
+
+    /// Le ragioni per cui il riconoscimento non è avvenuto (o non del tutto) e conviene riprovarlo più avanti: il libro
+    /// si segna e l'offerta di rielaborazione glielo propone. Le altre (nessuna pagina con grafica, sistema anteriore a
+    /// iOS 17, annullato, PDF non leggibile) non si riprovano.
+    public static let memoryBeforeLoadReason = "memoria insufficiente per il modello"
+    public static let memoryDuringModelReason = "memoria insufficiente durante il riconoscimento"
+    public static let modelUnavailableReason = "modello non disponibile"
+    public static let retryableSkipReasons: Set<String> = [memoryBeforeLoadReason, memoryDuringModelReason, modelUnavailableReason]
+
+    /// Ganci per le prove: fallimento simulato del caricamento del modello e memoria disponibile simulata (byte), prima
+    /// del caricamento e fra una pagina e l'altra del modello.
+    public struct TestHooks: Sendable {
+        public var failModelLoad = false
+        public var availableMemoryBytes: UInt64?
+        public var availableMemoryDuringModelBytes: UInt64?
+        public init(failModelLoad: Bool = false, availableMemoryBytes: UInt64? = nil, availableMemoryDuringModelBytes: UInt64? = nil) {
+            self.failModelLoad = failModelLoad
+            self.availableMemoryBytes = availableMemoryBytes
+            self.availableMemoryDuringModelBytes = availableMemoryDuringModelBytes
+        }
+    }
+    /// Solo prove e scenari di sviluppo (si imposta prima di elaborare; in produzione resta vuoto).
+    nonisolated(unsafe) public static var testing = TestHooks()
+
+    /// La memoria che il sistema concede ancora all'app (byte), o nil se non la dice (Mac; simulatore senza limite:
+    /// `os_proc_available_memory` vale 0).
+    public static func availableMemory(duringModel: Bool = false) -> UInt64? {
+        if duringModel, let simulated = testing.availableMemoryDuringModelBytes { return simulated }
+        if let simulated = testing.availableMemoryBytes { return simulated }
+        #if os(iOS)
+        let v = os_proc_available_memory()
+        return v > 0 ? UInt64(v) : nil
+        #else
+        return nil
+        #endif
+    }
+
+    private struct SimulatedModelFailure: Error {}
 
     /// Le pagine scelte senza quelle ruotate (rotazione non multipla di 360°). Pura, per le prove.
     public static func excludingRotated(_ pages: [Int], rotation: (Int) -> Int32) -> [Int] {
@@ -87,18 +139,26 @@ nonisolated public enum VisualRegionDetector {
         result.modelPages = Self.excludingRotated(chosen) { cgDoc.page(at: $0 + 1)?.rotationAngle ?? 0 }
         result.rotatedPagesSkipped = chosen.count - result.modelPages.count
         guard !result.modelPages.isEmpty else { result.skippedReason = "nessuna pagina con grafica"; return result }
-        // 3. Modello sulle sole pagine scelte.
+        // 3. Modello sulle sole pagine scelte, se la memoria lo consente.
         guard let pdfDoc = PDFDocument(url: pdfURL) else { result.skippedReason = "PDF non leggibile"; return result }
+        if let free = availableMemory(), free < minimumAvailableMemoryToLoad {
+            result.skippedReason = memoryBeforeLoadReason
+            Self.log.error("riconoscimento di tabelle e figure non eseguito: memoria disponibile \(free / 1_048_576, privacy: .public) MB")
+            return result
+        }
         // La fase si annuncia qui (0 di N): da questo momento il modello lavora davvero.
         onModelPage(0, result.modelPages.count)
         let model: HeronLayoutModel
-        do { model = try HeronLayoutModel.bundled(computeUnits: computeUnits) } catch {
+        do {
+            if testing.failModelLoad { throw SimulatedModelFailure() }
+            model = try HeronLayoutModel.bundled(computeUnits: computeUnits)
+        } catch {
             // Un secondo tentativo sulla sola CPU (per esempio se la GPU non ha risorse in quel momento).
             Self.log.error("modello d'impaginazione non caricato (\(computeUnits.rawValue, privacy: .public)): \(error.localizedDescription, privacy: .public)")
-            guard computeUnits != .cpuOnly, let cpu = try? HeronLayoutModel.bundled(computeUnits: .cpuOnly) else {
-                // Il libro resta senza risorse visive (dichiarato in docs/RISORSE_VISIVE.md § 7): nessuna offerta
-                // automatica di rielaborazione: se il modello non parte, riproporla girerebbe a vuoto.
-                result.skippedReason = "modello non disponibile"
+            guard computeUnits != .cpuOnly, !testing.failModelLoad, let cpu = try? HeronLayoutModel.bundled(computeUnits: .cpuOnly) else {
+                // Il libro resta senza risorse visive, l'elaborazione prosegue; l'app segna il libro e l'offerta di
+                // rielaborazione gli propone di riprovare (giro del 2026-10-16: prima non si riproponeva).
+                result.skippedReason = modelUnavailableReason
                 Self.log.error("riconoscimento di tabelle e figure non eseguito: modello non disponibile")
                 return result
             }
@@ -110,6 +170,11 @@ nonisolated public enum VisualRegionDetector {
         let t1 = Date()
         for (k, index) in result.modelPages.enumerated() {
             if isCancelled() { result.skippedReason = "annullato"; break }
+            if let free = availableMemory(duringModel: true), free < minimumAvailableMemoryPerPage {
+                result.skippedReason = memoryDuringModelReason
+                Self.log.error("riconoscimento fermato a pagina \(k, privacy: .public) di \(result.modelPages.count, privacy: .public): memoria \(free / 1_048_576, privacy: .public) MB")
+                break
+            }
             autoreleasepool {
                 guard let page = pdfDoc.page(at: index), let (layout, _) = try? analyzer.analyze(page: page, pageIndex: index) else { return }
                 result.analyzedPages += 1

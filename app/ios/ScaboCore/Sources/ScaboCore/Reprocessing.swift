@@ -34,6 +34,9 @@ public struct ReprocessingPolicy: Sendable {
     public let validatedSystemMajors: Set<Int>
     /// L'ultima build dell'app che ha portato una cura da offrire ai libri già elaborati.
     public let latestCureBuild: Int
+    /// La build della cura delle risorse visive (tabelle e figure): un libro il cui riconoscimento è saltato per una
+    /// ragione da riprovare (`visualResourcesSkipped`) riceve l'offerta dove il dispositivo sa riconoscere (cura ≥ 53).
+    public static let visualResourcesCureBuild = 53
 
     public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int) {
         self.validatedSystemMajors = validatedSystemMajors
@@ -59,6 +62,11 @@ public struct ReprocessingPolicy: Sendable {
         guard (doc.sourceKind ?? "pdf") == "pdf" else { return nil }
         guard currentGenerationIsValidated(currentSystemVersion: currentSystemVersion) else { return nil }
         let build = doc.processedAppBuild.flatMap { Int($0) }
+        // Riconoscimento di tabelle e figure saltato all'ultima elaborazione (memoria, modello): si propone di riprovare,
+        // anche se il libro è stato elaborato da questa stessa build (giro del 2026-10-16, protezione della memoria).
+        if doc.visualResourcesSkipped != nil, latestCureBuild >= Self.visualResourcesCureBuild {
+            return .cure
+        }
         // Lettura arrivata dal Mac (giro del 2026-10-16): il suo lettore di sistema è quello del Mac, non conta
         // l'aggiornamento dell'iPad; la sua build è il livello di cure della catena del Mac: si offre solo una cura
         // che quella catena non conteneva.
@@ -92,10 +100,13 @@ public struct ReadingSnapshot: Codable, Equatable, Sendable {
     public var processedAt: Date?
     /// Origine della lettura messa da parte (`nil` = elaborata dal dispositivo; additivo, giro del 2026-10-16).
     public var readingOrigin: String?
+    /// Riconoscimento di tabelle e figure saltato nella lettura messa da parte (additivo, giro del 2026-10-16).
+    public var visualResourcesSkipped: String?
     public var takenAt: Date
 
     public init(document d: ArchivedDocument, takenAt: Date) {
         readingOrigin = d.readingOrigin
+        visualResourcesSkipped = d.visualResourcesSkipped
         bookmarks = d.bookmarks ?? []
         underlines = d.underlines ?? []
         readingPosition = d.readingPosition
@@ -142,7 +153,7 @@ extension LibraryStore {
             readingPositionIsApproximate: snapshot.readingPositionIsApproximate)
         restoreProcessedLabel(id: documentId, systemVersion: snapshot.processedSystemVersion,
                               appBuild: snapshot.processedAppBuild, at: snapshot.processedAt,
-                              readingOrigin: snapshot.readingOrigin)
+                              readingOrigin: snapshot.readingOrigin, visualResourcesSkipped: snapshot.visualResourcesSkipped)
         return (newerB.count + newerU.count, orphaned)
     }
 }
