@@ -160,14 +160,21 @@ public enum ProcessingChain {
     /// contiene le cure fino a qui. Si aggiorna nel giro che porta una cura nuova, una volta sola, qui.
     /// 55: le note lunghe frazionate anche quando l'iPad elabora da sé un PDF (giro del 2026-10-16).
     /// 56: le note spezzate fra pagine contigue ricucite sull'iPad, e i pezzi delle note lunghe chiusi a fine frase
-    /// (giro «cura delle note», 2026-10-16 sera). Le letture del Mac preparate prima non hanno nessuna delle due: la cura
-    /// 56 si offre anche a loro.
+    /// (giro «cura delle note», 2026-10-16 sera). Le letture del Mac la ricevono dal Mac (`curesFromTheMacOnly`).
     public static let cureLevel = 56
 
     /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
     /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata
     /// dal Mac e l'offerta non la propone a quei libri (rielaborarli sull'iPad toglierebbe anzi l'innesto del Mac).
     public static let curesAlwaysInMacReadings: Set<Int> = [55]
+
+    /// Le cure che una lettura arrivata dal Mac riceve SOLO dal Mac, con una lettura nuova preparata da una catena del Mac
+    /// che le contiene, e non dalla rielaborazione sull'iPad: rielaborando sull'iPad la lettura del Mac perderebbe il suo
+    /// innesto (la rietichettatura dell'indice analitico, nella politica predefinita del Mac) senza che l'offerta lo dica.
+    /// 56: la ricucitura fra pagine contigue e i pezzi a fine frase (giro «cura delle note», 2026-10-16 sera, rilievo della
+    /// revisione indipendente): la catena del Mac le contiene dalla sua versione con questo livello di cure. Scelta prudente
+    /// in attesa della decisione del maintainer (referto del giro, § 9).
+    public static let curesFromTheMacOnly: Set<Int> = [56]
 
     /// Elabora il PDF `fileURL` (una copia locale) sul thread chiamante. `onProgress` è chiamato sul thread chiamante;
     /// `isCancelled` è consultato alle tappe naturali (per pagina e ai confini di fase). `onVisualDetection` riceve

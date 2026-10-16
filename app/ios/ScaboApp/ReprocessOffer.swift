@@ -37,13 +37,19 @@ enum ReprocessOffer {
                                   latestCureBuildForMacReadings: latestCureForMacReadings(upTo: latest))
     }
 
-    /// L'ultima cura che una lettura arrivata dal Mac può non avere (giro del 2026-10-16): la più recente fra le cure
-    /// che non sono già in ogni lettura del Mac (`ProcessingChain.curesAlwaysInMacReadings`: il frazionamento delle note
-    /// lunghe, che il Mac fa da sempre).
+    /// L'ultima cura che una lettura arrivata dal Mac può ricevere dall'iPad (giro del 2026-10-16): la più recente fra le
+    /// cure che non sono già in ogni lettura del Mac (`ProcessingChain.curesAlwaysInMacReadings`: il frazionamento delle
+    /// note lunghe, che il Mac fa da sempre) e che il Mac non porta da sé con una lettura nuova
+    /// (`ProcessingChain.curesFromTheMacOnly`: rielaborare sull'iPad toglierebbe l'innesto del Mac).
     static func latestCureForMacReadings(upTo latest: Int) -> Int {
         cures.map { $0.build }
-            .filter { $0 <= latest && !ProcessingChain.curesAlwaysInMacReadings.contains($0) }
+            .filter { $0 <= latest && !isNotOfferedToMacReadings($0) }
             .max() ?? latest
+    }
+
+    /// Una cura che non si promette né si offre a una lettura arrivata dal Mac.
+    static func isNotOfferedToMacReadings(_ build: Int) -> Bool {
+        ProcessingChain.curesAlwaysInMacReadings.contains(build) || ProcessingChain.curesFromTheMacOnly.contains(build)
     }
 
     /// Vero se il dispositivo può riconoscere tabelle e figure (iOS 17 o successivo).
@@ -118,12 +124,11 @@ enum ReprocessOffer {
     /// Cosa cambia, per questo libro.
     static func whatChanges(_ doc: ArchivedDocument, reason: ReprocessingReason) -> String {
         let since = doc.processedAppBuild.flatMap { Int($0) } ?? 0
-        // Una lettura arrivata dal Mac ha già le cure che il Mac fa da sempre (il frazionamento delle note lunghe): non si
-        // promettono come novità.
+        // Una lettura arrivata dal Mac ha già le cure che il Mac fa da sempre (il frazionamento delle note lunghe), e quelle
+        // che riceve dal Mac con una lettura nuova (la 56): non si promettono come novità della rielaborazione sull'iPad.
         let fromMac = doc.readingOrigin == ReadingOrigin.mac
         let list = cures.filter {
-            $0.build > since && $0.build <= policy.latestCureBuild
-                && !(fromMac && ProcessingChain.curesAlwaysInMacReadings.contains($0.build))
+            $0.build > since && $0.build <= policy.latestCureBuild && !(fromMac && isNotOfferedToMacReadings($0.build))
         }.map { $0.text }
         var text = ""
         if doc.readingOrigin == ReadingOrigin.mac {

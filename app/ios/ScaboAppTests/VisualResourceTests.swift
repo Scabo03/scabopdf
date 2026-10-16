@@ -327,11 +327,14 @@ final class VisualResourceTests: XCTestCase {
     func test_offer_listsTheVisualResourcesCure_onDevicesThatCanRecognise() {
         guard ReprocessOffer.visualResourcesAvailable else { return }
         // L'ultima cura è quella della catena (56 dal 2026-10-16 sera: note ricucite fra pagine e pezzi a fine frase); la
-        // cura delle risorse visive (53) resta nell'elenco. Una lettura arrivata dal Mac può non avere la 56 (preparata
-        // prima), mai la 55 (il Mac frazionava da sempre).
+        // cura delle risorse visive (53) resta nell'elenco ed è l'ultima che l'iPad offre a una lettura arrivata dal Mac:
+        // la 55 il Mac la fa da sempre, la 56 il Mac la porta con una lettura nuova (rielaborare sull'iPad toglierebbe
+        // l'innesto del Mac).
         XCTAssertEqual(ReprocessOffer.policy.latestCureBuild, ProcessingChain.cureLevel)
-        XCTAssertEqual(ReprocessOffer.policy.latestCureBuildForMacReadings, 56)
-        XCTAssertFalse(ProcessingChain.curesAlwaysInMacReadings.contains(56))
+        XCTAssertEqual(ReprocessOffer.policy.latestCureBuildForMacReadings, 53)
+        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.contains(56))
+        XCTAssertTrue(ReprocessOffer.isNotOfferedToMacReadings(55) && ReprocessOffer.isNotOfferedToMacReadings(56))
+        XCTAssertFalse(ReprocessOffer.isNotOfferedToMacReadings(53))
         XCTAssertTrue(ReprocessOffer.cures.contains { $0.build == 53 && $0.text.contains("risorse visive") })
     }
 }
