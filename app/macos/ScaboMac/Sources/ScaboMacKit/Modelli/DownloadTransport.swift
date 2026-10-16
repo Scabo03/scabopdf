@@ -43,10 +43,11 @@ public final class XPCDownloadTransport: NSObject, DownloadTransport, Avanzament
         lock.lock(); avanzamentoCorrente = avanzamento; lock.unlock()
         let once = OnceBox()
         let c = connetti()
-        c.invalidationHandler = { once.run { risposta(0, ProblemaScaricamento.rete) } }
-        c.interruptionHandler = { once.run { risposta(0, ProblemaScaricamento.rete) } }
-        let proxy = c.remoteObjectProxyWithErrorHandler { _ in once.run { risposta(0, ProblemaScaricamento.rete) } }
-        guard let s = proxy as? ScaricatoreProtocollo else { once.run { risposta(0, ProblemaScaricamento.rete) }; return }
+        // Un guasto della connessione con il servizio non è un guasto della rete: lo si dice per quello che è.
+        c.invalidationHandler = { once.run { risposta(0, ProblemaScaricamento.servizio) } }
+        c.interruptionHandler = { once.run { risposta(0, ProblemaScaricamento.servizio) } }
+        let proxy = c.remoteObjectProxyWithErrorHandler { _ in once.run { risposta(0, ProblemaScaricamento.servizio) } }
+        guard let s = proxy as? ScaricatoreProtocollo else { once.run { risposta(0, ProblemaScaricamento.servizio) }; return }
         s.scarica(url, verso: handle, byteAttesi: byteAttesi) { scritti, problema in once.run { risposta(scritti, problema) } }
     }
 

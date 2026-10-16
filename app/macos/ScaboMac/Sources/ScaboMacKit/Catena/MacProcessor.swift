@@ -31,6 +31,9 @@ public struct MacReadingReady {
     public let seconds: Double
     /// Conteggio dei tipi dei nodi di primo livello del documento grezzo (come il runner della rete).
     public let rawCategories: [String: Int]
+    /// Perché il riconoscimento di tabelle e figure non è avvenuto (o non del tutto) per una ragione da riprovare (il
+    /// modello non si è caricato); nil se è avvenuto. Va nel pacchetto: l'iPad segna il libro e propone di riprovare.
+    public var visualResourcesSkipped: String? = nil
 }
 
 public enum MacProcessingOutcome {
@@ -73,12 +76,15 @@ public enum MacProcessor {
         let large = ReadingAssembly.isLarge(pageCount: pageCount)
         let target = granularityTarget ?? (large ? ReadingAssembly.largeDocumentGranularity : DEFAULT_GRANULARITY_TARGET)
         let graft = OfficinaGraft(policy: policy)
+        var visualDetection: VisualRegionDetector.Result?
         let outcome = ProcessingChain.run(
             fileURL: pdfURL, sourceName: fileName, extractor: extractor,
             options: ChainOptions(granularityTarget: target, buildDoctrine: !large, detectVisualResources: true,
                                   fractionLongNotes: true, graft: policy.isOff ? nil : graft,
                                   visualCandidatesOverride: visualCandidates),
-            onProgress: onProgress, onVisualDetection: onVisualDetection, isCancelled: isCancelled)
+            onProgress: onProgress,
+            onVisualDetection: { result in visualDetection = result; onVisualDetection(result) },
+            isCancelled: isCancelled)
         switch outcome {
         case .cancelled:
             return .cancelled
@@ -92,11 +98,15 @@ public enum MacProcessor {
             let segs = r.content.pages.flatMap { $0.segments }
             var categories: [String: Int] = [:]
             for n in r.rawDocument.structure { categories[n.type.rawValue, default: 0] += 1 }
+            let skipped = visualDetection?.skippedReason.flatMap {
+                VisualRegionDetector.retryableSkipReasons.contains($0) ? $0 : nil
+            }
             return .ready(MacReadingReady(
                 title: title, fileName: fileName, sha256: sha, pageCount: pageCount, reading: reading,
                 workshop: r.graftReport ?? [], report: graft.report, segments: segs.count,
                 visualResources: segs.filter { $0.visualResource != nil }.count,
-                warnings: r.document.warnings, seconds: Date().timeIntervalSince(t0), rawCategories: categories))
+                warnings: r.document.warnings, seconds: Date().timeIntervalSince(t0), rawCategories: categories,
+                visualResourcesSkipped: skipped))
         }
     }
 
@@ -108,6 +118,7 @@ public enum MacProcessor {
             source: .init(sha256: ready.sha256, fileName: ready.fileName, title: ready.title, pageCount: ready.pageCount),
             reading: ready.reading, cacheFormat: ReadingAssembly.cacheFormatVersion, workshop: ready.workshop,
             stitchedNotes: ready.report.stitches.count, relabeledIndexLines: ready.report.relabels,
+            visualResourcesSkipped: ready.visualResourcesSkipped,
             annotations: annotations)
     }
 }

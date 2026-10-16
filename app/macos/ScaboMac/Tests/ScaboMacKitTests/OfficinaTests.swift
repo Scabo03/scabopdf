@@ -76,6 +76,27 @@ final class OfficinaTests: XCTestCase {
         XCTAssertEqual(body.reading, r.reading, "il pacchetto riletto con il codice dell'iPad è la lettura del Mac")
         XCTAssertNoThrow(try ReadingPackage.checkCompatibility(h, readableCacheFormats: ReadingAssembly.minReadableCacheFormatVersion...ReadingAssembly.cacheFormatVersion))
 
+        // Preparato FUORI dal thread principale (revisione indipendente del giro): stesso pacchetto, salvo l'ora di creazione.
+        let fuori = expectation(description: "pacchetto preparato fuori dal main")
+        var asyncData: Data?
+        m.preparaPacchetto { d in asyncData = d; fuori.fulfill() }
+        await fulfillment(of: [fuori], timeout: 30)
+        let ad = try XCTUnwrap(asyncData)
+        let (ah, aoff) = try ReadingPackage.readHeader(ad)
+        XCTAssertEqual(try ReadingPackage.readBody(ad, header: ah, payloadOffset: aoff).reading, r.reading)
+        XCTAssertNil(ah.reading.visualResourcesSkipped, "il riconoscimento c'è stato")
+        let fileFuori = expectation(description: "file per AirDrop preparato fuori dal main")
+        var asyncURL: URL?
+        m.preparaFileTemporaneo { u in asyncURL = u; fileFuori.fulfill() }
+        await fulfillment(of: [fileFuori], timeout: 30)
+        let au = try XCTUnwrap(asyncURL)
+        files.append(au)
+        XCTAssertEqual(try Data(contentsOf: au).prefix(8), Data(ReadingPackageFormat.magic))
+
+        // Il riassunto non dice mai insieme «nulla da correggere» e «controllo non possibile».
+        XCTAssertFalse(Testi.riassuntoLettura(r).contains("non è stato possibile")
+                       && Testi.riassuntoLettura(r).contains("non ha trovato nulla"))
+
         // Il file per AirDrop (e il nome proposto per il cavo).
         let tmp = try m.fileTemporaneo()
         files.append(tmp)

@@ -144,6 +144,32 @@ public final class OfficinaViewModel: ObservableObject {
         return url
     }
 
+    /// Come `pacchetto()`, ma FUORI dal thread principale (un codice intero sono megabyte da codificare e comprimere:
+    /// l'interfaccia e VoiceOver non devono fermarsi). `completion` sul main, con `nil` se non è riuscito.
+    public func preparaPacchetto(_ completion: @escaping @MainActor (Data?) -> Void) {
+        guard let r = pronta else { completion(nil); return }
+        let annotations = includiAnnotazioni ? annotazioniDisponibili : nil
+        DispatchQueue.global(qos: .userInitiated).async {
+            let data = try? MacProcessor.package(r, annotations: annotations)
+            Task { @MainActor in completion(data) }
+        }
+    }
+
+    /// Come `fileTemporaneo()`, fuori dal thread principale.
+    public func preparaFileTemporaneo(_ completion: @escaping @MainActor (URL?) -> Void) {
+        let nome = nomeFileProposto
+        preparaPacchetto { data in
+            guard let data else { completion(nil); return }
+            let dir = FileManager.default.temporaryDirectory.appendingPathComponent("Letture da inviare", isDirectory: true)
+            let url = dir.appendingPathComponent(nome)
+            DispatchQueue.global(qos: .userInitiated).async {
+                let ok = (try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)) != nil
+                    && (try? data.write(to: url, options: .atomic)) != nil
+                Task { @MainActor in completion(ok ? url : nil) }
+            }
+        }
+    }
+
     public func esportazioneRiuscita(_ prosa: String) {
         esitoEsportazione = prosa
         announcer.announce(prosa, priority: .alta)

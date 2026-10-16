@@ -121,6 +121,8 @@ public final class PanelViewModel: ObservableObject {
               let entry = catalog.voci.first(where: { $0.id == id }) else { return }
         verificheInCorso.insert(id)
         esitiVerifica[id] = nil
+        // Una domanda di rimozione ancora aperta per questa voce si chiude: i file servono alla verifica.
+        if confermaRimozionePer == id { confermaRimozionePer = nil }
         announcer.announce(Testi.annuncioVerificaAvviata(entry.nome), priority: .normale)
         v.verifica(id) { [weak self] esito in
             guard let self else { return }
@@ -139,6 +141,8 @@ public final class PanelViewModel: ObservableObject {
     public func confermaRimozione() {
         guard let id = confermaRimozionePer else { return }
         confermaRimozionePer = nil
+        // Mai togliere i file mentre la verifica li sta leggendo (revisione indipendente del giro).
+        guard !verificheInCorso.contains(id) else { focusRichiesto = id; return }
         service.remove(id)
     }
     public func annullaRimozione() {

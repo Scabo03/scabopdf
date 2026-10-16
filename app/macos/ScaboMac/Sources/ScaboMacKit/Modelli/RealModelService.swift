@@ -71,7 +71,7 @@ public final class RealModelService: ModelService, ModelVerifying {
             case .inclusoNellApp: states[e.id] = .incluso
             default:
                 if e.scaricamento != nil {
-                    if store.isInstalled(e) { states[e.id] = .scaricato } else { store.togliParziali(e.id); states[e.id] = .nonScaricato }
+                    if store.isInstalled(e) { states[e.id] = .scaricato } else { store.togliIncompleto(e.id); states[e.id] = .nonScaricato }
                 } else {
                     states[e.id] = .nonDisponibileQui
                 }
@@ -117,11 +117,6 @@ public final class RealModelService: ModelService, ModelVerifying {
         let id = entry.id
         guard indice < spec.file.count else { concludi(entry, transport: transport); return }
         let f = spec.file[indice]
-        // Già verificato da un tentativo precedente: non si riscarica.
-        if let sha = ModelStore.sha256Hex(of: store.file(id, f.nome)), sha == f.sha256 {
-            scaricaFile(entry, spec: spec, indice: indice + 1, fatti: fatti + f.byte, transport: transport)
-            return
-        }
         guard let url = URL(string: f.indirizzo), let handle = try? store.apriParziale(id, f.nome) else {
             fallisci(id, .sconosciuto, transport: transport); return
         }
@@ -135,7 +130,7 @@ public final class RealModelService: ModelService, ModelVerifying {
                 guard let self else { return }
                 if let problema {
                     if problema == ProblemaScaricamento.annullato || self.annullati.contains(id) {
-                        self.store.togliParziali(id)
+                        self.store.togliIncompleto(id)
                         transport.chiudi()
                         self.transports[id] = nil
                         self.set(id, .nonScaricato)
@@ -145,6 +140,7 @@ public final class RealModelService: ModelService, ModelVerifying {
                         case ProblemaScaricamento.rete: e = scritti > 0 ? .scaricamentoInterrotto : .connessioneAssente
                         case ProblemaScaricamento.troppiByte: e = .fileDanneggiato
                         case ProblemaScaricamento.rispostaNonValida: e = .fonteNonDisponibile
+                        case ProblemaScaricamento.servizio: e = .sconosciuto
                         default: e = .sconosciuto
                         }
                         self.fallisci(id, e, transport: transport)
@@ -158,7 +154,7 @@ public final class RealModelService: ModelService, ModelVerifying {
                     Task { @MainActor [weak self] in
                         guard let self else { return }
                         if self.annullati.contains(id) {
-                            self.store.togliParziali(id); transport.chiudi(); self.transports[id] = nil; self.set(id, .nonScaricato); return
+                            self.store.togliIncompleto(id); transport.chiudi(); self.transports[id] = nil; self.set(id, .nonScaricato); return
                         }
                         if ok {
                             self.scaricaFile(entry, spec: spec, indice: indice + 1, fatti: fatti + f.byte, transport: transport)
@@ -188,7 +184,7 @@ public final class RealModelService: ModelService, ModelVerifying {
     }
 
     private func fallisci(_ id: String, _ e: ModelError, transport: DownloadTransport) {
-        store.togliParziali(id)
+        store.togliIncompleto(id)
         transport.chiudi()
         transports[id] = nil
         set(id, .errore(e))

@@ -101,12 +101,14 @@ public struct ModelStore: Sendable {
         return (try? FileManager.default.moveItem(at: p, to: dest)) != nil
     }
 
-    /// Toglie i parziali di una voce (scaricamento annullato o fallito): nulla di incompleto resta sul disco.
-    func togliParziali(_ id: String) {
-        let items = (try? FileManager.default.contentsOfDirectory(at: dir(id), includingPropertiesForKeys: nil)) ?? []
-        for u in items where u.pathExtension == "parziale" { try? FileManager.default.removeItem(at: u) }
-        if (try? FileManager.default.contentsOfDirectory(atPath: dir(id).path))?.isEmpty == true {
-            try? FileManager.default.removeItem(at: dir(id))
+    /// Toglie TUTTO ciò che uno scaricamento non concluso ha scritto per una voce (annullato, fallito, o interrotto da
+    /// una chiusura dell'app): i parziali e anche i file già verificati di una voce che non è completa. Così «nulla è
+    /// rimasto sul disco» è vero (revisione indipendente del giro: annullando durante il secondo file, il primo, da 950
+    /// megabyte, restava). Le cache del motore non si toccano qui: le crea solo una verifica, cioè una voce completa.
+    func togliIncompleto(_ id: String) {
+        try? FileManager.default.removeItem(at: dir(id))
+        if (try? FileManager.default.contentsOfDirectory(atPath: root.path))?.isEmpty == true {
+            try? FileManager.default.removeItem(at: root)
         }
     }
 

@@ -265,11 +265,13 @@ public enum Testi {
         let s = r.report.stitches.count, n = r.report.relabels
         if s > 0 { parti.append(s == 1 ? "Una nota che scavalca la pagina è stata ricucita." : "Note che scavalcano la pagina ricucite: \(s).") }
         if n > 0 { parti.append("Voci dell'indice analitico lette come testo e non più come note: \(n).") }
-        if s == 0 && n == 0 {
-            parti.append("Il modello d'impaginazione non ha trovato nulla da correggere oltre a ciò che fa già il telefono.")
-        }
         if r.report.modelUnavailable {
             parti.append("Il controllo con il modello d'impaginazione non è stato possibile: la lettura è quella che farebbe il telefono.")
+        } else if s == 0 && n == 0 {
+            parti.append("Il modello d'impaginazione non ha trovato nulla da correggere oltre a ciò che fa già il telefono.")
+        }
+        if r.visualResourcesSkipped != nil {
+            parti.append("Il riconoscimento di tabelle e figure non è stato possibile su questo Mac: l'iPad proporrà di riprovarlo.")
         }
         parti.append("Preparata in \(max(1, Int(r.seconds.rounded()))) secondi.")
         return parti.joined(separator: " ")

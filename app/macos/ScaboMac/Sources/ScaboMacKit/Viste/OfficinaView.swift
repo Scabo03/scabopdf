@@ -127,11 +127,12 @@ public struct OfficinaView: View {
         panel.message = Testi.pannelloSalvaMessaggio
         panel.prompt = Testi.pannelloSalvaPulsante
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            try model.pacchetto().write(to: url, options: .atomic)
+        let model = self.model
+        model.preparaPacchetto { data in
+            guard let data, (try? data.write(to: url, options: .atomic)) != nil else {
+                model.esportazioneFallita(Testi.esitoNonSalvato); return
+            }
             model.esportazioneRiuscita(Testi.esitoSalvato(url.lastPathComponent))
-        } catch {
-            model.esportazioneFallita(Testi.esitoNonSalvato)
         }
     }
 
@@ -141,15 +142,14 @@ public struct OfficinaView: View {
         guard let service = NSSharingService(named: .sendViaAirDrop) else {
             model.esportazioneFallita(Testi.esitoAirDropAssente); return
         }
-        do {
-            let url = try model.fileTemporaneo()
+        let model = self.model
+        model.preparaFileTemporaneo { url in
+            guard let url else { model.esportazioneFallita(Testi.esitoNonPreparato); return }
             guard service.canPerform(withItems: [url]) else { model.esportazioneFallita(Testi.esitoAirDropAssente); return }
             let delegate = AirDropDelegate(model: model)
             AirDropDelegate.current = delegate
             service.delegate = delegate
             service.perform(withItems: [url])
-        } catch {
-            model.esportazioneFallita(Testi.esitoNonPreparato)
         }
     }
 }

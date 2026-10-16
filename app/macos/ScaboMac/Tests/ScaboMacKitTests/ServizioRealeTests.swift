@@ -183,16 +183,60 @@ final class ServizioRealeTests: XCTestCase {
         XCTAssertTrue(store.isInstalled(e))
     }
 
-    func test_fileGiaVerificato_nonSiRiscarica() async throws {
+    func test_annullamentoDuranteIlSecondoFile_tolgeAncheIlPrimo_nullaRestaSulDisco() async throws {
+        // Revisione indipendente del giro: annullando durante il secondo file, il primo (già verificato) restava.
+        let (e, fonte) = try voce()
+        let store = ModelStore(root: tempDir("modelli"))
+        let (_, m, a, trasporto) = servizioComandato(e, store: store)
+        m.scarica(e.id)
+        let t = try XCTUnwrap(trasporto())
+        try t.consegna(fonte.appendingPathComponent("file0.gguf"))
+        await lasciaGirare()
+        XCTAssertEqual(t.chiamate.count, 2, "verificato il primo, parte il secondo")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: store.file(e.id, "file0.gguf").path))
+        m.annulla(e.id)
+        await lasciaGirare()
+        XCTAssertEqual(m.state(of: e.id), .nonScaricato)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.dir(e.id).path), "nemmeno il primo file resta")
+        XCTAssertEqual(a.testi.last, Testi.annuncioScaricamentoAnnullato(e.nome), "e l'annuncio «nulla è rimasto» è vero")
+    }
+
+    func test_fileVerificatoSenzaSegno_diUnaVoltaPrecedente_siTogliAllAvvio() throws {
+        // Un'app chiusa a metà scaricamento: un file verificato senza il segno della voce completa non resta.
         let (e, fonte) = try voce()
         let store = ModelStore(root: tempDir("modelli"))
         try FileManager.default.createDirectory(at: store.dir(e.id), withIntermediateDirectories: true)
         try FileManager.default.copyItem(at: fonte.appendingPathComponent("file0.gguf"), to: store.file(e.id, "file0.gguf"))
-        let (_, m, _, trasporto) = servizioComandato(e, store: store)
-        XCTAssertEqual(m.state(of: e.id), .nonScaricato, "senza il segno la voce non è completa")
+        let (_, m, _, _) = servizioComandato(e, store: store)
+        XCTAssertEqual(m.state(of: e.id), .nonScaricato)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.dir(e.id).path))
+    }
+
+    func test_guastoDelServizio_nonDiceCheManchiInternet() async throws {
+        let (e, _) = try voce()
+        let (_, m, _, trasporto) = servizioComandato(e, store: ModelStore(root: tempDir("modelli")))
         m.scarica(e.id)
-        let t = try XCTUnwrap(trasporto())
-        XCTAssertEqual(t.chiamate.map(\.url.lastPathComponent), ["file1.gguf"], "il primo, già verificato, non si riscarica")
+        try XCTUnwrap(trasporto()).chiamate[0].risposta(0, ProblemaScaricamento.servizio)
+        await lasciaGirare()
+        XCTAssertEqual(m.state(of: e.id), .errore(.sconosciuto))
+        XCTAssertNotEqual(m.state(of: e.id), .errore(.connessioneAssente))
+    }
+
+    func test_rimozioneNonParte_mentreLaVerificaUsaIFile() async throws {
+        let (e, _) = try voce()
+        let store = ModelStore(root: tempDir("modelli"))
+        let (s, m, _) = servizio(e, store: store)
+        m.scarica(e.id)
+        await attendi(m, e.id) { if case .inScaricamento = $0 { return true }; return false }
+        XCTAssertTrue(s.puoVerificare(e.id))
+        m.chiediRimozione(e.id)
+        m.verifica(e.id)
+        XCTAssertNil(m.confermaRimozionePer, "la domanda di rimozione si chiude quando parte la verifica")
+        m.chiediRimozione(e.id)
+        m.confermaRimozione()
+        XCTAssertEqual(m.state(of: e.id), .scaricato, "durante la verifica nulla si toglie")
+        XCTAssertTrue(store.isInstalled(e))
+        for _ in 0..<400 where m.verificheInCorso.contains(e.id) { try await Task.sleep(nanoseconds: 25_000_000) }
     }
 
     func test_guasti_diRete_inProsa_conRiprova() async throws {

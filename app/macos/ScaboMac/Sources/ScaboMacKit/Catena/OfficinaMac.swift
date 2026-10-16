@@ -44,7 +44,9 @@ public struct OfficinaPolicy: Equatable, Sendable {
     public var analyticalIndexRelabel: Bool
     public var multipageStitch: Bool
 
-    public init(analyticalIndexRelabel: Bool = true, multipageStitch: Bool = true) {
+    /// Senza argomenti è la politica del giro (ricucitura fra pagine SPENTA): la ricucitura si accende solo chiedendola
+    /// esplicitamente (`.banco`), mai per dimenticanza (revisione indipendente del giro).
+    public init(analyticalIndexRelabel: Bool = true, multipageStitch: Bool = false) {
         self.analyticalIndexRelabel = analyticalIndexRelabel
         self.multipageStitch = multipageStitch
     }

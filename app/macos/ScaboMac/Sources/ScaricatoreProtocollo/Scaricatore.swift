@@ -45,6 +45,8 @@ public enum ProblemaScaricamento {
     public static let scrittura = "scrittura non riuscita"
     public static let rete = "connessione"
     public static let troppiByte = "più byte del previsto"
+    /// Il servizio di scaricamento non è partito o si è fermato (la connessione con l'app è caduta): non è la rete.
+    public static let servizio = "servizio di scaricamento"
 }
 
 /// Lo scaricatore in streaming: una richiesta, i byte scritti man mano nel file, l'avanzamento ogni `passoAvviso` byte.
