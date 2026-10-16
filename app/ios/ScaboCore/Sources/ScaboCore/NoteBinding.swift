@@ -96,6 +96,55 @@ public struct NotePlacementStats: Codable, Equatable, Sendable {
     public var placedLong = 0
     /// Footnote-continuazione cross-pagina ricucite nella testa (GATED Estratto).
     public var stitchedCrossPage = 0
+    /// Note ricucite fra pagine CONTIGUE fuori dall'Estratto (giro «cura delle note», 2026-10-16): la prima nota della
+    /// pagina B fusa nell'ultima della pagina A. Vedi `stitchAdjacentPageFootnotes`.
+    public var stitchedAdjacentPage = 0
+    /// Il vaglio di ogni coppia candidata alla ricucitura fra pagine contigue, PRIVO DI TESTO (pagine, identificativi,
+    /// misure, verdetto): per le reti e il giudizio contro la pagina stampata. Non viaggia nella lettura.
+    public var adjacentPageCandidates: [AdjacentPageStitchCandidate] = []
+}
+
+/// Il vaglio di una coppia «ultima nota della pagina A, prima nota della pagina B = A + 1» per la ricucitura fra pagine
+/// contigue (`stitchAdjacentPageFootnotes`). Privo di testo: solo pagine, identificativi, misure e verdetto.
+public struct AdjacentPageStitchCandidate: Codable, Equatable, Sendable {
+    /// Pagina (indice 0) dove sta la testa, cioè la parte della nota sulla pagina A, e pagina della coda (A + 1).
+    public var headPage: Int
+    public var tailPage: Int
+    /// Identificativi della nota-testa (la nota che resta, eventualmente già cresciuta in una catena) e della coda.
+    public var headId: String
+    public var tailId: String
+    /// Il predicato di ricucitura dell'app (`noteTailContinuesHead`): la testa resta aperta, la coda la continua.
+    public var predicate: Bool
+    /// Successione dei numeri sulla pagina B: «confermata» (la prima nota numerata dopo la coda ha il numero della testa
+    /// più uno), «non confermata» (ne ha un altro), «assente» (nessuna nota numerata dopo la coda sulla pagina B),
+    /// «testa senza numero».
+    public var succession: String
+    /// Numero della testa e della prima nota numerata dopo la coda sulla pagina B (nil se assenti).
+    public var headNumber: Int?
+    public var nextNumber: Int?
+    /// Il numero in testa alla coda torna nella successione (testa + 1): la coda è una nota nuova.
+    public var tailLeadingIsNext: Bool
+    /// Geometria (punti, origine in basso a sinistra): bordo superiore della prima riga della coda e fondo del contenuto
+    /// non-nota (corpo, titoli) della pagina B; lo stesso per il nodo dell'ultima nota della pagina A.
+    public var tailTop: Double?
+    public var tailPageContentBottom: Double?
+    public var headTop: Double?
+    public var headPageContentBottom: Double?
+    /// Corpo (punti) della prima riga della coda e dell'ultima riga della testa: il corpo MASSIMO dei suoi span con testo
+    /// (`noteLineMaxSpanSize`), che non risente del maiuscoletto né dei richiami in apice.
+    public var tailSize: Double?
+    public var headSize: Double?
+    /// Bordi sinistro e destro della prima riga della coda e dell'ultima riga della testa.
+    public var tailX0: Double?
+    public var tailX1: Double?
+    public var headX0: Double?
+    public var headX1: Double?
+    /// Tipo dei due nodi (NOTE o EDITORIAL_NOTE).
+    public var headNodeType: String
+    public var tailNodeType: String
+    /// Verdetto e, se respinta, la prima guardia che l'ha fermata.
+    public var stitched: Bool
+    public var reason: String
 }
 
 // MARK: - Costanti del segnale (calibrate in Fase 1b su PDFKit reale)
@@ -187,9 +236,11 @@ public func bindAndPlaceNotes(
         return derived
     }
 
-    // Per nodo BODY: i marcatori in-corpo. Per nodo NOTE: le note spezzate.
+    // Per nodo BODY: i marcatori in-corpo. Per nodo NOTE: le note spezzate (e le righe, per la geometria della
+    // ricucitura fra pagine contigue, sotto).
     var markersByBodyId: [String: [InlineMarker]] = [:]
     var footnotesByNoteId: [String: [Footnote]] = [:]
+    var noteLinesById: [String: [LineSummary]] = [:]
     var cursorByPage: [Int: Int] = [:]
     for node in document.structure {
         let page = node.page_index
@@ -206,6 +257,7 @@ public func bindAndPlaceNotes(
         case .run(.note, let lines):
             if node.type == .NOTE {
                 footnotesByNoteId[node.id] = splitFootnotes(lines, page: page)
+                noteLinesById[node.id] = lines
             }
         case .run(.gloss, _):
             break  // le glosse laterali non sono note: niente aggancio (apparato note ripulito)
@@ -286,6 +338,19 @@ public func bindAndPlaceNotes(
             stats.stitchedCrossPage = stitchCrossPageFootnotes(
                 document.structure, &footnoteNodeById, &footnotesInNoteOrder,
                 allowCrossPage: false, withinNodeOnly: true)
+            // ── 2b-ter. Ricucitura fra pagine CONTIGUE (giro «cura delle note», 2026-10-16) ───────────────
+            // Dopo il salvataggio same-page, che resta identico: l'ultima nota della pagina A e la prima della
+            // pagina A + 1, con le guardie di `stitchAdjacentPageFootnotes`. Codici esclusi (sopra), Estratto col
+            // suo percorso storico (sopra, invariato).
+            var contentBottomByPage: [Int: Double] = [:]
+            for page in Set(document.structure.filter { $0.type == .NOTE }.map { $0.page_index }) {
+                contentBottomByPage[page] = nonNoteContentBottom(items(page))
+            }
+            let adjacent = stitchAdjacentPageFootnotes(
+                document.structure, &footnoteNodeById, &footnotesInNoteOrder,
+                noteLinesById: noteLinesById, contentBottomByPage: contentBottomByPage)
+            stats.stitchedAdjacentPage = adjacent.count
+            stats.adjacentPageCandidates = adjacent.candidates
         }
     }
 
@@ -505,6 +570,173 @@ func stitchCrossPageFootnotes(
         }
     }
     return count
+}
+
+// MARK: - Ricucitura fra pagine contigue (giro «cura delle note», 2026-10-16)
+
+/// Fondo (y minima, origine in basso a sinistra) del contenuto che nota non è — corpo e titoli — fra gli elementi di una
+/// pagina; nil se la pagina non ne ha. Le glosse laterali e l'apparato di pagina intera non contano.
+func nonNoteContentBottom(_ items: [GenItem]) -> Double? {
+    var bottom: Double?
+    func take(_ sm: LineSummary) {
+        guard !sm.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        bottom = min(bottom ?? sm.yBottom, sm.yBottom)
+    }
+    for item in items {
+        switch item {
+        case .run(.body, let lines): lines.forEach(take)
+        case .heading(let sm, _), .numberedTitle(let sm, _), .monoTitle(let sm, _): take(sm)
+        case .run(.note, _), .run(.gloss, _), .apparatus: break
+        }
+    }
+    return bottom
+}
+
+/// Corpo tipografico MASSIMO fra gli span con testo di una riga (0 se nessuno): il corpo della riga che non risente del
+/// maiuscoletto (cognomi a corpo minore) né dei richiami in apice.
+func noteLineMaxSpanSize(_ line: LineSummary) -> Double {
+    line.spans.filter { $0.fontSize > 0 && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        .map { $0.fontSize }.max() ?? 0
+}
+
+/// Ricucitura delle note spezzate fra pagine CONTIGUE, fuori dall'Estratto e fuori dai codici (decisione del
+/// maintainer del 2026-10-16, LAYER2 § 12.12). Lavora come la ricucitura per identità dell'Estratto — livello FOOTNOTE,
+/// PRIMA del piazzamento, sul flatten delle note in ordine di lettura (il corpo è saltato: lo zip nodi↔pageItems dello
+/// step 1 non è toccato) — ma solo sull'ULTIMA nota della pagina A e sulla PRIMA della pagina A + 1, e con guardie in
+/// più, ciascuna contro una famiglia di falsi misurata dal conteggio del giro precedente
+/// (`docs/CONTEGGIO_NOTE_SPEZZATE.md`):
+///   • il predicato dell'app (`noteTailContinuesHead`): la testa resta aperta, la coda la continua (non apre con il
+///     marcatore di una nota nuova);
+///   • la SUCCESSIONE dei numeri confermata sulla pagina B: la prima nota numerata dopo la coda porta il numero della
+///     testa più uno — fra testa e coda non può nascondersi un'altra nota (note nuove il cui numero non si riconosce);
+///   • il numero in testa alla coda, se c'è, non è quello della testa più uno (la coda non è la nota seguente);
+///   • la coda COMINCIA SOTTO il corpo e i titoli della pagina B, e il nodo della testa sta sotto quelli della pagina
+///     A: è l'apparato a piè di pagina, non una glossa, una citazione in corpo minore, un riquadro, una tabella o una
+///     testatina che stanno fra le righe del corpo; una pagina senza corpo né titoli non si ricuce;
+///   • lo stesso corpo tipografico (entro `BODY_SIZE_TOLERANCE`) fra l'ultima riga della testa e la prima della coda:
+///     note dello stesso apparato, non una citazione in corpo minore che chiude il corpo della pagina B. Il corpo di
+///     una riga è quello MASSIMO dei suoi span (`noteLineMaxSpanSize`): la media pesata dei caratteri scende con il maiuscoletto
+///     dei cognomi e farebbe respingere una continuazione vera;
+///   • entrambi i nodi sono NOTE (non le note editoriali).
+/// Nel dubbio non si ricuce: si lascia una nota aperta, mai si fondono due note. De-sillaba la parola spezzata e
+/// ricomputa `length_category`; catene su più pagine solo se ogni passo supera le guardie (la testa, ricucita, porta
+/// il suo numero). Ritorna il numero di code fuse e il vaglio di ogni coppia candidata (coda senza marcatore d'apertura),
+/// privo di testo.
+func stitchAdjacentPageFootnotes(
+    _ structure: [NodeDict],
+    _ footnoteNodeById: inout [String: NodeDict],
+    _ footnotesInNoteOrder: inout [String: [String]],
+    noteLinesById: [String: [LineSummary]],
+    contentBottomByPage: [Int: Double]
+) -> (count: Int, candidates: [AdjacentPageStitchCandidate]) {
+    var flat: [String] = []
+    var nodeOfFootnote: [String: NodeDict] = [:]
+    for node in structure where node.type == .NOTE || node.type == .EDITORIAL_NOTE {
+        for fid in footnotesInNoteOrder[node.id] ?? [] {
+            flat.append(fid)
+            nodeOfFootnote[fid] = node
+        }
+    }
+    guard flat.count >= 2 else { return (0, []) }
+
+    var candidates: [AdjacentPageStitchCandidate] = []
+    var removed = Set<String>()
+    var headFid = flat[0]
+    var tailPage = footnoteNodeById[headFid]?.page_index ?? Int.min
+    // Il nodo dell'ULTIMA nota fisica della pagina della testa (per la geometria del lato A): per una catena è il nodo
+    // della coda già fusa, che sta sulla pagina A.
+    var lastNodeOnHeadSide = nodeOfFootnote[headFid]
+    var count = 0
+    for i in 1..<flat.count {
+        let fid = flat[i]
+        guard let cur = footnoteNodeById[fid], let head = footnoteNodeById[headFid],
+              let curNode = nodeOfFootnote[fid] else { continue }
+        let advance = {
+            headFid = fid
+            tailPage = cur.page_index
+            lastNodeOnHeadSide = curNode
+        }
+        // Solo la prima nota della pagina che segue subito quella della testa.
+        guard cur.page_index == tailPage + 1 else { advance(); continue }
+        let a = (head.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let b = (cur.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        // Candidata solo una coda SENZA marcatore d'apertura (le regole di `splitFootnotes`).
+        guard noteOpening(b) == nil, !noteSymbolOpening(b) else { advance(); continue }
+
+        let headNumber = noteOpening(a)
+        var nextNumber: Int?
+        var j = i + 1
+        while j < flat.count, let f = footnoteNodeById[flat[j]], f.page_index == cur.page_index {
+            if let n = noteOpening(f.text ?? "") { nextNumber = n; break }
+            j += 1
+        }
+        let succession: String
+        if headNumber == nil { succession = "testa senza numero" }
+        else if nextNumber == nil { succession = "assente" }
+        else if nextNumber == headNumber! + 1 { succession = "confermata" }
+        else { succession = "non confermata" }
+        let tailLeadingIsNext = headNumber.map { h in leadingInt(b) == h + 1 } ?? false
+        let predicate = noteTailContinuesHead(head: a, tail: b)
+
+        let tailLines = noteLinesById[curNode.id] ?? []
+        let headLines = lastNodeOnHeadSide.flatMap { noteLinesById[$0.id] } ?? []
+        let tailFirst = tailLines.first
+        let headFirst = headLines.first
+        let headLast = headLines.last
+        let tailBottom = contentBottomByPage[cur.page_index]
+        let headBottom = lastNodeOnHeadSide.flatMap { contentBottomByPage[$0.page_index] }
+
+        var candidate = AdjacentPageStitchCandidate(
+            headPage: tailPage, tailPage: cur.page_index, headId: headFid, tailId: fid,
+            predicate: predicate, succession: succession, headNumber: headNumber, nextNumber: nextNumber,
+            tailLeadingIsNext: tailLeadingIsNext,
+            tailTop: tailFirst?.yTop, tailPageContentBottom: tailBottom,
+            headTop: headFirst?.yTop, headPageContentBottom: headBottom,
+            tailSize: tailFirst.map(noteLineMaxSpanSize), headSize: headLast.map(noteLineMaxSpanSize),
+            tailX0: tailFirst?.x0, tailX1: tailFirst?.x1, headX0: headLast?.x0, headX1: headLast?.x1,
+            headNodeType: lastNodeOnHeadSide?.type.rawValue ?? "", tailNodeType: curNode.type.rawValue,
+            stitched: false, reason: "")
+
+        var reason = ""
+        if curNode.type != .NOTE || lastNodeOnHeadSide?.type != .NOTE { reason = "nodo non NOTE" }
+        else if !predicate { reason = "predicato" }
+        else if succession != "confermata" { reason = "successione \(succession)" }
+        else if tailLeadingIsNext { reason = "coda numerata come la nota seguente" }
+        else if tailFirst == nil || headFirst == nil || headLast == nil { reason = "geometria assente" }
+        else if tailBottom == nil || headBottom == nil { reason = "pagina senza corpo né titoli" }
+        else if !(tailFirst!.yTop < tailBottom!) { reason = "coda non sotto il corpo" }
+        else if !(headFirst!.yTop < headBottom!) { reason = "testa non sotto il corpo" }
+        else if abs(noteLineMaxSpanSize(tailFirst!) - noteLineMaxSpanSize(headLast!)) > BODY_SIZE_TOLERANCE { reason = "corpo tipografico diverso" }
+
+        if reason.isEmpty {
+            let merged: String
+            if endsWithLetterHyphenG(a), let f = b.first, f.isLowercase {
+                merged = String(a.dropLast()) + b           // de-sillabazione
+            } else {
+                merged = a + " " + b
+            }
+            var h = head
+            h.text = merged
+            h.length_category = lengthCategoryFor(merged)
+            footnoteNodeById[headFid] = h
+            removed.insert(fid)
+            tailPage = cur.page_index                        // catena: la testa copre fino a qui
+            lastNodeOnHeadSide = curNode
+            count += 1
+            candidate.stitched = true
+            candidate.reason = "ricucita"
+        } else {
+            candidate.reason = reason
+            advance()
+        }
+        candidates.append(candidate)
+    }
+    if !removed.isEmpty {
+        for (k, v) in footnotesInNoteOrder {
+            footnotesInNoteOrder[k] = v.filter { !removed.contains($0) }
+        }
+    }
+    return (count, candidates)
 }
 
 // MARK: - Rilevamento marcatori in-corpo
