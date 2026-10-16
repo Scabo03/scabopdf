@@ -22,6 +22,11 @@ public enum ReadingAssembly {
     /// meno memoria. Rete-A safe: tutto il testo resta, solo raggruppato in blocchi più grandi.
     public static let largeDocumentGranularity = 1200
 
+    /// Il formato della lettura in cache che l'app scrive (e che il pacchetto del Mac porta: § 12.12), e il più basso che
+    /// sa ancora leggere. Fino al 2026-10-16 vivevano privati in `LibraryService`; la storia dei valori è lì.
+    public static let cacheFormatVersion = 6
+    public static let minReadableCacheFormatVersion = 6
+
     /// Vero se un volume di `pageCount` pagine si apre alleggerito.
     public static func isLarge(pageCount: Int) -> Bool { pageCount > largeDocumentPageThreshold }
 

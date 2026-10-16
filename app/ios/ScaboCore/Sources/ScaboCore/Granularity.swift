@@ -381,6 +381,13 @@ func tailStartsWithDate(_ s: String) -> Bool {
 /// perché finisce con una citazione di giurisprudenza ("Cass."/"C. Cost.") E la coda è una
 /// DATA (`tailStartsWithDate`). Anti-fusione invariata: una nota nuova apre col proprio
 /// marcatore → `noteContinuation` la esclude → due note distinte non si fondono MAI.
+/// Il predicato di ricucitura delle note dell'app, esposto per l'officina Mac (giro del 2026-10-16): la coda `tail`
+/// continua la testa `head` (la testa resta aperta, la coda comincia in minuscolo o con una cifra e non apre con il
+/// marcatore di una nota nuova). Identico a `noteTailContinuesHead`: anti-fusione invariata.
+public func officinaNoteTailContinuesHead(head: String, tail: String) -> Bool {
+    noteTailContinuesHead(head: head, tail: tail)
+}
+
 func noteTailContinuesHead(head: String, tail: String) -> Bool {
     guard noteContinuation(tail) else { return false }
     if noteOpensForContinuation(head) { return true }

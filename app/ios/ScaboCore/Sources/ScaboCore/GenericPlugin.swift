@@ -1270,6 +1270,24 @@ func isWeaklyBackMatterIndexStructured(_ content: [LineSummary]) -> Bool {
 func detectBackMatterApparatus(
     _ extraction: PdfExtraction, _ furniture: Set<String>
 ) -> [Int: SemanticCategory] {
+    var ignored: [Int] = []
+    return detectBackMatterApparatus(extraction, furniture, analyticalPages: &ignored)
+}
+
+/// Le pagine (indici 0-based delle pagine dell'estrazione) dell'indice ANALITICO recintato che il back-matter riconosce
+/// e lascia LETTO per scelta (titolo «Indice analitico/alfabetico» nella regione finale, pagine fortemente strutturate a
+/// indice): lo stesso esame di `detectBackMatterApparatus`, che non cambia. Additiva, giro «costruzione della linea Mac»
+/// (2026-10-16): è il segnale dell'app con cui l'officina Mac sceglie le pagine su cui chiedere al modello
+/// d'impaginazione se ci sono note (indice del Codice penale al banco).
+public func analyticalIndexPages(_ extraction: PdfExtraction) -> [Int] {
+    var pages: [Int] = []
+    _ = detectBackMatterApparatus(extraction, detectFurniture(extraction), analyticalPages: &pages)
+    return pages.map { extraction.pages[$0].pageIndex }
+}
+
+func detectBackMatterApparatus(
+    _ extraction: PdfExtraction, _ furniture: Set<String>, analyticalPages: inout [Int]
+) -> [Int: SemanticCategory] {
     let n = extraction.pageCount
     let start = backMatterRegionStart(n)
     guard start < n else { return [:] }
@@ -1328,6 +1346,7 @@ func detectBackMatterApparatus(
         }
         // 4) Indice analitico RECINTATO → LETTO (mai in mappa). La regione resta aperta.
         if region == .analytical, strong {
+            analyticalPages.append(pageIndex)
             continue
         }
         // 5) Pagina di prosa / non-indice: chiude ogni regione indice aperta, così una

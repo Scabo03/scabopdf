@@ -108,14 +108,19 @@ public struct ChainOptions {
     public var fractionLongNotes: Bool
     /// Solo Mac: l'innesto dei verdetti del modello d'impaginazione (il fusore).
     public var graft: ChainGraft?
+    /// Solo reti: i candidati delle risorse visive già catturati (per esempio nel simulatore di una generazione) al
+    /// posto del riconoscimento dal vivo. `nil` = riconoscimento dal vivo (se `detectVisualResources`).
+    public var visualCandidatesOverride: [VisualRegionCandidate]?
 
     public init(granularityTarget: Int = DEFAULT_GRANULARITY_TARGET, buildDoctrine: Bool = true,
-                detectVisualResources: Bool = true, fractionLongNotes: Bool = false, graft: ChainGraft? = nil) {
+                detectVisualResources: Bool = true, fractionLongNotes: Bool = false, graft: ChainGraft? = nil,
+                visualCandidatesOverride: [VisualRegionCandidate]? = nil) {
         self.granularityTarget = granularityTarget
         self.buildDoctrine = buildDoctrine
         self.detectVisualResources = detectVisualResources
         self.fractionLongNotes = fractionLongNotes
         self.graft = graft
+        self.visualCandidatesOverride = visualCandidatesOverride
     }
 }
 
@@ -123,6 +128,9 @@ public struct ChainOptions {
 public struct ChainResult {
     /// Il documento con le note agganciate e piazzate per la Lettura Continua.
     public let document: ScabopdfDocument
+    /// Il documento grezzo (classificato, dopo l'eventuale innesto, prima dell'aggancio delle note): per le reti e i
+    /// conteggi delle categorie, come il runner del banco.
+    public let rawDocument: ScabopdfDocument
     /// Il flusso della Lettura Continua.
     public let content: PaginatedContent
     /// Il flusso della Dottrina Inline (§ 10), solo se il documento ha note e se richiesto.
@@ -141,6 +149,12 @@ public enum ChainOutcome {
 }
 
 public enum ProcessingChain {
+
+    /// Il LIVELLO DI CURE della catena: l'ultima build dell'app per iPad che ha portato una cura della lettura da offrire
+    /// ai libri già elaborati (§ 12.13). L'offerta «Lettura migliore disponibile» dell'iPad lo usa come `latestCureBuild`
+    /// (sui dispositivi che possono riconoscere tabelle e figure), e il pacchetto del Mac lo porta: la lettura del Mac
+    /// contiene le cure fino a qui. Si aggiorna nel giro che porta una cura nuova, una volta sola, qui.
+    public static let cureLevel = 53
 
     /// Elabora il PDF `fileURL` (una copia locale) sul thread chiamante. `onProgress` è chiamato sul thread chiamante;
     /// `isCancelled` è consultato alle tappe naturali (per pagina e ai confini di fase). `onVisualDetection` riceve
@@ -184,7 +198,9 @@ public enum ProcessingChain {
         // annuncia solo se il modello gira davvero. Il modello si rilascia qui, prima della classificazione, per non
         // sommare la sua memoria a quella del documento in costruzione.
         var visualCandidates: [VisualRegionCandidate] = []
-        if options.detectVisualResources {
+        if let given = options.visualCandidatesOverride {
+            visualCandidates = given
+        } else if options.detectVisualResources {
             let parked = pageCount > 0 ? Double(pageCount) / Double(2 * pageCount + 1) : 0
             let detection = VisualRegionDetector.detect(
                 pdfURL: fileURL,
@@ -280,8 +296,8 @@ public enum ProcessingChain {
 
         if isCancelled() { return .cancelled }
         onProgress(ChainProgress(phase: .pagination, unitsDone: pageCount, unitsTotal: pageCount, fraction: 1.0))
-        return .success(ChainResult(document: document, content: content, doctrineContent: doctrineContent,
-                                    visualReport: visualReport, graftReport: graftReport))
+        return .success(ChainResult(document: document, rawDocument: rawDocument, content: content,
+                                    doctrineContent: doctrineContent, visualReport: visualReport, graftReport: graftReport))
     }
 
     /// Riduce un errore a una spiegazione in prosa italiana. Gli errori dell'estrattore portano già un

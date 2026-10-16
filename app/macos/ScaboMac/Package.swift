@@ -10,10 +10,13 @@
 //
 // Struttura:
 //   ScaboMacKit  — libreria testabile: catalogo dei modelli (dato versionato + validazione), servizio dei
-//                  modelli (interfaccia + implementazione DICHIARATAMENTE simulata), annunciatore,
-//                  stringhe italiane in un posto solo, viste SwiftUI.
+//                  modelli, annunciatore, stringhe italiane in un posto solo, viste SwiftUI; dal giro
+//                  «costruzione della linea Mac» (2026-10-16) anche la CATENA del Mac (la stessa dell'iPad,
+//                  ScaboChain, più l'innesto dei verdetti del modello d'impaginazione col fusore di ScaboCore).
 //   ScaboMac     — l'eseguibile dell'app (punto d'ingresso, scene, menu).
-//   ScaboMacKitTests — test unitari (catalogo, stati, annunci, anti-gergo, verifiche reali economiche).
+//   scabomac-officina — riga di comando per le reti e il banco sul Mac (catena sui volumi, casi del gate del
+//                  fusore): non entra nell'app, scrive solo nel laboratorio fuori repo.
+//   ScaboMacKitTests — test unitari (catalogo, stati, annunci, anti-gergo, verifiche reali economiche, catena).
 //
 // Il bundle `.app` con sandbox ed entitlement lo assembla `scripts/build_app.sh` (SwiftPM da solo non
 // produce bundle firmati); vedi README.md.
@@ -29,18 +32,30 @@ let package = Package(
     products: [
         .library(name: "ScaboMacKit", targets: ["ScaboMacKit"]),
         .executable(name: "ScaboMac", targets: ["ScaboMac"]),
+        .executable(name: "scabomac-officina", targets: ["scabomac-officina"]),
     ],
     dependencies: [
         .package(path: "../../ios/ScaboCore"),
+        // La catena condivisa con l'iPad (estrazione con le cure, risorse visive, corpo): riusata, mai duplicata.
+        .package(path: "../../ios/ScaboChain"),
+        .package(path: "../../ios/ScaboPageStructure"),
     ],
     targets: [
         .target(
             name: "ScaboMacKit",
-            dependencies: [.product(name: "ScaboCore", package: "ScaboCore")],
+            dependencies: [
+                .product(name: "ScaboCore", package: "ScaboCore"),
+                .product(name: "ScaboChain", package: "ScaboChain"),
+                .product(name: "ScaboPageStructure", package: "ScaboPageStructure"),
+            ],
             resources: [.copy("Resources/catalogo.json")]
         ),
         .executableTarget(
             name: "ScaboMac",
+            dependencies: ["ScaboMacKit"]
+        ),
+        .executableTarget(
+            name: "scabomac-officina",
             dependencies: ["ScaboMacKit"]
         ),
         .testTarget(

@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import ScaboChain
 
 public enum Testi {
 
@@ -16,11 +17,11 @@ public enum Testi {
     public static let nomeApp = "ScaboPDF per Mac"
     public static let finestraTitolo = "ScaboPDF — officina"
     public static let finestraSpiegazione1 =
-        "Questa è l'officina di ScaboPDF: sul Mac si rielaborano i documenti difficili, quelli su cui l'app sul telefono "
-        + "non riesce a capire da sola la struttura, e si preparano le istruzioni che il telefono poi applica."
+        "Questa è l'officina di ScaboPDF: sul Mac si prepara la lettura di un libro con l'aiuto del modello che riconosce "
+        + "l'impaginazione delle pagine, poi la si manda all'iPad o all'iPhone con AirDrop, oppure con il cavo."
     public static let finestraSpiegazione2 =
-        "In questa versione l'officina non elabora ancora documenti: c'è il pannello per scegliere e scaricare gli "
-        + "strumenti che servono. Il pannello si trova nelle Impostazioni, oppure con il pulsante qui sotto."
+        "Sul telefono il libro deve essere già in libreria: basta aprire il file arrivato dal Mac e confermare. "
+        + "Gli strumenti dell'officina si trovano nel pannello, nelle Impostazioni o con il pulsante in fondo."
     public static let apriPannello = "Apri il pannello degli strumenti"
     public static let apriPannelloAiuto = "Mostra gli strumenti disponibili, divisi per ruolo, con descrizione, dimensione e stato"
     public static let menuStrumenti = "Strumenti dell'officina…"
@@ -175,6 +176,73 @@ public enum Testi {
     public static func catalogoVoceSenzaVersione(_ nome: String) -> String { "Nel catalogo la voce «\(nome)» non indica la versione." }
     public static func catalogoProblemaAvvio(_ spiegazione: String) -> String { "Il pannello non può mostrare gli strumenti. \(spiegazione)" }
 
+    // MARK: Officina: preparazione e invio della lettura (giro del 2026-10-16)
+
+    public static let preparaLettura = "Prepara la lettura di un PDF…"
+    public static let preparaLetturaAiuto = "Sceglie un PDF sul Mac e ne prepara la lettura da mandare al telefono"
+    public static let pannelloApriMessaggio = "Scegli il PDF del libro di cui preparare la lettura."
+    public static let pannelloApriPulsante = "Prepara"
+    public static let statoInAttesa = "Nessun libro in preparazione."
+    public static func statoInElaborazione(_ fase: String, _ percento: Int) -> String { "\(fase): \(percento) per cento." }
+    public static func statoFallito(_ prosa: String) -> String { "La lettura non è stata preparata. \(prosa)" }
+    public static let annullaElaborazione = "Annulla la preparazione"
+    public static let faseApertura = "Apertura del documento"
+    public static func fase(_ p: ChainPhase) -> String {
+        switch p {
+        case .opening: return "Apertura del documento"
+        case .extraction: return "Estrazione del testo"
+        case .visualResources: return "Riconoscimento di tabelle e figure"
+        case .classification: return "Riconoscimento della struttura"
+        case .graft: return "Controllo delle pagine con il modello d'impaginazione"
+        case .pagination: return "Impaginazione"
+        }
+    }
+    public static func annuncioElaborazioneAvviata(_ titolo: String) -> String { "Preparazione della lettura di \(titolo) avviata." }
+    public static func annuncioPercento(_ p: Int) -> String { "\(p) per cento." }
+    public static func annuncioLetturaPronta(_ titolo: String) -> String { "La lettura di \(titolo) è pronta da mandare al telefono." }
+    public static let annuncioElaborazioneAnnullata = "Preparazione annullata. Nulla è stato salvato."
+    public static func annuncioElaborazioneFallita(_ prosa: String) -> String { "La lettura non è stata preparata. \(prosa)" }
+    public static func letturaPronta(_ titolo: String) -> String { "Lettura pronta: «\(titolo)»" }
+    public static let includiAnnotazioni = "Includi le annotazioni"
+    public static let includiAnnotazioniAiuto = "Manda anche segnalibri e sottolineature di questo libro; sul telefono si uniscono a quelli che ci sono già"
+    public static let annotazioniAssenti =
+        "Su questo Mac non ci sono annotazioni per questo libro: la casella resta spenta. Le annotazioni che hai sul telefono restano dove sono."
+    public static let inviaAirDrop = "Invia all'iPad con AirDrop…"
+    public static let inviaAirDropAiuto = "Apre la finestra di AirDrop del Mac con il file della lettura: scegli l'iPad o l'iPhone vicino"
+    public static let salvaPerCavo = "Salva il file per il cavo…"
+    public static let salvaPerCavoAiuto =
+        "Salva il file della lettura; poi, con l'iPad collegato col cavo, trascinalo nella cartella di ScaboPDF che il Finder mostra fra i documenti dell'iPad"
+    public static let pannelloSalvaMessaggio = "Dove salvare il file della lettura da portare sul telefono?"
+    public static let pannelloSalvaPulsante = "Salva"
+    public static func esitoSalvato(_ nome: String) -> String {
+        "File salvato: \(nome). Con l'iPad collegato col cavo, nel Finder apri l'iPad, vai a «File», e trascina il file nella cartella di ScaboPDF. Poi apri ScaboPDF sull'iPad."
+    }
+    public static let esitoNonSalvato = "Il file non si è potuto salvare in quella posizione. Scegli un'altra cartella e riprova."
+    public static let esitoNonPreparato = "Il file della lettura non si è potuto preparare per l'invio. Riprova; se succede ancora, salvalo per il cavo."
+    public static let esitoAirDropAssente = "AirDrop non è disponibile su questo Mac adesso. Controlla che Wi-Fi e Bluetooth siano accesi, oppure salva il file per il cavo."
+    public static let esitoAirDropInviato = "Lettura inviata con AirDrop. Sull'iPad si apre ScaboPDF: conferma per usarla."
+    public static let esitoAirDropAnnullato = "Invio con AirDrop annullato. Nulla è stato inviato."
+    public static let esitoAirDropFallito = "L'invio con AirDrop non è riuscito. Riprova avvicinando i dispositivi, oppure salva il file per il cavo."
+
+    /// Il riassunto in prosa della lettura pronta (numeri, mai testo del libro).
+    public static func riassuntoLettura(_ r: MacReadingReady) -> String {
+        var parti = ["\(r.pageCount) pagine, \(r.segments) elementi di lettura."]
+        if r.visualResources > 0 {
+            parti.append(r.visualResources == 1 ? "Una tabella o figura riconosciuta." : "Tabelle e figure riconosciute: \(r.visualResources).")
+        }
+        let s = r.report.stitches.count, n = r.report.relabels
+        if s > 0 { parti.append(s == 1 ? "Una nota che scavalca la pagina è stata ricucita." : "Note che scavalcano la pagina ricucite: \(s).") }
+        if n > 0 { parti.append("Voci dell'indice analitico lette come testo e non più come note: \(n).") }
+        if s == 0 && n == 0 {
+            parti.append("Il modello d'impaginazione non ha trovato nulla da correggere oltre a ciò che fa già il telefono.")
+        }
+        if r.report.modelUnavailable {
+            parti.append("Il controllo con il modello d'impaginazione non è stato possibile: la lettura è quella che farebbe il telefono.")
+        }
+        parti.append("Preparata in \(max(1, Int(r.seconds.rounded()))) secondi.")
+        return parti.joined(separator: " ")
+    }
+
     /// Tutte le stringhe FISSE, per il test anti-gergo (le funzioni sono coperte con argomenti d'esempio nel test).
     public static var tutteLeStringheFisse: [String] {
         [nomeApp, finestraTitolo, finestraSpiegazione1, finestraSpiegazione2, apriPannello, apriPannelloAiuto, menuStrumenti,
@@ -187,7 +255,11 @@ public enum Testi {
          dettaglioRequisiti, dettaglioOffline, dettaglioValidazione, dettaglioProvenienza, offlineSi, offlineNo,
          dimensioneNessunoSpazio, spazioLiberoSconosciuto, dettagliPulsante, dettagliAiutoApri, dettagliAiutoChiudi, erroreConnessioneAssente, erroreScaricamentoInterrotto,
          erroreFileDanneggiato, erroreStrumentoSistemaNonDisponibile, erroreSconosciuto, catalogoAssente, catalogoIllegibile,
-         catalogoMalformato, catalogoVuoto]
+         catalogoMalformato, catalogoVuoto, preparaLettura, preparaLetturaAiuto, pannelloApriMessaggio, pannelloApriPulsante,
+         statoInAttesa, annullaElaborazione, faseApertura, annuncioElaborazioneAnnullata, includiAnnotazioni,
+         includiAnnotazioniAiuto, annotazioniAssenti, inviaAirDrop, inviaAirDropAiuto, salvaPerCavo, salvaPerCavoAiuto,
+         pannelloSalvaMessaggio, pannelloSalvaPulsante, esitoNonSalvato, esitoNonPreparato, esitoAirDropAssente,
+         esitoAirDropInviato, esitoAirDropAnnullato, esitoAirDropFallito]
     }
 }
 

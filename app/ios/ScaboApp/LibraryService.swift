@@ -21,6 +21,7 @@
 //
 
 import Foundation
+import ScaboChain
 import ScaboCore
 
 /// Singleton di servizio per lo stato persistente dell'app.
@@ -38,7 +39,7 @@ final class LibraryService {
     private let cacheDir: URL
 
     /// Versione del formato di cache SCRITTA dalle nuove elaborazioni.
-    private static let cacheFormatVersion = 6
+    private static let cacheFormatVersion = ReadingAssembly.cacheFormatVersion   // 6; in ScaboChain dal 2026-10-16 (lo usa anche il pacchetto del Mac)
     /// Versione minima LEGGIBILE.
     ///
     /// STORIA, perché questa costante è delicata. Fino al formato 4 valeva 3, deliberatamente: il 3
@@ -63,7 +64,7 @@ final class LibraryService {
     /// abbreviazioni cambia i confini di frase. Nulla di questo è ricavabile da una cache ferma:
     /// senza invalidazione i volumi già importati non mostrerebbero la cura. Ogni documento si
     /// rielabora UNA volta, alla prima apertura, come col formato 5.
-    private static let minReadableCacheFormatVersion = 6
+    private static let minReadableCacheFormatVersion = ReadingAssembly.minReadableCacheFormatVersion   // 6
 
     private init() {
         let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!

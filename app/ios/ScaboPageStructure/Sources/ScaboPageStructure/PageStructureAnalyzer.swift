@@ -74,11 +74,27 @@ public final class PageStructureAnalyzer {
     /// Riconosce l'impaginazione di una pagina. Il testo delle righe resta in memoria (post-processing e
     /// fusioni) e non esce: l'uscita porta solo tipi, riquadri, confidenze e ordini.
     public func analyze(page: PDFPage, pageIndex: Int) throws -> (PageLayout, PageTimings) {
+        let (layout, _, timings) = try run(page: page, pageIndex: pageIndex, collectTexts: false)
+        return (layout, timings)
+    }
+
+    /// Come `analyze`, e in più, per ogni regione (stesso indice di `regions`), il testo delle righe PDFKit che il
+    /// post-processing le ha assegnato, ricomposto come il prototipo del laboratorio («struttura nativa», `HeronNative`):
+    /// per gli elementi di testo le righe ricucite (`sanitizeLines`) più i pezzi fusi dal predittore d'ordine; per i figli
+    /// di figure e contenitori le loro righe; per tabelle, figure e contenitori la stringa vuota. Serve SOLO all'innesto
+    /// dell'officina Mac, che ancora i verdetti ai nodi per testo normalizzato (fusore, ScaboCore `Fusore.swift`): resta in
+    /// memoria, non si scrive mai. Le regioni sono identiche a quelle di `analyze` (giro «costruzione della linea Mac»,
+    /// 2026-10-16).
+    public func analyzeWithRegionTexts(page: PDFPage, pageIndex: Int) throws -> (PageLayout, [String], PageTimings) {
+        try run(page: page, pageIndex: pageIndex, collectTexts: true)
+    }
+
+    private func run(page: PDFPage, pageIndex: Int, collectTexts: Bool) throws -> (PageLayout, [String], PageTimings) {
         let t0 = Date()
         guard let (img, W, H) = HeronPageRenderer.renderPage(page) else {
             let box = page.bounds(for: .cropBox)
             return (PageLayout(pageIndex: pageIndex, width: Double(box.width), height: Double(box.height), regions: [], nDetections: 0, nClusters: 0, nCells: 0),
-                    PageTimings(total: 0, render: 0, infer: 0, cells: 0, post: 0, order: 0))
+                    [], PageTimings(total: 0, render: 0, infer: 0, cells: 0, post: 0, order: 0))
         }
         let tRender = Date().timeIntervalSince(t0)
         let t1 = Date(); let dets = try model.predict(image: img, pageW: W, pageH: H); let tInfer = Date().timeIntervalSince(t1)
@@ -109,6 +125,7 @@ public final class PageStructureAnalyzer {
         let tRO = Date().timeIntervalSince(t4)
         var merged = Set<Int>(); for (_, v) in merges { for m in v { merged.insert(m) } }
         var regions: [LayoutRegion] = []; var order = 0
+        var texts: [String] = []   // parallelo a `regions`, solo con `collectTexts`
         var orderOfCid: [Int: Int] = [:]
         var captionCidOfRegion: [Int: Int] = [:]   // indice in `regions` → cid della didascalia
         let clusterById: [Int: Cluster] = Dictionary(uniqueKeysWithValues: finalClusters.map { ($0.id, $0) })
@@ -122,6 +139,10 @@ public final class PageStructureAnalyzer {
                 for ch in parent.children {
                     regions.append(LayoutRegion(order: order, label: ch.label, bbox: ch.bbox.roundedArray, confidence: round4(ch.confidence),
                                                 level: 2, childOf: parent.id, clusterId: ch.id, nCells: ch.cells.count, merged: []))
+                    if collectTexts {
+                        let lines = ch.cells.map { $0.text.replacingOccurrences(of: "\u{02}", with: "-").trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+                        texts.append(sanitizeLines(lines))
+                    }
                     order += 1
                 }
             }
@@ -130,13 +151,22 @@ public final class PageStructureAnalyzer {
             if let caps = toCaptions[e.cid], let cap = caps.first { captionCidOfRegion[regions.count] = cap }
             regions.append(LayoutRegion(order: order, label: orig.label, bbox: c.bbox.roundedArray, confidence: round4(c.confidence),
                                         level: 1, childOf: nil, clusterId: c.id, nCells: ncells[orig.cid] ?? 0, merged: merges[e.cid] ?? []))
+            if collectTexts {
+                // Come il prototipo: il testo dell'elemento più quello degli elementi fusi dal predittore d'ordine.
+                var text = orig.text
+                for m in merges[e.cid] ?? [] {
+                    let t = roIn[m].text
+                    text = text.hasSuffix("\u{00AD}") ? String(text.dropLast()) + t : text + " " + t
+                }
+                texts.append(text)
+            }
             order += 1
             if orig.label == FIGURE_LABEL { childItems(c) }
         }
         for (k, capCid) in captionCidOfRegion { regions[k].captionOrder = orderOfCid[capCid] }
         let total = Date().timeIntervalSince(t0)
         return (PageLayout(pageIndex: pageIndex, width: W, height: H, regions: regions, nDetections: dets.count, nClusters: finalClusters.count, nCells: cells.count),
-                PageTimings(total: total, render: tRender, infer: tInfer, cells: tCells, post: tPost, order: tRO))
+                texts, PageTimings(total: total, render: tRender, infer: tInfer, cells: tCells, post: tPost, order: tRO))
     }
 }
 

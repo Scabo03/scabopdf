@@ -2,9 +2,10 @@
 //  ScaboMacApp.swift
 //  ScaboMac
 //
-//  Punto d'ingresso dell'app Mac. Una finestra principale minima, le Impostazioni con la scheda «Strumenti»
-//  (il pannello), e un comando di menu con scorciatoia (Cmd+Shift+M) che apre lo stesso pannello.
-//  Il servizio dei modelli è la simulazione dichiarata; l'annunciatore è quello VoiceOver reale.
+//  Punto d'ingresso dell'app Mac. La finestra principale è l'officina (giro «costruzione della linea Mac»,
+//  2026-10-16): prepara la lettura di un PDF con la catena condivisa con l'iPad più il modello d'impaginazione, e la
+//  manda all'iPad con AirDrop o la salva per il cavo. Le Impostazioni hanno la scheda «Strumenti» (il pannello), che si
+//  apre anche dal menu con Cmd+Shift+M. L'annunciatore è quello VoiceOver reale.
 //
 
 import ScaboMacKit
@@ -13,11 +14,12 @@ import SwiftUI
 @main
 struct ScaboMacApp: App {
     @StateObject private var model = ScaboMacApp.makeModel()
+    @StateObject private var officina = OfficinaViewModel(announcer: VoiceOverAnnouncer())
     @Environment(\.openSettings) private var openSettings
 
     var body: some Scene {
         WindowGroup(Testi.finestraTitolo) {
-            MainWindowView { openSettings() }
+            OfficinaView(model: officina) { openSettings() }
                 .environmentObject(model)
         }
         .commands {
