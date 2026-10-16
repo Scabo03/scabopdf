@@ -748,6 +748,8 @@ Il **segnale acustico di apertura** del regime di lunghezza della nota scatta **
 
 Questa regola di frazionamento si applica coerentemente anche a Lettura Continua, dove però il punto di ingresso della nota è diverso (differito a fine paragrafo numerato per le lunghezze MEDIUM e oltre, anziché a fine frase del richiamo come in Dottrina Inline).
 
+**Il meccanismo e la decisione del maintainer del 2026-10-16.** Il meccanismo è uno solo (`fractionLongNoteSegments`, nato per gli atti AKN e condiviso dal 2026-08-10, quando le note lunghe ricucite hanno preso il regime delle note normative lunghe): la soglia è la granularità del corpo (400 caratteri; 1.200 per i volumi oltre le 1.500 pagine), i pezzi si chiudono a confini di frase (a confini di parola solo dentro una frase più lunga della soglia), il primo pezzo porta il ruolo di nota, l'annuncio e il regime acustico della nota intera, i pezzi seguenti sono muti. Fino alla build 54 lo applicavano gli atti AKN, l'officina Mac, il runner delle reti e la porta d'importazione di sviluppo, ma non l'iPad quando elaborava da sé un PDF: lo stesso libro suonava diverso secondo chi l'aveva preparato. **Decisione:** le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF, come già fanno il Mac, il runner e gli atti AKN; la lettura deve essere la stessa chiunque l'abbia preparata (vedi § 12.12, quattro decisioni del 2026-10-16).
+
 ### 10.7 Note plurime nella stessa frase
 
 Quando una frase del corpo contiene **più richiami a note** (esempio: *"secondo Bianca (12) e Castronovo (13), invece, la responsabilità non è contrattuale (14)"*), tutte le note vengono lette **in sequenza a fine frase**, nell'ordine in cui i richiami compaiono nel corpo.
@@ -1036,6 +1038,18 @@ build 54).** Le tre decisioni qui sopra, rese concrete.
   una sottolineatura a cavallo di due pezzi diventa di due tratti. **Perché questa regola:** le annotazioni non hanno un orologio di modifica, e qualunque
   regola «vince il più recente» o «vince il Mac» butterebbe lavoro dell'utente; l'unione per contenuto è l'unica che non
   perde nulla e non raddoppia nulla, e usa le stesse ancore già provate dalla rete sulle annotazioni.
+
+**Quattro decisioni del maintainer (2026-10-16, registrate all'apertura del giro «uniformità della lettura e misura»).**
+
+1. **Note lunghe frazionate anche sull'iPad.** Quando l'iPad elabora da sé un PDF, le note lunghe si frazionano come già
+   fanno il Mac, il runner delle reti e gli atti AKN (§ 10.6): la lettura deve essere la stessa chiunque l'abbia
+   preparata. I libri già aperti ricevono la novità con l'offerta «Lettura migliore disponibile» (§ 12.13).
+2. **La ricucitura fra pagine sul Mac resta spenta** finché il conteggio delle note spezzate fra pagine che l'iPad lascia
+   aperte (giro del 2026-10-16, `docs/CONTEGGIO_NOTE_SPEZZATE.md`) non mostra casi che l'iPad non copre.
+3. **Il record App Store del Mac** sarà un record nuovo, da aprire solo quando il Mac andrà distribuito.
+4. **Sul Mac, due app separate:** l'officina e, se verrà, un'app di lettura, per non mescolare lavoro e lettura. La vista
+   di lettura per Mac sarà oggetto di uno studio dedicato e approfondito su VoiceOver di macOS, che è molto diverso da
+   quello dei dispositivi mobili, con documentazione e prove; non è materia del giro che registra queste decisioni.
 
 ---
 

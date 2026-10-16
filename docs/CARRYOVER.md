@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.45 (16 ottobre 2026 pomeriggio, giro «uniformità della lettura e misura», IN CORSO: quattro decisioni del maintainer registrate all'apertura — note lunghe frazionate anche quando l'iPad elabora da sé un PDF, ricucitura fra pagine sul Mac spenta finché il conteggio non mostra casi che l'iPad non copre, record App Store del Mac nuovo e solo alla distribuzione, due app separate sul Mac con uno studio dedicato su VoiceOver di macOS per la lettura. Vedi STATO del 2026-10-16 pomeriggio)
 > Versione: 2.44 (16 ottobre 2026, giro «costruzione della linea Mac»: il ramo `feat/mac-base` fuso in main; le cure dell'estrazione SPOSTATE in un modulo condiviso iPad/Mac (`app/ios/ScaboChain`) e il fusore del banco portato in Swift; l'**app Mac prepara la lettura** con la stessa catena (più la rietichettatura dell'indice analitico; ricucitura fra pagine spenta dopo una rete rossa) e la esporta in un **pacchetto `.scabolettura`**; l'**iPad la riceve** (AirDrop, «Apri con», File, cavo) con la regola delle annotazioni del § 12.12; protezione della memoria nel riconoscimento di tabelle e figure; selettore del layout su iPhone; **pannello dei modelli del Mac vero** (GLM-OCR scaricato, verificato, rimosso, servizio XPC unico con la rete); revisione indipendente con tre difetti veri corretti prima della build; reti verdi sulle due generazioni (letture identiche byte per byte alla build 53); **build 54 su TestFlight** (commit `16317ff`, Delivery UUID `9bfa68d7…`, note scritte dalla lane). Referto e laboratorio in `~/Developer/scabopdf-mac-lab/`. Vedi STATO del 2026-10-16)
 > Versione: 2.43 (12-13 ottobre 2026, giro «risorse visive»: il modulo d'impaginazione `app/ios/ScaboPageStructure` (Heron di docling in Core ML **fp32**, pesi 164 MB in Git LFS, porti Swift di docling, sonda grafica e prefiltro) entra nell'app per iPad; **tabelle e figure annunciate come risorse visive** con «Estrai come immagine» (ritaglio della sola regione al foglio di condivisione) e «Salta la risorsa», testo della regione sempre nel flusso (elemento additivo); guardia deterministica in ScaboCore tarata col giudizio contro la pagina (110 risorse per generazione, 86 tabelle e 24 figure, tutte vere); reti verdi sulle due generazioni (lettere e cifre identiche 52/52, annotazioni senza ricollocazioni sbagliate, misure invariate); revisione indipendente con verifica delle correzioni; **build 53 su TestFlight** (commit `dc2305f`, Delivery UUID `6f3ee37a…`, note scritte dalla lane). Documento `docs/RISORSE_VISIVE.md`; referto e laboratorio in `~/Developer/scabopdf-gen-lab/`. Vedi STATO del 2026-10-12)
 > Versione: 2.42 (12 ottobre 2026, giro «struttura nativa» — misura, senza toccare l'app: un'app Mac nativa compatibile con lo store riconosce la struttura delle pagine? **Sì**: il modello di impaginazione di docling (Heron, Apache-2.0) convertito in Core ML fp32 (164 MB) e fatto girare da un eseguibile Swift che porta in Swift il post-processing e l'ordine di lettura a regole di docling (porto identico a docling 35/35 pagine) trova sulle 34 pagine del banco (381 blocchi di verità giudicati da Code contro la pagina) note 41/76 contro 43 di docling, didascalie 2/2, tabelle 2/2, figure 4/4, titoli 22/47 contro 23, ordine 0,968 contro 0,993, in 42-44 ms/pagina, 0,36-0,41 GB, zero byte esterni; innestato nella catena del banco al posto di docling dà **letture identiche byte per byte** sui quattro casi del gate con le reti di fedeltà verdi. GLM-OCR non dà struttura (tutto testo), Granite-Docling perde note (7/76) e didascalie (0/2) e va in ripetizione, Vision non etichetta nulla. Tre decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.12 (pacchetto = file da aprire, scelta fra più copie, lettura del Mac accettata com'è). Documento `docs/MISURA_STRUTTURA_NATIVA.md`; referto e laboratorio in `~/Developer/scabopdf-mac-lab/struttura_nativa/`. Vedi STATO del 2026-10-12)
@@ -60,6 +61,22 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
 
 ---
+
+## ▶ STATO — Giro «uniformità della lettura e misura»: note lunghe frazionate anche sull'iPad (build 55) e conteggio delle note spezzate che l'iPad lascia aperte — 2026-10-16 pomeriggio (IN CORSO)
+
+**Partenza:** `72319f2` (main = origin, build 54 su TestFlight, nessun altro ramo). Referto e laboratorio (con nomi dei
+volumi: NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAMENTO.md`,
+`~/Developer/scabopdf-gen-lab/frazionamento/`.
+
+**Decisioni del maintainer registrate all'apertura** (testo completo in `LAYER2_PRODUCT_DECISIONS.md` § 12.12 e § 10.6):
+(1) le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF, come già fanno il Mac, il runner e gli atti AKN:
+la lettura deve essere la stessa chiunque l'abbia preparata; (2) la ricucitura fra pagine sul Mac resta spenta finché il
+conteggio di questo giro non mostra casi che l'iPad non copre; (3) il record App Store del Mac sarà un record nuovo, da
+aprire solo quando il Mac andrà distribuito; (4) sul Mac due app separate, l'officina e un'eventuale app di lettura; la
+vista di lettura per Mac sarà oggetto di uno studio dedicato su VoiceOver di macOS, con documentazione e prove (non è
+materia di questo giro). Le tre decisioni aperte del referto del giro Mac (§ 11) sono così chiuse.
+
+**Esito:** da compilare a fine giro.
 
 ## ▶ STATO — Giro «costruzione della linea Mac»: l'officina Mac produce la lettura migliorata, la esporta in un pacchetto, l'iPad la riceve; pannello dei modelli vero → build 54 — 2026-10-16
 
