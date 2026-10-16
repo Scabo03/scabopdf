@@ -64,6 +64,18 @@ diversa» (CARRYOVER, § C del capitolo NOTE).
   condiviso): sul caso 46-47 la nota logica è ora cella-testa «Nota lunga.» +
   2 continuazioni mute contigue. Verificato contro la pagina stampata che la
   ricucitura corrisponde a UNA nota (p. 47 non porta altre note).
+- **Aggiornamento 2026-10-16 (giro «uniformità della lettura e misura», build 55) — CONTEGGIATA sul corpus
+  intero (`docs/CONTEGGIO_NOTE_SPEZZATE.md`).** Sulla lettura dell'iPad, 52 volumi: 3.209 pagine candidate,
+  136 ricucite dall'aggancio delle note (tutte nell'Estratto), 211 ricucite nel flusso, 2.961 aperte (iOS
+  27; 2.965 su iOS 26.5). Campione dichiarato di 202 casi giudicati contro la pagina stampata (prospetti
+  PyMuPDF e, per 22 casi, l'immagine): 71 veri, 131 falsi. Stima: circa 930 note spezzate aperte vere,
+  circa 710 fuori dai codici. Gli 11 casi storici danno lo stesso esito del censimento (9 veri, 2 falsi)
+  e restano tutti aperti sull'iPad. Lo strato più grande dei veri sono le coppie di pagine CONTIGUE che il
+  predicato dell'app già accetta ma che restano lontane nel flusso (533 casi, 35 veri su 36 giudicati;
+  18 su 18 con la successione dei numeri confermata su B): la loro strada naturale è estendere la
+  ricucitura per identità PRIMA del piazzamento, oggi accesa solo sull'Estratto. Fra le 602 coppie della
+  ricucitura del Mac poi spenta, 429 sono di questo strato e aperte sull'iPad: l'osservazione del giro Mac
+  «sono le note che l'app già ricuce» vale solo per l'Estratto.
 
 ### A.2 L2 — saldatura senza successione
 
@@ -600,7 +612,10 @@ più l'innesto dei verdetti del modello d'impaginazione col fusore portato in Sw
   quattro casi del gate. Sul Mac l'innesto applica SOLO l'indice analitico (5 volumi, giudicati contro la pagina); la
   **ricucitura fra pagine è spenta** dopo una rete rossa (riconoscimento delle righe per contenimento del testo, coppie che
   l'app già ricuce da sé). Strada per riaccenderla: coppie in cui l'app non ricuce, righe riconosciute per geometria nel
-  riquadro del modello, rete e giudizio su tutte le coppie.
+  riquadro del modello, rete e giudizio su tutte le coppie. **Correzione del 2026-10-16 (conteggio della build 55,
+  voce A.1):** delle 602 coppie scelte, solo le 135 dell'Estratto e altre 17 erano già ricucite dall'iPad; 429 sono
+  aperte sull'iPad e sono quasi tutte note spezzate vere. Resta valida l'altra causa della rete rossa (righe riconosciute
+  per contenimento del testo).
 - **D.8 (linea Mac):** a parità di ingressi il Mac dà le letture dell'iPad 52/52 su entrambe le generazioni; dal vivo,
   rispetto a iOS 27, una pagina di flusso diversa (Mac migliore) e 3 annunci di risorse visive diversi, giudicati. Il
   pannello dei modelli è vero (GLM-OCR scaricato, verificato, rimosso; servizio XPC unico con la rete). Restano aperti:
@@ -611,4 +626,7 @@ più l'innesto dei verdetti del modello d'impaginazione col fusore portato in Sw
 - **D.9 (annotazioni e rielaborazione):** il riancoraggio regge ora anche il FRAZIONAMENTO delle note lunghe che la lettura
   del Mac porta, in entrambe le direzioni (testo intero → pezzi consecutivi che lo ricompongono esattamente; pezzi → nota
   intera), con 0 ricollocazioni sbagliate sui 52 volumi (revisione indipendente del giro, `00d282e`). Al ritorno restano
-  «da ricollocare» i pezzi sotto le 64 lettere (prudenza delle impronte corte).
+  «da ricollocare» i pezzi sotto le 64 lettere (prudenza delle impronte corte). **Aggiornamento 2026-10-16 (build 55):**
+  ora che anche l'iPad fraziona, fra la lettura del Mac e quella dell'iPad 55 il residuo sparisce (2 segnalibri e 6
+  citazioni orfani, tutti nei volumi dell'indice analitico, 0 sbagliati); resta solo per chi torna dalla lettura 55 a
+  quella della 54 («Torna alla lettura precedente»): 283 segnalibri su 10.909, dichiarati, 0 sbagliati.

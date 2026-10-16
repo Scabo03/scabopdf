@@ -205,3 +205,21 @@ Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 12.12, `ULTRAFOCUS_INBOX.md` § G,
   maintainer; il Mac fraziona le note lunghe, l'app per iPad (quando elabora da sé un PDF) no (le annotazioni reggono il
   passaggio in entrambe le direzioni; restano da ricollocare, al ritorno, i pezzi di nota sotto le 64 lettere); cancellare
   l'app Mac lascia il suo contenitore (i pesi si tolgono prima con «Rimuovi dal Mac»).
+
+## 6. Lettura uniforme e misura delle note spezzate (giro del 2026-10-16 pomeriggio, build 55)
+
+Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12, `docs/CONTEGGIO_NOTE_SPEZZATE.md`, `ULTRAFOCUS_INBOX.md` A.1 e
+§ G; referto `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAMENTO.md`.
+
+- **Chiuso (campo).** L'iPad fraziona le note lunghe quando elabora da sé un PDF, con lo stesso meccanismo degli atti AKN e
+  del Mac: la lettura di un libro è la stessa chiunque l'abbia preparata (byte per byte su 52 volumi e due generazioni,
+  a parità di ingressi); 29 libri su 52 cambiano, circa 5.360 note in Lettura Continua, ogni nota si ricompone esattamente;
+  ai libri già aperti la novità arriva con l'offerta (cura 55), non alle letture del Mac. Il «da ricollocare» dei pezzi
+  sotto le 64 lettere (§ 5, Restante) sparisce fra Mac e iPad; resta solo tornando dalla lettura 55 alla 54. Le note
+  spezzate fra pagine che l'iPad lascia aperte sono state CONTATE e giudicate contro la pagina: circa 930 vere (circa 710
+  fuori dai codici) su 2.961 aperte.
+- **Restante.** Le note spezzate aperte (strada sicura sull'iPad per circa tre quarti dei casi veri fuori dai codici:
+  decisione del maintainer); la qualità dei confini fra i pezzi (iniziali doppie degli autori, pezzi molto brevi, tagli a
+  parola dentro frasi lunghe: meccanismo condiviso con gli atti AKN e col Mac); il segnale di chiusura della nota, previsto
+  dal § 10.6 e mai costruito; l'ordine delle righe in alcune prime note di pagina (tre casi visti nel campione, non
+  misurato sul corpus).

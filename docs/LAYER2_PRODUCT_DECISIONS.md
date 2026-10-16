@@ -750,6 +750,8 @@ Questa regola di frazionamento si applica coerentemente anche a Lettura Continua
 
 **Il meccanismo e la decisione del maintainer del 2026-10-16.** Il meccanismo è uno solo (`fractionLongNoteSegments`, nato per gli atti AKN e condiviso dal 2026-08-10, quando le note lunghe ricucite hanno preso il regime delle note normative lunghe): la soglia è la granularità del corpo (400 caratteri; 1.200 per i volumi oltre le 1.500 pagine), i pezzi si chiudono a confini di frase (a confini di parola solo dentro una frase più lunga della soglia), il primo pezzo porta il ruolo di nota, l'annuncio e il regime acustico della nota intera, i pezzi seguenti sono muti. Fino alla build 54 lo applicavano gli atti AKN, l'officina Mac, il runner delle reti e la porta d'importazione di sviluppo, ma non l'iPad quando elaborava da sé un PDF: lo stesso libro suonava diverso secondo chi l'aveva preparato. **Decisione:** le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF, come già fanno il Mac, il runner e gli atti AKN; la lettura deve essere la stessa chiunque l'abbia preparata (vedi § 12.12, quattro decisioni del 2026-10-16).
 
+**Realizzato nella build 55 (2026-10-16).** La catena condivisa (`ScaboChain`) fraziona per difetto: iPad, iPhone e Mac danno la stessa lettura a parità di ingressi (verificato byte per byte su 52 volumi e due generazioni di iOS). Sui 52 volumi di prova cambiano 29 libri, circa 5.360 note in Lettura Continua; ogni nota frazionata si ricompone esattamente nella nota di prima (lettere e cifre identiche su tutti i volumi; in 11 note di un volume la ricomposizione differisce solo per spazi doppi ridotti a uno, dentro pezzi spezzati a parola). Sui pezzi di seguito valgono il salto «Vai al testo del richiamo» e il riquadro visivo della nota; il rinfresco di contesto resta sul solo primo pezzo. Ai libri già aperti la novità arriva con l'offerta «Lettura migliore disponibile» (cura 55); alle letture del Mac no, perché le frazionavano già. Due scarti dalla lettera di questa sezione, dichiarati e portati al maintainer: (a) il meccanismo condiviso divide a parola DENTRO una frase quando la frase supera la soglia (circa un confine su tre) e lo spezzatore di frasi non riconosce le iniziali doppie degli autori, sicché alcuni pezzi sono molto brevi; (b) il **segnale di chiusura** della nota non è mai stato costruito (non c'è il suono): oggi la fine di una nota frazionata si riconosce solo dal pezzo che segue, che non è più nota. Numeri e misure: `docs/CARRYOVER.md`, STATO del 2026-10-16 pomeriggio.
+
 ### 10.7 Note plurime nella stessa frase
 
 Quando una frase del corpo contiene **più richiami a note** (esempio: *"secondo Bianca (12) e Castronovo (13), invece, la responsabilità non è contrattuale (14)"*), tutte le note vengono lette **in sequenza a fine frase**, nell'ordine in cui i richiami compaiono nel corpo.
@@ -1050,6 +1052,14 @@ build 54).** Le tre decisioni qui sopra, rese concrete.
 4. **Sul Mac, due app separate:** l'officina e, se verrà, un'app di lettura, per non mescolare lavoro e lettura. La vista
    di lettura per Mac sarà oggetto di uno studio dedicato e approfondito su VoiceOver di macOS, che è molto diverso da
    quello dei dispositivi mobili, con documentazione e prove; non è materia del giro che registra queste decisioni.
+
+**Esito del giro per le decisioni 1 e 2 (2026-10-16).** La decisione 1 è realizzata nella build 55 (§ 10.6). Per la
+decisione 2, il conteggio (`docs/CONTEGGIO_NOTE_SPEZZATE.md`, giudicato contro la pagina stampata su un campione di 202
+casi) mostra circa 930 note spezzate fra pagine che l'iPad lascia aperte, circa 710 fuori dai codici: la condizione della
+decisione è quindi raggiunta. Il conteggio mostra però anche che circa tre quarti dei casi veri fuori dai codici sono coppie
+di pagine contigue che il predicato dell'app già accetta (35 veri su 36 giudicati), e che la ricucitura per identità prima
+del piazzamento esiste già sull'iPad, accesa solo sull'Estratto: la scelta fra riaccendere la ricucitura sul Mac e un
+percorso sull'iPad (che serve anche chi non ha il Mac) torna al maintainer; la ricucitura del Mac intanto resta spenta.
 
 ---
 

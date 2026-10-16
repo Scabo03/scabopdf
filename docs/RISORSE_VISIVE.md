@@ -199,7 +199,12 @@ verifica la stessa identità sulla catena dell'app, oltre a dare i tempi e il pi
 fotografa la vista di lettura su ogni elemento per il confronto a vista con la pagina (le fotografie restano nel
 laboratorio). Il runner della rete replica la porta d'importazione di sviluppo, che fraziona le note lunghe; con
 `--app-chain` riproduce invece l'importazione dell'app, e gli elementi coincidono con quelli dell'app in tutto (tipo,
-pagina, riquadro, testo contenuto, segmento seguente).
+pagina, riquadro, testo contenuto, segmento seguente). **Dal 2026-10-16 (build 55)** anche l'app fraziona le note lunghe
+(decisione del maintainer, `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12): la catena dell'app coincide con il runner nel
+suo modo normale, e `--app-chain` riproduce ormai la lettura dell'app fino alla build 54. Col frazionamento cambiano 7
+elementi su 110 (6 per il numero di elementi contenuti, 1 per il posto), tutti giudicati contro la pagina nel referto del
+giro «uniformità della lettura» (3 equivalenti, 3 migliori, 1 peggiore di poco: il salto si ferma prima della coda della
+didascalia).
 
 `SCABO_ANNOT_RV=1 app/ios/scripts/rete_annotazioni.sh <etichetta>` porta la rete delle annotazioni sulle letture con le
 risorse visive, con un giudizio più severo (una ricollocazione che attraversa il confine fra testo e risorsa visiva è
