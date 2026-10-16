@@ -155,19 +155,21 @@ final class LibraryService {
         loadCache(forDocumentId: id)?.content
     }
 
-    /// Scrive (o aggiorna) la cache: contenuto Lettura Continua + mappa pagine + Dottrina Inline.
+    /// Scrive (o aggiorna) la cache: contenuto Lettura Continua + mappa pagine + Dottrina Inline. Ritorna se la
+    /// scrittura è riuscita (scrittura atomica: se fallisce, la cache di prima resta intatta). I chiamanti storici
+    /// ignorano l'esito; la ricezione della lettura dal Mac lo controlla (giro del 2026-10-16).
+    @discardableResult
     func writeCache(
         _ content: PaginatedContent, pageMap: [String: Int],
         doctrineContent: PaginatedContent?, quickConsultTree: [QuickConsultNode]?,
         contentTarget: Int, forDocumentId id: String
-    ) {
+    ) -> Bool {
         let wrapped = CachedContent(
             formatVersion: Self.cacheFormatVersion, content: content,
             pageMap: pageMap, doctrineContent: doctrineContent, quickConsultTree: quickConsultTree,
             contentTarget: contentTarget)
-        if let data = try? JSONEncoder().encode(wrapped) {
-            try? data.write(to: cacheURL(forDocumentId: id), options: .atomic)
-        }
+        guard let data = try? JSONEncoder().encode(wrapped) else { return false }
+        return (try? data.write(to: cacheURL(forDocumentId: id), options: .atomic)) != nil
     }
 
     /// Rimuove sorgente (PDF o AKN) e cache di un documento dal disco (eliminazione definitiva).

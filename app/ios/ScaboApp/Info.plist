@@ -23,5 +23,52 @@
 	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Letture preparate dal Mac (giro «costruzione della linea Mac», 2026-10-16, LAYER2 § 12.12): il tipo del file
+	     (.scabolettura), che l'app apre da AirDrop, da «Apri con» e da File; la cartella dei documenti dell'app è visibile
+	     nel Finder del Mac col cavo (vi si trascinano le letture); i file aperti si copiano (niente apertura sul posto). -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Lettura ScaboPDF</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.scabo.scabopdf.lettura</string>
+			</array>
+		</dict>
+	</array>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.scabo.scabopdf.lettura</string>
+			<key>UTTypeDescription</key>
+			<string>Lettura ScaboPDF</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>scabolettura</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-scabopdf-lettura</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
 </dict>
 </plist>

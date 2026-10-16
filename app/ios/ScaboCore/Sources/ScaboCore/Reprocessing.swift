@@ -16,6 +16,12 @@
 
 import Foundation
 
+/// L'origine di una lettura in cache (`ArchivedDocument.readingOrigin`).
+public enum ReadingOrigin {
+    /// Arrivata pronta dal Mac in un pacchetto (§ 12.12).
+    public static let mac = "mac"
+}
+
 public enum ReprocessingReason: String, Codable, Sendable {
     /// Elaborato prima dell'ultima cura dell'estrazione o della classificazione.
     case cure
@@ -53,6 +59,12 @@ public struct ReprocessingPolicy: Sendable {
         guard (doc.sourceKind ?? "pdf") == "pdf" else { return nil }
         guard currentGenerationIsValidated(currentSystemVersion: currentSystemVersion) else { return nil }
         let build = doc.processedAppBuild.flatMap { Int($0) }
+        // Lettura arrivata dal Mac (giro del 2026-10-16): il suo lettore di sistema è quello del Mac, non conta
+        // l'aggiornamento dell'iPad; la sua build è il livello di cure della catena del Mac: si offre solo una cura
+        // che quella catena non conteneva.
+        if doc.readingOrigin == ReadingOrigin.mac {
+            return (build ?? 0) < latestCureBuild ? .cure : nil
+        }
         let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
         if !sameBuild, build == nil || build! < latestCureBuild { return .cure }
         if let was = Self.major(of: doc.processedSystemVersion), let now = Self.major(of: currentSystemVersion), was != now {
@@ -78,9 +90,12 @@ public struct ReadingSnapshot: Codable, Equatable, Sendable {
     public var processedSystemVersion: String?
     public var processedAppBuild: String?
     public var processedAt: Date?
+    /// Origine della lettura messa da parte (`nil` = elaborata dal dispositivo; additivo, giro del 2026-10-16).
+    public var readingOrigin: String?
     public var takenAt: Date
 
     public init(document d: ArchivedDocument, takenAt: Date) {
+        readingOrigin = d.readingOrigin
         bookmarks = d.bookmarks ?? []
         underlines = d.underlines ?? []
         readingPosition = d.readingPosition
@@ -126,7 +141,8 @@ extension LibraryStore {
             readingPosition: snapshot.readingPosition, readingAnchor: snapshot.readingAnchor,
             readingPositionIsApproximate: snapshot.readingPositionIsApproximate)
         restoreProcessedLabel(id: documentId, systemVersion: snapshot.processedSystemVersion,
-                              appBuild: snapshot.processedAppBuild, at: snapshot.processedAt)
+                              appBuild: snapshot.processedAppBuild, at: snapshot.processedAt,
+                              readingOrigin: snapshot.readingOrigin)
         return (newerB.count + newerU.count, orphaned)
     }
 }

@@ -22,6 +22,7 @@
 		5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000063 /* RealPdfBenchTests.swift */; };
 		5CABC04E00000000000000A2 /* PageIndicatorProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E00000000000000A3 /* PageIndicatorProbeTests.swift */; };
 		5CABC04E00000000000000B0 /* VisualResourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E00000000000000B1 /* VisualResourceTests.swift */; };
+		5CABC04E00000000000000C0 /* ReadingFromMacTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E00000000000000C1 /* ReadingFromMacTests.swift */; };
 		5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */; };
 		5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */; };
 		5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */; };
@@ -32,6 +33,7 @@
 		B7E1A0C2D3F4051627384950 /* ReprocessOfferUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8F2B1D3E4A5162738495A61 /* ReprocessOfferUITests.swift */; };
 		E5B8D3F2C6A7283940516C83 /* DuplicateImportUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A7C2E1B5F6172839405B72 /* DuplicateImportUITests.swift */; };
 		5CABC04E00000000000000B2 /* VisualResourceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E00000000000000B3 /* VisualResourceUITests.swift */; };
+		5CABC04E00000000000000C2 /* ReadingFromMacUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC04E00000000000000C3 /* ReadingFromMacUITests.swift */; };
 		C539E11B306FE6AC0C7F5809 /* MotorAccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71972E1431CAD5A4434B45C1 /* MotorAccessibilityTests.swift */; };
 		EAB3841D743855972BD02B55 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA7381B73C5CC5F8BCBA5DE7 /* Foundation.framework */; };
 /* End PBXBuildFile section */
@@ -67,6 +69,7 @@
 		5CABC04E0000000000000063 /* RealPdfBenchTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RealPdfBenchTests.swift; sourceTree = "<group>"; };
 		5CABC04E00000000000000A3 /* PageIndicatorProbeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PageIndicatorProbeTests.swift; sourceTree = "<group>"; };
 		5CABC04E00000000000000B1 /* VisualResourceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VisualResourceTests.swift; sourceTree = "<group>"; };
+		5CABC04E00000000000000C1 /* ReadingFromMacTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadingFromMacTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookmarkGestureWiringTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UnderlineRenderingTests.swift; sourceTree = "<group>"; };
 		5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SplitMemoryProbeTests.swift; sourceTree = "<group>"; };
@@ -79,6 +82,7 @@
 		C8F2B1D3E4A5162738495A61 /* ReprocessOfferUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReprocessOfferUITests.swift; sourceTree = "<group>"; };
 		D4A7C2E1B5F6172839405B72 /* DuplicateImportUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DuplicateImportUITests.swift; sourceTree = "<group>"; };
 		5CABC04E00000000000000B3 /* VisualResourceUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VisualResourceUITests.swift; sourceTree = "<group>"; };
+		5CABC04E00000000000000C3 /* ReadingFromMacUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReadingFromMacUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -144,6 +148,7 @@
 				C8F2B1D3E4A5162738495A61 /* ReprocessOfferUITests.swift */,
 				D4A7C2E1B5F6172839405B72 /* DuplicateImportUITests.swift */,
 				5CABC04E00000000000000B3 /* VisualResourceUITests.swift */,
+				5CABC04E00000000000000C3 /* ReadingFromMacUITests.swift */,
 			);
 			name = ScaboAppUITests;
 			path = ScaboAppUITests;
@@ -162,6 +167,7 @@
 				5CABC04E0000000000000063 /* RealPdfBenchTests.swift */,
 				5CABC04E00000000000000A3 /* PageIndicatorProbeTests.swift */,
 				5CABC04E00000000000000B1 /* VisualResourceTests.swift */,
+				5CABC04E00000000000000C1 /* ReadingFromMacTests.swift */,
 				5CABC04E0000000000000081 /* BookmarkGestureWiringTests.swift */,
 				5CABC04E0000000000000083 /* UnderlineRenderingTests.swift */,
 				5CABC04E0000000000000085 /* SplitMemoryProbeTests.swift */,
@@ -378,6 +384,7 @@
 				5CABC04E0000000000000062 /* RealPdfBenchTests.swift in Sources */,
 				5CABC04E00000000000000A2 /* PageIndicatorProbeTests.swift in Sources */,
 				5CABC04E00000000000000B0 /* VisualResourceTests.swift in Sources */,
+				5CABC04E00000000000000C0 /* ReadingFromMacTests.swift in Sources */,
 				5CABC04E0000000000000080 /* BookmarkGestureWiringTests.swift in Sources */,
 				5CABC04E0000000000000082 /* UnderlineRenderingTests.swift in Sources */,
 				5CABC04E0000000000000084 /* SplitMemoryProbeTests.swift in Sources */,
@@ -396,6 +403,7 @@
 				B7E1A0C2D3F4051627384950 /* ReprocessOfferUITests.swift in Sources */,
 				E5B8D3F2C6A7283940516C83 /* DuplicateImportUITests.swift in Sources */,
 				5CABC04E00000000000000B2 /* VisualResourceUITests.swift in Sources */,
+				5CABC04E00000000000000C2 /* ReadingFromMacUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

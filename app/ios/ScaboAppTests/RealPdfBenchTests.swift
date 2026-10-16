@@ -1042,3 +1042,108 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 }
+
+// MARK: - Il pacchetto dal Mac: andata e ritorno (giro «costruzione della linea Mac», 2026-10-16)
+
+extension RealPdfBenchTests {
+
+    private struct PackageRequest: Codable {
+        let packages: [String]
+        let outDir: String
+    }
+
+    private struct PackageRoundTrip: Codable {
+        let package: String
+        let bytes: Int
+        let pageCount: Int
+        let segments: Int
+        let contentTarget: Int
+        let hasDoctrine: Bool
+        let hasQuickConsult: Bool
+        let headerSeconds: Double
+        let bodySeconds: Double
+        let adoptSeconds: Double
+        let memoryBeforeMB: Double
+        let memoryPeakMB: Double
+        /// La lettura che l'iPad scrive in cache e riapre è identica a quella del pacchetto (stessi valori).
+        let identicalToPackage: Bool
+    }
+
+    /// ANDATA E RITORNO DEL PACCHETTO: per ogni pacchetto prodotto dal Mac (`scabomac-officina pacchetto`, fuori dal
+    /// repo), la catena di ricezione dell'app — intestazione, controlli di compatibilità, carico, adozione su un libro di
+    /// prova con la stessa impronta, cache — e poi la lettura che il lettore riceverebbe aprendo il libro (per i volumi
+    /// enormi senza Dottrina né Consultazione, come `DocumentOpener`). Scrive `<nome>.ipad.lettura.json` (stessa codifica
+    /// del controllo del Mac, chiavi ordinate) e un referto per pacchetto senza testo, con tempi e picco di memoria.
+    /// Stesso meccanismo a file-richiesta: `/tmp/scabo_package_request.json` = {packages, outDir}; `XCTSkip` senza richiesta.
+    func test_readingPackageRoundTrip_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_PACKAGE_REQUEST"] ?? "/tmp/scabo_package_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(PackageRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta d'andata e ritorno dei pacchetti in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let service = LibraryService.shared
+        let sorted = JSONEncoder()
+        sorted.outputFormatting = [.sortedKeys]
+        var reports: [PackageRoundTrip] = []
+        for path in req.packages {
+            let url = URL(fileURLWithPath: path)
+            let name = url.deletingPathExtension().lastPathComponent
+            let t0 = Date()
+            let (header, _) = try ReadingPackage.readHeader(at: url)
+            try ReadingPackage.checkCompatibility(header, readableCacheFormats: ReadingFromMac.readableCacheFormats)
+            try ReadingFromMac.checkLargeVolumeGranularity(header)
+            let headerSeconds = Date().timeIntervalSince(t0)
+
+            let mem0 = physFootprintMB()
+            let peak = PeakBox(mem0)
+            let done = DispatchSemaphore(value: 0)
+            let stop = PeakBox(0)
+            DispatchQueue.global(qos: .utility).async {
+                while stop.value == 0 { peak.update(physFootprintMB()); usleep(20_000) }
+                done.signal()
+            }
+            let t1 = Date()
+            let bytes = try Data(contentsOf: url)
+            let (h2, offset) = try ReadingPackage.readHeader(bytes)
+            let body = try ReadingPackage.readBody(bytes, header: h2, payloadOffset: offset)
+            let bodySeconds = Date().timeIntervalSince(t1)
+
+            // Il libro che la riceve: stessa impronta, stesse pagine (il PDF non serve: la lettura si adotta così com'è).
+            let doc = service.store.addDocument(title: header.source.title, sourceFileName: header.source.fileName,
+                                                sourcePageCount: header.source.pageCount)
+            defer {
+                service.deleteFiles(forDocumentId: doc.id)
+                service.store.deleteDocumentFromArchive(id: doc.id)
+            }
+            service.store.setSourceSha256(id: doc.id, header.source.sha256)
+            let t2 = Date()
+            XCTAssertNil(ReadingFromMac.adopt(reading: body.reading, header: header, documentId: doc.id), name)
+            let cached = try XCTUnwrap(service.loadCache(forDocumentId: doc.id), name)
+            let adoptSeconds = Date().timeIntervalSince(t2)
+            stop.update(1); done.wait()
+
+            // Ciò che il lettore riceve aprendo il libro (DocumentOpener.open, percorso della cache).
+            let large = doc.sourcePageCount > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
+            XCTAssertTrue(!large || cached.contentTarget == DocumentOpener.LARGE_DOCUMENT_GRANULARITY,
+                          "\(name): un volume enorme si apre dalla cache solo a granularità 1.200")
+            let opened = PackagedReading(content: cached.content, pageMap: cached.pageMap,
+                                         doctrineContent: large ? nil : cached.doctrineContent,
+                                         quickConsultTree: large ? nil : cached.quickConsultTree,
+                                         contentTarget: cached.contentTarget ?? 0)
+            try sorted.encode(opened).write(to: URL(fileURLWithPath: req.outDir + "/\(name).ipad.lettura.json"))
+            let identical = opened == body.reading
+            XCTAssertTrue(identical, "\(name): la lettura riaperta sull'iPad è quella del pacchetto")
+            let segs = cached.content.pages.reduce(0) { $0 + $1.segments.count }
+            let r = PackageRoundTrip(package: name, bytes: bytes.count, pageCount: header.source.pageCount, segments: segs,
+                                     contentTarget: cached.contentTarget ?? 0, hasDoctrine: opened.doctrineContent != nil,
+                                     hasQuickConsult: opened.quickConsultTree != nil, headerSeconds: headerSeconds,
+                                     bodySeconds: bodySeconds, adoptSeconds: adoptSeconds, memoryBeforeMB: mem0,
+                                     memoryPeakMB: peak.value, identicalToPackage: identical)
+            reports.append(r)
+            print(String(format: "[pacchetto] %@: %d byte, %d segmenti, intestazione %.3f s, carico %.2f s, adozione %.2f s, memoria %.0f → picco %.0f MB, identica %@",
+                         name, bytes.count, segs, headerSeconds, bodySeconds, adoptSeconds, mem0, peak.value, identical ? "sì" : "NO"))
+        }
+        try sorted.encode(reports).write(to: URL(fileURLWithPath: req.outDir + "/andata_ritorno.json"))
+    }
+}

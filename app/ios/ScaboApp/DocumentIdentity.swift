@@ -81,6 +81,29 @@ enum DocumentIdentity {
         }
     }
 
+    /// LETTURA DAL MAC (giro «costruzione della linea Mac», 2026-10-16, § 12.12): i libri con quell'impronta (presa
+    /// dall'intestazione del pacchetto), completando prima le impronte mancanti. Solo i libri che si possono aprire (file
+    /// d'archivio o lettura in cache); dal più recentemente aperto. `completion` sul main.
+    static func documents(
+        withFingerprint sha256: String, service: LibraryService = .shared,
+        completion: @escaping (_ matches: [ArchivedDocument]) -> Void
+    ) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        let pending = service.store.documentsWithoutSourceSha256()
+        queue.async {
+            let completed: [(String, String)] = pending.compactMap { doc in
+                fingerprintOfArchivedSource(doc, service: service).map { (doc.id, $0) }
+            }
+            DispatchQueue.main.async {
+                service.store.setSourceSha256s(completed.map { (id: $0.0, sha256: $0.1) })
+                let matches = service.store.documents(withSourceSha256: sha256).filter {
+                    service.hasArchivedSource(forDocumentId: $0.id, kind: $0.sourceKind) || service.hasCache(forDocumentId: $0.id)
+                }
+                completion(matches)
+            }
+        }
+    }
+
     /// IMPORTAZIONE: calcola l'impronta del file scelto e cerca i libri con la stessa impronta,
     /// completando prima le impronte mancanti. `completion` arriva sul main con l'impronta (o `nil` se
     /// il file non si legge) e i libri che coincidono, dal più recentemente aperto; vuoto = libro nuovo.

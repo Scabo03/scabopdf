@@ -27,7 +27,10 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     private var recents: [ArchivedDocument] = []
     private var workspaces: [Workspace] = []
 
-    private enum Section: Int, CaseIterable { case offer, recents, workspaces }
+    private enum Section: Int, CaseIterable { case fromMac, offer, recents, workspaces }
+    /// Letture preparate sul Mac arrivate e in attesa di decisione (§ 12.12, giro del 2026-10-16).
+    private var fromMacCount = 0
+    private var observingArrivals = false
     /// Libri che possono ricevere la lettura migliore (+ quelli in attesa di conferma): § 12.13.
     private var offerCount = 0
     private var offerEligible = 0
@@ -95,6 +98,12 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if !observingArrivals {
+            observingArrivals = true
+            NotificationCenter.default.addObserver(forName: ReceivedReadings.didChange, object: nil, queue: .main) { [weak self] _ in
+                self?.reload()
+            }
+        }
         reload()
     }
 
@@ -111,6 +120,8 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     #endif
 
     private func reload() {
+        ReceivedReadings.collectArrivals()   // le letture trascinate col cavo o lasciate da «Apri con» in Inbox
+        fromMacCount = ReceivedReadings.pending().count
         offerPending = ReprocessOffer.pendingConfirmation().count   // pulisce anche le copie di elaborazioni interrotte
         offerEligible = ReprocessOffer.eligibleDocuments().filter { !service.hasPreviousReading(forDocumentId: $0.id) }.count
         offerCount = offerEligible + offerPending
@@ -214,6 +225,7 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch Section(rawValue: section)! {
+        case .fromMac: return fromMacCount > 0 ? 1 : 0            // solo se è arrivata una lettura dal Mac
         case .offer: return offerCount > 0 ? 1 : 0                // riga discreta, solo se c'è qualcosa
         case .recents: return recents.count                       // sezione assente se vuota (header nil)
         case .workspaces: return max(workspaces.count, 1)         // almeno la riga "nessun workspace"
@@ -222,7 +234,7 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
         switch Section(rawValue: section)! {
-        case .offer: return nil
+        case .fromMac, .offer: return nil
         case .recents: return recents.isEmpty ? nil : "Recenti"
         case .workspaces: return nil   // header custom (con il tasto Nuovo workspace)
         }
@@ -239,6 +251,8 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch Section(rawValue: indexPath.section)! {
+        case .fromMac:
+            return fromMacCell(at: indexPath)
         case .offer:
             return offerCell(at: indexPath)
         case .recents:
@@ -287,10 +301,33 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
         return cell
     }
 
+    /// La riga delle letture arrivate dal Mac (§ 12.12): apre l'elenco, non applica nulla da sé.
+    private func fromMacCell(at indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "empty", for: indexPath)
+        var config = cell.defaultContentConfiguration()
+        config.text = fromMacCount == 1 ? "Una lettura arrivata dal Mac" : "\(fromMacCount) letture arrivate dal Mac"
+        config.secondaryText = "Apre l'elenco: ogni lettura si applica al suo libro solo se lo confermi tu."
+        config.textProperties.numberOfLines = 0
+        config.secondaryTextProperties.numberOfLines = 0
+        config.image = UIImage(systemName: "laptopcomputer.and.arrow.down")
+        cell.contentConfiguration = config
+        cell.accessoryType = .disclosureIndicator
+        cell.selectionStyle = .default
+        cell.accessibilityTraits = .button
+        cell.accessibilityIdentifier = "home.fromMac"
+        return cell
+    }
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: false)
-        guard Section(rawValue: indexPath.section) == .offer else { return }
-        navigationController?.pushViewController(ReprocessListViewController(style: .insetGrouped), animated: true)
+        switch Section(rawValue: indexPath.section) {
+        case .fromMac:
+            navigationController?.pushViewController(ReceivedListViewController(style: .insetGrouped), animated: true)
+        case .offer:
+            navigationController?.pushViewController(ReprocessListViewController(style: .insetGrouped), animated: true)
+        default:
+            return
+        }
     }
 
     private func fileCell(_ doc: ArchivedDocument, at indexPath: IndexPath) -> UITableViewCell {

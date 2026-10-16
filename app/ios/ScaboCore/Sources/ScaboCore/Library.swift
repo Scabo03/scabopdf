@@ -113,6 +113,13 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// dell'app aggiornata, senza rielaborare nulla.
     public var sourceSha256: String?
 
+    /// ORIGINE DELLA LETTURA in cache (giro «costruzione della linea Mac», 2026-10-16): `"mac"` se la lettura è arrivata
+    /// pronta dal Mac in un pacchetto (ReadingPackage.swift) e l'iPad l'ha adottata così com'è (§ 12.12); `nil` se
+    /// l'ha elaborata questo dispositivo. Serve all'offerta «Lettura migliore disponibile»: una lettura del Mac non si
+    /// ripropone per l'aggiornamento di sistema dell'iPad (il lettore di sistema che l'ha estratta è quello del Mac), e
+    /// per una cura solo se la catena del Mac non la conteneva. OPZIONALE/additivo come gli altri campi.
+    public var readingOrigin: String?
+
     public init(
         id: String,
         title: String,
@@ -131,8 +138,10 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
         processedAppBuild: String? = nil,
         readingAnchor: ContentAnchor? = nil,
         readingPositionIsApproximate: Bool? = nil,
-        sourceSha256: String? = nil
+        sourceSha256: String? = nil,
+        readingOrigin: String? = nil
     ) {
+        self.readingOrigin = readingOrigin
         self.readingAnchor = readingAnchor
         self.readingPositionIsApproximate = readingPositionIsApproximate
         self.sourceSha256 = sourceSha256
@@ -584,6 +593,19 @@ public final class LibraryStore {
         state.documents[i].processedSystemVersion = systemVersion
         state.documents[i].processedAt = now()
         state.documents[i].processedAppBuild = appBuild
+        state.documents[i].readingOrigin = nil   // elaborato da questo dispositivo
+        persist()
+    }
+
+    /// Registra l'adozione di una lettura ARRIVATA DAL MAC (giro «costruzione della linea Mac», 2026-10-16): la
+    /// generazione è quella del lettore di sistema del Mac che l'ha estratta, la build è il livello di cure della catena
+    /// del Mac (l'ultima build dell'app per iPad le cui cure la catena contiene), l'origine è `"mac"`.
+    public func recordReceivedReading(id: String, systemVersion: String, cureLevel: Int, at date: Date) {
+        guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
+        state.documents[i].processedSystemVersion = systemVersion
+        state.documents[i].processedAt = date
+        state.documents[i].processedAppBuild = String(cureLevel)
+        state.documents[i].readingOrigin = ReadingOrigin.mac
         persist()
     }
 
@@ -633,11 +655,13 @@ public final class LibraryStore {
     }
 
     /// Rimette l'etichetta di generazione com'era (ritorno alla lettura precedente, Reprocessing.swift).
-    public func restoreProcessedLabel(id: String, systemVersion: String?, appBuild: String?, at: Date?) {
+    public func restoreProcessedLabel(id: String, systemVersion: String?, appBuild: String?, at: Date?,
+                                      readingOrigin: String? = nil) {
         guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
         state.documents[i].processedSystemVersion = systemVersion
         state.documents[i].processedAppBuild = appBuild
         state.documents[i].processedAt = at
+        state.documents[i].readingOrigin = readingOrigin
         persist()
     }
 

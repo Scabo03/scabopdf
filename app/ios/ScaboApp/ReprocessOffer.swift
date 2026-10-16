@@ -18,6 +18,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 // MARK: - Politica e testi
@@ -27,9 +28,12 @@ enum ReprocessOffer {
     /// Generazioni validate dalla doppia rete della build in uso, e l'ultima build che porta una cura da
     /// offrire. Da aggiornare nel giro che valida una nuova generazione o introduce una cura.
     /// La cura della build 53 (risorse visive) richiede iOS 17 (il modello d'impaginazione): sotto, l'ultima cura
-    /// resta la 50 e l'offerta non promette ciò che il dispositivo non può fare.
+    /// resta la 50 e l'offerta non promette ciò che il dispositivo non può fare. Dal 2026-10-16 il numero della cura vive
+    /// in un posto solo, il livello di cure della catena condivisa (`ProcessingChain.cureLevel`, ScaboChain), che porta
+    /// anche il pacchetto del Mac.
     static var policy: ReprocessingPolicy {
-        ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: visualResourcesAvailable ? 53 : 50)
+        ReprocessingPolicy(validatedSystemMajors: [26, 27],
+                           latestCureBuild: visualResourcesAvailable ? ProcessingChain.cureLevel : 50)
     }
 
     /// Vero se il dispositivo può riconoscere tabelle e figure (iOS 17 o successivo).
@@ -87,11 +91,24 @@ enum ReprocessOffer {
         }
     }
 
+    /// Segnalibri e sottolineature di un libro, in parole («2 segnalibri e una sottolineatura»; vuoto se nessuno).
+    static func annotationsCountText(_ doc: ArchivedDocument) -> String {
+        let b = doc.bookmarks?.count ?? 0
+        let u = doc.underlines?.count ?? 0
+        var parts: [String] = []
+        if b > 0 { parts.append(b == 1 ? "un segnalibro" : "\(b) segnalibri") }
+        if u > 0 { parts.append(u == 1 ? "una sottolineatura" : "\(u) sottolineature") }
+        return parts.joined(separator: " e ")
+    }
+
     /// Cosa cambia, per questo libro.
     static func whatChanges(_ doc: ArchivedDocument, reason: ReprocessingReason) -> String {
         let since = doc.processedAppBuild.flatMap { Int($0) } ?? 0
         let list = cures.filter { $0.build > since && $0.build <= policy.latestCureBuild }.map { $0.text }
         var text = ""
+        if doc.readingOrigin == ReadingOrigin.mac {
+            text += "La lettura di adesso è arrivata dal Mac: rielaborando il libro qui, l'iPad la sostituisce con la sua. "
+        }
         if reason == .systemUpdate, let was = doc.processedSystemVersion {
             text += "Questo libro è stato letto con \(was); ora il lettore di sistema è \(SystemGeneration.current), già verificato per questa versione dell'app. "
         }
@@ -414,6 +431,19 @@ final class ReprocessConfirmViewController: ReprocessTextViewController {
     private let identifier: String
     private let onConfirm: () -> Void
     private var heading: UILabel?
+    /// Vero se la conferma è entrata nella stessa scheda della schermata che la chiede (invece di una seconda scheda
+    /// sopra): «Annulla» torna indietro, l'azione la lascia chiudere a chi l'ha chiesta.
+    private var pushed = false
+
+    /// La conferma come pagina successiva della STESSA scheda (giro del 2026-10-16, ricezione dal Mac): sull'iPad due
+    /// schede sovrapposte lasciano visibile il testo di quella di sotto, che l'audit d'accessibilità segnala.
+    static func push(on navigation: UINavigationController, identifier: String, question: String, explanation: String,
+                     actionTitle: String, onConfirm: @escaping () -> Void) {
+        let vc = ReprocessConfirmViewController(identifier: identifier, question: question, explanation: explanation,
+                                                actionTitle: actionTitle, onConfirm: onConfirm)
+        vc.pushed = true
+        navigation.pushViewController(vc, animated: Motion.animated())
+    }
 
     static func present(from presenter: UIViewController, identifier: String, question: String, explanation: String,
                         actionTitle: String, onConfirm: @escaping () -> Void) {
@@ -441,11 +471,15 @@ final class ReprocessConfirmViewController: ReprocessTextViewController {
         title = "Conferma"
         heading = addHeading(question)
         addParagraph(explanation, identifier: "\(identifier).text")
-        addButton("Annulla", prominent: true, identifier: "\(identifier).cancel") { [weak self] in self?.dismiss(animated: true) }
+        addButton("Annulla", prominent: true, identifier: "\(identifier).cancel") { [weak self] in
+            guard let self else { return }
+            if self.pushed { self.navigationController?.popViewController(animated: Motion.animated()) }
+            else { self.dismiss(animated: true) }
+        }
         addButton(actionTitle, prominent: false, identifier: "\(identifier).ok") { [weak self] in
             guard let self else { return }
             let onConfirm = self.onConfirm
-            self.dismiss(animated: true) { onConfirm() }
+            if self.pushed { onConfirm() } else { self.dismiss(animated: true) { onConfirm() } }
         }
     }
 

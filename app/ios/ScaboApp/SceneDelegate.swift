@@ -34,7 +34,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if CommandLine.arguments.contains("-uiTestSeedReprocess")
             || CommandLine.arguments.contains("-uiTestSeedDuplicateImport")
             || CommandLine.arguments.contains("-uiTestSeedVisualResource")
-            || CommandLine.arguments.contains("-uiTestSeedVisualResourceControl") {
+            || CommandLine.arguments.contains("-uiTestSeedVisualResourceControl")
+            || UITestSeeding.macReadingSeeds.contains(where: CommandLine.arguments.contains) {
             setStoredFirstOpenCompleted(prefs, true)
             UITestSeeding.applyIfRequested()
         }
@@ -60,8 +61,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // Identità del documento (giro «identità», 2026-10-11): i libri già in libreria ricevono
         // l'impronta del contenuto in sottofondo, uno alla volta, senza bloccare la lettura e senza
-        // rielaborare nulla. Serve a riconoscere lo stesso libro (importazione, e domani il Mac).
+        // rielaborare nulla. Serve a riconoscere lo stesso libro (importazione, e il frutto del Mac).
         DocumentIdentity.fingerprintMissingDocumentsInBackground()
+
+        // Letture preparate dal Mac (giro «costruzione della linea Mac», 2026-10-16, § 12.12): quelle trascinate col
+        // cavo nella cartella dell'app si raccolgono; quella con cui l'app è stata aperta (AirDrop, «Apri con») si propone.
+        ReceivedReadings.collectArrivals()
+        if !connectionOptions.urlContexts.isEmpty {
+            let urls = connectionOptions.urlContexts.map { $0.url }
+            DispatchQueue.main.async { [weak self] in self?.receive(urls) }
+        }
 
         // Avvio SEMPRE sulla Home stabile. La riapertura automatica dell'ultimo documento
         // all'avvio è DISABILITATA di proposito: presentare (e far leggere a VoiceOver) un
@@ -90,8 +99,37 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneWillEnterForeground(_ scene: UIScene) {
-        // Called as the scene transitions from the background to the foreground.
-        // Use this method to undo the changes made on entering the background.
+        // Le letture del Mac trascinate col cavo mentre l'app era in sottofondo: la Home le mostra al ritorno.
+        if ReceivedReadings.collectArrivals() > 0 {
+            NotificationCenter.default.post(name: ReceivedReadings.didChange, object: nil)
+        }
+    }
+
+    /// AirDrop, «Apri con», File: iOS consegna il file della lettura (copiato in `Documents/Inbox`).
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        receive(URLContexts.map { $0.url })
+    }
+
+    /// Accoglie le letture arrivate e propone subito la prima (le altre restano nella riga della Home). Se è aperta la
+    /// schermata della prima apertura, non si interrompe: la lettura resta in attesa nella Home.
+    private func receive(_ urls: [URL]) {
+        let accepted = urls.filter(ReceivedReadings.isPackage).compactMap(ReceivedReadings.accept)
+        NotificationCenter.default.post(name: ReceivedReadings.didChange, object: nil)
+        guard let first = accepted.first, let root = window?.rootViewController as? RootTabBarController else { return }
+        UIAccessibility.post(notification: .announcement, argument: "È arrivata una lettura preparata dal Mac.")
+        let present = {
+            let presenter = (root.selectedViewController as? UINavigationController)?.topViewController ?? root
+            ReadingFromMac.start(fileURL: first, from: presenter) {
+                NotificationCenter.default.post(name: ReceivedReadings.didChange, object: nil)
+            }
+        }
+        // Un lettore o un'altra schermata aperti si chiudono prima (la posizione è già salvata): la lettura del Mac
+        // potrebbe riguardare proprio il libro aperto.
+        if root.presentedViewController != nil {
+            root.dismiss(animated: false) { present() }
+        } else {
+            present()
+        }
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {
