@@ -196,6 +196,26 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 56 — 2026-10-17 notte, commit `11cd858` (giro «cura delle note»: le note spezzate fra pagine contigue ricucite
+  sull'iPad, i pezzi delle note lunghe chiusi a fine frase, cura 56 con l'offerta «Lettura migliore disponibile» ai libri
+  preparati dall'iPad da un PDF, non alle letture arrivate dal Mac né ai testi normativi già importati; `docs/CARRYOVER.md`
+  STATO del 2026-10-16 sera, `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12).** `fastlane beta` exit 0:
+  `CURRENT_PROJECT_VERSION` 56, EXPORT SUCCEEDED alle 01:35:34, altool «UPLOAD SUCCEEDED with no errors» alle 01:37:52,
+  Delivery UUID `64686da2-7e6b-4782-8b64-2fceca3a21e0`, «Successfully set the changelog for build» alle 01:41:00, nessun
+  errore di App Store Connect. Verifica in sola lettura con la chiave API (script Spaceship del laboratorio,
+  `ricucitura/strumenti/asc_build_56.rb`): build 56 VALID, «Cosa testare» (it) identico a
+  `app/ios/fastlane/COSA_TESTARE.txt` (provato prima con `fastlane note_tester`, exit 0). Reti prima del caricamento:
+  doppia rete delle generazioni `ric1` (cattura nuova) e `ric2` exit 0, Marotta identico, risorse visive 110 su 110 già
+  giudicate; rete fissa sulle annotazioni `ric1` e `ric2` exit 0 con 0 ricollocazioni sbagliate e le tre prove al
+  contrario; 534 ricuciture tutte giudicate vere contro la pagina; lettere e cifre identiche e ogni nota ricomposta
+  identica su 52 volumi e due generazioni; iPad e Mac identici byte per byte 52/52; titoli e struttura invariati; vista
+  nel simulatore senza veto. Suite (`validate.sh`, iPhone 16 iOS 26.5): ScaboCore 917, ScaboAppTests 176 (14 saltati),
+  test UI 17, 0 falliti; iPhone 16 iOS 27 uguale; iPad Pro iOS 27 test UI con gli stessi 6 rossi PREESISTENTI della build
+  55 (stessi casi, stessi 17 fallimenti, stessi messaggi; una corsa con un problema d'audit in più sulla Home, passeggero:
+  ripetuta, di nuovo i 3 preesistenti). Revisione indipendente prima del caricamento: nessun rilievo bloccante, 30
+  ricuciture rigiudicate vere; corretti la cura offerta alle letture del Mac (`3b19074`), quattro prove senza denti
+  (`6016519`) e le note per i tester (`25b9f7f`). IPA 162 858 501 byte (155,3 MiB, come la 55). Cura di lettura nuova:
+  `ProcessingChain.cureLevel` 56 (`ProcessingChain.curesFromTheMacOnly` = [56]).
 - **Build 55 — 2026-10-16 pomeriggio, commit `91aaf7b` (giro «uniformità della lettura e misura»: le note lunghe si
   frazionano anche quando l'iPad elabora da sé un PDF, cura 55 con l'offerta «Lettura migliore disponibile»;
   `docs/CARRYOVER.md` STATO del 2026-10-16 pomeriggio, `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12).** `fastlane beta`:

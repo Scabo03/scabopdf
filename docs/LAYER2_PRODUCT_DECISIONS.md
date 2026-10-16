@@ -1094,6 +1094,19 @@ percorso sull'iPad (che serve anche chi non ha il Mac) torna al maintainer; la r
 3. **Il segnale di chiusura della nota** (§ 10.6) si farà in un giro dedicato ai suoni, da certificare all'orecchio: non è
    materia del giro che registra queste decisioni.
 
+**Esito del giro per le decisioni 1 e 2 (build 56).** (1) Ricucitura fra pagine contigue nel codice condiviso
+(`stitchAdjacentPageFootnotes`, dopo l'aggancio, esclusi i codici, l'Estratto sul suo percorso storico): 534 punti di
+giunzione in 533 note di 16 volumi, tutti giudicati veri contro la pagina stampata (e 30 rigiudicati veri dalla revisione
+indipendente); zero fusioni fra note diverse o con il corpo; guardie: predicato dell'app, successione dei numeri, coda e
+testa sotto il corpo della loro pagina, stesso corpo tipografico, mai una testa senza numero. Il Mac la riceve identica
+dal codice condiviso; la sua ricucitura propria resta spenta. Le note spezzate vere ancora aperte fuori dai codici
+scendono da circa 710 a circa 182 (`docs/CONTEGGIO_NOTE_SPEZZATE.md` § 8). (2) Regola dei confini dei pezzi in § 10.6.
+**Chi riceve la cura 56 fra i libri già aperti (scelta prudente del giro, da confermare):** i libri preparati dall'iPad
+da un PDF, con l'offerta «Lettura migliore disponibile»; non le letture arrivate dal Mac (rielaborarle sull'iPad ne
+toglierebbe l'innesto: la riceveranno con una lettura nuova del Mac) né i testi normativi già importati (l'offerta vale
+per i PDF; i nuovi la hanno). Le annotazioni fatte con la build 55 su un pezzo di nota tagliato diversamente possono
+restare «da ricollocare» (§ 12.14: mai spostate a caso).
+
 ---
 
 ### 12.13 Rielaborazione dei libri dopo un aggiornamento di sistema o una cura (decisione del 2026-10-07)
