@@ -203,7 +203,7 @@ Dump di lettura dell'app (simulatore iOS 26.5, `test_readingFidelityDump_fromReq
 frazionamenti delle note lunghe** (`fractionLongNoteSegments`, che il runner applica e l'app no: regime dichiarato ad agosto), testo concatenato
 identico. Parità confermata a meno del frazionamento dichiarato (`prova6_parita_runner/confronto_app_runner.txt`: 167 blocchi diversi, 167 frazionamenti).
 *Nota del 2026-10-16:* dalla build 55 anche l'app fraziona le note lunghe (decisione del maintainer, `LAYER2_PRODUCT_DECISIONS.md` § 12.12):
-la differenza qui dichiarata non c'è più; la lettura dell'app coincide con quella del runner e con quella del Mac a parità di ingressi.
+la differenza qui dichiarata non c'è più; la lettura dell'app coincide con quella del runner e con quella del Mac a parità di ingressi e con l'innesto spento (con l'innesto acceso cambiano solo i 5 volumi dell'indice analitico).
 
 ## 5. Conseguenze per le istruzioni per-file (Parte IV dell'analisi)
 

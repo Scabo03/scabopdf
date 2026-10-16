@@ -202,9 +202,16 @@ laboratorio). Il runner della rete replica la porta d'importazione di sviluppo, 
 pagina, riquadro, testo contenuto, segmento seguente). **Dal 2026-10-16 (build 55)** anche l'app fraziona le note lunghe
 (decisione del maintainer, `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12): la catena dell'app coincide con il runner nel
 suo modo normale, e `--app-chain` riproduce ormai la lettura dell'app fino alla build 54. Col frazionamento cambiano 7
-elementi su 110 (6 per il numero di elementi contenuti, 1 per il posto), tutti giudicati contro la pagina nel referto del
-giro «uniformità della lettura» (3 equivalenti, 3 migliori, 1 peggiore di poco: il salto si ferma prima della coda della
-didascalia).
+elementi su 110 in Lettura Continua (5 in Dottrina Inline): in 5 cambia solo il numero di segmenti contenuti, in 2 anche il
+posto (Rivista DPC 4-2020 p. 117, solo in Lettura Continua: in Dottrina resta dov'era, quindi lì i due layout ora
+differiscono; Manuale di Diritto Costituzionale p. 250, ora fra due pezzi della stessa nota). Tutti giudicati contro la
+pagina nel referto del giro «uniformità della lettura»: 3 equivalenti, 3 migliori, 1 peggiore di poco (Costituzionale p.
+394: «Salta la risorsa» atterra su un pezzo di quattro parole, la coda della didascalia, invece di saltare la nota intera).
+**Dichiarato (revisione indipendente del giro).** La guardia conta come «certo» il testo di una nota solo se il segmento
+apre con un marcatore di nota; i pezzi di seguito di una nota frazionata (`NOTE_CONTINUATION`) non lo fanno, quindi la
+seconda parte di una nota lunga non vale più come testo già classificato. Sul corpus nessun effetto (110 elementi su 110,
+stessi id); il Mac si comporta così dalla build 54. Da riconsiderare, con le reti, se contare come certi i pezzi di seguito
+di una nota il cui primo pezzo apre con un marcatore.
 
 `SCABO_ANNOT_RV=1 app/ios/scripts/rete_annotazioni.sh <etichetta>` porta la rete delle annotazioni sulle letture con le
 risorse visive, con un giudizio più severo (una ricollocazione che attraversa il confine fra testo e risorsa visiva è

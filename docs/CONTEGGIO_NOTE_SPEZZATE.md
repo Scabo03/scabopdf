@@ -23,6 +23,11 @@ della pagina con note che la precede (A = B−1, o più indietro se le pagine in
   testa e coda non sono vicine nel flusso (la testa è stata piazzata al suo richiamo o a fine sezione), oppure è un codice
   (ricucitura esclusa per costruzione).
 
+**Limiti del criterio (fonte; rilievo della revisione indipendente).** Il rilevatore vede solo le continuazioni che
+l'app legge come nota a sé SENZA marcatore. Non vede: una continuazione che comincia con una, due o tre cifre seguite da
+uno spazio (per la regola dell'app è una nota nuova, con quel numero); una continuazione che l'app ha classificato come
+corpo. La stima che segue vale quindi dentro il criterio A.1 e non conta le note spezzate che gli sfuggono.
+
 **Su che cosa (campo).** La lettura della build 55 prodotta dalla catena dell'iPad (`ProcessingChain.run` con le opzioni
 dell'iPad) sulle catture del simulatore, iOS 27 e iOS 26.5, 52 volumi; è byte per byte la lettura che l'app vera prepara
 nel simulatore (52/52 per generazione). Strumento: `conteggio_spezzate.py` del laboratorio (uscite senza testo).
@@ -31,11 +36,12 @@ nel simulatore (52/52 per generazione). Strumento: `conteggio_spezzate.py` del l
 
 | | iOS 27 | iOS 26.5 |
 |---|---:|---:|
-| pagine candidate | 3.209 | 3.213 |
-| ricucite dall'aggancio delle note (tutte nell'Estratto) | 136 | 136 |
-| ricucite nel flusso | 211 | 211 |
-| senza una nota prima (non giudicabili) | 37 | 37 |
-| **aperte** | **2.961** | **2.965** |
+| pagine il cui apparato di note comincia senza marcatore | 3.345 | 3.349 |
+| — già ricucite dall'aggancio delle note (tutte nell'Estratto: la prima nota di B non esiste più come nota a sé) | 136 | 136 |
+| — **candidate** (la prima nota di B è letta come nota a sé senza marcatore) | 3.209 | 3.213 |
+| di cui ricucite nel flusso | 211 | 211 |
+| di cui senza una nota prima (non giudicabili) | 37 | 37 |
+| di cui **aperte** | **2.961** | **2.965** |
 | — la coda sembra una nota nuova (predicato) | 1.284 | 1.288 |
 | — la testa sembra chiusa (predicato) | 583 | 583 |
 | — il predicato le accetta ma sono lontane nel flusso | 560 | 560 |
@@ -138,7 +144,7 @@ giudicati su 36. La causa (1) resta: è un difetto del modo di spostare le righe
 ## 6. Risposte
 
 **Quanti casi aperti veri, e dove (dedotto dal giudizio di campo).** Circa 930, di cui circa 710 fuori dai codici, in 20
-volumi: soprattutto Mandrioli-Carratta 3 e 4 (circa 280), Rizzo (68), Lineamenti (65, giudicati tutti), Il mercato
+volumi: soprattutto Mandrioli-Carratta 3 e 4 (circa 280), Rizzo (68), Lineamenti (65: veri tutti i 13 giudicati), Il mercato
 finanziario (47), Compendio (46), i tre volumi DPC (circa 75), Mosconi (32), Rivista DPC 4-2020 (26), Estratto (25),
 Nomofanie (17); nei codici la stima è larga (circa 220; somma degli intervalli dei due volumi 33–617). Il resto delle aperte (circa 2.030) non sono
 note spezzate.

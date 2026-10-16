@@ -213,7 +213,7 @@ Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12, `docs/CONTEGGIO_N
 
 - **Chiuso (campo).** L'iPad fraziona le note lunghe quando elabora da sé un PDF, con lo stesso meccanismo degli atti AKN e
   del Mac: la lettura di un libro è la stessa chiunque l'abbia preparata (byte per byte su 52 volumi e due generazioni,
-  a parità di ingressi); 29 libri su 52 cambiano, circa 5.360 note in Lettura Continua, ogni nota si ricompone esattamente;
+  a parità di ingressi e con l'innesto del Mac spento); 29 libri su 52 cambiano, circa 5.360 note in Lettura Continua, ogni nota si ricompone esattamente;
   ai libri già aperti la novità arriva con l'offerta (cura 55), non alle letture del Mac. Il «da ricollocare» dei pezzi
   sotto le 64 lettere (§ 5, Restante) sparisce fra Mac e iPad; resta solo tornando dalla lettura 55 alla 54. Le note
   spezzate fra pagine che l'iPad lascia aperte sono state CONTATE e giudicate contro la pagina: circa 930 vere (circa 710
