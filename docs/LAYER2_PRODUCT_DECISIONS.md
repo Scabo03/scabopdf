@@ -1003,6 +1003,40 @@ Una funzione collega l'app a iCloud per **sincronizzare i dati fra i dispositivi
    dell'offerta «Lettura migliore disponibile» (§ 12.13): copia precedente, riancoraggio delle annotazioni per contenuto
    (§ 12.14), esito dichiarato, ritorno possibile.
 
+**Il formato del pacchetto e la regola delle annotazioni (giro «costruzione della linea Mac», 2026-10-16; costruiti nella
+build 54).** Le tre decisioni qui sopra, rese concrete.
+
+- **Il file.** Un file solo, estensione `.scabolettura`, tipo `com.scabo.scabopdf.lettura` dichiarato dall'app per iPad e
+  dall'app per Mac. Porta un'**intestazione leggibile senza aprire il resto** (che genere di file è e in quale versione del
+  formato, quale app e quale sistema l'hanno prodotto e con quale livello di cure, l'impronta e il titolo del PDF d'origine,
+  le pagine, la granularità, i conteggi della lettura e delle correzioni del Mac, le annotazioni se ci sono, l'impronta del
+  contenuto) e poi il **contenuto compresso**: la lettura nella stessa forma in cui l'iPad la conserva (Lettura Continua,
+  Dottrina Inline, albero della Consultazione Rapida, mappa delle pagine). **Non contiene il PDF.** Le annotazioni ci sono
+  solo se chi esporta lo sceglie (casella; sul Mac oggi è spenta, perché il Mac non ha ancora una vista di lettura).
+- **Versioni.** Il formato è versionato. Un pacchetto di una versione più recente di quella che l'app sa leggere, una
+  lettura in un formato che l'app non conosce, un file danneggiato (impronta del contenuto che non torna) o un volume enorme
+  preparato con una granularità che l'iPad scarterebbe: l'app **lo dice in prosa** e non cambia nulla.
+- **Come arriva.** AirDrop, «Apri con» da un'altra app, l'app File, oppure il cavo (la cartella dei documenti dell'app è
+  visibile nel Finder del Mac; i file lasciati lì si raccolgono quando l'app torna in primo piano). Sull'iPad non serve fare
+  altro: se nessuna schermata è aperta sopra la Home la proposta si apre da sola; se l'utente sta leggendo o l'app sta
+  elaborando un libro (o è aperta un'altra schermata), NON si interrompe nulla (un'elaborazione chiusa a metà andrebbe persa) e la lettura aspetta nella Home, alla riga «Una lettura
+  arrivata dal Mac» (o «N letture…»), e l'app lo annuncia. Niente si applica senza conferma, e la conferma avviene nella
+  stessa scheda dell'offerta. Una lettura che non si vuole si toglie («Togli questa lettura dall'iPad…», confermato):
+  nessun vicolo cieco.
+- **Tabelle e figure.** Se sul Mac il riconoscimento non è stato possibile, il pacchetto lo dice e l'iPad, adottandolo,
+  propone di riprovarlo: le tabelle e le figure che c'erano non spariscono in silenzio.
+- **La regola delle annotazioni.** Quando una lettura arriva, segnalibri e sottolineature si **riancorano per contenuto**
+  sulla lettura nuova (mai per identificativo, § 12.14). Se il pacchetto porta annotazioni, si **uniscono** a quelle
+  dell'iPad: un segnalibro che c'è già (stesso punto, nomi che non si contraddicono) resta **uno solo**, con l'unione dei
+  tag; due nomi diversi sullo stesso punto restano due; sottolineature identiche si contano una volta, **sovrapposte
+  diventano una sola** con l'unione delle estensioni (nessuna parola in due sottolineature, nessuna parola persa),
+  disgiunte si aggiungono; ciò che non si ritrova con sicurezza entra **«da ricollocare», mai scartato**; la posizione di
+  lettura resta quella dell'iPad. Il riancoraggio regge anche il **frazionamento** delle note lunghe che la lettura del Mac
+  porta (e il ritorno a note intere): un testo diviso in pezzi consecutivi che lo ricompongono esattamente si ritrova, e
+  una sottolineatura a cavallo di due pezzi diventa di due tratti. **Perché questa regola:** le annotazioni non hanno un orologio di modifica, e qualunque
+  regola «vince il più recente» o «vince il Mac» butterebbe lavoro dell'utente; l'unione per contenuto è l'unica che non
+  perde nulla e non raddoppia nulla, e usa le stesse ancore già provate dalla rete sulle annotazioni.
+
 ---
 
 ### 12.13 Rielaborazione dei libri dopo un aggiornamento di sistema o una cura (decisione del 2026-10-07)

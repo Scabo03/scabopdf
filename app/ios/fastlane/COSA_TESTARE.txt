@@ -1,22 +1,23 @@
-Build 53 — tabelle e figure
+Build 54 — letture preparate sul Mac
 
 Cosa è cambiato
-- Le tabelle e le figure dei PDF (schemi, diagrammi, grafici, immagini) ora sono riconosciute e annunciate nella lettura come «Risorsa visiva. Tabella» oppure «Risorsa visiva. Figura», seguite dalla didascalia quando c'è e dalla pagina del file originale (con «1 di 3», «2 di 3» se sulla stessa pagina ce n'è più d'una).
-- Sulla risorsa visiva c'è l'azione «Estrai come immagine»: con VoiceOver scorri in alto o in basso fino all'azione e tocca due volte. L'app prepara un'immagine della sola tabella o figura, mai della pagina intera, e apre il foglio di condivisione: da lì puoi salvarla con «Salva su File» o mandarla a un'app che descrive le immagini, per fartela descrivere. L'uso che ne fai è sotto la tua responsabilità.
-- Il testo che la tabella contiene resta leggibile come prima, subito dopo l'annuncio: nessuna parola sparisce. Se non vuoi ascoltarlo, sulla risorsa c'è anche l'azione «Salta la risorsa».
-- Segnalibri e sottolineature si possono mettere anche sulla risorsa visiva. Nella Consultazione Rapida la tabella compare tra il contenuto dell'articolo, con la stessa azione.
-- Nel rotore di VoiceOver dovrebbero comparire le voci «Tabelle» e «Immagini», per saltare da una tabella all'altra e da un'immagine all'altra: dicci se le trovi e come si chiamano.
-- Senza VoiceOver, «Estrai come immagine» è nel menù che si apre tenendo premuto sull'elemento.
+- L'iPad, e anche l'iPhone, può ricevere un libro già elaborato da ScaboPDF per Mac. È un file solo, che finisce in «.scabolettura», e non contiene il PDF: solo la lettura. Arriva in uno di questi modi: con AirDrop; dall'app File; con «Apri con» da un'altra app; con il cavo, dal Finder del Mac: scegli l'iPad, apri la scheda dei file e trascina il file sull'app.
+- Sull'iPad non serve fare altro. Se non stai leggendo e l'app non sta elaborando un libro, la proposta si apre da sola appena il file arriva. Se invece stai leggendo, o è aperta un'altra schermata, non si interrompe nulla: l'app ti dice che è arrivata una lettura e la trovi nella Home, alla riga «Una lettura arrivata dal Mac».
+- L'app cerca in libreria lo stesso libro (lo riconosce dal contenuto del PDF, non dal nome) e propone «Lettura migliore disponibile», dicendo che cosa arriva e da dove. Per accettare tocca «Usa la lettura del Mac…» e poi conferma con il pulsante che compare nella stessa scheda; «Non ora» la lascia da parte; «Togli questa lettura dall'iPad…», confermato, la cancella e il libro resta com'è.
+- La lettura di prima resta sul dispositivo: dopo aver accettato scegli fra «Tieni la nuova lettura», «Torna alla lettura precedente» e «Decidi più tardi».
+- Segnalibri e sottolineature che hai già su quel libro seguono il testo nella lettura nuova, anche dentro le note lunghe, che il Mac divide in parti. Se il file del Mac porta anche delle annotazioni, si uniscono alle tue senza doppioni e senza perdite: quello che l'app non ritrova con sicurezza finisce in «da ricollocare», mai cancellato.
+- Se hai più copie dello stesso libro, l'app chiede a quale applicarla. Se il libro non è in libreria, te lo dice e propone di importare il PDF. Se il file è rovinato, o viene da una versione del Mac più nuova di questa app, te lo spiega e non cambia nulla.
+- Per ora ScaboPDF per Mac non è distribuito: queste letture le prepara soltanto chi sviluppa l'app. Se non ricevi file dal Mac, per te non cambia nulla.
+
+Altre correzioni
+- Su iPhone il selettore del layout nella barra di lettura non si accorcia più in «L…»: la barra va su due righe (su tre con il testo molto grande) e il nome del layout si legge per intero.
+- Se durante l'importazione di un libro la memoria non basta per riconoscere tabelle e figure, l'importazione va avanti lo stesso, senza chiudersi: il libro si legge tutto, e nella Home la riga «Lettura migliore disponibile» propone più tardi di riprovare a riconoscerle.
 
 Quali libri
-- Soprattutto codici con tabelle, riviste con grafici e tabelle statistiche, manuali con schemi. Nella maggior parte dei libri non cambia nulla: il resto della lettura è identico alla build 52, verificato su tutti i volumi di prova con iOS 26 e iOS 27.
-- Serve iPadOS 17 o successivo: sulle versioni precedenti la lettura resta com'era.
+- Senza file dal Mac la lettura di ogni libro è identica alla build 53, verificato su tutti i volumi di prova con iOS 26 e iOS 27. L'unica eccezione è il caso della memoria scarsa descritto sopra.
 
 Per i libri già aperti
-- Restano letti come prima. Nella Home la riga «Lettura migliore disponibile» propone di rielaborarli per avere le tabelle e le figure: segnalibri e sottolineature seguono il testo, e la lettura di prima resta sul dispositivo finché non scegli quale tenere.
+- Restano letti come prima.
 
-Altre piccole correzioni
-- Se importi un libro che hai già stando dentro un workspace o una cartella, «Apri il libro che hai già» lo mette anche lì, senza farne una copia.
-
-Una cosa da notare a orecchio
-- Quanto tempo ci mette a importare un libro grande rispetto a prima, per esempio un codice o un manuale con molti schemi. Durante l'importazione può comparire una fase in più, «Riconoscimento di tabelle e figure». Dicci se l'attesa ti sembra cambiata.
+Una cosa da notare
+- Se ti arriva un file dal Mac: dicci se la riga nella Home si trova subito e se la conferma nella stessa scheda è chiara con VoiceOver.

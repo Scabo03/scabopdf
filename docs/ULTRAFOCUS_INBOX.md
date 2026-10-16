@@ -586,3 +586,29 @@ estraibili come immagine; il testo che contengono resta nel flusso (`docs/RISORS
 - **C.1 (fusione ordine + segmentazione):** il modello e l'ordine nativi sono ora nel repo e nell'app; il fusore (~400 righe
   Python) resta da portare: le risorse visive non lo usano (la guardia è deterministica, l'inserimento è additivo).
 - **Tabelle cella per cella:** TableFormer non convertito; resta la via futura per leggere la struttura delle celle.
+
+## G. Il giro «costruzione della linea Mac» (2026-10-16, build 54): l'officina produce, l'iPad riceve
+
+L'app Mac prepara la lettura di un PDF con la stessa catena dell'iPad (`app/ios/ScaboChain`, cure spostate e non copiate)
+più l'innesto dei verdetti del modello d'impaginazione col fusore portato in Swift, la esporta in un pacchetto
+`.scabolettura`, e l'iPad la riceve (AirDrop, «Apri con», File, cavo) con la regola delle annotazioni del
+`LAYER2_PRODUCT_DECISIONS.md` § 12.12. Conseguenze per le voci di questa casella:
+
+- **D.5 (distribuzione del frutto):** ✅ COSTRUITA. Il pacchetto e la ricezione sono nella build 54; non verificato: AirDrop
+  vero fra un Mac e un iPad fisici (la consegna dal sistema è provata nel simulatore con «Apri con»).
+- **C.1 (fusione ordine + segmentazione):** il fusore è portato in Swift (`ScaboCore/Fusore.swift`), identico al Python sui
+  quattro casi del gate. Sul Mac l'innesto applica SOLO l'indice analitico (5 volumi, giudicati contro la pagina); la
+  **ricucitura fra pagine è spenta** dopo una rete rossa (riconoscimento delle righe per contenimento del testo, coppie che
+  l'app già ricuce da sé). Strada per riaccenderla: coppie in cui l'app non ricuce, righe riconosciute per geometria nel
+  riquadro del modello, rete e giudizio su tutte le coppie.
+- **D.8 (linea Mac):** a parità di ingressi il Mac dà le letture dell'iPad 52/52 su entrambe le generazioni; dal vivo,
+  rispetto a iOS 27, una pagina di flusso diversa (Mac migliore) e 3 annunci di risorse visive diversi, giudicati. Il
+  pannello dei modelli è vero (GLM-OCR scaricato, verificato, rimosso; servizio XPC unico con la rete). Restano aperti:
+  il record App Store del Mac (decisione del maintainer), GLM-OCR dentro la catena (prototipo dichiarato), la vista di
+  lettura sul Mac (e quindi le annotazioni del Mac).
+- **Test d'interfaccia del Mac:** scritti e compilati (`app/macos/ScaboMac/UITests`), da lanciare con la modalità
+  automazione di macOS (password dell'amministratore, non chiesta in questo giro).
+- **D.9 (annotazioni e rielaborazione):** il riancoraggio regge ora anche il FRAZIONAMENTO delle note lunghe che la lettura
+  del Mac porta, in entrambe le direzioni (testo intero → pezzi consecutivi che lo ricompongono esattamente; pezzi → nota
+  intera), con 0 ricollocazioni sbagliate sui 52 volumi (revisione indipendente del giro, `00d282e`). Al ritorno restano
+  «da ricollocare» i pezzi sotto le 64 lettere (prudenza delle impronte corte).
