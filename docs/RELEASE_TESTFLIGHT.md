@@ -196,6 +196,24 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 54 — 2026-10-16, commit `16317ff` (giro «costruzione della linea Mac»: ricezione delle letture preparate sul
+  Mac, protezione della memoria nel riconoscimento di tabelle e figure, selettore del layout su iPhone, e le correzioni della
+  revisione indipendente; `docs/CARRYOVER.md` STATO 2026-10-16, `LAYER2_PRODUCT_DECISIONS.md` § 12.12).** `fastlane beta`
+  exit 0 (ultima build letta dalla lane: 53; `CURRENT_PROJECT_VERSION` 54), EXPORT SUCCEEDED, UPLOAD SUCCEEDED alle 08:09:22
+  del 16 ottobre, Delivery UUID `9bfa68d7-2b5e-4f76-b976-9fd1466f3df3`, processing Apple concluso alle 08:12:27 e
+  «Successfully set the changelog for build» alle 08:12:28: note da `app/ios/fastlane/COSA_TESTARE.txt` (2 950 caratteri,
+  provate prima con `fastlane note_tester`). Reti prima del caricamento sul codice definitivo `1e0fe21` (foto `giro_mac_fin2`,
+  entrambe le generazioni): letture identiche alla base 52/52 su iOS 26.5 e su iOS 27 e identiche byte per byte a quelle
+  finali della build 53 (`rv53k`) con e senza risorse visive, 104/104 per generazione; catture e regioni come la build 53;
+  Marotta identico; oracolo invariato; risorse visive 52/52 con 110 elementi già giudicati; annotazioni 416/416 verdi per
+  generazione, 0 ricollocazioni sbagliate, tre prove al contrario pulite. Suite (`validate.sh`, iPhone 16 iOS 26.5): ScaboCore
+  872, ScaboAppTests 173 (12 saltati) e test UI 17, 0 falliti; ricezione 10/10 anche su iPhone 16 e iPad Pro iOS 27 (sull'iPad
+  con i due rilievi d'accessibilità preesistenti dichiarati). Revisione indipendente prima del caricamento: tre difetti veri
+  corretti e riprovati (annotazioni nelle note lunghe dopo una lettura del Mac; file del Mac arrivato durante
+  un'elaborazione; sul Mac, scaricamento interrotto). Nessuna cura di lettura nuova: `latestCureBuild` 53 invariato (la
+  lettura cambia solo se arriva un file dal Mac). IPA 162 813 572 byte (155,3 MiB; la 53 154,9); nell'app archiviata
+  `weight.bin` di 171 698 672 byte come la 53; firma Apple Distribution del team D2KQYQ8YU8; `UIFileSharingEnabled` attivo.
+  Prossimo numero: 55.
 - **Build 53 — 2026-10-12, commit `dc2305f` (giro «risorse visive», `docs/RISORSE_VISIVE.md`, `LAYER2_PRODUCT_DECISIONS.md` § 7.9;
   porta anche i rilievi della revisione del giro «identità» già su main dopo la build 52, `39bbad6`).** Primo tentativo fermo
   all'archiviazione (exit 65, nessun caricamento): la firma passata come argomento globale toccava il bundle di risorse del

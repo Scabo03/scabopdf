@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.44 (16 ottobre 2026, giro «costruzione della linea Mac»: il ramo `feat/mac-base` fuso in main; le cure dell'estrazione SPOSTATE in un modulo condiviso iPad/Mac (`app/ios/ScaboChain`) e il fusore del banco portato in Swift; l'**app Mac prepara la lettura** con la stessa catena (più la rietichettatura dell'indice analitico; ricucitura fra pagine spenta dopo una rete rossa) e la esporta in un **pacchetto `.scabolettura`**; l'**iPad la riceve** (AirDrop, «Apri con», File, cavo) con la regola delle annotazioni del § 12.12; protezione della memoria nel riconoscimento di tabelle e figure; selettore del layout su iPhone; **pannello dei modelli del Mac vero** (GLM-OCR scaricato, verificato, rimosso, servizio XPC unico con la rete); revisione indipendente con tre difetti veri corretti prima della build; reti verdi sulle due generazioni (letture identiche byte per byte alla build 53); **build 54 su TestFlight** (commit `16317ff`, Delivery UUID `9bfa68d7…`, note scritte dalla lane). Referto e laboratorio in `~/Developer/scabopdf-mac-lab/`. Vedi STATO del 2026-10-16)
 > Versione: 2.43 (12-13 ottobre 2026, giro «risorse visive»: il modulo d'impaginazione `app/ios/ScaboPageStructure` (Heron di docling in Core ML **fp32**, pesi 164 MB in Git LFS, porti Swift di docling, sonda grafica e prefiltro) entra nell'app per iPad; **tabelle e figure annunciate come risorse visive** con «Estrai come immagine» (ritaglio della sola regione al foglio di condivisione) e «Salta la risorsa», testo della regione sempre nel flusso (elemento additivo); guardia deterministica in ScaboCore tarata col giudizio contro la pagina (110 risorse per generazione, 86 tabelle e 24 figure, tutte vere); reti verdi sulle due generazioni (lettere e cifre identiche 52/52, annotazioni senza ricollocazioni sbagliate, misure invariate); revisione indipendente con verifica delle correzioni; **build 53 su TestFlight** (commit `dc2305f`, Delivery UUID `6f3ee37a…`, note scritte dalla lane). Documento `docs/RISORSE_VISIVE.md`; referto e laboratorio in `~/Developer/scabopdf-gen-lab/`. Vedi STATO del 2026-10-12)
 > Versione: 2.42 (12 ottobre 2026, giro «struttura nativa» — misura, senza toccare l'app: un'app Mac nativa compatibile con lo store riconosce la struttura delle pagine? **Sì**: il modello di impaginazione di docling (Heron, Apache-2.0) convertito in Core ML fp32 (164 MB) e fatto girare da un eseguibile Swift che porta in Swift il post-processing e l'ordine di lettura a regole di docling (porto identico a docling 35/35 pagine) trova sulle 34 pagine del banco (381 blocchi di verità giudicati da Code contro la pagina) note 41/76 contro 43 di docling, didascalie 2/2, tabelle 2/2, figure 4/4, titoli 22/47 contro 23, ordine 0,968 contro 0,993, in 42-44 ms/pagina, 0,36-0,41 GB, zero byte esterni; innestato nella catena del banco al posto di docling dà **letture identiche byte per byte** sui quattro casi del gate con le reti di fedeltà verdi. GLM-OCR non dà struttura (tutto testo), Granite-Docling perde note (7/76) e didascalie (0/2) e va in ripetizione, Vision non etichetta nulla. Tre decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.12 (pacchetto = file da aprire, scelta fra più copie, lettura del Mac accettata com'è). Documento `docs/MISURA_STRUTTURA_NATIVA.md`; referto e laboratorio in `~/Developer/scabopdf-mac-lab/struttura_nativa/`. Vedi STATO del 2026-10-12)
 > Versione: 2.41 (11 ottobre 2026, giro «identità del documento», primo pezzo della fase Mac che serve anche all'iPad: **build 51** su TestFlight con la sola cura delle ancore già su main (commit `c3a2a10`, Delivery UUID `8c815312…`, reti verdi su iOS 26.5 e iOS 27 con cattura nuova `b51`); **identità ricavata dal contenuto** = SHA-256 della sorgente archiviata come campo additivo `ArchivedDocument.sourceSha256` (ScaboCore `DocumentFingerprint.swift`, CryptoKit già importato dal giro «ancore»), id locale intatto, migrazione in sottofondo al primo avvio senza rielaborare, schermata «Libro già presente» all'importazione (apri l'esistente come scelta predefinita, copia a parte, annulla); impronta identica su host macOS e simulatore iOS sullo stesso file; letture identiche al byte 52/52 su entrambe le generazioni e rete sulle annotazioni verde; decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.8 e § 12.12 (il frutto dell'officina viaggia solo via AirDrop o cavo come documento completo: istruzioni per file superate); **build 52** su TestFlight (commit `3d85836`, Delivery UUID `649e3a88…`). Vedi STATO del 2026-10-11)
@@ -59,6 +60,100 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
 
 ---
+
+## ▶ STATO — Giro «costruzione della linea Mac»: l'officina Mac produce la lettura migliorata, la esporta in un pacchetto, l'iPad la riceve; pannello dei modelli vero → build 54 — 2026-10-16
+
+**Documenti:** `LAYER2_PRODUCT_DECISIONS.md` § 12.12 (formato del pacchetto e regola delle annotazioni, resi concreti),
+`ULTRAFOCUS_INBOX.md` § G, `BILANCIO_FASE_MOBILE.md` § 5, `RELEASE_TESTFLIGHT.md` (build 54), `app/macos/ScaboMac/README.md`,
+`app/ios/ScaboChain` (modulo condiviso). Referto e laboratorio (con nomi dei volumi: NON diffondere):
+`~/Developer/scabopdf-mac-lab/REFERTO_GIRO_MAC.md`, `~/Developer/scabopdf-mac-lab/giro_costruzione/`.
+Partenza `7ebc50e` (main = origin, ramo `feat/mac-base` a `fa5f01e` mai fuso); arrivo: codice della build 54 `16317ff` (app
+`1e0fe21` più le note) e il commit dei documenti che registra questo stato, tutto su `origin/main`.
+
+**Integrazione del ramo (campo).** `feat/mac-base` fuso in main con un merge senza avanzamento rapido (`cf60f72`): i cinque
+commit del ramo restano com'erano; conflitti solo in due documenti, risolti a favore di main con note d'integrazione;
+nessun file sotto `app/ios` toccato dal merge; ramo cancellato in locale e sul remoto dopo la verifica che fosse contenuto.
+
+**La catena condivisa (campo, `9449e96`).** Le cure dell'estrazione sono state SPOSTATE (`git mv`, non copiate) in un
+pacchetto nuovo `app/ios/ScaboChain` usato da iPad e Mac (`PdfKitExtractor` con il ramo macOS, `PdfContentGlyphRuns`,
+`VisualRegionDetector`, `ContinuousBodyBuilder`, `ProcessingChain.run` = il corpo di `DocumentProcessor.process`); ScaboCore
+resta solo Foundation. Il fusore del banco è portato in Swift in ScaboCore (`e26e6bc`): sui quattro casi del gate stessi
+artefatti del Python operazione per operazione e letture identiche byte per byte 4/4.
+
+**Il Mac e l'iPad (campo).** A parità di ingressi (catture del simulatore) la catena del Mac dà le letture della rete: su iOS
+27 49/52 alla granularità dell'app e i 3 volumi enormi identici a 400, su iOS 26.5 52/52, con e senza risorse visive. Dal vivo (PDFKit di macOS 27): estrazione identica a iOS 27 su 50/52,
+letture identiche 51/52 a granularità 400 (EdD «L'azienda» p. 45: il Mac è migliore, lettere e cifre identiche); con le risorse visive 77
+riquadri spostati sotto il punto e 3 annunci diversi (1 Mac migliore, 2 Mac meno ricco), giudicati contro la pagina;
+determinismo 98/98. Il Mac fraziona le note lunghe come il runner (29 volumi, 5.430 note, lettere e cifre identiche);
+l'app per iPad no (scelta precedente, invariata).
+
+**L'innesto del modello sul Mac (campo).** Prima versione ROSSA (ricucitura fra pagine: lettere e cifre diverse in 4
+volumi, parole fabbricate, duplicati) → ricucitura SPENTA (`OfficinaPolicy.giro`; il codice resta per il banco). Resta
+l'indice analitico: 5 volumi, 1.355 segmenti su 165 pagine; Codice penale 275 rietichettature = quelle del banco nodo per
+nodo meno le 2 dell'indice cronologico; parole nuove 0, parole fuori lessico nuove 0; cifre recuperate (24 e 3 nei
+codici); tutte giudicate voci d'indice contro la pagina stampata; Codice civile p. 2664 corretto.
+
+**Il pacchetto (campo, `4195ce1`, `f326983`).** `.scabolettura`, tipo `com.scabo.scabopdf.lettura`: intestazione leggibile
+senza il carico, carico compresso con impronta = la lettura nella forma della cache dell'iPad; niente PDF; annotazioni solo
+con la casella. Sette pacchetti veri (dal Codice penale da 3,0 MB al volume di 3 pagine) andati e tornati sul simulatore
+iPad iOS 27: identici byte per byte 7/7 (Codice penale: carico 0,08 s, adozione 0,15 s).
+
+**La ricezione sull'iPad (campo, `bf04ea0`).** AirDrop, «Apri con», File, cavo (`UIFileSharingEnabled`); riga «Una lettura
+arrivata dal Mac» nella Home; libro per impronta; più copie → domanda; libro assente, file danneggiato, forma più recente,
+granularità scartata → prosa; offerta «Lettura migliore disponibile» con conferma nella stessa scheda, lettura precedente
+conservata, «Tieni / Torna / Decidi più tardi». Annotazioni: riancoraggio per contenuto e fusione senza doppioni né perdite
+(regola nel § 12.12). Test: 6 unitari (fra cui la prova nuova d'andata e ritorno delle annotazioni) e 7 d'interfaccia con
+audit: iPhone 16 iOS 27 7/7 audit completo; iPad Pro iOS 27 7/7 con due rilievi PREESISTENTI dichiarati (Dynamic Type
+nelle schermate dentro la scheda; «testo potenzialmente inaccessibile» senza elemento sulle schermate di testo condivise).
+
+**Memoria e selettore (campo, `e7c9472`, `d390cad`).** Se la memoria non basta (sotto 600 MB prima, 250 fra le pagine) o il
+modello non si carica, l'importazione prosegue senza le risorse visive, senza chiudersi, e l'offerta propone di riprovare;
+provato simulando i fallimenti. Il selettore del layout non si tronca più («L…» su iPhone): la barra va su due o tre righe.
+
+**Il pannello vero (campo, `bb796bf`, `f036d3d`).** GLM-OCR si scarica davvero dal repository ufficiale alla revisione
+fissata, attraverso un servizio XPC che è l'unico pezzo con la rete (l'app non ha la rete); impronte controllate; «Verifica
+che funzioni» legge la pagina di prova inclusa; «Rimuovi dal Mac» toglie tutto, cache del motore comprese; nessun processo
+vivo. Prova reale (due cicli): 245/452 s, impronte coincidenti, verifica 100 % in 24-25 s, 26 MB di cache tolti, 0 traffico
+dell'app, firma intatta. Heron «già incluso». llama.cpp b11429 verificato (`scripts/prepara_llama.sh`, `Vendor/` non
+versionata). GLM-OCR nella catena: prototipo dichiarato. Test del Mac 62 (2 saltati con il motivo); test d'interfaccia del
+Mac compilano (progetto nuovo), da lanciare con la modalità automazione (comando nel referto e nei test).
+
+**Revisione indipendente (campo; referto § 9).** Un sotto-agente nuovo, in sola lettura, sulla lista del mandato: 1, 2, 3,
+10 sì; 4, 5, 6, 7, 8, 9, 11 in parte, con prove. Tre difetti veri, corretti PRIMA della build e riprovati: (1) adottando
+una lettura del Mac, le annotazioni nelle note lunghe (che il Mac divide in pezzi) diventavano «da ricollocare»
+(Mandrioli vol. 3: 1.806 sottolineature su 5.929) → riancoraggio di ScaboCore che regge i testi divisi in pezzi
+consecutivi e ricomposti (`00d282e`): con la riproduzione del revisore gli stessi orfani del controllo; con il giudice della
+rete sulle annotazioni su 52 volumi 0 ricollocazioni sbagliate in entrambe le direzioni; (2) un file del Mac arrivato
+durante un'elaborazione la faceva perdere → l'arrivo non chiude più nulla (`20791c2`); (3) sul Mac uno scaricamento
+interrotto lasciava 950 MB → si toglie tutto (`1e0fe21`). Più undici correzioni minori (fra cui «Togli questa lettura
+dall'iPad…», niente offerta infinita di riprovare tabelle e figure, risorse visive mai perse in silenzio) e due numeri del
+referto corretti (77 riquadri; conteggi del segnale dell'indice non salvati sostituiti).
+
+**Reti finali dell'iPad sul codice corretto (campo, codice `1e0fe21`, fotografia `giro_mac_fin2`).** Suite: ScaboCore 872,
+app 173 unitari (12 saltati per costruzione) e 17 d'interfaccia, 0 falliti; ricezione 10/10 anche su iPhone 16 e iPad Pro iOS
+27. Doppia rete con le risorse visive: letture identiche alla base 52/52 su iOS 26.5 e iOS 27 (0 segmenti cambiati) e byte
+per byte a quelle finali della build 53 (104/104 per generazione); Marotta identico; oracolo invariato; risorse visive 52/52.
+Annotazioni 416/416 verdi per generazione, 0 ricollocazioni sbagliate, tre prove al contrario pulite. Mac: 65 test; terzo
+ciclo vero del pannello sull'app finale; catena del Mac dal vivo sul codice finale identica byte per byte (156/156) a quella
+su cui è stata fatta la prova di fedeltà.
+(Prima delle correzioni, sul codice `f036d3d`, fotografia `giro_mac_fin`, erano già verdi: letture identiche alla base 52/52
+su entrambe le generazioni e byte per byte a quelle finali della build 53, annotazioni 416/416.)
+
+**Build 54 (campo).** `fastlane beta` exit 0 dal commit `16317ff`: UPLOAD SUCCEEDED alle 08:09:22 del 16 ottobre, Delivery
+UUID `9bfa68d7-2b5e-4f76-b976-9fd1466f3df3`, processing concluso alle 08:12:27, note per i tester scritte dalla lane alle
+08:12:28 (2 950 caratteri: come si riceve un libro elaborato dal Mac, sull'iPad non serve fare altro). IPA 155,3 MiB.
+Nessuna cura di lettura nuova (`latestCureBuild` 53). Il Mac non è distribuito: app firmata in locale nel laboratorio
+(`~/Developer/scabopdf-mac-lab/giro_costruzione/app/ScaboMac.app`, da `1e0fe21`).
+
+**Residui dichiarati.** La ricucitura fra pagine sul Mac è spenta (strada per riaccenderla in INBOX § G); GLM-OCR nella
+catena è un prototipo; il Mac non ha una vista di lettura né annotazioni proprie; AirDrop fra dispositivi fisici non provato;
+soglie di memoria non misurate su un iPad vero; lo scaricamento non riprende da dove si era fermato; i test d'interfaccia del
+Mac aspettano la modalità automazione (comando nel referto, § 7); due rilievi d'accessibilità PREESISTENTI dell'iPad da
+indagare (Dynamic Type nelle schermate dentro la scheda; «testo potenzialmente inaccessibile» sulle schermate di testo
+condivise); al ritorno da una lettura frazionata restano da ricollocare i pezzi di nota sotto le 64 lettere; cancellare l'app
+Mac lascia il suo contenitore; il riassunto di `validate.sh` conta solo l'ultima riga dell'app. **Decisioni aperte per il
+maintainer** (referto § 11): note lunghe frazionate anche sull'iPad?; riaccendere o no la ricucitura sul Mac; record App Store
+del Mac.
 
 ## ▶ STATO — Giro «risorse visive»: il modulo d'impaginazione nell'app, tabelle e figure annunciate ed estraibili → build 53 — 2026-10-12
 

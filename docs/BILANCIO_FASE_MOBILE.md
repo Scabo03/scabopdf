@@ -176,6 +176,32 @@ Riferimenti: `docs/RISORSE_VISIVE.md`, `LAYER2_PRODUCT_DECISIONS.md` § 7.9; ref
 - **Restante.** Tabelle lette cella per cella (TableFormer non convertito); tempi e memoria sul dispositivo vero (stime dal
   Mac e dal simulatore); rotori «Tabelle» e «Immagini» da sentire sul dispositivo; «Copia titolo» del § 7.9 non fatto;
   nessun riconoscimento sotto iOS 17; dove il flusso fonde la tabella con altro testo, annuncio e salto stanno ai confini
-  del segmento; se il modello non si carica nemmeno sulla CPU il libro resta senza risorse (senza offerta automatica);
+  del segmento; se il modello non si carica nemmeno sulla CPU il libro resta senza risorse (senza offerta automatica; superato il
+  2026-10-16: l'offerta ripropone il riconoscimento, § 5);
   pagine ruotate escluse (0 nel corpus). Revisione indipendente del giro: due difetti veri corretti prima della build
   (salto che poteva scavalcare testo non suo, risorse assenti dalla Consultazione Rapida) e sei minori.
+
+## 5. La linea Mac costruita (giro del 2026-10-16, build 54)
+
+Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 12.12, `ULTRAFOCUS_INBOX.md` § G, `app/macos/ScaboMac/README.md`; referto
+`~/Developer/scabopdf-mac-lab/REFERTO_GIRO_MAC.md`.
+
+- **Chiuso (campo).** Il ramo Mac è in main; le cure dell'estrazione stanno in un modulo condiviso (ScaboChain) usato da
+  iPad e Mac; il Mac produce, a parità di ingressi, le letture dell'iPad 52/52 su entrambe le generazioni, più le
+  correzioni dell'indice analitico in 5 volumi (giudicate contro la pagina) e le note lunghe frazionate; il pacchetto
+  `.scabolettura` va e torna identico byte per byte (7/7); l'iPad lo riceve da AirDrop, File, «Apri con» e cavo, propone la
+  lettura migliore con conferma e lettura precedente conservata, e fonde le annotazioni senza doppioni né perdite; il
+  pannello dei modelli del Mac scarica, verifica e rimuove GLM-OCR davvero, senza rete nell'app. Il riconoscimento di
+  tabelle e figure non chiude più l'importazione quando la memoria manca (il § 4 diceva «il libro resta senza risorse,
+  senza offerta automatica»: ora l'offerta ripropone il riconoscimento); il selettore del layout non si tronca più su iPhone.
+- **Costo.** L'app per iPad non aggiunge modelli (IPA della build 54: 155,3 MiB, la 53 154,9); l'app Mac pesa 193 MB
+  (Heron 164 MB, llama.cpp) più 1,4 gigabyte di GLM-OCR se scaricato.
+- **Restante.** La ricucitura fra pagine sul Mac è spenta (strada per riaccenderla in INBOX § G); GLM-OCR dentro la catena è un
+  prototipo dichiarato; il Mac non ha ancora una vista di lettura (quindi nemmeno annotazioni sue); AirDrop vero fra un Mac e
+  un iPad fisici non provato; le soglie di memoria sono dedotte, non misurate su un dispositivo; lo scaricamento di GLM-OCR
+  non riprende da dove si era fermato (si riparte da capo); i test d'interfaccia del Mac aspettano la modalità automazione;
+  due rilievi d'accessibilità PREESISTENTI dell'iPad da indagare (Dynamic Type nelle schermate dentro la scheda, «testo
+  potenzialmente inaccessibile» sulle schermate di testo condivise); il record App Store del Mac resta una decisione del
+  maintainer; il Mac fraziona le note lunghe, l'app per iPad (quando elabora da sé un PDF) no (le annotazioni reggono il
+  passaggio in entrambe le direzioni; restano da ricollocare, al ritorno, i pezzi di nota sotto le 64 lettere); cancellare
+  l'app Mac lascia il suo contenitore (i pesi si tolgono prima con «Rimuovi dal Mac»).
