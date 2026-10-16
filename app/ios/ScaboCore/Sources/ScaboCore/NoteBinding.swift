@@ -124,6 +124,9 @@ public struct AdjacentPageStitchCandidate: Codable, Equatable, Sendable {
     public var nextNumber: Int?
     /// Il numero in testa alla coda torna nella successione (testa + 1): la coda è una nota nuova.
     public var tailLeadingIsNext: Bool
+    /// Nel corpo della pagina A o B c'è un richiamo col numero della testa più uno, ma nessuna nota con quel numero
+    /// sulle pagine A, B e B + 1: la coda potrebbe essere la nota seguente col marcatore perso (secondo gradino).
+    public var nextCallUnmatched: Bool = false
     /// Geometria (punti, origine in basso a sinistra): bordo superiore della prima riga della coda e fondo del contenuto
     /// non-nota (corpo, titoli) della pagina B; lo stesso per il nodo dell'ultima nota della pagina A.
     public var tailTop: Double?
@@ -346,9 +349,16 @@ public func bindAndPlaceNotes(
             for page in Set(document.structure.filter { $0.type == .NOTE }.map { $0.page_index }) {
                 contentBottomByPage[page] = nonNoteContentBottom(items(page))
             }
+            // Richiami nel corpo, per pagina (secondo gradino: un richiamo «testa + 1» senza la sua nota).
+            var callValuesByPage: [Int: Set<Int>] = [:]
+            for node in document.structure where node.type == .BODY {
+                for m in markersByBodyId[node.id] ?? [] { callValuesByPage[node.page_index, default: []].insert(m.value) }
+            }
+            let noteNumbersByPage = footnoteIdsByPageNumber.mapValues { Set($0.keys) }
             let adjacent = stitchAdjacentPageFootnotes(
                 document.structure, &footnoteNodeById, &footnotesInNoteOrder,
-                noteLinesById: noteLinesById, contentBottomByPage: contentBottomByPage)
+                noteLinesById: noteLinesById, contentBottomByPage: contentBottomByPage,
+                callValuesByPage: callValuesByPage, noteNumbersByPage: noteNumbersByPage)
             stats.stitchedAdjacentPage = adjacent.count
             stats.adjacentPageCandidates = adjacent.candidates
         }
@@ -607,8 +617,15 @@ func noteLineMaxSpanSize(_ line: LineSummary) -> Double {
 /// (`docs/CONTEGGIO_NOTE_SPEZZATE.md`):
 ///   • il predicato dell'app (`noteTailContinuesHead`): la testa resta aperta, la coda la continua (non apre con il
 ///     marcatore di una nota nuova);
-///   • la SUCCESSIONE dei numeri confermata sulla pagina B: la prima nota numerata dopo la coda porta il numero della
-///     testa più uno — fra testa e coda non può nascondersi un'altra nota (note nuove il cui numero non si riconosce);
+///   • la SUCCESSIONE dei numeri: la testa porta il SUO numero (un riquadro, una bibliografia, una nota editoriale senza
+///     numero non sono la testa di una nota spezzata: era l'unico falso del giudizio del conteggio), e
+///     – primo gradino: la prima nota numerata dopo la coda, sulla pagina B, porta il numero della testa più uno — fra
+///       testa e coda non può nascondersi un'altra nota;
+///     – secondo gradino (nessuna nota numerata dopo la coda, cioè la nota riempie l'apparato della pagina B, oppure
+///       successione rotta da un frammento con un numero spurio): la nota seguente non manca (il numero dopo la coda
+///       non è quello della testa più due) e nel corpo delle pagine A e B non c'è un richiamo col numero della testa
+///       più uno rimasto senza nota sulle pagine A, B e B + 1 — altrimenti la coda potrebbe essere quella nota, col
+///       marcatore perso;
 ///   • il numero in testa alla coda, se c'è, non è quello della testa più uno (la coda non è la nota seguente);
 ///   • la coda COMINCIA SOTTO il corpo e i titoli della pagina B, e il nodo della testa sta sotto quelli della pagina
 ///     A: è l'apparato a piè di pagina, non una glossa, una citazione in corpo minore, un riquadro, una tabella o una
@@ -627,7 +644,9 @@ func stitchAdjacentPageFootnotes(
     _ footnoteNodeById: inout [String: NodeDict],
     _ footnotesInNoteOrder: inout [String: [String]],
     noteLinesById: [String: [LineSummary]],
-    contentBottomByPage: [Int: Double]
+    contentBottomByPage: [Int: Double],
+    callValuesByPage: [Int: Set<Int>] = [:],
+    noteNumbersByPage: [Int: Set<Int>] = [:]
 ) -> (count: Int, candidates: [AdjacentPageStitchCandidate]) {
     var flat: [String] = []
     var nodeOfFootnote: [String: NodeDict] = [:]
@@ -677,6 +696,14 @@ func stitchAdjacentPageFootnotes(
         else { succession = "non confermata" }
         let tailLeadingIsNext = headNumber.map { h in leadingInt(b) == h + 1 } ?? false
         let predicate = noteTailContinuesHead(head: a, tail: b)
+        var nextCallUnmatched = false
+        if let h = headNumber {
+            let calls = callValuesByPage[tailPage, default: []].union(callValuesByPage[cur.page_index, default: []])
+            let numbers = [tailPage, cur.page_index, cur.page_index + 1].reduce(into: Set<Int>()) {
+                $0.formUnion(noteNumbersByPage[$1] ?? [])
+            }
+            nextCallUnmatched = calls.contains(h + 1) && !numbers.contains(h + 1)
+        }
 
         let tailLines = noteLinesById[curNode.id] ?? []
         let headLines = lastNodeOnHeadSide.flatMap { noteLinesById[$0.id] } ?? []
@@ -689,7 +716,7 @@ func stitchAdjacentPageFootnotes(
         var candidate = AdjacentPageStitchCandidate(
             headPage: tailPage, tailPage: cur.page_index, headId: headFid, tailId: fid,
             predicate: predicate, succession: succession, headNumber: headNumber, nextNumber: nextNumber,
-            tailLeadingIsNext: tailLeadingIsNext,
+            tailLeadingIsNext: tailLeadingIsNext, nextCallUnmatched: nextCallUnmatched,
             tailTop: tailFirst?.yTop, tailPageContentBottom: tailBottom,
             headTop: headFirst?.yTop, headPageContentBottom: headBottom,
             tailSize: tailFirst.map(noteLineMaxSpanSize), headSize: headLast.map(noteLineMaxSpanSize),
@@ -700,7 +727,11 @@ func stitchAdjacentPageFootnotes(
         var reason = ""
         if curNode.type != .NOTE || lastNodeOnHeadSide?.type != .NOTE { reason = "nodo non NOTE" }
         else if !predicate { reason = "predicato" }
-        else if succession != "confermata" { reason = "successione \(succession)" }
+        else if succession == "testa senza numero" { reason = "successione testa senza numero" }
+        else if succession == "non confermata", let h = headNumber, nextNumber == h + 2 {
+            reason = "successione non confermata: nota seguente mancante"
+        }
+        else if succession != "confermata", nextCallUnmatched { reason = "richiamo della nota seguente senza nota" }
         else if tailLeadingIsNext { reason = "coda numerata come la nota seguente" }
         else if tailFirst == nil || headFirst == nil || headLast == nil { reason = "geometria assente" }
         else if tailBottom == nil || headBottom == nil { reason = "pagina senza corpo né titoli" }

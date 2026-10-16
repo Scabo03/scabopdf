@@ -100,17 +100,55 @@ final class AdjacentPageStitchTests: XCTestCase {
 
     // MARK: - le guardie, ciascuna con la sua prova al contrario
 
-    func test_noStitch_withoutANumberedNoteAfterTheTailOnPageB() {
+    // MARK: - secondo gradino: nessuna nota numerata dopo la coda, o successione rotta da un numero spurio
+
+    func test_secondStep_stitches_whenTheNoteFillsTheNextApparatus() {
+        // nessuna nota numerata dopo la coda sulla pagina B (la nota riempie l'apparato) e nessun richiamo «14» senza
+        // la sua nota: si ricuce
         let (doc, stats) = placed(twoPages(nextNumber: nil))
-        XCTAssertEqual(stats.stitchedAdjacentPage, 0)
-        XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "successione assente")
-        XCTAssertTrue(noteTexts(doc).contains("continua sulla pagina seguente fino al punto."), "la coda resta com'era")
+        XCTAssertEqual(stats.stitchedAdjacentPage, 1)
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.succession, "assente")
+        XCTAssertTrue(noteTexts(doc).contains("13 Seconda nota che resta aperta e continua sulla pagina seguente fino al punto."))
     }
 
-    func test_noStitch_whenTheNextNumberedNoteBreaksTheSuccession() {
+    func test_secondStep_noStitch_whenTheBodyCallsTheNextNoteThatIsMissing() {
+        // il corpo della pagina B richiama la nota 14 (numero in apice), ma nessuna nota 14 c'è sulle pagine A, B e B+1:
+        // la «coda» potrebbe essere la nota 14 col marcatore perso → mai fusa
+        let pageA = bodyLines("a") + noteLines(["12 Prima nota completa della pagina.",
+                                                 "13 Seconda nota che resta aperta e"])
+        let call = line("", size: 10, y: 690, spans: [("Una frase del corpo con il richiamo", 10), ("14", 5),
+                                                      (" che prosegue.", 10)])
+        let pageB = bodyLines("b") + [call] + noteLines(["continua sulla pagina seguente fino al punto."])
+        let (_, stats) = placed(extraction([pageA, pageB]))
+        XCTAssertEqual(stats.stitchedAdjacentPage, 0)
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.nextCallUnmatched, true)
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "richiamo della nota seguente senza nota")
+    }
+
+    func test_secondStep_noStitch_whenTheNextNumberSkipsANote() {
+        // dopo la coda la nota 15: la 14 manca, e la coda potrebbe essere proprio lei → mai fusa
         let (_, stats) = placed(twoPages(nextNumber: 15))
         XCTAssertEqual(stats.stitchedAdjacentPage, 0)
-        XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "successione non confermata")
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.succession, "non confermata")
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "successione non confermata: nota seguente mancante")
+    }
+
+    func test_secondStep_stitches_whenTheSuccessionBreaksOnASpuriousNumber() {
+        // dopo la coda una «nota» con un numero lontano (un frammento che comincia con un numero di pagina): la
+        // successione non torna, ma la nota seguente non manca e nessun richiamo resta senza nota → si ricuce
+        let (_, stats) = placed(twoPages(nextNumber: 480))
+        XCTAssertEqual(stats.stitchedAdjacentPage, 1)
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.succession, "non confermata")
+    }
+
+    func test_noStitch_whenTheHeadHasNoNumberOfItsOwn() {
+        // in fondo alla pagina A un blocco a corpo di nota SENZA numero (un riquadro, una bibliografia): non è la testa
+        // di una nota spezzata, anche se resta aperto e la pagina B ne porta la continuazione
+        let pageA = bodyLines("a") + noteLines(["un blocco senza numero che resta aperto e"])
+        let pageB = bodyLines("b") + noteLines(["continua sulla pagina seguente.", "14 Nota nuova."])
+        let (_, stats) = placed(extraction([pageA, pageB]))
+        XCTAssertEqual(stats.stitchedAdjacentPage, 0)
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "successione testa senza numero")
     }
 
     func test_noStitch_whenTheTailSitsAmongTheBodyLines() {
