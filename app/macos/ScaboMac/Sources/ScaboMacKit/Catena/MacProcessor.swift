@@ -3,8 +3,9 @@
 //  ScaboMacKit
 //
 //  Il PDF → la lettura che il Mac manda all'iPad (giro «costruzione della linea Mac», 2026-10-16). Usa la catena
-//  condivisa (`ProcessingChain`, la stessa dell'iPad) con le due opzioni dell'officina — innesto dei verdetti del modello
-//  (`OfficinaGraft`) e frazionamento delle note lunghe ricucite — e prepara la lettura nella STESSA FORMA della cache
+//  condivisa (`ProcessingChain`, la stessa dell'iPad) con l'opzione dell'officina — l'innesto dei verdetti del modello
+//  (`OfficinaGraft`); il frazionamento delle note lunghe, prima solo del Mac, dal 2026-10-16 lo fa anche l'iPad — e
+//  prepara la lettura nella STESSA FORMA della cache
 //  dell'app per iPad (`PackagedReading`: flussi, albero della Consultazione Rapida, mappa delle pagine, granularità),
 //  con la stessa regola dei volumi enormi (granularità 1.200, niente Dottrina Inline né Consultazione Rapida oltre le
 //  1.500 pagine): l'iPad la adotta così com'è, senza rielaborarla (§ 12.12, decisione 3).
@@ -55,7 +56,7 @@ public enum MacProcessor {
     }
 
     /// Elabora il PDF sul thread chiamante. `granularityTarget == nil` → la regola dell'app (400; 1.200 oltre le 1.500
-    /// pagine). `policy` decide l'innesto (`.spenta` = la lettura dell'iPad con il frazionamento delle note).
+    /// pagine). `policy` decide l'innesto (`.spenta` = la stessa lettura che l'iPad prepara da sé, note lunghe frazionate).
     public static func process(
         pdfURL: URL,
         policy: OfficinaPolicy = .giro,

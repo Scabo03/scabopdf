@@ -4,12 +4,11 @@
 //
 //  LA CATENA DEL MAC (giro «costruzione della linea Mac», 2026-10-16): la stessa catena dell'iPad (`ProcessingChain`
 //  di ScaboChain: estrazione con le cure condivise, risorse visive con la guardia deterministica dell'iPad,
-//  classificazione, aggancio delle note, corpo) più due cose che l'iPad non fa:
-//
-//  1. l'INNESTO dei verdetti del modello d'impaginazione (Heron, `ScaboPageStructure`) con il FUSORE portato in Swift
-//     (`ScaboCore/Fusore.swift`), sulle sole pagine che una politica prudente sceglie (sotto);
-//  2. il FRAZIONAMENTO delle note lunghe ricucite (decisione di prodotto del 2026-08-10), come la porta d'import di
-//     sviluppo e il runner della rete.
+//  classificazione, aggancio delle note, corpo, frazionamento delle note lunghe) più una cosa che l'iPad non fa:
+//  l'INNESTO dei verdetti del modello d'impaginazione (Heron, `ScaboPageStructure`) con il FUSORE portato in Swift
+//  (`ScaboCore/Fusore.swift`), sulle sole pagine che una politica prudente sceglie (sotto). Il FRAZIONAMENTO delle note
+//  lunghe (decisione di prodotto del 2026-08-10, il meccanismo degli atti AKN) fino alla build 54 lo faceva solo il Mac;
+//  dal 2026-10-16 lo fa anche l'iPad (decisione del maintainer: la lettura è la stessa chiunque l'abbia preparata).
 //
 //  LA POLITICA (decisione del giro, registrata nel referto e in LAYER2 § 12.12). Il banco ha validato il fusore con
 //  Heron su due fenomeni, su pagine scelte a mano; qui le pagine le sceglie l'app, con SEGNALI SUOI GIÀ IN PRODUZIONE,
@@ -39,7 +38,7 @@ import ScaboCore
 import ScaboPageStructure
 
 /// Quali fenomeni del fusore l'officina applica. La predefinita è la politica del giro; `spenta` dà la lettura dell'iPad
-/// (stessa catena, stesso frazionamento, nessun innesto).
+/// (stessa catena, stesso frazionamento delle note lunghe, nessun innesto).
 public struct OfficinaPolicy: Equatable, Sendable {
     public var analyticalIndexRelabel: Bool
     public var multipageStitch: Bool

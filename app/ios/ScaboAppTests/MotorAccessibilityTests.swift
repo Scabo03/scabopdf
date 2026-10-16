@@ -144,6 +144,27 @@ final class MotorAccessibilityTests: XCTestCase {
         XCTAssertFalse(bar.isHidden, "con l'opzione, la nota ha il box visivo")
     }
 
+    /// Nota lunga frazionata (§ 10.6, giro del 2026-10-16): i pezzi di seguito sono nota e hanno lo stesso riquadro del
+    /// primo pezzo, con la barra del colore delle note; senza l'opzione, nessun riquadro.
+    func test_noteVisualBox_coversContinuationPiecesOfAFractionedNote() {
+        let piece = ContentSegment(id: "n1#1", role: SemanticCategory.NOTE_CONTINUATION.rawValue,
+                                   text: "Secondo pezzo della nota di prova.", lengthCategory: "", acousticIntro: "")
+        let bar = UIView(); let content = UIView(); let label = UILabel()
+        let traits = SystemAppearanceTraits(isDark: false)
+        let styleOn = resolveReadingStyle(source: .appTheme, preset: .standard, spacing: .standard,
+            accent: .standard, readingGuide: false, noteVisualBox: true, traits: traits)
+        ContinuousReadingView.applyRoleBoxAndGuide(bar: bar, contentView: content, textLabel: label,
+            segment: piece, style: styleOn, isReadingFocus: false)
+        XCTAssertFalse(bar.isHidden, "con l'opzione, anche il pezzo di seguito ha il riquadro")
+        XCTAssertEqual(bar.backgroundColor, ContinuousReadingView.roleBarColor(for: "NOTE", style: styleOn),
+                       "stesso colore della barra del primo pezzo")
+        let styleOff = resolveReadingStyle(source: .appTheme, preset: .standard, spacing: .standard,
+            accent: .standard, readingGuide: false, noteVisualBox: false, traits: traits)
+        ContinuousReadingView.applyRoleBoxAndGuide(bar: bar, contentView: content, textLabel: label,
+            segment: piece, style: styleOff, isReadingFocus: false)
+        XCTAssertTrue(bar.isHidden, "senza l'opzione, nessun riquadro")
+    }
+
     // MARK: - Riduci movimento (WCAG 2.3.3 / HIG)
 
     func test_motion_respectsReduceMotion() {

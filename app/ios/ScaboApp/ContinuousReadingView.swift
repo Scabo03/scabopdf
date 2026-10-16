@@ -1446,7 +1446,7 @@ final class ContinuousReadingView: UIView {
         case "QUOTED_TEXT_OLD": hex = c.accentProcedural
         case "QUOTED_TEXT_NEW": hex = c.accentHeading
         case "UPDATE_BLOCK": hex = c.accentLink
-        case "NOTE": hex = c.accentNote
+        case "NOTE", "NOTE_CONTINUATION": hex = c.accentNote
         case VISUAL_RESOURCE_ROLE: hex = c.accentLink
         default: hex = c.accentHeading  // SECTION_DIVIDER e altri
         }
@@ -1461,8 +1461,9 @@ final class ContinuousReadingView: UIView {
     ) {
         let role = segment.role
         // Le NOTE ottengono un box visivo SOLO se l'utente ha scelto l'opzione «riquadro visivo per
-        // le note» (default OFF): serve i sordi vedenti (mai-solo-suono), senza toccare gli altri.
-        let noteBoxed = style.showNoteBox && role == "NOTE"
+        // le note» (default OFF): serve i sordi vedenti (mai-solo-suono), senza toccare gli altri. Anche i
+        // pezzi di seguito di una nota lunga frazionata (§ 10.6) sono nota: il riquadro li copre tutti.
+        let noteBoxed = style.showNoteBox && (role == "NOTE" || role == "NOTE_CONTINUATION")
         let boxed = noteBoxed
             || (style.showRoleBoxes && (BOXED_ROLES.contains(role) || role == SECTION_DIVIDER_ROLE))
         if boxed {

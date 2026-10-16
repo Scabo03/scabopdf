@@ -19,6 +19,8 @@
 //  parola (il richiamo stesso). Senza riscontro, nessun legame: un salto sbagliato è peggio di
 //  nessun salto (regola d'oro). Le note non agganciate restano lette in posizione e non hanno
 //  richiamo da raggiungere.
+//   • nota lunga FRAZIONATA (§ 10.6): i pezzi di seguito prendono il richiamo del primo pezzo
+//     dello stesso nodo (giro «uniformità della lettura», 2026-10-16).
 //
 
 import Foundation
@@ -115,5 +117,34 @@ public func noteCallLinks(_ segments: [ContentSegment]) -> NoteCallLinks {
         links.callOfNote[i] = c
         links.notesOfCall[c, default: []].append(i)
     }
+    linkNoteContinuations(segments, &links)
     return links
+}
+
+/// L'id-nodo di un pezzo di nota frazionata: l'id senza l'ultimo suffisso `#k` (`fractionLongNoteSegments` chiama i pezzi
+/// `<id>#0`, `<id>#1`, …).
+private func fractionBaseId(_ id: String) -> Substring {
+    guard let hash = id.lastIndex(of: "#") else { return Substring(id) }
+    return id[..<hash]
+}
+
+/// Note lunghe FRAZIONATE (§ 10.6, `fractionLongNoteSegments`; dal 2026-10-16 anche quando l'iPad elabora da sé un PDF):
+/// i pezzi di seguito (`NOTE_CONTINUATION`) hanno lo stesso richiamo del primo pezzo, così «Vai al testo del richiamo» c'è
+/// su ogni pezzo come c'era sulla nota intera. Il primo pezzo si cerca all'indietro saltando gli altri pezzi e gli elementi
+/// «risorsa visiva» (additivi e trasparenti), e deve venire DALLO STESSO NODO (stesso id prima di `#k`): senza riscontro,
+/// nessun legame. Il salto «Vai alla nota N» dal richiamo resta sul primo pezzo (`notesOfCall` non cambia).
+private func linkNoteContinuations(_ segments: [ContentSegment], _ links: inout NoteCallLinks) {
+    guard !links.callOfNote.isEmpty else { return }
+    let continuation = SemanticCategory.NOTE_CONTINUATION.rawValue
+    for (i, seg) in segments.enumerated() where seg.role == continuation {
+        var j = i - 1
+        while j >= 0, segments[j].role == continuation || segments[j].role == VISUAL_RESOURCE_ROLE { j -= 1 }
+        guard j >= 0,
+              segments[j].role == SemanticCategory.NOTE.rawValue || segments[j].role == SemanticCategory.EDITORIAL_NOTE.rawValue,
+              let call = links.callOfNote[j],
+              segments[j].id.hasSuffix("#0"),
+              fractionBaseId(segments[j].id) == fractionBaseId(seg.id)
+        else { continue }
+        links.callOfNote[i] = call
+    }
 }

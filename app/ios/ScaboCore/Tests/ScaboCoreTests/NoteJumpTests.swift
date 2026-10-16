@@ -16,6 +16,61 @@ final class NoteJumpTests: XCTestCase {
                        acousticIntro: "", memoryRefresh: refresh)
     }
 
+    private func piece(_ id: String, _ role: String, _ text: String, refresh: String = "") -> ContentSegment {
+        ContentSegment(id: id, role: role, text: text, lengthCategory: "", acousticIntro: "", memoryRefresh: refresh)
+    }
+
+    /// Nota lunga frazionata (§ 10.6): ogni pezzo di seguito ha lo stesso richiamo del primo pezzo; dal richiamo si salta
+    /// solo al primo pezzo (giro «uniformità della lettura», 2026-10-16).
+    func test_fractionedNote_continuationPiecesLinkToTheSameCall() {
+        let segs = [
+            piece("b1", "BODY", "Frase di prova del corpo con il richiamo alla nota di prova 37, e poi altro testo di prova…"),
+            piece("b2", "BODY", "Paragrafo di prova senza richiami."),
+            piece("n9_n0#0", "NOTE", "37 Primo pezzo della nota di prova.",
+                  refresh: "Frase di prova del corpo con il richiamo alla nota di prova"),
+            piece("n9_n0#1", "NOTE_CONTINUATION", "Secondo pezzo della nota di prova."),
+            piece("n9_n0#2", "NOTE_CONTINUATION", "Terzo pezzo della nota di prova."),
+            piece("b3", "BODY", "Paragrafo di prova seguente."),
+        ]
+        let l = noteCallLinks(segs)
+        XCTAssertEqual(l.callOfNote[2], 0)
+        XCTAssertEqual(l.callOfNote[3], 0)
+        XCTAssertEqual(l.callOfNote[4], 0)
+        XCTAssertEqual(l.notesOfCall[0], [2], "dal richiamo si salta al primo pezzo, una volta")
+        XCTAssertNil(l.callOfNote[5])
+    }
+
+    /// Prova al contrario: un pezzo di seguito che non viene dallo stesso nodo del primo pezzo, o un primo pezzo senza
+    /// richiamo riscontrato, non dà alcun legame (un salto sbagliato è peggio di nessun salto).
+    func test_fractionedNote_continuationOfAnotherNodeOrOfUnlinkedHead_noLink() {
+        let other = [
+            piece("b1", "BODY", "Frase di prova con il richiamo 31."),
+            piece("n1#0", "NOTE", "31 Nota di prova breve."),
+            piece("n2#1", "NOTE_CONTINUATION", "Pezzo di prova di un'altra nota."),
+        ]
+        let a = noteCallLinks(other)
+        XCTAssertEqual(a.callOfNote[1], 0)
+        XCTAssertNil(a.callOfNote[2])
+        let unlinked = [
+            piece("b1", "BODY", "Frase di prova che non richiama nulla."),
+            piece("n3#0", "NOTE", "12 Nota di prova senza richiamo."),
+            piece("n3#1", "NOTE_CONTINUATION", "Seguito di prova della nota senza richiamo."),
+        ]
+        XCTAssertTrue(noteCallLinks(unlinked).callOfNote.isEmpty)
+    }
+
+    /// Un elemento «risorsa visiva» fra due pezzi della stessa nota è trasparente: il pezzo dopo l'elemento ritrova il
+    /// primo pezzo.
+    func test_fractionedNote_visualResourceBetweenPieces_isTransparent() {
+        let segs = [
+            piece("b1", "BODY", "Frase di prova con il richiamo 31."),
+            piece("n1#0", "NOTE", "31 Nota di prova breve."),
+            piece("v1", VISUAL_RESOURCE_ROLE, "Tabella"),
+            piece("n1#1", "NOTE_CONTINUATION", "Seguito di prova della nota."),
+        ]
+        XCTAssertEqual(noteCallLinks(segs).callOfNote[3], 0)
+    }
+
     func test_inlineNote_linksToPrecedingTextWithCall() {
         let segs = [
             s("BODY", "La tesi del raccolto anticipato è discussa 31."),

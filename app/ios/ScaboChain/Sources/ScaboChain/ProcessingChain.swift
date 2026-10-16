@@ -8,15 +8,16 @@
 //
 //    estrazione (per pagina) → risorse visive (sonda, prefiltro, modello sulle pagine scelte) →
 //    classificazione (per pagina) → [innesto, solo Mac] → aggancio e piazzamento delle note →
-//    corpo della Lettura Continua [frazionamento delle note lunghe, solo Mac] + risorse visive →
+//    corpo della Lettura Continua (con il frazionamento delle note lunghe) + risorse visive →
 //    flusso Dottrina Inline (se ci sono note) → guardia di contenuto minima.
 //
 //  `DocumentProcessor` dell'app è ora solo l'involucro: coda di lavoro, avanzamento e esito consegnati sul main,
-//  bandiera d'annullamento. L'app Mac usa la stessa funzione con due opzioni in più, entrambe spente per l'iPad:
-//  `graft` (l'innesto dei verdetti del modello d'impaginazione: il fusore, ScaboCore `Fusore.swift`) e
-//  `fractionLongNotes` (il frazionamento delle note lunghe ricucite, decisione del 2026-08-10). Con le opzioni
-//  predefinite la sequenza delle chiamate è identica, una per una, a quella di prima: lo provano le reti dell'iPad
-//  (estrazioni e letture identiche sui 52 volumi, catena dell'app = catena della rete).
+//  bandiera d'annullamento. L'app Mac usa la stessa funzione con un'opzione in più, spenta per l'iPad: `graft`
+//  (l'innesto dei verdetti del modello d'impaginazione: il fusore, ScaboCore `Fusore.swift`). Il frazionamento delle
+//  note lunghe (`fractionLongNotes`, § 10.6, il meccanismo degli atti AKN) è acceso per entrambi dal 2026-10-16
+//  (decisione del maintainer: la lettura è la stessa chiunque l'abbia preparata); fino alla build 54 era solo del Mac.
+//  Con le opzioni predefinite la sequenza delle chiamate è quella dell'iPad: lo provano le reti dell'iPad
+//  (estrazioni e letture identiche sui 52 volumi, catena dell'app = catena della rete = catena del Mac senza innesto).
 //
 //  ── Percentuale REALE, mai finta (§ 12.9) ─────────────────────────────────────────────────────────────────────
 //  L'unità è la PAGINA: estrazione [1…M], classificazione [M+1…2M], impaginazione (2M+1); la frazione è
@@ -104,7 +105,10 @@ public struct ChainOptions {
     public var buildDoctrine: Bool
     /// Riconoscere tabelle e figure (risorse visive). Spento solo nei test che non lo riguardano.
     public var detectVisualResources: Bool
-    /// Solo Mac: frazionamento delle note lunghe ricucite (decisione del 2026-08-10).
+    /// Frazionamento delle note lunghe (§ 10.6, `fractionLongNoteSegments`: il meccanismo degli atti AKN, soglia = la
+    /// granularità del corpo). Acceso per l'iPad e per il Mac dal 2026-10-16 (decisione del maintainer: la lettura è la
+    /// stessa chiunque l'abbia preparata); spento solo dalle reti e dai banchi che riproducono la lettura dell'iPad fino
+    /// alla build 54.
     public var fractionLongNotes: Bool
     /// Solo Mac: l'innesto dei verdetti del modello d'impaginazione (il fusore).
     public var graft: ChainGraft?
@@ -113,7 +117,7 @@ public struct ChainOptions {
     public var visualCandidatesOverride: [VisualRegionCandidate]?
 
     public init(granularityTarget: Int = DEFAULT_GRANULARITY_TARGET, buildDoctrine: Bool = true,
-                detectVisualResources: Bool = true, fractionLongNotes: Bool = false, graft: ChainGraft? = nil,
+                detectVisualResources: Bool = true, fractionLongNotes: Bool = true, graft: ChainGraft? = nil,
                 visualCandidatesOverride: [VisualRegionCandidate]? = nil) {
         self.granularityTarget = granularityTarget
         self.buildDoctrine = buildDoctrine

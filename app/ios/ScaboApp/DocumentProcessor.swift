@@ -156,7 +156,8 @@ final class DocumentProcessor {
                 }
             }
 
-            // La catena condivisa (ScaboChain), con le opzioni dell'iPad: niente innesto, niente frazionamento.
+            // La catena condivisa (ScaboChain), con le opzioni dell'iPad: niente innesto; le note lunghe si frazionano
+            // come sul Mac e negli atti AKN (§ 10.6, dal 2026-10-16: la lettura è la stessa chiunque l'abbia preparata).
             let outcome = ProcessingChain.run(
                 fileURL: fileURL,
                 sourceName: sourceName,

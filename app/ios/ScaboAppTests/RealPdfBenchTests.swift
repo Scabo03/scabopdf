@@ -403,6 +403,62 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 
+    /// LA LETTURA DELL'APP, completa (giro «uniformità della lettura», 2026-10-16): per ogni PDF della richiesta,
+    /// l'elaborazione VERA dell'iPad (`DocumentProcessor`, riconoscimento di tabelle e figure compreso, opzioni
+    /// predefinite della catena) e la lettura nella forma della cache (`PackagedReading`: Lettura Continua, Dottrina
+    /// Inline, mappa delle pagine, albero della Consultazione Rapida, granularità) con chiavi ordinate — la stessa forma
+    /// che il Mac mette nel pacchetto. Granularità e Dottrina come le prepara l'app: 400 con Dottrina e albero per i volumi
+    /// normali (importazione), 1.200 senza Dottrina né albero per i volumi enormi (riapertura alleggerita); la richiesta
+    /// può fissare `granularity`. Serve a confrontare la lettura dell'iPad con quella del Mac e del runner della rete a
+    /// parità di ingressi. Le uscite CONTENGONO TESTO dei volumi: solo nel laboratorio, mai nel repo. `XCTSkip` senza
+    /// richiesta (`/tmp/scabo_app_reading_request.json`, stesso formato delle altre).
+    func test_appReadingDump_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_APP_READING_REQUEST"]
+            ?? "/tmp/scabo_app_reading_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(DumpRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta di lettura dell'app in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let enc = JSONEncoder()
+        enc.outputFormatting = [.sortedKeys]
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("[app-reading] assente, salto: \(path)"); continue
+            }
+            let url = URL(fileURLWithPath: path)
+            let pageCount = CGPDFDocument(url as CFURL)?.numberOfPages ?? 0
+            let large = ReadingAssembly.isLarge(pageCount: pageCount)
+            let target = req.granularity ?? (large ? ReadingAssembly.largeDocumentGranularity : DEFAULT_GRANULARITY_TARGET)
+            let processor = DocumentProcessor()
+            let done = expectation(description: "elaborazione \(name)")
+            var outcome: DocumentProcessor.Outcome?
+            let t0 = Date()
+            processor.process(fileURL: url, sourceName: url.lastPathComponent, granularityTarget: target,
+                              buildDoctrine: !large, onProgress: { _ in }, completion: { outcome = $0; done.fulfill() })
+            wait(for: [done], timeout: 3600)
+            guard case .success(let document, let content, let doctrine)? = outcome else {
+                XCTFail("[app-reading] \(name): elaborazione non riuscita"); continue
+            }
+            let reading = PackagedReading(
+                content: content,
+                pageMap: ReadingAssembly.buildPageMap(document, content: content, doctrineContent: doctrine),
+                doctrineContent: large ? nil : doctrine,
+                quickConsultTree: large ? nil : ReadingAssembly.quickConsultTreeIfAvailable(document),
+                contentTarget: target)
+            let stem = (name as NSString).deletingPathExtension
+            let file = req.outDir + "/\(stem).app_lettura.json"
+            try? FileManager.default.createDirectory(atPath: (file as NSString).deletingLastPathComponent,
+                                                     withIntermediateDirectories: true)
+            try enc.encode(reading).write(to: URL(fileURLWithPath: file))
+            let segs = content.pages.flatMap { $0.segments }
+            print(String(format: "[app-reading] %@: %d segmenti (%d pezzi di nota di seguito), Dottrina %@, granularità %d, %.1f s",
+                         name, segs.count, segs.filter { $0.role == SemanticCategory.NOTE_CONTINUATION.rawValue }.count,
+                         doctrine == nil ? "no" : "sì", target, Date().timeIntervalSince(t0)))
+        }
+    }
+
     /// Fotografie della vista di lettura (iPad 11", verticale) con l'elemento «risorsa visiva» in cima: l'elemento
     /// riquadrato e il testo che lo segue, come li vede chi legge. Più un indice JSON con le etichette lette
     /// (elemento e i tre seguenti): CONTIENE TESTO del volume, quindi solo nel laboratorio, mai nel repo.

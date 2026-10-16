@@ -190,9 +190,9 @@ enum ReadingFromMac {
         if h.reading.visualResourcesSkipped != nil {
             t += " Sul Mac il riconoscimento di tabelle e figure non è stato possibile: dopo, l'iPad proporrà di riprovarlo."
         }
-        t += " Se il libro ha note molto lunghe, sono divise in parti, da ascoltare una alla volta. Il resto del testo è quello "
-            + "che l'iPad ricava dallo stesso PDF: se il libro non aveva nulla da correggere, la lettura resta molto simile a quella "
-            + "di adesso."
+        t += " Se il libro ha note molto lunghe, sono divise in parti, da ascoltare una alla volta, come fa ora anche l'iPad. "
+            + "Il resto del testo è quello che l'iPad ricava dallo stesso PDF: se il libro non aveva nulla da correggere, la "
+            + "lettura resta molto simile a quella di adesso."
         if ReadingAssembly.isLarge(pageCount: h.source.pageCount) {
             t += " È un volume molto grande: come sull'iPad, la lettura è a blocchi più ampi e senza Consultazione Rapida."
         }

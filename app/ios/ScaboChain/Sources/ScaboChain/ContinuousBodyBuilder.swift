@@ -92,16 +92,17 @@ public enum ContinuousBodyBuilder {
     /// ScaboCore decide quali regioni del modello diventano risorse e ne inserisce l'elemento nel flusso (additivo:
     /// il testo resta dov'era). `visual == nil` → identico a `bodyPaginatedContent`.
     ///
-    /// `fractionLongNotes` (solo l'officina Mac, giro del 2026-10-16; l'iPad lo lascia spento): il frazionamento
-    /// delle note lunghe ricucite (decisione di prodotto del 2026-08-10, `fractionLongNoteSegments`), applicato come
-    /// nella porta d'import di sviluppo e nel runner della rete, PRIMA delle risorse visive; la soglia è la
-    /// granularità del corpo (§ 10.6: corpo e note seguono lo stesso parametro).
+    /// `fractionLongNotes`: il frazionamento delle note lunghe (§ 10.6, `fractionLongNoteSegments`, il meccanismo degli
+    /// atti AKN; decisioni di prodotto del 2026-08-10 e del 2026-10-16), applicato come negli atti AKN, nella porta
+    /// d'import di sviluppo e nel runner della rete, PRIMA delle risorse visive; la soglia è la granularità del corpo
+    /// (§ 10.6: corpo e note seguono lo stesso parametro). Acceso per difetto: iPad e Mac danno la stessa lettura; spento
+    /// solo dalle reti che riproducono la lettura dell'iPad fino alla build 54.
     public static func bodyPaginatedContentWithVisual(
         from document: ScabopdfDocument,
         target: Int = DEFAULT_GRANULARITY_TARGET,
         segmentsPerPage: Int = DEFAULT_SEGMENTS_PER_PAGE,
         visual: VisualInput?,
-        fractionLongNotes: Bool = false
+        fractionLongNotes: Bool = true
     ) throws -> (content: PaginatedContent, report: VisualResourcesReport?) {
         var segments = bodySegments(from: document, target: target)
         if fractionLongNotes {

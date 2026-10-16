@@ -11,14 +11,17 @@
 //        Decodifica due artefatti fusi (per esempio Python e Swift) e dice se sono identici come dati; se no, dove
 //        (id dei nodi o pagine e righe), mai il testo.
 //    scabomac-officina catena --lista LISTA.json --corpus DIR --out DIR [--politica giro|spenta|banco] [--granularita N]
-//                             [--estrazioni DIR] [--regioni DIR] [--solo STEM] [--salva-catture DIR]
+//                             [--estrazioni DIR] [--regioni DIR] [--solo STEM] [--salva-catture DIR] [--lettura]
 //        La catena DEL MAC (quella dell'app: MacProcessor) sui volumi della lista: dal vivo (estrazione PDFKit di macOS,
 //        modello d'impaginazione sul Mac) oppure, con `--estrazioni`/`--regioni`, dalle catture di un simulatore (stesso
 //        formato del banco). Scrive per volume `<stem>.rv.reading.json` (lettura completa, risorse visive comprese) e
 //        `<stem>.reading.json` (senza gli elementi «risorsa visiva»), nel formato del runner della rete, più
 //        `<stem>.officina.json` (referto dell'innesto, privo di testo) e una riga di riepilogo per volume. Con
 //        `--salva-catture` scrive anche l'estrazione di PDFKit di macOS (`<stem>.extraction.json`) e le regioni del
-//        modello sul Mac (`<stem>.regions.json`), nel formato delle catture del simulatore (confronto canonico).
+//        modello sul Mac (`<stem>.regions.json`), nel formato delle catture del simulatore (confronto canonico). Con
+//        `--lettura` scrive anche `<stem>.lettura.json`: la lettura INTERA nella forma della cache dell'iPad (i due flussi,
+//        la mappa delle pagine, l'albero, la granularità; chiavi ordinate), per il confronto byte per byte con la lettura
+//        che l'iPad prepara da sé (giro «uniformità della lettura», 2026-10-16).
 //    scabomac-officina pacchetto --pdf FILE.pdf --out FILE.scabolettura [--politica giro|spenta|banco]
 //        Prepara e scrive il pacchetto della lettura come l'app (senza annotazioni).
 //    scabomac-officina verdetti-confronta --pdf VOLUME.pdf --dir CARTELLA --prefisso P
@@ -217,6 +220,9 @@ case "catena":
             try RunnerReading.encode(label: r.fileName, categories: r.rawCategories, segments: segs.filter { $0.visualResource == nil })
                 .write(to: URL(fileURLWithPath: base.path + ".reading.json"))
             try encoder.encode(r.report).write(to: URL(fileURLWithPath: base.path + ".officina.json"))
+            if CommandLine.arguments.contains("--lettura") {
+                try encoder.encode(r.reading).write(to: URL(fileURLWithPath: base.path + ".lettura.json"))
+            }
         } catch { say("\(stem): scrittura fallita"); rc = 1; continue }
         say("\(stem): \(segs.count) segmenti, \(r.visualResources) risorse, modello su \(r.report.modelPages.count) pagine, "
             + "ricuciture \(r.report.stitches.count), rietichettature \(r.report.relabels), \(String(format: "%.1f", Date().timeIntervalSince(t0))) s")

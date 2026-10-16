@@ -3,9 +3,9 @@
 //  ScaboChainTests
 //
 //  Prove sull'host (macOS) della catena condivisa: l'estrattore con le sue cure gira sul Mac con la stessa lettura
-//  di taglia, tratti e colore; la catena con le opzioni dell'iPad non fraziona e non innesta; l'innesto e il
-//  frazionamento (solo Mac) si accendono solo a richiesta; l'annullamento è pulito. PDF sintetici disegnati al volo,
-//  con parole di prova: nessun testo dei volumi.
+//  di taglia, tratti e colore; la catena con le opzioni dell'iPad non innesta e, dal 2026-10-16, fraziona le note lunghe
+//  come il Mac e gli atti AKN; l'innesto (solo Mac) si accende solo a richiesta; l'annullamento è pulito. PDF e documenti
+//  sintetici con parole di prova: nessun testo dei volumi.
 //
 
 import CoreGraphics
@@ -137,7 +137,7 @@ final class CatenaTests: XCTestCase {
         for (a, b) in zip(progress, progress.dropFirst()) { XCTAssertLessThanOrEqual(a.fraction, b.fraction) }
     }
 
-    func test_innestoEFrazionamento_soloSeRichiesti() throws {
+    func test_innestoSoloSeRichiesto_frazionamentoComeSulMac() throws {
         let url = SyntheticPDF.smallBook(pages: 2)
         defer { try? FileManager.default.removeItem(at: url) }
         let graft = InnestoDiProva()
@@ -149,6 +149,44 @@ final class CatenaTests: XCTestCase {
         XCTAssertTrue(progress.contains { $0.phase == .graft })
         // Nessuna nota lunga e un innesto che non tocca nulla: la lettura è la stessa.
         XCTAssertEqual(a.content, b.content)
+    }
+
+    /// Un documento con una nota lunga: le opzioni dell'iPad la frazionano (decisione del 2026-10-16) con lo STESSO
+    /// meccanismo degli atti AKN e del Mac (`fractionLongNoteSegments`, soglia = granularità): primo pezzo NOTE con
+    /// l'annuncio e il regime della nota intera, pezzi seguenti NOTE_CONTINUATION muti, testo ricomposto identico. Con il
+    /// frazionamento spento (solo per riprodurre la lettura dell'iPad fino alla build 54) la nota resta intera.
+    func test_opzioniDellIpad_frazionanoLeNoteLungheComeGliAttiAkn() throws {
+        XCTAssertTrue(ChainOptions().fractionLongNotes, "le opzioni predefinite sono quelle dell'iPad: frazionamento acceso")
+        let sentences = (1...16).map { "Frase di prova numero \($0) della nota lunga, scritta per il banco della catena." }
+        let noteText = "7 " + sentences.joined(separator: " ")
+        XCTAssertGreaterThan(noteText.count, DEFAULT_GRANULARITY_TARGET)
+        let doc = ScabopdfDocument(
+            schema_version: "0.7.0", document_id: "00000000-0000-4000-8000-000000000000",
+            metadata: DocumentMetadata(pages_pdf: 1, page_size_pt: [595, 842], source_pdf_filename: "prova.pdf"),
+            profile: DocumentProfileDict(profile_id: "unknown_generic", editorial_family: "unknown", genre: "unknown",
+                                         confidence: 0),
+            structure: [
+                NodeDict(id: "node_0", type: .HEADING_1, page_index: 0, text: "Capitolo di prova"),
+                NodeDict(id: "node_1", type: .BODY, page_index: 0, text: "Capoverso di prova del corpo."),
+                NodeDict(id: "node_2", type: .NOTE, page_index: 0, text: noteText, length_category: .VERY_LONG),
+            ])
+        let on = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(from: doc, visual: nil).content
+            .pages.flatMap { $0.segments }
+        let off = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(from: doc, visual: nil, fractionLongNotes: false)
+            .content.pages.flatMap { $0.segments }
+        // Lo stesso meccanismo, non una copia: la catena dà esattamente ciò che dà `fractionLongNoteSegments`.
+        XCTAssertEqual(on, fractionLongNoteSegments(off, target: DEFAULT_GRANULARITY_TARGET))
+        let pieces = on.filter { $0.role == "NOTE" || $0.role == "NOTE_CONTINUATION" }
+        XCTAssertGreaterThan(pieces.count, 1)
+        XCTAssertEqual(pieces.first?.role, "NOTE")
+        XCTAssertEqual(pieces.first?.id, "node_2#0")
+        XCTAssertEqual(pieces.first?.acousticIntro, "Nota lunga.")
+        XCTAssertEqual(pieces.first?.lengthCategory, "VERY_LONG")
+        XCTAssertTrue(pieces.dropFirst().allSatisfy { $0.role == "NOTE_CONTINUATION" && $0.acousticIntro.isEmpty })
+        XCTAssertTrue(pieces.allSatisfy { $0.text.count <= DEFAULT_GRANULARITY_TARGET })
+        XCTAssertEqual(pieces.map { $0.text }.joined(separator: " "), noteText, "il testo ricomposto è la nota di prima")
+        XCTAssertEqual(off.filter { $0.role == "NOTE" }.map { $0.text }, [noteText])
+        XCTAssertFalse(off.contains { $0.role == "NOTE_CONTINUATION" })
     }
 
     func test_annullamento_nessunDocumentoParziale() throws {
