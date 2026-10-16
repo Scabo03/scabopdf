@@ -3,9 +3,10 @@
 //  ScaboCore
 //
 //  Rifinitura AKN-scoped del flusso di segmenti (Parte B — i tre attriti del gate).
-//  È un post-passo PURO su `[ContentSegment]`, invocato SOLO dall'orchestratore
-//  AKN: non tocca `buildBaseSegments`/`expand` né il percorso PDF, quindi l'Estratto
-//  resta byte-identico per costruzione. Chiude:
+//  È un post-passo PURO su `[ContentSegment]`. `refineAknSegments` è invocato solo
+//  dall'orchestratore AKN; il suo Passo 2, `fractionLongNoteSegments`, è dal
+//  2026-10-16 (build 55) anche il frazionamento delle note lunghe di OGNI lettura
+//  preparata dalla catena condivisa (`ScaboChain`: iPad, iPhone e Mac). Chiude:
 //
 //   1. Note-mostro (§10.6): spezza le note più lunghe del target in celle sotto la
 //      soglia del viewport, preservando il regime acustico a livello di NOTA LOGICA
@@ -113,8 +114,9 @@ private func aknFractionNote(_ seg: ContentSegment, target: Int) -> [ContentSegm
 /// regime; continuazioni NOTE_CONTINUATION mute). È il Passo 2 di
 /// `refineAknSegments`, esposto da solo perché l'arco ultrafocus lo applica
 /// anche al flusso continuo dei frammenti ricuciti (porta d'import + runner
-/// d'officina) — stesso criterio, nessuna variante. Il percorso PDF normale
-/// NON lo invoca: nessun cambiamento per i volumi importati normalmente.
+/// d'officina) — stesso criterio, nessuna variante. Dal 2026-10-16 (build 55) lo
+/// invoca anche il percorso PDF normale (`ContinuousBodyBuilder`, frazionamento
+/// acceso per difetto): la lettura è la stessa chiunque l'abbia preparata.
 public func fractionLongNoteSegments(
     _ segments: [ContentSegment], target: Int = DEFAULT_GRANULARITY_TARGET
 ) -> [ContentSegment] {

@@ -4,7 +4,8 @@
 //
 //  Le annotazioni attraverso il FRAZIONAMENTO delle note lunghe (giro «costruzione della linea Mac», 2026-10-16,
 //  revisione indipendente). La lettura preparata dal Mac divide le note lunghe in più segmenti consecutivi (il primo
-//  NOTE, gli altri NOTE_CONTINUATION, `fractionLongNoteSegments`); l'iPad, quando elabora da sé, no. Andata: le
+//  NOTE, gli altri NOTE_CONTINUATION, `fractionLongNoteSegments`); dalla build 55 anche l'iPad, quando elabora da sé
+//  (il ritorno a note intere resta quello verso una lettura precedente). Andata: le
 //  annotazioni fatte sulla nota intera si ritrovano nei pezzi (anche a cavallo di due pezzi). Ritorno: quelle fatte sui
 //  pezzi si ritrovano nella nota intera (anche i pezzi di mezzo). Prove al contrario: nessuna ricollocazione su un testo
 //  diverso. Testi SINTETICI e neutri: nessun frammento di volume.

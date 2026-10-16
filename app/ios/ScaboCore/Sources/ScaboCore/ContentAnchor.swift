@@ -439,7 +439,8 @@ public final class ContentAnchorIndex {
         // 3-bis. Un PEZZO DI NOTA (continuazione: la parte di una nota lunga divisa in più segmenti, o il seguito di una
         //    nota sulla pagina dopo) dentro una nota più lunga, in QUALUNQUE punto e non solo a un'estremità: quando le
         //    parti tornano una nota sola, quelle di mezzo stanno nel mezzo (giro «costruzione della linea Mac»,
-        //    2026-10-16: le letture del Mac frazionano le note lunghe, l'iPad che rielabora no). Solo fra note e con testa
+        //    2026-10-16: le letture del Mac frazionano le note lunghe; dalla build 55 anche l'iPad, e il ritorno a note
+        //    intere resta quello verso una lettura precedente). Solo fra note e con testa
         //    e coda alla distanza giusta, all'inizio di una parola; più posizioni o più note → ambiguo, orfana.
         if anchor.role == Self.noteContinuationRole, anchor.containedElsewhere != true,
            anchor.length > TextFingerprint.edgeLength {
