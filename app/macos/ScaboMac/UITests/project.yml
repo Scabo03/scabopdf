@@ -1,0 +1,31 @@
+# Progetto Xcode dei soli test d'interfaccia dell'app Mac (giro «costruzione della linea Mac», 2026-10-16).
+# Un bersaglio solo, il bundle dei test XCUITest: l'app sotto prova è quella già assemblata da scripts/build_app.sh,
+# aperta per percorso (XCUIApplication(url:)). Il progetto generato è versionato; per rigenerarlo: `xcodegen generate`
+# in questa cartella. Per lanciarli serve la modalità automazione: vedi ScaboMacUITests.swift.
+name: ScaboMacUITests
+options:
+  bundleIdPrefix: com.scabo.scabopdf.mac
+  deploymentTarget:
+    macOS: "14.0"
+  developmentLanguage: it
+targets:
+  ScaboMacUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: ScaboMacUITests.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.scabo.scabopdf.mac.uitests
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  ScaboMacUITests:
+    build:
+      targets:
+        ScaboMacUITests: [test]
+    test:
+      targets:
+        - ScaboMacUITests
