@@ -18,5 +18,25 @@
 	<key>NSSupportsSuddenTermination</key><false/>
 	<key>ITSAppUsesNonExemptEncryption</key><false/>
 	<key>NSHumanReadableCopyright</key><string>ScaboPDF</string>
+	<!-- Il pacchetto della lettura (lo stesso tipo dichiarato dall'app per iPad, giro del 2026-10-16): lo produce il Mac. -->
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key><string>com.scabo.scabopdf.lettura</string>
+			<key>UTTypeDescription</key><string>Lettura ScaboPDF</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+				<string>public.content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array><string>scabolettura</string></array>
+				<key>public.mime-type</key>
+				<array><string>application/x-scabopdf-lettura</string></array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

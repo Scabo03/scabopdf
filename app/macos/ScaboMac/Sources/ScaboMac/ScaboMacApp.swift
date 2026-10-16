@@ -5,7 +5,8 @@
 //  Punto d'ingresso dell'app Mac. La finestra principale è l'officina (giro «costruzione della linea Mac»,
 //  2026-10-16): prepara la lettura di un PDF con la catena condivisa con l'iPad più il modello d'impaginazione, e la
 //  manda all'iPad con AirDrop o la salva per il cavo. Le Impostazioni hanno la scheda «Strumenti» (il pannello), che si
-//  apre anche dal menu con Cmd+Shift+M. L'annunciatore è quello VoiceOver reale.
+//  apre anche dal menu con Cmd+Shift+M. L'annunciatore è quello VoiceOver reale. Il servizio dei modelli è quello vero
+//  (scaricamento reale di GLM-OCR attraverso il servizio XPC, «Verifica», rimozione completa).
 //
 
 import ScaboMacKit
@@ -50,7 +51,10 @@ struct ScaboMacApp: App {
             NSLog("%@", Testi.catalogoProblemaAvvio(problema!))
             catalog = ModelCatalog(schemaVersione: ModelCatalog.schemaVersioneCorrente, aggiornatoIl: "", voci: [])
         }
-        let service = SimulatedModelService(catalog: catalog)
+        // Il servizio VERO (giro del 2026-10-16): scaricamento reale attraverso il servizio XPC, pesi nel contenitore.
+        let service = RealModelService(catalog: catalog)
+        // Prova del laboratorio (solo con l'argomento esplicito): percorso reale del pannello, poi l'app si chiude.
+        if ProvaPannello.richiesta { ProvaPannello.esegui(catalog: catalog) }
         return PanelViewModel(service: service, announcer: VoiceOverAnnouncer(), problemaCatalogo: problema)
     }
 }

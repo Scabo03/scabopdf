@@ -26,6 +26,11 @@ public final class PanelViewModel: ObservableObject {
     @Published public private(set) var spazioLiberoInParole: String = Testi.spazioLiberoSconosciuto
     /// Voce di cui si sta chiedendo conferma di rimozione (nil = nessuna).
     @Published public var confermaRimozionePer: String?
+    /// Voce di cui si sta chiedendo conferma dello scaricamento VERO (nil = nessuna): dimensione e fonte dette prima.
+    @Published public var confermaScaricamentoPer: String?
+    /// Voci in verifica sulla pagina di prova, e l'ultimo esito in prosa per voce.
+    @Published public private(set) var verificheInCorso: Set<String> = []
+    @Published public private(set) var esitiVerifica: [String: String] = [:]
     /// Voce che deve ricevere il focus dopo un cambio di stato (le viste lo consumano).
     @Published public var focusRichiesto: String?
     /// Ultimo ruolo aperto dall'utente (ricordato fra le sessioni).
@@ -80,9 +85,57 @@ public final class PanelViewModel: ObservableObject {
     // MARK: Azioni dell'utente
 
     public func scarica(_ id: String) { service.download(id) }
+    /// Lo scaricamento vero si chiede prima, con la dimensione e la fonte in prosa (giro del 2026-10-16).
+    public func chiediScaricamento(_ id: String) {
+        confermaScaricamentoPer = id
+        richiediFocusSullaDomanda(id)
+    }
+    /// Il fuoco di VoiceOver va sulla domanda appena comparsa (al giro successivo, quando la vista esiste già).
+    private func richiediFocusSullaDomanda(_ id: String) {
+        DispatchQueue.main.async { [weak self] in
+            // Solo se la domanda c'è ancora (annullata nel frattempo: il fuoco resta dov'è).
+            guard let self, self.confermaScaricamentoPer == id || self.confermaRimozionePer == id else { return }
+            self.focusRichiesto = Self.idDomanda(id)
+        }
+    }
+    /// L'identificativo di fuoco della domanda di conferma di una voce.
+    public static func idDomanda(_ id: String) -> String { "conferma.\(id)" }
+    public func confermaScaricamento() {
+        guard let id = confermaScaricamentoPer else { return }
+        confermaScaricamentoPer = nil
+        service.download(id)
+    }
+    public func annullaScaricamentoChiesto() {
+        let id = confermaScaricamentoPer
+        confermaScaricamentoPer = nil
+        focusRichiesto = id
+    }
+    /// La domanda di conferma dello scaricamento, con dimensione, editore e revisione.
+    public func domandaScaricamento(_ entry: CatalogEntry) -> String {
+        Testi.azioneScaricaDomanda(entry.nome, entry.dimensioneInParole, entry.provenienza.editore,
+                                   String((entry.scaricamento?.revisione ?? "").prefix(8)))
+    }
+    /// Verifica il lettore scaricato sulla pagina di prova inclusa nell'app; l'esito si dice e si annuncia.
+    public func verifica(_ id: String) {
+        guard let v = service as? ModelVerifying, v.puoVerificare(id), !verificheInCorso.contains(id),
+              let entry = catalog.voci.first(where: { $0.id == id }) else { return }
+        verificheInCorso.insert(id)
+        esitiVerifica[id] = nil
+        announcer.announce(Testi.annuncioVerificaAvviata(entry.nome), priority: .normale)
+        v.verifica(id) { [weak self] esito in
+            guard let self else { return }
+            self.verificheInCorso.remove(id)
+            self.esitiVerifica[id] = esito.prosa
+            self.announcer.announce(esito.prosa, priority: .alta)
+            self.focusRichiesto = id
+        }
+    }
     public func annulla(_ id: String) { service.cancelDownload(id) }
     public func riprova(_ id: String) { service.retry(id) }
-    public func chiediRimozione(_ id: String) { confermaRimozionePer = id }
+    public func chiediRimozione(_ id: String) {
+        confermaRimozionePer = id
+        richiediFocusSullaDomanda(id)
+    }
     public func confermaRimozione() {
         guard let id = confermaRimozionePer else { return }
         confermaRimozionePer = nil
@@ -100,17 +153,23 @@ public final class PanelViewModel: ObservableObject {
         case .nonScaricato:
             return entry.motore == .sistemaApple ? [.verificaSistema] : [.scarica]
         case .inScaricamento: return [.annulla]
-        case .scaricato: return [.rimuovi]
+        case .scaricato:
+            if let v = service as? ModelVerifying, v.puoVerificare(entry.id) {
+                return verificheInCorso.contains(entry.id) ? [] : [.verificaFunzionamento, .rimuovi]
+            }
+            return [.rimuovi]
         case .rimozioneInCorso: return []
         case .sistemaDisponibile, .sistemaNonDisponibile: return [.verificaSistema]
         case .errore(let e): return e.ammetteRiprova ? [.riprova] : (entry.motore == .sistemaApple ? [.verificaSistema] : [])
+        case .incluso, .nonDisponibileQui: return []
         }
     }
 
     public enum Azione: Equatable {
-        case scarica, annulla, rimuovi, riprova, verificaSistema
+        case scarica, annulla, rimuovi, riprova, verificaSistema, verificaFunzionamento
         public var etichetta: String {
             switch self {
+            case .verificaFunzionamento: return Testi.azioneVerificaFunzionamento
             case .scarica: return Testi.azioneScarica
             case .annulla: return Testi.azioneAnnulla
             case .rimuovi: return Testi.azioneRimuovi
@@ -124,7 +183,11 @@ public final class PanelViewModel: ObservableObject {
         // Il ruolo su cui l'utente lavora viene ricordato fra le sessioni (la vista vi riporta il focus all'apertura).
         if ruoloAperto != entry.ruolo { ruoloAperto = entry.ruolo }
         switch azione {
-        case .scarica, .verificaSistema: scarica(entry.id)
+        case .scarica:
+            // Scaricamento vero: prima la conferma con dimensione e fonte; strumenti di sistema e simulazione: subito.
+            if !service.isSimulation, entry.scaricamento != nil { chiediScaricamento(entry.id) } else { scarica(entry.id) }
+        case .verificaSistema: scarica(entry.id)
+        case .verificaFunzionamento: verifica(entry.id)
         case .annulla: annulla(entry.id)
         case .rimuovi: chiediRimozione(entry.id)
         case .riprova: riprova(entry.id)

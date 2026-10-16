@@ -28,6 +28,10 @@ public enum ModelState: Equatable, Sendable {
     case sistemaDisponibile
     case sistemaNonDisponibile
     case errore(ModelError)
+    /// Già incluso nell'app (niente da scaricare).
+    case incluso
+    /// La voce c'è nel catalogo, ma questa versione dell'app non la scarica ancora.
+    case nonDisponibileQui
 
     /// Lo stato in parole (è ciò che VoiceOver legge nel riassunto della voce).
     public var inParole: String {
@@ -39,6 +43,8 @@ public enum ModelState: Equatable, Sendable {
         case .sistemaDisponibile: return Testi.statoDisponibileSistema
         case .sistemaNonDisponibile: return Testi.statoNonDisponibileSistema
         case .errore(let e): return Testi.statoErrore(e.spiegazione)
+        case .incluso: return Testi.statoIncluso
+        case .nonDisponibileQui: return Testi.statoNonDisponibileQui
         }
     }
 }
@@ -52,6 +58,8 @@ public enum ModelError: Equatable, Sendable {
     case macNonCompatibile(requisiti: ModelRequirements)
     case strumentoSistemaNonDisponibile
     case sconosciuto
+    /// La fonte ufficiale ha risposto, ma senza consegnare il file (pagina inesistente, servizio fermo).
+    case fonteNonDisponibile
 
     public var spiegazione: String {
         switch self {
@@ -62,13 +70,15 @@ public enum ModelError: Equatable, Sendable {
         case .macNonCompatibile(let r): return Testi.erroreMacNonCompatibile(Testi.requisitiInParole(r))
         case .strumentoSistemaNonDisponibile: return Testi.erroreStrumentoSistemaNonDisponibile
         case .sconosciuto: return Testi.erroreSconosciuto
+        case .fonteNonDisponibile: return Testi.erroreFonteNonDisponibile
         }
     }
 
     /// Vero se la via d'uscita è «Riprova».
     public var ammetteRiprova: Bool {
         switch self {
-        case .spazioInsufficiente, .connessioneAssente, .scaricamentoInterrotto, .fileDanneggiato, .sconosciuto: return true
+        case .spazioInsufficiente, .connessioneAssente, .scaricamentoInterrotto, .fileDanneggiato, .sconosciuto,
+             .fonteNonDisponibile: return true
         case .macNonCompatibile, .strumentoSistemaNonDisponibile: return false
         }
     }

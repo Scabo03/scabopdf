@@ -1,48 +1,68 @@
-# ScaboMac — lo scheletro dell'app macOS di ScaboPDF (l'officina)
+# ScaboMac — l'app macOS di ScaboPDF (l'officina)
 
-Primo pezzo del prodotto Mac, nato nel giro «linea Mac» del 2026-10-05/06. Compila, si lancia, è progettato per
-la navigazione da tastiera e con VoiceOver (non ancora provata a orecchio), ed è costruito come pacchetto SwiftPM **fratello** dell'app iOS: dipende da `ScaboCore`
-(`../../ios/ScaboCore`) e non tocca `ScaboPDF.xcodeproj`.
+Nata come scheletro nel giro «linea Mac» del 2026-10-05/06 e costruita nel giro «costruzione della linea Mac» del
+2026-10-16: prepara la lettura di un PDF con la STESSA catena dell'iPad (ScaboChain, più l'innesto dei verdetti del
+modello d'impaginazione), la esporta in un pacchetto `.scabolettura` che l'iPad riceve (AirDrop o cavo), e ha il
+pannello dei modelli VERO (scaricamento reale di GLM-OCR, verifica, rimozione completa). È un pacchetto SwiftPM
+**fratello** dell'app iOS: dipende da `ScaboCore`, `ScaboChain` e `ScaboPageStructure` (`../../ios/`) e non tocca
+`ScaboPDF.xcodeproj`. Non è distribuita: si firma in locale.
 
 ## Come si compila, si prova e si apre
 
-- Test unitari: `swift test` (nella cartella di questo file). 35 test: catalogo e cataloghi malformati, stati del
-  servizio, annunci (testo e frequenza), anti-gergo, verifiche reali, accessibilità strutturale (2 saltati, vedi sotto).
-- App pronta da aprire: `scripts/build_app.sh` → `build/ScaboMac.app`, con sandbox attiva e firma locale
-  («Apple Development» se presente nel keychain, altrimenti ad hoc). Poi `open build/ScaboMac.app`.
-- Come la apre il maintainer: Finder → Vai alla cartella… → `~/Developer/scabopdf/app/macos/ScaboMac/build/` → `ScaboMac.app`.
-  Nella finestra: Cmd+Shift+M (o il pulsante) apre il pannello degli strumenti; è anche nelle Impostazioni (Cmd+,), scheda «Strumenti».
+- Prima volta: `scripts/prepara_llama.sh` mette llama.cpp (release ufficiale b11429 di ggml-org) in `Vendor/` (non
+  versionata) dopo averne verificato l'impronta pubblicata; lo scarica dalla release ufficiale, oppure usa uno zip già
+  scaricato indicato con `SCABOMAC_LLAMA_ZIP=<percorso>`.
+- Test unitari: `swift test` (nella cartella di questo file): catalogo, servizio vero (con file locali al posto della
+  rete), scaricatore (con un protocollo di prova al posto del server), annunci, anti-gergo, officina con un PDF
+  sintetico, catena. Saltati con il motivo: i due test strutturali delle viste (vedi sotto) e la lettura vera di GLM-OCR,
+  che gira solo con `SCABO_GLM_PESI=<cartella con i due file>` e verifica prima le impronte.
+- App da aprire: `scripts/build_app.sh [cartella]` → `<cartella>/ScaboMac.app` (predefinita `build/`): app con sandbox e
+  file scelti dall'utente, SENZA rete; servizio di scaricamento XPC con sandbox e la sola rete in uscita; llama.cpp in
+  `Contents/Frameworks`; firma locale («Apple Development» se presente, altrimenti ad hoc). Poi `open <cartella>/ScaboMac.app`.
+- Nella finestra: «Prepara la lettura di un PDF…»; poi «Invia all'iPad con AirDrop…» o «Salva il file per il cavo…». Cmd+Shift+M (o il
+  pulsante) apre il pannello degli strumenti; è anche nelle Impostazioni (Cmd+,), scheda «Strumenti».
+- Prova di laboratorio del pannello (mai per l'utente): avviare l'eseguibile con `-ScaboMacProvaPannello` scarica davvero
+  GLM-OCR, lo verifica sulla pagina di prova, lo rimuove, scrive un referto senza testo nel contenitore
+  (`Application Support/ScaboPDF per Mac/prova_pannello.json`) e chiude l'app.
 
 ## Struttura
 
 ```
-Package.swift                      SwiftPM, macOS 14+, dipendenza di percorso su ScaboCore
+Package.swift                      SwiftPM, macOS 14+
 Sources/ScaboMacKit/               libreria testabile
-  Catalogo/ModelCatalog.swift      tipi del catalogo (undici informazioni per voce), caricamento e validazione in prosa
-  Resources/catalogo.json          il catalogo versionato (schemaVersione 1, 11 voci, 3 ruoli)
-  Modelli/ModelService.swift       interfaccia del servizio + SimulatedModelService (dichiarata simulata) + spazio disco + compatibilità
-  Modelli/AppleSystemTools.swift   verifica REALE degli strumenti di sistema Apple (Vision, modello di linguaggio locale)
-  Annunci/Announcer.swift          interfaccia Announcing, annunciatore VoiceOver, registratore per i test, politica delle soglie
+  Catalogo/ModelCatalog.swift      tipi del catalogo, scaricamento dichiarato (repository, revisione, file, byte, impronte), validazione in prosa
+  Resources/catalogo.json          il catalogo versionato (schemaVersione 1)
+  Catena/                          la catena del Mac (MacProcessor = ScaboChain + innesto), l'officina, i casi del banco
+  Modelli/ModelService.swift       interfaccia del servizio, stati, problemi in prosa, SimulatedModelService (solo test), spazio disco
+  Modelli/RealModelService.swift   il servizio VERO: scaricamento, impronte, annullamento, rimozione, verifica
+  Modelli/ModelStore.swift         dove stanno i pesi (contenitore), parziali, segno di verifica, rimozione con le cache
+  Modelli/DownloadTransport.swift  trasporto XPC (produzione) e diretto (prove)
+  Modelli/ProvaPannello.swift      prova di laboratorio del pannello (solo con l'argomento esplicito)
+  Modelli/AppleSystemTools.swift   verifica REALE degli strumenti di sistema Apple
+  Annunci/Announcer.swift          annunciatore VoiceOver, registratore per i test, politica delle soglie
   Testi/Testi.swift                TUTTE le stringhe per l'utente + la lista del gergo vietato con i motivi
-  Viste/PanelViewModel.swift       stato del pannello, azioni per stato, focus dopo i cambi, preferenza del ruolo (KeyValueStore di ScaboCore)
-  Viste/ModelsPanelView.swift      pannello (ruoli = intestazioni, voci = gruppi con riassunto e azioni) + finestra principale
+  Viste/                           officina, pannello, modelli delle viste
+Sources/ScaboMacOCR/               GLM-OCR dentro l'app (llama.cpp) e la pagina di prova libera da diritti
+Sources/ScaricatoreProtocollo/     il protocollo fra l'app e il servizio di scaricamento, lo scaricatore in streaming
+Sources/ScaboMacScaricatore/       il servizio XPC di scaricamento (l'unico pezzo con la rete)
 Sources/ScaboMac/ScaboMacApp.swift punto d'ingresso: finestra, menu «Strumenti» con Cmd+Shift+M, Impostazioni
+Sources/scabomac-officina/         riga di comando per le reti e il banco (non entra nell'app)
 Tests/ScaboMacKitTests/            test unitari + cataloghi malformati in Fixtures/
-UITests/                           test XCUITest scritti ma NON eseguibili qui (vedi sotto)
-scripts/build_app.sh, Info.plist, ScaboMac.entitlements   assemblaggio del bundle con sandbox
+UITests/                           test XCUITest (vedi «Test d'interfaccia»)
+scripts/                           build_app.sh, prepara_llama.sh, genera_pagina_prova.swift, Info.plist e permessi
 ```
 
-## Cosa è reale e cosa è simulato
+## Che cosa è reale
 
-- **Simulato, e dichiarato tale nell'interfaccia** (`ModelService.isSimulation`, avviso in testa al pannello): lo
-  scaricamento (avanzamento a passi, nessuna rete, nessun file scritto), la rimozione, l'esecuzione dei modelli.
-- **Reale**: lo spazio libero sul disco (`DiskSpace`), la compatibilità del Mac (versione di sistema, processore
-  Apple), la disponibilità degli strumenti di sistema Apple (`AppleSystemTools`: Vision testo e documenti, modello
-  di linguaggio locale di Apple — mai la variante in cloud, che non è nominata né linkata).
-- **Gli stati di ogni voce**: non scaricato; in scaricamento con avanzamento e annullamento; scaricato; rimozione
-  con conferma e spazio liberato in parole; problema spiegato in prosa con la via d'uscita (spazio insufficiente,
-  connessione assente, scaricamento interrotto, file danneggiato, Mac non compatibile, strumento di sistema non
-  disponibile). Gli strumenti di sistema hanno in più «disponibile / non disponibile su questo Mac».
+- **Lo scaricamento** (voci con `scaricamento` nel catalogo, oggi GLM-OCR): domanda con dimensione, fonte e revisione;
+  byte dal repository ufficiale alla revisione fissata attraverso il servizio XPC; avanzamento annunciato; dimensione e
+  impronta controllate file per file; nulla di incompleto resta sul disco; la rimozione toglie tutto, cache del motore
+  comprese. I pesi stanno nel contenitore dell'app, mai nel pacchetto (la firma resta intatta).
+- **La verifica** («Verifica che funzioni»): GLM-OCR legge la pagina di prova inclusa e l'app misura l'accordo delle
+  parole con il testo atteso. Dentro la catena di elaborazione GLM-OCR resta un prototipo dichiarato (non entra nelle letture).
+- **Heron** è già incluso (lo usa la catena per tabelle, figure e indice analitico): niente da scaricare.
+- **Le voci senza scaricamento dichiarato** dicono «non ancora scaricabile da questa versione dell'app».
+- **Reali come prima**: spazio libero sul disco, compatibilità del Mac, disponibilità degli strumenti di sistema Apple.
 
 ## Accessibilità come requisito di costruzione
 
@@ -64,18 +84,15 @@ scripts/build_app.sh, Info.plist, ScaboMac.entitlements   assemblaggio del bundl
 - Annunci: avvio dello scaricamento, soglie 25/50/75 per cento, completamento, annullamento, rimozione con spazio
   liberato, ogni problema con la sua spiegazione; i cambi di stato una volta sola.
 
-## Test d'interfaccia: perché non girano qui
+## Test d'interfaccia: che cosa serve per farli girare
 
-Due prerequisiti mancano. (1) XCUITest richiede un bersaglio di test UI in un progetto Xcode: il pacchetto
-SwiftPM non può ospitarlo; i test sono scritti in `UITests/` per quando il progetto esisterà. (2) Su macOS i test
-UI richiedono la «modalità automazione», da abilitare a mano con autenticazione dell'amministratore:
-`automationmodetool enable-automationmode-without-authentication`. Senza, il runner si blocca e lascia un dialogo
-di sistema a schermo (accaduto il 2026-10-05). Ripiego adottato: test strutturale in-process
-(`AccessibilitaVisteTests`) che interroga l'albero NSAccessibility delle viste ospitate in una finestra — ma SwiftUI
-non costruisce quei nodi senza un cliente di accessibilità collegato, quindi i due test si dichiarano saltati con
-il motivo. **Quindi oggi nessun test che gira verifica la struttura delle viste**: l'accessibilità è verificata per
-lettura del codice e per i test unitari su testi, stati, azioni e annunci; l'ordine degli elementi è documentato qui
-sopra ed è da confermare a orecchio.
+Su macOS i test d'interfaccia (XCUITest) richiedono la «modalità automazione», che si abilita UNA volta con la password
+dell'amministratore: `automationmodetool enable-automationmode-without-authentication`. Senza, il runner si blocca e
+lascia un dialogo di sistema a schermo (accaduto il 2026-10-05): per questo i test non si lanciano da uno script senza
+quella abilitazione. Il comando completo per farli girare è nel referto del giro e in `UITests/ScaboMacUITests.swift`.
+Ripiego in-process (`AccessibilitaVisteTests`): SwiftUI non costruisce l'albero d'accessibilità senza un cliente
+collegato, quindi quei due test si dichiarano saltati con il motivo. Il percorso vero del pannello nell'app firmata è
+provato con `-ScaboMacProvaPannello` (sopra).
 
 ## Sistema minimo
 
@@ -88,7 +105,8 @@ Apple; macOS 14 copre chi non aggiorna spesso (tre versioni maggiori indietro ri
 
 Bundle `com.scabo.scabopdf.mac`: coerente con l'app iOS (`com.scabo.scabopdf`) ma distinto, perché aggiungere
 la piattaforma macOS allo STESSO record di App Store Connect diventa irreversibile dopo la prima approvazione
-(acquisto universale): la scelta spetta al maintainer e non va presa dal laboratorio. Oggi: firma locale, sandbox
-con il solo entitlement `app-sandbox`. Per distribuire servirà, a seconda del canale: App Store/TestFlight →
-record app (nuovo o piattaforma aggiunta), profilo, sandbox (già c'è), eventuale `network.client` quando lo
-scaricamento sarà reale; Developer ID → certificato Developer ID, hardened runtime (già attivo), notarizzazione.
+(acquisto universale): la scelta spetta al maintainer e non va presa dal laboratorio. Oggi: firma locale; app con
+sandbox e `files.user-selected.read-write`, SENZA rete; servizio di scaricamento `com.scabo.scabopdf.mac.scaricatore`
+con sandbox e `network.client`. Per distribuire servirà, a seconda del canale: App Store/TestFlight → record app (nuovo
+o piattaforma aggiunta), profili per l'app e per il servizio; Developer ID → certificato Developer ID, hardened
+runtime (già attivo), notarizzazione.

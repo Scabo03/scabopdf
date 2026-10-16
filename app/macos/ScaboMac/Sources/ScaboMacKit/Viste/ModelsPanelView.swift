@@ -125,14 +125,43 @@ struct CatalogEntryView: View {
             HStack {
                 ForEach(model.azioni(per: entry), id: \.self) { azione in
                     Button(azione.etichetta) { model.esegui(azione, su: entry) }
-                        .accessibilityHint(azione == .scarica ? Testi.azioneScaricaAiuto(entry.dimensioneInParole) : "")
+                        .accessibilityHint(aiuto(azione))
                         .accessibilityFocused($focusId, equals: entry.id)
                         .accessibilityIdentifier("azione.\(azione).\(entry.id)")
                 }
             }
+            if model.verificheInCorso.contains(entry.id) {
+                HStack {
+                    ProgressView().controlSize(.small).accessibilityHidden(true)
+                    Text(Testi.verificaInCorso)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("verifica.inCorso.\(entry.id)")
+            }
+            if let esito = model.esitiVerifica[entry.id] {
+                Text(esito)
+                    .font(.callout)
+                    .accessibilityIdentifier("verifica.esito.\(entry.id)")
+            }
+            if model.confermaScaricamentoPer == entry.id {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(model.domandaScaricamento(entry))
+                        .accessibilityFocused($focusId, equals: PanelViewModel.idDomanda(entry.id))
+                        .accessibilityIdentifier("conferma.scarica.domanda.\(entry.id)")
+                    HStack {
+                        Button(Testi.azioneScaricaConferma) { model.confermaScaricamento() }
+                            .accessibilityIdentifier("conferma.scarica.\(entry.id)")
+                        Button(Testi.azioneNo) { model.annullaScaricamentoChiesto() }
+                            .accessibilityIdentifier("conferma.scarica.no.\(entry.id)")
+                    }
+                }
+                .padding(8)
+                .background(Color(nsColor: .controlBackgroundColor))
+            }
             if model.confermaRimozionePer == entry.id {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(Testi.azioneRimuoviDomanda(entry.nome, entry.dimensioneInParole))
+                        .accessibilityFocused($focusId, equals: PanelViewModel.idDomanda(entry.id))
                     HStack {
                         Button(Testi.azioneRimuoviConferma) { model.confermaRimozione() }
                             .accessibilityIdentifier("conferma.rimuovi.\(entry.id)")
@@ -150,6 +179,14 @@ struct CatalogEntryView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(riassunto)
         .accessibilityIdentifier("voce.\(entry.id)")
+    }
+
+    private func aiuto(_ azione: PanelViewModel.Azione) -> String {
+        switch azione {
+        case .scarica: return Testi.azioneScaricaAiuto(entry.dimensioneInParole)
+        case .verificaFunzionamento: return Testi.azioneVerificaFunzionamentoAiuto
+        default: return ""
+        }
     }
 
     private var dettagli: some View {

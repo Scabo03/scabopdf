@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Il servizio di scaricamento (XPC dentro l'app): sandbox e SOLO la rete in uscita, per scaricare i pesi dei
+	     modelli dall'indirizzo ufficiale scritto nel catalogo. Non apre file suoi: scrive nel descrittore che l'app gli
+	     passa. Esce quando l'app chiude la connessione. -->
+	<key>com.apple.security.app-sandbox</key><true/>
+	<key>com.apple.security.network.client</key><true/>
+</dict>
+</plist>

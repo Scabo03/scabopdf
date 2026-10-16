@@ -53,12 +53,15 @@ public enum ModelEngine: String, Codable, CaseIterable, Sendable {
     case sistemaApple = "sistema_apple"
     /// Programma separato accanto all'app.
     case accantoAllApp = "accanto_all_app"
+    /// Già incluso nell'app (pesi nel pacchetto): niente da scaricare (giro del 2026-10-16: Heron).
+    case inclusoNellApp = "incluso_nell_app"
 
     public var nome: String {
         switch self {
         case .nativoNellApp: return Testi.motoreNativo
         case .sistemaApple: return Testi.motoreSistemaApple
         case .accantoAllApp: return Testi.motoreAccanto
+        case .inclusoNellApp: return Testi.motoreIncluso
         }
     }
 }
@@ -116,6 +119,26 @@ public struct ModelProvenance: Codable, Equatable, Sendable {
     }
 }
 
+/// Un file da scaricare, con la sua impronta pubblicata dalla fonte ufficiale.
+public struct ModelDownloadFile: Codable, Equatable, Sendable {
+    /// Nome del file nel contenitore dell'app (niente barre).
+    public var nome: String
+    /// Indirizzo ufficiale, con la revisione fissata (solo https).
+    public var indirizzo: String
+    public var byte: Int64
+    /// SHA-256 esadecimale pubblicato dalla fonte.
+    public var sha256: String
+    /// «pesi» o «proiettore» (per il motore).
+    public var ruolo: String
+}
+
+/// Come si scarica una voce (giro del 2026-10-16): repository e revisione ufficiali, file con dimensione e impronta.
+public struct ModelDownloadSpec: Codable, Equatable, Sendable {
+    public var repository: String
+    public var revisione: String
+    public var file: [ModelDownloadFile]
+}
+
 /// Una voce del catalogo: le undici informazioni richieste.
 public struct CatalogEntry: Codable, Equatable, Sendable, Identifiable {
     public var id: String
@@ -130,12 +153,15 @@ public struct CatalogEntry: Codable, Equatable, Sendable, Identifiable {
     public var validazione: ValidationStatus
     public var provenienza: ModelProvenance
     public var provvisoria: Bool
+    /// Come si scarica DAVVERO (assente = la voce non si scarica da questa versione dell'app).
+    public var scaricamento: ModelDownloadSpec?
 
     public init(
         id: String, nome: String, ruolo: ModelRole, descrizione: String, dimensioneByte: Int64,
         licenza: String, motore: ModelEngine, requisiti: ModelRequirements, funzionaSenzaInternet: Bool,
-        validazione: ValidationStatus, provenienza: ModelProvenance, provvisoria: Bool
+        validazione: ValidationStatus, provenienza: ModelProvenance, provvisoria: Bool, scaricamento: ModelDownloadSpec? = nil
     ) {
+        self.scaricamento = scaricamento
         self.id = id; self.nome = nome; self.ruolo = ruolo; self.descrizione = descrizione
         self.dimensioneByte = dimensioneByte; self.licenza = licenza; self.motore = motore
         self.requisiti = requisiti; self.funzionaSenzaInternet = funzionaSenzaInternet
@@ -231,6 +257,9 @@ public enum CatalogLoader {
             if entry.dimensioneByte < 0 || (entry.dimensioneByte == 0 && entry.motore != .sistemaApple) {
                 throw CatalogError(Testi.catalogoVoceDimensioneNonValida(entry.nome))
             }
+            if let spec = entry.scaricamento {
+                try validateDownload(spec, entry: entry)
+            }
             guard let url = URL(string: entry.provenienza.indirizzo), url.scheme == "https", url.host != nil else {
                 throw CatalogError(Testi.catalogoVoceProvenienzaNonValida(entry.nome))
             }
@@ -238,6 +267,25 @@ public enum CatalogLoader {
                 throw CatalogError(Testi.catalogoVoceSenzaVersione(entry.nome))
             }
         }
+    }
+}
+
+extension CatalogLoader {
+    /// Le regole di uno scaricamento vero: dal dominio ufficiale in https con la revisione fissata, nomi senza barre,
+    /// impronte di 64 cifre esadecimali, dimensioni positive la cui somma è la dimensione dichiarata della voce.
+    static func validateDownload(_ spec: ModelDownloadSpec, entry: CatalogEntry) throws {
+        guard !spec.file.isEmpty, spec.revisione.count >= 7 else { throw CatalogError(Testi.catalogoScaricamentoNonValido(entry.nome)) }
+        let hex = CharacterSet(charactersIn: "0123456789abcdef")
+        var totale: Int64 = 0
+        for f in spec.file {
+            guard let url = URL(string: f.indirizzo), url.scheme == "https", url.host == "huggingface.co",
+                  f.indirizzo.contains(spec.revisione), !f.nome.isEmpty, !f.nome.contains("/"), !f.nome.hasPrefix("."),
+                  f.byte > 0, f.sha256.count == 64, f.sha256.unicodeScalars.allSatisfy({ hex.contains($0) }) else {
+                throw CatalogError(Testi.catalogoScaricamentoNonValido(entry.nome))
+            }
+            totale += f.byte
+        }
+        guard totale == entry.dimensioneByte else { throw CatalogError(Testi.catalogoScaricamentoNonValido(entry.nome)) }
     }
 }
 

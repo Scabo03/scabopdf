@@ -1,6 +1,6 @@
 {
   "schemaVersione": 1,
-  "aggiornatoIl": "2026-10-06",
+  "aggiornatoIl": "2026-10-16",
   "voci": [
     {
       "id": "apple-vision-testo",
@@ -85,8 +85,8 @@
       "id": "glm-ocr",
       "nome": "GLM lettura pagine",
       "ruolo": "lettore_scansioni",
-      "descrizione": "Lettore di pagine scansionate pensato per i documenti. Licenza pulita. Lingue e qualità sull'italiano non verificate.",
-      "dimensioneByte": 1430000000,
+      "descrizione": "Lettore di pagine pensato per i documenti: legge il testo di una pagina anche quando il PDF non ne ha o lo ha guasto. Gira dentro l'app, senza programmi separati e senza internet; si scarica una volta dall'indirizzo ufficiale e l'app ne controlla l'impronta. Dentro l'elaborazione dei libri è ancora un prototipo.",
+      "dimensioneByte": 1434837056,
       "licenza": "MIT: libero anche per uso commerciale.",
       "motore": "nativo_nell_app",
       "requisiti": {
@@ -97,14 +97,36 @@
       },
       "funzionaSenzaInternet": true,
       "validazione": {
-        "nonMisurato": {}
+        "validato": {
+          "numeri": "banco del laboratorio di lettura delle scansioni (22 pagine): sulle pagine di cui il PDF contiene già il testo, concorda con quel testo nel 96,4 per cento delle parole, circa 8 secondi a pagina; il tasto «Verifica che funzioni» lo prova su questo Mac con una pagina di prova inclusa."
+        }
       },
       "provenienza": {
-        "indirizzo": "https://huggingface.co/zai-org/GLM-OCR",
-        "versione": "pesi ufficiali dell'editore",
-        "editore": "Zhipu AI"
+        "indirizzo": "https://huggingface.co/ggml-org/GLM-OCR-GGUF",
+        "versione": "revisione 65a42de1 del 10 marzo 2026",
+        "editore": "ggml-org (conversione dei pesi ufficiali di Zhipu AI)"
       },
-      "provvisoria": true
+      "provvisoria": true,
+      "scaricamento": {
+        "repository": "ggml-org/GLM-OCR-GGUF",
+        "revisione": "65a42de1148dbed2297e922b5dbc7d9b70c36578",
+        "file": [
+          {
+            "nome": "GLM-OCR-Q8_0.gguf",
+            "indirizzo": "https://huggingface.co/ggml-org/GLM-OCR-GGUF/resolve/65a42de1148dbed2297e922b5dbc7d9b70c36578/GLM-OCR-Q8_0.gguf",
+            "byte": 950433408,
+            "sha256": "45bc244a6446aff850521dc41f18bc8d7105ad5f0c2c8c28af04e7cc4f4d50b1",
+            "ruolo": "pesi"
+          },
+          {
+            "nome": "mmproj-GLM-OCR-Q8_0.gguf",
+            "indirizzo": "https://huggingface.co/ggml-org/GLM-OCR-GGUF/resolve/65a42de1148dbed2297e922b5dbc7d9b70c36578/mmproj-GLM-OCR-Q8_0.gguf",
+            "byte": 484403648,
+            "sha256": "9c4b58e33e316ed142eb5dcb41abec3844d3e6e5dc361ffb782c3fa9d175141f",
+            "ruolo": "proiettore"
+          }
+        ]
+      }
     },
     {
       "id": "apple-vision-documenti",
@@ -162,12 +184,12 @@
     },
     {
       "id": "docling-layout-heron",
-      "nome": "Struttura di pagina di docling (versione nativa)",
+      "nome": "Struttura di pagina di docling (Heron)",
       "ruolo": "ricostruttore_struttura_ordine",
-      "descrizione": "La parte di docling che riconosce le zone della pagina, in una forma che potrebbe girare dentro l'app senza programmi separati. Ancora da provare.",
+      "descrizione": "La parte di docling che riconosce le zone della pagina (titoli, note, tabelle, figure), convertita per girare dentro l'app. È già inclusa: niente da scaricare. L'app la usa per riconoscere tabelle e figure e, sul Mac, per l'indice analitico.",
       "dimensioneByte": 171000000,
       "licenza": "Apache 2.0: libero anche per uso commerciale.",
-      "motore": "nativo_nell_app",
+      "motore": "incluso_nell_app",
       "requisiti": {
         "macOSMinimo": "14.0",
         "richiedeAppleSilicon": true,
@@ -176,16 +198,16 @@
       },
       "funzionaSenzaInternet": true,
       "validazione": {
-        "provaNonEseguita": {
-          "motivo": "il caricamento dentro l'app non è stato eseguito in questo giro, per decisione del maintainer dopo l'incidente del 5 ottobre 2026; rinviato a un giro dedicato."
+        "validato": {
+          "numeri": "giro «struttura nativa»: identica a docling sul banco (35 pagine su 35 nello stesso ordine), 44 millisecondi a pagina; sul Mac verdetti identici a quelli del laboratorio su 131 pagine del giro del 16 ottobre 2026."
         }
       },
       "provenienza": {
-        "indirizzo": "https://huggingface.co/docling-project/docling-layout-heron-onnx",
-        "versione": "versione del 2026-03-31",
+        "indirizzo": "https://huggingface.co/docling-project/docling-layout-heron",
+        "versione": "conversione Core ML in precisione piena (fp32) della versione ufficiale",
         "editore": "Progetto Docling"
       },
-      "provvisoria": true
+      "provvisoria": false
     },
     {
       "id": "apple-modello-di-sistema",

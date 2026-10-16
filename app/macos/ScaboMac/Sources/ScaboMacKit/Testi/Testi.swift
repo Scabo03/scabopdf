@@ -47,6 +47,7 @@ public enum Testi {
     public static let motoreNativo = "dentro l'app"
     public static let motoreSistemaApple = "strumento di sistema Apple"
     public static let motoreAccanto = "programma accanto all'app"
+    public static let motoreIncluso = "già incluso nell'app"
 
     // MARK: Validazione
 
@@ -63,6 +64,8 @@ public enum Testi {
     public static func statoInScaricamento(_ percento: Int) -> String { "scaricamento in corso, \(percento) per cento" }
     public static let statoRimozioneInCorso = "rimozione in corso"
     public static func statoErrore(_ spiegazione: String) -> String { "problema: \(spiegazione)" }
+    public static let statoIncluso = "già incluso nell'app, niente da scaricare"
+    public static let statoNonDisponibileQui = "non ancora scaricabile da questa versione dell'app"
 
     // MARK: Azioni
 
@@ -77,6 +80,28 @@ public enum Testi {
     public static let azioneNo = "No, lascia"
     public static let azioneRiprova = "Riprova"
     public static let azioneVerificaSistema = "Verifica se è disponibile"
+    public static let azioneVerificaFunzionamento = "Verifica che funzioni"
+    public static let azioneVerificaFunzionamentoAiuto =
+        "Legge una pagina di prova inclusa nell'app, libera da diritti, e dice se il testo letto è quello giusto"
+    public static let azioneScaricaConferma = "Scarica adesso"
+    public static func azioneScaricaDomanda(_ nome: String, _ dimensione: String, _ editore: String, _ revisione: String) -> String {
+        "Scaricare «\(nome)»? Occupa \(dimensione) sul disco, dentro lo spazio riservato all'app. Arriva dall'indirizzo "
+            + "ufficiale di \(editore) (revisione \(revisione)) e alla fine l'app ne controlla l'impronta: se non coincide con "
+            + "quella pubblicata, il file si cancella. Lo scaricamento passa da un piccolo servizio separato, l'unico che usa "
+            + "internet, che si chiude appena ha finito; l'app non si collega a internet."
+    }
+    public static let verificaInCorso = "verifica in corso: legge la pagina di prova"
+    public static func annuncioVerificaAvviata(_ nome: String) -> String { "Verifica di \(nome) in corso: legge una pagina di prova." }
+    public static func esitoVerificaRiuscita(_ percento: Int, _ secondi: Int) -> String {
+        "Verifica riuscita: il lettore ha letto la pagina di prova e il \(percento) per cento delle parole coincide con il "
+            + "testo atteso. Ci ha messo \(secondi) secondi, sul solo Mac, senza internet."
+    }
+    public static func esitoVerificaDebole(_ percento: Int) -> String {
+        "Il lettore ha letto la pagina di prova, ma solo il \(percento) per cento delle parole coincide con il testo atteso: "
+            + "qualcosa non va. Rimuovilo e scaricalo di nuovo; se succede ancora, segnalalo."
+    }
+    public static let esitoVerificaFallita =
+        "La verifica non è riuscita: il lettore non è partito. Rimuovilo e scaricalo di nuovo; se succede ancora, segnalalo."
     public static let simulato = "simulato"
     public static let voceProvvisoria = "voce provvisoria"
     public static let vociProvvisorieSpiegazione = "Le voci segnate come provvisorie potrebbero cambiare o sparire nelle prossime versioni."
@@ -146,6 +171,13 @@ public enum Testi {
         + "o dal fatto che Apple Intelligence sia spenta nelle Impostazioni di Sistema."
     public static let erroreSconosciuto =
         "Si è verificato un problema inatteso durante l'operazione. Nulla è stato cambiato; puoi riprovare."
+    public static let erroreFonteNonDisponibile =
+        "La fonte ufficiale ha risposto, ma non ha consegnato il file: potrebbe essere ferma per qualche ora o averlo "
+        + "spostato. Nulla è rimasto sul disco. Premi Riprova più tardi; se succede ancora, serve un aggiornamento dell'app."
+    public static func catalogoScaricamentoNonValido(_ nome: String) -> String {
+        "Nel catalogo, la voce «\(nome)» dichiara uno scaricamento non valido (indirizzo, dimensione o impronta): l'app non "
+            + "la scarica. Serve un catalogo corretto, cioè un aggiornamento dell'app."
+    }
 
     // MARK: Annunci VoiceOver
 
@@ -248,13 +280,14 @@ public enum Testi {
         [nomeApp, finestraTitolo, finestraSpiegazione1, finestraSpiegazione2, apriPannello, apriPannelloAiuto, menuStrumenti,
          impostazioniScheda, simulazioneAvviso, ruoloLettoreScansioni, ruoloRicostruttore, ruoloRicucitore,
          ruoloLettoreScansioniSpiegazione, ruoloRicostruttoreSpiegazione, ruoloRicucitoreSpiegazione, motoreNativo,
-         motoreSistemaApple, motoreAccanto, validatoPrefisso, nonMisurato, provaNonEseguitaPrefisso, statoNonScaricato,
+         motoreSistemaApple, motoreAccanto, motoreIncluso, statoIncluso, statoNonDisponibileQui, azioneVerificaFunzionamento,
+         azioneVerificaFunzionamentoAiuto, azioneScaricaConferma, verificaInCorso, esitoVerificaFallita, validatoPrefisso, nonMisurato, provaNonEseguitaPrefisso, statoNonScaricato,
          statoScaricato, statoDisponibileSistema, statoNonDisponibileSistema, statoRimozioneInCorso, azioneScarica,
          azioneAnnulla, azioneRimuovi, azioneRimuoviConferma, azioneNo, azioneRiprova, azioneVerificaSistema, simulato,
          voceProvvisoria, vociProvvisorieSpiegazione, dettaglioDescrizione, dettaglioLicenza, dettaglioMotore,
          dettaglioRequisiti, dettaglioOffline, dettaglioValidazione, dettaglioProvenienza, offlineSi, offlineNo,
          dimensioneNessunoSpazio, spazioLiberoSconosciuto, dettagliPulsante, dettagliAiutoApri, dettagliAiutoChiudi, erroreConnessioneAssente, erroreScaricamentoInterrotto,
-         erroreFileDanneggiato, erroreStrumentoSistemaNonDisponibile, erroreSconosciuto, catalogoAssente, catalogoIllegibile,
+         erroreFileDanneggiato, erroreStrumentoSistemaNonDisponibile, erroreSconosciuto, erroreFonteNonDisponibile, catalogoAssente, catalogoIllegibile,
          catalogoMalformato, catalogoVuoto, preparaLettura, preparaLetturaAiuto, pannelloApriMessaggio, pannelloApriPulsante,
          statoInAttesa, annullaElaborazione, faseApertura, annuncioElaborazioneAnnullata, includiAnnotazioni,
          includiAnnotazioniAiuto, annotazioniAssenti, inviaAirDrop, inviaAirDropAiuto, salvaPerCavo, salvaPerCavoAiuto,
