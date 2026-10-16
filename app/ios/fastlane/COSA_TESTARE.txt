@@ -1,23 +1,19 @@
-Build 54 — letture preparate sul Mac
+Build 55 — le note lunghe a pezzi
 
 Cosa è cambiato
-- L'iPad, e anche l'iPhone, può ricevere un libro già elaborato da ScaboPDF per Mac. È un file solo, che finisce in «.scabolettura», e non contiene il PDF: solo la lettura. Arriva in uno di questi modi: con AirDrop; dall'app File; con «Apri con» da un'altra app; con il cavo, dal Finder del Mac: scegli l'iPad, apri la scheda dei file e trascina il file sull'app.
-- Sull'iPad non serve fare altro. Se non stai leggendo e l'app non sta elaborando un libro, la proposta si apre da sola appena il file arriva. Se invece stai leggendo, o è aperta un'altra schermata, non si interrompe nulla: l'app ti dice che è arrivata una lettura e la trovi nella Home, alla riga «Una lettura arrivata dal Mac».
-- L'app cerca in libreria lo stesso libro (lo riconosce dal contenuto del PDF, non dal nome) e propone «Lettura migliore disponibile», dicendo che cosa arriva e da dove. Per accettare tocca «Usa la lettura del Mac…» e poi conferma con il pulsante che compare nella stessa scheda; «Non ora» la lascia da parte; «Togli questa lettura dall'iPad…», confermato, la cancella e il libro resta com'è.
-- La lettura di prima resta sul dispositivo: dopo aver accettato scegli fra «Tieni la nuova lettura», «Torna alla lettura precedente» e «Decidi più tardi».
-- Segnalibri e sottolineature che hai già su quel libro seguono il testo nella lettura nuova, anche dentro le note lunghe, che il Mac divide in parti. Se il file del Mac porta anche delle annotazioni, si uniscono alle tue senza doppioni e senza perdite: quello che l'app non ritrova con sicurezza finisce in «da ricollocare», mai cancellato.
-- Se hai più copie dello stesso libro, l'app chiede a quale applicarla. Se il libro non è in libreria, te lo dice e propone di importare il PDF. Se il file è rovinato, o viene da una versione del Mac più nuova di questa app, te lo spiega e non cambia nulla.
-- Per ora ScaboPDF per Mac non è distribuito: queste letture le prepara soltanto chi sviluppa l'app. Se non ricevi file dal Mac, per te non cambia nulla.
-
-Altre correzioni
-- Su iPhone il selettore del layout nella barra di lettura non si accorcia più in «L…»: la barra va su due righe (su tre con il testo molto grande) e il nome del layout si legge per intero.
-- Se durante l'importazione di un libro la memoria non basta per riconoscere tabelle e figure, l'importazione va avanti lo stesso, senza chiudersi: il libro si legge tutto, e nella Home la riga «Lettura migliore disponibile» propone più tardi di riprovare a riconoscerle.
+- Le note lunghe ora si leggono a pezzi, uno alla volta, come già avveniva per i testi normativi. Vale per ogni libro che l'iPad (o l'iPhone) prepara da sé da un PDF: le note sono divise come nelle letture che arrivano dal Mac.
+- Il primo pezzo si annuncia come la nota intera: con il suono della nota, oppure con le parole «Nota», «Nota lunga» o «Nota molto lunga» se hai acceso «Annuncia le note a voce». Gli altri pezzi seguono subito dopo, senza annuncio. Scorrendo passi al pezzo seguente; puoi tornare al pezzo di prima e riascoltarlo.
+- Se una nota ha «Vai al testo del richiamo», ora c'è su ogni suo pezzo, non solo sul primo. Dal testo, «Vai alla nota» porta all'inizio della nota.
+- Se hai acceso «Riquadro visivo per le note», il riquadro tiene insieme tutti i pezzi della nota.
 
 Quali libri
-- Senza file dal Mac la lettura di ogni libro è identica alla build 53, verificato su tutti i volumi di prova con iOS 26 e iOS 27. L'unica eccezione è il caso della memoria scarsa descritto sopra.
+- Cambiano solo i libri con note più lunghe di circa 400 caratteri; nei libri molto grandi, come i codici, solo le note oltre circa 1.200 caratteri. Sui 52 libri di prova ne cambiano 29: circa 5.400 note sono ora divise in pezzi.
+- Il testo letto non cambia di una lettera: le note sono solo divise, nello stesso ordine. Verificato su tutti i libri di prova con iOS 26 e iOS 27.
 
 Per i libri già aperti
-- Restano letti come prima.
+- Ricevono la novità con l'offerta «Lettura migliore disponibile», nella Home e fra le opzioni del libro: tocca «Rielabora…» e conferma. La lettura di prima resta sul dispositivo finché non scegli «Tieni la nuova lettura»; puoi anche scegliere «Torna alla lettura precedente» o «Decidi più tardi». L'offerta compare anche per i libri senza note lunghe: lì, come dice l'offerta stessa, la nuova lettura resta uguale.
+- Segnalibri e sottolineature restano al loro posto, anche dentro le note lunghe: l'app li ritrova nel testo nuovo. Una sottolineatura che ora cade su due pezzi resta intera. Se l'app non ritrovasse qualcosa con sicurezza, te lo dice e non cancella nulla: un segnalibro resta «da ricollocare» in fondo alla lista dei segnalibri; una sottolineatura resta salvata ma non si vede, e riappare se torni alla lettura precedente.
+- I libri con una lettura arrivata dal Mac avevano già le note a pezzi: per loro questa offerta non compare.
 
 Una cosa da notare
-- Se ti arriva un file dal Mac: dicci se la riga nella Home si trova subito e se la conferma nella stessa scheda è chiara con VoiceOver.
+- Ascolta qualche nota lunga e dicci se i pezzi ti sembrano tagliati nel punto giusto, e se alla fine della nota ti manca un segnale che la chiuda.
