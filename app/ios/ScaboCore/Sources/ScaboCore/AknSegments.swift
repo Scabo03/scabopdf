@@ -51,7 +51,7 @@ func aknIsPunctuationOnly(_ text: String) -> Bool {
 //
 // Fino alla build 55 il meccanismo accumulava frasi intere fino alla soglia e, se una frase superava la soglia, la
 // tagliava a PAROLA: un confine su tre cadeva dentro una frase, spesso subito dopo un'abbreviazione («n. | 1234»), lo
-// spezzatore di frasi chiudeva la frase dopo una sigla di iniziali («X.Y. | Cognome»: 690 confini nel corpus) e restavano
+// spezzatore di frasi chiudeva la frase dopo una sigla di iniziali («X.Y. | Cognome»: 709 confini nel corpus) e restavano
 // 1.140 pezzi sotto i 40 caratteri. La regola nuova, misurata sulle 5.246 note frazionate dei 52 volumi:
 //   1. le frasi sono quelle dello spezzatore del corpo (`splitIntoSentences`, che resta com'è), con due regole in più che
 //      valgono solo qui: una sigla di iniziali multiple («X.Y.») non chiude la frase, e nemmeno le abbreviazioni delle
@@ -67,8 +67,8 @@ func aknIsPunctuationOnly(_ text: String) -> Bool {
 // solo la corsa di spazi del taglio, così la nota si ricompone esattamente.
 // Perché 1,5 T e non la soglia secca: le celle del corpo superano già la soglia quando una frase è lunga, perché la frase
 // intera vince sulla soglia (alla granularità 400 il 5 % dei blocchi del corpo supera i 667 caratteri); con 1,5 T i pezzi
-// di nota restano sotto quei valori (al più 600 caratteri alla granularità 400) e i confini a fine frase passano dal 59 al
-// 78 % circa, quelli dentro una frase cadono su un punto e virgola, due punti o una virgola, i confini dopo le iniziali e
+// di nota restano sotto quei valori (al più 600 caratteri alla granularità 400) e i confini a fine frase passano dal 58 al
+// 77 %, quelli dentro una frase cadono su un punto e virgola, due punti o una virgola, i confini dopo le iniziali e
 // dopo un'abbreviazione vanno a zero e i pezzi sotto i 40 caratteri quasi spariscono. Finestre più larghe (1,75 T, 2 T)
 // darebbero più fini di frase ma celle più alte di quelle del corpo: la granularità scelta resta il riferimento.
 

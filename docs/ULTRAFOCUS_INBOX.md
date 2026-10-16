@@ -447,8 +447,8 @@ volumi. Strato: STRUTTURALE (ordine).
 
 - **Aggiornamento 2026-10-16 sera (giro «cura delle note»).** Per questa causa i codici restano ESCLUSI dalla ricucitura
   fra pagine contigue (decisione del maintainer del giro): l'interfoliazione delle due colonne fa fabbricare parole a ogni
-  ricucitura per identità. Nei codici cambiano solo i confini dei pezzi di 5 note lunghe (Parte 2 del giro), con lettere e
-  cifre identiche; restano circa 219 note spezzate vere aperte (stima), materia di questa voce.
+  ricucitura per identità. Nei codici cambiano solo i pezzi di 7 note lunghe (Parte 2 del giro; 2 di esse ora restano intere),
+  con lettere e cifre identiche; restano circa 219 note spezzate vere aperte (stima), materia di questa voce.
 ### D.7 Titoli di paragrafo non riconosciuti — ✅ CHIUSA (2026-10-05 numerati; 2026-10-07 dispense, build 49)
 
 Dal resoconto d'uso del maintainer (il difetto «più intollerabile»): causa prima il canale
@@ -483,6 +483,18 @@ titolo al livello della parola-chiave prima dei titoli numerati, più il livello
 ritrovati 2.814 → 3.578 col metro «a unità» (`docs/TITOLI_MONOTIPOGRAFICI.md` § 6). Da fare con la verifica sulla
 pagina livello per livello e col metro corretto. Il tetto H4 reale (cinque livelli) chiede una decisione: quinto
 livello = schema. **Strato: STRUTTURALE**, tutto on-device.
+
+### D.11 Il salto «Vai al testo del richiamo» manca per i richiami fra parentesi — APERTA (preesistente, 2026-10-16)
+
+Trovato dalla revisione indipendente del giro «cura delle note». Il riconoscimento del richiamo nel corpo
+(`containsCallNumber` in `NoteJump.swift`) vuole il numero subito dopo una parola o una chiusura («…parola 50»,
+«…» 2»); un richiamo scritto fra parentesi tonde, con la parentesi aperta subito prima del numero, non è mai
+riconosciuto: la nota non ha il salto al suo richiamo, né «Vai alla nota» dal testo. Si vede nei volumi che stampano i
+richiami così (Mandrioli-Carratta: secondo la stima della revisione nessuna delle 228 note ricucite dei volumi 3 e 4 ha il
+salto; nel banco della vista del giro, 7 note su 22 senza richiamo legato). Il difetto c'era già nella build 55; la
+ricucitura non lo cambia. Cura possibile: ammettere la parentesi aperta prima del numero quando la chiude subito dopo,
+con le stesse esclusioni di abbreviazione («art. (5)» no); da misurare sul corpus con la rete dei salti
+(`verifica-salti`).
 
 ### D.8 Linea Mac — scheletro dell'app, parità fra sistemi, decisioni pendenti (2026-10-06; ramo fuso in main il 2026-10-16)
 
