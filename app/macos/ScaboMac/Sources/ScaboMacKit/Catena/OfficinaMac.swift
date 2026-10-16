@@ -15,16 +15,19 @@
 //  Heron su due fenomeni, su pagine scelte a mano; qui le pagine le sceglie l'app, con SEGNALI SUOI GIÀ IN PRODUZIONE,
 //  e il modello conferma. Nel dubbio non si tocca: dove i segnali dell'app e il modello non concordano, niente.
 //
-//  * Indice analitico (banco: indice del Codice penale). Pagine dell'indice ANALITICO recintato che il back-matter
-//    dell'app già riconosce (titolo «Indice analitico/alfabetico» nella regione finale, pagine fortemente strutturate a
-//    indice: `analyticalIndexPages`), con nodi NOTE; il modello gira su quelle pagine; dove non vede alcuna nota, i nodi
-//    NOTE senza marcatore diventano corpo (rietichettatura slot-preserving, guardia-marcatore).
-//  * Nota che scavalca la pagina (banco: MULTIPAGE di Lineamenti). Coppie A→B in cui la PRIMA nota di B non apre con un
-//    marcatore e CONTINUA l'ultima nota di A secondo il predicato di ricucitura dell'app (`officinaNoteTailContinuesHead`:
-//    la testa resta aperta — virgola, lettera, trattino, abbreviazione che attende un numero — e la coda comincia in
-//    minuscolo o con una cifra, mai con il marcatore di una nota nuova: anti-fusione); il modello gira su B e la coda
-//    è il suo primo elemento di nota, senza marcatore; le righe della coda vanno in coda ad A (livello d'estrazione) e
-//    il documento si ricostruisce con la stessa classificazione.
+//  * Indice analitico (banco: indice del Codice penale). Pagine della regione di coda fortemente strutturate a indice
+//    che portano il titolo o la testatina «Indice analitico/alfabetico» (`officinaAnalyticalIndexPages`: gli strumenti
+//    del back-matter dell'app, ma la testatina conta anche se è mobilia e il titolo anche se porta il richiamo di una
+//    nota), con nodi NOTE; il modello gira su quelle pagine; dove non vede alcuna nota, i nodi NOTE senza marcatore
+//    diventano corpo (rietichettatura slot-preserving, guardia-marcatore).
+//  * Nota che scavalca la pagina (banco: MULTIPAGE di Lineamenti) — SPENTA nella politica del giro (`.giro`), dopo la
+//    rete sui 52 volumi. La scelta delle coppie col predicato di ricucitura dell'app (`officinaNoteTailContinuesHead`)
+//    seleziona proprio le note che l'app GIÀ ricuce da sé nell'aggancio delle note (`NoteBinding`): lì l'innesto non
+//    serve. E il riconoscimento delle righe della coda per contenimento del testo normalizzato (porto fedele del banco,
+//    righe di almeno 10 lettere) a quella scala sposta anche righe di CORPO che il testo della nota contiene per caso
+//    («dimento amministrativo.» dentro una nota che cita il «provvedimento amministrativo»): giunture sbagliate e cifre
+//    perse in 4 volumi su 17. Il codice resta (`multipageStitch: true`) per il banco; la strada per riaccenderla è nel
+//    referto del giro: coppie in cui l'app NON ricuce e righe riconosciute per geometria (riquadro del modello).
 //
 //  Sempre la rete di fedeltà del fusore (multinsieme delle parole identico). I referti non portano testo.
 //
@@ -46,8 +49,11 @@ public struct OfficinaPolicy: Equatable, Sendable {
         self.multipageStitch = multipageStitch
     }
 
-    public static let giro = OfficinaPolicy()
+    /// La politica del giro: solo l'indice analitico (la ricucitura fra pagine è spenta: vedi la testata del file).
+    public static let giro = OfficinaPolicy(analyticalIndexRelabel: true, multipageStitch: false)
     public static let spenta = OfficinaPolicy(analyticalIndexRelabel: false, multipageStitch: false)
+    /// Banco: anche la ricucitura fra pagine (non usata dall'app).
+    public static let banco = OfficinaPolicy(analyticalIndexRelabel: true, multipageStitch: true)
 
     public var isOff: Bool { !analyticalIndexRelabel && !multipageStitch }
 }
@@ -60,6 +66,8 @@ public struct OfficinaReport: Codable, Equatable, Sendable {
     public var stitches: [[Int]] = []
     public var relabels = 0
     public var relabelPages: [Int] = []
+    /// Gli id dei nodi rietichettati (nessun testo): per il confronto con le operazioni del banco.
+    public var relabelNodes: [String] = []
     public var fidelityBroken = false
     public var modelUnavailable = false
     public var notes: [String] = []
@@ -140,7 +148,7 @@ public final class OfficinaGraft: ChainGraft {
         // 1. Candidati dai segnali dell'app.
         let notes = Self.notesByPage(rawDocument)
         let indexPages = policy.analyticalIndexRelabel
-            ? analyticalIndexPages(extraction).map { $0 + 1 }.filter { notes[$0] != nil } : []
+            ? officinaAnalyticalIndexPages(extraction).map { $0 + 1 }.filter { notes[$0] != nil } : []
         let pairs = policy.multipageStitch ? Self.multipageCandidates(rawDocument) : []
         report.indexPages = indexPages
         report.multipageCandidates = pairs.map { [$0.a, $0.b] }
@@ -196,7 +204,10 @@ public final class OfficinaGraft: ChainGraft {
             report.relabels = out.operations.count
             var pages = Set<Int>()
             for op in out.operations {
-                if case .relabel(_, _, _, let reason) = op, let n = Int(reason.split(separator: ".").last ?? "") { pages.insert(n) }
+                if case .relabel(let node, _, _, let reason) = op {
+                    report.relabelNodes.append(node)
+                    if let n = Int(reason.split(separator: ".").last ?? "") { pages.insert(n) }
+                }
             }
             report.relabelPages = pages.sorted()
         }

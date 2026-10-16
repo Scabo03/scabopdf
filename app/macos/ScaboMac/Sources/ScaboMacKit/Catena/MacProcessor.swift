@@ -107,6 +107,7 @@ public enum MacProcessor {
             producer: producer,
             source: .init(sha256: ready.sha256, fileName: ready.fileName, title: ready.title, pageCount: ready.pageCount),
             reading: ready.reading, cacheFormat: ReadingAssembly.cacheFormatVersion, workshop: ready.workshop,
+            stitchedNotes: ready.report.stitches.count, relabeledIndexLines: ready.report.relabels,
             annotations: annotations)
     }
 }

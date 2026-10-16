@@ -1270,24 +1270,6 @@ func isWeaklyBackMatterIndexStructured(_ content: [LineSummary]) -> Bool {
 func detectBackMatterApparatus(
     _ extraction: PdfExtraction, _ furniture: Set<String>
 ) -> [Int: SemanticCategory] {
-    var ignored: [Int] = []
-    return detectBackMatterApparatus(extraction, furniture, analyticalPages: &ignored)
-}
-
-/// Le pagine (indici 0-based delle pagine dell'estrazione) dell'indice ANALITICO recintato che il back-matter riconosce
-/// e lascia LETTO per scelta (titolo «Indice analitico/alfabetico» nella regione finale, pagine fortemente strutturate a
-/// indice): lo stesso esame di `detectBackMatterApparatus`, che non cambia. Additiva, giro «costruzione della linea Mac»
-/// (2026-10-16): è il segnale dell'app con cui l'officina Mac sceglie le pagine su cui chiedere al modello
-/// d'impaginazione se ci sono note (indice del Codice penale al banco).
-public func analyticalIndexPages(_ extraction: PdfExtraction) -> [Int] {
-    var pages: [Int] = []
-    _ = detectBackMatterApparatus(extraction, detectFurniture(extraction), analyticalPages: &pages)
-    return pages.map { extraction.pages[$0].pageIndex }
-}
-
-func detectBackMatterApparatus(
-    _ extraction: PdfExtraction, _ furniture: Set<String>, analyticalPages: inout [Int]
-) -> [Int: SemanticCategory] {
     let n = extraction.pageCount
     let start = backMatterRegionStart(n)
     guard start < n else { return [:] }
@@ -1346,7 +1328,6 @@ func detectBackMatterApparatus(
         }
         // 4) Indice analitico RECINTATO → LETTO (mai in mappa). La regione resta aperta.
         if region == .analytical, strong {
-            analyticalPages.append(pageIndex)
             continue
         }
         // 5) Pagina di prosa / non-indice: chiude ogni regione indice aperta, così una
@@ -1356,6 +1337,48 @@ func detectBackMatterApparatus(
         }
     }
     return result
+}
+
+// MARK: - Il segnale dell'officina Mac per l'indice analitico
+
+/// Titolo o testatina dell'indice ANALITICO per l'officina Mac: come `backMatterAnalyticalHeadingRegex`, ma tollera il
+/// richiamo di una nota in testa al titolo («(*) INDICE ANALITICO-ALFABETICO (*)», Codice penale).
+private let officinaAnalyticalHeadingRegex = try! NSRegularExpression(
+    pattern: "^\\s*(?:\\(\\*+\\)\\s*|\\*+\\s*)?(?:\\d{1,4}\\s+)?indice\\s+(analitico|alfabetico)",
+    options: [.caseInsensitive])
+
+/// IL SEGNALE DELL'OFFICINA MAC per l'indice analitico (giro «costruzione della linea Mac», 2026-10-16): le pagine
+/// (indici 0-based delle pagine del PDF) della regione di coda strutturate a indice (forte o debole) che portano, fra
+/// TUTTE le loro righe visibili, il titolo «Indice analitico/alfabetico» — testatina compresa, che il back-matter dell'iPad
+/// scarta come mobilia prima di cercare il titolo, e anche con il richiamo di una nota in testa. È un segnale solo
+/// dell'officina, fatto con gli stessi strumenti del back-matter (`detectBackMatterApparatus` non cambia): sceglie le
+/// pagine su cui chiedere al modello d'impaginazione se ci sono note; la rietichettatura avviene solo dove il modello
+/// non ne vede (fusore, `sectorRelabelNoFootnote`).
+public func officinaAnalyticalIndexPages(_ extraction: PdfExtraction) -> [Int] {
+    let n = extraction.pageCount
+    let start = backMatterRegionStart(n)
+    guard start < n else { return [] }
+    let furniture = detectFurniture(extraction)
+    var out: [Int] = []
+    for i in start..<n {
+        let page = extraction.pages[i]
+        var content: [LineSummary] = []
+        var heading = false
+        for (lineIndex, line) in page.lines.enumerated() {
+            let sm = summarizeLine(line)
+            if isNearWhite(sm.color) { continue }
+            let t = jsTrim(sm.text)
+            if t.utf16.count <= 60, regexHits(officinaAnalyticalHeadingRegex, t) { heading = true }
+            if furniture.contains("\(page.pageIndex):\(lineIndex)") { continue }
+            content.append(sm)
+        }
+        // Con il titolo o la testatina sulla pagina basta anche la struttura DEBOLE (voci multi-riga: la stessa
+        // conferma che il back-matter chiede a una testatina d'indice dei nomi).
+        if heading, isBackMatterIndexStructured(content) || isWeaklyBackMatterIndexStructured(content) {
+            out.append(page.pageIndex)
+        }
+    }
+    return out
 }
 
 // MARK: - Front-matter: recupero degli indici INIZIALI senza leader

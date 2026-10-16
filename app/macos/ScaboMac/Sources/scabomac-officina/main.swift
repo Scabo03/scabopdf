@@ -10,7 +10,7 @@
 //    scabomac-officina confronta-fusi --tipo documento|estrazione --a FILE --b FILE
 //        Decodifica due artefatti fusi (per esempio Python e Swift) e dice se sono identici come dati; se no, dove
 //        (id dei nodi o pagine e righe), mai il testo.
-//    scabomac-officina catena --lista LISTA.json --corpus DIR --out DIR [--politica giro|spenta] [--granularita N]
+//    scabomac-officina catena --lista LISTA.json --corpus DIR --out DIR [--politica giro|spenta|banco] [--granularita N]
 //                             [--estrazioni DIR] [--regioni DIR] [--solo STEM] [--salva-catture DIR]
 //        La catena DEL MAC (quella dell'app: MacProcessor) sui volumi della lista: dal vivo (estrazione PDFKit di macOS,
 //        modello d'impaginazione sul Mac) oppure, con `--estrazioni`/`--regioni`, dalle catture di un simulatore (stesso
@@ -19,7 +19,7 @@
 //        `<stem>.officina.json` (referto dell'innesto, privo di testo) e una riga di riepilogo per volume. Con
 //        `--salva-catture` scrive anche l'estrazione di PDFKit di macOS (`<stem>.extraction.json`) e le regioni del
 //        modello sul Mac (`<stem>.regions.json`), nel formato delle catture del simulatore (confronto canonico).
-//    scabomac-officina pacchetto --pdf FILE.pdf --out FILE.scabolettura [--politica giro|spenta]
+//    scabomac-officina pacchetto --pdf FILE.pdf --out FILE.scabolettura [--politica giro|spenta|banco]
 //        Prepara e scrive il pacchetto della lettura come l'app (senza annotazioni).
 //    scabomac-officina verdetti-confronta --pdf VOLUME.pdf --dir CARTELLA --prefisso P
 //        Confronta i verdetti DAL VIVO del modulo (`analyzeWithRegionTexts` sulla pagina del volume intero, sul Mac) con i
@@ -162,9 +162,9 @@ case "verdetti-confronta":
 
 case "catena":
     guard let lista = arg("lista"), let corpus = arg("corpus"), let outDir = arg("out") else {
-        fail("uso: catena --lista LISTA.json --corpus DIR --out DIR [--politica giro|spenta] [--granularita N] [--estrazioni DIR] [--regioni DIR]")
+        fail("uso: catena --lista LISTA.json --corpus DIR --out DIR [--politica giro|spenta|banco] [--granularita N] [--estrazioni DIR] [--regioni DIR]")
     }
-    let policy: OfficinaPolicy = arg("politica") == "spenta" ? .spenta : .giro
+    let policy: OfficinaPolicy = arg("politica") == "spenta" ? .spenta : (arg("politica") == "banco" ? .banco : .giro)
     let target = arg("granularita").flatMap(Int.init)
     let vols: [String]
     do { vols = try JSONDecoder().decode([String].self, from: Data(contentsOf: URL(fileURLWithPath: lista))) }
@@ -225,7 +225,7 @@ case "catena":
 
 case "pacchetto":
     guard let pdfPath = arg("pdf"), let out = arg("out") else { fail("uso: pacchetto --pdf FILE.pdf --out FILE.scabolettura") }
-    let policy: OfficinaPolicy = arg("politica") == "spenta" ? .spenta : .giro
+    let policy: OfficinaPolicy = arg("politica") == "spenta" ? .spenta : (arg("politica") == "banco" ? .banco : .giro)
     guard case .ready(let r) = MacProcessor.process(pdfURL: URL(fileURLWithPath: pdfPath), policy: policy) else { fail("elaborazione fallita", code: 1) }
     do {
         let data = try MacProcessor.package(r, producer: .init(app: Testi.nomeApp, version: "officina", build: "0",
@@ -234,7 +234,14 @@ case "pacchetto":
         let segs = r.reading.content.pages.flatMap { $0.segments }
         try RunnerReading.encode(label: r.fileName, categories: r.rawCategories, segments: segs)
             .write(to: URL(fileURLWithPath: out + ".reading.json"))
-        say("pacchetto: \(data.count) byte, \(segs.count) segmenti; lettura di controllo in \(out).reading.json")
+        // La lettura intera nella forma della cache (flussi, mappa, albero, granularità), per il confronto d'andata e
+        // ritorno con ciò che l'iPad scrive nella sua cache dopo averla adottata.
+        let sorted = JSONEncoder()
+        sorted.outputFormatting = [.sortedKeys]
+        try sorted.encode(r.reading).write(to: URL(fileURLWithPath: out + ".lettura.json"))
+        say("pacchetto: \(data.count) byte, \(segs.count) segmenti, \(r.visualResources) risorse, granularità \(r.reading.contentTarget), "
+            + "Dottrina \(r.reading.doctrineContent != nil ? "sì" : "no"), Consultazione \(r.reading.quickConsultTree != nil ? "sì" : "no"); "
+            + "controlli in \(out).reading.json e \(out).lettura.json")
     } catch { fail("pacchetto non scritto: \(error)", code: 1) }
 
 default:
