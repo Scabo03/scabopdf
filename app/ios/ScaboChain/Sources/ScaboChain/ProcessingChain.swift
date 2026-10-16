@@ -158,7 +158,13 @@ public enum ProcessingChain {
     /// ai libri già elaborati (§ 12.13). L'offerta «Lettura migliore disponibile» dell'iPad lo usa come `latestCureBuild`
     /// (sui dispositivi che possono riconoscere tabelle e figure), e il pacchetto del Mac lo porta: la lettura del Mac
     /// contiene le cure fino a qui. Si aggiorna nel giro che porta una cura nuova, una volta sola, qui.
-    public static let cureLevel = 53
+    /// 55: le note lunghe frazionate anche quando l'iPad elabora da sé un PDF (giro del 2026-10-16).
+    public static let cureLevel = 55
+
+    /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
+    /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata
+    /// dal Mac e l'offerta non la propone a quei libri (rielaborarli sull'iPad toglierebbe anzi l'innesto del Mac).
+    public static let curesAlwaysInMacReadings: Set<Int> = [55]
 
     /// Elabora il PDF `fileURL` (una copia locale) sul thread chiamante. `onProgress` è chiamato sul thread chiamante;
     /// `isCancelled` è consultato alle tappe naturali (per pagina e ai confini di fase). `onVisualDetection` riceve

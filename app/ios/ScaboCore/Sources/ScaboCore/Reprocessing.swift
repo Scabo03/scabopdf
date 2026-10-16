@@ -34,13 +34,18 @@ public struct ReprocessingPolicy: Sendable {
     public let validatedSystemMajors: Set<Int>
     /// L'ultima build dell'app che ha portato una cura da offrire ai libri già elaborati.
     public let latestCureBuild: Int
+    /// L'ultima cura che una lettura ARRIVATA DAL MAC può non avere (giro del 2026-10-16): il Mac fraziona le note lunghe
+    /// da sempre, quindi la cura 55 (il frazionamento sull'iPad) non manca a nessuna delle sue letture. Uguale a
+    /// `latestCureBuild` se non indicata.
+    public let latestCureBuildForMacReadings: Int
     /// La build della cura delle risorse visive (tabelle e figure): un libro il cui riconoscimento è saltato per una
     /// ragione da riprovare (`visualResourcesSkipped`) riceve l'offerta dove il dispositivo sa riconoscere (cura ≥ 53).
     public static let visualResourcesCureBuild = 53
 
-    public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int) {
+    public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int, latestCureBuildForMacReadings: Int? = nil) {
         self.validatedSystemMajors = validatedSystemMajors
         self.latestCureBuild = latestCureBuild
+        self.latestCureBuildForMacReadings = latestCureBuildForMacReadings ?? latestCureBuild
     }
 
     /// Il numero maggiore da una stringa come «iPadOS 27.0.1» / «iOS 26.5».
@@ -71,9 +76,9 @@ public struct ReprocessingPolicy: Sendable {
         }
         // Lettura arrivata dal Mac (giro del 2026-10-16): il suo lettore di sistema è quello del Mac, non conta
         // l'aggiornamento dell'iPad; la sua build è il livello di cure della catena del Mac: si offre solo una cura
-        // che quella catena non conteneva.
+        // che quella catena non conteneva (non il frazionamento delle note lunghe, che il Mac ha sempre fatto).
         if doc.readingOrigin == ReadingOrigin.mac {
-            return (build ?? 0) < latestCureBuild ? .cure : nil
+            return (build ?? 0) < latestCureBuildForMacReadings ? .cure : nil
         }
         let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
         if !sameBuild, build == nil || build! < latestCureBuild { return .cure }

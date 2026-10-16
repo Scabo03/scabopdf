@@ -32,8 +32,18 @@ enum ReprocessOffer {
     /// in un posto solo, il livello di cure della catena condivisa (`ProcessingChain.cureLevel`, ScaboChain), che porta
     /// anche il pacchetto del Mac.
     static var policy: ReprocessingPolicy {
-        ReprocessingPolicy(validatedSystemMajors: [26, 27],
-                           latestCureBuild: visualResourcesAvailable ? ProcessingChain.cureLevel : 50)
+        let latest = visualResourcesAvailable ? ProcessingChain.cureLevel : 50
+        return ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: latest,
+                                  latestCureBuildForMacReadings: latestCureForMacReadings(upTo: latest))
+    }
+
+    /// L'ultima cura che una lettura arrivata dal Mac può non avere (giro del 2026-10-16): la più recente fra le cure
+    /// che non sono già in ogni lettura del Mac (`ProcessingChain.curesAlwaysInMacReadings`: il frazionamento delle note
+    /// lunghe, che il Mac fa da sempre).
+    static func latestCureForMacReadings(upTo latest: Int) -> Int {
+        cures.map { $0.build }
+            .filter { $0 <= latest && !ProcessingChain.curesAlwaysInMacReadings.contains($0) }
+            .max() ?? latest
     }
 
     /// Vero se il dispositivo può riconoscere tabelle e figure (iOS 17 o successivo).
@@ -61,6 +71,8 @@ enum ReprocessOffer {
             + "non viene più letta"),
         (53, "le tabelle e le figure sono riconosciute e annunciate come risorse visive, e si possono estrarre come "
             + "immagine per farle descrivere; il testo che contengono resta leggibile come prima"),
+        (55, "le note lunghe si leggono a pezzi, da ascoltare uno alla volta: si annuncia solo il primo pezzo e gli altri "
+            + "seguono, come già avveniva per i testi normativi"),
     ]
 
     private static var service: LibraryService { .shared }
@@ -104,7 +116,13 @@ enum ReprocessOffer {
     /// Cosa cambia, per questo libro.
     static func whatChanges(_ doc: ArchivedDocument, reason: ReprocessingReason) -> String {
         let since = doc.processedAppBuild.flatMap { Int($0) } ?? 0
-        let list = cures.filter { $0.build > since && $0.build <= policy.latestCureBuild }.map { $0.text }
+        // Una lettura arrivata dal Mac ha già le cure che il Mac fa da sempre (il frazionamento delle note lunghe): non si
+        // promettono come novità.
+        let fromMac = doc.readingOrigin == ReadingOrigin.mac
+        let list = cures.filter {
+            $0.build > since && $0.build <= policy.latestCureBuild
+                && !(fromMac && ProcessingChain.curesAlwaysInMacReadings.contains($0.build))
+        }.map { $0.text }
         var text = ""
         if doc.readingOrigin == ReadingOrigin.mac {
             text += "La lettura di adesso è arrivata dal Mac: rielaborando il libro qui, l'iPad la sostituisce con la sua. "

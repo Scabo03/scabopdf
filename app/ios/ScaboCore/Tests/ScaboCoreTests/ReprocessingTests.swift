@@ -52,6 +52,31 @@ final class ReprocessingTests: XCTestCase {
         XCTAssertNil(store.document(id: d.id)!.visualResourcesSkipped)
     }
 
+    /// Giro del 2026-10-16: la cura 55 (note lunghe frazionate anche quando l'iPad elabora da sé un PDF) si offre ai libri
+    /// elaborati dall'iPad prima della 55, ma NON alle letture arrivate dal Mac, che le frazionano da sempre (rielaborarle
+    /// sull'iPad toglierebbe solo l'innesto del Mac); una cura successiva che il Mac non contiene si offre di nuovo.
+    func test_curaDelFrazionamento_nonSiOffreAlleLettureDelMac() {
+        let store = LibraryStore(persistence: InMemoryLibraryPersistence())
+        let mac = store.addDocument(title: "m", sourceFileName: "m.pdf", sourcePageCount: 3)
+        store.recordReceivedReading(id: mac.id, systemVersion: "macOS 27.0.1", cureLevel: 53, at: Date())
+        let ipad = store.addDocument(title: "i", sourceFileName: "i.pdf", sourcePageCount: 3)
+        store.recordProcessed(id: ipad.id, systemVersion: "iPadOS 27.0.1", appBuild: "54")
+        let p55 = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 55, latestCureBuildForMacReadings: 53)
+        func reason(_ p: ReprocessingPolicy, _ id: String) -> ReprocessingReason? {
+            p.reason(for: store.document(id: id)!, currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "55")
+        }
+        XCTAssertNil(reason(p55, mac.id), "la lettura del Mac ha già le note lunghe frazionate")
+        XCTAssertEqual(reason(p55, ipad.id), .cure, "il libro elaborato dall'iPad con la build 54 riceve la cura")
+        // Prova al contrario: senza il limite a parte la lettura del Mac riceverebbe l'offerta (il caso che la regola evita).
+        XCTAssertEqual(reason(ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 55), mac.id), .cure)
+        // Una cura nuova, che le letture del Mac non contengono, si offre anche a loro.
+        let p56 = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 56, latestCureBuildForMacReadings: 56)
+        XCTAssertEqual(reason(p56, mac.id), .cure)
+        // Una lettura del Mac preparata con il livello 55 non riceve la cura 55.
+        store.recordReceivedReading(id: mac.id, systemVersion: "macOS 27.0.1", cureLevel: 55, at: Date())
+        XCTAssertNil(reason(ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 55), mac.id))
+    }
+
     func test_akn_neverOffered() {
         XCTAssertNil(policy.reason(for: doc("akn", build: "40"), currentSystemVersion: "iPadOS 27.0.1"))
     }
