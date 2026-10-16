@@ -459,6 +459,132 @@ final class RealPdfBenchTests: XCTestCase {
         }
     }
 
+    /// Richiesta del banco della vista di lettura sulle note frazionate (giro «uniformità della lettura», 2026-10-16).
+    private struct FractionViewRequest: Codable {
+        let corpusDir: String
+        let outDir: String
+        let pdfs: [String]
+        /// Quante note frazionate guardare per volume (equispaziate nel flusso), se `noteIds` non le indica.
+        var perVolume: Int? = nil
+        /// Le note da guardare, per PDF della lista: id del nodo della nota (senza `#k`).
+        var noteIds: [String: [String]]? = nil
+    }
+
+    /// LA VISTA DI LETTURA SULLE NOTE FRAZIONATE (giro «uniformità della lettura», 2026-10-16): per ogni PDF della richiesta,
+    /// l'elaborazione vera dell'iPad e, per le note frazionate scelte, la Lettura Continua su uno schermo da iPad Air 11"
+    /// verticale col primo pezzo in cima: fotografie con lo stile predefinito e con il «Riquadro visivo per le note»
+    /// (sul primo e sull'ultimo pezzo), e per ogni elemento dal pezzo prima della nota al pezzo dopo l'ultimo, più il
+    /// segmento del richiamo, ciò che VoiceOver legge (etichetta senza e con «Annuncia le note a voce»), se suona il segnale
+    /// della nota, le azioni di salto nota-testo e la pagina. Per il giudizio a vista contro la pagina stampata. Le uscite
+    /// CONTENGONO TESTO dei volumi: solo nel laboratorio. `XCTSkip` senza richiesta (`/tmp/scabo_fraz_view_request.json`).
+    func test_fractionedNotesReadingView_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_FRAZ_VIEW_REQUEST"] ?? "/tmp/scabo_fraz_view_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(FractionViewRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta della vista sulle note frazionate in \(reqPath).")
+        }
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let noteRole = SemanticCategory.NOTE.rawValue, contRole = SemanticCategory.NOTE_CONTINUATION.rawValue
+        let traits = SystemAppearanceTraits(isDark: false)
+        let plainStyle = resolveReadingStyle(source: .appTheme, preset: .standard, spacing: .standard, accent: .standard,
+                                             readingGuide: false, noteVisualBox: false, traits: traits)
+        let boxStyle = resolveReadingStyle(source: .appTheme, preset: .standard, spacing: .standard, accent: .standard,
+                                           readingGuide: false, noteVisualBox: true, traits: traits)
+        for name in req.pdfs {
+            let path = req.corpusDir + "/" + name
+            guard FileManager.default.fileExists(atPath: path) else { print("[fraz-view] assente, salto: \(path)"); continue }
+            let url = URL(fileURLWithPath: path)
+            let large = ReadingAssembly.isLarge(pageCount: CGPDFDocument(url as CFURL)?.numberOfPages ?? 0)
+            let target = large ? ReadingAssembly.largeDocumentGranularity : DEFAULT_GRANULARITY_TARGET
+            let processor = DocumentProcessor()
+            let done = expectation(description: "elaborazione \(name)")
+            var outcome: DocumentProcessor.Outcome?
+            processor.process(fileURL: url, sourceName: url.lastPathComponent, granularityTarget: target,
+                              buildDoctrine: !large, onProgress: { _ in }, completion: { outcome = $0; done.fulfill() })
+            wait(for: [done], timeout: 3600)
+            guard case .success(let document, let content, let doctrine)? = outcome else {
+                XCTFail("[fraz-view] \(name): elaborazione non riuscita"); continue
+            }
+            let pageMap = ReadingAssembly.buildPageMap(document, content: content, doctrineContent: doctrine)
+            let segs = content.pages.flatMap { $0.segments }
+            let heads = segs.indices.filter { i in
+                segs[i].role == noteRole && segs[i].id.hasSuffix("#0") && i + 1 < segs.count && segs[i + 1].role == contRole
+            }
+            func base(_ id: String) -> String { id.lastIndex(of: "#").map { String(id[..<$0]) } ?? id }
+            var chosen: [Int]
+            if let wanted = req.noteIds?[name] {
+                chosen = heads.filter { wanted.contains(base(segs[$0].id)) }
+            } else {
+                let k = min(req.perVolume ?? 3, heads.count)
+                chosen = k == 0 ? [] : (0..<k).map { heads[(heads.count - 1) * $0 / max(1, k - 1)] }
+                chosen = Array(Set(chosen)).sorted()
+            }
+            let links = noteCallLinks(segs)
+            let size = CGSize(width: 820, height: 1180)
+            let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+            let view = ContinuousReadingView(frame: window.bounds)
+            window.addSubview(view)
+            window.makeKeyAndVisible()
+            view.setInitialReadingStyle(plainStyle)
+            view.pageProvider = { pageMap[$0] }
+            view.render(content)
+            view.layoutIfNeeded()
+            let stem = (name as NSString).deletingPathExtension
+            let baseOut = (req.outDir as NSString).appendingPathComponent(stem)
+            try? FileManager.default.createDirectory(atPath: (baseOut as NSString).deletingLastPathComponent,
+                                                     withIntermediateDirectories: true)
+            func snapshot(_ file: String) {
+                view.layoutIfNeeded()
+                RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+                let image = UIGraphicsImageRenderer(bounds: window.bounds, format: {
+                    let f = UIGraphicsImageRendererFormat(); f.scale = 1; return f }()).image { ctx in
+                    UIColor.white.setFill(); ctx.fill(window.bounds)
+                    view.layer.render(in: ctx.cgContext)
+                }
+                try? image.pngData()?.write(to: URL(fileURLWithPath: file))
+            }
+            var report: [[String: Any]] = []
+            for (k, h) in chosen.enumerated() {
+                var last = h
+                while last + 1 < segs.count, segs[last + 1].role == contRole
+                    || (segs[last + 1].role == VISUAL_RESOURCE_ROLE && last + 2 < segs.count && segs[last + 2].role == contRole) {
+                    last += 1
+                }
+                let window0 = max(0, h - 1), window1 = min(segs.count - 1, last + 1)
+                var indices = Array(window0...window1)
+                if let c = links.callOfNote[h], !indices.contains(c) { indices.insert(c, at: 0) }
+                let elements: [[String: Any]] = indices.map { i in
+                    [
+                        "index": i, "role": segs[i].role, "id": segs[i].id, "page": pageMap[segs[i].id] ?? -1,
+                        "label": ContinuousReadingView.intendedAccessibilityLabel(for: segs[i], restoreNoteIntro: false),
+                        "labelAVoce": ContinuousReadingView.intendedAccessibilityLabel(for: segs[i], restoreNoteIntro: true),
+                        "segnale": ContinuousReadingView.noteSignal(for: segs[i]) != nil,
+                        "salti": view.noteJumpActions(forIndex: i).map { $0.name },
+                        "chiamata": links.callOfNote[i] ?? -1,
+                    ]
+                }
+                view.applyReadingStyle(plainStyle)
+                view.goToElement(atIndex: h, focus: false)
+                snapshot(baseOut + "_n\(k)_primo.png")
+                view.applyReadingStyle(boxStyle)
+                view.goToElement(atIndex: h, focus: false)
+                snapshot(baseOut + "_n\(k)_primo_riquadro.png")
+                view.goToElement(atIndex: last, focus: false)
+                snapshot(baseOut + "_n\(k)_ultimo_riquadro.png")
+                report.append(["k": k, "nota": base(segs[h].id), "primo": h, "ultimo": last, "pezzi": last - h + 1,
+                               "paginaNota": pageMap[segs[h].id] ?? -1, "richiamo": links.callOfNote[h] ?? -1,
+                               "elementi": elements])
+            }
+            window.isHidden = true
+            if let json = try? JSONSerialization.data(withJSONObject: ["pdf": name, "noteFrazionate": heads.count,
+                                                                      "guardate": report],
+                                                      options: [.prettyPrinted, .sortedKeys]) {
+                try? json.write(to: URL(fileURLWithPath: baseOut + "_fraz_vista.json"))
+            }
+            print("[fraz-view] \(name): \(heads.count) note frazionate, \(chosen.count) guardate")
+        }
+    }
+
     /// Fotografie della vista di lettura (iPad 11", verticale) con l'elemento «risorsa visiva» in cima: l'elemento
     /// riquadrato e il testo che lo segue, come li vede chi legge. Più un indice JSON con le etichette lette
     /// (elemento e i tre seguenti): CONTIENE TESTO del volume, quindi solo nel laboratorio, mai nel repo.
