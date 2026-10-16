@@ -196,6 +196,31 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 55 — 2026-10-16 pomeriggio, commit `91aaf7b` (giro «uniformità della lettura e misura»: le note lunghe si
+  frazionano anche quando l'iPad elabora da sé un PDF, cura 55 con l'offerta «Lettura migliore disponibile»;
+  `docs/CARRYOVER.md` STATO del 2026-10-16 pomeriggio, `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12).** `fastlane beta`:
+  archiviazione ed esportazione riuscite (`CURRENT_PROJECT_VERSION` 55, EXPORT SUCCEEDED alle 15:17:45), poi altool «UPLOAD
+  SUCCEEDED with no errors», Delivery UUID `80cf20c4-fc3f-4ed3-bd95-3f674dbdd339`, ma App Store Connect ha risposto con tre
+  errori 500 interni (list-apps, operazioni di caricamento, stato del caricamento) e la lane è uscita con exit 1 («Error
+  uploading ipa file») PRIMA di attendere l'elaborazione e di scrivere le note. Nessun nuovo tentativo alla cieca: verificato
+  con la chiave API (script Spaceship in sola lettura) che la build 55 c'era, caricata alle 15:24:54 ora italiana, elaborazione
+  VALID, «Cosa testare» vuoto; poi impostato il solo «Cosa testare» (it) col testo di `app/ios/fastlane/COSA_TESTARE.txt` e
+  riletto: 2 372 caratteri, identico al file (provato prima con `fastlane note_tester`, exit 0). **Lezione:** con «UPLOAD
+  SUCCEEDED» e un Delivery UUID ma errori 500 di App Store Connect, la build di solito c'è: si controlla con l'API e si
+  completa il passo mancante, non si rilancia (rilanciare darebbe una 56, o un rifiuto per numero già usato). Reti prima
+  del caricamento: catena dell'iPad, app vera nel simulatore e Mac con l'innesto spento identici byte per byte 52/52 per
+  generazione; doppia rete delle generazioni `fraz55 --risorse-visive` exit 0; ogni nota frazionata ricomposta esattamente
+  (spazi doppi a parte in 11 note di un volume), lettere e cifre identiche; annotazioni 416/416 verdi per generazione, 0
+  ricollocazioni sbagliate, passaggio fra le letture 54 e 55 senza errori; pacchetti 7/7 identici all'andata e ritorno;
+  misure dei titoli e di struttura invariate; vista di lettura giudicata contro il PDF senza veto. Suite (`validate.sh`,
+  iPhone 16 iOS 26.5): ScaboCore 876, ScaboAppTests 176 (14 saltati), test UI 17, 0 falliti (al primo giro un test fissava
+  l'ultima cura a 53: aggiornato, `7b42715`); iPhone 16 iOS 27 uguale; iPad Pro iOS 27 test UI 11/17 con 6 rossi
+  PREESISTENTI, identici col codice di partenza `72319f2` (Dynamic Type, testo potenzialmente inaccessibile, due test
+  dell'importazione doppia scritti per la barra delle schede dell'iPhone). Revisione indipendente prima del caricamento:
+  nessun difetto del codice; tre frasi delle note per i tester corrette, documenti e commenti corretti. Cura di lettura nuova:
+  `ProcessingChain.cureLevel` 55 (le letture del Mac ne sono escluse). IPA 162 818 162 byte (155,3 MiB, come la 54);
+  `weight.bin` 171 698 672 byte; firma Apple Distribution del team D2KQYQ8YU8, profilo «match AppStore
+  com.scabo.scabopdf»; `UIFileSharingEnabled` attivo. Prossimo numero: 56.
 - **Build 54 — 2026-10-16, commit `16317ff` (giro «costruzione della linea Mac»: ricezione delle letture preparate sul
   Mac, protezione della memoria nel riconoscimento di tabelle e figure, selettore del layout su iPhone, e le correzioni della
   revisione indipendente; `docs/CARRYOVER.md` STATO 2026-10-16, `LAYER2_PRODUCT_DECISIONS.md` § 12.12).** `fastlane beta`

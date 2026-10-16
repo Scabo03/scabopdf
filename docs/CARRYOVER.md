@@ -10,7 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
-> Versione: 2.45 (16 ottobre 2026 pomeriggio, giro «uniformità della lettura e misura», IN CORSO: quattro decisioni del maintainer registrate all'apertura — note lunghe frazionate anche quando l'iPad elabora da sé un PDF, ricucitura fra pagine sul Mac spenta finché il conteggio non mostra casi che l'iPad non copre, record App Store del Mac nuovo e solo alla distribuzione, due app separate sul Mac con uno studio dedicato su VoiceOver di macOS per la lettura. Vedi STATO del 2026-10-16 pomeriggio)
+> Versione: 2.45 (16 ottobre 2026 pomeriggio, giro «uniformità della lettura e misura»: registrate all'apertura le quattro decisioni del maintainer; **le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF** (catena condivisa `ScaboChain`, stesso meccanismo degli atti AKN e del Mac: iPad, iPhone e Mac danno la stessa lettura a parità di ingressi, con l'innesto del Mac spento), cura 55 con l'offerta «Lettura migliore disponibile» (non alle letture del Mac); reti verdi sulle due generazioni (ricomposizione esatta, lettere e cifre identiche, annotazioni al loro posto anche fra le letture 54 e 55, pacchetti 7/7, vista di lettura senza veto); **conteggio delle note spezzate fra pagine che l'iPad lascia aperte** (`docs/CONTEGGIO_NOTE_SPEZZATE.md`: 2.961 aperte, 202 casi giudicati contro la pagina, circa 930 vere, circa 710 fuori dai codici; strato sicuro sull'iPad 35 veri su 36); revisione indipendente prima del caricamento; **build 55 su TestFlight** (commit `91aaf7b`, Delivery UUID `80cf20c4…`, note impostate a parte dopo errori 500 di App Store Connect). Tre decisioni per il maintainer. Referto in `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAMENTO.md`. Vedi STATO del 2026-10-16 pomeriggio)
 > Versione: 2.44 (16 ottobre 2026, giro «costruzione della linea Mac»: il ramo `feat/mac-base` fuso in main; le cure dell'estrazione SPOSTATE in un modulo condiviso iPad/Mac (`app/ios/ScaboChain`) e il fusore del banco portato in Swift; l'**app Mac prepara la lettura** con la stessa catena (più la rietichettatura dell'indice analitico; ricucitura fra pagine spenta dopo una rete rossa) e la esporta in un **pacchetto `.scabolettura`**; l'**iPad la riceve** (AirDrop, «Apri con», File, cavo) con la regola delle annotazioni del § 12.12; protezione della memoria nel riconoscimento di tabelle e figure; selettore del layout su iPhone; **pannello dei modelli del Mac vero** (GLM-OCR scaricato, verificato, rimosso, servizio XPC unico con la rete); revisione indipendente con tre difetti veri corretti prima della build; reti verdi sulle due generazioni (letture identiche byte per byte alla build 53); **build 54 su TestFlight** (commit `16317ff`, Delivery UUID `9bfa68d7…`, note scritte dalla lane). Referto e laboratorio in `~/Developer/scabopdf-mac-lab/`. Vedi STATO del 2026-10-16)
 > Versione: 2.43 (12-13 ottobre 2026, giro «risorse visive»: il modulo d'impaginazione `app/ios/ScaboPageStructure` (Heron di docling in Core ML **fp32**, pesi 164 MB in Git LFS, porti Swift di docling, sonda grafica e prefiltro) entra nell'app per iPad; **tabelle e figure annunciate come risorse visive** con «Estrai come immagine» (ritaglio della sola regione al foglio di condivisione) e «Salta la risorsa», testo della regione sempre nel flusso (elemento additivo); guardia deterministica in ScaboCore tarata col giudizio contro la pagina (110 risorse per generazione, 86 tabelle e 24 figure, tutte vere); reti verdi sulle due generazioni (lettere e cifre identiche 52/52, annotazioni senza ricollocazioni sbagliate, misure invariate); revisione indipendente con verifica delle correzioni; **build 53 su TestFlight** (commit `dc2305f`, Delivery UUID `6f3ee37a…`, note scritte dalla lane). Documento `docs/RISORSE_VISIVE.md`; referto e laboratorio in `~/Developer/scabopdf-gen-lab/`. Vedi STATO del 2026-10-12)
 > Versione: 2.42 (12 ottobre 2026, giro «struttura nativa» — misura, senza toccare l'app: un'app Mac nativa compatibile con lo store riconosce la struttura delle pagine? **Sì**: il modello di impaginazione di docling (Heron, Apache-2.0) convertito in Core ML fp32 (164 MB) e fatto girare da un eseguibile Swift che porta in Swift il post-processing e l'ordine di lettura a regole di docling (porto identico a docling 35/35 pagine) trova sulle 34 pagine del banco (381 blocchi di verità giudicati da Code contro la pagina) note 41/76 contro 43 di docling, didascalie 2/2, tabelle 2/2, figure 4/4, titoli 22/47 contro 23, ordine 0,968 contro 0,993, in 42-44 ms/pagina, 0,36-0,41 GB, zero byte esterni; innestato nella catena del banco al posto di docling dà **letture identiche byte per byte** sui quattro casi del gate con le reti di fedeltà verdi. GLM-OCR non dà struttura (tutto testo), Granite-Docling perde note (7/76) e didascalie (0/2) e va in ripetizione, Vision non etichetta nulla. Tre decisioni del maintainer registrate in `LAYER2_PRODUCT_DECISIONS.md` § 12.12 (pacchetto = file da aprire, scelta fra più copie, lettura del Mac accettata com'è). Documento `docs/MISURA_STRUTTURA_NATIVA.md`; referto e laboratorio in `~/Developer/scabopdf-mac-lab/struttura_nativa/`. Vedi STATO del 2026-10-12)
@@ -62,7 +62,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Giro «uniformità della lettura e misura»: note lunghe frazionate anche sull'iPad (build 55) e conteggio delle note spezzate che l'iPad lascia aperte — 2026-10-16 pomeriggio (IN CORSO)
+## ▶ STATO — Giro «uniformità della lettura e misura»: note lunghe frazionate anche sull'iPad (build 55) e conteggio delle note spezzate che l'iPad lascia aperte — 2026-10-16 pomeriggio
 
 **Partenza:** `72319f2` (main = origin, build 54 su TestFlight, nessun altro ramo). Referto e laboratorio (con nomi dei
 volumi: NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAMENTO.md`,
@@ -76,7 +76,73 @@ aprire solo quando il Mac andrà distribuito; (4) sul Mac due app separate, l'of
 vista di lettura per Mac sarà oggetto di uno studio dedicato su VoiceOver di macOS, con documentazione e prove (non è
 materia di questo giro). Le tre decisioni aperte del referto del giro Mac (§ 11) sono così chiuse.
 
-**Esito:** da compilare a fine giro.
+**Esito (2026-10-16 pomeriggio).** Codice: `85eb161` (frazionamento acceso per difetto nella catena condivisa
+`ScaboChain`: `ChainOptions.fractionLongNotes` e `bodyPaginatedContentWithVisual(fractionLongNotes:)` veri per difetto;
+«Vai al testo del richiamo» propagato ai pezzi di seguito in `NoteJump.swift`; riquadro e barra di ruolo anche sui pezzi
+di seguito; banco `test_appReadingDump_fromRequest`), `d1a8394` (cura 55: `ProcessingChain.cureLevel` 55,
+`curesAlwaysInMacReadings = [55]`, `ReprocessingPolicy.latestCureBuildForMacReadings`: le letture del Mac non ricevono
+l'offerta della 55), `cc1291c` (banco della vista sulle note frazionate), `7b42715` (test dell'offerta aggiornato alla cura
+55), `7234b95`, `b4d2f6c` (documenti), `dde135f` (commenti), `91aaf7b` (note per i tester della build 55).
+
+**Il frazionamento sull'iPad (campo).** Stesso meccanismo degli atti AKN (`fractionLongNoteSegments`), nessuna copia.
+Sui 52 volumi cambiano 29 libri (gli altri 23 identici byte per byte, su entrambe le generazioni): in Lettura Continua 5.360 note frazionate in 15.101 pezzi di seguito su iOS 26.5 (5.359 e
+15.091 su iOS 27); ogni nota si ricompone esattamente nella nota di prima (5.349 byte per byte, 11 note di Mosconi solo con
+spazi doppi ridotti a uno dentro pezzi spezzati a parola); lettere e cifre identiche su tutti i volumi; Dottrina Inline
+5.290 note (iOS 26.5); Consultazione Rapida: albero identico. Salti: 0 anomalie («Vai al testo del richiamo» su ogni
+pezzo delle note che hanno un richiamo; «Vai alla nota» porta al primo pezzo). Rinfresco di contesto identico sul primo
+pezzo, assente sui seguenti (10.648 teste). Risorse visive: 7 elementi cambiano su 110 (3 equivalenti, 3 migliori, 1
+peggiore di poco), giudicati contro la pagina. Annunci del primo pezzo: «Nota lunga.» 3.518, «Nota molto lunga.» 53,
+«Nota.» 899 (note fra 401 e 500 caratteri), nessuno 889 (code e materiale collassato in nota, come prima).
+
+**Le reti (campo).** Doppia rete delle generazioni `fraz55 --risorse-visive` exit 0 (letture del riferimento identiche
+alla base 52/52 per generazione, 26.5→27 1,40 % su 908 pagine, Marotta identico, oracolo invariato, risorse visive 52/52).
+App VERA nel simulatore = catena dell'iPad sull'host = Mac con l'innesto spento sulle stesse catture: byte per byte 52/52 su
+iOS 27 e 52/52 su iOS 26.5; Mac dal vivo contro iPad iOS 27: solo le differenze di generazione già note e dichiarate (EdD
+p. 45; 75 riquadri spostati al più di 0,6 punti; 3 annunci di risorse visive). Annotazioni: rete fissa 416/416 verdi per
+generazione, 0 sbagliati, tre prove al contrario pulite; passaggio dalla lettura 54 alla 55: 9.515/9.515 segnalibri
+(iOS 27; 9.486/9.486 su 26.5), 14.003 citazioni + 22 a cavallo di due pezzi (parole esatte), 0 sbagliati; ritorno dalla 55
+alla 54: 283 segnalibri «da ricollocare» dichiarati su 10.909 (pezzi brevi), 0 sbagliati; fra Mac e iPad 55 il residuo
+dei pezzi brevi sparisce (2 segnalibri e 6 citazioni orfani, nei volumi dell'indice analitico). Vista di lettura contro il
+PDF (iPad Air 11" M4 iOS 27, 13 volumi di tutte le famiglie, 26 note e 81 pezzi): nessun veto. Pacchetti: 7/7 identici
+byte per byte all'andata e ritorno. Misure dei titoli e di struttura identiche prima e dopo e alle ultime registrate,
+parole inesistenti 0 nuove su entrambe le generazioni. Suite: `validate.sh` (iPhone 16 iOS 26.5) ScaboCore 876,
+ScaboAppTests 176 (14 saltati), test UI 17, 0 falliti (al primo giro un test fissava l'ultima cura a 53: aggiornato in
+`7b42715`); iPhone 16 iOS 27 uguale (ScaboAppTests 176 con 14 saltati, test UI 17, 0 falliti); iPad Pro 11" iOS 27 test UI 11/17 con 6 rossi preesistenti, identici col codice di partenza `72319f2` (controprova nello stesso simulatore: Dynamic Type su Home, Ricerca, Impostazioni e dentro la scheda dell'offerta; testo potenzialmente inaccessibile sulla schermata del doppione; due test dell'importazione doppia scritti per la barra delle schede dell'iPhone); ScaboPageStructure 19 (1 saltata), ScaboChain 8, Mac 65 (3 saltate), 0 falliti.
+
+**Il conteggio delle note spezzate (campo; stima dedotta).** `docs/CONTEGGIO_NOTE_SPEZZATE.md`: 2.961 aperte su iOS 27
+(2.965 su 26.5) su 3.209 candidate; campione dichiarato di 202 casi giudicati contro la pagina (prospetti PyMuPDF e, per 22,
+l'immagine): 71 veri, 131 falsi; circa 930 note spezzate aperte vere, circa 710 fuori dai codici; gli 11 casi storici
+confermati (9 veri, 2 falsi) e tutti aperti. Strato «pagine contigue, il predicato dell'app le accetta, lontane nel
+flusso»: 533 casi, 35 veri su 36 (418 con la successione confermata, 18 su 18). Delle 602 coppie della ricucitura spenta
+del Mac, 429 sono aperte sull'iPad: la premessa «l'app le ricuce già» valeva solo per l'Estratto.
+
+**Build 55 (campo).** Su TestFlight: `fastlane beta` ha archiviato ed esportato (numero 55) e altool ha caricato
+(«UPLOAD SUCCEEDED», Delivery UUID `80cf20c4-fc3f-4ed3-bd95-3f674dbdd339`), ma tre errori 500 di App Store Connect hanno
+fatto uscire la lane con exit 1 prima delle note; verificato con l'API che la build c'era (elaborazione VALID, caricata alle
+15:24:54) e impostato il solo «Cosa testare» (2.372 caratteri, riletto identico al file). Dettagli e lezione in
+`RELEASE_TESTFLIGHT.md`.
+
+**Revisione indipendente (campo; sub-agente fresco prima del caricamento, sola lettura, verifiche sue).** Nessun difetto
+del codice che blocchi la build. Confermati con script suoi: ricomposizione esatta (errori 0; solo spazi doppi in Mosconi),
+lettere e cifre identiche (52/52 e 38/38 flussi per generazione), parità byte per byte con il Mac a innesto spento,
+conteggio coerente (10 casi rigiudicati, 10 concordi), nessun testo dei volumi. Rilievi: R1 tre frasi delle note per i
+tester imprecise → corrette; R2 la guardia delle risorse visive non conta «certi» i pezzi di seguito → dichiarato; R3/R4
+imprecisioni nei documenti → corrette (`b4d2f6c`); R5 commenti rimasti indietro → corretti (`dde135f`); R6 limiti del
+rilevatore, R7 volumi enormi fra 400 e 1.200 (annotazioni della prima sessione su pezzi brevi), R9 due convenzioni per
+l'id di base, R10 offerta anche ai libri che non cambiano → dichiarati; R8 il test rosso di `d1a8394` → già corretto.
+
+**Decisioni per il maintainer** (con inclinazione; referto § 8): (1) ricucire sull'iPad le note spezzate fra pagine
+contigue estendendo la ricucitura per identità prima del piazzamento (oggi solo Estratto), con la guardia di successione e
+senza codici — sì, giro dedicato; ricucitura del Mac spenta; (2) la qualità dei confini dei pezzi nel meccanismo condiviso
+(un confine su tre a parola dentro una frase, iniziali doppie degli autori, pezzi sotto i 40 caratteri) — curarla in un
+giro piccolo e misurato, prima le iniziali; (3) il segnale di chiusura della nota (§ 10.6), mai costruito — costruirlo nel
+giro dei suoni, certificato all'orecchio.
+
+**Residuo dichiarato.** I volumi oltre le 1.500 pagine: importati a 400 e riaperti a 1.200, ora con pezzi di nota
+diversi fra le due (annotazioni della prima sessione su pezzi brevi «da ricollocare», dichiarate); le note spezzate aperte; i confini dei pezzi; il segnale di chiusura; l'ordine delle righe in
+alcune prime note di pagina (3 casi nel campione, preesistente, non misurato); la posizione di lettura sulle note
+frazionate è provata per equivalenza di codice (stesso conio d'ancora dei segnalibri), non con una rete sua; AirDrop vero e
+ascolto su dispositivo non provati in questo giro.
 
 ## ▶ STATO — Giro «costruzione della linea Mac»: l'officina Mac produce la lettura migliorata, la esporta in un pacchetto, l'iPad la riceve; pannello dei modelli vero → build 54 — 2026-10-16
 
