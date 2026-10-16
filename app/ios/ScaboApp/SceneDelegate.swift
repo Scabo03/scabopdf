@@ -39,6 +39,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             setStoredFirstOpenCompleted(prefs, true)
             UITestSeeding.applyIfRequested()
         }
+        // Consegna di «Apri con» ad APP IN CORSA, per i test d'interfaccia: `XCUIApplication.open` rilancia l'app, quindi
+        // non prova l'arrivo con un libro aperto. Dopo i secondi dati si chiama la stessa funzione del sistema.
+        if let i = CommandLine.arguments.firstIndex(of: "-uiTestDeliverMacReadingAfter"),
+           CommandLine.arguments.indices.contains(i + 1), let seconds = Double(CommandLine.arguments[i + 1]) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { [weak self] in
+                self?.receive([URL(fileURLWithPath: UITestSeeding.outsidePackagePath)])
+            }
+        }
         #endif
 
         // Prima apertura (design accessibilità visiva): l'utente sceglie il tema con una schermata
@@ -110,27 +118,29 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         receive(URLContexts.map { $0.url })
     }
 
-    /// Accoglie le letture arrivate e propone subito la prima (le altre restano nella riga della Home). Se è aperta la
-    /// schermata della prima apertura, non si interrompe: la lettura resta in attesa nella Home.
+    /// Accoglie le letture arrivate. Se l'utente è sulla Home, propone subito la prima (le altre restano nella riga della
+    /// Home). Se è aperto qualcosa — un libro in lettura, un'elaborazione in corso, la schermata della prima apertura,
+    /// un'altra scheda — NON si chiude nulla: un'elaborazione interrotta andrebbe persa e un libro aperto non si strappa
+    /// all'utente (revisione indipendente del giro, 2026-10-16). La lettura aspetta nella Home e l'app lo dice.
     private func receive(_ urls: [URL]) {
         let accepted = urls.filter(ReceivedReadings.isPackage).compactMap(ReceivedReadings.accept)
         NotificationCenter.default.post(name: ReceivedReadings.didChange, object: nil)
-        guard let first = accepted.first, let root = window?.rootViewController as? RootTabBarController else { return }
-        UIAccessibility.post(notification: .announcement, argument: "È arrivata una lettura preparata dal Mac.")
-        let present = {
-            let presenter = (root.selectedViewController as? UINavigationController)?.topViewController ?? root
-            ReadingFromMac.start(fileURL: first, from: presenter) {
-                NotificationCenter.default.post(name: ReceivedReadings.didChange, object: nil)
-            }
+        guard let first = accepted.first else { return }
+        guard let root = window?.rootViewController as? RootTabBarController, root.presentedViewController == nil else {
+            UIAccessibility.post(notification: .announcement, argument: Self.arrivalWhileBusyAnnouncement)
+            return
         }
-        // Un lettore o un'altra schermata aperti si chiudono prima (la posizione è già salvata): la lettura del Mac
-        // potrebbe riguardare proprio il libro aperto.
-        if root.presentedViewController != nil {
-            root.dismiss(animated: false) { present() }
-        } else {
-            present()
+        UIAccessibility.post(notification: .announcement, argument: "È arrivata una lettura preparata dal Mac.")
+        let presenter = (root.selectedViewController as? UINavigationController)?.topViewController ?? root
+        ReadingFromMac.start(fileURL: first, from: presenter) {
+            NotificationCenter.default.post(name: ReceivedReadings.didChange, object: nil)
         }
     }
+
+    static let arrivalWhileBusyAnnouncement =
+        "È arrivata una lettura preparata dal Mac. Quello che stai facendo non si interrompe: la trovi nella Home, "
+        + "fra le letture arrivate dal Mac."
+
 
     func sceneDidEnterBackground(_ scene: UIScene) {
         // Called as the scene transitions from the foreground to the background.

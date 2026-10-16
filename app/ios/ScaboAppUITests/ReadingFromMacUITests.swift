@@ -125,6 +125,47 @@ final class ReadingFromMacUITests: XCTestCase {
         XCTAssertTrue(app.cells["home.fromMac"].waitForExistence(timeout: 5))
     }
 
+    /// «Togli questa lettura dall'iPad…»: due gesti (la conferma nella stessa scheda, «Annulla» non toglie nulla), poi la
+    /// lettura sparisce e con lei la riga della Home; il libro resta com'era (nessun vicolo cieco: revisione del giro).
+    func test_togliLaLettura_conConferma_laRigaSparisce() throws {
+        guard #available(iOS 17.0, *) else { throw XCTSkip("performAccessibilityAudit richiede iOS 17+") }
+        let app = launch("-uiTestSeedMacReading")
+        openArrival(app)
+        let discard = app.buttons["receive.discard"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 10))
+        discard.tap()
+        let cancel = app.buttons["confirm.discard.cancel"]
+        XCTAssertTrue(cancel.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["confirm.discard.text"].label.contains("Il libro resta com'è"))
+        audit(app, screen: "Conferma: togliere la lettura dal Mac")
+        cancel.tap()
+        XCTAssertTrue(discard.waitForExistence(timeout: 5), "«Annulla» lascia l'offerta, nulla è tolto")
+        discard.tap()
+        XCTAssertTrue(app.buttons["confirm.discard.ok"].waitForExistence(timeout: 5))
+        app.buttons["confirm.discard.ok"].tap()
+        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        if back.waitForExistence(timeout: 5) { back.tap() }
+        XCTAssertTrue(app.navigationBars.buttons["Tag"].waitForExistence(timeout: 10), "di nuovo in Home")
+        XCTAssertFalse(app.cells["home.fromMac"].exists, "la lettura tolta non c'è più")
+        let book = app.cells.containing(NSPredicate(format: "label CONTAINS %@", "Libro di prova")).firstMatch
+        XCTAssertTrue(book.exists, "il libro resta in libreria")
+    }
+
+    /// Il libro non c'è e non lo si vuole importare: anche lì la lettura si può togliere.
+    func test_libroAssente_laLetturaSiPuoTogliere() throws {
+        let app = launch("-uiTestSeedMacReadingMissingBook")
+        openArrival(app)
+        let discard = app.buttons["missing.discard"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 10))
+        discard.tap()
+        XCTAssertTrue(app.buttons["confirm.discard.ok"].waitForExistence(timeout: 5))
+        app.buttons["confirm.discard.ok"].tap()
+        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        if back.waitForExistence(timeout: 5) { back.tap() }
+        XCTAssertTrue(app.navigationBars.buttons["Tag"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.cells["home.fromMac"].exists, "la lettura tolta non c'è più")
+    }
+
     /// Due copie dello stesso libro: si chiede a quale, la più recente aperta per prima.
     func test_dueCopie_chiedeAQuale_laPiuRecentePerPrima() throws {
         guard #available(iOS 17.0, *) else { throw XCTSkip("performAccessibilityAudit richiede iOS 17+") }
@@ -158,7 +199,8 @@ final class ReadingFromMacUITests: XCTestCase {
     }
 
     /// La CONSEGNA DAL SISTEMA (il percorso di «Apri con» e di AirDrop): il pacchetto sta fuori dall'app e il sistema lo
-    /// apre con l'app (`XCUIApplication.open`); l'app lo accoglie fra le letture arrivate e propone subito l'offerta.
+    /// apre con l'app (`XCUIApplication.open`, che RILANCIA l'app: è il percorso dell'avvio con un file; quello ad app in
+    /// corsa con un libro aperto è nel test seguente); l'app lo accoglie fra le letture arrivate e propone subito l'offerta.
     func test_consegnaDalSistema_apriCon_proponeSubitoLOfferta() throws {
         guard #available(iOS 16.4, *) else { throw XCTSkip("XCUIApplication.open(URL) richiede iOS 16.4+") }
         let app = launch("-uiTestSeedMacReadingOutside")
@@ -170,6 +212,32 @@ final class ReadingFromMacUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Lettura migliore disponibile per «Libro di prova»"].exists)
         app.buttons["receive.later"].tap()
         XCTAssertTrue(app.cells["home.fromMac"].waitForExistence(timeout: 10), "«Non ora»: resta fra le letture arrivate")
+    }
+
+    /// Arriva una lettura dal Mac mentre un libro è aperto: il libro NON si chiude e nessuna offerta gli si sovrappone (lo
+    /// stesso vale per un'elaborazione in corso, che chiudendosi andrebbe persa: revisione indipendente del giro). La
+    /// lettura aspetta nella Home.
+    func test_consegnaAdAppInCorso_conUnLibroAperto_nonChiudeNulla() throws {
+        // `XCUIApplication.open` RILANCIA l'app (il registro del test lo mostra: «Launch»), quindi qui la consegna arriva
+        // all'app in corsa con la stessa funzione di «Apri con» dopo 12 secondi (`-uiTestDeliverMacReadingAfter`, DEBUG).
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTestSeedMacReadingOutside", "-uiTestDeliverMacReadingAfter", "12"]
+        app.launch()
+        let book = app.cells.containing(NSPredicate(format: "label CONTAINS %@", "Libro di prova")).firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 15), "il libro è nei Recenti")
+        book.tap()
+        let paragraph = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label BEGINSWITH %@", "Il primo paragrafo di prova")).firstMatch
+        XCTAssertTrue(paragraph.waitForExistence(timeout: 15), "il libro è aperto")
+        // La consegna arriva mentre il libro è aperto: nessuna offerta, il libro resta.
+        XCTAssertFalse(app.buttons["receive.accept"].waitForExistence(timeout: 14), "nessuna offerta sopra il libro aperto")
+        XCTAssertTrue(paragraph.exists, "il libro resta aperto")
+        // La lettura è stata accolta e aspetta nella Home: si riapre l'app senza semi (l'avvio va sempre alla Home; il
+        // tasto Indietro del lettore sta nel suo contenitore d'accessibilità chiuso, come negli altri test si termina).
+        app.terminate()
+        let again = XCUIApplication()
+        again.launch()
+        XCTAssertTrue(again.cells["home.fromMac"].waitForExistence(timeout: 15), "la lettura arrivata aspetta nella Home")
     }
 
     /// File danneggiato e forma più recente: prosa, nulla cambia; il file si può togliere.

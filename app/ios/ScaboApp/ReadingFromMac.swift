@@ -134,7 +134,7 @@ enum ReadingFromMac {
         }
         DocumentIdentity.documents(withFingerprint: header.source.sha256) { matches in
             if matches.isEmpty {
-                MissingBookViewController.present(header: header, from: presenter, onDone: onDone)
+                MissingBookViewController.present(header: header, fileURL: fileURL, from: presenter, onDone: onDone)
             } else if matches.count == 1 {
                 ReceiveOfferViewController.present(header: header, fileURL: fileURL, document: matches[0], copies: 1,
                                                    from: presenter, onDone: onDone)
@@ -179,16 +179,20 @@ enum ReadingFromMac {
             fixes.append(n == 1 ? "ha ricucito una nota spezzata fra due pagine" : "ha ricucito \(n) note spezzate fra due pagine")
         }
         if let n = h.reading.relabeledIndexLines, n > 0 {
-            fixes.append(n == 1 ? "legge come testo dell'indice una riga che prima era letta come nota"
-                         : "legge come testo dell'indice \(n) righe che prima erano lette come note")
+            fixes.append(n == 1 ? "legge come testo dell'indice una voce che prima era letta come nota"
+                         : "legge come testo dell'indice \(n) voci che prima erano lette come note")
         }
         if !fixes.isEmpty { t += " In questo libro il Mac " + fixes.joined(separator: " e ") + "." }
         if h.reading.visualResources > 0 {
             t += h.reading.visualResources == 1 ? " Porta una tabella o figura riconosciuta."
                 : " Porta \(h.reading.visualResources) tabelle e figure riconosciute."
         }
-        t += " Le note più lunghe sono divise in parti, da ascoltare una alla volta. Il resto del testo è quello che l'iPad "
-            + "ricava dallo stesso PDF: se il libro non aveva nulla da correggere, la lettura resta molto simile a quella di adesso."
+        if h.reading.visualResourcesSkipped != nil {
+            t += " Sul Mac il riconoscimento di tabelle e figure non è stato possibile: dopo, l'iPad proporrà di riprovarlo."
+        }
+        t += " Se il libro ha note molto lunghe, sono divise in parti, da ascoltare una alla volta. Il resto del testo è quello "
+            + "che l'iPad ricava dallo stesso PDF: se il libro non aveva nulla da correggere, la lettura resta molto simile a quella "
+            + "di adesso."
         if ReadingAssembly.isLarge(pageCount: h.source.pageCount) {
             t += " È un volume molto grande: come sull'iPad, la lettura è a blocchi più ampi e senza Consultazione Rapida."
         }
@@ -256,7 +260,8 @@ enum ReadingFromMac {
             return .cacheWriteFailed
         }
         service.store.recordReceivedReading(id: id, systemVersion: header.producer.system,
-                                            cureLevel: header.producer.cureLevel, at: date)
+                                            cureLevel: header.producer.cureLevel, at: date,
+                                            visualResourcesSkipped: header.reading.visualResourcesSkipped)
         return nil
     }
 
@@ -380,6 +385,7 @@ enum ReadingFromMac {
             ? "Il punto in cui eri arrivato non è stato ritrovato con sicurezza: riaprendo il libro partirai dall'inizio della stessa pagina."
             : "Il punto in cui eri arrivato è stato ritrovato.")
         lines.append("Puoi tenere la nuova lettura oppure tornare a quella di prima. Se non decidi adesso, la scelta resta fra le opzioni del libro.")
+        lines.append("Se torni a quella di prima, la lettura del Mac non resta sull'iPad: per riaverla, rimandala dal Mac.")
         return lines.joined(separator: " ")
     }
 }
@@ -431,18 +437,19 @@ final class ReceivedProblemViewController: ReprocessTextViewController {
 /// Il libro non è in libreria: lo dice e propone di importare prima il PDF.
 final class MissingBookViewController: ReprocessTextViewController {
     private let header: ReadingPackageHeader
+    private let fileURL: URL
     private let onDone: () -> Void
     private var heading: UILabel?
 
-    static func present(header: ReadingPackageHeader, from presenter: UIViewController, onDone: @escaping () -> Void) {
-        let vc = MissingBookViewController(header: header, onDone: onDone)
+    static func present(header: ReadingPackageHeader, fileURL: URL, from presenter: UIViewController, onDone: @escaping () -> Void) {
+        let vc = MissingBookViewController(header: header, fileURL: fileURL, onDone: onDone)
         let nav = UINavigationController(rootViewController: vc)
         nav.modalPresentationStyle = .formSheet
         presenter.present(nav, animated: Motion.animated())
     }
 
-    private init(header: ReadingPackageHeader, onDone: @escaping () -> Void) {
-        self.header = header; self.onDone = onDone
+    private init(header: ReadingPackageHeader, fileURL: URL, onDone: @escaping () -> Void) {
+        self.header = header; self.fileURL = fileURL; self.onDone = onDone
         super.init(nibName: nil, bundle: nil)
     }
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError("init(coder:) non supportato.") }
@@ -453,7 +460,7 @@ final class MissingBookViewController: ReprocessTextViewController {
         heading = addHeading("Il libro non è in libreria")
         addParagraph("È arrivata dal Mac la lettura di «\(header.source.title)» (file «\(header.source.fileName)», \(header.source.pageCount) pagine), "
             + "ma questo libro non è nella libreria di questo dispositivo, oppure non è lo stesso file byte per byte. "
-            + "Importa prima il PDF con il tasto più della Home; poi riapri la lettura dalla riga «Letture arrivate dal Mac». "
+            + "Importa prima il PDF con il tasto più della Home; poi riapri la lettura dalla riga delle letture arrivate dal Mac. "
             + "La lettura resta in attesa finché non decidi.", identifier: "missing.text")
         addButton("Importa il PDF adesso…", prominent: true, identifier: "missing.import") { [weak self] in
             guard let self, let presenter = self.presentingViewController else { return }
@@ -464,6 +471,21 @@ final class MissingBookViewController: ReprocessTextViewController {
             guard let self else { return }
             let d = self.onDone
             self.dismiss(animated: true) { d() }
+        }
+        addButton("Togli questa lettura dall'iPad…", prominent: false, identifier: "missing.discard") { [weak self] in
+            guard let self, let nav = self.navigationController else { return }
+            ReprocessConfirmViewController.push(
+                on: nav, identifier: "confirm.discard",
+                question: "Togliere questa lettura dall'iPad?",
+                explanation: "La lettura arrivata dal Mac per «\(self.header.source.title)» si cancella dall'iPad. Se poi la vorrai, "
+                    + "rimandala dal Mac.",
+                actionTitle: "Togli la lettura") { [weak self] in
+                    guard let self else { return }
+                    ReceivedReadings.remove(self.fileURL)
+                    let d = self.onDone
+                    UIAccessibility.post(notification: .announcement, argument: "Lettura dal Mac tolta dall'iPad.")
+                    self.dismiss(animated: true) { d() }
+                }
         }
     }
 
@@ -561,6 +583,25 @@ final class ReceiveOfferViewController: ReprocessTextViewController {
         addParagraph("Le tue annotazioni. " + ReadingFromMac.annotationsText(header, document: document), identifier: "receive.annotations")
         addButton("Usa la lettura del Mac…", prominent: true, identifier: "receive.accept") { [weak self] in self?.askConfirmation() }
         addButton("Non ora", prominent: false, identifier: "receive.later") { [weak self] in self?.later() }
+        addButton("Togli questa lettura dall'iPad…", prominent: false, identifier: "receive.discard") { [weak self] in self?.askDiscard() }
+    }
+
+    /// Una lettura che non si vuole si può togliere (nessun vicolo cieco: senza, la riga della Home restava per sempre).
+    private func askDiscard() {
+        guard let nav = navigationController else { return }
+        ReprocessConfirmViewController.push(
+            on: nav, identifier: "confirm.discard",
+            question: "Togliere questa lettura dall'iPad?",
+            explanation: "La lettura arrivata dal Mac per «\(document.title)» si cancella dall'iPad. Il libro resta com'è, con le "
+                + "sue annotazioni. Se poi la vorrai, rimandala dal Mac.",
+            actionTitle: "Togli la lettura") { [weak self] in self?.discard() }
+    }
+
+    private func discard() {
+        ReceivedReadings.remove(fileURL)
+        let d = onDone
+        UIAccessibility.post(notification: .announcement, argument: "Lettura dal Mac tolta dall'iPad.")
+        dismiss(animated: true) { d() }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -606,6 +647,8 @@ final class ReceivingViewController: UIViewController {
         label.accessibilityTraits.insert(.header)
         let spinner = UIActivityIndicatorView(style: .large)
         spinner.startAnimating()
+        spinner.isAccessibilityElement = false
+        waitingLabel = label
         let stack = UIStackView(arrangedSubviews: [spinner, label])
         stack.axis = .vertical
         stack.spacing = 16
@@ -619,9 +662,11 @@ final class ReceivingViewController: UIViewController {
         isModalInPresentation = true
     }
 
+    private weak var waitingLabel: UILabel?
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        UIAccessibility.post(notification: .screenChanged, argument: view.subviews.first)
+        UIAccessibility.post(notification: .screenChanged, argument: waitingLabel)
     }
 }
 
@@ -733,6 +778,7 @@ final class ReceivedListViewController: UITableViewController {
             config.text = "Nessuna lettura arrivata dal Mac."
             cell.accessoryType = .none
             cell.selectionStyle = .none
+            cell.accessibilityHint = nil
         } else {
             let f = files[indexPath.row]
             if let h = f.header {

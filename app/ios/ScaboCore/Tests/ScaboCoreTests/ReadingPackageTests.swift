@@ -58,6 +58,23 @@ final class ReadingPackageTests: XCTestCase {
         XCTAssertEqual(try ReadingPackage.readBody(data2, header: h2, payloadOffset: o2).annotations, ann)
     }
 
+    func test_riconoscimentoSaltatoSulMac_vaNellIntestazione_eUnaFormaSenzaIlCampoSiLeggeAncora() throws {
+        // Revisione indipendente del giro: se sul Mac tabelle e figure non si sono potute riconoscere, l'iPad lo deve sapere.
+        let skipped = try ReadingPackage.write(producer: Self.producer, source: Self.source, reading: Self.reading(), cacheFormat: 6,
+                                               workshop: [], visualResourcesSkipped: "modello non disponibile", annotations: nil)
+        XCTAssertEqual(try ReadingPackage.readHeader(skipped).header.reading.visualResourcesSkipped, "modello non disponibile")
+        let normal = try ReadingPackage.write(producer: Self.producer, source: Self.source, reading: Self.reading(), cacheFormat: 6,
+                                              workshop: [], annotations: nil)
+        let (h, _) = try ReadingPackage.readHeader(normal)
+        XCTAssertNil(h.reading.visualResourcesSkipped)
+        // Un'intestazione scritta prima del campo (senza la chiave) si legge ancora.
+        let json = try JSONEncoder().encode(h.reading)
+        var dict = try XCTUnwrap(JSONSerialization.jsonObject(with: json) as? [String: Any])
+        dict.removeValue(forKey: "visualResourcesSkipped")
+        let old = try JSONSerialization.data(withJSONObject: dict)
+        XCTAssertNil(try JSONDecoder().decode(ReadingPackageHeader.Reading.self, from: old).visualResourcesSkipped)
+    }
+
     func test_intestazioneDaFile_senzaToccareIlCarico() throws {
         let data = try ReadingPackage.write(producer: Self.producer, source: Self.source, reading: Self.reading(), cacheFormat: 6, workshop: [], annotations: nil)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("prova-\(UUID().uuidString).scabolettura")

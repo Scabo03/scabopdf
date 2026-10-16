@@ -125,6 +125,11 @@ public struct ArchivedDocument: Codable, Equatable, Sendable {
     /// protezione della memoria). `nil` se è avvenuto o non serviva. L'offerta di rielaborazione lo propone di nuovo.
     public var visualResourcesSkipped: String?
 
+    /// La build dell'app con cui un NUOVO tentativo di riconoscimento (dopo un primo saltato) è fallito di nuovo: finché
+    /// l'app resta quella, l'offerta non lo ripropone (un iPad che non ha mai memoria abbastanza non riceve l'offerta
+    /// all'infinito; revisione indipendente del giro, 2026-10-16). `nil` altrimenti. OPZIONALE/additivo.
+    public var visualResourcesRetriedBuild: String?
+
     public init(
         id: String,
         title: String,
@@ -601,20 +606,27 @@ public final class LibraryStore {
         state.documents[i].processedAt = now()
         state.documents[i].processedAppBuild = appBuild
         state.documents[i].readingOrigin = nil   // elaborato da questo dispositivo
+        let wasSkipped = state.documents[i].visualResourcesSkipped != nil
         state.documents[i].visualResourcesSkipped = visualResourcesSkipped
+        // Saltato di nuovo dopo un tentativo: con questa versione dell'app non si ripropone (vedi il campo).
+        state.documents[i].visualResourcesRetriedBuild = (wasSkipped && visualResourcesSkipped != nil) ? appBuild : nil
         persist()
     }
 
     /// Registra l'adozione di una lettura ARRIVATA DAL MAC (giro «costruzione della linea Mac», 2026-10-16): la
     /// generazione è quella del lettore di sistema del Mac che l'ha estratta, la build è il livello di cure della catena
     /// del Mac (l'ultima build dell'app per iPad le cui cure la catena contiene), l'origine è `"mac"`.
-    public func recordReceivedReading(id: String, systemVersion: String, cureLevel: Int, at date: Date) {
+    public func recordReceivedReading(id: String, systemVersion: String, cureLevel: Int, at date: Date,
+                                      visualResourcesSkipped: String? = nil) {
         guard let i = state.documents.firstIndex(where: { $0.id == id }) else { return }
         state.documents[i].processedSystemVersion = systemVersion
         state.documents[i].processedAt = date
         state.documents[i].processedAppBuild = String(cureLevel)
         state.documents[i].readingOrigin = ReadingOrigin.mac
-        state.documents[i].visualResourcesSkipped = nil   // le risorse visive le ha cercate il Mac
+        // Le risorse visive le ha cercate il Mac; se lì il riconoscimento non è avvenuto, il libro resta segnato e
+        // l'offerta di rielaborazione propone di riprovare sull'iPad.
+        state.documents[i].visualResourcesSkipped = visualResourcesSkipped
+        state.documents[i].visualResourcesRetriedBuild = nil
         persist()
     }
 

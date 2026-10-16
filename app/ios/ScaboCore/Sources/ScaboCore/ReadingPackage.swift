@@ -92,12 +92,18 @@ public struct ReadingPackageHeader: Codable, Equatable, Sendable {
         /// ricucite; righe dell'indice analitico che l'app leggeva come note e il Mac legge come testo dell'indice.
         public var stitchedNotes: Int?
         public var relabeledIndexLines: Int?
+        /// Il riconoscimento di tabelle e figure sul Mac non è avvenuto (o non del tutto) per una ragione da riprovare
+        /// (il modello non si è caricato): l'iPad che adotta la lettura segna il libro e propone di riprovare, invece di
+        /// perdere in silenzio le tabelle e figure che aveva (revisione indipendente del giro). Assente = riconoscimento fatto.
+        public var visualResourcesSkipped: String?
 
         public init(cacheFormat: Int, contentTarget: Int, segments: Int, visualResources: Int, hasDoctrine: Bool,
-                    hasQuickConsult: Bool, workshop: [String], stitchedNotes: Int? = nil, relabeledIndexLines: Int? = nil) {
+                    hasQuickConsult: Bool, workshop: [String], stitchedNotes: Int? = nil, relabeledIndexLines: Int? = nil,
+                    visualResourcesSkipped: String? = nil) {
             self.cacheFormat = cacheFormat; self.contentTarget = contentTarget; self.segments = segments
             self.visualResources = visualResources; self.hasDoctrine = hasDoctrine; self.hasQuickConsult = hasQuickConsult
             self.workshop = workshop; self.stitchedNotes = stitchedNotes; self.relabeledIndexLines = relabeledIndexLines
+            self.visualResourcesSkipped = visualResourcesSkipped
         }
     }
 
@@ -211,7 +217,7 @@ public enum ReadingPackage {
     /// Scrive il pacchetto. `annotations == nil` (o vuote) → non incluse.
     public static func write(producer: ReadingPackageHeader.Producer, source: ReadingPackageHeader.Source,
                              reading: PackagedReading, cacheFormat: Int, workshop: [String],
-                             stitchedNotes: Int? = nil, relabeledIndexLines: Int? = nil,
+                             stitchedNotes: Int? = nil, relabeledIndexLines: Int? = nil, visualResourcesSkipped: String? = nil,
                              annotations: PackagedAnnotations?, createdAt: Date = Date()) throws -> Data {
         let included = (annotations?.isEmpty == false) ? annotations : nil
         let body = ReadingPackageBody(reading: reading, annotations: included)
@@ -227,7 +233,8 @@ public enum ReadingPackage {
             reading: .init(cacheFormat: cacheFormat, contentTarget: reading.contentTarget, segments: segments,
                            visualResources: visual, hasDoctrine: reading.doctrineContent != nil,
                            hasQuickConsult: reading.quickConsultTree != nil, workshop: workshop,
-                           stitchedNotes: stitchedNotes, relabeledIndexLines: relabeledIndexLines),
+                           stitchedNotes: stitchedNotes, relabeledIndexLines: relabeledIndexLines,
+                           visualResourcesSkipped: visualResourcesSkipped),
             annotations: included.map { .init(bookmarks: $0.bookmarks.count, underlines: $0.underlines.count,
                                               hasPosition: $0.readingAnchor != nil) },
             payload: .init(encoding: "lzfse", length: compressed.count, sha256: sha256Hex(compressed)))

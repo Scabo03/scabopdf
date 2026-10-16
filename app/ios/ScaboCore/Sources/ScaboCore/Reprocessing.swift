@@ -64,7 +64,9 @@ public struct ReprocessingPolicy: Sendable {
         let build = doc.processedAppBuild.flatMap { Int($0) }
         // Riconoscimento di tabelle e figure saltato all'ultima elaborazione (memoria, modello): si propone di riprovare,
         // anche se il libro è stato elaborato da questa stessa build (giro del 2026-10-16, protezione della memoria).
-        if doc.visualResourcesSkipped != nil, latestCureBuild >= Self.visualResourcesCureBuild {
+        // Ma se un nuovo tentativo con QUESTA versione dell'app è già fallito, si tace fino alla prossima versione.
+        if doc.visualResourcesSkipped != nil, latestCureBuild >= Self.visualResourcesCureBuild,
+           currentAppBuild == nil || doc.visualResourcesRetriedBuild != currentAppBuild {
             return .cure
         }
         // Lettura arrivata dal Mac (giro del 2026-10-16): il suo lettore di sistema è quello del Mac, non conta

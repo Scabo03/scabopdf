@@ -33,6 +33,25 @@ final class ReprocessingTests: XCTestCase {
         XCTAssertEqual(policy.reason(for: doc(build: "1"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "48"), .cure)
     }
 
+    func test_riconoscimentoSaltato_siRipropone_maNonAllInfinitoConLaStessaApp() {
+        // Revisione indipendente del giro: un iPad che non ha mai memoria abbastanza non deve ricevere l'offerta per sempre.
+        let store = LibraryStore(persistence: InMemoryLibraryPersistence())
+        let d = store.addDocument(title: "t", sourceFileName: "t.pdf", sourcePageCount: 3)
+        let p = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 54)
+        func reason() -> ReprocessingReason? {
+            p.reason(for: store.document(id: d.id)!, currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "54")
+        }
+        store.recordProcessed(id: d.id, systemVersion: "iPadOS 27.0.1", appBuild: "54", visualResourcesSkipped: "memoria scarsa")
+        XCTAssertEqual(reason(), .cure, "il primo salto: si propone di riprovare")
+        store.recordProcessed(id: d.id, systemVersion: "iPadOS 27.0.1", appBuild: "54", visualResourcesSkipped: "memoria scarsa")
+        XCTAssertNil(reason(), "riprovato e fallito di nuovo con la stessa app: l'offerta tace")
+        XCTAssertEqual(p.reason(for: store.document(id: d.id)!, currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "55"),
+                       .cure, "con una versione nuova dell'app si ripropone")
+        store.recordProcessed(id: d.id, systemVersion: "iPadOS 27.0.1", appBuild: "55", visualResourcesSkipped: nil)
+        XCTAssertNil(store.document(id: d.id)!.visualResourcesRetriedBuild, "riuscito: nessun segno resta")
+        XCTAssertNil(store.document(id: d.id)!.visualResourcesSkipped)
+    }
+
     func test_akn_neverOffered() {
         XCTAssertNil(policy.reason(for: doc("akn", build: "40"), currentSystemVersion: "iPadOS 27.0.1"))
     }

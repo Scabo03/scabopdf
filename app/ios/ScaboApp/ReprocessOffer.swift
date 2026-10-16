@@ -160,7 +160,9 @@ enum ReprocessOffer {
     static func presentPendingChoice(for doc: ArchivedDocument, from presenter: UIViewController, onDone: @escaping () -> Void) {
         let sheet = UIAlertController(
             title: doc.title,
-            message: "Questo libro è stato rielaborato e la lettura di prima è ancora sul dispositivo.",
+            message: doc.readingOrigin == ReadingOrigin.mac
+                ? "Questo libro ha una lettura nuova arrivata dal Mac e la lettura di prima è ancora sul dispositivo."
+                : "Questo libro è stato rielaborato e la lettura di prima è ancora sul dispositivo.",
             preferredStyle: .actionSheet)
         sheet.addAction(UIAlertAction(title: "Tieni la nuova lettura", style: .default) { [weak presenter] _ in
             guard let presenter else { return }
