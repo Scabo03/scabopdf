@@ -71,6 +71,8 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 **Ordine di lavoro:** Parte 1 ricucitura (diagnosi, cura a gradini, reti), Parte 2 confini dei pezzi (misura, regola, ambito, reti), Parte 3 build 56 (solo se tutto è verde), documentazione, revisione indipendente, pulizia.
 
+**Avanzamento (per la ripresa).** Parte 1 CONCLUSA: `479d859` (primo gradino) e `6fc5ad1` (secondo gradino), `stitchAdjacentPageFootnotes` in `NoteBinding.swift`, 534 ricuciture (428 + 106) in 16 volumi, tutte giudicate contro la pagina (zero fusioni sbagliate), stesso insieme sulle due generazioni; doppia rete ufficiale `ric1` (cattura nuova) exit 0, rete fissa sulle annotazioni `ric1` exit 0 (0 sbagliate), parità iPad-Mac 52/52, titoli e struttura identici, vista nel simulatore senza veto; aperte 2.961 → 2.442. Parte 2 IN CORSO nel laboratorio (`ricucitura/src_p2`, regola dei confini in `AknSegments.swift` + una regola della guardia delle risorse visive che il frazionamento nuovo rende necessaria); nel repo una bozza vecchia è nello `stash@{0}` (superata dalla copia di laboratorio: NON applicarla).
+
 ## ▶ STATO — Giro «uniformità della lettura e misura»: note lunghe frazionate anche sull'iPad (build 55) e conteggio delle note spezzate che l'iPad lascia aperte — 2026-10-16 pomeriggio
 
 **Partenza:** `72319f2` (main = origin, build 54 su TestFlight, nessun altro ramo). Referto e laboratorio (con nomi dei
