@@ -1,19 +1,19 @@
-Build 55 — le note lunghe a pezzi
+Build 56 — note intere e pezzi più naturali
 
 Cosa è cambiato
-- Le note lunghe ora si leggono a pezzi, uno alla volta, come già avveniva per i testi normativi. Vale per ogni libro che l'iPad (o l'iPhone) prepara da sé da un PDF: le note sono divise come nelle letture che arrivano dal Mac.
-- Il primo pezzo si annuncia come la nota intera: con il suono della nota, oppure con le parole «Nota», «Nota lunga» o «Nota molto lunga» se hai acceso «Annuncia le note a voce». Gli altri pezzi seguono subito dopo, senza annuncio. Scorrendo passi al pezzo seguente; puoi tornare al pezzo di prima e riascoltarlo.
-- Se una nota ha «Vai al testo del richiamo», ora c'è su ogni suo pezzo, non solo sul primo. Dal testo, «Vai alla nota» porta all'inizio della nota.
-- Se hai acceso «Riquadro visivo per le note», il riquadro tiene insieme tutti i pezzi della nota.
+- Molte note che prima si interrompevano a fine pagina e riprendevano più avanti, dopo altro testo, ora si leggono intere: la parte che continua in cima alla pagina seguente viene unita alla sua nota e la segue subito. L'app la unisce solo quando è sicura che sia la stessa nota, per esempio quando la nota che viene dopo porta il numero seguente; nel dubbio la nota resta com'era.
+- Le note lunghe vengono divise in pezzi più naturali, di solito a fine frase; se una frase è lunghissima, dopo un punto e virgola, due punti o una virgola. Le iniziali non sono più separate dal cognome, le abbreviazioni come «n.», «art.» o «Riv.» non sono più separate dalla parola che segue, e non ci sono più pezzi di poche parole. Per finire la frase un pezzo può essere un po' più lungo di prima, al massimo una volta e mezzo la granularità di lettura.
+- Vale anche per le note dei testi normativi.
 
 Quali libri
-- Cambiano solo i libri con note più lunghe di circa 400 caratteri; nei libri molto grandi, come i codici, solo le note oltre circa 1.200 caratteri. Sui 52 libri di prova ne cambiano 29: circa 5.400 note sono ora divise in pezzi.
-- Il testo letto non cambia di una lettera: le note sono solo divise, nello stesso ordine. Verificato su tutti i libri di prova con iOS 26 e iOS 27.
+- Note unite: soprattutto manuali e riviste con molte note a piè di pagina. Sui 52 libri di prova, 534 note che si spezzavano fra due pagine ora sono intere, in 16 libri. Nei codici le note non vengono unite.
+- Pezzi nuovi: tutti i libri con note lunghe (29 dei 52 di prova) e i testi normativi con note lunghe.
+- Le lettere del testo letto sono le stesse di prima: cambia dove le note sono divise, e la parte di una nota che riprendeva più avanti ora segue subito il suo inizio. Verificato su tutti i libri di prova con iOS 26 e iOS 27.
 
 Per i libri già aperti
-- Ricevono la novità con l'offerta «Lettura migliore disponibile», nella Home e fra le opzioni del libro: tocca «Rielabora…» e conferma. La lettura di prima resta sul dispositivo finché non scegli «Tieni la nuova lettura»; puoi anche scegliere «Torna alla lettura precedente» o «Decidi più tardi». L'offerta compare anche per i libri senza note lunghe: lì, come dice l'offerta stessa, la nuova lettura resta uguale.
-- Segnalibri e sottolineature restano al loro posto, anche dentro le note lunghe: l'app li ritrova nel testo nuovo. Una sottolineatura che ora cade su due pezzi resta intera. Se l'app non ritrovasse qualcosa con sicurezza, te lo dice e non cancella nulla: un segnalibro resta «da ricollocare» in fondo alla lista dei segnalibri; una sottolineatura resta salvata ma non si vede, e riappare se torni alla lettura precedente.
-- I libri con una lettura arrivata dal Mac avevano già le note a pezzi: per loro questa offerta non compare.
+- Ricevono la novità con l'offerta «Lettura migliore disponibile», nella Home e fra le opzioni del libro: tocca «Rielabora…» e conferma. La lettura di prima resta sul dispositivo finché non scegli «Tieni la nuova lettura»; puoi anche scegliere «Torna alla lettura precedente» o «Decidi più tardi».
+- Segnalibri e sottolineature restano al loro posto quasi sempre. Quelli messi con la build 55 su un pezzo di una nota lunga, o su una nota che ora è unita, possono non ritrovarsi, perché i pezzi sono tagliati in altri punti: l'app non li sposta a caso e te lo dice. Un segnalibro resta «da ricollocare» in fondo alla lista dei segnalibri; una sottolineatura resta salvata ma non si vede, e riappare se torni alla lettura precedente.
+- Anche i libri con una lettura arrivata dal Mac ricevono l'offerta: rielaborando sull'iPad, la lettura del Mac viene sostituita da quella dell'iPad.
 
 Una cosa da notare
-- Ascolta qualche nota lunga e dicci se i pezzi ti sembrano tagliati nel punto giusto, e se alla fine della nota ti manca un segnale che la chiuda.
+- Ascolta qualche nota lunga, e qualche nota che prima riprendeva più avanti. Se senti due note diverse unite in una, o una nota unita al testo, dicci in quale libro e a quale pagina. Dicci anche se i pezzi ti sembrano tagliati nel punto giusto.
