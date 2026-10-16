@@ -96,12 +96,26 @@ public enum AnnotationReanchoring {
             var spans: [UnderlineSpan] = []
             var failed: String?
             for span in u.spans {
-                guard let q = span.anchor, let r = index.resolve(q) else {
+                // Uno span può tornare in più span (il suo segmento diviso in pezzi, la citazione a cavallo di due).
+                guard let q = span.anchor, let rs = index.resolveSpans(q), !rs.isEmpty else {
                     failed = "citazione non ritrovata o ambigua"; break
                 }
-                let newAnchor = index.quoteAnchor(forIndex: r.segmentIndex, startWord: r.startWord, endWord: r.endWord)
-                spans.append(UnderlineSpan(segmentId: segments[r.segmentIndex].id, startWord: r.startWord,
-                                           endWord: r.endWord, anchor: newAnchor ?? q))
+                for r in rs {
+                    // Span contigui nello stesso segmento (le parti di una nota tornate una nota sola) diventano uno.
+                    if let last = spans.last, last.segmentId == segments[r.segmentIndex].id, last.endWord + 1 >= r.startWord,
+                       r.startWord >= last.startWord {
+                        let merged = UnderlineSpan(segmentId: last.segmentId, startWord: last.startWord,
+                                                   endWord: max(last.endWord, r.endWord), anchor: nil)
+                        spans[spans.count - 1] = UnderlineSpan(
+                            segmentId: merged.segmentId, startWord: merged.startWord, endWord: merged.endWord,
+                            anchor: index.quoteAnchor(forIndex: r.segmentIndex, startWord: merged.startWord, endWord: merged.endWord)
+                                ?? last.anchor)
+                        continue
+                    }
+                    let newAnchor = index.quoteAnchor(forIndex: r.segmentIndex, startWord: r.startWord, endWord: r.endWord)
+                    spans.append(UnderlineSpan(segmentId: segments[r.segmentIndex].id, startWord: r.startWord,
+                                               endWord: r.endWord, anchor: newAnchor ?? q))
+                }
             }
             if let failed {
                 u.isOrphan = true

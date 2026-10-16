@@ -119,18 +119,27 @@ final class ContentAnchorTests: XCTestCase {
         let oldLong = ContentAnchorIndex(segments: base)
         let aLong = try XCTUnwrap(oldLong.anchor(forIndex: 7))
         let words = long.split(separator: " ")
+        // Il seguito NON ricompone il vecchio testo (è cambiato): vale solo la testa, verificata sulla scala.
         new = base
         new[7] = seg("node_7", words.prefix(32).joined(separator: " "), page: 2)   // ≥ 128 lettere, pezzo iniziale
-        new.append(seg("node_8", words.dropFirst(32).joined(separator: " "), page: 2))
+        new.append(seg("node_8", words.dropFirst(32).joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
         let r = ContentAnchorIndex(segments: new).resolve(aLong)
         XCTAssertEqual(r.level, .headOnly)
         XCTAssertEqual(r.index, 7)
         XCTAssertGreaterThanOrEqual(r.confidence, ContentAnchorIndex.relocationThreshold)
-        // Un pezzo iniziale sotto le 128 lettere è troppo poco: orfana, dichiarata.
+        // Un pezzo iniziale sotto le 128 lettere, con un seguito che non ricompone il testo: troppo poco, orfana.
         var tiny = base
         tiny[7] = seg("node_7", words.prefix(12).joined(separator: " "), page: 2)
-        tiny.append(seg("node_8", words.dropFirst(12).joined(separator: " "), page: 2))
+        tiny.append(seg("node_8", words.dropFirst(12).joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
         XCTAssertEqual(ContentAnchorIndex(segments: tiny).resolve(aLong).level, .orphan)
+        // Se invece i pezzi ricompongono ESATTAMENTE il vecchio testo, anche con un primo pezzo corto, il riscontro è
+        // pieno (giro «costruzione della linea Mac»): è lo stesso testo, diviso (SplitChainAnchorTests).
+        var exactSplit = base
+        exactSplit[7] = seg("node_7", words.prefix(12).joined(separator: " "), page: 2)
+        exactSplit.append(seg("node_8", words.dropFirst(12).joined(separator: " "), page: 2))
+        let rs = ContentAnchorIndex(segments: exactSplit).resolve(aLong)
+        XCTAssertEqual(rs.level, .exact)
+        XCTAssertEqual(rs.index, 7)
         _ = a
     }
 
@@ -208,7 +217,9 @@ final class ContentAnchorTests: XCTestCase {
         split[1] = seg("node_1", passage, page: 10)
         split.insert(seg("node_1b", "(9). Sei.", page: 10), at: 2)
         let r = ContentAnchorIndex(segments: split).resolve(a)
-        XCTAssertEqual(r.level, .headOnly)
+        // I due pezzi ricompongono esattamente il testo originale: riscontro pieno (giro «costruzione della linea Mac»;
+        // prima di allora si ritrovava con la sola testa). Sempre al posto giusto.
+        XCTAssertEqual(r.level, .exact)
         XCTAssertEqual(r.index, 1)
     }
 
