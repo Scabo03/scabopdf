@@ -513,6 +513,19 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(r2.segments.map { $0.id }, ["h", "n#0", "n#1", "x", "vr_p0_0", "d"])
     }
 
+    /// Una riga che il primo passo trova GIÀ in una nota (nei volumi: i numeri d'articolo fra parentesi di una tabella
+    /// statistica, classificati come note) resta libera di andare alla nota vera più vicina al grosso, come prima: la
+    /// regola dell'eco vale solo per le righe trovate fuori dalle note (revisione indipendente del giro).
+    func test_rigaTrovataGiaInUnaNota_vaAllaNotaPiuVicina_comePrima() {
+        let (ex, rows) = tabellaConIntestazione(["intestazione di prova numero"])
+        let segs = [seg("n1", "NOTE", "40 Una nota di prova che riporta intestazione di prova numero", page: 1),
+                    seg("b", "BODY", "un capoverso che cita intestazione di prova numero", page: 1),
+                    seg("n2", "NOTE", "41 Intestazione di prova numero", page: 1),
+                    seg("d", "BODY", rows.joined(separator: " "), page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 330])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["n1", "b", "vr_p0_0", "n2", "d"])
+    }
+
     /// Le intestazioni a corpo minore che il flusso porta come note SENZA marcatore (le tavole di concordanza dei codici)
     /// restano candidate come prima: la riga trovata anche nel corpo, più lontano, va alla nota vicina al grosso.
     func test_intestazioneClassificataNotaSenzaMarcatore_restaCandidata() {

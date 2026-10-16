@@ -4,9 +4,11 @@
 //
 //  Ricucitura delle note spezzate fra pagine CONTIGUE fuori dall'Estratto e dai codici (giro «cura delle note»,
 //  2026-10-16, `stitchAdjacentPageFootnotes`): estrazioni sintetiche CON GEOMETRIA (corpo in alto, apparato di note
-//  in basso) fatte passare per la pipeline reale (`buildDocumentFromPdf` → `bindAndPlaceNotes`). Ogni guardia ha la
-//  sua prova al contrario: senza successione confermata, con la coda fra le righe del corpo, con un corpo tipografico
-//  diverso, con la coda che porta il numero della nota seguente, nei codici, nell'Estratto. Testi neutri, inventati.
+//  in basso) fatte passare per la pipeline reale (`buildDocumentFromPdf` → `bindAndPlaceNotes`), più le guardie che la
+//  pipeline sintetica non raggiunge provate direttamente su `stitchAdjacentPageFootnotes`. Ogni guardia ha la sua prova
+//  al contrario: successione, nota seguente mancante, richiamo senza nota, testa senza numero, coda fra le righe del
+//  corpo, testa fra le righe del corpo, nodo che non è una nota, corpo tipografico diverso, coda col numero della nota
+//  seguente, testa chiusa, pagine non contigue, codici, Estratto; e la catena vera su tre pagine. Testi neutri, inventati.
 //
 
 import XCTest
@@ -202,7 +204,8 @@ final class AdjacentPageStitchTests: XCTestCase {
         XCTAssertTrue(stats.adjacentPageCandidates.isEmpty)
     }
 
-    func test_chain_overThreePages_whenEveryStepPassesTheGuards() {
+    /// Due ricuciture su due coppie di pagine consecutive, di due note DIVERSE (la 13 fra A e B, la 14 fra B e C).
+    func test_twoStitches_onConsecutivePagePairs_joinTwoDifferentNotes() {
         let pageA = bodyLines("a") + noteLines(["12 Prima nota completa della pagina.", "13 Una nota lunga che"])
         let pageB = bodyLines("b") + noteLines(["prosegue sulla seconda pagina e", "14 Nota breve della seconda pagina e"])
         let pageC = bodyLines("c") + noteLines(["chiusa sulla terza.", "15 Nota della terza pagina."])
@@ -211,6 +214,73 @@ final class AdjacentPageStitchTests: XCTestCase {
         let notes = noteTexts(doc)
         XCTAssertTrue(notes.contains("13 Una nota lunga che prosegue sulla seconda pagina e"))
         XCTAssertTrue(notes.contains("14 Nota breve della seconda pagina e chiusa sulla terza."))
+    }
+
+    /// Una catena VERA: la nota 13 riempie tutto l'apparato della pagina B e si chiude sulla C. Il secondo passo vale
+    /// solo perché la testa, dopo la prima ricucitura, copre fino alla pagina B (revisione indipendente del giro).
+    func test_chain_overThreePages_whenTheMiddleApparatusIsOnlyTheContinuation() {
+        let pageA = bodyLines("a") + noteLines(["12 Prima nota completa della pagina.", "13 Una nota lunga che"])
+        let pageB = bodyLines("b") + noteLines(["prosegue per tutta la seconda pagina e"])
+        let pageC = bodyLines("c") + noteLines(["si chiude sulla terza.", "14 Nota nuova della terza pagina."])
+        let (doc, stats) = placed(extraction([pageA, pageB, pageC]))
+        XCTAssertEqual(stats.stitchedAdjacentPage, 2)
+        let notes = noteTexts(doc)
+        XCTAssertTrue(notes.contains("13 Una nota lunga che prosegue per tutta la seconda pagina e si chiude sulla terza."),
+                      "la nota intera, nell'ordine: \(notes)")
+        XCTAssertTrue(notes.contains { $0.hasPrefix("14 ") })
+    }
+
+    // MARK: - guardie provate direttamente su `stitchAdjacentPageFootnotes` (strutture sintetiche)
+
+    /// Una riga di nota alla quota `y` (il fondo della riga), come la vede l'aggancio.
+    private func noteSummary(_ text: String, y: Double, size: Double = 8) -> LineSummary {
+        summarizeLine(line(text, size: size, y: y))
+    }
+
+    /// La testa 13 aperta sulla pagina 0, la sua coda in cima all'apparato della pagina 1, poi la nota 14. Il corpo di
+    /// entrambe le pagine finisce alla quota 690; `headY` e `tailY` sono le quote delle righe di nota.
+    private func direct(headType: SemanticCategory = .NOTE, tailType: SemanticCategory = .NOTE,
+                        headY: Double = 140, tailY: Double = 140) -> (count: Int, candidates: [AdjacentPageStitchCandidate]) {
+        let structure = [
+            NodeDict(id: "nA", type: headType, page_index: 0, text: "13 Seconda nota che resta aperta e"),
+            NodeDict(id: "nB", type: tailType, page_index: 1, text: "continua sulla pagina seguente fino al punto."),
+            NodeDict(id: "nC", type: .NOTE, page_index: 1, text: "14 Nota nuova della seconda pagina."),
+        ]
+        var byId: [String: NodeDict] = [:]
+        var order: [String: [String]] = [:]
+        for n in structure { byId["f_" + n.id] = n; order[n.id] = ["f_" + n.id] }
+        let lines: [String: [LineSummary]] = [
+            "nA": [noteSummary("13 Seconda nota che resta aperta e", y: headY)],
+            "nB": [noteSummary("continua sulla pagina seguente fino al punto.", y: tailY)],
+            "nC": [noteSummary("14 Nota nuova della seconda pagina.", y: tailY - 11)],
+        ]
+        return stitchAdjacentPageFootnotes(structure, &byId, &order, noteLinesById: lines,
+                                           contentBottomByPage: [0: 690, 1: 690])
+    }
+
+    func test_direct_stitches_whenEveryGuardPasses() {
+        let r = direct()
+        XCTAssertEqual(r.count, 1)
+        XCTAssertEqual(r.candidates.first?.reason, "ricucita")
+    }
+
+    func test_direct_noStitch_whenANodeIsNotANote() {
+        for r in [direct(tailType: .EDITORIAL_NOTE), direct(headType: .EDITORIAL_NOTE)] {
+            XCTAssertEqual(r.count, 0)
+            XCTAssertEqual(r.candidates.first?.reason, "nodo non NOTE")
+        }
+    }
+
+    func test_direct_noStitch_whenTheHeadSitsAmongTheBodyLines() {
+        let r = direct(headY: 740)   // la testa sta sopra il fondo del corpo della sua pagina
+        XCTAssertEqual(r.count, 0)
+        XCTAssertEqual(r.candidates.first?.reason, "testa non sotto il corpo")
+    }
+
+    func test_direct_noStitch_whenTheTailSitsAmongTheBodyLines() {
+        let r = direct(tailY: 740)
+        XCTAssertEqual(r.count, 0)
+        XCTAssertEqual(r.candidates.first?.reason, "coda non sotto il corpo")
     }
 
     // MARK: - dove la ricucitura nuova non vale
