@@ -183,7 +183,7 @@ final class CatenaTests: XCTestCase {
         XCTAssertEqual(pieces.first?.acousticIntro, "Nota lunga.")
         XCTAssertEqual(pieces.first?.lengthCategory, "VERY_LONG")
         XCTAssertTrue(pieces.dropFirst().allSatisfy { $0.role == "NOTE_CONTINUATION" && $0.acousticIntro.isEmpty })
-        XCTAssertTrue(pieces.allSatisfy { $0.text.count <= DEFAULT_GRANULARITY_TARGET })
+        XCTAssertTrue(pieces.allSatisfy { $0.text.count <= notePieceMaxLength(target: DEFAULT_GRANULARITY_TARGET) })
         XCTAssertEqual(pieces.map { $0.text }.joined(separator: " "), noteText, "il testo ricomposto è la nota di prima")
         XCTAssertEqual(off.filter { $0.role == "NOTE" }.map { $0.text }, [noteText])
         XCTAssertFalse(off.contains { $0.role == "NOTE_CONTINUATION" })

@@ -48,9 +48,10 @@ final class AknSegmentRefineTests: XCTestCase {
         XCTAssertEqual(refined.filter { $0.role == "ARTICLE_BODY" && aknIsBareCommaMarker($0.text) }.count, 0)
         // 2. Nessun frammento AMENDMENT di sola punteggiatura residuo.
         XCTAssertEqual(refined.filter { $0.role == "AMENDMENT" && aknIsPunctuationOnly($0.text) }.count, 0)
-        // 3. Nessuna cella-nota supera il viewport (target).
+        // 3. Nessuna cella-nota supera la finestra dei pezzi (1,5 volte il target: la regola dei confini del giro «cura
+        //    delle note», 2026-10-16, chiude il pezzo a fine frase fino a lì).
         for s in refined where s.role == "NOTE" || s.role == "NOTE_CONTINUATION" {
-            XCTAssertLessThanOrEqual(s.text.count, target, "cella nota troppo alta: \(s.id) len=\(s.text.count)")
+            XCTAssertLessThanOrEqual(s.text.count, notePieceMaxLength(target: target), "cella nota troppo alta: \(s.id) len=\(s.text.count)")
         }
         // Contenuto preservato (nessuna parola persa).
         XCTAssertEqual(stripWS(refined), stripWS(raw), "contenuto non preservato")
@@ -99,7 +100,7 @@ final class AknSegmentRefineTests: XCTestCase {
             let refined = refineAknSegments(raw, noteTarget: target)
             XCTAssertEqual(stripWS(refined), stripWS(raw), "\(n): contenuto non preservato")
             for s in refined where s.role == "NOTE" || s.role == "NOTE_CONTINUATION" {
-                XCTAssertLessThanOrEqual(s.text.count, target, "\(n): cella nota troppo alta \(s.id)")
+                XCTAssertLessThanOrEqual(s.text.count, notePieceMaxLength(target: target), "\(n): cella nota troppo alta \(s.id)")
             }
             XCTAssertEqual(refined.filter { $0.role == "ARTICLE_BODY" && aknIsBareCommaMarker($0.text) }.count, 0, "\(n): marker residuo")
             XCTAssertEqual(refined.filter { $0.role == "AMENDMENT" && aknIsPunctuationOnly($0.text) }.count, 0, "\(n): frammento residuo")

@@ -880,10 +880,10 @@ let SENTENCE_ABBREVIATIONS: Set<String> = [
 ]
 
 /// Caratteri di chiusura ammessi dopo il terminatore e prima dello spazio.
-private let CLOSING_CHARS: Set<Character> = ["»", "\u{201D}", "\u{2019}", "\"", "'", ")", "]"]
+let CLOSING_CHARS: Set<Character> = ["»", "\u{201D}", "\u{2019}", "\"", "'", ")", "]"]
 
 /// Caratteri di apertura ammessi come inizio di una nuova frase.
-private let OPENING_CHARS: Set<Character> = ["«", "\u{201C}", "\u{2018}", "\"", "'", "(", "["]
+let OPENING_CHARS: Set<Character> = ["«", "\u{201C}", "\u{2018}", "\"", "'", "(", "["]
 
 /// Spezza un testo in frasi (in ordine, contenuto preservato), riconoscendo un
 /// confine SOLO ad alta confidenza. Conservativo per costruzione: nel dubbio non
@@ -933,7 +933,7 @@ public func splitIntoSentences(_ text: String) -> [String] {
 /// Un carattere che può aprire una nuova frase: maiuscola, cifra, o virgoletta/
 /// parentesi di apertura. Una minuscola NON apre una frase (guardia conservativa
 /// contro i falsi confini, es. continuazioni di abbreviazione).
-private func isSentenceStart(_ c: Character) -> Bool {
+func isSentenceStart(_ c: Character) -> Bool {
     c.isUppercase || c.isNumber || OPENING_CHARS.contains(c)
 }
 

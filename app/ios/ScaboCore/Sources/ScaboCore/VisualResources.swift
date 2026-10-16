@@ -264,6 +264,20 @@ private func intersection(_ a: [Double], _ b: [Double]) -> Double {
     return w > 0 && h > 0 ? w * h : 0
 }
 
+/// I ruoli di nota del flusso.
+let VISUAL_NOTE_ROLES: Set<String> = [
+    SemanticCategory.NOTE.rawValue, SemanticCategory.NOTE_CONTINUATION.rawValue, SemanticCategory.EDITORIAL_NOTE.rawValue,
+]
+
+/// Vero se il segmento `i` è una NOTA VERA: una NOTE che si apre con il suo marcatore (la stessa prova del «blocco certo»),
+/// o un pezzo di seguito di una tale nota (si guarda il primo pezzo). Una NOTE senza marcatore (le intestazioni di colonna
+/// a corpo minore che i codici classificano come note) non lo è.
+func isTrueNoteSegment(_ segments: [ContentSegment], _ i: Int) -> Bool {
+    var k = i
+    while k > 0, segments[k].role == SemanticCategory.NOTE_CONTINUATION.rawValue { k -= 1 }
+    return segments[k].role == SemanticCategory.NOTE.rawValue && textOpensWithNoteMarker(segments[k].text)
+}
+
 /// Distanza massima (in segmenti) fra due riscontri dello stesso gruppo.
 let VISUAL_CLUSTER_GAP = 2
 /// Quota minima delle lettere ritrovate perché un gruppo di riscontri appartenga alla regione: sotto, è un'eco.
@@ -508,7 +522,13 @@ public func insertingVisualResources(
         // vicino al grosso del testo della regione (il segmento che ne porta più lettere), non al primo della pagina: la
         // stessa frase può stare anche nella didascalia di un'altra tabella, in un segmento prima (misurato su una rivista:
         // l'intestazione di una tabella ripetuta nella didascalia della tabella precedente spostava l'annuncio prima dei dati
-        // di quella), e una parola d'intestazione può stare anche nella prosa che precede.
+        // di quella), e una parola d'intestazione può stare anche nella prosa che precede. Una riga che il primo passo ha
+        // trovato FUORI dalle note non passa a una NOTA VERA (`isTrueNoteSegment`) solo perché questa sta più vicina al
+        // grosso: la prosa di una nota che usa le stesse parole di un'intestazione è un'eco, non la tabella (giro «cura delle
+        // note», 2026-10-16: sulla rivista, p. 117, la nota accanto alla tabella ripete le parole della prima colonna, e
+        // bastava che cambiasse il numero dei suoi pezzi per portare l'annuncio prima della fonte della tabella precedente).
+        // Tutto il resto come prima: una riga trovata in una nota, e le intestazioni a corpo minore che il flusso porta
+        // come note (le tavole di concordanza dei codici, i numeri d'articolo fra parentesi delle tabelle statistiche).
         var weightOf: [Int: Int] = [:]
         for m in firstPass { weightOf[m.index, default: 0] += m.chars }
         let bulk = weightOf.max { a, b in a.value != b.value ? a.value < b.value : a.key > b.key }?.key
@@ -517,7 +537,12 @@ public func insertingVisualResources(
             var i = m.index
             if !m.byRepetition, let bulk {
                 let candidates = flow.segmentsContaining(m.text, page1: page1)
-                if candidates.count > 1, let best = candidates.min(by: { (abs($0 - bulk), $0) < (abs($1 - bulk), $1) }) { i = best }
+                if candidates.count > 1 {
+                    let firstInNote = VISUAL_NOTE_ROLES.contains(segments[m.index].role)
+                    let notNotes = firstInNote ? [] : candidates.filter { !isTrueNoteSegment(segments, $0) }
+                    let pool = notNotes.isEmpty ? candidates : notNotes
+                    if let best = pool.min(by: { (abs($0 - bulk), $0) < (abs($1 - bulk), $1) }) { i = best }
+                }
             }
             matches.append((i, m.chars))
         }

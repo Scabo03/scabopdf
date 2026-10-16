@@ -482,4 +482,47 @@ final class VisualResourcesTests: XCTestCase {
         let c = candidate("table", [60, 100, 500, 400], next: [295, 35, 505, 65])
         XCTAssertEqual(insertingVisualResources(segs, candidates: [c], extraction: ex).segments.map { $0.id }, ["h", "vr_p0_0", "d"])
     }
+
+    // MARK: - Le note che fanno eco (giro «cura delle note», 2026-10-16)
+
+    /// Dieci righe di dati sotto due righe d'intestazione, in un riquadro di tabella sulla pagina di prova.
+    private func tabellaConIntestazione(_ intestazioni: [String]) -> (PdfExtraction, [String]) {
+        let rows = (1...10).map { "riga di dati numero \($0) con valori di prova" }
+        var lines = intestazioni.enumerated().map { line($0.element, l: 60, t: 200 + Double($0.offset) * 10, r: 540, b: 208 + Double($0.offset) * 10) }
+        lines += rows.enumerated().map { line($0.element, l: 60, t: 222 + Double($0.offset) * 10, r: 540, b: 230 + Double($0.offset) * 10) }
+        return (extraction([lines]), rows)
+    }
+
+    /// La riga d'intestazione che il primo passo trova nel corpo (dopo la fonte della tabella precedente) e che una NOTA
+    /// VERA lì accanto ripete nella sua prosa: la riga resta al corpo, la nota non fa da ponte fra l'intestazione e le righe,
+    /// e la risorsa precede le sue righe (rivista, p. 117: bastava che la nota cambiasse il numero dei suoi pezzi per portare
+    /// l'annuncio prima della fonte della tabella precedente).
+    func test_notaVeraCheRipeteLIntestazione_nonFaDaPonte() {
+        let (ex, rows) = tabellaConIntestazione(["intestazione di colonna prova", "seconda intestazione sola"])
+        let segs = [seg("h", "BODY", "fonte della tabella precedente intestazione di colonna prova seconda intestazione sola", page: 1),
+                    seg("n", "NOTE", "70 Una nota di prova che nella sua prosa nomina intestazione di colonna prova", page: 1),
+                    seg("x", "BODY", "cento", page: 1),
+                    seg("d", "BODY", rows.joined(separator: " "), page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 330])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["h", "n", "x", "vr_p0_0", "d"])
+        XCTAssertEqual(r.segments[3].visualResource?.containedElements, 1)
+        // Controprova: la stessa prosa in una nota divisa in due pezzi (prima del giro): stesso posto.
+        let pezzi = [segs[0], seg("n#0", "NOTE", "70 Una nota di prova che nella sua prosa", page: 1),
+                     seg("n#1", "NOTE_CONTINUATION", "nomina intestazione di colonna prova", page: 1), segs[2], segs[3]]
+        let r2 = insertingVisualResources(pezzi, candidates: [candidate("table", [55, 195, 545, 330])], extraction: ex)
+        XCTAssertEqual(r2.segments.map { $0.id }, ["h", "n#0", "n#1", "x", "vr_p0_0", "d"])
+    }
+
+    /// Le intestazioni a corpo minore che il flusso porta come note SENZA marcatore (le tavole di concordanza dei codici)
+    /// restano candidate come prima: la riga trovata anche nel corpo, più lontano, va alla nota vicina al grosso.
+    func test_intestazioneClassificataNotaSenzaMarcatore_restaCandidata() {
+        let (ex, rows) = tabellaConIntestazione(["regolamento di prova numero"])
+        let segs = [seg("b", "BODY", "un capoverso che cita il regolamento di prova numero", page: 1),
+                    seg("y", "BODY", "un capoverso qualsiasi senza relazione", page: 1),
+                    seg("hn", "NOTE", "regolamento di prova numero", page: 1),
+                    seg("d", "BODY", rows.joined(separator: " "), page: 1)]
+        let r = insertingVisualResources(segs, candidates: [candidate("table", [55, 195, 545, 330])], extraction: ex)
+        XCTAssertEqual(r.segments.map { $0.id }, ["b", "y", "vr_p0_0", "hn", "d"])
+        XCTAssertEqual(r.segments[2].visualResource?.containedElements, 2)
+    }
 }
