@@ -752,6 +752,29 @@ Questa regola di frazionamento si applica coerentemente anche a Lettura Continua
 
 **Realizzato nella build 55 (2026-10-16).** La catena condivisa (`ScaboChain`) fraziona per difetto: iPad, iPhone e Mac danno la stessa lettura a parità di ingressi, con l'innesto del Mac spento (verificato byte per byte su 52 volumi e due generazioni di iOS; con l'innesto acceso, la politica predefinita del Mac, cambiano solo i 5 volumi dell'indice analitico). Sui 52 volumi di prova cambiano 29 libri, circa 5.360 note in Lettura Continua; ogni nota frazionata si ricompone esattamente nella nota di prima (lettere e cifre identiche su tutti i volumi; in 11 note di un volume la ricomposizione differisce solo per spazi doppi ridotti a uno, dentro pezzi spezzati a parola). Sui pezzi di seguito valgono il salto «Vai al testo del richiamo» e il riquadro visivo della nota; il rinfresco di contesto resta sul solo primo pezzo. Ai libri già aperti la novità arriva con l'offerta «Lettura migliore disponibile» (cura 55); alle letture del Mac no, perché le frazionavano già. Due scarti dalla lettera di questa sezione, dichiarati e portati al maintainer: (a) il meccanismo condiviso divide a parola DENTRO una frase quando la frase supera la soglia (circa un confine su tre) e lo spezzatore di frasi non riconosce le iniziali doppie degli autori, sicché alcuni pezzi sono molto brevi; (b) il **segnale di chiusura** della nota non è mai stato costruito (non c'è il suono): oggi la fine di una nota frazionata si riconosce solo dal pezzo che segue, che non è più nota. Numeri e misure: `docs/CARRYOVER.md`, STATO del 2026-10-16 pomeriggio.
 
+**I confini dei pezzi (build 56, giro «cura delle note» del 2026-10-16 sera; decisione 2 del maintainer, § 12.12).** Lo
+scarto (a) è curato nel meccanismo condiviso (`notePieces`, ScaboCore: iPad, Mac e atti AKN restano identici). La regola:
+1. le frasi sono quelle dello spezzatore del corpo, più due regole che valgono solo nelle note: una sigla di iniziali
+   multiple non chiude la frase (il cognome resta con le iniziali), e nemmeno le abbreviazioni delle citazioni trovate nel
+   corpus come false fini di frase (riviste, enciclopedie, uffici giudiziari, rinvii);
+2. ogni pezzo è fatto di frasi intere fino alla soglia T; un pezzo ancora corto (sotto T/2) prende la frase seguente se ci
+   sta entro 1,5 T: il pezzo si chiude a fine frase in una finestra attorno alla soglia;
+3. solo una frase più lunga di 1,5 T si taglia dentro, nella finestra [T/2, 1,5 T]: dopo un punto e virgola o due punti,
+   poi dopo una virgola, in ultima istanza fra due parole; mai subito dopo un'iniziale, una sigla o un'abbreviazione;
+4. un pezzo sotto i 40 caratteri si unisce al vicino se l'unione resta entro 1,5 T; i pezzi sono tratti contigui del testo
+   (gli spazi restano quelli della stampa) e la nota si ricompone esattamente.
+**Perché 1,5 T (conciliazione della fine frase con la soglia della vista, misurata).** Il corpo già supera la soglia quando
+una frase è lunga: la frase intera vince sulla soglia (alla granularità 400 il 5 % dei blocchi del corpo supera i 667
+caratteri). Con 1,5 T i pezzi di nota restano sotto ciò che il corpo fa già (al più 600 caratteri alla granularità 400) e i
+confini a fine frase passano dal 58 al 77 %; finestre più larghe (1,75 T, 2 T) danno più fini di frase ma celle più alte
+del corpo. Misura sui 52 volumi: tagli fra parole 4.460 → 7, confini dopo le iniziali 709 → 0, dopo un'abbreviazione 616 →
+0, pezzi sotto i 40 caratteri 1.140 → 8; negli atti AKN tagli fra parole 503 → 0. **Ambito: solo le note.** Il corpo resta
+com'è: applicare le due regole in più anche al corpo sposterebbe 726 confini di blocco in 357 paragrafi di 38 volumi (con
+le annotazioni ancorate a quei blocchi) e lo spezzatore di frasi è condiviso con il riconoscimento dei titoli. **Costo
+dichiarato:** le annotazioni fatte con la build 55 su un pezzo di nota che ora sta a cavallo di due pezzi nuovi diventano
+«da ricollocare» dopo la rielaborazione (mai spostate a caso, § 12.14); «Torna alla lettura precedente» le restituisce.
+Lo scarto (b), il segnale di chiusura, resta per un giro dedicato ai suoni (decisione 3 del maintainer).
+
 ### 10.7 Note plurime nella stessa frase
 
 Quando una frase del corpo contiene **più richiami a note** (esempio: *"secondo Bianca (12) e Castronovo (13), invece, la responsabilità non è contrattuale (14)"*), tutte le note vengono lette **in sequenza a fine frase**, nell'ordine in cui i richiami compaiono nel corpo.

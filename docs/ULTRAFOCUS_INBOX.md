@@ -76,6 +76,22 @@ diversa» (CARRYOVER, § C del capitolo NOTE).
   ricucitura per identità PRIMA del piazzamento, oggi accesa solo sull'Estratto. Fra le 602 coppie della
   ricucitura del Mac poi spenta, 429 sono di questo strato e aperte sull'iPad: l'osservazione del giro Mac
   «sono le note che l'app già ricuce» vale solo per l'Estratto.
+- **Aggiornamento 2026-10-16 sera (giro «cura delle note», build 56) — CURATA sulle pagine contigue.** Decisione del
+  maintainer (LAYER2 § 12.12): le note spezzate fra pagine contigue si ricuciono sull'iPad, esclusi i codici; la
+  ricucitura del Mac resta spenta. `stitchAdjacentPageFootnotes` (`NoteBinding.swift`, commit `479d859` e `6fc5ad1`) lavora
+  DOPO lo zip posizionale, sulle note già materializzate (il livello giusto: le fusioni non toccano l'estrazione, le
+  etichette restano a livello di nodo), solo fra l'ultima nota della pagina A e la prima della pagina A + 1. Guardie: il
+  predicato dell'app; la successione (confermata, oppure assente o non confermata ma mai con la nota seguente che salta un
+  numero né col suo richiamo nel corpo senza la nota); coda e testa SOTTO il corpo e i titoli della loro pagina (contro le
+  categorie dei falsi del conteggio: glosse, citazioni in corpo minore, riquadri, tabelle, testatine); stesso corpo
+  tipografico (span più grande della riga); mai una testa senza numero proprio. **534 ricuciture in 16 volumi, tutte
+  giudicate contro la pagina stampata: 534 vere, 0 false**; lo stesso insieme su iOS 26.5 e 27; codici, Estratto e Marotta
+  identici byte per byte; lettere e cifre identiche; iPad e Mac identici 52/52; annotazioni 0 ricollocazioni sbagliate.
+  Aperte 2.961 → 2.442; vere ancora aperte fuori dai codici circa 182 (erano circa 710), quasi tutte coppie che il predicato
+  respinge (coda in maiuscola, testa chiusa da un punto). **I casi storici:** Lineamenti 162-163, 480-481, 825-826 ora
+  ricuciti; Lineamenti 46-47, 514-515, 770-771, 899-900 e Delitti 43-44, 265-266 restano aperti (li respinge il predicato:
+  materia di un predicato nuovo); i due falsi Delitti 33-34 e 168-169 restano giustamente non ricuciti. **MULTIPAGE (pagine
+  non contigue) non è toccata**: resta la voce aperta. Dettaglio: `docs/CONTEGGIO_NOTE_SPEZZATE.md` § 8.
 
 ### A.2 L2 — saldatura senza successione
 
@@ -85,6 +101,13 @@ dei numeri non conferma. «L2 fuori dal mobile» (decisione § C).
 - **Misura:** nessun conteggio dedicato pubblicato (banda definita, non censita).
 - **Strato:** STRUTTURALE nel frutto (fusione di blocchi esistenti); il giudizio
   è di lettura/senso, ed è il motivo per cui va al modello sul Mac.
+- **Aggiornamento 2026-10-16 sera (giro «cura delle note», build 56).** Una parte della banda è ora sull'iPad, per
+  decisione del maintainer del giro: fra pagine CONTIGUE, col predicato dell'app vero, la successione assente o non
+  confermata non impedisce più la ricucitura, purché la nota seguente non salti un numero e il suo richiamo nel corpo non
+  resti senza nota (secondo gradino di A.1). Giudicate contro la pagina tutte le 108 coppie così con la testa numerata: 108
+  vere; 105 ricucite, 3 fermate per prudenza. Il numero che «non conferma» è quello di un frammento sovra-spezzato
+  dall'estrazione (un numero di pagina, d'articolo, una data a inizio riga), non una nota nascosta. Il resto della banda
+  (pagine non contigue, predicato respinto) resta fuori dal mobile.
 
 ### A.3 L3 — nessuna conferma (il «dubbio» per costruzione)
 
@@ -350,6 +373,10 @@ invariata ovunque. Il «~220» era stima larga; il fenomeno abbreviazione-datata
 misurato è ~16. Le abbreviazioni complete («ss.», «cit.», «ibidem») restano
 fuori (una coda a seguire è un NUOVO marcatore); «ord.» resta fuori
 (chiude una citazione, non l'apre); «lgs.» resta fuori (rischio codici).
+**Aggiornamento 2026-10-16 sera (giro «cura delle note»).** La ricucitura fra pagine CONTIGUE (A.1) è un passo a sé,
+dopo questo salvataggio same-page che resta identico, e ne eredita la guardia di successione in forma più forte: la prima
+nota numerata dopo la coda sulla pagina seguente non deve saltare un numero. Il salvataggio same-page e la sua forma
+stretta non cambiano.
 
 ### D.6-quinquies Estensione della soppressione inneschi — ✅ CHIUSA (2026-08-12)
 
@@ -418,6 +445,10 @@ volumi. Strato: STRUTTURALE (ordine).
   interfogliate); residuo desync dichiarato. La causa a monte (desync PDFKit A.5)
   resta la sola parte non risolvibile senza estrattore migliore.
 
+- **Aggiornamento 2026-10-16 sera (giro «cura delle note»).** Per questa causa i codici restano ESCLUSI dalla ricucitura
+  fra pagine contigue (decisione del maintainer del giro): l'interfoliazione delle due colonne fa fabbricare parole a ogni
+  ricucitura per identità. Nei codici cambiano solo i confini dei pezzi di 5 note lunghe (Parte 2 del giro), con lettere e
+  cifre identiche; restano circa 219 note spezzate vere aperte (stima), materia di questa voce.
 ### D.7 Titoli di paragrafo non riconosciuti — ✅ CHIUSA (2026-10-05 numerati; 2026-10-07 dispense, build 49)
 
 Dal resoconto d'uso del maintainer (il difetto «più intollerabile»): causa prima il canale

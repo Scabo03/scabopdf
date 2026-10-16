@@ -1,7 +1,8 @@
 # Conteggio delle note spezzate fra pagine che l'iPad lascia aperte
 
 Misura del 2026-10-16 (giro «uniformità della lettura e misura», Parte 2), sulla lettura dell'iPad della **build 55**
-(note lunghe frazionate). Solo misura: nessuna modifica al codice. Documento privo di testo dei volumi: volumi, pagine,
+(note lunghe frazionate). Solo misura: nessuna modifica al codice. **La cura e la rimisura dopo la cura (giro «cura delle
+note», build 56) sono al § 8.** Documento privo di testo dei volumi: volumi, pagine,
 categorie e conteggi. Il materiale con il testo (prospetti, immagini, giudizi riga per riga) resta nel laboratorio
 `~/Developer/scabopdf-gen-lab/frazionamento/conteggio/`, fuori dal repo.
 
@@ -176,6 +177,47 @@ cifra) ha tassi di vero fra il 20 e il 45 %: non è un percorso sicuro senza un 
   gran parte delle «code» false: materia della classificazione per famiglia, non del frazionamento né della ricucitura.
 - **Codici.** La testa letta può essere troncata dall'ordine delle due colonne sulla stessa pagina (un caso): fenomeno noto
   dell'apparato a due colonne (voce codici dell'INBOX), non una nota spezzata fra pagine.
+
+## 8. Dopo la cura (giro «cura delle note», 2026-10-16 sera, build 56)
+
+**La cura (fonte, commit `479d859` e `6fc5ad1`).** La strada indicata al § 6: la ricucitura per identità prima del
+piazzamento, estesa fuori dall'Estratto alle coppie di pagine contigue (`stitchAdjacentPageFootnotes` in
+`NoteBinding.swift`), solo l'ultima nota della pagina A con la prima della pagina A + 1, esclusi i codici. Guardie: il
+predicato dell'app; la successione dei numeri (primo gradino: confermata su B; secondo gradino: anche assente o non
+confermata, ma mai con la nota seguente che salta un numero, né col richiamo della nota seguente nel corpo senza la sua
+nota); la coda e la testa sotto il corpo e i titoli della loro pagina (contro glosse, citazioni in corpo minore, riquadri,
+tabelle); lo stesso corpo tipografico; mai una testa senza numero proprio.
+
+**Ricuciture (campo): 534**, lo stesso insieme su iOS 27 e iOS 26.5, in 16 volumi: Mandrioli-Carratta vol. 3 117,
+Mandrioli-Carratta vol. 4 111, Rizzo 58, Lineamenti 42, Compendio 39, Mosconi 31, Il mercato finanziario 31, Rivista DPC
+4-2020 22, DPC vol 2 21, DPC vol 1 19, Nomofanie 17, DPC vol 3 11, Magnani 9, Lezioni di storia 3, EdD L'azienda 2,
+Delitti 1. **Tutte giudicate contro la pagina stampata: 534 vere, 0 false** (zero fusioni fra note diverse, zero fusioni con
+il corpo). Le guardie hanno fermato 5 coppie false che il predicato e la successione accettavano (righe di citazione in
+corpo minore, una glossa marginale) e 3 coppie vere, per prudenza (due note che riempiono una pagina senza corpo, un corpo
+tipografico diverso). Dello strato «418 con successione confermata» ne sono ricuciti 414 (i 4 restanti sono fra i falsi
+fermati); delle 108 coppie dello strato «533» senza successione confermata e con la testa numerata, tutte vere al giudizio,
+ne sono ricucite 105 (le 3 restanti fermate per prudenza), più un passo di catena.
+
+**Rimisura (campo, lo stesso strumento del § 2 sulla lettura nuova).** Aperte **2.961 → 2.442** su iOS 27 (2.965 → 2.446 su
+iOS 26.5); candidate 2.675; ricucite dall'aggancio 670, nel flusso 196. Per volume, aperte prima → dopo: Mandrioli-Carratta
+vol. 3 166 → 56, vol. 4 153 → 44, Mosconi 129 → 98, Rizzo 78 → 22, Compendio 74 → 35, Lineamenti 65 → 24, Lezioni di storia
+49 → 46, Il mercato finanziario 47 → 17, Delitti 45 → 44, DPC vol 2 43 → 22, Nomofanie 36 → 20, Rivista DPC 4-2020 32 → 10,
+Magnani 32 → 23, DPC vol 1 27 → 8, EdD L'azienda 23 → 21, DPC vol 3 18 → 8; gli altri volumi invariati.
+
+**Quante ne restano vere (dedotto, con i giudizi del campione del § 3 che restano aperti: 167 casi, 36 veri).** Circa 401
+(376 col tasso di strato del corpus): circa 219 nei codici (esclusi per decisione) e circa **182 negli altri volumi, contro
+circa 710 prima**. Le principali: Mandrioli-Carratta vol. 4 ~44, Estratto ~25, Lineamenti ~24, Mandrioli-Carratta vol. 3 ~18,
+Il mercato finanziario ~17, DPC vol 2 ~15, Rizzo ~10. Quasi tutte sono coppie che il predicato dell'app respinge (la coda
+comincia con una maiuscola, la testa finisce con un punto: la stessa forma di una nota nuova senza numero), anche dove la
+successione su B conferma (Mandrioli-Carratta vol. 3: 49 casi aperti con la successione confermata; vol. 4: 37); poi le
+teste senza numero proprio (96 coppie), le pagine non contigue e la variante MULTIPAGE (INBOX A.1), non toccate.
+
+**Una scoperta (campo): fusioni sbagliate nel flusso già nella build 55.** La ricucitura nel flusso
+(`mergeNoteContinuations`) unisce un pezzo di nota al pezzo di nota che lo precede nel flusso, chiunque sia: quando la testa
+vera è stata spostata al suo richiamo, la coda orfana finisce accanto a un'altra nota e vi viene incollata. Misura: 33
+fusioni sbagliate nella lettura della build 55 (iOS 27), 18 dopo la cura (le code vanno ora alla testa giusta prima del
+piazzamento): 12 nei codici e 6 negli altri volumi, preesistenti e invariate (dichiarate; il conteggio del § 2 le contava
+fra le «ricucite nel flusso»).
 
 ## Appendice — I 202 casi giudicati (volume, pagine, strato, verdetto, tipo)
 

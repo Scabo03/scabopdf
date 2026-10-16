@@ -118,7 +118,14 @@ porta: se la pagina ripete la riga identica poche volte (da 2 a 4: intestazioni 
 fonte sotto due grafici) e il flusso la porta sulla pagina lo stesso numero di volte, la k-esima ripetizione va alla
 k-esima occorrenza; altrimenti, fra i segmenti che la portano (dalla pagina della regione alle tre prima), a quello più
 vicino al segmento che porta più testo della regione (la stessa frase può stare nella didascalia di un'altra tabella, o
-una parola d'intestazione nella prosa che precede). Una risorsa senza testo nel flusso (figura, tabella che è
+una parola d'intestazione nella prosa che precede). Una riga che il primo passo trova FUORI dalle note non passa però a una
+nota vera (una nota che si apre col suo numero, o un suo pezzo) solo perché questa sta più vicina: la prosa di una nota che
+ripete le parole di un'intestazione è un'eco (giro «cura delle note», 2026-10-16: senza la regola, il frazionamento nuovo
+delle note avrebbe spostato l'annuncio di una tabella della rivista, p. 117, prima della fonte della tabella precedente; con
+la regola tutte le risorse restano dove sono state giudicate, e col frazionamento vecchio non cambia nulla). Restano come
+prima le righe che il primo passo trova già in una nota (i numeri d'articolo fra parentesi di una tabella statistica) e le
+intestazioni a corpo minore che il flusso porta come note senza numero (le tavole di concordanza dei codici). Una risorsa
+senza testo nel flusso (figura, tabella che è
 un'immagine) si colloca con la didascalia, se il flusso la porta (la risorsa la precede se sta sotto, la segue se sta
 sopra), poi col testo che il modello legge dopo e prima, corretto dalla geometria (un blocco tutto sopra la regione la
 precede, uno tutto sotto la segue), infine all'inizio della pagina.

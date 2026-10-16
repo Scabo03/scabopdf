@@ -527,8 +527,9 @@ public func insertingVisualResources(
         // grosso: la prosa di una nota che usa le stesse parole di un'intestazione è un'eco, non la tabella (giro «cura delle
         // note», 2026-10-16: sulla rivista, p. 117, la nota accanto alla tabella ripete le parole della prima colonna, e
         // bastava che cambiasse il numero dei suoi pezzi per portare l'annuncio prima della fonte della tabella precedente).
-        // Tutto il resto come prima: una riga trovata in una nota, e le intestazioni a corpo minore che il flusso porta
-        // come note (le tavole di concordanza dei codici, i numeri d'articolo fra parentesi delle tabelle statistiche).
+        // Tutto il resto come prima: una riga che il primo passo trova già in una nota (i numeri d'articolo fra parentesi
+        // di una tabella statistica), e le intestazioni a corpo minore che il flusso porta come note senza numero (le
+        // tavole di concordanza dei codici).
         var weightOf: [Int: Int] = [:]
         for m in firstPass { weightOf[m.index, default: 0] += m.chars }
         let bulk = weightOf.max { a, b in a.value != b.value ? a.value < b.value : a.key > b.key }?.key
