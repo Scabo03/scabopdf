@@ -93,10 +93,10 @@ final class NoteJumpTests: XCTestCase {
     func test_deferredNote_linksBackThroughRefreshPhrase() {
         let segs = [
             s("HEADING_3", "1. La stagione del raccolto."),
-            s("BODY", "Paradigmatico è il caso in cui la responsabilità sia proporzionale 37, giacché la funzione…"),
+            s("BODY", "Il mugnaio apre le chiuse quando la piena del fiume arriva al ponte 37, perché la ruota…"),
             s("BODY", "Altro paragrafo senza richiami."),
-            s("NOTE", "37 Anche per altri argomenti a favore…",
-              refresh: "Paradigmatico è il caso in cui la responsabilità sia proporzionale"),
+            s("NOTE", "37 Una nota di prova sul mulino e sulla piena…",
+              refresh: "Il mugnaio apre le chiuse quando la piena del fiume arriva al ponte"),
         ]
         XCTAssertEqual(noteCallLinks(segs).callOfNote[3], 1)
     }
@@ -137,10 +137,10 @@ final class NoteJumpTests: XCTestCase {
 
     func test_deferredNote_doesNotCrossSectionHeading() {
         let segs = [
-            s("BODY", "la responsabilità sia proporzionale 37, giacché"),
+            s("BODY", "la piena del fiume arriva al ponte 37, perché"),
             s("HEADING_3", "2. La faglia del fortuito."),
             s("BODY", "Nuova sezione."),
-            s("NOTE", "37 Nota.", refresh: "la responsabilità sia proporzionale"),
+            s("NOTE", "37 Nota.", refresh: "la piena del fiume arriva al ponte"),
         ]
         XCTAssertNil(noteCallLinks(segs).callOfNote[3], "il richiamo sta nella stessa sezione della nota")
     }
