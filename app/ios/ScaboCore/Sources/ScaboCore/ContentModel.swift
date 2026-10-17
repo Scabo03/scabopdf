@@ -73,6 +73,12 @@ public struct ContentSegment: Codable, Equatable, Sendable {
     /// dall'uguaglianza; vive solo fra `buildBaseSegments` e `granularizeBody`, che produce blocchi nuovi
     /// sempre a `false`. Vedi MonoTitles.swift.
     public var opensParagraph: Bool = false
+    /// Solo per i segmenti di NOTA nati da `bindAndPlaceNotes`: l'id della nota che li precede subito nel documento
+    /// d'origine (vedi `NodeDict.noteOriginPrevious`; vuoto se subito prima c'è altro). Campo INTERNO e TRANSITORIO come
+    /// `opensParagraph`: assente da `CodingKeys` (cache e formato invariati) e dall'uguaglianza; lo legge solo
+    /// `mergeNoteContinuations`, che non unisce due pezzi di nota se la coda non segue subito la testa. `nil` (nessuna
+    /// informazione, per esempio segmenti costruiti a mano nelle prove) lascia la regola di prima.
+    public var noteOriginPrevious: String? = nil
     /// Solo per il ruolo `VISUAL_RESOURCE`: tipo, pagina e riquadro della risorsa (per «Estrai come immagine»)
     /// e quanti elementi seguenti portano il suo testo (per «Salta la risorsa»). Campo ADDITIVO e opzionale:
     /// assente nelle cache scritte prima (decodifica a `nil`), nessun cambio del formato della cache.

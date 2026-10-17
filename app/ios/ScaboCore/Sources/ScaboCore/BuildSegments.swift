@@ -76,7 +76,7 @@ private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
     let role = isSyntheticContainer(node.type.rawValue, node.text)
         ? SECTION_DIVIDER_ROLE
         : node.type.rawValue
-    return ContentSegment(
+    var segment = ContentSegment(
         id: node.id,
         role: role,
         text: text,
@@ -91,6 +91,10 @@ private func segmentFor(_ node: NodeDict, _ text: String) -> ContentSegment {
         // dato è esatto; è la ricucitura cross-pagina a valle che deve mantenerlo per fetta.
         sourcePage: node.page_index + 1
     )
+    // La nota che precede subito questa nell'ordine d'origine (per la ricucitura nel flusso), come il rinfresco: solo
+    // per il testo proprio del nodo.
+    if text == (node.text ?? "") { segment.noteOriginPrevious = node.noteOriginPrevious }
+    return segment
 }
 
 // MARK: - Solo le note VERE annunciano "Nota." (passo finale, solo backend Generic)

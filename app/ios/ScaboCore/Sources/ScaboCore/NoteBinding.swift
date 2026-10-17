@@ -302,6 +302,9 @@ public func bindAndPlaceNotes(
         footnotesInNoteOrder[node.id] = ids
     }
 
+    // L'elenco delle note individuali PRIMA delle ricuciture dell'aggancio: serve all'ordine d'origine (2c).
+    let originalFootnotesInNoteOrder = footnotesInNoteOrder
+
     // ── 2b. RICUCITURA cross-pagina per identità (GATED Estratto) ─────────────────
     // Una nota spezzata dal salto pagina riaffiora come due footnote: la testa (ultima di
     // pag N, col suo numero, finisce "aperta") e la coda (prima di N+1, SENZA numero
@@ -363,6 +366,13 @@ public func bindAndPlaceNotes(
             stats.adjacentPageCandidates = adjacent.candidates
         }
     }
+
+    // ── 2c. Ordine d'origine delle note individuali (giro «pulizia delle note», 2026-10-17) ─────────────────────────
+    // Ogni nota individuale porta l'id della nota che la precede SUBITO nel documento d'origine (o il vuoto, se subito
+    // prima c'è altro): la ricucitura nel flusso, dopo il piazzamento, unisce due pezzi di nota solo se l'uno segue così
+    // l'altro (`mergeNoteContinuations`). Non cambia né i testi né l'ordine: è un'annotazione interna.
+    annotateNoteOriginPrevious(document.structure, original: originalFootnotesInNoteOrder,
+                               surviving: footnotesInNoteOrder, &footnoteNodeById)
 
     // ── 3. Aggancio richiamo↔nota con scope e guardia di successione ──────────────
     var boundFootnoteIds: Set<String> = []
@@ -473,6 +483,48 @@ public func bindAndPlaceNotes(
     var placed = document
     placed.structure = out
     return (placed, stats)
+}
+
+/// L'ORDINE D'ORIGINE delle note individuali, per la ricucitura nel flusso (giro «pulizia e rifinitura finale del capitolo
+/// note», 2026-10-17; decisione 3 del maintainer, LAYER2 § 12.12). La ricucitura nel flusso (`mergeNoteContinuations`)
+/// lavora DOPO il piazzamento: una nota agganciata è stata spostata al suo richiamo, e la nota che la seguiva nella pagina
+/// può trovarsi accanto a un'ALTRA nota (o a un frammento) e venirvi incollata. Misurato sui 52 volumi (build 56): 21
+/// fusioni così in Lettura Continua e 3 in Dottrina Inline (frammenti dei codici incollati a note di altre colonne,
+/// righe di tabella, note che si aprono con una citazione incollate a titoli), più 27 unioni nei codici che saltavano
+/// una riga dell'apparato letta come corpo (due parole fabbricate) e 5 glosse a margine incollate a una nota.
+/// Qui ogni nota individuale sopravvissuta alle ricuciture dell'aggancio riceve l'id della nota che la precede SUBITO
+/// nella sequenza d'origine — i nodi della struttura in ordine, ogni nodo di note esploso nelle sue note individuali
+/// d'origine —, oppure il vuoto se subito prima c'è altro (corpo, titolo, glossa, una nota senza testo) o niente. Una
+/// nota assorbita da una ricucitura dell'aggancio conta come la nota che l'ha assorbita: le tre ricuciture dell'aggancio
+/// uniscono sempre una nota alla nota sopravvissuta che la precede nel loro ordine, che è questo.
+func annotateNoteOriginPrevious(
+    _ structure: [NodeDict],
+    original: [String: [String]],
+    surviving: [String: [String]],
+    _ footnoteNodeById: inout [String: NodeDict]
+) {
+    let alive = Set(surviving.values.flatMap { $0 })
+    var owner: [String: String] = [:]
+    var lastAlive: String?
+    for node in structure where node.type == .NOTE || node.type == .EDITORIAL_NOTE {
+        for fid in original[node.id] ?? [] {
+            if alive.contains(fid) { lastAlive = fid } else if let o = lastAlive { owner[fid] = o }
+        }
+    }
+    var previous = ""
+    for node in structure {
+        guard node.type == .NOTE || node.type == .EDITORIAL_NOTE else { previous = ""; continue }
+        let fids = original[node.id] ?? []
+        if fids.isEmpty { previous = ""; continue }
+        for fid in fids {
+            if alive.contains(fid) {
+                footnoteNodeById[fid]?.noteOriginPrevious = previous
+                previous = fid
+            } else {
+                previous = owner[fid] ?? ""
+            }
+        }
+    }
 }
 
 /// Ricucitura-per-identità delle note spezzate dal salto pagina, a livello FOOTNOTE e

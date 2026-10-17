@@ -404,8 +404,12 @@ func noteTailContinuesHead(head: String, tail: String) -> Bool {
 func mergeNoteContinuations(_ segments: [ContentSegment]) -> [ContentSegment] {
     let NOTE = SemanticCategory.NOTE.rawValue
     var out: [ContentSegment] = []
+    // Per ogni segmento in uscita, l'id dell'ultima nota individuale che contiene (all'inizio la sua): la coda deve
+    // seguire SUBITO quella nell'ordine d'origine (catene di più pezzi comprese).
+    var lastAbsorbed: [String] = []
     for seg in segments {
         if seg.role == NOTE, let prev = out.last, prev.role == NOTE,
+           noteFollowsInOrigin(seg, headLast: lastAbsorbed[lastAbsorbed.count - 1]),
            noteTailContinuesHead(head: prev.text, tail: seg.text) {
             let a = prev.text.trimmingCharacters(in: .whitespacesAndNewlines)
             let b = seg.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -421,11 +425,23 @@ func mergeNoteContinuations(_ segments: [ContentSegment]) -> [ContentSegment] {
             m.lengthCategory = lc
             m.acousticIntro = prev.acousticIntro.isEmpty ? "" : acousticIntroFor(NOTE, lc)
             out[out.count - 1] = m
+            lastAbsorbed[lastAbsorbed.count - 1] = seg.id
         } else {
             out.append(seg)
+            lastAbsorbed.append(seg.id)
         }
     }
     return out
+}
+
+/// Guardia d'ORIGINE della ricucitura nel flusso (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17): la
+/// coda segue SUBITO, nel documento d'origine, l'ultima nota contenuta nella testa (`ContentSegment.noteOriginPrevious`,
+/// annotato da `bindAndPlaceNotes`). Una nota spostata al suo richiamo, un corpo, un titolo o una glossa in mezzo: la coda
+/// non è la continuazione di QUESTA testa, e unirle incollerebbe due note diverse (o salterebbe una riga). Senza
+/// informazione (segmenti costruiti fuori dall'aggancio, nelle prove) vale la regola di prima.
+func noteFollowsInOrigin(_ seg: ContentSegment, headLast: String) -> Bool {
+    guard let previous = seg.noteOriginPrevious else { return true }
+    return !previous.isEmpty && previous == headLast
 }
 
 // ── BIBLIOGRAFIA in corpo-piccolo: riconoscimento alla RADICE (NOTE → LETTERATURA) ─

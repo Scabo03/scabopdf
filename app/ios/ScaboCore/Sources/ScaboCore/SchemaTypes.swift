@@ -191,6 +191,12 @@ public struct NodeDict: Codable, Equatable, Sendable {
     /// è annotato in memoria da `bindAndPlaceNotes` sui soli nodi nota differiti.
     /// `nil` per ogni altro nodo. Vedi `MemoryRefresh.swift`.
     public var memoryRefresh: String? = nil
+    /// Per una NOTA individuale materializzata da `bindAndPlaceNotes`: l'id della nota individuale che la precede SUBITO
+    /// nel documento d'origine (nessun altro nodo in mezzo), dopo le ricuciture dell'aggancio (una nota già assorbita
+    /// conta come la nota che l'ha assorbita); la stringa vuota se subito prima c'è altro (corpo, titolo, glossa) o niente.
+    /// La ricucitura nel flusso (`mergeNoteContinuations`) unisce due pezzi di nota solo se l'uno segue così l'altro.
+    /// Campo INTERNO di Layer 2 come `memoryRefresh`: assente da `CodingKeys`, mai serializzato. `nil` altrove.
+    public var noteOriginPrevious: String? = nil
 
     public init(
         id: String,
