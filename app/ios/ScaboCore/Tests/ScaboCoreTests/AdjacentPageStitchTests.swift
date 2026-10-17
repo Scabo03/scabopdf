@@ -186,12 +186,23 @@ final class AdjacentPageStitchTests: XCTestCase {
         XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "coda numerata come la nota seguente")
     }
 
-    func test_noStitch_whenTheHeadIsClosed() {
+    func test_noStitch_whenTheHeadIsClosed_andTheSuccessionIsNotConfirmed() {
+        // testa chiusa (il predicato respinge) e nessuna nota numerata dopo la coda: nessuna conferma, non si ricuce
         let pageA = bodyLines("a") + noteLines(["12 Prima nota completa della pagina.", "13 Seconda nota chiusa."])
-        let pageB = bodyLines("b") + noteLines(["continua sulla pagina seguente.", "14 Nota nuova."])
+        let pageB = bodyLines("b") + noteLines(["continua sulla pagina seguente."])
         let (_, stats) = placed(extraction([pageA, pageB]))
         XCTAssertEqual(stats.stitchedAdjacentPage, 0)
         XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "predicato")
+    }
+
+    func test_closedHead_withConfirmedSuccession_isStitched() {
+        // dal giro «pulizia delle note» (decisione 2 del maintainer): con la successione confermata il predicato non serve
+        // più (le prove della regola nuova sono in `AdjacentPageSuccessionTests`)
+        let pageA = bodyLines("a") + noteLines(["12 Prima nota completa della pagina.", "13 Seconda nota chiusa."])
+        let pageB = bodyLines("b") + noteLines(["continua sulla pagina seguente.", "14 Nota nuova."])
+        let (_, stats) = placed(extraction([pageA, pageB]))
+        XCTAssertEqual(stats.stitchedAdjacentPage, 1)
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.predicate, false)
     }
 
     func test_noStitch_acrossANonContiguousPage() {

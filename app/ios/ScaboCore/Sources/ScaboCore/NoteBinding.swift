@@ -352,8 +352,10 @@ public func bindAndPlaceNotes(
             // pagina A + 1, con le guardie di `stitchAdjacentPageFootnotes`. Codici esclusi (sopra), Estratto col
             // suo percorso storico (sopra, invariato).
             var contentBottomByPage: [Int: Double] = [:]
+            var bodyLeftByPage: [Int: Double] = [:]
             for page in Set(document.structure.filter { $0.type == .NOTE }.map { $0.page_index }) {
                 contentBottomByPage[page] = nonNoteContentBottom(items(page))
+                bodyLeftByPage[page] = bodyLeftMargin(items(page))
             }
             // Richiami nel corpo, per pagina (secondo gradino: un richiamo «testa + 1» senza la sua nota).
             var callValuesByPage: [Int: Set<Int>] = [:]
@@ -364,7 +366,7 @@ public func bindAndPlaceNotes(
             let adjacent = stitchAdjacentPageFootnotes(
                 document.structure, &footnoteNodeById, &footnotesInNoteOrder,
                 noteLinesById: noteLinesById, contentBottomByPage: contentBottomByPage,
-                callValuesByPage: callValuesByPage, noteNumbersByPage: noteNumbersByPage)
+                callValuesByPage: callValuesByPage, noteNumbersByPage: noteNumbersByPage, bodyLeftByPage: bodyLeftByPage)
             stats.stitchedAdjacentPage = adjacent.count
             stats.adjacentPageCandidates = adjacent.candidates
         }
@@ -660,7 +662,9 @@ func nonNoteContentBottom(_ items: [GenItem]) -> Double? {
 /// Corpo tipografico MASSIMO fra gli span con testo di una riga (0 se nessuno): il corpo della riga che non risente del
 /// maiuscoletto (cognomi a corpo minore) né dei richiami in apice.
 func noteLineMaxSpanSize(_ line: LineSummary) -> Double {
-    line.spans.filter { $0.fontSize > 0 && !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    // solo gli span con lettere o cifre: una virgola o un trattino composti al corpo del testo dentro una riga di nota
+    // non sono il corpo della riga (giro «pulizia delle note», 2026-10-17: una continuazione vera di Magnani era respinta)
+    line.spans.filter { $0.fontSize > 0 && $0.text.contains(where: { $0.isLetter || $0.isNumber }) }
         .map { $0.fontSize }.max() ?? 0
 }
 
@@ -701,15 +705,18 @@ func stitchAdjacentPageFootnotes(
     noteLinesById: [String: [LineSummary]],
     contentBottomByPage: [Int: Double],
     callValuesByPage: [Int: Set<Int>] = [:],
-    noteNumbersByPage: [Int: Set<Int>] = [:]
+    noteNumbersByPage: [Int: Set<Int>] = [:],
+    bodyLeftByPage: [Int: Double] = [:]
 ) -> (count: Int, candidates: [AdjacentPageStitchCandidate]) {
     var flat: [String] = []
     var nodeOfFootnote: [String: NodeDict] = [:]
+    var noteNodeIdsByPage: [Int: [String]] = [:]
     for node in structure where node.type == .NOTE || node.type == .EDITORIAL_NOTE {
         for fid in footnotesInNoteOrder[node.id] ?? [] {
             flat.append(fid)
             nodeOfFootnote[fid] = node
         }
+        if node.type == .NOTE { noteNodeIdsByPage[node.page_index, default: []].append(node.id) }
     }
     guard flat.count >= 2 else { return (0, []) }
 
@@ -740,8 +747,13 @@ func stitchAdjacentPageFootnotes(
         var headNumber = noteOpening(a)
         var nextNumber: Int?
         var j = i + 1
+        var nextOpensLikeNote = true
         while j < flat.count, let f = footnoteNodeById[flat[j]], f.page_index == cur.page_index {
-            if let n = noteOpening(f.text ?? "") { nextNumber = n; break }
+            if let n = noteOpening(f.text ?? "") {
+                nextNumber = n
+                nextOpensLikeNote = !noteNumberFollowedByLowercase(f.text ?? "")
+                break
+            }
             j += 1
         }
         // Testa-frammento (giro «pulizia delle note», 2026-10-17): la «testa» è un frammento che l'estrazione ha staccato
@@ -794,7 +806,12 @@ func stitchAdjacentPageFootnotes(
 
         var reason = ""
         if curNode.type != .NOTE || lastNodeOnHeadSide?.type != .NOTE { reason = "nodo non NOTE" }
-        else if !predicate { reason = "predicato" }
+        // Giro «pulizia delle note» (2026-10-17, decisione 2 del maintainer): con la successione CONFERMATA (la prima nota
+        // numerata dopo la coda porta il numero della testa più uno) il predicato non serve più: fra testa e coda non può
+        // esserci un'altra nota numerata, e le guardie che seguono (geometria, corpo tipografico) fermano ciò che nota non è.
+        // La conferma deve venire da una nota che si APRE come una nota: un numero seguito da una minuscola è un numero
+        // spurio o il marcatore staccato e spostato dal testo della coda stessa (Compendio p. 1170), non la nota seguente.
+        else if !predicate, !(succession == "confermata" && nextOpensLikeNote) { reason = "predicato" }
         else if succession == "testa senza numero" { reason = "successione testa senza numero" }
         else if succession == "non confermata", let h = headNumber, nextNumber == h + 2 {
             reason = "successione non confermata: nota seguente mancante"
@@ -802,10 +819,21 @@ func stitchAdjacentPageFootnotes(
         else if succession != "confermata", nextCallUnmatched { reason = "richiamo della nota seguente senza nota" }
         else if tailLeadingIsNext { reason = "coda numerata come la nota seguente" }
         else if tailFirst == nil || headFirst == nil || headLast == nil { reason = "geometria assente" }
-        else if tailBottom == nil || headBottom == nil { reason = "pagina senza corpo né titoli" }
-        else if !(tailFirst!.yTop < tailBottom!) { reason = "coda non sotto il corpo" }
-        else if !(headFirst!.yTop < headBottom!) { reason = "testa non sotto il corpo" }
+        // Una pagina senza corpo né titoli (una nota che la riempie tutta) non ha un corpo sotto cui stare: la si ricuce
+        // solo se vale anche il predicato (testa aperta, coda che continua), oltre al corpo tipografico uguale.
+        else if tailBottom == nil || headBottom == nil, !predicate { reason = "pagina senza corpo né titoli" }
+        else if let bottom = tailBottom, !(tailFirst!.yTop < bottom) { reason = "coda non sotto il corpo" }
+        else if let bottom = headBottom, !(headFirst!.yTop < bottom) { reason = "testa non sotto il corpo" }
         else if abs(noteLineMaxSpanSize(tailFirst!) - noteLineMaxSpanSize(headLast!)) > BODY_SIZE_TOLERANCE { reason = "corpo tipografico diverso" }
+        // La coda è aperta da una glossa a margine, o è la glossa da sola (Mandrioli: la glossa stampata nel margine accanto
+        // alle note, che l'estrazione mette in testa al nodo o legge come un nodo di note a sé). Ricucirla porterebbe la
+        // glossa dentro la nota: la nota resta aperta.
+        else if tailStartsWithMarginGloss(
+            tailLines, bodyLeft: bodyLeftByPage[cur.page_index],
+            noteColumnLeft: noteColumnLeft((noteNodeIdsByPage[cur.page_index] ?? []).filter { $0 != curNode.id }
+                .compactMap { noteLinesById[$0] })) {
+            reason = "coda aperta da una glossa a margine"
+        }
 
         if reason.isEmpty {
             let merged: String
@@ -857,6 +885,20 @@ func stitchAdjacentPageFootnotes(
     return (count, candidates)
 }
 
+/// Vero se il numero d'apertura di una nota individuale è seguito da una parola in minuscolo («27 dell'esito…»): il
+/// numero spurio a inizio riga di un frammento, o il marcatore che l'estrazione ha staccato dal testo della sua nota e
+/// messo davanti al seguito. Non è la forma di una nota che si apre (maiuscola, citazione, parentesi, o il numero da solo).
+func noteNumberFollowedByLowercase(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    var rest = Substring(t)
+    while let c = rest.first, c == "(" || c == "[" || c.isWhitespace { rest = rest.dropFirst() }
+    guard rest.first?.isNumber == true else { return false }
+    while let c = rest.first, c.isNumber { rest = rest.dropFirst() }
+    while let c = rest.first, c == ")" || c == "]" || c == "." || c.isWhitespace { rest = rest.dropFirst() }
+    guard let c = rest.first, c.isLetter else { return false }
+    return c.isLowercase
+}
+
 /// Unione di due testi di nota come nelle ricuciture: de-sillabazione se il primo finisce con lettera e trattino e il
 /// secondo comincia in minuscolo, altrimenti uno spazio.
 func joinFootnoteTexts(_ a: String, _ b: String) -> String {
@@ -892,6 +934,64 @@ func footnoteLineRanges(_ lines: [LineSummary]) -> [Range<Int>] {
 /// geometria distingua le une dalle altre; e scarto ammesso fra la riga di un frammento e quel margine.
 let NOTE_OPENING_INDENT_MIN = 3.0
 let NOTE_CONTINUATION_MARGIN_TOLERANCE = 1.0
+
+/// Di quanto (punti) la prima riga di un nodo di note può stare a sinistra della colonna senza essere nel margine.
+let NOTE_COLUMN_OUTSIDE_TOLERANCE = 3.0
+/// Due righe stanno alla stessa ascissa entro questa distanza (punti).
+let NOTE_MARGIN_SAME_X = 1.5
+
+/// Il margine sinistro della colonna del CORPO di una pagina: la più piccola fra le ascisse (al mezzo punto) che almeno
+/// due righe di corpo condividono (una riga isolata non lo sposta; il corpo può avere due margini, il testo e le citazioni
+/// in corpo minore rientrate), con almeno tre righe di corpo sulla pagina; nil altrimenti.
+func bodyLeftMargin(_ items: [GenItem]) -> Double? {
+    var counts: [Double: Int] = [:]
+    var total = 0
+    for item in items {
+        if case .run(.body, let lines) = item {
+            for line in lines where !line.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                counts[(line.x0 * 2).rounded() / 2, default: 0] += 1
+                total += 1
+            }
+        }
+    }
+    guard total >= 3 else { return nil }
+    return counts.filter { $0.value >= 2 }.keys.min()
+}
+
+/// Il margine sinistro della colonna delle note di una pagina, misurato sulle righe di seguito (non le aperture) dei nodi
+/// di note dati: l'ascissa più frequente (al mezzo punto), condivisa da almeno due righe; nil se non misurabile.
+func noteColumnLeft(_ nodes: [[LineSummary]]) -> Double? {
+    var counts: [Double: Int] = [:]
+    for lines in nodes {
+        let starts = Set(footnoteLineRanges(lines).map { $0.lowerBound })
+        for (i, line) in lines.enumerated() where !starts.contains(i) { counts[(line.x0 * 2).rounded() / 2, default: 0] += 1 }
+    }
+    guard let modal = counts.max(by: { $0.value != $1.value ? $0.value < $1.value : $0.key > $1.key }), modal.value >= 2
+    else { return nil }
+    return modal.key
+}
+
+/// Vero se il nodo di note comincia con una GLOSSA A MARGINE, o è fatto della sola glossa (giro «pulizia delle note»,
+/// 2026-10-17; misurato sui Mandrioli: 25 code così, con la glossa stampata nel margine sinistro accanto alle note, che
+/// l'estrazione mette in testa al nodo o legge come un nodo di note a sé). La firma: le righe in testa al nodo stanno a una
+/// stessa ascissa, a sinistra della colonna del corpo della pagina (`bodyLeft`) di più di `NOTE_COLUMN_OUTSIDE_TOLERANCE`
+/// (nel margine), e poi
+///   • la riga che segue sta più a destra, nella colonna, e quell'ascissa non torna più nel resto del nodo (le note di un
+///     apparato più largo del corpo, o su due colonne come nell'EdD, tornano al loro margine nelle righe che seguono; una
+///     glossa no); oppure
+///   • il nodo finisce lì (la glossa da sola) e le altre note della pagina hanno la loro colonna (`noteColumnLeft`, misurata
+///     fuori dal nodo) più a destra di quell'ascissa, oltre la tolleranza. Senza quella misura non si ferma nulla: la coda
+///     di una nota che sporge a sinistra del corpo (Rivista DPC) sta alla stessa ascissa delle altre note della pagina.
+func tailStartsWithMarginGloss(_ lines: [LineSummary], bodyLeft: Double?, noteColumnLeft: Double?) -> Bool {
+    guard let first = lines.first, let left = bodyLeft, first.x0 < left - NOTE_COLUMN_OUTSIDE_TOLERANCE else { return false }
+    let x = first.x0
+    guard let end = lines.firstIndex(where: { abs($0.x0 - x) > NOTE_MARGIN_SAME_X }) else {
+        guard let column = noteColumnLeft else { return false }
+        return x < column - NOTE_COLUMN_OUTSIDE_TOLERANCE
+    }
+    guard lines[end].x0 > x + NOTE_COLUMN_OUTSIDE_TOLERANCE else { return false }
+    return !lines[end...].contains(where: { abs($0.x0 - x) <= NOTE_MARGIN_SAME_X })
+}
 
 /// Se la testa candidata `fragmentId` (l'ultima nota della pagina A, aperta da un numero `fragmentNumber`) è un
 /// FRAMMENTO della nota che la precede, ritorna id e testo della nota vera (a cui il chiamante riunisce il frammento e la
