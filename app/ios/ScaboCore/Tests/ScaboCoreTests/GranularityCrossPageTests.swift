@@ -64,12 +64,12 @@ final class GranularityCrossPageTests: XCTestCase {
 
     func test_noteHeld_noterm_midClause() {
         let out = granularizeBody([
-            seg(BODY, "Il giudice nel decidere le controversie deve seguire le norme del diritto e", "a"),
+            seg(BODY, "Il mugnaio nel macinare il grano deve seguire le regole del mestiere e", "a"),
             seg(NOTE, "12. V. Cass. n. 731.", "n"),
-            seg(BODY, "non può discostarsene se non nei casi previsti dalla legge vigente in materia.", "b"),
+            seg(BODY, "non può allontanarsene salvo i casi stabiliti dalla consuetudine del luogo.", "b"),
         ])
         let body = out.filter { $0.role == BODY }.map { $0.text }.joined(separator: " ")
-        XCTAssertTrue(body.contains("del diritto e non può discostarsene"), "ricucitura mid-periodo: \(body)")
+        XCTAssertTrue(body.contains("del mestiere e non può allontanarsene"), "ricucitura mid-periodo: \(body)")
         XCTAssertEqual(out.last?.role, NOTE)
     }
 
@@ -89,19 +89,19 @@ final class GranularityCrossPageTests: XCTestCase {
         let out = granularizeBody([
             seg(BODY, "– a", "a"),
             seg(NOTE, "1. nota.", "n"),
-            seg(BODY, "seguito dell'estinzione del reato per prescrizione maturata nel frattempo.", "b"),
+            seg(BODY, "seguito della chiusura del mulino per siccità maturata nel frattempo.", "b"),
         ])
         // frammento corto: non è target di ricucitura → la nota NON è trattenuta dopo di esso.
-        XCTAssertFalse(joinedBody(out).contains("– a seguito dell'estinzione"))
+        XCTAssertFalse(joinedBody(out).contains("– a seguito della chiusura"))
     }
 
     func test_guard_listMarkerNextNotMerged() {
         let out = granularizeBody([
-            seg(BODY, "La Repubblica ha il compito di rimuovere gli ostacoli di ordine economico e", "a"),
+            seg(BODY, "Il consorzio ha il dovere di togliere gli intralci di ordine idraulico e", "a"),
             seg(NOTE, "1. nota.", "n"),
-            seg(BODY, "a) la politica europea che concerne i rapporti con gli altri Stati membri.", "b"),
+            seg(BODY, "a) la manutenzione ordinaria che concerne i canali con gli altri consorzi.", "b"),
         ])
-        XCTAssertFalse(joinedBody(out).contains("economico e a) la politica"), "elenco NON fuso")
+        XCTAssertFalse(joinedBody(out).contains("idraulico e a) la manutenzione"), "elenco NON fuso")
     }
 
     func test_guard_uppercaseNextNotMerged() {

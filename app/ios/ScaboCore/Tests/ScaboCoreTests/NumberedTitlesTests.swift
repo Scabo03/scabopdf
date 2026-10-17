@@ -70,11 +70,11 @@ final class NumberedTitlesTests: XCTestCase {
     func test_sizeSupported_titleSplitsBodyRun() {
         let items = run([
             bodyLine("…e chiude il paragrafo precedente.", yTop: 500),
-            line([("2. Il reticolo di fatti oggetto del giudizio", 12.48)], yTop: 480, width: 250),
-            bodyLine("L’art. 1229 del codice civile del 1865 disponeva", yTop: 460),
+            line([("2. Il sentiero dei mulini lungo il fiume", 12.48)], yTop: 480, width: 250),
+            bodyLine("L’art. 12 del regolamento del 1902 disponeva", yTop: 460),
         ])
         XCTAssertEqual(items.count, 3, "corpo | titolo | corpo: il confine c'è davvero")
-        XCTAssertEqual(titles(items), ["2. Il reticolo di fatti oggetto del giudizio"])
+        XCTAssertEqual(titles(items), ["2. Il sentiero dei mulini lungo il fiume"])
         guard case .run(.body, let before) = items[0], case .run(.body, let after) = items[2] else {
             return XCTFail("attesi due run di corpo attorno al titolo")
         }
@@ -82,21 +82,21 @@ final class NumberedTitlesTests: XCTestCase {
     }
 
     func test_sizeSupported_continuationLinesAreMerged_evenInSmallCaps() {
-        // Maiuscoletto con parola spezzata (Storia della codificazione p.110): la continuazione
-        // apre con una minuscola maiuscoletta a 9,96 ma porta maiuscole a 12,48.
+        // Maiuscoletto con parola spezzata (forma di Storia della codificazione p.110, testo inventato):
+        // la continuazione apre con una minuscola maiuscoletta a 9,96 ma porta maiuscole a 12,48.
         let items = run([
-            line([("6. L", 12.48), ("A RESTAURAZIONE: CRISI DEL MODELLO NAPO-", 9.96)], yTop: 480, width: 280),
-            line([("LEONICO", 9.96), (".", 12.48)], yTop: 466, width: 80),
-            bodyLine("Gli anni di transizione. – La caduta dei regimi", yTop: 440),
+            line([("6. L", 12.48), ("A BONIFICA: CRISI DEL MODELLO CONTADI-", 9.96)], yTop: 480, width: 280),
+            line([("NESCO", 9.96), (".", 12.48)], yTop: 466, width: 80),
+            bodyLine("Gli anni della semina. – La stagione dei raccolti", yTop: 440),
         ])
         XCTAssertEqual(titles(items).count, 1)
-        XCTAssertTrue(titles(items)[0].hasSuffix("LEONICO."), "la riga di continuazione è nel titolo")
+        XCTAssertTrue(titles(items)[0].hasSuffix("NESCO."), "la riga di continuazione è nel titolo")
     }
 
     func test_sizeSupported_bodySizedLineIsNeverAContinuation() {
         let items = run([
             line([("3.1. La fattispecie base", 12.48)], yTop: 480, width: 200),
-            line([("centi", 12.48), (" Gli artt. 589-bis e 590-bis sanzionano", body)], yTop: 466),
+            line([("centi", 12.48), (" Gli artt. 12-bis e 14-ter disciplinano", body)], yTop: 466),
         ])
         XCTAssertEqual(titles(items), ["3.1. La fattispecie base"],
                        "una riga che porta testo alla taglia del corpo è corpo")
@@ -107,10 +107,10 @@ final class NumberedTitlesTests: XCTestCase {
     func test_bodySize_depth2_shortLine_isTitle() {
         let items = run([
             bodyLine("…si conclude la trattazione precedente.", yTop: 500),
-            bodyLine("4.1. Il lavoro a tempo parziale.", yTop: 480, width: 180),
-            bodyLine("Il contratto di lavoro a tempo parziale è", yTop: 460),
+            bodyLine("4.1. Il raccolto delle castagne.", yTop: 480, width: 180),
+            bodyLine("Il contratto di raccolto delle castagne è", yTop: 460),
         ])
-        XCTAssertEqual(titles(items), ["4.1. Il lavoro a tempo parziale."])
+        XCTAssertEqual(titles(items), ["4.1. Il raccolto delle castagne."])
     }
 
     func test_bodySize_depth1_isNeverATitle() {
@@ -126,7 +126,7 @@ final class NumberedTitlesTests: XCTestCase {
         // Paragrafo di prosa numerato a tutta giustezza (Rivista DPC 4-2020, Lineamenti p.482).
         let items = run([
             bodyLine("…fine del paragrafo.", yTop: 500),
-            bodyLine("1.1. Le riflessioni che qui propongo riguardano problemi della", yTop: 480, width: 296),
+            bodyLine("1.1. Le osservazioni che qui raccolgo riguardano questioni della", yTop: 480, width: 296),
         ])
         XCTAssertTrue(titles(items).isEmpty)
     }
@@ -148,35 +148,35 @@ final class NumberedTitlesTests: XCTestCase {
     }
 
     func test_bodySize_multiline_hangingIndentAfterGap_isTitle() {
-        // Rizzo p.260: stacco 20,7 pt, continuazioni rientrate di 14,2 pt, chiusura su riga corta.
+        // Forma di Rizzo p.260 (testo inventato): stacco 20,7 pt, continuazioni rientrate di 14,2 pt, chiusura su riga corta.
         let items = run([
             bodyLine("…nel processo penale.", yTop: 520, width: 120),
-            line([("2.1.1. Certezze e dubbi ragionevoli: l’evitabilità dell’evento da parte", body)], yTop: 488, width: 296),
+            line([("2.1.1. Speranze e timori fondati: la portata della piena da parte", body)], yTop: 488, width: 296),
             // Riga piena ma rientrata: più stretta di 0,85×colonna, eppure arriva al margine destro.
-            line([("della condotta alternativa lecita nei reati omissivi, nel momento", body)], yTop: 474, width: 250, x0: 118),
-            line([("posi sostanzialmente omissivi.", body)], yTop: 460, width: 130, x0: 84.2),
-            line([("Il problema della matrice della legge di copertura", body)], yTop: 436, width: 280, x0: 84.2),
+            line([("della diga costruita lungo il torrente maggiore, nel momento", body)], yTop: 474, width: 250, x0: 118),
+            line([("delle piogge stagionali.", body)], yTop: 460, width: 130, x0: 84.2),
+            line([("Il problema della misura della portata di riferimento", body)], yTop: 436, width: 280, x0: 84.2),
         ])
         XCTAssertEqual(titles(items).count, 1)
-        XCTAssertTrue(titles(items)[0].hasSuffix("omissivi."))
+        XCTAssertTrue(titles(items)[0].hasSuffix("stagionali."))
     }
 
     func test_bodySize_multiline_doesNotSwallowNextParagraphFirstLine() {
         // Titolo su una riga piena, poi la prima riga (rientrata) del paragrafo senza stacco dopo.
         let items = run([
             bodyLine("…fine della scheda precedente.", yTop: 520, width: 120),
-            line([("2.3. Sentenza CG 10 maggio 1995, causa C-384/93, Alpine Investments", body)], yTop: 488, width: 299),
-            line([("Nell’ambito di una controversia tra la Alpine Investments, società olandese spe-", body)], yTop: 474, width: 285, x0: 84),
-            line([("cializzata nella consulenza sugli investimenti, ed il Ministero", body)], yTop: 460, width: 299),
+            line([("2.3. Sentenza CG 12 marzo 1996, causa C-999/95, Mulini Riuniti", body)], yTop: 488, width: 299),
+            line([("In una lite fra la Mulini Riuniti e un mercante, società olandese spe-", body)], yTop: 474, width: 285, x0: 84),
+            line([("cializzata nella macinazione dei cereali, ed il Ministero", body)], yTop: 460, width: 299),
         ])
-        XCTAssertTrue(titles(items).allSatisfy { !$0.contains("Nell’ambito") })
+        XCTAssertTrue(titles(items).allSatisfy { !$0.contains("In una lite") })
     }
 
     func test_bodySize_multiline_proseParagraph_isNotTitle() {
         // Paragrafo di prosa numerato: prima riga, poi le altre tornano al margine (nessun rientro sporgente).
         let items = run([
             bodyLine("…fine del paragrafo.", yTop: 520, width: 120),
-            line([("1.1. Le riflessioni che qui propongo riguardano problemi della", body)], yTop: 488, width: 296, x0: 84),
+            line([("1.1. Le osservazioni che qui raccolgo riguardano questioni della", body)], yTop: 488, width: 296, x0: 84),
             line([("pena. Stanno al centro della discussione.", body)], yTop: 474, width: 200, x0: 70),
         ])
         XCTAssertTrue(titles(items).isEmpty)
@@ -185,8 +185,8 @@ final class NumberedTitlesTests: XCTestCase {
     func test_bodySize_multiline_withoutGap_isNotTitle() {
         let items = run([
             bodyLine("…fine del paragrafo.", yTop: 500, width: 120),
-            line([("2.1.1. Certezze e dubbi ragionevoli: l’evitabilità dell’evento", body)], yTop: 488, width: 296),
-            line([("posi sostanzialmente omissivi.", body)], yTop: 474, width: 130, x0: 84.2),
+            line([("2.1.1. Speranze e timori fondati: la portata della piena", body)], yTop: 488, width: 296),
+            line([("delle piogge stagionali.", body)], yTop: 474, width: 130, x0: 84.2),
         ])
         XCTAssertTrue(titles(items).isEmpty, "senza stacco verticale prima: nel dubbio corpo")
     }

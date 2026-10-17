@@ -83,8 +83,8 @@ final class NoteJumpTests: XCTestCase {
 
     func test_inlineNotes_groupAfterSameSentence_allLink() {
         let segs = [
-            s("BODY", "Con gli studi di Staub 194, Stoll 195, Larenz 196."),
-            s("NOTE", "194 STAUB, op. cit."), s("NOTE", "195 STOLL, op. cit."), s("NOTE", "196 LARENZ, op. cit."),
+            s("BODY", "Con le ricerche di Rossi 194, Bianchi 195, Verdi 196."),
+            s("NOTE", "194 ROSSI, op. cit."), s("NOTE", "195 BIANCHI, op. cit."), s("NOTE", "196 VERDI, op. cit."),
         ]
         let l = noteCallLinks(segs)
         XCTAssertEqual(l.notesOfCall[0], [1, 2, 3])
@@ -138,7 +138,7 @@ final class NoteJumpTests: XCTestCase {
     func test_deferredNote_doesNotCrossSectionHeading() {
         let segs = [
             s("BODY", "la piena del fiume arriva al ponte 37, perché"),
-            s("HEADING_3", "2. La faglia del fortuito."),
+            s("HEADING_3", "2. La quiete del bosco."),
             s("BODY", "Nuova sezione."),
             s("NOTE", "37 Nota.", refresh: "la piena del fiume arriva al ponte"),
         ]

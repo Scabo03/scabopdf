@@ -67,8 +67,8 @@ final class BackMatterTests: XCTestCase {
     // ── colophon finale (ISBN / "finito di stampare") → ARTIFACT_STAMP, fuori flusso ─
     func test_finalColophon_becomesArtifactStamp_excludedFromFlow() {
         let colo = page(34, [
-            line("ISBN 9788813382230", 9),
-            line("Finito di stampare nel mese di marzo 2025 nella Stampatre s.r.l. di Torino.", 9),
+            line("ISBN 9791200000014", 9),
+            line("Finito di stampare nel mese di aprile 2024 nella Tipografia Lunare s.r.l. di Borgoverde.", 9),
         ])
         let d = docPages(body: 34, tail: [colo, bodyPage(35)])   // N=36, backStart=30
         XCTAssertEqual(nodes(d, .ARTIFACT_STAMP).count, 1, "il colophon finale è ARTIFACT_STAMP")
@@ -153,14 +153,14 @@ final class BackMatterTests: XCTestCase {
     func test_appendixProse_inBackRegion_isReadAndProtected() {
         let appendix = page(33, [
             line("APPENDICE", 13),
-            line("La Compagnia delle Indie: un archetipo del dominio angloamericano sul mondo.", 10),
-            line("Nel Capitolo VIII si è fatto cenno al ruolo della Compagnia delle Indie nella", 10),
-            line("espansione coloniale della Gran Bretagna in estremo Oriente e in altre aree.", 10),
-            line("L’East India Company affascinò le menti di tanti protagonisti della rivoluzione.", 10),
+            line("La Compagnia dei Mulini: un archetipo del commercio fluviale sul continente.", 10),
+            line("Nel Capitolo VIII abbiamo accennato alla parte della Compagnia dei Mulini nella", 10),
+            line("espansione commerciale della pianura padana verso levante e altrove.", 10),
+            line("La Compagnia dei Mulini attirò l’interesse di molti mercanti del tempo.", 10),
         ])
         let nameIdx = page(34, [line("LE FONTI", 11)] + indexEntries(12))
         let d = docPages(body: 33, tail: [appendix, nameIdx, bodyPage(35)])
-        XCTAssertTrue(readText(d).contains("La Compagnia delle Indie"), "l'appendice (prosa) è LETTA, protetta")
+        XCTAssertTrue(readText(d).contains("La Compagnia dei Mulini"), "l'appendice (prosa) è LETTA, protetta")
         XCTAssertEqual(nodes(d, .INDEX_ENTRY).count, 1, "l'indice nomi che segue è scartato")
         XCTAssertFalse(readText(d).contains("Voce d’indice"), "indice nomi scartato")
     }
@@ -216,7 +216,7 @@ final class BackMatterTests: XCTestCase {
     // ── back-matter detection: lo stesso item per pagina nel build e in NoteBinding ──
     // (lo zip 1:1 deve restare esatto: detectBackMatterApparatus è passato a entrambi.)
     func test_backApparatusMap_isStable() {
-        let colo = page(34, [line("ISBN 9788813382230", 9), line("Tutti i diritti sono riservati.", 9)])
+        let colo = page(34, [line("ISBN 9791200000014", 9), line("Tutti i diritti sono riservati.", 9)])
         let ex = PdfExtraction(version: 2, pageCount: 36,
                                pages: (0..<34).map { bodyPage($0) } + [colo, bodyPage(35)])
         let furniture = detectFurniture(ex)

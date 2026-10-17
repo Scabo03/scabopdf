@@ -108,7 +108,7 @@ final class CrossPageNoteStitchTests: XCTestCase {
     }
 
     func test_abbrWaitingNumber_opens_continuationDigit_merged() {
-        let r = run([(28, "28 cit., vol. II, 279; in senso analogo, p."), (29, "508 ss.; SORDI")])
+        let r = run([(28, "28 cit., vol. II, 341; in senso conforme, p."), (29, "612 ss.; MARRI")])
         XCTAssertEqual(r.count, 1, "abbr che attende numero apre; coda numerica continua")
     }
 }

@@ -38,7 +38,7 @@ final class HeadingFusionTests: XCTestCase {
     /// filo. Né il margine sinistro né il centro tornano (la riga 2 è molto più corta), ma è la
     /// stessa riga andata a capo. Geometria misurata sul volume: rientro costante di 14,2pt.
     func test_shouldFuse_hangingIndentContinuation() {
-        let a = hl("2. Doveri informativi dell’intermediario, regole di condotta e regole",
+        let a = hl("2. Doveri informativi del mugnaio, regole di macinazione e regole",
                    x0: 65, x1: 400, yTop: 300)
         let b = hl("di validità", x0: 79.2, x1: 140, yTop: 285)
         XCTAssertTrue(headingsShouldFuse(a, b), "rientro di 14,2pt = continuazione")
@@ -46,7 +46,7 @@ final class HeadingFusionTests: XCTestCase {
 
     /// Il tetto del rientro è stretto: oltre, non è più una continuazione.
     func test_shouldNotFuse_indentTooLarge() {
-        let a = hl("2. Doveri informativi dell’intermediario, regole di condotta e regole",
+        let a = hl("2. Doveri informativi del mugnaio, regole di macinazione e regole",
                    x0: 65, x1: 400, yTop: 300)
         let b = hl("di validità", x0: 130, x1: 190, yTop: 285)
         XCTAssertFalse(headingsShouldFuse(a, b), "rientro di 65pt: altro livello, non continuazione")
@@ -78,17 +78,17 @@ final class HeadingFusionTests: XCTestCase {
     /// Le altre guardie restano sovrane anche per i due modi nuovi: una riga 2 che apre un nuovo
     /// item non si fonde nemmeno se rientrata.
     func test_shouldNotFuse_hangingIndentButLine2OpensNewItem() {
-        let a = hl("1. La prestazione dei servizi di investimento", x0: 65, x1: 400, yTop: 300)
-        let b = hl("2. Doveri informativi dell’intermediario", x0: 79.2, x1: 380, yTop: 285)
+        let a = hl("1. L’offerta dei servizi di macinazione", x0: 65, x1: 400, yTop: 300)
+        let b = hl("2. Doveri informativi del mugnaio", x0: 79.2, x1: 380, yTop: 285)
         XCTAssertFalse(headingsShouldFuse(a, b), "la riga 2 è un titolo distinto numerato")
     }
 
     /// E la riga 1 che chiude con punto forte non si fonde nemmeno col rientro: è la guardia che
     /// tiene separati due titoli distinti, e resta intatta (caso archiviato del volume Lener).
     func test_shouldNotFuse_hangingIndentButLine1Terminates() {
-        let a = hl("5. La crisi del paradigma della razionalità dell’investitore informato.",
+        let a = hl("5. La crisi del modello della razionalità del mugnaio informato.",
                    x0: 65, x1: 400, yTop: 300)
-        let b = hl("Dissonanze cognitive e attività metacognitiva dell’investitore",
+        let b = hl("Dissonanze stagionali e attività quotidiana del mugnaio",
                    x0: 79.2, x1: 380, yTop: 285)
         XCTAssertFalse(headingsShouldFuse(a, b))
     }
@@ -107,13 +107,13 @@ final class HeadingFusionTests: XCTestCase {
 
     func test_shouldFuse_genuineWrap_centered() {
         // due righe di UN titolo centrato, interlinea singola (baseline-delta ≈ una riga)
-        let a = hl("LE ORIGINI DEL NOSTRO SISTEMA", yTop: 501)
-        let b = hl("DI GIUSTIZIA AMMINISTRATIVA", yTop: 486)   // baseline-delta 15 / lineH 18 = 0.83
+        let a = hl("LE RADICI DEL NOSTRO SISTEMA", yTop: 501)
+        let b = hl("DI BONIFICA IDRAULICA", yTop: 486)   // baseline-delta 15 / lineH 18 = 0.83
         XCTAssertTrue(headingsShouldFuse(a, b))
     }
     func test_shouldNotFuse_line2StartsWithDigit_tocPageNumber() {
         // riga-2 inizia con un numero di pagina (voce d'indice) → mai una continuazione
-        let a = hl("Le assemblee separate e le assemblee speciali", yTop: 501)
+        let a = hl("Le riunioni separate e le riunioni speciali", yTop: 501)
         let b = hl("463 15. L’organo amministrativo", yTop: 486)
         XCTAssertFalse(headingsShouldFuse(a, b))
     }
@@ -163,18 +163,18 @@ final class HeadingFusionTests: XCTestCase {
 
     func test_consolidate_twoLineTitle_fusedWithSpace() {
         let out = fuse([
-            .heading(hl("LE ORIGINI DEL NOSTRO SISTEMA", yTop: 501), level: 3),
-            .heading(hl("DI GIUSTIZIA AMMINISTRATIVA", yTop: 486), level: 3)])
-        XCTAssertEqual(headingTexts(out), ["LE ORIGINI DEL NOSTRO SISTEMA DI GIUSTIZIA AMMINISTRATIVA"])
+            .heading(hl("LE RADICI DEL NOSTRO SISTEMA", yTop: 501), level: 3),
+            .heading(hl("DI BONIFICA IDRAULICA", yTop: 486), level: 3)])
+        XCTAssertEqual(headingTexts(out), ["LE RADICI DEL NOSTRO SISTEMA DI BONIFICA IDRAULICA"])
     }
     func test_consolidate_threeLineTitle_chains_viaReanchor() {
         // titolo a 3 righe: si re-àncora all'ultima riga fisica per il controllo d'interlinea
         let out = fuse([
-            .heading(hl("I DELITTI", yTop: 501), level: 1),
-            .heading(hl("CONTRO LA SICUREZZA DELLO STATO", yTop: 486), level: 1),
-            .heading(hl("E CONTRO L’ORDINE PUBBLICO", yTop: 471), level: 1)])
+            .heading(hl("I RACCOLTI", yTop: 501), level: 1),
+            .heading(hl("CONTRO LA SICCITÀ DELLA PIANURA", yTop: 486), level: 1),
+            .heading(hl("E CONTRO L’ARSURA ESTIVA", yTop: 471), level: 1)])
         XCTAssertEqual(headingTexts(out),
-                       ["I DELITTI CONTRO LA SICUREZZA DELLO STATO E CONTRO L’ORDINE PUBBLICO"])
+                       ["I RACCOLTI CONTRO LA SICCITÀ DELLA PIANURA E CONTRO L’ARSURA ESTIVA"])
     }
     func test_consolidate_differentLevel_notFused() {
         let out = fuse([

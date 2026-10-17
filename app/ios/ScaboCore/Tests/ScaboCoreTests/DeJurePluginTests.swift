@@ -30,7 +30,7 @@ final class DeJurePluginTests: XCTestCase {
     ) -> PdfExtraction {
         var lines = [
             line("DOTTRINA"),
-            line("Il problema delle concause dell'evento dannoso nella costruzione del modello."),
+            line("Il problema delle piene del fiume nella costruzione del modello."),
             line("SERVIZIO GESTIONE RISORSE DOCUMENTARIE © Copyright Giuffrè Francis Lefebvre S.p.A. 2024"),
         ]
         if footer { lines.append(line("Pagina 1 di 59")) }
@@ -49,7 +49,7 @@ final class DeJurePluginTests: XCTestCase {
         // Contenuto reale: mai furniture.
         XCTAssertFalse(isDejureFurnitureText("La dottrina prevalente esclude la responsabilità."))
         XCTAssertFalse(isDejureFurnitureText("DOTTRINA E GIURISPRUDENZA"))  // non esatto
-        XCTAssertFalse(isDejureFurnitureText("Quando un ordinamento giuridico si dà delle regole."))
+        XCTAssertFalse(isDejureFurnitureText("Quando un consorzio di bonifica si dà delle regole."))
     }
 
     // MARK: - matches(): gate congiunto a tre segnali
@@ -93,7 +93,7 @@ final class DeJurePluginTests: XCTestCase {
     func test_retag_furnitureBecomesArtifactStamp_contentUntouched() {
         var nodes = [
             NodeDict(id: "node_0", type: .NOTE, page_index: 0, text: "DOTTRINA"),
-            NodeDict(id: "node_1", type: .BODY, page_index: 0, text: "Il problema delle concause."),
+            NodeDict(id: "node_1", type: .BODY, page_index: 0, text: "Il problema delle piene."),
             NodeDict(id: "node_2", type: .BODY, page_index: 0,
                      text: "SERVIZIO GESTIONE RISORSE DOCUMENTARIE © Copyright Giuffrè Francis Lefebvre S.p.A. 2024"),
         ]

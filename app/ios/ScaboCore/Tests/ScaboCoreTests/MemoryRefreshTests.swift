@@ -142,17 +142,17 @@ final class MemoryRefreshTests: XCTestCase {
     // MARK: - Regola 6: citazione bibliografica saltata nel para-titolo
 
     func test_paraTitolo_skipsOpeningCitation() {
-        let note = "(178) Così E. MERLIN, L'ordinanza di pagamento, in Riv. dir. proc., 1994, "
-            + "p. 1022. Si verificherebbe una sorta di solve et repete in senso ampio."
+        let note = "(178) Così E. ROVERETI, L'ordinanza del raccolto, in Riv. dir. proc., 1996, "
+            + "p. 1031. Si avrebbe una sorta di raccolto anticipato in senso ampio."
         let p = noteParaTitolo(note)
-        XCTAssertTrue(p.hasPrefix("Si verificherebbe"), "salta la citazione: \(p)")
-        XCTAssertFalse(p.contains("MERLIN"), "non riporta il rinvio bibliografico: \(p)")
+        XCTAssertTrue(p.hasPrefix("Si avrebbe"), "salta la citazione: \(p)")
+        XCTAssertFalse(p.contains("ROVERETI"), "non riporta il rinvio bibliografico: \(p)")
     }
 
     func test_paraTitolo_keepsSubstantiveOpening() {
-        let note = "(22) A meno che non risulti che l'assistenza del lavoratore non sia stata effettiva."
+        let note = "(7) A patto che l'aiuto del vicino sia stato pronto e costante."
         let p = noteParaTitolo(note)
-        XCTAssertTrue(p.hasPrefix("A meno che"), "apertura sostanziale conservata: \(p)")
+        XCTAssertTrue(p.hasPrefix("A patto che"), "apertura sostanziale conservata: \(p)")
     }
 
     func test_paraTitolo_capsWordCount() {

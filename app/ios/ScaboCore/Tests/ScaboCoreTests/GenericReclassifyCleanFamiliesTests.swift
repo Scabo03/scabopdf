@@ -25,12 +25,12 @@ final class GenericReclassifyCleanFamiliesTests: XCTestCase {
     // MARK: - SOMMARIO → CHAPTER_SUMMARY
 
     func test_sommario_uppercase_becomesChapterSummary() {
-        let out = reclass([note("SOMMARIO: 1. La nozione di tributo. – 2. Imposte, tasse, contributi.")])
+        let out = reclass([note("SOMMARIO: 1. Il concetto di raccolto. – 2. Grano, orzo, segale.")])
         XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
         XCTAssertNil(out[0].length_category, "una summary non porta regime acustico di nota")
     }
     func test_sommario_mixedCase_becomesChapterSummary() {
-        let out = reclass([note("Sommario: 1. Il diritto internazionale privato. – 2. Mancini.")])
+        let out = reclass([note("Sommario: 1. Il diritto dei mulini. – 2. Ramelli.")])
         XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
     }
     func test_sommario_short_becomesChapterSummary() {
@@ -55,11 +55,11 @@ final class GenericReclassifyCleanFamiliesTests: XCTestCase {
     // Estratto: l'etichetta e l'elenco numerato stanno nello STESSO nodo, separati da spazio
     // (non da ":"): "SOMMARIO 1. … – 2. …". La cifra dopo lo spazio apre l'elenco → promosso.
     func test_sommario_inlineElenco_noColon_becomesChapterSummary() {
-        let out = reclass([note("SOMMARIO 1. Premessa critica. – 2. Caratteri essenziali del provvedimento.")])
+        let out = reclass([note("SOMMARIO 1. Premessa generale. – 2. Caratteri essenziali del mulino.")])
         XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
     }
     func test_sommario_inlineElenco_mixedCase_becomesChapterSummary() {
-        let out = reclass([note("Sommario 1. L’impresa e l’imprenditore.")])
+        let out = reclass([note("Sommario 1. Il mulino e il mugnaio.")])
         XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
     }
     // Guardia: "SOMMARIO" + parola (non cifra) NON è un elenco → resta NOTE (precisione).
@@ -77,7 +77,7 @@ final class GenericReclassifyCleanFamiliesTests: XCTestCase {
         XCTAssertEqual(out[0].type, .NOTE)
     }
     func test_guard_sommarioInSentence_notReclassified() {
-        let out = reclass([note("a un sommario esame del ricorso la sezione provvede")])
+        let out = reclass([note("dopo un sommario esame del raccolto la squadra provvede")])
         XCTAssertEqual(out[0].type, .NOTE)
     }
     func test_guard_sommarioNotAtStart_notReclassified() {
@@ -123,10 +123,10 @@ final class GenericReclassifyCleanFamiliesTests: XCTestCase {
     // MARK: - GUARDIE / TRAPPOLE (restano NOTE)
 
     func test_guard_bodyProseWithLowercaseTitolo_notReclassified() {
-        // la trappola reale (Mercato p149): prosa di corpo che cita "titolo secondo…",
+        // forma della trappola reale (Mercato p149, testo inventato): prosa di corpo che cita "titolo secondo…",
         // keyword MINUSCOLA e riga lunga → NON è un'intestazione.
-        let trap = note("titolo secondo della parte quarta, concernente l’appello al pubblico "
-            + "risparmio. In un medesimo contesto si collocano poi le disposizioni seguenti.")
+        let trap = note("titolo terzo della parte seconda, concernente la manutenzione dei "
+            + "canali. In un medesimo contesto si collocano poi le disposizioni seguenti.")
         XCTAssertEqual(reclass([trap])[0].type, .NOTE, "prosa di corpo non diventa heading")
     }
     func test_guard_longMergedStructLine_notReclassified() {

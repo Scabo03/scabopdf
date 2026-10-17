@@ -24,9 +24,9 @@ final class EstrattoTitlesTests: XCTestCase {
     // MARK: - predicati
 
     func test_chapterTitleLine() {
-        XCTAssertTrue(estrattoIsChapterTitleLine(ln("LA NOZIONE DI PROVVEDIMENTO", 12.48), body))   // caps + 1.04
-        XCTAssertFalse(estrattoIsChapterTitleLine(ln("La nozione di provvedimento", 12.48), body))  // non maiuscolo
-        XCTAssertFalse(estrattoIsChapterTitleLine(ln("LA NOZIONE DI PROVVEDIMENTO", 12.0), body))   // taglia corpo
+        XCTAssertTrue(estrattoIsChapterTitleLine(ln("LA NOZIONE DI RACCOLTO", 12.48), body))   // caps + 1.04
+        XCTAssertFalse(estrattoIsChapterTitleLine(ln("La nozione di raccolto", 12.48), body))  // non maiuscolo
+        XCTAssertFalse(estrattoIsChapterTitleLine(ln("LA NOZIONE DI RACCOLTO", 12.0), body))   // taglia corpo
     }
     func test_paraSizeLine() {
         XCTAssertTrue(estrattoIsParaSizeLine(ln("x", 11.52), body))
@@ -35,7 +35,7 @@ final class EstrattoTitlesTests: XCTestCase {
     }
     func test_paraTitleStarts() {
         XCTAssertTrue(estrattoParaTitleStarts("1 Premessa critica"))
-        XCTAssertTrue(estrattoParaTitleStarts("10 Segue: la non del tutto sclerotizzata"))
+        XCTAssertTrue(estrattoParaTitleStarts("10 Segue: la stagione non ancora conclusa"))
         XCTAssertFalse(estrattoParaTitleStarts("113, comma 1, della Cost. 23"))  // 3 cifre = citazione
         XCTAssertFalse(estrattoParaTitleStarts("1 gennaio 2020, n. 5"))          // minuscola = data
         XCTAssertFalse(estrattoParaTitleStarts("Premessa critica"))             // niente numero
@@ -48,7 +48,7 @@ final class EstrattoTitlesTests: XCTestCase {
     // MARK: - gating
 
     func test_gatedOff_isNoOp() {
-        let items: [GenItem] = [.run(.body, [ln("LA NOZIONE DI PROVVEDIMENTO", 12.48),
+        let items: [GenItem] = [.run(.body, [ln("LA NOZIONE DI RACCOLTO", 12.48),
                                              ln("1 Premessa critica", 11.52)])]
         let out = recognizeEstrattoTitles(items, prof(false))   // non-Estratto → identità
         guard case .run(.body, let lines) = out[0] else { return XCTFail("atteso run invariato") }
@@ -62,8 +62,8 @@ final class EstrattoTitlesTests: XCTestCase {
         // navigazione). Il testo unisce marcatore + titolo; rete A: nessuna lettera persa.
         let items: [GenItem] = [
             .run(.note, [ln("CAPITOLO I", 9.65)]),                 // marcatore CAPITOLO N
-            .run(.body, [ln("LA NOZIONE DI PROVVEDIMENTO E LA SUA PERDURANTE", 12.48),
-                         ln("ATTUALITÀ NELL’ODIERNA REALTÀ GIURIDICA E FATTUALE", 12.48)])]
+            .run(.body, [ln("LA NOZIONE DI RACCOLTO E LA SUA PERDURANTE", 12.48),
+                         ln("ATTUALITÀ NELL’ODIERNA REALTÀ AGRICOLA E FLUVIALE", 12.48)])]
         let out = recognizeEstrattoTitles(items, prof(true))
         XCTAssertEqual(out.count, 1)               // UN heading fuso
         guard case .heading(let sm, let lvl) = out[0] else { return XCTFail("atteso heading capitolo") }
@@ -88,7 +88,7 @@ final class EstrattoTitlesTests: XCTestCase {
     func test_chapterTitle_notPromoted_withoutPrecedingCapitolo() {
         // Mezzotitolo/occhiello (es. titolo del libro): all-caps a taglia-capitolo ma NON dopo
         // "CAPITOLO N" → resta corpo (niente promosso per sbaglio).
-        let items: [GenItem] = [.run(.body, [ln("IL PROVVEDIMENTO AMMINISTRATIVO", 12.48)])]
+        let items: [GenItem] = [.run(.body, [ln("IL RACCOLTO DEL GRANO", 12.48)])]
         let out = recognizeEstrattoTitles(items, prof(true))
         XCTAssertEqual(out.count, 1)
         guard case .run(.body, _) = out[0] else { return XCTFail("senza CAPITOLO deve restare corpo") }
@@ -97,8 +97,8 @@ final class EstrattoTitlesTests: XCTestCase {
     func test_paragraphTitle_split_fromBody() {
         let items: [GenItem] = [.run(.body, [
             ln("1 Premessa critica", 11.52),
-            ln("Attualmente a livello dottrinale è in atto un profondo ripensamento.", 12.0),
-            ln("Nel corso della trattazione si tornerà più volte sul punto.", 12.0)])]
+            ln("Attualmente a livello locale si vive un forte cambiamento.", 12.0),
+            ln("Nel corso della stagione si tornerà più volte sul campo.", 12.0)])]
         let out = recognizeEstrattoTitles(items, prof(true))
         XCTAssertEqual(out.count, 2)
         guard case .heading(let sm, let lvl) = out[0] else { return XCTFail("atteso heading paragrafo") }
@@ -109,14 +109,14 @@ final class EstrattoTitlesTests: XCTestCase {
 
     func test_paragraphTitle_multiLineTitle_merged_stopsAtBody() {
         let items: [GenItem] = [.run(.body, [
-            ln("2 Caratteri essenziali del provvedimento amministrativo: a)", 11.52),
-            ln("finalizzazione al raggiungimento di interessi pubblici con-", 11.52),
-            ln("creti; b) unilateralità; c) inoppugnabilità", 11.52),
-            ln("il motivo, intesi come elementi costitutivi dell’atto stesso 31", 11.75)])]  // corpo-con-richiamo
+            ln("2 Caratteri essenziali del raccolto stagionale: a)", 11.52),
+            ln("finalizzazione al raggiungimento di quantità con-", 11.52),
+            ln("crete; b) regolarità; c) qualità", 11.52),
+            ln("il clima, intesi come elementi costitutivi del raccolto stesso 31", 11.75)])]  // corpo-con-richiamo
         let out = recognizeEstrattoTitles(items, prof(true))
         XCTAssertEqual(out.count, 2)
         guard case .heading(let sm, _) = out[0] else { return XCTFail("atteso heading") }
-        XCTAssertTrue(sm.text.contains("Caratteri") && sm.text.contains("inoppugnabilità"), "titolo multi-riga unito")
+        XCTAssertTrue(sm.text.contains("Caratteri") && sm.text.contains("qualità"), "titolo multi-riga unito")
         guard case .run(.body, let bl) = out[1] else { return XCTFail("atteso corpo") }
         XCTAssertEqual(bl.count, 1, "la riga-corpo (11.75, fuori banda) NON entra nel titolo")
     }

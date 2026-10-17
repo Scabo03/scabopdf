@@ -13,23 +13,23 @@ import XCTest
 
 final class UserNotesPluginTests: XCTestCase {
 
-    // MARK: - Foglia intestazioni: promozioni vere (dai dati reali di Proc.civ vol.3)
+    // MARK: - Foglia intestazioni: promozioni vere (forme reali di Proc.civ vol.3, testo inventato)
 
     func test_heading_parte_uppercase_level1() {
-        XCTAssertEqual(userNotesHeadingLevel("PARTE PRIMA – PROCESSI SPECIALI A COGNIZIONE PIENA"), 1)
-        XCTAssertEqual(userNotesHeadingLevel("PARTE SECONDA – I PROCESSI SPECIALI A COGNIZIONE"), 1)
+        XCTAssertEqual(userNotesHeadingLevel("PARTE PRIMA – CONSORZI SPECIALI A GESTIONE PIENA"), 1)
+        XCTAssertEqual(userNotesHeadingLevel("PARTE SECONDA – I CONSORZI SPECIALI A GESTIONE"), 1)
     }
     func test_heading_cap_abbrev_digit_level2() {
-        XCTAssertEqual(userNotesHeadingLevel("CAP. 1 – PROCESSI O PROCEDIMENTI SPECIALI IN"), 2)
-        XCTAssertEqual(userNotesHeadingLevel("CAP. 10 – PROCEDURA DI NEGOZAZIONE ASSISTITA DAGLI"), 2)
+        XCTAssertEqual(userNotesHeadingLevel("CAP. 1 – CONSORZI O ENTI SPECIALI IN"), 2)
+        XCTAssertEqual(userNotesHeadingLevel("CAP. 10 – PROCEDURA DI SPARTIZIONE DELLE ACQUE DAGLI"), 2)
     }
     func test_heading_cap_with_comma_in_title_kept() {
         // la virgola è NEL titolo, dopo il trattino → resta intestazione (regola trattino-titolo)
-        XCTAssertEqual(userNotesHeadingLevel("CAP. 2 – IL PROCESSO DEL LAVORO, PREVIDENZIALE,"), 2)
+        XCTAssertEqual(userNotesHeadingLevel("CAP. 2 – IL CONSORZIO DEL GRANO, COOPERATIVO,"), 2)
     }
     func test_heading_sezione_mixedcase_level3() {
-        XCTAssertEqual(userNotesHeadingLevel("Sezione prima – Generalità dei processi del lavoro"), 3)
-        XCTAssertEqual(userNotesHeadingLevel("Sezione Terza – Le controversie in materia di previdenza"), 3)
+        XCTAssertEqual(userNotesHeadingLevel("Sezione prima – Generalità dei consorzi del grano"), 3)
+        XCTAssertEqual(userNotesHeadingLevel("Sezione Terza – Le liti sull’irrigazione dei campi"), 3)
     }
     func test_heading_capitolo_full_and_others() {
         XCTAssertEqual(userNotesHeadingLevel("CAPITOLO 2 – Le impugnazioni"), 2)
@@ -48,14 +48,14 @@ final class UserNotesPluginTests: XCTestCase {
     }
     func test_trap_citationWithComma() {
         // dopo l'ordinale romano "IV" c'è una virgola, non il trattino → non è un'intestazione
-        XCTAssertNil(userNotesHeadingLevel("Libro IV, Titolo III, Contratti tipici o"))
+        XCTAssertNil(userNotesHeadingLevel("Libro IV, Titolo III, Consorzi tipici o"))
     }
     func test_trap_titleWithPeriodNotDash() {
         XCTAssertNil(userNotesHeadingLevel("Parte seconda."))
     }
     func test_trap_bodySentenceStartingWithKeyword() {
         XCTAssertNil(userNotesHeadingLevel("Il capitolo terzo affronta la questione centrale."))
-        XCTAssertNil(userNotesHeadingLevel("Parte della dottrina afferma l’estensione dell’adozione"))
+        XCTAssertNil(userNotesHeadingLevel("Parte della gente crede nell’estensione del consorzio"))
     }
     func test_trap_keywordOrdinalWithoutDashTitle() {
         // niente " – titolo" → fuori scope (ramo EOL escluso per ora) → nil

@@ -36,7 +36,7 @@ final class GiappichelliFamilyTests: XCTestCase {
 
     func test_sectionHeader_predicate() {
         // vera testatina: §N. Titolo + numero di pagina in coda
-        XCTAssertTrue(giappichelliIsSectionHeader("§ 4. Le origini della giustizia amministrativa 7"))
+        XCTAssertTrue(giappichelliIsSectionHeader("§ 4. Le origini della bonifica idraulica 7"))
         XCTAssertTrue(giappichelliIsSectionHeader("§ 6. Alcuni problemi aperti 45"))
         XCTAssertTrue(giappichelliIsSectionHeader("§ 3. (segue): il contributo specifico 63"))
         // NON testatina: senza numero di pagina in coda (è un titolo vero)
@@ -44,22 +44,22 @@ final class GiappichelliFamilyTests: XCTestCase {
         XCTAssertFalse(giappichelliIsSectionHeader("§ 3. I principi sul giudice"))
         // NON testatina: nota vera / citazione che non apre con §N.
         XCTAssertFalse(giappichelliIsSectionHeader("Cfr. § 3, p. 45"))
-        XCTAssertFalse(giappichelliIsSectionHeader("27 G. CORSO, L’attività amministrativa, 1999, p. 120"))
+        XCTAssertFalse(giappichelliIsSectionHeader("27 G. ROVERETI, L’attività dei consorzi, 1999, p. 120"))
         // NON testatina: header+biblio incollati che NON finiscono con un numero isolato
-        XCTAssertFalse(giappichelliIsSectionHeader("§ 5. La legge sui conflitti del 1877 27 1964, p. 86 ss."))
+        XCTAssertFalse(giappichelliIsSectionHeader("§ 5. La legge sui consorzi del 1882 27 1964, p. 86 ss."))
     }
 
     // MARK: - predicati titolo (heading)
 
     func test_sectionTitle_predicate() {
         XCTAssertTrue(giappichelliIsSectionTitle("§ 1. Premessa"))
-        XCTAssertTrue(giappichelliIsSectionTitle("§ 3. Il ricorso gerarchico: il problema del ‘silenzio’"))
+        XCTAssertTrue(giappichelliIsSectionTitle("§ 3. Il ricorso al consorzio: il problema del ‘turno’"))
         XCTAssertTrue(giappichelliIsSectionTitle("§ 1. L’istituzione della Quarta sezione"))
         // NON titolo: è una testatina (numero di pagina in coda) → la gestisce la furniture, non l'heading
-        XCTAssertFalse(giappichelliIsSectionTitle("§ 4. Le origini della giustizia amministrativa 7"))
+        XCTAssertFalse(giappichelliIsSectionTitle("§ 4. Le origini della bonifica idraulica 7"))
         // NON titolo: testatina raddoppiata nel corpo (due §) → resta corpo
         XCTAssertFalse(giappichelliIsSectionTitle(
-            "§ 2. Il declino dei tribunali del contenzioso § 2. Il declino dei tribunali 17"))
+            "§ 2. Il declino dei mulini del contado § 2. Il declino dei mulini 17"))
         // NON titolo: incipit minuscolo (frase di corpo che inizia con un riferimento §)
         XCTAssertFalse(giappichelliIsSectionTitle("§ 3. che disciplina il ricorso, dispone"))
         // NON titolo: troppo lungo per essere un titolo di sezione
@@ -68,15 +68,15 @@ final class GiappichelliFamilyTests: XCTestCase {
         // caporali «…» (il falso-positivo trovato su Mandrioli vol. 2 al banco). Un titolo di
         // sezione non cita mai tra caporali.
         XCTAssertFalse(giappichelliIsSectionTitle(
-            "§ 8. In accoglimento dell’istanza di spostamento, «il giudice istruttore"))
+            "§ 8. In accoglimento della domanda di proroga, «il custode delle chiuse"))
     }
 
     // MARK: - furniture: reclassifyGiappichelliRunningHeaders
 
     func test_runningHeader_reclassified_toArtifact() {
         let nodes = [
-            note("§ 2. Gli istituti della giustizia amministrativa 3", "h1", page: 2),
-            note("§ 4. Le origini della giustizia amministrativa 7", "h2", page: 6),
+            note("§ 2. Gli istituti della bonifica idraulica 3", "h1", page: 2),
+            note("§ 4. Le origini della bonifica idraulica 7", "h2", page: 6),
             note("§ 6. Alcuni problemi aperti 45", "h3", page: 44),
         ]
         var n = nodes
@@ -89,7 +89,7 @@ final class GiappichelliFamilyTests: XCTestCase {
     func test_runningHeader_singleOccurrence_stillReclassified() {
         // anche una testatina che compare una sola volta (sezione di 1 pagina) è furniture:
         // la firma è il numero di pagina in coda, non la ricorrenza.
-        var n = [note("§ 2. Gli istituti della giustizia amministrativa 3", "h1", page: 2)]
+        var n = [note("§ 2. Gli istituti della bonifica idraulica 3", "h1", page: 2)]
         let c = reclassifyGiappichelliRunningHeaders(&n, prof(true))
         XCTAssertEqual(c, 1)
         XCTAssertEqual(n[0].type, .ARTIFACT_RUNNING_HEADER)
@@ -98,7 +98,7 @@ final class GiappichelliFamilyTests: XCTestCase {
     func test_realNote_notTouched() {
         // una nota vera (numeri interni ma non apre con §N.) resta NOTE
         var n = [
-            note("42 Sul punto v. M.S. GIANNINI, Diritto amministrativo, Milano, 1993, p. 51 ss.", "r", page: 5),
+            note("42 Sul punto v. M.S. CORRADINI, Diritto dei boschi, Milano, 1993, p. 51 ss.", "r", page: 5),
             note("§ 3. I principi sul giudice 95", "h", page: 94),
         ]
         let c = reclassifyGiappichelliRunningHeaders(&n, prof(true))
@@ -110,14 +110,14 @@ final class GiappichelliFamilyTests: XCTestCase {
     func test_bodySectionHeaderText_notTouched_noteOnly() {
         // il ramo furniture opera SOLO su NOTE: un nodo BODY che combacia col pattern (es. la
         // testatina raddoppiata nel corpo) NON viene toccato.
-        var n = [bodyNode("§ 2. Il declino dei tribunali del contenzioso § 2. Il declino 17", "b", page: 16)]
+        var n = [bodyNode("§ 2. Il declino dei mulini del contado § 2. Il declino 17", "b", page: 16)]
         let c = reclassifyGiappichelliRunningHeaders(&n, prof(true))
         XCTAssertEqual(c, 0)
         XCTAssertEqual(n[0].type, .BODY)
     }
 
     func test_furniture_gatedOff_noOp() {
-        var n = [note("§ 4. Le origini della giustizia amministrativa 7", "h", page: 6)]
+        var n = [note("§ 4. Le origini della bonifica idraulica 7", "h", page: 6)]
         let c = reclassifyGiappichelliRunningHeaders(&n, prof(false))
         XCTAssertEqual(c, 0)
         XCTAssertEqual(n[0].type, .NOTE, "gate off: invariato")
@@ -127,8 +127,8 @@ final class GiappichelliFamilyTests: XCTestCase {
 
     func test_versoHeader_norm_stripsFolio() {
         XCTAssertEqual(
-            giappichelliVersoHeaderNorm("14 II. Le origini del nostro sistema di giustizia amministrativa"),
-            "II. Le origini del nostro sistema di giustizia amministrativa")
+            giappichelliVersoHeaderNorm("14 II. Le radici del nostro sistema di bonifica idraulica"),
+            "II. Le radici del nostro sistema di bonifica idraulica")
         // non-verso: nessuna norma
         XCTAssertNil(giappichelliVersoHeaderNorm("§ 4. Le origini 7"))     // recto, non verso
         XCTAssertNil(giappichelliVersoHeaderNorm("14. Autore, opera cit."))  // nota numerata (niente romano)
@@ -137,7 +137,7 @@ final class GiappichelliFamilyTests: XCTestCase {
 
     func test_versoHeader_recurring_reclassified() {
         // la stessa testatina verso su più pagine verso (folio diverso, norma identica) → furniture
-        let title = "Le origini del nostro sistema di giustizia amministrativa"
+        let title = "Le radici del nostro sistema di bonifica idraulica"
         var n = (0..<7).map { note("\(14 + $0 * 2) II. \(title)", "v\($0)", page: 14 + $0 * 2) }
         let c = reclassifyGiappichelliRunningHeaders(&n, prof(true))
         XCTAssertEqual(c, 7)
@@ -207,7 +207,7 @@ final class GiappichelliFamilyTests: XCTestCase {
         // una riga-testatina (con numero di pagina) capitata in un run di corpo NON è promossa a
         // titolo (la promozione esclude il pattern-testatina).
         let items: [GenItem] = [.run(.body, [
-            ln("§ 4. Le origini della giustizia amministrativa 7"),
+            ln("§ 4. Le origini della bonifica idraulica 7"),
             ln("Il testo prosegue con l’analisi del sistema francese.")])]
         let out = recognizeGiappichelliParaTitles(items, prof(true))
         XCTAssertEqual(out.count, 1)

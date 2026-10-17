@@ -71,9 +71,9 @@ final class GranularityBrokenWordTailTests: XCTestCase {
         // Nota VERA (inizia col proprio numero "14. …"): mai ricucita, mai privata del
         // numero — è apparato, non coda di parola. Resta letta (ri-emessa dopo, mattone 2).
         let out = granularizeBody([
-            seg(BODY, "Il romanzo d’appendice racconta vicende giudiziarie in forma popola-", "a"),
-            seg(NOTE, "14. D. Buzzati, “Più penoso che grande questo romanzo”, in Corriere, 1951.", "n"),
-            seg(BODY, "Pratiche come il perp walk danno risalto alla scena pubblica del fermo.", "b"),
+            seg(BODY, "Il racconto d’appendice narra vicende di paese in forma popola-", "a"),
+            seg(NOTE, "14. D. Rovereti, “Più lungo che bello questo raccolto”, in Gazzetta, 1951.", "n"),
+            seg(BODY, "Pratiche come la fiera del grano danno risalto alla piazza del paese.", "b"),
         ])
         XCTAssertTrue(out.contains { $0.role == NOTE && ($0.text).hasPrefix("14.") },
                       "la nota vera resta, col suo numero")
@@ -83,15 +83,15 @@ final class GranularityBrokenWordTailTests: XCTestCase {
     }
 
     func test_paletto_longNoteWithLowercaseStart_isBrick2NotFragment() {
-        // Caso reale #414: "comu-" / nota lunga che inizia minuscola ("logia francese…") /
+        // Forma del caso reale #414 (testo inventato): "comu-" / nota lunga che inizia minuscola ("logia dei mulini…") /
         // "nicazione…" (continuazione minuscola). La parola si completa nel BODY DOPO la
         // nota (mattone 2), NON nella nota: niente ricucitura-frammento, nota preservata.
-        let longNote = "logia francese è il magistrato del pubblico ministero che sostiene "
-            + "l’accusa davanti alla Corte di assise. 21. Conseil supérieur, 2019, p. 59."
+        let longNote = "logia dei mulini è il mestiere del mugnaio che macina il grano "
+            + "davanti alla piazza del paese. 21. Archivio comunale, 2019, p. 59."
         let out = granularizeBody([
-            seg(BODY, "I magistrati francesi hanno definito i loro rapporti con i mezzi di comu-", "a"),
+            seg(BODY, "I mugnai del paese hanno curato le relazioni con i mezzi di comu-", "a"),
             seg(NOTE, longNote, "n"),
-            seg(BODY, "nicazione e in particolare di comunicazione giudiziaria nel paese.", "b"),
+            seg(BODY, "nicazione e in particolare di comunicazione con i clienti.", "b"),
         ])
         let body = joinedBody(out)
         XCTAssertTrue(body.contains("mezzi di comunicazione"), "parola completata dal BODY dopo la nota: \(body)")
@@ -109,7 +109,7 @@ final class GranularityBrokenWordTailTests: XCTestCase {
             seg(BODY, "Lavorerei meglio, in tutta franchezza, se non avessi alcuna preoccu-", "a"),
             seg(NOTE, placed, "p"),
             seg(NOTE, "pazione.19", "n"),
-            seg(BODY, "Pratiche come il perp walk danno risalto alla cattura pubblica.", "b"),
+            seg(BODY, "Pratiche come la fiera del grano danno risalto alla festa del paese.", "b"),
         ])
         let body = joinedBody(out)
         XCTAssertTrue(body.contains("alcuna preoccupazione."), "frammento fuso anche con nota in mezzo: \(body)")

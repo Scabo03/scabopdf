@@ -110,9 +110,9 @@ final class SegmentSourcePageTests: XCTestCase {
     /// comincia, quindi conserva la pagina della testa.
     func test_stitchedNoteKeepsTheHeadPage() {
         let head = seg("node_1", SemanticCategory.NOTE.rawValue,
-                       "12 ANTOLISEI, Manuale di diritto penale, Milano 1997, p.", page: 20)
+                       "12 CORRADINI, Manuale di diritto forestale, Milano 1997, p.", page: 20)
         let tail = seg("node_2", SemanticCategory.NOTE.rawValue,
-                       "508 ss.; SORDI, in altra opera citata.", page: 21)
+                       "612 ss.; MARRI, in altra opera citata.", page: 21)
         let out = mergeNoteContinuations([head, tail])
         XCTAssertEqual(out.count, 1)
         XCTAssertEqual(out.first?.sourcePage, 20)

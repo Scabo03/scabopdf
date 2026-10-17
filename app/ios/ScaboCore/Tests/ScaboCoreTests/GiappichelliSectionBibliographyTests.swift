@@ -28,10 +28,10 @@ final class GiappichelliSectionBibliographyTests: XCTestCase {
         // § 1 → bibliografia → corpo → § 2 : la bibliografia di §1 va a fine §1 (prima di §2)
         let input = [
             h4("s1", "§ 1. Premessa"),
-            lett("l1", "BENVENUTI, Giustizia amministrativa, in Enc. dir., 1970"),
-            body("b1", "Nel diritto amministrativo la garanzia del cittadino…"),
+            lett("l1", "ROVERETI, Giustizia dei consorzi, in Enc. dir., 1968"),
+            body("b1", "Nel diritto delle acque la garanzia del consorziato…"),
             body("b2", "Nello Stato di diritto più evoluto…"),
-            h4("s2", "§ 2. Gli istituti della giustizia amministrativa"),
+            h4("s2", "§ 2. Gli istituti della bonifica idraulica"),
         ]
         let out = holdGiappichelliSectionBibliography(input)
         XCTAssertEqual(ids(out), ["s1", "b1", "b2", "l1", "s2"], "biblio dopo il corpo, prima di §2")
@@ -69,7 +69,7 @@ final class GiappichelliSectionBibliographyTests: XCTestCase {
     func test_lastSection_biblioAtDocumentEnd() {
         let input = [
             h4("s1", "§ 1. Premessa"),
-            lett("l1", "BENVENUTI, opera, 1970"),
+            lett("l1", "ROVERETI, opera, 1968"),
             body("b1", "Ultimo corpo."),
         ]
         let out = holdGiappichelliSectionBibliography(input)

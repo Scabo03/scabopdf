@@ -12,7 +12,7 @@ import XCTest
 
 final class EstrattoRunningHeaderTests: XCTestCase {
 
-    private let HEADER = "Il contenuto delle scelte provvedimentali tra diritto sostanziale e processo"
+    private let HEADER = "Il contenuto delle scelte colturali tra paesaggio agrario e mercato del grano"
 
     private func note(_ text: String, _ id: String = "n", page: Int = 10) -> NodeDict {
         NodeDict(id: id, type: .NOTE, page_index: page, text: text, length_category: .MEDIUM)
@@ -37,7 +37,7 @@ final class EstrattoRunningHeaderTests: XCTestCase {
         // una nota vera (lunga ma UNICA) in mezzo alle testatine resta NOTE
         var nodes = (0..<6).map { note("\(HEADER) \(50 + $0)", "h\($0)", page: 10 + $0) }
         let realNote = note(
-            "27 G. CORSO, L’attività amministrativa, Torino, 1999, p. 120, secondo cui la nozione",
+            "27 G. ROVERETI, L’attività dei consorzi, Torino, 1999, p. 120, secondo cui la nozione",
             "real", page: 12)
         nodes.insert(realNote, at: 3)
         let (out, _) = run(nodes)
