@@ -1128,14 +1128,18 @@ delle note lunghe, che è una decisione del maintainer ancora da prendere.
 **Esito del giro (2026-10-17, build 57).** (1) Le letture arrivate dal Mac non ricevono la cura 57 (`curesFromTheMacOnly` =
 56, 57); i testi normativi già importati ricevono l'offerta per le cure della loro catena (`curesForAknActs` = 56, 57), mai
 per un aggiornamento del sistema, con un testo di «Cosa cambia» che parla solo di loro, e si rielaborano con la catena dei
-testi normativi. (2) Le coppie respinte dal predicato con la successione confermata sono ricucite: 534 → 659 ricuciture,
-le 125 nuove tutte giudicate vere; fermate da due guardie nuove, e dichiarate, 25 code aperte da una glossa a margine e una
-coppia col marcatore spostato. (3) Separate tutte le 42 fusioni sbagliate nel flusso (ora un pezzo si unisce solo a ciò che
-lo precede subito nell'origine) e ricomposte 12 delle 15 teste-frammento (3 dichiarate). In più, rifiniture minori: salto
+testi normativi; un testo importato con la 56 riceve la 57, che cambia solo le note lunghe con un elenco fra parentesi,
+e per un testo normativo l'esito dice «vicino al punto di prima» (non ha le pagine del file originale). (2) Le coppie
+respinte dal predicato con la successione confermata sono ricucite: 534 → 659 ricuciture, le 125 nuove tutte giudicate
+vere; fermate da due guardie nuove, e dichiarate, 25 coppie con una glossa a margine (13 note davvero spezzate, 12 note
+complete dove la guardia evita una fusione nota-glossa) e una coppia col marcatore spostato. (3) Separate tutte le 42
+fusioni fuori dall'ordine d'origine nel flusso (ora un pezzo si unisce solo a ciò che lo precede subito nell'origine; una,
+nel Costituzionale, aveva il contenuto giusto ma una parola fabbricata) e ricomposte 16 teste-frammento (12 delle 15 della
+build 56, 3 dichiarate, e 4 nate con le ricuciture nuove). In più, rifiniture minori: salto
 «Vai al testo del richiamo» anche per i richiami fra parentesi; richiamo alla memoria sempre a inizio parola; nelle
 note-elenco l'etichetta fra parentesi resta col primo elemento del suo elenco; la guardia delle risorse visive misura le
 distanze in posizioni logiche (i pezzi di una nota contano come una). Dettagli: `CONTEGGIO_NOTE_SPEZZATE.md` § 9,
-`ULTRAFOCUS_INBOX.md` A.1, D.11-D.14, CARRYOVER (STATO del 2026-10-17).
+`ULTRAFOCUS_INBOX.md` A.1, D.11-D.15, CARRYOVER (STATO del 2026-10-17).
 
 ---
 

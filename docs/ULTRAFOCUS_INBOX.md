@@ -95,9 +95,10 @@ diversa» (CARRYOVER, § C del capitolo NOTE).
 - **Aggiornamento 2026-10-17 (giro «pulizia e rifinitura finale del capitolo note», build 57).** Decisione del maintainer:
   le coppie che il predicato respinge si ricuciono con la successione confermata e le guardie geometriche (commit
   `25f76ff`). Ricuciture 534 → 659 (125 nuove, tutte giudicate vere; nessuna delle 534 cambiata); fermate e dichiarate 25
-  code con una glossa a margine (D.12) e una coppia col marcatore spostato. Separate le 42 fusioni sbagliate nel flusso
-  (commit `09d6799`) e ricomposte 12 teste-frammento (commit `0e4376b`). Aperte 2.442 → 2.324 (iOS 27); vere fuori dai
-  codici circa 57. I casi storici restano com'erano: quelli aperti hanno la successione ASSENTE sulla pagina B. MULTIPAGE e
+  coppie con una glossa a margine (D.12: 13 note davvero spezzate, 12 note complete seguite da un nodo di sola glossa) e una
+  coppia col marcatore spostato. Separate le 42 fusioni fuori dall'ordine d'origine nel flusso (commit `09d6799`) e
+  ricomposte 16 teste-frammento (12 della Parte 1, commit `0e4376b`, e 4 nate con le ricuciture nuove). Aperte 2.442 →
+  2.324 (iOS 27); vere fuori dai codici circa 45. I casi storici restano com'erano: quelli aperti hanno la successione ASSENTE sulla pagina B. MULTIPAGE e
   pagine non contigue non toccate. Dettaglio: `docs/CONTEGGIO_NOTE_SPEZZATE.md` § 9.
 
 ### A.2 L2 — saldatura senza successione
@@ -513,11 +514,15 @@ con le stesse esclusioni di abbreviazione («art. (5)» no); da misurare sul cor
 
 ### D.12 Code di nota aperte da una glossa a margine (Mandrioli-Carratta vol. 3 e 4) — APERTA (dichiarata, 2026-10-17)
 
-Giro «pulizia delle note». 25 coppie di pagine contigue con la successione confermata, vere, NON ricucite: sulla pagina B la
-glossa stampata nel margine sinistro accanto alle note entra nel nodo delle note (in testa, 21 casi, o come nodo a sé, 4
-casi), e ricucire porterebbe la glossa dentro la nota. La guardia `tailStartsWithMarginGloss` (`NoteBinding.swift`) le
-ferma: la nota resta aperta come nella build 56. Cura possibile: togliere le righe della glossa dalla coda (o saltare il
-nodo fatto della sola glossa) e ricucire la coda vera; non fatta per prudenza.
+Giro «pulizia delle note». 25 coppie di pagine contigue con la successione confermata NON ricucite: sulla pagina B la
+glossa stampata nel margine sinistro accanto alle note entra nel nodo delle note (in testa al nodo, 10 casi, o come nodo
+fatto della sola glossa, 15 casi), e ricucire porterebbe la glossa dentro la nota. La guardia `tailStartsWithMarginGloss`
+(`NoteBinding.swift`) le ferma. Giudicate dalla revisione indipendente: **13 sono note davvero spezzate** (le 10 con la
+glossa in testa e 3 con un nodo di sola glossa prima della coda vera) e restano aperte come nella build 56; **12 sono note
+complete** chiuse da un punto, seguite da un nodo di sola glossa e da note che si aprono con N+1 (pagine stampate, contando
+da 1: vol. 3 pp. 213→214, 281→282, 299→300, 359→360; vol. 4 pp. 48→49, 119→120, 133→134, 160→161, 213→214, 254→255,
+304→305, 335→336): lì la guardia evita una fusione nota-glossa. Cura possibile per le 13: togliere le righe della glossa
+dalla coda (o saltare il nodo fatto della sola glossa) e ricucire la coda vera; non fatta per prudenza.
 
 ### D.13 Frammenti di nota a numero spurio sulla stessa pagina, e una coda divisa da un richiamo del corpo — APERTE (preesistenti, 2026-10-17)
 
@@ -535,6 +540,21 @@ a parte (`~/Developer/scabopdf-gen-lab/pulizia/strumenti/posti_risorse.py`: 164 
 sulle letture dell'app; nel runner della rete, a granularità 400 anche per i codici, due tabelle della tavola di
 concordanza del codice civile p. 2380 cambiano posto, giudicate meglio collocate). Proposta: aggiungere il posto al giudizio
 della rete.
+
+### D.15 Rilievi minori della revisione indipendente del giro «pulizia delle note» — APERTI (preesistenti, 2026-10-17)
+
+Nessuno è nato nel giro; tutti identici nella build 56. (a) Richiami alla memoria con una parola composta fusa:
+`stitchHyphenation` (`MemoryRefresh.swift`) toglie ogni trattino fra due minuscole, anche quello di una parola composta. La
+revisione ne ha visti almeno 7 su iOS 27 (Estratto, Nomofanie, Rivista DPC 2-2018, Delitti, codice penale); una misura larga
+(parola fuori lessico nel richiamo che nel testo del volume compare col trattino) conta 152 occorrenze in 18 volumi,
+identiche nella build 56 e nella 57. (b) In 17 delle 125 giunzioni nuove la testa finisce con
+lettera e trattino e la coda comincia in maiuscolo: quasi tutti cognomi in maiuscoletto spezzati a fine riga, che restano
+«X- Y» e VoiceOver legge in due pezzi (uno è un vero nome doppio, dove il trattino va tenuto ma senza spazio); la
+de-sillabazione vale solo per una coda minuscola, come nel resto del flusso. (c) Su una pagina senza corpo né titoli, se
+vale il predicato, i controlli «sotto il corpo» si saltano (`NoteBinding.swift`): nel corpus scatta solo per le catene di
+Rizzo, giuste; con volumi nuovi fatti di pagine intere di note sarebbe un rischio. Le coppie fermate dalla guardia «coda non
+sotto il corpo» passano da 5 a 157: per le successioni confermate la prudenza poggia sulla geometria. (d)
+`footnoteLineRanges` ricopia la regola di `splitFootnotes`: oggi identiche, tenute insieme solo da un test sul conteggio.
 
 ### D.8 Linea Mac — scheletro dell'app, parità fra sistemi, decisioni pendenti (2026-10-06; ramo fuso in main il 2026-10-16)
 

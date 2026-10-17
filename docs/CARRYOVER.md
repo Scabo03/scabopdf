@@ -10,7 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
-> Versione: 2.48 (17 ottobre 2026, giro «pulizia e rifinitura finale del capitolo note», **CONCLUSO** salvo la build 57: separate le 42 fusioni sbagliate nel flusso, ricomposte 12 teste-frammento, 125 note spezzate in più ricucite con la successione confermata (534 → 659), offerta ai testi normativi già importati, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco dei codici, guardia delle risorse visive in posizioni logiche, cura 57. Vedi STATO del 2026-10-17)
+> Versione: 2.48 (17 ottobre 2026, giro «pulizia e rifinitura finale del capitolo note», **CONCLUSO** salvo la build 57: separate le 42 fusioni sbagliate nel flusso, ricomposte 16 teste-frammento (12 della Parte 1, 4 nate con le ricuciture nuove), 125 note spezzate in più ricucite con la successione confermata (534 → 659), offerta ai testi normativi già importati, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco dei codici, guardia delle risorse visive in posizioni logiche, cura 57. Vedi STATO del 2026-10-17)
 > Versione: 2.46 (16-17 ottobre 2026 notte, giro «cura delle note», **build 56**: registrate all'apertura le tre decisioni del maintainer; **le note spezzate fra pagine contigue si ricuciono sull'iPad** (`stitchAdjacentPageFootnotes`, nel codice condiviso, esclusi i codici: 534 punti di giunzione in 533 note, tutti giudicati veri contro la pagina) e **i pezzi delle note lunghe si chiudono a fine frase** (`notePieces`: finestra 0,5–1,5 volte la soglia, pause, iniziali e abbreviazioni mai separate); cura 56 offerta ai libri preparati dall'iPad da un PDF, non alle letture del Mac né ai testi normativi già importati; il segnale di chiusura della nota resta per il giro dei suoni. Vedi STATO del 2026-10-16 sera)
 > Versione: 2.45 (16 ottobre 2026 pomeriggio, giro «uniformità della lettura e misura»: registrate all'apertura le quattro decisioni del maintainer; **le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF** (catena condivisa `ScaboChain`, stesso meccanismo degli atti AKN e del Mac: iPad, iPhone e Mac danno la stessa lettura a parità di ingressi, con l'innesto del Mac spento), cura 55 con l'offerta «Lettura migliore disponibile» (non alle letture del Mac); reti verdi sulle due generazioni (ricomposizione esatta, lettere e cifre identiche, annotazioni al loro posto anche fra le letture 54 e 55, pacchetti 7/7, vista di lettura senza veto); **conteggio delle note spezzate fra pagine che l'iPad lascia aperte** (`docs/CONTEGGIO_NOTE_SPEZZATE.md`: 2.961 aperte, 202 casi giudicati contro la pagina, circa 930 vere, circa 710 fuori dai codici; strato sicuro sull'iPad 35 veri su 36); revisione indipendente prima del caricamento; **build 55 su TestFlight** (commit `91aaf7b`, Delivery UUID `80cf20c4…`, note impostate a parte dopo errori 500 di App Store Connect). Tre decisioni per il maintainer. Referto in `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAMENTO.md`. Vedi STATO del 2026-10-16 pomeriggio)
 > Versione: 2.44 (16 ottobre 2026, giro «costruzione della linea Mac»: il ramo `feat/mac-base` fuso in main; le cure dell'estrazione SPOSTATE in un modulo condiviso iPad/Mac (`app/ios/ScaboChain`) e il fusore del banco portato in Swift; l'**app Mac prepara la lettura** con la stessa catena (più la rietichettatura dell'indice analitico; ricucitura fra pagine spenta dopo una rete rossa) e la esporta in un **pacchetto `.scabolettura`**; l'**iPad la riceve** (AirDrop, «Apri con», File, cavo) con la regola delle annotazioni del § 12.12; protezione della memoria nel riconoscimento di tabelle e figure; selettore del layout su iPhone; **pannello dei modelli del Mac vero** (GLM-OCR scaricato, verificato, rimosso, servizio XPC unico con la rete); revisione indipendente con tre difetti veri corretti prima della build; reti verdi sulle due generazioni (letture identiche byte per byte alla build 53); **build 54 su TestFlight** (commit `16317ff`, Delivery UUID `9bfa68d7…`, note scritte dalla lane). Referto e laboratorio in `~/Developer/scabopdf-mac-lab/`. Vedi STATO del 2026-10-16)
@@ -83,26 +83,39 @@ parentesi), `cad421c` (rinfresco a inizio parola), `1687267` (note-elenco), `bac
 - **Fusioni sbagliate (Parte 1).** Un rilevatore nuovo registra ogni fusione con il suo meccanismo: le fusioni sbagliate
   erano 36 in Lettura Continua e 6 in Dottrina Inline (non 18), tutte unioni nel flusso di pezzi non contigui nell'origine.
   Ora un pezzo si unisce solo a ciò che lo precede SUBITO nell'origine (`noteOriginPrevious`, campo interno, cache
-  invariata): separate tutte, intatte le 252 giuste. 12 teste-frammento su 15 ricomposte con la loro nota (successione
-  oltre la pagina + geometria delle righe), 3 dichiarate.
+  invariata): separate tutte, intatte le 252 giuste. Una delle 42 (un riquadro del Costituzionale, pp. 158→159) aveva il
+  contenuto giusto ma una parola fabbricata alla giunzione: separata per la parola, resta aperta. Le separazioni tolgono 7
+  parole fuori lessico fabbricate dalla de-sillabazione (5 nel civile, 6 occorrenze; 1 nel penale; 1 nel Costituzionale).
+  12 teste-frammento su 15 ricomposte con la loro nota (successione oltre la pagina + geometria delle righe), 3 dichiarate;
+  altre 4 sono nate con le ricuciture nuove della Parte 2 e sono ricomposte allo stesso modo: 16 nella lettura finale,
+  giudicate tutte sulla pagina dalla revisione indipendente.
 - **Note respinte dal predicato (Parte 2).** Ricuciture fra pagine contigue 534 → 659, le 125 nuove tutte giudicate vere,
   nessuna delle 534 cambiata; per tutte le 659 gli estremi della giunzione ritrovati sulla pagina. Guardie nuove: la
   conferma viene solo da una nota che si apre come una nota; la coda non è aperta da una glossa a margine (25 coppie dei
-  Mandrioli fermate). Aperte 2.442 → 2.324 (iOS 27). `CONTEGGIO_NOTE_SPEZZATE.md` § 9.
+  Mandrioli fermate: 13 sono note davvero spezzate, 12 sono note complete seguite da un nodo fatto della sola glossa, dove
+  la guardia evita una fusione nota-glossa). Aperte 2.442 → 2.324 (iOS 27). `CONTEGGIO_NOTE_SPEZZATE.md` § 9.
 - **Testi normativi (Parte 3).** `ReprocessingPolicy.latestCureBuildForAknActs` e `ProcessingChain.curesForAknActs` (56,
   57): l'offerta arriva ai testi normativi già importati (mai per un aggiornamento di sistema), che si rielaborano con la
-  loro catena; letture del Mac escluse (`curesFromTheMacOnly` 56, 57). I tre tipi di libro provati nei test della politica,
-  nell'app e d'interfaccia.
+  loro catena; letture del Mac escluse (`curesFromTheMacOnly` 56, 57). Un testo importato con la 56 riceve la 57 (l'etichetta
+  degli elenchi fra parentesi): la lettura nuova cambia solo dove una nota lunga ha un elenco così (1 nota sui 14 atti di
+  prova), e «Cosa cambia» lo dice. I tre tipi di libro provati nei test della politica, nell'app e d'interfaccia (verde
+  sull'iPhone 16 con iOS 26.5 e iOS 27; sull'iPad Pro iOS 27 il test si ferma all'audit di Dynamic Type, come gli altri test
+  dell'offerta: rosso preesistente, provato sul codice della build 56). Per un testo normativo l'esito della rielaborazione
+  dice «vicino al punto di prima», non «inizio della pagina» (non ha le pagine del file originale).
 - **Rifiniture (Parte 4).** INBOX D.11 chiusa (note col salto 8.216 → 12.923, ogni legame nuovo provato sulla pagina);
   rinfreschi a metà parola 217 → 0; nelle note-elenco l'etichetta fra parentesi resta col suo primo elemento (48 note per
   flusso, una nota fra i 14 atti AKN); la guardia delle risorse visive misura in posizioni logiche (controprova con i pezzi
   forzati: vecchia guardia 5 risorse spostate, nuova 3 e volute).
 - **Reti** (due generazioni, dettaglio nel referto § 6): doppia rete ufficiale exit 0 dopo ogni parte; Marotta identico;
-  lettere e cifre identiche e 0 parole nuove fuori lessico dalla build 56 al finale (codici compresi; 13 trattini di fine
-  riga tornati con le separazioni, ciascuno ritrovato sulla pagina); ricomposizione esatta di tutte le note frazionate;
+  lettere e cifre identiche e 0 parole nuove fuori lessico dalla build 56 al finale (codici compresi; cambiano solo i
+  trattini: 9 tornano con le separazioni, 6 nel civile, 1 nel penale, 1 per flusso nel Costituzionale, e sono le
+  de-sillabazioni delle fusioni sbagliate; 9 se ne vanno con le giunzioni nuove di Rizzo, Magnani e Il mercato finanziario,
+  verificate sulla pagina dalla revisione); ricomposizione esatta di tutte le note frazionate;
   titoli e struttura identici; 110 risorse giudicate, collocazioni identiche alla build 56 nella lettura dell'app; parità
   iPad-Mac 52/52; annotazioni: rete fissa 0 sbagliati (orfani 147 su 3.081, +15 sulle code ricucite), passaggio 56 → 57 0
-  sbagliati (31 orfani su 10.846 segnalibri); vista nel simulatore senza veto. Xcode si è aggiornato da solo a 27.1 durante
+  sbagliati (31 orfani su 10.846 segnalibri all'andata, 18 al ritorno; 1 «evitabile» prudente in ciascuna direzione);
+  vista nel simulatore senza veto. Le reti delle annotazioni coprono i 52 PDF, non la rielaborazione dei testi normativi
+  (dal codice: senza pagine si accetta solo un riscontro unico, quindi il rischio è un orfano, non un segnalibro spostato). Xcode si è aggiornato da solo a 27.1 durante
   il giro (richiesta dell'amministratore aperta e risolta non da me; servizi utente del simulatore riavviati).
 
 **Cosa resta aperto sulle note, per peso** (il capitolo è chiuso salvo queste voci dichiarate):
@@ -112,12 +125,21 @@ parentesi), `cad421c` (rinfresco a inizio parola), `1687267` (note-elenco), `bac
    Delitti, respinti dal predicato con la successione ASSENTE sulla pagina seguente.
 3. **Teste senza numero proprio** (93 coppie, quasi tutte riquadri del Manuale di Diritto Costituzionale): nessun segnale
    sicuro.
-4. **Code con una glossa a margine** (25 coppie dei Mandrioli, INBOX D.12): vere, ferme per prudenza; cura possibile
-   togliendo la glossa dalla coda.
+4. **Code con una glossa a margine** (Mandrioli, INBOX D.12): delle 25 coppie fermate, 13 sono note davvero spezzate (10 con
+   la glossa in testa alla coda, 3 con un nodo di sola glossa prima della coda vera); le altre 12 sono note complete e la
+   guardia vi evita una fusione nota-glossa. Cura possibile per le 13: togliere la glossa dalla coda o saltare il nodo-glossa.
 5. **Difetti dell'estrazione visti e dichiarati** (INBOX D.13): righe che cominciano con un numero lette come note a sé
    sulla stessa pagina; una coda divisa da un richiamo del corpo; 3 teste-frammento senza prova.
-6. **Annotazioni**: orfani dichiarati sulle note ricucite (0 sbagliati); 1 orfano «evitabile» prudente (pagina lontana).
+6. **Annotazioni**: orfani dichiarati sulle note ricucite (0 sbagliati); 1 orfano «evitabile» prudente per direzione del
+   passaggio (pagina lontana); la rielaborazione dei testi normativi non ha una rete delle annotazioni.
 7. **Rete delle risorse visive**: giudica l'identità, non il posto (INBOX D.14); proposta di aggiungerlo.
+8. **Rilievi minori della revisione, preesistenti** (INBOX D.15): richiami alla memoria con una parola composta fusa
+   (`stitchHyphenation` toglie ogni trattino fra due minuscole; misura larga 152 occorrenze in 18 volumi, uguali nella 56); cognomi in maiuscoletto spezzati a fine riga che
+   restano «X- Y» in 17 giunzioni (la de-sillabazione vale solo per una coda minuscola); su una pagina senza corpo né titoli,
+   se vale il predicato, i controlli «sotto il corpo» si saltano (nel corpus solo le catene di Rizzo, giuste);
+   `footnoteLineRanges` ricopia la regola di `splitFootnotes` (oggi identiche, tenute insieme solo da un test sul conteggio).
+Stima delle note vere ancora aperte fuori dai codici (dedotto): circa 45 (182 − 125 ricucite − 12 coppie-glossa che erano
+note complete).
 Decisione aperta di prima, invariata: il tetto alla distanza delle note lunghe.
 
 ## ▶ STATO — Giro «cura delle note»: ricucitura sull'iPad delle note spezzate fra pagine contigue, confini dei pezzi delle note lunghe, build 56 — 2026-10-16 sera / 17 notte

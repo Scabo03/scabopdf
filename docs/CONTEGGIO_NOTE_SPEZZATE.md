@@ -231,7 +231,9 @@ misurato sui soli span con lettere o cifre), mai una testa senza numero; una pag
 predicato. Due guardie per le categorie false trovate giudicando: la conferma deve venire da una nota che si apre come una
 nota (non da un numero seguito da una minuscola: il marcatore staccato e spostato dall'estrazione, Compendio p. 1170) e la
 coda non è aperta da una glossa a margine né fatta della sola glossa (Mandrioli-Carratta vol. 3 e 4, 25 coppie: la glossa
-stampata nel margine entra nel nodo delle note). **Ricuciture 534 → 659**, stesso insieme su iOS 27 e 26.5; nessuna delle
+stampata nel margine entra nel nodo delle note; 13 sono note davvero spezzate, 10 con la glossa in testa alla coda e 3 con un
+nodo di sola glossa prima della coda vera, e 12 sono note complete seguite da un nodo di sola glossa, dove la guardia evita
+una fusione nota-glossa; giudicate dalla revisione indipendente). **Ricuciture 534 → 659**, stesso insieme su iOS 27 e 26.5; nessuna delle
 534 cambiata; **le 125 nuove giudicate tutte vere contro la pagina**, e per tutte le 659 gli estremi della giunzione
 ritrovati sulle pagine stampate. Nuove per volume: Mandrioli-Carratta vol. 3 38, vol. 4 24, DPC vol 2 16, Il mercato
 finanziario 11, Rizzo 10, Lineamenti 6, DPC vol 1 4, DPC vol 3 4, Mosconi 3, Lezioni di storia 2, Nomofanie 2, Rivista DPC
@@ -239,12 +241,18 @@ finanziario 11, Rizzo 10, Lineamenti 6, DPC vol 1 4, DPC vol 3 4, Mosconi 3, Lez
 
 **Fusioni sbagliate nel flusso (campo, commit `09d6799`).** La ricucitura nel flusso unisce ora un pezzo di nota all'ultimo
 pezzo assorbito solo se lo segue SUBITO nell'origine (il documento come l'ha costruito la legatura delle note). Separate
-tutte le fusioni sbagliate: 36 in Lettura Continua e 6 in Dottrina Inline (il conteggio di 18 del § 8 ne vedeva una parte;
-il rilevatore nuovo registra ogni fusione con il suo meccanismo); intatte le 151 + 101 giuste. Le note separate restano
-aperte e sono dichiarate (nei codici: frammenti dell'apparato interfoliato fra le colonne). **Teste-frammento (campo, commit
-`0e4376b`):** 15 ricuciture la cui «testa» era un frammento staccato a un numero spurio a inizio riga; 12 ricomposte con la
-loro nota (successione oltre la pagina e geometria delle righe), 3 dichiarate (DPC vol 1 p. 26: margine non misurabile;
-Compendio pp. 569 e 1316: nessuna nota seguente che provi la successione).
+tutte le fusioni fuori dall'ordine d'origine: 36 in Lettura Continua e 6 in Dottrina Inline (il conteggio di 18 del § 8 ne
+vedeva una parte; il rilevatore nuovo registra ogni fusione con il suo meccanismo); intatte le 151 + 101 giuste. Di queste
+42, 41 univano testi diversi; una (un riquadro del Manuale di Diritto Costituzionale, pp. 158→159, in entrambi i flussi)
+aveva il contenuto giusto ma la de-sillabazione fabbricava una parola alla giunzione: separata per la parola, il riquadro
+resta aperto. In tutto le separazioni tolgono 7 parole fuori lessico (5 nel civile con 6 occorrenze, 1 nel penale, 1 nel
+Costituzionale). Le note separate restano aperte e sono dichiarate (nei codici: frammenti dell'apparato interfoliato fra le
+colonne). **Teste-frammento (campo, commit `0e4376b`):** 15 ricuciture la cui «testa» era un frammento staccato a un numero
+spurio a inizio riga; 12 ricomposte con la loro nota (successione oltre la pagina e geometria delle righe), 3 dichiarate (DPC
+vol 1 p. 26: margine non misurabile; Compendio pp. 569 e 1316: nessuna nota seguente che provi la successione). Altre 4
+teste-frammento sono nate con le ricuciture nuove (Compendio pp. 521→522, Mandrioli-Carratta vol. 3 pp. 255→256, DPC vol 2
+pp. 120→121, Lineamenti pp. 205→206) e la stessa cura le ricompone: **16 nella lettura finale**, su entrambe le generazioni,
+giudicate tutte sulla pagina dalla revisione indipendente.
 
 **Rimisura (campo, lo strumento del § 2 sulle letture finali).** Aperte iOS 27: 2.442 (build 56) → 2.448 dopo le fusioni
 separate (+6: civile +2, Torrente +2, Mosconi +1, Costituzionale +1) → **2.324**; iOS 26.5: 2.446 → 2.452 → **2.328**. Per
@@ -252,9 +260,10 @@ volume (iOS 27, build 56 → build 57): Mandrioli-Carratta vol. 3 56 → 18, vol
 DPC vol 2 22 → 6, Rizzo 22 → 13, Lineamenti 24 → 18, DPC vol 1 8 → 4, DPC vol 3 8 → 4, Mosconi 98 → 96, Lezioni di storia
 46 → 44, Nomofanie 20 → 18, Rivista DPC 4-2020 10 → 8, Compendio 35 → 34, EdD L'azienda 21 → 20, Magnani 23 → 22.
 
-**Quante ne restano vere (dedotto).** Delle circa 182 vere aperte fuori dai codici dopo la build 56, 125 sono ricucite: ne
-restano circa 57. Le più pesanti: le 25 coppie dei Mandrioli con la glossa a margine (vere, ma ricucirle porterebbe la
-glossa dentro la nota: servirebbe togliere la glossa dalla coda o saltare il nodo-glossa); le teste senza numero proprio
+**Quante ne restano vere (dedotto).** Delle circa 182 vere aperte fuori dai codici dopo la build 56, 125 sono ricucite e 12
+(le coppie dei Mandrioli con una nota completa seguita da un nodo di sola glossa) non erano note spezzate: ne restano circa
+45. Le più pesanti: le 13 coppie dei Mandrioli con la glossa a margine davvero spezzate (ricucirle porterebbe la glossa
+dentro la nota: servirebbe togliere la glossa dalla coda o saltare il nodo-glossa); le teste senza numero proprio
 (93 coppie, quasi tutte riquadri del Manuale di Diritto Costituzionale, poi Lezioni di giustizia amministrativa 9, Torrente
 3); le coppie respinte dal predicato con la successione ASSENTE sulla pagina seguente (fra cui i casi storici Lineamenti
 46-47, 514-515, 770-771, 899-900 e Delitti 43-44, 265-266, rimasti aperti); le pagine non contigue e la variante MULTIPAGE
