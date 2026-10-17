@@ -88,11 +88,16 @@ enum ReprocessOffer {
             + "seguono, come già avveniva per i testi normativi"),
         (56, "molte note che si interrompevano a fine pagina e riprendevano più avanti si leggono intere, e le note lunghe "
             + "sono divise in pezzi più naturali, di solito a fine frase"),
+        (57, "altre note che si interrompevano a fine pagina si leggono intere; alcune note che erano incollate per sbaglio "
+            + "a un'altra nota o al testo ora sono separate; il richiamo alla memoria prima di una nota letta più avanti "
+            + "comincia sempre a inizio parola; nelle note lunghe che elencano leggi, l'etichetta dell'elenco non resta più "
+            + "da sola alla fine di un pezzo"),
     ]
 
     /// Le cure che cambiano la lettura dei testi normativi, in parole semplici (la parte che li riguarda).
     static let aknCures: [(build: Int, text: String)] = [
         (56, "le note lunghe sono divise in pezzi più naturali, di solito a fine frase"),
+        (57, "nelle note lunghe che elencano leggi o articoli, l'etichetta dell'elenco non resta più da sola alla fine di un pezzo"),
     ]
 
     private static var service: LibraryService { .shared }
