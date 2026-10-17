@@ -148,6 +148,9 @@ public struct AdjacentPageStitchCandidate: Codable, Equatable, Sendable {
     /// Verdetto e, se respinta, la prima guardia che l'ha fermata.
     public var stitched: Bool
     public var reason: String
+    /// Testa-frammento ricomposta (giro «pulizia delle note», 2026-10-17): l'id del frammento, sovra-spezzato
+    /// dall'estrazione a un numero spurio, che è stato riunito alla nota vera che lo precede prima della ricucitura.
+    public var recomposedFragmentId: String? = nil
 }
 
 // MARK: - Costanti del segnale (calibrate in Fase 1b su PDFKit reale)
@@ -734,12 +737,25 @@ func stitchAdjacentPageFootnotes(
         // Candidata solo una coda SENZA marcatore d'apertura (le regole di `splitFootnotes`).
         guard noteOpening(b) == nil, !noteSymbolOpening(b) else { advance(); continue }
 
-        let headNumber = noteOpening(a)
+        var headNumber = noteOpening(a)
         var nextNumber: Int?
         var j = i + 1
         while j < flat.count, let f = footnoteNodeById[flat[j]], f.page_index == cur.page_index {
             if let n = noteOpening(f.text ?? "") { nextNumber = n; break }
             j += 1
+        }
+        // Testa-frammento (giro «pulizia delle note», 2026-10-17): la «testa» è un frammento che l'estrazione ha staccato
+        // dalla nota vera a un numero spurio a inizio riga (un numero d'articolo o di pagina, una data). Se la successione
+        // oltre la pagina lo prova — la nota che lo precede sulla pagina A porta il numero N, e la prima nota numerata dopo
+        // la coda sulla pagina B porta N + 1 — e se la riga del frammento sta al margine delle righe di seguito e non al
+        // rientro delle aperture, il frammento è la continuazione di quella nota: si riunisce a lei, e la coda le si ricuce.
+        var recomposition: (fid: String, trueText: String)?
+        if let nF = headNumber, nextNumber != nil, nextNumber != nF + 1,
+           let fragment = headFragmentRecomposition(fragmentId: headFid, flat: flat, removed: removed,
+                                                     footnoteNodeById: footnoteNodeById, nodeOfFootnote: nodeOfFootnote,
+                                                     noteLinesById: noteLinesById, fragmentNumber: nF, nextNumber: nextNumber!) {
+            recomposition = fragment
+            headNumber = noteOpening(fragment.trueText)
         }
         let succession: String
         if headNumber == nil { succession = "testa senza numero" }
@@ -798,6 +814,25 @@ func stitchAdjacentPageFootnotes(
             } else {
                 merged = a + " " + b
             }
+            if let r = recomposition {
+                // la testa-frammento torna nella sua nota, e la nota vera diventa la testa della ricucitura
+                let whole = joinFootnoteTexts(r.trueText, merged)
+                removed.insert(headFid)
+                candidate.recomposedFragmentId = headFid
+                headFid = r.fid
+                var t = footnoteNodeById[headFid]!
+                t.text = whole
+                t.length_category = lengthCategoryFor(whole)
+                footnoteNodeById[headFid] = t
+                removed.insert(fid)
+                tailPage = cur.page_index
+                lastNodeOnHeadSide = curNode
+                count += 1
+                candidate.stitched = true
+                candidate.reason = "ricucita"
+                candidates.append(candidate)
+                continue
+            }
             var h = head
             h.text = merged
             h.length_category = lengthCategoryFor(merged)
@@ -820,6 +855,87 @@ func stitchAdjacentPageFootnotes(
         }
     }
     return (count, candidates)
+}
+
+/// Unione di due testi di nota come nelle ricuciture: de-sillabazione se il primo finisce con lettera e trattino e il
+/// secondo comincia in minuscolo, altrimenti uno spazio.
+func joinFootnoteTexts(_ a: String, _ b: String) -> String {
+    let x = a.trimmingCharacters(in: .whitespacesAndNewlines)
+    let y = b.trimmingCharacters(in: .whitespacesAndNewlines)
+    if endsWithLetterHyphenG(x), let f = y.first, f.isLowercase { return String(x.dropLast()) + y }
+    return x + " " + y
+}
+
+/// Le righe di ciascuna nota individuale di un nodo di note, con la STESSA regola di `splitFootnotes` (apertura per
+/// numero o per simbolo; le note di testo vuoto non contano): l'intervallo di righe della nota `k` è `result[k]`.
+func footnoteLineRanges(_ lines: [LineSummary]) -> [Range<Int>] {
+    var result: [Range<Int>] = []
+    var start: Int?
+    func flush(_ end: Int) {
+        guard let s = start, s < end else { return }
+        if !joinLines(lines[s..<end].map { $0.text }).isEmpty { result.append(s..<end) }
+        start = nil
+    }
+    for (i, line) in lines.enumerated() {
+        if noteOpening(line.text) != nil || noteSymbolOpening(line.text) {
+            flush(i)
+            start = i
+        } else if start == nil {
+            start = i
+        }
+    }
+    flush(lines.count)
+    return result
+}
+
+/// Distanza minima (punti) fra il rientro delle aperture di nota e il margine delle righe di seguito perché la
+/// geometria distingua le une dalle altre; e scarto ammesso fra la riga di un frammento e quel margine.
+let NOTE_OPENING_INDENT_MIN = 3.0
+let NOTE_CONTINUATION_MARGIN_TOLERANCE = 1.0
+
+/// Se la testa candidata `fragmentId` (l'ultima nota della pagina A, aperta da un numero `fragmentNumber`) è un
+/// FRAMMENTO della nota che la precede, ritorna id e testo della nota vera (a cui il chiamante riunisce il frammento e la
+/// coda); altrimenti nil.
+/// Tutte le condizioni, ciascuna contro un modo di sbagliare:
+///   • la nota vera T è la nota sopravvissuta che precede il frammento, nello STESSO nodo di note e sulla stessa pagina
+///     (righe contigue dell'apparato), e porta il suo numero N;
+///   • la successione oltre la pagina prova che il frammento non è una nota: la prima nota numerata dopo la coda, sulla
+///     pagina B, porta N + 1 (`nextNumber`), e il numero del frammento non è N + 1;
+///   • la geometria: la prima riga del frammento sta al MARGINE delle righe di seguito del nodo e non al RIENTRO delle
+///     aperture (che dev'essere misurabile: almeno `NOTE_OPENING_INDENT_MIN` punti), cioè è una riga che continua una nota,
+///     non una riga che ne apre una. Senza geometria misurabile non si ricompone (nel dubbio non si tocca).
+func headFragmentRecomposition(
+    fragmentId: String, flat: [String], removed: Set<String>,
+    footnoteNodeById: [String: NodeDict], nodeOfFootnote: [String: NodeDict],
+    noteLinesById: [String: [LineSummary]], fragmentNumber: Int, nextNumber: Int
+) -> (fid: String, trueText: String)? {
+    guard let fi = flat.firstIndex(of: fragmentId), let fragment = footnoteNodeById[fragmentId],
+          let node = nodeOfFootnote[fragmentId] else { return nil }
+    var ti = fi - 1
+    while ti >= 0, removed.contains(flat[ti]) { ti -= 1 }
+    guard ti >= 0 else { return nil }
+    let trueId = flat[ti]
+    guard let truth = footnoteNodeById[trueId], nodeOfFootnote[trueId]?.id == node.id,
+          truth.page_index == fragment.page_index,
+          let n = noteOpening(truth.text ?? ""), nextNumber == n + 1, fragmentNumber != n + 1 else { return nil }
+    // geometria: la prima riga del frammento contro il margine di seguito e il rientro delle aperture del nodo
+    guard let lines = noteLinesById[node.id], let k = Int(fragmentId.components(separatedBy: "_n").last ?? ""),
+          case let ranges = footnoteLineRanges(lines), k < ranges.count else { return nil }
+    guard let kt = Int(trueId.components(separatedBy: "_n").last ?? ""), kt < ranges.count else { return nil }
+    let fragmentLine = lines[ranges[k].lowerBound]
+    // il rientro delle aperture: la riga che apre la nota vera stessa (le righe che cominciano con un numero spurio non
+    // contano); il margine delle righe di seguito: l'ascissa più frequente (al mezzo punto) delle righe che non aprono
+    // una nota (una glossa o un capoverso rientrato non lo spostano), misurabile solo se almeno due righe la condividono
+    let indent = lines[ranges[kt].lowerBound].x0
+    let openingStarts = Set(ranges.map { $0.lowerBound })
+    var margins: [Double: Int] = [:]
+    for (i, line) in lines.enumerated() where !openingStarts.contains(i) {
+        margins[(line.x0 * 2).rounded() / 2, default: 0] += 1
+    }
+    guard let modal = margins.max(by: { $0.value != $1.value ? $0.value < $1.value : $0.key > $1.key }),
+          modal.value >= 2, case let m = modal.key, indent - m >= NOTE_OPENING_INDENT_MIN,
+          abs(fragmentLine.x0 - m) <= NOTE_CONTINUATION_MARGIN_TOLERANCE else { return nil }
+    return (trueId, truth.text ?? "")
 }
 
 // MARK: - Rilevamento marcatori in-corpo
