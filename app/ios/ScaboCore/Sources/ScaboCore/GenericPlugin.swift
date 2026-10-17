@@ -1890,7 +1890,7 @@ func pageItems(
 // ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────
 //
 // Il difetto: un titolo di capitolo/sezione andato a capo diventa DUE nodi heading adiacenti
-// dello stesso livello ("LE ORIGINI DEL NOSTRO SISTEMA" + "DI GIUSTIZIA AMMINISTRATIVA") → in
+// dello stesso livello (es. inventato: "LE RADICI DEL NOSTRO SISTEMA" + "DI BONIFICA IDRAULICA") → in
 // navigazione per intestazioni compaiono due voci-troncone. Qui si fondono, ma il segnale NON è
 // il testo (che sovraconta e mescola titolo+autore+abstract): è la POSIZIONE e lo STILE. Misurato
 // sul corpus (40 volumi, dump geometria): con queste guardie zero titoli distinti fusi sui volumi
@@ -2305,7 +2305,7 @@ func splitGiappichelliBodyRun(_ lines: [LineSummary]) -> [GenItem] {
 }
 
 /// Testatina corrente VERSO "<folio> <romano-capitolo>. <titolo di capitolo>" (es.
-/// "14 II. Le origini del nostro sistema di giustizia amministrativa"): il numero di pagina
+/// inventato "14 II. Le radici del nostro sistema di bonifica idraulica"): il numero di pagina
 /// del libro in testa + il numero di capitolo in romano + il titolo del capitolo. È l'altra
 /// faccia della testatina §N (recto): il recto porta il § della sezione, il verso il capitolo.
 /// Anch'essa più piccola del corpo → il size-only la mette in NOTE → falso-"Nota.".

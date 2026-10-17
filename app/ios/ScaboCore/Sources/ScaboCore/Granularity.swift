@@ -503,7 +503,7 @@ private let BIBLIO_STYLEME = try! NSRegularExpression(
 
 /// Marcatore di nota IN LINEA "(N) Testo" (1–3 cifre fra parentesi, seguite da spazio e da un
 /// carattere): è la firma di un blocco di NOTE NUMERATE incollate dal salto pagina/estrazione
-/// che PORTANO CONTENUTO ("… p. 55. (59) Ciò implica … (60) Che potrebbe essere …"). Una VOCE
+/// che PORTANO CONTENUTO ("… p. 61. (59) Ciò comporta … (60) Che potrebbe …", forma inventata). Una VOCE
 /// di bibliografia pura non contiene MAI un tale marcatore in linea. È la guardia di contenuto:
 /// un blocco che porta contenuto non va mai degradato a bibliografia, anche se il suo incipit è
 /// una citazione d'autore. L'anno fra parentesi "(2019)" ha 4 cifre → escluso; "(5)." (a fine,
@@ -516,7 +516,7 @@ private let BIBLIO_INLINE_NOTE_MARKER = try! NSRegularExpression(
 /// non è un'abbreviazione "p."/"L."/"D." né una singola iniziale "A.") seguito da spazio, una
 /// parola in Title-case (maiuscola + minuscole) e altra prosa in minuscolo. È il segnale che il
 /// blocco PORTA CONTENUTO: una nota di piè che comincia con una citazione d'autore ma prosegue
-/// con un periodo discorsivo ("… cit., p. 1305. Un'identica disposizione si rinveniva …",
+/// con un periodo discorsivo (forma inventata: "… cit., p. 1203. Una regola simile valeva …";
 /// Mandrioli vol. 3 nota 58, che il salto-pagina spezza dai suoi "(59)…(63)" perdendo così il
 /// marcatore in linea). Una LISTA di bibliografia è nominale: i suoi punti sono abbreviazioni o
 /// fine-voce, e dopo un ";" o un "." viene un cognome in MAIUSCOLETTO (tutte maiuscole) — che
@@ -532,7 +532,7 @@ private let BIBLIO_DISCURSIVE_PROSE = try! NSRegularExpression(
 /// trasversale che il blocco PORTA CONTENUTO (una nota discorsiva, non una lista di citazioni) —
 /// da NON degradare a bibliografia. GUARDIA DI CONTENUTO UNIVERSALE: applicata a entrambi i rami
 /// (storico e particella), a differenza della guardia di prosa-discorsiva (che è ambigua con i
-/// SOTTOTITOLI dei libri — "L'interesse legittimo. Storia e teoria" — e resta perciò confinata al
+/// SOTTOTITOLI dei libri — es. inventato "L'acqua pubblica. Storia e teoria" — e resta perciò confinata al
 /// solo ramo particella). Empiricamente, sul corpus di 40 volumi, colpisce SOLO le note-contenuto
 /// di Mandrioli vol. 3 con rinvio interno; ZERO su ogni altro volume, incluse le 97 voci
 /// genuine di bibliografia di Lezioni.
