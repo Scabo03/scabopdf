@@ -18,6 +18,10 @@
 //  `-uiTestSeedMacReadingTwoCopies` due copie dello stesso libro; `-uiTestSeedMacReadingMissingBook` un pacchetto di un
 //  libro che non c'è; `-uiTestSeedMacReadingDamaged` un file danneggiato; `-uiTestSeedMacReadingNewer` una forma del
 //  file più recente. Pacchetti costruiti qui con testo neutro: nessun volume.
+//  I tre tipi di libro davanti all'offerta (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17):
+//  `-uiTestSeedReprocessKinds` crea un PDF elaborato dall'iPad con una build vecchia (riceve l'offerta), una lettura
+//  arrivata dal Mac al livello di cure di questa catena (non la riceve: la rifà il Mac aggiornato) e un testo normativo
+//  AKN sintetico importato prima dei pezzi nuovi delle note (la riceve e si rielabora con la catena dei testi normativi).
 //
 
 #if DEBUG
@@ -48,6 +52,7 @@ enum UITestSeeding {
         if args.contains("-uiTestSeedDuplicateImport") { seedDuplicateImport(); return }
         if args.contains("-uiTestSeedVisualResourceControl") { seedVisualResource(withResource: false); return }
         if args.contains("-uiTestSeedVisualResource") { seedVisualResource(withResource: true); return }
+        if args.contains("-uiTestSeedReprocessKinds") { seedReprocessKinds(); return }
         guard args.contains("-uiTestSeedReprocess") else { return }
         let service = LibraryService.shared
         // Libreria pulita per un test deterministico.
@@ -65,6 +70,54 @@ enum UITestSeeding {
                                   name: "Segnalibro di prova", preview: "Segnalibro di prova", originalPage: 2,
                                   tagIds: tag.map { [$0.id] } ?? [])
         service.store.recordOpened(id: doc.id)
+    }
+
+    /// I tre tipi di libro davanti all'offerta (vedi l'intestazione del file).
+    private static func seedReprocessKinds() {
+        let service = LibraryService.shared
+        for d in service.store.allDocuments() {
+            service.store.deleteDocumentFromArchive(id: d.id)
+            service.deleteFiles(forDocumentId: d.id)
+        }
+        let pdfURL = FileManager.default.temporaryDirectory.appendingPathComponent("libro-di-prova.pdf")
+        try? syntheticPdf().write(to: pdfURL)
+        let pdf = service.store.addDocument(title: "Libro di prova", sourceFileName: "libro-di-prova.pdf", sourcePageCount: 3)
+        try? service.storePDF(from: pdfURL, forDocumentId: pdf.id)
+        service.store.recordProcessed(id: pdf.id, systemVersion: SystemGeneration.current, appBuild: "40")
+        let mac = service.store.addDocument(title: "Lettura dal Mac di prova", sourceFileName: "lettura-dal-mac.pdf",
+                                            sourcePageCount: 3)
+        try? service.storePDF(from: pdfURL, forDocumentId: mac.id)
+        service.store.recordReceivedReading(id: mac.id, systemVersion: "macOS 27.0.1", cureLevel: ProcessingChain.cureLevel,
+                                            at: Date())
+        let xmlURL = FileManager.default.temporaryDirectory.appendingPathComponent("testo-normativo-di-prova.xml")
+        try? Data(syntheticAknAct().utf8).write(to: xmlURL)
+        let akn = service.store.addDocument(title: "Testo normativo di prova", sourceFileName: "testo-normativo-di-prova.xml",
+                                            sourcePageCount: 0, sourceKind: "akn")
+        try? service.storeSource(from: xmlURL, forDocumentId: akn.id, kind: "akn")
+        service.store.recordProcessed(id: akn.id, systemVersion: SystemGeneration.current, appBuild: "55")
+        for d in [mac, pdf, akn] { service.store.recordOpened(id: d.id) }
+    }
+
+    /// Un testo normativo AKN sintetico: cinque articoli e una nota lunga, che la catena dei testi normativi legge a pezzi.
+    /// Testo neutro, inventato.
+    static func syntheticAknAct() -> String {
+        let note = "(1) La nota di prova racconta del mulino sul fiume, che di notte apre le chiuse per il grano. "
+            + "Il mugnaio scende al lago quando la brezza della sera piega gli ulivi sulla collina e il faro si accende sulla scogliera. "
+            + "Nei mesi freddi la neve copre i tetti della valle e le strade restano bianche fino al disgelo di primavera. "
+            + "Allora i carri tornano a portare il grano al mulino, e le ruote girano dall'alba al tramonto senza fermarsi mai. "
+            + "La gente del borgo conta i sacchi nel cortile e annota ogni carico su un registro di carta che nessuno ha mai perso. "
+            + "Alla fine della stagione il registro passa al figlio del mugnaio, che lo custodisce nella cassa accanto al camino. "
+            + "Questa nota serve soltanto a provare la lettura a pezzi delle note lunghe dei testi normativi e non ha altro scopo."
+        var articles = ""
+        for n in 1...5 {
+            articles += "<article eId=\"art_\(n)\"><num>Art. \(n)</num><heading>Articolo di prova \(n)</heading>"
+                + "<paragraph eId=\"art_\(n)__para_1\"><num>1.</num><content><p>Il comma di prova numero \(n) parla del vento "
+                + "sulla collina.</p></content></paragraph></article>"
+        }
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\">"
+            + "<act name=\"prova\"><body>" + articles
+            + "<section eId=\"note\"><content><p><authorialNote eId=\"nota_1\">" + note + "</authorialNote></p></content></section>"
+            + "</body></act></akomaNtoso>"
     }
 
     /// Un libro già in libreria (impronta calcolata, cache scritta, un segnalibro, elaborato da QUESTA

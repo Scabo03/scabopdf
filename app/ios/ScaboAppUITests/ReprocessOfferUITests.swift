@@ -116,6 +116,47 @@ final class ReprocessOfferUITests: XCTestCase {
         audit(app, screen: "Segnalibri per tag con un orfano")
     }
 
+    /// I tre tipi di libro davanti all'offerta (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17, decisione 1
+    /// del maintainer): il PDF elaborato sull'iPad e il testo normativo importato prima dei pezzi nuovi delle note la
+    /// ricevono, la lettura arrivata dal Mac no. Il testo normativo si rielabora davvero, con la catena dei testi normativi
+    /// (con quella dei PDF fallirebbe), e si torna alla lettura precedente.
+    func testThreeKindsOfBook_pdfAndNormativeTextReceiveTheOffer_macReadingDoesNot() throws {
+        guard #available(iOS 17.0, *) else { throw XCTSkip("performAccessibilityAudit richiede iOS 17+") }
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTestSeedReprocessKinds"]
+        app.launch()
+
+        let row = app.cells["home.offer"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "la Home offre la lettura migliore")
+        row.tap()
+        func cell(_ title: String) -> XCUIElement {
+            app.cells.containing(NSPredicate(format: "label CONTAINS %@", title)).firstMatch
+        }
+        let akn = cell("Testo normativo di prova")
+        XCTAssertTrue(akn.waitForExistence(timeout: 5), "il testo normativo importato prima dei pezzi nuovi riceve l'offerta")
+        XCTAssertTrue(cell("Libro di prova").exists, "il PDF elaborato sull'iPad con una build vecchia la riceve")
+        XCTAssertFalse(cell("Lettura dal Mac di prova").exists, "la lettura arrivata dal Mac no: la rifà il Mac aggiornato")
+        audit(app, screen: "Elenco della lettura migliore con i tre tipi di libro")
+        akn.tap()
+
+        let what = app.staticTexts["offer.what"]
+        XCTAssertTrue(what.waitForExistence(timeout: 5))
+        XCTAssertTrue(what.label.contains("testo normativo"), what.label)
+        XCTAssertFalse(what.label.contains("pagina"), "le cure dei soli PDF non si promettono a un testo normativo: \(what.label)")
+        audit(app, screen: "Offerta per un testo normativo")
+        app.buttons["offer.accept"].tap()
+        XCTAssertTrue(app.buttons["confirm.reprocess.ok"].waitForExistence(timeout: 5))
+        app.buttons["confirm.reprocess.ok"].tap()
+        XCTAssertTrue(app.staticTexts["Rielaborazione conclusa"].waitForExistence(timeout: 120), "il testo normativo si rielabora")
+        XCTAssertTrue(app.staticTexts["result.text"].exists)
+        audit(app, screen: "Esito della rielaborazione di un testo normativo")
+
+        // Torna alla lettura precedente: l'offerta per il testo normativo ricompare.
+        app.buttons["result.revert"].tap()
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.cells["home.offer"].waitForExistence(timeout: 10))
+    }
+
     // MARK: - Audit (stesso criterio di AccessibilityAuditUITests)
 
     @available(iOS 17.0, *)

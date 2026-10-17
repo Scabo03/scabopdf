@@ -172,9 +172,16 @@ public enum ProcessingChain {
     /// che le contiene, e non dalla rielaborazione sull'iPad: rielaborando sull'iPad la lettura del Mac perderebbe il suo
     /// innesto (la rietichettatura dell'indice analitico, nella politica predefinita del Mac) senza che l'offerta lo dica.
     /// 56: la ricucitura fra pagine contigue e i pezzi a fine frase (giro «cura delle note», 2026-10-16 sera, rilievo della
-    /// revisione indipendente): la catena del Mac le contiene dalla sua versione con questo livello di cure. Scelta prudente
-    /// in attesa della decisione del maintainer (referto del giro, § 9).
+    /// revisione indipendente): la catena del Mac le contiene dalla sua versione con questo livello di cure. Confermato dal
+    /// maintainer il 2026-10-17 (decisione 1 del giro «pulizia e rifinitura finale del capitolo note»): le letture del Mac
+    /// si rifanno dal Mac aggiornato.
     public static let curesFromTheMacOnly: Set<Int> = [56]
+
+    /// Le cure che cambiano anche la lettura dei TESTI NORMATIVI (AKN): solo queste si offrono a un testo normativo già
+    /// importato (decisione 1 del maintainer, 2026-10-17). La catena AKN non passa dall'estrazione dei PDF; la tocca solo
+    /// ciò che è condiviso con le note dei PDF.
+    /// 56: i pezzi delle note lunghe chiusi a fine frase (lo spezzatore è uno, `notePieces`).
+    public static let curesForAknActs: Set<Int> = [56]
 
     /// Elabora il PDF `fileURL` (una copia locale) sul thread chiamante. `onProgress` è chiamato sul thread chiamante;
     /// `isCancelled` è consultato alle tappe naturali (per pagina e ai confini di fase). `onVisualDetection` riceve

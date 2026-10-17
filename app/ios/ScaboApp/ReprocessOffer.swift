@@ -34,7 +34,14 @@ enum ReprocessOffer {
     static var policy: ReprocessingPolicy {
         let latest = visualResourcesAvailable ? ProcessingChain.cureLevel : 50
         return ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: latest,
-                                  latestCureBuildForMacReadings: latestCureForMacReadings(upTo: latest))
+                                  latestCureBuildForMacReadings: latestCureForMacReadings(upTo: latest),
+                                  latestCureBuildForAknActs: latestCureForAknActs)
+    }
+
+    /// L'ultima cura da offrire a un testo normativo già importato (decisione 1 del maintainer, 2026-10-17): la più recente
+    /// fra le cure della sua catena (`ProcessingChain.curesForAknActs`). Non dipende dal riconoscimento delle risorse visive.
+    static var latestCureForAknActs: Int? {
+        ProcessingChain.curesForAknActs.filter { $0 <= ProcessingChain.cureLevel }.max()
     }
 
     /// L'ultima cura che una lettura arrivata dal Mac può ricevere dall'iPad (giro del 2026-10-16): la più recente fra le
@@ -83,6 +90,11 @@ enum ReprocessOffer {
             + "sono divise in pezzi più naturali, di solito a fine frase"),
     ]
 
+    /// Le cure che cambiano la lettura dei testi normativi, in parole semplici (la parte che li riguarda).
+    static let aknCures: [(build: Int, text: String)] = [
+        (56, "le note lunghe sono divise in pezzi più naturali, di solito a fine frase"),
+    ]
+
     private static var service: LibraryService { .shared }
 
     static func reason(for doc: ArchivedDocument) -> ReprocessingReason? {
@@ -124,6 +136,13 @@ enum ReprocessOffer {
     /// Cosa cambia, per questo libro.
     static func whatChanges(_ doc: ArchivedDocument, reason: ReprocessingReason) -> String {
         let since = doc.processedAppBuild.flatMap { Int($0) } ?? 0
+        // Un testo normativo riceve solo le cure della sua catena, dette per lui.
+        if doc.sourceKind == "akn" {
+            let list = aknCures.filter { $0.build > since && $0.build <= (latestCureForAknActs ?? 0) }.map { $0.text }
+            guard !list.isEmpty else { return "" }
+            return "Da quando questo testo normativo è stato importato, l'app ha imparato a leggere meglio i testi normativi: "
+                + list.joined(separator: "; ") + ". Se le sue note sono brevi, la nuova lettura resta uguale."
+        }
         // Una lettura arrivata dal Mac ha già le cure che il Mac fa da sempre (il frazionamento delle note lunghe), e quelle
         // che riceve dal Mac con una lettura nuova (la 56): non si promettono come novità della rielaborazione sull'iPad.
         let fromMac = doc.readingOrigin == ReadingOrigin.mac
@@ -258,12 +277,13 @@ enum ReprocessOffer {
         // 3. Elaborazione nella schermata dedicata.
         let large = doc.sourcePageCount > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
         let target = large ? DocumentOpener.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
-        let processor = DocumentProcessor()
+        // Un testo normativo si rielabora con la sua catena (decisione 1 del maintainer, 2026-10-17), un PDF con quella dei PDF.
+        let processor: DocumentProcessing = doc.sourceKind == "akn" ? AknDocumentProcessor() : DocumentProcessor()
         let vc = ProcessingViewController(
             fileURL: service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind), sourceName: doc.title,
             granularityTarget: target, buildDoctrine: !large, processor: processor)
         vc.onOutcome = { [weak presenter] outcome in
-            let visualSkipped = processor.visualResourcesMissingReason
+            let visualSkipped = (processor as? DocumentProcessor)?.visualResourcesMissingReason
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
                 switch outcome {

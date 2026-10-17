@@ -11,7 +11,9 @@
 //    aggiornamento maggiore non ancora giudicato, nessuna offerta, mai;
 //  - ed è stato elaborato con una catena precedente all'ultima cura dichiarata «da offrire» (etichetta
 //    `processedAppBuild` assente o minore), oppure con un'altra generazione maggiore del sistema.
-//  I libri AKN/EPUB non dipendono dal lettore PDF e non la ricevono.
+//  I testi normativi (AKN) non dipendono dal lettore PDF: ricevono l'offerta solo per una cura della LORO catena
+//  (`latestCureBuildForAknActs`, giro «pulizia e rifinitura finale del capitolo note», 2026-10-17, decisione 1 del
+//  maintainer: i pezzi nuovi delle note), mai per un aggiornamento del sistema. I libri EPUB non la ricevono.
 //
 
 import Foundation
@@ -38,14 +40,19 @@ public struct ReprocessingPolicy: Sendable {
     /// da sempre, quindi la cura 55 (il frazionamento sull'iPad) non manca a nessuna delle sue letture. Uguale a
     /// `latestCureBuild` se non indicata.
     public let latestCureBuildForMacReadings: Int
+    /// L'ultima cura da offrire ai TESTI NORMATIVI (AKN) già importati: la più recente fra le cure che cambiano anche la
+    /// loro lettura (i pezzi delle note lunghe, build 56). `nil`: nessuna offerta ai testi normativi (fino alla build 56).
+    public let latestCureBuildForAknActs: Int?
     /// La build della cura delle risorse visive (tabelle e figure): un libro il cui riconoscimento è saltato per una
     /// ragione da riprovare (`visualResourcesSkipped`) riceve l'offerta dove il dispositivo sa riconoscere (cura ≥ 53).
     public static let visualResourcesCureBuild = 53
 
-    public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int, latestCureBuildForMacReadings: Int? = nil) {
+    public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int, latestCureBuildForMacReadings: Int? = nil,
+                latestCureBuildForAknActs: Int? = nil) {
         self.validatedSystemMajors = validatedSystemMajors
         self.latestCureBuild = latestCureBuild
         self.latestCureBuildForMacReadings = latestCureBuildForMacReadings ?? latestCureBuild
+        self.latestCureBuildForAknActs = latestCureBuildForAknActs
     }
 
     /// Il numero maggiore da una stringa come «iPadOS 27.0.1» / «iOS 26.5».
@@ -64,6 +71,14 @@ public struct ReprocessingPolicy: Sendable {
     /// Perché il documento riceve l'offerta, o `nil` se non la riceve. Un documento elaborato dalla
     /// STESSA build in uso (`currentAppBuild`) ha già tutte le sue cure: niente offerta per la cura.
     public func reason(for doc: ArchivedDocument, currentSystemVersion: String, currentAppBuild: String? = nil) -> ReprocessingReason? {
+        // Un testo normativo: nessun lettore di sistema in gioco (né generazioni da validare, né aggiornamenti), solo le
+        // cure della sua catena che non aveva quando è stato elaborato.
+        if doc.sourceKind == "akn" {
+            guard let latest = latestCureBuildForAknActs else { return nil }
+            let build = doc.processedAppBuild.flatMap { Int($0) }
+            let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
+            return !sameBuild && (build ?? 0) < latest ? .cure : nil
+        }
         guard (doc.sourceKind ?? "pdf") == "pdf" else { return nil }
         guard currentGenerationIsValidated(currentSystemVersion: currentSystemVersion) else { return nil }
         let build = doc.processedAppBuild.flatMap { Int($0) }

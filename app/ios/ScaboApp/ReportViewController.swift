@@ -91,7 +91,9 @@ final class ReportViewController: UIViewController, UITableViewDataSource {
                     config.secondaryText = "Rielaborato: la lettura di prima è ancora sul dispositivo, in attesa che tu scelga quale tenere (dalle opzioni del libro)."
                 } else if ReprocessOffer.reason(for: document) != nil {
                     config.secondaryText = "Disponibile: si può rielaborare dalle opzioni del libro."
-                } else if !ReprocessOffer.policy.currentGenerationIsValidated(currentSystemVersion: SystemGeneration.current) {
+                } else if document.sourceKind != "akn",
+                          !ReprocessOffer.policy.currentGenerationIsValidated(currentSystemVersion: SystemGeneration.current) {
+                    // Il lettore di sistema conta solo per i PDF: un testo normativo non ne dipende.
                     config.secondaryText = "Questa versione del sistema non è ancora stata verificata dall'app: per ora nessuna rielaborazione."
                 } else {
                     config.secondaryText = "Il libro è già letto con la versione più recente."

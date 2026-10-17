@@ -337,6 +337,27 @@ final class VisualResourceTests: XCTestCase {
         XCTAssertFalse(ReprocessOffer.isNotOfferedToMacReadings(53))
         XCTAssertTrue(ReprocessOffer.cures.contains { $0.build == 53 && $0.text.contains("risorse visive") })
     }
+
+    /// Decisione 1 del maintainer (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17): un testo normativo già
+    /// importato riceve le cure della SUA catena (i pezzi nuovi delle note), con un testo che parla di lui; mai quelle dei
+    /// soli PDF, e nessun discorso sul lettore di sistema.
+    func test_offer_reachesNormativeTexts_withTheirOwnCures() {
+        XCTAssertEqual(ReprocessOffer.latestCureForAknActs, ProcessingChain.curesForAknActs.filter { $0 <= ProcessingChain.cureLevel }.max())
+        XCTAssertNotNil(ReprocessOffer.latestCureForAknActs)
+        func akn(_ build: String) -> ArchivedDocument {
+            ArchivedDocument(id: "a", title: "t", sourceFileName: "t.xml", importedAt: Date(), sourcePageCount: 0,
+                             sourceKind: "akn", processedSystemVersion: SystemGeneration.current, processedAppBuild: build)
+        }
+        let old = akn("55")
+        XCTAssertEqual(ReprocessOffer.policy.reason(for: old, currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"), .cure)
+        let text = ReprocessOffer.whatChanges(old, reason: .cure)
+        XCTAssertTrue(text.contains("testo normativo") && text.contains("pezzi"), text)
+        XCTAssertFalse(text.contains("pagina") || text.contains("lettore di sistema"), text)
+        let current = akn(String(ReprocessOffer.latestCureForAknActs ?? 0))
+        XCTAssertNil(ReprocessOffer.policy.reason(for: current, currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"),
+                     "con i pezzi nuovi già fatti, nessuna offerta")
+        XCTAssertEqual(ReprocessOffer.whatChanges(current, reason: .cure), "")
+    }
 }
 
 // MARK: - Protezione della memoria (giro «costruzione della linea Mac», 2026-10-16)
