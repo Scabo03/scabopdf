@@ -513,7 +513,13 @@ final class RealPdfBenchTests: XCTestCase {
             func base(_ id: String) -> String { id.lastIndex(of: "#").map { String(id[..<$0]) } ?? id }
             var chosen: [Int]
             if let wanted = req.noteIds?[name] {
-                chosen = heads.filter { wanted.contains(base(segs[$0].id)) }
+                // Le note indicate: il primo pezzo di una nota frazionata, o una nota intera (giro «pulizia e rifinitura
+                // finale del capitolo note», 2026-10-17: si guardano anche le note ricucite o separate che restano intere).
+                let headSet = Set(heads)
+                chosen = segs.indices.filter { i in
+                    (segs[i].role == noteRole || segs[i].role == SemanticCategory.EDITORIAL_NOTE.rawValue)
+                        && (headSet.contains(i) || !segs[i].id.contains("#")) && wanted.contains(base(segs[i].id))
+                }
             } else {
                 let k = min(req.perVolume ?? 3, heads.count)
                 chosen = k == 0 ? [] : (0..<k).map { heads[(heads.count - 1) * $0 / max(1, k - 1)] }
