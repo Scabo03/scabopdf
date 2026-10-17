@@ -1,21 +1,25 @@
-Build 56 — note intere e pezzi più naturali
+Build 57 — note più pulite
 
 Cosa è cambiato
-- Molte note che prima si interrompevano a fine pagina e riprendevano più avanti, dopo altro testo, ora si leggono intere: la parte che continua all'inizio delle note della pagina seguente viene unita alla sua nota e la segue subito. L'app la unisce solo quando è sicura che sia la stessa nota, per esempio quando la nota che viene dopo porta il numero seguente; nel dubbio la nota resta com'era.
-- Alcune di queste note, ora intere, sono diventate lunghe: come tutte le note lunghe si leggono alla fine della sezione, non più subito dopo la frase del richiamo.
-- Le note lunghe vengono divise in pezzi più naturali, di solito a fine frase; se una frase è lunghissima, dopo un punto e virgola, due punti o una virgola. Le iniziali non sono più separate dal cognome, le abbreviazioni come «n.», «art.» o «Riv.» non sono più separate dalla parola che segue, e i pezzi di poche parole sono quasi spariti. Per finire la frase un pezzo può essere un po' più lungo di prima, al massimo una volta e mezzo la granularità di lettura.
-- Vale anche per le note dei testi normativi che importi da questa versione in poi.
+- Altre note che si interrompevano a fine pagina e riprendevano all'inizio della pagina seguente ora si leggono intere. L'app le unisce solo quando ne è sicura: per esempio quando la nota che viene dopo, sulla pagina seguente, porta il numero giusto. Nel dubbio la nota resta com'era.
+- Alcune note che prima venivano incollate per errore a un'altra nota, a una scritta a margine o a un titolo ora sono separate. Succedeva soprattutto nei codici, dove le note di colonne diverse si mescolavano, e in qualche manuale.
+- In alcune note, un pezzo che l'app staccava per errore a causa di un numero all'inizio di una riga (un numero di pagina, di articolo o una data) è tornato al suo posto: la nota si legge intera e nell'ordine giusto.
+- Il richiamo alla memoria che si sente prima di una nota letta più avanti comincia sempre all'inizio di una parola, mai a metà.
+- «Vai al testo del richiamo» e «Vai alla nota» funzionano anche quando il richiamo è stampato fra parentesi, per esempio «(12)». Questo vale subito per tutti i libri, senza rielaborarli.
+- Nei codici, nelle note lunghe che elencano leggi, un pezzo non finisce più con l'etichetta dell'elenco staccata dal suo primo elemento.
+- Le tabelle e le figure restano al loro posto anche quando cambia il modo in cui le note sono divise in pezzi.
 
 Quali libri
-- Note unite: soprattutto manuali e riviste con molte note a piè di pagina. Sui 52 libri di prova, in 16 libri, 534 punti in cui una nota si spezzava fra due pagine ora sono uniti. In qualche caso la nota resta comunque divisa in due da un altro difetto della lettura del PDF. Nei codici le note non vengono unite.
-- Pezzi nuovi: tutti i libri con note lunghe (29 dei 52 di prova).
-- Le lettere del testo letto sono le stesse di prima: cambia dove le note sono divise, e la parte di una nota che riprendeva più avanti ora segue subito il suo inizio. Verificato su tutti i libri di prova con iOS 26 e iOS 27.
+- Note unite: sui 52 libri di prova, 125 punti in più in 15 libri, soprattutto manuali e riviste con molte note.
+- Note separate: una quarantina di punti, soprattutto nei codici.
+- Le lettere del testo letto sono le stesse di prima: cambia dove una nota comincia e finisce. Verificato su tutti i libri di prova con iOS 26 e iOS 27.
 
 Per i libri già aperti
 - Ricevono la novità con l'offerta «Lettura migliore disponibile», nella Home e fra le opzioni del libro: tocca «Rielabora…» e conferma. La lettura di prima resta sul dispositivo finché non scegli «Tieni la nuova lettura»; puoi anche scegliere «Torna alla lettura precedente» o «Decidi più tardi».
-- Segnalibri e sottolineature restano al loro posto quasi sempre. Fanno eccezione quelli messi con la build 55 su un pezzo di una nota lunga, o su una nota che ora è unita: nelle nostre prove circa uno su quattro di quelli messi su un pezzo dopo il primo non si ritrova, perché i pezzi sono tagliati in altri punti. L'app non li sposta a caso e te lo dice. Un segnalibro resta «da ricollocare» in fondo alla lista dei segnalibri; una sottolineatura resta salvata ma non si vede, e riappare se torni alla lettura precedente prima di scegliere «Tieni la nuova lettura».
-- I libri con una lettura arrivata dal Mac restano come sono, e questa novità non viene offerta: arriverà con una nuova lettura preparata dal Mac.
-- I testi normativi già importati restano come prima.
+- Anche i testi normativi già importati ora ricevono l'offerta: le loro note lunghe vengono divise in pezzi più naturali. Se le note di un testo sono brevi, la nuova lettura resta uguale.
+- I libri con una lettura arrivata dal Mac restano come sono: la novità arriverà con una nuova lettura preparata dal Mac.
+- Segnalibri e sottolineature restano al loro posto quasi sempre: nelle nostre prove, 3 su mille non si ritrovano, perché stavano su una parte di nota che ora è unita alla sua nota o separata da un'altra. L'app non li sposta a caso e te lo dice: un segnalibro resta «da ricollocare» in fondo alla lista dei segnalibri.
 
 Una cosa da notare
-- Ascolta qualche nota lunga, e qualche nota che prima riprendeva più avanti. Se senti due note diverse unite in una, o una nota unita al testo, dicci in quale libro e a quale pagina. Dicci anche se i pezzi ti sembrano tagliati nel punto giusto.
+- Ascolta qualche nota che prima si interrompeva a fine pagina, e qualche nota nei codici. Se senti due note diverse unite in una, o una nota unita al testo, dicci in quale libro e a quale pagina.
+- Prova «Vai al testo del richiamo» su una nota con il richiamo fra parentesi.
