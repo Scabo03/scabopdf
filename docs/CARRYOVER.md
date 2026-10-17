@@ -10,7 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
-> Versione: 2.48 (17 ottobre 2026, giro «pulizia e rifinitura finale del capitolo note», **CONCLUSO** salvo la build 57: separate le 42 fusioni sbagliate nel flusso, ricomposte 16 teste-frammento (12 della Parte 1, 4 nate con le ricuciture nuove), 125 note spezzate in più ricucite con la successione confermata (534 → 659), offerta ai testi normativi già importati, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco dei codici, guardia delle risorse visive in posizioni logiche, cura 57. Vedi STATO del 2026-10-17)
+> Versione: 2.48 (17 ottobre 2026, giro «pulizia e rifinitura finale del capitolo note», **CONCLUSO** con la **build 57** su TestFlight (VALID): separate le 42 fusioni sbagliate nel flusso, ricomposte 16 teste-frammento (12 della Parte 1, 4 nate con le ricuciture nuove), 125 note spezzate in più ricucite con la successione confermata (534 → 659), offerta ai testi normativi già importati, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco dei codici, guardia delle risorse visive in posizioni logiche, cura 57. Vedi STATO del 2026-10-17)
 > Versione: 2.46 (16-17 ottobre 2026 notte, giro «cura delle note», **build 56**: registrate all'apertura le tre decisioni del maintainer; **le note spezzate fra pagine contigue si ricuciono sull'iPad** (`stitchAdjacentPageFootnotes`, nel codice condiviso, esclusi i codici: 534 punti di giunzione in 533 note, tutti giudicati veri contro la pagina) e **i pezzi delle note lunghe si chiudono a fine frase** (`notePieces`: finestra 0,5–1,5 volte la soglia, pause, iniziali e abbreviazioni mai separate); cura 56 offerta ai libri preparati dall'iPad da un PDF, non alle letture del Mac né ai testi normativi già importati; il segnale di chiusura della nota resta per il giro dei suoni. Vedi STATO del 2026-10-16 sera)
 > Versione: 2.45 (16 ottobre 2026 pomeriggio, giro «uniformità della lettura e misura»: registrate all'apertura le quattro decisioni del maintainer; **le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF** (catena condivisa `ScaboChain`, stesso meccanismo degli atti AKN e del Mac: iPad, iPhone e Mac danno la stessa lettura a parità di ingressi, con l'innesto del Mac spento), cura 55 con l'offerta «Lettura migliore disponibile» (non alle letture del Mac); reti verdi sulle due generazioni (ricomposizione esatta, lettere e cifre identiche, annotazioni al loro posto anche fra le letture 54 e 55, pacchetti 7/7, vista di lettura senza veto); **conteggio delle note spezzate fra pagine che l'iPad lascia aperte** (`docs/CONTEGGIO_NOTE_SPEZZATE.md`: 2.961 aperte, 202 casi giudicati contro la pagina, circa 930 vere, circa 710 fuori dai codici; strato sicuro sull'iPad 35 veri su 36); revisione indipendente prima del caricamento; **build 55 su TestFlight** (commit `91aaf7b`, Delivery UUID `80cf20c4…`, note impostate a parte dopo errori 500 di App Store Connect). Tre decisioni per il maintainer. Referto in `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAMENTO.md`. Vedi STATO del 2026-10-16 pomeriggio)
 > Versione: 2.44 (16 ottobre 2026, giro «costruzione della linea Mac»: il ramo `feat/mac-base` fuso in main; le cure dell'estrazione SPOSTATE in un modulo condiviso iPad/Mac (`app/ios/ScaboChain`) e il fusore del banco portato in Swift; l'**app Mac prepara la lettura** con la stessa catena (più la rietichettatura dell'indice analitico; ricucitura fra pagine spenta dopo una rete rossa) e la esporta in un **pacchetto `.scabolettura`**; l'**iPad la riceve** (AirDrop, «Apri con», File, cavo) con la regola delle annotazioni del § 12.12; protezione della memoria nel riconoscimento di tabelle e figure; selettore del layout su iPhone; **pannello dei modelli del Mac vero** (GLM-OCR scaricato, verificato, rimosso, servizio XPC unico con la rete); revisione indipendente con tre difetti veri corretti prima della build; reti verdi sulle due generazioni (letture identiche byte per byte alla build 53); **build 54 su TestFlight** (commit `16317ff`, Delivery UUID `9bfa68d7…`, note scritte dalla lane). Referto e laboratorio in `~/Developer/scabopdf-mac-lab/`. Vedi STATO del 2026-10-16)
@@ -66,8 +66,9 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ## ▶ STATO — Giro «pulizia e rifinitura finale del capitolo note»: fusioni sbagliate e teste-frammento, note respinte dal predicato, offerta ai testi normativi, rifiniture minori, build 57 — 2026-10-17
 
-**Partenza:** `1533f8d` (main = origin, build 56 su TestFlight). **Arrivo:** `main` con il giro (codice fino a `bd08aa2`,
-documenti a seguire) e la build 57 (vedi sotto). Referto (con nomi dei volumi: NON diffondere):
+**Partenza:** `1533f8d` (main = origin, build 56 su TestFlight). **Arrivo:** `main` = `origin` con il giro (codice di
+prodotto fino a `c357a2d`, pulizia dei vecchi test e dei commenti `a49e780`/`8c7bd27`, documenti a seguire) e la **build 57
+su TestFlight** dal commit `8c7bd27` (vedi sotto). Referto (con nomi dei volumi: NON diffondere):
 `~/Developer/scabopdf-gen-lab/referto/REFERTO_PULIZIA_NOTE.md`; laboratorio `~/Developer/scabopdf-gen-lab/pulizia/`
 (letture `base`/`p1c`/`p2h`/`p4f`, varianti di controprova, giudizi, reti, attrezzi).
 
@@ -79,7 +80,16 @@ sbagliate nel flusso e teste-frammento curate adesso.
 **Esito.** Codice: `09d6799` (fusioni nel flusso), `0e4376b` (teste-frammento), `25f76ff` (successione confermata e due
 guardie nuove), `396fc9c` (offerta ai testi normativi), `d5510f8` (banco della vista), `28c7300` (salto ai richiami fra
 parentesi), `cad421c` (rinfresco a inizio parola), `1687267` (note-elenco), `baccac5` (guardia delle risorse visive),
-`f22b984` (cura 57), `ec8ba12` (seme del test d'interfaccia), `bd08aa2` (pulizia di frasi di prova riprese da un volume).
+`f22b984` (cura 57), `ec8ba12` (seme del test d'interfaccia), `bd08aa2` (pulizia di frasi di prova riprese da un volume);
+dopo la revisione indipendente: `c357a2d` (parole dell'offerta per i testi normativi e per la cura 57, test allineati alla
+configurazione reale), `232d713` (note per i tester), `e0128fb` (numeri dei documenti), `a49e780` e `8c7bd27` (testo dei
+volumi rimasto in 18 vecchi file di test e in due commenti del codice, preesistente: ora testo inventato della stessa forma).
+- **Build 57** (2026-10-17, 15:25-15:32, Xcode 27.1): `fastlane beta` exit 0, UPLOAD SUCCEEDED alle 15:29:12, Delivery UUID
+  `5e0bd0e7-4a04-408d-9f36-fc7da5f382a3`, «Cosa testare» impostato dalla corsia; verifica in sola lettura: VALID, note
+  identiche al file. Suite: `validate.sh` 966 + 177 (14 saltati) + 18 test d'interfaccia, 0 falliti; iPhone 16 iOS 27 uguale.
+- **Revisione indipendente** (sotto-agente nuovo con la lista del maintainer): nessun rilievo bloccante; 40 ricuciture
+  rigiudicate giuste sul PDF; rilievi corretti nei numeri, nei test, nelle parole dell'app e delle note per i tester, e nel
+  testo dei volumi dei vecchi test. Dettaglio nel referto § 8.
 - **Fusioni sbagliate (Parte 1).** Un rilevatore nuovo registra ogni fusione con il suo meccanismo: le fusioni sbagliate
   erano 36 in Lettura Continua e 6 in Dottrina Inline (non 18), tutte unioni nel flusso di pezzi non contigui nell'origine.
   Ora un pezzo si unisce solo a ciò che lo precede SUBITO nell'origine (`noteOriginPrevious`, campo interno, cache
@@ -140,6 +150,8 @@ parentesi), `cad421c` (rinfresco a inizio parola), `1687267` (note-elenco), `bac
    `footnoteLineRanges` ricopia la regola di `splitFootnotes` (oggi identiche, tenute insieme solo da un test sul conteggio).
 Stima delle note vere ancora aperte fuori dai codici (dedotto): circa 45 (182 − 125 ricucite − 12 coppie-glossa che erano
 note complete).
+Fuori dalle note, dichiarato: i documenti d'analisi storici (`docs/analysis/`, maggio 2026) e alcune note di ricognizione
+delle fixture della pipeline citano righe dei volumi (fino a 23 parole di fila); da ripulire in un giro dedicato.
 Decisione aperta di prima, invariata: il tetto alla distanza delle note lunghe.
 
 ## ▶ STATO — Giro «cura delle note»: ricucitura sull'iPad delle note spezzate fra pagine contigue, confini dei pezzi delle note lunghe, build 56 — 2026-10-16 sera / 17 notte

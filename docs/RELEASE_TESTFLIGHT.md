@@ -196,6 +196,31 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 57 — 2026-10-17 pomeriggio, commit `8c7bd27` (giro «pulizia e rifinitura finale del capitolo note»: separate le
+  42 fusioni fuori dall'ordine d'origine nel flusso, ricomposte 16 teste-frammento, 125 note spezzate in più ricucite con la
+  successione confermata (534 → 659), offerta «Lettura migliore disponibile» ai testi normativi già importati e non alle
+  letture del Mac, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco, guardia delle risorse visive in
+  posizioni logiche; `docs/CARRYOVER.md` STATO del 2026-10-17, `LAYER2_PRODUCT_DECISIONS.md` § 12.12).** Prima build con
+  **Xcode 27.1** (27A9275, aggiornato da solo a giro in corso). `fastlane beta` exit 0: `CURRENT_PROJECT_VERSION` 57
+  (calcolato dalla corsia, `SCABO_BUILD_NUMBER` tolto), EXPORT SUCCEEDED alle 15:26:44, altool «UPLOAD SUCCEEDED with no
+  errors» alle 15:29:12, Delivery UUID `5e0bd0e7-4a04-408d-9f36-fc7da5f382a3`, «Successfully set the changelog for build»
+  alle 15:32:20, nessun errore di App Store Connect. Verifica in sola lettura con la chiave API (script del laboratorio
+  `ricucitura/strumenti/asc_build_56.rb 57`): build 57 VALID, «Cosa testare» (it) di 3.131 caratteri identico a
+  `app/ios/fastlane/COSA_TESTARE.txt` (provato prima con `fastlane note_tester`, exit 0). Reti prima del caricamento:
+  doppia rete delle generazioni exit 0 dopo ogni parte (`pul1`, `pul2`, `pul5`; Marotta identico; risorse visive 110 su 110
+  giudicate, collocazioni identiche alla build 56 nella lettura dell'app); rete fissa sulle annotazioni `pul5` 416 righe
+  verdi con le tre prove al contrario e 0 ricollocazioni sbagliate; passaggio delle annotazioni dalla lettura 56 alla 57
+  con 0 sbagliati (31 orfani su 10.846 all'andata, 18 al ritorno, due generazioni); le 125 ricuciture nuove giudicate tutte
+  vere contro la pagina; lettere e cifre identiche (cambiano solo 9 + 9 trattini, giustificati), 0 parole nuove fuori
+  lessico (codici compresi), ogni nota frazionata ricomposta identica; iPad e Mac identici byte per byte 52/52 sulle due
+  generazioni; titoli e struttura invariati; vista nel simulatore senza veto. Suite: `validate.sh` (iPhone 16 iOS 26.5)
+  ScaboCore 966, ScaboAppTests 177 (14 saltati), test UI 18, 0 falliti; iPhone 16 iOS 27 uguale (177/14/0, UI 18/18);
+  ScaboChain 8/8; pacchetto Mac 65 (3 saltati, 0 errori); iPad Pro iOS 27 test UI con 6 rossi PREESISTENTI (audit di Dynamic
+  Type e i test che aspettano la barra dell'iPhone), provati sul codice della build 56 con Xcode 27.1. Revisione
+  indipendente prima del caricamento: nessun rilievo bloccante, 40 ricuciture rigiudicate giuste; corretti le parole
+  dell'offerta e i test (`c357a2d`), le note per i tester (`232d713`), i numeri dei documenti (`e0128fb`) e il testo dei
+  volumi rimasto in vecchi test e commenti (`a49e780`, `8c7bd27`). IPA 162 899 552 byte (155,4 MiB). Cura di lettura nuova:
+  `ProcessingChain.cureLevel` 57 (`curesFromTheMacOnly` = [56, 57], `curesForAknActs` = [56, 57]).
 - **Build 56 — 2026-10-17 notte, commit `11cd858` (giro «cura delle note»: le note spezzate fra pagine contigue ricucite
   sull'iPad, i pezzi delle note lunghe chiusi a fine frase, cura 56 con l'offerta «Lettura migliore disponibile» ai libri
   preparati dall'iPad da un PDF, non alle letture arrivate dal Mac né ai testi normativi già importati; `docs/CARRYOVER.md`
