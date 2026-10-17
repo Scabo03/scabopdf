@@ -101,6 +101,34 @@ final class NoteJumpTests: XCTestCase {
         XCTAssertEqual(noteCallLinks(segs).callOfNote[3], 1)
     }
 
+    /// Richiamo fra parentesi (INBOX D.11, giro «pulizia e rifinitura finale del capitolo note», 2026-10-17): «(12)» subito
+    /// dopo una parola o una chiusura, anche col punto di un'abbreviazione, è un richiamo; con le stesse esclusioni.
+    func test_parenthesizedCall_links() {
+        let inline = [s("BODY", "La tesi del raccolto anticipato è discussa (31)."), s("NOTE", "(31) ROSSI, op. cit., p. 10.")]
+        XCTAssertEqual(noteCallLinks(inline).callOfNote[1], 0)
+        let deferred = [
+            s("BODY", "Il mugnaio apre le chiuse quando la piena del fiume arriva al ponte (37), perché la ruota…"),
+            s("BODY", "Altro paragrafo senza richiami."),
+            s("NOTE", "(37) Una nota di prova sul mulino e sulla piena…",
+              refresh: "Il mugnaio apre le chiuse quando la piena del fiume arriva al ponte"),
+        ]
+        XCTAssertEqual(noteCallLinks(deferred).callOfNote[2], 0)
+        XCTAssertTrue(containsCallNumber("così la dottrina, op. cit. (12)", 12))
+        XCTAssertTrue(containsCallNumber("il raccolto (art. 5 del decreto) (12)", 12))
+        XCTAssertTrue(containsCallNumber("il raccolto(12)", 12))
+    }
+
+    func test_parenthesizedNumberAfterAReferenceAbbreviation_isNotACall() {
+        // «art. (5)», «n. (12)»: riferimenti, non richiami; e un numero diverso non conferma
+        XCTAssertFalse(containsCallNumber("la vendemmia segue l’art. (5) del calendario delle uve", 5))
+        XCTAssertFalse(containsCallNumber("vedi il n. (12) della serie", 12))
+        XCTAssertFalse(containsCallNumber("la tesi discussa (13)", 12))
+        XCTAssertFalse(containsCallNumber("la tesi discussa (123)", 12))
+        XCTAssertFalse(containsCallNumber("la tesi discussa (12 maggio)", 12))
+        let segs = [s("BODY", "La vendemmia segue l’art. (5) del calendario delle uve."), s("NOTE", "(5) Una nota di prova.")]
+        XCTAssertNil(noteCallLinks(segs).callOfNote[1])
+    }
+
     func test_numberAsReference_isNotACall() {
         // «art. 5» non è il richiamo della nota 5.
         let segs = [s("BODY", "Si applica l’art. 5 del decreto."), s("NOTE", "5 Cfr. Cass. 12 marzo 2010.")]

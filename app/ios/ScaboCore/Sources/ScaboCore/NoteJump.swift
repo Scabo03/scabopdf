@@ -56,16 +56,26 @@ private let NOT_A_CALL_BEFORE: Set<String> = [
 ]
 
 /// Vero se `text` (o la sua coda di `tail` caratteri) contiene il numero `n` come RICHIAMO di nota:
-/// subito dopo una parola o una chiusura di citazione/parentesi («…aquiliana 50», «…mondo» 2»), mai
-/// dopo un'abbreviazione di riferimento («art. 5», «comma 2», «n. 12»).
-private func containsCallNumber(_ text: String, _ n: Int, tail: Int? = nil) -> Bool {
+/// subito dopo una parola o una chiusura di citazione/parentesi («…aquiliana 50», «…mondo» 2»), oppure FRA PARENTESI
+/// tonde subito dopo una parola o una chiusura, anche col punto di un'abbreviazione («…del giudice (12)», «…cit. (12)»:
+/// giro «pulizia e rifinitura finale del capitolo note», INBOX D.11); mai dopo un'abbreviazione di riferimento
+/// («art. 5», «comma 2», «n. 12», «art. (5)»).
+func containsCallNumber(_ text: String, _ n: Int, tail: Int? = nil) -> Bool {
     let t = tail.map { String(text.suffix($0)) } ?? text
-    let pattern = "([A-Za-zÀ-ÿ»”’\\)\\]]+)\\s?\(n)(?![0-9])"
-    guard let re = try? NSRegularExpression(pattern: pattern) else { return false }
-    for m in re.matches(in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) {
-        guard let r = Range(m.range(at: 1), in: t) else { continue }
-        let word = t[r].lowercased().filter { $0.isLetter }
-        if !NOT_A_CALL_BEFORE.contains(word) { return true }
+    let patterns = [
+        "([A-Za-zÀ-ÿ»”’\\)\\]]+)\\s?\(n)(?![0-9])",
+        "([A-Za-zÀ-ÿ»”’\\)\\]]+)\\.?\\s?\\(\(n)\\)",
+    ]
+    for (k, pattern) in patterns.enumerated() {
+        guard let re = try? NSRegularExpression(pattern: pattern) else { continue }
+        for m in re.matches(in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) {
+            guard let r = Range(m.range(at: 1), in: t) else { continue }
+            let word = t[r].lowercased().filter { $0.isLetter }
+            // fra parentesi conta anche la parola dopo l'ultimo apostrofo («l’art. (5)» è «art»): nel dubbio, nessun salto
+            let tail = String(t[r].lowercased().split(whereSeparator: { !$0.isLetter }).last ?? "")
+            if NOT_A_CALL_BEFORE.contains(word) || (k == 1 && NOT_A_CALL_BEFORE.contains(tail)) { continue }
+            return true
+        }
     }
     return false
 }
