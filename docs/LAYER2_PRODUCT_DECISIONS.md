@@ -1107,6 +1107,24 @@ toglierebbe l'innesto: la riceveranno con una lettura nuova del Mac) né i testi
 per i PDF; i nuovi la hanno). Le annotazioni fatte con la build 55 su un pezzo di nota tagliato diversamente possono
 restare «da ricollocare» (§ 12.14: mai spostate a caso).
 
+**Tre decisioni del maintainer (2026-10-17, registrate all'apertura del giro «pulizia e rifinitura finale del capitolo
+note», build 57).**
+
+1. **A chi arriva la cura delle note fra i libri già aperti.** La cura delle note **non si offre alle letture arrivate dal
+   Mac**: quelle si rifanno dal Mac aggiornato (rielaborarle sull'iPad ne toglierebbe l'innesto). **Si offre invece ai testi
+   normativi già importati**, che oggi non ricevono i pezzi nuovi delle note: anche loro con l'offerta «Lettura migliore
+   disponibile» (§ 12.13). Conferma, per le letture del Mac, la scelta prudente della build 56; la estende ai testi
+   normativi.
+2. **Le note spezzate fra pagine contigue che il predicato dell'app respinge si ricuciono**, con la successione dei numeri
+   confermata e le guardie geometriche del giro precedente al posto del predicato, giudicando ogni caso contro la pagina
+   stampata.
+3. **Le fusioni sbagliate nel flusso e le teste-frammento si curano adesso**: una fusione sbagliata (due note diverse
+   unite, o una nota unita al corpo) è peggio di una nota lasciata aperta.
+
+**Fuori da questo giro, di proposito:** le note spezzate fra pagine non contigue e la variante MULTIPAGE, che restano
+all'officina; la regola nuova dei confini nel corpo, lasciata com'è per non spostare le annotazioni; il tetto alla distanza
+delle note lunghe, che è una decisione del maintainer ancora da prendere.
+
 ---
 
 ### 12.13 Rielaborazione dei libri dopo un aggiornamento di sistema o una cura (decisione del 2026-10-07)
