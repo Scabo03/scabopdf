@@ -94,6 +94,26 @@ final class NotePiecesTests: XCTestCase {
         XCTAssertEqual(pieces.joined(separator: " "), a + b + c)
     }
 
+    /// Giro «pulizia e rifinitura finale del capitolo note» (2026-10-17): nelle note-elenco (un elenco di voci senza punti
+    /// fermi, ciascuna con la sua etichetta fra parentesi che introduce un elenco) il taglio non cade più dopo i due punti
+    /// dell'etichetta, che resta col primo elemento del suo elenco.
+    func test_fraseLunghissima_maiTagliataDopoIDuePuntiDiUnEtichettaFraParentesi() {
+        let voce = "Legge sulla tutela del raccolto (sui frutteti) (in nota a: artt. 11, 12, 13, 14)"
+        let t = Array(repeating: voce, count: 6).joined(separator: " ")   // circa 500 caratteri, nessun punto fermo
+        let pieces = notePieces(t, target: 100)
+        XCTAssertGreaterThan(pieces.count, 1)
+        for p in pieces.dropLast() { XCTAssertFalse(p.hasSuffix("in nota a:"), "etichetta separata dal suo elenco: \(p)") }
+        XCTAssertEqual(pieces.joined(separator: " "), t)
+    }
+
+    func test_fraseLunghissima_dopoIDuePuntiFuoriDaParentesi_siTagliaAncora() {
+        // prova al contrario: i due punti fuori da una parentesi restano un buon punto di taglio
+        let a = "Alfa " + parole(64) + ":"            // 70 caratteri
+        let b = " " + parole(29) + ","                 // fino a 101
+        let c = " " + parole(117) + "."                // 220 in tutto
+        XCTAssertEqual(notePieces(a + b + c, target: 100).first, a)
+    }
+
     func test_fraseLunghissima_maiTagliataDopoUnAbbreviazione() {
         let t = "Alfa " + parole(92) + " n. 12 " + parole(150) + "."
         let pieces = notePieces(t, target: 100)

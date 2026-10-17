@@ -165,8 +165,23 @@ func noteSentenceRanges(_ chars: [Character]) -> [Range<Int>] {
 }
 
 /// Un taglio possibile dentro una frase: il pezzo finisce a `cut` (inizio della corsa di spazi), il seguente comincia a
-/// `resume`; `grade` 1 dopo «;» o «:», 2 dopo «,», 3 fra due parole.
+/// `resume`; `grade` 1 dopo «;» o «:», 2 dopo «,», 3 fra due parole, 4 dopo i due punti DENTRO una parentesi aperta.
 private struct NoteCut { let cut: Int; let resume: Int; let grade: Int }
+
+/// La profondità delle parentesi tonde e quadre aperte dall'inizio della frase, per ogni posizione dell'intervallo
+/// (mai negativa: una chiusa senza la sua aperta non conta). Giro «pulizia e rifinitura finale del capitolo note»
+/// (2026-10-17): nelle note-elenco dei codici (elenchi di leggi senza punti fermi, ciascuna con un'etichetta fra parentesi
+/// che introduce l'elenco dei suoi articoli) il taglio cadeva dopo i due punti dell'etichetta, separandola dal primo
+/// elemento del suo elenco: quei due punti sono ora l'ultimo taglio possibile, e l'etichetta resta col suo primo elemento.
+private func parenthesisDepths(_ chars: [Character], _ range: Range<Int>) -> [Int] {
+    var depths = [Int](repeating: 0, count: range.count + 1)
+    var d = 0
+    for (j, i) in range.enumerated() {
+        if chars[i] == "(" || chars[i] == "[" { d += 1 } else if (chars[i] == ")" || chars[i] == "]"), d > 0 { d -= 1 }
+        depths[j + 1] = d
+    }
+    return depths
+}
 
 /// Taglia un intervallo più lungo di 1,5 T (una frase lunghissima) nella finestra [T/2, 1,5 T] da ogni inizio (punto 3
 /// della testata). Se nella finestra non c'è un taglio ammesso si prende il migliore prima della finestra, poi il primo
@@ -174,6 +189,8 @@ private struct NoteCut { let cut: Int; let resume: Int; let grade: Int }
 private func cutLongRange(_ chars: [Character], _ range: Range<Int>, target: Int, minLen: Int, maxLen: Int) -> [Range<Int>] {
     var out: [Range<Int>] = []
     var start = range.lowerBound
+    let depths = parenthesisDepths(chars, range)
+    func depth(at i: Int) -> Int { depths[i - range.lowerBound] }
     while range.upperBound - start > maxLen {
         var inWindow: (NoteCut, Int)?
         var before: (NoteCut, Int)?
@@ -188,7 +205,10 @@ private func cutLongRange(_ chars: [Character], _ range: Range<Int>, target: Int
             let length = k - start
             if !noteTokenIsAbbreviation(chars[tokenStart..<k]) {
                 let last = chars[k - 1]
-                let cut = NoteCut(cut: k, resume: resume, grade: (last == ";" || last == ":") ? 1 : (last == "," ? 2 : 3))
+                var grade = (last == ";" || last == ":") ? 1 : (last == "," ? 2 : 3)
+                // i due punti dell'etichetta che, dentro una parentesi, introduce un elenco
+                if last == ":", depth(at: k) > 0 { grade = 4 }
+                let cut = NoteCut(cut: k, resume: resume, grade: grade)
                 let distance = abs(length - target)
                 if length > maxLen { after = cut; break }
                 if length >= minLen {
