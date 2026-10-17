@@ -219,6 +219,47 @@ fusioni sbagliate nella lettura della build 55 (iOS 27), 18 dopo la cura (le cod
 piazzamento): 12 nei codici e 6 negli altri volumi, preesistenti e invariate (dichiarate; il conteggio del § 2 le contava
 fra le «ricucite nel flusso»).
 
+## 9. Dopo la pulizia (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17, build 57)
+
+**Le decisioni (fonte, `LAYER2_PRODUCT_DECISIONS.md` § 12.12, decisioni del 2026-10-17).** (2) Le note spezzate fra pagine
+contigue che il predicato dell'app respinge si ricuciono con la successione CONFERMATA sulla pagina seguente al posto del
+predicato, tenendo le guardie geometriche; (3) le fusioni sbagliate nel flusso e le teste-frammento si curano.
+
+**La ricucitura (campo, commit `25f76ff`).** Con la successione confermata (la prima nota numerata dopo la coda porta il
+numero della testa più uno) il predicato non serve; restano coda e testa sotto il corpo, lo stesso corpo tipografico (ora
+misurato sui soli span con lettere o cifre), mai una testa senza numero; una pagina fatta di sole note si ricuce se vale il
+predicato. Due guardie per le categorie false trovate giudicando: la conferma deve venire da una nota che si apre come una
+nota (non da un numero seguito da una minuscola: il marcatore staccato e spostato dall'estrazione, Compendio p. 1170) e la
+coda non è aperta da una glossa a margine né fatta della sola glossa (Mandrioli-Carratta vol. 3 e 4, 25 coppie: la glossa
+stampata nel margine entra nel nodo delle note). **Ricuciture 534 → 659**, stesso insieme su iOS 27 e 26.5; nessuna delle
+534 cambiata; **le 125 nuove giudicate tutte vere contro la pagina**, e per tutte le 659 gli estremi della giunzione
+ritrovati sulle pagine stampate. Nuove per volume: Mandrioli-Carratta vol. 3 38, vol. 4 24, DPC vol 2 16, Il mercato
+finanziario 11, Rizzo 10, Lineamenti 6, DPC vol 1 4, DPC vol 3 4, Mosconi 3, Lezioni di storia 2, Nomofanie 2, Rivista DPC
+4-2020 2, Compendio 1, EdD L'azienda 1, Magnani 1.
+
+**Fusioni sbagliate nel flusso (campo, commit `09d6799`).** La ricucitura nel flusso unisce ora un pezzo di nota all'ultimo
+pezzo assorbito solo se lo segue SUBITO nell'origine (il documento come l'ha costruito la legatura delle note). Separate
+tutte le fusioni sbagliate: 36 in Lettura Continua e 6 in Dottrina Inline (il conteggio di 18 del § 8 ne vedeva una parte;
+il rilevatore nuovo registra ogni fusione con il suo meccanismo); intatte le 151 + 101 giuste. Le note separate restano
+aperte e sono dichiarate (nei codici: frammenti dell'apparato interfoliato fra le colonne). **Teste-frammento (campo, commit
+`0e4376b`):** 15 ricuciture la cui «testa» era un frammento staccato a un numero spurio a inizio riga; 12 ricomposte con la
+loro nota (successione oltre la pagina e geometria delle righe), 3 dichiarate (DPC vol 1 p. 26: margine non misurabile;
+Compendio pp. 569 e 1316: nessuna nota seguente che provi la successione).
+
+**Rimisura (campo, lo strumento del § 2 sulle letture finali).** Aperte iOS 27: 2.442 (build 56) → 2.448 dopo le fusioni
+separate (+6: civile +2, Torrente +2, Mosconi +1, Costituzionale +1) → **2.324**; iOS 26.5: 2.446 → 2.452 → **2.328**. Per
+volume (iOS 27, build 56 → build 57): Mandrioli-Carratta vol. 3 56 → 18, vol. 4 44 → 20, Il mercato finanziario 17 → 6,
+DPC vol 2 22 → 6, Rizzo 22 → 13, Lineamenti 24 → 18, DPC vol 1 8 → 4, DPC vol 3 8 → 4, Mosconi 98 → 96, Lezioni di storia
+46 → 44, Nomofanie 20 → 18, Rivista DPC 4-2020 10 → 8, Compendio 35 → 34, EdD L'azienda 21 → 20, Magnani 23 → 22.
+
+**Quante ne restano vere (dedotto).** Delle circa 182 vere aperte fuori dai codici dopo la build 56, 125 sono ricucite: ne
+restano circa 57. Le più pesanti: le 25 coppie dei Mandrioli con la glossa a margine (vere, ma ricucirle porterebbe la
+glossa dentro la nota: servirebbe togliere la glossa dalla coda o saltare il nodo-glossa); le teste senza numero proprio
+(93 coppie, quasi tutte riquadri del Manuale di Diritto Costituzionale, poi Lezioni di giustizia amministrativa 9, Torrente
+3); le coppie respinte dal predicato con la successione ASSENTE sulla pagina seguente (fra cui i casi storici Lineamenti
+46-47, 514-515, 770-771, 899-900 e Delitti 43-44, 265-266, rimasti aperti); le pagine non contigue e la variante MULTIPAGE
+(fuori dal giro). Nei codici, circa 219 (esclusi per decisione).
+
 ## Appendice — I 202 casi giudicati (volume, pagine, strato, verdetto, tipo)
 
 Strato = successione dei numeri su B · motivo per cui l'iPad non ricuce · salto. Il «tipo» dice che cos'è davvero la coda

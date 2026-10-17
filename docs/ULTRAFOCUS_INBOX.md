@@ -92,6 +92,13 @@ diversa» (CARRYOVER, § C del capitolo NOTE).
   ricuciti; Lineamenti 46-47, 514-515, 770-771, 899-900 e Delitti 43-44, 265-266 restano aperti (li respinge il predicato:
   materia di un predicato nuovo); i due falsi Delitti 33-34 e 168-169 restano giustamente non ricuciti. **MULTIPAGE (pagine
   non contigue) non è toccata**: resta la voce aperta. Dettaglio: `docs/CONTEGGIO_NOTE_SPEZZATE.md` § 8.
+- **Aggiornamento 2026-10-17 (giro «pulizia e rifinitura finale del capitolo note», build 57).** Decisione del maintainer:
+  le coppie che il predicato respinge si ricuciono con la successione confermata e le guardie geometriche (commit
+  `25f76ff`). Ricuciture 534 → 659 (125 nuove, tutte giudicate vere; nessuna delle 534 cambiata); fermate e dichiarate 25
+  code con una glossa a margine (D.12) e una coppia col marcatore spostato. Separate le 42 fusioni sbagliate nel flusso
+  (commit `09d6799`) e ricomposte 12 teste-frammento (commit `0e4376b`). Aperte 2.442 → 2.324 (iOS 27); vere fuori dai
+  codici circa 57. I casi storici restano com'erano: quelli aperti hanno la successione ASSENTE sulla pagina B. MULTIPAGE e
+  pagine non contigue non toccate. Dettaglio: `docs/CONTEGGIO_NOTE_SPEZZATE.md` § 9.
 
 ### A.2 L2 — saldatura senza successione
 
@@ -484,7 +491,15 @@ ritrovati 2.814 → 3.578 col metro «a unità» (`docs/TITOLI_MONOTIPOGRAFICI.m
 pagina livello per livello e col metro corretto. Il tetto H4 reale (cinque livelli) chiede una decisione: quinto
 livello = schema. **Strato: STRUTTURALE**, tutto on-device.
 
-### D.11 Il salto «Vai al testo del richiamo» manca per i richiami fra parentesi — APERTA (preesistente, 2026-10-16)
+### D.11 Il salto «Vai al testo del richiamo» manca per i richiami fra parentesi — ✅ CHIUSA (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17, build 57)
+
+**Chiusura (commit `28c7300`).** `containsCallNumber` ammette «(N)» subito dopo una parola o una chiusura, anche col punto
+di un'abbreviazione («cit. (12)»), con le esclusioni di prima e, fra parentesi, anche la parola dopo l'ultimo apostrofo
+(«l'art. (5)» no). Il legame si calcola nella vista: vale per ogni lettura senza rielaborare. Note con il salto (52 volumi,
+iOS 27) 8.216 → 12.923 in Lettura Continua, 7.139 → 10.006 in Dottrina Inline; nessun legame di prima perso. Ogni legame
+nuovo provato contro la pagina stampata: 7.491 su 7.574 confermati meccanicamente, gli altri 83 riguardati: richiami veri.
+Testo storico della voce:
+
 
 Trovato dalla revisione indipendente del giro «cura delle note». Il riconoscimento del richiamo nel corpo
 (`containsCallNumber` in `NoteJump.swift`) vuole il numero subito dopo una parola o una chiusura («…parola 50»,
@@ -495,6 +510,31 @@ salto; nel banco della vista del giro, 7 note su 22 senza richiamo legato). Il d
 ricucitura non lo cambia. Cura possibile: ammettere la parentesi aperta prima del numero quando la chiude subito dopo,
 con le stesse esclusioni di abbreviazione («art. (5)» no); da misurare sul corpus con la rete dei salti
 (`verifica-salti`).
+
+### D.12 Code di nota aperte da una glossa a margine (Mandrioli-Carratta vol. 3 e 4) — APERTA (dichiarata, 2026-10-17)
+
+Giro «pulizia delle note». 25 coppie di pagine contigue con la successione confermata, vere, NON ricucite: sulla pagina B la
+glossa stampata nel margine sinistro accanto alle note entra nel nodo delle note (in testa, 21 casi, o come nodo a sé, 4
+casi), e ricucire porterebbe la glossa dentro la nota. La guardia `tailStartsWithMarginGloss` (`NoteBinding.swift`) le
+ferma: la nota resta aperta come nella build 56. Cura possibile: togliere le righe della glossa dalla coda (o saltare il
+nodo fatto della sola glossa) e ricucire la coda vera; non fatta per prudenza.
+
+### D.13 Frammenti di nota a numero spurio sulla stessa pagina, e una coda divisa da un richiamo del corpo — APERTE (preesistenti, 2026-10-17)
+
+Viste nella vista del simulatore del giro «pulizia delle note», identiche nella build 56. (a) Nomofanie p. 206: una riga
+della nota 75 comincia con «20.» (un numero di pagina citato) e l'app la legge come una nota a sé, letta in un altro punto;
+la nota 75 finisce a «p.». È la stessa causa delle teste-frammento fra pagine, ma sulla stessa pagina e senza una ricucitura
+che la mostri. (b) Compendio p. 1167: un richiamo «23» del corpo, in apice, finisce fra le righe della nota 21 e divide la
+sua coda in due nodi; la ricucitura prende le prime due righe (con il «23» in fondo), il resto della coda resta aperto.
+
+### D.14 La rete delle risorse visive giudica l'identità, non il posto nel flusso — APERTA (osservazione, 2026-10-17)
+
+Il giudizio «già giudicato» di `rete_risorse_visive.py` confronta volume, pagina, tipo e riquadro (IoU ≥ 0,8), non il punto
+del flusso in cui l'elemento è inserito né quanti segmenti contiene. Nel giro «pulizia delle note» il posto si è controllato
+a parte (`~/Developer/scabopdf-gen-lab/pulizia/strumenti/posti_risorse.py`: 164 elementi identici fra la build 56 e la 57
+sulle letture dell'app; nel runner della rete, a granularità 400 anche per i codici, due tabelle della tavola di
+concordanza del codice civile p. 2380 cambiano posto, giudicate meglio collocate). Proposta: aggiungere il posto al giudizio
+della rete.
 
 ### D.8 Linea Mac — scheletro dell'app, parità fra sistemi, decisioni pendenti (2026-10-06; ramo fuso in main il 2026-10-16)
 
