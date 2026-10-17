@@ -513,6 +513,42 @@ final class VisualResourcesTests: XCTestCase {
         XCTAssertEqual(r2.segments.map { $0.id }, ["h", "n#0", "n#1", "x", "vr_p0_0", "d"])
     }
 
+    // MARK: - Distanze in posizioni logiche (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17)
+
+    func test_logicalPositions_piecesOfAFractionedNoteCountOnce() {
+        let segs = [seg("a", "BODY", "uno", page: 1), seg("n#0", "NOTE", "70 nota", page: 1),
+                    seg("n#1", "NOTE_CONTINUATION", "seguito", page: 1), seg("n#2", "NOTE_CONTINUATION", "seguito", page: 1),
+                    seg("b", "BODY", "due", page: 1), seg("m", "NOTE", "71 nota intera", page: 1),
+                    seg("x#1", "NOTE_CONTINUATION", "pezzo di un altro nodo", page: 1)]
+        XCTAssertEqual(logicalPositions(segs), [0, 1, 1, 1, 2, 3, 4])
+    }
+
+    func test_clusterGap_isMeasuredInLogicalPositions() {
+        // un riscontro piccolo e uno grande separati da una nota frazionata in quattro pezzi: in segmenti la distanza è 5
+        // e il piccolo cadrebbe come eco; in posizioni logiche è 2, come se la nota fosse intera
+        let segs = [seg("h", "BODY", "intestazione", page: 1)]
+            + (0..<4).map { seg("n#\($0)", $0 == 0 ? "NOTE" : "NOTE_CONTINUATION", "pezzo", page: 1) }
+            + [seg("d", "BODY", "righe", page: 1)]
+        let matches = [(index: 0, chars: 10), (index: 5, chars: 100)]
+        XCTAssertEqual(regionMatchClusters(matches), [5], "in segmenti: il riscontro piccolo è un'eco")
+        let logical = logicalPositions(segs)
+        XCTAssertEqual(regionMatchClusters(matches, position: { logical[$0] }), [0, 5])
+    }
+
+    /// La collocazione non dipende da quanti pezzi ha una nota fra l'intestazione e le righe della tabella: con la nota intera
+    /// o divisa in sei pezzi la risorsa sta nello stesso posto (prima la distanza in segmenti la spostava).
+    func test_placement_doesNotDependOnThePiecesOfANoteInBetween() {
+        let (ex, rows) = tabellaConIntestazione(["intestazione di colonna prova"])
+        let h = seg("h", "BODY", "intestazione di colonna prova", page: 1), d = seg("d", "BODY", rows.joined(separator: " "), page: 1)
+        let intera = [h, seg("n", "NOTE", "70 Una nota di prova lunga che parla d'altro e non ripete nulla della tabella", page: 1), d]
+        let pezzi = [h] + (0..<6).map { seg("n#\($0)", $0 == 0 ? "NOTE" : "NOTE_CONTINUATION", $0 == 0 ? "70 Una nota di prova" : "un pezzo che parla d'altro", page: 1) } + [d]
+        let c = candidate("table", [55, 195, 545, 330])
+        let r1 = insertingVisualResources(intera, candidates: [c], extraction: ex).segments.map { $0.id }
+        let r2 = insertingVisualResources(pezzi, candidates: [c], extraction: ex).segments.map { $0.id }
+        XCTAssertEqual(r1, ["vr_p0_0", "h", "n", "d"])
+        XCTAssertEqual(r2, ["vr_p0_0", "h"] + (0..<6).map { "n#\($0)" } + ["d"])
+    }
+
     /// Una riga che il primo passo trova GIÀ in una nota (nei volumi: i numeri d'articolo fra parentesi di una tabella
     /// statistica, classificati come note) resta libera di andare alla nota vera più vicina al grosso, come prima: la
     /// regola dell'eco vale solo per le righe trovate fuori dalle note (revisione indipendente del giro).

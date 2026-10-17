@@ -278,8 +278,28 @@ func isTrueNoteSegment(_ segments: [ContentSegment], _ i: Int) -> Bool {
     return segments[k].role == SemanticCategory.NOTE.rawValue && textOpensWithNoteMarker(segments[k].text)
 }
 
-/// Distanza massima (in segmenti) fra due riscontri dello stesso gruppo.
+/// Distanza massima (in posizioni logiche, vedi `logicalPositions`) fra due riscontri dello stesso gruppo.
 let VISUAL_CLUSTER_GAP = 2
+
+/// Le posizioni LOGICHE dei segmenti del flusso: i pezzi di una nota frazionata (il primo `<id>#0` e i suoi pezzi di seguito
+/// `NOTE_CONTINUATION` dello stesso nodo) contano come UNA posizione. La guardia misura le distanze qui e non in segmenti,
+/// così le sue scelte non cambiano quando cambia il numero dei pezzi delle note (giro «pulizia e rifinitura finale del
+/// capitolo note», 2026-10-17: il giro precedente aveva visto i pezzi nuovi spostare una tabella giudicata).
+func logicalPositions(_ segments: [ContentSegment]) -> [Int] {
+    func base(_ id: String) -> Substring { id.lastIndex(of: "#").map { id[..<$0] } ?? Substring(id) }
+    var out = [Int](repeating: 0, count: segments.count)
+    var p = -1
+    for (i, s) in segments.enumerated() {
+        if i > 0, s.role == SemanticCategory.NOTE_CONTINUATION.rawValue, s.id.contains("#"),
+           base(segments[i - 1].id) == base(s.id) {
+            out[i] = p
+        } else {
+            p += 1
+            out[i] = p
+        }
+    }
+    return out
+}
 /// Quota minima delle lettere ritrovate perché un gruppo di riscontri appartenga alla regione: sotto, è un'eco.
 let VISUAL_CLUSTER_MIN_SHARE = 0.25
 
@@ -290,7 +310,7 @@ let VISUAL_CLUSTER_MIN_SHARE = 0.25
 /// di pagina in pagina; le tabelle statistiche ripetono i nomi dei distretti). Una tabella che il flusso legge in due
 /// parti separate da altri segmenti ha due gruppi grandi, e li tiene entrambi per la guardia (CP p. 1604); il testo
 /// contenuto, per il salto, è solo la prima sequenza contigua.
-func regionMatchClusters(_ matches: [(index: Int, chars: Int)]) -> Set<Int> {
+func regionMatchClusters(_ matches: [(index: Int, chars: Int)], position: (Int) -> Int = { $0 }) -> Set<Int> {
     guard !matches.isEmpty else { return [] }
     var weight: [Int: Int] = [:]
     for m in matches { weight[m.index, default: 0] += m.chars }
@@ -298,7 +318,8 @@ func regionMatchClusters(_ matches: [(index: Int, chars: Int)]) -> Set<Int> {
     let sorted = weight.keys.sorted()
     var groups: [[Int]] = [[sorted[0]]]
     for i in sorted.dropFirst() {
-        if i - groups[groups.count - 1].last! > VISUAL_CLUSTER_GAP { groups.append([i]) } else { groups[groups.count - 1].append(i) }
+        if position(i) - position(groups[groups.count - 1].last!) > VISUAL_CLUSTER_GAP { groups.append([i]) }
+        else { groups[groups.count - 1].append(i) }
     }
     var kept = Set<Int>()
     for g in groups where Double(g.reduce(0) { $0 + weight[$1]! }) >= VISUAL_CLUSTER_MIN_SHARE * Double(total) {
@@ -424,6 +445,9 @@ public func insertingVisualResources(
         return b
     }
     let flow = FlowIndex(segments)
+    // Le distanze della guardia in posizioni logiche (i pezzi di una nota frazionata contano una volta).
+    let logical = logicalPositions(segments)
+    func position(_ i: Int) -> Int { i < logical.count ? logical[i] : (logical.last ?? 0) + (i - logical.count + 1) }
     // Le righe normalizzate di ogni pagina dell'estrazione, calcolate a richiesta: per contare quante volte una riga
     // compare prima di sé nella finestra di pagine (la sua ripetizione), e ritrovare nel flusso la ripetizione giusta.
     var normalizedLines: [Int: [String]] = [:]
@@ -542,14 +566,16 @@ public func insertingVisualResources(
                     let firstInNote = VISUAL_NOTE_ROLES.contains(segments[m.index].role)
                     let notNotes = firstInNote ? [] : candidates.filter { !isTrueNoteSegment(segments, $0) }
                     let pool = notNotes.isEmpty ? candidates : notNotes
-                    if let best = pool.min(by: { (abs($0 - bulk), $0) < (abs($1 - bulk), $1) }) { i = best }
+                    if let best = pool.min(by: {
+                        (abs(position($0) - position(bulk)), $0) < (abs(position($1) - position(bulk)), $1)
+                    }) { i = best }
                 }
             }
             matches.append((i, m.chars))
         }
         // I segmenti che portano davvero il testo della regione (le eco escluse): per la collocazione e per il «blocco
         // certo». Il «testo non letto» si giudica invece su tutti i riscontri: se la riga c'è, nel flusso c'è.
-        let kept = regionMatchClusters(matches)
+        let kept = regionMatchClusters(matches, position: position)
         let foundChars = matches.reduce(0) { $0 + $1.chars }
         var covered: [Int] = []
         var roleChars: [String: Int] = [:]
@@ -613,7 +639,7 @@ public func insertingVisualResources(
                         return segmentFor(pageIndex: c.pageIndex, lineIndex: pair.offset, text: text)
                             .map { (index: $0, chars: TextFingerprint.normalize(text).count) }
                     }
-                let kept = regionMatchClusters(found)
+                let kept = regionMatchClusters(found, position: position)
                 return found.map { $0.index }.filter { kept.contains($0) }
             }
             func isAbove(_ b: [Double]) -> Bool { b[3] <= c.bbox[1] + 1 }
