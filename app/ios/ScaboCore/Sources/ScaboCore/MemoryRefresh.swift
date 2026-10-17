@@ -40,11 +40,15 @@ public let MEMORY_REFRESH_CEILING = 180
 /// testo del nodo BODY del richiamo; `markerOffset` è l'indice di CARATTERE (in
 /// `Array(text)`) dove INIZIA il marcatore (la stessa convenzione di `InlineMarker`).
 /// Ritorna "" se non calcolabile (marcatore a inizio testo assoluto, testo vuoto).
+/// `brokenWordHead`: la testa di una parola spezzata alla fine del BODY precedente, quando `text` si apre con la sua coda
+/// (lo stesso paragrafo oltre il salto pagina). Se il rinfresco comincia all'inizio di `text`, la parola si ricompone con
+/// la sua testa: il rinfresco comincia a inizio parola (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17).
 public func memoryRefreshSegment(
     _ text: String,
     markerOffset: Int,
     floor: Int = MEMORY_REFRESH_FLOOR,
-    ceiling: Int = MEMORY_REFRESH_CEILING
+    ceiling: Int = MEMORY_REFRESH_CEILING,
+    brokenWordHead: String = ""
 ) -> String {
     let chars = Array(text)
     let n = chars.count
@@ -65,6 +69,7 @@ public func memoryRefreshSegment(
     }
 
     var seg = Array(chars[start..<mk])
+    if start == 0, !brokenWordHead.isEmpty { seg = Array(brokenWordHead) + seg }
 
     // TETTO: oltre `ceiling`, conserva la parte PIÙ VICINA al richiamo (la fine), con
     // taglio pulito al confine di parola (mai a metà parola).

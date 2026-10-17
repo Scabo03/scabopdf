@@ -148,6 +148,26 @@ final class NoteBindingTests: XCTestCase {
         XCTAssertEqual(t[secondHeadingIdx - 1], .NOTE, "la nota lunga precede immediatamente il prossimo titolo")
     }
 
+    /// Il rinfresco della nota differita comincia a inizio parola anche quando la frase del richiamo comincia sulla pagina
+    /// prima, con una parola spezzata a fine pagina (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17).
+    func test_deferredNote_refreshCompletesAWordBrokenAcrossThePageBreak() {
+        let longText = "13 " + String(repeating: "parola ", count: 60) + "fine."
+        func pages(_ endA: String, _ startB: String) -> [[PdfTextLine]] {
+            [[line([span("TITOLO DI SEZIONE", 18)]), bodyLine("Prima riga di corpo della sezione."), bodyLine(endA)],
+             [bodyLineWithMarker(startB, "13", " e altro testo qui."), bodyLine("Riga di corpo che segue."),
+              noteLine(longText), line([span("PROSSIMA SEZIONE", 18)]), bodyLine("Corpo della seconda sezione.")]]
+        }
+        let (doc, stats) = placed(pages("il mugnaio aspetta sulla collina la vendem-", "mia delle uve mature del podere sul fiume"))
+        XCTAssertEqual(stats.placedLong, 1)
+        let refresh = doc.structure.first { $0.type == .NOTE }?.memoryRefresh ?? ""
+        XCTAssertTrue(refresh.hasPrefix("vendemmia delle uve"), refresh)
+        // prove al contrario: la pagina prima finisce con una parola intera, o la pagina dopo comincia con una maiuscola
+        let (whole, _) = placed(pages("il mugnaio aspetta sulla collina la sera", "mia delle uve mature del podere sul fiume"))
+        XCTAssertTrue((whole.structure.first { $0.type == .NOTE }?.memoryRefresh ?? "").hasPrefix("mia"))
+        let (upper, _) = placed(pages("il mugnaio aspetta sulla collina la vendem-", "Mia delle uve mature del podere sul fiume"))
+        XCTAssertTrue((upper.structure.first { $0.type == .NOTE }?.memoryRefresh ?? "").hasPrefix("Mia"))
+    }
+
     // MARK: - Dottrina Inline (§ 10.2/§ 10.5): ogni nota inline al richiamo, niente differimento
 
     func test_doctrineInline_longNotePlacedInlineNotDeferred() {

@@ -58,6 +58,32 @@ final class MemoryRefreshTests: XCTestCase {
         XCTAssertLessThanOrEqual(r.count, 180)
     }
 
+    // MARK: - Parola spezzata fra due nodi (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17)
+
+    func test_refreshStartingAtTheNodeStart_completesTheBrokenWord() {
+        // il nodo comincia con la coda di una parola spezzata a fine pagina («vendem-» / «mia»)
+        let text = "mia delle uve sulla collina continua fino al tramonto dell'ultimo giorno, qui."
+        let mk = offset(of: "qui", in: text)
+        let r = memoryRefreshSegment(text, markerOffset: mk, brokenWordHead: "vendem")
+        XCTAssertTrue(r.hasPrefix("vendemmia delle uve"), r)
+        XCTAssertEqual(memoryRefreshSegment(text, markerOffset: mk), String(r.dropFirst(6)), "senza testa: com'era")
+    }
+
+    func test_refreshStartingInsideTheNode_ignoresTheBrokenWordHead() {
+        let text = "mia delle uve. Seconda frase lunga abbastanza per superare il pavimento dei sessanta caratteri, qui."
+        let mk = offset(of: "qui", in: text)
+        let r = memoryRefreshSegment(text, markerOffset: mk, brokenWordHead: "vendem")
+        XCTAssertTrue(r.hasPrefix("Seconda frase"), r)
+    }
+
+    func test_refreshCutAtTheCeiling_dropsTheCompletedWordCleanly() {
+        let text = "mia " + String(repeating: "parola ", count: 40) + "qui."
+        let mk = offset(of: "qui", in: text)
+        let r = memoryRefreshSegment(text, markerOffset: mk, brokenWordHead: "vendem")
+        XCTAssertLessThanOrEqual(r.count, 180)
+        XCTAssertTrue(r.hasPrefix("parola"), "il taglio al tetto cade a inizio parola: \(r)")
+    }
+
     // MARK: - Regola 2/5: frase lunga → troncamento pulito al tetto, parte vicina al richiamo
 
     func test_longSentence_cleanTruncationAtCeiling_keepsNearMarker() {

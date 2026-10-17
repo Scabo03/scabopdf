@@ -393,6 +393,27 @@ public func bindAndPlaceNotes(
         default: return false
         }
     }
+    // La testa di una parola spezzata alla fine del BODY precedente, per il BODY che si apre con la sua coda (lo stesso
+    // paragrafo oltre il salto pagina; in mezzo solo apparato): serve al rinfresco, perché cominci a inizio parola (giro
+    // «pulizia e rifinitura finale del capitolo note», 2026-10-17: 217 rinfreschi su 9.025 cominciavano a metà parola).
+    var brokenWordHeadByBodyId: [String: String] = [:]
+    var previousBodyText: String?
+    for node in document.structure {
+        switch node.type {
+        case .BODY:
+            let text = node.text ?? ""
+            if let prev = previousBodyText.map(jsTrim), endsWithLetterHyphenG(prev),
+               let first = jsTrim(text).first, first.isLowercase {
+                let head = String(prev.dropLast().reversed().prefix(while: { $0.isLetter }).reversed())
+                if !head.isEmpty { brokenWordHeadByBodyId[node.id] = head }
+            }
+            previousBodyText = text
+        case .NOTE, .EDITORIAL_NOTE, .MARGINAL_GLOSS, .MARGINAL_HEADING:
+            break   // l'apparato e le glosse a margine fra le due metà del paragrafo (il flusso le ricongiunge)
+        default:
+            previousBodyText = nil
+        }
+    }
     for node in document.structure where node.type == .BODY {
         guard let markers = markersByBodyId[node.id] else { continue }
         let page = node.page_index
@@ -430,7 +451,8 @@ public func bindAndPlaceNotes(
                 // Nota differita: calcola QUI il rinfresco (servono testo del BODY del
                 // richiamo + offset del marcatore, entrambi disponibili solo ora). In Dottrina
                 // Inline questo ramo non è MAI raggiunto → nessun rinfresco (§ 10.5).
-                let refresh = memoryRefreshSegment(node.text ?? "", markerOffset: m.offset)
+                let refresh = memoryRefreshSegment(node.text ?? "", markerOffset: m.offset,
+                                                   brokenWordHead: brokenWordHeadByBodyId[node.id] ?? "")
                 if !refresh.isEmpty { refreshByFootnoteId[bound] = refresh }
             }
         }
