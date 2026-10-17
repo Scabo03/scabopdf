@@ -89,7 +89,8 @@ enum ReprocessOffer {
         (56, "molte note che si interrompevano a fine pagina e riprendevano più avanti si leggono intere, e le note lunghe "
             + "sono divise in pezzi più naturali, di solito a fine frase"),
         (57, "altre note che si interrompevano a fine pagina si leggono intere; alcune note che erano incollate per sbaglio "
-            + "a un'altra nota o al testo ora sono separate; il richiamo alla memoria prima di una nota letta più avanti "
+            + "a un'altra nota, a una scritta a margine o a un titolo ora sono separate; il richiamo alla memoria prima di "
+            + "una nota letta più avanti "
             + "comincia sempre a inizio parola; nelle note lunghe che elencano leggi, l'etichetta dell'elenco non resta più "
             + "da sola alla fine di un pezzo"),
     ]
@@ -145,8 +146,9 @@ enum ReprocessOffer {
         if doc.sourceKind == "akn" {
             let list = aknCures.filter { $0.build > since && $0.build <= (latestCureForAknActs ?? 0) }.map { $0.text }
             guard !list.isEmpty else { return "" }
+            // «di questo tipo» vale per ogni elenco: le note lunghe (56), le note lunghe con un elenco di leggi (57).
             return "Da quando questo testo normativo è stato importato, l'app ha imparato a leggere meglio i testi normativi: "
-                + list.joined(separator: "; ") + ". Se le sue note sono brevi, la nuova lettura resta uguale."
+                + list.joined(separator: "; ") + ". Se il testo non ha note di questo tipo, la nuova lettura resta uguale."
         }
         // Una lettura arrivata dal Mac ha già le cure che il Mac fa da sempre (il frazionamento delle note lunghe), e quelle
         // che riceve dal Mac con una lettura nuova (la 56): non si promettono come novità della rielaborazione sull'iPad.
@@ -333,8 +335,10 @@ enum ReprocessOffer {
         presenter.present(vc, animated: Motion.animated())
     }
 
-    /// Testo dell'esito, in parole semplici.
-    static func resultText(_ r: ReanchorReport, positionApproximate: Bool) -> String {
+    /// Testo dell'esito, in parole semplici. Senza le pagine del file originale (un testo normativo) il salto di un segnalibro
+    /// da ricollocare e la posizione non ritrovata con sicurezza portano vicino al punto di prima, non all'inizio di una pagina
+    /// (`ContinuousReadingViewController`, `AnnotationReanchoring`).
+    static func resultText(_ r: ReanchorReport, positionApproximate: Bool, hasOriginalPages: Bool = true) -> String {
         var lines: [String] = ["Il libro è stato rielaborato."]
         let bTotal = r.bookmarksRelocated + r.bookmarksOrphaned + r.bookmarksWithoutAnchor
         let uTotal = r.underlinesRelocated + r.underlinesOrphaned + r.underlinesWithoutAnchor
@@ -342,7 +346,8 @@ enum ReprocessOffer {
             let lost = r.bookmarksOrphaned + r.bookmarksWithoutAnchor
             lines.append(lost == 0
                 ? "Tutti i segnalibri sono al loro posto (\(bTotal))."
-                : "Segnalibri al loro posto: \(r.bookmarksRelocated) su \(bTotal). Da ricollocare: \(lost); li trovi in fondo alla lista dei segnalibri, e il salto porta all'inizio della pagina da cui venivano.")
+                : "Segnalibri al loro posto: \(r.bookmarksRelocated) su \(bTotal). Da ricollocare: \(lost); li trovi in fondo alla lista dei segnalibri, e il salto porta "
+                    + (hasOriginalPages ? "all'inizio della pagina da cui venivano." : "vicino al punto da cui venivano."))
         }
         if uTotal > 0 {
             let lost = r.underlinesOrphaned + r.underlinesWithoutAnchor
@@ -351,7 +356,8 @@ enum ReprocessOffer {
                 : "Sottolineature al loro posto: \(r.underlinesRelocated) su \(uTotal). \(lost) non sono state ritrovate: restano salvate ma non si vedono; tornando alla lettura precedente riappaiono.")
         }
         lines.append(positionApproximate
-            ? "Il punto in cui eri arrivato non è stato ritrovato con sicurezza: riaprendo il libro partirai dall'inizio della stessa pagina."
+            ? "Il punto in cui eri arrivato non è stato ritrovato con sicurezza: riaprendo il libro partirai "
+                + (hasOriginalPages ? "dall'inizio della stessa pagina." : "vicino al punto di prima.")
             : "Il punto in cui eri arrivato è stato ritrovato.")
         lines.append("Puoi tenere la nuova lettura oppure tornare a quella di prima. Se non decidi adesso, la scelta resta disponibile fra le opzioni del libro.")
         return lines.joined(separator: " ")
@@ -572,7 +578,9 @@ final class ReprocessResultViewController: ReprocessTextViewController {
         super.viewDidLoad()
         title = "Rielaborazione"
         heading = addHeading("Rielaborazione conclusa")
-        addParagraph(ReprocessOffer.resultText(report, positionApproximate: positionApproximate), identifier: "result.text")
+        let hasOriginalPages = LibraryService.shared.store.document(id: documentId)?.sourceKind != "akn"
+        addParagraph(ReprocessOffer.resultText(report, positionApproximate: positionApproximate, hasOriginalPages: hasOriginalPages),
+                     identifier: "result.text")
         addButton("Tieni la nuova lettura", prominent: true, identifier: "result.keep") { [weak self] in
             guard let self else { return }
             ReprocessOffer.askToKeepNewReading(self.documentId, from: self) { [weak self] in self?.close() }

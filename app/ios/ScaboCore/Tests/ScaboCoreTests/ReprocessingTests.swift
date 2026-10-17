@@ -83,26 +83,34 @@ final class ReprocessingTests: XCTestCase {
     }
 
     /// Giro «pulizia e rifinitura finale del capitolo note» (2026-10-17, decisione 1 del maintainer): un testo normativo già
-    /// importato riceve l'offerta per una cura della SUA catena che non aveva (i pezzi nuovi delle note, build 56), mai per un
-    /// aggiornamento del sistema né per le cure dei soli PDF.
+    /// importato riceve l'offerta per una cura della SUA catena che non aveva, mai per un aggiornamento del sistema né per le
+    /// cure dei soli PDF. Le cure della catena dei testi normativi sono la 56 (i pezzi nuovi delle note) e la 57 (l'etichetta
+    /// di un elenco fra parentesi resta col suo primo elemento): la configurazione in produzione è 57.
     func test_akn_offeredOnlyACureOfItsChain() {
-        let p = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 57, latestCureBuildForAknActs: 56)
+        let p = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 57, latestCureBuildForAknActs: 57)
         XCTAssertEqual(p.reason(for: doc("akn", build: "55"), currentSystemVersion: "iPadOS 27.0.1"), .cure)
         XCTAssertEqual(p.reason(for: doc("akn", system: nil, build: nil), currentSystemVersion: "iPadOS 27.0.1"), .cure)
-        XCTAssertNil(p.reason(for: doc("akn", build: "56"), currentSystemVersion: "iPadOS 27.0.1"), "ha già i pezzi nuovi")
-        XCTAssertNil(p.reason(for: doc("akn", build: "56"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "57"),
-                     "la cura 57 dei PDF non cambia i testi normativi")
+        XCTAssertEqual(p.reason(for: doc("akn", build: "56"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "57"), .cure,
+                       "importato con la 56: riceve la cura 57 della sua catena")
+        XCTAssertNil(p.reason(for: doc("akn", build: "57"), currentSystemVersion: "iPadOS 27.0.1"), "ha già la cura 57")
+        XCTAssertNil(p.reason(for: doc("akn", build: "57"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "57"))
         // nessun lettore di sistema in gioco: un aggiornamento non conta, e una generazione non validata non ferma la cura
-        XCTAssertNil(p.reason(for: doc("akn", system: "iPadOS 26.5", build: "56"), currentSystemVersion: "iPadOS 27.0.1"))
+        XCTAssertNil(p.reason(for: doc("akn", system: "iPadOS 26.5", build: "57"), currentSystemVersion: "iPadOS 27.0.1"))
+        XCTAssertEqual(p.reason(for: doc("akn", system: "iPadOS 26.5", build: "56"), currentSystemVersion: "iPadOS 27.0.1"), .cure)
         XCTAssertEqual(p.reason(for: doc("akn", build: "55"), currentSystemVersion: "iPadOS 28.0"), .cure)
         // elaborato dalla build in uso: niente offerta
         XCTAssertNil(p.reason(for: doc("akn", build: "55"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "55"))
         // un libro EPUB: mai
         XCTAssertNil(p.reason(for: doc("epub", build: "40"), currentSystemVersion: "iPadOS 27.0.1"))
+        // la regola con una sola cura della catena (la build 56 com'era): chi l'ha già non riceve nulla
+        let p56 = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 56, latestCureBuildForAknActs: 56)
+        XCTAssertNil(p56.reason(for: doc("akn", build: "56"), currentSystemVersion: "iPadOS 27.0.1"), "ha già i pezzi nuovi")
+        XCTAssertEqual(p56.reason(for: doc("akn", build: "55"), currentSystemVersion: "iPadOS 27.0.1"), .cure)
     }
 
-    /// I tre tipi di libro con le regole della decisione 1: il PDF elaborato sull'iPad riceve la cura nuova; la lettura
-    /// arrivata dal Mac no (si rifà dal Mac aggiornato); il testo normativo importato prima dei pezzi nuovi sì.
+    /// I tre tipi di libro con le regole della decisione 1, nella configurazione in produzione (cura 57): il PDF elaborato
+    /// sull'iPad riceve la cura nuova; la lettura arrivata dal Mac no (si rifà dal Mac aggiornato); il testo normativo
+    /// importato prima della 57 sì, anche se aveva già i pezzi nuovi della 56.
     func test_threeKindsOfBook() {
         let store = LibraryStore(persistence: InMemoryLibraryPersistence())
         let pdf = store.addDocument(title: "p", sourceFileName: "p.pdf", sourcePageCount: 3)
@@ -113,18 +121,21 @@ final class ReprocessingTests: XCTestCase {
         store.recordProcessed(id: akn.id, systemVersion: "iPadOS 27.0.1", appBuild: "55")
         let akn56 = store.addDocument(title: "b", sourceFileName: "b.xml", sourcePageCount: 0, sourceKind: "akn")
         store.recordProcessed(id: akn56.id, systemVersion: "iPadOS 27.0.1", appBuild: "56")
+        let akn57 = store.addDocument(title: "c", sourceFileName: "c.xml", sourcePageCount: 0, sourceKind: "akn")
+        store.recordProcessed(id: akn57.id, systemVersion: "iPadOS 27.0.1", appBuild: "57")
         // le cure 56 e 57 arrivano alle letture del Mac solo dal Mac: l'ultima che possono ricevere dall'iPad è la 53
         let p = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 57, latestCureBuildForMacReadings: 53,
-                                   latestCureBuildForAknActs: 56)
+                                   latestCureBuildForAknActs: 57)
         func reason(_ id: String) -> ReprocessingReason? {
             p.reason(for: store.document(id: id)!, currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "57")
         }
         XCTAssertEqual(reason(pdf.id), .cure, "il PDF elaborato sull'iPad con la 56 riceve la cura 57")
         XCTAssertNil(reason(mac.id), "la lettura arrivata dal Mac non riceve la cura delle note: la rifà il Mac")
         XCTAssertEqual(reason(akn.id), .cure, "il testo normativo importato con la 55 riceve i pezzi nuovi")
-        XCTAssertNil(reason(akn56.id), "importato con la 56: ha già i pezzi nuovi")
+        XCTAssertEqual(reason(akn56.id), .cure, "importato con la 56: riceve la cura 57 della sua catena")
+        XCTAssertNil(reason(akn57.id), "importato con la 57: niente da offrire")
         let eligible = p.eligibleDocuments(store.allDocuments(), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "57")
-        XCTAssertEqual(Set(eligible.map { $0.id }), [pdf.id, akn.id])
+        XCTAssertEqual(Set(eligible.map { $0.id }), [pdf.id, akn.id, akn56.id])
     }
 
     func test_snapshotRestore_bringsBackAnnotationsAndLabel() throws {

@@ -354,6 +354,23 @@ final class VisualResourceTests: XCTestCase {
         let text = ReprocessOffer.whatChanges(old, reason: .cure)
         XCTAssertTrue(text.contains("testo normativo") && text.contains("pezzi"), text)
         XCTAssertFalse(text.contains("pagina") || text.contains("lettore di sistema"), text)
+        // importato con la 56 (i pezzi nuovi già fatti): riceve la cura 57 della sua catena, detta da sola
+        let mid = akn("56")
+        XCTAssertEqual(ReprocessOffer.latestCureForAknActs, 57)
+        XCTAssertEqual(ReprocessOffer.policy.reason(for: mid, currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"), .cure)
+        let midText = ReprocessOffer.whatChanges(mid, reason: .cure)
+        XCTAssertTrue(midText.contains("elenco") && midText.contains("non ha note di questo tipo"), midText)
+        XCTAssertFalse(midText.contains("di solito a fine frase") || midText.contains("pagina"), midText)
+        // l'esito senza le pagine del file originale: vicino al punto di prima, mai «inizio della pagina»
+        var report = ReanchorReport()
+        report.bookmarksRelocated = 2
+        report.bookmarksOrphaned = 1
+        let result = ReprocessOffer.resultText(report, positionApproximate: true, hasOriginalPages: false)
+        XCTAssertTrue(result.contains("vicino al punto da cui venivano") && result.contains("vicino al punto di prima"), result)
+        XCTAssertFalse(result.contains("pagina"), result)
+        let pdfResult = ReprocessOffer.resultText(report, positionApproximate: true)
+        XCTAssertTrue(pdfResult.contains("all'inizio della pagina da cui venivano") && pdfResult.contains("dall'inizio della stessa pagina"),
+                      pdfResult)
         let current = akn(String(ReprocessOffer.latestCureForAknActs ?? 0))
         XCTAssertNil(ReprocessOffer.policy.reason(for: current, currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"),
                      "con i pezzi nuovi già fatti, nessuna offerta")

@@ -275,10 +275,12 @@ enum DocumentOpener {
         reader.onAnchorIndexReady = { index in mintMissingAnchors(documentId: doc.id, in: index) }
         reader.modalPresentationStyle = .fullScreen
         // Posizione ritrovata solo per pagina dopo una rielaborazione (§ 12.14): lo si dice.
+        // Senza le pagine del file originale (un testo normativo) si riparte vicino al punto di prima.
         if focusAnchor == nil, doc.readingPositionIsApproximate == true {
+            let where_ = doc.sourceKind == "akn" ? "riparti vicino al punto di prima." : "riparti dall'inizio della stessa pagina."
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 UIAccessibility.post(notification: .announcement,
-                                     argument: "Dopo la rielaborazione il punto in cui eri arrivato non è stato ritrovato con sicurezza: riparti dall'inizio della stessa pagina.")
+                                     argument: "Dopo la rielaborazione il punto in cui eri arrivato non è stato ritrovato con sicurezza: " + where_)
             }
         }
         // Split da dentro il file (§ 11.1): il reader si chiude, si sceglie la seconda metà dal
