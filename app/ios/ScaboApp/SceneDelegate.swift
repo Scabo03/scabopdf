@@ -32,6 +32,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             setStoredAppearanceSource(prefs, .followSystem)
         }
         if CommandLine.arguments.contains("-uiTestSeedReprocess")
+            || CommandLine.arguments.contains("-uiTestSeedReprocessKinds")
             || CommandLine.arguments.contains("-uiTestSeedDuplicateImport")
             || CommandLine.arguments.contains("-uiTestSeedVisualResource")
             || CommandLine.arguments.contains("-uiTestSeedVisualResourceControl")
