@@ -82,7 +82,9 @@ chiedeva di nominare.
    fine sezione senza limite). Campo (build 45, `CURA_INTESTAZIONI.md` § 3): Rizzo 121 note su 390 lette oltre 5 pagine dal
    richiamo (fino a 20), Mandrioli 3 446 su 1.313. Il rinfresco della memoria (60/180 caratteri) c'è; il tetto è una scelta
    del maintainer. Dedotto: i livelli e i titoli nuovi del giro finale (sezioni DeJure, unità dei manuali) accorciano le
-   sezioni e quindi la distanza; non rimisurata.
+   sezioni e quindi la distanza; non rimisurata. **Chiusa (decisione del maintainer, 2026-10-18): nessun tetto.** Una nota
+   lunga si legge alla fine della sezione, quanto lontano sia; per raggiungerla prima c'è il salto fra nota e richiamo
+   (`LAYER2_PRODUCT_DECISIONS.md` § 7.3 e § 12.12).
 2. **Gesto per ricollocare un'annotazione orfana** (fonte: `BookmarksWindowViewController.swift`, `ContinuousReading
    ViewController.swift`): gli orfani stanno in coda come «da ricollocare», anche per VoiceOver, e il salto porta alla pagina
    d'origine annunciandolo; ma non c'è un «ricolloca qui» — oggi si crea un segnalibro nuovo e si elimina l'orfano. Le

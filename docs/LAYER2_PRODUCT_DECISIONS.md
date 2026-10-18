@@ -349,6 +349,11 @@ Le note **MEDIUM, LONG, VERY_LONG e MEGA** vengono lette **a fine paragrafo nume
 
 **Il capitolo come luogo di piazzamento è escluso esplicitamente**: un capitolo di manuale può essere lungo decine di pagine e a quel punto la nota perderebbe ogni connessione con il contesto in cui era stata richiamata.
 
+**Nessun tetto alla distanza (decisione del maintainer, 2026-10-18).** Una nota lunga si legge alla fine della sua sezione
+(il punto di sosta strutturale più vicino che segue il richiamo), quanto lontano sia: se la sezione è lunga, il libro è fatto
+così, e l'app non sposta la nota in un punto che il libro non ha. Il rinfresco di contesto (§ 7.4) riaggancia la nota alla
+frase del richiamo; chi vuole raggiungere prima la nota, o tornare al richiamo, usa il salto fra nota e richiamo (§ 7.12).
+
 ### 7.4 Memory refresh — rinfresco di contesto prima delle note differite
 
 Quando una nota viene letta lontana dal punto in cui era stata richiamata (cioè quando non è una MICRO o SHORT che si legge subito a fine frase), VoiceOver premette un breve **rinfresco verbale del contesto** prima della nota stessa. La regola dipende dalla lunghezza della nota.
@@ -1140,6 +1145,20 @@ build 56, 3 dichiarate, e 4 nate con le ricuciture nuove). In più, rifiniture m
 note-elenco l'etichetta fra parentesi resta col primo elemento del suo elenco; la guardia delle risorse visive misura le
 distanze in posizioni logiche (i pezzi di una nota contano come una). Dettagli: `CONTEGGIO_NOTE_SPEZZATE.md` § 9,
 `ULTRAFOCUS_INBOX.md` A.1, D.11-D.15, CARRYOVER (STATO del 2026-10-17).
+
+**Quattro decisioni del maintainer (2026-10-18, registrate all'apertura del giro «chiusura del capitolo note e pulizia del
+repo», build 58).**
+
+1. **Nessun tetto alla distanza delle note lunghe.** Una nota lunga si legge alla fine della sezione, quanto lontano sia
+   dal suo richiamo: se la sezione è lunga, il libro è fatto così. Per raggiungerla prima c'è il salto fra nota e richiamo
+   (§ 7.12). La voce, aperta dal bilancio della fase mobile, si chiude (§ 7.3).
+2. **Si curano le 13 note dei Mandrioli spezzate fra pagine vicino a una glossa a margine** (le 13 delle 25 coppie fermate
+   dalla guardia della glossa nella build 57 che sono note davvero spezzate). La glossa resta nel flusso come oggi; le 12
+   note complete restano separate.
+3. **Nei codici la ricucitura delle note aspetta una cura vera dell'ordine delle colonne**: prima l'estrazione, poi la
+   ricucitura con le stesse guardie.
+4. **La rete delle risorse visive giudica anche il posto nel flusso**, non solo l'identità della risorsa (pagina, tipo,
+   riquadro).
 
 ---
 

@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.49 (18 ottobre 2026, giro «chiusura del capitolo note e pulizia del repo», IN CORSO: registrate all'apertura le quattro decisioni del maintainer — nessun tetto alla distanza delle note lunghe, cura delle 13 note dei Mandrioli spezzate vicino a una glossa a margine, codici in attesa di una cura vera dell'ordine delle colonne, rete delle risorse visive che giudica anche il posto nel flusso. Vedi STATO del 2026-10-18)
 > Versione: 2.48 (17 ottobre 2026, giro «pulizia e rifinitura finale del capitolo note», **CONCLUSO** con la **build 57** su TestFlight (VALID): separate le 42 fusioni sbagliate nel flusso, ricomposte 16 teste-frammento (12 della Parte 1, 4 nate con le ricuciture nuove), 125 note spezzate in più ricucite con la successione confermata (534 → 659), offerta ai testi normativi già importati, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco dei codici, guardia delle risorse visive in posizioni logiche, cura 57. Vedi STATO del 2026-10-17)
 > Versione: 2.46 (16-17 ottobre 2026 notte, giro «cura delle note», **build 56**: registrate all'apertura le tre decisioni del maintainer; **le note spezzate fra pagine contigue si ricuciono sull'iPad** (`stitchAdjacentPageFootnotes`, nel codice condiviso, esclusi i codici: 534 punti di giunzione in 533 note, tutti giudicati veri contro la pagina) e **i pezzi delle note lunghe si chiudono a fine frase** (`notePieces`: finestra 0,5–1,5 volte la soglia, pause, iniziali e abbreviazioni mai separate); cura 56 offerta ai libri preparati dall'iPad da un PDF, non alle letture del Mac né ai testi normativi già importati; il segnale di chiusura della nota resta per il giro dei suoni. Vedi STATO del 2026-10-16 sera)
 > Versione: 2.45 (16 ottobre 2026 pomeriggio, giro «uniformità della lettura e misura»: registrate all'apertura le quattro decisioni del maintainer; **le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF** (catena condivisa `ScaboChain`, stesso meccanismo degli atti AKN e del Mac: iPad, iPhone e Mac danno la stessa lettura a parità di ingressi, con l'innesto del Mac spento), cura 55 con l'offerta «Lettura migliore disponibile» (non alle letture del Mac); reti verdi sulle due generazioni (ricomposizione esatta, lettere e cifre identiche, annotazioni al loro posto anche fra le letture 54 e 55, pacchetti 7/7, vista di lettura senza veto); **conteggio delle note spezzate fra pagine che l'iPad lascia aperte** (`docs/CONTEGGIO_NOTE_SPEZZATE.md`: 2.961 aperte, 202 casi giudicati contro la pagina, circa 930 vere, circa 710 fuori dai codici; strato sicuro sull'iPad 35 veri su 36); revisione indipendente prima del caricamento; **build 55 su TestFlight** (commit `91aaf7b`, Delivery UUID `80cf20c4…`, note impostate a parte dopo errori 500 di App Store Connect). Tre decisioni per il maintainer. Referto in `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAMENTO.md`. Vedi STATO del 2026-10-16 pomeriggio)
@@ -63,6 +64,25 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
 
 ---
+
+## ▶ STATO — Giro «chiusura del capitolo note e pulizia del repo»: le 13 note dei Mandrioli con la glossa, il posto delle risorse visive nella rete, testo dei volumi nei documenti, build 58 — 2026-10-18 (IN CORSO)
+
+**Partenza:** `af77c49` (main = origin, build 57 su TestFlight; prossimo numero 58). Referto in bozza (con nomi dei volumi:
+NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_CHIUSURA_NOTE.md`; laboratorio
+`~/Developer/scabopdf-gen-lab/chiusura/`.
+
+**Quattro decisioni del maintainer registrate all'apertura** (`LAYER2_PRODUCT_DECISIONS.md` § 12.12, e § 7.3 per la prima):
+1. **Nessun tetto alla distanza delle note lunghe.** Una nota lunga si legge alla fine della sezione, quanto lontano sia: se
+   la sezione è lunga, il libro è fatto così; per raggiungerla prima c'è il salto fra nota e richiamo. La voce si chiude
+   (era la «decisione aperta» del bilancio della fase mobile e dei due giri precedenti).
+2. **Si curano le 13 note dei Mandrioli spezzate fra pagine vicino a una glossa a margine** (INBOX D.12). La glossa resta
+   nel flusso come oggi; le 12 note complete restano separate; ogni caso giudicato contro la pagina stampata.
+3. **Nei codici la ricucitura aspetta una cura vera dell'ordine delle colonne.**
+4. **La rete delle risorse visive giudica anche il posto nel flusso**, non solo l'identità (INBOX D.14).
+
+Parti del giro, nell'ordine: (1) le 13 note con la glossa; (2) il posto delle risorse visive nella rete, con una verità
+registrata per le 110 risorse e la prova al contrario; (3) pulizia del repo (righe dei volumi nei vecchi documenti
+d'analisi e ovunque nell'albero; cartella non tracciata «SCR=» in `app/ios/`); (4) build 58 se tutto è verde.
 
 ## ▶ STATO — Giro «pulizia e rifinitura finale del capitolo note»: fusioni sbagliate e teste-frammento, note respinte dal predicato, offerta ai testi normativi, rifiniture minori, build 57 — 2026-10-17
 
