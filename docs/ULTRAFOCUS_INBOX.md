@@ -590,7 +590,10 @@ sotto il corpo» passano da 5 a 157: per le successioni confermate la prudenza p
 ### D.16 Note lette lontano dal richiamo senza il salto «Vai al testo del richiamo» — CURATA in gran parte, residuo dichiarato (giro «accessibilità e completamento», 2026-10-18)
 
 **Esito (campo, stesso attrezzo sulle letture dei 52 volumi, iOS 27 e 26.5 con numeri identici): differite senza salto
-1.224 → 151 su 9.030.** Le cause, misurate prima di curare (funzione di laboratorio sul codice dell'app): 848 il numero del
+1.224 → 151 su 9.030.** Le cause, misurate prima di curare (funzione di laboratorio sul codice dell'app; definizioni: «non riconosciuto» = la coda
+del richiamo alla memoria è nel segmento e il numero c'è come testo, ma la regola di parola non lo prende; «non nel
+segmento» = il segmento che ha la coda non contiene il numero come parola; la revisione indipendente, con definizioni
+diverse, divide gli stessi 1.048 casi in 919 e 129): 848 il numero del
 richiamo c'è ma la regola di parola di `containsCallNumber` non lo riconosce (dopo un punto o una virgola, dopo un
 altro numero come un anno, dopo una sigla), 200 il numero non sta nel segmento dove la regola cercava, 128 la frase del richiamo alla memoria
 sta a cavallo di due segmenti, 48 rinfresco corto. **L'ipotesi della ricerca fermata da un'intestazione è falsificata:
@@ -603,8 +606,10 @@ rinfresco corto (meno di 12 lettere: 11 sbagliati su 38 nella prova). Verifica: 
 seguito, che lo ereditano), 0 legami persi, 0 cambiati; salto inverso «Vai alla nota» presente per tutte le 8.879 note
 legate; **ogni legame nuovo controllato contro la pagina stampata** (laboratorio, PyMuPDF): 1.070 in automatico (frase del
 richiamo e numero in apice, più piccolo o fra parentesi sulla pagina; o numero seguito dalle parole della pagina), 3 a vista
-(giusti), campione casuale di 30 rivisto uno per uno: 30/30 giusti; prova al contrario (numero di ogni nota spostato di uno):
-0 legami in più. Il legame si calcola nella vista: vale subito anche per i libri già aperti, senza rielaborare.
+(giusti), campione casuale di 30 fra i 1.070 verificati in automatico rivisto uno per uno: 30/30 giusti; prova al contrario
+(numero di ogni nota spostato di uno): 0 legami in più. La revisione indipendente ha rifatto la verifica di tutti i 1.073
+partendo dalla pagina stampata, con un metodo suo: 1.069 confermati, i 4 restanti nati da difetti d'ordine del testo
+preesistenti (il salto porta comunque al segmento che contiene il numero), nessun legame inventato. Il legame si calcola nella vista: vale subito anche per i libri già aperti, senza rielaborare.
 
 Per volume (campo, iOS 27; differite, senza salto prima → dopo): Delitti in prima pagina 239, 224 → 1; Mandrioli-Carratta
 vol. 3 1.339, 159 → 30; vol. 4 1.148, 141 → 15; Rivista DPC 2-2018 673, 130 → 8; Pubblico ministero 95, 88 → 2;

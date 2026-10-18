@@ -103,7 +103,7 @@ chiedeva di nominare.
 6. **Segnali sonori** (fonte: `ContinuousReadingViewController.swift`, `AudioSignals.swift`): collegati solo alcuni earcon;
    mancano transizione strutturale, chiusure, sottolineature, «fine del documento»; la convivenza con la voce di VoiceOver si
    certifica solo all'orecchio, sul dispositivo.
-7. **Tastiera nello split** (fonte: `KeyboardCommandsCatalog.swift`, `SplitScreenViewController`): i comandi da tastiera
+7. **Tastiera nello split** — CHIUSA il 2026-10-18 (§ 7; 3.1.2 resta aperta) (fonte: `KeyboardCommandsCatalog.swift`, `SplitScreenViewController`): i comandi da tastiera
    stanno nel lettore a schermo intero; nello split non sono garantiti; il salto nota↔richiamo non ha un tasto. Lingua del
    documento dichiarata (3.1.1 conforme); lingua delle parti straniere (3.1.2) non valutata.
 8. **Importazione** (fonte: `DocumentOpener.swift`): solo dal selettore interno; niente «Apri con», niente estensione di
@@ -113,7 +113,7 @@ chiedeva di nominare.
     i guardiani di contenuto perso e d'ordine (D.4) sono decisi ma non costruiti.
 
 **Basso**
-11. **Audit di accessibilità** (campo, CARRYOVER): la voce Dynamic Type resta aperta fra i due motori d'audit di Xcode 26 e
+11. **Audit di accessibilità** — causa trovata il 2026-10-18 (§ 7) (campo, CARRYOVER): la voce Dynamic Type resta aperta fra i due motori d'audit di Xcode 26 e
     27; lettore e split non passano dall'audit automatico.
 12. **Minori** (fonte): spegnere e riaccendere VoiceOver riporta all'inizio del libro; tocco sull'altra metà dello split
     non collaudato sul dispositivo; porta di sviluppo D.6-bis da rimuovere; icona segnaposto.
@@ -225,3 +225,26 @@ Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 10.6 e § 12.12, `docs/CONTEGGIO_N
   parola dentro frasi lunghe: meccanismo condiviso con gli atti AKN e col Mac); il segnale di chiusura della nota, previsto
   dal § 10.6 e mai costruito; l'ordine delle righe in alcune prime note di pagina (tre casi visti nel campione, non
   misurato sul corpus).
+
+## 7. Accessibilità e completamento (giro del 2026-10-18 sera, build 59)
+
+Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 12.1 (il principio dell'ordine), § 7.12 e § 11.8 (tastiera),
+`ANALYSIS_ACCESSIBILITA_AREE_SCOPERTE.md` (stato del giro, tabella WCAG), `ULTRAFOCUS_INBOX.md` D.16; referto
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_ACCESSIBILITA_HOME.md`.
+
+- **Chiuso (campo).** L'ordine di lettura nelle schermate con le schede segue l'importanza: titolo, le tre schede, i
+  comandi, il contenuto, senza doppioni (prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime;
+  sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero da iOS 27 e con l'albero d'accessibilità su
+  26.5. Il salto «Vai al testo del richiamo» c'è per 8.879 delle 9.030 note lette lontano dal richiamo (erano 7.806), ogni
+  legame nuovo controllato sulla pagina stampata (voce D.16). La voce 7 qui sopra (tastiera nello split, salto senza
+  tasto) è chiusa: tasti dello split alla metà che comanda, ⌥⌘← / ⌥⌘→, ⌘J; la lingua dell'interfaccia e quella del
+  documento sono dichiarate (3.1.1). Due difetti preesistenti trovati con la tastiera e curati: ⌘= impossibile da una
+  tastiera italiana (ora anche ⌘+), il menu degli strumenti aperto con ⌘E che sull'iPad Esc non chiudeva. Voce 11 (audit):
+  le due voci rosse dell'iPad hanno una causa misurata — le etichette della barra delle schede di sistema e il testo sotto
+  un foglio — e i test le accettano con condizioni e un tetto, stampandole; i test d'interfaccia dell'iPad che aspettavano la barra
+  delle schede dell'iPhone sono verdi.
+- **Restante.** Le parti in un'altra lingua dentro un libro (3.1.2, livello AA) non si marcano: decisione del maintainer;
+  nello split la metà che comanda non ha un segno visivo per chi usa la tastiera senza VoiceOver (2.4.7, AA); tastiera e
+  VoiceOver insieme non verificati (nel simulatore i comandi col Comando non scattano con VoiceOver acceso); 151 note
+  differite ancora senza salto (85 per il testo estratto, 45 rinfresco corto, 21 nei codici); il lettore e lo split non
+  passano ancora dall'audit automatico.

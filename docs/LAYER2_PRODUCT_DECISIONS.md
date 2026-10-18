@@ -527,7 +527,8 @@ Sul **richiamo a una nota inline** nel corpo del testo (quando esposto come elem
 
 Con una tastiera esterna lo stesso salto ha un tasto (giro «accessibilità e completamento», 2026-10-18): **Comando J** —
 sulla nota va al testo del richiamo, sul testo che richiama una nota va alla nota; dove non c'è nulla da raggiungere
-VoiceOver lo dice e la lettura non si muove. Da tastiera gli strumenti dell'elemento (Comando E) si aprono come finestra di
+VoiceOver lo dice e la lettura non si muove (senza VoiceOver non c'è ancora un segnale: lo schermo resta fermo); se lo
+stesso testo richiama più note, Comando J va alla prima. Da tastiera gli strumenti dell'elemento (Comando E) si aprono come finestra di
 dialogo, dove Esc è «Annulla» (sull'iPad il menu a comparsa non si chiudeva con Esc); il testo più grande è Comando = e,
 sulle tastiere dove il più è un tasto a sé come quella italiana, Comando +. Dallo stesso giro il salto c'è per 8.879 delle 9.030 note lette lontano dal
 richiamo nei 52 volumi di prova (erano 7.806): il numero della nota si cerca anche subito dopo la frase del richiamo alla
@@ -902,7 +903,8 @@ Il passaggio del focus VoiceOver da una schermata all'altra avviene con i gesti 
 **Con una tastiera esterna (giro «accessibilità e completamento», 2026-10-18; WCAG 2.1.1 e 2.1.2).** I comandi di lettura
 da tastiera (pannello «Comandi da tastiera» delle Impostazioni) valgono per la metà che comanda (§ 11.6): quella in cui si
 sta operando, o, dalla barra di split e dalla linea, l'ultima che ha comandato. Due comandi scelgono la metà — Comando
-Opzione freccia sinistra e Comando Opzione freccia destra — e portano lì anche il fuoco di VoiceOver. Esc chiede se
+Opzione freccia sinistra e Comando Opzione freccia destra — e portano lì anche il fuoco di VoiceOver (nel codice; con
+VoiceOver non ancora verificato). Esc chiede se
 chiudere la metà che comanda, come il suo «Indietro»; nella domanda Esc annulla e A capo chiude, quindi dallo split si esce
 con la sola tastiera. Non sono gesti: i gesti di VoiceOver restano quelli di sistema (§ 2.4). Nello split la metà che
 comanda non ha ancora un segno visivo per chi usa la tastiera senza VoiceOver (decisione aperta, WCAG 2.4.7).

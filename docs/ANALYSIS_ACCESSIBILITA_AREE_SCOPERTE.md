@@ -11,8 +11,9 @@
 > - **2.1.1 Keyboard (A) — conforme e verificato.** ⌘J salta fra nota e richiamo (come le azioni VoiceOver «Vai al testo
 >   del richiamo» / «Vai alla nota»); nello split ogni comando di lettura vale per la metà che comanda (§ 11.6) e ⌥⌘← /
 >   ⌥⌘→ scelgono la metà, portando lì anche il fuoco di VoiceOver; il pannello «Comandi da tastiera» li elenca (la sezione
->   dello split solo sull'iPad). Prove: `KeyboardUITests` (tastiera hardware del simulatore dentro XCTest, `typeKey`, con
->   VoiceOver vero su iOS 27) e `KeyboardAndLanguageTests` (catalogo, comandi dello split e metà che comanda, salto).
+>   dello split solo sull'iPad). Prove: `KeyboardUITests` (tastiera hardware del simulatore dentro XCTest, `typeKey`, **a
+>   VoiceOver spento**; iPad e iPhone iOS 27) e `KeyboardAndLanguageTests` (catalogo, comandi dello split e metà che comanda,
+>   salto). Che ⌥⌘← / ⌥⌘→ portino il fuoco di VoiceOver sulla metà scelta sta nel codice: non verificato.
 > - **2.1.2 No Keyboard Trap (A) — conforme e verificato.** Dal lettore Esc torna alla schermata di prima; nello split Esc
 >   chiede se chiudere la metà che comanda, nella domanda Esc annulla e A capo chiude; dallo split si torna alla Home con
 >   la sola tastiera (`KeyboardUITests`). Trovata e chiusa una trappola preesistente: il menu degli strumenti aperto con ⌘E
@@ -24,12 +25,15 @@
 >   con Comando-punto (che il sistema consegna come Esc) e con il ritorno a capo «\n». Con VoiceOver acceso i comandi col
 >   Comando non scattano nel simulatore: **tastiera insieme a VoiceOver: non verificato**, nel simulatore e sul dispositivo.
 > - **3.1.1 Language (A) — interfaccia: conforme e verificato; contenuto: conforme tecnicamente.** L'interfaccia dichiara
->   l'italiano all'avvio (app e finestra): sul simulatore in inglese, con VoiceOver vero, i tratti si sentono in italiano
->   («Pulsante», «Intestazione»), e «Workspaces», dichiarato inglese, resta «Heading». Il contenuto dichiara la lingua del
+>   l'italiano all'avvio (app e finestra): sul simulatore iPad in inglese, con VoiceOver vero, i tratti si sentono in italiano
+>   («Pulsante», «Intestazione»), e «Workspaces», dichiarato inglese, resta «Heading» (l'iPhone in un'altra lingua: non
+>   verificato). Il contenuto dichiara la lingua del
 >   documento (`DocumentLanguage`: l'italiano, salvo un libro chiaramente in un'altra lingua — soglia 0,9 su un campione
 >   di tutto il libro; sui 52 volumi di prova 50 riconosciuti italiani a ≥ 0,995, le due Riviste DPC con articoli in altre
 >   lingue restano italiane). Che una cella di un libro inglese dichiari «en» lo provano i test di unità; che VoiceOver e
->   il display braille cambino davvero voce e tavola su quel libro, sul dispositivo: **non verificato**.
+>   il display braille cambino davvero voce e tavola su quel libro, sul dispositivo: **non verificato**. Limite dichiarato:
+>   in un libro di un'altra lingua anche le parole dell'app dentro la cella («Intestazione di livello …», l'inizio della
+>   nota) verrebbero lette con la voce di quella lingua (dedotto; nei 52 volumi di prova non ce n'è).
 > - **3.1.2 Language of Parts (AA) — non conforme, dichiarato.** Le parti in un'altra lingua dentro un libro non si
 >   marcano: sui 52 volumi il riconoscitore di sistema dà per straniere anche parti italiane o latine, e cambiare voce a metà
 >   lettura è una scelta d'orecchio (decisione del maintainer). Eccezione già presente: «Workspaces», dichiarato inglese.
@@ -41,8 +45,9 @@
 > - **Audit dell'iPad.** Le due voci rosse preesistenti hanno ora una causa misurata (sonde sulla copia di partenza): i 3
 >   rilievi Dynamic Type sono le tre etichette della barra delle schede galleggiante di iPadOS (3 con la barra, 0 con la
 >   barra nascosta), il «testo potenzialmente inaccessibile» è il testo della schermata sotto un foglio (4 col foglio, 0 a
->   schermo intero). Sono comportamenti di sistema: i test li accettano in modo stretto e li stampano (`SystemAuditRule`);
->   ogni altro rilievo fa fallire.
+>   schermo intero). Sono comportamenti di sistema: i test li accettano con condizioni e un tetto e li stampano
+>   (`SystemAuditRule`); ogni altro rilievo fa fallire. Il testo sotto un foglio è misurato su un foglio solo; sugli altri
+>   fogli dell'iPad è dedotto, con la controprova dell'iPhone, dove gli stessi fogli passano l'audit senza eccezioni.
 >
 > Non validati sul campo (servono utenti reali): una sessione di studio intera con la sola tastiera nello split; Accesso
 > completo da tastiera insieme ai nostri tasti; voce e braille su un libro in un'altra lingua; la scoperta dei comandi dal
@@ -369,7 +374,7 @@ traguardo consigliato.
 | 1.4.11 Non-text Contrast | AA | ✓ | Bordi/barre ruolo ≥3:1 (build 39). |
 | 1.4.12 Text Spacing | AA | ✓ | Asse spaziatura (build 39). |
 | 1.4.13 Content on Hover/Focus | AA | N.A. | Nessun contenuto su hover. |
-| 2.1.1 **Keyboard** | **A** | **✓** | Build 40: comandi di lettura. 2026-10-18: ⌘J nota↔richiamo, split con i tasti alla metà che comanda e ⌥⌘←/→; verificato con la tastiera del simulatore e VoiceOver vero. (Prima: **✗**, nessuna operabilità da tastiera.) |
+| 2.1.1 **Keyboard** | **A** | **✓** | Build 40: comandi di lettura. 2026-10-18: ⌘J nota↔richiamo, split con i tasti alla metà che comanda e ⌥⌘←/→, ⌘+; verificato con la tastiera del simulatore a VoiceOver spento (tastiera e VoiceOver insieme: non verificato). (Prima: **✗**, nessuna operabilità da tastiera.) |
 | 2.1.2 No Keyboard Trap | A | ✓ | 2026-10-18: Esc esce dal lettore; nello split Esc chiede, Esc annulla, A capo chiude; dallo split alla Home con la sola tastiera (test). |
 | 2.1.4 Character Key Shortcuts | A | N.A. | Nessuna scorciatoia a carattere. |
 | 2.2.1 Timing Adjustable | A | ✓ | Nessun limite di tempo. |
@@ -389,7 +394,7 @@ traguardo consigliato.
 | 3.3.1 Error Identification | A | ✓ | Errori d'import in prosa. |
 | 3.3.2 Labels or Instructions | A | ✓ | Campi etichettati. |
 | 3.3.3 Error Suggestion | AA | ✓/N.A. | Pochi input; nessun errore complesso. |
-| 4.1.2 Name, Role, Value | A | ✓ | Controlli etichettati coi tratti giusti. |
+| 4.1.2 Name, Role, Value | A | ✓ | Controlli etichettati coi tratti giusti. 2026-10-18 (revisione indipendente): nelle Impostazioni le righe riusate tenevano l'interruttore e il suggerimento della riga di prima («Comandi da tastiera» e «Apri le impostazioni di iOS» annunciate come interruttori); curato (riga riportata a nuova a ogni riuso) e provato con VoiceOver vero (`VoiceOverOrderUITests`). |
 | 4.1.3 Status Messages | AA | ◐ | Buona copertura; conferma layout earcon-only, conteggio ricerca non annunciato. |
 | **2.5.7 Dragging Movements** | **AA [2.2]** | ◐ | Split ok (pulsanti); resta lo swipe elimina in segnalibri/tag. |
 | **2.5.8 Target Size (Minimum)** | **AA [2.2]** | ◐ | Pulsanti barra sotto 24/44pt, senza vincoli. |

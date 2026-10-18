@@ -1,20 +1,29 @@
-Build 58 — note intere vicino alle scritte a margine
+Build 59 — le schede subito dopo il titolo, il salto fra nota e richiamo, tastiera e lingua
 
 Cosa è cambiato
-- In alcuni manuali, accanto alle note ci sono brevi scritte a margine (le glosse). Quando una nota continuava sulla pagina seguente e lì la ripresa cominciava vicino a una di queste scritte, l'app lasciava la nota interrotta. Ora queste note si leggono intere.
-- La scritta a margine resta dove la sentivi prima: non sparisce e non entra nella nota.
-- L'app unisce i due pezzi solo quando ne è sicura: per esempio quando la nota che viene dopo porta il numero giusto e il seguito sta sotto il testo, nella colonna delle note, con la stessa dimensione del carattere. Nel dubbio la nota resta com'era.
-- Le note che finiscono davvero a fine pagina, seguite sulla pagina dopo da una scritta a margine, restano separate come prima.
+- Nella Home, con VoiceOver, subito dopo il titolo «ScaboPDF» senti le tre schede (VoiceOver le chiama pannelli): Home, Ricerca, Impostazioni. Poi i comandi in alto (Tag, Affianca due documenti, Importa un documento), poi i Recenti e i Workspaces. Prima le schede arrivavano per ultime, dopo tutta la libreria. Lo stesso ordine vale nella Ricerca, nelle Impostazioni e nelle schermate che apri da lì (Tag, Segnalibri per tag, un workspace, una cartella), sull'iPad e sull'iPhone.
+- Il titolo della schermata è sempre in alto, sotto la barra, anche sull'iPad con iPadOS 26, dove prima mancava. Resta fermo quando scorri.
+- La scheda della Home si chiama «Home» (prima si sentiva «ScaboPDF», come il titolo).
+- Nella Ricerca il campo «Cerca nei documenti» sta sotto il titolo, sopra l'elenco dei libri.
 
-Quali libri
-- Sui 52 libri di prova cambiano 13 note, in due volumi dello stesso manuale. Altre 12 note in una situazione simile erano già complete e restano come sono. Ognuno dei 25 casi è stato controllato sulla pagina stampata.
-- Le lettere e le cifre del testo letto sono le stesse di prima. Cambia dove finiscono quelle 13 note; cinque di loro, ora più lunghe, non si leggono più subito dopo il richiamo ma più avanti, alla fine del paragrafo, come le altre note di quella lunghezza, precedute dal richiamo alla memoria. Verificato su tutti i libri di prova con iOS 26 e iOS 27.
+Il salto fra nota e richiamo
+- Quando una nota lunga si legge alla fine del paragrafo o della sezione, l'azione «Vai al testo del richiamo» c'è in molte più note: nei nostri 52 libri di prova mancava in 1.224 note su 9.030, ora in 151. Ogni nuovo salto è stato controllato sulla pagina stampata. Dove il numero della nota non si ritrova con sicurezza il salto resta assente: meglio nessun salto che un salto sbagliato.
+- Vale anche per i libri che hai già aperto, senza rielaborarli.
 
-Per i libri già aperti
-- Ricevono la novità con l'offerta «Lettura migliore disponibile», nella Home e fra le opzioni del libro: tocca «Rielabora…» e conferma. L'offerta arriva a tutti i libri elaborati sull'iPad: se un libro non ha note di questo tipo, la nuova lettura è uguale a quella di prima. La lettura di prima resta sul dispositivo finché non scegli «Tieni la nuova lettura»; puoi anche scegliere «Torna alla lettura precedente» o «Decidi più tardi».
-- I testi normativi non cambiano e non ricevono offerte nuove.
-- I libri con una lettura arrivata dal Mac restano come sono: la novità arriverà con una nuova lettura preparata dal Mac.
-- Segnalibri e sottolineature restano al loro posto quasi sempre, e nessuno finisce in un punto sbagliato. Nelle nostre prove, passando dalla build 57 alla 58, con segnalibri e sottolineature sparsi in tutti i libri di prova si sono ritrovati tutti i segnalibri e, di circa quattordicimila sottolineature, tutte tranne una. Mettendo invece un segnalibro su ogni pezzo dei due volumi cambiati, non si ritrovano 16 segnalibri su circa diecimila e 13 sottolineature su circa seimila: quelli messi proprio sui pezzi di nota che ora sono uniti alla loro nota. L'app non sposta nulla a caso e te lo dice: un segnalibro non ritrovato resta «da ricollocare» in fondo alla lista dei segnalibri; una sottolineatura non ritrovata resta salvata ma non si vede, e riappare se torni alla lettura precedente.
+Con una tastiera esterna
+- Comando J: sulla nota porta al testo del richiamo, sul testo che richiama una nota porta alla nota (se ne richiama più d'una, alla prima).
+- Nello split screen, sull'iPad, i comandi da tastiera ora funzionano e valgono per la metà che comanda: all'inizio la sinistra; Comando Opzione freccia sinistra e Comando Opzione freccia destra scelgono la metà. Esc chiede se chiudere la metà; nella domanda Esc annulla e A capo chiude. Sulle tastiere senza il tasto Esc, al posto di Esc vale Comando punto.
+- Testo più grande: sulla tastiera italiana ora basta Comando e il tasto più (prima non funzionava).
+- Comando E apre gli strumenti dell'elemento (segnalibro, sottolineatura) in una finestra che si chiude con Esc; sull'iPad prima Esc non la chiudeva.
+- L'elenco completo è nelle Impostazioni, «Comandi da tastiera».
+
+La lingua
+- L'app dice a VoiceOver che è in italiano: anche su un dispositivo impostato in un'altra lingua, VoiceOver legge pulsanti e titoli in italiano (l'abbiamo provato su un iPad impostato in inglese; sull'iPhone non ancora).
+- Di un libro tutto in un'altra lingua, per esempio in inglese, l'app dice a VoiceOver quella lingua, così VoiceOver può leggerlo con la sua voce; i libri italiani, anche con qualche pagina in un'altra lingua, restano in italiano. Non l'abbiamo potuto ascoltare su un dispositivo: se hai un libro tutto in inglese, dicci con quale voce lo senti.
+
+Cosa non cambia
+- Il testo che senti nei libri è lo stesso di prima, lettera per lettera, verificato su tutti i libri di prova con iOS 26 e iOS 27. Segnalibri e sottolineature restano dove sono. Nessuna offerta «Lettura migliore disponibile»: non serve rielaborare nulla.
 
 Una cosa da notare
-- Se hai un manuale con scritte a margine accanto alle note, ascolta qualche nota che continua sulla pagina seguente. Se senti due note diverse unite in una, o una scritta a margine sparita o finita dentro una nota, dicci in quale libro e a quale pagina.
+- Ascolta l'inizio della Home, della Ricerca e delle Impostazioni: dicci se senti qualcosa due volte, o se un elemento non si raggiunge più.
+- Se usi una tastiera insieme a VoiceOver, prova Comando J su una nota e i comandi nello split: è la combinazione che non abbiamo potuto provare. Dicci se un tasto non fa nulla.
