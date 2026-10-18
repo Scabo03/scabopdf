@@ -171,7 +171,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
                 action: #selector(toggleNoteBox(_:)))
 
         case .systemFilters:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+            let cell = freshCell()
             var config = cell.defaultContentConfiguration()
             config.text = "Apri le impostazioni di iOS"
             config.textProperties.color = .link
@@ -182,7 +182,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
             return cell
 
         case .keyboard:
-            let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+            let cell = freshCell()
             var config = cell.defaultContentConfiguration()
             config.text = "Comandi da tastiera"
             cell.contentConfiguration = config
@@ -235,8 +235,28 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         AppearanceOptions.isSelected(AppearanceOptions.all[row], prefs: prefs)
     }
 
-    private func checkmarkCell(_ text: String, selected: Bool) -> UITableViewCell {
+    /// Le proprietà di una riga nuova, prese una volta sola da una cella appena creata.
+    private static let freshCellTraits = UITableViewCell().accessibilityTraits
+
+    /// Una riga «cell» ripresa dal riuso e riportata com'è una riga nuova: tutte le righe delle Impostazioni (tranne quelle
+    /// dell'aspetto) condividono l'identificatore, e una riga riusata teneva l'interruttore, il suggerimento, i tratti e lo
+    /// stile di selezione della riga di prima (VoiceOver annunciava «Comandi da tastiera» e «Apri le impostazioni di iOS» come
+    /// interruttori, e l'interruttore riusato restava collegato all'impostazione dell'altra riga; giro «accessibilità e
+    /// completamento», 2026-10-18, revisione indipendente). Ogni ramo configura poi solo ciò che è suo.
+    private func freshCell() -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell")!
+        cell.accessoryView = nil
+        cell.accessoryType = .none
+        cell.selectionStyle = .default
+        cell.accessibilityTraits = Self.freshCellTraits
+        cell.accessibilityLabel = nil
+        cell.accessibilityHint = nil
+        cell.accessibilityValue = nil
+        return cell
+    }
+
+    private func checkmarkCell(_ text: String, selected: Bool) -> UITableViewCell {
+        let cell = freshCell()
         var config = cell.defaultContentConfiguration()
         config.text = text
         config.textProperties.numberOfLines = 0
@@ -248,7 +268,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
     }
 
     private func switchCell(_ text: String, isOn: Bool, action: Selector) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell")!
+        let cell = freshCell()
         var config = cell.defaultContentConfiguration()
         config.text = text
         config.textProperties.numberOfLines = 0

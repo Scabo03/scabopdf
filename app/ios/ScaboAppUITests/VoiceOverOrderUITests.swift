@@ -42,8 +42,10 @@ final class VoiceOverOrderUITests: XCTestCase {
                     content: ["Cerca nei documenti", "Libro di prova uno"])
         XCTAssertTrue(app.tapTab("Impostazioni"))
         XCTAssertTrue(app.waitForScreen("Impostazioni"))
-        assertOrder(try speakScreen("Impostazioni"), screen: "Impostazioni", title: "Impostazioni", selected: "Impostazioni",
+        let settings = try speakScreen("Impostazioni")
+        assertOrder(settings, screen: "Impostazioni", title: "Impostazioni", selected: "Impostazioni",
                     commands: [], content: ["Aspetto della lettura"])
+        assertSettingsRoles(settings)
         XCTAssertTrue(app.tapTab("Home"))
         XCTAssertTrue(app.waitForScreen("ScaboPDF"))
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Workspace di prova A")).firstMatch.tap()
@@ -69,6 +71,30 @@ final class VoiceOverOrderUITests: XCTestCase {
         XCTAssertTrue(spoken.contains { $0.hasPrefix("Workspaces") && $0.contains("Heading") }, "«Workspaces» in inglese — \(all)")
         for u in spoken where !u.hasPrefix("Workspaces") {
             XCTAssertFalse(u.contains(" Button") || u.contains(" Heading"), "nessun tratto in inglese fuori da «Workspaces»: «\(u)»")
+        }
+    }
+
+    /// Le righe delle Impostazioni hanno il loro ruolo anche dopo lo scorrimento (le righe si riusano): «Comandi da tastiera»
+    /// e «Apri le impostazioni di iOS» sono pulsanti, «Interruttore» si sente solo sulle quattro righe con l'interruttore, e
+    /// nessuna riga porta il suggerimento di un'altra (revisione indipendente del giro: prima VoiceOver diceva «Comandi da
+    /// tastiera, interruttore non attivo» e «Fine — 400 caratteri … Apre Impostazioni iOS»).
+    private func assertSettingsRoles(_ spoken: [String], file: StaticString = #filePath, line: UInt = #line) {
+        let switches = ["Guida di lettura", "Annuncia le note a voce", "Riquadro visivo per le note",
+                        "Mostra numero pagine file originale"]
+        for row in ["Comandi da tastiera", "Apri le impostazioni di iOS"] {
+            let said = spoken.filter { $0.hasPrefix(row) }
+            XCTAssertFalse(said.isEmpty, "«\(row)» pronunciato", file: file, line: line)
+            for u in said {
+                XCTAssertTrue(u.contains("Pulsante"), "«\(row)» è un pulsante: «\(u)»", file: file, line: line)
+                XCTAssertFalse(u.contains("Interruttore"), "«\(row)» non è un interruttore: «\(u)»", file: file, line: line)
+            }
+        }
+        for u in spoken where u.contains("Interruttore") {
+            XCTAssertTrue(switches.contains { u.hasPrefix($0) }, "«Interruttore» solo sulle righe con l'interruttore: «\(u)»",
+                          file: file, line: line)
+        }
+        for u in spoken where u.contains("Apre Impostazioni iOS") {
+            XCTAssertTrue(u.hasPrefix("Apri le impostazioni di iOS"), "suggerimento di un'altra riga: «\(u)»", file: file, line: line)
         }
     }
 
