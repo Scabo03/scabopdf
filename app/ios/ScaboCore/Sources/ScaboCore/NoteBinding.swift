@@ -151,6 +151,11 @@ public struct AdjacentPageStitchCandidate: Codable, Equatable, Sendable {
     /// Testa-frammento ricomposta (giro «pulizia delle note», 2026-10-17): l'id del frammento, sovra-spezzato
     /// dall'estrazione a un numero spurio, che è stato riunito alla nota vera che lo precede prima della ricucitura.
     public var recomposedFragmentId: String? = nil
+    /// Coda aperta da una glossa a margine (giro «chiusura del capitolo note», 2026-10-18): la forma trovata, «glossa in
+    /// testa alla coda» (il seguito dopo la glossa, se ricucito, va alla testa e la glossa resta al suo posto) o «coda
+    /// fatta della sola glossa» (la testa aspetta la nota seguente della pagina B); nil per le altre coppie. Con la glossa
+    /// in testa, la geometria della coda (`tailTop`, `tailSize`, `tailX0`, `tailX1`) è quella della prima riga del seguito.
+    public var marginGloss: String? = nil
 }
 
 // MARK: - Costanti del segnale (calibrate in Fase 1b su PDFKit reale)
@@ -827,6 +832,12 @@ func stitchAdjacentPageFootnotes(
             stitched: false, reason: "")
 
         var reason = ""
+        // Giro «chiusura del capitolo note» (2026-10-18, decisione 2 del maintainer): la coda aperta da una glossa a
+        // margine. Se dopo le righe della glossa la nota continua nella colonna (`glossCut`), la glossa resta dov'è, come
+        // nota a sé, e il seguito si ricuce alla testa; se la coda è fatta della sola glossa (`skipGloss`), la glossa resta
+        // dov'è e la testa aspetta la nota seguente della pagina B, che può essere il seguito vero.
+        var glossCut: (glossText: String, continuationText: String)?
+        var skipGloss = false
         if curNode.type != .NOTE || lastNodeOnHeadSide?.type != .NOTE { reason = "nodo non NOTE" }
         // Giro «pulizia delle note» (2026-10-17, decisione 2 del maintainer): con la successione CONFERMATA (la prima nota
         // numerata dopo la coda porta il numero della testa più uno) il predicato non serve più: fra testa e coda non può
@@ -855,14 +866,64 @@ func stitchAdjacentPageFootnotes(
             noteColumnLeft: noteColumnLeft((noteNodeIdsByPage[cur.page_index] ?? []).filter { $0 != curNode.id }
                 .compactMap { noteLinesById[$0] })) {
             reason = "coda aperta da una glossa a margine"
+            switch marginGlossSeparation(tailLines, bodyLeft: bodyLeftByPage[cur.page_index]) {
+            case .glossOnly:
+                // la coda è la sola glossa: resta dov'è; la nota seguente della pagina B si vaglia con la stessa testa
+                skipGloss = true
+                candidate.marginGloss = "coda fatta della sola glossa: si vaglia la nota seguente"
+            case .glossThenContinuation(let glossLines, let continuationLines):
+                // il seguito dopo la glossa si ricuce solo con la successione confermata da una nota che si apre come
+                // una nota, e se supera da sé le guardie della geometria e del corpo tipografico (sotto il corpo, nella
+                // colonna, stesso corpo della testa, non aperto dal numero della nota seguente)
+                let glossText = joinLines(glossLines.map { $0.text })
+                let continuationText = joinLines(continuationLines.map { $0.text })
+                let first = continuationLines[0]
+                candidate.marginGloss = "glossa in testa alla coda"
+                candidate.tailTop = first.yTop
+                candidate.tailSize = noteLineMaxSpanSize(first)
+                candidate.tailX0 = first.x0
+                candidate.tailX1 = first.x1
+                if !(succession == "confermata" && nextOpensLikeNote) {
+                    reason = "coda aperta da una glossa a margine: successione non confermata"
+                } else if glossText.isEmpty || continuationText.isEmpty
+                            || noteOpening(continuationText) != nil || noteSymbolOpening(continuationText) {
+                    reason = "coda aperta da una glossa a margine: seguito non riconosciuto"
+                } else if let h = headNumber, leadingInt(continuationText) == h + 1 {
+                    reason = "coda aperta da una glossa a margine: seguito numerato come la nota seguente"
+                } else if let bottom = tailBottom, !(first.yTop < bottom) {
+                    reason = "coda aperta da una glossa a margine: seguito non sotto il corpo"
+                } else if let left = bodyLeftByPage[cur.page_index], first.x0 < left - NOTE_COLUMN_OUTSIDE_TOLERANCE {
+                    reason = "coda aperta da una glossa a margine: seguito fuori dalla colonna"
+                } else if abs(noteLineMaxSpanSize(first) - noteLineMaxSpanSize(headLast!)) > BODY_SIZE_TOLERANCE {
+                    reason = "coda aperta da una glossa a margine: corpo tipografico diverso"
+                } else {
+                    reason = ""
+                    glossCut = (glossText, continuationText)
+                }
+            case .unrecognized:
+                break
+            }
         }
 
         if reason.isEmpty {
+            // il seguito della nota: la coda intera, o la sola parte dopo la glossa a margine
+            let continuation = glossCut?.continuationText ?? b
             let merged: String
-            if endsWithLetterHyphenG(a), let f = b.first, f.isLowercase {
-                merged = String(a.dropLast()) + b           // de-sillabazione
+            if endsWithLetterHyphenG(a), let f = continuation.first, f.isLowercase {
+                merged = String(a.dropLast()) + continuation           // de-sillabazione
             } else {
-                merged = a + " " + b
+                merged = a + " " + continuation
+            }
+            // la coda: tolta (è tutta seguito), oppure ridotta alla sola glossa, che resta al suo posto nel flusso
+            func settleTail() {
+                if let g = glossCut {
+                    var t = footnoteNodeById[fid]!
+                    t.text = g.glossText
+                    t.length_category = lengthCategoryFor(g.glossText)
+                    footnoteNodeById[fid] = t
+                } else {
+                    removed.insert(fid)
+                }
             }
             if let r = recomposition {
                 // la testa-frammento torna nella sua nota, e la nota vera diventa la testa della ricucitura
@@ -874,7 +935,7 @@ func stitchAdjacentPageFootnotes(
                 t.text = whole
                 t.length_category = lengthCategoryFor(whole)
                 footnoteNodeById[headFid] = t
-                removed.insert(fid)
+                settleTail()
                 tailPage = cur.page_index
                 lastNodeOnHeadSide = curNode
                 count += 1
@@ -887,12 +948,17 @@ func stitchAdjacentPageFootnotes(
             h.text = merged
             h.length_category = lengthCategoryFor(merged)
             footnoteNodeById[headFid] = h
-            removed.insert(fid)
+            settleTail()
             tailPage = cur.page_index                        // catena: la testa copre fino a qui
             lastNodeOnHeadSide = curNode
             count += 1
             candidate.stitched = true
             candidate.reason = "ricucita"
+        } else if skipGloss {
+            // la testa resta quella: la nota seguente della pagina B (se è un seguito senza numero) si vaglia con lei
+            candidate.reason = reason
+            candidates.append(candidate)
+            continue
         } else {
             candidate.reason = reason
             advance()
@@ -1013,6 +1079,32 @@ func tailStartsWithMarginGloss(_ lines: [LineSummary], bodyLeft: Double?, noteCo
     }
     guard lines[end].x0 > x + NOTE_COLUMN_OUTSIDE_TOLERANCE else { return false }
     return !lines[end...].contains(where: { abs($0.x0 - x) <= NOTE_MARGIN_SAME_X })
+}
+
+/// Come una glossa a margine in testa a un nodo di note si separa dalla prima nota individuale del nodo.
+enum MarginGlossSeparation: Equatable {
+    /// la prima nota individuale del nodo è fatta delle sole righe della glossa
+    case glossOnly
+    /// la prima nota individuale comincia con le righe della glossa e continua, prima di ogni apertura, nella colonna
+    case glossThenContinuation(gloss: [LineSummary], continuation: [LineSummary])
+    /// forma non riconosciuta: nel dubbio non si separa nulla
+    case unrecognized
+}
+
+/// Separa le righe della glossa a margine in testa a un nodo di note (la firma di `tailStartsWithMarginGloss`, che il
+/// chiamante ha già verificato: righe in testa alla stessa ascissa, nel margine a sinistra della colonna del corpo) dal
+/// resto della PRIMA nota individuale del nodo, con la stessa regola di `splitFootnotes` (`footnoteLineRanges`): giro
+/// «chiusura del capitolo note» (2026-10-18, decisione 2 del maintainer). Misurato sui Mandrioli: delle 25 code fermate
+/// dalla guardia della glossa, 10 sono glossa più il seguito della nota della pagina A (note davvero spezzate) e 15 sono la
+/// sola glossa (dopo la quale viene il seguito vero in 3 casi, la nota seguente in 12).
+func marginGlossSeparation(_ lines: [LineSummary], bodyLeft: Double?) -> MarginGlossSeparation {
+    guard let first = lines.first, let left = bodyLeft, first.x0 < left - NOTE_COLUMN_OUTSIDE_TOLERANCE,
+          let range = footnoteLineRanges(lines).first, range.lowerBound == 0 else { return .unrecognized }
+    let x = first.x0
+    let glossEnd = lines.firstIndex(where: { abs($0.x0 - x) > NOTE_MARGIN_SAME_X }) ?? lines.count
+    guard glossEnd > 0 else { return .unrecognized }
+    if glossEnd >= range.upperBound { return .glossOnly }
+    return .glossThenContinuation(gloss: Array(lines[0..<glossEnd]), continuation: Array(lines[glossEnd..<range.upperBound]))
 }
 
 /// Se la testa candidata `fragmentId` (l'ultima nota della pagina A, aperta da un numero `fragmentNumber`) è un

@@ -10,8 +10,9 @@
 //  corpo di una riga si misura sui soli span con lettere o cifre. Due guardie per le categorie false trovate giudicando
 //  contro la pagina: la conferma deve venire da una nota che si apre come una nota (non da un numero seguito da una
 //  minuscola: il marcatore staccato e spostato dall'estrazione), e una coda aperta da una glossa a margine, o fatta della
-//  sola glossa, non si ricuce. Estrazioni sintetiche con geometria, pipeline reale, e prove dirette delle guardie; ogni
-//  regola ha la sua prova al contrario. Testi neutri, inventati.
+//  sola glossa, non si ricuce (dal giro «chiusura del capitolo note», 2026-10-18, la glossa resta al suo posto e si
+//  ricuce il seguito vero: `MarginGlossStitchTests`). Estrazioni sintetiche con geometria, pipeline reale, e prove dirette
+//  delle guardie; ogni regola ha la sua prova al contrario. Testi neutri, inventati.
 //
 
 import XCTest
@@ -133,14 +134,22 @@ final class AdjacentPageSuccessionTests: XCTestCase {
 
     // MARK: - glossa a margine in testa alla coda
 
-    func test_tailOpenedByAMarginGloss_noStitch() {
+    func test_tailOpenedByAMarginGloss_glossStays_continuationStitches() {
         // sulla pagina B l'estrazione mette in testa al nodo delle note una glossa stampata nel margine sinistro (a
-        // sinistra del corpo, che sta a 60): ricucire porterebbe la glossa dentro la nota
+        // sinistra del corpo, che sta a 60). Fino alla build 57 la coppia restava aperta (ricucire tutto avrebbe portato la
+        // glossa dentro la nota); dal giro «chiusura del capitolo note» (2026-10-18) la glossa resta dov'era, nota a sé, e
+        // il seguito dopo la glossa si ricuce alla testa (le prove complete in `MarginGlossStitchTests`)
         let gloss = line("Titoletto a margine", size: 8, x: 40, y: 150)
         let (doc, stats) = placed(pages(gloss: gloss))
-        XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "coda aperta da una glossa a margine")
-        XCTAssertEqual(stats.stitchedAdjacentPage, 0)
-        XCTAssertTrue(noteTexts(doc).contains("13 Seconda nota la cui prima frase finisce qui."))
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.marginGloss, "glossa in testa alla coda")
+        XCTAssertEqual(stats.adjacentPageCandidates.first?.reason, "ricucita")
+        XCTAssertEqual(stats.stitchedAdjacentPage, 1)
+        let notes = noteTexts(doc)
+        XCTAssertTrue(notes.contains(
+            "13 Seconda nota la cui prima frase finisce qui. Una frase nuova della stessa nota prosegue sulla pagina seguente."),
+                      "\(notes)")
+        XCTAssertTrue(notes.contains("Titoletto a margine"), "la glossa resta, da sola: \(notes)")
+        XCTAssertFalse(notes.contains { $0.hasPrefix("Titoletto a margine ") }, "la glossa non porta più il seguito")
     }
 
     func test_tailOpenedByALineInTheColumn_stitches() {
