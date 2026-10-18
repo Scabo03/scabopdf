@@ -142,7 +142,7 @@ Heading non numerati: non osservati. La struttura è interamente numerica/gerarc
 
 Prosa lineare. Caratteristiche tipografiche osservate:
 
-- **Corsivi**: frequenti per latinismi (`[locuzione latina di 4 parole]`, `ex ante`, `ex post`, `ex art.`, `iter`, `[brocardo latino di 4 parole]`, `[locuzione francese di 3 parole]`, `sine die`, `a posteriori`, `secundum eventum`, `[brocardo latino di 4 parole]`, `[brocardo latino di 4 parole]`), titoli di opere e riviste citate, nomi propri di parti processuali in italico per convenzione editoriale (es. "[nome e cognome di una parte]"), enfasi autoriale.
+- **Corsivi**: frequenti per latinismi (`condicio sine qua non`, `ex ante`, `ex post`, `ex art.`, `iter`, `nemo tenetur se detegere`, `et pour cause`, `sine die`, `a posteriori`, `secundum eventum`, `volenti non fit iniuria`, `versari in re illecita`), titoli di opere e riviste citate, nomi propri di parti processuali in italico per convenzione editoriale (es. "[nome e cognome di una parte]"), enfasi autoriale.
 - **Bold inline**: assente nei campioni del body. Il bold è riservato a heading e meta. Il caso descritto per Massime ("emphasis: true" su parole nel body in contesto Sapient-IA) **non si presenta** nella Dottrina.
 - **Virgolette**: sia caporali « » sia angolari " " sono usate, con preferenza per le caporali nelle citazioni testuali estese e per le virgolette curve nei termini tecnici evidenziati ("fatto", "ipotesi", "tesi", "verità"). Da preservare come tali.
 - **Citazioni in blocco rientrate**: NON osservate. Anche le citazioni testuali lunghe sono integrate nel flusso del paragrafo dentro virgolette caporali.

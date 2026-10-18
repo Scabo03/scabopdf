@@ -60,8 +60,8 @@ positivi non provabili zero). Vedi il referto del giro. Testo storico per confro
 
 Il fenomeno che ho chiuso per l'Estratto (titoli capitolo "CAPITOLO N" + titolo → un heading) è
 **corpus-wide**: heading multi-riga spezzati in più nodi (Rivista 342, Patriarca 163, Lineamenti 59;
-e sui manuali che il maintainer legge: **Lezioni 12, Mandrioli 9-12** — es. "LE ORIGINI DEL NOSTRO
-SISTEMA" ++ "DI GIUSTIZIA AMMINISTRATIVA"). È un **difetto reale di navigazione**. È **meccanico**
+e sui manuali che il maintainer legge: **Lezioni 12, Mandrioli 9-12** — es. un titolo di capitolo in
+maiuscolo di 8 parole spezzato in due nodi, 5 parole ++ 3 parole). È un **difetto reale di navigazione**. È **meccanico**
 (posizionale), non semantico. MA una fusione universale sicura richiede **posizione + stile** (stessa
 pagina, gap verticale piccolo, stesso corpo, x0 tollerante, riga-1 senza punto forte, riga-2 senza
 marcatore-nuovo-item — la macchina del `_consolidate_adjacent_headings` di Layer-1) perché il

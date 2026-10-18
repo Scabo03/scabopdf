@@ -157,7 +157,7 @@ PAGINA 75 (la banda nota finisce a metà frase, senza punto):
   «…[coda della nota, 7 parole, interrotta su una preposizione]»
         ↓↓↓
 PAGINA 76 (la banda nota prosegue con testo nota pieno):
-  «(181) [frase di 5 parole] ex art. 111 Cost. (Cass. 13 febbraio
+  «(181) [frase di 4 parole] ex art. 111 Cost. (Cass. 13 febbraio
    1989 n. 880). [rinvio di 7 parole a una pronuncia già citata] Cass. sez. un. 12 aprile 1980…»
 ```
 

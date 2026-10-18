@@ -169,7 +169,7 @@ arresto: [valore] (1° e 2° comma); [altro valore] (3° comma)
 fermo: [valore, 2 parole] (1° e 2° comma); [altro valore] (3° comma)
 custodia cautelare in carcere: [valore]
 altre misure cautelari personali: [valore]
-procedibilità: [valore, 2 parole]
+procedibilità: [valore, 1 parola]
 ```
 (nel file reale tutto su una riga senza newline)
 
