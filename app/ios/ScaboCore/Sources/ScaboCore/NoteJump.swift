@@ -22,6 +22,25 @@
 //   • nota lunga FRAZIONATA (§ 10.6): i pezzi di seguito prendono il richiamo del primo pezzo
 //     dello stesso nodo (giro «uniformità della lettura», 2026-10-16).
 //
+//  ── Il riscontro ANCORATO (giro «accessibilità e completamento», 2026-10-18, INBOX D.16) ────────────
+//
+//  Il rinfresco di una nota differita finisce, per costruzione (`memoryRefreshSegment`), esattamente dove
+//  comincia il marcatore della nota nel testo del corpo. Quindi nel testo del richiamo le ultime lettere/cifre
+//  del rinfresco sono seguite SUBITO dal numero della nota (e poi da una non-cifra). È un riscontro più
+//  stretto della regola di parola (`containsCallNumber`): lo stesso numero, nello stesso punto. Serve dove la
+//  regola di parola non riconosce il richiamo pur essendoci: dopo un punto o una virgola («…parola.12»), dopo
+//  un altro numero («…del 1990¹²», che il lettore di sistema scrive «199012»), dopo una sigla. Tre forme:
+//  nello stesso segmento; coda in fondo al segmento e numero in testa al segmento di testo seguente; coda a
+//  cavallo di due segmenti di testo consecutivi (il richiamo è il secondo). Misura sui 52 volumi di prova
+//  (iOS 27): sulle 7.806 note differite che il salto lo avevano già, il riscontro ancorato ritrova lo stesso
+//  richiamo in 7.694 casi e in nessun caso uno diverso; sulle 1.224 che non lo avevano ne lega 1.073, ognuno
+//  provato contro la pagina stampata (il numero è scritto come richiamo — in apice, più piccolo o fra
+//  parentesi — subito dopo la stessa frase o subito prima delle stesse parole: giudice di laboratorio).
+//  Non vale nei TESTI NORMATIVI (flusso con articoli: codici, atti AKN): lì un numero in apice dopo «art. N»
+//  è il comma, non un richiamo (provato su due casi dei codici); resta la regola di parola. Un rinfresco
+//  troppo corto (meno di 12 lettere) non lega nulla: con sei-undici lettere la stessa frase torna in più
+//  punti (provato: 11 legami sbagliati su 38).
+//
 
 import Foundation
 
@@ -94,24 +113,58 @@ public func noteCallLinks(_ segments: [ContentSegment]) -> NoteCallLinks {
         normCache[i] = s
         return s
     }
+    // Testo normativo (codici, atti AKN): niente riscontro ancorato, vedi l'intestazione del file.
+    let normative = segments.contains { $0.role == SemanticCategory.ARTICLE_HEADER.rawValue }
+    func isText(_ k: Int) -> Bool { !isNoteRole(segments[k].role) && segments[k].role != VISUAL_RESOURCE_ROLE }
+    func isHeading(_ k: Int) -> Bool {
+        segments[k].role.hasPrefix("HEADING_") || segments[k].role == SemanticCategory.ARTICLE_HEADER.rawValue
+    }
     for (i, seg) in segments.enumerated()
     where seg.role == SemanticCategory.NOTE.rawValue || seg.role == SemanticCategory.EDITORIAL_NOTE.rawValue {
         guard let number = noteOpening(seg.text) else { continue }
         var call: Int?
+        var anchored: Int?
         if !seg.memoryRefresh.isEmpty {
             // Differita: la coda della frase del richiamo, all'indietro.
             let tail = String(jumpNorm(seg.memoryRefresh).suffix(NOTE_JUMP_REFRESH_TAIL))
             guard tail.count >= 12 else { continue }
+            let digits = String(number)
             var j = i - 1
             let floor = max(0, i - NOTE_JUMP_MAX_LOOKBACK)
             while j >= floor {
-                let role = segments[j].role
                 // La nota differita è letta a fine della SUA sezione: il richiamo sta dopo
                 // l'intestazione che apre la sezione. Oltre, non si cerca (e il costo resta
                 // limitato anche sui volumi giganti).
-                if role.hasPrefix("HEADING_") || role == SemanticCategory.ARTICLE_HEADER.rawValue { break }
-                if !isNoteRole(role), role != VISUAL_RESOURCE_ROLE, norm(j).contains(tail) { call = j; break }
+                if isHeading(j) { break }
+                if isText(j), norm(j).contains(tail) { call = j; break }
                 j -= 1
+            }
+            if !normative {
+                if let c = call, !containsCallNumber(segments[c].text, number) {
+                    // nello stesso segmento, o coda in fondo e numero in testa al segmento di testo seguente
+                    if anchoredNumber(after: tail, in: norm(c), digits) {
+                        anchored = c
+                    } else if norm(c).hasSuffix(tail) {
+                        var k = c + 1
+                        while k < i, !isText(k) { k += 1 }
+                        if k < i, numberOpens(norm(k), digits) { anchored = c }
+                    }
+                } else if call == nil {
+                    // coda a cavallo di due segmenti di testo consecutivi: il richiamo è il secondo
+                    var k = i - 1
+                    while k > floor, !isHeading(k) {
+                        if isText(k) {
+                            var p = k - 1
+                            while p >= floor, !isText(p), !isHeading(p) { p -= 1 }
+                            if p >= floor, isText(p), !isHeading(p),
+                               anchoredNumber(straddling: norm(p), norm(k), tail, digits) {
+                                anchored = k
+                                break
+                            }
+                        }
+                        k -= 1
+                    }
+                }
             }
         } else {
             // In linea: il segmento di testo subito prima del gruppo di note. L'elemento «risorsa visiva» è additivo e
@@ -119,6 +172,11 @@ public func noteCallLinks(_ segments: [ContentSegment]) -> NoteCallLinks {
             var j = i - 1
             while j >= 0, isNoteRole(segments[j].role) || segments[j].role == VISUAL_RESOURCE_ROLE { j -= 1 }
             if j >= 0 { call = j }
+        }
+        if let c = anchored {
+            links.callOfNote[i] = c
+            links.notesOfCall[c, default: []].append(i)
+            continue
         }
         guard let c = call,
               containsCallNumber(segments[c].text, number,
@@ -129,6 +187,35 @@ public func noteCallLinks(_ segments: [ContentSegment]) -> NoteCallLinks {
     }
     linkNoteContinuations(segments, &links)
     return links
+}
+
+/// Vero se in `text` (lettere/cifre minuscole) la coda `tail` è seguita SUBITO dal numero `digits` e poi da una non-cifra
+/// (riscontro ancorato, vedi l'intestazione del file).
+func anchoredNumber(after tail: String, in text: String, _ digits: String) -> Bool {
+    var from = text.startIndex
+    while let r = text.range(of: tail, range: from..<text.endIndex) {
+        if numberOpens(text[r.upperBound...], digits) { return true }
+        from = text.index(after: r.lowerBound)
+    }
+    return false
+}
+
+/// Vero se `text` comincia col numero `digits` seguito da una non-cifra (o dalla fine).
+func numberOpens<S: StringProtocol>(_ text: S, _ digits: String) -> Bool {
+    guard text.hasPrefix(digits) else { return false }
+    let after = text.index(text.startIndex, offsetBy: digits.count)
+    return after == text.endIndex || !text[after].isNumber
+}
+
+/// Vero se la coda sta a cavallo fra la fine di `first` e l'inizio di `second` (almeno un carattere per parte) ed è
+/// seguita subito, dentro `second`, dal numero `digits` e da una non-cifra.
+func anchoredNumber(straddling first: String, _ second: String, _ tail: String, _ digits: String) -> Bool {
+    let chars = Array(tail)
+    for split in stride(from: chars.count - 1, through: 1, by: -1) {
+        let head = String(chars[..<split]), rest = String(chars[split...])
+        if first.hasSuffix(head), second.hasPrefix(rest), numberOpens(second.dropFirst(rest.count), digits) { return true }
+    }
+    return false
 }
 
 /// L'id-nodo di un pezzo di nota frazionata: l'id senza l'ultimo suffisso `#k` (`fractionLongNoteSegments` chiama i pezzi

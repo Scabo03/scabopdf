@@ -587,7 +587,40 @@ Rizzo, giuste; con volumi nuovi fatti di pagine intere di note sarebbe un rischi
 sotto il corpo» passano da 5 a 157: per le successioni confermate la prudenza poggia sulla geometria. (d)
 `footnoteLineRanges` ricopia la regola di `splitFootnotes`: oggi identiche, tenute insieme solo da un test sul conteggio.
 
-### D.16 Note lette lontano dal richiamo senza il salto «Vai al testo del richiamo» — APERTA (misurata, 2026-10-18)
+### D.16 Note lette lontano dal richiamo senza il salto «Vai al testo del richiamo» — CURATA in gran parte, residuo dichiarato (giro «accessibilità e completamento», 2026-10-18)
+
+**Esito (campo, stesso attrezzo sulle letture dei 52 volumi, iOS 27 e 26.5 con numeri identici): differite senza salto
+1.224 → 151 su 9.030.** Le cause, misurate prima di curare (funzione di laboratorio sul codice dell'app): 848 il numero del
+richiamo c'è ma la regola di parola di `containsCallNumber` non lo riconosce (dopo un punto o una virgola, dopo un
+altro numero come un anno, dopo una sigla), 200 il numero non sta nel segmento dove la regola cercava, 128 la frase del richiamo alla memoria
+sta a cavallo di due segmenti, 48 rinfresco corto. **L'ipotesi della ricerca fermata da un'intestazione è falsificata:
+0 casi.** Cura (`ScaboCore/NoteJump.swift`, «riscontro ancorato»): il richiamo alla memoria finisce esattamente sul segno
+di richiamo (`memoryRefreshSegment`), quindi il numero della nota si cerca **subito dopo la coda della frase**, seguito da un
+carattere che non sia una cifra, in tre forme (nello stesso segmento; all'inizio del segmento di testo seguente; a cavallo
+fra due segmenti, mai oltre un titolo); vale solo dove la regola di prima non lega, quindi nessun legame di prima cambia.
+Esclusi: i testi normativi (un apice dopo «art. N» è il numero del comma: 2 legami sbagliati trovati nei codici) e il
+rinfresco corto (meno di 12 lettere: 11 sbagliati su 38 nella prova). Verifica: 1.073 note nuove col salto (+674 pezzi di
+seguito, che lo ereditano), 0 legami persi, 0 cambiati; salto inverso «Vai alla nota» presente per tutte le 8.879 note
+legate; **ogni legame nuovo controllato contro la pagina stampata** (laboratorio, PyMuPDF): 1.070 in automatico (frase del
+richiamo e numero in apice, più piccolo o fra parentesi sulla pagina; o numero seguito dalle parole della pagina), 3 a vista
+(giusti), campione casuale di 30 rivisto uno per uno: 30/30 giusti; prova al contrario (numero di ogni nota spostato di uno):
+0 legami in più. Il legame si calcola nella vista: vale subito anche per i libri già aperti, senza rielaborare.
+
+Per volume (campo, iOS 27; differite, senza salto prima → dopo): Delitti in prima pagina 239, 224 → 1; Mandrioli-Carratta
+vol. 3 1.339, 159 → 30; vol. 4 1.148, 141 → 15; Rivista DPC 2-2018 673, 130 → 8; Pubblico ministero 95, 88 → 2;
+Mosconi-Campiglio 543, 66 → 10; Rivista DPC 4-2020 534, 55 → 5; DPC vol. 2 354, 40 → 5; DeJure DT Cartabia 353, 35 → 2;
+Estratto «Il provvedimento amministrativo» 915, 41 → 9; Diritto penale, Parte speciale 345, 46 → 16; Compendio di procedura
+penale 232, 29 → 2; Rizzo 399, 25 → 3; DPC vol. 3 185, 18 → 0; Magnani 149, 19 → 2; Nomofanie 543, 27 → 12; DPC vol. 1 247,
+15 → 2; Il mercato finanziario 359, 15 → 2; EdD L'azienda 101, 12 → 1; Lezioni storia 98, 10 → 0;
+Breve storia (processo inglese) 44, 4 → 1; DeJure DT Concause 74, 4 → 2; codice civile 32, 9 → 9; codice penale
+29, 12 → 12.
+
+**Residuo dichiarato, 151 (nessun legame inventato):** 85 il numero sulla pagina non segue la frase del richiamo nella
+lettura (difetto d'estrazione o d'ordine del testo: la frase c'è, il numero è altrove), 45 rinfresco corto, 21 nei codici
+(il segno dopo «art. N» non si distingue dal comma). Volumi col residuo maggiore: Mandrioli-Carratta vol. 3 (30), Diritto
+penale, Parte speciale (16), Mandrioli-Carratta vol. 4 (15), Nomofanie (12), codice penale (12).
+
+Misura di partenza (giro «chiusura del capitolo note»):
 
 Giro «chiusura del capitolo note». La decisione 1 del maintainer (nessun tetto alla distanza: una nota lunga si legge a fine
 sezione, e per raggiungerla prima c'è il salto fra nota e richiamo) poggia sul salto. Misura (campo, funzione dell'app
