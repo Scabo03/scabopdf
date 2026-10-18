@@ -40,8 +40,8 @@ final class SplitMemoryProbeTests: XCTestCase {
 
     private func syntheticContent(_ count: Int) -> PaginatedContent {
         // Testo di corpo realistico (~160 caratteri), come un comma/paragrafo tipico.
-        let body = "Il presente articolo disciplina la fattispecie in esame, stabilendo i diritti e "
-            + "gli obblighi delle parti nonché le conseguenze giuridiche derivanti dall'inadempimento."
+        let body = "Il presente capitolo descrive il caso del mulino, fissando i compiti e i turni dei mugnai "
+            + "nonché le conseguenze pratiche che derivano dai ritardi nella consegna della farina."
         let segments = (0..<count).map { i in
             ContentSegment(id: "n\(i)", role: "BODY", text: "\(i). \(body)",
                            lengthCategory: "", acousticIntro: "")

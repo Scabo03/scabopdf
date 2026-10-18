@@ -78,9 +78,9 @@ final class PdfKitExtractorTests: XCTestCase {
         [
             Block(text: "Capitolo Primo — Le obbligazioni", size: 24, bold: true, color: .black),
             Block(text: "Il rapporto obbligatorio lega due soggetti determinati.", size: 11, bold: false, color: .black),
-            Block(text: "Il creditore ha diritto alla prestazione dovuta dal debitore.", size: 11, bold: false, color: .black),
+            Block(text: "Il creditore attende dal mugnaio la consegna della farina pattuita.", size: 11, bold: false, color: .black),
             Block(text: "La prestazione deve essere suscettibile di valutazione economica.", size: 11, bold: false, color: .black),
-            Block(text: "L'inadempimento espone il debitore al risarcimento del danno.", size: 11, bold: false, color: .black),
+            Block(text: "Il ritardo costringe il mugnaio a rifondere la farina perduta.", size: 11, bold: false, color: .black),
             Block(text: "Cfr. art. 1218 c.c. sulla responsabilità del debitore.", size: 8, bold: false, color: .black),
         ]
     }

@@ -688,9 +688,9 @@ final class ContinuousReadingViewTests: XCTestCase {
         let view = makeView()
         view.render([ContentSegment(id: "nt", role: "NOTE", text: "Cfr. art. 1218 c.c. sulla responsabilità del debitore.",
                                     lengthCategory: "LONG", acousticIntro: "Nota lunga.",
-                                    memoryRefresh: "la rivalutazione del credito del lavoratore")])
+                                    memoryRefresh: "la maturazione del grano nel podere")])
         let label = cell(view, 0).accessibilityLabel ?? ""
-        XCTAssertTrue(label.hasPrefix("la rivalutazione del credito del lavoratore"), "il rinfresco è anteposto: \(label)")
+        XCTAssertTrue(label.hasPrefix("la maturazione del grano nel podere"), "il rinfresco è anteposto: \(label)")
         XCTAssertTrue(label.contains("Cfr. art. 1218 c.c. sulla responsabilità del debitore."), "contenuto integro: \(label)")
         XCTAssertFalse(label.contains("Nota lunga."), "il segnale-nota sostituisce l'intro verbale")
     }
@@ -773,10 +773,10 @@ final class ContinuousReadingViewTests: XCTestCase {
         let blocks: [(text: String, size: CGFloat, bold: Bool)] = [
             ("Capitolo Primo — Le obbligazioni", 24, true),
             ("Il rapporto obbligatorio lega due soggetti determinati: il creditore e il debitore.", 11, false),
-            ("Il creditore ha diritto alla prestazione, che deve essere suscettibile di valutazione economica.", 11, false),
-            ("L'inadempimento espone il debitore al risarcimento del danno secondo le regole generali.", 11, false),
+            ("Il mugnaio consegna la farina pattuita, che deve avere un prezzo stimabile in denaro.", 11, false),
+            ("Il ritardo obbliga chi doveva consegnare a rimborsare il prezzo secondo le regole generali.", 11, false),
             ("Sezione I — La prestazione", 18, true),
-            ("La prestazione può consistere in un dare, un fare o un non fare a seconda del titolo.", 11, false),
+            ("La consegna può riguardare grano, farina o crusca a seconda del contratto stipulato.", 11, false),
             ("Cfr. art. 1218 c.c. sulla responsabilità del debitore.", 8, false),
         ]
         let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
