@@ -269,6 +269,56 @@ dentro la nota: servirebbe togliere la glossa dalla coda o saltare il nodo-gloss
 46-47, 514-515, 770-771, 899-900 e Delitti 43-44, 265-266, rimasti aperti); le pagine non contigue e la variante MULTIPAGE
 (fuori dal giro). Nei codici, circa 219 (esclusi per decisione).
 
+## 10. Dopo la chiusura (giro «chiusura del capitolo note e pulizia del repo», 2026-10-18, build 58)
+
+**La decisione (fonte, `LAYER2_PRODUCT_DECISIONS.md` § 12.12, decisione 2 del 2026-10-18).** Si curano le 13 note dei
+Mandrioli spezzate fra pagine vicino a una glossa a margine; la glossa resta nel flusso come prima; le 12 note complete
+restano separate; ogni caso giudicato contro la pagina stampata.
+
+**Le 25 coppie (campo).** La glossa stampata nel margine sinistro, accanto alle note, entra nel nodo delle note della
+pagina B in due forme. **Glossa in testa alla coda, poi il seguito** (10 coppie, tutte note spezzate): vol. 3 pp. 80→81,
+270→271, 286→287, 291→292, 325→326, 361→362, 408→409; vol. 4 pp. 216→217, 328→329, 399→400. **Glossa come prima nota a
+sé** (15 coppie; in 4 un nodo fatto della sola glossa, vol. 3 p. 303 e vol. 4 pp. 104, 120, 237, in 11 la prima nota di
+un nodo che prosegue con le note seguenti: i documenti della build 57 dicono «nodo di sola glossa» per tutte e 15): dopo
+la glossa viene il seguito vero, senza numero, in 3 coppie (vol. 3 pp. 302→303; vol. 4 pp. 103→104, 236→237: note
+spezzate) e la nota N+1 in 12 coppie (le note complete del § 9). Ciò che distingue le 13 dalle 12 non è un tratto del
+testo ma la successione delle righe dopo la glossa; il segnale dell'app (righe dell'estrazione, regola di
+`splitFootnotes`) e la pagina stampata (prima riga dell'apparato nella colonna, PyMuPDF) danno la stessa partizione su
+tutte le 25 coppie.
+
+**La cura (campo, commit `fa71598`, nel codice condiviso: iPad e Mac identici).** Dove la guardia della glossa fermava
+la coppia, `marginGlossSeparation` separa le righe della glossa (fuori dalla colonna del corpo, alla stessa ascissa fra
+loro) dal resto della prima nota della pagina B. Con la glossa in testa, il seguito si ricuce alla testa solo con la
+successione CONFERMATA da una nota che si apre come una nota e se la prima riga del seguito sta sotto il corpo, dentro
+la colonna, con lo stesso corpo tipografico della testa, e non apre né porta il numero della nota seguente; la prima
+nota della pagina B resta con la sola glossa, allo stesso posto. Con la glossa come nota a sé, la glossa resta dov'è e
+si vaglia con le guardie di sempre la nota che la segue: un seguito senza numero si ricuce, una nota N+1 non è nemmeno
+candidata. Nel dubbio la coppia resta aperta, col suo motivo.
+
+**Il giudizio (campo).** Tutte e 25 le coppie confrontate con la pagina stampata su entrambe le generazioni (testa nuova
+= testa di prima più il seguito; estremi della giunzione ritrovati sulle due pagine; la glossa con le lettere della
+glossa stampata e con gli stessi vicini nel flusso, in Lettura Continua e in Dottrina Inline; il seguito non compare più
+altrove; per le 12 complete, testa, glossa e nota seguente invariate): **25/25**, più il giudizio a vista delle 25
+pagine. Ricuciture fra pagine contigue **659 → 672** (vol. 3 155 → 163, vol. 4 135 → 140), stesso insieme su iOS 27 e
+26.5; nessun altro volume cambia. Lettere e cifre identiche in ogni flusso; cambiano solo i trattini, due in meno per
+flusso nel vol. 3 e tre nel vol. 4 (4 parole spezzate fra le due pagine ricomposte alla giunzione e 1 parola del corpo
+ricomposta fra le pp. 303 e 304 del vol. 3, ora che la coda non sta più fra le due metà del paragrafo: verificate sulla
+pagina); nessuna parola nuova nel testo (nei richiami alla memoria 3 parole che prima non vi comparivano, tutte presenti
+nel volume).
+
+**Rimisura (campo, lo strumento del § 2 sulle letture finali).** Aperte 2.324 (iOS 27) e 2.328 (iOS 26.5), come nella build
+57: lo strumento guarda la prima riga dell'apparato della pagina B, e nelle 25 coppie quella riga è la glossa, che resta
+nel flusso per decisione. Le 13 ricuciture si vedono nelle righe dell'elenco: 13 cambiano per generazione, in tutte la
+lunghezza della testa (che ora contiene il seguito); in 10 anche la lunghezza della coda (ridotta alla glossa), in 4 i
+pezzi della coda, in 5 il richiamo alla memoria della testa (diventata media, ora letta a fine paragrafo); in 2 cambia
+la sola testa.
+
+**Quante ne restano vere (dedotto).** Fuori dai codici circa 32 (le circa 45 della build 57 meno le 13 ricucite): le teste
+senza numero proprio (93 coppie, quasi tutte riquadri del Manuale di Diritto Costituzionale), le coppie con la successione
+ASSENTE sulla pagina seguente (fra cui i casi storici Lineamenti e Delitti), le pagine non contigue e la variante MULTIPAGE.
+Nei codici circa 219, in attesa di una cura vera dell'ordine delle colonne (decisione 3 del 2026-10-18). Con questo giro il
+capitolo delle note è chiuso: le voci che restano aperte lo sono per scelta (CARRYOVER, STATO del 2026-10-18).
+
 ## Appendice — I 202 casi giudicati (volume, pagine, strato, verdetto, tipo)
 
 Strato = successione dei numeri su B · motivo per cui l'iPad non ricuce · salto. Il «tipo» dice che cos'è davvero la coda

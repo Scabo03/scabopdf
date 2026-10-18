@@ -353,6 +353,8 @@ Le note **MEDIUM, LONG, VERY_LONG e MEGA** vengono lette **a fine paragrafo nume
 (il punto di sosta strutturale più vicino che segue il richiamo), quanto lontano sia: se la sezione è lunga, il libro è fatto
 così, e l'app non sposta la nota in un punto che il libro non ha. Il rinfresco di contesto (§ 7.4) riaggancia la nota alla
 frase del richiamo; chi vuole raggiungere prima la nota, o tornare al richiamo, usa il salto fra nota e richiamo (§ 7.12).
+*Misura del 2026-10-18 (`ULTRAFOCUS_INBOX.md` D.16): oggi il salto manca a 1.224 delle 9.030 note lette lontano dal
+richiamo nei 52 volumi di prova, concentrate in pochi volumi; la decisione poggia sul salto, che va completato lì.*
 
 ### 7.4 Memory refresh — rinfresco di contesto prima delle note differite
 
@@ -1159,6 +1161,19 @@ repo», build 58).**
    ricucitura con le stesse guardie.
 4. **La rete delle risorse visive giudica anche il posto nel flusso**, non solo l'identità della risorsa (pagina, tipo,
    riquadro).
+
+**Esito del giro (2026-10-18, build 58).** (1) Registrata in § 7.3: nessun tetto; la voce è chiusa. (2) Le 13 note dei
+Mandrioli spezzate vicino a una glossa a margine si leggono intere: la glossa resta nel flusso, allo stesso posto, e il
+seguito della nota si ricuce alla sua testa solo con la successione confermata e le guardie geometriche; le 12 note
+complete restano separate; tutte e 25 le coppie giudicate contro la pagina stampata, su iOS 27 e 26.5 (ricuciture fra
+pagine contigue 659 → 672). La cura vale per i PDF elaborati sull'iPad (offerta «Lettura migliore disponibile», cura 58);
+le letture arrivate dal Mac la ricevono dal Mac (`curesFromTheMacOnly` 56, 57, 58); i testi normativi non cambiano e non
+ricevono offerte nuove. (3) Nei codici nessuna ricucitura nuova: resta in attesa della cura dell'ordine delle colonne.
+(4) La rete delle risorse visive giudica il posto di ognuna delle 110 risorse contro una verità registrata, e diventa
+rossa esattamente sulla risorsa spostata di proposito. **Il capitolo delle note è chiuso**: ciò che resta aperto lo è per
+scelta (pagine non contigue e MULTIPAGE, teste senza numero proprio, codici, difetti minori dell'estrazione; elenco nel
+CARRYOVER, STATO del 2026-10-18). Dettagli: `CONTEGGIO_NOTE_SPEZZATE.md` § 10, `ULTRAFOCUS_INBOX.md` A.1, D.12-D.16
+(D.16: il salto fra nota e richiamo manca a 1.224 note differite su 9.030), `RISORSE_VISIVE.md` § 6.
 
 ---
 

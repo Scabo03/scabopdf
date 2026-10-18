@@ -100,6 +100,12 @@ diversa» (CARRYOVER, § C del capitolo NOTE).
   ricomposte 16 teste-frammento (12 della Parte 1, commit `0e4376b`, e 4 nate con le ricuciture nuove). Aperte 2.442 →
   2.324 (iOS 27); vere fuori dai codici circa 45. I casi storici restano com'erano: quelli aperti hanno la successione ASSENTE sulla pagina B. MULTIPAGE e
   pagine non contigue non toccate. Dettaglio: `docs/CONTEGGIO_NOTE_SPEZZATE.md` § 9.
+- **Aggiornamento 2026-10-18 (giro «chiusura del capitolo note e pulizia del repo», build 58).** Ricucite le 13 note dei
+  Mandrioli spezzate vicino a una glossa a margine (D.12 chiusa): ricuciture 659 → 672, le 12 note complete separate, la
+  glossa nel flusso; vere aperte fuori dai codici circa 32 (dedotto). Nei codici la ricucitura aspetta una cura vera
+  dell'ordine delle colonne (decisione 3 del maintainer); nessun tetto alla distanza delle note lunghe (decisione 1).
+  **MULTIPAGE e pagine non contigue restano aperte per scelta**, come le teste senza numero proprio: con questo giro il
+  capitolo delle note è chiuso. Dettaglio: `docs/CONTEGGIO_NOTE_SPEZZATE.md` § 10.
 
 ### A.2 L2 — saldatura senza successione
 
@@ -512,7 +518,16 @@ ricucitura non lo cambia. Cura possibile: ammettere la parentesi aperta prima de
 con le stesse esclusioni di abbreviazione («art. (5)» no); da misurare sul corpus con la rete dei salti
 (`verifica-salti`).
 
-### D.12 Code di nota aperte da una glossa a margine (Mandrioli-Carratta vol. 3 e 4) — APERTA (dichiarata, 2026-10-17)
+### D.12 Code di nota aperte da una glossa a margine (Mandrioli-Carratta vol. 3 e 4) — ✅ CHIUSA (giro «chiusura del capitolo note», 2026-10-18, build 58)
+
+**Chiusura (decisione 2 del maintainer).** Commit `fa71598`, nel codice condiviso: in `stitchAdjacentPageFootnotes`, dove
+la guardia della glossa fermava la coppia, `marginGlossSeparation` (`NoteBinding.swift`) separa le righe della glossa dal
+resto della prima nota della pagina B. Glossa in testa alla coda: la glossa resta dov'era (la nota della coda ne porta il
+solo testo, stesso id e stesso posto) e il seguito si ricuce alla testa con la successione confermata e quattro guardie sue
+(sotto il corpo, nella colonna, stesso corpo tipografico, non numerato come la nota seguente). Glossa come nota a sé (in 4
+casi un nodo a sé, in 11 la prima nota di un nodo con le note seguenti): la glossa resta dov'è e si vaglia la nota che segue. Esito su entrambe le generazioni: **le 13 note spezzate ricucite**, le 12
+complete separate come prima, ogni glossa nel flusso al suo posto; 25/25 coppie giudicate contro la pagina stampata;
+ricuciture 659 → 672; lettere e cifre identiche. Dettaglio: `CONTEGGIO_NOTE_SPEZZATE.md` § 10. Testo storico della voce:
 
 Giro «pulizia delle note». 25 coppie di pagine contigue con la successione confermata NON ricucite: sulla pagina B la
 glossa stampata nel margine sinistro accanto alle note entra nel nodo delle note (in testa al nodo, 10 casi, o come nodo
@@ -525,6 +540,9 @@ da 1: vol. 3 pp. 213→214, 281→282, 299→300, 359→360; vol. 4 pp. 48→49,
 dalla coda (o saltare il nodo fatto della sola glossa) e ricucire la coda vera; non fatta per prudenza.
 
 ### D.13 Frammenti di nota a numero spurio sulla stessa pagina, e una coda divisa da un richiamo del corpo — APERTE (preesistenti, 2026-10-17)
+
+*2026-10-18: invariate nella build 58; restano aperte per scelta alla chiusura del capitolo note (difetti dell'estrazione,
+pochi e dichiarati, senza un segnale sicuro per una cura).*
 
 Viste nella vista del simulatore del giro «pulizia delle note», identiche nella build 56. (a) Nomofanie p. 206: una riga
 della nota 75 comincia con «20.» (un numero di pagina citato) e l'app la legge come una nota a sé, letta in un altro punto;
@@ -553,6 +571,9 @@ della rete.
 
 ### D.15 Rilievi minori della revisione indipendente del giro «pulizia delle note» — APERTI (preesistenti, 2026-10-17)
 
+*2026-10-18: invariati nella build 58 (la cura della glossa usa `footnoteLineRanges` per la stessa regola: il punto (d)
+vale anche per lei); restano aperti per scelta alla chiusura del capitolo note, come rilievi minori.*
+
 Nessuno è nato nel giro; tutti identici nella build 56. (a) Richiami alla memoria con una parola composta fusa:
 `stitchHyphenation` (`MemoryRefresh.swift`) toglie ogni trattino fra due minuscole, anche quello di una parola composta. La
 revisione ne ha visti almeno 7 su iOS 27 (Estratto, Nomofanie, Rivista DPC 2-2018, Delitti, codice penale); una misura larga
@@ -565,6 +586,20 @@ vale il predicato, i controlli «sotto il corpo» si saltano (`NoteBinding.swift
 Rizzo, giuste; con volumi nuovi fatti di pagine intere di note sarebbe un rischio. Le coppie fermate dalla guardia «coda non
 sotto il corpo» passano da 5 a 157: per le successioni confermate la prudenza poggia sulla geometria. (d)
 `footnoteLineRanges` ricopia la regola di `splitFootnotes`: oggi identiche, tenute insieme solo da un test sul conteggio.
+
+### D.16 Note lette lontano dal richiamo senza il salto «Vai al testo del richiamo» — APERTA (misurata, 2026-10-18)
+
+Giro «chiusura del capitolo note». La decisione 1 del maintainer (nessun tetto alla distanza: una nota lunga si legge a fine
+sezione, e per raggiungerla prima c'è il salto fra nota e richiamo) poggia sul salto. Misura (campo, funzione dell'app
+`noteCallLinks` sulle letture dei 52 volumi di prova, iOS 27, attrezzo di laboratorio
+`~/Developer/scabopdf-gen-lab/chiusura/strumenti/legami_salto`): delle **9.030 note differite** (lette lontano dal
+richiamo, col richiamo alla memoria) **1.224 non hanno il salto** (13,6 %); erano 1.223 su 9.025 nella build 57 (la cura
+58 non toglie nessun salto e ne aggiunge uno). Concentrate in pochi volumi: Delitti in prima pagina 224 su 239, Pubblico
+ministero 88 su 95, Mandrioli-Carratta vol. 3 159 su 1.339 e vol. 4 141 su 1.148, Rivista DPC 2-2018 130 su 673,
+Mosconi-Campiglio 66 su 543. Cause probabili, da accertare: la ricerca all'indietro del richiamo si ferma alla prima
+intestazione (anche di livello basso) mentre la nota è letta alla fine di una sezione più ampia; la coda del richiamo alla
+memoria non ritrovata nel testo; richiami in una forma che `containsCallNumber` non riconosce. Da misurare per causa prima
+di curare; il legame si calcola nella vista e una cura varrebbe subito, senza rielaborare.
 
 ### D.8 Linea Mac — scheletro dell'app, parità fra sistemi, decisioni pendenti (2026-10-06; ramo fuso in main il 2026-10-16)
 
