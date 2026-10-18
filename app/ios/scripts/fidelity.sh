@@ -33,6 +33,19 @@ export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Develope
 HERE="$(cd "$(dirname "$0")/.." && pwd)"   # .../app/ios
 STEM="${PDF_NAME%.pdf}"
 
+# Le cartelle d'uscita devono essere percorsi ASSOLUTI e senza «=»: un valore relativo o un'assegnazione malformata
+# (per esempio SCABO_BENCH_OUT=SCR=/percorso) creerebbe la cartella dentro il repo, nella cartella da cui si lancia lo
+# script (successo il 2026-07-13: una catena di cartelle vuote «app/ios/SCR=/…», tolta il 2026-10-18).
+for p in "$OUT" "$REQUEST"; do
+    case "$p" in
+        /*) ;;
+        *) echo "[fidelity] percorso non assoluto: «${p}» (SCABO_BENCH_OUT e SCABO_BENCH_REQUEST vogliono un percorso assoluto)" >&2; exit 2 ;;
+    esac
+    case "$p" in
+        *=*) echo "[fidelity] percorso con «=»: «${p}» (assegnazione malformata?)" >&2; exit 2 ;;
+    esac
+done
+
 mkdir -p "$OUT"
 printf '{"corpusDir":"%s","outDir":"%s","pdfs":["%s"]}\n' "$CORPUS" "$OUT" "$PDF_NAME" > "$REQUEST"
 
