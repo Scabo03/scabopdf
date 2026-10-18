@@ -22,6 +22,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
         self.window = window
+        // La lingua dell'interfaccia (WCAG 3.1.1; giro «accessibilità e completamento», 2026-10-18): l'app è in italiano e
+        // lo dichiara, così VoiceOver e il display braille la rendono in italiano anche su un apparecchio in un'altra
+        // lingua. La lingua del contenuto la dichiara la lettura (`DocumentLanguage`).
+        UIApplication.shared.accessibilityLanguage = DocumentLanguage.interfaceCode
+        window.accessibilityLanguage = DocumentLanguage.interfaceCode
         let prefs = LibraryService.shared.prefs
 
         #if DEBUG
@@ -37,6 +42,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             || CommandLine.arguments.contains("-uiTestSeedVisualResource")
             || CommandLine.arguments.contains("-uiTestSeedVisualResourceControl")
             || CommandLine.arguments.contains("-uiTestSeedHomeOrder")
+            || CommandLine.arguments.contains("-uiTestSeedKeyboardBooks")
             || UITestSeeding.macReadingSeeds.contains(where: CommandLine.arguments.contains) {
             setStoredFirstOpenCompleted(prefs, true)
             UITestSeeding.applyIfRequested()

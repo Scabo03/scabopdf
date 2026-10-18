@@ -203,9 +203,10 @@ final class SegmentCell: UICollectionViewCell {
 
         // La cella È l'elemento accessibile foglia: le sotto-viste (testo, marcatore) non sono esposte.
         isAccessibilityElement = true
-        // Lingua del contenuto = italiano (WCAG 3.1.1): VoiceOver e il display braille rendono il testo
-        // giuridico in italiano anche su un device configurato in un'altra lingua (niente mispronuncia).
-        accessibilityLanguage = "it"
+        // Lingua del contenuto (WCAG 3.1.1): quella del documento (`DocumentLanguage`, l'italiano salvo un libro
+        // chiaramente in un'altra lingua), riapplicata a ogni configurazione; VoiceOver e il display braille rendono il
+        // testo nella sua lingua anche su un apparecchio configurato in un'altra.
+        accessibilityLanguage = DocumentLanguage.defaultCode
     }
 
     @available(*, unavailable)
@@ -276,6 +277,8 @@ final class SegmentCell: UICollectionViewCell {
         // Risorsa visiva (§ 7.9): la pagina vera della regione come valore e, se la pagina ne ha più d'una, quale: annunci
         // altrimenti identici di fila si distinguono. Per ogni altro elemento nessun valore, come prima.
         accessibilityValue = host.visualResourceValue(forIndex: index)
+        // La lingua del documento (WCAG 3.1.1): l'italiano, o la lingua di un libro chiaramente in un'altra lingua.
+        accessibilityLanguage = host.contentLanguage
 
         // Stacco di pagina originale (Opzione A): visivo, muto per VoiceOver. Scala con la leva.
         pageMarker.isHidden = !pageStart
@@ -347,6 +350,10 @@ final class ContinuousReadingView: UIView {
     /// (nessun muro di memoria), ma i loro indice+livello vivono qui e il rotore li raggiunge scorrendo
     /// e materializzando la sola cella bersaglio (meccanismo validato in Fase 0).
     private(set) var headingIndex: [(index: Int, level: Int)] = []
+    /// La lingua del contenuto (WCAG 3.1.1, `DocumentLanguage`): l'italiano, salvo un documento chiaramente in un'altra
+    /// lingua. Ogni cella la dichiara a VoiceOver e al display braille.
+    private(set) var contentLanguage = DocumentLanguage.defaultCode
+
     /// Legami nota ↔ segmento del richiamo (§ 7.12), calcolati a ogni render (`noteCallLinks`).
     private(set) var noteLinks = NoteCallLinks()
 
@@ -569,6 +576,7 @@ final class ContinuousReadingView: UIView {
         recomputePageStarts()
         rebuildHeadingIndexAndRotors()
         noteLinks = noteCallLinks(segments)
+        contentLanguage = DocumentLanguage.code(for: segments)
         resetHeightCache()  // nuovo contenuto → nuove altezze da misurare
         collectionView.reloadData()
         onPaginationChanged?()
@@ -703,6 +711,23 @@ final class ContinuousReadingView: UIView {
             })
         }
         return actions
+    }
+
+    /// Salto fra nota e richiamo DA TASTIERA (WCAG 2.1.1; giro «accessibilità e completamento», 2026-10-18): sull'elemento
+    /// in lettura fa ciò che fanno le azioni VoiceOver «Vai al testo del richiamo» (sulla nota) e «Vai alla nota N» (sul
+    /// testo che richiama, la prima delle sue note). Falso se l'elemento non è né una nota legata né un testo che richiama.
+    @discardableResult
+    func jumpBetweenNoteAndCall() -> Bool {
+        let index = currentOrTopIndex
+        if let call = noteLinks.callOfNote[index] {
+            goToElement(atIndex: call, focus: true)
+            return true
+        }
+        if let note = noteLinks.notesOfCall[index]?.first, note < segments.count {
+            goToElement(atIndex: note, focus: true)
+            return true
+        }
+        return false
     }
 
     /// Azioni della RISORSA VISIVA per l'elemento di indice dato (§ 7.9, `docs/RISORSE_VISIVE.md`): «Estrai come

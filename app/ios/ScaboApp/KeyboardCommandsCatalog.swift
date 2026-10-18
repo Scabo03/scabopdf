@@ -12,6 +12,9 @@
 //  Scelte dei tasti: tutti MODIFICATI (⌘ / ⌥) tranne Esc, per non collidere con la
 //  navigazione a tasti nudi di Full Keyboard Access (Tab/frecce/Spazio).
 //
+//  Giro «accessibilità e completamento» (2026-10-18): il salto fra nota e richiamo ha il suo tasto (⌘J), e nello split
+//  screen i comandi di lettura valgono per la metà che comanda, con due comandi per scegliere la metà (⌥⌘← / ⌥⌘→).
+//
 
 import UIKit
 
@@ -23,6 +26,22 @@ struct KeyboardCommandSpec {
     let modifiers: UIKeyModifierFlags
     /// Descrizione in prosa di cosa fa (per il pannello scopribile).
     let description: String
+    /// Altri tasti con lo stesso effetto e gli stessi modificatori (per le disposizioni di tastiera in cui il tasto
+    /// principale non si batte direttamente: sulla tastiera italiana l'«=» è Maiuscole+0, il «+» è un tasto a sé).
+    var alternateInputs: [String] = []
+
+    /// Gli `UIKeyCommand` della voce: il tasto principale (con il nome che il sistema mostra tenendo premuto ⌘) e gli
+    /// alternativi, nascosti in quell'elenco per non comparire due volte. Stessa azione, stesso `propertyList`.
+    func makeKeyCommands(action: Selector, propertyList: Any? = nil) -> [UIKeyCommand] {
+        ([input] + alternateInputs).enumerated().map { k, key in
+            let cmd = UIKeyCommand(title: title, action: action, input: key, modifierFlags: modifiers,
+                                   propertyList: propertyList)
+            cmd.discoverabilityTitle = title
+            cmd.wantsPriorityOverSystemBehavior = true
+            if k > 0 { cmd.attributes = .hidden }
+            return cmd
+        }
+    }
 
     /// I tasti in glifi (es. «⌘ ↓», «Esc»), per la resa visiva del pannello.
     var displayKeys: String {
@@ -91,7 +110,8 @@ enum KeyboardCommandsCatalog {
             description: "Salta al titolo precedente."),
         KeyboardCommandSpec(id: "textLarger", title: "Testo più grande",
             input: "=", modifiers: .command,
-            description: "Ingrandisce il testo di lettura di un passo."),
+            description: "Ingrandisce il testo di lettura di un passo. Sulla tastiera italiana: Comando e il tasto più.",
+            alternateInputs: ["+"]),
         KeyboardCommandSpec(id: "textSmaller", title: "Testo più piccolo",
             input: "-", modifiers: .command,
             description: "Rimpicciolisce il testo di lettura di un passo."),
@@ -100,9 +120,23 @@ enum KeyboardCommandsCatalog {
             description: "Aggiunge o toglie un segnalibro sull'elemento in lettura."),
         KeyboardCommandSpec(id: "elementTools", title: "Strumenti elemento",
             input: "e", modifiers: .command,
-            description: "Apre il menu con segnalibro e sottolineatura per l'elemento in lettura."),
+            description: "Apre il menu con segnalibro e sottolineatura per l'elemento in lettura; Esc lo chiude."),
+        KeyboardCommandSpec(id: "noteJump", title: "Nota e richiamo",
+            input: "j", modifiers: .command,
+            description: "Sulla nota va al testo del richiamo; sul testo che richiama una nota va alla nota. Come le azioni «Vai al testo del richiamo» e «Vai alla nota»."),
         KeyboardCommandSpec(id: "back", title: "Indietro",
             input: UIKeyCommand.inputEscape, modifiers: [],
-            description: "Chiude la lettura e torna alla schermata precedente."),
+            description: "Chiude la lettura e torna alla schermata precedente. Nello split screen chiede se chiudere la metà che comanda."),
+    ]
+
+    /// I comandi dello split screen (§ 11, solo iPad). I comandi di lettura qui sopra valgono per la metà che COMANDA
+    /// (§ 11.6); questi scelgono la metà, e portano lì anche il fuoco di VoiceOver.
+    static let split: [KeyboardCommandSpec] = [
+        KeyboardCommandSpec(id: "splitLeft", title: "Metà sinistra",
+            input: UIKeyCommand.inputLeftArrow, modifiers: [.command, .alternate],
+            description: "Nello split screen: comanda la metà sinistra (i comandi di lettura valgono per lei)."),
+        KeyboardCommandSpec(id: "splitRight", title: "Metà destra",
+            input: UIKeyCommand.inputRightArrow, modifiers: [.command, .alternate],
+            description: "Nello split screen: comanda la metà destra (i comandi di lettura valgono per lei)."),
     ]
 }

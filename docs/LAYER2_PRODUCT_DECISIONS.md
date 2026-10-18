@@ -525,6 +525,14 @@ Sulla **nota letta inline o nel suo punto di lettura**:
 Sul **richiamo a una nota inline** nel corpo del testo (quando esposto come elemento separato):
 - *"vai al testo della nota"* (salto immediato al punto del flusso dove la nota sarà letta).
 
+Con una tastiera esterna lo stesso salto ha un tasto (giro «accessibilità e completamento», 2026-10-18): **Comando J** —
+sulla nota va al testo del richiamo, sul testo che richiama una nota va alla nota; dove non c'è nulla da raggiungere
+VoiceOver lo dice e la lettura non si muove. Da tastiera gli strumenti dell'elemento (Comando E) si aprono come finestra di
+dialogo, dove Esc è «Annulla» (sull'iPad il menu a comparsa non si chiudeva con Esc); il testo più grande è Comando = e,
+sulle tastiere dove il più è un tasto a sé come quella italiana, Comando +. Dallo stesso giro il salto c'è per 8.879 delle 9.030 note lette lontano dal
+richiamo nei 52 volumi di prova (erano 7.806): il numero della nota si cerca anche subito dopo la frase del richiamo alla
+memoria (INBOX D.16).
+
 Sulla **scheda operativa** annunciata:
 - *"salta"*.
 
@@ -890,6 +898,14 @@ All'attivazione dello split screen, la linea parte sempre dal **centro perfetto*
 ### 11.8 Passaggio del focus fra le schermate
 
 Il passaggio del focus VoiceOver da una schermata all'altra avviene con i gesti di sistema standard: l'esplorazione manuale (il dito che tocca l'altra metà) e lo scrub a due dita. Non è previsto né necessario alcun gesto speciale definito dall'app. La percettibilità della linea centrale come container autonomo aiuta l'utente a orientarsi e a sapere sempre in quale metà si trova.
+
+**Con una tastiera esterna (giro «accessibilità e completamento», 2026-10-18; WCAG 2.1.1 e 2.1.2).** I comandi di lettura
+da tastiera (pannello «Comandi da tastiera» delle Impostazioni) valgono per la metà che comanda (§ 11.6): quella in cui si
+sta operando, o, dalla barra di split e dalla linea, l'ultima che ha comandato. Due comandi scelgono la metà — Comando
+Opzione freccia sinistra e Comando Opzione freccia destra — e portano lì anche il fuoco di VoiceOver. Esc chiede se
+chiudere la metà che comanda, come il suo «Indietro»; nella domanda Esc annulla e A capo chiude, quindi dallo split si esce
+con la sola tastiera. Non sono gesti: i gesti di VoiceOver restano quelli di sistema (§ 2.4). Nello split la metà che
+comanda non ha ancora un segno visivo per chi usa la tastiera senza VoiceOver (decisione aperta, WCAG 2.4.7).
 
 ### 11.9 Persistenza dello split screen
 

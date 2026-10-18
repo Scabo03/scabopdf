@@ -421,13 +421,9 @@ final class ContinuousReadingViewController: UIViewController {
     override var canBecomeFirstResponder: Bool { true }
 
     override var keyCommands: [UIKeyCommand]? {
-        KeyboardCommandsCatalog.reading.map { spec in
-            let cmd = UIKeyCommand(
-                title: spec.title, action: Self.selector(forCommandId: spec.id),
-                input: spec.input, modifierFlags: spec.modifiers)
-            cmd.discoverabilityTitle = spec.title  // mostrata nell'HUD tenendo premuto ⌘
-            cmd.wantsPriorityOverSystemBehavior = true
-            return cmd
+        // Il nome di ogni comando è mostrato nell'HUD tenendo premuto ⌘; i tasti alternativi vi sono nascosti.
+        KeyboardCommandsCatalog.reading.flatMap { spec in
+            spec.makeKeyCommands(action: Self.selector(forCommandId: spec.id))
         }
     }
 
@@ -441,7 +437,35 @@ final class ContinuousReadingViewController: UIViewController {
         case "textSmaller": return #selector(kbTextSmaller)
         case "bookmark": return #selector(kbToggleBookmark)
         case "elementTools": return #selector(kbElementTools)
+        case "noteJump": return #selector(kbNoteJump)
         default: return #selector(kbBack)
+        }
+    }
+
+    /// Esegue il comando da tastiera `id` del catalogo. Lo split screen (§ 11) lo inoltra alla metà che comanda: nello
+    /// split il primo destinatario dei tasti è lo split, non la metà (giro «accessibilità e completamento», 2026-10-18).
+    func performKeyboardCommand(id: String) {
+        switch id {
+        case "scrollForward": kbScrollForward()
+        case "scrollBack": kbScrollBack()
+        case "nextHeading": kbNextHeading()
+        case "prevHeading": kbPrevHeading()
+        case "textLarger": kbTextLarger()
+        case "textSmaller": kbTextSmaller()
+        case "bookmark": kbToggleBookmark()
+        case "elementTools": kbElementTools()
+        case "noteJump": kbNoteJump()
+        case "back": kbBack()
+        default: break
+        }
+    }
+
+    /// Salto fra nota e richiamo da tastiera (⌘J): lo stesso delle azioni VoiceOver sull'elemento in lettura. Dove non
+    /// c'è nulla da raggiungere lo dice (a voce, con VoiceOver), senza muovere la lettura.
+    @objc private func kbNoteJump() {
+        guard currentLayout != .quick, readingView.jumpBetweenNoteAndCall() else {
+            UIAccessibility.post(notification: .announcement, argument: "Qui non c'è una nota né un richiamo da raggiungere.")
+            return
         }
     }
 
@@ -465,9 +489,14 @@ final class ContinuousReadingViewController: UIViewController {
         }
     }
 
-    /// Menu strumenti (segnalibro + sottolineatura) sull'elemento in lettura, da tastiera.
+    /// Menu strumenti (segnalibro + sottolineatura) sull'elemento in lettura, da tastiera. È una finestra di dialogo e non
+    /// un menù a comparsa: sull'iPad il menù a comparsa (popover) non si chiudeva con Esc e chi usa solo la tastiera restava
+    /// chiuso dentro (WCAG 2.1.2; giro «accessibilità e completamento», 2026-10-18, tastiera del simulatore); nella
+    /// finestra di dialogo Esc è «Annulla». Dal tocco lungo il menù resta quello di prima.
     @objc private func kbElementTools() {
-        readingView.openElementMenu(forSegmentAt: readingView.currentOrTopIndex, sourcePoint: view.center)
+        let index = readingView.currentOrTopIndex
+        guard let id = readingView.segmentId(atIndex: index), let text = readingView.segmentText(atIndex: index) else { return }
+        presentElementMenu(segmentId: id, orderIndex: index, segmentText: text, sourcePoint: view.center, fromKeyboard: true)
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -1185,7 +1214,15 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
     /// sottolineatura (§ 6) secondo lo stato. Il menù assorbe il pop-up di conflitto § 6.3 (è esso
     /// stesso la disambiguazione fra aggiungi/modifica/elimina). Su iPad il popover si ancora al dito.
     func presentElementMenu(segmentId: String, orderIndex: Int, segmentText: String, sourcePoint: CGPoint) {
-        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        presentElementMenu(segmentId: segmentId, orderIndex: orderIndex, segmentText: segmentText, sourcePoint: sourcePoint,
+                           fromKeyboard: false)
+    }
+
+    /// `fromKeyboard`: aperto con ⌘E, il menù è una finestra di dialogo (Esc = Annulla), con il titolo che dice che cosa è.
+    private func presentElementMenu(segmentId: String, orderIndex: Int, segmentText: String, sourcePoint: CGPoint,
+                                    fromKeyboard: Bool) {
+        let sheet = UIAlertController(title: fromKeyboard ? "Strumenti elemento" : nil, message: nil,
+                                      preferredStyle: fromKeyboard ? .alert : .actionSheet)
 
         // Risorsa visiva (§ 7.9): l'estrazione come immagine anche per chi non usa VoiceOver.
         let segments = readingView.currentSegments

@@ -21,7 +21,11 @@ import UIKit
 final class KeyboardCommandsViewController: UIViewController, UITableViewDataSource {
 
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
-    private let commands = KeyboardCommandsCatalog.reading
+    /// Le sezioni: lettura e, sull'iPad, lo split screen (§ 11.1: solo iPad).
+    private let sections: [(title: String, commands: [KeyboardCommandSpec])] =
+        [("Durante la lettura, con una tastiera esterna", KeyboardCommandsCatalog.reading)]
+        + (UIDevice.current.userInterfaceIdiom == .pad
+            ? [("Nello split screen (iPad)", KeyboardCommandsCatalog.split)] : [])
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,18 +43,19 @@ final class KeyboardCommandsViewController: UIViewController, UITableViewDataSou
         ])
     }
 
-    func numberOfSections(in tableView: UITableView) -> Int { 1 }
+    func numberOfSections(in tableView: UITableView) -> Int { sections.count }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        commands.count
+        sections[section].commands.count
     }
 
     func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        "Durante la lettura, con una tastiera esterna"
+        sections[section].title
     }
 
     func tableView(_ tableView: UITableView, titleForFooterInSection section: Int) -> String? {
-        "I comandi sono fissi: iOS non consente alle app di riassegnare le combinazioni di tasti. "
+        if section < sections.count - 1 { return nil }
+        return "I comandi sono fissi: iOS non consente alle app di riassegnare le combinazioni di tasti. "
             + "Sono elencati qui perché altrimenti sarebbero invisibili. Gli stessi strumenti sono "
             + "raggiungibili anche con VoiceOver, Controllo Vocale, Controllo Interruttori e Accesso "
             + "completo da tastiera, tramite le azioni personalizzate sull'elemento."
@@ -58,7 +63,7 @@ final class KeyboardCommandsViewController: UIViewController, UITableViewDataSou
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cmd", for: indexPath)
-        let spec = commands[indexPath.row]
+        let spec = sections[indexPath.section].commands[indexPath.row]
         var config = UIListContentConfiguration.subtitleCell()
         config.text = "\(spec.title)    \(spec.displayKeys)"
         config.secondaryText = spec.description

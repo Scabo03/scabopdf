@@ -25,6 +25,16 @@
 //  Memoria (cancello misurativo §): ciascuna metà eredita la politica coarse per i volumi enormi
 //  (build 23), così due viste vive restano nel budget (vedi la sonda `SplitMemoryProbeTests`).
 //
+//  ── Tastiera (WCAG 2.1.1 e 2.1.2, giro «accessibilità e completamento», 2026-10-18) ──────────────
+//
+//  Fino alla build 58 nello split i comandi da tastiera non funzionavano: ciascuna metà è un lettore EMBEDDED, che non
+//  diventa primo destinatario dei tasti. Ora il primo destinatario è lo split: i comandi di lettura del catalogo vanno alla
+//  metà che COMANDA (§ 11.6: quella del container attivo; dalla barra di split o dalla linea, l'ultima che ha comandato),
+//  e due comandi scelgono la metà (⌥⌘← / ⌥⌘→), portando lì anche il fuoco di VoiceOver. Esc chiede se chiudere la metà che
+//  comanda (come il suo «Indietro»): nella domanda Esc annulla e A capo chiude — li governa lo split, che resta il
+//  destinatario dei tasti — quindi dallo split si esce con la sola tastiera (nessuna trappola del fuoco). Con una schermata
+//  sopra lo split che non sia la sua domanda da tastiera, lo split non prende tasti.
+//
 
 import UIKit
 import ScaboCore
@@ -55,6 +65,8 @@ final class SplitScreenViewController: UIViewController {
 
     /// Ciclo di scrub fra i sei container (§ 11.8). Indice del container attivo.
     private var activeIndex = 0
+    /// La metà che comanda i tasti quando il container attivo è la barra di split o la linea (§ 11.6).
+    private var lastCommandingSide: SplitSide = .left
     private var isSyncing = false
     private var lastLeaderIndex: [SplitSide: Int] = [:]
 
@@ -213,6 +225,7 @@ final class SplitScreenViewController: UIViewController {
         let containers = orderedContainers()
         guard i >= 0, i < containers.count else { return }
         activeIndex = i
+        if let side = Self.side(ofContainerAt: i) { lastCommandingSide = side }
         view.accessibilityElements = [containers[i]]
         for (j, c) in containers.enumerated() {
             (c as? UIView)?.accessibilityViewIsModal = (j == i)
@@ -229,6 +242,91 @@ final class SplitScreenViewController: UIViewController {
 
     private func advanceActive() {
         setActive((activeIndex + 1) % orderedContainers().count)
+    }
+
+    /// La metà di un container del ciclo (testo e barra di una metà), o `nil` per la barra di split e la linea.
+    static func side(ofContainerAt index: Int) -> SplitSide? {
+        switch index {
+        case 0, 1: return .left
+        case 3, 4: return .right
+        default: return nil
+        }
+    }
+
+    /// La metà che comanda adesso: quella del container attivo, o l'ultima che ha comandato.
+    var commandingSide: SplitSide { Self.side(ofContainerAt: activeIndex) ?? lastCommandingSide }
+
+    // MARK: - Tastiera (WCAG 2.1.1 / 2.1.2)
+
+    override var canBecomeFirstResponder: Bool { true }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        becomeFirstResponder()
+    }
+
+    /// La domanda «Chiudi metà …» aperta da tastiera, e la chiusura che A capo conferma.
+    private var keyboardQuestion: (alert: UIAlertController, close: () -> Void)?
+
+    override var keyCommands: [UIKeyCommand]? {
+        // Con la domanda da tastiera aperta i tasti dello split sono soltanto A capo («Chiudi») ed Esc («Annulla»): li
+        // governa lo split, che resta il destinatario dei tasti, perché nel simulatore A capo arrivava alla domanda solo a
+        // volte (misurato nel giro: 2 volte su 3 nel caso migliore). Con un'altra schermata sopra, nessun comando
+        // (misurato: senza questa guardia Esc rifaceva «Indietro» invece di annullare la domanda).
+        if let question = keyboardQuestion, presentedViewController === question.alert {
+            let close = UIKeyCommand(input: "\r", modifierFlags: [], action: #selector(keyboardQuestionClose))
+            let cancel = UIKeyCommand(input: UIKeyCommand.inputEscape, modifierFlags: [], action: #selector(keyboardQuestionCancel))
+            for command in [close, cancel] { command.wantsPriorityOverSystemBehavior = true }
+            return [close, cancel]
+        }
+        guard presentedViewController == nil else { return [] }
+        let reading = KeyboardCommandsCatalog.reading.flatMap { spec in
+            spec.makeKeyCommands(action: #selector(readingKeyCommand(_:)), propertyList: spec.id)
+        }
+        let own = KeyboardCommandsCatalog.split.flatMap { spec in
+            spec.makeKeyCommands(action: #selector(splitKeyCommand(_:)), propertyList: spec.id)
+        }
+        return reading + own
+    }
+
+    /// Un comando di lettura: alla metà che comanda.
+    @objc private func readingKeyCommand(_ command: UIKeyCommand) {
+        guard let id = command.propertyList as? String else { return }
+        // Esc = «Indietro» della metà che comanda: la domanda, nella forma da tastiera (A capo chiude).
+        if id == "back" {
+            confirmClose(keeping: commandingSide.other, fromKeyboard: true)
+            return
+        }
+        childVC(commandingSide).performKeyboardCommand(id: id)
+    }
+
+    /// La scelta della metà: il suo testo diventa il container attivo (e lì va il fuoco di VoiceOver).
+    @objc private func splitKeyCommand(_ command: UIKeyCommand) {
+        guard let id = command.propertyList as? String else { return }
+        switch id {
+        case "splitLeft": selectCommandingSide(.left)
+        case "splitRight": selectCommandingSide(.right)
+        default: break
+        }
+    }
+
+    /// A capo nella domanda da tastiera: «Chiudi».
+    @objc private func keyboardQuestionClose() {
+        guard let question = keyboardQuestion else { return }
+        keyboardQuestion = nil
+        question.alert.dismiss(animated: true) { question.close() }
+    }
+
+    /// Esc nella domanda da tastiera: «Annulla».
+    @objc private func keyboardQuestionCancel() {
+        guard let question = keyboardQuestion else { return }
+        keyboardQuestion = nil
+        question.alert.dismiss(animated: true) { [weak self] in self?.becomeFirstResponder() }
+    }
+
+    func selectCommandingSide(_ side: SplitSide) {
+        setActive(side == .left ? 0 : 4)
+        UIAccessibility.post(notification: .announcement, argument: side == .left ? "Metà sinistra" : "Metà destra")
     }
 
     private func wireHalf(_ vc: ContinuousReadingViewController, side: SplitSide) {
@@ -341,20 +439,37 @@ final class SplitScreenViewController: UIViewController {
 
     // MARK: - Uscita (§ 11.1): chiudi una metà, l'altra torna a schermo intero
 
-    private func confirmClose(keeping keptSide: SplitSide) {
+    /// `fromKeyboard`: la domanda nasce da Esc. Allora «Chiudi» è l'azione preferita, in evidenza, e A capo la sceglie
+    /// (lo governa lo split: `keyCommands`); ha lo stile normale, perché il sistema non tratta come scelta di A capo
+    /// un'azione distruttiva (misurato nel giro). Dalla X o da «Indietro» la domanda resta com'era: «Chiudi» rossa.
+    private func confirmClose(keeping keptSide: SplitSide, fromKeyboard: Bool = false) {
         let keptTitle = keptSide == .left ? "sinistra" : "destra"
         let closedTitle = keptSide == .left ? "destra" : "sinistra"
         let alert = UIAlertController(
             title: "Chiudi metà \(closedTitle)",
             message: "La metà \(closedTitle) sarà chiusa; la metà \(keptTitle) tornerà a schermo intero.",
             preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
-        alert.addAction(UIAlertAction(title: "Chiudi", style: .destructive) { [weak self] _ in
+        let closeHalf: () -> Void = { [weak self] in
             guard let self else { return }
             let survivor = self.split.documentId(on: keptSide)
             self.store.setSplitState(nil)  // § 11.9: niente più split da ripristinare.
             self.onExitKeeping(survivor)
+        }
+        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel) { [weak self] _ in
+            self?.keyboardQuestion = nil
+            self?.becomeFirstResponder()   // di nuovo i comandi da tastiera dello split
         })
+        let close = UIAlertAction(title: "Chiudi", style: fromKeyboard ? .default : .destructive) { [weak self] _ in
+            self?.keyboardQuestion = nil
+            closeHalf()
+        }
+        alert.addAction(close)
+        // Da tastiera: Esc annulla, A capo chiude (li governa lo split, `keyCommands`): si esce dallo split senza toccare
+        // lo schermo.
+        if fromKeyboard {
+            alert.preferredAction = close
+            keyboardQuestion = (alert, closeHalf)
+        }
         present(alert, animated: true)
     }
 
@@ -369,6 +484,7 @@ final class SplitScreenViewController: UIViewController {
 
     var splitStateForTesting: SplitState { split }
     var activeContainerIndexForTesting: Int { activeIndex }
+    var commandingSideForTesting: SplitSide { commandingSide }
     var orderedContainerCountForTesting: Int { orderedContainers().count }
     func advanceActiveForTesting() { advanceActive() }
     func selectRegimeForTesting(_ r: ParallelizationRegime) { selectRegime(r) }

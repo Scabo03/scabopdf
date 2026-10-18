@@ -52,6 +52,26 @@ final class VoiceOverOrderUITests: XCTestCase {
                     commands: ["ScaboPDF", "Opzioni del contenitore"], content: ["Cartella di prova"])
     }
 
+    /// La lingua dell'interfaccia (WCAG 3.1.1): VoiceOver dice i tratti («Pulsante», «Intestazione») nella lingua
+    /// dell'elemento, quindi la lingua dichiarata si sente. Significativo su un simulatore in un'altra lingua
+    /// (laboratorio: un iPad in inglese); su uno in italiano passa comunque. «Workspaces» resta inglese, dichiarato.
+    func testInterfaceIsSpokenInItalian_alsoOnADeviceInAnotherLanguage() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("il servizio VoiceOver dei test c'è da iOS 27") }
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTestSeedHomeOrder"]
+        app.launch()
+        XCTAssertTrue(app.waitForScreen("ScaboPDF", timeout: 30), "la Home compare")
+        let spoken = try speakScreen("Lingua")
+        let all = spoken.joined(separator: " | ")
+        XCTAssertTrue(spoken.contains { $0.hasPrefix("ScaboPDF") && $0.contains("Intestazione") }, "titolo in italiano — \(all)")
+        XCTAssertTrue(spoken.contains { $0.hasPrefix("Tag") && $0.contains("Pulsante") }, "comandi in italiano — \(all)")
+        XCTAssertTrue(spoken.contains { $0.hasPrefix("Recenti") && $0.contains("Intestazione") }, "contenuto in italiano — \(all)")
+        XCTAssertTrue(spoken.contains { $0.hasPrefix("Workspaces") && $0.contains("Heading") }, "«Workspaces» in inglese — \(all)")
+        for u in spoken where !u.hasPrefix("Workspaces") {
+            XCTAssertFalse(u.contains(" Button") || u.contains(" Heading"), "nessun tratto in inglese fuori da «Workspaces»: «\(u)»")
+        }
+    }
+
     // MARK: - VoiceOver
 
     /// Accende VoiceOver, torna al primo elemento della schermata e avanza fino all'ultimo: le voci pronunciate in ordine.

@@ -24,6 +24,9 @@
 //  AKN sintetico importato prima dei pezzi nuovi delle note (la riceve e si rielabora con la catena dei testi normativi).
 //  L'ordine di lettura delle schermate con le schede (giro «accessibilità e completamento», 2026-10-18):
 //  `-uiTestSeedHomeOrder` crea tre libri fra i recenti e due workspace (il primo con una cartella), nomi inventati.
+//  La tastiera (stesso giro): `-uiTestSeedKeyboardBooks` crea due libri già elaborati (cache) con titoli, un richiamo e la
+//  sua nota lunga letta a fine sezione col richiamo alla memoria, lontana dal richiamo; il primo si riapre sulla nota.
+//  Testo inventato.
 //
 
 #if DEBUG
@@ -56,6 +59,7 @@ enum UITestSeeding {
         if args.contains("-uiTestSeedVisualResource") { seedVisualResource(withResource: true); return }
         if args.contains("-uiTestSeedReprocessKinds") { seedReprocessKinds(); return }
         if args.contains("-uiTestSeedHomeOrder") { seedHomeOrder(); return }
+        if args.contains("-uiTestSeedKeyboardBooks") { seedKeyboardBooks(); return }
         guard args.contains("-uiTestSeedReprocess") else { return }
         let service = LibraryService.shared
         // Libreria pulita per un test deterministico.
@@ -104,6 +108,62 @@ enum UITestSeeding {
             service.store.addCollocation(documentId: docs[0].id, to: .folder(workspace: first.id, folder: folder.id))
         }
         service.store.createWorkspace(name: "Workspace di prova B")
+    }
+
+    /// Due libri per i test di tastiera e dello split: titoli di due livelli, un richiamo («ponte 1») e la sua nota lunga
+    /// differita a fine sezione col richiamo alla memoria, così il salto fra nota e richiamo c'è. Testo inventato.
+    private static func seedKeyboardBooks() {
+        let service = LibraryService.shared
+        setStoredReadingTextSizeOffset(service.prefs, 0)   // la dimensione del testo di partenza, ogni volta
+        for d in service.store.allDocuments() {
+            service.store.deleteDocumentFromArchive(id: d.id)
+            service.deleteFiles(forDocumentId: d.id)
+        }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("libro-di-prova.pdf")
+        try? syntheticPdf().write(to: url)
+        // Il richiamo alla memoria è la coda della frase che richiama la nota; il paragrafo comincia con altre parole, così
+        // anche nei primi caratteri di ciò che VoiceOver dice (il servizio dei test ne restituisce una sessantina) la nota,
+        // che si legge a fine sezione preceduta dal richiamo alla memoria, si distingue dal testo che la richiama.
+        let refresh = "il mugnaio apre le chiuse quando la piena del fiume arriva al ponte"
+        for (n, name) in ["Libro tastiera uno", "Libro tastiera due"].enumerated() {
+            let doc = service.store.addDocument(title: name, sourceFileName: "libro-di-prova.pdf", sourcePageCount: 3)
+            try? service.storePDF(from: url, forDocumentId: doc.id)
+            let mark = n == 0 ? "uno" : "due"
+            func seg(_ id: String, _ role: String, _ text: String, _ page: Int, refresh: String = "", length: String = "")
+                -> ContentSegment {
+                ContentSegment(id: id, role: role, text: text, lengthCategory: length, acousticIntro: "",
+                               memoryRefresh: refresh, sourcePage: page)
+            }
+            // Fra il richiamo e la sua nota trenta paragrafi: la nota si legge lontano, fuori dalla schermata del richiamo,
+            // così il salto si vede anche senza VoiceOver (compare l'uno, sparisce l'altra).
+            let fillers = (1...30).map { k in
+                seg("node_f\(k)", "BODY", "Paragrafo \(k) del libro \(mark): il mulino, la strada lungo la riva e i campi.", 1)
+            }
+            let segments = [
+                seg("node_0", "HEADING_1", "Capitolo primo del libro \(mark)", 1),
+                seg("node_1", "BODY", "Nel libro \(mark) si racconta che \(refresh) 1, e la ruota gira fino a sera.", 1),
+            ] + fillers + [
+                seg("node_3_n0", "NOTE", "1 Una nota di prova lunga sul mulino e sulla piena del fiume, letta alla fine della "
+                    + "sezione del libro \(mark).", 1, refresh: refresh, length: "LONG"),
+                seg("node_4", "HEADING_2", "Sezione seconda del libro \(mark)", 2),
+                seg("node_5", "BODY", "Il faro si accende sulla scogliera quando scende la sera nel libro \(mark).", 2),
+                seg("node_6", "HEADING_2", "Sezione terza del libro \(mark)", 3),
+                seg("node_7", "BODY", "La neve copre i tetti della valle fino al disgelo nel libro \(mark).", 3),
+            ] + (1...30).map { k in
+                // altro testo in fondo: la lettura può portare la nota (e ogni titolo) in cima alla schermata
+                seg("node_g\(k)", "BODY", "Riga \(k) in fondo al libro \(mark): la valle, il ponte e le case.", 3)
+            }
+            service.writeCache(PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: segments)],
+                                                totalSegments: segments.count),
+                               pageMap: [:], doctrineContent: nil, quickConsultTree: nil,
+                               contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id)
+            service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
+            // Il primo libro si riapre sulla nota (la lettura vi si posa), il secondo dall'inizio.
+            if n == 0, let note = segments.firstIndex(where: { $0.role == "NOTE" }) {
+                service.store.updateReadingPosition(id: doc.id, position: note)
+            }
+            service.store.recordOpened(id: doc.id)
+        }
     }
 
     /// I tre tipi di libro davanti all'offerta (vedi l'intestazione del file).
