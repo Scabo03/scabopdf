@@ -592,7 +592,7 @@ La regola si applica uniformemente a tutti i livelli e a tutti i tipi di documen
 
 - *"Libro IV, delle obbligazioni, titoli da I a IX, pagine da 245 a 560"* (codice civile, livello alto);
 - *"Capo III, dell'inadempimento delle obbligazioni, articoli da 1218 a 1229, pagine da 287 a 295"* (codice civile, livello prossimo agli articoli);
-- *"Parte prima, il processo di cognizione, capitoli da I a IV, pagine da 1 a 145"* (manuale Mandrioli, livello alto);
+- *"Parte prima, le nozioni di base, capitoli da I a IV, pagine da 1 a 145"* (manuale, livello alto; titolo d'esempio);
 - *"Sezione III, la rappresentanza processuale, paragrafi da 12 a 18, pagine da 60 a 75"* (manuale, livello prossimo ai paragrafi);
 - *"Voce Responsabilità precontrattuale, autore Castronovo, sotto-voci da I a V, pagine da 1 a 87"* (voce EdD, livello alto);
 - *"Capitolo 1, obbligazioni in generale, paragrafi da 1 a 8, pagine da 1 a 24"* (appunti personali con tre livelli).

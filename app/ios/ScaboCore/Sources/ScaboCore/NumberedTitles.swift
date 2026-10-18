@@ -22,7 +22,7 @@
 //  Componenti oltre il primo di 1-2 cifre (esclude importi «1.000» e anni «12.3.2010»).
 //
 //  Segnale di SUPPORTO, la taglia del NUMERO (primo span, non la media di riga: un titolo
-//  in maiuscoletto ha la media più bassa — Costituzionale «1. CHE COS'È…» 11,52 vs media
+//  in maiuscoletto ha la media più bassa — Costituzionale: una riga come «1. LA REGOLA…» 11,52 vs media
 //  9,63), con soglia bassa:
 //   • numero ≥ corpo×1.03 → titolo (qualunque profondità), con le sue righe di
 //     continuazione alla stessa taglia;

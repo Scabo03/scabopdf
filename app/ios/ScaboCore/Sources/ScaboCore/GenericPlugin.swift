@@ -2084,7 +2084,7 @@ private let SOMMARIO_HEADING_RE = try! NSRegularExpression(
     pattern: "^\\s*sommario(?:\\s*:|\\s*$|\\s+\\d)", options: [.caseInsensitive])
 /// Keyword in MAIUSCOLO (le intestazioni sono "TITOLO"; il corpo dice "titolo") seguita
 /// da un ordinale (romano, cifra, o parola maiuscola tipo "TERZO"/"PRIMA"). La guardia di
-/// lunghezza tiene fuori la prosa di corpo che cita "titolo secondo della parte quarta…".
+/// lunghezza tiene fuori la prosa di corpo che cita, per esempio, "titolo quinto della parte nona…".
 private let STRUCT_HEADING_RE = try! NSRegularExpression(
     pattern: "^(CAPITOLO|CAPO|SEZIONE|PARTE|TITOLO|LIBRO)\\s+([IVXLCDM]+|\\d+|[A-ZÀ-Ý][A-ZÀ-Ý]+)\\b")
 let STRUCT_HEADING_MAX_LEN = 70
