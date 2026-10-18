@@ -778,8 +778,8 @@ def test_parse_toc_general_extracts_five_items() -> None:
 def test_parse_toc_general_splits_off_trailing_heading() -> None:
     plugin = DejureNotaSentenzaProfile()
     text = (
-        "Sommario  1. Inquadramento — 2. Difetto — 3. Riparto — 4. Riserva — "
-        "5. Conclusioni del caso. 1. INQUADRAMENTO PRELIMINARE DELLA DECISIONE"
+        "Sommario  1. Premessa — 2. Fatti — 3. Motivi — 4. Rilievi — "
+        "5. Osservazioni sul caso. 1. PREMESSA GENERALE SULLA VICENDA DI PROVA"
     )
     host = Node(
         id="node_0001",
