@@ -326,15 +326,17 @@ final class VisualResourceTests: XCTestCase {
 
     func test_offer_listsTheVisualResourcesCure_onDevicesThatCanRecognise() {
         guard ReprocessOffer.visualResourcesAvailable else { return }
-        // L'ultima cura è quella della catena (57 dal 2026-10-17: la pulizia del capitolo note); la cura delle risorse
-        // visive (53) resta nell'elenco ed è l'ultima che l'iPad offre a una lettura arrivata dal Mac: la 55 il Mac la fa da
-        // sempre, la 56 e la 57 il Mac le porta con una lettura nuova (rielaborare sull'iPad toglierebbe l'innesto del Mac;
-        // decisione 1 del maintainer, 2026-10-17).
+        // L'ultima cura è quella della catena (58 dal 2026-10-18: la ricucitura vicino alle glosse a margine); la cura delle
+        // risorse visive (53) resta nell'elenco ed è l'ultima che l'iPad offre a una lettura arrivata dal Mac: la 55 il Mac la
+        // fa da sempre, la 56, la 57 e la 58 il Mac le porta con una lettura nuova (rielaborare sull'iPad toglierebbe
+        // l'innesto del Mac; decisione 1 del maintainer, 2026-10-17).
         XCTAssertEqual(ReprocessOffer.policy.latestCureBuild, ProcessingChain.cureLevel)
         XCTAssertEqual(ReprocessOffer.policy.latestCureBuildForMacReadings, 53)
-        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.isSuperset(of: [56, 57]), "decisione 1: le cure delle note dal Mac")
+        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.isSuperset(of: [56, 57, 58]), "decisione 1: le cure delle note dal Mac")
         XCTAssertTrue(ReprocessOffer.isNotOfferedToMacReadings(55) && ReprocessOffer.isNotOfferedToMacReadings(56)
-                      && ReprocessOffer.isNotOfferedToMacReadings(57))
+                      && ReprocessOffer.isNotOfferedToMacReadings(57) && ReprocessOffer.isNotOfferedToMacReadings(58))
+        XCTAssertTrue(ReprocessOffer.cures.contains { $0.build == ProcessingChain.cureLevel },
+                      "la cura dell'ultima build ha il suo testo in «Cosa cambia»")
         XCTAssertFalse(ReprocessOffer.isNotOfferedToMacReadings(53))
         XCTAssertTrue(ReprocessOffer.cures.contains { $0.build == 53 && $0.text.contains("risorse visive") })
     }

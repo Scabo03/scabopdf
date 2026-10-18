@@ -165,7 +165,11 @@ public enum ProcessingChain {
     /// separate, teste-frammento ricomposte, rinfresco a inizio parola, etichetta fra parentesi delle note-elenco col suo
     /// primo elemento (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17). Come la 56: dal Mac per le sue
     /// letture, offerta ai testi normativi per la parte che li riguarda (decisione 1 del maintainer).
-    public static let cureLevel = 57
+    /// 58: le note spezzate fra pagine contigue vicino a una glossa a margine ricucite, con la glossa al suo posto nel
+    /// flusso (giro «chiusura del capitolo note», 2026-10-18, decisione 2 del maintainer: 13 note dei manuali Mandrioli).
+    /// Come la 56 e la 57: dal Mac per le sue letture. Non tocca i testi normativi (la loro catena non ricuce note fra
+    /// pagine: 14 atti su 14 identici), quindi non entra in `curesForAknActs`.
+    public static let cureLevel = 58
 
     /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
     /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata
@@ -178,14 +182,17 @@ public enum ProcessingChain {
     /// 56: la ricucitura fra pagine contigue e i pezzi a fine frase (giro «cura delle note», 2026-10-16 sera, rilievo della
     /// revisione indipendente): la catena del Mac le contiene dalla sua versione con questo livello di cure. Confermato dal
     /// maintainer il 2026-10-17 (decisione 1 del giro «pulizia e rifinitura finale del capitolo note»): le letture del Mac
-    /// si rifanno dal Mac aggiornato. 57: la cura delle note di quel giro, con la stessa regola.
-    public static let curesFromTheMacOnly: Set<Int> = [56, 57]
+    /// si rifanno dal Mac aggiornato. 57: la cura delle note di quel giro, con la stessa regola. 58: la ricucitura vicino
+    /// alle glosse a margine (giro «chiusura del capitolo note», 2026-10-18), con la stessa regola.
+    public static let curesFromTheMacOnly: Set<Int> = [56, 57, 58]
 
     /// Le cure che cambiano anche la lettura dei TESTI NORMATIVI (AKN): solo queste si offrono a un testo normativo già
     /// importato (decisione 1 del maintainer, 2026-10-17). La catena AKN non passa dall'estrazione dei PDF; la tocca solo
     /// ciò che è condiviso con le note dei PDF.
     /// 56: i pezzi delle note lunghe chiusi a fine frase (lo spezzatore è uno, `notePieces`).
     /// 57: nelle note-elenco l'etichetta fra parentesi resta col primo elemento del suo elenco (stesso spezzatore).
+    /// La 58 (ricucitura vicino alle glosse a margine) non li tocca e resta fuori: un testo normativo elaborato con la 57
+    /// non riceve offerte nuove.
     public static let curesForAknActs: Set<Int> = [56, 57]
 
     /// Elabora il PDF `fileURL` (una copia locale) sul thread chiamante. `onProgress` è chiamato sul thread chiamante;

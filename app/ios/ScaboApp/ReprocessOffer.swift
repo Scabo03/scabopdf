@@ -93,6 +93,8 @@ enum ReprocessOffer {
             + "una nota letta più avanti "
             + "comincia sempre a inizio parola; nelle note lunghe che elencano leggi, l'etichetta dell'elenco non resta più "
             + "da sola alla fine di un pezzo"),
+        (58, "alcune note dei manuali che si interrompevano a fine pagina, vicino a una scritta a margine, si leggono "
+            + "intere; la scritta a margine resta al suo posto"),
     ]
 
     /// Le cure che cambiano la lettura dei testi normativi, in parole semplici (la parte che li riguarda).
