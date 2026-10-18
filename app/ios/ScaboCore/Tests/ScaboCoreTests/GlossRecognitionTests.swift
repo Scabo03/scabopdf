@@ -56,13 +56,13 @@ final class GlossRecognitionTests: XCTestCase {
 
     func test_marginalGloss_excludedFromReadingFlow_butKeptInDocument() {
         var lines = bodyLines(6)
-        lines.insert(lineAt("Norma giuridica e norma morale", size: 6.5, x0: 40, x1: 85, y: 75), at: 2)
+        lines.insert(lineAt("Fosso privato e fosso comune", size: 6.5, x0: 40, x1: 85, y: 75), at: 2)
         let d = doc([page(0, lines)])
         // resta nel documento (categoria conservata, reversibile)…
         XCTAssertEqual(nodes(d, .MARGINAL_GLOSS).count, 1)
         // …ma NON entra nel flusso letto
         let read = buildBaseSegments(d).map { $0.text }.joined(separator: " ")
-        XCTAssertFalse(read.contains("Norma giuridica e norma morale"), "la glossa è scartata dal flusso letto")
+        XCTAssertFalse(read.contains("Fosso privato e fosso comune"), "la glossa è scartata dal flusso letto")
         XCTAssertTrue(read.contains("Riga di corpo"), "il corpo è letto")
     }
 

@@ -27,7 +27,7 @@ final class GranularityCrossPageTests: XCTestCase {
 
     func test_dehyphenate_adjacentBodyHalves() {
         let out = granularizeBody([
-            seg(BODY, "Nel racconto biblico la prima cronaca di un processo è amministrata dalla giu-", "a"),
+            seg(BODY, "Nel racconto antico la prima notizia di una lite è affidata alla giu-", "a"),
             seg(BODY, "stizia contenuta nei poemi omerici e nelle saghe antiche del nord.", "b"),
         ])
         let body = out.filter { $0.role == BODY }.map { $0.text }.joined(separator: " ")
@@ -50,9 +50,9 @@ final class GranularityCrossPageTests: XCTestCase {
 
     func test_noteHeld_movedAfterReconstructedParagraph() {
         let out = granularizeBody([
-            seg(BODY, "La prima cronaca di un processo si trova nei poemi e racconta della giu-", "a"),
+            seg(BODY, "La prima notizia di una lite si trova nei registri e parla della giu-", "a"),
             seg(NOTE, "3. Iliade, 18, 497-508.", "n"),
-            seg(BODY, "stizia contenuta nei versi antichi. Si tratta di una controversia per un omicidio.", "b"),
+            seg(BODY, "stizia contenuta nei versi antichi. Vi si narra di una lite per un confine.", "b"),
         ])
         // il paragrafo è ricucito (parola intera) e la nota è DOPO, non dentro la parola.
         let firstNoteIdx = out.firstIndex { $0.role == NOTE }!
@@ -77,7 +77,7 @@ final class GranularityCrossPageTests: XCTestCase {
 
     func test_guard_capsHeadingNotMerged() {
         let out = granularizeBody([
-            seg(BODY, "SCHEMA RIASSUNTIVO DELLE RISERVE COSTITUZIONALI PREVISTE", "a"),
+            seg(BODY, "SCHEMA RIASSUNTIVO DELLE QUOTE CONSORTILI PREVISTE", "a"),
             seg(NOTE, "1. nota.", "n"),
             seg(BODY, "zionali: il procedimento legislativo ordinario e quello aggravato di revisione.", "b"),
         ])

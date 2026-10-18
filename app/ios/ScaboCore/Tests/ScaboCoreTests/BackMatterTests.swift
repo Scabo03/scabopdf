@@ -171,8 +171,8 @@ final class BackMatterTests: XCTestCase {
             line("BIBLIOGRAFIA", 12),
             line("Ascarelli, Appunti di diritto commerciale, Roma, 1936.", 9),
             line("Auletta, Impresa e azienda, Napoli, 1958.", 9),
-            line("Ferrara, Teoria giuridica dell’azienda, Firenze, 1949.", 9),
-            line("Ghiron, Azienda in Nuovo dig. it., Torino, 1937.", 9),
+            line("Ferrandi, Lineamenti del fondo rustico, Firenze, 1949.", 9),
+            line("Gherardi, Bottega in Nuovo dig. it., Torino, 1937.", 9),
         ])
         let d = docPages(body: 34, tail: [biblio, bodyPage(35)])
         XCTAssertEqual(nodes(d, .INDEX_ENTRY).count, 0, "la bibliografia NON è scartata")
@@ -185,14 +185,14 @@ final class BackMatterTests: XCTestCase {
         let nameIdx = page(33, [line("INDICE DEI NOMI", 11)] + indexEntries(12))
         let biblio = page(34, [
             line("BIBLIOGRAFIA", 12),
-            line("Bryce, The Holy Roman Empire, Oxford, 1864.", 9),
-            line("Brague, Il futuro dell’Occidente, Milano, 1998.", 9),
+            line("Brennard, The Quiet River Towns, Oxford, 1864.", 9),
+            line("Bragoni, Il ritorno delle stagioni, Milano, 1998.", 9),
             line("Veyne, L’Empire romain, Paris, 1980.", 9),
             line("Machiavelli, Discorsi sopra la prima deca, Torino, 1997.", 9),
         ])
         let d = docPages(body: 33, tail: [nameIdx, biblio, bodyPage(35)])
         XCTAssertEqual(nodes(d, .INDEX_ENTRY).count, 1, "solo l'indice nomi è scartato")
-        XCTAssertTrue(readText(d).contains("The Holy Roman Empire"), "la bibliografia che segue è LETTA (regione chiusa)")
+        XCTAssertTrue(readText(d).contains("The Quiet River Towns"), "la bibliografia che segue è LETTA (regione chiusa)")
         XCTAssertFalse(readText(d).contains("Voce d’indice"), "l'indice nomi è scartato")
     }
 

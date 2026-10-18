@@ -41,7 +41,7 @@ final class EstrattoTitlesTests: XCTestCase {
         XCTAssertFalse(estrattoParaTitleStarts("Premessa critica"))             // niente numero
     }
     func test_lineEndsWithCallMarker() {
-        XCTAssertTrue(lineEndsWithCallMarker("le contraddizioni del medesimo 21"))
+        XCTAssertTrue(lineEndsWithCallMarker("le incertezze del mugnaio stesso 21"))
         XCTAssertFalse(lineEndsWithCallMarker("Premessa critica"))
     }
 
@@ -123,7 +123,7 @@ final class EstrattoTitlesTests: XCTestCase {
 
     func test_bodyWithMarker_atParaSize_notPromoted_ifNoNumberPrefix() {
         // riga corpo-con-richiamo a 11.52 ma SENZA prefisso-numero → resta corpo.
-        let items: [GenItem] = [.run(.body, [ln("le contraddizioni del medesimo 21", 11.52)])]
+        let items: [GenItem] = [.run(.body, [ln("le incertezze del mugnaio stesso 21", 11.52)])]
         let out = recognizeEstrattoTitles(items, prof(true))
         XCTAssertEqual(out.count, 1)
         guard case .run(.body, _) = out[0] else { return XCTFail("deve restare corpo") }

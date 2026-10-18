@@ -81,12 +81,12 @@ final class GenericReclassifyCleanFamiliesTests: XCTestCase {
         XCTAssertEqual(out[0].type, .NOTE)
     }
     func test_guard_sommarioNotAtStart_notReclassified() {
-        let out = reclass([note("(*) Sommario 1. Il senso della ricerca")])  // inizia con (*)
+        let out = reclass([note("(*) Sommario 1. Il grano del mulino")])  // inizia con (*)
         XCTAssertEqual(out[0].type, .NOTE)
     }
     // Non-regressione del ramo col due punti (deve restare identico a prima).
     func test_colonVariant_withInlineElenco_stillBecomesChapterSummary() {
-        let out = reclass([note("SOMMARIO: 1. Premessa. – 2. La giurisdizione. – 3. Profili")])
+        let out = reclass([note("SOMMARIO: 1. Le chiuse. – 2. La macina. – 3. Profili")])
         XCTAssertEqual(out[0].type, .CHAPTER_SUMMARY)
     }
 

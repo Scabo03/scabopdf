@@ -62,7 +62,7 @@ final class HeadingFusionTests: XCTestCase {
     /// Parola spezzata dal trattino di fine riga: segnale più forte di qualunque geometria — una
     /// parola tagliata a metà non può aprire un titolo distinto. Vale anche fuori allineamento.
     func test_shouldFuse_wordSplitByHyphen_evenWhenMisaligned() {
-        let a = hl("5. Deficit informativi e invalidità delle de-", x0: 51, x1: 400, yTop: 300)
+        let a = hl("5. Lacune informative e nullità delle de-", x0: 51, x1: 400, yTop: 300)
         let b = hl("libere assembleari", x0: 107.7, x1: 200, yTop: 285)
         XCTAssertTrue(headingsShouldFuse(a, b))
     }
@@ -96,12 +96,12 @@ final class HeadingFusionTests: XCTestCase {
     /// Il testo fuso è de-sillabato: nessuna parola resta spezzata nella navigazione.
     func test_fusedText_isDehyphenated() {
         let items: [GenItem] = [
-            .heading(hl("2. Informazione al mercato. Efficienza infor-", x0: 65, x1: 400, yTop: 300),
+            .heading(hl("2. Informazione al consorzio. Chiarezza infor-", x0: 65, x1: 400, yTop: 300),
                      level: 3),
-            .heading(hl("mativa ed efficienza valutativa", x0: 79.2, x1: 250, yTop: 285), level: 3),
+            .heading(hl("mativa e chiarezza contabile", x0: 79.2, x1: 250, yTop: 285), level: 3),
         ]
         XCTAssertEqual(headingTexts(fuse(items)),
-                       ["2. Informazione al mercato. Efficienza informativa ed efficienza valutativa"])
+                       ["2. Informazione al consorzio. Chiarezza informativa e chiarezza contabile"])
     }
 
 
@@ -114,7 +114,7 @@ final class HeadingFusionTests: XCTestCase {
     func test_shouldNotFuse_line2StartsWithDigit_tocPageNumber() {
         // riga-2 inizia con un numero di pagina (voce d'indice) → mai una continuazione
         let a = hl("Le riunioni separate e le riunioni speciali", yTop: 501)
-        let b = hl("463 15. L’organo amministrativo", yTop: 486)
+        let b = hl("463 15. Il custode delle chiuse", yTop: 486)
         XCTAssertFalse(headingsShouldFuse(a, b))
     }
     func test_shouldNotFuse_line2StartsWithItemMarker() {
@@ -191,8 +191,8 @@ final class HeadingFusionTests: XCTestCase {
     }
     func test_consolidate_rivistaGatedOff_identity() {
         let items: [GenItem] = [
-            .heading(hl("La responsabilidad penal de las personas", yTop: 501), level: 3),
-            .heading(hl("del modelo italiano de imputación", yTop: 486), level: 3)]
+            .heading(hl("La regulación de los molinos de agua", yTop: 501), level: 3),
+            .heading(hl("del sistema italiano de riego", yTop: 486), level: 3)]
         XCTAssertEqual(headingTexts(fuse(items, rivista: true)).count, 2)   // Rivista esclusa
         XCTAssertEqual(headingTexts(fuse(items, rivista: false)).count, 1)  // altrove fusa
     }

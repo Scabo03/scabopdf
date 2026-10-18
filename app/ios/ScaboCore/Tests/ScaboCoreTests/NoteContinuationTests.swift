@@ -41,7 +41,7 @@ final class NoteContinuationTests: XCTestCase {
         XCTAssertTrue(noteContinuation("tica, 2010; MORANDI"))        // minuscola (coda parola)
         XCTAssertTrue(noteContinuation("25 ottobre 2001, n. 13196)"))  // cifra+minuscola (data)
         XCTAssertTrue(noteContinuation("572 risulta ispirata"))        // cifra+minuscola
-        XCTAssertFalse(noteContinuation("13 Le pronunce di riferimento"))  // marcatore "N Maiuscola"
+        XCTAssertFalse(noteContinuation("13 Le regole del mulino"))  // marcatore "N Maiuscola"
         XCTAssertFalse(noteContinuation("39 F. CORRADINI, Corso"))            // marcatore "N Maiuscola"
         XCTAssertFalse(noteContinuation("5. Sembra utile"))               // marcatore "N."
         XCTAssertFalse(noteContinuation("(7) Cass."))                     // marcatore "(N)"
@@ -70,7 +70,7 @@ final class NoteContinuationTests: XCTestCase {
 
     func test_noMerge_newNoteMarker_bound() {
         // prev APRE (ss. no… qui virgola) ma il frammento è una NUOVA nota "13 Le…".
-        let r = merged([note("in Riv. it. dir. proc. pen., 1949,"), note("13 Le pronunce di riferimento")])
+        let r = merged([note("in Riv. it. dir. proc. pen., 1949,"), note("13 Le regole del mulino")])
         XCTAssertEqual(r.count, 2)   // NON fuse
     }
     func test_noMerge_uppercaseStart() {

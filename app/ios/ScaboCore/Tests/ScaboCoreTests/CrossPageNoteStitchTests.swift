@@ -46,9 +46,9 @@ final class CrossPageNoteStitchTests: XCTestCase {
     }
 
     func test_commaContinuation_merged_withSpace() {
-        let r = run([(15, "15 strumento urbanistico, oppure"), (16, "una diffida, fanno sì che")])
+        let r = run([(15, "15 registro dei pozzi, oppure"), (16, "una ricevuta, fanno sì che")])
         XCTAssertEqual(r.count, 1)
-        XCTAssertTrue(r.text[0].contains("oppure una diffida"), "giunzione con spazio")
+        XCTAssertTrue(r.text[0].contains("oppure una ricevuta"), "giunzione con spazio")
     }
 
     func test_samePageSplit_merged() {

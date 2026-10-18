@@ -108,14 +108,14 @@ final class DeJurePluginTests: XCTestCase {
         // Caso Concause/Cartabia: il colophon è incollato in coda a un nodo BODY di contenuto.
         var nodes = [
             NodeDict(id: "node_0", type: .BODY, page_index: 5,
-                     text: "Per il resto rimando ad un successivo studio. "
+                     text: "Il seguito della vicenda resta da scrivere. "
                          + "SERVIZIO GESTIONE RISORSE DOCUMENTARIE © Copyright Giuffrè Francis Lefebvre S.p.A. 2024 11/12/2024"),
         ]
         let n = retagDejureFurniture(&nodes)
         XCTAssertEqual(n, 1, "un timbro isolato")
         XCTAssertEqual(nodes.count, 2, "il nodo è spaccato in contenuto + timbro")
         XCTAssertEqual(nodes[0].type, .BODY)
-        XCTAssertEqual(nodes[0].text, "Per il resto rimando ad un successivo studio.",
+        XCTAssertEqual(nodes[0].text, "Il seguito della vicenda resta da scrivere.",
                        "il contenuto reale resta, senza il colophon")
         XCTAssertEqual(nodes[1].type, .ARTIFACT_STAMP, "il colophon diventa furniture non letta")
         XCTAssertTrue(nodes[1].text?.hasPrefix("SERVIZIO GESTIONE RISORSE DOCUMENTARIE") == true)

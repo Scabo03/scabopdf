@@ -114,8 +114,8 @@ final class MemoryRefreshTests: XCTestCase {
     // MARK: - Regola 7: ricucitura delle sillabazioni di fine riga
 
     func test_hyphenationStitched() {
-        XCTAssertEqual(stitchHyphenation("sul-la c.d. rivalutazio-ne del credito"),
-                       "sulla c.d. rivalutazione del credito")
+        XCTAssertEqual(stitchHyphenation("sul-la c.d. maturazio-ne del raccolto"),
+                       "sulla c.d. maturazione del raccolto")
         XCTAssertEqual(stitchHyphenation("am-messa dalla Cassazione"), "ammessa dalla Cassazione")
         // composto reale: il trattino resta.
         XCTAssertEqual(stitchHyphenation("regime ex-articolo"), "regime ex-articolo")

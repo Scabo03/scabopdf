@@ -131,7 +131,7 @@ final class NoteJumpTests: XCTestCase {
 
     func test_numberAsReference_isNotACall() {
         // «art. 5» non è il richiamo della nota 5.
-        let segs = [s("BODY", "Si applica l’art. 5 del decreto."), s("NOTE", "5 Cfr. Cass. 12 marzo 2010.")]
+        let segs = [s("BODY", "Si segue l’art. 5 del calendario delle uve."), s("NOTE", "5 Cfr. Cass. 12 marzo 2010.")]
         XCTAssertNil(noteCallLinks(segs).callOfNote[1])
     }
 

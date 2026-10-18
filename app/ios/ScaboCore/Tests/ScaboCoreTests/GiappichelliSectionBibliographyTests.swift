@@ -30,7 +30,7 @@ final class GiappichelliSectionBibliographyTests: XCTestCase {
             h4("s1", "§ 1. Premessa"),
             lett("l1", "ROVERETI, Giustizia dei consorzi, in Enc. dir., 1968"),
             body("b1", "Nel diritto delle acque la garanzia del consorziato…"),
-            body("b2", "Nello Stato di diritto più evoluto…"),
+            body("b2", "Nel consorzio meglio organizzato…"),
             h4("s2", "§ 2. Gli istituti della bonifica idraulica"),
         ]
         let out = holdGiappichelliSectionBibliography(input)
@@ -43,8 +43,8 @@ final class GiappichelliSectionBibliographyTests: XCTestCase {
         let input = [
             h4("s1", "§ 1. L’interesse legittimo"),
             body("b1", "…è una posizione qualificata"),
-            lett("l1", "SANDULLI, Manuale di diritto amministrativo, 1989"),
-            body("b2", "Non è sufficiente, però, la configurabilità…"),
+            lett("l1", "PIRANDI, Manuale di diritto delle acque, 1989"),
+            body("b2", "Non basta, però, la sola misura…"),
             h4("s2", "§ 2. Considerazioni"),
         ]
         let out = holdGiappichelliSectionBibliography(input)

@@ -29,9 +29,9 @@ final class GranularityBrokenWordTailTests: XCTestCase {
 
     func test_brokenWordTail_fusedAndMarkerRemoved() {
         let out = granularizeBody([
-            seg(BODY, "I giornali tendono a esaltare i personaggi più romanzeschi, più ecce-", "a"),
+            seg(BODY, "I mercanti tendono a lodare le merci più rare, più ecce-", "a"),
             seg(NOTE, "zionali.14", "n"),
-            seg(BODY, "Si parla di “bassa stampa” riferendosi a una certa stampa popolare.", "b"),
+            seg(BODY, "Si parla di “merce povera” riferendosi a una certa merce di paese.", "b"),
         ])
         let body = joinedBody(out)
         XCTAssertTrue(body.contains("più eccezionali."), "parola ricucita: \(body)")
@@ -45,9 +45,9 @@ final class GranularityBrokenWordTailTests: XCTestCase {
     func test_brokenWordTail_multiWordTail() {
         // "confronta-" + "no nel processo" → "confrontano nel processo"; marker 65 rimosso.
         let out = granularizeBody([
-            seg(BODY, "Il caso è raccontato dando spazio alle parti che sono coinvolte e si confronta-", "a"),
+            seg(BODY, "Il racconto della fiera dà voce ai mugnai del borgo, che si confronta-", "a"),
             seg(NOTE, "no nel processo.65", "n"),
-            seg(BODY, "In una gara al sensazionalismo le notizie si rincorrono ogni giorno.", "b"),
+            seg(BODY, "In una gara fra mercanti le offerte si rincorrono ogni giorno.", "b"),
         ])
         let body = joinedBody(out)
         XCTAssertTrue(body.contains("si confrontano nel processo."), "coda multi-parola ricucita: \(body)")
@@ -91,7 +91,7 @@ final class GranularityBrokenWordTailTests: XCTestCase {
         let out = granularizeBody([
             seg(BODY, "I mugnai del paese hanno curato le relazioni con i mezzi di comu-", "a"),
             seg(NOTE, longNote, "n"),
-            seg(BODY, "nicazione e in particolare di comunicazione con i clienti.", "b"),
+            seg(BODY, "nicazione e soprattutto di dialogo con i clienti.", "b"),
         ])
         let body = joinedBody(out)
         XCTAssertTrue(body.contains("mezzi di comunicazione"), "parola completata dal BODY dopo la nota: \(body)")
@@ -106,7 +106,7 @@ final class GranularityBrokenWordTailTests: XCTestCase {
         // nota vera resta (ri-emessa dopo). È il caso che falliva con la guardia count==1.
         let placed = "211. A. Tizio, Un titolo lungo di nota differita, Editore, Città 2009, p. 211."
         let out = granularizeBody([
-            seg(BODY, "Lavorerei meglio, in tutta franchezza, se non avessi alcuna preoccu-", "a"),
+            seg(BODY, "Il mugnaio lavorerebbe meglio, a suo dire, se non avesse alcuna preoccu-", "a"),
             seg(NOTE, placed, "p"),
             seg(NOTE, "pazione.19", "n"),
             seg(BODY, "Pratiche come la fiera del grano danno risalto alla festa del paese.", "b"),

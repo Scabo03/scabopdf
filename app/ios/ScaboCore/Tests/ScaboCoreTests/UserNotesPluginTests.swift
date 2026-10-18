@@ -43,8 +43,8 @@ final class UserNotesPluginTests: XCTestCase {
     func test_trap_romanLettersAreItalianWords() {
         // "di" = D,I romani; "il" = I,L romani — ma keyword minuscola + niente "– titolo"
         XCTAssertNil(userNotesHeadingLevel("parte di debito."))
-        XCTAssertNil(userNotesHeadingLevel("parte il separato contratto di"))
-        XCTAssertNil(userNotesHeadingLevel("titolo di canone, anche se deve"))
+        XCTAssertNil(userNotesHeadingLevel("parte il vecchio raccolto di"))
+        XCTAssertNil(userNotesHeadingLevel("titolo di affitto, anche se poi"))
     }
     func test_trap_citationWithComma() {
         // dopo l'ordinale romano "IV" c'è una virgola, non il trattino → non è un'intestazione

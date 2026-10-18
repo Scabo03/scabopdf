@@ -101,14 +101,14 @@ final class BuildSegmentsTests: XCTestCase {
         let doc = genericDocWith([
             // testatina / titolo di sezione collassato in NOTE (niente marcatore)
             NodeDict(id: "node_0", type: .NOTE, page_index: 0,
-                     text: "UNA LUNGA STORIA. ASSASSINII E PROCESSI", length_category: .MICRO),
+                     text: "UNA VECCHIA PIAZZA. BOTTEGHE E MERCATI", length_category: .MICRO),
             // nota VERA, si apre col numero d'apertura → tiene l'intro
             NodeDict(id: "node_1", type: .NOTE, page_index: 0,
-                     text: "1. S. Humbert, La chronique judiciaire.", length_category: .SHORT),
+                     text: "1. R. Delmont, La gazette des marchés.", length_category: .SHORT),
         ])
         let segs = buildBaseSegments(doc)
         XCTAssertEqual(segs[0].acousticIntro, "", "il titolo di sezione collassato in NOTE non annuncia 'Nota.'")
-        XCTAssertEqual(segs[0].text, "UNA LUNGA STORIA. ASSASSINII E PROCESSI", "il testo resta invariato, letto in posizione")
+        XCTAssertEqual(segs[0].text, "UNA VECCHIA PIAZZA. BOTTEGHE E MERCATI", "il testo resta invariato, letto in posizione")
         XCTAssertEqual(segs[1].acousticIntro, "Nota.", "la nota vera (apre col numero) tiene l'intro")
     }
 

@@ -48,9 +48,9 @@ final class NumberedTitlesTests: XCTestCase {
     // MARK: - numerazione: profondità arbitraria, punto finale obbligatorio
 
     func test_depth_parsesArbitraryDepth() {
-        XCTAssertEqual(numberedTitleDepth("2. Il reticolo di fatti"), 1)
+        XCTAssertEqual(numberedTitleDepth("2. Il tracciato dei fossi"), 1)
         XCTAssertEqual(numberedTitleDepth("3.2. Il problema"), 2)
-        XCTAssertEqual(numberedTitleDepth("5.3.1. Il danno evitabile."), 3)
+        XCTAssertEqual(numberedTitleDepth("5.3.1. Il grano conservato."), 3)
         XCTAssertEqual(numberedTitleDepth("1.2.3.4. Quarto livello"), 4)
         XCTAssertEqual(numberedTitleDepth("§ 12. La sentenza"), 1)
         XCTAssertEqual(numberedTitleDepth("7.2. «Danno intrinseco»"), 2)
@@ -60,7 +60,7 @@ final class NumberedTitlesTests: XCTestCase {
         XCTAssertNil(numberedTitleDepth("48.2.15 (Ulp. 56 ad ed.)"), "citazione del Digesto: niente punto finale")
         XCTAssertNil(numberedTitleDepth("1.000 Euro di sanzione"), "importo: componente a 3 cifre")
         XCTAssertNil(numberedTitleDepth("12.3.2010 La sentenza"), "data: anno a 4 cifre")
-        XCTAssertNil(numberedTitleDepth("2. ha abrogato l’art. 70"), "minuscola: prosa")
+        XCTAssertNil(numberedTitleDepth("2. ha richiamato l’art. 70"), "minuscola: prosa")
         XCTAssertNil(numberedTitleDepth("22 maggio 1978, n. 194"), "data senza punto")
         XCTAssertNil(numberedTitleDepth("Il titolo senza numero"))
     }
@@ -95,10 +95,10 @@ final class NumberedTitlesTests: XCTestCase {
 
     func test_sizeSupported_bodySizedLineIsNeverAContinuation() {
         let items = run([
-            line([("3.1. La fattispecie base", 12.48)], yTop: 480, width: 200),
+            line([("3.1. La regola base", 12.48)], yTop: 480, width: 200),
             line([("centi", 12.48), (" Gli artt. 12-bis e 14-ter disciplinano", body)], yTop: 466),
         ])
-        XCTAssertEqual(titles(items), ["3.1. La fattispecie base"],
+        XCTAssertEqual(titles(items), ["3.1. La regola base"],
                        "una riga che porta testo alla taglia del corpo è corpo")
     }
 
@@ -142,9 +142,9 @@ final class NumberedTitlesTests: XCTestCase {
     func test_bodySize_depth3_shortLine_isTitle() {
         let items = run([
             bodyLine("…fine del paragrafo.", yTop: 500),
-            bodyLine("5.3.1. Il danno evitabile.", yTop: 480, width: 130),
+            bodyLine("5.3.1. Il grano conservato.", yTop: 480, width: 130),
         ])
-        XCTAssertEqual(titles(items), ["5.3.1. Il danno evitabile."])
+        XCTAssertEqual(titles(items), ["5.3.1. Il grano conservato."])
     }
 
     func test_bodySize_multiline_hangingIndentAfterGap_isTitle() {
@@ -242,13 +242,13 @@ final class NumberedTitlesTests: XCTestCase {
     }
 
     func test_level_underChapter_addsDepth() {
-        let pre = [h(.HEADING_2, "La causalità nella struttura del giudizio"), h(.BODY, "…")]
+        let pre = [h(.HEADING_2, "La misura nella struttura del raccolto"), h(.BODY, "…")]
         XCTAssertEqual(numberedTitleLevel(depth: 1, preceding: pre), 3)
         XCTAssertEqual(numberedTitleLevel(depth: 2, preceding: pre), 4)
     }
 
     func test_level_siblingKeepsLevel_childGoesDeeper() {
-        let pre = [h(.HEADING_2, "Capitolo"), h(.HEADING_3, "3. La teoria del doppio nesso"),
+        let pre = [h(.HEADING_2, "Capitolo"), h(.HEADING_3, "3. La regola del doppio argine"),
                    h(.HEADING_4, "3.1. Lesioni contestuali")]
         XCTAssertEqual(numberedTitleLevel(depth: 2, preceding: pre), 4, "fratello di 3.1")
         XCTAssertEqual(numberedTitleLevel(depth: 1, preceding: pre), 3, "fratello di 3.")
@@ -277,7 +277,7 @@ final class NumberedTitlesTests: XCTestCase {
 
     func test_codeAbbreviationsAtSentenceEnd_stillClose() {
         // Escluse di proposito: chiudono spesso una frase.
-        XCTAssertEqual(splitIntoSentences("Lo prevede l’art. 7 c.p.a. Il dibattito è aperto.").count, 2)
-        XCTAssertEqual(splitIntoSentences("È previsto nel t.u.f. La concezione è diversa.").count, 2)
+        XCTAssertEqual(splitIntoSentences("Lo prevede l’art. 7 c.p.a. Il mulino è chiuso.").count, 2)
+        XCTAssertEqual(splitIntoSentences("È previsto nel t.u.f. Il raccolto è diverso.").count, 2)
     }
 }

@@ -112,7 +112,7 @@ final class BibliographyReclassifyTests: XCTestCase {
             "ROVERETI, Giustizia dei consorzi, in Enc. dir., Milano 1968, p. 413 ss. (5) anche Corte cost."))
         // sottotitolo del libro (prosa-discorsiva-like) su ramo storico → resta bibliografia
         XCTAssertTrue(looksLikeBibliographyEntry(
-            "BARALDI, L’acqua pubblica. Storia e teoria, Torino 2016, p. 377 ss."))
+            "BARALDI, L’acqua pubblica. Storia e teoria, Pavia 2016, p. 377 ss."))
     }
 
     // MARK: - GUARDIA DI CONTENUTO UNIVERSALE: rinvio interno a un'altra nota/paragrafo ≠ bibliografia
@@ -122,9 +122,9 @@ final class BibliographyReclassifyTests: XCTestCase {
         // all'apparato interno del volume ("v. oltre, la nota N", "In proposito v. … alla nota N").
         // Una voce di bibliografia non rinvia MAI a "la nota N" del proprio volume. → mai biblio.
         XCTAssertFalse(looksLikeBibliographyEntry(
-            "SPADONI, Il raccolto, cit., p. 91). In proposito v. anche Trib. Lecco 5 marzo 2004 n. 212, cit., già richiamata retro, alla nota 31. Di regola, la consegna del grano non potrà fondarsi sul solo peso dei sacchi."))
+            "SPADONI, Il raccolto, cit., p. 91). In proposito v. pure Trib. Lecco 5 marzo 2004 n. 212, cit., da me richiamata retro, alla nota 31. Di regola, la consegna del grano non potrà fondarsi sul solo peso dei sacchi."))
         XCTAssertFalse(looksLikeBibliographyEntry(
-            "GALBIATI e, ancora, Trib. Lecco 12 ottobre 2022, già cit. retro, alla nota 19. In caso di socio assente, alla riunione del consorzio dovrebbe partecipare il delegato."))
+            "GALBIATI e, ancora, Trib. Lecco 12 ottobre 2022, da me cit. retro, alla nota 19. In caso di socio assente, alla riunione del consorzio dovrebbe partecipare il delegato."))
         XCTAssertFalse(looksLikeBibliographyEntry(
             "TESTONI, op. cit., p. 43; su ciò v. oltre, la nota 205 nel § 64, dove si chiarisce il punto."))
     }
@@ -135,7 +135,7 @@ final class BibliographyReclassifyTests: XCTestCase {
         XCTAssertTrue(looksLikeBibliographyEntry(
             "AA.VV., Coltivare e custodire. Trasformazioni dei paesaggi, a cura di Galbiati, Napoli 2021; ROVERETI, Consorzi, in Enc. dir., vol. IV, Milano 1961, p. 529 ss."))
         XCTAssertTrue(looksLikeBibliographyEntry(
-            "PIRANDI, Manuale di diritto delle acque, 12a ediz., Napoli 1987, pp. 103 ss. e 131 ss.; BARALDI, L’acqua pubblica. Storia e teoria, Torino 2016, p. 377 ss."))
+            "PIRANDI, Manuale di diritto delle acque, 12a ediz., Napoli 1987, pp. 103 ss. e 131 ss.; BARALDI, L’acqua pubblica. Storia e teoria, Pavia 2016, p. 377 ss."))
     }
 
     // MARK: - predicato (negativi: l'altra direzione, nota vera / non-bibliografia)
