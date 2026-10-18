@@ -1,5 +1,10 @@
 # Diagnosi — il riconoscimento dei titoli di paragrafo e di sezione
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > **✅ CURATO (voci 1, 3, 6 della proposta) il 2026-10-05** — vedi `docs/CURA_INTESTAZIONI.md`:
 > canale dei titoli numerati nel tronco (richiamo 0 → ~100% dei numerati, 0 falsi su 2.519 nuovi
 > verificati), cascata note Rizzo 37,5 → 3 pagine, salto nota↔testo costruito, abbreviazioni
@@ -54,7 +59,7 @@ Aptos Bold 30 pt; Google Docs: Arial Bold 12 pt). Il titolo si distingue SOLO pe
 davanti ai titoli; Word: 58 pt contro 11 pt fra paragrafi; GDocs: 54 contro 20,5), **riga
 corta**, **nessun punto finale**, riga seguente che riparte (Pages: senza stacco, in maiuscola).
 
-### 2.2 Il titolo seguito lungo la catena (dispensa Pages DPC vol. 2, p. 2, «Tecniche di tipizzazione e procedibilità a querela»)
+### 2.2 Il titolo seguito lungo la catena (dispensa Pages DPC vol. 2, p. 2, «[titolo di paragrafo di 7 parole]»)
 
 1. **Estrazione (PdfKitExtractor, on-device) — CONSERVA tutto.** La riga arriva intera, con
    bbox: y=695, larghezza 345 su ~480, stacco 18 pt dalla riga sopra, 0 dalla sotto, taglia 15
@@ -74,13 +79,14 @@ corta**, **nessun punto finale**, riga seguente che riparte (Pages: senza stacco
 5. **Granularità (`granularizeBody`, `Granularity.swift:572`) — il titolo si fonde nella frase
    seguente.** Il corpo si riassembla in blocchi da ~400 caratteri a confine di frase; il
    titolo, senza punto, non chiude una frase e diventa l'inizio della frase dopo:
-   «…a querela **Oltre** ad abbassamento…». A VoiceOver: nessun annuncio, nessun cambio di
+   «…[ultime 2 parole del titolo] **[prima parola, maiuscola, della frase seguente]** [2 parole]…».
+   A VoiceOver: nessun annuncio, nessun cambio di
    elemento, nessuna voce nel rotore.
 
 **Causa prima, netta:** il punto 3. L'informazione c'è (punto 1) e non è guardata da nessuno
 (punto 3); i punti 4-5 sono conseguenze meccaniche. Nel ramo Google Docs le cose vanno appena
 meglio solo dove il titolo contiene una parola-chiave (PARTE/CAPITOLO/SEZIONE…, regex
-`USER_HEADING_REGEX`): i titoli semplici («Origine del diritto amministrativo») restano corpo.
+`USER_HEADING_REGEX`): i titoli semplici («[titolo di 4 parole]») restano corpo.
 
 ### 2.3 Perché la stessa causa spiega i manuali
 
@@ -288,8 +294,8 @@ di nodo (riga/pagina) dentro le citazioni. Dettaglio per volume: officina
 
 ## 9. Reperti collaterali (annotati, non toccati)
 
-- **Rizzo: 88 testatine di capitolo lette come «Nota.»** («La causalità nella struttura del
-  giudizio… 119» ×58, «La causalità giuridica nel sistema… N» ×30): testatina corrente per
+- **Rizzo: 88 testatine di capitolo lette come «Nota.»** («[titolo di capitolo, prime 6
+  parole]… 119» ×58, «[titolo di capitolo, prime 5 parole]… N» ×30): testatina corrente per
   capitolo con folio, sfuggita alla furniture → intrusioni nel flusso. Contribuisce ai
   «frammenti» del resoconto.
 - **Rizzo: copertina 1108×765** (le pagine di corpo sono 482×680): irrilevante oggi, ma la

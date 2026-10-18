@@ -1,4 +1,10 @@
 # Analisi Trasversale — Sintesi dei Sei Profili Manuali
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Documento di sintesi che raccoglie la conoscenza accumulata dall'analisi dei sei manuali del progetto.
 > Affianca (non sostituisce) i sei file di analisi singoli: `ANALYSIS_MARRONE.md`, `ANALYSIS_TORRENTE_SCHLESINGER.md`, `ANALYSIS_MOSCONI_CAMPIGLIO.md`, `ANALYSIS_PATRIARCA_BENAZZO.md`, `ANALYSIS_MANDRIOLI_CARRATTA.md`, `ANALYSIS_TESAURO_COMPENDIO.md`.
 >
@@ -94,7 +100,7 @@ I sei profili, ridotti al loro scheletro funzionale, si raggruppano in quattro a
 - Apparato bibliografico ragionato finale (Bibliografia)
 - Indice analitico finale ricco
 
-**Caso paradigmatico**: 1.485 note in 180 sezioni "Note", massimo 395 note in un singolo capitolo (Cap. VII Obbligazioni), mediana 233 caratteri, regime B dominante (60%)
+**Caso paradigmatico**: 1.485 note in 180 sezioni "Note", massimo 395 note in un singolo capitolo (Cap. VII [titolo di 1 parola]), mediana 233 caratteri, regime B dominante (60%)
 
 **Filosofia**: il professore discute nel body ed esibisce le citazioni tecniche nell'apparato note erudito, separato visivamente.
 
@@ -276,8 +282,8 @@ Tre profili richiedono logica specifica di ricomposizione testuale. Tutte conflu
 **Problema**: il 13,1% delle note marginali del Mosconi (39 su 297 lato sinistro) è **segmentato con `...`** come marker di continuazione tipografica:
 
 ```
-p.55 nota: 'Prospettiva "contenziosa"...'      (termina con ...)
-p.56 nota: '... e "pre-contenziosa".'          (inizia con ...)
+p.55 nota: '[segmento di 2 parole, la seconda fra virgolette]...'                       (termina con ...)
+p.56 nota: '... [segmento di 2 parole, la seconda fra virgolette, chiuso da un punto]'    (inizia con ...)
 ```
 
 Le due note sono parti della stessa unità semantica spezzata per impaginazione (manca spazio nel margine).
@@ -369,7 +375,7 @@ I sei manuali rivelano **tre pattern compositivi** distinti per i heading di par
 
 **Profili**: `manuale_bic` (Marrone), `manuale_zanichelli_giuridica` (Patriarca)
 
-**Esempio**: `'3. Le forme del trasferimento'` — un solo span, un solo blocco.
+**Esempio**: `'3. [titolo di 4 parole]'` — un solo span, un solo blocco.
 
 | Profilo | Firma tipografica |
 |---|---|
@@ -388,7 +394,7 @@ I sei manuali rivelano **tre pattern compositivi** distinti per i heading di par
 |---|---|---|
 | 1 | TimesNewRomanPS-BoldMT 11.0pt flag 20 | `'§'` |
 | 2 | TimesNewRomanPS-BoldMT 11.5pt flag 20 | `'1.'` |
-| 3 | TimesNewRomanPS-BoldItal 11.5pt flag 22 | `'L'ordinamento giuridico.'` |
+| 3 | TimesNewRomanPS-BoldItal 11.5pt flag 22 | `'[titolo di 2 parole, chiuso da un punto]'` |
 
 **Identificazione**: pattern testuale `^§\s*\d+(?:-bis|-ter)?\.\s+\w` come trigger primario; firma compositiva come conferma.
 
@@ -442,7 +448,7 @@ Il rapporto outline/struttura tipografica è dramaticamente diverso tra i sei ma
 | Profilo | Outline | Affidabilità | Note |
 |---|---|---|---|
 | Marrone | 1.562 entry, 3 livelli | **completo e affidabile** | Doppia funzione: navigazione semantica + mappa al libro stampato (~1.330 entry numero-pagina) |
-| Torrente | 86 entry, 1 livello | **inaffidabile** | Titoli concatenati senza spazi (es. `"CAPITOLO IIIL'EFFICACIA TEMPORALE"`); serve normalizzazione regex |
+| Torrente | 86 entry, 1 livello | **inaffidabile** | Titoli concatenati senza spazi (esempio inventato: `"CAPITOLO IIIL'ARGOMENTO GENERICO"`); serve normalizzazione regex |
 | Mosconi | 0 entry | **assente** | Struttura ricostruita interamente per via tipografica |
 | Patriarca | 0 entry | **assente** | Struttura ricostruita interamente per via tipografica |
 | Mandrioli | 113 entry, 4 livelli | **utile ma non esaustivo** | 32 paragrafi su 74 mancano dall'outline; gerarchia ha incoerenze (paragrafi classificati L2 anziché L4) |

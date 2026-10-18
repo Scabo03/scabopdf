@@ -1,4 +1,10 @@
 # Analisi Tecnica — Articoli di Dottrina DeJure
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: Giuffrè Francis Lefebvre · Pipeline: Aspose.PDF (presunto, ereditato da Massime e Note a Sentenza, da verificare con PyMuPDF)
 > Versione: PRIMA — basata su due campioni
 > Stato: in corso di consolidamento
@@ -24,8 +30,8 @@ Questa caratterizzazione utente è coerente con quanto emerso dall'analisi: il p
 
 | # | Titolo | Autore | Rivista | Pagine | Note | Densità note |
 |---|--------|--------|---------|--------|------|-------------|
-| 1 | La notizia di reato: i controlli sulla tempestività dell'iscrizione e gli effetti della retrodatazione | Roberta Aprati | Cassazione Penale, fasc. 3, 1 marzo 2024, pag. 813 | 22 | 15 | ~0,7/pp. |
-| 2 | Il problema delle concause dell'evento dannoso nella costruzione del modello civile di causalità giuridica: introduzione a una teoria | Nicola Rizzo | Responsabilità Civile e Previdenza, fasc. 3, 1 marzo 2022, pag. 713 | 59 | 96 | ~1,6/pp. |
+| 1 | [titolo di 14 parole, con due punti] | Roberta Aprati | Cassazione Penale, fasc. 3, 1 marzo 2024, pag. 813 | 22 | 15 | ~0,7/pp. |
+| 2 | [titolo di 18 parole, con due punti] | Nicola Rizzo | Responsabilità Civile e Previdenza, fasc. 3, 1 marzo 2022, pag. 713 | 59 | 96 | ~1,6/pp. |
 
 I due campioni coprono ampiamente il range dichiarato dall'utente ("una quarantina di pagine in media, con escursioni significative") e il secondo rappresenta espressamente il caso più impegnativo. Il pattern strutturale è identico in entrambi: ciò consente di considerare il profilo tipologico **stabile per il genere**.
 
@@ -109,7 +115,7 @@ Campi osservati:
 - `Fonte:` (obbligatorio) — rivista contenitore, fascicolo, data di pubblicazione, pagina iniziale
 - `Autori:` (obbligatorio) — uno o più autori. Nei due campioni: un solo autore. Caso multi-autore non osservato.
 
-Campo `(*) Sommario` con asterisco e nota a piè (campione 2): l'asterisco rinvia a una nota redazionale di apertura ("Contributo approvato dai Referee. Il presente saggio è destinato al Liber Amicorum per..."). Questa nota è agganciata al sommario stesso, non al body. La numerazione delle note normali del body parte da `(1)`, mentre `(*)` resta isolata. Da gestire come categoria a sé: `EDITORIAL_NOTE`.
+Campo `(*) Sommario` con asterisco e nota a piè (campione 2): l'asterisco rinvia a una nota redazionale di apertura ("[nota redazionale di 13 parole, troncata: avviso di revisione dei referee e destinazione editoriale del saggio]"). Questa nota è agganciata al sommario stesso, non al body. La numerazione delle note normali del body parte da `(1)`, mentre `(*)` resta isolata. Da gestire come categoria a sé: `EDITORIAL_NOTE`.
 
 ### 4.2 Sommario
 
@@ -136,7 +142,7 @@ Heading non numerati: non osservati. La struttura è interamente numerica/gerarc
 
 Prosa lineare. Caratteristiche tipografiche osservate:
 
-- **Corsivi**: frequenti per latinismi (`condicio sine qua non`, `ex ante`, `ex post`, `ex art.`, `iter`, `nemo tenetur se detegere`, `et pour cause`, `sine die`, `a posteriori`, `secundum eventum`, `volenti non fit iniuria`, `versari in re illecita`), titoli di opere e riviste citate, nomi propri di parti processuali in italico per convenzione editoriale (es. "Saidi Hamaied"), enfasi autoriale.
+- **Corsivi**: frequenti per latinismi (`[locuzione latina di 4 parole]`, `ex ante`, `ex post`, `ex art.`, `iter`, `[brocardo latino di 4 parole]`, `[locuzione francese di 3 parole]`, `sine die`, `a posteriori`, `secundum eventum`, `[brocardo latino di 4 parole]`, `[brocardo latino di 4 parole]`), titoli di opere e riviste citate, nomi propri di parti processuali in italico per convenzione editoriale (es. "[nome e cognome di una parte]"), enfasi autoriale.
 - **Bold inline**: assente nei campioni del body. Il bold è riservato a heading e meta. Il caso descritto per Massime ("emphasis: true" su parole nel body in contesto Sapient-IA) **non si presenta** nella Dottrina.
 - **Virgolette**: sia caporali « » sia angolari " " sono usate, con preferenza per le caporali nelle citazioni testuali estese e per le virgolette curve nei termini tecnici evidenziati ("fatto", "ipotesi", "tesi", "verità"). Da preservare come tali.
 - **Citazioni in blocco rientrate**: NON osservate. Anche le citazioni testuali lunghe sono integrate nel flusso del paragrafo dentro virgolette caporali.
@@ -196,7 +202,7 @@ Conteggio caratteri (spazi inclusi, escluso il prefisso "(N)"):
 | 100–500 car. | 6 (40%) |
 | > 500 car. | 3 (20%) |
 
-Profilo: **note brevi/medie con coda lunga**. Le note brevi sono per lo più riferimenti puntuali a sentenze o autori (`Cordero, op. cit., p. 1037.`); le note lunghe contengono cataloghi di precedenti giurisprudenziali con massimazioni inserite.
+Profilo: **note brevi/medie con coda lunga**. Le note brevi sono per lo più riferimenti puntuali a sentenze o autori (esempio inventato: `Rossi, op. cit., p. 100.`); le note lunghe contengono cataloghi di precedenti giurisprudenziali con massimazioni inserite.
 
 ### 5.2 Distribuzione lunghezze — Campione 2 (Rizzo, 59 pp., 96 note)
 
@@ -222,8 +228,8 @@ La fascia > 1.500 caratteri è l'elemento nuovo rispetto a tutti i generi preced
 
 Dall'ispezione dei due campioni, le note di Dottrina si dividono in cinque sottotipi:
 
-1. **Riferimento puntuale** (`Cordero, op. cit., p. 1037.`): 30–80 car. È un redirector bibliografico.
-2. **Riferimento giurisprudenziale singolo** (`Cass. civ., 16 gennaio 2009, n. 975, in Danno resp., 2010, 372 ss., con nota di Capecchi.`): 80–200 car.
+1. **Riferimento puntuale** (esempio inventato: `Rossi, op. cit., p. 100.`): 30–80 car. È un redirector bibliografico.
+2. **Riferimento giurisprudenziale singolo** (forma, con segnaposto: `Cass. civ., <giorno mese anno>, n. <numero>, in <sigla rivista>, <anno>, <pagina> ss., con nota di <cognome>.`): 80–200 car.
 3. **Catalogo di precedenti** (`Cfr. Sez. II, ...; Sez. V, ...; Sez. VI, ...; Sez. V, ....`): 200–700 car. Lista lunga di sentenze separate da `;`.
 4. **Riferimento + massima** (precedente giurisprudenziale seguito da `secondo cui` + il principio di diritto): 300–1.500 car.
 5. **Sub-discussione dottrinale**: il caso pesante. 1.500–5.000+ car. Argomento autonomo dell'autore inserito nella nota, con citazioni testuali estese di terzi, contrapposizioni di tesi, talvolta conclusione propria. Tipico delle note "ideologiche" dove l'autore espone una digressione che non vuole interrompere il flusso del body.

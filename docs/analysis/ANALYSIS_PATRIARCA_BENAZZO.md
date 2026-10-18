@@ -1,4 +1,10 @@
 # Analisi Tecnica — Patriarca/Benazzo 2022 (Manuale Zanichelli, Editoria Giuridica)
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: Zanichelli editore S.p.A. — Divisione Editoria Giuridica (Torino)
 > Pipeline editoriale: PDF 1.4 (creator/producer stripped)
 > Versione: PRIMA — basata su un solo campione, NON consolidata
@@ -80,7 +86,7 @@ Il sistema più semplice di tutti i profili documentati. Soltanto **24 firme uni
 | TimesNewRomanPS-ItalicMT 9.0pt | 475 | <1% | Italic piccolo (Sommario) |
 | Helvetica-Bold 9.0pt | 383 | <1% | Etichette nel Sommario ("Sommario") |
 | TimesNewRomanPS-BoldItal 11.0pt | 142 | <1% | Bold italic occasionale |
-| **TimesNewRomanPSMT 19.0pt** | **101** | <1% | **Heading di capitolo** ("Capitolo I", "IMPRENDITORE E IMPRESA"...) |
+| **TimesNewRomanPSMT 19.0pt** | **101** | <1% | **Heading di capitolo** ("Capitolo I", "[titolo di 3 parole, in maiuscolo]"...) |
 | Times-Roman 6.0pt | 56 | <1% | Microelementi (codice editoriale, ISBN) |
 | Altri (Helvetica varie, Times-Bold) | <50 ciascuno | trascurabile | Coperta, marker editoriali |
 
@@ -97,7 +103,7 @@ Questa dominanza estrema riflette un'**architettura editoriale minimalista**: il
 A differenza del Torrente (composizione complessa con tre span: § + N + titolo) e del Mosconi (composizione con numero in Roman + titolo in Bold), il heading di paragrafo del Patriarca è **un singolo span monolitico** in TimesNewRomanPS-BoldMT 12.0pt:
 
 ```
-'3. Le forme del trasferimento'
+'3. [titolo di 4 parole]'
 ```
 
 (verificato a p.50, blocco bi=2, una sola riga, un solo span)
@@ -111,20 +117,20 @@ Questa è la **composizione più semplice tra i quattro manuali** analizzati. La
 
 I 21 heading di capitolo sono in **TimesNewRomanPSMT 19.0pt regular** (non bold!), su due righe:
 - Riga 1: `Capitolo I`, `Capitolo II`, ..., `Capitolo XXI`
-- Riga 2: titolo del capitolo in maiuscolo (es. `IMPRENDITORE E IMPRESA`, `LE CATEGORIE DI IMPRENDITORI`, `LO «STATUTO» DELL'IMPRENDITORE GENERALE...`)
+- Riga 2: titolo del capitolo in maiuscolo (es. `[titolo di 3 parole, in maiuscolo]`, `[titolo di 4 parole, in maiuscolo]`, `[titolo in maiuscolo con una parola fra «», prime 4 parole]...`)
 
 A differenza del Torrente (capitolo in stessa firma del body, identificato per pattern testuale + centratura) e del Mosconi (capitolo in 12pt regular insieme al front matter), il Patriarca usa una **firma 19pt** che è **univoca per il heading capitolo** (101 spans = 21 capitoli × media ~5 spans per heading, considerando pure i sotto-elementi "Sezione A", "Sezione B" del Cap. XIII/XIX).
 
 ### 3.4 Sezioni interne (sotto-capitolo)
 
 Due capitoli hanno **sezioni interne**:
-- **Cap. XIII**: "La società unipersonale. I nuovi modelli di s.r.l. e le sfide della fintech: dalle criptovalute al ruolo dell'intelligenza artificiale"
-  - Sez. A: "La società unipersonale. I nuovi modelli di s.r.l." (p.295)
-  - Sez. B: "Il diritto societario e le sfide della fintech: dalle criptovalute al ruolo dell'intelligenza artificiale..." (p.302)
-- **Cap. XIX**: "La disciplina speciale delle società aperte"
-  - Sez. A: "Informazione e trasparenza" (p.386)
-  - Sez. B: "La disciplina speciale delle società aperte: struttura finanziaria e capitale" (p.399)
-  - Sez. C: "Diritti dei soci e struttura organizzativa interna" (p.413)
+- **Cap. XIII**: "[titolo di 19 parole]"
+  - Sez. A: "[titolo di 8 parole]" (p.295)
+  - Sez. B: "[titolo di 14 parole]..." (p.302)
+- **Cap. XIX**: "[titolo di 6 parole]"
+  - Sez. A: "[titolo di 3 parole]" (p.386)
+  - Sez. B: "[titolo di 10 parole]" (p.399)
+  - Sez. C: "[titolo di 7 parole]" (p.413)
 
 Le sezioni hanno la **stessa firma TimesNewRomanPSMT 19.0pt** del heading capitolo. La distinzione si fa per:
 - **Pattern testuale**: `^Sezione [ABC]` invece di `^Capitolo [IVX]+`
@@ -134,9 +140,9 @@ Le sezioni hanno la **stessa firma TimesNewRomanPSMT 19.0pt** del heading capito
 
 | Livello | Firma | Conteggio | Esempi |
 |---|---|---|---|
-| **H1 — CAPITOLO** | TimesNewRomanPSMT 19.0pt + pattern "Capitolo [IVX]+" | 21 | "Capitolo I — IMPRENDITORE E IMPRESA" |
-| **H2 — SEZIONE** (solo Cap. XIII e XIX) | TimesNewRomanPSMT 19.0pt + pattern "Sezione [ABC]" | 5 (2 + 3) | "Sezione A — La società unipersonale" |
-| **H3 — PARAGRAFO** | TimesNewRomanPS-BoldMT 12.0pt + pattern "^\d+\.\s" | **279** | "3. Le forme del trasferimento" |
+| **H1 — CAPITOLO** | TimesNewRomanPSMT 19.0pt + pattern "Capitolo [IVX]+" | 21 | "Capitolo I — [titolo di 3 parole, in maiuscolo]" |
+| **H2 — SEZIONE** (solo Cap. XIII e XIX) | TimesNewRomanPSMT 19.0pt + pattern "Sezione [ABC]" | 5 (2 + 3) | "Sezione A — [inizio del titolo, 3 parole]" |
+| **H3 — PARAGRAFO** | TimesNewRomanPS-BoldMT 12.0pt + pattern "^\d+\.\s" | **279** | "3. [titolo di 4 parole]" |
 
 Niente sotto-paragrafi numerati `N.M.`. Niente livelli ulteriori. Struttura **piatta a 2 livelli effettivi** (3 nei due capitoli con sezioni interne).
 
@@ -154,10 +160,10 @@ A inizio di ogni capitolo (subito dopo l'heading "Capitolo N — TITOLO"), c'è 
 
 Esempio (p.21, Cap. I):
 ```
-Sommario  1. L'impresa e l'imprenditore. La rilevanza «sociale»
-dell'impresa – 2. La nozione di imprenditore: fattispecie ed
-elementi costitutivi – 3. La capacità per l'esercizio dell'impresa.
-La spendita del nome – 4. L'inizio e la fine dell'impresa
+Sommario  1. [prime 6 parole del titolo 1, con un punto interno e una parola fra «»]
+[settima parola] – 2. [prime 6 parole del titolo 2, con due punti]
+[ultime 2 parole] – 3. [prime 5 parole del titolo 3, chiuse da un punto interno]
+[ultime 4 parole] – 4. [titolo 4, 5 parole]
 ```
 
 ### 4.2 Statistica
@@ -214,7 +220,7 @@ Layout **a colonna singola pura**, senza margini riservati ad apparati laterali:
 │         Bold inline per termini tecnici             │
 │         Italic per latinismi/opere                  │
 │                                                     │
-│  Heading di paragrafo: '3. Le forme del...'         │
+│  Heading di paragrafo: '3. [titolo]...'             │
 │  (TimesNewRomanPS-BoldMT 12pt, blocco isolato)      │
 │                                                     │
 │         (testo continua...)                         │
@@ -247,51 +253,51 @@ DOCUMENTO (Patriarca-Benazzo "Diritto delle imprese e delle società")
 ├─ Front matter (pp. 1-4, frontespizio + colophon)
 ├─ Sommario generale (pp. 5-18, indice analitico iniziale dei capitoli e paragrafi)
 ├─ Prefazione (p. 19)
-├─ Capitolo I "Imprenditore e impresa" (pp. 21-33)
+├─ Capitolo I "[titolo di 3 parole]" (pp. 21-33)
 │  ├─ Sommario di capitolo (mini-indice paragrafi)
 │  └─ §1-§4 (4 paragrafi)
-├─ Capitolo II "Le categorie di imprenditori" (pp. 34-40)
+├─ Capitolo II "[titolo di 4 parole]" (pp. 34-40)
 │  └─ §1-§4
-├─ Capitolo III "Lo «statuto» dell'imprenditore generale e quello dell'imprenditore commerciale" (pp. 41-47)
+├─ Capitolo III "[titolo di 8 parole]" (pp. 41-47)
 │  └─ §1-§5
-├─ Capitolo IV "L'azienda e il suo trasferimento" (pp. 48-53)
+├─ Capitolo IV "[titolo di 5 parole]" (pp. 48-53)
 │  └─ §1-§6
-├─ Capitolo V "I diritti di proprietà industriale e la disciplina della concorrenza" (pp. 54-77)
+├─ Capitolo V "[titolo di 10 parole]" (pp. 54-77)
 │  └─ §1-§12
-├─ Capitolo VI "Il contratto di società. Considerazioni generali" (pp. 78-101)
+├─ Capitolo VI "[titolo di 6 parole]" (pp. 78-101)
 │  └─ §1-§11
-├─ Capitolo VII "Le società di persone" (pp. 102-138)
+├─ Capitolo VII "[titolo di 4 parole]" (pp. 102-138)
 │  └─ §1-§23
-├─ Capitolo VIII "La società per azioni: costituzione e struttura finanziaria" (pp. 139-178)
+├─ Capitolo VIII "[titolo di 8 parole]" (pp. 139-178)
 │  └─ §1-§24
-├─ Capitolo IX "I profili organizzativi della s.p.a." (pp. 179-223)
+├─ Capitolo IX "[titolo di 5 parole]" (pp. 179-223)
 │  └─ §1-§27 (massimo n. paragrafi nel manuale)
-├─ Capitolo X "Le modificazioni dell'atto costitutivo e dello statuto..." (pp. 224-245)
+├─ Capitolo X "[titolo di 7 parole]..." (pp. 224-245)
 │  └─ §1-§13
-├─ Capitolo XI "La società a responsabilità limitata: costituzione e struttura finanziaria" (pp. 246-271)
+├─ Capitolo XI "[titolo di 9 parole]" (pp. 246-271)
 │  └─ §1-§16
-├─ Capitolo XII "La s.r.l.: la struttura organizzativa" (pp. 272-294)
+├─ Capitolo XII "[titolo di 5 parole]" (pp. 272-294)
 │  └─ §1-§21
-├─ Capitolo XIII "La società unipersonale. I nuovi modelli di s.r.l. e le sfide della fintech..." (pp. 295-319)
-│  ├─ Sezione A "La società unipersonale. I nuovi modelli di s.r.l." (§1-§5)
-│  └─ Sezione B "Il diritto societario e le sfide della fintech..." (§1-§...)
-├─ Capitolo XIV "La documentazione dell'attività delle società di capitali" (pp. 320-333)
+├─ Capitolo XIII "[titolo di 13 parole]..." (pp. 295-319)
+│  ├─ Sezione A "[titolo di 8 parole]" (§1-§5)
+│  └─ Sezione B "[titolo di 8 parole]..." (§1-§...)
+├─ Capitolo XIV "[titolo di 7 parole]" (pp. 320-333)
 │  └─ §1-§9
-├─ Capitolo XV "Scioglimento e liquidazione delle società di capitali" (pp. 334-341)
+├─ Capitolo XV "[titolo di 7 parole]" (pp. 334-341)
 │  └─ §1-§3
-├─ Capitolo XVI "I gruppi di società" (pp. 342-350)
+├─ Capitolo XVI "[titolo di 4 parole]" (pp. 342-350)
 │  └─ §1-§6
-├─ Capitolo XVII "Le operazioni straordinarie" (pp. 351-366)
+├─ Capitolo XVII "[titolo di 3 parole]" (pp. 351-366)
 │  └─ §1-§12
-├─ Capitolo XVIII "Le società per azioni «aperte». La fattispecie" (pp. 367-385)
+├─ Capitolo XVIII "[titolo di 7 parole]" (pp. 367-385)
 │  └─ §1-§8
-├─ Capitolo XIX "La disciplina speciale delle società aperte" (pp. 386-440)
-│  ├─ Sezione A "Informazione e trasparenza" (§1-§6)
-│  ├─ Sezione B "La disciplina speciale delle società aperte: struttura finanziaria e capitale" (§1-§6)
-│  └─ Sezione C "Diritti dei soci e struttura organizzativa interna" (§1-§11)
-├─ Capitolo XX "Il mercato del controllo societario: le offerte pubbliche di acquisto" (pp. 441-460)
+├─ Capitolo XIX "[titolo di 6 parole]" (pp. 386-440)
+│  ├─ Sezione A "[titolo di 3 parole]" (§1-§6)
+│  ├─ Sezione B "[titolo di 10 parole]" (§1-§6)
+│  └─ Sezione C "[titolo di 7 parole]" (§1-§11)
+├─ Capitolo XX "[titolo di 10 parole]" (pp. 441-460)
 │  └─ §1-§...
-└─ Capitolo XXI "Le società cooperative" (pp. 461-...)
+└─ Capitolo XXI "[titolo di 3 parole]" (pp. 461-...)
    └─ §1-§15
 ```
 
@@ -395,7 +401,7 @@ Il Patriarca è un caso **semplificato** rispetto agli altri profili: l'assenza 
 ### 10.3 Decisioni di prodotto da prendere
 
 - **Sommario di capitolo all'inizio del capitolo**: leggerlo automaticamente in Layout 1 o offrire come opzione "preview"?
-- **Heading di paragrafo monolitico**: il numero e il titolo sono nello stesso span. Per la prosodia VoiceOver, conviene comunque inserire una micro-pausa tra "tre" e "Le forme del trasferimento" per chiarezza, anche se tipograficamente sono un'unica unità.
+- **Heading di paragrafo monolitico**: il numero e il titolo sono nello stesso span. Per la prosodia VoiceOver, conviene comunque inserire una micro-pausa tra "tre" e "[titolo del paragrafo, 4 parole]" per chiarezza, anche se tipograficamente sono un'unica unità.
 
 ---
 
@@ -407,7 +413,7 @@ Il Patriarca è un caso **semplificato** rispetto agli altri profili: l'assenza 
 
 3. **Architettura "manuale didattico moderno semplificato"**: il Patriarca rappresenta forse una tendenza editoriale italiana recente (post-2020) verso manuali più snelli, senza apparati eruditi. Da verificare con altri campioni recenti.
 
-4. **Presenza/assenza di Indice Analitico finale**: non ho ispezionato le ultime pagine. 504 pagine totali e l'ultimo capitolo (XXI "Le società cooperative") parte a p.461. Le ultime ~30-40 pagine potrebbero essere indice analitico, bibliografia generale, o continuazione del Cap. XXI.
+4. **Presenza/assenza di Indice Analitico finale**: non ho ispezionato le ultime pagine. 504 pagine totali e l'ultimo capitolo (XXI "[titolo di 3 parole]") parte a p.461. Le ultime ~30-40 pagine potrebbero essere indice analitico, bibliografia generale, o continuazione del Cap. XXI.
 
 5. **Pipeline DTP**: con metadata stripped non posso identificare il software di composizione. Possibili candidati: InDesign (probabile), Quark XPress (meno), LaTeX (improbabile data la natura dei font). La firma `TimesNewRomanPSMT` (CID TrueType Identity-H) suggerisce DTP commerciale.
 

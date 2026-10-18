@@ -1,4 +1,10 @@
 # Analisi Tecnica — Mosconi/Campiglio 2024 (Manuale UTET Giuridica / Wolters Kluwer)
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: Wolters Kluwer Italia (marchio UTET GIURIDICA®)
 > Pipeline editoriale: Adobe InDesign CS6 (Macintosh) + Adobe PDF Library 10.0.1
 > Versione: PRIMA — basata su un solo campione, NON consolidata
@@ -116,7 +122,7 @@ size 10.5pt           size 10.5pt          size 10.5pt          size 10.5pt
 flag 4 (regular)      flag 20 (bold)       flag 20 (bold)       flag 20 (bold)
 ```
 
-Esempio (verificato a p.35): `'1.'` (Roman 10.5) + ` \t` (Bold 10.5) + ` ` (Bold 10.5) + `'Il diritto internazionale privato (d.i.pr.): terminologia.'` (Bold 10.5).
+Esempio (verificato a p.35): `'1.'` (Roman 10.5) + ` \t` (Bold 10.5) + ` ` (Bold 10.5) + `'[titolo del paragrafo di 6 parole, chiuso da un punto]'` (Bold 10.5).
 
 Il numero del paragrafo è in Roman, il titolo è in Bold. Curiosamente il `\t` (carattere tabulazione) è anch'esso bold, presumibilmente perché InDesign genera il tab con la firma tipografica del testo che segue. Pattern compositivo simile al Torrente (dove il § era in 11.0 e il numero in 11.5), ma qui senza il segno paragrafo e con due size identiche (10.5 in tutti gli span).
 
@@ -129,7 +135,7 @@ I 7 heading di capitolo + i ~13 heading di front matter sono in **TimesTenLTStd-
 | Tipo | Conteggio | Esempi |
 |---|---|---|
 | Front matter | 13 | "INDICE", "ABBREVIAZIONI", "PREMESSA ALLA UNDICESIMA EDIZIONE", "PREMESSA ALLA DECIMA EDIZIONE", ..., "PREMESSA ALLA PRIMA EDIZIONE" (13 prefazioni in totale!) |
-| Capitoli | 7 + 7 (ogni capitolo ha "Capitolo N" in una linea + titolo del capitolo in altra linea) | "Capitolo Primo" + "Il diritto internazionale privato"; "Capitolo Secondo" + "La giurisdizione internazionale"; ecc. |
+| Capitoli | 7 + 7 (ogni capitolo ha "Capitolo N" in una linea + titolo del capitolo in altra linea) | "Capitolo Primo" + "[titolo di 4 parole]"; "Capitolo Secondo" + "[titolo di 3 parole]"; ecc. |
 
 **Curiosità importante**: il manuale contiene **13 prefazioni** (alla prima edizione, alla seconda, ..., alla undicesima edizione). Sono mantenute tutte cumulativamente attraverso le edizioni: ogni nuova edizione aggiunge la propria prefazione senza cancellare le precedenti. È una caratteristica editoriale Wolters Kluwer/UTET (o forse di questo specifico manuale).
 
@@ -145,7 +151,7 @@ A differenza del Torrente (che usava numeri romani I, II, III), qui i capitoli s
 | Livello | Firma diagnostica | Conteggio | Esempi |
 |---|---|---|---|
 | **H1 — CAPITOLO / FRONT MATTER** | TimesTenLTStd-Roman 12.0pt + pattern testuale | 7 capitoli + 13+ front matter heading | "Capitolo Primo", "INDICE", "PREMESSA ALLA UNDICESIMA EDIZIONE" |
-| **H2 — PARAGRAFO** | Composito: TimesTenLTStd-Roman 10.5pt (numero) + TimesTenLTStd-Bold 10.5pt (titolo) | 148 paragrafi unici (numerati 1-N, ricominciando per capitolo) | "1. Il diritto internazionale privato (d.i.pr.): terminologia." |
+| **H2 — PARAGRAFO** | Composito: TimesTenLTStd-Roman 10.5pt (numero) + TimesTenLTStd-Bold 10.5pt (titolo) | 148 paragrafi unici (numerati 1-N, ricominciando per capitolo) | "1. [titolo di 6 parole, chiuso da un punto]" |
 
 Solo 2 livelli gerarchici operativi nel corpo del manuale. Più piatto del Torrente (che aveva 4 livelli H1-H4) e simile al Marrone (che aveva 2 livelli H1+H2). **Niente sotto-paragrafi numerati `N.M.`** rilevati.
 
@@ -204,7 +210,7 @@ I box di approfondimento sono una **categoria nuova** che né Marrone né Torren
 - **Per Layout 3 (Struttura Visibile)**: banner laterale colorato distintivo
 - **Per Layout 4 (Dottrina Inline)**: questo è il caso d'uso primario per il **regime D** dei box. Con 23,3% dei box in regime D (≥1500 caratteri), il manuale Mosconi è un caso di test ideale per validare il regime D in produzione. Probabile opzione utente: posticipa i box a fine paragrafo o a fine capitolo, in alternativa al rendering inline.
 
-**Cautela**: tra i 420 blocchi rilevati, **una piccola parte (~25-30) sono falsi positivi** dell'Indice Sommario iniziale (pp.5-32), dove la stessa firma TimesTenLTStd-Italic 9.0pt è usata per i sotto-headings di sezione (`Sezione I. Il regolamento in materia civile e commerciale...`). La pipeline deve filtrare questi escludendo le pagine del front matter o usando criteri contestuali (un box vero ha bbox.y nel range del body, non del front matter).
+**Cautela**: tra i 420 blocchi rilevati, **una piccola parte (~25-30) sono falsi positivi** dell'Indice Sommario iniziale (pp.5-32), dove la stessa firma TimesTenLTStd-Italic 9.0pt è usata per i sotto-headings di sezione (`Sezione I. [titolo di 7 parole, troncato]...`). La pipeline deve filtrare questi escludendo le pagine del front matter o usando criteri contestuali (un box vero ha bbox.y nel range del body, non del front matter).
 
 ---
 
@@ -223,15 +229,15 @@ A differenza del Torrente (zero note a piè) e del Marrone (note raggruppate a f
 **Numerazione**: ricomincia da 1 a inizio capitolo. Verificato con 6 reset rilevati (tra fine paragrafo del capitolo precedente e inizio del successivo):
 | Capitolo | Range note | Pagine PDF |
 |---|---|---|
-| Cap. I "Il diritto internazionale privato" | 1-119 | 35-108 |
-| Cap. II "La giurisdizione internazionale" | 1-384 | 109-248 |
-| Cap. III "Le norme di diritto internazionale privato" | 1-73 | 249-310 |
-| Cap. IV "Il diritto applicabile" | 1-93 | 311-374 |
-| Cap. V "Il riconoscimento e l'esecuzione delle decisioni giudiziarie straniere" | 1-183 | 375-456 |
+| Cap. I "[titolo di 4 parole]" | 1-119 | 35-108 |
+| Cap. II "[titolo di 3 parole]" | 1-384 | 109-248 |
+| Cap. III "[titolo di 6 parole]" | 1-73 | 249-310 |
+| Cap. IV "[titolo di 3 parole]" | 1-93 | 311-374 |
+| Cap. V "[titolo di 8 parole]" | 1-183 | 375-456 |
 | Cap. VI | 1-54 | 457-512 |
 | Cap. VII | 1-? | 513+ |
 
-**Numero massimo note in un capitolo**: 384 (Cap. II), valore alto paragonabile ai capitoli più densi del Marrone (max 395 nel Cap. VII Obbligazioni).
+**Numero massimo note in un capitolo**: 384 (Cap. II), valore alto paragonabile ai capitoli più densi del Marrone (max 395 nel Cap. VII [titolo di 1 parola]).
 
 ### 5.2 Statistica delle note a piè
 
@@ -252,7 +258,7 @@ A differenza del Torrente (zero note a piè) e del Marrone (note raggruppate a f
 | C | 500–1.500 car. | 136 | 14,1% |
 | D | ≥ 1.500 car. | 15 | 1,6% |
 
-**Profilo bimodale**: 43% delle note sono brevissime (redirector come `'Supra, nota 53.'`, `'COM(2003) 654 def.'`), e una coda lunga di note molto estese fino a 3.169 caratteri. Le note lunghe contengono catalogi di sentenze (`'Cass. , sez. un. , 30 settembre 2016, n. 19473. La Corte di Giustizia (13 giugno...'`) e mini-saggi dottrinali.
+**Profilo bimodale**: 43% delle note sono brevissime (redirector come `'[rinvio interno a una nota precedente, 3 parole]'`, `'COM(2003) 654 def.'`), e una coda lunga di note molto estese fino a 3.169 caratteri. Le note lunghe contengono catalogi di sentenze (`'Cass. , sez. un. , 30 settembre 2016, n. 19473. [seguito di 6 parole: organo giudicante europeo e data fra parentesi]...'`) e mini-saggi dottrinali.
 
 ### 5.4 Confronto cross-profilo (manuali del progetto)
 
@@ -287,26 +293,26 @@ Anche il Mosconi ha note marginali, ma con caratteristiche **diverse** dal Torre
 - Mosconi: max 338 caratteri (Torrente 152)
 - Le note marginali del Mosconi sono **circa 3 volte più lunghe** in mediana
 
-Quindi il Mosconi ha note marginali che sono **mini-frasi tematiche** (es. `'I principi ispiratori delle norme di diritto processuale civile internazionale'`, `'Il procedimento di stipulazione delle convenzioni internazionali. Il procediment...'`), non solo titoletti di 3-4 parole come il Torrente.
+Quindi il Mosconi ha note marginali che sono **mini-frasi tematiche** (es. `'[glossa di 10 parole, senza punto finale]'`, `'[glossa di due frasi: la prima di 7 parole chiusa da un punto, la seconda troncata]...'`), non solo titoletti di 3-4 parole come il Torrente.
 
 **Caratteristica unica: continuazioni con `...`**
 
 Il 13,1% delle note marginali (39 su 297) contiene `...`. Investigando le sequenze, scopriamo che `...` è un **marker tipografico di continuazione**:
 
 ```
-p.55 nota: 'Prospettiva "contenziosa"...'      (termina con ...)
-p.56 nota: '... e "pre-contenziosa".'          (inizia con ...)
+p.55 nota: '[segmento di 2 parole, la seconda fra virgolette]...'                       (termina con ...)
+p.56 nota: '... [segmento di 2 parole, la seconda fra virgolette, chiuso da un punto]'    (inizia con ...)
 ```
 
 Le due note sono **parti della stessa unità semantica** che è stata spezzata (probabilmente per impaginazione, perché non c'era spazio nel margine di p.55 per il testo intero).
 
 Esempio nella stessa pagina:
 ```
-p.37 nota: '... in senso "intermedio"'         
-p.37 nota: '... in senso stretto (conflitto di leggi)'  
+p.37 nota: '... [segmento di 3 parole, l'ultima fra virgolette]'
+p.37 nota: '... [segmento di 6 parole che riprende le prime 2 del precedente, chiuso da una parentesi di 3 parole]'
 ```
 
-Anche qui sono continuazioni che condividono un'origine comune (la nota intera è qualcosa come `'Diritto internazionale privato in senso lato ... in senso "intermedio" ... in senso stretto (conflitto di leggi)'` spezzata in 3 segmenti per impaginazione).
+Anche qui sono continuazioni che condividono un'origine comune (la nota intera è qualcosa come `'[segmento di 6 parole] ... [segmento di 3 parole, l'ultima fra virgolette] ... [segmento di 6 parole, chiuso da una parentesi di 3 parole]'` spezzata in 3 segmenti per impaginazione).
 
 **Implicazione operativa per la pipeline**: le note marginali con `...` vanno **ricomposte**:
 1. Se una nota termina con `...` e la successiva inizia con `...`, sono parti della stessa nota
@@ -376,7 +382,7 @@ Su ogni pagina del corpo c'è una struttura di header a due elementi:
    Esempio p.40: `'6\t | Capitolo Primo\t | '`
 
 2. **Running header**: TimesTenLTStd-Roman 7.5pt, bbox y ≈ 39-42, x ≈ 47, formato `'<titolo capitolo> <num pagina libro>'`
-   Esempio p.40: `'Il diritto internazionale privato 7'`
+   Esempio p.40: `'[titolo del capitolo di 4 parole] 7'`
 
 I due elementi forniscono ridondanza informativa: il primo è la "indicazione di pagina e capitolo" formale, il secondo è il "running header tipografico" tradizionale italiano. La pipeline può usarli come fonte ridondante per estrarre il numero pagina libro e il titolo capitolo corrente.
 
@@ -417,21 +423,21 @@ DOCUMENTO (Mosconi-Campiglio Vol. I)
 ├─ INDICE (pp. 5-10)
 ├─ ABBREVIAZIONI (p. 11)
 ├─ Premesse (pp. 13-33) — 13 prefazioni cumulative dalle 11 edizioni
-├─ Capitolo Primo "Il diritto internazionale privato" (pp. 35-108)
-│  ├─ § 1. Il diritto internazionale privato (d.i.pr.): terminologia.
-│  ├─ § 2. Mancini e la Conferenza dell'Aja di d.i.pr.
+├─ Capitolo Primo "[titolo di 4 parole]" (pp. 35-108)
+│  ├─ § 1. [titolo di 6 parole]
+│  ├─ § 2. [titolo di 7 parole]
 │  ├─ ... (18 paragrafi)
 │  └─ Note a piè 1-119 (numerazione per capitolo)
-├─ Capitolo Secondo "La giurisdizione internazionale" (pp. 109-248)
+├─ Capitolo Secondo "[titolo di 3 parole]" (pp. 109-248)
 │  ├─ § 1-30 (30 paragrafi)
 │  └─ Note a piè 1-384 (max nel manuale)
-├─ Capitolo Terzo "Le norme di diritto internazionale privato" (pp. 249-310)
+├─ Capitolo Terzo "[titolo di 6 parole]" (pp. 249-310)
 │  ├─ § 1-18
 │  └─ Note a piè 1-73
-├─ Capitolo Quarto "Il diritto applicabile" (pp. 311-374)
+├─ Capitolo Quarto "[titolo di 3 parole]" (pp. 311-374)
 │  ├─ § 1-15
 │  └─ Note a piè 1-93
-├─ Capitolo Quinto "Il riconoscimento e l'esecuzione delle decisioni giudiziarie straniere" (pp. 375-456)
+├─ Capitolo Quinto "[titolo di 8 parole]" (pp. 375-456)
 │  ├─ § 1-22
 │  └─ Note a piè 1-183
 ├─ Capitolo Sesto (pp. 457-512)

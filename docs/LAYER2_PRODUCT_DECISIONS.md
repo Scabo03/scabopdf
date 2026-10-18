@@ -468,7 +468,7 @@ non gira: nessuna risorsa visiva, la lettura resta quella di prima.
 
 A distinzione delle risorse visive complesse trattate in sezione 7.9, i **box di approfondimento** (categoria EXAMPLE_BOX del Mosconi) sono testuali, in prosa continua, e funzionalmente sono note molto lunghe che il tipografo ha promosso a blocchi autonomi. Vanno letti come note lunghe: differiti a fine paragrafo numerato, annunciati con etichetta propria (per esempio *"Box di approfondimento: 864 caratteri, swipe per saltare"*), con memory refresh se rilevante.
 
-I **casi pratici** (esempi narrativi tipo *"IL CASO: IL REATO DI BESTEMMIA"* del Bin/Pitruzzella) sono ugualmente testuali e narrativi. Vanno letti nel flusso normalmente, annunciati con un'etichetta leggera (*"Caso pratico"*), e non sono saltabili in blocco per default — sono parte essenziale dello studio. L'utente che vuole saltarli può farlo manualmente con i gesti, ma l'annuncio non suggerisce il salto attivo.
+I **casi pratici** (esempi narrativi annunciati in maiuscolo da *"IL CASO:"* e un titolo, come nel manuale di Bin e Pitruzzella; esempio inventato: *"IL CASO: LA LITE SUL CONFINE"*) sono ugualmente testuali e narrativi. Vanno letti nel flusso normalmente, annunciati con un'etichetta leggera (*"Caso pratico"*), e non sono saltabili in blocco per default — sono parte essenziale dello studio. L'utente che vuole saltarli può farlo manualmente con i gesti, ma l'annuncio non suggerisce il salto attivo.
 
 
 ### 7.11 Categorie semantiche secondarie: trattamento per famiglia

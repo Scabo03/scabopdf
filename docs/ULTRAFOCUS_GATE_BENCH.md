@@ -1,5 +1,10 @@
 # Ultrafocus — banco del gate (versione content-free)
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Preparato il 2026-08-07, giro di apertura dell'arco ultrafocus. Questo è
 > l'elenco **content-free** dei casi su cui il gate (Fase 0 di
 > `ANALYSIS_ULTRAFOCUS_MACOS.md`, Parte II) misurerà se la rielaborazione con
@@ -159,7 +164,7 @@ un'esclusione).
 | 2 | Delitti 33-34 | didascalia legata alla figura; il paragrafo del corpo prosegue oltre pagina | didascalia «Nota.»; paragrafo ricucito | didascalia senza annuncio dopo il paragrafo; «democrazia» ricucita | **Corrisponde la nuova** (alta) — chiuso ON-DEVICE |
 | 3 | Delitti 168-169 | tabella statistica (contenuto) + nota-`*` (nota vera) | un'unica «Nota lunga.» con tabella e nota insieme | tabella senza falso annuncio; **nota-`*` autonoma con «Nota.»** | **Corrisponde la nuova** (alta) — chiuso ON-DEVICE; residuo: la tabella resta ruolo NOTE muto (non-annuncio, non falso annuncio) |
 | 4 | Lineamenti 46-47 | **UNA** nota (12) che continua su p.47: verificato sulla stampa — le uniche righe a corpo-nota di p.47 sono le 7 della continuazione, senza marcatore e senza nessuna nota 13 sulla pagina → nessun rischio di due note fuse | testa troncata «Nota.» + coda orfana PRIMA della testa | nota logica ricucita e **frazionata da regime**: cella-testa «Nota lunga.» + 2 continuazioni mute contigue; orfana sparita | **Corrisponde la nuova** (alta, con verifica diretta della pagina sul rischio di fusione silenziosa) |
-| 5 | CP indice analitico | colonne alfabetiche, sotto-voci attaccate alla voce-madre | sotto-voci staccate/dislocate, 267 false «Nota.», cifre inghiottite | alfabeto monotono (sonda Abitazione→Aborto→Abuso→Affidamento→Aggravanti), sotto-voci NEL segmento della voce-madre, 0 «Nota.», 24 cifre recuperate; navigazione identica (5622 ARTICLE_HEADER, heading invariati) | **Corrisponde la nuova** (alta) — rimedio via officina (rietichettatura docling-gated) |
+| 5 | CP indice analitico | colonne alfabetiche, sotto-voci attaccate alla voce-madre | sotto-voci staccate/dislocate, 267 false «Nota.», cifre inghiottite | alfabeto monotono (sonda su cinque voci-madre consecutive con l'iniziale A), sotto-voci NEL segmento della voce-madre, 0 «Nota.», 24 cifre recuperate; navigazione identica (5622 ARTICLE_HEADER, heading invariati) | **Corrisponde la nuova** (alta) — rimedio via officina (rietichettatura docling-gated) |
 | 6 | Rivista DPC (controllo) | — | — | flusso identico byte-per-byte | **Nessuna regressione** |
 
 **Esiti negativi, con la stessa nettezza:** (a) la regressione bare-`*` sul
@@ -208,8 +213,8 @@ volumi che hanno intercettato e curato due regressioni:
    (l'over-split è un artefatto di `splitFootnotes` dentro il run).
 La **guardia di successione** protegge le note vere che aprono con
 numero+minuscola: una coda il cui numero torna nella successione (testa+1, o
-seguita dal proprio successore) non si fonde mai — senza, «39 van den
-Aardweg…» (nota vera, Rivista DPC) sarebbe stata inghiottita in silenzio.
+seguita dal proprio successore) non si fonde mai — senza, «39 van der
+Esempio…» (esempio inventato della forma; nota vera, Rivista DPC) sarebbe stata inghiottita in silenzio.
 Delta finale: 14 volumi migliorano (code false fuse nelle teste, regimi
 aggiornati, corpi «Propo-|sto» risanati; su DPC il salvataggio ha SEPARATO
 tre note vere 13/15/16 che la base fondeva), zero token fabbricati, zero
@@ -264,8 +269,8 @@ on-device, commit `ba2c2b5`).** Estrattore delta a 40 volumi ricostruito
 (`run_corpus.sh` + estrazioni ricatturate). Censimento sul before: la coda che
 riprende dopo «Cass.»/«C. Cost.» apre solo se è una DATA → predicato condiviso
 `noteTailContinuesHead`, set `{cass, cost}`. Sentinella cercata e neutralizzata
-per costruzione (una nota nuova non inizia mai con una data nuda: «39 van den
-Aardweg» non è una data). Rete di delta: **16 fusioni, tutte Mandrioli 3 (9) e 4
+per costruzione (una nota nuova non inizia mai con una data nuda: «39 van der
+Esempio», esempio inventato della forma, non è una data). Rete di delta: **16 fusioni, tutte Mandrioli 3 (9) e 4
 (7)** + 4 su EdD; 37/40 byte-identici (Estratto e codici compresi); attrezzo
 token-fabbricati = **0 fabbricati, 0 parole perse/comparse**; navigazione
 invariata; ScaboCore 589/589. Chiude INBOX D.6-quater.
@@ -323,7 +328,7 @@ soglia minima, i 7 flag automatici (tutti falsi allarmi: `lett. a)` inline,
 
 **Delta a 40 volumi: 38 byte-identici** (solo i 2 codici cambiano, gated).
 Navigazione articoli **corretta**: 10 testatine del penale risanate (da mangled
-tipo «7. …corpora1. Indicazione…» a pulite), **+3 articoli del civile
+tipo «7. …termine1. Rubrica…», esempio inventato della forma, a pulite), **+3 articoli del civile
 RECUPERATI** (erano nascosti dentro testatine mangled). Estratto e Marotta
 byte-identici. Cura **45 penale + 16 civile** pagine; residuo desync **16 + 8**
 (dichiarato, non peggiorato: identità sulle pagine escluse). ScaboCore 589/589.

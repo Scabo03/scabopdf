@@ -1,5 +1,10 @@
 # Aggancio richiamo↔nota e piazzamento delle note (capitolo NOTE)
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 Questo documento somma al sapere dev-time del sentiero note
 (`scabopdf-triple-take/discovery/_REGOLE_NOTE/` e relativi referti) la conoscenza
 **verificata sulla pipeline PDFKit reale** e l'implementazione on-device
@@ -143,7 +148,7 @@ Misura sui dump PDFKit reali:
 
 - **Torrente**: 1882 nodi NOTE, ma **solo l'1% inizia con un numero**; **0 pagine**
   con doppia-comparsa nell'intero volume. Le "note" sono **glosse marginali /
-  parole-chiave** ("ADR", "Premessa: insufficienza delle tutele…", "CAPITOLO XL"),
+  parole-chiave** ("ADR", "[glossa di 4 parole, con i due punti dopo la prima]…", "CAPITOLO XL"),
   non note numerate. Torrente **non è** un volume a note-numerate-cieche: è un
   volume **senza apparato numerato**. La tripletta non ha a cosa ancorarsi → **non
   applicabile**. Il trattamento giusto delle glosse marginali è un'altra cosa
@@ -189,9 +194,9 @@ casi ambigui, già minimi):
 
 ```
 p43 N=12:  "…n. 476 e L. 28 marzo 2001, n. 149)12 ."   (richiamo)
-           "…come vedremo (infra, par. 12 e in fine…"   (esca: rinvio a paragrafo)
+           "…[2 parole] (infra, par. 12 [3 parole]…"    (esca: rinvio a paragrafo)
 p34 N=1:   "1. Il dir[itto]…"                            (esca: numero di paragrafo)
-           "…di altri Stati.1 L'opzione…"                (richiamo)
+           "…[fine frase, 3 parole].1 [1 parola]…"      (richiamo)
 ```
 
 In tutti, la regola cieca trova >1 occorrenza → **astensione corretta**. Non serve

@@ -1,4 +1,10 @@
 # Analisi Tecnica — Marrone, Istituzioni di Diritto Romano (BIC 2009)
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore originale: G.B. Palumbo & C. Editore S.P.A. (2006) · Adattamento: Biblioteca Italiana per i Ciechi "Regina Margherita" - Monza (2009)
 > Pipeline di esportazione: iLovePDF (passaggio web finale, 4 ott 2022)
 > Profilo: `manuale_bic` (primo profilo della famiglia manuali del progetto)
@@ -62,7 +68,7 @@ Caratteristica strutturale fondamentale: il PDF di 684 pagine **non è il manual
 
 | Volume BIC | Pagine PDF | Pagine libro originale (annunciate a p.1 di ogni volume) |
 |---|---|---|
-| Volume 1 | 1–110 | "Primo volume da pagina 1 a pagina 115 del testo originale" |
+| Volume 1 | 1–110 | "[annuncio del volume BIC, 11 parole: primo volume, pagine 1-115 del testo originale]" |
 | Volume 2 | 111–261 | (verifica visiva da p.111 in poi: "Pag. 116-..." nei footer) |
 | Volume 3 | 262–383 | |
 | Volume 4 | 384–536 | |
@@ -72,7 +78,7 @@ Caratteristica strutturale fondamentale: il PDF di 684 pagine **non è il manual
 - Frontespizio Palumbo + dichiarazione BIC (Verdana,Bold 24pt — "Istituzioni di Diritto Romano")
 - "Indice" del volume con elenco dei capitoli/paragrafi contenuti
 - "Abbreviazioni principali" (la stessa lista, ripetuta 5 volte!)
-- A volte inserito anche un piccolo testo "Nota del trascrittore" (verificato a p.384 — *"In fondo alla pagina, al centro, il numero della corrispondente pagina del testo originale"*)
+- A volte inserito anche un piccolo testo "Nota del trascrittore" (verificato a p.384 — *"[avvertenza del trascrittore di 14 parole sulla posizione del numero di pagina del testo originale: in basso, al centro]"*)
 - Inizio del primo capitolo di quel volume (continuazione dal precedente)
 
 **Implicazione architetturale per ScaboPDF**:
@@ -117,9 +123,9 @@ Il manuale ha quattro livelli di heading distinti:
 
 | Livello | Firma | Color | Esempi | Conteggio |
 |---|---|---|---|---|
-| **H1 (titolo apicale)** | Verdana,BoldItalic 16.1pt | verde `#008000` | "Capitolo I - Ius", "Capitolo II - Fonti", "Indice analitico", "Bibliografia", "Prefazione alla terza edizione", "Prefazione alla seconda edizione" | 13 |
+| **H1 (titolo apicale)** | Verdana,BoldItalic 16.1pt | verde `#008000` | "Capitolo I - [titolo di 1 parola]", "Capitolo II - [titolo di 1 parola]", "Indice analitico", "Bibliografia", "[titolo della prefazione alla terza edizione]", "[titolo della prefazione alla seconda edizione]" | 13 |
 | **H2 (titolo speciale)** | Verdana,Bold 18.0pt | indaco `#333399` | "Premesse" (compare 2 volte sulla stessa pagina, **da deduplicare**) | 2 |
-| **H3 (paragrafo numerato)** | Verdana,Bold 13.9pt | rosso scuro `#800000` | "§ 1. Istituzioni", "§ 11. Diritto", ..., "§ 214" | 212 + 60 in italic = 272 (alcuni paragrafi hanno la variante BoldItalic) |
+| **H3 (paragrafo numerato)** | Verdana,Bold 13.9pt | rosso scuro `#800000` | "§ 1. [titolo di 1 parola]", "§ 11. [titolo di 1 parola]", ..., "§ 214" | 212 + 60 in italic = 272 (alcuni paragrafi hanno la variante BoldItalic) |
 | **H_NOTE (marker Note)** | Verdana,Bold 12.0pt flags=16 | rosso puro `#ff0000` | "Note" (singola parola) | 180 |
 
 ### 4.2 Palette cromatica BIC
@@ -199,9 +205,9 @@ L'outline contiene 1.562 entry su 3 livelli:
 |---|---|---|
 | Livello 1 — N pagina libro pura | 668 | "3", "4", "5", ..., "681" — bookmark a inizio pagina del libro |
 | Livello 1 — N pagina con (1) | 661 | "3 (1)", "4 (1)", ... — bookmark a fine pagina del libro |
-| Livello 1 — Heading testuali | 9 | "Prefazione alla terza edizione", "Premesse", "Premesse (1)", "Abbreviazioni principali" (×5 per ciascun volume) |
+| Livello 1 — Heading testuali | 9 | "[titolo della prefazione alla terza edizione]", "Premesse", "Premesse (1)", "Abbreviazioni principali" (×5 per ciascun volume) |
 | Livello 2 — Capitoli | 9 | "Capitolo I" .. "Capitolo IX" |
-| Livello 2 — Paragrafi `§ N.` | 210 | "§ 1. Istituzioni" .. "§ 214" |
+| Livello 2 — Paragrafi `§ N.` | 210 | "§ 1. [titolo di 1 parola]" .. "§ 214" |
 | Livello 2 — Heading non capitolo | 3 | "Abbreviazioni principali" (in indice), "Indice analitico", "Bibliografia" |
 | Livello 3 — Paragrafi annidati | 2 | (rari) |
 
@@ -218,30 +224,30 @@ Il livello 1 è una **navigazione mappa-libro** parallela alla navigazione PDF. 
 ```
 DOCUMENTO (manuale completo)
 ├─ Front matter (Volume 1, pp. 1-7)
-│  ├─ Prefazione alla terza edizione (p.4)
-│  ├─ Prefazione alla seconda edizione (p.5)
+│  ├─ [titolo della prefazione alla terza edizione] (p.4)
+│  ├─ [titolo della prefazione alla seconda edizione] (p.5)
 │  └─ Abbreviazioni principali (p.6) — 5 occorrenze totali, 1 per volume BIC
 ├─ Premesse (p.8) — heading H2 Verdana,Bold 18pt
-│  └─ § 1. Istituzioni .. § 10. Precisazioni
+│  └─ § 1. [titolo di 1 parola] .. § 10. [titolo di 1 parola]
 │      [Note: 1-38] (1 sezione Note unica per Premesse)
-├─ Capitolo I - Ius (p.17) — heading H1 verde
-│  └─ § 11. Diritto .. § 20. ...
+├─ Capitolo I - [titolo di 1 parola] (p.17) — heading H1 verde
+│  └─ § 11. [titolo di 1 parola] .. § 20. ...
 │      [Note: 1-37] in 8 sezioni intercalate
-├─ Capitolo II - Fonti (p.34)
+├─ Capitolo II - [titolo di 1 parola] (p.34)
 │  └─ ... [Note: 1-120] in 6 sezioni
-├─ Capitolo III - Il processo (p.51)
+├─ Capitolo III - [titolo di 2 parole] (p.51)
 │  └─ ... [Note: 1-133] in 19 sezioni
-├─ Capitolo IV - Fatti e negozi (p.113)
+├─ Capitolo IV - [titolo di 3 parole] (p.113)
 │  └─ ... [Note: 1-209] in 18 sezioni
-├─ Capitolo V - Persone e famiglia (p.175)
+├─ Capitolo V - [titolo di 3 parole] (p.175)
 │  └─ ... [Note: 1-101] in 29 sezioni
-├─ Capitolo VI - Cose, diritti reali, possesso (p.265)
+├─ Capitolo VI - [titolo di 4 parole] (p.265)
 │  └─ ... [Note: 1-290] in 27 sezioni
-├─ Capitolo VII - Obbligazioni (p.387)
+├─ Capitolo VII - [titolo di 1 parola] (p.387)
 │  └─ ... [Note: 1-395] in 44 sezioni
-├─ Capitolo VIII - Donazioni (p.540)
+├─ Capitolo VIII - [titolo di 1 parola] (p.540)
 │  └─ ... [Note: 1-26] in 3 sezioni
-├─ Capitolo IX - Le successioni mortis causa (p.548)
+├─ Capitolo IX - [titolo di 4 parole] (p.548)
 │  └─ ... [Note: 1-250] in 25 sezioni
 ├─ Indice analitico (p.631)
 └─ Bibliografia (p.674)
@@ -255,7 +261,7 @@ I paragrafi `§ N.` sono numerati **continuativamente in tutto il manuale**, da 
 
 ### 6.4 Numerazione note per capitolo
 
-Le note ricominciano da 1 **a inizio capitolo**, non a inizio paragrafo. Verificato con i 10 reset puliti rilevati nel campione (1 per Premesse + 9 per i 9 capitoli) corrispondenti a (massimi rilevati): 38, 37, 120, 133, 209, 101, 290, 395, 26, 250. Il manuale Marrone ha quindi **fino a 395 note in un singolo capitolo** (Capitolo VII Obbligazioni). Sono numeri molto alti, paragonabili a una voce EdD storica densa.
+Le note ricominciano da 1 **a inizio capitolo**, non a inizio paragrafo. Verificato con i 10 reset puliti rilevati nel campione (1 per Premesse + 9 per i 9 capitoli) corrispondenti a (massimi rilevati): 38, 37, 120, 133, 209, 101, 290, 395, 26, 250. Il manuale Marrone ha quindi **fino a 395 note in un singolo capitolo** (Capitolo VII, [titolo di 1 parola]). Sono numeri molto alti, paragonabili a una voce EdD storica densa.
 
 ### 6.5 Marker "Note" e regola di posizionamento
 
@@ -339,10 +345,10 @@ Il manuale Marrone è dominato dal **regime B (60% delle note)**. È la più alt
 
 **Top 10 più lunghe** (tutte iniziano con citazione di Digesto/Gaio):
 - p.52, nota 3: 2.044 car. — `Cfr. D. 44.7.51 (Cels. 3 dig.): Nihil aliud est actio quam ius...`
-- p.500, nota 301: 1.987 car. — `Cfr. supra, p. 101 ss. Godevano del beneficium competentiae...`
-- p.352, nota 201: 1.706 car. — `Cfr. D. 7.1.13 pr. (Ulp. 18 ad Sab.). Contro l'usufruttuario...`
-- p.253, nota 187: 1.700 car. — `Non vi è dubbio che la funzione originaria della tutela muliebre fu...`
-- p.238, nota 137: 1.588 car. — `Agli appartenenti all'ordo senatorio una lex Claudia, del 220 a.C....`
+- p.500, nota 301: 1.987 car. — `[apertura della nota: rinvio interno a pagine precedenti del manuale, poi prosa di commento con un latinismo, 9 parole]...`
+- p.352, nota 201: 1.706 car. — `Cfr. D. 7.1.13 pr. (Ulp. 18 ad Sab.). [prosa di commento, troncata dopo 2 parole]...`
+- p.253, nota 187: 1.700 car. — `[apertura della nota: prosa di commento, 12 parole]...`
+- p.238, nota 137: 1.588 car. — `[apertura della nota: prosa di commento con il richiamo alla lex Claudia del 220 a.C., 10 parole]...`
 
 **10 più brevi** (tutte sono pure redirector bibliografici):
 - p.344, nota 182: 14 car. — `Cfr. I. 2.3.4.`
@@ -422,7 +428,7 @@ Sulla base di questo singolo campione, propongo provvisoriamente il sotto-profil
 
 8. **Duplicazione "Premesse"**: il marker "Premesse" appare 2 volte nella stessa pagina 8. Verificare se è una scelta editoriale specifica (forse uno è dell'indice e uno del corpo) o un artefatto. La pipeline deve deduplicare.
 
-9. **Il caso "Capitolo VIII - Donazioni" con solo 3 paragrafi**: dei 9 capitoli del manuale, il VIII ha appena 3 paragrafi (§ 185, 186, 187). Verificare visivamente se è un capitolo davvero così breve o se ho perso qualcosa nella rilevazione. Se è davvero così, è un'eccezione strutturale.
+9. **Il caso "Capitolo VIII - [titolo di 1 parola]" con solo 3 paragrafi**: dei 9 capitoli del manuale, il VIII ha appena 3 paragrafi (§ 185, 186, 187). Verificare visivamente se è un capitolo davvero così breve o se ho perso qualcosa nella rilevazione. Se è davvero così, è un'eccezione strutturale.
 
 ---
 

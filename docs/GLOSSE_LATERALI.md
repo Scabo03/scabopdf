@@ -1,5 +1,10 @@
 # Glosse laterali — indagine + implementazione
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > **Stato: IMPLEMENTATO** (categoria `MARGINAL_GLOSS`, riconoscimento geometrico,
 > scarto dal flusso). Vedi § 8 in fondo per l'implementazione e le due reti di
 > verifica. Le sezioni 1–7 sono l'indagine che l'ha fondata.
@@ -100,13 +105,13 @@ unici).
 **etichette di argomento / abstract** della porzione di corpo che affiancano, e il
 contenuto è sempre nel corpo, spesso verbatim:
 
-- Torrente: "Pluralità degli ordinamenti" ↔ corpo "Nella prospettiva della pluralità
-  degli ordinamenti giuridici…"; "Norma giuridica e norma morale" ↔ corpo "La norma
-  giuridica si distingue dalla norma morale…". Pure etichette di tema.
-- Mandrioli I: "Il diritto processuale civile e il suo oggetto di studio." ↔ corpo
-  "Con l'espressione «diritto processuale civile» … oggetto del nostro studio."
-- Mosconi: il caso più "ricco", "Modifiche apportate nel 2017 in materia di obblighi
-  alimentari, e nel 2022 in materia di divorzio…" — **caccia attiva al
+- Torrente: "[glossa di 3 parole]" ↔ corpo "[frase di 7 parole che contiene le stesse
+  3 parole]…"; "[glossa di 5 parole]" ↔ corpo "[frase di 8 parole che riprende i due
+  sintagmi della glossa]…". Pure etichette di tema.
+- Mandrioli I: "[glossa di 10 parole, chiusa da un punto]" ↔ corpo
+  "[frase di 9 parole con un'omissione «…», che riprende due sintagmi della glossa, uno fra «»]."
+- Mosconi: il caso più "ricco", "[glossa-abstract di 16 parole: due modifiche datate
+  2017 e 2022, ciascuna con la sua materia]…" — **caccia attiva al
   controesempio**: sembrava contenuto unico (date+materie), ma la verifica mostra che
   il corpo della stessa pagina contiene 2017, 2022, "alimentari", "divorzio",
   "separazione". **Redondante anch'esso.**
@@ -121,7 +126,7 @@ trovato glosse a contenuto unico** nei volumi esaminati.
 Sotto il nome "glossa laterale" ci sono cose affini ma diverse:
 
 - **(a) Parola-chiave di argomento** (Torrente, ~25c): sintagma nominale breve
-  ("Socialità del diritto"). Pura navigazione/etichetta.
+  ("[sintagma di 3 parole]"). Pura navigazione/etichetta.
 - **(b) Titoletto-riassunto in paráfrasi** (Mandrioli I/II, ~79c): frammento di
   frase, spesso con "…" di continuazione tra glosse adiacenti.
 - **(c) Abstract descrittivo** (Mosconi, ~61c): può nominare specifici (date,
@@ -255,7 +260,7 @@ bordi delle righe corpo-larghe, e PDFKit emette su alcune pagine una riga corpo-
 con `x0` anomalo (≈9pt, bordo pagina). Il `min` collassava il bordo-colonna sinistro
 a ~9–10 invece di ~85, così la glossa (x1≤79) non risultava più "fuori colonna" e
 sfuggiva. Le sfuggite erano glosse vere ("Eguaglianza", "Servitù", "Soggettività
-giuridica", "Servitus in faciendo consistere"). I margini alternati recto/verso
+giuridica", "[brocardo latino di 4 parole]"). I margini alternati recto/verso
 rendevano una banda-di-volume globale insicura (la banda sx del verso si sovrappone
 alla colonna del recto): scartata come segnale.
 
@@ -280,8 +285,8 @@ robustezza della stima. Le glosse a corpo rado / con colonna ancora ambigua rest
 | Marotta (controllo) | 101 → 101 | 0 → 0 | 0 |
 
 Le righe migrate NOTE→MARGINAL_GLOSS sono **confermate glosse** (campione): Torrente
-"Eguaglianza", "Servitù", "Soggettività giuridica", "Forma ad probationem";
-Mandrioli "La controeccezione.", "Il c.d. principio di non contestazione…",
+"Eguaglianza", "Servitù", "Soggettività giuridica", "[locuzione latina di 3 parole]";
+Mandrioli "La controeccezione.", "[glossa di 6 parole con «c.d.», chiusa da «…»]",
 titoletti-riassunto con "…". NON sono note (le note vere sono in-colonna e restano).
 
 ### Rete A — token-per-token (zero contenuto unico)

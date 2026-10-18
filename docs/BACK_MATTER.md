@@ -1,5 +1,10 @@
 # Back-matter — apparato finale (scartabile) vs contenuto (protetto)
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 L'apparato finale dei volumi (colophon "finito di stampare", indice/sommario
 ripetuto in coda, indice dei nomi / delle fonti / cronologico delle sentenze
 citate) all'ascolto è tedio: lista di rimandi, dati editoriali, nomi di parti.
@@ -39,8 +44,8 @@ letto**. Meglio un indice di troppo nel flusso che una postfazione/appendice per
 | EdD (azienda, voce) | — | — | FONTI. / LETTERATURA. (bibliografia) | — |
 
 **Scoperta che corregge l'assunzione iniziale.** Gli indici **analitici** sono
-**senza leader** (voci con riferimenti inline: `Recesso (diritto di): 8`,
-`Ab intestato, 123`). I leader puntinati li hanno **solo** l'indice-sommario
+**senza leader** (voci con riferimenti inline, esempi inventati della forma: `Termine (scadenza del): 8`,
+`Ad hoc, 123`). I leader puntinati li hanno **solo** l'indice-sommario
 generale ripetuto (Compendio) e l'indice cronologico delle leggi (Codici). Quindi
 il segnale-leader del front-matter, riusato in coda, scarta *solo* il
 sommario-ripetuto/cronologico e **non sfiora mai l'indice analitico recintato**.
@@ -123,8 +128,8 @@ Compendio −14 (`kluwer`,`wolters` + numeri romani del sommario), Elementi/Torr
 −1 (`isbn`), Mandrioli III −2 (`stampare`,`stampatre`), Marotta −282 (nomi d'autore
 antichi e titoli d'opera dell'indice fonti), Mosconi −1596 (nomi di parti delle
 sentenze citate). Contenuto preservato (verificato): Marotta **APPENDICE**
-("Compagnia delle Indie") LETTA, Torrente indice analitico ancora letto (fence),
-Torrente corpo (cap. "PROCEDURE CONCORSUALI") e ABBREVIAZIONI letti, corpi intatti.
+("[titolo dell'appendice, 3 parole]") LETTA, Torrente indice analitico ancora letto (fence),
+Torrente corpo (cap. "[titolo di 2 parole, in maiuscolo]") e ABBREVIAZIONI letti, corpi intatti.
 
 **Rete B — il già fatto è invariato.** Aggancio note **byte-identico** BEFORE/AFTER
 su tutti i 7 volumi (Mosconi same-page 518/orfani 10, Mandrioli III 1496/10,

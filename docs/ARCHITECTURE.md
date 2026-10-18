@@ -1,5 +1,10 @@
 # ScaboPDF — Architecture
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Operational guide with checklists, organized by development phase.
 > Scope of this document: Layer 1 (Python extraction pipeline) + Layer 2 (React Native iOS/iPadOS app).
 > Layer 3 (audio integrations: ElevenLabs, StableAudio) is documented separately when implementation begins.
@@ -803,18 +808,18 @@ The reading-order tree of the document. Each node has a `type` and type-specific
     "type": "HEADING_2",
     "level": 2,
     "text": "Capitolo Primo",
-    "subtitle": "Il diritto internazionale privato",
+    "subtitle": "La disciplina di esempio",
     "page_pdf": 35,
     "page_book": 1,
     "children": [
       {
         "id": "node_002",
         "type": "CHAPTER_SUMMARY",
-        "text": "Sommario: 1. Il diritto internazionale privato (d.i.pr.): terminologia. – 2. Mancini e la Conferenza dell'Aja...",
+        "text": "Sommario: 1. La disciplina di esempio (d.e.): definizioni. – 2. Fonti e sviluppo storico...",
         "page_pdf": 35,
         "items": [
-          {"number": 1, "title": "Il diritto internazionale privato (d.i.pr.): terminologia"},
-          {"number": 2, "title": "Mancini e la Conferenza dell'Aja di d.i.pr."}
+          {"number": 1, "title": "La disciplina di esempio (d.e.): definizioni"},
+          {"number": 2, "title": "Fonti e sviluppo storico della d.e."}
         ]
       },
       {
@@ -822,7 +827,7 @@ The reading-order tree of the document. Each node has a `type` and type-specific
         "type": "HEADING_4",
         "level": 4,
         "number": "1",
-        "title": "Il diritto internazionale privato (d.i.pr.): terminologia.",
+        "title": "La disciplina di esempio (d.e.): definizioni.",
         "page_pdf": 35,
         "page_book": 1,
         "children": [
@@ -831,9 +836,9 @@ The reading-order tree of the document. Each node has a `type` and type-specific
             "type": "BODY",
             "page_pdf": 35,
             "spans": [
-              {"text": "Il diritto internazionale privato è ", "italic": false, "bold": false},
-              {"text": "ramo del diritto interno", "italic": true, "bold": false},
-              {"text": " che disciplina ...", "italic": false, "bold": false}
+              {"text": "La disciplina di esempio è ", "italic": false, "bold": false},
+              {"text": "parte di un ordinamento", "italic": true, "bold": false},
+              {"text": " che regola ...", "italic": false, "bold": false}
             ],
             "marginal_heading_id": "node_007"
           },
@@ -861,7 +866,7 @@ The reading-order tree of the document. Each node has a `type` and type-specific
           {
             "id": "node_007",
             "type": "MARGINAL_HEADING",
-            "spans": [{"text": "Definizione classica del d.i.pr.", "italic": false, "bold": false}],
+            "spans": [{"text": "Prima nozione generale di d.e.", "italic": false, "bold": false}],
             "char_count": 30,
             "associated_body_id": "node_004"
           }
@@ -966,8 +971,8 @@ For `codice_giuffre_penale` and `codice_giuffre_civile`:
     {"type": "ARTICLE_BODY", "comma": 2, "spans": [...]},
     {"type": "NOTE", "number": 1, "spans": [...], "regime": "B"},
     {"type": "PROCEDURAL", "entries": {
-      "competenza": "Trib. monocratico (udienza prelim. 1° e 2° comma); Trib. collegiale (3° comma)",
-      "arresto": "facoltativo (1° e 2° comma); obbligatorio (3° comma)",
+      "competenza": "Giudice di esempio (1° comma); Altro giudice di esempio (2° e 3° comma)",
+      "arresto": "regime di esempio (1° comma); altro regime di esempio (2° e 3° comma)",
       "fermo": "...",
       "custodia_cautelare_in_carcere": "...",
       "altre_misure_cautelari_personali": "...",

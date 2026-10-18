@@ -1,4 +1,10 @@
 # Analisi Tecnica — Mandrioli-Carratta, Diritto processuale civile Vol. III
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: **Giappichelli** · 30ª edizione · ISBN 9791221112917 · 498 pp.
 > Autori: Crisanto Mandrioli, Antonio Carratta
 > Sottotitolo: "III – Processi speciali e procedure alternative"
@@ -56,7 +62,7 @@ Il producer Photoshop è insolito per un volume di testo: probabilmente la coper
 - L3: 50 voci (Sezioni)
 - L4: 42 voci (Paragrafi numerati)
 
-L'outline è ricco ma **non esaustivo**: dei 74 marker tipografici di paragrafo size 11.5pt rilevati, solo 42 hanno corrispondente entry L4 nell'outline. Inoltre la gerarchia outline ha incoerenze (es. `1. Generalità sui processi…` è classificato L2 anziché L4). Da combinare con rilevamento tipografico.
+L'outline è ricco ma **non esaustivo**: dei 74 marker tipografici di paragrafo size 11.5pt rilevati, solo 42 hanno corrispondente entry L4 nell'outline. Inoltre la gerarchia outline ha incoerenze (es. `1. [titolo di paragrafo troncato dopo 3 parole]…` è classificato L2 anziché L4). Da combinare con rilevamento tipografico.
 
 ---
 
@@ -142,7 +148,7 @@ Nonostante l'encoding Custom sui Type 1C SimonciniGaramondStd, l'estrazione test
 ```
 H1: PARTE Prima/Seconda/Terza/Quarta
 H2: CAPITOLO I/II/.../X
-H3: Sezione prima/seconda/...  +  GENERALITÀ SUL PROCESSO DEL LAVORO (titolo sez.)
+H3: Sezione prima/seconda/...  +  [titolo di 5 parole, in maiuscolo] (titolo sez.)
 H4: <num>. <Titolo paragrafo>
 ```
 
@@ -161,7 +167,7 @@ Layout fisso:
 [Block]    BODY                                  Garamond 11.0pt
 ```
 
-**`CAPITOLO N` e titolo capitolo NON sono in maiuscoletto vero**: sono capitalized nel testo sorgente (`I PROCESSI O PROCEDIMENTI SPECIALI`). Lo small-cap visivo è ottenuto da CSS-like font feature, non da Unicode small-caps. Il testo estratto è in maiuscolo.
+**`CAPITOLO N` e titolo capitolo NON sono in maiuscoletto vero**: sono capitalized nel testo sorgente (`[titolo di capitolo di 5 parole, in maiuscolo]`). Lo small-cap visivo è ottenuto da CSS-like font feature, non da Unicode small-caps. Il testo estratto è in maiuscolo.
 
 ### 4.3 SOMMARIO: blocco "tematico-bibliografico" di apertura
 
@@ -240,14 +246,14 @@ Feature minore ma **distintiva** del profilo. **12 occorrenze** in tutto il manu
 Le glosse sono **incassate nel margine sinistro accanto a punti specifici delle NOTE**, non del body. Visualmente la glossa "accompagna" una porzione di nota, suggerendone il tema.
 
 Esempi reali rilevati:
-- p.81 — "L'obbligatoria pronuncia sulla rivalutazione monetaria"
-- p.214 — "L'assegno divorzile e le sue funzioni."
-- p.282 — "Procedimento speciale ex art. 14 D.Lgs. 150/2011 per la liquidazione degli onorari degli avvocati"
-- p.300 — "Il pagamento in pendenza del giudizio di opposizione"
-- p.303 — "L'opposizione tardiva"
-- p.326 — "Morosità e relativa sanatoria ai sensi dell'art. 55 L. 392/1978"
-- p.360 — "Efficacia ed esecutorietà delle sentenze nella U.E.: il Reg. 1215/2012"
-- p.409 — "L'arbitrato amministrato"
+- p.81 — "[glossa di 5 parole]"
+- p.214 — "[glossa di 6 parole, chiusa da un punto]"
+- p.282 — "[glossa di 14 parole, con un rinvio all'art. 14 D.Lgs. 150/2011]"
+- p.300 — "[glossa di 8 parole]"
+- p.303 — "[glossa di 2 parole]"
+- p.326 — "[glossa di 10 parole, con un rinvio all'art. 55 L. 392/1978]"
+- p.360 — "[glossa di 10 parole, con un rinvio al Reg. 1215/2012]"
+- p.409 — "[glossa di 2 parole]"
 
 ### 5.3 Rilevamento
 
@@ -259,7 +265,7 @@ Tag interno proposto: **`MARGINAL_GLOSS`** (nuovo, distinto da `MARGINAL_HEADING
 
 Le glosse sono tematicamente legate alla nota a fianco. In Layout 1/2/3 vanno lette come heading di micro-sezione delle note. In Layout 4 (Dottrina Inline) **non vanno lette**: sarebbero rumore acustico nel flusso del body. Marcare `accessibilityElementsHidden = true` in Layout 4, o annunciare opzionalmente con prosodia distinta dopo la nota associata.
 
-**Anomalia da gestire**: a p.170 PyMuPDF rileva due span `AGaramondPro-SemiboldItalic` 11.5pt **dentro** il body (non come glossa marginale). Trattasi di fallback automatico InDesign per due parole ("cu-ratore del minore"). Va distinto dalle glosse vere via geometria (bbox dentro la colonna body, non nel margine sinistro). Soglia robusta: **glossa vera = bbox.x < 50** (margine sinistro) **AND** font BoldItalic.
+**Anomalia da gestire**: a p.170 PyMuPDF rileva due span `AGaramondPro-SemiboldItalic` 11.5pt **dentro** il body (non come glossa marginale). Trattasi di fallback automatico InDesign per due parole ("[locuzione di 3 parole, con la prima parola spezzata a fine riga da un trattino]"). Va distinto dalle glosse vere via geometria (bbox dentro la colonna body, non nel margine sinistro). Soglia robusta: **glossa vera = bbox.x < 50** (margine sinistro) **AND** font BoldItalic.
 
 ---
 
@@ -318,16 +324,16 @@ Tutte sono note di carattere bibliografico-dottrinale, nessuna "narrativa":
 
 | Numero nota | Lunghezza | Incipit |
 |---|---|---|
-| (316) | 3.402 | "Il riferimento è ai contratti o accordi collettivi…" |
-| (32) | 3.137 | "La totale mancanza di quest'esperimento per mancata proposizione…" |
-| (46) | 3.074 | "In questo modo, il legislatore ha inteso estendere…" |
-| (8) | 3.031 | "E dunque, non si applicano al rito del lavoro utilizzato…" |
-| (1) | 2.509 | "In argomento v. P. FEDERICO-R. FOGLIA, La disciplina del nuovo processo…" |
-| (256) | 2.492 | "In proposito v. C. CONSOLO, L'arbitrato con sede estera…" |
-| (13) | 2.410 | "Cfr., in generale, sui requisiti del rapporto di parasubordinazione…" |
-| (83) | 2.347 | "V. anche, in argomento, M.A. LUPOI, Il "nuovo" procedimento di separazione…" |
-| (230) | 2.325 | "Termine che va rispettato in ogni caso sia per la dichiarazione di appello…" |
-| (1) | 2.310 | "In argomento v. A. CARRATTA, in A. CARRATTA-P. D'ASCOLA, Nuove riforme…" |
+| (316) | 3.402 | "[apertura della nota: prosa di commento, 8 parole]…" |
+| (32) | 3.137 | "[apertura della nota: prosa di commento, 8 parole]…" |
+| (46) | 3.074 | "[apertura della nota: prosa di commento, 8 parole]…" |
+| (8) | 3.031 | "[apertura della nota: prosa di commento, 10 parole]…" |
+| (1) | 2.509 | "[apertura della nota: rinvio bibliografico a un'opera di due autori, cognomi in maiuscoletto, 11 parole]…" |
+| (256) | 2.492 | "[apertura della nota: rinvio bibliografico a un'opera di un autore, cognome in maiuscoletto, 9 parole]…" |
+| (13) | 2.410 | "[apertura della nota: rinvio generico su un tema, 9 parole]…" |
+| (83) | 2.347 | "[apertura della nota: rinvio bibliografico a un'opera di un autore, con una parola del titolo fra virgolette, 11 parole]…" |
+| (230) | 2.325 | "[apertura della nota: prosa di commento, 13 parole]…" |
+| (1) | 2.310 | "[apertura della nota: rinvio bibliografico a un contributo in un'opera di due autori, 11 parole]…" |
 
 **La nota (1) ricorre in cima alla lista**: è la **bibliografia di apertura del paragrafo / capitolo**, sistematicamente lunghissima. Ogni capitolo o sezione importante apre con un paragrafo di pochi caratteri di body seguito da una nota (1) bibliografica di 1.500–3.000 caratteri. Pattern editoriale ricorrente: la nota (1) raccoglie l'apparato dottrinale di riferimento dell'intero capitolo.
 
@@ -363,8 +369,8 @@ Per ogni pagina del corpo:
 
 Esempi reali:
 - p.24: continuazione bibliografica della nota (1) di p.23 (apertura cap. lavoro)
-- p.49: `del ricorso nel processo del lavoro, in Giur. it., 1991, I, 2, 365; G. TRISORIO LIUZZI…`
-- p.86: `1984; D. BORGHESI, in D. BORGHESI-L. DE ANGELIS, Il processo, cit., p. 367; A. SALETTI…`
+- p.49: `[continuazione di nota di 16 parole: riparte a metà del titolo di un'opera, in minuscolo, poi una rivista con anno e pagina, poi un nuovo autore in maiuscoletto]…`
+- p.86: `[continuazione di nota di 15 parole: riparte dall'anno di una citazione, chiuso da punto e virgola, poi rinvii ad autori in maiuscoletto con «cit.» e pagina]…`
 
 In un manuale di 498 pp con 744 note, una nota su 12 attraversa il confine di pagina. È **caratteristica strutturale frequente**, non eccezionale.
 
@@ -400,7 +406,7 @@ Caso raro ma possibile: una nota di 3.000+ caratteri può estendersi su 2 o 3 pa
 ### 7.1 Italic strutturale nel body
 
 Il body 11.0pt usa italic 11.0pt per:
-- Termini tecnici evidenziati (`processo o rito del lavoro`, `causa petendi`, `rebus sic stantibus`)
+- Termini tecnici evidenziati (`[locuzione di 5 parole]`, `causa petendi`, `rebus sic stantibus`)
 - Titoli di articoli/leggi citati (`Norme per le controversie in materia di lavoro`)
 - Citazioni testuali brevi (es. `«limitatamente agli interessi patrimoniali dei figli minori o legalmente incapaci»` reso in italic dopo ` solo ` roman)
 - Latinismi giuridici
@@ -421,13 +427,13 @@ Pattern di disambiguazione vs altre parentesi:
 
 ### 7.3 Citazioni virgolettate
 
-Le citazioni testuali nel body sono in **`«»`** (virgolette caporali italiane), spesso in italic (es. p.50: `«Il giudice – così recita il 2° comma –, entro cinque giorni dal deposito del ri-corso, fissa, con decreto, l'udienza di discussione, alla quale le parti sono tenute a comparire personalmente»`).
+Le citazioni testuali nel body sono in **`«»`** (virgolette caporali italiane), spesso in italic (es. p.50: `«Il giudice – [inciso dell'autore di 5 parole che indica il comma citato] –, entro cinque giorni dal deposito del ri-corso, fissa, con decreto, l'udienza di discussione, alla quale le parti sono tenute a comparire personalmente»`).
 
 Le citazioni `«»` brevi (< 30 char) sono inline; quelle lunghe (> 100 char) sono in italic per intero. Per Layout 4 (Dottrina Inline) si potrebbe applicare differenziazione acustica anche alle citazioni lunghe in italic, analoga a quella già discussa nelle Note a Sentenza DeJure. Decisione di prodotto, non di pipeline.
 
 ### 7.4 Sigla autori in maiuscoletto
 
-Nelle note (e talvolta nel body) gli autori sono citati in **maiuscoletto** (size 7.0pt secondo il rilevamento PyMuPDF). Esempi: `A. PROTO PISANI`, `G. TARZIA`, `G. CASABURI`. Pattern: nome puntato + cognome in maiuscoletto.
+Nelle note (e talvolta nel body) gli autori sono citati in **maiuscoletto** (size 7.0pt secondo il rilevamento PyMuPDF). Esempi inventati della stessa forma: `A. ROSSI BIANCHI`, `G. VERDI`, `G. NERI`. Pattern: nome puntato + cognome in maiuscoletto.
 
 Per il rendering accessibile: lo speech engine pronuncia comunque i nomi correttamente in maiuscolo, non serve fare nulla. Per Layout 3 (Struttura Visibile) si può rendere visivamente con small-caps CSS-like.
 

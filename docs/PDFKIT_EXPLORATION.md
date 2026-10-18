@@ -1,5 +1,10 @@
 # Esplorazione PDFKit — fotografia del segnale grezzo su tre documenti reali
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 Stato: **giro esplorativo, non decisione.** Questo documento riporta solo i
 **fatti grezzi** dell'estrazione on-device con l'estrattore reale
 `app/ios/ScaboApp/PdfKitExtractor.swift` (Apple PDFKit) su tre fixture del corpus
@@ -52,10 +57,10 @@ e 54–74 span per pagina, frasi intere, sillabazione di fine riga preservata
 
 ```
 [19pt] Capitolo III
-[19pt] LO «STATUTO» DELL’IMPRENDITORE / GENERALE E QUELLO / DELL’IMPRENDITORE COMMERCIALE
-[9pt]  Sommario  +  1. Premessa – 2. Il registro delle imprese – …
+[19pt] [titolo di capitolo di 8 parole, in maiuscolo, una parola fra «», su tre righe: … / … / …]
+[9pt]  Sommario  +  1. Premessa – 2. [titolo di 4 parole] – …
 [12pt] 1. Premessa
-[11pt] L’identificazione in un determinato soggetto – eseguita secondo i criteri…
+[11pt] [inizio del corpo, 9 parole con una lineetta d'inciso]…
 ```
 
 **Proprietà catturate.**
@@ -94,8 +99,8 @@ distinti, e ricalcano esattamente la struttura cromatica documentata del Marrone
 | `#333399` indigo | 538 | testata `«Premesse»` + termini latini inline (`adiudicatio`, `condemnatio`) |
 | `#800000` maroon | 339 | paragrafi `§` — `«§ 33.»`, `«§ 34.»`, `«§ 35.»` (13,92 pt) |
 | `#FF0000` rosso | 195 | marcatore di sezione `«Note»` (12 pt) |
-| `#008000` verde | **13** | testate di capitolo (`«Prefazione alla terza edizione»`) |
-| `#FF6600` arancio | 1 | dedica `«A Bernardo Albanese con affetto e gratitudine»` |
+| `#008000` verde | **13** | testate di capitolo (`«[titolo della prefazione, 4 parole]»`) |
+| `#FF6600` arancio | 1 | dedica `«[dedica di 7 parole]»` |
 
 Il campione (pp. 60–84, ri-serializzato) **conferma a livello span**: vi compaiono
 nero 3 073, bianco 52, indigo 39, blu 25, maroon 19, rosso 9 — stessa palette,
@@ -142,18 +147,18 @@ dimensione nota (~9 pt) è popolata su **ogni** pagina (14–35 span/banda). I
 marcatori di richiamo sono catturati come testo: `(181)`, `(191)`, `(192)`,
 `(209)`, `(210)`, `(211)`… Il testo della nota è ricco e completo: citazioni
 giurisprudenziali (`Cass. 13 febbraio 1989 n. 880`), riviste, rinvii interni
-(`v. il § 58 del vol. IV, in corrispondenza della nota 19`).
+(`[rinvio a un § di un altro volume e a una sua nota, 11 parole]`).
 
 **Confine cross-page — testo PRESENTE ma SPEZZATO alla pagina, non perso.** È il
 fatto più importante richiesto. Esempio reale del confine p. 75 → p. 76:
 
 ```
 PAGINA 75 (la banda nota finisce a metà frase, senza punto):
-  «…caratterizzata dal difetto di ogni elemento di»
+  «…[coda della nota, 7 parole, interrotta su una preposizione]»
         ↓↓↓
 PAGINA 76 (la banda nota prosegue con testo nota pieno):
-  «(181) Neppure col ricorso straordinario ex art. 111 Cost. (Cass. 13 febbraio
-   1989 n. 880). Più in generale v. la già cit. Cass. sez. un. 12 aprile 1980…»
+  «(181) [frase di 5 parole] ex art. 111 Cost. (Cass. 13 febbraio
+   1989 n. 880). [rinvio di 7 parole a una pronuncia già citata] Cass. sez. un. 12 aprile 1980…»
 ```
 
 Altri confini "aperti" rilevati nel solo campione (la banda di pagina N finisce
@@ -171,10 +176,11 @@ arrivano **completi**, spezzati in un'iniziale a dimensione nominale + una coda 
 ~78%:
 
 ```
-[9pt]«…con nota adesiva di E.»  [9pt]«M»  [7,02pt]«ERLIN»  → «E. MERLIN»
-[9pt]«…considerazioni… L.»      [9pt]«M»  [7,02pt]«ONTESANO» → «L. MONTESANO»
-[9pt]«…e G.»                    [9pt]«R»  [7,02pt]«AITI»     → «G. RAITI»
-[9pt]«…cfr. G. T»                        [7,02pt]«ARZIA»     → «G. TARZIA»
+esempio inventato della stessa forma:
+[9pt]«…[4 parole di nota] A.»   [9pt]«R»  [7,02pt]«OSSI»     → «A. ROSSI»
+[9pt]«…[1 parola]… B.»          [9pt]«B»  [7,02pt]«IANCHI»   → «B. BIANCHI»
+[9pt]«…e C.»                    [9pt]«V»  [7,02pt]«ERDI»     → «C. VERDI»
+[9pt]«…cfr. D. N»                         [7,02pt]«ERI»      → «D. NERI»
 ```
 
 (Un mio primo scan a banda 9 pt mostrava "B," / "C," troncati: era un artefatto

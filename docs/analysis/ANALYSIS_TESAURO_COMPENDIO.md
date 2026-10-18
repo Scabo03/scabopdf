@@ -1,4 +1,10 @@
 # Analisi Tecnica — Tesauro, Compendio di Diritto Tributario
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: **UTET Giuridica** (gruppo Wolters Kluwer Italia) · 9ª edizione · ISBN 9788859825753 · 542 pp.
 > Autore: Francesco Tesauro · Aggiornato da Maria Cecilia Fregni, Nicola Sartori, Alessandro Turchi
 > Sottotitolo: "Compendio di Diritto Tributario"
@@ -99,7 +105,7 @@ Famiglie:
 |---|---|---|---|---|
 | **HEADING_1** (Titolo Parte/Sezione) | (non usato in questo manuale: niente PARTI) | — | — | — |
 | **HEADING_2** (Capitolo numerale, es. "Capitolo decimo") | TimesTenLTStd-Roman | 12.0 | 4 | NON bold |
-| **HEADING_2_TITLE** (Titolo capitolo, es. "L'AVVISO DI ACCERTAMENTO") | TimesTenLTStd-Bold | 12.0 | 20 | Bold + capitalizzazione |
+| **HEADING_2_TITLE** (Titolo capitolo, es. "[titolo di 3 parole, in maiuscolo]") | TimesTenLTStd-Bold | 12.0 | 20 | Bold + capitalizzazione |
 | **HEADING_3** (Sotto-titolo opzionale) | TimesTenLTStd-Bold | 11.0 | 20 | Raro |
 | **HEADING_PARA_L1** (Paragrafo numerato `1.`) | TimesTenLTStd-Bold (numero) + TimesTenLTStd-Italic (titolo) | 10.0 | 20 + 6 | **Size 10.0**, distinta dal body 10.2 |
 | **HEADING_PARA_L2** (Sotto-paragrafo `1.1.`) | TimesTenLTStd-Bold (numero) + TimesTenLTStd-Italic (titolo) | **10.2** | 20 + 6 | Size body, distingue da L1 solo per il pattern del numero |
@@ -129,7 +135,7 @@ La differenza è una scelta editoriale precisa: gli **apparati di navigazione** 
 ```
 H1: (non usato — il manuale non ha PARTI, solo una sequenza di Capitoli)
 H2: CAPITOLO <numerale italiano> + TITOLO
-H3: (raramente usato, alcuni capitoli hanno sotto-sezioni come "Aspetti generali")
+H3: (raramente usato, alcuni capitoli hanno sotto-sezioni come "[titolo di 2 parole]")
 H4: <num>. <Titolo paragrafo>             [275 unità]
 H5: <num>.<sub>. <Titolo sotto-paragrafo> [216 unità]
 ```
@@ -155,7 +161,7 @@ H5: <num>.<sub>. <Titolo sotto-paragrafo> [216 unità]
 | 1000–1500 char | 3 |
 | > 1500 char | 4 (max 2.583, capitolo 19 IRES) |
 
-I SOMMARI più lunghi (cap. 19 IRES = 2.583 char, cap. 18 Singoli redditi = 1.548) **occupano quasi un'intera pagina**. Sono di fatto piccole indici dettagliati intra-capitolo.
+I SOMMARI più lunghi (cap. 19 IRES = 2.583 char, cap. 18 [titolo di 2 parole] = 1.548) **occupano quasi un'intera pagina**. Sono di fatto piccole indici dettagliati intra-capitolo.
 
 ### 4.3 Numerazione paragrafi a due livelli
 
@@ -200,7 +206,7 @@ Il numero di capitolo è in **numerale italiano** (`primo`, `secondo`, …, `dod
 ### 5.1 Italic strutturale
 
 Il body usa italic 10.2pt per:
-- Termini tecnici (`avviso di accertamento`, `tax expenditure`, `Pillar One/Two`, `compensatio lucri cum damno`)
+- Termini tecnici (`[termine tecnico di 3 parole]`, `tax expenditure`, `Pillar One/Two`, `compensatio lucri cum damno`)
 - Latinismi giuridici (`an, quantum, quid debetur`, `causa petendi`, `ratione temporis`)
 - Riferimenti normativi inline in italic dopo cita: `(Tuir, art. 86, comma 4)` — il numero è roman, ma alcuni richiami specifici sono italic
 - Titoli di articoli di legge citati (`Statuto dei diritti del contribuente`)
@@ -217,7 +223,7 @@ Pattern frequente: `(Tuir, art. NN, comma N, lett. X)`, `(L. 23 dicembre 2005, n
 
 ### 5.4 Liste con trattino lungo
 
-Il body usa frequentemente liste con trattino lungo `–` come marker (es. p.60: `– vi sono regimi fiscali che si applicano…`, `– le plusvalenze dei beni…`). Sono liste interne ai paragrafi, non heading. Il parser deve riconoscerle come `LIST_ITEM` per il rendering accessibile (segnalazione vocale di lista).
+Il body usa frequentemente liste con trattino lungo `–` come marker (es. p.60: `– [frase del corpo di 7 parole]…`, `– [frase del corpo di 4 parole]…`). Sono liste interne ai paragrafi, non heading. Il parser deve riconoscerle come `LIST_ITEM` per il rendering accessibile (segnalazione vocale di lista).
 
 ---
 
@@ -246,7 +252,7 @@ Il testo size 8.0pt presente nel manuale (~22K chars) è **interamente** costitu
 
 ### 6.5 Indice analitico finale
 
-**Assente**. Il manuale termina a p.513 (numerazione interna 497, capitolo "La fiscalità internazionale" / Pillar One e Two) e le successive 29 pagine sono pad-out vuoto.
+**Assente**. Il manuale termina a p.513 (numerazione interna 497, capitolo "[titolo di 3 parole]" / Pillar One e Two) e le successive 29 pagine sono pad-out vuoto.
 
 ---
 
@@ -336,14 +342,14 @@ Se in futuro emergeranno altri compendi UTET (es. `Compendio di Diritto Civile` 
 
 | Categoria | Rilevamento | Esempio |
 |---|---|---|
-| `TOC_GENERAL` | blocchi nelle pp. 5-15 con TimesTen-Roman 8.5 + presenza simbolo `»` | "1. La nozione di tributo. ... » 19" |
+| `TOC_GENERAL` | blocchi nelle pp. 5-15 con TimesTen-Roman 8.5 + presenza simbolo `»` | "1. [titolo di 4 parole, chiuso da un punto] ... » 19" |
 | `HEADING_2` | blocco TimesTenLTStd-Roman 12.0pt non-bold con pattern `^Capitolo <numerale>$` | "Capitolo decimo" |
-| `HEADING_2_TITLE` | blocco TimesTenLTStd-Bold 12.0pt successivo a HEADING_2 | "L'AVVISO DI ACCERTAMENTO" |
-| `CHAPTER_SUMMARY` | blocco TimesTen-Roman 8.0pt con incipit "Sommario:" in TimesTen-Roman-SC700 | "Sommario: 1. Natura giuridica… – 2. Contenuto…" |
-| `HEADING_PARA_L1` | blocco di 1-2 righe con TimesTenLTStd-Bold + Italic 10.0pt + pattern `^\d+\. ` | "1. Natura giuridica dell'avviso di accertamento." |
-| `HEADING_PARA_L2` | blocco di 1-2 righe con TimesTenLTStd-Bold + Italic 10.2pt + pattern `^\d+\.\d+\. ` | "2.1. Lo Statuto dei diritti del contribuente." |
+| `HEADING_2_TITLE` | blocco TimesTenLTStd-Bold 12.0pt successivo a HEADING_2 | "[titolo di 3 parole, in maiuscolo]" |
+| `CHAPTER_SUMMARY` | blocco TimesTen-Roman 8.0pt con incipit "Sommario:" in TimesTen-Roman-SC700 | "Sommario: 1. [titolo troncato dopo 2 parole]… – 2. [titolo troncato dopo 1 parola]…" |
+| `HEADING_PARA_L1` | blocco di 1-2 righe con TimesTenLTStd-Bold + Italic 10.0pt + pattern `^\d+\. ` | "1. [titolo di 5 parole, chiuso da un punto]" |
+| `HEADING_PARA_L2` | blocco di 1-2 righe con TimesTenLTStd-Bold + Italic 10.2pt + pattern `^\d+\.\d+\. ` | "2.1. [titolo di 6 parole, chiuso da un punto]" |
 | `BODY` | TimesTenLTStd-Roman 10.2pt (con eventuali span Italic 10.2pt inline) | testo paragrafo |
-| `LIST_ITEM` | sotto-blocco BODY con prima riga prefissata da `– ` | "– vi sono regimi fiscali…" |
+| `LIST_ITEM` | sotto-blocco BODY con prima riga prefissata da `– ` | "– [frase del corpo di 4 parole]…" |
 | `FOOTER` | TimesTenLTStd-Roman 8.0pt centrato in basso "© Wolters Kluwer Italia" | ARTIFACT |
 | `STAMP_ARTIFACT` | TimesTenLTStd-Roman 9.0pt in fondo "261887_Quarta_Bozza.indb …" | ARTIFACT |
 | `EMPTY_PAGE` | pagine con 0 chars (le 16 intermedie + 29 pad-out finale) | skip |

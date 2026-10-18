@@ -230,9 +230,10 @@ spegnere anche lì, a discrezione.
 - 3 deprecazioni `contentEdgeInsets` (§ 4).
 - Elemento «Intestazione di livello 1.» vuoto nella reading view di Marotta su
   iOS 27 (§ 7), non presente nel dump: da attribuire.
-- Marotta nel dump di lettura: nota 1 incollata dentro «preoccupa-zione»
-  («…preoccupa1 M.-H. Quet… zione per la tranquillità…») e nota 2 attaccata
-  senza spazio alla ripresa del corpo («…Laterza (BUL), Romasenza nessun…»):
+- Marotta nel dump di lettura: nota 1 incollata dentro una parola spezzata a fine
+  pagina (la prima metà della parola, il numero della nota con il cognome dell'autore
+  citato, poi la seconda metà) e nota 2 attaccata senza spazio alla ripresa del corpo
+  (il luogo di edizione della citazione incollato alla parola seguente):
   piazzamento di note brevi su paragrafo a cavallo di pagina — volume di
   controllo, comportamento preesistente e invariato (identico nel dump).
 - `LastUpgradeCheck = 1210` nel progetto (§ 4).

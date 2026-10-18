@@ -1,4 +1,10 @@
 # Analisi Tecnica — DeJure Note a Sentenza (PDF export)
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Fonte: Giuffrè DeJure, sezione Note e Dottrina, export PDF
 > Generatore: Aspose.PDF for .NET (stesso stack delle Massime)
 > Campioni analizzati:
@@ -163,27 +169,27 @@ Struttura: dopo i metadati, un blocco SOMMARIO con elenco delle sezioni, poi sez
 [META BLOCK]
 [SOMMARIO]
   "Sommario   1. ... — 2. ... — 3. ... — 4. ... — 5. ..."   → TOC (prosa con separatori "— N.")
-[HEADING] "1. INQUADRAMENTO PRELIMINARE..."                  → HEADING (bold maiuscolo)
+[HEADING] "1. [titolo, in maiuscolo]..."                     → HEADING (bold maiuscolo)
 [BODY paragrafi]
-[HEADING] "2. DIFETTO ASSOLUTO..."
+[HEADING] "2. [titolo, in maiuscolo]..."
 [BODY]
 ... ecc fino a sezione 5 ...
 [NOTES SECTION]
   "Note:"                            → SECTION_LABEL (bold)
-  "(1) Contributo approvato..."      → FOOTNOTE
-  "(2) Olanda c. Urgenda..."         → FOOTNOTE
+  "(1) [nota di servizio]..."        → FOOTNOTE
+  "(2) [rinvio a una sentenza]..."   → FOOTNOTE
   ... fino a (54) ...
 ```
 
 **Sommario:** è un singolo blocco di prosa che inizia con `Sommario` (bold) seguito da `   1. ... — 2. ... — 3. ...` con separatore em-dash + spazio + numero + punto. Il parser può estrarlo come campo strutturato `toc: [{number: 1, title: "..."}, ...]` per consentire navigazione VoiceOver tramite rotore. Pattern di split: `\s*—\s*\d+\.\s*`.
 
-**Heading di sezione:** Arial-BoldMT in MAIUSCOLO con numerazione `N.` o `N. TITOLO` all'inizio. Esempi: `1. INQUADRAMENTO PRELIMINARE DELLA DECISIONE NEL CONTESTO EUROPEO`, `2. DIFETTO ASSOLUTO DI GIURISDIZIONE: PRINCIPIO DI SEPARAZIONE DEI POTERI E PRINCIPIO DI EFFETTIVITÀ DELLA TUTELA`.
+**Heading di sezione:** Arial-BoldMT in MAIUSCOLO con numerazione `N.` o `N. TITOLO` all'inizio. Esempi: `1. [titolo di 7 parole, in maiuscolo]`, `2. [titolo di 15 parole, in maiuscolo, con i due punti dopo la quarta parola e una vocale accentata]`.
 
 Pattern: `^\d+\.\s+[A-ZÀÈÌÒÙ\s:,«»]+$` (tutto maiuscolo dopo il numero, può contenere virgole, due punti, virgolette francesi).
 
 **Note bibliografiche:** numerazione `(N)` da `(1)` a `(54)` nel campione 2. Sono lunghe: una nota può occupare 30+ righe ed elencare decine di riferimenti. Il blocco `Note:` apre la sezione, poi ogni nota inizia con `(N)` e prosegue su una o più righe finché non inizia il prossimo `(N)`.
 
-**Importante:** queste sono note a piè di documento, non note inline come nelle Massime. La numerazione `(N)` compare nel BODY come rimando inline esattamente come negli articoli del Codice penale (es: `noto caso Urgenda(1)`, `Affaire du siècle(2)`, ecc.). La mappatura rimando→nota va costruita, è cruciale per il rendering accessibile.
+**Importante:** queste sono note a piè di documento, non note inline come nelle Massime. La numerazione `(N)` compare nel BODY come rimando inline esattamente come negli articoli del Codice penale (esempi inventati: `noto caso Alfa(1)`, `vicenda Beta(2)`, ecc.). La mappatura rimando→nota va costruita, è cruciale per il rendering accessibile.
 
 ### 6.3 Confronto strutturale
 
@@ -207,9 +213,9 @@ I due campioni rappresentano i due estremi di un continuum. Note di media lunghe
 Nel campione 2 le virgolette francesi `«»` racchiudono **citazioni testuali dalla sentenza commentata o da altre fonti**, frequentemente formattate in italic. Esempio:
 
 ```
-...ha evidenziato infatti come «il difetto assoluto di giurisdizione è 
-configurabile quando manca nell'ordinamento una norma di diritto astrattamente 
-idonea a tutelare l'interesse dedotto in giudizio...» (10)
+...[frase del corpo, 4 parole] «[citazione in corsivo dalla sentenza commentata,
+22 parole distribuite su tre righe, interrotta dall'analista con i puntini
+di sospensione]...» (10)
 ```
 
 Il blocco italic dentro virgolette francesi è una **citazione strutturale**, non un latinismo. Distinzione importante per Layout 4 (Dottrina Inline): la differenziazione acustica deve trattare diversamente:
@@ -219,7 +225,7 @@ Il blocco italic dentro virgolette francesi è una **citazione strutturale**, no
 
 Regola di rilevamento citazione: span italic ≥ ~30 caratteri preceduto da `«` e seguito da `»` → CITATION inline. Span italic < 30 caratteri o senza virgolette → LATINISM.
 
-I latinismi e le citazioni convivono nello stesso paragrafo. Esempio: `In tema di causalità della colpa e concretizzazione del rischio, prosegue la Corte, costituisce *ius receptum* che, in tema di omicidio da incidente, la violazione...` (`ius receptum` è latinismo, non citazione).
+I latinismi e le citazioni convivono nello stesso paragrafo. Esempio: `[frase del corpo, 14 parole] *ius receptum* [9 parole, troncata]...` (`ius receptum` è latinismo, non citazione).
 
 ---
 
@@ -232,8 +238,8 @@ Nel campione 2 le note bibliografiche occupano dalla pagina 14 alla pagina 21. O
 ```
 
 Esempi:
-- `(1) Contributo approvato dai Referee.`
-- `(2) Olanda c. Urgenda Foundation, 20 dicembre 2019, ...; Per approfondimenti si v. Guarna Assanti, Il ruolo innovativo... ;Jacometti, La sentenza Urgenda... ; ...`
+- `(1) [nota di servizio di 4 parole: dichiarazione di revisione paritaria]`
+- `(2) [rinvio giurisprudenziale: parti e data di una sentenza straniera], ...; [formula di rinvio, 4 parole] [Autore], [titolo di un'opera, troncato]... ;[Autore], [titolo di un'opera, troncato]... ; ...`
 
 Le note lunghe contengono liste di riferimenti separati da `;`. La (2) elenca circa 12 voci bibliografiche su una decina di righe.
 
@@ -241,16 +247,16 @@ Le note lunghe contengono liste di riferimenti separati da `;`. La (2) elenca ci
 
 **Cross-page delle note:** una singola nota può attraversare il confine di pagina. Es. la (8) inizia a pagina 16 e prosegue a pagina 17. Il parser applica la stessa logica di continuation già definita per le Massime (cross-page detection) ma applicata al contesto FOOTNOTE invece che BODY.
 
-**Note vuote o quasi vuote:** la (1) `Contributo approvato dai Referee.` è una nota di servizio editoriale, non bibliografica. Conservata invariata.
+**Note vuote o quasi vuote:** la (1) `[nota di servizio di 4 parole]` è una nota di servizio editoriale, non bibliografica. Conservata invariata.
 
 ---
 
 ## 9. Mappatura rimandi nel body
 
 I rimandi `(N)` nel body del campione 2 sono numerosi e densi. Esempi:
-- `noto caso Urgenda(1)` — rimando attaccato alla parola precedente, nessuno spazio
-- `caso denominato Affaire du siècle(2)` — idem
-- `ex multisTimmons Roberts-Parks` — qui c'è anche un caso interessante: `ex multis` è latinismo italic ma non c'è spazio prima di `Timmons`, è un difetto Aspose
+- esempio inventato: `noto caso Alfa(1)` — rimando attaccato alla parola precedente, nessuno spazio
+- esempio inventato: `caso denominato Beta(2)` — idem
+- esempio inventato: `ex multisRossi-Bianchi` — qui c'è anche un caso interessante: `ex multis` è latinismo italic ma non c'è spazio prima di `Rossi`, è un difetto Aspose
 
 **Pattern di rimando:** `(\d+)` immediatamente dopo una parola, senza spazio. Regex: `\b\w+(\(\d+\))` con catturazione del gruppo numerico.
 
@@ -290,7 +296,7 @@ I rimandi `(N)` nel body del campione 2 sono numerosi e densi. Esempi:
     "subtitle": "Quotidiano del 6 giugno 2024",
     "export_date": "2025-03-12"
   },
-  "title": "Il nesso causale può escludersi quando si dimostri che l'incidente si sarebbe ugualmente verificato anche senza condotta antigiuridica",
+  "title": "[titolo della nota, 18 parole]",
   "toc": null,
   "sections": [
     {
@@ -311,15 +317,15 @@ I rimandi `(N)` nel body del campione 2 sono numerosi e densi. Esempi:
 {
   ...
   "toc": [
-    {"number": 1, "title": "Inquadramento preliminare della decisione nel contesto europeo"},
-    {"number": 2, "title": "Difetto assoluto di giurisdizione: principio di separazione dei poteri e principio di effettività della tutela"},
+    {"number": 1, "title": "[titolo di 7 parole]"},
+    {"number": 2, "title": "[titolo di 15 parole, con due punti]"},
     ...
   ],
   "sections": [
     {
       "id": "sec_001",
       "number": 1,
-      "heading": "INQUADRAMENTO PRELIMINARE DELLA DECISIONE NEL CONTESTO EUROPEO",
+      "heading": "[titolo di 7 parole, in maiuscolo]",
       "body": [
         {
           "type": "PARAGRAPH",
@@ -335,8 +341,8 @@ I rimandi `(N)` nel body del campione 2 sono numerosi e densi. Esempi:
     }
   ],
   "footnotes": [
-    {"number": 1, "text": "Contributo approvato dai Referee."},
-    {"number": 2, "text": "Olanda c. Urgenda Foundation, 20 dicembre 2019, ..."},
+    {"number": 1, "text": "[nota di servizio di 4 parole]"},
+    {"number": 2, "text": "[rinvio giurisprudenziale: parti e data di una sentenza straniera], ..."},
     ...
   ]
 }
@@ -362,7 +368,7 @@ I quattro layout già definiti vanno declinati per le Note a Sentenza:
 
 ### 11.4 Layout 4 — Dottrina Inline (è il layout per cui le Note sono pensate)
 - **Tutte** le note bibliografiche inline al rimando, secondo le regole già definite per il Layout 4.
-- Soglia note brevi/significative (~100 caratteri) molto rilevante: la nota (1) `Contributo approvato dai Referee.` è 31 car. → BREVE; la (2) Urgenda con elenco bibliografico è 1500+ car. → SIGNIFICATIVA con segnale acustico discreto e cambio voce.
+- Soglia note brevi/significative (~100 caratteri) molto rilevante: la nota (1) `[nota di servizio di 4 parole]` è 31 car. → BREVE; la (2) Urgenda con elenco bibliografico è 1500+ car. → SIGNIFICATIVA con segnale acustico discreto e cambio voce.
 - **Citazioni virgolettate italic ≥ 30 car.** trattate con differenziazione acustica analoga a quella delle note significative ma distinta (es. cambio voce diverso, segnale diverso). Da calibrare.
 - **Latinismi** trattati con prosodia leggera, senza pausa.
 

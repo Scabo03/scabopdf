@@ -1,10 +1,16 @@
 # Analisi esplorativa — calibrazione del *memory refresh* per le note lunghe differite
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > **Natura di questo documento.** È **solo esplorazione**: misura, legge, propone.
 > La regola del *memory refresh* è una **decisione di prodotto** che spetta al
 > maintainer; qui non si decide e non si implementa nulla. Non tocca codice di
 > produzione. Le distribuzioni provengono da un'indagine empirica una-tantum sui
-> fixtures reali; gli esempi sono citati verbatim dal testo estratto dalla pipeline.
+> fixtures reali; gli esempi erano citati dal testo estratto dalla pipeline e sono ora descritti senza testo dei
+> volumi (forma, posizione del marcatore, numero di parole), vedi la nota qui sotto.
 > Sessione: 2026-06-23.
 
 ---
@@ -153,15 +159,15 @@ allora il vuoto. La spaccatura è fortemente per-fixture:
 ## 4. Fase 2 — giudizio semantico (dove deve cadere la ripartenza)
 
 Ho letto frase del richiamo + nota su un campione e giudicato il punto di ripartenza che
-**ricostruisce davvero il filo** per un ascoltatore. Esempi verbatim.
+**ricostruisce davvero il filo** per un ascoltatore. Esempi descritti nella loro forma.
 
 ### 4.1 Caso sano, marcatore a metà frase: § 7.5 funziona
 
-> **Mandrioli III, nota (126), LONG.** «…esso – secondo i più recenti approdi della
-> giurisprudenza della Cassazione – assolve ad una funzione non solo assistenziale, ma
-> anche perequativo-compensativa **(126)** e va espressamente richiesto dalla parte…»
-> **§ 7.5 produce:** *«assolve ad una funzione non solo assistenziale, ma anche
-> perequativo-compensativa»* (82 car.).
+> **Mandrioli III, nota (126), LONG.** «…[soggetto, 1 parola] – [inciso di 9 parole] –
+> [proposizione di 10 parole, con una virgola interna] **(126)** [seguito della frase,
+> 6 parole]…»
+> **§ 7.5 produce:** *«[la proposizione di 10 parole fra la lineetta che chiude l'inciso
+> e il marcatore]»* (82 car.).
 
 **Giudizio:** ottimo. Il segno forte all'indietro è il «–» dell'inciso precedente; il
 segmento è la proposizione che il richiamo annota. La regola primaria è corretta qui.
@@ -170,16 +176,15 @@ segmento è la proposizione che il richiamo annota. La regola primaria è corret
 ### 4.2 Marcatore a fine frase, frase lunga: anche il taglio interno funziona
 
 > **Mandrioli IV, nota (95), MEDIUM** (frase di 1 937 car., un elenco «1)…; 2)…; 3)…»):
-> «…2) agli adempimenti previsti dall'articolo 570 **(95)** e, ove occorrenti…»
-> **§ 7.5 produce:** *«2) agli adempimenti previsti dall'articolo 570»* (47 car.,
+> «…2) [voce d'elenco di 5 parole, chiusa da un rinvio a un articolo] **(95)** [seguito
+> della voce, 3 parole]…»
+> **§ 7.5 produce:** *«2) [la voce d'elenco di 5 parole fino al marcatore]»* (47 car.,
 > ancorato al «;» dell'elenco).
 
-> **Mandrioli IV, nota (7), MEDIUM** (frase di 449 car.): «…presentano la sola
-> caratteristica di aprire subito la via alla tutela esecutiva, senza essere idonei ad
-> acquisire efficacia di giudicato: si tratta dei provvedimenti sommari con funzione
-> esclusivamente esecutiva **(7)**.»
-> **§ 7.5 produce:** *«si tratta dei provvedimenti sommari con funzione esclusivamente
-> esecutiva»* (75 car., ancorato ai «:»).
+> **Mandrioli IV, nota (7), MEDIUM** (frase di 449 car.): «…[coda della frase prima dei
+> due punti, 20 parole con una virgola interna]: [proposizione di 9 parole] **(7)**.»
+> **§ 7.5 produce:** *«[la proposizione di 9 parole fra i due punti e il marcatore]»*
+> (75 car., ancorato ai «:»).
 
 **Giudizio:** per le **frasi lunghe**, l'ancoraggio al primo `;`/`:` interno restituisce
 l'**unità di senso** (la voce d'elenco, la proposizione introdotta dai due punti) — che
@@ -190,19 +195,19 @@ fallback è sano.
 
 ### 4.3 Marcatore-apice dopo il punto fermo: § 7.5 dà il VUOTO — serve la frase precedente
 
-> **BIC Marrone, nota 23, MEDIUM.** «…proporre al senato per l'approvazione. **Si ebbe
-> così l'Editto perpetuo.**²³ Dopo di allora i pretori mantennero…»
-> Nota 23: *«Nel senso di editto destinato a durare senza limiti…»*
+> **BIC Marrone, nota 23, MEDIUM.** «…[coda della frase precedente, 5 parole]. **[frase
+> breve di 5 parole].**²³ [inizio della frase successiva, 6 parole]…»
+> Nota 23: *«[apertura della nota, 9 parole]…»*
 > **§ 7.5 produce:** *«»* (vuoto: l'apice è subito dopo il punto fermo).
 
-> **BIC Marrone, nota 56, MEDIUM.** «…anche con liberte e figlie di gente di teatro
-> **(Ulp. 13.2, 16.2).**⁵⁶ I divieti matrimoniali della lex Iulia…»
-> Nota 56: *«Fu però solo per un senatoconsulto dei tempi di Marco Aurelio…»*
+> **BIC Marrone, nota 56, MEDIUM.** «…[coda della frase, 9 parole] **(Ulp. 13.2,
+> 16.2).**⁵⁶ [inizio della frase successiva, 6 parole]…»
+> Nota 56: *«[apertura della nota, 11 parole]…»*
 > **§ 7.5 produce:** *«»* (vuoto).
 
 **Giudizio:** in BIC l'apice annota **la frase che si è appena chiusa**. Il rinfresco
-corretto è la **frase precedente** («Si ebbe così l'Editto perpetuo» / la frase sui
-divieti matrimoniali della *lex Iulia*), non il nulla che sta dopo il punto. § 7.5
+corretto è la **frase precedente** (la frase breve di 5 parole / la frase chiusa dal
+rinvio alle fonti fra parentesi), non il nulla che sta dopo il punto. § 7.5
 letterale qui non rilegge mai la cosa giusta. **È il 71–88 % dei casi BIC.** Il puro
 conteggio caratteri non lo vede; la lettura sì: *quando il marcatore è a (o subito dopo)
 un confine di frase, la ripartenza deve scavalcare quel confine all'indietro e prendere
@@ -223,8 +228,8 @@ incollato al marcatore → frammento → serve scavalcarlo all'indietro.
 ### 4.5 Para-titolo VERY_LONG/MEGA: nei manuali apre spesso con una citazione bibliografica
 
 > **Mandrioli III, nota (178), VERY_LONG.** Para-titolo (prime 20 parole) =
-> *«Così E. MERLIN, L'ordinanza di pagamento delle somme non contestate, in Riv. dir.
-> proc., 1994, pp. 1022, 1031. Si…»*
+> *«Così [autore in maiuscoletto], [titolo di un articolo, 7 parole], in [sigla di
+> rivista], [anno], pp. [due pagine]. Si…»*
 
 **Giudizio:** il § 7.4 vuole il para-titolo come aiuto a «decidere se ascoltare o
 saltare». Ma in questi manuali le note lunghe **aprono frequentemente con un rinvio
@@ -255,13 +260,13 @@ Distribuzione del segno su cui § 7.5 taglia (segmenti non-fallback, n = 2 214):
 - **Punti di abbreviazione (falso confine di frase).** Il **29 %** dei tagli sul `.` cade
   su un **punto di abbreviazione** (`c.d.`, `art.`, `n.`, `p.`, `cfr.`, `c.c.`…),
   ubiquitari nell'italiano giuridico. Esempio (Mandrioli, nota (22)): «…sul-la c.d.
-  rivalutazione del credito del lavoratore (22)» → § 7.5 taglia al «.» di **«c.d.»** e dà
-  *«rivalutazione del credito del lavoratore»*, perdendo «la c.d.». Un punto di
+  [sintagma di 5 parole] (22)» → § 7.5 taglia al «.» di **«c.d.»** e dà
+  *«[il sintagma di 5 parole]»*, perdendo «la c.d.». Un punto di
   abbreviazione **non è** un confine di frase e non dovrebbe ancorare.
 - **Coda di un marcatore di nota precedente.** Il **27 %** dei segmenti **inizia con un
   carattere non-alfabetico** — tipicamente la coda di un `(N)` precedente. Esempio
-  (Mandrioli, nota (20)): § 7.5 ancora al «(» di «(19)» e produce *«19), essa è stata
-  ammessa dapprima da parte della Cassazione»* — un rinfresco che si apre con «19)».
+  (Mandrioli, nota (20)): § 7.5 ancora al «(» di «(19)» e produce *«19), [proposizione
+  di 9 parole]»* — un rinfresco che si apre con «19)».
 
 ### 5.3 Frammenti da segno forte incollato al marcatore
 
@@ -379,4 +384,4 @@ Due soli parametri secondari da fissare: **K** (contesto minimo, proposta 30–4
 - La distanza richiamo→nota è un **limite superiore** (albero pipeline, non posizionamento
   Layer 2). Mostra che il refresh serve, non la distanza esatta.
 - Il giudizio semantico (Fase 2) è qualitativo, basato sulla lettura del maintainer-modello;
-  gli esempi sono verbatim e verificabili, ma la decisione resta del maintainer sul concreto.
+  gli esempi sono verificabili sui volumi (pagina e nota indicate), ma la decisione resta del maintainer sul concreto.

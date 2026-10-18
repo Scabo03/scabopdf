@@ -1,5 +1,10 @@
 # Nocciolo duro — nota-di-contenuto vs bibliografia: misura, e perché nessun discriminatore regge
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 **Giro di sola misura (Tempo A), nessuna implementazione.** Metodo imposto dal maintainer: qui il
 pericolo non è perdere testo (le reti a lettere resterebbero verdi) ma **degradare in massa
 l'etichettatura senza che nessuna rete meccanica se ne accorga**. Perciò la precisione va **provata
@@ -32,16 +37,17 @@ bibliografia in massa.
 ### Candidato A — verbi coniugati "naive" (è/sono/era/stato/Stato…)
 **BOCCIATO.** Degrada **40 delle 140 voci gold** (5 volumi). Causa: **omografi nei titoli** — "Stato"
 ("Consiglio di **Stato**", onnipresente nel diritto amministrativo), "è" in titoli-affermazione
-("Il ricorso per excès de pouvoir **è** destinato…"). È il caso-scuola del pericolo: le reti a
+("[titolo di 6 parole] **è** [1 parola]…"). È il caso-scuola del pericolo: le reti a
 lettere direbbero "0 lettere perse", ma 40 bibliografie genuine diventerebbero note.
 
 ### Candidato B — verbi d'azione raffinati (prevede/stabilisce/ritiene/… esclusi participi e copula)
 **BOCCIATO (rapporto inaccettabile).** Pulito su Lezioni (0/97) ma sull'intero gold **tocca 2 voci**:
-- **Mandrioli vol. 4**: `TAFORA, …, in Riv. es. forz., 2020, p. 11. Resta il fatto che gli atti …
-  sono invalidi e tale invalidità non può venir meno ex tunc …` → è **contenuto** (una citazione +
+- **Mandrioli vol. 4**: `[COGNOME], …, in Riv. es. forz., 2020, p. 11. [frase d'argomento di 17 parole, con
+  un'omissione «…» a metà] …` → è **contenuto** (una citazione +
   argomento), demoterlo sarebbe corretto;
-- **Estratto**: `CAPACCIOLI, Manuale, cit., 312; S. CASSESE, Le basi…, cit., 342; P. VIRGA, …; L.
-  GALATERIA e M. STIPO, …. Esclude, invece, la configurabilità … M.S. GIANNINI, …` → è **bibliografia
+- **Estratto**: `[COGNOME], [titolo di 1 parola], cit., 312; [iniziale e COGNOME], [titolo di 2 parole]…, cit., 342;
+  [iniziale e COGNOME], …; [due autori uniti da «e»], …. [annotazione di 4 parole, con due virgole] … [iniziali
+  e COGNOME], …` → è **bibliografia
   genuina** (4 citazioni pure + 1 annotata), demoterla sarebbe una **degradazione**.
 Cioè: per curare ~1 nota-contenuto degraderebbe ≥1 voce genuina. Sotto la soglia "mai degradare il
 gold".
@@ -49,8 +55,8 @@ gold".
 ### Candidato C — promozione per "forma bibliografica" (nessun verbo d'azione + densità citazioni + cognomi in testa ai segmenti ';')
 **BOCCIATO (scambia contenuto per bibliografia in massa).** Il bucket "biblio" conta **203 note su
 Mandrioli 3** e **114 sull'Estratto** — numeri grandi, ma l'**ispezione semantica** del campione
-mostra che sono in larga parte **contenuto o misto**: frasi-tema con elenco ("Sulla differenza fra …
-v. A. PROTO PISANI, …"), citazioni-virgolettate ("È giuridicamente irrilevante che il consenso …"),
+mostra che sono in larga parte **contenuto o misto**: frasi-tema con elenco ("[frase-tema di 3 parole] …
+v. [iniziale e COGNOME], …"), citazioni-virgolettate ("[citazione di 6 parole] …"),
 argomenti i cui verbi cadono fuori da ogni lista chiusa ("sorte", "opina", "ricollega", "disponeva",
 "Riferiscono"). Promuoverli darebbe l'earcon "bibliografia" a centinaia di note di contenuto: la
 degradazione di massa invisibile.
@@ -65,7 +71,7 @@ che rinviano internamente.
 ## Perché è un limite di sostanza, non di strumenti
 La nota accademica è **intrinsecamente mista**: c'è un continuo dalla pura lista di riferimenti alla
 pura argomentazione, e la maggior parte delle note sta nel mezzo. Le voci di bibliografia genuine
-hanno spesso **titoli discorsivi** ("L'interesse legittimo. **Storia e teoria**") e nomi che sono
+hanno spesso **titoli discorsivi** (esempio inventato: "Il bene pubblico. **Origini e funzioni**") e nomi che sono
 omografi di participi/sostantivi ("Stato"); le note di contenuto **contengono citazioni** dense. Nessun
 segnale di superficie separa i due lati senza cadere su uno di questi.
 

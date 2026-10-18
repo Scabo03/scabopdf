@@ -1,5 +1,10 @@
 # Piano di migrazione ScaboPDF — da React Native a Swift nativo puro
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 Stato: piano operativo. Destinatario: assistente tecnico che eseguirà la
 migrazione. Vincolo deciso e non discutibile: l'app iOS/iPadOS viene portata da
 React Native (RN) a Swift nativo puro. Niente Android (non testabile con
@@ -362,7 +367,7 @@ classificazione on-device.** Il classificatore on-device è il **Generic**
 Generic, **`italic` non è usato per nulla**; **`bold` è usato in un solo punto**
 (`classify()`, ramo HEADING_4: `line.bold && ratio ≥ 1.04`). I titoli di
 paragrafo § del Mandrioli — le vere HEADING_4 — sono empiricamente a **11,52 pt
-con `bold=false, italic=false`** (es. «16. Le ordinanze sommarie definitorie…»,
+con `bold=false, italic=false`** (es. «16. [titolo di paragrafo, prime 4 parole]…»,
 «17. L'appello…»): nel documento sono **italic, non bold** (la pipeline
 Giappichelli esprime enfasi con corsivo e maiuscoletto, non grassetto). Con corpo
 stimato a 11 pt, il loro ratio è **1,047**, nella fascia [1,04; 1,12) che solo il

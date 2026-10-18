@@ -1,5 +1,10 @@
 # Cura — titoli di paragrafo numerati, abbreviazioni, salto nota↔testo
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Giro di cura del 2026-10-05, dopo `docs/DIAGNOSI_INTESTAZIONI.md` (causa prima: riconoscimento
 > dei titoli solo tipografico). Codice: `ScaboCore/NumberedTitles.swift` (canale), `NoteJump.swift`
 > (salto), `Granularity.swift` (abbreviazioni), aggancio in `GenericPlugin.pageItems`, azioni in
@@ -24,7 +29,7 @@ e date «12.3.2010»); niente punto finale = niente titolo (esclude le citazioni
 «48.2.15 (Ulp.…», Marrone).
 
 **Segnale di supporto (la taglia, soglia bassa), misurato sul NUMERO** (primo span), non sulla
-media di riga (il maiuscoletto abbassa la media: Costituzionale «1. CHE COS'È…» 11,52 vs 9,63):
+media di riga (il maiuscoletto abbassa la media: Costituzionale «1. [titolo in maiuscoletto]…» 11,52 vs 9,63):
 
 | Caso | Regola |
 |---|---|
@@ -82,8 +87,8 @@ giro). **Marotta**, il volume di controllo storico, cambia di proposito: ha 24 t
 ora riconosciuti.
 
 **Fedeltà:** multinsieme lettere+cifre identico su tutti i volumi; nessuna parola fabbricata. Un
-solo spostamento di confine di parola, giudicato miglioramento: Magnani p.232 «licenzia6.3. I vizi
-formali…» (fusione falsa preesistente) → titolo separato.
+solo spostamento di confine di parola, giudicato miglioramento: Magnani p.232 «licenzia6.3. [inizio
+del titolo, 3 parole]…» (fusione falsa preesistente) → titolo separato.
 
 ## 3. La cascata sulle note — misurata
 
@@ -169,7 +174,7 @@ Build **45** caricata su TestFlight il 2026-10-05 con la procedura consolidata (
   di capitolo): il canale lavora sul corpo, dove anche le note iniziano con «1.»; residuo.
 - **Livelli a tetto 4**: dove i capitoli sono già H3 per taglia (Magnani, Mandrioli) «N.» e «N.M.»
   stanno entrambi a H4.
-- **Titoli non numerati in maiuscoletto** (Magnani «SEZ. II: IL TEMPO DI LAVORO»): non sono del
+- **Titoli non numerati in maiuscoletto** (Magnani «SEZ. II: [titolo di 4 parole, in maiuscoletto]»): non sono del
   canale numerato; restano corpo come prima.
 - Preesistenti, invariati: frontespizio di Rizzo («Jus Civile», «Studi», «1», «Nicola Rizzo» come
   intestazioni), «Capitolo I» a un livello più profondo del suo titolo, 88 testatine di Rizzo lette

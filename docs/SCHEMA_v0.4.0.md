@@ -1,5 +1,10 @@
 # ScaboPDF — JSON Schema v0.4.0
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Riferimento narrativo dello schema JSON che fa da contratto fra Layer 1 (pipeline Python) e Layer 2 (app React Native).
 > Versione: 0.4.0, instabile (pre-1.0).
 > Stato: introduzione del campo `toc_items` su `NodeDict` per le voci strutturate dei blocchi `TOC_GENERAL` parsificati dal secondo plugin di corpus (`compendio_utet`). Vedi [`SCHEMA_v0.3.0.md`](SCHEMA_v0.3.0.md), [`SCHEMA_v0.2.0.md`](SCHEMA_v0.2.0.md) e [`SCHEMA_v0.1.0.md`](SCHEMA_v0.1.0.md) per le baseline storiche e [`SCHEMA_CHANGELOG.md`](SCHEMA_CHANGELOG.md) per il delta versione-per-versione.
@@ -74,7 +79,7 @@ Un nodo nell'albero di lettura. I suoi campi:
 
 Le invarianti "`items` non null implica `type == "CHAPTER_SUMMARY"`" e "`toc_items` non null implica `type == "TOC_GENERAL"`" non sono validate strutturalmente in 0.4.0 — sono promesse di emissione, simmetriche a quella di `level`. Layer 2 può comunque assumere che un `items` o `toc_items` valorizzato appartenga al rispettivo tipo di nodo.
 
-`block_indices` è la lista degli indici flat (interi) nei blocchi dell'estrazione che hanno contribuito a questo nodo. Un nodo può aggregare più blocchi originali a causa della fusione cross-page (vedi `ARCHITECTURE.md § 5.5`) o di scelte profile-specific (per esempio il plugin Tesauro fonde i due blocchi consecutivi "Capitolo decimo" + "L'AVVISO DI ACCERTAMENTO" in un singolo `HEADING_2` con `block_indices` di lunghezza due). Lista vuota per nodi sintetici.
+`block_indices` è la lista degli indici flat (interi) nei blocchi dell'estrazione che hanno contribuito a questo nodo. Un nodo può aggregare più blocchi originali a causa della fusione cross-page (vedi `ARCHITECTURE.md § 5.5`) o di scelte profile-specific (per esempio il plugin Tesauro fonde i due blocchi consecutivi "Capitolo decimo" + "[titolo del capitolo di 3 parole, in maiuscolo]" in un singolo `HEADING_2` con `block_indices` di lunghezza due). Lista vuota per nodi sintetici.
 
 `children` è la lista ricorsiva di `NodeDict` figli, ordinata per posizione di lettura. Profondità arbitraria: tipicamente HEADING_1 → HEADING_2 → HEADING_3 → HEADING_4 → BODY/NOTE/MARGINAL_*, ma niente nel contratto la limita a quattro livelli.
 
@@ -130,13 +135,13 @@ L'esempio che segue mostra come si presenta un `TOC_GENERAL` emesso dal plugin `
       "id": "node_0007",
       "type": "TOC_GENERAL",
       "page_index": 4,
-      "text": "1. La nozione di tributo ............ » 19 1.1. Profili costituzionali » 23 2. Le fonti del diritto tributario » 31",
+      "text": "1. La nozione di base ............ » 19 1.1. Profili generali » 23 2. Le regole della materia » 31",
       "level": null,
       "items": null,
       "toc_items": [
-        {"number": "1", "title": "La nozione di tributo", "page_number": 19},
-        {"number": "1.1", "title": "Profili costituzionali", "page_number": 23},
-        {"number": "2", "title": "Le fonti del diritto tributario", "page_number": 31}
+        {"number": "1", "title": "La nozione di base", "page_number": 19},
+        {"number": "1.1", "title": "Profili generali", "page_number": 23},
+        {"number": "2", "title": "Le regole della materia", "page_number": 31}
       ],
       "block_indices": [22],
       "children": [],

@@ -1,4 +1,10 @@
 # Analisi Tecnica — Voci Enciclopedia del Diritto Giuffrè (campioni iniziali)
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: Giuffrè (Francis Lefebvre dal 2017) | Provenienza canale: sito EdD Giuffrè
 > Stato: in costruzione, tre campioni iniziali analizzati con PyMuPDF
 > Modalità: prima analisi del progetto condotta sul filesystem, non per stima visiva.
@@ -75,7 +81,7 @@ Se il sito EdD Giuffrè distribuisce voci di anni e pipeline diverse, ScaboPDF d
 | SimonciniGaramond | 12.0 | 4 | NUMERO PAGINA (footer alternato) | 28 |
 | TimesNewRoman | 12.0 | 4 | FOOTER "Enciclopedia del Diritto - Aggiornamento I - 1997" | 28 |
 | Helvetica-Bold | 6.0 | 16 | FOOTER copyright "Copyright Giuffrè ... RIPRODUZIONE RISERVATA" | 28 |
-| SimonciniGaramond | 6.0 | 4 | RUNNING HEADER "Prova in generale (dir. proc. pen.)" | piccolo |
+| SimonciniGaramond | 6.0 | 4 | RUNNING HEADER "[titolo della voce, 6 parole]" | piccolo |
 
 Distinzione netta body 9.0 vs note 7.5 — **lo stesso schema gerarchico dei codici Giuffrè**, ma con font Simoncini Garamond invece di Palatino Linotype. Family editoriale chiaramente diversa, ma stesso design pattern.
 
@@ -90,7 +96,7 @@ Body: due colonne giustificate
   Vertical: y=73 a y=625 (height 552)
 Header running: y=47-56
   alternato sinistra (pagine pari) o destra (dispari)
-  testo: "Prova in generale (dir. proc. pen.)"
+  testo: "[titolo della voce, 6 parole]"
 Numero pagina: y=640-651
   alternato sinistra (pari) o destra (dispari)
 Footer ente: y=695-711, centrato (x=131-373)
@@ -231,7 +237,7 @@ Rilevamento automatico del profilo OCR su producer e/o numero di firme uniche, e
 - Producer "Skia/PDF m133 Google Docs Renderer" → esportato da Google Docs
 - Una (1) sola firma tipografica: ArialMT 11.0pt non-bold non-italic, su tutte le 1.417 occorrenze
 - 112 pagine A4 standard (596×842 pt)
-- Errori OCR fossilizzati nel testo: "r" al posto di "1" (`r5 gennaio r94r`), `e.e.` al posto di `c.c.`, `nel!'` al posto di `nell'`, sillabazioni preservate come hyphen letterali, `imprendito1'·i-società`
+- Errori OCR fossilizzati nel testo: "r" al posto di "1" (esempio inventato: `r2 marzo r95r`), `e.e.` al posto di `c.c.`, `nel!'` al posto di `nell'`, sillabazioni preservate come hyphen letterali, `imprendito1'·i-società`
 - Numerazione pagine originale conservata come testo libero: `5r6` = pag. 516 del volume
 
 ### 4.2 Origine
@@ -246,7 +252,7 @@ Nonostante la perdita totale di gerarchia tipografica, il testo conserva:
 - 9 sezioni con marker `Sez. N` rilevate
 - LETTERATURA finale a partire dal 97% del documento
 
-Le note a piè originali sono **inframmezzate al body** senza distinzione tipografica. Esempio (pag. 3): `(5) In termini, App. Messina r5 gennaio r94r, in Foro it., r942, I, 45r.` appare come testo normale dopo "(7)" del body. Senza tipografia non c'è modo di distinguere body da nota se non per regex puramente testuali (e euristiche fragili come "se inizia con `(N)` e contiene una citazione, è una nota").
+Le note a piè originali sono **inframmezzate al body** senza distinzione tipografica. Esempio (pag. 3): `(5) [nota di 13 parole: rinvio giurisprudenziale a una sentenza d'appello, con rivista, anno e pagina, in cui l'OCR legge le cifre 1 come r]` appare come testo normale dopo "(7)" del body. Senza tipografia non c'è modo di distinguere body da nota se non per regex puramente testuali (e euristiche fragili come "se inizia con `(N)` e contiene una citazione, è una nota").
 
 ### 4.4 Conclusione di scope
 
@@ -430,7 +436,7 @@ Nessuno di questi tre file è una trascrizione personale (escluso quindi il risc
 - 91 sillabazioni hyphenate non ricomposte su 4 pagine (densità ≈22 per pagina, simile a Piras 29% delle linee)
 - Errori OCR fossilizzati osservabili: `En<iclopedia` (anziché Enciclopedia), `l. ·` (anziché I. -), `lll .` (anziché III.), `c..stodia` (anziché Custodia), `1953·`, `· `; pattern coerente con la qualità di scansione anni '60
 
-**Struttura editoriale — VARIANTE NUOVA**: Custodia non è una voce singola, è una **voce-contenitore con più sotto-voci**. La pagina iniziale è un sommario strutturale che elenca cinque sotto-voci (`I. CUSTODIA (DIRITTO ROMANO)`, `II. CUSTODIA DI BENI PIGNORATI E SEQUESTRATI` con a/b di processuale civile e penale, `III. CUSTODIA DI MINORI...`, `IV. CUSTODIA PREVENTIVA` con a/b, `V. CUSTODIA DI TERRA SANTA`) ognuna con autori e LETTERATURA propri. Il PDF caricato contiene solo le 4 pagine della prima sotto-voce (Custodia di diritto romano, di Talamanca), non l'intera voce.
+**Struttura editoriale — VARIANTE NUOVA**: Custodia non è una voce singola, è una **voce-contenitore con più sotto-voci**. La pagina iniziale è un sommario strutturale che elenca cinque sotto-voci (`I. CUSTODIA (DIRITTO ROMANO)`, `II. CUSTODIA [specificazione di 5 parole in maiuscolo]` con a/b di processuale civile e penale, `III. CUSTODIA [specificazione di 2 parole in maiuscolo]...`, `IV. CUSTODIA [specificazione di 1 parola in maiuscolo]` con a/b, `V. CUSTODIA [specificazione di 3 parole in maiuscolo]`) ognuna con autori e LETTERATURA propri. Il PDF caricato contiene solo le 4 pagine della prima sotto-voce (Custodia di diritto romano, di Talamanca), non l'intera voce.
 
 Questa è una variante strutturale finora **non osservata** in nessun campione precedente (né Melchionda né Piras erano voci-contenitore). Implica due cose:
 
@@ -472,7 +478,7 @@ Nessun riferimento di nota inline `(N)` nel body (zero occorrenze): le citazioni
 **Differenze fini rispetto a Melchionda**:
 - Trattini lunghi `—` invece di `-` per separare le voci del sommario (Melchionda usa `-` semplice)
 - Nessun caratterino `Sez. I, Sez. II` (Melchionda aveva 3 sezioni; Rent to buy, voce monografica più breve, ha solo paragrafi numerati senza raggruppamento in sezioni)
-- Cross-references intra-EdD del tipo `v. CONTRATTO PRELIMINARE, 2021`, `v. AUTONOMIA PRIVATA (PROFILI COSTITUZIONALI), 2015`: pattern caratteristico dei Tematici (rimando con anno = volume), che Melchionda non aveva (Melchionda è del 1997, prima dell'introduzione dei Tematici nel 2021)
+- Cross-references intra-EdD del tipo `v. [NOMEVOCE DI 2 PAROLE], 2021`, `v. [NOMEVOCE DI 2 PAROLE] ([SPECIFICAZIONE DI 2 PAROLE]), 2015`: pattern caratteristico dei Tematici (rimando con anno = volume), che Melchionda non aveva (Melchionda è del 1997, prima dell'introduzione dei Tematici nel 2021)
 
 ### 10.4 Ferrando 2014 — terzo campione moderno, intermedio temporalmente (conferma profilo, evidenzia caso lungo)
 
@@ -510,7 +516,7 @@ Nessun riferimento di nota inline `(N)` nel body (zero occorrenze): le citazioni
 
 **Conferma del sotto-profilo `enciclopedia_moderna`**: il profilo è solido, copre Melchionda 1997 + Ferrando 2014 + Palazzo 2025 senza varianti significative. Le tre adattamenti minori già dichiarati (doppia colonna; FONTI separata da LETTERATURA; cross-page note frequenti) sono confermati e quantificabili.
 
-**Sotto-variante da aggiungere — Tematici post-2021**: i campioni Tematici 2025 introducono il pattern di cross-reference intra-EdD `v. NOMEVOCE, anno` (es. `v. CONTRATTO PRELIMINARE, 2021`). La pipeline può sfruttarlo come marcatore identificativo del sotto-profilo `enciclopedia_moderna_tematici` (rispetto a `enciclopedia_moderna_aggiornamenti` di Melchionda e `enciclopedia_moderna_annali` di Ferrando). Ai fini del parsing è una piccola differenza: cambia solo il regex che riconosce le citazioni interne. Ai fini della lettura accessibile potrebbe essere utile annunciare diversamente: "rimando alla voce X, volume Tematici dell'anno Y" vs un semplice rimando alla voce.
+**Sotto-variante da aggiungere — Tematici post-2021**: i campioni Tematici 2025 introducono il pattern di cross-reference intra-EdD `v. NOMEVOCE, anno` (es. `v. [NOMEVOCE DI 2 PAROLE], 2021`). La pipeline può sfruttarlo come marcatore identificativo del sotto-profilo `enciclopedia_moderna_tematici` (rispetto a `enciclopedia_moderna_aggiornamenti` di Melchionda e `enciclopedia_moderna_annali` di Ferrando). Ai fini del parsing è una piccola differenza: cambia solo il regex che riconosce le citazioni interne. Ai fini della lettura accessibile potrebbe essere utile annunciare diversamente: "rimando alla voce X, volume Tematici dell'anno Y" vs un semplice rimando alla voce.
 
 ### 10.6 Nuovo pattern strutturale: voce-contenitore vs voce-saggio
 
@@ -560,7 +566,7 @@ Due nuovi campioni dell'EdD storica caricati per chiudere le lacune 1 (secondo v
 
 ### 11.2 Galgano 1977 — analisi strutturale
 
-**Apertura del PDF**: la prima pagina inizia con `II. - Diritto privato: / a) PREMESSE PROBLEMATICHE E DOTTRINE GENERALI`. Questo significa che esiste, nel volume cartaceo, anche un `I. - Diritto romano` (presumibilmente di altro autore, non incluso nel PDF). Il marcatore `II.` con numerazione romana sopra la lettera minuscola in tonda `a)` indica una **gerarchia a due livelli**: prima livello in cifre romane per il sotto-ramo storico-disciplinare ("Diritto privato"), secondo livello in lettere minuscole per il sotto-articolo tematico ("Premesse problematiche e dottrine generali"). Galgano è dunque autore di una **sotto-voce** di voce-contenitore, non di una voce-saggio monografica.
+**Apertura del PDF**: la prima pagina inizia con `II. - Diritto privato: / a) PREMESSE PROBLEMATICHE E DOTTRINE GENERALI`. Questo significa che esiste, nel volume cartaceo, anche un `I. - [titolo di 2 parole]` (presumibilmente di altro autore, non incluso nel PDF). Il marcatore `II.` con numerazione romana sopra la lettera minuscola in tonda `a)` indica una **gerarchia a due livelli**: prima livello in cifre romane per il sotto-ramo storico-disciplinare ("Diritto privato"), secondo livello in lettere minuscole per il sotto-articolo tematico ("Premesse problematiche e dottrine generali"). Galgano è dunque autore di una **sotto-voce** di voce-contenitore, non di una voce-saggio monografica.
 
 **SOMMARIO iniziale**: presente in pagina 1, con 12 paragrafi numerati esposti separatamente. Il regex su `^\d+\.\s+[A-Z]` rileva 10 paragrafi su 12 (i numeri 4, 5, 10 sono persi per OCR fossilizzato che li trascrive come "•·", "s.", "xo."). Range §§ 1-12.
 
@@ -574,9 +580,9 @@ Due nuovi campioni dell'EdD storica caricati per chiudere le lacune 1 (secondo v
 
 **LETTERATURA finale**: **assente come sezione esplicita**. L'apparato bibliografico è inglobato direttamente nelle note del corpo (le ultime note del § 12 contengono i riferimenti finali in forma narrativa) e l'ultima pagina si chiude con `* * * * *` come marcatore tipografico di fine voce, immediatamente prima del footer ente. Differenza strutturale netta rispetto a Piras 1964 (che ha LETTERATURA esplicita) e rispetto a Espropriazione/Ardizzone 1966 (che ha sia FONTI sia LETTERATURA).
 
-→ Ricontrollata la pagina 18 nel testo OCR del PDF: **anzi, "LETTERATURA. — La letteratura sul negozio giuridico è sterminata..." è presente nelle pagine 17-18 del PDF**, con elenco di opere monografiche su 1.5 pagine. Il regex non l'aveva intercettata per via di OCR fossilizzato (`LnTEHATURA` invece di `LETTERATURA`). Dunque **LETTERATURA presente, ma con OCR rovinato sulla parola-marcatore**: questo è un punto operativo importante per la pipeline di parsing, deve gestire varianti OCR del titolo della sezione finale.
+→ Ricontrollata la pagina 18 nel testo OCR del PDF: **anzi, "LETTERATURA. — [frase d'apertura della sezione bibliografica, 7 parole]..." è presente nelle pagine 17-18 del PDF**, con elenco di opere monografiche su 1.5 pagine. Il regex non l'aveva intercettata per via di OCR fossilizzato (`LnTEHATURA` invece di `LETTERATURA`). Dunque **LETTERATURA presente, ma con OCR rovinato sulla parola-marcatore**: questo è un punto operativo importante per la pipeline di parsing, deve gestire varianti OCR del titolo della sezione finale.
 
-**Cross-references intra-EdD**: 14 voci richiamate distinte con pattern `v. NOMEVOCE` (es. `v. FATTO GIURIDICO`, `v. ATTO GIURIDICO`, `v. AUTONOMIA PRIVATA`, `v. CAUSA DEL NEGOZIO GIURIDICO`, `v. SIMULAZIONE`, `v. NEGOZIO ASTRATTO`, `v. ACCERTAMENTO: negozio di`, `v. CIRCOLAZIONE GIURIDICA`, `v. CONDIZIONI GENERALI DI CONTRATTO`, `v. CONTRATTO DI ADESIONE`, `v. VIZI DEL CONSENSO`, `v. ANNULLABILITÀ E ANNULLAMENTO`, `v. BUONA FEDE: diritto privato`, `v. ATTO AMMINISTRATIVO`, `v. NEGOZIO PROCESSUALE`, `v. MANIFESTAZIONE`, `v. VOLONTÀ`). **Pattern senza anno**, intermedio fra Piras 1964 (zero cross-references) e Tematici post-2021 (`v. VOCE, anno`). Conferma che il pattern `v. VOCE` è stabile dagli anni '60 al 2014; l'aggiunta dell'anno è introduzione recente del 2021+.
+**Cross-references intra-EdD**: 14 voci richiamate distinte con pattern `v. NOMEVOCE` (es. [17 rinvii in elenco, nome della voce in maiuscolo: 4 di 1 parola, 8 di 2, 3 di 3, 2 di 4; in due casi il nome è seguito da due punti e da una specificazione in minuscolo di 2 parole, `v. NOMEVOCE: [specificazione di 2 parole]`]). **Pattern senza anno**, intermedio fra Piras 1964 (zero cross-references) e Tematici post-2021 (`v. VOCE, anno`). Conferma che il pattern `v. VOCE` è stabile dagli anni '60 al 2014; l'aggiunta dell'anno è introduzione recente del 2021+.
 
 **Footer ente**: `Enciclopedia del Diritto - Volume XXVII - 1977` su tutte le 18 pagine, riga sotto il numero di pagina, in font ridotto. Pattern uniforme: come Piras e Talamanca.
 
@@ -607,12 +613,12 @@ Due nuovi campioni dell'EdD storica caricati per chiudere le lacune 1 (secondo v
 **Analisi strutturale**:
 
 - Il PDF caricato contiene **una sola sotto-voce** della voce-contenitore "Espropriazione per p.u.": la lettera **c) Procedimento** di Ardizzone. Le altre sotto-voci (a/b/d/e di altri autori — Nicolini, Landi etc.) NON sono nel PDF. Quindi **la lacuna 2 (voce-contenitore intera) NON è chiusa** da questo file: rimane aperta per chat futura.
-- **Sezioni interne** (Sez. romane): tutte e cinque presenti e correttamente individuabili nel sommario iniziale e nel body. **Sez. II è "La determinazione preventiva dell'indennità"** (la sessione precedente l'aveva persa per un problema di regex, non per assenza nel testo). Le cinque sezioni sono: Sez. I "Il procedimento secondo la l. espr. p.u." (§§ 1-35), Sez. II "La determinazione preventiva dell'indennità" (§§ 36-51), Sez. III "La misura dell'indennità" (§§ 52-73), Sez. IV "Il decreto di espropriazione" (§§ 74-90), Sez. V "Norme speciali per determinate espropriazioni" (§§ 91-96).
+- **Sezioni interne** (Sez. romane): tutte e cinque presenti e correttamente individuabili nel sommario iniziale e nel body. **Sez. II è "[titolo di 4 parole]"** (la sessione precedente l'aveva persa per un problema di regex, non per assenza nel testo). Le cinque sezioni sono: Sez. I "[titolo di 7 parole, chiuso dalla sigla abbreviata della legge]" (§§ 1-35), Sez. II "[titolo di 4 parole]" (§§ 36-51), Sez. III "[titolo di 3 parole]" (§§ 52-73), Sez. IV "[titolo di 4 parole]" (§§ 74-90), Sez. V "[titolo di 5 parole]" (§§ 91-96).
 - **96 paragrafi numerati** nel sommario iniziale (range §§ 1-96), confermati dalle Sezioni che coprono integralmente l'arco. La regex su titolo+trattino lungo cattura solo 23 dei 96 — l'OCR fossilizza i numeri di paragrafo in modi imprevedibili (`r.` `2.` `3.` con caratteri ambigui). Il sommario iniziale enumera correttamente tutti i 96.
 - **108 numeri di nota distinti** (range 1-114, con 6 numeri non utilizzati nell'arco), **154 note individuali estratte** dopo splitting intra-blocco (94 con marker `(N)` + 60 continuazioni cross-page, 39% del totale = ulteriore conferma che la cross-page è caratteristica strutturale forte). Lunghezze: **min 1 (frammenti residui), max 4.010, media 376, mediana 105 caratteri**. Distribuzione: 49% < 100 char, 26% 100-500 char, **19% 500-1500 char**, **6.5% > 1500 char**. Distribuzione **fortemente bimodale**: massa concentrata su note brevi (mediana 105) ma coda lunga di note che superano i 1.500 caratteri e arrivano fino a **4.010 caratteri** — al pari della Dottrina DeJure più densa (Rizzo 2022: 4.000-5.000 caratteri). Questo conferma che le voci enciclopediche storiche più dense possono avere mini-saggi nelle note al pari della dottrina contemporanea.
 - **FONTI** ed **LETTERATURA** entrambe presenti a fine documento, separate (offset 99.2% e 99.3%). Pattern di chiusura: `BODY → firma autore (Ugo Ardizzone) → FONTI → LETTERATURA`. Questo è il pattern voce-saggio storica con apparato bibliografico esplicito e diviso in due sezioni autonome.
 - **Firma autore rilevata**: "Ugo Ardizzone", in posizione di chiusura, prima dell'apparato bibliografico.
-- **Cross-references intra-EdD**: **4 voci distinte richiamate, 8 occorrenze totali** (`v. DICHIARAZIONE DI PUBBLICA UTILITÀ` con 6 occorrenze in vari modi spezzati dall'OCR — la voce è la stessa, la rottura è artefatto OCR; `v. OCCUPAZIONE` 1; `v. CONTRIBUTI DI MIGLIORIA` 1; `v. URBANISTICA` 1, OCR-spezzata `URBANI-/STICA`). Pattern `v. NOMEVOCE` senza anno, identico a Galgano 1977. **Correzione rispetto al provvisorio**: nella sessione precedente erano stati contati "8 voci distinte" perché le rotture OCR di DICHIARAZIONE DI PUBBLICA UTILITÀ in più forme erano state contate come voci diverse — il numero corretto di voci distinte è 4.
+- **Cross-references intra-EdD**: **4 voci distinte richiamate, 8 occorrenze totali** (`v. [NOMEVOCE DI 4 PAROLE]` con 6 occorrenze in vari modi spezzati dall'OCR — la voce è la stessa, la rottura è artefatto OCR; `v. [NOMEVOCE DI 1 PAROLA]` 1; `v. [NOMEVOCE DI 3 PAROLE]` 1; `v. [NOMEVOCE DI 1 PAROLA]` 1, OCR-spezzata a metà parola `[6 lettere]-/[5 lettere]`). Pattern `v. NOMEVOCE` senza anno, identico a Galgano 1977. **Correzione rispetto al provvisorio**: nella sessione precedente erano stati contati "8 voci distinte" perché le rotture OCR della prima voce (quella di 4 parole) in più forme erano state contate come voci diverse — il numero corretto di voci distinte è 4.
 - Footer ente: `Enciclopedia del Diritto - Volume XV - 1966` su tutte 66/66 pagine, uniformemente.
 
 **Conclusione su Espropriazione/Ardizzone**: è una **sotto-voce LUNGA** (66 pp, 96 §§ in 5 sezioni interne, 108 numeri di nota, 154 note individuali estratte) di voce-contenitore degli anni '60. Per studiare le **transizioni inter-sotto-voce** (numerazione paragrafi che riparte? sommari interni separati per ogni sotto-voce? salti di pagina tra autori?) servirebbero le altre sotto-voci a/b/d/e che non sono nel PDF. Aspettativa: la voce-contenitore intera Vol. XV 1966 ha numerazione di paragrafi che riparte da 1 per ogni sotto-voce (quella di Ardizzone ha §§ 1-96 propri, partendo da 1).
@@ -718,7 +724,7 @@ Il regime D è **necessario** per gestire correttamente Ardizzone (6.5% di note 
 **Conseguenza sul modello JSON**:
 - Il `document` di output è sempre una singola unità con paragrafi, note, FONTI, LETTERATURA, firma autore di un solo autore (o di un team di autori per la stessa sotto-voce).
 - **Nessun wrapper voce-contenitore**: il modello non deve prevedere un livello gerarchico superiore al `document` per raggruppare sotto-voci della stessa voce-contenitore.
-- I rimandi tra sotto-voci della stessa voce-contenitore (es. "v. supra, Principi generali" osservato in Ardizzone, oppure rimandi alla sotto-voce a/b/d/e dello stesso volume) vanno trattati come **cross-references intra-EdD**, identici al pattern `v. NOMEVOCE` ma riferiti a sotto-voci dello stesso contenitore. La pipeline può riconoscerli ma non risolverli (l'altra sotto-voce non è caricata).
+- I rimandi tra sotto-voci della stessa voce-contenitore (es. "v. supra, [titolo di 2 parole]" osservato in Ardizzone, oppure rimandi alla sotto-voce a/b/d/e dello stesso volume) vanno trattati come **cross-references intra-EdD**, identici al pattern `v. NOMEVOCE` ma riferiti a sotto-voci dello stesso contenitore. La pipeline può riconoscerli ma non risolverli (l'altra sotto-voce non è caricata).
 - L'utente che vuole leggere una voce-contenitore intera dovrà caricare le sotto-voci una per una come documenti separati. ScaboPDF può eventualmente offrire una funzione di "raggruppamento" a livello di interfaccia (carica le 4-5 sotto-voci di Espropriazione e l'app le presenta come un raccoglitore navigabile), ma a livello di pipeline di estrazione ogni sotto-voce è un documento autonomo.
 
 **Distinzione operativa scoperta sul sito EdD** (utile per documentare il comportamento all'utente finale):
@@ -776,13 +782,13 @@ Il producer è **corroborante** ma non determinante.
 
 **Struttura testuale**:
 - 1 SOMMARIO iniziale articolato a pag 1
-- **3 sezioni interne** correttamente rilevate (Sez. I Aspetti generali §§ 1-3; Sez. II L'estensione della competenza degli Stati costieri §§ 4-8; Sez. III Il riconoscimento degli interessi della comunità internazionale §§ 9-11)
+- **3 sezioni interne** correttamente rilevate (Sez. I [titolo di 2 parole] §§ 1-3; Sez. II [titolo di 6 parole] §§ 4-8; Sez. III [titolo di 7 parole] §§ 9-11)
 - **11 paragrafi numerati** (§§ 1-11), distribuiti regolarmente
 - 101 rimandi `(N)` totali, range 1-51, 51 numeri di nota distinti
 - **57 note individuali estratte** (48 con marker `(N)` + 9 continuazioni cross-page)
 - Lunghezze note: min 27, max **2.474**, media 395, mediana 266 caratteri. Distribuzione: A<100 24.6%, B 100-500 43.9%, C 500-1500 29.8%, **D ≥ 1500 1.8% (1 nota)** — profilo simile a Melchionda 1997 (24% C, 2% D).
 - FONTI a 93,9%, LETTERATURA a 95,7% — entrambe presenti come sezioni esplicite finali (pattern voce-saggio moderna con apparato bibliografico ricco articolato in due sezioni)
-- Cross-references intra-EdD: 14 occorrenze, 12 voci distinte, pattern `v. NOMEVOCE` **senza anno** (es. `v. PIATTAFORMA CONTINENTALE` 3×, `v. MARE TERRITORIALE`, `v. ZONA ECONOMICA ESCLUSIVA`, `v. FONDI MARINI INTERNAZIONALI`). Alcune sono auto-rinvii con qualificazione `In questa Enciclopedia` o `In questo Aggiornamento II`.
+- Cross-references intra-EdD: 14 occorrenze, 12 voci distinte, pattern `v. NOMEVOCE` **senza anno** (es. `v. [NOMEVOCE DI 2 PAROLE]` 3×, `v. [NOMEVOCE DI 2 PAROLE]`, `v. [NOMEVOCE DI 3 PAROLE]`, `v. [NOMEVOCE DI 3 PAROLE]`). Alcune sono auto-rinvii con qualificazione `In questa Enciclopedia` o `In questo Aggiornamento II`.
 - Footer ente: `Enciclopedia del Diritto - Aggiornamento II - 1998` su tutte 17/17 pagine, uniformemente.
 
 **Conferma profilo `enciclopedia_moderna`**: Mare 1998 è una voce-saggio singola monografica (autrice Angela Del Vecchio, firma in chiusura) di un Aggiornamento, strutturalmente analoga a Melchionda 1997. La distribuzione regimi acustici è simile a Melchionda (basso A, B alta, C ~30%, D marginale).
@@ -840,12 +846,12 @@ Il PDF si apre con il **sommario di voce-contenitore** ("POSSESSO" come voce-con
 POSSESSO 
 I. - POSSESSO (IN GENERALE):
   a) Diritto romano . . . . . . p. 452
-  b) Diritto intermedio . . . . p. 467
-  c) Diritto privato . . . . . p. 491
-  d) Diritto penale . . . . . . p. 520
-  e) Diritto canonico . . . . . p. 534
-II. - POSSESSO DI DIRITTI . . . p. 539
-III. - POSSESSO DI STATO . . . . p. 550
+  b) [titolo di 2 parole] . . . . p. 467
+  c) [titolo di 2 parole] . . . . . p. 491
+  d) [titolo di 2 parole] . . . . . . p. 520
+  e) [titolo di 2 parole] . . . . . p. 534
+II. - POSSESSO [specificazione di 2 parole] . . . p. 539
+III. - POSSESSO [specificazione di 2 parole] . . . . p. 550
 ```
 
 I numeri di pagina indicati nel sommario coprono pp. 452-550 (= 98 pp totali della voce-contenitore intera). Il PDF caricato ha 16 pp, copre pp. 452-467, **contiene solo la sotto-voce a) Diritto romano** di Alberto Burdese. Pattern identico a Talamanca 1962 (Custodia) e Ardizzone 1966 (Espropriazione c).
@@ -857,7 +863,7 @@ I numeri di pagina indicati nel sommario coprono pp. 452-550 (= 98 pp totali del
 - **0 sezioni romane interne** (la sotto-voce è 16 pp, troppo breve per articolarsi in sezioni — coerente con Talamanca 4pp e Galgano 18 pp che similmente non hanno sezioni interne; le sezioni I-V appaiono solo in sotto-voci LUNGHE come Ardizzone 66pp)
 - **LETTERATURA esplicita finale** (rilevata con pattern tollerante, OCR rovinato il titolo con varianti grafiche)
 - **FONTI assente** come sezione separata
-- **Cross-references**: solo 1 (`v. INTERDETTI`) — densità bassissima, coerente con sotto-voce di diritto romano focalizzata
+- **Cross-references**: solo 1 (`v. [NOMEVOCE DI 1 PAROLA]`) — densità bassissima, coerente con sotto-voce di diritto romano focalizzata
 - Footer ente: `Enciclopedia del Diritto - Volume XXXIV - 1985` su tutte 16/16 pagine
 
 **Conferma definitiva variante B `enciclopedia_storica`** (sotto-voce di voce-contenitore anni '60-'80) con limite cronologico esteso al 1985.

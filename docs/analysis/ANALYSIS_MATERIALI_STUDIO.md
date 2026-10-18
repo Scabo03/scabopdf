@@ -1,4 +1,10 @@
 # Analisi Tecnica — Materiali di Studio User-Generated
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Autore: Scabo (utente del progetto) · Sorgenti: Microsoft Word per Microsoft 365 + Google Docs (rendering Skia/PDF) · Dominio: appunti universitari giuridici
 > Versione: DEFINITIVA — ispezione PyMuPDF sui quattro fixture privati
 > Documenti: `materiali_teoria_generale.pdf` (200 pp.) · `materiali_diritto_tributario.pdf` (222 pp.) · `materiali_diritto_privato_i.pdf` (552 pp.) · `materiali_diritto_privato_ii.pdf` (857 pp.)
@@ -56,14 +62,14 @@ I sistemi tipografici dei quattro fixture sono uniformemente impoveriti rispetto
 | teoria_generale | 1 sola | `Arial-BoldMT 25.0pt flags=16 color=0` | 100.00 % | mono-tipografica |
 | diritto_tributario | 3 | `Arial-BoldMT 20.04pt flags=16 color=0` | 98.88 % | + `ArialMT` regular per 63 bullet dash, + 1 glifo `CambriaMath` |
 | diritto_privato_i | 1 sola | `Arial-BoldMT 22.0pt flags=16 color=0` | 100.00 % | mono-tipografica |
-| diritto_privato_ii | 3 fonts × 3 colors | `Arial-BoldMT 25.0pt flags=16` | 99.22 % | + `ArialMT` regular per 4142 char di heading + `Arial-ItalicMT` per 21 char (DO UT DES/FACIAS) |
+| diritto_privato_ii | 3 fonts × 3 colors | `Arial-BoldMT 25.0pt flags=16` | 99.22 % | + `ArialMT` regular per 4142 char di heading + `Arial-ItalicMT` per 21 char ([due locuzioni latine di 3 parole]) |
 
 Tre dei quattro fixture (teoria_generale, diritto_privato_i, e quasi tutto il diritto_tributario) sono **monoculture tipografiche**: ogni glifo del documento è un Arial-Bold di una sola dimensione, in nero, senza flag italic, senza colore. Il bold non è enfasi: è il default del documento. L'unico discriminatore tipografico legittimo è completamente assente — niente body in regular distinto dai titoli in bold, niente size differente per heading, niente italic per citazioni o latinismi, niente color. **L'unico sentiero per la classificazione strutturale è testuale e geometrico**, mai tipografico.
 
 Il fixture diritto_privato_ii è l'eccezione utile: lo stesso renderer Skia/PDF di Google Docs che ha collassato gli altri tre documenti in monoculture, su questo quarto fixture ha invece preservato due dimensioni di emfasi tipografica:
 
 - **`ArialMT` (non-bold) a tre colori distinti**, usato per i titoli e i banner: `RGB(102,102,102)` grigio chiaro per i banner di Parte all-caps (26 span su 857 pagine), `RGB(0,0,0)` nero per i titoli `CAP. N - TITOLO` (69 span), `RGB(67,67,67)` grigio medio per i sotto-titoli/lemmi case-mista (83 span). Totale: 178 span non-bold = 0.78 % del documento.
-- **`Arial-ItalicMT`** per 21 char concentrati in due titoli compositi: `CAP. 42 - GLI ALTRI CONTRATTI DO UT DES` e `CAP. 43 - I CONTRATTI DI SCAMBIO DO UT FACIAS`, dove l'autore ha messo in italico il latinismo dopo aver fatto la maiuscola.
+- **`Arial-ItalicMT`** per 21 char concentrati in due titoli compositi: `CAP. 42 - [titolo di 6 parole in maiuscolo, le ultime 3 una locuzione latina di 9 caratteri]` e `CAP. 43 - [titolo di 7 parole in maiuscolo, le ultime 3 una locuzione latina di 12 caratteri]`, dove l'autore ha messo in italico il latinismo dopo aver fatto la maiuscola.
 
 **Inversione semantica del bold**: il fixture diritto_privato_ii, come tutti i Google Docs della famiglia, ha collassato il body in Arial-Bold e ha emesso i titoli in Arial regular. La convenzione opposta a quella di ogni profilo editoriale conosciuto. Il plugin dovrà trattare **`Arial-BoldMT` come BODY** e **`ArialMT` non-bold come candidato heading** quando il signal di colore è disponibile.
 
@@ -116,7 +122,7 @@ Senza signature tipografica disponibile (o disponibile solo su un fixture), la *
 
 Pattern dominanti osservati:
 
-- **Linea allcaps isolata** in un blocco di 1-2 linee, lunghezza 6-50 caratteri, testo che combacia con la regex `^[A-Z][A-Z\s'\-,]{4,}$`. Sul fixture diritto_privato_i: `'I DIRITTI REALI'` (p.265 b.2), `'I DIRITTI DI CREDITO'` (p.395 b.2). Sul fixture diritto_privato_ii: 26 span all-caps colorati grigio-chiaro come `'I SINGOLI CONTRATTI'` (p.1), `'LE OBBLIGAZIONI NASCENTI DALLA LEGGE'` (p.300), `'I RAPPORTI DI FAMIGLIA'` (p.312), `'LA SUCCESSIONE PER CAUSA DI MORTE'` (p.509), `'LA PUBBLICITA' IMMOBILIARE'` (p.707), `'LE OBBLIGAZIONI NASCENTI DA FATTO ILLECITO'` (p.751).
+- **Linea allcaps isolata** in un blocco di 1-2 linee, lunghezza 6-50 caratteri, testo che combacia con la regex `^[A-Z][A-Z\s'\-,]{4,}$`. Sul fixture diritto_privato_i: `'[titolo di 3 parole in maiuscolo]'` (p.265 b.2), `'[titolo di 4 parole in maiuscolo]'` (p.395 b.2). Sul fixture diritto_privato_ii: 26 span all-caps colorati grigio-chiaro come `'[titolo di 3 parole in maiuscolo]'` (p.1), `'[titolo di 5 parole in maiuscolo]'` (p.300), `'[titolo di 4 parole in maiuscolo]'` (p.312), `'[titolo di 6 parole in maiuscolo]'` (p.509), `'[titolo di 3 parole in maiuscolo, con un apostrofo al posto dell'accento finale di una parola]'` (p.707), `'[titolo di 6 parole in maiuscolo]'` (p.751).
 - **Separatore em-dash manuale** `^[—–-]{5,}$` o `^—-{5,}$`, una sequenza di trattini lunga che l'utente ha digitato per dividere visivamente macro-sezioni. Sul fixture teoria_generale: 2 occorrenze (p.0 b.1 leading, p.143 b.1 trailing). Sul fixture diritto_privato_i: 8 occorrenze (pp.10, 18, 22, 34, 53, 65, 265, 395). Sul fixture diritto_privato_ii: presenza di separatori multipli misti `—`, `-`, e sequenze di `I` maiuscoli ripetute (cfr. p.33 `'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII'` come decoro testuale).
 
 Il separatore em-dash funziona come **marker di confine di macro-sezione** ma non è sempre presente (assente nei capitoli finali del diritto_privato_i pp.177-543). L'allcaps lines è più affidabile.
@@ -132,15 +138,15 @@ La regex deve accettare entrambi i casi (`Cap.` minuscolo e `CAP.` maiuscolo, co
 
 ### 5.3 HEADING_3 — sezione interna al capitolo
 
-Pattern: **`^[A-Z]\.\s+[A-Z]`** seguito da titolo all-caps o mixed-case, lunghezza tipicamente < 60 caratteri. Sul fixture diritto_privato_i: 11 blocchi del tipo `A. NOZIONI GENERALI.`, `A. I DIRITTI REALI`, `C. USUFRUTTO, USO E ABITAZIONE`, `D. LE SERVITU'`, `B. IL CONDOMINIO.`, `D. L'IPOTECA.`. Concentrati a `x0=72` (8) o `x0=90` (3).
+Pattern: **`^[A-Z]\.\s+[A-Z]`** seguito da titolo all-caps o mixed-case, lunghezza tipicamente < 60 caratteri. Sul fixture diritto_privato_i: 11 blocchi del tipo `A. [titolo di 2 parole in maiuscolo].`, `A. [titolo di 3 parole in maiuscolo]`, `C. [titolo di 4 parole in maiuscolo, con una virgola]`, `D. [titolo di 2 parole in maiuscolo, con un apostrofo al posto dell'accento finale]`, `B. [titolo di 2 parole in maiuscolo].`, `D. [titolo di 1 parola in maiuscolo con articolo eliso].`. Concentrati a `x0=72` (8) o `x0=90` (3).
 
 Il pattern è ambiguo: una linea body può iniziare anche con `A. ` o `B. ` come enumerazione interna (es. `'a. Diritto…', 'b. alla sicurezza…'` sul fixture diritto_privato_ii, p.5). La discriminazione richiede una combinazione di criteri: lettera maiuscola seguita da titolo all-caps, lunghezza del blocco < 60 chars, blocco isolato di 1-2 linee, eventualmente preceduto da un blank line.
 
 ### 5.4 HEADING_4 — sotto-titolo colon-ending / lemma
 
-Pattern: **`^[A-Z][^:\n]{4,80}:$`** — linea breve capitalizzata che termina con due punti, isolata in un blocco di 1 linea. Sul fixture diritto_privato_i: 56 occorrenze (`'Diritto Europeo:'`, `'Nozione di Stato:'`, `'Negozi unilaterali:'`, `'Tre tipi di pubblicità:'`, `'Caratteristiche della proprietà:'`, `'Principi fondamentali:'`). Sul fixture diritto_privato_ii: 83 occorrenze (in mode color-aware, distinguibili dal colore grigio-medio RGB(67,67,67)). Sul fixture teoria_generale: il pattern colon-ending è raro ma esiste come variante delle topic-label (es. `'recap dei requisiti:'`).
+Pattern: **`^[A-Z][^:\n]{4,80}:$`** — linea breve capitalizzata che termina con due punti, isolata in un blocco di 1 linea. Sul fixture diritto_privato_i: 56 occorrenze (`'[lemma di 2 parole]:'`, `'[lemma di 3 parole]:'`, `'[lemma di 2 parole]:'`, `'[lemma di 4 parole]:'`, `'[lemma di 3 parole]:'`, `'[lemma di 2 parole]:'`). Sul fixture diritto_privato_ii: 83 occorrenze (in mode color-aware, distinguibili dal colore grigio-medio RGB(67,67,67)). Sul fixture teoria_generale: il pattern colon-ending è raro ma esiste come variante delle topic-label (es. `'[lemma di 3 parole, con iniziale minuscola]:'`).
 
-Le **topic-label terminanti in punto** del fixture teoria_generale sono una variante dello stesso pattern: linea breve capitalizzata che termina con `.` (47 candidati come `'Prolusione.'`, `'Ulpiano.'`, `'Gustavo Zagrebelsky.'`, `'Amedeo Conte.'`, `'Tema bioetico.'`, `'Giuspositivismo.'`). Il plugin deve trattare entrambe le varianti come HEADING_4 candidate, riconosciute come **"linea breve capitalizzata isolata terminante con `.` o `:` in un blocco di 1 linea"**.
+Le **topic-label terminanti in punto** del fixture teoria_generale sono una variante dello stesso pattern: linea breve capitalizzata che termina con `.` (47 candidati come `'[etichetta di 1 parola].'`, `'[nome di un giurista, 1 parola].'`, `'[nome e cognome di un giurista].'`, `'[nome e cognome di un giurista].'`, `'[etichetta di 2 parole].'`, `'[etichetta di 1 parola].'`). Il plugin deve trattare entrambe le varianti come HEADING_4 candidate, riconosciute come **"linea breve capitalizzata isolata terminante con `.` o `:` in un blocco di 1 linea"**.
 
 ### 5.5 LIST_ITEM — voce di lista puntata
 
@@ -157,7 +163,7 @@ La lista usa **un solo marker** (il trattino ASCII `-`), mai bullet grafici `•
 
 ### 5.6 Pattern numerati e altri marker
 
-Pattern di numerazione decimale gerarchica `1.1`, `1.1.1`, numerazione romana `I. II. III.`, parentesi lettera `a)`, `A)` sono **completamente assenti** nei quattro fixture. L'autore non ha mai usato la numerazione gerarchica di Word/Google Docs come strumento strutturale. Liste numerate semplici `1. xxx`, `2. xxx` ricorrono inline nel body in casi sporadici (la lista delle "fasi della fiscalità europea" sul fixture diritto_tributario p.48, la lista "1. violenza, 2. xxx, 3. errore" sul fixture diritto_privato_ii p.336), ma non costituiscono signal strutturale univoco.
+Pattern di numerazione decimale gerarchica `1.1`, `1.1.1`, numerazione romana `I. II. III.`, parentesi lettera `a)`, `A)` sono **completamente assenti** nei quattro fixture. L'autore non ha mai usato la numerazione gerarchica di Word/Google Docs come strumento strutturale. Liste numerate semplici `1. xxx`, `2. xxx` ricorrono inline nel body in casi sporadici (una lista di fasi, "[intestazione di 4 parole]", sul fixture diritto_tributario p.48, la lista "1. violenza, 2. xxx, 3. errore" sul fixture diritto_privato_ii p.336), ma non costituiscono signal strutturale univoco.
 
 Riferimenti normativi inline (`art. NNN`, `Cass. ...`, `c.c.`, `c.p.`, `DPR`, `L. NN del AAAA`) ricorrono nei materiali ma non vengono mintati come CROSS_REFERENCE: sono **citazioni inline** parte del flusso del body, non puntano a target interni al documento (nessun footnote, nessun apparato bibliografico).
 
@@ -243,7 +249,7 @@ Categorie escluse: ogni categoria specifica di editorial pipeline (`MARGINAL_HEA
 
 ### 8.1 Riguardo alla decisione su separator em-dash
 
-I separator em-dash (sequenze `^[—–-]{5,}$`) hanno doppia natura nei fixture: a volte sono leading marker di nuova macro-sezione (sul fixture teoria_generale, p.0 b.1 introduce la "Prolusione"), a volte sono trailing marker della sezione precedente (sul fixture teoria_generale, p.143 b.1 è in fondo alla pagina e la nuova macro-sezione "Giuspositivismo" inizia a p.144). Il plugin tratta i separator come **`ARTIFACT_FILIGREE`** uniforme — sono decorazioni testuali manuali, non heading. Il prossimo blocco non-artefatto dopo un separator può essere promosso a HEADING_1 solo se combacia con un altro signal di HEADING_1 (allcaps line). Questa scelta evita il falso positivo "ogni separator è un heading" sui documenti dove l'utente usa il separator come fioritura grafica generica.
+I separator em-dash (sequenze `^[—–-]{5,}$`) hanno doppia natura nei fixture: a volte sono leading marker di nuova macro-sezione (sul fixture teoria_generale, p.0 b.1 introduce la macro-sezione "[titolo di 1 parola]"), a volte sono trailing marker della sezione precedente (sul fixture teoria_generale, p.143 b.1 è in fondo alla pagina e la nuova macro-sezione "[titolo di 1 parola]" inizia a p.144). Il plugin tratta i separator come **`ARTIFACT_FILIGREE`** uniforme — sono decorazioni testuali manuali, non heading. Il prossimo blocco non-artefatto dopo un separator può essere promosso a HEADING_1 solo se combacia con un altro signal di HEADING_1 (allcaps line). Questa scelta evita il falso positivo "ogni separator è un heading" sui documenti dove l'utente usa il separator come fioritura grafica generica.
 
 ---
 
@@ -342,7 +348,7 @@ Pass-through: zero apparato (no NOTE, no CROSS_REFERENCE, no MARGINAL_GLOSS, no 
 
 I materiali di studio sono probabilmente l'**output JSON più usato a runtime dall'utente**: a differenza dei manuali editoriali che si studiano sequenzialmente, gli appunti si navigano per cercare un topic, saltare a una sezione, riascoltare un passaggio. L'output JSON dovrebbe quindi:
 
-- **Preservare la gerarchia heading nella sua interezza**, anche quando i livelli sono inferiti euristicamente da pattern testuali (i 56 colon-ending HEADING_4 del fixture diritto_privato_i sono il principale veicolo di navigazione per topic specifici come "Diritto Europeo", "Negozi unilaterali", "Caratteristiche della proprietà"; perderli significa perdere la possibilità di navigare il documento).
+- **Preservare la gerarchia heading nella sua interezza**, anche quando i livelli sono inferiti euristicamente da pattern testuali (i 56 colon-ending HEADING_4 del fixture diritto_privato_i sono il principale veicolo di navigazione per topic specifici come "[lemma di 2 parole]", "[lemma di 2 parole]", "[lemma di 3 parole]"; perderli significa perdere la possibilità di navigare il documento).
 - **Esporre i LIST_ITEM come Node strutturati**, non come testo body, per consentire a Layer 2 di renderli con leggere pause acustiche o intonazione enumerativa.
 - **Preservare ogni typo dell'autore** verbatim: il plugin non normalizza il testo. Layer 2 può applicare normalizzazione cosmetica a runtime se desiderato.
 
@@ -374,6 +380,6 @@ Documentato nel module docstring del plugin e nel CARRYOVER v2.16:
 4. Immagini Word/GDocs non gestite (zero osservazioni sul training set).
 5. ToC auto-generato di Word con dotted leader non riconosciuto (zero osservazioni).
 6. Separator em-dash classificati come `ARTIFACT_FILIGREE` uniforme, non promossi a HEADING_1 (scelta conservativa v1).
-7. Sotto-titoli su 2 righe (es. il banner di parte `LE OBBLIGAZIONI NASCENTI DALLA / LEGGE` del fixture diritto_privato_ii) non vengono fusi in un singolo HEADING_1: ogni linea diventa un Node separato (limitazione strutturale del tier 1 reconstructor; il plugin lascia un warning diagnostico).
+7. Sotto-titoli su 2 righe (es. il banner di parte `[titolo in maiuscolo di 5 parole, spezzato in 4 parole / 1 parola]` del fixture diritto_privato_ii) non vengono fusi in un singolo HEADING_1: ogni linea diventa un Node separato (limitazione strutturale del tier 1 reconstructor; il plugin lascia un warning diagnostico).
 
 Ogni limitazione è coperta da un warning diagnostico nel vocabolario chiuso `plugin:materiali_studio:` per surfacing audit-log.

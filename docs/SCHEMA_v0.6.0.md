@@ -1,5 +1,10 @@
 # ScaboPDF — JSON Schema v0.6.0
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Riferimento narrativo dello schema JSON che fa da contratto fra Layer 1 (pipeline Python) e Layer 2 (app React Native).
 > Versione: 0.6.0, instabile (pre-1.0).
 > Stato: introduzione del campo opzionale `length_category` su `NodeDict`, classificatore acustico delle note in **sei regimi chiusi** (`MICRO` / `SHORT` / `MEDIUM` / `LONG` / `VERY_LONG` / `MEGA`) deciso dopo l'ispezione empirica di **22 294 Node `NOTE`** estratti da tutti i 22 fixture privati dei nove plugin che emettono note. È il contract surface dello **Layout 4 acoustic regime** che la analysis EdD § 12.8 e la analysis Dottrina avevano dichiarato come partizione sei-vie e che la 0.5.0 lasciava esplicitamente fuori (vedi [`SCHEMA_v0.5.0.md`](SCHEMA_v0.5.0.md) § 5). Layer 2 lo consuma per scegliere l'intestazione vocale prima di leggere il testo della nota a voce. Vedi [`SCHEMA_v0.5.0.md`](SCHEMA_v0.5.0.md), [`SCHEMA_v0.4.0.md`](SCHEMA_v0.4.0.md), [`SCHEMA_v0.3.0.md`](SCHEMA_v0.3.0.md), [`SCHEMA_v0.2.0.md`](SCHEMA_v0.2.0.md) e [`SCHEMA_v0.1.0.md`](SCHEMA_v0.1.0.md) per le baseline storiche e [`SCHEMA_CHANGELOG.md`](SCHEMA_CHANGELOG.md) per il delta versione-per-versione.
@@ -115,7 +120,7 @@ Un documento minimale che esercita la 0.6.0 (un Node `NOTE` di ciascuna fascia p
           "id": "node_0003",
           "type": "NOTE",
           "page_index": 1,
-          "text": "(2) Su tale distinzione, ex multis, Taruffo, La Corte di cassazione e la legge, in Il diritto processuale civile, vol. III, Torino, 2018, 224 ss.",
+          "text": "(2) Per un quadro d'insieme si veda, per tutti, Autore, Titolo di un saggio di esempio, in Rivista di esempio, vol. II, Milano, 2019, 112 ss.",
           "level": null,
           "items": null,
           "toc_items": null,

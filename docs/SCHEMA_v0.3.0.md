@@ -1,5 +1,10 @@
 # ScaboPDF — JSON Schema v0.3.0
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Riferimento narrativo dello schema JSON che fa da contratto fra Layer 1 (pipeline Python) e Layer 2 (app React Native).
 > Versione: 0.3.0, instabile (pre-1.0).
 > Stato: introduzione del campo `items` su `NodeDict` per le voci strutturate dei blocchi `CHAPTER_SUMMARY` parsificati dal primo plugin di corpus (`manuale_zanichelli_giuridica`). Vedi [`SCHEMA_v0.2.0.md`](SCHEMA_v0.2.0.md) e [`SCHEMA_v0.1.0.md`](SCHEMA_v0.1.0.md) per le baseline storiche e [`SCHEMA_CHANGELOG.md`](SCHEMA_CHANGELOG.md) per il delta versione-per-versione.
@@ -120,7 +125,7 @@ L'esempio che segue mostra come si presenta un `CHAPTER_SUMMARY` emesso dal plug
       "id": "node_0042",
       "type": "HEADING_1",
       "page_index": 20,
-      "text": "Capitolo I IMPRENDITORE E IMPRESA",
+      "text": "Capitolo I OGGETTO E METODO",
       "level": 1,
       "items": null,
       "block_indices": [60],
@@ -129,13 +134,13 @@ L'esempio che segue mostra come si presenta un `CHAPTER_SUMMARY` emesso dal plug
           "id": "node_0043",
           "type": "CHAPTER_SUMMARY",
           "page_index": 20,
-          "text": "Sommario  1. L'impresa e l'imprenditore – 2. La nozione di imprenditore – 3. La capacità per l'esercizio dell'impresa – 4. L'inizio e la fine dell'impresa",
+          "text": "Sommario  1. L'oggetto e il metodo – 2. La nozione di sistema – 3. I requisiti di ingresso nel rapporto – 4. L'avvio e la chiusura del rapporto",
           "level": null,
           "items": [
-            {"number": "1", "title": "L'impresa e l'imprenditore"},
-            {"number": "2", "title": "La nozione di imprenditore"},
-            {"number": "3", "title": "La capacità per l'esercizio dell'impresa"},
-            {"number": "4", "title": "L'inizio e la fine dell'impresa"}
+            {"number": "1", "title": "L'oggetto e il metodo"},
+            {"number": "2", "title": "La nozione di sistema"},
+            {"number": "3", "title": "I requisiti di ingresso nel rapporto"},
+            {"number": "4", "title": "L'avvio e la chiusura del rapporto"}
           ],
           "block_indices": [61],
           "children": [],
@@ -145,7 +150,7 @@ L'esempio che segue mostra come si presenta un `CHAPTER_SUMMARY` emesso dal plug
           "id": "node_0044",
           "type": "HEADING_3",
           "page_index": 20,
-          "text": "1. L'impresa e l'imprenditore. La rilevanza «sociale» dell'impresa",
+          "text": "1. L'oggetto e il metodo. La rilevanza «pratica» del metodo",
           "level": 3,
           "items": null,
           "block_indices": [62],

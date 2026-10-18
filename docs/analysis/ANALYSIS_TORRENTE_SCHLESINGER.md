@@ -1,4 +1,10 @@
 # Analisi Tecnica — Torrente/Schlesinger 2021 (Manuale Giuffrè diretto)
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: Giuffrè Francis Lefebvre · Pipeline editoriale: PDFsharp 1.31.1789-g (la stessa dei Codici e degli Annali/Tematici EdD)
 > Versione: PRIMA — basata su un solo campione, NON consolidata
 > Stato: profilo `manuale_giuffre_diretto` provvisorio. Il quadro va confrontato con altri campioni della stessa collana (Manuali Giuridici Interattivi) e con manuali di altri editori (per consolidare/distinguere).
@@ -84,12 +90,12 @@ Niente Verdana (era specifica del Marrone BIC). Niente Palatino (era dei Codici)
 | MScotchRoman-Italic 9.5pt flag=6 | 1.885 | Indice Analitico italic (variante italic) | INDEX_ENTRY (parte) |
 | TimesNewRoman 15.3pt flag=4 | 1.554 | Filigrana copyright BIC ("© Giuffrè Francis Lefebvre - Versione riservata Biblioteca It. Ciechi - Monza") in alto su OGNI pagina | ARTIFACT (filigrana) |
 | TimesNewRomanPS-BoldMT 11.5pt flag=20 | 1.488 | Numero paragrafo (es. "1.", "2.", "3.") nel heading § N. Titolo | HEADING_PAR (parte) |
-| TimesNewRomanPS-BoldItal 11.5pt flag=22 | 796 | Titolo del paragrafo nel heading § N. Titolo (es. "L'ordinamento giuridico.") | HEADING_PAR (parte) |
+| TimesNewRomanPS-BoldItal 11.5pt flag=22 | 796 | Titolo del paragrafo nel heading § N. Titolo (es. "[titolo di 2 parole, chiuso da un punto]") | HEADING_PAR (parte) |
 | TimesNewRomanPS-BoldMT 11.0pt flag=20 | 710 | Segno § isolato nel heading § N. Titolo | HEADING_PAR (parte) |
 | MScotchRoman-Italic 7.5pt flag=6 | 344 | Note marginali italic (variante italic) | MARGINAL_HEADING (parte) |
 | MScotchRoman 6.2pt flag=4 | 159 | Indice Sommario iniziale: voci di sotto-livello (capitoli interni) | INDEX_ENTRY (parte) |
 | GentiumPlus 11.5pt flag=4 | 39 | Caratteri greci/multi-script nel body (rari) | BODY (parte) |
-| **TimesNewRomanPS-BoldMT 13.0pt flag=20** | **17** | **Heading di PARTE TEMATICA** (es. "NOZIONI PRELIMINARI", "I DIRITTI REALI", "I CONTRATTI IN GENERALE") | **HEADING_1** |
+| **TimesNewRomanPS-BoldMT 13.0pt flag=20** | **17** | **Heading di PARTE TEMATICA** (es. "[titolo di 2 parole, in maiuscolo]", "[titolo di 3 parole, in maiuscolo]", "[titolo di 4 parole, in maiuscolo]") | **HEADING_1** |
 | Altri (residuali) | <10 | Vari elementi front-matter, simboli, font del codice ISBN/codice a barre | ARTIFACT |
 
 ### 3.2 Composizione del heading paragrafo (verificato spazialmente)
@@ -103,7 +109,7 @@ size 11.0pt              size 11.5pt             size 11.5pt
 flag 20 (bold)           flag 20 (bold)          flag 22 (bold italic)
 ```
 
-Esempio (verificato a p.37): `'§'` (size 11.0) + `'1.'` (size 11.5) + `'L'ordinamento giuridico.'` (size 11.5 bold italic).
+Esempio (verificato a p.37): `'§'` (size 11.0) + `'1.'` (size 11.5) + `'[titolo di 2 parole, chiuso da un punto]'` (size 11.5 bold italic).
 
 Questo spiega perché TimesNewRomanPS-BoldMT appare in due size molto vicini (11.0 e 11.5): non sono due livelli gerarchici diversi ma due elementi compositivi dello stesso heading. La pipeline ScaboPDF deve **riconoscere il heading come pattern compositivo**, non come singola firma.
 
@@ -119,14 +125,14 @@ Sorpresa importante: i **heading di capitolo** del Torrente non hanno una firma 
 Esempio (p.37):
 ```
 Riga 1: x=197, y=134  "CAPITOLO I"
-Riga 2: x=136, y=150  "L'ORDINAMENTO GIURIDICO"
+Riga 2: x=136, y=150  "[titolo di 2 parole, in maiuscolo]"
 ```
 
 **Implicazione architetturale per ScaboPDF**: la pipeline NON può classificare i heading capitolo per firma tipografica. Deve usare regex testuali (`^CAPITOLO\s+[IVXLCDM]+(?:-BIS|-TER)?\b`) come trigger principale, eventualmente con verifica geometrica (centratura). Questo è meno robusto dell'approccio firma-tipografica usato per il Marrone, e va trattato come un'eccezione del profilo `manuale_giuffre_diretto`.
 
 ### 3.4 Sotto-sezioni "A) X", "B) X", "I. X", "II. X"
 
-Tra capitolo e paragrafo c'è un livello intermedio: le sotto-sezioni indicate da lettere maiuscole (`A) LA PERSONA FISICA`, `B) I DIRITTI DELLA PERSONALITÀ`, `C) GLI ENTI`) o da numeri romani (`I. L'ADEMPIMENTO`, `II. I MODI DI ESTINZIONE DIVERSI DALL'ADEMPIMENTO`). 
+Tra capitolo e paragrafo c'è un livello intermedio: le sotto-sezioni indicate da lettere maiuscole (`A) [titolo di 3 parole, in maiuscolo]`, `B) [titolo di 4 parole, in maiuscolo]`, `C) [titolo di 2 parole, in maiuscolo]`) o da numeri romani (`I. [titolo di 1 parola, in maiuscolo]`, `II. [titolo di 6 parole, in maiuscolo]`). 
 
 Caratteristiche misurate:
 - Firma: MScotchRoman 11.5pt regular (di nuovo, **stessa firma del body**, identificate solo per pattern testuale e centratura)
@@ -135,7 +141,7 @@ Caratteristiche misurate:
 - Posizione centrata (x ≈ 100-200)
 - Pattern testuale: `^[A-Z]\)\s+[A-Z]+` o `^[IVX]+\.\s+[A-Z]+`
 
-**Cautela**: il pattern `^[A-Z]\)\s+` può collidere con enumerazioni inline al body italic (es. "*B) Accettazione tacita. — Per l'art. 476 c.c., l'accettazione...*" dove la `B)` apre una sotto-classificazione del paragrafo, NON una sotto-sezione strutturale). La pipeline deve distinguere:
+**Cautela**: il pattern `^[A-Z]\)\s+` può collidere con enumerazioni inline al body italic (es. "*B) [etichetta di 2 parole a iniziale maiuscola, chiusa da un punto] — [prosa del corpo che si apre con un rinvio all'art. 476 c.c.]...*" dove la `B)` apre una sotto-classificazione del paragrafo, NON una sotto-sezione strutturale). La pipeline deve distinguere:
 - **Sotto-sezione vera**: blocco isolato, centrato (x>100), tutto MAIUSCOLO, font regular
 - **Enumerazione inline**: dentro un blocco di body, font italic, mixed case dopo la lettera
 
@@ -145,10 +151,10 @@ Dunque il manuale Torrente ha 4 livelli + paragrafo:
 
 | Livello | Firma diagnostica | Conteggio | Esempi |
 |---|---|---|---|
-| **H1 — PARTE TEMATICA** | TimesNewRomanPS-BoldMT 13.0pt | 17 occorrenze (= 13 parti distinte, alcune ripetute 2 volte sulla pagina) | "NOZIONI PRELIMINARI", "L'ATTIVITÀ GIURIDICA E LA TUTELA GIURISDIZIONALE DEI DIRITTI", "I DIRITTI REALI", "I DIRITTI DI CREDITO", "I CONTRATTI IN GENERALE", "I SINGOLI CONTRATTI", "LE OBBLIGAZIONI NASCENTI DA ATTI UNILATERALI", "LE OBBLIGAZIONI NASCENTI DALLA LEGGE", "LE OBBLIGAZIONI NASCENTI DA FATTO ILLECITO", "L'IMPRESA", "I RAPPORTI DI FAMIGLIA", "LA SUCCESSIONE PER CAUSA DI MORTE", "LA PUBBLICITÀ IMMOBILIARE" |
-| **H2 — CAPITOLO** | MScotchRoman 11.5pt + pattern testuale "CAPITOLO N" + posizione centrata | 82 capitoli unici (numerati I a LXXXI con 1 -bis: LXXII-bis) | "CAPITOLO I — L'ORDINAMENTO GIURIDICO", "CAPITOLO XXVI — LE TRATTATIVE E LA CONCLUSIONE DEL CONTRATTO" |
-| **H3 — SOTTO-SEZIONE A)/I.** | MScotchRoman 11.5pt + pattern testuale "A) X" o "I. X" + posizione centrata | 57 lettere + 13 romani = 70 (in alcuni capitoli, non in tutti) | "A) LA PERSONA FISICA", "I. L'ADEMPIMENTO" |
-| **H4 — PARAGRAFO § N.** | TimesNewRomanPS-BoldMT/BoldItal 11.0/11.5pt + pattern "§ N. Titolo" | 710 totali (693 numerici + 17 -bis/-ter) | "§ 1. L'ordinamento giuridico." |
+| **H1 — PARTE TEMATICA** | TimesNewRomanPS-BoldMT 13.0pt | 17 occorrenze (= 13 parti distinte, alcune ripetute 2 volte sulla pagina) | 13 titoli in maiuscolo: "[titolo di 2 parole]", "[titolo di 8 parole]", "[titolo di 3 parole]", "[titolo di 4 parole]", "[titolo di 4 parole]", "[titolo di 3 parole]", "[titolo di 6 parole]", "[titolo di 5 parole]", "[titolo di 6 parole]", "[titolo di 1 parola]", "[titolo di 4 parole]", "[titolo di 6 parole]", "[titolo di 3 parole]" |
+| **H2 — CAPITOLO** | MScotchRoman 11.5pt + pattern testuale "CAPITOLO N" + posizione centrata | 82 capitoli unici (numerati I a LXXXI con 1 -bis: LXXII-bis) | "CAPITOLO I — [titolo di 2 parole, in maiuscolo]", "CAPITOLO XXVI — [titolo di 7 parole, in maiuscolo]" |
+| **H3 — SOTTO-SEZIONE A)/I.** | MScotchRoman 11.5pt + pattern testuale "A) X" o "I. X" + posizione centrata | 57 lettere + 13 romani = 70 (in alcuni capitoli, non in tutti) | "A) [titolo di 3 parole, in maiuscolo]", "I. [titolo di 1 parola, in maiuscolo]" |
+| **H4 — PARAGRAFO § N.** | TimesNewRomanPS-BoldMT/BoldItal 11.0/11.5pt + pattern "§ N. Titolo" | 710 totali (693 numerici + 17 -bis/-ter) | "§ 1. [titolo di 2 parole, chiuso da un punto]" |
 
 Profondità maggiore del Marrone (che era H1 capitoli + H2 paragrafi). Più simile al Codice Civile (H4 con LIBRO/TITOLO/CAPO/SEZIONE).
 
@@ -200,8 +206,8 @@ Misurazione su 1.509 pagine analizzate (escluso front matter pp. 1-50):
 
 Sono **micro-titoletti**: la nota marginale tipica è di 3-4 parole. Esempi:
 - 4 caratteri: `'A'` (forse erroneamente isolata?)
-- 24 caratteri (mediana): `'Diritto pubblico'`, `'Nozione di equità'`, `'Equità integrativa'`
-- 152 caratteri (massimo): `'Il regime patrimoniale nelle unioni civili tra persone dello stesso sesso La cooperazione giudiziaria europea in tema di...'` — qui sono due note marginali contigue raggruppate da PyMuPDF in un unico blocco. Da splittare nella pipeline.
+- 24 caratteri (mediana): `'[glossa di 2 parole]'`, `'[glossa di 3 parole]'`, `'[glossa di 2 parole]'`
+- 152 caratteri (massimo): `'[glossa di 11 parole] [glossa successiva, di cui si leggono 7 parole]...'` (nessun separatore fra le due) — qui sono due note marginali contigue raggruppate da PyMuPDF in un unico blocco. Da splittare nella pipeline.
 
 ### 4.4 Associazione spaziale al body
 
@@ -314,10 +320,10 @@ Su ogni pagina del corpo (y = 44-56) c'è un blocco MScotchRoman-Italic 11.5pt f
 
 ```
 [Titolo della parte tematica]   [Num pagina libro]   [§ N corrente]
-"L'attività giuridica"          "96"                 "[§ 46]"
+"[titolo di 2 parole]"          "96"                 "[§ 46]"
 ```
 
-L'header serve per orientamento del lettore. Per ScaboPDF è un'**informazione di contesto**: può essere usata per il "tu sei qui" (es. "stai leggendo: L'attività giuridica, p. 96, paragrafo 46"), ma NON deve essere letta inline al body (sarebbe un'interruzione del flusso).
+L'header serve per orientamento del lettore. Per ScaboPDF è un'**informazione di contesto**: può essere usata per il "tu sei qui" (es. "stai leggendo: [titolo della parte], p. 96, paragrafo 46"), ma NON deve essere letta inline al body (sarebbe un'interruzione del flusso).
 
 ### 6.3 Filigrana copyright BIC
 
@@ -331,7 +337,7 @@ A differenza del Marrone (che aveva ancore Verdana 1pt invisibili), il Torrente 
 
 Nel Torrente la **numerazione PDF e quella del libro** divergono strutturalmente:
 - p.1 PDF = frontespizio outlier
-- p.5 PDF = "Prefazione alla 25a edizione" (p.V del libro? — da verificare)
+- p.5 PDF = "[titolo della prefazione alla 25a edizione]" (p.V del libro? — da verificare)
 - p.7 PDF = "Indice Sommario" (probabilmente p.VII del libro)
 - p.37 PDF = "§ 1" = p.3 del libro stampato
 - p.130 PDF = p.96 del libro
@@ -347,11 +353,11 @@ Lo scarto si stabilizza intorno a 34-35 pagine (front matter PDF rispetto a nume
 
 L'outline del Torrente ha **86 entry, tutte di livello 1**, e contiene:
 - Prefazione, Indice Sommario, Abbreviazioni
-- 13 PARTI tematiche concatenate al primo capitolo della parte (es. `"NOZIONI PRELIMINARI - CAPITOLO IL'ORDINAMENTO GIURIDICO"`)
+- 13 PARTI tematiche concatenate al primo capitolo della parte (es. `"[titolo della parte, 2 parole] - CAPITOLO IL'[resto del titolo del capitolo, 2 parole in tutto, attaccato al numero romano]"`)
 - 82 capitoli (alcuni concatenati con la parte successiva)
 - Indice Analitico-Alfabetico
 
-L'outline è **molto meno dettagliato** dell'outline del Marrone (1.562 entry su 3 livelli). Inoltre **i titoli sono malformati**: vedo concatenazioni come `"CAPITOLO IIIL'EFFICACIA TEMPORALE DELLE LEGGI"` (manca uno spazio tra "III" e "L'EFFICACIA"). Sono titoli che nel PDF sono su due righe e l'outline li ha collassati senza separatori. Da gestire in pipeline (regex per re-inserire spazi tra romano e parola successiva).
+L'outline è **molto meno dettagliato** dell'outline del Marrone (1.562 entry su 3 livelli). Inoltre **i titoli sono malformati**: vedo concatenazioni come `"CAPITOLO IIIL'[resto di un titolo di 4 parole, in maiuscolo]"` (manca uno spazio tra "III" e la prima parola del titolo, "L'…"). Sono titoli che nel PDF sono su due righe e l'outline li ha collassati senza separatori. Da gestire in pipeline (regex per re-inserire spazi tra romano e parola successiva).
 
 **Implicazione**: l'outline del Torrente NON è una fonte affidabile per la ricostruzione strutturale. La pipeline deve usare l'**Indice Sommario interno (pp.7-34)** o la rilevazione tipografica diretta come fonti primarie, e usare l'outline solo come segnale di verifica.
 
@@ -360,16 +366,16 @@ L'outline è **molto meno dettagliato** dell'outline del Marrone (1.562 entry su
 L'Indice Sommario è una sezione strutturata di 28 pagine con la **gerarchia completa**:
 ```
 INDICE SOMMARIO (*)
-[nota a piè con asterisco: "(*) I capitoli I-VI, IX, XXV-L, LXV-LXXXI sono curati da Franco Anelli. I capitoli VII-VIII, X-XXIV, LI-LXIV sono stati curati da Carlo Granelli."]
+[nota a piè con asterisco: "(*) [nota dei curatori di 22 parole, in due frasi: assegna a ciascuno dei due curatori un elenco di capitoli in numeri romani]"]
 
-NOZIONI PRELIMINARI    [parte tematica]
+[titolo di 2 parole, in maiuscolo]    [parte tematica]
 
 CAPITOLO I              [capitolo]
-L'ORDINAMENTO GIURIDICO
+[titolo di 2 parole, in maiuscolo]
 
-1.  L'ordinamento giuridico................. 3
-2.  L'ordinamento giuridico dello Stato e
-    la pluralità degli ordinamenti giuridici. 4
+1.  [voce di 2 parole]...................... 3
+2.  [voce di 10 parole che va a capo:
+    la seconda riga chiude con un punto]. 4
 ...
 ```
 
@@ -382,12 +388,12 @@ L'ORDINAMENTO GIURIDICO
 
 50 pagine di indice alfabetico **a doppia colonna**. Caratteristiche:
 - Titolo: "INDICE ANALITICO-ALFABETICO"
-- Sottotitolo italic: "(Il numero indica il paragrafo)" → i numeri NON sono pagine ma riferimenti a `§ N`
+- Sottotitolo italic: "([avvertenza di 5 parole])" → i numeri NON sono pagine ma riferimenti a `§ N`
 - Voci alfabetiche con sottoindentazione e dot leader: 
-  - `Ab intestato (successione), 639.`
-  - `Abitazione (diritto di): coniuge o unito civilmente superstite (del), 153, 622-bis, 643. — nozione, 153.`
+  - `[voce di 2 parole] ([1 parola]), 639.`
+  - `[voce di 1 parola] ([2 parole]): [sottovoce di 5 parole] ([1 parola]), 153, 622-bis, 643. — [sottovoce di 1 parola], 153.`
 - Sottovoci preceduta da trattino lungo `—`
-- Riferimenti incrociati: `V. anche Beneficio d'inventario.` (rinvii a altre voci dell'indice)
+- Riferimenti incrociati: `V. anche [voce di 2 parole].` (rinvii a altre voci dell'indice)
 - Lettere di sezione alfabetica: `A`, `B`, `C`, ecc. (rilevati `MScotchRoman 9.5pt` in ~15 occorrenze come header alfabetiche)
 
 La struttura a **doppia colonna** è una caratteristica unica di questa parte: tutto il resto del manuale è a colonna singola. La pipeline deve rilevare la transizione (probabilmente all'apertura del titolo "INDICE ANALITICO-ALFABETICO") e attivare il merge di colonne.
@@ -545,9 +551,9 @@ I due manuali rappresentano **due profili editoriali fondamentalmente diversi** 
 
 7. **Pagina ABBREVIAZIONI finale (p.1557)**: da analizzare separatamente in pass dedicato per capire se è tabella, elenco a colonne, prosa.
 
-8. **Errore di output dell'outline**: i titoli concatenati senza spazi (`"CAPITOLO IIIL'EFFICACIA TEMPORALE..."`) sono un bug del processo di generazione PDFsharp. La pipeline ScaboPDF deve normalizzare questi titoli con regex (`(CAPITOLO\s+[IVXLCDM]+)([A-Z])` → `\1 \2`).
+8. **Errore di output dell'outline**: i titoli concatenati senza spazi (`"CAPITOLO IIIL'[resto del titolo]..."`) sono un bug del processo di generazione PDFsharp. La pipeline ScaboPDF deve normalizzare questi titoli con regex (`(CAPITOLO\s+[IVXLCDM]+)([A-Z])` → `\1 \2`).
 
-9. **Verifica dei 17 PARTI tematiche**: in alcuni casi appaiono con il numero pagina duplicato (es. `'L'ATTIVITÀ GIURIDICA E LA TUTELA GIURISDIZIONALE DEI DIRITTI'` a p.103 con 2 occorrenze). Da capire se è perché il blocco è strutturato in più linee che PyMuPDF separa (ogni linea genera uno span TimesNewRoman 13pt) o se davvero il titolo è ripetuto in 2 luoghi della stessa pagina.
+9. **Verifica dei 17 PARTI tematiche**: in alcuni casi appaiono con il numero pagina duplicato (es. `'[titolo di 8 parole, in maiuscolo]'` a p.103 con 2 occorrenze). Da capire se è perché il blocco è strutturato in più linee che PyMuPDF separa (ogni linea genera uno span TimesNewRoman 13pt) o se davvero il titolo è ripetuto in 2 luoghi della stessa pagina.
 
 10. **Header pagina "[§ N]"**: il numero del paragrafo corrente nell'header pagina aiuterebbe enormemente la navigazione. Da estrarre come metadata `current_paragraph` per ogni pagina nel JSON di output.
 

@@ -1,5 +1,10 @@
 # Analisi — Indice / Sommario / TOC letti come corpo dal Generic on-device
 
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 Stato: **referto di sola indagine**. Nessuna modifica al codice di classificazione,
 nessuna modifica allo schema, nessuna decisione di implementazione presa. L'unico
 artefatto scrivibile di questa sessione è questo documento. Le scelte (se intervenire,
@@ -181,8 +186,8 @@ Tratti strutturali ricorrenti, indipendenti dall'editore:
 
 ### 2.3 La fenomenologia osservata sul dispositivo
 
-Il frammento riportato — `"331 1. La trasformazione, in generale 332 2. Trasformazione
-tra società di capitali…"` — è coerente con un sommario di diritto commerciale
+Il frammento riportato — `"331 1. [voce di sommario di 4 parole, con una virgola] 332 2.
+[voce di sommario di 5 parole]…"` — è coerente con un sommario di diritto commerciale
 (famiglia Patriarca-Benazzo). I numeri 331/332 sono i numeri di pagina del libro,
 interlacciati con le voci: l'estrattore li riporta come testo, il classificatore li
 fonde nel paragrafo (vedi § 3). Il "rumore illeggibile" e "i titoli che impazziscono"
@@ -224,7 +229,7 @@ A seconda di dove cade la taglia del sommario rispetto al corpo:
   `appendPageNodes`/`joinLines` (`GenericPlugin.swift:326-408`), poi il motore di
   granularità riassembla il `BODY` in blocchi da ~400 caratteri
   (`Granularity.swift:80,118`). Risultato: l'intero sommario diventa prosa lineare —
-  esattamente `"331 1. La trasformazione… 332 2. …"`. **È il regime del documento
+  esattamente `"331 1. [voce]… 332 2. …"`. **È il regime del documento
   osservato sul dispositivo.**
 
 - **(b) Sommario < corpo** (Torrente/Tesauro/Mosconi/Mandrioli, `ratio ≤ 0.85`):

@@ -1,4 +1,10 @@
 # Analisi Tecnica Definitiva — Codici d'Udienza Giuffrè
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Editore: Giuffrè Francis Lefebvre | Generatore: PDFsharp 1.31.1789-g
 > Versione: DEFINITIVA — training set completo esaurito
 > Documenti: Codice Penale + c.p.p. (2640 pp.) · Codice Civile + c.p.c. (2697 pp.)
@@ -83,9 +89,9 @@ Priorità di classificazione in ordine:
 [BLOCCO] ARTICLE_HEADER: "309. (1)(2) Riesame delle ordinanze..."
 [BLOCCO] ARTICLE_BODY:   "1. Entro dieci giorni..."
 [BLOCCO] ARTICLE_BODY:   "2. Per l'imputato..."
-[BLOCCO] NOTE:           "(1) Articolo dichiarato..."
+[BLOCCO] NOTE:           "(1) [apertura di nota redazionale, 2 parole]..."
 [BLOCCO] NOTE:           "(2) V. art. 8..."
-[BLOCCO] PROCEDURAL:     "competenza: Trib. riesame..."
+[BLOCCO] PROCEDURAL:     "competenza: [valore, 2 parole]..."
 ```
 
 Il confine tra articoli coincide con il confine tra blocchi PDFsharp. Il parser usa il confine di blocco come segnale primario.
@@ -158,12 +164,12 @@ Disambiguazione rimando [N] vs numero comma [I]:
 
 Esempio reale:
 ```
-competenza: Trib. monocratico (udienza prelim. 1° e 2° comma); Trib. collegiale (3° comma)
-arresto: facoltativo (1° e 2° comma); obbligatorio (3° comma)
-fermo: non consentito (1° e 2° comma); consentito (3° comma)
-custodia cautelare in carcere: consentita
-altre misure cautelari personali: consentite
-procedibilità: d'ufficio
+competenza: [organo, 2 parole] ([qualifica, 2 parole] 1° e 2° comma); [altro organo, 2 parole] (3° comma)
+arresto: [valore] (1° e 2° comma); [altro valore] (3° comma)
+fermo: [valore, 2 parole] (1° e 2° comma); [altro valore] (3° comma)
+custodia cautelare in carcere: [valore]
+altre misure cautelari personali: [valore]
+procedibilità: [valore, 2 parole]
 ```
 (nel file reale tutto su una riga senza newline)
 

@@ -1,4 +1,10 @@
 # Analisi Tecnica — DeJure Massime (PDF export)
+
+> **Nota (2026-10-18, giro «chiusura del capitolo note»).** Le righe citate dai volumi analizzati sono state sostituite
+> da descrizioni prive di testo (posizione, numero di parole, tipo, forma) o da esempi inventati della stessa forma,
+> dichiarati; numeri, misure, pagine e conclusioni sono invariati. Restano i testi di legge, i riferimenti ufficiali,
+> le formule editoriali riconosciute dal codice e l'identificazione bibliografica dei volumi.
+
 > Fonte: Giuffrè DeJure, sezione Massime, export PDF
 > Generatore: Aspose.PDF for .NET 18.4
 > Campioni analizzati:
@@ -185,8 +191,8 @@ La rappresentazione JSON interna di ogni massima:
     "data": "24/10/2025",
     "numero": "28307"
   },
-  "title": "La sentenza risulta viziata di omessa o apparente motivazione...",
-  "body": "Ricorre il vizio di omessa o apparente motivazione della sentenza...",
+  "title": "[apertura del titolo della massima, 9 parole]...",
+  "body": "[apertura del corpo della massima, 10 parole]...",
   "fonte": {
     "raw": "Sapient-IA testo creato da A.I. generativa e validato da GFL 2025",
     "tipo": "AI_VALIDATED"
@@ -331,8 +337,8 @@ REFERRAL_PATTERN = re.compile(
 Nel primo campione i titoli erano sempre frasi descrittive in Title Case o minuscolo. Nel secondo compaiono titoli in formato classificatorio maiuscolo con trattini:
 
 ```
-"RESPONSABILITÀ CIVILE - Cose in custodia"
-"DANNI - Patrimoniali e non patrimoniali - - biologico"
+"[voce di 2 parole, in maiuscolo] - [sottovoce di 3 parole]"
+"[voce di 1 parola, in maiuscolo] - [sottovoce di 4 parole] - - [sottovoce di 1 parola]"
 ```
 
 Questi non sono titoli narrativi ma voci di classificazione tematica del massimario. Strutturalmente sono comunque Arial-BoldMT 12pt e vanno classificati come TITLE, ma la loro forma è diversa e potrebbe essere utile riconoscerla per una presentazione visiva leggermente diversa (es. tag `TITLE_CLASSIFICATORY` vs `TITLE_NARRATIVE`).
@@ -352,8 +358,8 @@ Nella pagina 3 il blocco TITLE appare come primo elemento della pagina, senza il
 
 ```
 PAGE 2 bottom: [r]  "Consiglio di Stato sez. VI - 22/06/2018, n. 3838"
-PAGE 3 top:    [B]  "Va escluso il risarcimento del danno..."   ← TITLE senza MASSIMA_LABEL
-               [r]  "Nella ricostruzione del nesso..."          ← BODY
+PAGE 3 top:    [B]  "[apertura del titolo, 6 parole]..."        ← TITLE senza MASSIMA_LABEL
+               [r]  "[apertura del corpo, 4 parole]..."         ← BODY
 ```
 
 Questo è un caso di massima cross-page più complesso del primo campione: non solo il BODY ma anche il TITLE può trovarsi su una pagina diversa dal MASSIMA_LABEL. Il parser deve riconoscere che un blocco Bold 12pt all'inizio di pagina senza precedente MASSIMA_LABEL è il titolo di una massima iniziata nella pagina precedente.
@@ -473,10 +479,10 @@ Pattern semantico: `Rivista ANNO, fascicolo[, sezione_romana], pagina`. È una v
 Caso unico nel massivo (p. 53, Cass. III n. 1902, fonte Sapient-IA):
 
 ```
-"Per interrompere il NESSO CAUSALE [bold] tra la cosa e il danno,
-la CONDOTTA COLPOSA DEL DANNEGGIATO [bold] non deve necessariamente
-essere autonoma o eccezionale, ma si richiede che sia
-"OGGETTIVAMENTE COLPOSA" [bold]..."
+"[3 parole di corpo] [2 PAROLE IN MAIUSCOLO] [bold] [6 parole di corpo, chiuse da virgola]
+[1 parola] [4 PAROLE IN MAIUSCOLO] [bold] [3 parole di corpo]
+[9 parole di corpo]
+"[2 PAROLE IN MAIUSCOLO]" [bold]..."
 ```
 
 (I termini in MAIUSCOLO sopra sono span Arial-BoldMT 12pt all'interno del flusso ArialMT 12pt regolare del body.)
@@ -487,10 +493,10 @@ Nei due campioni precedenti il body era sempre tutto roman (con eventuali italic
 
 ```json
 "body": [
-  {"text": "Per interrompere il ", "emphasis": false},
-  {"text": "nesso causale", "emphasis": true},
-  {"text": " tra la cosa e il danno, la ", "emphasis": false},
-  {"text": "condotta colposa del danneggiato", "emphasis": true},
+  {"text": "[3 parole di corpo] ", "emphasis": false},
+  {"text": "[2 parole enfatizzate]", "emphasis": true},
+  {"text": " [7 parole di corpo] ", "emphasis": false},
+  {"text": "[4 parole enfatizzate]", "emphasis": true},
   ...
 ]
 ```
@@ -503,7 +509,7 @@ Per i Layout 1, 2, 3 questa informazione può essere ignorata (rendering testo c
 
 Diverse massime nel massivo terminano con `(M. Fin.)` dopo il punto fermo finale del body. Esempi: pp. 50 (n. 2635), 51 (n. 2641), 53 (n. 2562), 57 (n. 38). Il pattern compare solo per le fonti `Guida al diritto`. Si tratta della sigla del massimatore (Marco Finzi, presumibilmente) che ha redatto la massima per Guida al diritto.
 
-Strutturalmente è parte del body, separato dal punto fermo finale: `... rispettati i requisiti di gravità, precisione e concordanza di cui all'art. 2729 c.c.. (M. Fin.)`.
+Strutturalmente è parte del body, separato dal punto fermo finale: `... [chiusa del corpo della massima, 10 parole] all'art. 2729 c.c.. (M. Fin.)`.
 
 **Implicazione per il parser:** nessuna azione obbligatoria, ma è utile riconoscere il pattern `\([A-Z]\.\s*[A-Z][a-z]*\.\)$` come *opzionale metadato bibliografico* che può essere estratto e portato fuori dal body se si vuole (`body_attribution: "M. Fin."`). Decisione di rendering, non di pipeline.
 
