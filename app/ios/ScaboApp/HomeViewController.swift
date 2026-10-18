@@ -38,7 +38,9 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "ScaboPDF"
+        // Il titolo della SCHERMATA, non quello della scheda: `title` lo copierebbe anche sulla scheda, che si chiama
+        // «Home» (§ 12.1; prima si leggeva «ScaboPDF» due volte, titolo e scheda).
+        navigationItem.title = "ScaboPDF"
         view.backgroundColor = .systemBackground
         navigationController?.navigationBar.prefersLargeTitles = true
 
@@ -242,7 +244,9 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard Section(rawValue: section) == .workspaces else { return nil }
-        return WorkspacesHeaderView(target: self, action: #selector(newWorkspaceTapped))
+        let header = WorkspacesHeaderView()
+        header.onNewWorkspace = { [weak self] in self?.newWorkspaceTapped() }
+        return header
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
@@ -368,21 +372,29 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
 // MARK: - Intestazione "Workspaces" con il tasto Nuovo workspace (§ 12.1)
 
 private final class WorkspacesHeaderView: UITableViewHeaderFooterView {
-    init(target: Any, action: Selector) {
+    /// L'azione del tasto «Nuovo workspace».
+    var onNewWorkspace: (() -> Void)?
+    private let titleLabel = UILabel()
+    private let button = UIButton(type: .system)
+    /// I due elementi che VoiceOver legge, nell'ordine (§ 12.1): il testo «Workspaces», poi il tasto. Sono elementi
+    /// d'accessibilità nostri, con la cornice delle viste vere; le viste vere sono nascoste all'accessibilità. Con le viste
+    /// vere esposte la tabella le elencava DUE volte, al loro posto e di nuovo in fondo alla lista (misura del giro
+    /// «accessibilità e completamento», 2026-10-18: con o senza elenco esplicito, intestazione di tabella o vista semplice).
+    private var titleElement: ViewBackedElement!
+    private var buttonElement: ViewBackedElement!
+
+    init() {
         super.init(reuseIdentifier: nil)
-        let title = UILabel()
-        title.text = "Workspaces"
-        title.font = UIFont.preferredFont(forTextStyle: .headline)
-        title.adjustsFontForContentSizeCategory = true
-        title.numberOfLines = 0
+        titleLabel.text = "Workspaces"
+        titleLabel.font = UIFont.preferredFont(forTextStyle: .headline)
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.numberOfLines = 0
         // Non comprimere mai il testo sotto la sua altezza intrinseca: evita il clip verticale
         // dell'intestazione (rilevato dall'audit di accessibilità come «Text clipped»).
-        title.setContentCompressionResistancePriority(.required, for: .vertical)
-        title.translatesAutoresizingMaskIntoConstraints = false
-        title.accessibilityTraits.insert(.header)
-        title.accessibilityLanguage = "en"  // «Workspaces» è un termine inglese (WCAG 3.1.2 Language of Parts)
+        titleLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.isAccessibilityElement = false
 
-        let button = UIButton(type: .system)
         var config = UIButton.Configuration.plain()
         config.image = UIImage(systemName: "plus.circle")
         config.title = "Nuovo workspace"
@@ -390,24 +402,64 @@ private final class WorkspacesHeaderView: UITableViewHeaderFooterView {
         button.configuration = config
         button.titleLabel?.adjustsFontForContentSizeCategory = true
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.accessibilityLabel = "Nuovo workspace"
-        button.accessibilityHint = "Crea un nuovo workspace"
-        button.addTarget(target, action: action, for: .touchUpInside)
+        button.isAccessibilityElement = false
+        button.accessibilityElementsHidden = true   // anche l'etichetta interna del tasto: la tabella la elencherebbe a sé
+        button.addAction(UIAction { [weak self] _ in self?.onNewWorkspace?() }, for: .touchUpInside)
 
-        contentView.addSubview(title)
+        contentView.addSubview(titleLabel)
         contentView.addSubview(button)
         NSLayoutConstraint.activate([
-            title.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
-            title.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-            title.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.leadingAnchor),
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
             button.trailingAnchor.constraint(equalTo: contentView.layoutMarginsGuide.trailingAnchor),
-            button.centerYAnchor.constraint(equalTo: title.centerYAnchor),
-            button.leadingAnchor.constraint(greaterThanOrEqualTo: title.trailingAnchor, constant: 8),
+            button.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+            button.leadingAnchor.constraint(greaterThanOrEqualTo: titleLabel.trailingAnchor, constant: 8),
         ])
-        // Ordine di lettura: prima il testo "Workspaces", poi il tasto (§ 12.1).
-        accessibilityElements = [title, button]
+
+        titleElement = ViewBackedElement(accessibilityContainer: self, view: titleLabel)
+        buttonElement = ViewBackedElement(accessibilityContainer: self, view: button)
+        titleElement.accessibilityLabel = "Workspaces"
+        titleElement.accessibilityTraits = .header
+        titleElement.accessibilityLanguage = "en"  // «Workspaces» è un termine inglese (WCAG 3.1.2 Language of Parts)
+        buttonElement.accessibilityLabel = "Nuovo workspace"
+        buttonElement.accessibilityHint = "Crea un nuovo workspace"
+        buttonElement.accessibilityTraits = .button
+        buttonElement.onActivate = { [weak self] in self?.onNewWorkspace?() }
+        accessibilityElements = [titleElement, buttonElement]
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // L'etichetta interna del tasto (creata dal tasto stesso) resta fuori dall'accessibilità: la tabella elenca a parte
+        // le etichette accessibili delle intestazioni, anche dentro un tasto nascosto.
+        func mute(_ v: UIView) { for sub in v.subviews { sub.isAccessibilityElement = false; mute(sub) } }
+        mute(button)
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) non supportato.") }
+}
+
+/// Un elemento d'accessibilità con la cornice (sempre attuale) di una vista vera; se ha un'azione, la esegue come il tasto
+/// vero (VoiceOver, Controllo vocale, Controllo interruttori, Accesso completo da tastiera passano da `accessibilityActivate`).
+private final class ViewBackedElement: UIAccessibilityElement {
+    private weak var view: UIView?
+    var onActivate: (() -> Void)?
+
+    init(accessibilityContainer container: Any, view: UIView) {
+        self.view = view
+        super.init(accessibilityContainer: container)
+    }
+
+    override var accessibilityFrame: CGRect {
+        get { view.map { UIAccessibility.convertToScreenCoordinates($0.bounds, in: $0) } ?? .zero }
+        set {}
+    }
+
+    override func accessibilityActivate() -> Bool {
+        guard let onActivate else { return false }
+        onActivate()
+        return true
+    }
 }

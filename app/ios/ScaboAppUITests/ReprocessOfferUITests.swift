@@ -100,7 +100,7 @@ final class ReprocessOfferUITests: XCTestCase {
         let gone = NSPredicate(format: "exists == false")
         expectation(for: gone, evaluatedWith: app.staticTexts["Rielaborazione conclusa"])
         waitForExpectations(timeout: 10)
-        let back = app.navigationBars["Lettura migliore"].buttons.element(boundBy: 0)
+        let back = app.backButton(onScreen: "Lettura migliore")
         XCTAssertTrue(back.waitForExistence(timeout: 5))
         back.tap()
         let tags = app.navigationBars.buttons["Tag"]

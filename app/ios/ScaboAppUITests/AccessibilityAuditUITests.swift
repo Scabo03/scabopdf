@@ -42,15 +42,18 @@ final class AccessibilityAuditUITests: XCTestCase {
         }
 
         // 2. Home (Recenti / Spazi).
-        _ = app.tabBars.firstMatch.waitForExistence(timeout: 3)
+        XCTAssertTrue(app.waitForScreen("ScaboPDF", timeout: 15), "la Home compare")
         audit(app, screen: "Home")
 
-        // 3. Ricerca.
-        tapTab(app, "Ricerca")
+        // 3. Ricerca. (Sull'iPad la barra delle schede galleggiante non è un `tabBar` per i test: prima del giro
+        // «accessibilità e completamento» il tocco della scheda falliva in silenzio e l'audit ripeteva la Home.)
+        XCTAssertTrue(app.tapTab("Ricerca"), "scheda Ricerca")
+        XCTAssertTrue(app.waitForScreen("Ricerca"))
         audit(app, screen: "Ricerca")
 
         // 4. Impostazioni.
-        tapTab(app, "Impostazioni")
+        XCTAssertTrue(app.tapTab("Impostazioni"), "scheda Impostazioni")
+        XCTAssertTrue(app.waitForScreen("Impostazioni"))
         audit(app, screen: "Impostazioni")
 
         // 5. Pannello «Comandi da tastiera» dentro Impostazioni (se presente).
@@ -90,8 +93,4 @@ final class AccessibilityAuditUITests: XCTestCase {
             "Audit accessibilità FALLITO su «\(screen)» (\(report.count)):\n" + report.joined(separator: "\n"))
     }
 
-    private func tapTab(_ app: XCUIApplication, _ name: String) {
-        let tab = app.tabBars.buttons[name]
-        if tab.waitForExistence(timeout: 3) { tab.tap() }
-    }
 }

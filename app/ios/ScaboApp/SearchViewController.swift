@@ -13,16 +13,21 @@
 //
 //  Accessibilità: barra di ricerca standard di sistema + lista di documenti; ogni riga espone
 //  riquadro + Opzioni (§ 12.4). La barra di ricerca è pienamente gestita da VoiceOver.
+//  Dal giro «accessibilità e completamento» (2026-10-18) la barra di ricerca sta sopra la lista, sotto il titolo della
+//  schermata, e non più nella barra in alto: su iPhone il titolo nella fascia (TabStackNavigationController) sarebbe finito
+//  SOTTO il campo di ricerca. Sta FUORI dalla tabella: come intestazione della tabella era esposta due volte (la tabella
+//  ripete in coda le viste accessibili delle sue intestazioni). L'ordine di lettura resta titolo, schede, campo di
+//  ricerca, risultati.
 //
 
 import UIKit
 import ScaboCore
 
-final class SearchViewController: UIViewController, UITableViewDataSource, UISearchResultsUpdating {
+final class SearchViewController: UIViewController, UITableViewDataSource, UISearchBarDelegate {
 
     private var service: LibraryService { .shared }
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
-    private let searchController = UISearchController(searchResultsController: nil)
+    private let searchBar = UISearchBar()
     private var results: [ArchivedDocument] = []
 
     override func viewDidLoad() {
@@ -31,20 +36,24 @@ final class SearchViewController: UIViewController, UITableViewDataSource, UISea
         view.backgroundColor = .systemBackground
         navigationController?.navigationBar.prefersLargeTitles = true
 
-        searchController.searchResultsUpdater = self
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = "Cerca nei documenti"
-        searchController.searchBar.accessibilityLabel = "Cerca nei documenti dell'archivio"
-        navigationItem.searchController = searchController
-        navigationItem.hidesSearchBarWhenScrolling = false
+        searchBar.delegate = self
+        searchBar.searchBarStyle = .minimal
+        searchBar.placeholder = "Cerca nei documenti"
+        searchBar.accessibilityLabel = "Cerca nei documenti dell'archivio"
+        searchBar.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(searchBar)
 
         tableView.dataSource = self
+        tableView.keyboardDismissMode = .onDrag
         tableView.register(LibraryRowCell.self, forCellReuseIdentifier: LibraryRowCell.reuseId)
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "empty")
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            searchBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            searchBar.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            searchBar.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            tableView.topAnchor.constraint(equalTo: searchBar.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -53,7 +62,7 @@ final class SearchViewController: UIViewController, UITableViewDataSource, UISea
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        applyQuery(searchController.searchBar.text)
+        applyQuery(searchBar.text)
     }
 
     private func applyQuery(_ query: String?) {
@@ -75,8 +84,12 @@ final class SearchViewController: UIViewController, UITableViewDataSource, UISea
         }
     }
 
-    func updateSearchResults(for searchController: UISearchController) {
-        applyQuery(searchController.searchBar.text)
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        applyQuery(searchText)
+    }
+
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.resignFirstResponder()
     }
 
     // MARK: - Data
@@ -114,12 +127,12 @@ final class SearchViewController: UIViewController, UITableViewDataSource, UISea
             optionsHint: "Apri, aggiungi a un contenitore, rinomina, referto, o elimina definitivamente")
         cell.onOpen = { [weak self] in
             guard let self else { return }
-            DocumentOpener.open(documentId: doc.id, from: self, onClosed: { self.applyQuery(self.searchController.searchBar.text) })
+            DocumentOpener.open(documentId: doc.id, from: self, onClosed: { self.applyQuery(self.searchBar.text) })
         }
         cell.onOptions = { [weak self] in
             guard let self else { return }
             FileOptions.present(document: doc, context: .search, from: self) {
-                self.applyQuery(self.searchController.searchBar.text)
+                self.applyQuery(self.searchBar.text)
             }
         }
         return cell

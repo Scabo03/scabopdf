@@ -36,8 +36,7 @@ final class DuplicateImportUITests: XCTestCase {
         let again = XCUIApplication()
         again.launch()
         // Sotto carico (suite in parallelo) il riavvio può superare i 10 s: si aspetta la Home fino a 30 s.
-        XCTAssertTrue(again.tabBars.firstMatch.waitForExistence(timeout: 30), "la Home riappare al riavvio")
-        _ = again.navigationBars["ScaboPDF"].waitForExistence(timeout: 5)
+        XCTAssertTrue(again.waitForScreen("ScaboPDF", timeout: 30), "la Home riappare al riavvio")
         return again.cells.containing(NSPredicate(format: "label CONTAINS %@", "Libro di prova")).count
     }
 
@@ -63,7 +62,7 @@ final class DuplicateImportUITests: XCTestCase {
         waitForDuplicateScreen(app)
         audit(app, screen: "Libro già presente")
         app.buttons["duplicate.cancel"].tap()
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 5), "si torna alla Home")
+        XCTAssertTrue(app.waitForScreen("ScaboPDF", timeout: 10), "si torna alla Home")
         XCTAssertFalse(app.buttons["duplicate.open"].exists)
         XCTAssertFalse(app.staticTexts["Elaborazione del documento"].exists, "annullare non elabora nulla")
         XCTAssertEqual(relaunchAndCountProvaBooks(app), 1, "nessun libro nuovo")

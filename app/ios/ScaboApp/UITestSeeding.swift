@@ -22,6 +22,8 @@
 //  `-uiTestSeedReprocessKinds` crea un PDF elaborato dall'iPad con una build vecchia (riceve l'offerta), una lettura
 //  arrivata dal Mac al livello di cure di questa catena (non la riceve: la rifà il Mac aggiornato) e un testo normativo
 //  AKN sintetico importato prima dei pezzi nuovi delle note (la riceve e si rielabora con la catena dei testi normativi).
+//  L'ordine di lettura delle schermate con le schede (giro «accessibilità e completamento», 2026-10-18):
+//  `-uiTestSeedHomeOrder` crea tre libri fra i recenti e due workspace (il primo con una cartella), nomi inventati.
 //
 
 #if DEBUG
@@ -53,6 +55,7 @@ enum UITestSeeding {
         if args.contains("-uiTestSeedVisualResourceControl") { seedVisualResource(withResource: false); return }
         if args.contains("-uiTestSeedVisualResource") { seedVisualResource(withResource: true); return }
         if args.contains("-uiTestSeedReprocessKinds") { seedReprocessKinds(); return }
+        if args.contains("-uiTestSeedHomeOrder") { seedHomeOrder(); return }
         guard args.contains("-uiTestSeedReprocess") else { return }
         let service = LibraryService.shared
         // Libreria pulita per un test deterministico.
@@ -70,6 +73,37 @@ enum UITestSeeding {
                                   name: "Segnalibro di prova", preview: "Segnalibro di prova", originalPage: 2,
                                   tagIds: tag.map { [$0.id] } ?? [])
         service.store.recordOpened(id: doc.id)
+    }
+
+    /// L'ordine di lettura delle schermate con le schede (giro «accessibilità e completamento», 2026-10-18): una libreria
+    /// con tre libri fra i recenti (elaborati da QUESTA build: nessuna riga d'offerta) e due workspace, il primo con una
+    /// cartella e un libro collocato. Titoli e nomi inventati, nessun volume.
+    private static func seedHomeOrder() {
+        let service = LibraryService.shared
+        for d in service.store.allDocuments() {
+            service.store.deleteDocumentFromArchive(id: d.id)
+            service.deleteFiles(forDocumentId: d.id)
+        }
+        for ws in service.store.state.workspaces { service.store.deleteWorkspace(id: ws.id) }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("libro-di-prova.pdf")
+        try? syntheticPdf().write(to: url)
+        var docs: [ArchivedDocument] = []
+        for name in ["Libro di prova uno", "Libro di prova due", "Libro di prova tre"] {
+            let doc = service.store.addDocument(title: name, sourceFileName: "libro-di-prova.pdf", sourcePageCount: 3)
+            try? service.storePDF(from: url, forDocumentId: doc.id)
+            service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild)
+            service.store.recordOpened(id: doc.id)
+            docs.append(doc)
+        }
+        let tag = service.store.tags().first { $0.name == "Importante" } ?? service.store.createTag(name: "Importante")
+        service.store.addBookmark(documentId: docs[0].id, anchorSegmentId: "node_1", orderIndexHint: 1,
+                                  name: "Segnalibro di prova", preview: "Segnalibro di prova", originalPage: 1,
+                                  tagIds: tag.map { [$0.id] } ?? [])
+        let first = service.store.createWorkspace(name: "Workspace di prova A")
+        if let folder = service.store.createFolder(inWorkspace: first.id, name: "Cartella di prova") {
+            service.store.addCollocation(documentId: docs[0].id, to: .folder(workspace: first.id, folder: folder.id))
+        }
+        service.store.createWorkspace(name: "Workspace di prova B")
     }
 
     /// I tre tipi di libro davanti all'offerta (vedi l'intestazione del file).

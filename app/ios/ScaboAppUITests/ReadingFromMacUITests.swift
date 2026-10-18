@@ -90,7 +90,7 @@ final class ReadingFromMacUITests: XCTestCase {
         expectation(for: gone, evaluatedWith: app.staticTexts["Lettura dal Mac applicata"])
         waitForExpectations(timeout: 10)
         // Torna alla Home: la lettura applicata non è più fra quelle arrivate.
-        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        let back = app.backButton(onScreen: "Letture dal Mac")
         if back.waitForExistence(timeout: 5) { back.tap() }
         XCTAssertTrue(app.navigationBars.buttons["Tag"].waitForExistence(timeout: 10), "di nuovo in Home")
         XCTAssertFalse(app.cells["home.fromMac"].exists, "applicata la lettura, la riga sparisce")
@@ -106,7 +106,7 @@ final class ReadingFromMacUITests: XCTestCase {
         app.buttons["confirm.receive.ok"].tap()
         XCTAssertTrue(app.buttons["received.revert"].waitForExistence(timeout: 30))
         app.buttons["received.revert"].tap()
-        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        let back = app.backButton(onScreen: "Letture dal Mac")
         if back.waitForExistence(timeout: 5) { back.tap() }
         XCTAssertTrue(app.navigationBars.buttons["Tag"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.cells["home.offer"].exists, "tornati alla lettura di prima, nulla resta in attesa di conferma")
@@ -118,7 +118,7 @@ final class ReadingFromMacUITests: XCTestCase {
         openArrival(app)
         XCTAssertTrue(app.buttons["receive.later"].waitForExistence(timeout: 10))
         app.buttons["receive.later"].tap()
-        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        let back = app.backButton(onScreen: "Letture dal Mac")
         XCTAssertTrue(back.waitForExistence(timeout: 5))
         XCTAssertTrue(app.cells.containing(NSPredicate(format: "label CONTAINS %@", "Libro di prova")).firstMatch.exists)
         back.tap()
@@ -143,7 +143,7 @@ final class ReadingFromMacUITests: XCTestCase {
         discard.tap()
         XCTAssertTrue(app.buttons["confirm.discard.ok"].waitForExistence(timeout: 5))
         app.buttons["confirm.discard.ok"].tap()
-        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        let back = app.backButton(onScreen: "Letture dal Mac")
         if back.waitForExistence(timeout: 5) { back.tap() }
         XCTAssertTrue(app.navigationBars.buttons["Tag"].waitForExistence(timeout: 10), "di nuovo in Home")
         XCTAssertFalse(app.cells["home.fromMac"].exists, "la lettura tolta non c'è più")
@@ -160,7 +160,7 @@ final class ReadingFromMacUITests: XCTestCase {
         discard.tap()
         XCTAssertTrue(app.buttons["confirm.discard.ok"].waitForExistence(timeout: 5))
         app.buttons["confirm.discard.ok"].tap()
-        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        let back = app.backButton(onScreen: "Letture dal Mac")
         if back.waitForExistence(timeout: 5) { back.tap() }
         XCTAssertTrue(app.navigationBars.buttons["Tag"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.cells["home.fromMac"].exists, "la lettura tolta non c'è più")
@@ -251,7 +251,7 @@ final class ReadingFromMacUITests: XCTestCase {
         XCTAssertTrue(problem.label.contains("Nella libreria non è stato cambiato nulla"))
         audit(app, screen: "File danneggiato")
         app.buttons["received.remove"].tap()
-        let back = app.navigationBars["Letture dal Mac"].buttons.element(boundBy: 0)
+        let back = app.backButton(onScreen: "Letture dal Mac")
         if back.waitForExistence(timeout: 5) { back.tap() }
         XCTAssertTrue(app.navigationBars.buttons["Tag"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.cells["home.fromMac"].exists, "il file tolto non c'è più")

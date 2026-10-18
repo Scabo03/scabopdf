@@ -36,6 +36,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             || CommandLine.arguments.contains("-uiTestSeedDuplicateImport")
             || CommandLine.arguments.contains("-uiTestSeedVisualResource")
             || CommandLine.arguments.contains("-uiTestSeedVisualResourceControl")
+            || CommandLine.arguments.contains("-uiTestSeedHomeOrder")
             || UITestSeeding.macReadingSeeds.contains(where: CommandLine.arguments.contains) {
             setStoredFirstOpenCompleted(prefs, true)
             UITestSeeding.applyIfRequested()
