@@ -13,7 +13,13 @@
 //  ogni generazione. Il titolo passa dalla barra alla fascia: `navigationItem.title` si svuota (sull'iPad, accanto alla barra
 //  delle schede galleggiante, qualunque titolo o vista-titolo nella barra apre una seconda riga, vuota se lo si nasconde:
 //  provato nel giro) e `backButtonTitle` conserva il nome, così il pulsante «indietro» della schermata seguente si chiama
-//  come prima. Un cambio di titolo dopo la comparsa (rinomina di un workspace) segue la stessa strada.
+//  come prima. Con la barra senza titolo il sistema scrive il nome accanto alla freccia del pulsante «indietro» (prima
+//  della fascia la barra aveva il titolo e il pulsante era la sola freccia): prima di iOS 27 il pulsante torna la sola
+//  freccia, col nome per VoiceOver, perché l'audit di iOS 26.5 segnala quella scritta come tagliabile col testo grande; da
+//  iOS 27 resta la scritta, perché lì la sola freccia toglie il nome a VoiceOver («Indietro»). Tutto misurato sui quattro
+//  simulatori (giro «accessibilità e completamento», dopo la revisione); un pulsante «indietro» proprio
+//  (`backBarButtonItem`) non serve: il sistema ignora la sola freccia e su iOS 27 lo chiama comunque «Indietro».
+//  Un cambio di titolo dopo la comparsa (rinomina di un workspace) segue la stessa strada.
 //
 
 import UIKit
@@ -94,11 +100,14 @@ final class TabStackNavigationController: UINavigationController, UINavigationCo
     /// I titoli delle schermate della pila, tolti dalla barra (chiave debole: muoiono con la schermata).
     private let screenTitles = NSMapTable<UINavigationItem, NSString>.weakToStrongObjects()
 
-    /// Il titolo passa dalla barra alla fascia; il pulsante «indietro» della schermata seguente conserva il nome.
+    /// Il titolo passa dalla barra alla fascia; il pulsante «indietro» della schermata seguente conserva il nome, che
+    /// VoiceOver dice («ScaboPDF Pulsante Indietro»). Prima di iOS 27 il pulsante è la sola freccia, com'era quando la barra
+    /// aveva il titolo; da iOS 27 la sola freccia si chiamerebbe «Indietro», e resta la scritta (vedi in testa al file).
     private func takeTitle(from item: UINavigationItem) {
         guard let title = item.title, !title.isEmpty else { return }
         screenTitles.setObject(title as NSString, forKey: item)
         item.backButtonTitle = title
+        if #unavailable(iOS 27) { item.backButtonDisplayMode = .minimal }
         item.title = nil
     }
 
