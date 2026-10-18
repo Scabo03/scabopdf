@@ -46,6 +46,15 @@ final class KeyboardAndLanguageTests: XCTestCase {
         XCTAssertEqual(split.first?.spokenKeys, "Comando più Opzione più freccia sinistra")
     }
 
+    /// Una tabella sola dagli id del catalogo alle azioni del lettore: ogni comando di lettura ne ha una (un id nuovo senza
+    /// azione non darebbe nessun tasto, né nel lettore né nello split).
+    func test_catalog_everyReadingCommand_hasAnActionInTheReader() {
+        for spec in KeyboardCommandsCatalog.reading {
+            XCTAssertTrue(ContinuousReadingViewController.hasKeyboardAction(forCommandId: spec.id), "azione per «\(spec.id)»")
+        }
+        XCTAssertFalse(ContinuousReadingViewController.hasKeyboardAction(forCommandId: "nessuno"))
+    }
+
     func test_catalog_noKeyCombinationOrIdTwice_acrossReadingAndSplit() {
         let all = KeyboardCommandsCatalog.reading + KeyboardCommandsCatalog.split
         let keys = all.flatMap { spec in ([spec.input] + spec.alternateInputs).map { "\($0)|\(spec.modifiers.rawValue)" } }

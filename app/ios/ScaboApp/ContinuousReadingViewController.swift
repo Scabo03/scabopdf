@@ -423,11 +423,14 @@ final class ContinuousReadingViewController: UIViewController {
     override var keyCommands: [UIKeyCommand]? {
         // Il nome di ogni comando è mostrato nell'HUD tenendo premuto ⌘; i tasti alternativi vi sono nascosti.
         KeyboardCommandsCatalog.reading.flatMap { spec in
-            spec.makeKeyCommands(action: Self.selector(forCommandId: spec.id))
+            Self.selector(forCommandId: spec.id).map { spec.makeKeyCommands(action: $0) } ?? []
         }
     }
 
-    private static func selector(forCommandId id: String) -> Selector {
+    /// L'azione di ogni comando del catalogo: UNA tabella sola, per i tasti del lettore e per i comandi che lo split inoltra
+    /// alla metà che comanda (`performKeyboardCommand`). Un id senza azione non dà nessun tasto (prima ricadeva su
+    /// «Indietro»); `KeyboardAndLanguageTests` controlla che ogni id del catalogo ne abbia una.
+    private static func selector(forCommandId id: String) -> Selector? {
         switch id {
         case "scrollForward": return #selector(kbScrollForward)
         case "scrollBack": return #selector(kbScrollBack)
@@ -438,26 +441,20 @@ final class ContinuousReadingViewController: UIViewController {
         case "bookmark": return #selector(kbToggleBookmark)
         case "elementTools": return #selector(kbElementTools)
         case "noteJump": return #selector(kbNoteJump)
-        default: return #selector(kbBack)
+        case "back": return #selector(kbBack)
+        default: return nil
         }
     }
 
-    /// Esegue il comando da tastiera `id` del catalogo. Lo split screen (§ 11) lo inoltra alla metà che comanda: nello
-    /// split il primo destinatario dei tasti è lo split, non la metà (giro «accessibilità e completamento», 2026-10-18).
+    /// Vero se il comando `id` del catalogo ha un'azione nel lettore (per i test).
+    static func hasKeyboardAction(forCommandId id: String) -> Bool { selector(forCommandId: id) != nil }
+
+    /// Esegue il comando da tastiera `id` del catalogo, con la stessa tabella dei tasti. Lo split screen (§ 11) lo inoltra
+    /// alla metà che comanda: nello split il primo destinatario dei tasti è lo split, non la metà (giro «accessibilità e
+    /// completamento», 2026-10-18).
     func performKeyboardCommand(id: String) {
-        switch id {
-        case "scrollForward": kbScrollForward()
-        case "scrollBack": kbScrollBack()
-        case "nextHeading": kbNextHeading()
-        case "prevHeading": kbPrevHeading()
-        case "textLarger": kbTextLarger()
-        case "textSmaller": kbTextSmaller()
-        case "bookmark": kbToggleBookmark()
-        case "elementTools": kbElementTools()
-        case "noteJump": kbNoteJump()
-        case "back": kbBack()
-        default: break
-        }
+        guard let action = Self.selector(forCommandId: id) else { return }
+        perform(action)
     }
 
     /// Salto fra nota e richiamo da tastiera (⌘J): lo stesso delle azioni VoiceOver sull'elemento in lettura. Dove non
