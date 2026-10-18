@@ -141,7 +141,7 @@ and is not promoted to H1 / H2.
 PARAGRAPH_HEADING_TEXT_LIMIT = 200
 """Maximum text length for a candidate H3 block.
 
-H3 headings are one-liners (``3. Le forme del trasferimento``).
+H3 headings are one-liners (``3. Le forme del registro``).
 Front-matter ``Sommario generale`` entries share the 12pt bold
 signature but typically run past this limit when they wrap to several
 lines per entry.

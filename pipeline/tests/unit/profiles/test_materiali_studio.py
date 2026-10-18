@@ -490,7 +490,7 @@ class TestParteAllcaps:
         assert MaterialiStudioProfile._is_parte_allcaps(view) is True
 
     def test_with_accented_uppercase(self) -> None:
-        view = _view([_span("LE OBBLIGAZIONI NASCENTI DA FATTO ILLECITO")])
+        view = _view([_span("LE SCHEDE NATE DA ERRORE MATERIALE")])
         assert MaterialiStudioProfile._is_parte_allcaps(view) is True
 
     def test_lowercase_rejected(self) -> None:
@@ -508,17 +508,17 @@ class TestParteAllcaps:
 
     def test_three_lines_rejected(self) -> None:
         spans = [
-            _span("LE OBBLIGAZIONI", line_index=0),
-            _span("NASCENTI DALLA", line_index=1),
-            _span("LEGGE COMUNE", line_index=2),
+            _span("LE SCHEDE", line_index=0),
+            _span("NATE DALLA", line_index=1),
+            _span("PROVA COMUNE", line_index=2),
         ]
         view = _view(spans)
         assert MaterialiStudioProfile._is_parte_allcaps(view) is False
 
     def test_two_lines_accepted(self) -> None:
         spans = [
-            _span("LE OBBLIGAZIONI ", line_index=0),
-            _span("NASCENTI DALLA LEGGE", line_index=1),
+            _span("LE SCHEDE ", line_index=0),
+            _span("NATE DALLA PROVA", line_index=1),
         ]
         view = _view(spans)
         assert MaterialiStudioProfile._is_parte_allcaps(view) is True
@@ -962,7 +962,7 @@ class TestColorAwarePredicate:
     def test_black_cap_promoted_heading_2(self) -> None:
         plugin = MaterialiStudioProfile()
         plugin._color_mode = True
-        view = _view([_span("CAP. 42 - GLI ALTRI CONTRATTI", font="ArialMT", flags=0, color=0)])
+        view = _view([_span("CAP. 42 - LE ALTRE SCHEDE", font="ArialMT", flags=0, color=0)])
         result = plugin._color_aware_predicate(view)
         assert result is not None
         assert result.category is SemanticCategory.HEADING_2

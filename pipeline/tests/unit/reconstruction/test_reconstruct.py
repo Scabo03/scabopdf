@@ -517,14 +517,14 @@ def test_consolidation_fuses_two_adjacent_heading_fragments() -> None:
     typical vertical leading, identical typography → fused into one Node.
     """
     extraction, classified = _build_heading_pair_inputs(
-        text1="LE OBBLIGAZIONI NASCENTI DALLA",
-        text2="LEGGE",
+        text1="LE SCHEDE NATE DALLA",
+        text2="PROVA",
     )
     document = reconstruct(extraction, classified, _profile(), _plugin())
     assert len(document.root) == 1
     head = document.root[0]
     assert head.category is SemanticCategory.HEADING_1
-    assert head.text == "LE OBBLIGAZIONI NASCENTI DALLA LEGGE"
+    assert head.text == "LE SCHEDE NATE DALLA PROVA"
     assert sorted(head.block_indices) == [0, 1]
 
 

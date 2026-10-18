@@ -489,7 +489,7 @@ def test_refine_classification_promotes_chapter_title_after_chapter_number() -> 
     spans = (
         _SpanBuilder()
         .add("CAPITOLO I", size=CHAPTER_HEADING_SIZE)
-        .add("I PROCESSI O PROCEDIMENTI SPECIALI", size=CHAPTER_HEADING_SIZE)
+        .add("I REGISTRI E LE SCHEDE DI LAVORO", size=CHAPTER_HEADING_SIZE)
         .build()
     )
     block_a = _make_block(page=20, span_range=(0, 1), block_index=0)
@@ -611,7 +611,7 @@ def test_refine_classification_promotes_paragraph_heading_h4() -> None:
         _SpanBuilder()
         .add("1. ", size=PARAGRAPH_HEADING_SIZE, flags=4)
         .add(
-            "La fase introduttiva del processo",
+            "La fase iniziale della verifica",
             font="SimonciniGaramondStd-Ita",
             size=PARAGRAPH_HEADING_SIZE,
             flags=4 | ITALIC_FLAG,
@@ -926,7 +926,7 @@ def test_refine_reconstruction_fuses_chapter_pair() -> None:
     title_node = _node(
         "node_0002",
         SemanticCategory.HEADING_2,
-        "I PROCESSI O PROCEDIMENTI SPECIALI",
+        "I REGISTRI E LE SCHEDE DI LAVORO",
         block_indices=(1,),
     )
     document = Document(root=(number_node, title_node))
@@ -935,7 +935,7 @@ def test_refine_reconstruction_fuses_chapter_pair() -> None:
     assert len(result.root) == 1
     fused = result.root[0]
     assert fused.id == "node_0001"
-    assert fused.text == "CAPITOLO I. I PROCESSI O PROCEDIMENTI SPECIALI"
+    assert fused.text == "CAPITOLO I. I REGISTRI E LE SCHEDE DI LAVORO"
     assert fused.block_indices == (0, 1)
     assert fused.level == 2
 
@@ -967,7 +967,7 @@ def test_refine_reconstruction_mints_cross_reference_for_inline_paren_marker() -
     body_node = _node(
         "node_0001",
         SemanticCategory.BODY,
-        "Sensi dell'art. 333 c.c. (18). Poi continua.",
+        "Come dispone l'art. 333 del c.c. (18). Poi continua.",
         block_indices=(5,),
     )
     document = Document(root=(body_node,))

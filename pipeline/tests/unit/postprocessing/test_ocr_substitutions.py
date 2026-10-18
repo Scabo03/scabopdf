@@ -364,7 +364,7 @@ def test_collect_contextual_rewrite_matches_strips_bullet_dot_ornament() -> None
 
 def test_collect_contextual_rewrite_matches_strips_leading_middle_dot() -> None:
     """``\\s·Un esempio`` strips the line-leading middle-dot before uppercase."""
-    matches = collect_contextual_rewrite_matches("Premessa. ·Un esempio del secondo tipo.")
+    matches = collect_contextual_rewrite_matches("Premessa. ·Un esempio di questa regola.")
     leadings = [m for m in matches if m[4] == "leading_middle_dot_stripped"]
     assert len(leadings) == 1
 

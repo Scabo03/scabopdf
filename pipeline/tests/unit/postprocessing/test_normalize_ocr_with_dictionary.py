@@ -436,14 +436,14 @@ def test_contextual_rewrite_bullet_dot_ornament_is_stripped() -> None:
 
 def test_contextual_rewrite_leading_middle_dot_is_stripped() -> None:
     """``\\s·Un esempio`` → ``\\sUn esempio``: line-leading middle-dot strip."""
-    document = Document(root=(_node("node_0001", "Premessa. ·Un esempio del secondo tipo."),))
+    document = Document(root=(_node("node_0001", "Premessa. ·Un esempio di questa regola."),))
     lexicon = ItalianLexicon.from_word_set(set())
 
     new_document, transformations = normalize_ocr_with_dictionary(
         document, _empty_extraction(), [], lexicon=lexicon
     )
 
-    assert new_document.root[0].text == "Premessa. Un esempio del secondo tipo."
+    assert new_document.root[0].text == "Premessa. Un esempio di questa regola."
     assert any(t.original == "·" and t.normalized == "" for t in transformations)
 
 

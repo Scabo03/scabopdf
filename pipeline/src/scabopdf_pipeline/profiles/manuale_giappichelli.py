@@ -558,7 +558,7 @@ CHAPTER_TITLE_TEXT_LIMIT = 200
 """Max text length for a candidate chapter-title block.
 
 Chapter titles are short uppercase phrases (e.g.
-``"I PROCESSI O PROCEDIMENTI SPECIALI IN GENERALE"``, 47 characters).
+``"LE SCHEDE E I REGISTRI DEL LABORATORIO DI PROVA"``, 47 characters).
 The cap discriminates against 13.02pt blocks that carry more text.
 """
 

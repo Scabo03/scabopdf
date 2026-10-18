@@ -562,7 +562,7 @@ def test_refine_classification_rejects_short_italic_9pt_block() -> None:
 
 def test_refine_classification_filters_front_matter_index_residue() -> None:
     """An italic-9.0pt block opening with an index keyword is filtered and warned."""
-    text = "Sezione I — Il regolamento in materia civile " * 5
+    text = "Sezione I — Il registro delle schede di prova " * 5
     spans = (
         _SpanBuilder()
         .add(text, font="TimesTenLTStd-Italic", size=EXAMPLE_BOX_SIZE, flags=0x02)

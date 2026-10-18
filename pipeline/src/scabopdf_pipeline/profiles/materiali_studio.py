@@ -534,8 +534,8 @@ HEADING_LINE_MAX_LINES = 2
 block.
 
 Headings are single-line in the dominant case; two-line headings
-emerge for multi-line PARTE banners (e.g., ``"LE OBBLIGAZIONI
-NASCENTI DALLA / LEGGE"`` on the diritto_privato_ii fixture). Three-
+emerge for multi-line PARTE banners (e.g., ``"LE SCHEDE NATE
+DALLA / PROVA"``, the shape seen on the diritto_privato_ii fixture). Three-
 or-more-line blocks are necessarily body paragraphs.
 """
 
@@ -591,9 +591,9 @@ Matches an allcaps line of length ≥ 5 made of Latin uppercase letters
 (ASCII A-Z + Latin Extended ``À-ſ`` for accented letters like
 ``À È Ì`` etc.), spaces, straight or curly apostrophes, en-dash, em-
 dash, ASCII hyphen, comma and period. Examples that match:
-``"I DIRITTI REALI"``, ``"I DIRITTI DI CREDITO"``, ``"LE OBBLIGAZIONI
-NASCENTI DALLA LEGGE"``, ``"LA PUBBLICITA' IMMOBILIARE"``, ``"LE
-OBBLIGAZIONI NASCENTI DA FATTO ILLECITO"``. The 5-character minimum
+``"I DIRITTI REALI"``, ``"I DIRITTI DI CREDITO"``, ``"LE SCHEDE NATE
+DALLA PROVA"``, ``"LA PUBBLICITA' IMMOBILIARE"``, ``"LE SCHEDE NATE
+DA ERRORE MATERIALE"``. The 5-character minimum
 filters out trivial single-letter or two-character allcaps fragments.
 """
 

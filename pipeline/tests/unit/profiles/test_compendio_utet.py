@@ -300,7 +300,7 @@ def test_refine_classification_promotes_chapter_title_block() -> None:
     spans = (
         _SpanBuilder()
         .add(
-            "L'AVVISO DI ACCERTAMENTO",
+            "L'ARCHIVIO DEI MODULI",
             font="TimesTenLTStd-Bold",
             size=CHAPTER_HEADING_SIZE,
             flags=CHAPTER_TITLE_BOLD_FLAG_BIT | 4,
@@ -386,7 +386,7 @@ def test_refine_classification_paragraph_l1_takes_priority_over_body() -> None:
             flags=CHAPTER_TITLE_BOLD_FLAG_BIT | 4,
         )
         .add(
-            "Natura giuridica dell'avviso di accertamento",
+            "Natura pratica dell'archivio dei moduli",
             font="TimesTenLTStd-Italic",
             size=PARAGRAPH_L1_SIZE,
             flags=6,
@@ -433,7 +433,7 @@ def test_refine_classification_promotes_body() -> None:
     spans = (
         _SpanBuilder()
         .add(
-            "L'avviso di accertamento è un atto autoritativo.",
+            "L'archivio dei moduli è un luogo ordinato.",
             font="TimesTenLTStd-Roman",
             size=BODY_FONT_SIZE,
             flags=4,
@@ -452,7 +452,7 @@ def test_refine_classification_promotes_list_item_with_en_dash_marker() -> None:
     spans = (
         _SpanBuilder()
         .add(
-            f"{EN_DASH} vi sono regimi fiscali che si applicano in tutta l'UE",
+            f"{EN_DASH} vi sono moduli interni che valgono per tutto il reparto",
             font="TimesTenLTStd-Roman",
             size=BODY_FONT_SIZE,
             flags=4,
@@ -518,7 +518,7 @@ def test_refine_classification_promotes_toc_general() -> None:
     spans = (
         _SpanBuilder()
         .add(
-            "1. La nozione di tributo .... » 19",
+            "1. La nozione di modulo .... » 19",
             font="TimesTen-Roman",
             size=TOC_GENERAL_SIZE,
         )
@@ -536,7 +536,7 @@ def test_refine_classification_toc_general_requires_marker() -> None:
     spans = (
         _SpanBuilder()
         .add(
-            "1. La nozione di tributo",
+            "1. La nozione di modulo",
             font="TimesTen-Roman",
             size=TOC_GENERAL_SIZE,
         )
@@ -671,7 +671,7 @@ def _classified_pair() -> tuple[ExtractionResult, list[ClassifiedBlock]]:
         _SpanBuilder()
         .add("Capitolo decimo", font="TimesTenLTStd-Roman", size=CHAPTER_HEADING_SIZE, flags=4)
         .add(
-            "L'AVVISO DI ACCERTAMENTO",
+            "L'ARCHIVIO DEI MODULI",
             font="TimesTenLTStd-Bold",
             size=CHAPTER_HEADING_SIZE,
             flags=CHAPTER_TITLE_BOLD_FLAG_BIT | 4,
@@ -706,7 +706,7 @@ def test_refine_reconstruction_fuses_chapter_pair() -> None:
                 category=SemanticCategory.HEADING_2,
                 page_index=140,
                 block_indices=(1,),
-                text="L'AVVISO DI ACCERTAMENTO",
+                text="L'ARCHIVIO DEI MODULI",
                 level=2,
             ),
         )
@@ -715,7 +715,7 @@ def test_refine_reconstruction_fuses_chapter_pair() -> None:
     assert len(refined.root) == 1
     fused = refined.root[0]
     assert fused.category is SemanticCategory.HEADING_2
-    assert fused.text == "Capitolo decimo. L'AVVISO DI ACCERTAMENTO"
+    assert fused.text == "Capitolo decimo. L'ARCHIVIO DEI MODULI"
     assert fused.level == 2
     assert fused.block_indices == (0, 1)
     assert refined.warnings == ()
@@ -806,7 +806,7 @@ def _toc_node(text: str | None, node_id: str = "node_0007") -> Node:
 
 def test_refine_reconstruction_parses_toc_general_items_with_integer_pages() -> None:
     text = (
-        "1. La nozione di tributo .................... » 19 "
+        "1. La nozione di modulo ..................... » 19 "
         "1.1. Profili costituzionali ................ » 23 "
         "2. Le fonti del diritto tributario ......... » 31"
     )
@@ -816,7 +816,7 @@ def test_refine_reconstruction_parses_toc_general_items_with_integer_pages() -> 
     items = refined.root[0].toc_items
     assert items is not None
     assert items == (
-        TocGeneralItem(number="1", title="La nozione di tributo", page_number=19),
+        TocGeneralItem(number="1", title="La nozione di modulo", page_number=19),
         TocGeneralItem(number="1.1", title="Profili costituzionali", page_number=23),
         TocGeneralItem(number="2", title="Le fonti del diritto tributario", page_number=31),
     )

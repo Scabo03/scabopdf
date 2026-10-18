@@ -290,7 +290,7 @@ def test_refine_classification_promotes_heading_3_paragraph() -> None:
     spans = (
         _SpanBuilder()
         .add(
-            "3. Le forme del trasferimento",
+            "3. Le forme del registro",
             font=PARAGRAPH_HEADING_FONT,
             size=PARAGRAPH_HEADING_SIZE,
         )
@@ -311,7 +311,7 @@ def test_refine_classification_promotes_chapter_summary_via_helvetica() -> None:
         _SpanBuilder()
         .add("Sommario  ", font="Helvetica-Bold", size=SUMMARY_FONT_SIZE)
         .add(
-            f"1. L'impresa e l'imprenditore{DASH}2. La nozione di imprenditore",
+            f"1. L'archivio e l'archivista{DASH}2. La nozione di archivista",
             font="Helvetica-Light",
             size=SUMMARY_FONT_SIZE,
         )
@@ -468,9 +468,9 @@ def _summary_node(text: str | None, node_id: str = "node_0001") -> Node:
 
 def test_refine_reconstruction_parses_three_items() -> None:
     text = (
-        f"Sommario  1. L'impresa e l'imprenditore{DASH}"
-        f"2. La nozione di imprenditore{DASH}"
-        "3. La capacità per l'esercizio dell'impresa"
+        f"Sommario  1. L'archivio e l'archivista{DASH}"
+        f"2. La nozione di archivista{DASH}"
+        "3. La cura per l'ordine dell'archivio"
     )
     document = Document(root=(_summary_node(text),))
     refined = ManualeZanichelliGiuridicaProfile().refine_reconstruction(
@@ -479,9 +479,9 @@ def test_refine_reconstruction_parses_three_items() -> None:
     items = refined.root[0].summary_items
     assert items is not None
     assert len(items) == 3
-    assert items[0] == SummaryItem(number="1", title="L'impresa e l'imprenditore")
-    assert items[1] == SummaryItem(number="2", title="La nozione di imprenditore")
-    assert items[2] == SummaryItem(number="3", title="La capacità per l'esercizio dell'impresa")
+    assert items[0] == SummaryItem(number="1", title="L'archivio e l'archivista")
+    assert items[1] == SummaryItem(number="2", title="La nozione di archivista")
+    assert items[2] == SummaryItem(number="3", title="La cura per l'ordine dell'archivio")
     assert refined.warnings == ()
 
 

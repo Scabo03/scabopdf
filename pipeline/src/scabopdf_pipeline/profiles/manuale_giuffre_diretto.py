@@ -193,12 +193,13 @@ Apparatus.
   PDF page index 6 (book p.7) inside the Indice Sommario: a
   ``MScotchRoman`` 7.98pt block whose text starts with the literal
   ``(*)`` marker, carrying the editorial division of curatorship
-  between Anelli (capitoli I-VI, IX, XXV-L, LXV-LXXXI) and Granelli
-  (capitoli VII-VIII, X-XXIV, LI-LXIV). The block is intercepted by
+  between the two curators (Anelli and Granelli), each with its own
+  list of Roman-numeral chapter ranges (shape ``capitoli I-IV, X,
+  XX-XL``). The block is intercepted by
   :meth:`refine_classification` via the ``(*)`` text predicate and
   classified as ``NOTE`` despite the apparently anomalous size
-  (7.98pt is also used for the Indice Analitico subtitle ``(Il
-  numero indica il paragrafo)`` and for the asterisk note itself —
+  (7.98pt is also used for the Indice Analitico subtitle, a short
+  parenthesised line, and for the asterisk note itself —
   the text-prefix check disambiguates).
 
 Artifacts.
@@ -1242,8 +1243,8 @@ class ManualeGiuffreDirectoProfile(ProfilePlugin):
         """A HEADING_1 PARTE TEMATICA block opens with TimesNewRomanPS-BoldMT 12.97pt.
 
         The 12.97pt size is unique to this category in the manual.
-        Multi-line PARTE titles (e.g. "L'ATTIVITÀ GIURIDICA / E LA TUTELA
-        GIURISDIZIONALE DEI DIRITTI") have all spans at 12.97pt; the
+        Multi-line PARTE titles (e.g. "L'ORDINE DEI REGISTRI / E LA CURA
+        DELLE SCHEDE DI LAVORO") have all spans at 12.97pt; the
         predicate checks the leading span only.
         """
         if not view.spans:

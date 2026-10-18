@@ -36,7 +36,7 @@ not anticipated by the analysis:
   liability law, with a dense apparatus of 96 footnotes that includes
   two **mega-notes** (note 15 at ~11,366 chars, note 46 at ~7,955
   chars), a HEADING_2 sub-section level (4.1, 4.2), and an editorial
-  note ``(*) Contributo approvato dai Referee...`` fused into the
+  note ``(*) Nota redazionale...`` (a peer-review remark) fused into the
   ``Note:`` section label block by PyMuPDF. Section headings here are
   separate Arial-BoldMT 12pt UPPERCASE blocks (Style A). Cross-page
   rate on the footnotes is 13.5 % (13 of 96 span more than one page).
@@ -80,7 +80,7 @@ dimensions:
 
 - **EDITORIAL_NOTE category in production for the first time.** The
   schema 0.5.0 ``SemanticCategory`` enum declares ``EDITORIAL_NOTE``
-  for the academic "(*) Contributo approvato dai Referee..." style
+  for the academic "(*) Nota redazionale..." style
   note that prefixes the numbered notes section in many Dottrina
   articles. The plugin recognises the ``(*)`` chunk in the notes
   section text and mints it as an ``EDITORIAL_NOTE`` Node distinct

@@ -1110,9 +1110,9 @@ def test_refine_reconstruction_body_without_note_marker_unchanged() -> None:
 
 
 def test_refine_reconstruction_body_with_one_note_mints_one_note() -> None:
-    body_text = "Il diritto è un sistema.Note1. Una nota di chiarimento."
+    body_text = "La regola vale per ogni caso.Note1. Una nota di chiarimento."
     spans = [
-        _make_span("Il diritto è un sistema.", font="Verdana", size=BODY_SIZE, span_index=0),
+        _make_span("La regola vale per ogni caso.", font="Verdana", size=BODY_SIZE, span_index=0),
         _make_span(
             "Note",
             font="Verdana,Bold",

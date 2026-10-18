@@ -669,7 +669,7 @@ def test_is_sotto_sezione_offcenter_rejected() -> None:
     """An ``A) X`` block at body-column x is not a structural sotto-sezione."""
     spans = [
         _make_span("A) ", font="MScotchRoman", size=BODY_SIZE),
-        _make_span("Accettazione tacita. — Per l'art. 476", font="MScotchRoman", size=BODY_SIZE),
+        _make_span("Prova scritta. — Per l'art. 476", font="MScotchRoman", size=BODY_SIZE),
     ]
     view = _make_view(spans, bbox=(51.0, 200.0, 200.0, 215.0))
     assert not ManualeGiuffreDirectoProfile._is_sotto_sezione(view)
@@ -711,7 +711,7 @@ def test_is_asterisk_footnote_matches() -> None:
 def test_is_asterisk_footnote_no_asterisk_marker_rejected() -> None:
     spans = [
         _make_span(
-            "Il numero indica il paragrafo", font="MScotchRoman", size=ASTERISK_FOOTNOTE_SIZE
+            "Il segno rinvia alla sezione.", font="MScotchRoman", size=ASTERISK_FOOTNOTE_SIZE
         )
     ]
     view = _make_view(spans, page=6)
@@ -930,7 +930,7 @@ def test_refine_classification_promotes_index_entry() -> None:
 def test_refine_classification_promotes_body() -> None:
     spans = [
         _make_span(
-            "Ogni società, ogni comunità umana stabile...", font="MScotchRoman", size=BODY_SIZE
+            "Ogni ufficio, ogni gruppo di lavoro stabile...", font="MScotchRoman", size=BODY_SIZE
         )
     ]
     blocks = [_make_block(span_range=(0, 1), page=100)]
@@ -1017,7 +1017,7 @@ def test_refine_reconstruction_mints_paragraph_crossref() -> None:
 
 
 def test_refine_reconstruction_mints_article_crossref() -> None:
-    body = _body_node("In base all'art. 476 c.c., l'accettazione tacita richiede...")
+    body = _body_node("In base all'art. 476 c.c., la scheda di prova richiede...")
     doc = _document_with((body,))
     new_doc = _reconstruct_via_plugin(doc)
     crossrefs = [n for n in new_doc.root if n.category is SemanticCategory.CROSS_REFERENCE]

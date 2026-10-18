@@ -22,7 +22,7 @@ Four heading-like levels:
   node: the "Capitolo `<ord>`" block in ``TimesTenLTStd-Roman`` 12.0pt
   (non-bold) and the title block in ``TimesTenLTStd-Bold`` 12.0pt
   immediately following. The Italian ordinal is preserved verbatim
-  (e.g. ``"Capitolo decimo. L'AVVISO DI ACCERTAMENTO"``), not mapped to
+  (e.g. ``"Capitolo decimo. L'ARCHIVIO DEI MODULI"``), not mapped to
   a digit: ordinals are kept as strings, sequence position is inferred
   from order of appearance when needed.
 - **H3 — paragraph L1.** Pattern ``^\\d+\\.\\s+\\w`` with
@@ -327,7 +327,7 @@ CHAPTER_HEADING_TEXT_LIMIT = 80
 """Max text length for a candidate chapter-number or chapter-title block.
 
 Chapter number blocks are short (``Capitolo decimo``) and title blocks
-are short uppercase labels (``L'AVVISO DI ACCERTAMENTO``). A block
+are short uppercase labels (``L'ARCHIVIO DEI MODULI``). A block
 sharing the 12pt signature but carrying significantly more text is
 not a chapter heading and is left UNCLASSIFIED.
 """
@@ -912,8 +912,8 @@ class CompendioUtetProfile(ProfilePlugin):
 
         The number node's text (e.g. ``"Capitolo decimo"``) is
         concatenated with the title node's text (e.g.
-        ``"L'AVVISO DI ACCERTAMENTO"``) separated by ``". "`` to give
-        ``"Capitolo decimo. L'AVVISO DI ACCERTAMENTO"`` — the natural
+        ``"L'ARCHIVIO DEI MODULI"``) separated by ``". "`` to give
+        ``"Capitolo decimo. L'ARCHIVIO DEI MODULI"`` — the natural
         prose form for a screen-reader announcement. ``block_indices``
         carries both blocks. ``children`` is the concatenation of the
         two original children lists, both recursively refined.

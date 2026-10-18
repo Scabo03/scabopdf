@@ -159,8 +159,8 @@ Apparatus.
   scope the tier 1 generic cross-reference resolver applies, so the
   binding from CROSS_REFERENCE to NOTE is performed without
   profile-specific override. Each minted NOTE Node carries the note
-  text starting with the numbered marker (``"12. La distinzione tra
-  ius civile e ius gentium ..."``) so that
+  text starting with the numbered marker (``"12. Una nota inventata
+  per questo esempio ..."``) so that
   :data:`apparatus.constants.NOTE_MARKER_REGEX` matches.
 
 - **CROSS_REFERENCE — rimando inline alle note.** Synthetic Nodes
