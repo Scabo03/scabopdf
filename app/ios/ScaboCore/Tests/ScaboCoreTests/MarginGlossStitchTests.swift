@@ -75,10 +75,11 @@ final class MarginGlossStitchTests: XCTestCase {
 
     private func glossThenContinuation(continuationX: Double = 60, continuationY: Double = 128,
                                        continuationSize: Double = 8, headText: String = "13 Una nota che resta aperta e",
-                                       withNext: Bool = true, glossFirstWord: String = "Titoletto") -> Outcome {
+                                       withNext: Bool = true, glossFirstWord: String = "Titoletto",
+                                       continuationText: String = "continua sulla pagina seguente") -> Outcome {
         var nodes = [headNode(headText),
                      (id: "nB", page: 1, lines: [row(glossFirstWord, x: 40, y: 150), row("a margine", x: 40, y: 139),
-                                                 row("continua sulla pagina seguente", x: continuationX, y: continuationY,
+                                                 row(continuationText, x: continuationX, y: continuationY,
                                                      size: continuationSize),
                                                  row("fino al punto.", x: 60, y: continuationY - 11)])]
         if withNext {
@@ -135,6 +136,25 @@ final class MarginGlossStitchTests: XCTestCase {
         let r = glossThenContinuation(continuationSize: 10)
         XCTAssertEqual(r.count, 0)
         XCTAssertEqual(r.candidates.first?.reason, "coda aperta da una glossa a margine: corpo tipografico diverso")
+    }
+
+    func test_glossThenContinuation_continuationOutsideTheColumn_staysOpen() {
+        // prova al contrario: la prima riga del «seguito» sta anch'essa a sinistra della colonna delle note, ma non alla
+        // stessa ascissa della glossa: non è un seguito sicuro, la coppia resta aperta
+        let r = glossThenContinuation(continuationX: 50)
+        XCTAssertEqual(r.count, 0)
+        XCTAssertEqual(r.candidates.first?.reason, "coda aperta da una glossa a margine: seguito fuori dalla colonna")
+        XCTAssertEqual(r.texts["nA_n0"], "13 Una nota che resta aperta e")
+    }
+
+    func test_glossThenContinuation_continuationNumberedAsTheNextNote_staysOpen() {
+        // prova al contrario: il «seguito» comincia col numero della nota seguente (14, attaccato a una virgola, quindi non è
+        // un'apertura di nota per l'estrazione): potrebbe essere la nota 14 stessa, non si ricuce
+        let r = glossThenContinuation(continuationText: "14,5 per cento della somma resta dovuto")
+        XCTAssertEqual(r.count, 0)
+        XCTAssertEqual(r.candidates.first?.reason,
+                       "coda aperta da una glossa a margine: seguito numerato come la nota seguente")
+        XCTAssertEqual(r.texts["nA_n0"], "13 Una nota che resta aperta e")
     }
 
     // MARK: - coda fatta della sola glossa
