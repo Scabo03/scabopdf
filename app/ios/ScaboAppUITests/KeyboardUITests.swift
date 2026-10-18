@@ -139,6 +139,20 @@ final class KeyboardUITests: XCTestCase {
         XCTAssertTrue(reading(app, "Capitolo primo del libro due").exists, "si resta nella lettura")
     }
 
+    /// Esc dato subito dopo ⌘E, prima che la finestra degli strumenti prenda i tasti, chiude solo la finestra: la lettura
+    /// resta. Prima della cura, sull'iPad iOS 26.5, quell'Esc arrivava al lettore come «Indietro» (campo, 2 corse su 3).
+    func testReader_escapeRightAfterCommandE_closesOnlyTheTools() throws {
+        let app = launch()
+        open(app, "Libro tastiera due", showing: "Capitolo primo del libro due")
+        app.typeKey("e", modifierFlags: .command)
+        escape(app)
+        let tools = app.alerts["Strumenti elemento"]
+        XCTAssertTrue(tools.waitForNonExistence(timeout: 5), "la finestra degli strumenti è chiusa")
+        let stayed = reading(app, "Capitolo primo del libro due").waitForExistence(timeout: 5)
+        if !stayed { print("GERARCHIA dopo ⌘E ed Esc di seguito:\n\(app.debugDescription)") }
+        XCTAssertTrue(stayed, "si resta nella lettura")
+    }
+
     /// ⌘J: il libro si riapre sulla nota, lontana dal richiamo; ⌘J porta il testo del richiamo in cima, ⌘J riporta la nota.
     func testReader_commandJ_jumpsBetweenNoteAndCall() throws {
         let app = launch()

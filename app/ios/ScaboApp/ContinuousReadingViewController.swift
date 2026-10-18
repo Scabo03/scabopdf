@@ -421,10 +421,28 @@ final class ContinuousReadingViewController: UIViewController {
     override var canBecomeFirstResponder: Bool { true }
 
     override var keyCommands: [UIKeyCommand]? {
+        // Con la finestra «Strumenti elemento» aperta da tastiera il lettore tiene solo Esc, che la chiude come «Annulla».
+        // Subito dopo ⌘E la finestra non ha ancora i tasti: un Esc dato in quel momento arrivava al lettore come «Indietro»
+        // e chiudeva la lettura (campo, iPad iOS 26.5, 2 corse su 3; giro «accessibilità e completamento», dopo la
+        // revisione). Quando la finestra ha i tasti, Esc lo prende lei: l'esito è lo stesso.
+        if let tools = keyboardTools, presentedViewController === tools {
+            let cancel = UIKeyCommand(input: UIKeyCommand.inputEscape, modifierFlags: [], action: #selector(kbCancelTools))
+            cancel.wantsPriorityOverSystemBehavior = true
+            return [cancel]
+        }
         // Il nome di ogni comando è mostrato nell'HUD tenendo premuto ⌘; i tasti alternativi vi sono nascosti.
-        KeyboardCommandsCatalog.reading.flatMap { spec in
+        return KeyboardCommandsCatalog.reading.flatMap { spec in
             Self.selector(forCommandId: spec.id).map { spec.makeKeyCommands(action: $0) } ?? []
         }
+    }
+
+    /// La finestra «Strumenti elemento» aperta da tastiera (⌘E), finché è aperta.
+    private weak var keyboardTools: UIAlertController?
+
+    /// Esc con la finestra degli strumenti aperta da tastiera: la chiude, come «Annulla».
+    @objc private func kbCancelTools() {
+        guard let tools = keyboardTools, presentedViewController === tools else { return }
+        tools.dismiss(animated: Motion.animated())
     }
 
     /// L'azione di ogni comando del catalogo: UNA tabella sola, per i tasti del lettore e per i comandi che lo split inoltra
@@ -1220,6 +1238,7 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
                                     fromKeyboard: Bool) {
         let sheet = UIAlertController(title: fromKeyboard ? "Strumenti elemento" : nil, message: nil,
                                       preferredStyle: fromKeyboard ? .alert : .actionSheet)
+        if fromKeyboard { keyboardTools = sheet }
 
         // Risorsa visiva (§ 7.9): l'estrazione come immagine anche per chi non usa VoiceOver.
         let segments = readingView.currentSegments
