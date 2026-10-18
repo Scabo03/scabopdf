@@ -136,7 +136,11 @@ final class KeyboardUITests: XCTestCase {
         XCTAssertTrue(tools.buttons["Annulla"].exists)
         escape(app)
         XCTAssertTrue(tools.waitForNonExistence(timeout: 5), "Esc chiude gli strumenti")
-        XCTAssertTrue(reading(app, "Capitolo primo del libro due").exists, "si resta nella lettura")
+        // Si aspetta la lettura: subito dopo la chiusura della finestra, sull'iPad iOS 26.5, l'albero non mostra ancora gli
+        // elementi sotto (campo: con una sonda il lettore non riceve «Indietro» e la lettura resta).
+        let stayed = reading(app, "Capitolo primo del libro due").waitForExistence(timeout: 5)
+        if !stayed { print("GERARCHIA dopo Esc negli strumenti:\n\(app.debugDescription)") }
+        XCTAssertTrue(stayed, "si resta nella lettura")
     }
 
     /// Esc dato subito dopo ⌘E, prima che la finestra degli strumenti prenda i tasti, chiude solo la finestra: la lettura
@@ -170,23 +174,32 @@ final class KeyboardUITests: XCTestCase {
         XCTAssertTrue(note.waitForExistence(timeout: 5) && isNearTheTop(app, note), "⌘J dal richiamo torna alla nota")
     }
 
-    /// Con la tastiera italiana (la disposizione del simulatore in italiano) ⌘+ ingrandisce e ⌘- rimpicciolisce il testo:
-    /// il «+» italiano è un tasto a sé (l'«=» del comando principale lì è Maiuscole+0, che il sistema non riconosce).
-    func testReader_textSizeKeys_workOnAnItalianKeyboard() throws {
-        guard Locale.preferredLanguages.first?.hasPrefix("it") == true else {
-            throw XCTSkip("la prova è per la disposizione italiana della tastiera (simulatore in italiano)")
-        }
+    /// ⌘+ ingrandisce e ⌘- rimpicciolisce il testo, con la disposizione della tastiera fisica che il simulatore usa. Con
+    /// quella italiana il «+» è un tasto a sé (l'«=» del comando principale lì è Maiuscole+0, che il sistema non riconosce)
+    /// e vale l'alias «+»; con quella americana vale l'«=». La disposizione non si legge dalla lingua: l'iPad iOS 26.5 usa
+    /// quella americana anche in italiano e con le stesse impostazioni degli altri simulatori (campo, giro «accessibilità e
+    /// completamento»: il tasto alla posizione americana «]» arriva come «]» e non come «+»). La si riconosce dal tasto che
+    /// funziona: con la disposizione italiana il tasto «=» americano scrive «ì» e non è un comando, così un alias «+» rotto
+    /// fa comunque cadere la prova.
+    func testReader_textSizeKeys_workOnTheSimulatorLayout() throws {
         let app = launch()
         open(app, "Libro tastiera due", showing: "Capitolo primo del libro due")
         let heading = reading(app, "Capitolo primo del libro due")
         let before = heading.frame.height
         app.typeKey("]", modifierFlags: .command)     // il «+» della tastiera italiana
         sleep(2)
-        let larger = heading.frame.height
-        app.typeKey("/", modifierFlags: .command)     // il «-» della tastiera italiana
+        var larger = heading.frame.height
+        var layout = "italiana"
+        if larger <= before {
+            app.typeKey("=", modifierFlags: .command) // l'«=» della tastiera americana
+            sleep(2)
+            larger = heading.frame.height
+            layout = "americana"
+        }
+        app.typeKey(layout == "italiana" ? "/" : "-", modifierFlags: .command)   // il «-» delle due disposizioni
         sleep(2)
         let back = heading.frame.height
-        print("TASTI|altezza del titolo \(before), dopo ⌘+ \(larger), dopo ⌘- \(back)")
+        print("TASTI|disposizione \(layout); altezza del titolo \(before), dopo ⌘+ \(larger), dopo ⌘- \(back)")
         XCTAssertGreaterThan(larger, before, "⌘+ ingrandisce il testo")
         XCTAssertLessThan(back, larger, "⌘- rimpicciolisce il testo")
     }

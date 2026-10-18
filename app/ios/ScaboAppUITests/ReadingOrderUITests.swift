@@ -41,13 +41,13 @@ final class ReadingOrderUITests: XCTestCase {
 
         XCTAssertTrue(app.tapTab("Impostazioni"), "scheda Impostazioni")
         XCTAssertTrue(app.waitForScreen("Impostazioni"))
-        check(app, screen: "Impostazioni", tab: "Impostazioni", content: ["Aspetto della lettura"])
+        check(app, screen: "Impostazioni", tab: "Impostazioni", content: ["Comandi da tastiera"])
         let keyboardRow = app.cells.staticTexts["Comandi da tastiera"].firstMatch
         if keyboardRow.waitForExistence(timeout: 5) {
             keyboardRow.tap()
             XCTAssertTrue(app.waitForScreen("Comandi da tastiera"))
             check(app, screen: "Comandi da tastiera", tab: "Impostazioni",
-                  content: ["Durante la lettura, con una tastiera esterna"])
+                  content: ["Scorri avanti. Tasti: Comando più freccia giù. Avanza di una schermata nella lettura."])
             app.backButton.tap()
         } else { XCTFail("riga «Comandi da tastiera» assente") }
 
@@ -100,7 +100,10 @@ final class ReadingOrderUITests: XCTestCase {
         if let firstContent = rest.firstIndex(of: "contenuto"), let lastBar = rest.lastIndex(of: "barra") {
             XCTAssertLessThan(lastBar, firstContent, "«\(screen)»: i comandi della barra prima del contenuto — \(names)", file: file, line: line)
         }
-        // 4. il contenuto atteso c'è, una volta
+        // 4. il contenuto atteso c'è, una volta. È una riga e non un'intestazione di sezione: le intestazioni e i piè di
+        // sezione delle tabelle di sistema compaiono anche in coda all'albero (il sistema le ripete), e VoiceOver vero su
+        // iOS 27 le dice una volta sola (`VoiceOverOrderUITests` legge le Impostazioni fino in fondo: campo, giro
+        // «accessibilità e completamento»).
         for label in expected {
             let n = leaves.filter { $0.zone == "contenuto" && $0.label == label }.count
             XCTAssertEqual(n, 1, "«\(screen)»: «\(label)» nel contenuto una volta (trovato \(n)) — \(names)", file: file, line: line)
