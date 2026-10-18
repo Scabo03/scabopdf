@@ -196,6 +196,30 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 58 — 2026-10-18, commit `a43243c` (giro «chiusura del capitolo note e pulizia del repo»: le 13 note dei
+  Mandrioli spezzate vicino a una glossa a margine ricucite con la glossa al suo posto (659 → 672 ricuciture), la rete
+  delle risorse visive che giudica anche il posto, testo dei volumi tolto dall'albero del repo; `docs/CARRYOVER.md` STATO
+  del 2026-10-18, `LAYER2_PRODUCT_DECISIONS.md` § 7.3 e § 12.12).** `fastlane beta` exit 0 (Xcode 27.1):
+  `CURRENT_PROJECT_VERSION` 58 (calcolato dalla corsia, `SCABO_BUILD_NUMBER` tolto), EXPORT SUCCEEDED alle 18:42:21,
+  altool «UPLOAD SUCCEEDED with no errors» alle 18:43:48, Delivery UUID `72b52138-3c9d-4a37-b103-fde59c3e4f4d`,
+  elaborazione finita alle 18:46:54, «Successfully set the changelog for build» alle 18:46:55, nessun errore di App Store
+  Connect. Verifica in sola lettura con la chiave API (`ricucitura/strumenti/asc_build_56.rb 58`): build 58 VALID, «Cosa
+  testare» (it) di 3.098 caratteri identico a `app/ios/fastlane/COSA_TESTARE.txt` (provato prima con `fastlane
+  note_tester`, exit 0). Reti prima del caricamento (due generazioni): doppia rete delle generazioni exit 0 dopo ogni
+  parte (`chi0`, `chi1`, `chi2`, `chi3` sul codice finale; Marotta identico; risorse visive 110 su 110 giudicate e al
+  posto registrato, prova al contrario 201/201); letture finali identiche al byte a quelle giudicate; cambiano solo i
+  Mandrioli vol. 3 e 4 (Estratto e codici identici alla 57); le 25 coppie della glossa giudicate contro la pagina stampata
+  (13 ricucite, 12 note complete separate); lettere e cifre identiche, nessuna parola nuova nel testo; ogni nota
+  frazionata ricomposta identica; iPad e Mac identici al byte 52/52; titoli e struttura invariati; annotazioni: rete fissa
+  416 righe verdi con le tre prove al contrario, passaggio 57 → 58 con 0 sbagliati; vista nel simulatore senza veto.
+  Suite: `validate.sh` (iPhone 16 iOS 26.5) ScaboCore 976, ScaboAppTests 177 (14 saltati), test d'interfaccia 18, 0
+  falliti; iPhone 16 iOS 27 uguale (177/14/0, interfaccia 18/18); ScaboChain 8/8; pacchetto del Mac 65 (3 saltati, 0
+  errori); pipeline 2.465/2.465; iPad Pro iOS 27 test d'interfaccia con 7 rossi PREESISTENTI, gli stessi test della build
+  57 (uno si ferma ora più avanti, all'audit di Dynamic Type); dopo la revisione ScaboCore 978/978 con due prove al
+  contrario nuove. Revisione indipendente prima del caricamento (sotto-agente nuovo, lista del maintainer): nessun rilievo
+  bloccante; corretti le note per i tester (`a43243c`), i documenti (`73a8216`, `5875562` e il CARRYOVER) e i test
+  (`cc9331d`, `b4bf154`). IPA 162 902 960 byte (155,4 MiB). Cura di lettura nuova: `ProcessingChain.cureLevel` 58
+  (`curesFromTheMacOnly` = [56, 57, 58], `curesForAknActs` invariato [56, 57]). Prossimo numero: 59.
 - **Build 57 — 2026-10-17 pomeriggio, commit `8c7bd27` (giro «pulizia e rifinitura finale del capitolo note»: separate le
   42 fusioni fuori dall'ordine d'origine nel flusso, ricomposte 16 teste-frammento, 125 note spezzate in più ricucite con la
   successione confermata (534 → 659), offerta «Lettura migliore disponibile» ai testi normativi già importati e non alle
