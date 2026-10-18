@@ -18,8 +18,8 @@
 //  NON può vivere nel Generic senza cambiare la classificazione di altri volumi: il
 //  segnale tipografico (maiuscoletto piccolo) e il pattern di numerazione promuovono
 //  a titolo righe legittime di altri corpora — titoli-capitolo maiuscoli (Torrente
-//  "CAPITOLO II"), titoli-paragrafo numerati (Costituzionale "1. CHE COS'È IL
-//  DIRITTO?"), voci d'elenco/citazioni/sentenze numerate (Tesauro, Nomofanie, Il
+//  "CAPITOLO II"), titoli-paragrafo numerati (Costituzionale: una riga come "1. CHE COS'È UNA
+//  NORMA?"), voci d'elenco/citazioni/sentenze numerate (Tesauro, Nomofanie, Il
 //  mercato finanziario). La condizione del maintainer è ZERO regressione altrove;
 //  quindi il riconoscitore vive QUI, recintato dalla famiglia editoriale, e il
 //  Generic resta intatto byte-per-byte.

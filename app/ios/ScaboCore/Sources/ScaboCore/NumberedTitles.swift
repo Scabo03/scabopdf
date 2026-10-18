@@ -10,7 +10,7 @@
 //  Il classificatore del tronco (`classify`) promuove un'intestazione solo per TAGLIA
 //  (≥ corpo×1.12) o colore, o per grassetto ≥ corpo×1.04 — ma PDFKit on-device perde il
 //  grassetto sulle filiere editoriali dei manuali. Sui manuali italiani il titolo di
-//  paragrafo sta a +4…+9% del corpo («2. Il reticolo di fatti…» 12,48 su 11,5): resta corpo,
+//  paragrafo sta a +4…+9% del corpo («2. Il quadro dei fatti…» 12,48 su 11,5): resta corpo,
 //  inghiottito nel blocco, invisibile alla navigazione, e le note lunghe — differite al
 //  prossimo nodo intestazione — scivolano fino al capitolo (Rizzo: mediana 37,5 pagine).
 //
@@ -29,11 +29,11 @@
 //   • numero alla taglia del corpo (±3%) → titolo SOLO se la numerazione ha ≥ 2 livelli
 //     (una sequenza puntata «4.1.» o «5.3.1.» non si confonde con una cifra isolata) E la
 //     riga è CORTA (finita per scelta, non per giustezza: < 85% della colonna) E non chiude
-//     con «,» «;» «:» — così un paragrafo di prosa numerato («1.1. Le riflessioni che qui
-//     propongo…», a tutta giustezza) resta corpo;
+//     con «,» «;» «:» — così un paragrafo di prosa numerato («1.1. Le osservazioni che qui
+//     seguono…», a tutta giustezza) resta corpo;
 //   • numero alla taglia del corpo, ≥ 2 livelli, titolo su PIÙ righe → solo se preceduto da uno
 //     stacco verticale, composto a rientro sporgente (righe successive rientrate rispetto al
-//     numero) e chiuso da una riga corta entro 4 righe (Rizzo «2.1.1. Certezze e dubbi…»).
+//     numero) e chiuso da una riga corta entro 4 righe (Rizzo: una riga come «2.1.1. Ipotesi e verifiche…»).
 //
 //  GUARDIE (ognuna nata da un caso che il canale potrebbe rovinare, verificato sul corpus):
 //   • apertura di blocco: la riga precedente del run chiude con punteggiatura forte, o c'è
@@ -276,8 +276,8 @@ func recognizeNumberedTitles(
                 i += 1
                 continue
             }
-            // Titolo a numerazione multipla, taglia-corpo, su PIÙ righe (Rizzo «2.1.1. Certezze e
-            // dubbi ragionevoli: …», 4 righe): preceduto da uno STACCO verticale e composto a
+            // Titolo a numerazione multipla, taglia-corpo, su PIÙ righe (Rizzo: una riga come «2.1.1. Ipotesi
+            // e verifiche possibili: …», 4 righe): preceduto da uno STACCO verticale e composto a
             // RIENTRO SPORGENTE (le righe dopo la prima rientrano rispetto al numero), chiuso da una
             // riga corta entro NUMBERED_TITLE_MAX_LINES righe. Un paragrafo di prosa numerato fa il
             // contrario (rientra la prima riga, le altre tornano al margine) → resta corpo.
@@ -303,8 +303,8 @@ func recognizeNumberedTitles(
                 }
                 let last = jsTrim(parts.last?.text ?? "")
                 // Il blocco-titolo è staccato anche DOPO (o chiude il run): una riga d'apertura di
-                // paragrafo rientrata come una continuazione non viene inghiottita (Mercato unico
-                // «2.3. Sentenza CG … | Nell'ambito di una controversia…»). E mai una parola spezzata.
+                // paragrafo rientrata come una continuazione non viene inghiottita (Mercato unico: una riga
+                // come «2.3. Sentenza CG … | Nel corso di un giudizio…»). E mai una parola spezzata.
                 let gapAfter: Bool = {
                     guard j < lines.count, let lastPart = parts.last else { return true }
                     return lastPart.yBottom - lines[j].yTop > max(lastPart.height, lines[j].height) * 0.5

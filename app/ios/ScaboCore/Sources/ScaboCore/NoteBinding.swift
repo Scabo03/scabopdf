@@ -618,7 +618,7 @@ func stitchCrossPageFootnotes(
         let a = (head.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let b = (cur.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         // Cross-pagina (N → N+1) e SAME-PAGE (over-split di `splitFootnotes` su un numero
-        // spurio nel testo della nota, es. "…cordi 69" | "le norme…"): in entrambi i casi la
+        // spurio nel testo della nota, es. "…atti 69" | "le regole…"): in entrambi i casi la
         // testa deve APRIRE e la coda CONTINUARE (guardie invariate, anti-fusione: una nota
         // NUOVA apre col suo numero → `noteContinuation` la esclude → mai fuse due note distinte).
         let pageOk = cur.page_index == tailPage

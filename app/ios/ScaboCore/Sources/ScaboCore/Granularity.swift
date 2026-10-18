@@ -281,7 +281,7 @@ func wordTailFragmentInHeld(_ held: [ContentSegment], openRunLast: String?)
 // con un marcatore "N " (1–3 cifre + spazio + Maiuscola); la guardia lo riconosce ed
 // ESCLUDE, così non si fondono MAI due note distinte ("…493 ss." || "13 Le pronunce…"
 // resta separato). Nel regime BIBLIOGRAFIA non agganciato non ci sono marcatori, e le
-// continuazioni minuscole/di-pagina ("…Torino 1991, p." | "508 ss.; SORDI…") si ricuciono.
+// continuazioni minuscole/di-pagina ("…Torino 2031, p." | "508 ss.; ROSSI…") si ricuciono.
 // PRECISIONE PRIMA DEL RECALL: una nota che finisce con punteggiatura forte (completa) NON
 // apre; un frammento che inizia Maiuscolo (nuova voce/frase) o con un marcatore è una nuova
 // nota → mai fuso. Nel dubbio non si ricuce: si lascia un frammento, mai si fondono due note.
