@@ -108,7 +108,7 @@ final class DuplicateImportUITests: XCTestCase {
                 let el = issue.element
                 if issue.auditType == .textClipped, el?.elementType == .searchField { return true }
                 // Rilievi del SISTEMA sull'iPad (barra delle schede galleggiante, testo attorno a un foglio): vedi
-                // `SystemAuditRule`, accettati in modo stretto e stampati; ogni altro rilievo fa fallire.
+                // `SystemAuditRule`, accettati con condizioni e tetti e stampati; ogni altro rilievo fa fallire.
                 if systemRule.accept(issue) { return true }
                 print("AUDIT «\(screen)» RILIEVO: \(issue.compactDescription) — \(issue.detailedDescription) — «\(el?.label ?? "?")» "
                       + "frame:\(el.map { "\($0.frame)" } ?? "?")")

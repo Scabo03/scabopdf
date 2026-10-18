@@ -66,8 +66,8 @@ extension XCUIApplication {
 
 // MARK: - Rilievi di sistema dell'audit d'accessibilità
 
-/// I rilievi dell'audit d'accessibilità che vengono dal SISTEMA e non dall'app, accettati in modo stretto: si stampano nel
-/// registro del test (dichiarati) e non fanno fallire; ogni altro rilievo fa fallire. Misure del giro «accessibilità e
+/// I rilievi dell'audit d'accessibilità che vengono dal SISTEMA e non dall'app, accettati con le condizioni e i tetti qui
+/// sotto: si stampano nel registro del test (dichiarati) e non fanno fallire; ogni altro rilievo fa fallire. Misure del giro «accessibilità e
 /// completamento» (2026-10-18), iPad iOS 27, sulla copia di partenza `8db0bcd` (sonde di laboratorio):
 /// 1. **Dynamic Type sulle etichette della barra delle schede galleggiante di iPadOS.** Sulla Home 3 rilievi «User will not
 ///    be able to change the font size of this UILabel», senza elemento, con la barra in vista; 0 con la barra nascosta: sono
@@ -75,15 +75,22 @@ extension XCUIApplication {
 ///    senza elemento, su un'etichetta, al più uno per scheda in ogni audit, e solo con la barra delle schede in vista o
 ///    sotto un foglio.
 /// 2. **«Testo potenzialmente inaccessibile» senza elemento attorno a un foglio.** La schermata «Libro già presente» come
-///    foglio: 4 rilievi; la stessa a schermo intero: 0. È il testo della schermata sotto, visibile ai lati del foglio e
-///    volutamente fuori da VoiceOver mentre il foglio è aperto. Accettati solo sull'iPad, senza elemento, e solo con un
-///    foglio aperto (`XCUIApplication.isShowingSheet`).
+///    foglio: 4 rilievi sulla copia di partenza (5 dopo il giro, con il titolo nuovo della Home visibile ai lati: dedotto);
+///    la stessa a schermo intero: 0. È il testo della schermata sotto, visibile ai lati del foglio e volutamente fuori da
+///    VoiceOver mentre il foglio è aperto. Misurato su quel foglio solo; sugli altri fogli dell'iPad (conferme, esiti,
+///    offerte, scelte) è dedotto, e vale la controprova dell'iPhone: lì i fogli coprono lo schermo e gli stessi fogli
+///    passano l'audit senza nessuna eccezione. Accettati solo sull'iPad, senza elemento, con un foglio aperto
+///    (`XCUIApplication.isShowingSheet`) e al più `maxSheetText` per audit (il massimo osservato): un testo inaccessibile
+///    nuovo dentro un foglio dell'iPad passerebbe se resta sotto il tetto, ma l'audit dell'iPhone lo troverebbe.
 @available(iOS 17.0, *)
 final class SystemAuditRule {
+    /// Il massimo di rilievi «testo potenzialmente inaccessibile» accettati sotto un foglio (osservato: 5, «Libro già presente»).
+    static let maxSheetText = 5
     private let app: XCUIApplication
     private let screen: String
     private let sheet: Bool
     private var tabLabels = 0
+    private var sheetText = 0
 
     init(app: XCUIApplication, screen: String) {
         self.app = app
@@ -103,7 +110,10 @@ final class SystemAuditRule {
                 accepted = true
             }
         case .elementDetection:
-            accepted = sheet
+            if sheet, sheetText < Self.maxSheetText {
+                sheetText += 1
+                accepted = true
+            }
         default:
             break
         }

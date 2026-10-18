@@ -271,7 +271,7 @@ final class ReadingFromMacUITests: XCTestCase {
     /// Dal giro «accessibilità e completamento» (2026-10-18) l'audit gira su ogni schermata anche sull'iPad: i due rilievi
     /// dell'iPad che prima facevano saltare le schermate dentro la scheda (Dynamic Type senza elemento) e accettare il
     /// «testo potenzialmente inaccessibile» senza elemento hanno una causa misurata — le etichette della barra delle schede
-    /// di sistema, il testo della schermata sotto un foglio — e li accetta in modo stretto `SystemAuditRule`, stampandoli.
+    /// di sistema, il testo della schermata sotto un foglio — e li accetta `SystemAuditRule`, con condizioni e tetti, stampandoli.
     /// `inTabOnPad` resta per dire quali schermate stanno dentro la scheda (documentazione: non cambia più l'audit).
     @available(iOS 17.0, *)
     private func audit(_ app: XCUIApplication, screen: String, inTabOnPad: Bool = false) {
@@ -290,7 +290,7 @@ final class ReadingFromMacUITests: XCTestCase {
                 let el = issue.element
                 if issue.auditType == .textClipped, el?.elementType == .searchField { return true }
                 // Rilievi del SISTEMA sull'iPad (barra delle schede galleggiante, testo attorno a un foglio): vedi
-                // `SystemAuditRule`, accettati in modo stretto e stampati; ogni altro rilievo fa fallire.
+                // `SystemAuditRule`, accettati con condizioni e tetti e stampati; ogni altro rilievo fa fallire.
                 if systemRule.accept(issue) { return true }
                 let line = "• [\(issue.auditType.rawValue)] \(issue.compactDescription) — «\(el?.label ?? "?")» id:\(el?.identifier ?? "?") type:\(el.map { "\($0.elementType.rawValue)" } ?? "?")"
                 print("AUDIT «\(screen)» \(line)\nAUDIT dettaglio: \(issue.detailedDescription)\nAUDIT elemento: \(el?.debugDescription ?? "nessuno")")

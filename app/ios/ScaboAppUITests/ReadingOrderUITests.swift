@@ -41,12 +41,13 @@ final class ReadingOrderUITests: XCTestCase {
 
         XCTAssertTrue(app.tapTab("Impostazioni"), "scheda Impostazioni")
         XCTAssertTrue(app.waitForScreen("Impostazioni"))
-        check(app, screen: "Impostazioni", tab: "Impostazioni", content: [])
+        check(app, screen: "Impostazioni", tab: "Impostazioni", content: ["Aspetto della lettura"])
         let keyboardRow = app.cells.staticTexts["Comandi da tastiera"].firstMatch
         if keyboardRow.waitForExistence(timeout: 5) {
             keyboardRow.tap()
             XCTAssertTrue(app.waitForScreen("Comandi da tastiera"))
-            check(app, screen: "Comandi da tastiera", tab: "Impostazioni", content: [])
+            check(app, screen: "Comandi da tastiera", tab: "Impostazioni",
+                  content: ["Durante la lettura, con una tastiera esterna"])
             app.backButton.tap()
         } else { XCTFail("riga «Comandi da tastiera» assente") }
 
@@ -57,7 +58,7 @@ final class ReadingOrderUITests: XCTestCase {
         check(app, screen: "Tag", tab: "Home", content: ["Importante"])
         app.cells.staticTexts["Importante"].firstMatch.tap()
         XCTAssertTrue(app.waitForScreen("Segnalibri per tag"))
-        check(app, screen: "Segnalibri per tag", tab: "Home", content: [])
+        check(app, screen: "Segnalibri per tag", tab: "Home", content: ["Filtra per tag"])
         app.backButton.tap()
         XCTAssertTrue(app.waitForScreen("Tag"))
         app.backButton.tap()

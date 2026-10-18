@@ -74,12 +74,12 @@ final class AccessibilityAuditUITests: XCTestCase {
             try app.performAccessibilityAudit { issue in
                 let el = issue.element
                 // Rilievi del SISTEMA sull'iPad (barra delle schede galleggiante, testo attorno a un foglio), misurati e
-                // descritti in `SystemAuditRule`: accettati in modo stretto e stampati; ogni altro rilievo fa fallire.
+                // descritti in `SystemAuditRule`: accettati con condizioni e tetti e stampati; ogni altro rilievo fa fallire.
                 if systemRule.accept(issue) { return true }
-                // FALSO POSITIVO documentato: la `UISearchBar` di sistema (dentro `UISearchController`)
+                // FALSO POSITIVO documentato: la `UISearchBar` di sistema (il campo della Ricerca)
                 // gestisce da sé il layout del placeholder; il clip del placeholder non è
                 // controllabile dall'autore e la barra ha già un `accessibilityLabel` corretto.
-                // È l'UNICO caso soppresso, e in modo stretto (solo textClipped su un searchField).
+                // Oltre ai rilievi di sistema dell'iPad qui sopra, è l'unico caso soppresso (solo textClipped su un searchField).
                 if issue.auditType == .textClipped, el?.elementType == .searchField {
                     return true  // gestito: non è un difetto d'autore
                 }
