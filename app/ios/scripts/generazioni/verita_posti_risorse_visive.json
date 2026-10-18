@@ -1,0 +1,4015 @@
+{
+ "descrizione": "Verità registrata del POSTO delle risorse visive nel flusso della rete (runner, `<stem>.rv.reading.json`), per generazione del lettore di sistema. Nessun testo: identità (pagina 1-based, tipo, riquadro), impronte SHA-256 (16 cifre) delle 64 lettere normalizzate prima e dopo l'annuncio e attorno alla fine del salto, conteggi. Vedi rete_risorse_visive.py, punto 5.",
+ "generazioni": {
+  "ios27": {
+   "originals/Codice civile e procedura civile e leggi complementari_9788828854708_pdf.pdf": [
+    {
+     "pagina": 1103,
+     "tipo": "table",
+     "bbox": [
+      183.1,
+      139.9,
+      326.3,
+      213
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1103,
+     "contenuti": 1,
+     "lettere_contenute": 143,
+     "prima": "8590af001d97d054",
+     "dopo": "73f6b67eb9af4c1e",
+     "fine_prima": "de954188c2ccb140",
+     "fine_dopo": "56b56aecea26aa6b"
+    },
+    {
+     "pagina": 1103,
+     "tipo": "table",
+     "bbox": [
+      183,
+      227.1,
+      326.3,
+      300.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1103,
+     "contenuti": 1,
+     "lettere_contenute": 157,
+     "prima": "7d919e71913f2c12",
+     "dopo": "a45e7ca0268821f3",
+     "fine_prima": "ea37a9af6d0c36cc",
+     "fine_dopo": "7591ff5f5425535f"
+    },
+    {
+     "pagina": 1103,
+     "tipo": "table",
+     "bbox": [
+      182.9,
+      314.1,
+      326.4,
+      387.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1103,
+     "contenuti": 1,
+     "lettere_contenute": 159,
+     "prima": "5704ad7d95c5327c",
+     "dopo": "a45e7ca0268821f3",
+     "fine_prima": "23ca8911bb04fa4b",
+     "fine_dopo": "f5c1594d49614b14"
+    },
+    {
+     "pagina": 1134,
+     "tipo": "table",
+     "bbox": [
+      182.9,
+      333.9,
+      326.4,
+      510.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1134,
+     "contenuti": 4,
+     "lettere_contenute": 382,
+     "prima": "d13758b56ead6d0f",
+     "dopo": "c257b5d7c592577e",
+     "fine_prima": "5268de76c8716390",
+     "fine_dopo": "1cd2816d54c35a70"
+    },
+    {
+     "pagina": 1135,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      39.7,
+      174,
+      510
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1135,
+     "contenuti": 4,
+     "lettere_contenute": 1533,
+     "prima": "5268de76c8716390",
+     "dopo": "1cd2816d54c35a70",
+     "fine_prima": "06fa522eb069b711",
+     "fine_dopo": "7850c4c089f50350"
+    },
+    {
+     "pagina": 1135,
+     "tipo": "table",
+     "bbox": [
+      182.8,
+      39.3,
+      326.3,
+      510
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1135,
+     "contenuti": 2,
+     "lettere_contenute": 1508,
+     "prima": "9a00811560f905ba",
+     "dopo": "3ee1a8f3adb7ad5c",
+     "fine_prima": "06fa522eb069b711",
+     "fine_dopo": "7850c4c089f50350"
+    },
+    {
+     "pagina": 1136,
+     "tipo": "table",
+     "bbox": [
+      30.5,
+      39.8,
+      174,
+      503.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1136,
+     "contenuti": 4,
+     "lettere_contenute": 1398,
+     "prima": "06fa522eb069b711",
+     "dopo": "7850c4c089f50350",
+     "fine_prima": "e0dfac12de30d9bb",
+     "fine_dopo": "3c2e86990e738def"
+    },
+    {
+     "pagina": 1136,
+     "tipo": "table",
+     "bbox": [
+      182.8,
+      39.2,
+      326.4,
+      503.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1136,
+     "contenuti": 3,
+     "lettere_contenute": 1379,
+     "prima": "a77431b9377d4f2e",
+     "dopo": "a7262bfdd186519c",
+     "fine_prima": "e0dfac12de30d9bb",
+     "fine_dopo": "3c2e86990e738def"
+    },
+    {
+     "pagina": 1702,
+     "tipo": "table",
+     "bbox": [
+      182.7,
+      39.4,
+      326.4,
+      509.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1702,
+     "contenuti": 1,
+     "lettere_contenute": 1820,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "77a04d1d7881affb",
+     "fine_dopo": "ee5bc57324a52a55"
+    },
+    {
+     "pagina": 1702,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      160.8,
+      173.9,
+      509.6
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 1702,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "d27f4ed207bfc2eb",
+     "fine_dopo": "170ddb3e7044c8f0"
+    },
+    {
+     "pagina": 1703,
+     "tipo": "table",
+     "bbox": [
+      30.6,
+      39.4,
+      174.1,
+      173.5
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 1702,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "d27f4ed207bfc2eb",
+     "fine_dopo": "170ddb3e7044c8f0"
+    },
+    {
+     "pagina": 1703,
+     "tipo": "table",
+     "bbox": [
+      182.8,
+      39.9,
+      326.3,
+      162.5
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 1702,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "d27f4ed207bfc2eb",
+     "fine_dopo": "170ddb3e7044c8f0"
+    },
+    {
+     "pagina": 2379,
+     "tipo": "table",
+     "bbox": [
+      183,
+      40.2,
+      326.3,
+      510.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2379,
+     "contenuti": 3,
+     "lettere_contenute": 991,
+     "prima": "b9e98561bc902bee",
+     "dopo": "72f0652fa7676c5a",
+     "fine_prima": "744d5a6ae4e05402",
+     "fine_dopo": "5fafc18a41249f6c"
+    },
+    {
+     "pagina": 2379,
+     "tipo": "table",
+     "bbox": [
+      30.8,
+      410.4,
+      173.8,
+      510.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2379,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "fcf6fbea80cf053c",
+     "dopo": "1ff42916526159d8",
+     "fine_prima": "fcf6fbea80cf053c",
+     "fine_dopo": "1ff42916526159d8"
+    },
+    {
+     "pagina": 2380,
+     "tipo": "table",
+     "bbox": [
+      182.7,
+      39,
+      326.4,
+      328.3
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2380,
+     "contenuti": 1,
+     "lettere_contenute": 310,
+     "prima": "b7ea38552a69da9d",
+     "dopo": "28ecd86e466930bd",
+     "fine_prima": "6fd1373c9561444f",
+     "fine_dopo": "2ef02c28213c59ce"
+    },
+    {
+     "pagina": 2380,
+     "tipo": "table",
+     "bbox": [
+      30.5,
+      39.8,
+      174,
+      328.3
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 2380,
+     "contenuti": 4,
+     "lettere_contenute": 1148,
+     "prima": "b7ea38552a69da9d",
+     "dopo": "28ecd86e466930bd",
+     "fine_prima": "d4134b492fe12d05",
+     "fine_dopo": "72c4dc280ced6720"
+    },
+    {
+     "pagina": 2486,
+     "tipo": "table",
+     "bbox": [
+      183.1,
+      324.3,
+      326.2,
+      457.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2486,
+     "contenuti": 6,
+     "lettere_contenute": 173,
+     "prima": "79b3201c68beeeb6",
+     "dopo": "1085011be68a44f1",
+     "fine_prima": "10e28e467401e3ab",
+     "fine_dopo": "23b48bfb9a82c3e7"
+    }
+   ],
+   "originals/Codice penale e procedura penale e leggi complementari 2025.pdf": [
+    {
+     "pagina": 716,
+     "tipo": "table",
+     "bbox": [
+      183,
+      101.7,
+      326.3,
+      189.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 714,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "792490d4bd5b98ef",
+     "dopo": "f6146749df3bf10d",
+     "fine_prima": "792490d4bd5b98ef",
+     "fine_dopo": "f6146749df3bf10d"
+    },
+    {
+     "pagina": 1604,
+     "tipo": "table",
+     "bbox": [
+      183,
+      52.3,
+      326.3,
+      509.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1604,
+     "contenuti": 2,
+     "lettere_contenute": 619,
+     "prima": "2a08ff1fd95a5944",
+     "dopo": "aa314d9ccf63c5db",
+     "fine_prima": "9c94cd52e3dc4b5f",
+     "fine_dopo": "4752309b15fba2a9"
+    },
+    {
+     "pagina": 1605,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      40.1,
+      173.9,
+      253.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1605,
+     "contenuti": 2,
+     "lettere_contenute": 556,
+     "prima": "c785d5ea8392f8b9",
+     "dopo": "6954997c85fef660",
+     "fine_prima": "6cb178ccb70af683",
+     "fine_dopo": "ce6a5d172cc5d093"
+    },
+    {
+     "pagina": 1605,
+     "tipo": "table",
+     "bbox": [
+      183,
+      40.5,
+      326.2,
+      85.8
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 1605,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c785d5ea8392f8b9",
+     "dopo": "6954997c85fef660",
+     "fine_prima": "c785d5ea8392f8b9",
+     "fine_dopo": "6954997c85fef660"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      61.7,
+      107.4,
+      196.2,
+      171.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      190.5,
+      295.3,
+      254.2
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      273.1,
+      295.2,
+      336.8
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      62,
+      357.6,
+      295.1,
+      421.1
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      54.5,
+      295.2,
+      118.3
+     ],
+     "gruppo": 4,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      147.8,
+      261.9,
+      176.9
+     ],
+     "gruppo": 5,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      204.3,
+      262,
+      233.8
+     ],
+     "gruppo": 6,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      260.6,
+      261.9,
+      296
+     ],
+     "gruppo": 7,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      62,
+      327.4,
+      272,
+      379.7
+     ],
+     "gruppo": 8,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      54.6,
+      295.2,
+      119
+     ],
+     "gruppo": 9,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      150.2,
+      295.2,
+      214.3
+     ],
+     "gruppo": 10,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      245.2,
+      295.2,
+      309.4
+     ],
+     "gruppo": 11,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      340.1,
+      295.3,
+      392.8
+     ],
+     "gruppo": 12,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.3,
+      53.6,
+      289.6,
+      117
+     ],
+     "gruppo": 13,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.2,
+      136.3,
+      290.2,
+      204.2
+     ],
+     "gruppo": 14,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.1,
+      211.8,
+      293.4,
+      290
+     ],
+     "gruppo": 15,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.4,
+      309.9,
+      289.6,
+      349.3
+     ],
+     "gruppo": 16,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      54.5,
+      293.3,
+      102.1
+     ],
+     "gruppo": 17,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      123.6,
+      293.1,
+      163.9
+     ],
+     "gruppo": 18,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      185.7,
+      293.5,
+      220.9
+     ],
+     "gruppo": 19,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      241.7,
+      293.5,
+      276
+     ],
+     "gruppo": 20,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      303.6,
+      293.2,
+      366
+     ],
+     "gruppo": 21,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2184,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      55.8,
+      293.5,
+      140.9
+     ],
+     "gruppo": 22,
+     "pagina_flusso": 2184,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2184,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      171.4,
+      293.4,
+      256.8
+     ],
+     "gruppo": 23,
+     "pagina_flusso": 2184,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2184,
+     "tipo": "table",
+     "bbox": [
+      63.9,
+      287.2,
+      293.6,
+      361.3
+     ],
+     "gruppo": 24,
+     "pagina_flusso": 2184,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.7,
+      54.6,
+      292.3,
+      128.5
+     ],
+     "gruppo": 25,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.7,
+      148.2,
+      292.1,
+      182.4
+     ],
+     "gruppo": 26,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.7,
+      191.9,
+      292.1,
+      226
+     ],
+     "gruppo": 27,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.6,
+      230.2,
+      292.3,
+      264.2
+     ],
+     "gruppo": 28,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.8,
+      284.2,
+      292.1,
+      333.2
+     ],
+     "gruppo": 29,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.8,
+      353.1,
+      229.2,
+      381.9
+     ],
+     "gruppo": 30,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2514,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      97,
+      326.3,
+      360.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    },
+    {
+     "pagina": 2515,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      58.5,
+      326.3,
+      468.9
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    },
+    {
+     "pagina": 2516,
+     "tipo": "table",
+     "bbox": [
+      30.6,
+      40.3,
+      326.4,
+      451.1
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    },
+    {
+     "pagina": 2517,
+     "tipo": "table",
+     "bbox": [
+      30.5,
+      40.3,
+      326.5,
+      451.4
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    }
+   ],
+   "originals/Rivista DPC 2-2018.pdf": [
+    {
+     "pagina": 205,
+     "tipo": "figure",
+     "bbox": [
+      153.9,
+      124.4,
+      524.7,
+      322.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 205,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "08c63c4205415b9c",
+     "dopo": "7a1d982f574b69e8",
+     "fine_prima": "08c63c4205415b9c",
+     "fine_dopo": "7a1d982f574b69e8"
+    },
+    {
+     "pagina": 206,
+     "tipo": "figure",
+     "bbox": [
+      153.8,
+      56.8,
+      524.4,
+      221.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 206,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a87c6b9ab219e042",
+     "dopo": "c7aac972f10f6ecc",
+     "fine_prima": "a87c6b9ab219e042",
+     "fine_dopo": "c7aac972f10f6ecc"
+    },
+    {
+     "pagina": 206,
+     "tipo": "figure",
+     "bbox": [
+      153.8,
+      395.6,
+      524.5,
+      593.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 206,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "5ffab8b563037baf",
+     "dopo": "6dfd69df614c7a50",
+     "fine_prima": "5ffab8b563037baf",
+     "fine_dopo": "6dfd69df614c7a50"
+    },
+    {
+     "pagina": 209,
+     "tipo": "figure",
+     "bbox": [
+      153.8,
+      132.1,
+      524.6,
+      370.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 209,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d8cd08b6b0d16c3f",
+     "dopo": "16ae0baf798d700b",
+     "fine_prima": "d8cd08b6b0d16c3f",
+     "fine_dopo": "16ae0baf798d700b"
+    },
+    {
+     "pagina": 210,
+     "tipo": "figure",
+     "bbox": [
+      192.7,
+      199.4,
+      491.1,
+      370.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 210,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "9db286653c3dacdc",
+     "dopo": "24a51c79c3bfab68",
+     "fine_prima": "9db286653c3dacdc",
+     "fine_dopo": "24a51c79c3bfab68"
+    },
+    {
+     "pagina": 213,
+     "tipo": "figure",
+     "bbox": [
+      153.7,
+      347,
+      524.6,
+      528.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 213,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "9523c67a2c21ec67",
+     "dopo": "24a51c79c3bfab68",
+     "fine_prima": "9523c67a2c21ec67",
+     "fine_dopo": "24a51c79c3bfab68"
+    },
+    {
+     "pagina": 327,
+     "tipo": "table",
+     "bbox": [
+      48.8,
+      136,
+      515.7,
+      470.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 327,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 327,
+     "tipo": "table",
+     "bbox": [
+      49.2,
+      523.4,
+      518.3,
+      683.5
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 327,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 328,
+     "tipo": "table",
+     "bbox": [
+      48.4,
+      62.4,
+      514.8,
+      241.4
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 328,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 328,
+     "tipo": "table",
+     "bbox": [
+      47.4,
+      279,
+      518.1,
+      439.7
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 328,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 328,
+     "tipo": "table",
+     "bbox": [
+      46.5,
+      483.6,
+      518.6,
+      654.9
+     ],
+     "gruppo": 4,
+     "pagina_flusso": 328,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      49.5,
+      62.5,
+      518.1,
+      261.8
+     ],
+     "gruppo": 5,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      48.7,
+      299.8,
+      516.5,
+      480.2
+     ],
+     "gruppo": 6,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      48.1,
+      521.5,
+      519.7,
+      569
+     ],
+     "gruppo": 7,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      47.5,
+      613.9,
+      517.1,
+      738.9
+     ],
+     "gruppo": 8,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      46.7,
+      61.9,
+      516.7,
+      158.9
+     ],
+     "gruppo": 9,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      47.3,
+      202.4,
+      519.4,
+      373.5
+     ],
+     "gruppo": 10,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      47.4,
+      410.8,
+      520.4,
+      515.8
+     ],
+     "gruppo": 11,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      45.6,
+      566.7,
+      521,
+      681.2
+     ],
+     "gruppo": 12,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      48.2,
+      61.8,
+      516.6,
+      192.9
+     ],
+     "gruppo": 13,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      47.1,
+      233.9,
+      516.1,
+      375.7
+     ],
+     "gruppo": 14,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      46.1,
+      421.9,
+      519.3,
+      526.8
+     ],
+     "gruppo": 15,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      48.1,
+      583,
+      517.2,
+      686.8
+     ],
+     "gruppo": 16,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 332,
+     "tipo": "table",
+     "bbox": [
+      46.8,
+      61.7,
+      519.9,
+      280.5
+     ],
+     "gruppo": 17,
+     "pagina_flusso": 332,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 332,
+     "tipo": "table",
+     "bbox": [
+      46.5,
+      343,
+      518.8,
+      517.1
+     ],
+     "gruppo": 18,
+     "pagina_flusso": 332,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    }
+   ],
+   "originals/Rivista DPC 4-2020.pdf": [
+    {
+     "pagina": 108,
+     "tipo": "figure",
+     "bbox": [
+      152.8,
+      415.4,
+      529,
+      591.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 108,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "17566ef020a428da",
+     "dopo": "b7b22d04094ef8d8",
+     "fine_prima": "17566ef020a428da",
+     "fine_dopo": "b7b22d04094ef8d8"
+    },
+    {
+     "pagina": 111,
+     "tipo": "figure",
+     "bbox": [
+      153.4,
+      181.8,
+      530.3,
+      406.4
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 111,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "0bedb480251b204a",
+     "dopo": "d08bb6b5295b4fdf",
+     "fine_prima": "0bedb480251b204a",
+     "fine_dopo": "d08bb6b5295b4fdf"
+    },
+    {
+     "pagina": 112,
+     "tipo": "figure",
+     "bbox": [
+      153.5,
+      217.5,
+      524.5,
+      369.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 112,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "23eaa24305e593c6",
+     "dopo": "55292af45b3afc10",
+     "fine_prima": "23eaa24305e593c6",
+     "fine_dopo": "55292af45b3afc10"
+    },
+    {
+     "pagina": 112,
+     "tipo": "figure",
+     "bbox": [
+      153.3,
+      444,
+      524.6,
+      600.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 112,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a0ebefae02a6742b",
+     "dopo": "0f2f5ebd84963a21",
+     "fine_prima": "a0ebefae02a6742b",
+     "fine_dopo": "0f2f5ebd84963a21"
+    },
+    {
+     "pagina": 113,
+     "tipo": "figure",
+     "bbox": [
+      153.5,
+      56.1,
+      525.7,
+      214.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 113,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a0ebefae02a6742b",
+     "dopo": "32101e2469df9ca1",
+     "fine_prima": "a0ebefae02a6742b",
+     "fine_dopo": "32101e2469df9ca1"
+    },
+    {
+     "pagina": 113,
+     "tipo": "figure",
+     "bbox": [
+      153.3,
+      294.3,
+      525.7,
+      466.2
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 113,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a0ebefae02a6742b",
+     "dopo": "32101e2469df9ca1",
+     "fine_prima": "a0ebefae02a6742b",
+     "fine_dopo": "32101e2469df9ca1"
+    },
+    {
+     "pagina": 116,
+     "tipo": "table",
+     "bbox": [
+      76.5,
+      55.3,
+      525.8,
+      535.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 116,
+     "contenuti": 2,
+     "lettere_contenute": 69,
+     "prima": "103fe6175d859bc6",
+     "dopo": "bed1a1ca398d7fc3",
+     "fine_prima": "ae737ef72e1036ed",
+     "fine_dopo": "9de4f389a8689813"
+    },
+    {
+     "pagina": 117,
+     "tipo": "table",
+     "bbox": [
+      152.7,
+      55.3,
+      497.8,
+      569
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 117,
+     "contenuti": 1,
+     "lettere_contenute": 702,
+     "prima": "9f45f6266337c9ee",
+     "dopo": "0b8b57dbc6945fd5",
+     "fine_prima": "1c749dc08cd81905",
+     "fine_dopo": "cc09725ca454d88e"
+    },
+    {
+     "pagina": 118,
+     "tipo": "table",
+     "bbox": [
+      76.5,
+      55.2,
+      525.1,
+      480.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 118,
+     "contenuti": 1,
+     "lettere_contenute": 91,
+     "prima": "93a34ab1edf3b874",
+     "dopo": "ff501737d06ce860",
+     "fine_prima": "034a72a83733826e",
+     "fine_dopo": "77726655d2f854b1"
+    },
+    {
+     "pagina": 119,
+     "tipo": "table",
+     "bbox": [
+      76.3,
+      55.3,
+      525.2,
+      460.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 119,
+     "contenuti": 4,
+     "lettere_contenute": 1223,
+     "prima": "32b8138c7fe56e31",
+     "dopo": "a7ec3cb6382a78aa",
+     "fine_prima": "61b242d04e2e15eb",
+     "fine_dopo": "771598f47df501e4"
+    }
+   ],
+   "originals_new/Delitti in prima pagina_9788832854046(p)_pdf.pdf": [
+    {
+     "pagina": 34,
+     "tipo": "figure",
+     "bbox": [
+      83.5,
+      109.8,
+      368.7,
+      290.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 35,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "eb27e18e56c10be8",
+     "dopo": "21421a659c1a205c",
+     "fine_prima": "eb27e18e56c10be8",
+     "fine_dopo": "21421a659c1a205c"
+    },
+    {
+     "pagina": 34,
+     "tipo": "figure",
+     "bbox": [
+      83.6,
+      300.8,
+      368.7,
+      448.1
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 35,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "eb27e18e56c10be8",
+     "dopo": "21421a659c1a205c",
+     "fine_prima": "eb27e18e56c10be8",
+     "fine_dopo": "21421a659c1a205c"
+    },
+    {
+     "pagina": 44,
+     "tipo": "figure",
+     "bbox": [
+      84,
+      109.9,
+      369.3,
+      340.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 44,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "2ddf698d16627f3a",
+     "dopo": "e53874e9ac2f70b0",
+     "fine_prima": "2ddf698d16627f3a",
+     "fine_dopo": "e53874e9ac2f70b0"
+    },
+    {
+     "pagina": 48,
+     "tipo": "figure",
+     "bbox": [
+      84.7,
+      110.5,
+      369,
+      507
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 48,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "2be897f62b33154c",
+     "dopo": "d16d1aea1f98baa7",
+     "fine_prima": "2be897f62b33154c",
+     "fine_dopo": "d16d1aea1f98baa7"
+    },
+    {
+     "pagina": 122,
+     "tipo": "figure",
+     "bbox": [
+      84.7,
+      110.8,
+      369,
+      537.4
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 123,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "30dcd5659321a3c9",
+     "dopo": "960a5e27d3688863",
+     "fine_prima": "30dcd5659321a3c9",
+     "fine_dopo": "960a5e27d3688863"
+    },
+    {
+     "pagina": 169,
+     "tipo": "table",
+     "bbox": [
+      83.9,
+      296.3,
+      368.8,
+      558.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 169,
+     "contenuti": 1,
+     "lettere_contenute": 393,
+     "prima": "8c7bcbee6f7cda5c",
+     "dopo": "9721ab81a0e01d1e",
+     "fine_prima": "7cdbabb6378c9da8",
+     "fine_dopo": "1b40c5eda90705c7"
+    },
+    {
+     "pagina": 251,
+     "tipo": "figure",
+     "bbox": [
+      136.9,
+      112.8,
+      317.3,
+      279.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 251,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "f726da74a43a8220",
+     "dopo": "09b784332a0540f1",
+     "fine_prima": "f726da74a43a8220",
+     "fine_dopo": "09b784332a0540f1"
+    },
+    {
+     "pagina": 255,
+     "tipo": "figure",
+     "bbox": [
+      84.4,
+      113.9,
+      368.8,
+      393
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 255,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "0bb62631efe0cd61",
+     "dopo": "1140da23ed2bf1f2",
+     "fine_prima": "0bb62631efe0cd61",
+     "fine_dopo": "1140da23ed2bf1f2"
+    },
+    {
+     "pagina": 256,
+     "tipo": "figure",
+     "bbox": [
+      123.7,
+      110.2,
+      329.4,
+      384.4
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 256,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "db80dbd8be638a21",
+     "dopo": "9605e0507ec16861",
+     "fine_prima": "db80dbd8be638a21",
+     "fine_dopo": "9605e0507ec16861"
+    },
+    {
+     "pagina": 257,
+     "tipo": "figure",
+     "bbox": [
+      84,
+      110.1,
+      242.2,
+      321.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 257,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "1fdde0285157627e",
+     "dopo": "bfaecbc29d12e7e0",
+     "fine_prima": "1fdde0285157627e",
+     "fine_dopo": "bfaecbc29d12e7e0"
+    }
+   ],
+   "originals_new/Diritto penale. Appunti di parte generale_9791221100563_pdf.pdf": [
+    {
+     "pagina": 185,
+     "tipo": "table",
+     "bbox": [
+      58.8,
+      78.7,
+      421.7,
+      247.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "44f6b64fe0fd414b",
+     "dopo": "db8e48cb9b4c9ab2",
+     "fine_prima": "44f6b64fe0fd414b",
+     "fine_dopo": "db8e48cb9b4c9ab2"
+    }
+   ],
+   "originals_new/Manuale di Diritto Costituzionale.pdf": [
+    {
+     "pagina": 27,
+     "tipo": "figure",
+     "bbox": [
+      55.6,
+      363.3,
+      423.2,
+      508.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 27,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "72f28bff3c48de28",
+     "dopo": "e7afa3338ce4c9dc",
+     "fine_prima": "72f28bff3c48de28",
+     "fine_dopo": "e7afa3338ce4c9dc"
+    },
+    {
+     "pagina": 167,
+     "tipo": "table",
+     "bbox": [
+      69.8,
+      230.4,
+      319.4,
+      334.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 167,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bbb91d5ebfd6f812",
+     "dopo": "c589a1df1624b787",
+     "fine_prima": "bbb91d5ebfd6f812",
+     "fine_dopo": "c589a1df1624b787"
+    },
+    {
+     "pagina": 250,
+     "tipo": "table",
+     "bbox": [
+      73.4,
+      341.3,
+      408.8,
+      440.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 250,
+     "contenuti": 1,
+     "lettere_contenute": 334,
+     "prima": "48aa8b9d0f39cdf5",
+     "dopo": "c65f0f9ffbec4745",
+     "fine_prima": "9021d53d9e827fcb",
+     "fine_dopo": "2fbc5df0138d2198"
+    },
+    {
+     "pagina": 306,
+     "tipo": "table",
+     "bbox": [
+      56,
+      92.2,
+      426,
+      301.3
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 306,
+     "contenuti": 2,
+     "lettere_contenute": 791,
+     "prima": "fa7af8cfc34410e6",
+     "dopo": "e6815fd1f69cd31d",
+     "fine_prima": "3f30d9647931b789",
+     "fine_dopo": "c00a4ba965284d31"
+    },
+    {
+     "pagina": 313,
+     "tipo": "table",
+     "bbox": [
+      55.7,
+      92.1,
+      426,
+      275.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 313,
+     "contenuti": 1,
+     "lettere_contenute": 265,
+     "prima": "6a1a7461f5dcccc7",
+     "dopo": "cfcc8113092eddd3",
+     "fine_prima": "0dd7da99f0493dee",
+     "fine_dopo": "a6aeca28dd7a9aef"
+    },
+    {
+     "pagina": 382,
+     "tipo": "table",
+     "bbox": [
+      55.9,
+      72.7,
+      425.8,
+      186.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 382,
+     "contenuti": 1,
+     "lettere_contenute": 290,
+     "prima": "fcb21c7371bc8a43",
+     "dopo": "5f92532c7217a415",
+     "fine_prima": "a63f47c42c08accd",
+     "fine_dopo": "4a4140e1e91c8698"
+    },
+    {
+     "pagina": 390,
+     "tipo": "figure",
+     "bbox": [
+      55.8,
+      92.2,
+      426,
+      386.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 390,
+     "contenuti": 3,
+     "lettere_contenute": 862,
+     "prima": "1347bc73fc697974",
+     "dopo": "96b39b7a678fac60",
+     "fine_prima": "a7243976ba534354",
+     "fine_dopo": "bc4de61c16219e15"
+    },
+    {
+     "pagina": 394,
+     "tipo": "figure",
+     "bbox": [
+      55.7,
+      92.1,
+      425.4,
+      461.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 394,
+     "contenuti": 2,
+     "lettere_contenute": 594,
+     "prima": "cfa97ecf9fff96a4",
+     "dopo": "fde61b47ca359bc5",
+     "fine_prima": "22f445e2088257a2",
+     "fine_dopo": "853179d38a5fb1e8"
+    }
+   ]
+  },
+  "ios265": {
+   "originals/Codice civile e procedura civile e leggi complementari_9788828854708_pdf.pdf": [
+    {
+     "pagina": 1103,
+     "tipo": "table",
+     "bbox": [
+      183.1,
+      139.9,
+      326.3,
+      213
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1103,
+     "contenuti": 1,
+     "lettere_contenute": 143,
+     "prima": "8590af001d97d054",
+     "dopo": "73f6b67eb9af4c1e",
+     "fine_prima": "de954188c2ccb140",
+     "fine_dopo": "56b56aecea26aa6b"
+    },
+    {
+     "pagina": 1103,
+     "tipo": "table",
+     "bbox": [
+      183,
+      227.1,
+      326.3,
+      300.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1103,
+     "contenuti": 1,
+     "lettere_contenute": 157,
+     "prima": "7d919e71913f2c12",
+     "dopo": "a45e7ca0268821f3",
+     "fine_prima": "ea37a9af6d0c36cc",
+     "fine_dopo": "7591ff5f5425535f"
+    },
+    {
+     "pagina": 1103,
+     "tipo": "table",
+     "bbox": [
+      182.9,
+      314.1,
+      326.4,
+      387.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1103,
+     "contenuti": 1,
+     "lettere_contenute": 159,
+     "prima": "5704ad7d95c5327c",
+     "dopo": "a45e7ca0268821f3",
+     "fine_prima": "23ca8911bb04fa4b",
+     "fine_dopo": "f5c1594d49614b14"
+    },
+    {
+     "pagina": 1134,
+     "tipo": "table",
+     "bbox": [
+      182.9,
+      333.9,
+      326.4,
+      510.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1134,
+     "contenuti": 4,
+     "lettere_contenute": 382,
+     "prima": "d13758b56ead6d0f",
+     "dopo": "c257b5d7c592577e",
+     "fine_prima": "5268de76c8716390",
+     "fine_dopo": "1cd2816d54c35a70"
+    },
+    {
+     "pagina": 1135,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      39.7,
+      174,
+      510
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1135,
+     "contenuti": 4,
+     "lettere_contenute": 1533,
+     "prima": "5268de76c8716390",
+     "dopo": "1cd2816d54c35a70",
+     "fine_prima": "06fa522eb069b711",
+     "fine_dopo": "7850c4c089f50350"
+    },
+    {
+     "pagina": 1135,
+     "tipo": "table",
+     "bbox": [
+      182.8,
+      39.3,
+      326.3,
+      510
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1135,
+     "contenuti": 2,
+     "lettere_contenute": 1508,
+     "prima": "9a00811560f905ba",
+     "dopo": "3ee1a8f3adb7ad5c",
+     "fine_prima": "06fa522eb069b711",
+     "fine_dopo": "7850c4c089f50350"
+    },
+    {
+     "pagina": 1136,
+     "tipo": "table",
+     "bbox": [
+      30.5,
+      39.8,
+      174,
+      503.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1136,
+     "contenuti": 4,
+     "lettere_contenute": 1398,
+     "prima": "06fa522eb069b711",
+     "dopo": "7850c4c089f50350",
+     "fine_prima": "e0dfac12de30d9bb",
+     "fine_dopo": "3c2e86990e738def"
+    },
+    {
+     "pagina": 1136,
+     "tipo": "table",
+     "bbox": [
+      182.8,
+      39.2,
+      326.4,
+      503.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1136,
+     "contenuti": 3,
+     "lettere_contenute": 1379,
+     "prima": "a77431b9377d4f2e",
+     "dopo": "a7262bfdd186519c",
+     "fine_prima": "e0dfac12de30d9bb",
+     "fine_dopo": "3c2e86990e738def"
+    },
+    {
+     "pagina": 1702,
+     "tipo": "table",
+     "bbox": [
+      182.7,
+      39.4,
+      326.4,
+      509.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1702,
+     "contenuti": 1,
+     "lettere_contenute": 1820,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "77a04d1d7881affb",
+     "fine_dopo": "ee5bc57324a52a55"
+    },
+    {
+     "pagina": 1702,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      160.8,
+      173.9,
+      509.6
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 1702,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "d27f4ed207bfc2eb",
+     "fine_dopo": "170ddb3e7044c8f0"
+    },
+    {
+     "pagina": 1703,
+     "tipo": "table",
+     "bbox": [
+      30.6,
+      39.4,
+      174.1,
+      173.5
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 1702,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "d27f4ed207bfc2eb",
+     "fine_dopo": "170ddb3e7044c8f0"
+    },
+    {
+     "pagina": 1703,
+     "tipo": "table",
+     "bbox": [
+      182.8,
+      39.9,
+      326.3,
+      162.5
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 1702,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d27f4ed207bfc2eb",
+     "dopo": "170ddb3e7044c8f0",
+     "fine_prima": "d27f4ed207bfc2eb",
+     "fine_dopo": "170ddb3e7044c8f0"
+    },
+    {
+     "pagina": 2379,
+     "tipo": "table",
+     "bbox": [
+      183,
+      40.2,
+      326.3,
+      510.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2379,
+     "contenuti": 3,
+     "lettere_contenute": 991,
+     "prima": "b9e98561bc902bee",
+     "dopo": "72f0652fa7676c5a",
+     "fine_prima": "744d5a6ae4e05402",
+     "fine_dopo": "5fafc18a41249f6c"
+    },
+    {
+     "pagina": 2379,
+     "tipo": "table",
+     "bbox": [
+      30.8,
+      410.3,
+      173.8,
+      510.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2379,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "fcf6fbea80cf053c",
+     "dopo": "1ff42916526159d8",
+     "fine_prima": "fcf6fbea80cf053c",
+     "fine_dopo": "1ff42916526159d8"
+    },
+    {
+     "pagina": 2380,
+     "tipo": "table",
+     "bbox": [
+      182.7,
+      39,
+      326.4,
+      328.3
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2380,
+     "contenuti": 1,
+     "lettere_contenute": 310,
+     "prima": "b7ea38552a69da9d",
+     "dopo": "28ecd86e466930bd",
+     "fine_prima": "6fd1373c9561444f",
+     "fine_dopo": "2ef02c28213c59ce"
+    },
+    {
+     "pagina": 2380,
+     "tipo": "table",
+     "bbox": [
+      30.5,
+      39.8,
+      174,
+      328.3
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 2380,
+     "contenuti": 4,
+     "lettere_contenute": 1148,
+     "prima": "b7ea38552a69da9d",
+     "dopo": "28ecd86e466930bd",
+     "fine_prima": "d4134b492fe12d05",
+     "fine_dopo": "72c4dc280ced6720"
+    },
+    {
+     "pagina": 2486,
+     "tipo": "table",
+     "bbox": [
+      183.1,
+      324.3,
+      326.2,
+      457.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2486,
+     "contenuti": 6,
+     "lettere_contenute": 173,
+     "prima": "79b3201c68beeeb6",
+     "dopo": "1085011be68a44f1",
+     "fine_prima": "10e28e467401e3ab",
+     "fine_dopo": "23b48bfb9a82c3e7"
+    }
+   ],
+   "originals/Codice penale e procedura penale e leggi complementari 2025.pdf": [
+    {
+     "pagina": 716,
+     "tipo": "table",
+     "bbox": [
+      183,
+      101.7,
+      326.3,
+      189.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 714,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "792490d4bd5b98ef",
+     "dopo": "f6146749df3bf10d",
+     "fine_prima": "792490d4bd5b98ef",
+     "fine_dopo": "f6146749df3bf10d"
+    },
+    {
+     "pagina": 1604,
+     "tipo": "table",
+     "bbox": [
+      183,
+      52.3,
+      326.3,
+      509.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1604,
+     "contenuti": 2,
+     "lettere_contenute": 619,
+     "prima": "2a08ff1fd95a5944",
+     "dopo": "aa314d9ccf63c5db",
+     "fine_prima": "9c94cd52e3dc4b5f",
+     "fine_dopo": "4752309b15fba2a9"
+    },
+    {
+     "pagina": 1605,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      40.1,
+      173.9,
+      253.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 1605,
+     "contenuti": 2,
+     "lettere_contenute": 556,
+     "prima": "c785d5ea8392f8b9",
+     "dopo": "6954997c85fef660",
+     "fine_prima": "6cb178ccb70af683",
+     "fine_dopo": "ce6a5d172cc5d093"
+    },
+    {
+     "pagina": 1605,
+     "tipo": "table",
+     "bbox": [
+      183,
+      40.5,
+      326.2,
+      85.8
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 1605,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c785d5ea8392f8b9",
+     "dopo": "6954997c85fef660",
+     "fine_prima": "c785d5ea8392f8b9",
+     "fine_dopo": "6954997c85fef660"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      61.7,
+      107.4,
+      196.2,
+      171.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      190.5,
+      295.3,
+      254.2
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      273.1,
+      295.2,
+      336.8
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2179,
+     "tipo": "table",
+     "bbox": [
+      62,
+      357.6,
+      295.2,
+      421.1
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 2179,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      54.5,
+      295.2,
+      118.3
+     ],
+     "gruppo": 4,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      147.8,
+      261.9,
+      176.9
+     ],
+     "gruppo": 5,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      204.3,
+      262,
+      233.8
+     ],
+     "gruppo": 6,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      260.6,
+      261.9,
+      296
+     ],
+     "gruppo": 7,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2180,
+     "tipo": "table",
+     "bbox": [
+      62,
+      327.4,
+      272,
+      379.7
+     ],
+     "gruppo": 8,
+     "pagina_flusso": 2180,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      54.6,
+      295.2,
+      119
+     ],
+     "gruppo": 9,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      150.2,
+      295.2,
+      214.3
+     ],
+     "gruppo": 10,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.9,
+      245.2,
+      295.2,
+      309.4
+     ],
+     "gruppo": 11,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2181,
+     "tipo": "table",
+     "bbox": [
+      61.8,
+      340.1,
+      295.3,
+      392.8
+     ],
+     "gruppo": 12,
+     "pagina_flusso": 2181,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.3,
+      53.6,
+      289.6,
+      117
+     ],
+     "gruppo": 13,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.2,
+      136.3,
+      290.2,
+      204.2
+     ],
+     "gruppo": 14,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.1,
+      211.8,
+      293.4,
+      290
+     ],
+     "gruppo": 15,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2182,
+     "tipo": "table",
+     "bbox": [
+      63.4,
+      309.9,
+      289.6,
+      349.3
+     ],
+     "gruppo": 16,
+     "pagina_flusso": 2182,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      54.5,
+      293.3,
+      102.1
+     ],
+     "gruppo": 17,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      123.6,
+      293.1,
+      163.9
+     ],
+     "gruppo": 18,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      185.7,
+      293.5,
+      220.9
+     ],
+     "gruppo": 19,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      241.7,
+      293.5,
+      276
+     ],
+     "gruppo": 20,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2183,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      303.6,
+      293.2,
+      366
+     ],
+     "gruppo": 21,
+     "pagina_flusso": 2183,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2184,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      55.8,
+      293.5,
+      140.9
+     ],
+     "gruppo": 22,
+     "pagina_flusso": 2184,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2184,
+     "tipo": "table",
+     "bbox": [
+      63.8,
+      171.4,
+      293.4,
+      256.8
+     ],
+     "gruppo": 23,
+     "pagina_flusso": 2184,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2184,
+     "tipo": "table",
+     "bbox": [
+      63.9,
+      287.2,
+      293.6,
+      361.3
+     ],
+     "gruppo": 24,
+     "pagina_flusso": 2184,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.7,
+      54.6,
+      292.3,
+      128.5
+     ],
+     "gruppo": 25,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.7,
+      148.2,
+      292.1,
+      182.4
+     ],
+     "gruppo": 26,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.7,
+      191.9,
+      292.1,
+      226
+     ],
+     "gruppo": 27,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.6,
+      230.2,
+      292.3,
+      264.2
+     ],
+     "gruppo": 28,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.8,
+      284.2,
+      292.1,
+      333.2
+     ],
+     "gruppo": 29,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2185,
+     "tipo": "table",
+     "bbox": [
+      65.8,
+      353.1,
+      229.2,
+      381.9
+     ],
+     "gruppo": 30,
+     "pagina_flusso": 2185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bd6226be12443a40",
+     "dopo": "7d6ab7cc76b54a16",
+     "fine_prima": "bd6226be12443a40",
+     "fine_dopo": "7d6ab7cc76b54a16"
+    },
+    {
+     "pagina": 2514,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      97,
+      326.3,
+      360.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    },
+    {
+     "pagina": 2515,
+     "tipo": "table",
+     "bbox": [
+      30.7,
+      58.5,
+      326.3,
+      468.9
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    },
+    {
+     "pagina": 2516,
+     "tipo": "table",
+     "bbox": [
+      30.6,
+      40.3,
+      326.4,
+      451.1
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    },
+    {
+     "pagina": 2517,
+     "tipo": "table",
+     "bbox": [
+      30.5,
+      40.3,
+      326.5,
+      451.4
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 2514,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "55e5523e7227a39c",
+     "dopo": "7fb231f01c046ff1",
+     "fine_prima": "55e5523e7227a39c",
+     "fine_dopo": "7fb231f01c046ff1"
+    }
+   ],
+   "originals/Rivista DPC 2-2018.pdf": [
+    {
+     "pagina": 205,
+     "tipo": "figure",
+     "bbox": [
+      153.9,
+      124.4,
+      524.7,
+      322.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 205,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "08c63c4205415b9c",
+     "dopo": "7a1d982f574b69e8",
+     "fine_prima": "08c63c4205415b9c",
+     "fine_dopo": "7a1d982f574b69e8"
+    },
+    {
+     "pagina": 206,
+     "tipo": "figure",
+     "bbox": [
+      153.8,
+      56.7,
+      524.4,
+      221.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 206,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a87c6b9ab219e042",
+     "dopo": "c7aac972f10f6ecc",
+     "fine_prima": "a87c6b9ab219e042",
+     "fine_dopo": "c7aac972f10f6ecc"
+    },
+    {
+     "pagina": 206,
+     "tipo": "figure",
+     "bbox": [
+      153.8,
+      395.5,
+      524.5,
+      593.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 206,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "5ffab8b563037baf",
+     "dopo": "6dfd69df614c7a50",
+     "fine_prima": "5ffab8b563037baf",
+     "fine_dopo": "6dfd69df614c7a50"
+    },
+    {
+     "pagina": 209,
+     "tipo": "figure",
+     "bbox": [
+      153.8,
+      132.1,
+      524.6,
+      370.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 209,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "d8cd08b6b0d16c3f",
+     "dopo": "16ae0baf798d700b",
+     "fine_prima": "d8cd08b6b0d16c3f",
+     "fine_dopo": "16ae0baf798d700b"
+    },
+    {
+     "pagina": 210,
+     "tipo": "figure",
+     "bbox": [
+      192.6,
+      199.4,
+      491.1,
+      370.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 210,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "9db286653c3dacdc",
+     "dopo": "24a51c79c3bfab68",
+     "fine_prima": "9db286653c3dacdc",
+     "fine_dopo": "24a51c79c3bfab68"
+    },
+    {
+     "pagina": 213,
+     "tipo": "figure",
+     "bbox": [
+      153.7,
+      347,
+      524.6,
+      528.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 213,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "9523c67a2c21ec67",
+     "dopo": "24a51c79c3bfab68",
+     "fine_prima": "9523c67a2c21ec67",
+     "fine_dopo": "24a51c79c3bfab68"
+    },
+    {
+     "pagina": 327,
+     "tipo": "table",
+     "bbox": [
+      48.8,
+      136.1,
+      515.8,
+      470.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 327,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 327,
+     "tipo": "table",
+     "bbox": [
+      49.2,
+      523.4,
+      518.3,
+      683.5
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 327,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 328,
+     "tipo": "table",
+     "bbox": [
+      48.4,
+      62.4,
+      514.8,
+      241.4
+     ],
+     "gruppo": 2,
+     "pagina_flusso": 328,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 328,
+     "tipo": "table",
+     "bbox": [
+      47.4,
+      279,
+      518.1,
+      439.7
+     ],
+     "gruppo": 3,
+     "pagina_flusso": 328,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 328,
+     "tipo": "table",
+     "bbox": [
+      46.5,
+      483.6,
+      518.6,
+      654.9
+     ],
+     "gruppo": 4,
+     "pagina_flusso": 328,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      49.5,
+      62.5,
+      518.1,
+      261.8
+     ],
+     "gruppo": 5,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      48.7,
+      299.8,
+      516.5,
+      480.2
+     ],
+     "gruppo": 6,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      48.1,
+      521.5,
+      519.7,
+      569
+     ],
+     "gruppo": 7,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 329,
+     "tipo": "table",
+     "bbox": [
+      47.5,
+      613.9,
+      517.1,
+      738.9
+     ],
+     "gruppo": 8,
+     "pagina_flusso": 329,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      46.7,
+      61.9,
+      516.7,
+      158.9
+     ],
+     "gruppo": 9,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      47.3,
+      202.3,
+      519.4,
+      373.5
+     ],
+     "gruppo": 10,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      47.4,
+      410.8,
+      520.4,
+      515.8
+     ],
+     "gruppo": 11,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 330,
+     "tipo": "table",
+     "bbox": [
+      45.6,
+      566.7,
+      521,
+      681.2
+     ],
+     "gruppo": 12,
+     "pagina_flusso": 330,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      48.2,
+      61.8,
+      516.6,
+      192.9
+     ],
+     "gruppo": 13,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      47.1,
+      233.9,
+      516.1,
+      375.7
+     ],
+     "gruppo": 14,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      46.1,
+      422,
+      519.3,
+      526.8
+     ],
+     "gruppo": 15,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 331,
+     "tipo": "table",
+     "bbox": [
+      48.1,
+      583,
+      517.3,
+      686.9
+     ],
+     "gruppo": 16,
+     "pagina_flusso": 331,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 332,
+     "tipo": "table",
+     "bbox": [
+      46.8,
+      61.7,
+      519.9,
+      280.5
+     ],
+     "gruppo": 17,
+     "pagina_flusso": 332,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    },
+    {
+     "pagina": 332,
+     "tipo": "table",
+     "bbox": [
+      46.5,
+      343,
+      518.8,
+      517.1
+     ],
+     "gruppo": 18,
+     "pagina_flusso": 332,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "c344c67ef731a6d8",
+     "dopo": "e3b0c44298fc1c14",
+     "fine_prima": "c344c67ef731a6d8",
+     "fine_dopo": "e3b0c44298fc1c14"
+    }
+   ],
+   "originals/Rivista DPC 4-2020.pdf": [
+    {
+     "pagina": 108,
+     "tipo": "figure",
+     "bbox": [
+      152.8,
+      415.4,
+      529.1,
+      591.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 108,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "17566ef020a428da",
+     "dopo": "b7b22d04094ef8d8",
+     "fine_prima": "17566ef020a428da",
+     "fine_dopo": "b7b22d04094ef8d8"
+    },
+    {
+     "pagina": 111,
+     "tipo": "figure",
+     "bbox": [
+      153.4,
+      181.8,
+      530.3,
+      406.3
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 111,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "0bedb480251b204a",
+     "dopo": "d08bb6b5295b4fdf",
+     "fine_prima": "0bedb480251b204a",
+     "fine_dopo": "d08bb6b5295b4fdf"
+    },
+    {
+     "pagina": 112,
+     "tipo": "figure",
+     "bbox": [
+      153.5,
+      217.5,
+      524.6,
+      369.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 112,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "23eaa24305e593c6",
+     "dopo": "55292af45b3afc10",
+     "fine_prima": "23eaa24305e593c6",
+     "fine_dopo": "55292af45b3afc10"
+    },
+    {
+     "pagina": 112,
+     "tipo": "figure",
+     "bbox": [
+      153.3,
+      444,
+      524.6,
+      600.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 112,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a0ebefae02a6742b",
+     "dopo": "0f2f5ebd84963a21",
+     "fine_prima": "a0ebefae02a6742b",
+     "fine_dopo": "0f2f5ebd84963a21"
+    },
+    {
+     "pagina": 113,
+     "tipo": "figure",
+     "bbox": [
+      153.5,
+      56.1,
+      525.7,
+      214.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 113,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a0ebefae02a6742b",
+     "dopo": "32101e2469df9ca1",
+     "fine_prima": "a0ebefae02a6742b",
+     "fine_dopo": "32101e2469df9ca1"
+    },
+    {
+     "pagina": 113,
+     "tipo": "figure",
+     "bbox": [
+      153.3,
+      294.3,
+      525.7,
+      466.2
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 113,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "a0ebefae02a6742b",
+     "dopo": "32101e2469df9ca1",
+     "fine_prima": "a0ebefae02a6742b",
+     "fine_dopo": "32101e2469df9ca1"
+    },
+    {
+     "pagina": 116,
+     "tipo": "table",
+     "bbox": [
+      76.5,
+      55.3,
+      525.8,
+      535.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 116,
+     "contenuti": 2,
+     "lettere_contenute": 69,
+     "prima": "103fe6175d859bc6",
+     "dopo": "bed1a1ca398d7fc3",
+     "fine_prima": "ae737ef72e1036ed",
+     "fine_dopo": "9de4f389a8689813"
+    },
+    {
+     "pagina": 117,
+     "tipo": "table",
+     "bbox": [
+      152.7,
+      55.3,
+      497.8,
+      569
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 117,
+     "contenuti": 1,
+     "lettere_contenute": 702,
+     "prima": "9f45f6266337c9ee",
+     "dopo": "0b8b57dbc6945fd5",
+     "fine_prima": "1c749dc08cd81905",
+     "fine_dopo": "cc09725ca454d88e"
+    },
+    {
+     "pagina": 118,
+     "tipo": "table",
+     "bbox": [
+      76.5,
+      55.3,
+      525.1,
+      480.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 118,
+     "contenuti": 1,
+     "lettere_contenute": 91,
+     "prima": "93a34ab1edf3b874",
+     "dopo": "ff501737d06ce860",
+     "fine_prima": "034a72a83733826e",
+     "fine_dopo": "77726655d2f854b1"
+    },
+    {
+     "pagina": 119,
+     "tipo": "table",
+     "bbox": [
+      76.3,
+      55.3,
+      525.2,
+      460.5
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 119,
+     "contenuti": 4,
+     "lettere_contenute": 1223,
+     "prima": "32b8138c7fe56e31",
+     "dopo": "a7ec3cb6382a78aa",
+     "fine_prima": "61b242d04e2e15eb",
+     "fine_dopo": "771598f47df501e4"
+    }
+   ],
+   "originals_new/Delitti in prima pagina_9788832854046(p)_pdf.pdf": [
+    {
+     "pagina": 34,
+     "tipo": "figure",
+     "bbox": [
+      83.5,
+      109.8,
+      368.7,
+      290.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 35,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "eb27e18e56c10be8",
+     "dopo": "21421a659c1a205c",
+     "fine_prima": "eb27e18e56c10be8",
+     "fine_dopo": "21421a659c1a205c"
+    },
+    {
+     "pagina": 34,
+     "tipo": "figure",
+     "bbox": [
+      83.6,
+      300.8,
+      368.7,
+      448.1
+     ],
+     "gruppo": 1,
+     "pagina_flusso": 35,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "eb27e18e56c10be8",
+     "dopo": "21421a659c1a205c",
+     "fine_prima": "eb27e18e56c10be8",
+     "fine_dopo": "21421a659c1a205c"
+    },
+    {
+     "pagina": 44,
+     "tipo": "figure",
+     "bbox": [
+      84,
+      109.9,
+      369.3,
+      340.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 44,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "2ddf698d16627f3a",
+     "dopo": "e53874e9ac2f70b0",
+     "fine_prima": "2ddf698d16627f3a",
+     "fine_dopo": "e53874e9ac2f70b0"
+    },
+    {
+     "pagina": 48,
+     "tipo": "figure",
+     "bbox": [
+      84.6,
+      110.4,
+      368.7,
+      506.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 48,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "2be897f62b33154c",
+     "dopo": "d16d1aea1f98baa7",
+     "fine_prima": "2be897f62b33154c",
+     "fine_dopo": "d16d1aea1f98baa7"
+    },
+    {
+     "pagina": 122,
+     "tipo": "figure",
+     "bbox": [
+      84.7,
+      110.8,
+      369,
+      537.4
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 123,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "30dcd5659321a3c9",
+     "dopo": "960a5e27d3688863",
+     "fine_prima": "30dcd5659321a3c9",
+     "fine_dopo": "960a5e27d3688863"
+    },
+    {
+     "pagina": 169,
+     "tipo": "table",
+     "bbox": [
+      83.9,
+      296.3,
+      368.8,
+      558.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 169,
+     "contenuti": 1,
+     "lettere_contenute": 393,
+     "prima": "8c7bcbee6f7cda5c",
+     "dopo": "9721ab81a0e01d1e",
+     "fine_prima": "7cdbabb6378c9da8",
+     "fine_dopo": "1b40c5eda90705c7"
+    },
+    {
+     "pagina": 251,
+     "tipo": "figure",
+     "bbox": [
+      136.9,
+      112.8,
+      317.3,
+      279.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 251,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "f726da74a43a8220",
+     "dopo": "09b784332a0540f1",
+     "fine_prima": "f726da74a43a8220",
+     "fine_dopo": "09b784332a0540f1"
+    },
+    {
+     "pagina": 255,
+     "tipo": "figure",
+     "bbox": [
+      84.4,
+      113.9,
+      368.8,
+      393
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 255,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "0bb62631efe0cd61",
+     "dopo": "1140da23ed2bf1f2",
+     "fine_prima": "0bb62631efe0cd61",
+     "fine_dopo": "1140da23ed2bf1f2"
+    },
+    {
+     "pagina": 256,
+     "tipo": "figure",
+     "bbox": [
+      123.7,
+      110.2,
+      329.4,
+      384.4
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 256,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "db80dbd8be638a21",
+     "dopo": "9605e0507ec16861",
+     "fine_prima": "db80dbd8be638a21",
+     "fine_dopo": "9605e0507ec16861"
+    },
+    {
+     "pagina": 257,
+     "tipo": "figure",
+     "bbox": [
+      84,
+      110.1,
+      242.2,
+      321.9
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 257,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "1fdde0285157627e",
+     "dopo": "bfaecbc29d12e7e0",
+     "fine_prima": "1fdde0285157627e",
+     "fine_dopo": "bfaecbc29d12e7e0"
+    }
+   ],
+   "originals_new/Diritto penale. Appunti di parte generale_9791221100563_pdf.pdf": [
+    {
+     "pagina": 185,
+     "tipo": "table",
+     "bbox": [
+      58.8,
+      78.7,
+      421.7,
+      247.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 185,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "44f6b64fe0fd414b",
+     "dopo": "db8e48cb9b4c9ab2",
+     "fine_prima": "44f6b64fe0fd414b",
+     "fine_dopo": "db8e48cb9b4c9ab2"
+    }
+   ],
+   "originals_new/Manuale di Diritto Costituzionale.pdf": [
+    {
+     "pagina": 27,
+     "tipo": "figure",
+     "bbox": [
+      55.6,
+      363.3,
+      423.2,
+      508.2
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 27,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "72f28bff3c48de28",
+     "dopo": "e7afa3338ce4c9dc",
+     "fine_prima": "72f28bff3c48de28",
+     "fine_dopo": "e7afa3338ce4c9dc"
+    },
+    {
+     "pagina": 167,
+     "tipo": "table",
+     "bbox": [
+      69.8,
+      230.4,
+      319.4,
+      334.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 167,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "bbb91d5ebfd6f812",
+     "dopo": "c589a1df1624b787",
+     "fine_prima": "bbb91d5ebfd6f812",
+     "fine_dopo": "c589a1df1624b787"
+    },
+    {
+     "pagina": 250,
+     "tipo": "table",
+     "bbox": [
+      73.4,
+      341.3,
+      408.8,
+      440.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 250,
+     "contenuti": 1,
+     "lettere_contenute": 334,
+     "prima": "48aa8b9d0f39cdf5",
+     "dopo": "c65f0f9ffbec4745",
+     "fine_prima": "9021d53d9e827fcb",
+     "fine_dopo": "2fbc5df0138d2198"
+    },
+    {
+     "pagina": 306,
+     "tipo": "table",
+     "bbox": [
+      56,
+      92.2,
+      426,
+      301.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 306,
+     "contenuti": 2,
+     "lettere_contenute": 791,
+     "prima": "fa7af8cfc34410e6",
+     "dopo": "e6815fd1f69cd31d",
+     "fine_prima": "3f30d9647931b789",
+     "fine_dopo": "c00a4ba965284d31"
+    },
+    {
+     "pagina": 313,
+     "tipo": "table",
+     "bbox": [
+      55.7,
+      92.1,
+      426,
+      275.7
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 313,
+     "contenuti": 1,
+     "lettere_contenute": 265,
+     "prima": "6a1a7461f5dcccc7",
+     "dopo": "cfcc8113092eddd3",
+     "fine_prima": "0dd7da99f0493dee",
+     "fine_dopo": "a6aeca28dd7a9aef"
+    },
+    {
+     "pagina": 382,
+     "tipo": "table",
+     "bbox": [
+      55.9,
+      72.7,
+      425.8,
+      186.6
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 382,
+     "contenuti": 1,
+     "lettere_contenute": 290,
+     "prima": "fcb21c7371bc8a43",
+     "dopo": "5f92532c7217a415",
+     "fine_prima": "a63f47c42c08accd",
+     "fine_dopo": "4a4140e1e91c8698"
+    },
+    {
+     "pagina": 390,
+     "tipo": "figure",
+     "bbox": [
+      55.8,
+      92.2,
+      426,
+      386.1
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 390,
+     "contenuti": 3,
+     "lettere_contenute": 862,
+     "prima": "1347bc73fc697974",
+     "dopo": "96b39b7a678fac60",
+     "fine_prima": "a7243976ba534354",
+     "fine_dopo": "bc4de61c16219e15"
+    },
+    {
+     "pagina": 394,
+     "tipo": "figure",
+     "bbox": [
+      55.7,
+      92.1,
+      425.4,
+      461.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 394,
+     "contenuti": 2,
+     "lettere_contenute": 594,
+     "prima": "cfa97ecf9fff96a4",
+     "dopo": "fde61b47ca359bc5",
+     "fine_prima": "22f445e2088257a2",
+     "fine_dopo": "853179d38a5fb1e8"
+    }
+   ]
+  }
+ },
+ "registrazioni": [
+  {
+   "generazione": "ios27",
+   "data": "2026-10-18",
+   "codice": "fa71598",
+   "letture": "chi1_ios27",
+   "elementi": 110,
+   "nota": "Posto delle 110 risorse della lettura della rete (runner, granularità 400 anche per i codici) alla build 58, giudicato contro la pagina: 104 identiche al posto giudicato nel giro «risorse visive» (rv53k); 6 cambiate da allora e giudicate nel giro «chiusura del capitolo note» (stesso punto dell'annuncio; salto fino alla fine della tabella o della didascalia in 3, meno pezzi con le stesse lettere in 2, una nota ricucita altrove prima dell'annuncio in 1)."
+  },
+  {
+   "generazione": "ios265",
+   "data": "2026-10-18",
+   "codice": "fa71598",
+   "letture": "chi1_ios265",
+   "elementi": 110,
+   "nota": "Posto delle 110 risorse della lettura della rete (runner, granularità 400 anche per i codici) alla build 58, giudicato contro la pagina: 104 identiche al posto giudicato nel giro «risorse visive» (rv53k); 6 cambiate da allora e giudicate nel giro «chiusura del capitolo note» (stesso punto dell'annuncio; salto fino alla fine della tabella o della didascalia in 3, meno pezzi con le stesse lettere in 2, una nota ricucita altrove prima dell'annuncio in 1)."
+  }
+ ]
+}

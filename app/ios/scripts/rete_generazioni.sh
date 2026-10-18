@@ -21,7 +21,11 @@
 #      passaggio (banco `test_visualRegionsDump_fromRequest`, la catena dell'app), produce una seconda lettura CON le
 #      regioni (`<stem>.rv.reading.json`, decisioni della guardia in `<stem>.visual.json`) e giudica che l'elemento
 #      «risorsa visiva» sia additivo: tolti gli elementi, la lettura è identica (`rete_risorse_visive.py`). Con
-#      SCABO_RV_GIUDICATE=<dir con le letture giudicate> ogni elemento è confrontato con quelli già giudicati.
+#      SCABO_RV_GIUDICATE=<dir con le letture giudicate> ogni elemento è confrontato con quelli già giudicati. Dal giro
+#      «chiusura del capitolo note» (2026-10-18) giudica anche il POSTO di ogni elemento nel flusso contro la verità
+#      registrata in `generazioni/verita_posti_risorse_visive.json` (per generazione; altro file con SCABO_RV_POSTI=<file>,
+#      nessun giudizio del posto con SCABO_RV_POSTI=no): un elemento spostato, un salto che finisce altrove, un elemento
+#      nuovo o uno che manca fanno ROSSO.
 #
 # Uso:  app/ios/scripts/rete_generazioni.sh <etichetta> [--no-capture] [--all-pages] [--controllo-diverso-atteso] [--risorse-visive]
 #   <etichetta>    nome della fotografia (es. `base`, `cura_spazi`): le uscite vanno in
@@ -193,10 +197,15 @@ if [ "$RV" = 1 ]; then
   for g in "${GENS[@]}"; do
     GEN="${g##*:}"; GIUD=()
     [ -n "${SCABO_RV_GIUDICATE:-}" ] && GIUD=(--giudicate "${SCABO_RV_GIUDICATE//\{gen\}/$GEN}")
+    POSTI="${SCABO_RV_POSTI:-$SCRIPT_DIR/generazioni/verita_posti_risorse_visive.json}"
+    if [ "$POSTI" != no ]; then
+      [ -f "$POSTI" ] || { say "    verità del posto assente: $POSTI"; RC=1; }
+      GIUD+=(--posti "$POSTI" --gen "$GEN")
+    fi
     # ${GIUD[@]+…}: con «set -u» la bash 3.2 di macOS tratta l'array vuoto come variabile non definita.
     "$PY" "$SCRIPT_DIR/generazioni/rete_risorse_visive.py" "$LAB/letture/${TAG}_$GEN" "$LISTA" "$LAB/reti/risorse_visive_${TAG}_$GEN" ${GIUD[@]+"${GIUD[@]}"} > /dev/null; rc=$?
     say "[6] risorse visive $GEN: exit=$rc → $LAB/reti/risorse_visive_${TAG}_$GEN.md"
-    sed -n '3p;5p' "$LAB/reti/risorse_visive_${TAG}_$GEN.md" | sed 's/^/      /'
+    grep -E '^(Volumi [0-9]|Giudizio|POSTO)' "$LAB/reti/risorse_visive_${TAG}_$GEN.md" | sed 's/^/      /'
     [ "$rc" = 0 ] || RC=1
   done
 fi

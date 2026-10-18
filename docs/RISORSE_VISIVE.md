@@ -199,7 +199,34 @@ con le regioni e giudica con `scripts/generazioni/rete_risorse_visive.py`:
 2. **lettere e cifre** identiche, per volume;
 3. elenco degli elementi per volume (tipo, pagine, testo contenuto), privo di testo;
 4. con `SCABO_RV_GIUDICATE=<letture giudicate>` ogni elemento è confrontato con quelli già giudicati contro la pagina;
-   gli altri finiscono in `<out>_da_giudicare.json`.
+   gli altri finiscono in `<out>_da_giudicare.json`;
+5. **il posto nel flusso** (dal giro «chiusura del capitolo note», 2026-10-18, decisione 4 del maintainer,
+   `LAYER2_PRODUCT_DECISIONS.md` § 12.12): ogni elemento è confrontato con la **verità registrata** in
+   `scripts/generazioni/verita_posti_risorse_visive.json`, per generazione. Il punto 4 confronta solo l'identità (pagina,
+   tipo, riquadro): un elemento annunciato nel punto sbagliato del flusso, o un «Salta la risorsa» che atterra altrove, lo
+   superava (INBOX D.14). Il posto si misura sul testo del flusso normalizzato (lettere e cifre in minuscolo), concatenato
+   attraverso i segmenti senza gli elementi, così non dipende da come il flusso è tagliato in segmenti: impronte SHA-256
+   (16 cifre esadecimali, nessun testo) delle 64 lettere subito prima e subito dopo l'annuncio e attorno alla fine del testo
+   contenuto, quanti elementi e quante lettere il salto supera, la pagina dell'elemento nel flusso, l'ordine fra gli elementi
+   annunciati nello stesso punto. Un elemento spostato, un salto che finisce altrove, un elemento nuovo non registrato o uno
+   registrato che manca fanno rosso, con l'elenco (senza testo) di che cosa è cambiato. A ogni corsa la rete fa anche la
+   sua **prova al contrario**: per ogni elemento simula lo spostamento oltre il segmento con testo che lo segue e oltre
+   quello che lo precede, e deve accorgersene (uno spostamento simulato non visto è un punto cieco: rosso). Un cambiamento
+   voluto si giudica contro la pagina e si registra di nuovo: `rete_risorse_visive.py <letture> <lista> --scrivi-posti
+   <verità> --gen <ios27|ios265> --nota "<come è stato giudicato>"` (la verità tiene il registro delle registrazioni, con la
+   data, il codice e la nota). `SCABO_RV_POSTI=<file>` usa un'altra verità, `SCABO_RV_POSTI=no` salta il giudizio del posto.
+   **La verità di partenza** (registrata alla build 58 sulle letture della rete, runner a granularità 400 anche per i codici):
+   110 elementi per generazione; 104 al posto giudicato nel giro «risorse visive» (rete finale `rv53k`), 6 cambiati da
+   allora e giudicati contro la pagina nel giro «chiusura del capitolo note»: stesso punto dell'annuncio, e il salto che ora
+   arriva alla fine della tabella o della didascalia (codice civile p. 2379, Costituzionale pp. 250 e 394), meno pezzi con
+   le stesse lettere (Delitti p. 169, Costituzionale p. 306), una nota che precedeva l'annuncio ricucita altrove dalle cure
+   delle note (Rivista DPC 4-2020 p. 116). **Prova al contrario sul codice**: una copia di laboratorio della guardia che
+   sposta di proposito di un segmento la tabella della Rivista DPC 4-2020 p. 117 (in avanti), poi la figura di Delitti p. 122
+   (indietro) e la tabella del codice civile p. 2486 (in avanti): l'identità e il giudizio del punto 4 restano verdi (110
+   elementi, tutti «già giudicati»), il posto diventa rosso esattamente sulle risorse spostate, su entrambe le generazioni;
+   la stessa copia senza spostamenti dà letture identiche al byte e la rete verde. La lettura dell'app per i codici (oltre
+   1.500 pagine, granularità 1.200) non è quella della rete: lì 13 elementi hanno un salto di lunghezza diversa e il codice
+   penale p. 716 un annuncio prima, nello stesso segmento grosso (giudicato nel giro «risorse visive»).
 
 Il banco `test_visualAppChainDump_fromRequest` esegue l'elaborazione completa dell'app (con e senza riconoscimento) e
 verifica la stessa identità sulla catena dell'app, oltre a dare i tempi e il picco di memoria; con `snapshotDir`

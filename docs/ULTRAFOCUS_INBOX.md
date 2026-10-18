@@ -532,7 +532,17 @@ la nota 75 finisce a «p.». È la stessa causa delle teste-frammento fra pagine
 che la mostri. (b) Compendio p. 1167: un richiamo «23» del corpo, in apice, finisce fra le righe della nota 21 e divide la
 sua coda in due nodi; la ricucitura prende le prime due righe (con il «23» in fondo), il resto della coda resta aperto.
 
-### D.14 La rete delle risorse visive giudica l'identità, non il posto nel flusso — APERTA (osservazione, 2026-10-17)
+### D.14 La rete delle risorse visive giudica l'identità, non il posto nel flusso — ✅ CHIUSA (giro «chiusura del capitolo note», 2026-10-18, build 58)
+
+**Chiusura (decisione 4 del maintainer).** `rete_risorse_visive.py` giudica anche il POSTO di ogni elemento contro una verità
+registrata per generazione (`app/ios/scripts/generazioni/verita_posti_risorse_visive.json`, senza testo: impronte delle 64
+lettere normalizzate prima e dopo l'annuncio e attorno alla fine del salto, conteggi, pagina nel flusso), ed è acceso per
+difetto in `rete_generazioni.sh --risorse-visive`. Verità di partenza: 110 elementi per generazione, 104 al posto giudicato
+nel giro «risorse visive», 6 cambiati da allora e giudicati ora. Prova al contrario sul codice (copia di laboratorio che
+sposta di proposito una risorsa): il vecchio giudizio resta verde, il posto diventa rosso esattamente sulla risorsa
+spostata; a ogni corsa la rete simula anche lo spostamento di ogni elemento di un segmento avanti e indietro e deve vederlo.
+Dettagli: `docs/RISORSE_VISIVE.md` § 6. Testo storico della voce:
+
 
 Il giudizio «già giudicato» di `rete_risorse_visive.py` confronta volume, pagina, tipo e riquadro (IoU ≥ 0,8), non il punto
 del flusso in cui l'elemento è inserito né quanti segmenti contiene. Nel giro «pulizia delle note» il posto si è controllato
