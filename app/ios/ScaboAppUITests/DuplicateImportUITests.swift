@@ -102,10 +102,17 @@ final class DuplicateImportUITests: XCTestCase {
     @available(iOS 17.0, *)
     private func audit(_ app: XCUIApplication, screen: String) {
         var report: [String] = []
+        let systemRule = SystemAuditRule(app: app, screen: screen)
         do {
             try app.performAccessibilityAudit { issue in
                 let el = issue.element
                 if issue.auditType == .textClipped, el?.elementType == .searchField { return true }
+                // Rilievi del SISTEMA sull'iPad (barra delle schede galleggiante, testo attorno a un foglio): vedi
+                // `SystemAuditRule`, accettati in modo stretto e stampati; ogni altro rilievo fa fallire.
+                if systemRule.accept(issue) { return true }
+                print("AUDIT «\(screen)» RILIEVO: \(issue.compactDescription) — \(issue.detailedDescription) — «\(el?.label ?? "?")» "
+                      + "frame:\(el.map { "\($0.frame)" } ?? "?")")
+                if report.isEmpty { print("AUDIT gerarchia:\n\(app.debugDescription)") }
                 report.append("• [\(issue.auditType.rawValue)] \(issue.compactDescription) — «\(el?.label ?? "?")» type:\(el.map { "\($0.elementType.rawValue)" } ?? "?")")
                 return false
             }

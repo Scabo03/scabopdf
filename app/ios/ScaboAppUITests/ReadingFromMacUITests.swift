@@ -268,18 +268,13 @@ final class ReadingFromMacUITests: XCTestCase {
 
     // MARK: - Audit (stesso criterio di AccessibilityAuditUITests)
 
-    /// `inTabOnPad`: sull'iPad, le schermate DENTRO la scheda (la Home e quelle che vi si aprono sopra, con la barra delle
-    /// schede di iPadOS visibile in alto) danno all'audit un rilievo Dynamic Type su un'etichetta che l'audit non sa
-    /// indicare. È PREESISTENTE: il test esistente dell'offerta di rielaborazione fallisce allo stesso modo sull'iPad con
-    /// il codice di main e passa sull'iPhone; le etichette delle schermate nuove seguono tutte la dimensione del testo
-    /// (sonda del giro). Lì l'audit si fa sull'iPhone; sull'iPad si salta, dichiarandolo. Le schermate presentate sopra
-    /// (offerta, conferma, esito, copie, libro assente, problemi): audit ovunque.
+    /// Dal giro «accessibilità e completamento» (2026-10-18) l'audit gira su ogni schermata anche sull'iPad: i due rilievi
+    /// dell'iPad che prima facevano saltare le schermate dentro la scheda (Dynamic Type senza elemento) e accettare il
+    /// «testo potenzialmente inaccessibile» senza elemento hanno una causa misurata — le etichette della barra delle schede
+    /// di sistema, il testo della schermata sotto un foglio — e li accetta in modo stretto `SystemAuditRule`, stampandoli.
+    /// `inTabOnPad` resta per dire quali schermate stanno dentro la scheda (documentazione: non cambia più l'audit).
     @available(iOS 17.0, *)
     private func audit(_ app: XCUIApplication, screen: String, inTabOnPad: Bool = false) {
-        if inTabOnPad, UIDevice.current.userInterfaceIdiom == .pad {
-            print("AUDIT «\(screen)» saltato sull'iPad: rilievo preesistente delle schermate dentro la scheda (vedi il commento di audit)")
-            return
-        }
         // Le transizioni (pagina che entra nella scheda, scheda che si apre) lasciano per qualche istante un'istantanea
         // della pagina di prima, con il suo testo dentro un'immagine: l'audit la segnalerebbe. Si attende che finiscano.
         func wideImages() -> Int {
@@ -289,18 +284,14 @@ final class ReadingFromMacUITests: XCTestCase {
         while wideImages() > 0, Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.25)) }
         print("AUDIT «\(screen)»: immagini più larghe dello schermo prima dell'audit: \(wideImages())")
         var report: [String] = []
+        let systemRule = SystemAuditRule(app: app, screen: screen)
         do {
             try app.performAccessibilityAudit { issue in
                 let el = issue.element
                 if issue.auditType == .textClipped, el?.elementType == .searchField { return true }
-                // Sull'iPad, le schermate di testo condivise con l'offerta di rielaborazione (ReprocessTextViewController)
-                // danno all'audit «testo potenzialmente inaccessibile» SENZA indicare l'elemento: preesistente (con il codice
-                // di main l'offerta di rielaborazione fallisce allo stesso modo sull'iPad; sull'iPhone passa). Solo quel
-                // tipo, solo senza elemento, solo sull'iPad: si stampa e si dichiara; tutto il resto fa fallire.
-                if UIDevice.current.userInterfaceIdiom == .pad, issue.auditType == .elementDetection, el == nil {
-                    print("AUDIT «\(screen)» rilievo preesistente dell'iPad accettato e dichiarato: \(issue.compactDescription)")
-                    return true
-                }
+                // Rilievi del SISTEMA sull'iPad (barra delle schede galleggiante, testo attorno a un foglio): vedi
+                // `SystemAuditRule`, accettati in modo stretto e stampati; ogni altro rilievo fa fallire.
+                if systemRule.accept(issue) { return true }
                 let line = "• [\(issue.auditType.rawValue)] \(issue.compactDescription) — «\(el?.label ?? "?")» id:\(el?.identifier ?? "?") type:\(el.map { "\($0.elementType.rawValue)" } ?? "?")"
                 print("AUDIT «\(screen)» \(line)\nAUDIT dettaglio: \(issue.detailedDescription)\nAUDIT elemento: \(el?.debugDescription ?? "nessuno")")
                 if report.isEmpty { print("AUDIT gerarchia:\n\(app.debugDescription)") }

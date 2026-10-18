@@ -43,7 +43,9 @@ final class ReprocessOfferUITests: XCTestCase {
         book.tap()
 
         let accept = app.buttons["offer.accept"]
-        XCTAssertTrue(accept.waitForExistence(timeout: 5))
+        let offerShown = accept.waitForExistence(timeout: 10)
+        if !offerShown { print("GERARCHIA senza l'offerta:\n\(app.debugDescription)") }
+        XCTAssertTrue(offerShown, "l'offerta compare")
         XCTAssertTrue(app.staticTexts["offer.what"].exists)
         XCTAssertTrue(app.staticTexts["offer.time"].exists)
         XCTAssertTrue(app.staticTexts["offer.annotations"].exists)
@@ -85,7 +87,9 @@ final class ReprocessOfferUITests: XCTestCase {
         XCTAssertTrue(app.cells["home.offer"].waitForExistence(timeout: 10))
         app.cells["home.offer"].tap()
         app.cells.containing(NSPredicate(format: "label CONTAINS %@", "Libro di prova")).firstMatch.tap()
-        XCTAssertTrue(app.buttons["offer.accept"].waitForExistence(timeout: 5))
+        let offerShown = app.buttons["offer.accept"].waitForExistence(timeout: 10)
+        if !offerShown { print("GERARCHIA senza l'offerta (segnalibro orfano):\n\(app.debugDescription)") }
+        XCTAssertTrue(offerShown, "l'offerta compare")
         app.buttons["offer.accept"].tap()
         XCTAssertTrue(app.buttons["confirm.reprocess.ok"].waitForExistence(timeout: 5))
         app.buttons["confirm.reprocess.ok"].tap()
@@ -135,6 +139,7 @@ final class ReprocessOfferUITests: XCTestCase {
         let akn = cell("Testo normativo di prova")
         XCTAssertTrue(akn.waitForExistence(timeout: 5), "il testo normativo importato prima dei pezzi nuovi riceve l'offerta")
         XCTAssertTrue(cell("Libro di prova").exists, "il PDF elaborato sull'iPad con una build vecchia la riceve")
+        if cell("Lettura dal Mac di prova").exists { print("GERARCHIA dell'elenco con la lettura dal Mac:\n\(app.debugDescription)") }
         XCTAssertFalse(cell("Lettura dal Mac di prova").exists, "la lettura arrivata dal Mac no: la rifà il Mac aggiornato")
         audit(app, screen: "Elenco della lettura migliore con i tre tipi di libro")
         akn.tap()
@@ -162,10 +167,17 @@ final class ReprocessOfferUITests: XCTestCase {
     @available(iOS 17.0, *)
     private func audit(_ app: XCUIApplication, screen: String) {
         var report: [String] = []
+        let systemRule = SystemAuditRule(app: app, screen: screen)
         do {
             try app.performAccessibilityAudit { issue in
                 let el = issue.element
                 if issue.auditType == .textClipped, el?.elementType == .searchField { return true }
+                // Rilievi del SISTEMA sull'iPad (barra delle schede galleggiante, testo attorno a un foglio): vedi
+                // `SystemAuditRule`, accettati in modo stretto e stampati; ogni altro rilievo fa fallire.
+                if systemRule.accept(issue) { return true }
+                print("AUDIT «\(screen)» RILIEVO: \(issue.compactDescription) — \(issue.detailedDescription) — «\(el?.label ?? "?")» "
+                      + "frame:\(el.map { "\($0.frame)" } ?? "?")")
+                if report.isEmpty { print("AUDIT gerarchia:\n\(app.debugDescription)") }
                 report.append("• [\(issue.auditType.rawValue)] \(issue.compactDescription) — «\(el?.label ?? "?")» type:\(el.map { "\($0.elementType.rawValue)" } ?? "?")")
                 return false
             }

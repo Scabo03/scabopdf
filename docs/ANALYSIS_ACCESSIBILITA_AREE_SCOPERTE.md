@@ -1,5 +1,53 @@
 # Analisi — Le aree di accessibilità ancora scoperte
 
+> **STATO — giro «accessibilità e completamento» (2026-10-18, build 59).** Le due lacune di livello A che i documenti
+> lasciavano aperte dopo la build 40 (`BILANCIO_FASE_MOBILE.md` § 2 voce 7): la **tastiera** — nello split i comandi non
+> arrivavano alle metà (ciascuna è un lettore incorporato, che non riceve i tasti) e il salto fra nota e richiamo non aveva
+> un tasto — e la **lingua** — il contenuto dichiarava «it» in modo fisso e l'interfaccia non dichiarava nulla, quindi su
+> un apparecchio in un'altra lingua VoiceOver leggeva le scritte italiane con la voce di quella lingua (campo: «Tag
+> Button» sul simulatore in inglese; `UIAccessibility.h`: «If no language is set, the user's language is used»). Esito,
+> distinguendo **conforme e verificato** (prova oggettiva nel giro) da **conforme tecnicamente, non validato sul campo**
+> (manca l'utente reale):
+> - **2.1.1 Keyboard (A) — conforme e verificato.** ⌘J salta fra nota e richiamo (come le azioni VoiceOver «Vai al testo
+>   del richiamo» / «Vai alla nota»); nello split ogni comando di lettura vale per la metà che comanda (§ 11.6) e ⌥⌘← /
+>   ⌥⌘→ scelgono la metà, portando lì anche il fuoco di VoiceOver; il pannello «Comandi da tastiera» li elenca (la sezione
+>   dello split solo sull'iPad). Prove: `KeyboardUITests` (tastiera hardware del simulatore dentro XCTest, `typeKey`, con
+>   VoiceOver vero su iOS 27) e `KeyboardAndLanguageTests` (catalogo, comandi dello split e metà che comanda, salto).
+> - **2.1.2 No Keyboard Trap (A) — conforme e verificato.** Dal lettore Esc torna alla schermata di prima; nello split Esc
+>   chiede se chiudere la metà che comanda, nella domanda Esc annulla e A capo chiude; dallo split si torna alla Home con
+>   la sola tastiera (`KeyboardUITests`). Trovata e chiusa una trappola preesistente: il menu degli strumenti aperto con ⌘E
+>   era, sull'iPad, un menu a comparsa che Esc non chiudeva; aperto da tastiera ora è una finestra di dialogo, dove Esc è
+>   «Annulla».
+> - **Tastiera italiana.** ⌘= («Testo più grande») non si poteva dare da una tastiera italiana (l'«=» è Maiuscole+0, il
+>   «+» un tasto a sé): ora vale anche ⌘+ (verificato con la disposizione italiana del simulatore).
+> - **Limiti della prova, dichiarati.** Nel simulatore XCTest non fa arrivare all'app il tasto Esc né A capo: si provano
+>   con Comando-punto (che il sistema consegna come Esc) e con il ritorno a capo «\n». Con VoiceOver acceso i comandi col
+>   Comando non scattano nel simulatore: **tastiera insieme a VoiceOver: non verificato**, nel simulatore e sul dispositivo.
+> - **3.1.1 Language (A) — interfaccia: conforme e verificato; contenuto: conforme tecnicamente.** L'interfaccia dichiara
+>   l'italiano all'avvio (app e finestra): sul simulatore in inglese, con VoiceOver vero, i tratti si sentono in italiano
+>   («Pulsante», «Intestazione»), e «Workspaces», dichiarato inglese, resta «Heading». Il contenuto dichiara la lingua del
+>   documento (`DocumentLanguage`: l'italiano, salvo un libro chiaramente in un'altra lingua — soglia 0,9 su un campione
+>   di tutto il libro; sui 52 volumi di prova 50 riconosciuti italiani a ≥ 0,995, le due Riviste DPC con articoli in altre
+>   lingue restano italiane). Che una cella di un libro inglese dichiari «en» lo provano i test di unità; che VoiceOver e
+>   il display braille cambino davvero voce e tavola su quel libro, sul dispositivo: **non verificato**.
+> - **3.1.2 Language of Parts (AA) — non conforme, dichiarato.** Le parti in un'altra lingua dentro un libro non si
+>   marcano: sui 52 volumi il riconoscitore di sistema dà per straniere anche parti italiane o latine, e cambiare voce a metà
+>   lettura è una scelta d'orecchio (decisione del maintainer). Eccezione già presente: «Workspaces», dichiarato inglese.
+> - **2.4.3 Focus Order (A) — rafforzato e verificato.** Nelle schermate con le schede l'ordine segue l'importanza
+>   (`LAYER2_PRODUCT_DECISIONS.md` § 12.1): titolo, schede, comandi, contenuto; VoiceOver vero su iOS 27, albero su 26.5,
+>   iPad e iPhone.
+> - **2.4.7 Focus Visible (AA) — parziale, dichiarato.** Nello split la metà che comanda non ha un segno visivo per chi usa
+>   la tastiera senza VoiceOver (un segno è una scelta d'aspetto: decisione del maintainer).
+> - **Audit dell'iPad.** Le due voci rosse preesistenti hanno ora una causa misurata (sonde sulla copia di partenza): i 3
+>   rilievi Dynamic Type sono le tre etichette della barra delle schede galleggiante di iPadOS (3 con la barra, 0 con la
+>   barra nascosta), il «testo potenzialmente inaccessibile» è il testo della schermata sotto un foglio (4 col foglio, 0 a
+>   schermo intero). Sono comportamenti di sistema: i test li accettano in modo stretto e li stampano (`SystemAuditRule`);
+>   ogni altro rilievo fa fallire.
+>
+> Non validati sul campo (servono utenti reali): una sessione di studio intera con la sola tastiera nello split; Accesso
+> completo da tastiera insieme ai nostri tasti; voce e braille su un libro in un'altra lingua; la scoperta dei comandi dal
+> pannello per chi non li conosce.
+
 > **STATO — IMPLEMENTATO (2026-07-13, branch `feature/accessibility-conformance`,
 > impilato su `feature/visual-accessibility`; build 40 su TestFlight = build 39 +
 > questo giro).** Il maintainer ha approvato e sciolto i bivi (includere i 2.2;
@@ -321,19 +369,20 @@ traguardo consigliato.
 | 1.4.11 Non-text Contrast | AA | ✓ | Bordi/barre ruolo ≥3:1 (build 39). |
 | 1.4.12 Text Spacing | AA | ✓ | Asse spaziatura (build 39). |
 | 1.4.13 Content on Hover/Focus | AA | N.A. | Nessun contenuto su hover. |
-| 2.1.1 **Keyboard** | **A** | **✗** | **Nessuna operabilità da tastiera fisica; lettura/navigazione non raggiungibili.** |
-| 2.1.2 No Keyboard Trap | A | N.A.→◐ | Nessuna tastiera oggi; da garantire quando si aggiunge. |
+| 2.1.1 **Keyboard** | **A** | **✓** | Build 40: comandi di lettura. 2026-10-18: ⌘J nota↔richiamo, split con i tasti alla metà che comanda e ⌥⌘←/→; verificato con la tastiera del simulatore e VoiceOver vero. (Prima: **✗**, nessuna operabilità da tastiera.) |
+| 2.1.2 No Keyboard Trap | A | ✓ | 2026-10-18: Esc esce dal lettore; nello split Esc chiede, Esc annulla, A capo chiude; dallo split alla Home con la sola tastiera (test). |
 | 2.1.4 Character Key Shortcuts | A | N.A. | Nessuna scorciatoia a carattere. |
 | 2.2.1 Timing Adjustable | A | ✓ | Nessun limite di tempo. |
 | 2.2.2 Pause, Stop, Hide | A | ✓ | Nessun contenuto in movimento. |
 | 2.3.1 Three Flashes | A | ✓ | Nessun lampeggio. |
-| 2.4.3 Focus Order | A | ✓ | Ordine sequenziale (VoiceOver). |
-| 2.4.7 Focus Visible | AA | N.A.→◐ | Pertinente all'aggiunta della tastiera (Fase 1). |
+| 2.4.3 Focus Order | A | ✓ | Ordine sequenziale (VoiceOver). 2026-10-18: nelle schermate con le schede titolo, schede, comandi, contenuto (§ 12.1), misurato con VoiceOver vero. |
+| 2.4.7 Focus Visible | AA | ◐ | Nello split la metà che comanda non ha un segno visivo per chi usa la tastiera senza VoiceOver (decisione del maintainer). |
 | 2.5.1 **Pointer Gestures** | **A** | **◐** | Long-press (segnalibro/underline) e swipe (elimina) senza alternativa non-VoiceOver. |
 | 2.5.2 Pointer Cancellation | A | ✓ | Azioni su up-event (controlli standard). |
 | 2.5.3 Label in Name | A | ✓ | Label combaciano col testo visibile. |
 | 2.5.4 Motion Actuation | A | N.A. | Nessuna azione da movimento del device. |
-| 3.1.1 **Language of Page** | **A** | **✗** | Lingua italiana non dichiarata (`developmentRegion=en`). |
+| 3.1.1 **Language of Page** | **A** | **✓** | 2026-10-18: interfaccia dichiarata «it» (app e finestra, verificato con VoiceOver vero su un simulatore in inglese); contenuto nella lingua del documento (`DocumentLanguage`, test di unità; voce sul dispositivo non verificata). (Prima: **✗**, poi «it» fisso sul contenuto.) |
+| 3.1.2 Language of Parts | AA | ✗ | Parti in altra lingua non marcate (misurate: riconoscitore inaffidabile su italiano/latino); «Workspaces» dichiarato inglese. Decisione del maintainer. |
 | 3.2.1 On Focus / 3.2.2 On Input | A | ✓ | `.layoutChanged`, nessun cambio di contesto inatteso. |
 | 3.2.3 Consistent Navigation | AA | ✓ | Barra/flusso coerenti. |
 | 3.2.4 Consistent Identification | AA | ✓ | Nomi coerenti. |
@@ -345,6 +394,10 @@ traguardo consigliato.
 | **2.5.7 Dragging Movements** | **AA [2.2]** | ◐ | Split ok (pulsanti); resta lo swipe elimina in segnalibri/tag. |
 | **2.5.8 Target Size (Minimum)** | **AA [2.2]** | ◐ | Pulsanti barra sotto 24/44pt, senza vincoli. |
 | **3.2.6 Consistent Help** | **A [2.2]** | N.A. | Nessun meccanismo d'aiuto ricorrente (valutare in futuro). |
+
+> *Nota (2026-10-18):* la tabella è la fotografia della ricognizione di luglio, aggiornata solo nelle righe toccate dal
+> giro «accessibilità e completamento» (2.1.1, 2.1.2, 2.4.3, 2.4.7, 3.1.1, 3.1.2 nuova); per 1.3.3, 2.5.1, 2.5.8 e 4.1.3
+> vale lo stato della build 40 in testa al documento. La sintesi che segue è quella di luglio.
 
 **Sintesi.** Sotto il bersaglio **2.1 AA** ci sono **due non-conformità nette di
 Livello A** — **2.1.1 Keyboard** e **3.1.1 Language** — più una **parzialità 2.5.1**

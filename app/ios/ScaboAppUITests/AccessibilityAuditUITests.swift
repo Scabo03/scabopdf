@@ -69,9 +69,13 @@ final class AccessibilityAuditUITests: XCTestCase {
     @available(iOS 17.0, *)
     private func audit(_ app: XCUIApplication, screen: String) {
         var report: [String] = []
+        let systemRule = SystemAuditRule(app: app, screen: screen)
         do {
             try app.performAccessibilityAudit { issue in
                 let el = issue.element
+                // Rilievi del SISTEMA sull'iPad (barra delle schede galleggiante, testo attorno a un foglio), misurati e
+                // descritti in `SystemAuditRule`: accettati in modo stretto e stampati; ogni altro rilievo fa fallire.
+                if systemRule.accept(issue) { return true }
                 // FALSO POSITIVO documentato: la `UISearchBar` di sistema (dentro `UISearchController`)
                 // gestisce da sé il layout del placeholder; il clip del placeholder non è
                 // controllabile dall'autore e la barra ha già un `accessibilityLabel` corretto.
@@ -83,6 +87,7 @@ final class AccessibilityAuditUITests: XCTestCase {
                 let type = el.map { "\($0.elementType.rawValue)" } ?? "?"
                 let frame = el.map { "\($0.frame)" } ?? "?"
                 report.append("• [\(issue.auditType.rawValue)] \(issue.compactDescription) — «\(label)» type:\(type) frame:\(frame)")
+                print("AUDIT «\(screen)» RILIEVO: \(issue.compactDescription) — \(issue.detailedDescription) — «\(label)» frame:\(frame)")
                 return false  // non sopprimere: ogni altro problema è un fallimento reale
             }
         } catch {
