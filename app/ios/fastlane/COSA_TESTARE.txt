@@ -4,7 +4,8 @@ Cosa è cambiato
 - Nella Home, con VoiceOver, subito dopo il titolo «ScaboPDF» senti le tre schede (VoiceOver le chiama pannelli): Home, Ricerca, Impostazioni. Poi i comandi in alto (Tag, Affianca due documenti, Importa un documento), poi i Recenti e i Workspaces. Prima le schede arrivavano per ultime, dopo tutta la libreria. Lo stesso ordine vale nella Ricerca, nelle Impostazioni e nelle schermate che apri da lì (Tag, Segnalibri per tag, un workspace, una cartella), sull'iPad e sull'iPhone.
 - Il titolo della schermata è sempre in alto, sotto la barra, anche sull'iPad con iPadOS 26, dove prima mancava. Resta fermo quando scorri.
 - La scheda della Home si chiama «Home» (prima si sentiva «ScaboPDF», come il titolo).
-- Nella Ricerca il campo «Cerca nei documenti» sta sotto il titolo, sopra l'elenco dei libri.
+- Nella Ricerca il campo di ricerca (VoiceOver lo chiama «Cerca nei documenti dell'archivio») sta sotto il titolo, sopra l'elenco dei libri.
+- Il pulsante per tornare indietro: con iOS 26 è la sola freccia, come prima; con iOS 27 accanto alla freccia c'è il nome della schermata a cui torni. In tutti e due i casi VoiceOver dice il nome della schermata a cui torni, per esempio «ScaboPDF».
 
 Il salto fra nota e richiamo
 - Quando una nota lunga si legge alla fine del paragrafo o della sezione, l'azione «Vai al testo del richiamo» c'è in molte più note: nei nostri 52 libri di prova mancava in 1.224 note su 9.030, ora in 151. Ogni nuovo salto è stato controllato sulla pagina stampata. Dove il numero della nota non si ritrova con sicurezza il salto resta assente: meglio nessun salto che un salto sbagliato.

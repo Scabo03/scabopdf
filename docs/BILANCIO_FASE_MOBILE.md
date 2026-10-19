@@ -233,16 +233,20 @@ Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 12.1 (il principio dell'ordine), �
 `~/Developer/scabopdf-gen-lab/referto/REFERTO_ACCESSIBILITA_HOME.md`.
 
 - **Chiuso (campo).** L'ordine di lettura nelle schermate con le schede segue l'importanza: titolo, le tre schede, i
-  comandi, il contenuto, senza doppioni (prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime;
-  sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero da iOS 27 e con l'albero d'accessibilità su
-  26.5. Il salto «Vai al testo del richiamo» c'è per 8.879 delle 9.030 note lette lontano dal richiamo (erano 7.806), ogni
-  legame nuovo controllato sulla pagina stampata (voce D.16). La voce 7 qui sopra (tastiera nello split, salto senza
-  tasto) è chiusa: tasti dello split alla metà che comanda, ⌥⌘← / ⌥⌘→, ⌘J; la lingua dell'interfaccia e quella del
-  documento sono dichiarate (3.1.1). Due difetti preesistenti trovati con la tastiera e curati: ⌘= impossibile da una
-  tastiera italiana (ora anche ⌘+), il menu degli strumenti aperto con ⌘E che sull'iPad Esc non chiudeva. Voce 11 (audit):
-  le due voci rosse dell'iPad hanno una causa misurata — le etichette della barra delle schede di sistema e il testo sotto
-  un foglio — e i test le accettano con condizioni e un tetto, stampandole; i test d'interfaccia dell'iPad che aspettavano la barra
-  delle schede dell'iPhone sono verdi.
+  comandi, il contenuto, senza doppioni (prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per
+  ultime; sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero da iOS 27 e con l'albero
+  d'accessibilità su 26.5. Il salto «Vai al testo del richiamo» c'è per 8.879 delle 9.030 note lette lontano dal
+  richiamo (erano 7.806), ogni legame nuovo controllato sulla pagina stampata (voce D.16). La voce 7 qui sopra (tastiera
+  nello split, salto senza tasto) è chiusa: tasti dello split alla metà che comanda, ⌥⌘← / ⌥⌘→, ⌘J; la lingua
+  dell'interfaccia e quella del documento sono dichiarate (3.1.1). Due difetti preesistenti trovati con la tastiera e
+  curati: ⌘= impossibile da una tastiera italiana (ora anche ⌘+), il menu degli strumenti aperto con ⌘E che sull'iPad
+  Esc non chiudeva. Voce 11 (audit): le due voci rosse dell'iPad hanno una causa misurata — le etichette della barra
+  delle schede di sistema e il testo sotto un foglio — e i test le accettano con condizioni e un tetto, stampandole; i
+  test d'interfaccia dell'iPad che aspettavano la barra delle schede dell'iPhone sono verdi. Le suite intere sul codice
+  finale hanno trovato due difetti del giro, curati: un Esc dato subito dopo ⌘E chiudeva la lettura invece della sola
+  finestra degli strumenti (iPad iOS 26.5), e il nome scritto accanto alla freccia del pulsante «indietro» era segnalato
+  dall'audit di iOS 26.5 (ora sola freccia prima di iOS 27, col nome per VoiceOver su tutte e due le generazioni). Suite
+  intere verdi su iPad e iPhone, iOS 26.5 e 27.
 - **Restante.** Le parti in un'altra lingua dentro un libro (3.1.2, livello AA) non si marcano: decisione del maintainer;
   nello split la metà che comanda non ha un segno visivo per chi usa la tastiera senza VoiceOver (2.4.7, AA); tastiera e
   VoiceOver insieme non verificati (nel simulatore i comandi col Comando non scattano con VoiceOver acceso); 151 note

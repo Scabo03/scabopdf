@@ -937,17 +937,20 @@ con le schede — la Home, la Ricerca, le Impostazioni e ogni schermata che vi s
 3. poi gli **altri comandi** della barra in alto (Indietro, Tag, Affianca, Importa, Opzioni del contenitore, Nuovo tag…);
 4. infine il **contenuto** (per la Home: le letture arrivate dal Mac e l'offerta se ci sono, i Recenti, i Workspaces).
 
-Nessun elemento si legge due volte e nessuno si perde. Prima di questo giro, sull'iPad con iPadOS 27 e sull'iPhone, le schede
-si leggevano per ultime, dopo tutta la libreria (sull'iPad la barra delle schede sta in alto al centro, ma il sistema la
-legge dopo il contenuto; sull'iPad con iPadOS 26.5 il titolo della schermata mancava del tutto). Come si realizza:
-l'ordine è dichiarato dall'app e non lasciato al sistema, che lo ha già cambiato fra due generazioni; il titolo della
-schermata è un'intestazione dell'app sotto la barra in alto, nello stesso punto e con la stessa misura del titolo grande di
-sistema, ma fisso (non si richiude scorrendo); la scheda della Home si chiama «Home» (prima prendeva il nome «ScaboPDF» dal
-titolo); nella Ricerca il campo di ricerca sta sopra la lista, sotto il titolo. Se un aggiornamento del sistema cambiasse
-la barra delle schede al punto da non riconoscerla, l'app torna all'ordine del sistema (mai elementi persi o doppi) e i
-test d'interfaccia diventano rossi. Verifica: su otto schermate (Home, Ricerca, Impostazioni, Comandi da tastiera, Tag,
-Segnalibri per tag, un workspace, una cartella) con l'albero d'accessibilità su iPad e iPhone, iOS 26.5 e 27
-(`ReadingOrderUITests`); con VoiceOver vero su Home, Ricerca, Impostazioni e un workspace, iOS 27, iPad e iPhone
+Nessun elemento si legge due volte e nessuno si perde. Prima di questo giro, sull'iPad con iPadOS 27 e sull'iPhone, le
+schede si leggevano per ultime, dopo tutta la libreria (sull'iPad la barra delle schede sta in alto al centro, ma il
+sistema la legge dopo il contenuto; sull'iPad con iPadOS 26.5 il titolo della schermata mancava del tutto). Come si
+realizza: l'ordine è dichiarato dall'app e non lasciato al sistema, che lo ha già cambiato fra due generazioni; il
+titolo della schermata è un'intestazione dell'app sotto la barra in alto, nello stesso punto e con la stessa misura del
+titolo grande di sistema, ma fisso (non si richiude scorrendo); la scheda della Home si chiama «Home» (prima prendeva il
+nome «ScaboPDF» dal titolo); nella Ricerca il campo di ricerca sta sopra la lista, sotto il titolo; il pulsante
+«indietro» porta il nome della schermata a cui torna, che VoiceOver dice (con iOS 27, nella frase di VoiceOver letta dai
+test: «ScaboPDF», poi «Pulsante Indietro»): con iOS 26 è la sola freccia, come prima, con iOS 27 il nome si legge anche
+accanto alla freccia (con la sola freccia iOS 27 lo chiamerebbe solo «Indietro»). Se un aggiornamento del sistema
+cambiasse la barra delle schede al punto da non riconoscerla, l'app torna all'ordine del sistema (mai elementi persi o
+doppi) e i test d'interfaccia diventano rossi. Verifica: su otto schermate (Home, Ricerca, Impostazioni, Comandi da
+tastiera, Tag, Segnalibri per tag, un workspace, una cartella) con l'albero d'accessibilità su iPad e iPhone, iOS 26.5 e
+27 (`ReadingOrderUITests`); con VoiceOver vero su Home, Ricerca, Impostazioni e un workspace, iOS 27, iPad e iPhone
 (`VoiceOverOrderUITests`). Le altre schermate dentro le schede seguono lo stesso meccanismo, senza un test proprio.
 
 ### 12.2 Workspace, cartelle, sottocartelle: contenitori organizzativi

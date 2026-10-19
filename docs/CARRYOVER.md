@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.50 (18-19 ottobre 2026, giro «accessibilità e completamento», **CONCLUSO** con la **build 59** su TestFlight (caricamento in corso): **l'ordine di lettura segue l'importanza** in ogni schermata con le schede (titolo, poi le tre schede, poi i comandi, poi il contenuto; prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime e sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero nei test d'interfaccia da iOS 27 (`XCUIDevice.voiceOverService`); **salto fra nota e richiamo** per 8.879 delle 9.030 note differite (1.224 → 151 senza salto, ogni legame nuovo verificato contro la pagina stampata; INBOX D.16); **lacune WCAG di livello A chiuse**: tastiera nello split e ⌘J (2.1.1/2.1.2, con due difetti preesistenti curati: ⌘= impossibile dalla tastiera italiana, menu degli strumenti che Esc non chiudeva sull'iPad), lingua dell'interfaccia dichiarata e lingua del documento ricavata (3.1.1); le due voci rosse dell'audit sull'iPad spiegate (barra delle schede di sistema, testo sotto un foglio) e accettate con condizioni e un tetto, dichiarate; letture identiche al byte alla build 58 su entrambe le generazioni. Vedi STATO del 2026-10-18 sera)
 > Versione: 2.49 (18 ottobre 2026, giro «chiusura del capitolo note e pulizia del repo», **CONCLUSO** con la **build 58** su TestFlight (VALID): registrate all'apertura le quattro decisioni del maintainer (nessun tetto alla distanza delle note lunghe; cura delle 13 note dei Mandrioli spezzate vicino a una glossa a margine; codici in attesa di una cura vera dell'ordine delle colonne; rete delle risorse visive che giudica anche il posto); le 13 note ricucite con la glossa al suo posto (659 → 672 ricuciture, 25/25 coppie giudicate sulla pagina); la rete delle risorse visive giudica il posto contro una verità registrata, con la prova al contrario; testo dei volumi tolto dall'albero del repo (74 file); **il capitolo delle note è chiuso**, con le voci aperte per scelta elencate nello STATO del 2026-10-18)
 > Versione: 2.48 (17 ottobre 2026, giro «pulizia e rifinitura finale del capitolo note», **CONCLUSO** con la **build 57** su TestFlight (VALID): separate le 42 fusioni sbagliate nel flusso, ricomposte 16 teste-frammento (12 della Parte 1, 4 nate con le ricuciture nuove), 125 note spezzate in più ricucite con la successione confermata (534 → 659), offerta ai testi normativi già importati, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco dei codici, guardia delle risorse visive in posizioni logiche, cura 57. Vedi STATO del 2026-10-17)
 > Versione: 2.46 (16-17 ottobre 2026 notte, giro «cura delle note», **build 56**: registrate all'apertura le tre decisioni del maintainer; **le note spezzate fra pagine contigue si ricuciono sull'iPad** (`stitchAdjacentPageFootnotes`, nel codice condiviso, esclusi i codici: 534 punti di giunzione in 533 note, tutti giudicati veri contro la pagina) e **i pezzi delle note lunghe si chiudono a fine frase** (`notePieces`: finestra 0,5–1,5 volte la soglia, pause, iniziali e abbreviazioni mai separate); cura 56 offerta ai libri preparati dall'iPad da un PDF, non alle letture del Mac né ai testi normativi già importati; il segnale di chiusura della nota resta per il giro dei suoni. Vedi STATO del 2026-10-16 sera)
@@ -62,6 +63,73 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - `ANALYSIS_PATRIARCA_BENAZZO.md` — Analisi tecnica del manuale Patriarca-Benazzo "Diritto delle imprese e delle società" (Zanichelli 2022) — profilo `manuale_zanichelli_giuridica`
 - `ANALYSIS_MANDRIOLI_CARRATTA.md` — Analisi tecnica del manuale Mandrioli-Carratta "Diritto processuale civile Vol. III — Processi speciali e procedure alternative" 30ª ed. (Giappichelli 2025/26) — profilo `manuale_giappichelli`
 - `ANALYSIS_TESAURO_COMPENDIO.md` — Analisi tecnica del Compendio Tesauro "Compendio di Diritto Tributario" 9ª ed. (UTET Giuridica 2023) — profilo `compendio_utet`
+
+---
+
+## ▶ STATO — Giro «accessibilità e completamento»: ordine della Home, salto fra nota e richiamo, lacune WCAG di livello A, build 59 — 2026-10-18 sera
+
+**Partenza:** `8db0bcd` (main = origin, build 58 su TestFlight). **Arrivo:** vedi la riga «Build 59». Referto (nomi dei volumi solo nelle
+tabelle per volume: NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_ACCESSIBILITA_HOME.md`; laboratorio
+`~/Developer/scabopdf-gen-lab/accessibilita/` (ordine, salto, wcag, reti, revisione, attrezzi, copia di partenza `wt_base`).
+
+**Esito.** Codice: `211bb88` (ordine di lettura: `ScreenReadingOrder`, `TabStackNavigationController`, scheda «Home»,
+Ricerca col campo sopra la lista, «Workspaces» senza doppione; `ReadingOrderUITests`, `VoiceOverOrderUITests`,
+`UITestHelpers`), `5ea55a9` (salto: riscontro ancorato in `NoteJump.swift`, `NoteJumpAnchoredTests`), `1d74825`
+(tastiera e lingua: ⌘J, split con i tasti alla metà che comanda, ⌥⌘← / ⌥⌘→, Esc e A capo nella domanda, ⌘+ alternativo,
+strumenti da tastiera come finestra di dialogo, `DocumentLanguage`, lingua dell'interfaccia; `KeyboardUITests`,
+`KeyboardAndLanguageTests`), `b07ba15` (audit dell'iPad: `SystemAuditRule`); dopo la revisione indipendente `27a5288`
+(Impostazioni: ogni riga riusata torna nuova — ruolo, interruttore e suggerimento non restano della riga di prima),
+`62a31c2` (una tabella sola dagli id dei comandi da tastiera alle azioni del lettore), `2d13c80` (un tetto ai rilievi di
+sistema sotto un foglio, un contenuto atteso in ogni schermata del test dell'ordine); dalle suite intere sul codice
+finale `d6fb738` (Esc subito dopo ⌘E chiude solo la finestra degli strumenti, non la lettura), `d67dcf5` (pulsante
+«indietro»: sola freccia prima di iOS 27, col nome per VoiceOver su ogni generazione), `63db679` (prove della tastiera
+giuste anche sull'iPad 26.5, contenuto atteso come riga); documenti `6e85d84` e a seguire.
+- **Ordine (Parte 1).** Diagnosi (campo, albero d'accessibilità e VoiceOver vero sulla copia di partenza): iPad 27 schede
+  20-22 di 22 dopo tutta la libreria; iPhone 27 schede 18-20 di 20; iPad 26.5 schede prime ma nessun titolo; la scheda Home
+  si chiamava «ScaboPDF». L'ordine fra barra delle schede e contenuto lo decide il sistema e cambia fra 26.5 e 27; l'unica
+  leva pubblica è l'elenco `accessibilityElements` del controller delle schede. Cura e verifica: vedi commit `211bb88`.
+  I test dell'iPad che aspettavano la barra dell'iPhone: stesso equivoco, corretti.
+- **Salto (Parte 2).** Vedi INBOX D.16 (cause, cura, verifica contro la pagina, per volume, residuo 151). Nessuna versione
+  nuova della cura: il legame si calcola nella vista.
+- **WCAG A (Parte 3).** Vedi `ANALYSIS_ACCESSIBILITA_AREE_SCOPERTE.md` (stato in testa). Limiti dichiarati: tastiera
+  insieme a VoiceOver non verificata (nel simulatore i comandi col Comando non scattano con VoiceOver acceso); XCTest non
+  fa arrivare all'app il tasto Esc né A capo (si provano con Comando-punto e «\n»); 3.1.2 non marcata (decisione).
+- **Audit dell'iPad.** Causa delle due voci rosse misurata con due sonde; accettate nei test con condizioni e un tetto
+  (il testo sotto un foglio misurato su un foglio solo, con la controprova dell'iPhone), stampate come dichiarate.
+- **Reti** (due generazioni, codice `b07ba15`, cattura fresca `acc0` su iPad Pro 11" M5 iOS 26.5 e 27.0): doppia rete
+  ufficiale `rete_generazioni.sh acc0 --risorse-visive` exit 0 (Marotta identico, oracolo dei confini di parola 0,9880 /
+  0,9915 come nella 58, risorse visive identità 52/52, Δ lettere 0, posto 110/110, prova al contrario 201/201); **letture
+  identiche al byte alla build 58** (runner `acc0` contro `chi3`: 0 differenze su 260 file per generazione; catena
+  dell'iPad contro la finale della 58: 0 su 312); **iPad e Mac identici 52/52** per generazione; **annotazioni** 416 righe
+  verdi per generazione, 0 sbagliati, le tre prove al contrario verdi (iOS 27: 2.934/3.081 segnalibri, 147 orfani,
+  citazioni 1.948 / 47 / 0; prove al contrario 7.691/9.243, 1.552 orfani dichiarati, 0 sbagliati: come nella 58); catture
+  identiche come dati a quelle della 58 (nei byte solo ordine delle chiavi e tempi del modello). Driver di laboratorio
+  `accessibilita/strumenti/reti_giro.sh`.
+- **Suite** (campo, codice finale `63db679`, `accessibilita/strumenti/suite_giro.sh`, registro `logs/suite_giro.log`,
+  ogni passo exit 0): `validate.sh` sull'iPhone 16 iOS 26.5 VERDE (ScaboCore 989/989; test di unità dell'app 194 con 14
+  saltati, d'interfaccia 28 con 4 saltati, 0 falliti); unità e interfaccia sull'iPhone 16 iOS 27 (194 con 14 saltati; 28
+  con 1 saltato), sull'iPad Pro 11" (M5) iOS 27 (194/14; 28/0) e iOS 26.5 (194/14; 28/3): 0 falliti ovunque, audit
+  d'accessibilità compresi; lo split ripetuto 5 volte sull'iPad iOS 27: 5/5; `swift test` ScaboChain 8/8,
+  ScaboPageStructure 19 (1 saltato), ScaboMac 65 (3 saltati), 0 falliti. Saltati per costruzione: i 14 strumenti di
+  banco a richiesta (partono solo con un file di richiesta), lo split sull'iPhone, i tre test con VoiceOver vero su iOS
+  26.5 (il servizio c'è da iOS 27), il banco a richiesta di ScaboPageStructure, due prove dell'albero SwiftUI e la prova
+  di GLM-OCR coi pesi nel pacchetto del Mac. Non eseguiti: i test d'interfaccia del Mac (`automationmodetool`: modalità
+  di automazione spenta, accenderla chiede l'autenticazione; codice del Mac non toccato dal giro). Pipeline non toccata:
+  `ruff` verde, `pytest tests/unit` 2.465/2.465; `mypy --strict` con mypy 2.4.0 dà 5 avvisi di versione in quattro file
+  di test (con 1.20.2: 0), residuo dichiarato. **Nessun rosso residuo.**
+- **Build 59:** in corso dal commit di questi documenti; la riga si aggiorna dopo il caricamento.
+- **Revisione indipendente** (sotto-agente nuovo, con la regola del perimetro dei file nelle istruzioni; referto § 6):
+  nessun rilievo bloccante, 14 rilievi. Curati nel codice: R2 (Impostazioni, `27a5288`, provato con VoiceOver vero su
+  iPad e iPhone iOS 27), R4 e R13 (`2d13c80`), R10 (`62a31c2`); R3 (suite intere sul codice finale): fatto, e ha trovato
+  due difetti veri, curati (`d6fb738`, `d67dcf5`), e tre rossi delle prove, corretti (`63db679`); R9 (lingua tarata con
+  la regola dell'app: 52/52 «it» su entrambe le generazioni). Corretti nei documenti: R1, R5, R7, R8. Dichiarati: R6,
+  R11, R12. Confermato: R14.
+- **Residuo trovato a fine giro** (fonte, non toccato: le suite intere erano già fatte sul codice finale): la
+  descrizione di «Segui il sistema» (Impostazioni e scelta dell'aspetto alla prima apertura) dice «del tuo iPhone» anche
+  sull'iPad (`ReadingAppearance.swift:67`); da correggere al prossimo giro.
+
+**Decisioni per il maintainer** (referto § 8): parti in un'altra lingua (3.1.2); segno visivo della metà che comanda nello
+split (2.4.7); prova d'orecchio di tastiera e VoiceOver insieme.
 
 ---
 

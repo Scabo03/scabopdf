@@ -18,7 +18,9 @@
 >   chiede se chiudere la metà che comanda, nella domanda Esc annulla e A capo chiude; dallo split si torna alla Home con
 >   la sola tastiera (`KeyboardUITests`). Trovata e chiusa una trappola preesistente: il menu degli strumenti aperto con ⌘E
 >   era, sull'iPad, un menu a comparsa che Esc non chiudeva; aperto da tastiera ora è una finestra di dialogo, dove Esc è
->   «Annulla».
+>   «Annulla». Le suite intere sul codice finale hanno trovato una corsa: un Esc dato subito dopo ⌘E, prima che la finestra
+>   prendesse i tasti, chiudeva la lettura (iPad iOS 26.5, 2 corse su 3); curata (il lettore, con la finestra aperta,
+>   tiene solo Esc e la chiude), 10/10 su iPad iOS 26.5 e 10/10 su iPad iOS 27.
 > - **Tastiera italiana.** ⌘= («Testo più grande») non si poteva dare da una tastiera italiana (l'«=» è Maiuscole+0, il
 >   «+» un tasto a sé): ora vale anche ⌘+ (verificato con la disposizione italiana del simulatore).
 > - **Limiti della prova, dichiarati.** Nel simulatore XCTest non fa arrivare all'app il tasto Esc né A capo: si provano
@@ -368,14 +370,14 @@ traguardo consigliato.
 | 1.4.1 Use of Color | A | ✓ | «Mai-solo-colore» (build 39). |
 | 1.4.2 Audio Control | A | ✓ | Earcon transitori <3s. |
 | 1.4.3 Contrast (Minimum) | AA | ✓ | Palette verificate WCAG (build 39). |
-| 1.4.4 Resize Text | AA | ✓ | Leva dimensione + Dynamic Type. |
+| 1.4.4 Resize Text | AA | ✓ | Leva dimensione + Dynamic Type. 2026-10-18: il nome scritto accanto alla freccia del pulsante «indietro» (nato con la fascia del titolo) era segnalato dall'audit di iOS 26.5 come tagliabile col testo grande; curato (sola freccia prima di iOS 27, come prima). |
 | 1.4.5 Images of Text | AA | ✓ | Testo reale, non immagini. |
 | 1.4.10 Reflow | AA | ✓ | Reading view a finestra riflette. |
 | 1.4.11 Non-text Contrast | AA | ✓ | Bordi/barre ruolo ≥3:1 (build 39). |
 | 1.4.12 Text Spacing | AA | ✓ | Asse spaziatura (build 39). |
 | 1.4.13 Content on Hover/Focus | AA | N.A. | Nessun contenuto su hover. |
 | 2.1.1 **Keyboard** | **A** | **✓** | Build 40: comandi di lettura. 2026-10-18: ⌘J nota↔richiamo, split con i tasti alla metà che comanda e ⌥⌘←/→, ⌘+; verificato con la tastiera del simulatore a VoiceOver spento (tastiera e VoiceOver insieme: non verificato). (Prima: **✗**, nessuna operabilità da tastiera.) |
-| 2.1.2 No Keyboard Trap | A | ✓ | 2026-10-18: Esc esce dal lettore; nello split Esc chiede, Esc annulla, A capo chiude; dallo split alla Home con la sola tastiera (test). |
+| 2.1.2 No Keyboard Trap | A | ✓ | 2026-10-18: Esc esce dal lettore; nello split Esc chiede, Esc annulla, A capo chiude; dallo split alla Home con la sola tastiera (test); Esc subito dopo ⌘E chiude solo la finestra degli strumenti (corsa curata). |
 | 2.1.4 Character Key Shortcuts | A | N.A. | Nessuna scorciatoia a carattere. |
 | 2.2.1 Timing Adjustable | A | ✓ | Nessun limite di tempo. |
 | 2.2.2 Pause, Stop, Hide | A | ✓ | Nessun contenuto in movimento. |
