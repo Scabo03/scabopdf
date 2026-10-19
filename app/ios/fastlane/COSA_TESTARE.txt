@@ -1,30 +1,30 @@
-Build 59 — le schede subito dopo il titolo, il salto fra nota e richiamo, tastiera e lingua
+Build 60 — cercare dentro il libro
 
-Cosa è cambiato
-- Nella Home, con VoiceOver, subito dopo il titolo «ScaboPDF» senti le tre schede (VoiceOver le chiama pannelli): Home, Ricerca, Impostazioni. Poi i comandi in alto (Tag, Affianca due documenti, Importa un documento), poi i Recenti e i Workspaces. Prima le schede arrivavano per ultime, dopo tutta la libreria. Lo stesso ordine vale nella Ricerca, nelle Impostazioni e nelle schermate che apri da lì (Tag, Segnalibri per tag, un workspace, una cartella), sull'iPad e sull'iPhone.
-- Il titolo della schermata è sempre in alto, sotto la barra, anche sull'iPad con iPadOS 26, dove prima mancava. Resta fermo quando scorri.
-- La scheda della Home si chiama «Home» (prima si sentiva «ScaboPDF», come il titolo).
-- Nella Ricerca il campo di ricerca (VoiceOver lo chiama «Cerca nei documenti dell'archivio») sta sotto il titolo, sopra l'elenco dei libri.
-- Il pulsante per tornare indietro: con iOS 26 è la sola freccia, come prima; con iOS 27 accanto alla freccia c'è il nome della schermata a cui torni. In tutti e due i casi VoiceOver dice il nome della schermata a cui torni, per esempio «ScaboPDF».
+Come si cerca
+- Nel libro aperto, nella barra della lettura c'è un pulsante nuovo: «Cerca nel libro», subito dopo il selettore del layout. Con una tastiera esterna: Comando F. C'è sull'iPad e sull'iPhone.
+- Si apre la schermata «Cerca nel libro». Scrivi una parola o una frase e premi Cerca (con la tastiera esterna: A capo). Maiuscole, accenti, apostrofi e virgolette non contano: «perche» trova «perché», e l'apostrofo diritto trova anche quello tipografico.
+- VoiceOver ti dice subito quanti risultati ci sono. Poi, scorrendo, senti ogni risultato: qualche parola attorno a ciò che hai cercato, se sta in una nota («nella nota 12»), il titolo della sezione e la pagina del file originale.
+- La ricerca trova anche il testo delle note, comprese le note lunghe divise in parti, e le frasi che passano da un blocco di lettura al successivo.
+- «Parola intera»: se lo attivi, la parola non si trova dentro parole più lunghe («art» non trova «articolo»).
+- Se non trova nulla te lo dice, con un suggerimento: per esempio di togliere «Parola intera».
+- Scegli un risultato con un doppio tocco: la schermata si chiude e la lettura va lì, in Lettura Continua anche se leggevi in un altro layout, con VoiceOver sul blocco che contiene il risultato.
+- «Annulla» chiude la schermata senza muovere la lettura. Lo fanno anche lo scrub a due dita e il tasto Esc.
 
-Il salto fra nota e richiamo
-- Quando una nota lunga si legge alla fine del paragrafo o della sezione, l'azione «Vai al testo del richiamo» c'è in molte più note: nei nostri 52 libri di prova mancava in 1.224 note su 9.030, ora in 151. Ogni nuovo salto è stato controllato sulla pagina stampata. Dove il numero della nota non si ritrova con sicurezza il salto resta assente: meglio nessun salto che un salto sbagliato.
-- Vale anche per i libri che hai già aperto, senza rielaborarli.
+Da un risultato all'altro
+- Con VoiceOver: nel rotore c'è la voce «Risultati della ricerca». Scorri in giù o in su per andare al risultato successivo o al precedente. Dopo il testo del blocco senti quale risultato è, per esempio «risultato 4 di 12».
+- Con la tastiera: Comando G porta al risultato successivo, Maiuscole Comando G al precedente. Dopo l'ultimo la lettura resta dov'è e te lo dice.
+- Dopo una ricerca con risultati, nella barra compaiono anche due frecce, «Risultato precedente» e «Risultato successivo», e il pulsante «Cerca nel libro» dice quanti risultati ci sono. Chi guarda lo schermo vede i risultati evidenziati nel testo.
+- Se riapri «Cerca nel libro» ritrovi l'ultima ricerca, con i risultati e due comandi: «Torna dove leggevi», che riporta al punto in cui eri prima di andare ai risultati, e «Chiudi la ricerca», che toglie il rotore, le frecce e le evidenze.
+- Nello split screen la ricerca è della metà da cui la apri.
+- La ricerca resta finché il libro è aperto; quando lo chiudi non viene salvata.
 
-Con una tastiera esterna
-- Comando J: sulla nota porta al testo del richiamo, sul testo che richiama una nota porta alla nota (se ne richiama più d'una, alla prima).
-- Nello split screen, sull'iPad, i comandi da tastiera ora funzionano e valgono per la metà che comanda: all'inizio la sinistra; Comando Opzione freccia sinistra e Comando Opzione freccia destra scelgono la metà. Esc chiede se chiudere la metà; nella domanda Esc annulla e A capo chiude. Sulle tastiere senza il tasto Esc, al posto di Esc vale Comando punto.
-- Testo più grande: sulla tastiera italiana ora basta Comando e il tasto più (prima non funzionava).
-- Comando E apre gli strumenti dell'elemento (segnalibro, sottolineatura) in una finestra che si chiude con Esc; sull'iPad prima Esc non la chiudeva.
-- L'elenco completo è nelle Impostazioni, «Comandi da tastiera».
-
-La lingua
-- L'app dice a VoiceOver che è in italiano: anche su un dispositivo impostato in un'altra lingua, VoiceOver legge pulsanti e titoli in italiano (l'abbiamo provato su un iPad impostato in inglese; sull'iPhone non ancora).
-- Di un libro tutto in un'altra lingua, per esempio in inglese, l'app dice a VoiceOver quella lingua, così VoiceOver può leggerlo con la sua voce; i libri italiani, anche con qualche pagina in un'altra lingua, restano in italiano. Non l'abbiamo potuto ascoltare su un dispositivo: se hai un libro tutto in inglese, dicci con quale voce lo senti.
+Altre correzioni
+- Con una finestra aperta sopra la lettura, per esempio quella dei Segnalibri, Esc non chiude più il libro che sta sotto.
+- Sull'iPad la spiegazione di «Segui il sistema», nelle Impostazioni, diceva «del tuo iPhone»: ora dice «del tuo iPad». Anche le frasi di una lettura arrivata dal Mac nominano l'apparecchio che usi.
 
 Cosa non cambia
-- Il testo che senti nei libri è lo stesso di prima, lettera per lettera, verificato su tutti i libri di prova con iOS 26 e iOS 27. Segnalibri e sottolineature restano dove sono. Nessuna offerta «Lettura migliore disponibile»: non serve rielaborare nulla.
+- Il testo che senti nei libri è lo stesso di prima, lettera per lettera: lo abbiamo verificato su tutti i libri di prova, con iOS 26 e con iOS 27. Segnalibri e sottolineature restano dove sono. Nessuna offerta «Lettura migliore disponibile»: non c'è nulla da rielaborare.
 
-Una cosa da notare
-- Ascolta l'inizio della Home, della Ricerca e delle Impostazioni: dicci se senti qualcosa due volte, o se un elemento non si raggiunge più.
-- Se usi una tastiera insieme a VoiceOver, prova Comando J su una nota e i comandi nello split: è la combinazione che non abbiamo potuto provare. Dicci se un tasto non fa nulla.
+Due cose da provare, un minuto ciascuna
+- Cerca una parola che sai essere anche in una nota, e ascolta il conteggio e i primi risultati. Dicci se l'ordine ti fa scegliere subito quello giusto: prima le parole attorno, poi dove sta (nota, sezione, pagina).
+- Scegli un risultato, poi con il rotore su «Risultati della ricerca» vai avanti due o tre volte. Dicci se ti basta sentire «risultato 4 di 12» dopo il testo del blocco, o se ti servirebbe prima.
