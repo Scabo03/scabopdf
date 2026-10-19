@@ -272,6 +272,8 @@ final class BookSearchAppTests: XCTestCase {
                 bar.setTextSizeControls(available: true)
                 bar.setBookmarksAvailable(true)
                 bar.setSearchControls(available: true, activeSummary: "12 risultati per «x»")
+                // Anche con i comandi della Consultazione Rapida accesi (revisione del giro: non era provato).
+                bar.setQuickControls(visible: true, canNavigate: true)
                 bar.setPageIndicator(visualizationCurrent: 0, visualizationTotal: 0, originalCurrent: 412, originalTotal: 1559,
                                      showOriginal: true)
                 let window = UIWindow(frame: host.frame)
@@ -285,7 +287,8 @@ final class BookSearchAppTests: XCTestCase {
                 XCTAssertLessThanOrEqual(needed.height, title.bounds.height + 1, "il titolo sta tutto: \(label)")
                 let buttons: [UIView] = [bar.backButton, bar.layoutSelectorButton, bar.searchButton, bar.prevResultButton,
                                          bar.nextResultButton, bar.bookmarksButton, bar.decreaseTextSizeButton,
-                                         bar.increaseTextSizeButton]
+                                         bar.increaseTextSizeButton, bar.resetStructureButton, bar.prevExpandedButton,
+                                         bar.nextExpandedButton]
                 let frames = buttons.map { $0.convert($0.bounds, to: bar) }
                 for i in frames.indices { for j in frames.indices where j > i {
                     XCTAssertFalse(frames[i].insetBy(dx: 0.5, dy: 0.5).intersects(frames[j].insetBy(dx: 0.5, dy: 0.5)),
@@ -360,6 +363,73 @@ final class BookSearchAppTests: XCTestCase {
         XCTAssertEqual(cancelled, 1)
         XCTAssertTrue(vc.accessibilityPerformEscape())
         XCTAssertEqual(cancelled, 1, "una sola uscita per apertura")
+    }
+
+    /// Riaperta su una ricerca in corso, la finestra riceve i tasti (Esc = Annulla, ⌘F = il campo), come dopo «Cerca»: nello
+    /// split, se no, Esc non la chiudeva (revisione del giro).
+    func test_window_reopenedOnASearch_receivesTheKeys() {
+        let session = BookSearchSession(segments: book())
+        session.searchNow("faro", wholeWord: false)
+        let vc = BookSearchViewController.makeForTesting(session: session)
+        let w = UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        w.rootViewController = vc
+        w.makeKeyAndVisible()
+        defer { w.isHidden = true }
+        vc.viewDidAppear(false)
+        XCTAssertTrue(vc.isFirstResponder, "la finestra è destinataria dei tasti")
+        XCTAssertTrue(vc.keyCommands?.contains { $0.input == UIKeyCommand.inputEscape } ?? false)
+    }
+
+    /// «Torna dove leggevi» vale per una ricerca: una ricerca diversa lo azzera, la stessa rifatta no.
+    func test_session_positionBeforeSearch_isPerSearch() {
+        let session = BookSearchSession(segments: book())
+        session.searchNow("faro", wholeWord: false)
+        session.positionBeforeSearch = 2
+        session.searchNow("faro", wholeWord: false)
+        XCTAssertEqual(session.positionBeforeSearch, 2, "la stessa ricerca rifatta lo tiene")
+        session.searchNow("FARO", wholeWord: false)
+        XCTAssertEqual(session.positionBeforeSearch, 2, "le stesse parole, maiuscole indifferenti")
+        session.searchNow("faro", wholeWord: true)
+        XCTAssertNil(session.positionBeforeSearch, "l'altra «Parola intera» è una ricerca diversa")
+        session.positionBeforeSearch = 3
+        session.searchNow("porto", wholeWord: true)
+        XCTAssertNil(session.positionBeforeSearch, "altre parole: una ricerca diversa")
+    }
+
+    /// Senza VoiceOver un salto al primo elemento è una posizione di lettura: ⌘G riparte da lì (revisione del giro).
+    func test_readingView_jumpToTheFirstElement_isAReadingPosition() {
+        let view = ContinuousReadingView(frame: .zero)
+        view.signalPlayer = SilentSearchSignals()
+        let w = window(with: view)
+        defer { w.isHidden = true }
+        let segs = book()
+        view.render(segs)
+        let r = BookSearchCorpus(segments: segs).search("porto")
+        XCTAssertEqual(r.elementIndices, [0, 6])
+        view.setSearchResult(r, highlighter: nil)
+        view.goToElement(atIndex: 6, focus: false)
+        view.goToElement(atIndex: 0, focus: false)
+        XCTAssertEqual(view.currentReadingElementIndex, 0)
+        XCTAssertEqual(view.goToAdjacentSearchResult(forward: true), 6, "dal primo elemento, il risultato dopo")
+    }
+
+    /// In Consultazione Rapida «Annulla» riporta il fuoco alla riga di prima: l'albero dà l'elemento di ogni riga, anche
+    /// fuori dallo schermo (la porta in vista), e niente per una riga che non c'è.
+    func test_quickTree_rowElement_isTheCellOfThatRow() {
+        let leaves = (0..<60).map { i in
+            QuickConsultNode(role: "HEADING_2", depth: 2, title: "Capo \(i + 1)", headingId: "h\(i)",
+                             firstPage: 0, lastPage: 0, children: [], contentIds: [])
+        }
+        let tree = QuickConsultView(roots: leaves, nodeText: [:], documentTitle: "Libro")
+        let w = window(with: tree)
+        defer { w.isHidden = true }
+        let first = tree.rowElement(0) as? UITableViewCell
+        XCTAssertNotNil(first)
+        let far = tree.rowElement(55) as? UITableViewCell
+        XCTAssertNotNil(far, "una riga lontana si porta in vista")
+        XCTAssertTrue(far?.accessibilityLabel?.contains("Capo 56") ?? false, far?.accessibilityLabel ?? "")
+        XCTAssertNil(tree.rowElement(60))
+        XCTAssertNil(tree.rowElement(-1))
     }
 
     func test_session_buildsTheTextOnce_andReleasesItOnlyWhenIdle() {

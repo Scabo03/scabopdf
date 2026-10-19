@@ -234,6 +234,37 @@ final class BookSearchUITests: XCTestCase {
         sleep(1)
         app.typeKey("g", modifierFlags: .command)
         XCTAssertTrue(isNearTheTop(app, reading(app, "sezione del libro due")), "⌘G vale per la metà che comanda")
+        // Riaperta sull'ultima ricerca, la finestra riceve i tasti: Esc la chiude, sempre senza la domanda (revisione).
+        sleep(1)
+        app.typeKey("f", modifierFlags: .command)
+        XCTAssertTrue(searchBar(app).waitForExistence(timeout: 8), "⌘F la riapre")
+        XCTAssertTrue(app.staticTexts["ricerca.conteggio"].waitForExistence(timeout: 5), "sull'ultima ricerca")
+        sleep(1)
+        app.typeKey(".", modifierFlags: .command)   // Esc
+        XCTAssertTrue(searchBar(app).waitForNonExistence(timeout: 8), "Esc chiude la finestra riaperta")
+        XCTAssertFalse(app.alerts.firstMatch.waitForExistence(timeout: 2), "Esc non chiede di chiudere la metà")
+    }
+
+    /// Riaperta su una ricerca in corso, la finestra riceve i tasti anche a schermo intero: ⌘F porta al campo, Esc dal
+    /// campo la chiude (revisione del giro: prima ⌘F nella finestra riaperta non arrivava).
+    func testReopenedWindow_commandFGoesToTheField_andEscClosesIt() throws {
+        let app = launch()
+        open(app, "Libro tastiera due", showing: "Capitolo primo del libro due")
+        openSearch(app)
+        search(app, "faro", expect: "per «faro»")
+        app.typeKey(".", modifierFlags: .command)   // Esc
+        XCTAssertTrue(searchBar(app).waitForNonExistence(timeout: 8), "Annulla")
+        sleep(1)
+        app.typeKey("f", modifierFlags: .command)
+        XCTAssertTrue(searchBar(app).waitForExistence(timeout: 8), "⌘F la riapre")
+        XCTAssertTrue(app.staticTexts["ricerca.conteggio"].waitForExistence(timeout: 5), "sull'ultima ricerca")
+        sleep(1)
+        app.typeKey("f", modifierFlags: .command)
+        let field = app.textFields["ricerca.campo"]
+        let focused = expectation(for: NSPredicate(format: "hasKeyboardFocus == true"), evaluatedWith: field)
+        XCTAssertEqual(XCTWaiter.wait(for: [focused], timeout: 5), .completed, "⌘F nella finestra riaperta porta al campo")
+        app.typeKey(".", modifierFlags: .command)   // Esc dal campo
+        XCTAssertTrue(searchBar(app).waitForNonExistence(timeout: 8), "Esc chiude la finestra")
     }
 
     /// L'audit d'accessibilità della finestra con i risultati (iPhone e iPad; sull'iPad i rilievi di sistema sotto un foglio
@@ -250,6 +281,11 @@ final class BookSearchUITests: XCTestCase {
     }
 
     // MARK: - Con VoiceOver vero (iOS 27)
+
+    // Il fuoco dopo «Annulla» in Dottrina Inline e in Consultazione Rapida (revisione del giro, R7) non si prova qui con
+    // VoiceOver vero: la barra si raggiunge solo con lo scrub a due dita, che il servizio VoiceOver dei test non ha, e con
+    // VoiceOver acceso i comandi col Comando non arrivano; senza VoiceOver la barra non è nell'albero e il fuoco non c'è.
+    // Le correzioni hanno le prove di unità dell'albero (`BookSearchAppTests`); il resto è da sentire sul dispositivo.
 
     /// Ordine della finestra, conteggio detto subito, e fuoco sull'elemento giusto dopo il doppio tap su un risultato.
     func testVoiceOver_countIsSpokenFirst_andTheChosenResultGetsTheFocus() throws {

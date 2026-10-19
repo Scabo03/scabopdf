@@ -1084,8 +1084,11 @@ final class ContinuousReadingViewController: UIViewController {
     private func restoreReadingFocus(toIndex index: Int, raceRobust: Bool) {
         readingView.goToElement(atIndex: index, focus: true)
         guard raceRobust, UIAccessibility.isVoiceOverRunning else { return }
+        // Nello stesso Layout di partenza (Lettura Continua o Dottrina Inline: la stessa vista): se nel frattempo il
+        // Layout è cambiato, l'indice non vale più.
+        let layout = currentLayout
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
-            guard let self, self.view.window != nil, self.currentLayout == .continuous else { return }
+            guard let self, self.view.window != nil, self.currentLayout == layout, layout != .quick else { return }
             self.readingView.goToElement(atIndex: index, focus: true)
         }
     }
@@ -1124,12 +1127,14 @@ final class ContinuousReadingViewController: UIViewController {
     func openSearch() {
         guard presentedViewController == nil else { return }
         let readingIndex = readingView.currentReadingElementIndex
+        // In Consultazione Rapida: la riga dell'albero che ha il fuoco, per riportarlo lì dopo «Annulla».
+        let quickRow = currentLayout == .quick ? quickConsultView?.focusedRowForRestore : nil
         searchWindow = BookSearchViewController.present(
             from: self, session: searchSession, pageProvider: showOriginalPages ? sourcePage : nil,
             onChoose: { [weak self] hit in self?.jumpToSearchHit(hit) },
             onReturnToStart: { [weak self] position in self?.returnToPositionBeforeSearch(position) },
             onEnd: { [weak self] in self?.endSearch() },
-            onCancel: { [weak self] in self?.restoreFocusAfterSearchWindow(readingIndex) },
+            onCancel: { [weak self] in self?.restoreFocusAfterSearchWindow(readingIndex, quickRow: quickRow) },
             onResultsChanged: { [weak self] in self?.searchResultsChangedWhileTheWindowIsOpen() })
     }
 
@@ -1186,10 +1191,8 @@ final class ContinuousReadingViewController: UIViewController {
         }
         if currentLayout != .continuous { switchLayout(to: .continuous) }
         activateTextContainer(restoreFocus: false)
-        if readingView.goToAdjacentSearchResult(forward: forward) == nil {
-            UIAccessibility.post(notification: .announcement, argument: forward
-                ? "Non ci sono altri risultati dopo questo: era l'ultimo."
-                : "Non ci sono altri risultati prima di questo: era il primo.")
+        if readingView.goToAdjacentSearchResult(forward: forward) == nil, let r = searchSession.result {
+            UIAccessibility.post(notification: .announcement, argument: BookSearchWording.noMoreResults(forward: forward, result: r))
         }
     }
 
@@ -1218,14 +1221,22 @@ final class ContinuousReadingViewController: UIViewController {
         if embedded { parent?.becomeFirstResponder() } else { becomeFirstResponder() }
     }
 
-    /// Chiusa la finestra senza scegliere: il fuoco torna all'elemento di prima (§ 2.3), la lettura non si muove.
-    private func restoreFocusAfterSearchWindow(_ index: Int?) {
+    /// Chiusa la finestra senza scegliere: il fuoco torna all'elemento di prima (§ 2.3), la lettura non si muove; in
+    /// Consultazione Rapida alla riga dell'albero di prima (`quickRow`), ripetuto dopo un istante come nella lettura.
+    private func restoreFocusAfterSearchWindow(_ index: Int?, quickRow: Int? = nil) {
         reclaimKeyboardAfterSearchWindow()
         // Nello split (§ 11) `activateTextContainer` non fa nulla (la modalità la governa il padre); il fuoco torna
         // comunque nella metà che ha aperto la finestra.
         activateTextContainer(restoreFocus: false)
         if currentLayout == .quick {
-            if let tree = quickConsultView { UIAccessibility.post(notification: .screenChanged, argument: tree.firstRowElement ?? tree) }
+            guard let tree = quickConsultView else { return }
+            let target: () -> NSObject = { quickRow.flatMap { tree.rowElement($0) } ?? tree.firstRowElement ?? tree }
+            UIAccessibility.post(notification: .screenChanged, argument: target())
+            guard UIAccessibility.isVoiceOverRunning else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                guard let self, self.view.window != nil, self.currentLayout == .quick else { return }
+                UIAccessibility.post(notification: .screenChanged, argument: target())
+            }
             return
         }
         if let index {

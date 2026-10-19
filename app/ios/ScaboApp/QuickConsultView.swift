@@ -259,6 +259,20 @@ final class QuickConsultView: UIView {
         }
     }
 
+    /// La riga che ha il fuoco di VoiceOver (best-effort), per riportarlo lì dopo una finestra (la ricerca nel libro).
+    var focusedRowForRestore: Int? { focusedRowIndex() }
+
+    /// L'elemento di accessibilità della riga `row` (la cella; se non è materializzata la si porta in vista), o `nil`.
+    func rowElement(_ row: Int) -> NSObject? {
+        guard row >= 0, row < rows.count else { return nil }
+        let ip = IndexPath(row: row, section: 0)
+        if tableView.cellForRow(at: ip) == nil {
+            tableView.scrollToRow(at: ip, at: .middle, animated: false)
+            tableView.layoutIfNeeded()
+        }
+        return tableView.cellForRow(at: ip)
+    }
+
     /// Indice di riga della cella che ha attualmente il fuoco VoiceOver (best-effort).
     private func focusedRowIndex() -> Int? {
         for ip in tableView.indexPathsForVisibleRows ?? [] {

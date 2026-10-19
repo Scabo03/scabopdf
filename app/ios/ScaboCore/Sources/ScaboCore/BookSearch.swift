@@ -701,6 +701,16 @@ public enum BookSearchWording {
         return "risultati da \(number(ordinals.lowerBound)) a \(number(ordinals.upperBound)) di \(t)"
     }
 
+    /// Ciò che si dice quando non c'è un risultato dopo (o prima di) quello raggiunto. Con un elenco troncato (più di
+    /// `defaultHitLimit` occorrenze) le fermate finiscono con le prime occorrenze: lo si dice, con il modo di arrivare
+    /// alle altre, invece di «era l'ultimo».
+    public static func noMoreResults(forward: Bool, result: BookSearchResult) -> String {
+        guard forward else { return "Non ci sono altri risultati prima di questo: era il primo." }
+        guard result.isTruncated else { return "Non ci sono altri risultati dopo questo: era l'ultimo." }
+        return "Non ci sono altri risultati fra i primi \(number(result.hits.count)), su \(number(result.totalCount)) in "
+            + "tutto: per arrivare agli altri, restringi la ricerca, per esempio con più parole o con «Parola intera»."
+    }
+
     /// Il numero di una nota, dalle cifre in testa al suo testo («12 Cfr. …» → «12»), o `nil`.
     public static func noteNumber(_ noteText: String) -> String? {
         let head = noteText.drop(while: { $0 == " " || $0 == "(" || $0 == "[" })

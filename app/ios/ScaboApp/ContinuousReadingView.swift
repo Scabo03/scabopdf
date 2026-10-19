@@ -691,7 +691,9 @@ final class ContinuousReadingView: UIView {
         let ip = IndexPath(item: index, section: 0)
         collectionView.scrollToItem(at: ip, at: .top, animated: false)
         collectionView.layoutIfNeeded()
-        presetReadingPosition(toIndex: index)
+        // Un salto è una posizione di lettura vera, anche il primo elemento (`presetReadingPosition` salta lo 0: senza
+        // VoiceOver, dopo un salto al primo elemento ⌘G ripartiva dalla posizione di prima).
+        lastFocusedIndex = index
         if focus, UIAccessibility.isVoiceOverRunning {
             let target: Any = collectionView.cellForItem(at: ip) ?? self
             UIAccessibility.post(notification: .screenChanged, argument: target)

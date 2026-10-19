@@ -84,6 +84,21 @@ final class BookSearchTests: XCTestCase {
     func test_wholeWord_rejectedCandidateDoesNotConsume() {
         XCTAssertEqual(count([body("a", "xab ab")], "ab", whole: true), 1)
         XCTAssertEqual(count([body("a", "abab ab")], "ab", whole: true), 1)
+        // Il caso che distingue l'errore (revisione del giro): lo scartato «di di» dentro «xdi di» non deve consumare il
+        // testo, se no l'occorrenza vera che comincia nel suo secondo «di» si perde.
+        XCTAssertEqual(count([body("a", "xdi di di")], "di di", whole: true), 1)
+    }
+
+    func test_wording_noMoreResults_saysWhenTheListIsCut() {
+        let corpus = BookSearchCorpus(segments: [body("a", "faro faro faro")])
+        let all = corpus.search("faro")
+        XCTAssertEqual(BookSearchWording.noMoreResults(forward: true, result: all), "Non ci sono altri risultati dopo questo: era l'ultimo.")
+        XCTAssertEqual(BookSearchWording.noMoreResults(forward: false, result: all), "Non ci sono altri risultati prima di questo: era il primo.")
+        let cut = corpus.search("faro", limit: 2)
+        XCTAssertTrue(cut.isTruncated)
+        let s = BookSearchWording.noMoreResults(forward: true, result: cut)
+        XCTAssertTrue(s.hasPrefix("Non ci sono altri risultati fra i primi 2, su 3 in tutto"), s)
+        XCTAssertTrue(s.contains("restringi la ricerca"), s)
     }
 
     func test_phraseAcrossTwoBodyBlocks_isFound_andStartsInTheFirst() {

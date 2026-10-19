@@ -39,7 +39,9 @@ final class BookSearchSession {
     /// L'ultima ricerca scritta e l'opzione «Parola intera» (la finestra le ripropone).
     private(set) var query = ""
     private(set) var wholeWord = false
-    /// Dove si leggeva prima del primo salto a un risultato («Torna dove leggevi»): indice di Lettura Continua.
+    /// Dove si leggeva prima del primo salto a un risultato DI QUESTA RICERCA («Torna dove leggevi»): indice di Lettura
+    /// Continua. Una ricerca diversa (altre parole o l'altra «Parola intera») lo azzera: il punto da cui si riparte è
+    /// quello in cui si legge al suo primo salto. La stessa ricerca rifatta non lo tocca.
     var positionBeforeSearch: Int?
     /// Quanto è durata l'ultima ricerca (con la costruzione del testo, se è servita) e la costruzione (se è avvenuta).
     private(set) var lastDuration: TimeInterval = 0
@@ -93,6 +95,9 @@ final class BookSearchSession {
     }
 
     private func apply(_ r: BookSearchResult, wholeWord: Bool, duration: TimeInterval, build: TimeInterval?) {
+        if let previous = result, previous.normalizedQuery != r.normalizedQuery || previous.options != r.options {
+            positionBeforeSearch = nil
+        }
         result = r
         query = r.query
         self.wholeWord = wholeWord
@@ -284,7 +289,9 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if session.result != nil {
-            // Si riapre su una ricerca in corso: VoiceOver comincia dalla frase del conteggio, i risultati subito dopo.
+            // Si riapre su una ricerca in corso: VoiceOver comincia dalla frase del conteggio, i risultati subito dopo; la
+            // finestra riceve i tasti (Esc = Annulla, ⌘F = il campo), come dopo «Cerca».
+            becomeFirstResponder()
             focusCountRow()
         } else {
             searchField.becomeFirstResponder()
