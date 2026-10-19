@@ -246,18 +246,20 @@ final class ImportProcessingTests: XCTestCase {
             XCTAssertTrue(element is SegmentCell, "il container del testo espone solo segmenti")
         }
 
-        // Container dell'INTERFACCIA: [Indietro, selettore Layout, Testo più piccolo, Testo più
-        // grande] — Opzione A verticale: caduta la pagina di visualizzazione sintetica, e con
+        // Container dell'INTERFACCIA: [Indietro, selettore Layout, Cerca nel libro, Testo più piccolo,
+        // Testo più grande] — Opzione A verticale: caduta la pagina di visualizzazione sintetica, e con
         // l'originale OFF (default qui) nessun box di pagina. Il selettore (§ 3.4) ha sostituito il
-        // titolo statico; i due pulsanti dimensione sono la leva della Fase 0 accessibilità visiva.
-        // NESSUN elemento di testo qui (invariante di container chiuso, § 2.3).
+        // titolo statico; i due pulsanti dimensione sono la leva della Fase 0 accessibilità visiva;
+        // «Cerca nel libro» c'è in ogni libro con del testo (§ 13.3; le due frecce dei risultati solo
+        // con una ricerca in corso). NESSUN elemento di testo qui (invariante di container chiuso, § 2.3).
         vc.viewDidAppear(false)
         let interface = vc.interfaceContainerForTesting
         let interfaceElements = (interface.accessibilityElements as? [NSObject]) ?? []
-        XCTAssertEqual(interfaceElements.count, 4,
-                       "interfaccia: Indietro, selettore Layout, Testo più piccolo, Testo più grande")
+        XCTAssertEqual(interfaceElements.count, 5,
+                       "interfaccia: Indietro, selettore Layout, Cerca nel libro, Testo più piccolo, Testo più grande")
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.backButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.layoutSelectorButton })
+        XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.searchButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.decreaseTextSizeButton })
         XCTAssertTrue(interfaceElements.contains { ($0 as? UIButton) === interface.increaseTextSizeButton })
         XCTAssertTrue(interface.visualizationPageLabel.isHidden, "nessun box di visualizzazione nel verticale")

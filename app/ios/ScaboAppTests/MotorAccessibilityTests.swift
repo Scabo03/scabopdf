@@ -18,7 +18,8 @@ final class MotorAccessibilityTests: XCTestCase {
 
     func test_keyboardCatalog_isCompleteAndDescribed() {
         let cmds = KeyboardCommandsCatalog.reading
-        XCTAssertEqual(cmds.count, 10, "i comandi di lettura previsti (con ⌘J, giro «accessibilità e completamento»)")
+        XCTAssertEqual(cmds.count, 13, "i comandi di lettura previsti (con ⌘J, giro «accessibilità e completamento»; "
+                       + "con ⌘F, ⌘G e Maiuscole ⌘G, giro «ricerca nel libro»)")
         // Ogni comando ha titolo, descrizione e tasti resi in glifi e a parole (per VoiceOver).
         for c in cmds {
             XCTAssertFalse(c.title.isEmpty)

@@ -102,12 +102,20 @@ final class BookSearchUITests: XCTestCase {
         sleep(1)
     }
 
-    /// Scrive la ricerca e la esegue (A capo); aspetta la frase del conteggio che contiene `countText`.
+    /// Scrive la ricerca e la esegue (A capo); aspetta la frase del conteggio che contiene `countText`. Sull'iPhone iOS 27,
+    /// alla prima comparsa della tastiera dopo l'avvio, l'A capo sintetico dei test può non arrivare al campo (la frase
+    /// resta quella d'aiuto, nessuna ricerca parte: suite del 2026-10-19): in quel caso lo si ripete UNA volta, e lo si
+    /// scrive nel registro della prova. Una ricerca partita e sbagliata resta rossa.
     @discardableResult
     private func search(_ app: XCUIApplication, _ text: String, expect countText: String) -> XCUIElement {
         app.typeText(text)
         app.typeKey("\n", modifierFlags: [])
         let count = app.staticTexts["ricerca.conteggio"]
+        let started = NSPredicate(format: "NOT (label BEGINSWITH %@)", "Scrivi una parola")
+        if XCTWaiter.wait(for: [expectation(for: started, evaluatedWith: count)], timeout: 4) != .completed {
+            print("A CAPO NON ARRIVATO al campo: ripetuto una volta")
+            app.typeKey("\n", modifierFlags: [])
+        }
         let predicate = NSPredicate(format: "label CONTAINS %@", countText)
         let ok = expectation(for: predicate, evaluatedWith: count)
         let result = XCTWaiter.wait(for: [ok], timeout: 10)
