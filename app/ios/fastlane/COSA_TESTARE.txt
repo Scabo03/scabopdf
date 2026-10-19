@@ -1,7 +1,7 @@
 Build 60 — cercare dentro il libro
 
 Come si cerca
-- Nel libro aperto, nella barra della lettura c'è un pulsante nuovo: «Cerca nel libro», subito dopo il selettore del layout. Con una tastiera esterna: Comando F. C'è sull'iPad e sull'iPhone.
+- Nel libro aperto, nella barra della lettura c'è un pulsante nuovo: «Cerca nel libro», subito dopo il selettore del layout. Con VoiceOver, dal testo lo scrub a due dita porta alla barra. Con una tastiera esterna: Comando F. C'è sull'iPad e sull'iPhone.
 - Si apre la schermata «Cerca nel libro». Scrivi una parola o una frase e premi Cerca (con la tastiera esterna: A capo). Maiuscole, accenti, apostrofi e virgolette non contano: «perche» trova «perché», e l'apostrofo diritto trova anche quello tipografico.
 - VoiceOver ti dice subito quanti risultati ci sono. Poi, scorrendo, senti ogni risultato: qualche parola attorno a ciò che hai cercato, se sta in una nota («nella nota 12»), il titolo della sezione e la pagina del file originale.
 - La ricerca trova anche il testo delle note, comprese le note lunghe divise in parti, e le frasi che passano da un blocco di lettura al successivo.
@@ -11,10 +11,10 @@ Come si cerca
 - «Annulla» chiude la schermata senza muovere la lettura. Lo fanno anche lo scrub a due dita e il tasto Esc.
 
 Da un risultato all'altro
-- Con VoiceOver: nel rotore c'è la voce «Risultati della ricerca». Scorri in giù o in su per andare al risultato successivo o al precedente. Dopo il testo del blocco senti quale risultato è, per esempio «risultato 4 di 12».
-- Con la tastiera: Comando G porta al risultato successivo, Maiuscole Comando G al precedente. Dopo l'ultimo la lettura resta dov'è e te lo dice.
+- In Lettura Continua, con VoiceOver: nel rotore c'è la voce «Risultati della ricerca». Scorri in giù o in su per andare al risultato successivo o al precedente. Dopo il testo del blocco senti quale risultato è, per esempio «risultato 4 di 12».
+- Con la tastiera, anche da un altro layout (la lettura passa in Lettura Continua): Comando G porta al risultato successivo, Maiuscole Comando G al precedente. Dopo l'ultimo la lettura resta dov'è, e con VoiceOver te lo dice. Con moltissimi risultati, più di 50.000 (per esempio «di» in un codice), ci si ferma ai primi 50.000 e VoiceOver ti suggerisce di restringere la ricerca.
 - Dopo una ricerca con risultati, nella barra compaiono anche due frecce, «Risultato precedente» e «Risultato successivo», e il pulsante «Cerca nel libro» dice quanti risultati ci sono. Chi guarda lo schermo vede i risultati evidenziati nel testo.
-- Se riapri «Cerca nel libro» ritrovi l'ultima ricerca, con i risultati e due comandi: «Torna dove leggevi», che riporta al punto in cui eri prima di andare ai risultati, e «Chiudi la ricerca», che toglie il rotore, le frecce e le evidenze.
+- Se riapri «Cerca nel libro» ritrovi l'ultima ricerca, con i risultati e il comando «Chiudi la ricerca», che toglie il rotore, le frecce e le evidenze. Se sei già andato a un risultato c'è anche «Torna dove leggevi»: riporta in Lettura Continua al punto in cui leggevi prima del primo risultato di quella ricerca.
 - Nello split screen la ricerca è della metà da cui la apri.
 - La ricerca resta finché il libro è aperto; quando lo chiudi non viene salvata.
 

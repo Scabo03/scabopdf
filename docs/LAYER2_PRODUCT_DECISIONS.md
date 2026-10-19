@@ -1341,10 +1341,15 @@ le due frecce.
   tornare alla schermata; per chi guarda o usa i comandi a sfioramento ci sono le due frecce in barra («Risultato
   precedente», «Risultato successivo»). L'elemento dice, dopo il suo testo, quali risultati porta («risultato 4 di 12»); a
   vista i risultati sono evidenziati a colori invertiti (stesso contrasto della palette, mai solo una tinta). Oltre l'ultimo
-  e prima del primo la lettura non si muove e i tasti lo dicono. **Nessun vicolo cieco, nessuna posizione persa**:
-  «Annulla» (o Esc, o lo scrub) lascia la lettura dov'era; la schermata si riapre sull'ultima ricerca; «Torna dove
-  leggevi» riporta al punto di prima del primo salto; «Chiudi la ricerca» toglie rotore, frecce ed evidenze. La ricerca
-  vive finché il libro è aperto. Nello split vale per la metà che comanda.
+  e prima del primo la lettura non si muove e i tasti lo dicono; con più di 50.000 risultati (l'elenco ne mostra i primi
+  50.000, il conteggio resta esatto) dopo l'ultima fermata lo dicono e suggeriscono di restringere la ricerca. Il rotore c'è
+  in Lettura Continua; i tasti e le frecce, da un altro Layout, vi portano. **Nessun vicolo cieco, nessuna posizione
+  persa**: «Annulla» (o Esc, o lo scrub) lascia la lettura dov'era, col fuoco sull'elemento di prima (in Consultazione
+  Rapida sulla riga di prima); la schermata si riapre sull'ultima ricerca e riceve subito i tasti (Esc, Comando F);
+  «Torna dove leggevi» c'è dopo un salto a un risultato e riporta in Lettura Continua al punto in cui si leggeva prima del
+  PRIMO salto di quella ricerca (una ricerca diversa, con altre parole o l'altra «Parola intera», riparte da dove si legge
+  al suo primo salto); «Chiudi la ricerca» toglie rotore, frecce ed evidenze. La ricerca vive finché il libro è aperto.
+  Nello split vale per la metà che comanda.
 - **Memoria.** Il testo da cercare si prepara alla prima ricerca dai segmenti che la lettura tiene già in memoria (nessun
   indice su disco, nessun costo all'importazione, nulla da riallineare dopo una rielaborazione) e resta finché il libro è
   aperto; misure del giro in `~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA.md` § 5.
