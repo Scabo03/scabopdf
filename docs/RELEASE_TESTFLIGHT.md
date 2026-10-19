@@ -219,7 +219,10 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   (1 saltato), pacchetto del Mac 65 (3 saltati); pipeline non toccata, 2.465/2.465. Revisione indipendente prima del
   caricamento (sotto-agente nuovo, lista del maintainer, regola del perimetro dei file): nessun rilievo bloccante, 14
   rilievi curati o dichiarati; le suite intere che chiedeva hanno trovato due difetti del giro, curati prima della build
-  (`d6fb738`, `d67dcf5`). IPA 162 959 804 byte (155,4 MiB). Prossimo numero: 60.
+  (`d6fb738`, `d67dcf5`). IPA 162 959 804 byte (155,4 MiB). Dopo la corsa restavano due processi `log stream` orfani
+  (padre launchd, predicato `subsystem == "com.apple.network"` su «Xcode» e su «altool», partiti durante l'esportazione
+  e il caricamento): fermati per PID; a fine caricamento si controlla con `pgrep -fl "^/usr/bin/log stream"`. Prossimo
+  numero: 60.
 - **Build 58 — 2026-10-18, commit `a43243c` (giro «chiusura del capitolo note e pulizia del repo»: le 13 note dei
   Mandrioli spezzate vicino a una glossa a margine ricucite con la glossa al suo posto (659 → 672 ricuciture), la rete
   delle risorse visive che giudica anche il posto, testo dei volumi tolto dall'albero del repo; `docs/CARRYOVER.md` STATO
