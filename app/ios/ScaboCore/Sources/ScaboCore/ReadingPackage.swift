@@ -207,7 +207,7 @@ public enum ReadingPackageProblem: Error, Equatable, CustomStringConvertible {
             return "Questa lettura arriva da \(producer) ed è di un volume molto grande, preparato a blocchi di \(found) "
                 + "caratteri: per i volumi così grandi questo dispositivo usa blocchi di \(expected) e, aprendo il libro, la "
                 + "sostituirebbe rielaborando il PDF. Nella libreria non è stato cambiato nulla. Prepara di nuovo la lettura "
-                + "con la finestra di ScaboPDF per Mac, che usa la stessa regola dell'iPad."
+                + "con la finestra di ScaboPDF per Mac, che usa la stessa regola di questo dispositivo."
         }
     }
 }

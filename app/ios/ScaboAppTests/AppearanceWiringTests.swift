@@ -25,6 +25,16 @@ final class AppearanceWiringTests: XCTestCase {
         }
     }
 
+    /// «Segui il sistema» nomina l'apparecchio in uso: prima diceva «del tuo iPhone» anche sull'iPad.
+    func test_followSystemOption_namesTheDeviceInUse() {
+        let expected = UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        let other = expected == "iPad" ? "iPhone" : "iPad"
+        XCTAssertEqual(SystemGeneration.deviceName, expected)
+        let followSystem = AppearanceOptions.all.first { $0.preset == nil }!
+        XCTAssertTrue(followSystem.subtitle.contains("del tuo \(expected)"), followSystem.subtitle)
+        XCTAssertFalse(followSystem.subtitle.contains(other), followSystem.subtitle)
+    }
+
     func test_apply_followSystemOption() {
         let store = InMemoryKeyValueStore()
         let followSystem = AppearanceOptions.all.first { $0.preset == nil }!

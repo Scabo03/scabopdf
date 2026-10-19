@@ -160,7 +160,7 @@ enum ReprocessOffer {
         }.map { $0.text }
         var text = ""
         if doc.readingOrigin == ReadingOrigin.mac {
-            text += "La lettura di adesso è arrivata dal Mac: rielaborando il libro qui, l'iPad la sostituisce con la sua. "
+            text += "La lettura di adesso è arrivata dal Mac: rielaborando il libro qui, l'\(SystemGeneration.deviceName) la sostituisce con la sua. "
         }
         if doc.visualResourcesSkipped != nil {
             text += "L'ultima volta il riconoscimento di tabelle e figure non si è potuto fare, perché la memoria del dispositivo "

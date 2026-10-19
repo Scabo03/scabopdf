@@ -64,7 +64,7 @@ enum AppearanceOptions {
     static let all: [AppearanceOption] = [
         AppearanceOption(
             preset: nil, title: "Segui il sistema",
-            subtitle: "L'app segue le impostazioni del tuo iPhone: chiaro o scuro, aumento del contrasto."),
+            subtitle: "L'app segue le impostazioni del tuo \(SystemGeneration.deviceName): chiaro o scuro, aumento del contrasto."),
         AppearanceOption(
             preset: .standard, title: "Scuro ad alto contrasto",
             subtitle: "Sfondo scuro, testo chiaro ben leggibile. L'equilibrio predefinito."),

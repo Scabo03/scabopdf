@@ -188,13 +188,13 @@ enum ReadingFromMac {
                 : " Porta \(h.reading.visualResources) tabelle e figure riconosciute."
         }
         if h.reading.visualResourcesSkipped != nil {
-            t += " Sul Mac il riconoscimento di tabelle e figure non è stato possibile: dopo, l'iPad proporrà di riprovarlo."
+            t += " Sul Mac il riconoscimento di tabelle e figure non è stato possibile: dopo, l'\(SystemGeneration.deviceName) proporrà di riprovarlo."
         }
-        t += " Se il libro ha note molto lunghe, sono divise in parti, da ascoltare una alla volta, come fa ora anche l'iPad. "
-            + "Il resto del testo è quello che l'iPad ricava dallo stesso PDF: se il libro non aveva nulla da correggere, la "
+        t += " Se il libro ha note molto lunghe, sono divise in parti, da ascoltare una alla volta, come fa ora anche l'\(SystemGeneration.deviceName). "
+            + "Il resto del testo è quello che l'\(SystemGeneration.deviceName) ricava dallo stesso PDF: se il libro non aveva nulla da correggere, la "
             + "lettura resta molto simile a quella di adesso."
         if ReadingAssembly.isLarge(pageCount: h.source.pageCount) {
-            t += " È un volume molto grande: come sull'iPad, la lettura è a blocchi più ampi e senza Consultazione Rapida."
+            t += " È un volume molto grande: come sull'\(SystemGeneration.deviceName), la lettura è a blocchi più ampi e senza Consultazione Rapida."
         }
         return t
     }
@@ -385,7 +385,7 @@ enum ReadingFromMac {
             ? "Il punto in cui eri arrivato non è stato ritrovato con sicurezza: riaprendo il libro partirai dall'inizio della stessa pagina."
             : "Il punto in cui eri arrivato è stato ritrovato.")
         lines.append("Puoi tenere la nuova lettura oppure tornare a quella di prima. Se non decidi adesso, la scelta resta fra le opzioni del libro.")
-        lines.append("Se torni a quella di prima, la lettura del Mac non resta sull'iPad: per riaverla, rimandala dal Mac.")
+        lines.append("Se torni a quella di prima, la lettura del Mac non resta sull'\(SystemGeneration.deviceName): per riaverla, rimandala dal Mac.")
         return lines.joined(separator: " ")
     }
 }
@@ -472,18 +472,18 @@ final class MissingBookViewController: ReprocessTextViewController {
             let d = self.onDone
             self.dismiss(animated: true) { d() }
         }
-        addButton("Togli questa lettura dall'iPad…", prominent: false, identifier: "missing.discard") { [weak self] in
+        addButton("Togli questa lettura dall'\(SystemGeneration.deviceName)…", prominent: false, identifier: "missing.discard") { [weak self] in
             guard let self, let nav = self.navigationController else { return }
             ReprocessConfirmViewController.push(
                 on: nav, identifier: "confirm.discard",
-                question: "Togliere questa lettura dall'iPad?",
-                explanation: "La lettura arrivata dal Mac per «\(self.header.source.title)» si cancella dall'iPad. Se poi la vorrai, "
+                question: "Togliere questa lettura dall'\(SystemGeneration.deviceName)?",
+                explanation: "La lettura arrivata dal Mac per «\(self.header.source.title)» si cancella dall'\(SystemGeneration.deviceName). Se poi la vorrai, "
                     + "rimandala dal Mac.",
                 actionTitle: "Togli la lettura") { [weak self] in
                     guard let self else { return }
                     ReceivedReadings.remove(self.fileURL)
                     let d = self.onDone
-                    UIAccessibility.post(notification: .announcement, argument: "Lettura dal Mac tolta dall'iPad.")
+                    UIAccessibility.post(notification: .announcement, argument: "Lettura dal Mac tolta dall'\(SystemGeneration.deviceName).")
                     self.dismiss(animated: true) { d() }
                 }
         }
@@ -583,7 +583,7 @@ final class ReceiveOfferViewController: ReprocessTextViewController {
         addParagraph("Le tue annotazioni. " + ReadingFromMac.annotationsText(header, document: document), identifier: "receive.annotations")
         addButton("Usa la lettura del Mac…", prominent: true, identifier: "receive.accept") { [weak self] in self?.askConfirmation() }
         addButton("Non ora", prominent: false, identifier: "receive.later") { [weak self] in self?.later() }
-        addButton("Togli questa lettura dall'iPad…", prominent: false, identifier: "receive.discard") { [weak self] in self?.askDiscard() }
+        addButton("Togli questa lettura dall'\(SystemGeneration.deviceName)…", prominent: false, identifier: "receive.discard") { [weak self] in self?.askDiscard() }
     }
 
     /// Una lettura che non si vuole si può togliere (nessun vicolo cieco: senza, la riga della Home restava per sempre).
@@ -591,8 +591,8 @@ final class ReceiveOfferViewController: ReprocessTextViewController {
         guard let nav = navigationController else { return }
         ReprocessConfirmViewController.push(
             on: nav, identifier: "confirm.discard",
-            question: "Togliere questa lettura dall'iPad?",
-            explanation: "La lettura arrivata dal Mac per «\(document.title)» si cancella dall'iPad. Il libro resta com'è, con le "
+            question: "Togliere questa lettura dall'\(SystemGeneration.deviceName)?",
+            explanation: "La lettura arrivata dal Mac per «\(document.title)» si cancella dall'\(SystemGeneration.deviceName). Il libro resta com'è, con le "
                 + "sue annotazioni. Se poi la vorrai, rimandala dal Mac.",
             actionTitle: "Togli la lettura") { [weak self] in self?.discard() }
     }
@@ -600,7 +600,7 @@ final class ReceiveOfferViewController: ReprocessTextViewController {
     private func discard() {
         ReceivedReadings.remove(fileURL)
         let d = onDone
-        UIAccessibility.post(notification: .announcement, argument: "Lettura dal Mac tolta dall'iPad.")
+        UIAccessibility.post(notification: .announcement, argument: "Lettura dal Mac tolta dall'\(SystemGeneration.deviceName).")
         dismiss(animated: true) { d() }
     }
 

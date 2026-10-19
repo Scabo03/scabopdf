@@ -26,6 +26,16 @@ enum SystemGeneration {
         return "\(platformName) \(number)"
     }
 
+    /// Il nome dell'apparecchio per le frasi dell'app («dall'iPad», «del tuo iPhone»): iPad o iPhone secondo
+    /// l'apparecchio in uso. I due nomi cominciano per vocale, quindi «l'», «dall'», «sull'» valgono per entrambi.
+    static var deviceName: String {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
+        #else
+        return "Mac"
+        #endif
+    }
+
     private static var platformName: String {
         #if os(iOS)
         return UIDevice.current.userInterfaceIdiom == .pad ? "iPadOS" : "iOS"
