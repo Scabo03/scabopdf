@@ -352,6 +352,8 @@ final class ContinuousReadingViewController: UIViewController {
         // Pulsanti dimensione del testo (Fase 0): sempre disponibili in lettura (indipendenti dalla
         // libreria), cablati alla leva live della reading view.
         setUpTextSize()
+        // Ricerca nel libro (§ 13.3): pulsante in barra, da ogni Layout; rotore e tasti dopo una ricerca.
+        setUpSearch()
         // Posizione di lettura ricordata: la si preimposta come ultima posizione (senza spostare
         // ancora il fuoco) così il rientro nel testo e il ripristino alla comparsa vi puntano.
         readingView.presetReadingPosition(toIndex: initialReadingPosition)
@@ -383,6 +385,11 @@ final class ContinuousReadingViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // Ricerca nel libro: una ricerca fatta mentre la finestra copriva il lettore entra ora nella lettura.
+        if searchApplyPending {
+            searchApplyPending = false
+            applySearchToReadingView()
+        }
         // Rientrando (es. dalle Impostazioni) le preferenze possono essere cambiate: ri-risolve e
         // riapplica lo stile di lettura dal vivo (posizione conservata; ri-misura solo se la geometria
         // è cambiata, altrimenti solo colore).
@@ -430,6 +437,18 @@ final class ContinuousReadingViewController: UIViewController {
             cancel.wantsPriorityOverSystemBehavior = true
             return [cancel]
         }
+        // Con la finestra «Cerca nel libro» aperta il lettore tiene solo Esc, che la chiude come «Annulla». Dopo «Cerca» il
+        // campo lascia la tastiera e il destinatario dei tasti torna il lettore, sotto la finestra: Esc vi arrivava come
+        // «Indietro» e chiudeva la lettura (campo: test d'interfaccia e registro dell'app, iPad iOS 27; giro «ricerca nel
+        // libro», 2026-10-19).
+        if let search = searchWindow, presentedViewController != nil, presentedViewController === search.navigationController {
+            let cancel = UIKeyCommand(input: UIKeyCommand.inputEscape, modifierFlags: [], action: #selector(kbCancelSearch))
+            cancel.wantsPriorityOverSystemBehavior = true
+            return [cancel]
+        }
+        // Con un'altra schermata sopra (Segnalibri, sottolineature, …) nessun comando del lettore, come nello split: Esc non
+        // chiude più la lettura nascosta sotto una finestra (stesso difetto, trovato nello stesso giro).
+        guard presentedViewController == nil else { return [] }
         // Il nome di ogni comando è mostrato nell'HUD tenendo premuto ⌘; i tasti alternativi vi sono nascosti.
         return KeyboardCommandsCatalog.reading.flatMap { spec in
             Self.selector(forCommandId: spec.id).map { spec.makeKeyCommands(action: $0) } ?? []
@@ -438,6 +457,14 @@ final class ContinuousReadingViewController: UIViewController {
 
     /// La finestra «Strumenti elemento» aperta da tastiera (⌘E), finché è aperta.
     private weak var keyboardTools: UIAlertController?
+
+    /// La finestra «Cerca nel libro», finché è aperta.
+    private weak var searchWindow: BookSearchViewController?
+
+    /// Esc con la finestra della ricerca aperta (quando il destinatario dei tasti è rimasto il lettore): come «Annulla».
+    @objc private func kbCancelSearch() {
+        searchWindow?.cancelFromKeyboard()
+    }
 
     /// Esc con la finestra degli strumenti aperta da tastiera: la chiude, come «Annulla».
     @objc private func kbCancelTools() {
@@ -459,6 +486,9 @@ final class ContinuousReadingViewController: UIViewController {
         case "bookmark": return #selector(kbToggleBookmark)
         case "elementTools": return #selector(kbElementTools)
         case "noteJump": return #selector(kbNoteJump)
+        case "search": return #selector(kbSearch)
+        case "nextResult": return #selector(kbNextResult)
+        case "prevResult": return #selector(kbPrevResult)
         case "back": return #selector(kbBack)
         default: return nil
         }
@@ -483,6 +513,10 @@ final class ContinuousReadingViewController: UIViewController {
             return
         }
     }
+
+    @objc private func kbSearch() { openSearch() }
+    @objc private func kbNextResult() { goToAdjacentSearchResult(forward: true) }
+    @objc private func kbPrevResult() { goToAdjacentSearchResult(forward: false) }
 
     @objc private func kbScrollForward() { readingView.scrollByViewport(forward: true) }
     @objc private func kbScrollBack() { readingView.scrollByViewport(forward: false) }
@@ -583,6 +617,8 @@ final class ContinuousReadingViewController: UIViewController {
         if layout == .continuous {
             readingView.presetReadingPosition(toIndex: continuousPosition)
         }
+        // Ricerca nel libro (§ 13.3): le fermate sono indici di Lettura Continua; in Dottrina Inline la vista non le ha.
+        applySearchToReadingView()
         activateTextContainer(restoreFocus: false)
         // Embedded (§ 11): il fuoco lo governa il padre split (fuoco unico sui 6 container); non
         // rubarlo qui al cambio Layout della singola metà. Ripristino per INDICE (celle riciclanti):
@@ -1052,6 +1088,156 @@ final class ContinuousReadingViewController: UIViewController {
             guard let self, self.view.window != nil, self.currentLayout == .continuous else { return }
             self.readingView.goToElement(atIndex: index, focus: true)
         }
+    }
+
+    // MARK: - Ricerca nel libro (§ 13.3; BookSearchViewController.swift, ScaboCore BookSearch.swift)
+
+    /// La ricerca di questo libro aperto: il testo da cercare è il flusso di Lettura Continua (lo stesso della vista).
+    private lazy var searchSession = BookSearchSession(segments: content.pages.flatMap { $0.segments })
+
+    /// Per i test e il banco.
+    var searchSessionForTesting: BookSearchSession { searchSession }
+    /// Per i test: gli stessi percorsi della finestra, dei tasti e della barra.
+    func applySearchForTesting() { applySearchToReadingView() }
+    func jumpToSearchHitForTesting(_ hit: BookSearchHit) { jumpToSearchHit(hit) }
+    func goToAdjacentSearchResultForTesting(forward: Bool) { goToAdjacentSearchResult(forward: forward) }
+    func returnToPositionBeforeSearchForTesting() {
+        if let p = searchSession.positionBeforeSearch { returnToPositionBeforeSearch(p) }
+    }
+    func endSearchForTesting() { endSearch() }
+
+    /// Vero se il libro ha testo da cercare (il pulsante in barra c'è).
+    private var searchAvailable = false
+
+    private func setUpSearch() {
+        searchAvailable = content.pages.contains { page in
+            page.segments.contains { !$0.text.isEmpty && $0.role != VISUAL_RESOURCE_ROLE }
+        }
+        interfaceBar.setSearchControls(available: searchAvailable, activeSummary: nil)
+        interfaceBar.onSearch = { [weak self] in self?.openSearch() }
+        interfaceBar.onPrevResult = { [weak self] in self?.goToAdjacentSearchResult(forward: false) }
+        interfaceBar.onNextResult = { [weak self] in self?.goToAdjacentSearchResult(forward: true) }
+        readingView.onSearchStop = { [weak self] in self?.rememberPositionBeforeSearch() }
+    }
+
+    /// Apre la finestra «Cerca nel libro» (pulsante in barra, ⌘F). Da ogni Layout: i risultati si leggono in Lettura Continua.
+    func openSearch() {
+        guard presentedViewController == nil else { return }
+        let readingIndex = readingView.currentReadingElementIndex
+        searchWindow = BookSearchViewController.present(
+            from: self, session: searchSession, pageProvider: showOriginalPages ? sourcePage : nil,
+            onChoose: { [weak self] hit in self?.jumpToSearchHit(hit) },
+            onReturnToStart: { [weak self] position in self?.returnToPositionBeforeSearch(position) },
+            onEnd: { [weak self] in self?.endSearch() },
+            onCancel: { [weak self] in self?.restoreFocusAfterSearchWindow(readingIndex) },
+            onResultsChanged: { [weak self] in self?.searchResultsChangedWhileTheWindowIsOpen() })
+    }
+
+    /// La finestra copre il lettore (schermo intero): la vista di lettura è fuori dalla finestra, e riconfigurarne le celle
+    /// lì lascerebbe un'animazione che non finisce mai (campo: i test d'interfaccia aspettavano un minuto che l'app si
+    /// fermasse). Rotore, valori ed evidenze si applicano quando il lettore ricompare.
+    private var searchApplyPending = false
+
+    private func searchResultsChangedWhileTheWindowIsOpen() {
+        if view.window == nil {
+            searchApplyPending = true
+        } else {
+            applySearchToReadingView()
+        }
+    }
+
+    /// La ricerca attiva nella vista (rotore, valori, evidenze) e nella barra (frecce, riassunto).
+    private func applySearchToReadingView() {
+        interfaceBar.setSearchControls(available: searchAvailable, activeSummary: searchSession.activeSummary)
+        guard currentLayout == .continuous, searchSession.isActive, let r = searchSession.result,
+              let corpus = searchSession.corpus else {
+            readingView.setSearchResult(nil, highlighter: nil)
+            return
+        }
+        readingView.setSearchResult(r) { index, text in
+            corpus.highlightRanges(forSegment: index, text: text, hits: r.hits(touching: index))
+        }
+    }
+
+    /// Dove si leggeva prima del PRIMO salto a un risultato (una volta per ricerca): l'elemento che orienta la
+    /// lettura in quel momento (a fuoco se in vista, altrimenti il primo visibile: vale anche senza VoiceOver), in Lettura
+    /// Continua.
+    private func rememberPositionBeforeSearch() {
+        guard searchSession.positionBeforeSearch == nil else { return }
+        let here = currentLayout == .continuous ? readingView.orientationElementIndex : nil
+        searchSession.positionBeforeSearch = here ?? continuousPosition
+    }
+
+    /// Scelta di un risultato: Lettura Continua, l'elemento che contiene il risultato, il fuoco di VoiceOver lì.
+    private func jumpToSearchHit(_ hit: BookSearchHit) {
+        reclaimKeyboardAfterSearchWindow()
+        if currentLayout != .continuous { switchLayout(to: .continuous) }
+        rememberPositionBeforeSearch()
+        activateTextContainer(restoreFocus: false)
+        restoreReadingFocus(toIndex: hit.segmentIndex, raceRobust: true)
+    }
+
+    /// ⌘G / Maiuscole ⌘G e le frecce della barra: il risultato successivo o precedente, come il rotore.
+    private func goToAdjacentSearchResult(forward: Bool) {
+        guard searchSession.isActive else {
+            UIAccessibility.post(notification: .announcement,
+                                 argument: "Nessuna ricerca in corso. Per cercare nel libro: Comando F, o il pulsante «Cerca nel libro».")
+            return
+        }
+        if currentLayout != .continuous { switchLayout(to: .continuous) }
+        activateTextContainer(restoreFocus: false)
+        if readingView.goToAdjacentSearchResult(forward: forward) == nil {
+            UIAccessibility.post(notification: .announcement, argument: forward
+                ? "Non ci sono altri risultati dopo questo: era l'ultimo."
+                : "Non ci sono altri risultati prima di questo: era il primo.")
+        }
+    }
+
+    /// «Torna dove leggevi»: la lettura torna al punto di prima della ricerca, che poi si dimentica (la ricerca resta).
+    private func returnToPositionBeforeSearch(_ position: Int) {
+        reclaimKeyboardAfterSearchWindow()
+        if currentLayout != .continuous { switchLayout(to: .continuous) }
+        searchSession.positionBeforeSearch = nil
+        activateTextContainer(restoreFocus: false)
+        restoreReadingFocus(toIndex: position, raceRobust: true)
+    }
+
+    /// «Chiudi la ricerca»: via rotore, valori, evidenze e frecce; la lettura resta dov'è.
+    private func endSearch() {
+        searchSession.end()
+        applySearchToReadingView()
+        restoreFocusAfterSearchWindow(readingView.currentReadingElementIndex)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            UIAccessibility.post(notification: .announcement, argument: "Ricerca chiusa.")
+        }
+    }
+
+    /// Dopo la finestra della ricerca il destinatario dei tasti torna il lettore (o lo split che lo contiene), così ⌘G e
+    /// gli altri comandi funzionano subito.
+    private func reclaimKeyboardAfterSearchWindow() {
+        if embedded { parent?.becomeFirstResponder() } else { becomeFirstResponder() }
+    }
+
+    /// Chiusa la finestra senza scegliere: il fuoco torna all'elemento di prima (§ 2.3), la lettura non si muove.
+    private func restoreFocusAfterSearchWindow(_ index: Int?) {
+        reclaimKeyboardAfterSearchWindow()
+        // Nello split (§ 11) `activateTextContainer` non fa nulla (la modalità la governa il padre); il fuoco torna
+        // comunque nella metà che ha aperto la finestra.
+        activateTextContainer(restoreFocus: false)
+        if currentLayout == .quick {
+            if let tree = quickConsultView { UIAccessibility.post(notification: .screenChanged, argument: tree.firstRowElement ?? tree) }
+            return
+        }
+        if let index {
+            restoreReadingFocus(toIndex: index, raceRobust: true)
+        } else {
+            UIAccessibility.post(notification: .screenChanged, argument: readingView)
+        }
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        searchSession.releaseCorpusIfIdle()
     }
 
     /// Anteprima (prime parole) dell'elemento marcato, per la lista dei segnalibri (§ 5.4).

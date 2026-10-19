@@ -275,8 +275,10 @@ final class SegmentCell: UICollectionViewCell {
         // `headingQualifier`), così non si perde il segnale acustico "è un titolo, di livello N".
         accessibilityTraits = .staticText
         // Risorsa visiva (§ 7.9): la pagina vera della regione come valore e, se la pagina ne ha più d'una, quale: annunci
-        // altrimenti identici di fila si distinguono. Per ogni altro elemento nessun valore, come prima.
-        accessibilityValue = host.visualResourceValue(forIndex: index)
+        // altrimenti identici di fila si distinguono. Ricerca nel libro (§ 13.3): sull'elemento che contiene risultati,
+        // quali («risultato 4 di 12»); le risorse visive non si cercano, quindi i due valori non si incontrano. Per ogni
+        // altro elemento nessun valore, come prima.
+        accessibilityValue = host.searchValue(forIndex: index) ?? host.visualResourceValue(forIndex: index)
         // La lingua del documento (WCAG 3.1.1): l'italiano, o la lingua di un libro chiaramente in un'altra lingua.
         accessibilityLanguage = host.contentLanguage
 
@@ -284,6 +286,25 @@ final class SegmentCell: UICollectionViewCell {
         pageMarker.isHidden = !pageStart
         pageMarker.setPageNumber(pageStart ? pageNumber : nil)
         pageMarker.applyTextSizeTraits(sizingTraits)
+    }
+
+    /// Ricerca nel libro (§ 13.3): evidenzia le occorrenze nel testo reso, a colori INVERTITI (fondo = colore del testo,
+    /// testo = colore del fondo): il contrasto resta quello della palette scelta e il segno non dipende da una tinta (mai
+    /// solo colore). Solo visivo: il parlato non cambia. Fondo e primo piano non toccano la misura (altezza in cache).
+    func applySearchHighlights(_ ranges: [NSRange], textColor: UIColor, backgroundColor: UIColor) {
+        guard !ranges.isEmpty, let segment else { return }
+        let base: NSMutableAttributedString
+        if let attributed = textLabel.attributedText, attributed.length == (segment.text as NSString).length {
+            base = NSMutableAttributedString(attributedString: attributed)
+        } else {
+            base = NSMutableAttributedString(string: segment.text, attributes: [
+                .font: textLabel.font as Any, .foregroundColor: textLabel.textColor as Any])
+        }
+        for r in ranges where r.length > 0 && NSMaxRange(r) <= base.length {
+            base.addAttribute(.backgroundColor, value: textColor, range: r)
+            base.addAttribute(.foregroundColor, value: backgroundColor, range: r)
+        }
+        textLabel.attributedText = base
     }
 
     /// Azioni-segnalibro costruite PIGRAMENTE dall'host solo per la cella a fuoco (§ 5.1): nessun peso
@@ -573,6 +594,9 @@ final class ContinuousReadingView: UIView {
         for (i, s) in segments.enumerated() where idToIndex[s.id] == nil { idToIndex[s.id] = i }
         lastFocusedIndex = nil
         lastFocusedRole = nil
+        // Le fermate della ricerca sono indici del flusso di prima: il controller le reimposta se il flusso è lo stesso.
+        searchResult = nil
+        searchHighlighter = nil
         recomputePageStarts()
         rebuildHeadingIndexAndRotors()
         noteLinks = noteCallLinks(segments)
@@ -907,7 +931,90 @@ final class ContinuousReadingView: UIView {
         visualIndex = segments.enumerated().compactMap { i, s in s.visualResource.map { (index: i, kind: $0.kind) } }
         if visualIndex.contains(where: { $0.kind == .table }) { rotors.append(visualRotor(.table)) }
         if visualIndex.contains(where: { $0.kind == .figure }) { rotors.append(visualRotor(.figure)) }
+        // Ricerca nel libro (§ 13.3): il rotore «Risultati della ricerca» solo con una ricerca attiva, primo della lista.
+        if searchResult != nil { rotors.insert(searchRotor(), at: 0) }
         collectionView.accessibilityCustomRotors = rotors
+    }
+
+    // MARK: - Ricerca nel libro (§ 13.3): fermate, valore parlato, evidenza, rotore «Risultati della ricerca»
+    //
+    // La ricerca (ScaboCore `BookSearchCorpus`) consegna le occorrenze in ordine di lettura; qui servono le FERMATE (gli
+    // elementi con almeno un'occorrenza): il rotore e i tasti ⌘G / ⇧⌘G le percorrono con la stessa meccanica dei titoli
+    // (indice leggero, poi scorrimento e materializzazione della sola cella bersaglio), il valore parlato dell'elemento
+    // dice quali risultati porta, l'evidenza visiva li mostra a chi guarda.
+
+    /// La ricerca attiva, o `nil` (nessuna ricerca, o nessun risultato: niente rotore, valori, evidenze).
+    private(set) var searchResult: BookSearchResult?
+    /// Gli intervalli (UTF-16 del testo del segmento) da evidenziare, per indice di segmento e testo.
+    private var searchHighlighter: ((Int, String) -> [NSRange])?
+    /// Nome del rotore della ricerca (VoiceOver lo dice ruotando).
+    static let searchRotorName = "Risultati della ricerca"
+
+    /// Imposta (o toglie, con `nil`) la ricerca attiva: rotore, valori parlati ed evidenze delle celle visibili.
+    func setSearchResult(_ result: BookSearchResult?, highlighter: ((Int, String) -> [NSRange])?) {
+        let active = (result?.elementIndices.isEmpty == false) ? result : nil
+        searchResult = active
+        searchHighlighter = active == nil ? nil : highlighter
+        rebuildHeadingIndexAndRotors()
+        reconfigureVisibleCells()
+    }
+
+    /// Chiamata PRIMA di ogni passo fra i risultati (rotore, tasti): il controller ricorda dove si leggeva prima del primo.
+    var onSearchStop: (() -> Void)?
+
+    /// Il valore parlato dell'elemento che contiene risultati della ricerca attiva («risultato 4 di 12»), o `nil`.
+    func searchValue(forIndex index: Int) -> String? {
+        guard let r = searchResult, let ordinals = r.ordinals(inElement: index) else { return nil }
+        return BookSearchWording.positionValue(ordinals: ordinals, total: r.totalCount)
+    }
+
+    /// Porta la lettura all'elemento con risultati successivo (`forward`) o precedente a quello in lettura, col fuoco di
+    /// VoiceOver. L'indice raggiunto, o `nil` se non ce n'è (oltre l'ultimo o prima del primo) o non c'è una ricerca.
+    @discardableResult
+    func goToAdjacentSearchResult(forward: Bool) -> Int? {
+        guard let r = searchResult else { return nil }
+        let current = lastFocusedIndex ?? ((collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1)
+        guard let target = r.adjacentElement(from: current, forward: forward) else { return nil }
+        onSearchStop?()
+        goToElement(atIndex: target, focus: true)
+        return target
+    }
+
+    /// Il rotore «Risultati della ricerca» (solo con una ricerca attiva): fermate dal risultato, come i titoli.
+    private func searchRotor() -> UIAccessibilityCustomRotor {
+        UIAccessibilityCustomRotor(name: Self.searchRotorName) { [weak self] predicate in
+            guard let self, let r = self.searchResult else { return nil }
+            let current: Int
+            if let cell = predicate.currentItem.targetElement as? SegmentCell { current = cell.readingIndex }
+            else if let idx = self.lastFocusedIndex { current = idx }
+            else { current = (self.collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1 }
+            guard let t = r.adjacentElement(from: current, forward: predicate.searchDirection == .next) else { return nil }
+            self.onSearchStop?()
+            let ip = IndexPath(item: t, section: 0)
+            self.collectionView.scrollToItem(at: ip, at: .top, animated: false)
+            self.collectionView.layoutIfNeeded()
+            self.presetReadingPosition(toIndex: t)
+            guard let cell = self.collectionView.cellForItem(at: ip) else { return nil }
+            return UIAccessibilityCustomRotorItemResult(targetElement: cell, targetRange: nil)
+        }
+    }
+
+    /// I nomi dei rotori su misura installati (per i test).
+    var customRotorNamesForTesting: [String] {
+        (collectionView.accessibilityCustomRotors ?? []).filter { $0.systemRotorType == .none }.map { $0.name }
+    }
+
+    /// Esegue il rotore «Risultati della ricerca» come farebbe VoiceOver (per i test): l'indice della cella restituita.
+    func searchRotorStepForTesting(from current: Int?, forward: Bool) -> Int? {
+        guard let rotor = (collectionView.accessibilityCustomRotors ?? []).first(where: { $0.name == Self.searchRotorName })
+        else { return nil }
+        let predicate = UIAccessibilityCustomRotorSearchPredicate()
+        predicate.searchDirection = forward ? .next : .previous
+        // Senza elemento corrente, come VoiceOver all'inizio: un bersaglio che non è una cella (vale la posizione ricordata).
+        let target: NSObject = current.flatMap { element(atIndex: $0) } ?? self
+        predicate.currentItem = UIAccessibilityCustomRotorItemResult(targetElement: target, targetRange: nil)
+        let result = rotor.itemSearchBlock(predicate)
+        return (result?.targetElement as? SegmentCell)?.readingIndex
     }
 
     /// Indice leggero degli elementi «risorsa visiva» (indice di lettura, tipo).
@@ -1235,6 +1342,15 @@ final class ContinuousReadingView: UIView {
             sizingTraits: textSizeTraitCollection,
             style: readingStyle, horizontalInset: horizontalInset(forWidth: width),
             isReadingFocus: index == lastFocusedIndex)
+        if let highlighter = searchHighlighter {
+            let ranges = highlighter(index, segment.text)
+            if !ranges.isEmpty {
+                let text = readingStyle.map { Self.textColor(for: segment.role, style: $0) } ?? .label
+                let background = readingStyle.map { UIColor.fromHex($0.colors.background, fallback: .systemBackground) }
+                    ?? .systemBackground
+                cell.applySearchHighlights(ranges, textColor: text, backgroundColor: background)
+            }
+        }
     }
 
     private func isPageStart(_ index: Int) -> Bool {

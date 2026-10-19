@@ -14,6 +14,8 @@
 //
 //  Giro «accessibilità e completamento» (2026-10-18): il salto fra nota e richiamo ha il suo tasto (⌘J), e nello split
 //  screen i comandi di lettura valgono per la metà che comanda, con due comandi per scegliere la metà (⌥⌘← / ⌥⌘→).
+//  Giro «ricerca nel libro» (2026-10-19): ⌘F apre la ricerca, ⌘G e Maiuscole ⌘G scorrono i risultati (lettere, uguali
+//  sulla tastiera italiana e su quella americana; gli stessi tasti della ricerca nelle app di sistema).
 //
 
 import UIKit
@@ -124,6 +126,15 @@ enum KeyboardCommandsCatalog {
         KeyboardCommandSpec(id: "noteJump", title: "Nota e richiamo",
             input: "j", modifiers: .command,
             description: "Sulla nota va al testo del richiamo; sul testo che richiama una nota va alla nota. Come le azioni «Vai al testo del richiamo» e «Vai alla nota»."),
+        KeyboardCommandSpec(id: "search", title: "Cerca nel libro",
+            input: "f", modifiers: .command,
+            description: "Apre la ricerca dentro il libro: scrivi una parola o una frase e premi A capo. Trova anche il testo delle note."),
+        KeyboardCommandSpec(id: "nextResult", title: "Risultato successivo",
+            input: "g", modifiers: .command,
+            description: "Dopo una ricerca, porta al risultato successivo nella lettura, come il rotore «Risultati della ricerca»."),
+        KeyboardCommandSpec(id: "prevResult", title: "Risultato precedente",
+            input: "g", modifiers: [.command, .shift],
+            description: "Dopo una ricerca, porta al risultato precedente nella lettura."),
         KeyboardCommandSpec(id: "back", title: "Indietro",
             input: UIKeyCommand.inputEscape, modifiers: [],
             description: "Chiude la lettura e torna alla schermata precedente. Nello split screen chiede se chiudere la metà che comanda."),

@@ -38,7 +38,9 @@
 		5CABC05900000000000000B2 /* UITestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC05900000000000000B3 /* UITestHelpers.swift */; };
 		5CABC05900000000000000C2 /* VoiceOverOrderUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC05900000000000000C3 /* VoiceOverOrderUITests.swift */; };
 		5CABC05900000000000000D2 /* KeyboardUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC05900000000000000D3 /* KeyboardUITests.swift */; };
+		5CABC06000000000000000B2 /* BookSearchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC06000000000000000B3 /* BookSearchUITests.swift */; };
 		5CABC05900000000000000E2 /* KeyboardAndLanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC05900000000000000E3 /* KeyboardAndLanguageTests.swift */; };
+		5CABC06000000000000000A2 /* BookSearchAppTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CABC06000000000000000A3 /* BookSearchAppTests.swift */; };
 		C539E11B306FE6AC0C7F5809 /* MotorAccessibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71972E1431CAD5A4434B45C1 /* MotorAccessibilityTests.swift */; };
 		EAB3841D743855972BD02B55 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BA7381B73C5CC5F8BCBA5DE7 /* Foundation.framework */; };
 /* End PBXBuildFile section */
@@ -92,7 +94,9 @@
 		5CABC05900000000000000B3 /* UITestHelpers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UITestHelpers.swift; sourceTree = "<group>"; };
 		5CABC05900000000000000C3 /* VoiceOverOrderUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VoiceOverOrderUITests.swift; sourceTree = "<group>"; };
 		5CABC05900000000000000D3 /* KeyboardUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardUITests.swift; sourceTree = "<group>"; };
+		5CABC06000000000000000B3 /* BookSearchUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookSearchUITests.swift; sourceTree = "<group>"; };
 		5CABC05900000000000000E3 /* KeyboardAndLanguageTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardAndLanguageTests.swift; sourceTree = "<group>"; };
+		5CABC06000000000000000A3 /* BookSearchAppTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BookSearchAppTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -163,6 +167,7 @@
 				5CABC05900000000000000B3 /* UITestHelpers.swift */,
 				5CABC05900000000000000C3 /* VoiceOverOrderUITests.swift */,
 				5CABC05900000000000000D3 /* KeyboardUITests.swift */,
+				5CABC06000000000000000B3 /* BookSearchUITests.swift */,
 			);
 			name = ScaboAppUITests;
 			path = ScaboAppUITests;
@@ -190,6 +195,7 @@
 				5CABC04E000000000000008B /* AppearanceWiringTests.swift */,
 				71972E1431CAD5A4434B45C1 /* MotorAccessibilityTests.swift */,
 				5CABC05900000000000000E3 /* KeyboardAndLanguageTests.swift */,
+				5CABC06000000000000000A3 /* BookSearchAppTests.swift */,
 			);
 			path = ScaboAppTests;
 			sourceTree = SOURCE_ROOT;
@@ -408,6 +414,7 @@
 				5CABC04E000000000000008A /* AppearanceWiringTests.swift in Sources */,
 				C539E11B306FE6AC0C7F5809 /* MotorAccessibilityTests.swift in Sources */,
 				5CABC05900000000000000E2 /* KeyboardAndLanguageTests.swift in Sources */,
+				5CABC06000000000000000A2 /* BookSearchAppTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,6 +431,7 @@
 				5CABC05900000000000000B2 /* UITestHelpers.swift in Sources */,
 				5CABC05900000000000000C2 /* VoiceOverOrderUITests.swift in Sources */,
 				5CABC05900000000000000D2 /* KeyboardUITests.swift in Sources */,
+				5CABC06000000000000000B2 /* BookSearchUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

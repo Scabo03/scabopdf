@@ -84,6 +84,51 @@ final class ReadingInterfaceBar: UIView {
     /// Azione del pulsante Segnalibri (impostata dal controller).
     var onBookmarks: (() -> Void)?
 
+    /// Ricerca nel libro (§ 13.3): apre la finestra «Cerca nel libro», da ogni Layout. Con una ricerca attiva il valore
+    /// dice quanti risultati e per che cosa (il nome resta lo stesso).
+    let searchButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "magnifyingglass"), for: .normal)
+        b.accessibilityLabel = "Cerca nel libro"
+        b.accessibilityHint = "Cerca una parola o una frase nel testo del libro, note comprese"
+        b.isHidden = true   // visibile solo con un documento reale (lo abilita il controller)
+        return b
+    }()
+
+    /// Con una ricerca attiva: il risultato precedente e il successivo nella lettura (per chi guarda o usa i comandi a
+    /// sfioramento; con VoiceOver ci sono anche il rotore «Risultati della ricerca» e, da tastiera, ⌘G e Maiuscole ⌘G).
+    let prevResultButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "chevron.up"), for: .normal)
+        b.accessibilityLabel = "Risultato precedente"
+        b.isHidden = true
+        return b
+    }()
+    let nextResultButton: UIButton = {
+        let b = UIButton(type: .system)
+        b.setImage(UIImage(systemName: "chevron.down"), for: .normal)
+        b.accessibilityLabel = "Risultato successivo"
+        b.isHidden = true
+        return b
+    }()
+
+    /// Azioni della ricerca (impostate dal controller).
+    var onSearch: (() -> Void)?
+    var onPrevResult: (() -> Void)?
+    var onNextResult: (() -> Void)?
+
+    /// Mostra il pulsante della ricerca (`available`) e, con una ricerca attiva (`activeSummary` non `nil`), le frecce dei
+    /// risultati; il riassunto («12 risultati per «x»») diventa il valore del pulsante.
+    func setSearchControls(available: Bool, activeSummary: String?) {
+        searchButton.isHidden = !available
+        let active = available && activeSummary != nil
+        searchButton.accessibilityValue = active ? activeSummary : nil
+        prevResultButton.isHidden = !active
+        nextResultButton.isHidden = !active
+        setNeedsLayout()
+        refreshAccessibilityElements()
+    }
+
     /// Pulsante Split screen (§ 11.1, attivazione da dentro un file): apre lo split con questo
     /// documento in una metà. Solo iPad, solo full-screen (mai in una metà già embedded).
     let splitButton: UIButton = {
@@ -233,7 +278,8 @@ final class ReadingInterfaceBar: UIView {
     /// Lo stack di destra impacchetta indicatore-pagina e controlli-quick: si mostra l'uno o gli
     /// altri secondo il Layout attivo (uno stack collassa gli arranged hidden).
     private lazy var rightStack: UIStackView = {
-        let stack = UIStackView(arrangedSubviews: [splitButton, bookmarksButton, textSizeStack, quickControlsStack, pageIndicatorStack])
+        let stack = UIStackView(arrangedSubviews: [searchButton, prevResultButton, nextResultButton, splitButton, bookmarksButton,
+                                                   textSizeStack, quickControlsStack, pageIndicatorStack])
         stack.axis = .horizontal
         stack.spacing = 12
         stack.alignment = .center
@@ -354,6 +400,9 @@ final class ReadingInterfaceBar: UIView {
         NSLayoutConstraint.activate(oneRowConstraints)
 
         backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        searchButton.addTarget(self, action: #selector(searchTapped), for: .touchUpInside)
+        prevResultButton.addTarget(self, action: #selector(prevResultTapped), for: .touchUpInside)
+        nextResultButton.addTarget(self, action: #selector(nextResultTapped), for: .touchUpInside)
         bookmarksButton.addTarget(self, action: #selector(bookmarksTapped), for: .touchUpInside)
         splitButton.addTarget(self, action: #selector(splitTapped), for: .touchUpInside)
         decreaseTextSizeButton.addTarget(self, action: #selector(decreaseTextSizeTapped), for: .touchUpInside)
@@ -365,7 +414,8 @@ final class ReadingInterfaceBar: UIView {
         // Bersagli di tocco ≥ 44×44 pt (HIG Apple; WCAG 2.5.8 [2.2] chiede ≥ 24pt): i pulsanti a icona
         // erano altrimenti sotto misura. L'altezza riempie la barra (44pt); la larghezza minima 44 è sui
         // pulsanti a icona (quelli testuali sono già larghi). Verificato da unit test sui frame resi.
-        let iconButtons = [bookmarksButton, splitButton, decreaseTextSizeButton, increaseTextSizeButton,
+        let iconButtons = [searchButton, prevResultButton, nextResultButton, bookmarksButton, splitButton,
+                           decreaseTextSizeButton, increaseTextSizeButton,
                            resetStructureButton, prevExpandedButton, nextExpandedButton]
         for b in iconButtons {
             b.widthAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
@@ -457,6 +507,9 @@ final class ReadingInterfaceBar: UIView {
     /// presenti — il box pagina ORIGINALE e infine quello di VISUALIZZAZIONE (§ 4.3).
     private func refreshAccessibilityElements() {
         var elements: [NSObject] = [backButton, layoutSelectorButton]
+        if !searchButton.isHidden { elements.append(searchButton) }
+        if !prevResultButton.isHidden { elements.append(prevResultButton) }
+        if !nextResultButton.isHidden { elements.append(nextResultButton) }
         if !splitButton.isHidden { elements.append(splitButton) }
         if !bookmarksButton.isHidden { elements.append(bookmarksButton) }
         if !decreaseTextSizeButton.isHidden { elements.append(decreaseTextSizeButton) }
@@ -581,6 +634,10 @@ final class ReadingInterfaceBar: UIView {
     @objc private func bookmarksTapped() {
         onBookmarks?()
     }
+
+    @objc private func searchTapped() { onSearch?() }
+    @objc private func prevResultTapped() { onPrevResult?() }
+    @objc private func nextResultTapped() { onNextResult?() }
 
     @objc private func splitTapped() {
         onSplit?()
