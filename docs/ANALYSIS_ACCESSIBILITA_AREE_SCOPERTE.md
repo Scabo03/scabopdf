@@ -1,5 +1,22 @@
 # Analisi — Le aree di accessibilità ancora scoperte
 
+> **STATO — giro «ricerca nel libro» (2026-10-19, build 60).** La ricerca dentro il libro aperto (`LAYER2_PRODUCT_DECISIONS.md`
+> § 13.3) tiene i criteri già conformi: **2.1.1** — tre comandi nuovi da tastiera, ⌘F «Cerca nel libro», ⌘G «Risultato
+> successivo», Maiuscole ⌘G «Risultato precedente» (lettere: uguali sulle tastiere italiana e americana; nel pannello
+> «Comandi da tastiera»), più il pulsante e due frecce in barra per chi non usa la tastiera; **2.1.2** — la finestra «Cerca
+> nel libro» si chiude con Esc (Comando-punto nelle prove) e la lettura resta dov'era; trovata e curata un'uscita
+> inattesa: con una finestra sopra il lettore a schermo intero (anche i Segnalibri, già prima del giro) Esc arrivava al
+> lettore come «Indietro» e chiudeva il libro nascosto — ora, come nello split, con un'altra finestra sopra il lettore non
+> tiene comandi (con la ricerca solo Esc come «Annulla»); **2.4.3** — ordine della finestra titolo, «Annulla», campo,
+> «Parola intera», comandi, conteggio, risultati, misurato con VoiceOver vero (iOS 27); **4.1.3** — il conteggio della
+> ricerca nel libro si dice subito (il fuoco va sulla frase del conteggio; annuncio quando si cambia «Parola intera»);
+> la riga 4.1.3 della mappatura passa da parziale a conforme: i due minori della ricognizione (conteggio della scheda
+> Ricerca, conferma del layout) erano già annunciati dal codice, e la riga non era stata aggiornata.
+> Prove: `BookSearchUITests` (tastiera del simulatore a VoiceOver spento; VoiceOver vero per ordine, conteggio e fuoco dopo
+> il salto; audit d'accessibilità della finestra; split), `BookSearchAppTests`. Non verificati: il rotore «Risultati della
+> ricerca» con VoiceOver vero (il servizio dei test non ha il rotore: provato sull'API d'accessibilità) e la tastiera
+> insieme a VoiceOver (come per gli altri comandi).
+>
 > **STATO — giro «accessibilità e completamento» (2026-10-18, build 59).** Le due lacune di livello A che i documenti
 > lasciavano aperte dopo la build 40 (`BILANCIO_FASE_MOBILE.md` § 2 voce 7): la **tastiera** — nello split i comandi non
 > arrivavano alle metà (ciascuna è un lettore incorporato, che non riceve i tasti) e il salto fra nota e richiamo non aveva
@@ -376,8 +393,8 @@ traguardo consigliato.
 | 1.4.11 Non-text Contrast | AA | ✓ | Bordi/barre ruolo ≥3:1 (build 39). |
 | 1.4.12 Text Spacing | AA | ✓ | Asse spaziatura (build 39). |
 | 1.4.13 Content on Hover/Focus | AA | N.A. | Nessun contenuto su hover. |
-| 2.1.1 **Keyboard** | **A** | **✓** | Build 40: comandi di lettura. 2026-10-18: ⌘J nota↔richiamo, split con i tasti alla metà che comanda e ⌥⌘←/→, ⌘+; verificato con la tastiera del simulatore a VoiceOver spento (tastiera e VoiceOver insieme: non verificato). (Prima: **✗**, nessuna operabilità da tastiera.) |
-| 2.1.2 No Keyboard Trap | A | ✓ | 2026-10-18: Esc esce dal lettore; nello split Esc chiede, Esc annulla, A capo chiude; dallo split alla Home con la sola tastiera (test); Esc subito dopo ⌘E chiude solo la finestra degli strumenti (corsa curata). |
+| 2.1.1 **Keyboard** | **A** | **✓** | Build 40: comandi di lettura. 2026-10-18: ⌘J nota↔richiamo, split con i tasti alla metà che comanda e ⌥⌘←/→, ⌘+; verificato con la tastiera del simulatore a VoiceOver spento (tastiera e VoiceOver insieme: non verificato). 2026-10-19: ⌘F «Cerca nel libro», ⌘G / Maiuscole ⌘G fra i risultati (anche nello split). (Prima: **✗**, nessuna operabilità da tastiera.) |
+| 2.1.2 No Keyboard Trap | A | ✓ | 2026-10-18: Esc esce dal lettore; nello split Esc chiede, Esc annulla, A capo chiude; dallo split alla Home con la sola tastiera (test); Esc subito dopo ⌘E chiude solo la finestra degli strumenti (corsa curata). 2026-10-19: Esc chiude la finestra «Cerca nel libro» e la lettura resta; con un'altra finestra sopra il lettore Esc non chiude più il libro nascosto (test). |
 | 2.1.4 Character Key Shortcuts | A | N.A. | Nessuna scorciatoia a carattere. |
 | 2.2.1 Timing Adjustable | A | ✓ | Nessun limite di tempo. |
 | 2.2.2 Pause, Stop, Hide | A | ✓ | Nessun contenuto in movimento. |
@@ -397,7 +414,7 @@ traguardo consigliato.
 | 3.3.2 Labels or Instructions | A | ✓ | Campi etichettati. |
 | 3.3.3 Error Suggestion | AA | ✓/N.A. | Pochi input; nessun errore complesso. |
 | 4.1.2 Name, Role, Value | A | ✓ | Controlli etichettati coi tratti giusti. 2026-10-18 (revisione indipendente): nelle Impostazioni le righe riusate tenevano l'interruttore e il suggerimento della riga di prima («Comandi da tastiera» e «Apri le impostazioni di iOS» annunciate come interruttori); curato (riga riportata a nuova a ogni riuso) e provato con VoiceOver vero (`VoiceOverOrderUITests`). |
-| 4.1.3 Status Messages | AA | ◐ | Buona copertura; conferma layout earcon-only, conteggio ricerca non annunciato. |
+| 4.1.3 Status Messages | AA | ✓ | Segnalibri, sottolineature, tag, fasi d'import annunciati. I due minori della ricognizione erano già chiusi e la riga non lo diceva (fonte, ricontrollato il 2026-10-19): il conteggio della scheda Ricerca della Home è annunciato (`SearchViewController.swift`, «N risultati» / «Nessun risultato»), il cambio di layout anche («Layout: …», `ContinuousReadingViewController.swift`). 2026-10-19: il conteggio della ricerca NEL LIBRO si dice subito (fuoco sulla frase del conteggio; annuncio al cambio di «Parola intera»). |
 | **2.5.7 Dragging Movements** | **AA [2.2]** | ◐ | Split ok (pulsanti); resta lo swipe elimina in segnalibri/tag. |
 | **2.5.8 Target Size (Minimum)** | **AA [2.2]** | ◐ | Pulsanti barra sotto 24/44pt, senza vincoli. |
 | **3.2.6 Consistent Help** | **A [2.2]** | N.A. | Nessun meccanismo d'aiuto ricorrente (valutare in futuro). |
