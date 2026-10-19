@@ -196,6 +196,27 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 60 — 2026-10-20 notte, commit `f9f49de` (giro «ricerca nel libro»: la ricerca dentro il testo del libro
+  aperto — finestra «Cerca nel libro», rotore «Risultati della ricerca», ⌘F ⌘G Maiuscole ⌘G —, due pulizie di
+  riservatezza dei laboratori e di `docs/DIAGNOSI_INTESTAZIONI.md`, «del tuo iPhone» corretto; `docs/CARRYOVER.md` STATO del
+  2026-10-19 sera, `LAYER2_PRODUCT_DECISIONS.md` § 13.3).** `fastlane beta` exit 0 (Xcode 27.1): `CURRENT_PROJECT_VERSION`
+  60 (calcolato dalla corsia, `SCABO_BUILD_NUMBER` tolto), EXPORT SUCCEEDED alle 01:34:34, altool «UPLOAD SUCCEEDED with no
+  errors» alle 01:36:47, Delivery UUID `1da56d8a-f2f5-4361-a8bc-15899d1b9a9d`, «Successfully set the changelog for build»
+  alle 01:39:54, nessun errore di App Store Connect. Verifica in sola lettura con la chiave API
+  (`ricucitura/strumenti/asc_build_56.rb 60`): build 60 VALID, «Cosa testare» (it) di 3.888 caratteri identico a
+  `app/ios/fastlane/COSA_TESTARE.txt` (provato prima con `fastlane note_tester`, exit 0). Nessuna cura di lettura nuova
+  (`ProcessingChain.cureLevel` resta 58): nessuna offerta «Lettura migliore disponibile». Reti sul codice della build
+  (`f9f49de`, due generazioni, catture riusate): letture identiche al byte alla build 59 (0 differenze su 260 file del
+  runner e su 312 della catena dell'iPad, per generazione), iPad e Mac identici 52/52, annotazioni uguali alla build 59,
+  risorse visive 110 su 110 al posto registrato, Marotta identico; correttezza della ricerca 7.501/7.501 (iOS 27) e
+  7.498/7.498 (iOS 26.5) con la prova al contrario rossa. Suite intere sul codice della build: `validate.sh` (iPhone 16 iOS
+  26.5) ScaboCore 1.016 e prove dell'app verdi; iPhone 16 iOS 27 216 (15 saltate) e 36 (2 saltate); iPad iOS 27 216 (15) e
+  36; iPad iOS 26.5 216 (15) e 36 (4); 0 cadute; split 5/5; ScaboChain 8, ScaboPageStructure 19 (1 saltato), ScaboMac 65
+  (3 saltati); pipeline non toccata, 2.465/2.465. Revisione indipendente prima del caricamento (sotto-agente nuovo, lista
+  del maintainer, regola del perimetro dei file): 18 rilievi, nessuno bloccante, i «da correggere» corretti (`49a69bc`,
+  `f9f49de`). IPA 163 080 358 byte (155,5 MiB). Dopo la corsa due processi `log stream` orfani (padre launchd, predicato
+  `subsystem == "com.apple.network"` su «Xcode» e su «altool»), fermati per PID dal conduttore del giro
+  (`ricerca/strumenti/build60.sh`, che li confronta con quelli di prima della corsa). Prossimo numero: 61.
 - **Build 59 — 2026-10-19 notte, commit `9877676` (giro «accessibilità e completamento»: l'ordine di lettura nelle
   schermate con le schede — titolo, schede, comandi, contenuto —, il salto fra nota e richiamo per 8.879 delle 9.030
   note differite, tastiera e lingua (WCAG 2.1.1, 2.1.2, 3.1.1); `docs/CARRYOVER.md` STATO del 2026-10-18 sera,

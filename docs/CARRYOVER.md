@@ -97,29 +97,47 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ## ▶ STATO — Giro «ricerca nel libro»: la ricerca dentro il testo del libro aperto, due pulizie di riservatezza, una correzione, build 60 — 2026-10-19 sera
 
-**Partenza:** `6f46be5` (main = origin, build 59 su TestFlight). **Arrivo:** (da completare a fine giro). Referto (nomi dei
+**Partenza:** `6f46be5` (main = origin, build 59 su TestFlight). **Arrivo:** `main` = `origin` dopo il commit dei documenti finali; codice della build `f9f49de`; build 60 su TestFlight (VALID, «Cosa testare» identico al file). Referto (nomi dei
 volumi solo nelle tabelle per volume: NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA.md`;
-laboratorio `~/Developer/scabopdf-gen-lab/ricerca/` (strumenti, reti, misure, registri).
+laboratorio `~/Developer/scabopdf-gen-lab/ricerca/` (strumenti, reti, misure, registri, revisione).
 
 - **Raccolta dei permessi all'inizio** (regola fissa nuova, vedi «Regole fisse del lavoro»): una sola richiesta scattata e
-  concessa; misurato che le regole «ask» non scattano sui comandi su più righe.
-- **Pulizie di riservatezza (Parte 0).** Registri dei laboratori: tolte 859 righe con percorsi o nomi di file delle
-  cartelle personali in 35 file (`mac-lab/ocrlab`, `gen-lab/chiusura/revisione/lavoro_2/voce4/scansione`,
-  `gen-lab/chiusura/pulizia_repo`), eliminati `fonti.tsv` e una cache compilata di Python della vecchia versione dello
-  script del revisore; lasciati apposta l'elenco di esclusione dentro uno script e il codice di terzi delle copie di
-  ambienti Python. `docs/DIAGNOSI_INTESTAZIONI.md`: tolta la colonna dei nomi e dei percorsi d'origine (`317d44f`).
-  Strumento: `ricerca/strumenti/percorsi_personali.py` (legge solo sotto `~/Developer`).
+  concessa; misurato che le regole «ask» non scattano sui comandi su più righe. Richieste arrivate tardi: nessuna.
+- **Pulizie di riservatezza (Parte 0).** Registri dei laboratori (`mac-lab/ocrlab`,
+  `gen-lab/chiusura/revisione/lavoro_2/voce4/scansione`, `gen-lab/chiusura/pulizia_repo`): **3.875 righe tolte in 35 file**
+  in tre passate (859, poi 2.147 e 869 quando lo strumento ha imparato a vedere Mail, Messaggi, Note e le forme protette o
+  composte), eliminati `fonti.tsv` e una cache compilata di Python; lo script che aveva fotografato il file system
+  (`ocrlab/03_foto/foto_fs.py`) ora salta anche Mail, Messaggi e Note. `docs/DIAGNOSI_INTESTAZIONI.md`: tolta la colonna dei
+  nomi e dei percorsi d'origine (`317d44f`), storia pubblicata non riscritta. Strumento `ricerca/strumenti/percorsi_personali.py`
+  (versione 5; legge solo sotto `~/Developer`; batterie di prove inventate, la mia e quella del revisore) e conduttore
+  `verifica_percorsi.sh`. Dichiarati: il testo di un volume con un indirizzo web che contiene «Downloads»; sei PDF del banco
+  in `scabopdf-triple-take/originals_maint/` con il nome del file d'origine nel titolo dei metadati (decisione del
+  maintainer, referto § 10). Verifica completa: 304.315 voci dei tre laboratori (145 GB), nessun percorso personale e nessun nome di file personale fuori
+  da quanto dichiarato (8 falsi positivi in testi di terzi esclusi o dichiarati; ricontrollo exit 0).
 - **Correzione (Parte 0.3, `dd4f64c`).** «Segui il sistema» diceva «del tuo iPhone» anche sull'iPad; la lettura arrivata dal
   Mac e l'offerta di rielaborazione dicevano «iPad» anche sull'iPhone: ora nominano l'apparecchio in uso
-  (`SystemGeneration.deviceName`).
+  (`SystemGeneration.deviceName`). Le frasi del Mac che dicono solo «iPad» restano (fuori dalla 0.3; revisione R9).
 - **Ricerca nel libro (Parti 1-2; `LAYER2_PRODUCT_DECISIONS.md` § 13.3).** Motore in ScaboCore `BookSearch.swift` (solo
-  Foundation, per la futura lettura sul Mac; `5feadd6`), app `BookSearchViewController.swift` e lettore (`0b77a35`):
-  «Cerca nel libro» (pulsante in barra, ⌘F), conteggio detto subito, risultati con contesto, nota, sezione, pagina; rotore
-  «Risultati della ricerca», ⌘G / Maiuscole ⌘G, frecce in barra, valore «risultato N di M», evidenza a colori invertiti;
-  «Torna dove leggevi», «Chiudi la ricerca». Curato nello stesso giro: con una finestra sopra il lettore Esc chiudeva la
-  lettura nascosta (anche con i Segnalibri, prima del giro).
-- **Reti**: correttezza 7.501/7.501 (iOS 27) e 7.498/7.498 (iOS 26.5, domande proprie), prova al contrario rossa;
-  posizione 145/145 sui cinque volumi più grandi; (letture, annotazioni, risorse visive, parità iPad-Mac: da completare).
+  Foundation, per la futura lettura sul Mac; `5feadd6`, `6971f50`), app `BookSearchViewController.swift` e lettore
+  (`7b36076`, `49a69bc`): «Cerca nel libro» (pulsante in barra — con VoiceOver dal testo lo scrub porta alla barra —, ⌘F),
+  conteggio detto subito, risultati con contesto, nota, sezione, pagina; rotore «Risultati della ricerca» (Lettura
+  Continua), ⌘G / Maiuscole ⌘G, frecce in barra, valore «risultato N di M», evidenza a colori invertiti; «Torna dove
+  leggevi» (per ricerca), «Chiudi la ricerca». Oltre i primi 50.000 risultati lo si dice. Curati nello stesso giro: con una
+  finestra sopra il lettore Esc chiudeva la lettura nascosta (anche con i Segnalibri, prima del giro); i rilievi della
+  revisione (finestra riaperta che riceve i tasti, fuoco dopo «Annulla» negli altri layout, salto al primo elemento).
+- **Reti** (sul codice finale): correttezza 7.501/7.501 (iOS 27) e 7.498/7.498 (iOS 26.5, domande proprie), prova al
+  contrario rossa; posizione 145/145 sui cinque volumi più grandi; letture identiche al byte alla build 59 su entrambe le
+  generazioni (runner 260 file, catena 312), iPad = Mac 52/52, annotazioni uguali alla build 59, risorse visive 110/110 al
+  posto; nessuna cura di lettura (`cureLevel` 58), nessuna offerta. Tempi (Release, simulatore iPad M5): prima ricerca sul
+  Codice civile 42 ms, +15 MB. Suite intere sul codice della build (`f9f49de`): quattro simulatori verdi (prove d'unità 216,
+  d'interfaccia 36), split 5/5, pacchetti, cancello della pipeline. Build 60: `fastlane beta` exit 0, VALID, note identiche.
+- **Revisione indipendente**: 18 rilievi, nessuno bloccante; corretti tutti i «da correggere» (R1, R2, R3, R5, R7, R11) e
+  sei dei dichiarabili; le prove con VoiceOver vero del fuoco dopo «Annulla» in Dottrina Inline e Consultazione Rapida non
+  si possono fare nel simulatore (manca lo scrub nel servizio dei test): da sentire sul dispositivo.
+- **Aperto per il giro dopo** (referto § 10-11): la ricerca in tutta la libreria (strada consigliata: un testo di ricerca
+  per libro accanto alla cache); Esc come «Annulla» nelle altre finestre sopra il lettore; i sei PDF con il nome nei
+  metadati; «Parola intera» con i richiami di nota incollati; allargare la rete di correttezza con le domande sui confini
+  del revisore.
 
 ---
 
