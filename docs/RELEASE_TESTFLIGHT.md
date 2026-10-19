@@ -196,6 +196,30 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 59 — 2026-10-19 notte, commit `9877676` (giro «accessibilità e completamento»: l'ordine di lettura nelle
+  schermate con le schede — titolo, schede, comandi, contenuto —, il salto fra nota e richiamo per 8.879 delle 9.030
+  note differite, tastiera e lingua (WCAG 2.1.1, 2.1.2, 3.1.1); `docs/CARRYOVER.md` STATO del 2026-10-18 sera,
+  `LAYER2_PRODUCT_DECISIONS.md` § 12.1, § 7.12 e § 11.8).** `fastlane beta` exit 0 (Xcode 27.1):
+  `CURRENT_PROJECT_VERSION` 59 (calcolato dalla corsia, `SCABO_BUILD_NUMBER` tolto), EXPORT SUCCEEDED alle 03:02:43,
+  altool «UPLOAD SUCCEEDED with no errors» alle 03:04:37, Delivery UUID `3531342b-da63-47f2-b5ca-fd6b2cb9d367`,
+  elaborazione finita alle 03:07:42, «Successfully set the changelog for build» alle 03:07:44, nessun errore di App
+  Store Connect. Verifica in sola lettura con la chiave API (`ricucitura/strumenti/asc_build_56.rb 59`): build 59 VALID,
+  «Cosa testare» (it) di 3.722 caratteri identico a `app/ios/fastlane/COSA_TESTARE.txt` (provato prima con `fastlane
+  note_tester`, exit 0). Nessuna cura di lettura nuova (`ProcessingChain.cureLevel` resta 58): il salto si calcola nella
+  vista e la lettura non cambia, quindi nessuna offerta «Lettura migliore disponibile». Reti prima del caricamento (due
+  generazioni, codice `b07ba15`; dopo, nessuna riga cambiata nella catena né nei pacchetti fino al commit della build):
+  doppia rete delle generazioni exit 0 (Marotta identico; risorse visive 110 su 110 al posto registrato, prova al
+  contrario 201/201); letture identiche al byte alla build 58 (0 differenze su 260 file del runner e su 312 della catena
+  dell'iPad, per generazione); iPad e Mac identici al byte 52/52; annotazioni 416 righe verdi per generazione con le tre
+  prove al contrario, 0 sbagliati. Suite intere sul codice finale `63db679`: `validate.sh` (iPhone 16 iOS 26.5)
+  ScaboCore 989, ScaboAppTests 194 (14 saltati), test d'interfaccia 28 (4 saltati), 0 falliti; iPhone 16 iOS 27 194/14 e
+  28 (1 saltato); iPad Pro 11" iOS 27 194/14 e 28/28; iPad Pro 11" iOS 26.5 194/14 e 28 (3 saltati); 0 falliti ovunque,
+  audit d'accessibilità compresi (sull'iPad i rilievi della barra delle schede di sistema e del testo sotto un foglio
+  accettati con condizioni e un tetto, stampati); lo split ripetuto 5 volte: 5/5; ScaboChain 8/8, ScaboPageStructure 19
+  (1 saltato), pacchetto del Mac 65 (3 saltati); pipeline non toccata, 2.465/2.465. Revisione indipendente prima del
+  caricamento (sotto-agente nuovo, lista del maintainer, regola del perimetro dei file): nessun rilievo bloccante, 14
+  rilievi curati o dichiarati; le suite intere che chiedeva hanno trovato due difetti del giro, curati prima della build
+  (`d6fb738`, `d67dcf5`). IPA 162 959 804 byte (155,4 MiB). Prossimo numero: 60.
 - **Build 58 — 2026-10-18, commit `a43243c` (giro «chiusura del capitolo note e pulizia del repo»: le 13 note dei
   Mandrioli spezzate vicino a una glossa a margine ricucite con la glossa al suo posto (659 → 672 ricuciture), la rete
   delle risorse visive che giudica anche il posto, testo dei volumi tolto dall'albero del repo; `docs/CARRYOVER.md` STATO
