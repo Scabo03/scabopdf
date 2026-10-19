@@ -349,6 +349,19 @@ final class BookSearchAppTests: XCTestCase {
         XCTAssertEqual(chosen.map(\.segmentIndex), [6])
     }
 
+    /// Lo scrub a due dita di VoiceOver (`accessibilityPerformEscape`) è «Annulla»: chiude la finestra senza scegliere
+    /// nulla, una volta sola.
+    func test_window_voiceOverScrub_isCancel_once() {
+        let session = BookSearchSession(segments: book())
+        var cancelled = 0
+        let vc = BookSearchViewController.makeForTestingObservingCancel(session: session) { cancelled += 1 }
+        vc.loadViewIfNeeded()
+        XCTAssertTrue(vc.accessibilityPerformEscape())
+        XCTAssertEqual(cancelled, 1)
+        XCTAssertTrue(vc.accessibilityPerformEscape())
+        XCTAssertEqual(cancelled, 1, "una sola uscita per apertura")
+    }
+
     func test_session_buildsTheTextOnce_andReleasesItOnlyWhenIdle() {
         let session = BookSearchSession(segments: book())
         session.searchNow("faro", wholeWord: false)

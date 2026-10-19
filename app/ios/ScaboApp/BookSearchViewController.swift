@@ -214,6 +214,13 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
                                  onEnd: {}, onCancel: {}, onResultsChanged: {})
     }
 
+    /// Per le prove: la finestra con «Annulla» osservabile.
+    static func makeForTestingObservingCancel(session: BookSearchSession,
+                                              onCancel: @escaping () -> Void) -> BookSearchViewController {
+        BookSearchViewController(session: session, pageProvider: nil, onChoose: { _ in }, onReturnToStart: { _ in },
+                                 onEnd: {}, onCancel: onCancel, onResultsChanged: {})
+    }
+
     private init(session: BookSearchSession, pageProvider: ((String) -> Int?)?,
                  onChoose: @escaping (BookSearchHit) -> Void, onReturnToStart: @escaping (Int) -> Void,
                  onEnd: @escaping () -> Void, onCancel: @escaping () -> Void, onResultsChanged: @escaping () -> Void) {
