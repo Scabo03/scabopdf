@@ -91,8 +91,12 @@ chiedeva di nominare.
    sottolineature orfane non hanno una vista dove ritrovarle. Campo: alla fine del giro la rete conta 330
    orfani dichiarati su 3.010 segnalibri sintetici della catena (iOS 27; 332/2.997 su 26.5), 0 sbagliati; erano 66 prima
    della fusione delle unità dei manuali.
-3. **Ricerca nel testo del libro** (fonte: `SearchViewController.swift`): il tab Ricerca guarda solo titolo e nome del file;
-   la ricerca dentro il libro (`LAYER2_PRODUCT_DECISIONS.md` § 13.3) non esiste.
+3. **Ricerca nel testo del libro** — FATTA per il libro aperto il 2026-10-19 (build 60; `LAYER2_PRODUCT_DECISIONS.md`
+   § 13.3, `ScaboCore/BookSearch.swift`, `ScaboApp/BookSearchViewController.swift`): «Cerca nel libro» (pulsante, ⌘F),
+   conteggio detto subito, risultati con contesto, nota, sezione e pagina; rotore «Risultati della ricerca», ⌘G e
+   Maiuscole ⌘G nella lettura. Resta aperta la ricerca in TUTTA la libreria: il tab Ricerca guarda ancora solo titolo e
+   nome del file (fonte: `SearchViewController.swift`); studio con costi e memoria nel referto del giro
+   (`~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA.md` § 6).
 
 **Medio**
 4. **Residui d'estrattore** (campo): 24 pagine dei codici col desync delle colonne; spazi mancanti su iOS 27 (Patriarca,

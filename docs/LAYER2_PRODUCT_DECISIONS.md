@@ -662,7 +662,10 @@ Quando un documento ha una sola voce di intestazione del livello più alto (un s
 
 ### 8.9 Integrazione con la ricerca testuale
 
-La ricerca testuale interna al documento (vedi sezione 13) funziona indipendentemente dal Layout attivo. Quando avviata in Consultazione Rapida, l'esito si presenta tipicamente in **Lettura Continua come fallback uniforme**: l'utente atterra direttamente sul risultato (o naviga fra più risultati con le solite frecce standard), e Lettura Continua è la vista naturale per leggere il risultato in contesto. La ricerca testuale non è quindi un elemento strutturale del Layout Consultazione Rapida.
+La ricerca testuale interna al documento (vedi sezione 13) funziona indipendentemente dal Layout attivo. Quando avviata in Consultazione Rapida, l'esito si presenta tipicamente in **Lettura Continua come fallback uniforme**: l'utente atterra direttamente sul risultato (o naviga fra più risultati con le solite frecce standard), e Lettura Continua è la vista naturale per leggere il risultato in contesto. La ricerca testuale non è quindi un elemento strutturale del Layout Consultazione Rapida. Dal 2026-10-19 (build 60) la
+ricerca è quella del § 13.3: dalla Consultazione Rapida si apre la schermata «Cerca nel libro» (pulsante o Comando F), e il
+risultato scelto si legge in Lettura Continua; fra i risultati si passa col rotore «Risultati della ricerca», con Comando
+G e Maiuscole Comando G o con le frecce in barra.
 
 
 ---
@@ -1305,11 +1308,49 @@ Il tab Ricerca offre dei **filtri** e un tasto per **resettare i filtri**.
 
 La ricerca interna al file funziona indipendentemente dal Layout attivo. Avviata da qualsiasi Layout, restituisce i risultati come elementi navigabili.
 
-Quando la ricerca individua un singolo risultato, l'app **salta direttamente al risultato e lo visualizza in Lettura Continua come fallback uniforme**, indipendentemente dal Layout di partenza. Lettura Continua è la vista naturale per leggere un risultato nel suo contesto.
-
-Quando la ricerca individua più risultati, l'app visualizza il primo in Lettura Continua e mette a disposizione **due frecce di navigazione** (avanti e indietro) per scorrere fra i risultati. Lo schema ricalca il pattern standard di iOS per la ricerca testuale.
-
 La ricerca interna è progettata come **infrastruttura trasversale** e non costituisce un elemento di design dei singoli Layout.
+
+**Realizzata nel giro «ricerca nel libro» (2026-10-19, build 60), su indicazione del maintainer.** Dove questa sezione
+diceva che con un solo risultato l'app salta subito al risultato e che con più risultati mostra il primo con due frecce,
+vale ora lo schema che segue: prima una schermata con il conteggio e i risultati, poi, nella lettura, il rotore, i tasti e
+le due frecce.
+
+- **Che cosa si cerca.** Il testo della lettura, cioè ciò che VoiceOver legge: corpo, titoli, note (anche i pezzi delle
+  note lunghe frazionate) e testi normativi, con le parole spezzate a fine riga già ricomposte. Non si cercano gli
+  annunci delle tabelle e delle figure (il loro testo è comunque nel flusso, subito dopo), gli intro sonori o parlati e il
+  richiamo alla memoria prima delle note lette lontano (è testo ripetuto). Una frase che attraversa due blocchi della
+  lettura o due pezzi della stessa nota si trova; una nota letta in mezzo al corpo non spezza il corpo; una frase non passa
+  mai dal corpo a una nota né da una nota all'altra.
+- **Che cosa è uguale.** Maiuscole e minuscole; lettere accentate e non accentate; apostrofi e virgolette tipografiche e
+  diritte; trattini e lineette; ogni genere di spazio. Opzione **«Parola intera»** (spenta di partenza): la parola non
+  deve stare dentro una parola più lunga; apostrofo, trattino e parentesi sono confini («obbligazione» intera si trova in
+  «l'obbligazione»).
+- **La schermata «Cerca nel libro».** Si apre col pulsante «Cerca nel libro» nella barra della lettura, da ogni Layout,
+  o con **Comando F**. È a schermo intero, anche sull'iPad (attorno a un foglio il testo del libro resterebbe visibile e
+  fuori da VoiceOver). Ordine di lettura (principio del § 12.1): il titolo, «Annulla», il campo, «Parola intera», i
+  comandi della ricerca in corso («Torna dove leggevi», «Chiudi la ricerca»), la frase del conteggio, i risultati. Dopo
+  «Cerca» (A capo) VoiceOver dice subito il conteggio («12 risultati per «x».»); lo swipe dopo è il primo risultato.
+  Ogni risultato dice un breve contesto preso dal testo, se sta in una nota («nella nota 12»), la sezione o il titolo in
+  cui sta («nel titolo» se è il titolo stesso) e la pagina del file originale (se l'opzione delle pagine è attiva; gli
+  atti AKN non hanno pagine). Scelto un risultato, la schermata si chiude e la lettura va lì, **in Lettura Continua**
+  (anche da Dottrina Inline e da Consultazione Rapida), con il fuoco di VoiceOver sull'elemento che contiene il
+  risultato. **Zero risultati** si dicono in prosa, con un suggerimento (togliere «Parola intera», usare meno parole o
+  una parte della parola).
+- **Nella lettura, dopo una ricerca.** Il rotore **«Risultati della ricerca»** e i tasti **Comando G** (successivo) e
+  **Maiuscole Comando G** (precedente) passano da un elemento con risultati al successivo, in ordine di lettura, senza
+  tornare alla schermata; per chi guarda o usa i comandi a sfioramento ci sono le due frecce in barra («Risultato
+  precedente», «Risultato successivo»). L'elemento dice, dopo il suo testo, quali risultati porta («risultato 4 di 12»); a
+  vista i risultati sono evidenziati a colori invertiti (stesso contrasto della palette, mai solo una tinta). Oltre l'ultimo
+  e prima del primo la lettura non si muove e i tasti lo dicono. **Nessun vicolo cieco, nessuna posizione persa**:
+  «Annulla» (o Esc, o lo scrub) lascia la lettura dov'era; la schermata si riapre sull'ultima ricerca; «Torna dove
+  leggevi» riporta al punto di prima del primo salto; «Chiudi la ricerca» toglie rotore, frecce ed evidenze. La ricerca
+  vive finché il libro è aperto. Nello split vale per la metà che comanda.
+- **Memoria.** Il testo da cercare si prepara alla prima ricerca dai segmenti che la lettura tiene già in memoria (nessun
+  indice su disco, nessun costo all'importazione, nulla da riallineare dopo una rielaborazione) e resta finché il libro è
+  aperto; misure del giro in `~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA.md` § 5.
+- **Dove sta il codice.** La logica (testo, uguaglianze, risultati, frasi) in ScaboCore, `BookSearch.swift`, solo
+  Foundation: la riuserà la lettura sul Mac. La presentazione nell'app (`BookSearchViewController.swift`, rotore e tasti nel
+  lettore).
 
 ---
 

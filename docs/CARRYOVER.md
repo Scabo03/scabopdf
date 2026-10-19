@@ -95,6 +95,34 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Giro «ricerca nel libro»: la ricerca dentro il testo del libro aperto, due pulizie di riservatezza, una correzione, build 60 — 2026-10-19 sera
+
+**Partenza:** `6f46be5` (main = origin, build 59 su TestFlight). **Arrivo:** (da completare a fine giro). Referto (nomi dei
+volumi solo nelle tabelle per volume: NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA.md`;
+laboratorio `~/Developer/scabopdf-gen-lab/ricerca/` (strumenti, reti, misure, registri).
+
+- **Raccolta dei permessi all'inizio** (regola fissa nuova, vedi «Regole fisse del lavoro»): una sola richiesta scattata e
+  concessa; misurato che le regole «ask» non scattano sui comandi su più righe.
+- **Pulizie di riservatezza (Parte 0).** Registri dei laboratori: tolte 859 righe con percorsi o nomi di file delle
+  cartelle personali in 35 file (`mac-lab/ocrlab`, `gen-lab/chiusura/revisione/lavoro_2/voce4/scansione`,
+  `gen-lab/chiusura/pulizia_repo`), eliminati `fonti.tsv` e una cache compilata di Python della vecchia versione dello
+  script del revisore; lasciati apposta l'elenco di esclusione dentro uno script e il codice di terzi delle copie di
+  ambienti Python. `docs/DIAGNOSI_INTESTAZIONI.md`: tolta la colonna dei nomi e dei percorsi d'origine (`317d44f`).
+  Strumento: `ricerca/strumenti/percorsi_personali.py` (legge solo sotto `~/Developer`).
+- **Correzione (Parte 0.3, `dd4f64c`).** «Segui il sistema» diceva «del tuo iPhone» anche sull'iPad; la lettura arrivata dal
+  Mac e l'offerta di rielaborazione dicevano «iPad» anche sull'iPhone: ora nominano l'apparecchio in uso
+  (`SystemGeneration.deviceName`).
+- **Ricerca nel libro (Parti 1-2; `LAYER2_PRODUCT_DECISIONS.md` § 13.3).** Motore in ScaboCore `BookSearch.swift` (solo
+  Foundation, per la futura lettura sul Mac; `5feadd6`), app `BookSearchViewController.swift` e lettore (`0b77a35`):
+  «Cerca nel libro» (pulsante in barra, ⌘F), conteggio detto subito, risultati con contesto, nota, sezione, pagina; rotore
+  «Risultati della ricerca», ⌘G / Maiuscole ⌘G, frecce in barra, valore «risultato N di M», evidenza a colori invertiti;
+  «Torna dove leggevi», «Chiudi la ricerca». Curato nello stesso giro: con una finestra sopra il lettore Esc chiudeva la
+  lettura nascosta (anche con i Segnalibri, prima del giro).
+- **Reti**: correttezza 7.501/7.501 (iOS 27) e 7.498/7.498 (iOS 26.5, domande proprie), prova al contrario rossa;
+  posizione 145/145 sui cinque volumi più grandi; (letture, annotazioni, risorse visive, parità iPad-Mac: da completare).
+
+---
+
 ## ▶ STATO — Giro «accessibilità e completamento»: ordine della Home, salto fra nota e richiamo, lacune WCAG di livello A, build 59 — 2026-10-18 sera
 
 **Partenza:** `8db0bcd` (main = origin, build 58 su TestFlight). **Arrivo:** `main` = `origin` con i documenti finali
