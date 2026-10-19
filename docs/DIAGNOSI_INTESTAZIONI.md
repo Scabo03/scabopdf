@@ -32,21 +32,22 @@ dall'estrazione** e nessuna regola la guarda. Non c'è un bug che «si spegne»:
 Trovati (copiati in `scabopdf-triple-take/originals_maint/`, originali intatti; contenimento
 provato con sonda: `git add -f` rifiuta «outside repository», l'officina non è un repo):
 
-| Nel giro | Originale | Natura |
-|---|---|---|
-| `Rizzo - La causalita civile.pdf` | iCloud Drive `Nicola RIZZO_La causalità civile.pdf` | Giappichelli (482×680), 385 pp, producer **riscritto da iOS** (Quartz, AppendMode) |
-| `DPC vol 1/2/3.pdf` | iCloud Drive `Diritto penale commerciale. Volume 1/2/3_…_PDF.pdf` | Giappichelli/Photoshop, 145/225/153 pp, geometria **429×642 / 425×652** |
-| `Magnani - Diritto del lavoro.pdf` | `Documenti/Manuali/Diritto del lavoro_9791221100778_PDF.pdf` | Giappichelli/Photoshop 484×680, 296 pp |
-| `Dispensa Pages - DPC vol 1/2/3.pdf` | iCloud Drive `Manuale - Diritto penale com(m)erciale Vol. 1/2/3 (…).pdf` | dispense del maintainer, export **Pages** (macOS Quartz), 17/34/22 pp |
-| `Dispensa Pages - Estratto.pdf`, `Dispensa Pages - Lezioni Travi.pdf` | iCloud Drive `Manuale - Estratto…`, `Manuale - Lezioni… (A. Travi)` | dispense, export **Pages** (iOS Quartz), 167/431 pp, 40 pt verde su nero |
-| `Dispensa Word - Appunti DPC.pdf` | iCloud Drive `Appunti - Diritto penale commerciale .pdf` | dispensa, **Microsoft Word 365**, 306 pp |
-| `Dispensa GDocs - Scoca.pdf` | iCloud Drive `Manuale - Diritto amministrativo (a cura di F. G. Scoca).pdf` | dispensa, **Google Docs**, 182 pp |
+| Nel giro | Natura |
+|---|---|
+| `Rizzo - La causalita civile.pdf` | Giappichelli (482×680), 385 pp, producer **riscritto da iOS** (Quartz, AppendMode) |
+| `DPC vol 1/2/3.pdf` | Giappichelli/Photoshop, 145/225/153 pp, geometria **429×642 / 425×652** |
+| `Magnani - Diritto del lavoro.pdf` | Giappichelli/Photoshop 484×680, 296 pp |
+| `Dispensa Pages - DPC vol 1/2/3.pdf` | dispense del maintainer, export **Pages** (macOS Quartz), 17/34/22 pp |
+| `Dispensa Pages - Estratto.pdf`, `Dispensa Pages - Lezioni Travi.pdf` | dispense, export **Pages** (iOS Quartz), 167/431 pp, 40 pt verde su nero |
+| `Dispensa Word - Appunti DPC.pdf` | dispensa, **Microsoft Word 365**, 306 pp |
+| `Dispensa GDocs - Scoca.pdf` | dispensa, **Google Docs**, 182 pp |
 
-Note sulla ricerca: in `Documenti` e `Documenti/Manuali` gli omonimi `.pages` (Rizzo, DPC 1-3,
+Note sulla ricerca: gli omonimi `.pages` trovati accanto ad alcuni di questi file (Rizzo, DPC 1-3,
 Estratto, Travi) sono i **sorgenti Pages** delle dispense (pacchetti zip da 200-450 KB), non i
-manuali; i PDF veri stanno in iCloud Drive. Non usati: `Diritto penale commerciale - Manuale
-completo (Voll. I-III).pdf` in Download (ReportLab, 56 pp, un compendio generato, non un
-volume né una dispensa del maintainer). Nessun volume del resoconto mancante.
+manuali. Non usato: un compendio generato con ReportLab (56 pp), che non è un volume né una
+dispensa del maintainer. Nessun volume del resoconto mancante. (Nomi e percorsi d'origine dei file
+tolti dal documento il 2026-10-19 per riservatezza: le cartelle personali del maintainer non si
+citano; restano i nomi delle copie di lavoro nel laboratorio.)
 
 ## 2. La causa prima, sul caso semplice (le dispense)
 
