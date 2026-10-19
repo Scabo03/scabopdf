@@ -78,6 +78,21 @@ public struct BookSearchResult: Equatable, Sendable {
     public let hits: [BookSearchHit]
     /// Gli elementi (indici di segmento) dove comincia almeno un'occorrenza, in ordine: le fermate del rotore e dei tasti.
     public let elementIndices: [Int]
+    /// Le occorrenze che finiscono in un segmento dopo quello d'inizio (poche: le frasi che attraversano un confine), in
+    /// ordine di lettura: servono a `hits(touching:)`, perché dentro una di esse, nell'ordine dei segmenti, possono
+    /// cadere le occorrenze di altri flussi (una nota letta in mezzo al corpo), anche molte.
+    private let spanningHits: [BookSearchHit]
+
+    init(query: String, normalizedQuery: String, options: BookSearchOptions, totalCount: Int, hits: [BookSearchHit],
+         elementIndices: [Int]) {
+        self.query = query
+        self.normalizedQuery = normalizedQuery
+        self.options = options
+        self.totalCount = totalCount
+        self.hits = hits
+        self.elementIndices = elementIndices
+        self.spanningHits = hits.filter { $0.endSegmentIndex > $0.segmentIndex }
+    }
 
     public var isTruncated: Bool { hits.count < totalCount }
     public var isEmptyQuery: Bool { normalizedQuery.isEmpty }
@@ -107,19 +122,13 @@ public struct BookSearchResult: Equatable, Sendable {
         return lo > 0 ? elementIndices[lo - 1] : nil
     }
 
-    /// Le occorrenze che toccano il segmento `segmentIndex`: quelle che vi cominciano e quelle cominciate in un segmento
-    /// precedente che vi arrivano a cavallo (una frase attraversa al più pochi segmenti: si guarda indietro di poco).
+    /// Le occorrenze che possono toccare il segmento `segmentIndex`, in ordine di lettura: quelle cominciate in un
+    /// segmento precedente e finite in questo o dopo, poi quelle che vi cominciano. Una frase del corpo che scavalca una
+    /// nota letta in mezzo è fra queste anche per la nota, ma non vi lascia evidenze (`highlightRanges` la scarta: il
+    /// suo testo non è nel flusso della nota).
     public func hits(touching segmentIndex: Int) -> [BookSearchHit] {
-        guard let lo = Self.lowerBound(hits, segmentIndex) else { return [] }
-        var out: [BookSearchHit] = []
-        var k = lo - 1
-        var looked = 0
-        while k >= 0, looked < 16 {
-            if hits[k].endSegmentIndex >= segmentIndex { out.append(hits[k]) }
-            k -= 1
-            looked += 1
-        }
-        out.reverse()
+        var out = spanningHits.filter { $0.segmentIndex < segmentIndex && $0.endSegmentIndex >= segmentIndex }
+        guard let lo = Self.lowerBound(hits, segmentIndex) else { return out }
         var j = lo
         while j < hits.count, hits[j].segmentIndex == segmentIndex { out.append(hits[j]); j += 1 }
         return out

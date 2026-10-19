@@ -177,6 +177,27 @@ final class BookSearchTests: XCTestCase {
         XCTAssertEqual(r.hits(touching: 2).count, 0)
     }
 
+    /// Una frase del corpo a cavallo di due blocchi, con in mezzo una nota che contiene molte volte la stessa ricerca:
+    /// l'occorrenza a cavallo tocca anche il secondo blocco (e la sua evidenza ci arriva), per quante occorrenze stiano
+    /// nella nota in mezzo.
+    func test_hitsTouching_findThePhraseArriving_evenWithManyHitsOfANoteInBetween() {
+        let manyInTheNote = String(repeating: "Poi il vento e la pioggia. ", count: 40)
+        let s = [body("p#0", "Il faro si accende e"), note("n4", "4 " + manyInTheNote),
+                 body("p#1", "la barca rientra in porto.")]
+        let corpus = BookSearchCorpus(segments: s)
+        let r = corpus.search("e la")
+        XCTAssertEqual(r.totalCount, 41, "40 nella nota e 1 nel corpo, a cavallo")
+        let arriving = r.hits(touching: 2)
+        XCTAssertEqual(arriving.count, 1, "l'occorrenza a cavallo arriva al secondo blocco")
+        XCTAssertEqual(arriving.first?.segmentIndex, 0)
+        XCTAssertEqual(arriving.first?.endSegmentIndex, 2)
+        XCTAssertEqual(r.hits(touching: 1).filter(\.isInNote).count, 40)
+        XCTAssertEqual(corpus.highlightRanges(forSegment: 1, text: s[1].text, hits: r.hits(touching: 1)).count, 40,
+                       "nella nota le sue 40 evidenze; la frase del corpo che la scavalca non ne lascia")
+        let ranges = corpus.highlightRanges(forSegment: 2, text: s[2].text, hits: arriving)
+        XCTAssertEqual(ranges, [NSRange(location: 0, length: 2)], "nel secondo blocco l'evidenza copre «la»")
+    }
+
     func test_highlightRanges_mapBackToTheOriginalText() {
         let text = "Il «Ponte» 🌉 sull’Àdige è lungo; il ponte è alto."
         let s = [body("a", text)]
