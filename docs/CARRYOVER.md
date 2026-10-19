@@ -66,6 +66,35 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## Regole fisse del lavoro (valgono per ogni giro)
+
+- **Raccolta dei permessi all'inizio del giro (regola del maintainer, 2026-10-19, permanente).** Prima di ogni altro
+  lavoro si ripercorre mentalmente tutto il giro e si elenca ogni operazione che può chiedere un'autorizzazione o un
+  intervento del maintainer: le regole «ask» di `~/.claude/settings.json` (cartelle personali), gli accessi fuori dal repo e
+  dai laboratori, gli scaricamenti, i simulatori (primo avvio di Xcode, servizi di CoreSimulator, VoiceOver nei test), la
+  firma e il portachiavi, il deposito dei certificati di `match`, il push, App Store Connect (chiave API, accordi), il
+  caricamento su TestFlight, eventuali dialoghi di sistema o password. Poi **si provocano subito**, con operazioni innocue e
+  reali, mentre il maintainer è presente: per esempio una ricerca vera su una riga che nomina le cartelle (fa scattare la
+  regola), `git push --dry-run`, `git ls-remote` del deposito dei certificati, una firma di prova di un file temporaneo con
+  ciascuna identità «Apple Distribution» (per impronta: il nome da solo è ambiguo, i certificati omonimi sono tre), la
+  verifica in sola lettura dell'ultima build su App Store Connect, l'avvio dei simulatori del giro con
+  `xcodebuild -checkFirstLaunchStatus` e un test d'interfaccia breve con VoiceOver vero su iOS 27, gli scaricamenti con pip.
+  Il maintainer concede o nega; quello che nega non si aggira: si riorganizza il giro senza. Raccolto tutto, gli si scrive un
+  messaggio breve e ben visibile che comincia con **«HO TUTTO, VADO A LAVORARE»**, con la durata stimata, il fatto che può
+  assentarsi e il momento successivo in cui servirà, oppure la frase «non avrò più bisogno di te fino al referto». Una
+  richiesta imprevista a giro avviato non ferma tutto: si annota, si prosegue con le parti che non ne dipendono e ci si torna
+  alla fine; se resta irrisolta si dichiara nel referto, che riporta sempre una riga sulle richieste arrivate in ritardo e sul
+  perché non erano state previste. Misurato il 2026-10-19: le regole «ask» sui comandi del Terminale confrontano il testo e
+  **non scattano sui comandi scritti su più righe** (uno script su più righe che nominava le cartelle è passato senza
+  richiesta; la stessa ricerca su una riga l'ha fatta scattare): quel varco non si usa mai per raggiungere le cartelle; le
+  verifiche di soli file dei laboratori che devono nominarle, a maintainer assente, passano da uno script del laboratorio
+  dichiarato. L'esito si legge nel registro della sessione (`permissionDecision` «user_temporary» contro «mode»).
+- Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
+  commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
+  solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
+
+---
+
 ## ▶ STATO — Giro «accessibilità e completamento»: ordine della Home, salto fra nota e richiamo, lacune WCAG di livello A, build 59 — 2026-10-18 sera
 
 **Partenza:** `8db0bcd` (main = origin, build 58 su TestFlight). **Arrivo:** `main` = `origin` con i documenti finali
