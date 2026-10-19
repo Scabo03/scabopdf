@@ -251,6 +251,55 @@ final class BookSearchAppTests: XCTestCase {
         XCTAssertEqual(bar.searchButton.accessibilityValue, "2 risultati per «x»")
     }
 
+    /// Con il pulsante della ricerca e le due frecce la barra non tronca mai il selettore, a ogni larghezza e dimensione del
+    /// testo, e nessun pulsante si sovrappone a un altro (la barra va su più righe quando serve); ogni pulsante della
+    /// ricerca è ≥ 44×44.
+    func test_bar_withTheSearchControls_neverTruncates_andKeepsTargetsAt44() throws {
+        guard #available(iOS 17.0, *) else { throw XCTSkip("traitOverrides richiede iOS 17") }
+        for width in [320.0, 375.0, 393.0, 440.0, 744.0, 834.0, 1024.0] {
+            for category in [UIContentSizeCategory.large, .extraExtraExtraLarge, .accessibilityExtraExtraExtraLarge] {
+                let host = UIView(frame: CGRect(x: 0, y: 0, width: width, height: 700))
+                let bar = ReadingInterfaceBar()
+                bar.translatesAutoresizingMaskIntoConstraints = false
+                host.traitOverrides.preferredContentSizeCategory = category
+                host.addSubview(bar)
+                NSLayoutConstraint.activate([
+                    bar.topAnchor.constraint(equalTo: host.topAnchor),
+                    bar.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+                    bar.trailingAnchor.constraint(equalTo: host.trailingAnchor),
+                    bar.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
+                ])
+                bar.setTextSizeControls(available: true)
+                bar.setBookmarksAvailable(true)
+                bar.setSearchControls(available: true, activeSummary: "12 risultati per «x»")
+                bar.setPageIndicator(visualizationCurrent: 0, visualizationTotal: 0, originalCurrent: 412, originalTotal: 1559,
+                                     showOriginal: true)
+                let window = UIWindow(frame: host.frame)
+                window.addSubview(host)
+                window.isHidden = false
+                for _ in 0..<3 { host.setNeedsLayout(); host.layoutIfNeeded() }
+                let label = "larghezza \(Int(width)), \(category.rawValue)"
+                let title = try XCTUnwrap(bar.layoutSelectorButton.titleLabel)
+                XCTAssertGreaterThan(title.bounds.width, 0, label)
+                let needed = title.sizeThatFits(CGSize(width: title.bounds.width, height: .greatestFiniteMagnitude))
+                XCTAssertLessThanOrEqual(needed.height, title.bounds.height + 1, "il titolo sta tutto: \(label)")
+                let buttons: [UIView] = [bar.backButton, bar.layoutSelectorButton, bar.searchButton, bar.prevResultButton,
+                                         bar.nextResultButton, bar.bookmarksButton, bar.decreaseTextSizeButton,
+                                         bar.increaseTextSizeButton]
+                let frames = buttons.map { $0.convert($0.bounds, to: bar) }
+                for i in frames.indices { for j in frames.indices where j > i {
+                    XCTAssertFalse(frames[i].insetBy(dx: 0.5, dy: 0.5).intersects(frames[j].insetBy(dx: 0.5, dy: 0.5)),
+                                   "\(buttons[i].accessibilityLabel ?? "?") e \(buttons[j].accessibilityLabel ?? "?"): \(label)")
+                } }
+                for b in [bar.searchButton, bar.prevResultButton, bar.nextResultButton] {
+                    XCTAssertGreaterThanOrEqual(b.frame.width, 44, label)
+                    XCTAssertGreaterThanOrEqual(b.frame.height, 44, label)
+                }
+                window.isHidden = true
+            }
+        }
+    }
+
     // MARK: Finestra dei risultati
 
     func test_window_countIsSaidFirst_andRowsSayContextNoteSectionPage() {

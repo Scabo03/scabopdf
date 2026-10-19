@@ -192,6 +192,42 @@ final class BookSearchUITests: XCTestCase {
         XCTAssertTrue(whole.label.contains("togliere «Parola intera»"), whole.label)
     }
 
+    /// Sceglie `title` nel foglio «Aggiungi un file» dello split (come in `KeyboardUITests`).
+    private func choose(_ app: XCUIApplication, _ title: String) {
+        let bar = app.navigationBars["Aggiungi un file"]
+        XCTAssertTrue(bar.waitForExistence(timeout: 10), "la scelta del file è aperta")
+        sleep(1)
+        let sheet = bar.frame
+        let row = app.cells.allElementsBoundByIndex.first { cell in
+            cell.frame.minX >= sheet.minX - 1 && cell.frame.maxX <= sheet.maxX + 1 && cell.staticTexts[title].exists
+        }
+        XCTAssertNotNil(row, "«\(title)» nella scelta")
+        row?.tap()
+        sleep(2)
+    }
+
+    /// Nello split (iPad) la ricerca è della metà che comanda: ⌘F apre la finestra da quella metà, Esc nella finestra la
+    /// chiude senza toccare lo split (nessuna domanda «Chiudi metà»), e subito dopo ⌘G porta ai risultati in quella metà.
+    func testSplit_searchBelongsToTheCommandingHalf_withoutTraps() throws {
+        guard UIDevice.current.userInterfaceIdiom == .pad else { throw XCTSkip("lo split screen è solo dell'iPad (§ 11.1)") }
+        let app = launch()
+        app.buttons["Affianca due documenti"].firstMatch.tap()
+        for title in ["Libro tastiera uno", "Libro tastiera due"] { choose(app, title) }
+        XCTAssertTrue(reading(app, "del libro uno").waitForExistence(timeout: 20), "lo split è aperto")
+        sleep(1)
+        app.typeKey(XCUIKeyboardKey.rightArrow, modifierFlags: [.command, .alternate])   // comanda la destra
+        XCTAssertTrue(reading(app, "Capitolo primo del libro due").waitForExistence(timeout: 5), "la metà destra comanda")
+        sleep(1)
+        openSearch(app)
+        search(app, "sezione", expect: "3 risultati per «sezione».")
+        app.typeKey(".", modifierFlags: .command)   // Esc
+        XCTAssertTrue(searchBar(app).waitForNonExistence(timeout: 8), "Esc chiude la finestra")
+        XCTAssertFalse(app.alerts.firstMatch.waitForExistence(timeout: 2), "Esc non chiede di chiudere la metà")
+        sleep(1)
+        app.typeKey("g", modifierFlags: .command)
+        XCTAssertTrue(isNearTheTop(app, reading(app, "sezione del libro due")), "⌘G vale per la metà che comanda")
+    }
+
     /// L'audit d'accessibilità della finestra con i risultati (iPhone e iPad; sull'iPad i rilievi di sistema sotto un foglio
     /// sono quelli dichiarati e accettati con tetto in `SystemAuditRule`).
     func testAccessibilityAudit_ofTheSearchWindowWithResults() throws {
