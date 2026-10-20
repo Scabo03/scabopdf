@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.51 (20 ottobre 2026, giro «ricerca nella libreria», livello di verifica leggero, **CONCLUSO** con la **build 61** su TestFlight: dal tab Ricerca della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla»/«Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; le frasi del Mac nominano iPad e iPhone. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.50 (18-19 ottobre 2026, giro «accessibilità e completamento», **CONCLUSO** con la **build 59** su TestFlight (VALID, note per i tester impostate): **l'ordine di lettura segue l'importanza** in ogni schermata con le schede (titolo, poi le tre schede, poi i comandi, poi il contenuto; prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime e sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero nei test d'interfaccia da iOS 27 (`XCUIDevice.voiceOverService`); **salto fra nota e richiamo** per 8.879 delle 9.030 note differite (1.224 → 151 senza salto, ogni legame nuovo verificato contro la pagina stampata; INBOX D.16); **lacune WCAG di livello A chiuse**: tastiera nello split e ⌘J (2.1.1/2.1.2, con due difetti preesistenti curati: ⌘= impossibile dalla tastiera italiana, menu degli strumenti che Esc non chiudeva sull'iPad), lingua dell'interfaccia dichiarata e lingua del documento ricavata (3.1.1); le due voci rosse dell'audit sull'iPad spiegate (barra delle schede di sistema, testo sotto un foglio) e accettate con condizioni e un tetto, dichiarate; letture identiche al byte alla build 58 su entrambe le generazioni. Vedi STATO del 2026-10-18 sera)
 > Versione: 2.49 (18 ottobre 2026, giro «chiusura del capitolo note e pulizia del repo», **CONCLUSO** con la **build 58** su TestFlight (VALID): registrate all'apertura le quattro decisioni del maintainer (nessun tetto alla distanza delle note lunghe; cura delle 13 note dei Mandrioli spezzate vicino a una glossa a margine; codici in attesa di una cura vera dell'ordine delle colonne; rete delle risorse visive che giudica anche il posto); le 13 note ricucite con la glossa al suo posto (659 → 672 ricuciture, 25/25 coppie giudicate sulla pagina); la rete delle risorse visive giudica il posto contro una verità registrata, con la prova al contrario; testo dei volumi tolto dall'albero del repo (74 file); **il capitolo delle note è chiuso**, con le voci aperte per scelta elencate nello STATO del 2026-10-18)
 > Versione: 2.48 (17 ottobre 2026, giro «pulizia e rifinitura finale del capitolo note», **CONCLUSO** con la **build 57** su TestFlight (VALID): separate le 42 fusioni sbagliate nel flusso, ricomposte 16 teste-frammento (12 della Parte 1, 4 nate con le ricuciture nuove), 125 note spezzate in più ricucite con la successione confermata (534 → 659), offerta ai testi normativi già importati, salto ai richiami fra parentesi, rinfresco a inizio parola, note-elenco dei codici, guardia delle risorse visive in posizioni logiche, cura 57. Vedi STATO del 2026-10-17)
@@ -92,6 +93,45 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
   commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
   solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
+
+---
+
+## ▶ STATO — Giro «ricerca nella libreria»: il testo di tutti i libri dal tab Ricerca, Esc in ogni finestra, «Parola intera» coi richiami, frasi del Mac, build 61 — 2026-10-20
+
+**Partenza:** `12acbd9` (main = origin, build 60 su TestFlight). **Arrivo:** vedi la voce della build 61 in
+`docs/RELEASE_TESTFLIGHT.md`. Livello di verifica **leggero**, deciso dal maintainer: solo iOS 27, catture già presenti,
+nessuna rete delle annotazioni, niente suite complete su tutti i dispositivi. Referto (nomi dei volumi NON diffusi):
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA_LIBRERIA.md`; laboratorio `~/Developer/scabopdf-gen-lab/libreria/`.
+
+- **Raccolta dei permessi** all'inizio: nessuna richiesta scattata (push, deposito dei certificati, tre identità di firma,
+  App Store Connect, simulatori, VoiceOver vero nei test). Richieste arrivate tardi: nessuna.
+- **Ricerca nella libreria (LAYER2 § 13.2).** ScaboCore `LibrarySearch.swift`: il testo di ricerca di un libro, cioè gli
+  stessi byte del `BookSearchCorpus`, i confini dei richiami e il timbro della cache. Lo conta la stessa scansione della
+  ricerca nel libro (`PreparedBookSearch.scan`). App `LibraryService` (`<id>.search` accanto alla cache): si scrive con la
+  cache, si mette da parte e si rimette con la lettura precedente, si cancella col libro, vale solo col timbro giusto.
+  `LibrarySearchIndex`: messa in pari in sottofondo, un libro alla volta, mai con un libro aperto; ricerca un libro alla
+  volta, col file mappato. Tab Ricerca: i titoli mentre si scrive; con «Cerca» il testo di tutti i libri, con «Parola
+  intera»; prima il riassunto, poi un libro per riga. Scelto un libro, «Cerca nel libro» si apre con la ricerca già fatta;
+  scelto un risultato, la lettura va lì con il rotore attivo. Il lettore passa alla ricerca i legami fra note e richiami
+  che ha già (senza, la prima ricerca nel libro costava fino a +0,37 s sul Mac).
+- **Esc (`EscapeKey.swift`).** La finestra della scena passa Esc, e lo scrub quando nessuno lo prende prima, all'azione
+  «Annulla»/«Chiudi» della finestra più in alto. Mai al lettore, mai a una finestra sotto; gli avvisi di sistema fanno da
+  sé. Censimento in LAYER2 § 13.3: quindici finestre coperte. Senza Esc restano gli esiti «Decidi più tardi» e
+  l'attesa della ricezione.
+- **«Parola intera» e i richiami.** Il richiamo di nota attaccato a una parola è un confine solo dove `noteCallLinks`
+  lega la nota a quel blocco: al più tre cifre, senza zero in testa, mai se le cifre compaiono due volte nel blocco. Sul
+  banco iOS 27 i confini sono 1.820, tutti giudicati buoni da un controllo indipendente. Coprono 1.820 dei 2.587 casi della
+  misura della revisione, in 18 volumi; il resto sono numeri attaccati dove la lettura non lega una nota: non toccati.
+- **Mac.** Le frasi dell'officina dicono «l'iPad o l'iPhone»; prima dicevano solo «iPad», o «telefono».
+- **Reti (iOS 27, catture ric0).**
+  - Letture identiche al byte alla build 60: runner 0 su 260 file, catena dell'iPad 0 su 312.
+  - Correttezza della ricerca nel libro: 7.501 domande su 7.501.
+  - Ricerca nella libreria (l'app nel simulatore contro un conteggio indipendente in Python): 605 domande su 605, 16.720
+    coppie libro-domanda.
+  - Prove al contrario rosse.
+  - Tempi (simulatore iPad M5, Release): ricerca su 52 libri in mediana 37 ms, al massimo 75 ms; memoria +0,5 MB; messa in
+    pari di 52 libri 7,9 s, picco +28 MB.
+- **Aperto per il giro dopo**: vedi il referto, § decisioni.
 
 ---
 

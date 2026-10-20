@@ -1304,6 +1304,36 @@ Il tab Ricerca offre dei **filtri** e un tasto per **resettare i filtri**.
 
 **Delega a Code:** il dettaglio dei filtri specifici (per workspace, per tipo di documento, per data di importazione, per formato PDF/XML/EPUB, per presenza di segnalibri o tag, eccetera) e la meccanica tecnica della ricerca a contenuto pieno sono **demandati alla fase di sviluppo con Code operativo**, che potrà definire i filtri più utili e implementabili in base alla struttura reale dei dati. È una delle questioni esplicitamente rinviate (vedi sezione 15.2).
 
+**Ricerca a contenuto pieno realizzata nel giro «ricerca nella libreria» (2026-10-20, build 61).** I filtri restano per un
+giro futuro. Mentre si scrive, il tab trova i titoli e i nomi dei file, come prima. Con **«Cerca»** (A capo, o la riga
+«Cerca … nel testo dei libri») cerca anche nel testo di tutti i libri, con le stesse regole della ricerca nel libro (§ 13.3),
+«Parola intera» compresa. Ordine di lettura (principio del § 12.1):
+1. il campo;
+2. la sezione «Nel testo dei libri»: «Parola intera», poi la frase del riassunto, poi un libro per riga, in ordine
+   alfabetico, con il titolo e il numero di risultati («Titolo, 12 risultati»);
+3. la sezione «Titoli e nomi dei file».
+
+Dopo «Cerca» il fuoco va sul riassunto, quindi VoiceOver dice subito quanti libri e quanti risultati in tutto
+(«3 libri, 47 risultati in tutto per «x».»). Zero risultati si dicono con un suggerimento. Scelto un libro, il libro si apre
+sulla sua lista: la schermata «Cerca nel libro» con la ricerca già fatta e il conteggio detto subito. Scelto un risultato, la
+lettura va lì con il rotore «Risultati della ricerca» attivo. «Annulla» lascia la lettura dove era; «Indietro» dalla lettura
+torna alla Ricerca con i risultati di prima.
+
+**Come funziona.** Ogni libro ha un **testo di ricerca** accanto alla cache della lettura: gli stessi byte che la ricerca
+nel libro prepara in memoria, timbrati con la cache da cui nascono.
+- Si scrive a ogni scrittura della cache: elaborazione, rielaborazione, lettura ricevuta dal Mac.
+- Si mette da parte e si rimette insieme alla lettura precedente, e si cancella insieme al libro.
+- I libri già in libreria prima di questa versione si mettono in pari in sottofondo, uno alla volta, solo con la Home in
+  vista. Un libro il cui testo di ricerca manca o non corrisponde alla cache di adesso non si cerca: il riassunto lo dice («Un
+  libro non si è potuto cercare: il suo testo di ricerca non è ancora pronto»). Così nessun risultato viene da una lettura
+  che non c'è più.
+- La ricerca scorre i libri uno alla volta: il file si mappa in memoria, si legge e si lascia. In memoria c'è sempre un libro
+  solo, mai tutti; misure nel referto `~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA_LIBRERIA.md`.
+- Il testo dei libri non lascia mai il dispositivo (§ 12.12).
+
+Il codice sta in ScaboCore (`LibrarySearch.swift`, solo Foundation), in `LibrarySearchIndex.swift` e
+`SearchViewController.swift`.
+
 ### 13.3 Ricerca interna al file
 
 La ricerca interna al file funziona indipendentemente dal Layout attivo. Avviata da qualsiasi Layout, restituisce i risultati come elementi navigabili.
@@ -1324,7 +1354,11 @@ le due frecce.
 - **Che cosa è uguale.** Maiuscole e minuscole; lettere accentate e non accentate; apostrofi e virgolette tipografiche e
   diritte; trattini e lineette; ogni genere di spazio. Opzione **«Parola intera»** (spenta di partenza): la parola non
   deve stare dentro una parola più lunga; apostrofo, trattino e parentesi sono confini («obbligazione» intera si trova in
-  «l'obbligazione»).
+  «l'obbligazione»). Dal giro «ricerca nella libreria» (2026-10-20) anche il **richiamo di nota attaccato** è un confine:
+  «obbligazione» intera si trova in «obbligazione12», dove 12 è il richiamo. Vale solo dove la lettura sa che c'è un
+  richiamo, cioè nel blocco a cui il salto fra nota e richiamo (§ 7.12) lega la nota 12. Le cifre sono al più tre, senza zero
+  in testa. Se nello stesso blocco quelle cifre compaiono attaccate due volte, non c'è confine (nel dubbio non si tocca). Un
+  pezzo di parola resta un pezzo: «obbligazion» intera non si trova.
 - **La schermata «Cerca nel libro».** Si apre col pulsante «Cerca nel libro» nella barra della lettura, da ogni Layout,
   o con **Comando F**. È a schermo intero, anche sull'iPad (attorno a un foglio il testo del libro resterebbe visibile e
   fuori da VoiceOver). Ordine di lettura (principio del § 12.1): il titolo, «Annulla», il campo, «Parola intera», i
@@ -1356,6 +1390,15 @@ le due frecce.
 - **Dove sta il codice.** La logica (testo, uguaglianze, risultati, frasi) in ScaboCore, `BookSearch.swift`, solo
   Foundation: la riuserà la lettura sul Mac. La presentazione nell'app (`BookSearchViewController.swift`, rotore e tasti nel
   lettore).
+- **Esc in tutte le finestre (giro «ricerca nella libreria», 2026-10-20).** In ogni finestra dell'app aperta sopra il
+  lettore o sopra la Home che ha un pulsante «Annulla» o «Chiudi», Esc fa la stessa cosa di quel pulsante. Mai fa qualcosa
+  di nascosto sotto la finestra, cioè né il lettore né una finestra più sotto. Lo stesso vale per lo scrub di VoiceOver,
+  quando nessun elemento lo prende prima. Le finestre coperte: Segnalibri, nuovo segnalibro, sottolineatura, Cerca nel
+  libro, Referto, Aggiungi un file, scelta del contenitore (al primo livello), elaborazione, libro già presente, Lettura
+  migliore e la sua conferma, letture arrivate dal Mac (offerta, libro assente, quale copia, lettura non usabile). Gli
+  avvisi di sistema con «Annulla» gestiscono Esc da sé. Le finestre senza «Annulla» né «Chiudi» non hanno Esc: gli esiti
+  con «Decidi più tardi» e l'attesa della ricezione. Come si realizza: la finestra della scena (`EscapeKey.swift`) passa Esc
+  alla finestra più in alto.
 
 ---
 
