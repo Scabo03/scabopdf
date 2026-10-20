@@ -1,30 +1,23 @@
-Build 60 — cercare dentro il libro
+Build 61 — cercare nel testo di tutti i libri, Esc in ogni finestra
 
-Come si cerca
-- Nel libro aperto, nella barra della lettura c'è un pulsante nuovo: «Cerca nel libro», subito dopo il selettore del layout. Con VoiceOver, dal testo lo scrub a due dita porta alla barra. Con una tastiera esterna: Comando F. C'è sull'iPad e sull'iPhone.
-- Si apre la schermata «Cerca nel libro». Scrivi una parola o una frase e premi Cerca (con la tastiera esterna: A capo). Maiuscole, accenti, apostrofi e virgolette non contano: «perche» trova «perché», e l'apostrofo diritto trova anche quello tipografico.
-- VoiceOver ti dice subito quanti risultati ci sono. Poi, scorrendo, senti ogni risultato: qualche parola attorno a ciò che hai cercato, se sta in una nota («nella nota 12»), il titolo della sezione e la pagina del file originale.
-- La ricerca trova anche il testo delle note, comprese le note lunghe divise in parti, e le frasi che passano da un blocco di lettura al successivo.
-- «Parola intera»: se lo attivi, la parola non si trova dentro parole più lunghe («art» non trova «articolo»).
-- Se non trova nulla te lo dice, con un suggerimento: per esempio di togliere «Parola intera».
-- Scegli un risultato con un doppio tocco: la schermata si chiude e la lettura va lì, in Lettura Continua anche se leggevi in un altro layout, con VoiceOver sul blocco che contiene il risultato.
-- «Annulla» chiude la schermata senza muovere la lettura. Lo fanno anche lo scrub a due dita e il tasto Esc.
+Cercare in tutti i libri
+- Nel tab Ricerca della Home ora si cerca anche nel testo di tutti i libri, non solo nei titoli. Mentre scrivi, la lista mostra come prima i titoli e i nomi dei file che contengono ciò che scrivi.
+- Per cercare nel testo premi Cerca sulla tastiera (con la tastiera esterna: A capo), oppure tocca la riga «Cerca … nel testo dei libri». Valgono le stesse regole di «Cerca nel libro»: maiuscole, accenti, apostrofi e virgolette non contano. Sopra i risultati c'è anche «Parola intera».
+- VoiceOver ti dice subito quanti libri e quanti risultati in tutto, per esempio «3 libri, 47 risultati in tutto per «x».». Scorrendo senti un libro per riga, con il titolo e il numero dei suoi risultati. Sotto, nella sezione «Titoli e nomi dei file», trovi i titoli come prima.
+- Tocca due volte un libro: il libro si apre sulla sua lista dei risultati, cioè la schermata «Cerca nel libro» con la ricerca già fatta, e VoiceOver ti dice quanti risultati ci sono in quel libro. Scegli un risultato: la lettura va lì, e nel rotore la voce «Risultati della ricerca» è già pronta per andare agli altri risultati del libro.
+- «Annulla» chiude la lista e ti lascia nel libro, al punto in cui eri. Con «Indietro» torni alla Ricerca e ritrovi i risultati di prima.
+- I libri che avevi già in libreria vengono preparati per la ricerca nel testo una volta sola, in sottofondo, mentre sei sulla Home: di solito meno di un secondo per libro, qualche secondo per i più grandi. Se cerchi prima che sia finito, VoiceOver ti dice quanti libri non è ancora riuscito a cercare. I libri nuovi sono pronti appena importati.
+- Il testo dei libri resta sul tuo apparecchio: non va da nessuna parte.
 
-Da un risultato all'altro
-- In Lettura Continua, con VoiceOver: nel rotore c'è la voce «Risultati della ricerca». Scorri in giù o in su per andare al risultato successivo o al precedente. Dopo il testo del blocco senti quale risultato è, per esempio «risultato 4 di 12».
-- Con la tastiera, anche da un altro layout (la lettura passa in Lettura Continua): Comando G porta al risultato successivo, Maiuscole Comando G al precedente. Dopo l'ultimo la lettura resta dov'è, e con VoiceOver te lo dice. Con moltissimi risultati, più di 50.000 (per esempio «di» in un codice), ci si ferma ai primi 50.000 e VoiceOver ti suggerisce di restringere la ricerca.
-- Dopo una ricerca con risultati, nella barra compaiono anche due frecce, «Risultato precedente» e «Risultato successivo», e il pulsante «Cerca nel libro» dice quanti risultati ci sono. Chi guarda lo schermo vede i risultati evidenziati nel testo.
-- Se riapri «Cerca nel libro» ritrovi l'ultima ricerca, con i risultati e il comando «Chiudi la ricerca», che toglie il rotore, le frecce e le evidenze. Se sei già andato a un risultato c'è anche «Torna dove leggevi»: riporta in Lettura Continua al punto in cui leggevi prima del primo risultato di quella ricerca.
-- Nello split screen la ricerca è della metà da cui la apri.
-- La ricerca resta finché il libro è aperto; quando lo chiudi non viene salvata.
+Esc in ogni finestra
+- Con una tastiera esterna, il tasto Esc chiude o annulla ogni finestra che ha un pulsante «Annulla» o «Chiudi»: Segnalibri, nuovo segnalibro, sottolineatura, Referto, Aggiungi un file, l'offerta di una lettura migliore, le letture arrivate dal Mac, e le altre. Fa la stessa cosa del pulsante, e mai qualcosa nella schermata che sta sotto: il libro aperto resta aperto.
 
-Altre correzioni
-- Con una finestra aperta sopra la lettura, per esempio quella dei Segnalibri, Esc non chiude più il libro che sta sotto.
-- Sull'iPad la spiegazione di «Segui il sistema», nelle Impostazioni, diceva «del tuo iPhone»: ora dice «del tuo iPad». Anche le frasi di una lettura arrivata dal Mac nominano l'apparecchio che usi.
+«Parola intera» e le note
+- «Parola intera» ora trova anche le parole con il numero della nota attaccato. Per esempio «obbligazione» si trova anche dove il testo dice «obbligazione12», con 12 il richiamo della nota. Vale in «Cerca nel libro» e nella ricerca di tutti i libri.
 
 Cosa non cambia
-- Il testo che senti nei libri è lo stesso di prima, lettera per lettera: lo abbiamo verificato su tutti i libri di prova, con iOS 26 e con iOS 27. Segnalibri e sottolineature restano dove sono. Nessuna offerta «Lettura migliore disponibile»: non c'è nulla da rielaborare.
+- Il testo che senti nei libri è lo stesso di prima, lettera per lettera: lo abbiamo verificato su tutti i libri di prova con iOS 27. Segnalibri e sottolineature restano dove sono. Nessuna offerta «Lettura migliore disponibile»: non c'è nulla da rielaborare.
 
 Due cose da provare, un minuto ciascuna
-- Cerca una parola che sai essere anche in una nota, e ascolta il conteggio e i primi risultati. Dicci se l'ordine ti fa scegliere subito quello giusto: prima le parole attorno, poi dove sta (nota, sezione, pagina).
-- Scegli un risultato, poi con il rotore su «Risultati della ricerca» vai avanti due o tre volte. Dicci se ti basta sentire «risultato 4 di 12» dopo il testo del blocco, o se ti servirebbe prima.
+- Nel tab Ricerca cerca una parola che sai essere in più libri. Dicci se ti basta sentire prima quanti libri e quanti risultati, e poi ogni libro con il suo numero.
+- Apri un libro dalla lista e scegli un risultato, poi con il rotore su «Risultati della ricerca» vai avanti. Dicci se ti è chiaro di essere passato dalla ricerca di tutti i libri a quella dentro il libro.
