@@ -196,6 +196,20 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 61 — 2026-10-20, commit `6d90262` (giro «ricerca nella libreria», livello di verifica leggero: dal tab Ricerca
+  della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla» o
+  «Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; frasi del Mac con iPad e
+  iPhone; `docs/CARRYOVER.md` STATO del 2026-10-20, `LAYER2_PRODUCT_DECISIONS.md` § 13.2-13.3).** `fastlane beta` exit 0
+  (Xcode 27.1): `CURRENT_PROJECT_VERSION` 61 (calcolato dalla corsia), EXPORT SUCCEEDED alle 11:38:21, altool «UPLOAD
+  SUCCEEDED with no errors» alle 11:40:14, Delivery UUID `649592ca-424c-40d5-a337-bf19cb3ac556`, «Successfully set the
+  changelog for build» alle 11:43:20, nessun errore di App Store Connect. Verifica in sola lettura con la chiave API
+  (`asc_build_56.rb 61`): VALID, «Cosa testare» (it) di 3.110 caratteri identico al file (provato prima con
+  `fastlane note_tester`, exit 0). Nessuna cura di lettura nuova (`cureLevel` 58), nessuna offerta. Reti (iOS 27, catture
+  ric0): letture identiche al byte alla build 60 (runner 0 su 260, catena 0 su 312), correttezza della ricerca nel libro
+  7.501/7.501 e nella libreria 605/605, prove al contrario rosse. Prove: ScaboCore 1.028, app iPad iOS 27 230 (16 saltate)
+  e interfaccia nuove su iPad e iPhone iOS 27 verdi, ScaboMac 66 (3 saltate). Revisione indipendente: 7 rilievi, nessuno
+  bloccante, corretti in `9513879`. IPA 163 157 614 byte. Due `log stream` orfani nati durante la corsa fermati per PID dal
+  conduttore (`libreria/strumenti/build61.sh`). Prossimo numero: 62.
 - **Build 60 — 2026-10-20 notte, commit `f9f49de` (giro «ricerca nel libro»: la ricerca dentro il testo del libro
   aperto — finestra «Cerca nel libro», rotore «Risultati della ricerca», ⌘F ⌘G Maiuscole ⌘G —, due pulizie di
   riservatezza dei laboratori e di `docs/DIAGNOSI_INTESTAZIONI.md`, «del tuo iPhone» corretto; `docs/CARRYOVER.md` STATO del

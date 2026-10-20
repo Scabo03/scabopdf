@@ -98,8 +98,8 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ## ▶ STATO — Giro «ricerca nella libreria»: il testo di tutti i libri dal tab Ricerca, Esc in ogni finestra, «Parola intera» coi richiami, frasi del Mac, build 61 — 2026-10-20
 
-**Partenza:** `12acbd9` (main = origin, build 60 su TestFlight). **Arrivo:** vedi la voce della build 61 in
-`docs/RELEASE_TESTFLIGHT.md`. Livello di verifica **leggero**, deciso dal maintainer: solo iOS 27, catture già presenti,
+**Partenza:** `12acbd9` (main = origin, build 60 su TestFlight). **Arrivo:** codice della build `6d90262`, poi questo
+commit di documenti; build 61 su TestFlight (VALID, «Cosa testare» identico al file; voce in `docs/RELEASE_TESTFLIGHT.md`). Livello di verifica **leggero**, deciso dal maintainer: solo iOS 27, catture già presenti,
 nessuna rete delle annotazioni, niente suite complete su tutti i dispositivi. Referto (nomi dei volumi NON diffusi):
 `~/Developer/scabopdf-gen-lab/referto/REFERTO_RICERCA_LIBRERIA.md`; laboratorio `~/Developer/scabopdf-gen-lab/libreria/`.
 
@@ -131,7 +131,12 @@ nessuna rete delle annotazioni, niente suite complete su tutti i dispositivi. Re
   - Prove al contrario rosse.
   - Tempi (simulatore iPad M5, Release): ricerca su 52 libri in mediana 37 ms, al massimo 75 ms; memoria +0,5 MB; messa in
     pari di 52 libri 7,9 s, picco +28 MB.
-- **Aperto per il giro dopo**: vedi il referto, § decisioni.
+- **Revisione indipendente**: le cinque domande del maintainer «sì»; 7 rilievi, nessuno bloccante. Corretti in `9513879`:
+  la messa in pari già in corso, la versione del formato legata alle regole, la lista persa con una finestra sopra,
+  l'intestazione. Dichiarati: «12» intera trova anche il richiamo 12; un libro in messa in pari può sovrapporsi
+  all'apertura di un altro.
+- **Aperto per il giro dopo** (referto § 6): i 767 numeri attaccati dove la lettura non lega la nota; la ricerca nella
+  libreria da sentire sul dispositivo (tempi stimati, non misurati sull'A14).
 
 ---
 
