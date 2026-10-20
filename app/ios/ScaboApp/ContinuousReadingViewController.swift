@@ -302,6 +302,9 @@ final class ContinuousReadingViewController: UIViewController {
             appearanceObservers.append(token)
         }
         readingView.render(content)
+        // I legami fra note e richiami del flusso di Lettura Continua, già calcolati dalla vista: la ricerca nel libro li
+        // riusa per i confini dei richiami (calcolarli di nuovo costava fino a quasi mezzo secondo sul Mac, campo).
+        continuousNoteLinks = readingView.noteLinks
         // Persistenza della posizione di lettura (§ 2.5): ogni cambio di fuoco aggiorna lo store e
         // l'indicatore di pagina in toolbar (§ 4.3, silenzioso: nessun annuncio, § 4.5).
         readingView.onReadingPositionChanged = { [weak self] index in
@@ -1097,7 +1100,9 @@ final class ContinuousReadingViewController: UIViewController {
     // MARK: - Ricerca nel libro (§ 13.3; BookSearchViewController.swift, ScaboCore BookSearch.swift)
 
     /// La ricerca di questo libro aperto: il testo da cercare è il flusso di Lettura Continua (lo stesso della vista).
-    private lazy var searchSession = BookSearchSession(segments: content.pages.flatMap { $0.segments })
+    private lazy var searchSession = BookSearchSession(segments: content.pages.flatMap { $0.segments }, noteLinks: continuousNoteLinks)
+    /// I legami fra note e richiami calcolati dalla vista sul flusso di Lettura Continua (lo stesso della ricerca).
+    private var continuousNoteLinks: NoteCallLinks?
 
     /// Per i test e il banco.
     var searchSessionForTesting: BookSearchSession { searchSession }

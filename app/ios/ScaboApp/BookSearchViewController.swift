@@ -50,8 +50,12 @@ final class BookSearchSession {
     private var generation = 0
     private static let queue = DispatchQueue(label: "com.scabo.scabopdf.ricerca", qos: .userInitiated)
 
-    init(segments: [ContentSegment]) {
+    /// I legami fra note e richiami degli stessi segmenti, se la lettura li ha già (`nil`: li calcola il testo da cercare).
+    private let noteLinks: NoteCallLinks?
+
+    init(segments: [ContentSegment], noteLinks: NoteCallLinks? = nil) {
         self.segments = segments
+        self.noteLinks = noteLinks
     }
 
     /// Vero se c'è una ricerca con almeno un risultato: c'è il rotore, ci sono le frecce.
@@ -62,10 +66,11 @@ final class BookSearchSession {
         generation += 1
         let g = generation
         let segs = segments
+        let links = noteLinks
         let existing = corpus
         Self.queue.async { [weak self] in
             let t0 = Date()
-            let built = existing == nil ? BookSearchCorpus(segments: segs) : nil
+            let built = existing == nil ? BookSearchCorpus(segments: segs, noteLinks: links) : nil
             let build = built.map { _ in Date().timeIntervalSince(t0) }
             let c = existing ?? built!
             let r = c.search(text, options: BookSearchOptions(wholeWord: wholeWord))
@@ -86,7 +91,7 @@ final class BookSearchSession {
         let t0 = Date()
         var build: TimeInterval?
         if corpus == nil {
-            corpus = BookSearchCorpus(segments: segments)
+            corpus = BookSearchCorpus(segments: segments, noteLinks: noteLinks)
             build = Date().timeIntervalSince(t0)
         }
         let r = corpus!.search(text, options: BookSearchOptions(wholeWord: wholeWord))

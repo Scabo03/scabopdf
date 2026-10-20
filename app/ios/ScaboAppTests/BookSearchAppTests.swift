@@ -738,6 +738,19 @@ final class LibrarySearchAppTests: XCTestCase {
         XCTAssertFalse(service.needsSearchText(forDocumentId: id))
     }
 
+    /// La ricerca nel libro aperto riusa i legami fra note e richiami della lettura: gli stessi confini, gli stessi
+    /// conteggi del testo di ricerca della libreria (che li calcola da sé, dagli stessi segmenti).
+    func test_bookSearch_inTheReader_usesTheReadingLinks_andCountsLikeTheLibrary() {
+        let segs = [seg("b1", "BODY", "Il \(lantern)12 resta acceso, e un altro \(lantern) dopo."), seg("n12", "NOTE", "12 Nota inventata.")]
+        let id = addBook("Libro coerente", segs)
+        let vc = ContinuousReadingViewController(content: content(segs), documentId: "", signalPlayer: SilentLibrarySignals())
+        vc.loadViewIfNeeded()
+        let inBook = vc.searchSessionForTesting.searchNow(lantern, wholeWord: true)
+        XCTAssertEqual(inBook.totalCount, 2, "anche quello col richiamo 12 attaccato")
+        XCTAssertEqual(countIn(id, lantern, whole: true), inBook.totalCount, "lo stesso numero nella libreria")
+        XCTAssertEqual(vc.searchSessionForTesting.corpus?.callBoundaryCount, BookSearchCorpus(segments: segs).callBoundaryCount)
+    }
+
     // MARK: Il tab Ricerca
 
     private func hostedSearch() -> (SearchViewController, UIWindow) {
