@@ -1138,9 +1138,19 @@ final class ContinuousReadingViewController: UIViewController {
         guard let pending = pendingLibrarySearch else { return }
         pendingLibrarySearch = nil
         searchSession.prefill(query: pending.query, wholeWord: pending.wholeWord)
-        // Dopo un istante: la posizione ripristinata e l'annuncio d'ingresso vanno prima; la finestra poi prende il fuoco.
+        // Dopo un istante: la posizione ripristinata e l'annuncio d'ingresso vanno prima; la finestra poi prende il fuoco. Se
+        // c'è già un'altra finestra sopra il lettore, si riprova quando se ne va (al più per dieci secondi), invece di perdere
+        // la lista in silenzio.
+        openPendingSearchWindow(attempt: 0)
+    }
+
+    private func openPendingSearchWindow(attempt: Int) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self, self.view.window != nil else { return }
+            if self.presentedViewController != nil {
+                if attempt < 16 { self.openPendingSearchWindow(attempt: attempt + 1) }
+                return
+            }
             self.openSearch(runImmediately: true)
         }
     }

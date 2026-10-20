@@ -751,6 +751,19 @@ final class LibrarySearchAppTests: XCTestCase {
         XCTAssertEqual(vc.searchSessionForTesting.corpus?.callBoundaryCount, BookSearchCorpus(segments: segs).callBoundaryCount)
     }
 
+    /// Chi chiede la messa in pari mentre è già in corso ne riceve la fine (revisione del giro, rilievo 1: il tab Ricerca
+    /// rifà così la ricerca che aveva libri non ancora pronti).
+    func test_catchUp_askedWhileRunning_getsTheEndOfTheRunningOne() {
+        let id = addBook("Libro in coda", [seg("b", "BODY", "Il zxruscello corre.")])
+        try? FileManager.default.removeItem(at: service.searchTextURL(forDocumentId: id))
+        let first = expectation(description: "la prima"), second = expectation(description: "la seconda, chiesta durante")
+        LibrarySearchIndex.shared.catchUp(isIdle: { true }) { first.fulfill() }
+        XCTAssertTrue(LibrarySearchIndex.shared.isCatchingUp)
+        LibrarySearchIndex.shared.catchUp(isIdle: { true }) { second.fulfill() }
+        wait(for: [first, second], timeout: 60)
+        XCTAssertFalse(service.needsSearchText(forDocumentId: id))
+    }
+
     // MARK: Il tab Ricerca
 
     private func hostedSearch() -> (SearchViewController, UIWindow) {

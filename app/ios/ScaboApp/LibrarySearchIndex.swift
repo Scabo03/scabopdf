@@ -12,9 +12,10 @@
 //  Un libro elaborato da questa versione in poi ha già il suo testo di ricerca (lo scrive `writeCache`). I libri già in
 //  libreria prima, o quelli il cui testo non vale più (timbro diverso dalla cache), si mettono in pari IN SOTTOFONDO, uno
 //  alla volta: si legge dalla cache il solo flusso di Lettura Continua, si scrive il testo, si lascia andare tutto prima del
-//  libro dopo. Mai mentre si legge o si elabora un libro (`isIdle`, chiesto prima di ogni libro): la memoria di un libro
-//  aperto e quella di una cache letta in sottofondo non si sommano. Si riparte all'avvio e ogni volta che si apre il tab
-//  Ricerca.
+//  libro dopo. Nessun libro si comincia mentre si legge o si elabora un libro (`isIdle`, chiesto prima di ogni libro); il
+//  libro già cominciato finisce (sul Mac al più 0,9 s e +28 MB per il più grande del banco), quindi aprire un libro in quel
+//  momento può sommarsi a quel solo libro, mai a tutta la messa in pari. Si riparte all'avvio e ogni volta che si apre il tab
+//  Ricerca; chi la chiede mentre è già in corso riceve la fine di quella in corso.
 //
 //  ── La ricerca ────────────────────────────────────────────────────────────────────────────────────────────────
 //
@@ -38,12 +39,16 @@ final class LibrarySearchIndex {
 
     /// Quanti libri l'ultima messa in pari ha scritto (per i test e le misure).
     private(set) var lastCatchUpWritten = 0
+    /// Chi aspetta la fine della messa in pari in corso.
+    private var pendingCompletions: [() -> Void] = []
 
     /// Rimette in pari i testi di ricerca che mancano o non valgono. `isIdle` (sul thread principale, prima di ogni libro):
     /// falso = ci si ferma (si riparte alla prossima occasione). `completion` sul thread principale.
     func catchUp(isIdle: @escaping () -> Bool, completion: (() -> Void)? = nil) {
         dispatchPrecondition(condition: .onQueue(.main))
-        guard !isCatchingUp else { completion?(); return }
+        // Già in corso: chi la chiede ne riceve la fine (il tab Ricerca rifà così la ricerca coi libri non ancora pronti).
+        if let completion { pendingCompletions.append(completion) }
+        guard !isCatchingUp else { return }
         let ids = service.store.allDocuments().map(\.id)
         isCatchingUp = true
         lastCatchUpWritten = 0
@@ -52,7 +57,9 @@ final class LibrarySearchIndex {
             guard k < ids.count, isIdle() else {
                 isCatchingUp = false
                 lastCatchUpWritten = written
-                completion?()
+                let waiting = pendingCompletions
+                pendingCompletions = []
+                waiting.forEach { $0() }
                 return
             }
             let id = ids[k]

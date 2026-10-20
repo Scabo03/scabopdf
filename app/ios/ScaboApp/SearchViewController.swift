@@ -97,7 +97,6 @@ final class SearchViewController: UIViewController, UITableViewDataSource, UITab
     /// I testi di ricerca che mancano si rimettono in pari mentre il tab è aperto; a lavoro finito, se una ricerca nel testo
     /// aveva libri «non ancora pronti», la si rifà in silenzio.
     private func startCatchUp() {
-        guard !index.isCatchingUp else { return }
         index.catchUp(isIdle: { [weak self] in
             guard let self, let window = self.view.window else { return false }
             return window.rootViewController?.presentedViewController == nil

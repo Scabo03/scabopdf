@@ -123,6 +123,26 @@ final class LibrarySearchTests: XCTestCase {
         XCTAssertNil(LibrarySearchText.stamp(of: Data()))
     }
 
+    /// Il testo di ricerca scritto su disco vale finché le regole del testo da cercare non cambiano: questa prova fotografa
+    /// le regole (normalizzazione, flussi, confini dei richiami) su un campione inventato. Se diventa rossa perché le regole
+    /// sono cambiate apposta, va alzata `LibrarySearchText.formatVersion` (i testi vecchi si riscrivono in sottofondo) e
+    /// aggiornata qui l'impronta insieme alla versione; mai l'una senza l'altra (revisione del giro, rilievo 3).
+    func test_formatVersion_isTiedToTheRulesOfTheText() {
+        let sample = [
+            ContentSegment(id: "h", role: "HEADING_2", text: "Perché l’Università — «Città» ﬁne", lengthCategory: "", acousticIntro: "", sourcePage: nil),
+            ContentSegment(id: "b", role: "BODY", text: "Straße σοφός e\u{0301} par\u{00AD}ola lanterna7 ²", lengthCategory: "", acousticIntro: "", sourcePage: nil),
+            ContentSegment(id: "n7", role: "NOTE", text: "7 Nota  di   prova.", lengthCategory: "", acousticIntro: "", sourcePage: nil),
+            ContentSegment(id: "n7#1", role: "NOTE_CONTINUATION", text: "Seguito.", lengthCategory: "", acousticIntro: "", sourcePage: nil),
+        ]
+        let corpus = BookSearchCorpus(segments: sample)
+        let fingerprint = corpus.buffer.reduce(UInt64(1469598103934665603)) { ($0 ^ UInt64($1)) &* 1099511628211 }
+        XCTAssertEqual(LibrarySearchText.formatVersion, 1)
+        XCTAssertEqual(corpus.wordBoundaries, [Int32(corpus.buffer.firstIndex(of: 0x37)!)], "il richiamo 7 attaccato")
+        XCTAssertEqual(fingerprint, LibrarySearchTests.rulesFingerprintV1,
+                       "le regole del testo da cercare sono cambiate: alzare LibrarySearchText.formatVersion e aggiornare l'impronta")
+    }
+    static let rulesFingerprintV1: UInt64 = 1621835139919584941
+
     // MARK: La ricerca nella libreria, con la prova al contrario
 
     /// Il conteggio atteso, calcolato in modo indipendente dal motore: il testo dei flussi unito a mano, `range(of:)` di

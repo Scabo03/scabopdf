@@ -1358,7 +1358,8 @@ le due frecce.
   «obbligazione» intera si trova in «obbligazione12», dove 12 è il richiamo. Vale solo dove la lettura sa che c'è un
   richiamo, cioè nel blocco a cui il salto fra nota e richiamo (§ 7.12) lega la nota 12. Le cifre sono al più tre, senza zero
   in testa. Se nello stesso blocco quelle cifre compaiono attaccate due volte, non c'è confine (nel dubbio non si tocca). Un
-  pezzo di parola resta un pezzo: «obbligazion» intera non si trova.
+  pezzo di parola resta un pezzo: «obbligazion» intera non si trova. Il richiamo diventa una parola a sé: «12» intera trova
+  anche il richiamo 12 attaccato alla parola (scelta voluta: è il numero scritto nel testo).
 - **La schermata «Cerca nel libro».** Si apre col pulsante «Cerca nel libro» nella barra della lettura, da ogni Layout,
   o con **Comando F**. È a schermo intero, anche sull'iPad (attorno a un foglio il testo del libro resterebbe visibile e
   fuori da VoiceOver). Ordine di lettura (principio del § 12.1): il titolo, «Annulla», il campo, «Parola intera», i
