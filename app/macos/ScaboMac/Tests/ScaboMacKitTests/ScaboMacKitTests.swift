@@ -274,6 +274,21 @@ final class GergoTests: XCTestCase {
         }
     }
 
+    /// Il Mac non sa a quale apparecchio andrà la lettura (AirDrop o cavo): le frasi nominano l'iPad e l'iPhone insieme, mai
+    /// uno solo, e mai «telefono» (giro «ricerca nella libreria», 2026-10-20).
+    func test_frasiSullApparecchio_valgonoPerIPadEIPhone() {
+        let frasi = Testi.tutteLeStringheFisse + [Testi.annuncioLetturaPronta("Titolo"), Testi.esitoSalvato("lettura.scabolettura")]
+        var conApparecchio = 0
+        for s in frasi {
+            XCTAssertFalse(s.localizedCaseInsensitiveContains("telefono"), "«telefono» in: \(s)")
+            if s.contains("iPad") || s.contains("iPhone") {
+                conApparecchio += 1
+                XCTAssertTrue(s.contains("iPad") && s.contains("iPhone"), "un apparecchio solo in: \(s)")
+            }
+        }
+        XCTAssertGreaterThanOrEqual(conApparecchio, 10)
+    }
+
     func test_stringheComposte_senzaGergo() {
         let r = ModelRequirements(macOSMinimo: "26.0", richiedeAppleSilicon: true, memoriaConsigliataGB: 16, nota: "Apple Intelligence attiva")
         let p = ModelProvenance(indirizzo: "https://esempio.it", versione: "1", editore: "Esempio")

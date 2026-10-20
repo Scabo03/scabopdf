@@ -6,7 +6,7 @@
 //  incontra gli elementi: intestazione di livello 1 «ScaboPDF — officina» → spiegazione → «Prepara la lettura di un
 //  PDF…» → lo STATO in parole (in attesa / fase e percentuale con la barra e «Annulla» / lettura pronta / problema in
 //  prosa) → se la lettura è pronta: intestazione di livello 2 col titolo, il riassunto in prosa, la casella delle
-//  annotazioni, «Invia all'iPad con AirDrop…», «Salva il file per il cavo…», l'esito dell'ultimo invio → «Apri il
+//  annotazioni, «Invia all'iPad o all'iPhone con AirDrop…», «Salva il file per il cavo…», l'esito dell'ultimo invio → «Apri il
 //  pannello degli strumenti». Lo stato è sempre una frase; nessuna animazione con «Riduci movimento».
 //
 

@@ -20,7 +20,7 @@ public enum Testi {
         "Questa è l'officina di ScaboPDF: sul Mac si prepara la lettura di un libro con l'aiuto del modello che riconosce "
         + "l'impaginazione delle pagine, poi la si manda all'iPad o all'iPhone con AirDrop, oppure con il cavo."
     public static let finestraSpiegazione2 =
-        "Sul telefono il libro deve essere già in libreria: basta aprire il file arrivato dal Mac e confermare. "
+        "Sull'iPad o sull'iPhone il libro deve essere già in libreria: basta aprire il file arrivato dal Mac e confermare. "
         + "Gli strumenti dell'officina si trovano nel pannello, nelle Impostazioni o con il pulsante in fondo."
     public static let apriPannello = "Apri il pannello degli strumenti"
     public static let apriPannelloAiuto = "Mostra gli strumenti disponibili, divisi per ruolo, con descrizione, dimensione e stato"
@@ -211,7 +211,7 @@ public enum Testi {
     // MARK: Officina: preparazione e invio della lettura (giro del 2026-10-16)
 
     public static let preparaLettura = "Prepara la lettura di un PDF…"
-    public static let preparaLetturaAiuto = "Sceglie un PDF sul Mac e ne prepara la lettura da mandare al telefono"
+    public static let preparaLetturaAiuto = "Sceglie un PDF sul Mac e ne prepara la lettura da mandare all'iPad o all'iPhone"
     public static let pannelloApriMessaggio = "Scegli il PDF del libro di cui preparare la lettura."
     public static let pannelloApriPulsante = "Prepara"
     public static let statoInAttesa = "Nessun libro in preparazione."
@@ -231,28 +231,28 @@ public enum Testi {
     }
     public static func annuncioElaborazioneAvviata(_ titolo: String) -> String { "Preparazione della lettura di \(titolo) avviata." }
     public static func annuncioPercento(_ p: Int) -> String { "\(p) per cento." }
-    public static func annuncioLetturaPronta(_ titolo: String) -> String { "La lettura di \(titolo) è pronta da mandare al telefono." }
+    public static func annuncioLetturaPronta(_ titolo: String) -> String { "La lettura di \(titolo) è pronta da mandare all'iPad o all'iPhone." }
     public static let annuncioElaborazioneAnnullata = "Preparazione annullata. Nulla è stato salvato."
     public static func annuncioElaborazioneFallita(_ prosa: String) -> String { "La lettura non è stata preparata. \(prosa)" }
     public static func letturaPronta(_ titolo: String) -> String { "Lettura pronta: «\(titolo)»" }
     public static let includiAnnotazioni = "Includi le annotazioni"
-    public static let includiAnnotazioniAiuto = "Manda anche segnalibri e sottolineature di questo libro; sul telefono si uniscono a quelli che ci sono già"
+    public static let includiAnnotazioniAiuto = "Manda anche segnalibri e sottolineature di questo libro; sull'iPad o sull'iPhone si uniscono a quelli che ci sono già"
     public static let annotazioniAssenti =
-        "Su questo Mac non ci sono annotazioni per questo libro: la casella resta spenta. Le annotazioni che hai sul telefono restano dove sono."
-    public static let inviaAirDrop = "Invia all'iPad con AirDrop…"
+        "Su questo Mac non ci sono annotazioni per questo libro: la casella resta spenta. Le annotazioni che hai sull'iPad o sull'iPhone restano dove sono."
+    public static let inviaAirDrop = "Invia all'iPad o all'iPhone con AirDrop…"
     public static let inviaAirDropAiuto = "Apre la finestra di AirDrop del Mac con il file della lettura: scegli l'iPad o l'iPhone vicino"
     public static let salvaPerCavo = "Salva il file per il cavo…"
     public static let salvaPerCavoAiuto =
-        "Salva il file della lettura; poi, con l'iPad collegato col cavo, trascinalo nella cartella di ScaboPDF che il Finder mostra fra i documenti dell'iPad"
-    public static let pannelloSalvaMessaggio = "Dove salvare il file della lettura da portare sul telefono?"
+        "Salva il file della lettura; poi, con l'iPad o l'iPhone collegato col cavo, trascinalo nella cartella di ScaboPDF che il Finder mostra fra i suoi documenti"
+    public static let pannelloSalvaMessaggio = "Dove salvare il file della lettura da portare sull'iPad o sull'iPhone?"
     public static let pannelloSalvaPulsante = "Salva"
     public static func esitoSalvato(_ nome: String) -> String {
-        "File salvato: \(nome). Con l'iPad collegato col cavo, nel Finder apri l'iPad, vai a «File», e trascina il file nella cartella di ScaboPDF. Poi apri ScaboPDF sull'iPad."
+        "File salvato: \(nome). Con l'iPad o l'iPhone collegato col cavo, nel Finder scegli il dispositivo, vai a «File», e trascina il file nella cartella di ScaboPDF. Poi apri ScaboPDF sul dispositivo."
     }
     public static let esitoNonSalvato = "Il file non si è potuto salvare in quella posizione. Scegli un'altra cartella e riprova."
     public static let esitoNonPreparato = "Il file della lettura non si è potuto preparare per l'invio. Riprova; se succede ancora, salvalo per il cavo."
     public static let esitoAirDropAssente = "AirDrop non è disponibile su questo Mac adesso. Controlla che Wi-Fi e Bluetooth siano accesi, oppure salva il file per il cavo."
-    public static let esitoAirDropInviato = "Lettura inviata con AirDrop. Sull'iPad si apre ScaboPDF: conferma per usarla."
+    public static let esitoAirDropInviato = "Lettura inviata con AirDrop. Sull'iPad o sull'iPhone si apre ScaboPDF: conferma per usarla."
     public static let esitoAirDropAnnullato = "Invio con AirDrop annullato. Nulla è stato inviato."
     public static let esitoAirDropFallito = "L'invio con AirDrop non è riuscito. Riprova avvicinando i dispositivi, oppure salva il file per il cavo."
 
@@ -266,12 +266,12 @@ public enum Testi {
         if s > 0 { parti.append(s == 1 ? "Una nota che scavalca la pagina è stata ricucita." : "Note che scavalcano la pagina ricucite: \(s).") }
         if n > 0 { parti.append("Voci dell'indice analitico lette come testo e non più come note: \(n).") }
         if r.report.modelUnavailable {
-            parti.append("Il controllo con il modello d'impaginazione non è stato possibile: la lettura è quella che farebbe il telefono.")
+            parti.append("Il controllo con il modello d'impaginazione non è stato possibile: la lettura è quella che preparano da sé l'iPad e l'iPhone.")
         } else if s == 0 && n == 0 {
-            parti.append("Il modello d'impaginazione non ha trovato nulla da correggere oltre a ciò che fa già il telefono.")
+            parti.append("Il modello d'impaginazione non ha trovato nulla da correggere oltre a ciò che fanno già l'iPad e l'iPhone.")
         }
         if r.visualResourcesSkipped != nil {
-            parti.append("Il riconoscimento di tabelle e figure non è stato possibile su questo Mac: l'iPad proporrà di riprovarlo.")
+            parti.append("Il riconoscimento di tabelle e figure non è stato possibile su questo Mac: ScaboPDF sull'iPad o sull'iPhone proporrà di riprovarlo.")
         }
         parti.append("Preparata in \(max(1, Int(r.seconds.rounded()))) secondi.")
         return parti.joined(separator: " ")
