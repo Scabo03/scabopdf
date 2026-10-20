@@ -20,7 +20,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // alla finestra; se all'ultima chiusura era aperto un documento e il suo contenuto è in cache,
         // lo si riapre al punto di lettura (§ 2.5, riapertura nello stato di chiusura).
         guard let windowScene = scene as? UIWindowScene else { return }
-        let window = UIWindow(windowScene: windowScene)
+        // La finestra della scena instrada Esc all'«Annulla»/«Chiudi» della finestra dell'app più in alto (EscapeKey.swift).
+        let window = ScaboWindow(windowScene: windowScene)
         self.window = window
         // La lingua dell'interfaccia (WCAG 3.1.1; giro «accessibilità e completamento», 2026-10-18): l'app è in italiano e
         // lo dichiara, così VoiceOver e il display braille la rendono in italiano anche su un apparecchio in un'altra
@@ -73,6 +74,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         // Il tema memorizzato è applicato alla finestra (posizione B → chiaro/scuro forzato; A → sistema).
         ReadingAppearance.applyToWindow(window, prefs: prefs)
+        scheduleSearchTextCatchUp()
         window.makeKeyAndVisible()
 
         // Identità del documento (giro «identità», 2026-10-11): i libri già in libreria ricevono
@@ -95,6 +97,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // si apre SOLO su azione dell'utente dai Recenti. Degradazione ragionevole (§ 2.5: il
         // principio di riapertura non è un vincolo assoluto). L'ultimo-documento resta memorizzato
         // per i Recenti; semplicemente non lo si ripresenta da solo.
+    }
+
+    /// I testi di ricerca dei libri già in libreria (o che non valgono più) si rimettono in pari in sottofondo, poco dopo
+    /// l'avvio e solo con la Home in vista, un libro alla volta (LibrarySearchIndex.swift). Non durante le prove d'unità:
+    /// le prove la chiamano da sé.
+    private func scheduleSearchTextCatchUp() {
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            LibrarySearchIndex.shared.catchUp(isIdle: { [weak self] in
+                guard let root = self?.window?.rootViewController as? RootTabBarController else { return false }
+                return root.presentedViewController == nil && UIApplication.shared.applicationState == .active
+            })
+        }
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

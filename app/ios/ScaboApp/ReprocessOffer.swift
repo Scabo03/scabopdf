@@ -368,8 +368,12 @@ enum ReprocessOffer {
 
 // MARK: - Schermata a testo con pulsanti (base comune, accessibile)
 
-class ReprocessTextViewController: UIViewController {
+class ReprocessTextViewController: UIViewController, EscapeClosable {
     let stack = UIStackView()
+    /// L'azione di «Annulla» o «Chiudi» di questa finestra, se ne ha uno: Esc fa la stessa cosa (EscapeKey.swift).
+    var escapeAction: (() -> Void)?
+    var hasEscapeAction: Bool { escapeAction != nil }
+    func performEscapeAction() { escapeAction?() }
     private let scroll = UIScrollView()
 
     override func viewDidLoad() {
@@ -451,8 +455,9 @@ final class ReprocessOfferViewController: ReprocessTextViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Lettura migliore"
+        escapeAction = { [weak self] in self?.dismiss(animated: true) }
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Chiudi", primaryAction: UIAction { [weak self] _ in
-            self?.dismiss(animated: true)
+            self?.escapeAction?()
         })
         heading = addHeading("Rielaborare «\(document.title)»?")
         addParagraph("Cosa cambia. " + ReprocessOffer.whatChanges(document, reason: reason), identifier: "offer.what")
@@ -538,11 +543,12 @@ final class ReprocessConfirmViewController: ReprocessTextViewController {
         title = "Conferma"
         heading = addHeading(question)
         addParagraph(explanation, identifier: "\(identifier).text")
-        addButton("Annulla", prominent: true, identifier: "\(identifier).cancel") { [weak self] in
+        escapeAction = { [weak self] in
             guard let self else { return }
             if self.pushed { self.navigationController?.popViewController(animated: Motion.animated()) }
             else { self.dismiss(animated: true) }
         }
+        addButton("Annulla", prominent: true, identifier: "\(identifier).cancel") { [weak self] in self?.escapeAction?() }
         addButton(actionTitle, prominent: false, identifier: "\(identifier).ok") { [weak self] in
             guard let self else { return }
             let onConfirm = self.onConfirm

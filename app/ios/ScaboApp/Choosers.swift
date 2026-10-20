@@ -243,3 +243,14 @@ final class DocumentChooserViewController: UIViewController, UITableViewDataSour
         dismiss(animated: true) { [onChoose] in onChoose(id) }
     }
 }
+
+// Esc = «Annulla» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension DestinationChooserViewController: EscapeClosable {
+    /// «Annulla» c'è solo al primo livello; ai livelli interni c'è «Indietro».
+    var hasEscapeAction: Bool { if case .root = level { return true } else { return false } }
+    func performEscapeAction() { cancelTapped() }
+}
+// Esc = «Annulla» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension DocumentChooserViewController: EscapeClosable {
+    func performEscapeAction() { cancelTapped() }
+}

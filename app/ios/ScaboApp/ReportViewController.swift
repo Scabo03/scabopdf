@@ -109,3 +109,8 @@ final class ReportViewController: UIViewController, UITableViewDataSource {
         return cell
     }
 }
+
+// Esc = «Chiudi» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension ReportViewController: EscapeClosable {
+    func performEscapeAction() { closeTapped() }
+}

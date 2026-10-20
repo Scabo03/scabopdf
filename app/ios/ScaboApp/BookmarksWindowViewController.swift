@@ -233,3 +233,8 @@ final class BookmarksWindowViewController: UIViewController, UITableViewDataSour
         return bm.tagIds.compactMap { byId[$0] }
     }
 }
+
+// Esc = «Chiudi» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension BookmarksWindowViewController: EscapeClosable {
+    func performEscapeAction() { closeTapped() }
+}

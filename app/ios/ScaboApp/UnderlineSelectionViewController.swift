@@ -323,3 +323,8 @@ final class WordChipsView: UIView {
         CGSize(width: UIView.noIntrinsicMetric, height: laidOutHeight)
     }
 }
+
+// Esc = «Annulla» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension UnderlineSelectionViewController: EscapeClosable {
+    func performEscapeAction() { cancelTapped() }
+}

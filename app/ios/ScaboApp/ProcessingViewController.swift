@@ -288,3 +288,10 @@ final class ProcessingViewController: UIViewController {
         ])
     }
 }
+
+// Esc = «Annulla» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension ProcessingViewController: EscapeClosable {
+    /// Finché l'elaborazione è in corso e «Annulla» si può premere.
+    var hasEscapeAction: Bool { cancelButton.isEnabled && !cancelButton.isHidden && cancelButton.window != nil }
+    func performEscapeAction() { cancelTapped() }
+}

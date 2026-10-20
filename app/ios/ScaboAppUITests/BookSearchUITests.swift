@@ -347,3 +347,220 @@ final class BookSearchUITests: XCTestCase {
         add(attachment)
     }
 }
+
+/// LA RICERCA NEL TESTO DI TUTTI I LIBRI dal tab Ricerca, ed ESC come «Annulla»/«Chiudi» nelle finestre (giro «ricerca
+/// nella libreria», 2026-10-20). Seme `-uiTestSeedKeyboardBooks` (due libri inventati; «faro» una volta in ciascuno).
+/// Senza VoiceOver, con la tastiera hardware del simulatore (Esc = Comando-punto, A capo = «\n», come in `KeyboardUITests`).
+final class LibrarySearchUITests: XCTestCase {
+
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        continueAfterFailure = false
+    }
+
+    private func launch() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTestSeedKeyboardBooks"]
+        app.launch()
+        XCTAssertTrue(app.waitForScreen("ScaboPDF", timeout: 30), "la Home compare")
+        app.typeKey(XCUIKeyboardKey.shift, modifierFlags: [])   // il primo tasto dopo l'avvio a volte non arriva
+        sleep(1)
+        return app
+    }
+
+    private func item(_ app: XCUIApplication, _ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any)[identifier]
+    }
+
+    private func reading(_ app: XCUIApplication, _ text: String) -> XCUIElement {
+        app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+    }
+
+    /// Nel tab Ricerca scrive `text` e preme Cerca; aspetta la frase del riassunto che contiene `expect`.
+    @discardableResult
+    private func searchLibrary(_ app: XCUIApplication, _ text: String, expect: String) -> XCUIElement {
+        XCTAssertTrue(app.tapTab("Ricerca"), "scheda Ricerca")
+        XCTAssertTrue(app.waitForScreen("Ricerca"))
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "il campo di ricerca")
+        field.tap()
+        sleep(1)
+        app.typeText(text)
+        app.typeKey("\n", modifierFlags: [])
+        let summary = item(app, "libreria.riassunto")
+        if !summary.waitForExistence(timeout: 6) {
+            print("A CAPO NON ARRIVATO al campo: ripetuto una volta")
+            app.typeKey("\n", modifierFlags: [])
+        }
+        let ok = XCTWaiter.wait(for: [expectation(for: NSPredicate(format: "label CONTAINS %@", expect), evaluatedWith: summary)],
+                                timeout: 15)
+        if ok != .completed { print("RIASSUNTO: «\(summary.exists ? summary.label : "assente")»\n\(app.debugDescription)") }
+        XCTAssertEqual(ok, .completed, "il riassunto contiene «\(expect)»")
+        return summary
+    }
+
+    /// Dal tab Ricerca: il riassunto (quanti libri, quanti risultati) prima dei libri, un libro per riga col titolo e il
+    /// numero di risultati, i titoli trovabili come prima; scelto un libro, la sua lista; scelto un risultato, la lettura lì
+    /// con le frecce dei risultati (la ricerca è attiva); Esc riporta alla Ricerca con i risultati di prima.
+    func testLibrary_textOfAllBooks_bookList_thenTheReadingWithTheSearchActive() throws {
+        let app = launch()
+        let summary = searchLibrary(app, "faro", expect: "2 libri, 2 risultati in tutto per «faro».")
+        let first = item(app, "libreria.libro.0"), second = item(app, "libreria.libro.1")
+        XCTAssertTrue(first.exists && second.exists, "un libro per riga")
+        XCTAssertEqual(first.label, "Libro tastiera due, un risultato")
+        XCTAssertEqual(second.label, "Libro tastiera uno, un risultato")
+        XCTAssertTrue(summary.frame.minY < first.frame.minY && first.frame.minY < second.frame.minY,
+                      "prima il riassunto, poi i libri in ordine")
+        XCTAssertTrue(app.staticTexts["Nessun titolo o nome di file con «faro»"].exists, "la sezione dei titoli c'è e lo dice")
+        first.tap()
+        // Il libro si apre sulla sua lista dei risultati: «Cerca nel libro» con la ricerca già fatta.
+        let count = app.staticTexts["ricerca.conteggio"]
+        let listed = XCTWaiter.wait(for: [expectation(for: NSPredicate(format: "label == %@", "Un risultato per «faro»."),
+                                                      evaluatedWith: count)], timeout: 20)
+        if listed != .completed { print("LISTA DEL LIBRO:\n\(app.debugDescription)") }
+        XCTAssertEqual(listed, .completed, "la lista dei risultati del libro, con la ricerca già fatta")
+        XCTAssertEqual(app.textFields["ricerca.campo"].value as? String, "faro")
+        item(app, "ricerca.risultato.0").tap()
+        XCTAssertTrue(app.navigationBars["Cerca nel libro"].waitForNonExistence(timeout: 8), "la lista si chiude")
+        let hit = reading(app, "Il faro si accende sulla scogliera")
+        XCTAssertTrue(hit.waitForExistence(timeout: 8), "la lettura è sul risultato")
+        // La ricerca è attiva nella lettura: l'elemento dice quale risultato porta (il valore del rotore «Risultati della
+        // ricerca»; la barra con le frecce senza VoiceOver non è nell'albero dei test).
+        let value = XCTWaiter.wait(for: [expectation(for: NSPredicate(format: "value == %@", "risultato 1 di 1"), evaluatedWith: hit)],
+                                   timeout: 8)
+        XCTAssertEqual(value, .completed, "la ricerca è attiva nella lettura: «\(hit.value as? String ?? "-")»")
+        sleep(1)
+        app.typeKey(".", modifierFlags: .command)   // Esc nel lettore: «Indietro»
+        XCTAssertTrue(app.waitForScreen("Ricerca", timeout: 10), "si torna alla Ricerca")
+        XCTAssertTrue(item(app, "libreria.riassunto").label.contains("2 libri, 2 risultati"), "con i risultati di prima")
+    }
+
+    /// I titoli e i nomi dei file restano trovabili come prima, mentre si scrive.
+    func testLibrary_titlesAreStillFoundWhileTyping() throws {
+        let app = launch()
+        XCTAssertTrue(app.tapTab("Ricerca"))
+        XCTAssertTrue(app.waitForScreen("Ricerca"))
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        app.typeText("tastiera uno")
+        let row = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Libro tastiera uno")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "il titolo si trova mentre si scrive")
+        XCTAssertTrue(item(app, "libreria.cercaNelTesto").exists, "e la riga per cercarlo anche nel testo")
+    }
+
+    func testLibrary_accessibilityAudit_ofTheResults() throws {
+        guard #available(iOS 17.0, *) else { throw XCTSkip("performAccessibilityAudit richiede iOS 17+") }
+        let app = launch()
+        searchLibrary(app, "libro", expect: "2 libri")
+        app.typeKey(XCUIKeyboardKey.shift, modifierFlags: [])
+        sleep(1)
+        let rule = SystemAuditRule(app: app, screen: "Ricerca nel testo dei libri")
+        try app.performAccessibilityAudit { issue in
+            // Lo stesso falso positivo documentato della barra di ricerca di sistema (AccessibilityAuditUITests).
+            if issue.auditType == .textClipped, issue.element?.elementType == .searchField { return true }
+            if rule.accept(issue) { return true }
+            print("AUDIT RICERCA NEL TESTO RILIEVO: \(issue.compactDescription) — \(issue.detailedDescription) — «\(issue.element?.label ?? "?")»")
+            return false
+        }
+    }
+
+    // MARK: - Esc come «Annulla» o «Chiudi»
+
+    /// Sopra il lettore: le finestre «Aggiungi segnalibro» e «Aggiungi sottolineatura» (dagli strumenti dell'elemento, ⌘E)
+    /// si chiudono con Esc come con «Annulla», e il libro resta aperto (la barra con «Segnalibri» senza VoiceOver non è
+    /// nell'albero dei test: la finestra dei Segnalibri la provano le prove d'unità, `LibrarySearchAppTests`).
+    func testEscape_closesTheWindowsOverTheReader_andNeverTheBookBelow() throws {
+        let app = launch()
+        let book = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Libro tastiera due")).firstMatch
+        XCTAssertTrue(book.waitForExistence(timeout: 10))
+        book.tap()
+        XCTAssertTrue(reading(app, "Capitolo primo del libro due").waitForExistence(timeout: 20), "il libro è aperto")
+        sleep(1)
+        app.typeKey(XCUIKeyboardKey.shift, modifierFlags: [])
+        for action in ["Aggiungi segnalibro", "Aggiungi sottolineatura"] {
+            app.typeKey("e", modifierFlags: .command)
+            let choice = app.buttons[action]
+            XCTAssertTrue(choice.waitForExistence(timeout: 8), "gli strumenti dell'elemento offrono «\(action)»")
+            choice.tap()
+            let cancel = app.navigationBars.buttons["Annulla"]
+            XCTAssertTrue(cancel.waitForExistence(timeout: 8), "«\(action)»: la finestra con «Annulla»")
+            sleep(1)
+            app.typeKey(".", modifierFlags: .command)   // Esc
+            XCTAssertTrue(cancel.waitForNonExistence(timeout: 8), "«\(action)»: Esc fa «Annulla»")
+            sleep(1)
+            XCTAssertTrue(reading(app, "Capitolo primo del libro due").exists, "«\(action)»: il libro sotto è ancora aperto")
+            XCTAssertFalse(app.waitForScreen("ScaboPDF", timeout: 1), "«\(action)»: non si è tornati alla Home")
+        }
+    }
+
+    /// Sopra la Home (qui dal tab Ricerca): il menù Opzioni si chiude con Esc senza scegliere nulla; il Referto si chiude
+    /// con Esc come con «Chiudi»; la schermata sotto resta.
+    func testEscape_closesTheOptionsAndTheReport_overTheSearchTab() throws {
+        let app = launch()
+        XCTAssertTrue(app.tapTab("Ricerca"))
+        XCTAssertTrue(app.waitForScreen("Ricerca"))
+        let options = app.buttons.matching(NSPredicate(format: "label == %@", "Opzioni")).firstMatch
+        XCTAssertTrue(options.waitForExistence(timeout: 5))
+        options.tap()
+        let reportAction = app.buttons["Referto di elaborazione"]
+        XCTAssertTrue(reportAction.waitForExistence(timeout: 5), "il menù Opzioni")
+        sleep(1)
+        app.typeKey(".", modifierFlags: .command)   // Esc sul menù: lo chiude, nessuna scelta
+        XCTAssertTrue(reportAction.waitForNonExistence(timeout: 5), "Esc chiude il menù")
+        XCTAssertTrue(app.waitForScreen("Ricerca", timeout: 5), "la Ricerca resta")
+        options.tap()
+        XCTAssertTrue(reportAction.waitForExistence(timeout: 5))
+        reportAction.tap()
+        let report = app.navigationBars["Referto di elaborazione"]
+        XCTAssertTrue(report.waitForExistence(timeout: 8), "il Referto")
+        sleep(1)
+        app.typeKey(".", modifierFlags: .command)   // Esc
+        XCTAssertTrue(report.waitForNonExistence(timeout: 8), "Esc fa «Chiudi»")
+        XCTAssertTrue(app.waitForScreen("Ricerca", timeout: 5), "la Ricerca resta")
+    }
+
+    // MARK: - Con VoiceOver vero (iOS 27)
+
+    /// Dopo «Cerca» VoiceOver dice prima quanti libri e quanti risultati in tutto, poi ogni libro col titolo e il numero
+    /// dei risultati; il doppio tap su un libro apre la sua lista, e VoiceOver dice subito il conteggio del libro.
+    func testVoiceOver_summaryFirst_thenEachBook_thenTheBookList() throws {
+        guard #available(iOS 27.0, *) else { throw XCTSkip("il servizio VoiceOver dei test c'è da iOS 27") }
+        let app = launch()
+        XCTAssertTrue(app.tapTab("Ricerca"))
+        XCTAssertTrue(app.waitForScreen("Ricerca"))
+        let field = app.searchFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        field.tap()
+        sleep(1)
+        app.typeText("faro")
+        let vo = XCUIDevice.shared.voiceOverService
+        try vo.enable()
+        defer {
+            try? vo.disable()
+            let deadline = Date().addingTimeInterval(10)
+            while vo.isEnabled, Date() < deadline { RunLoop.current.run(until: Date().addingTimeInterval(0.25)) }
+        }
+        sleep(2)
+        app.typeKey("\n", modifierFlags: [])
+        sleep(3)
+        let summary = (try? vo.currentSpeech())?.utterance ?? ""
+        print("VOCE|libreria|dopo la ricerca|\(summary)")
+        XCTAssertTrue(summary.hasPrefix("2 libri, 2 risultati in tutto per «faro»."), "prima quanti libri e quanti risultati: «\(summary)»")
+        let first = (try? vo.moveForward())?.utterance ?? ""
+        let second = (try? vo.moveForward())?.utterance ?? ""
+        print("VOCE|libreria|libri|\(first) | \(second)")
+        XCTAssertTrue(first.hasPrefix("Libro tastiera due, un risultato"), "poi ogni libro: «\(first)»")
+        XCTAssertTrue(second.hasPrefix("Libro tastiera uno, un risultato"), "in ordine: «\(second)»")
+        item(app, "libreria.libro.0").doubleTap()
+        XCTAssertTrue(app.staticTexts["ricerca.conteggio"].waitForExistence(timeout: 20), "la lista del libro")
+        sleep(3)
+        let list = (try? vo.currentSpeech())?.utterance ?? ""
+        print("VOCE|libreria|lista del libro|\(list)")
+        XCTAssertTrue(list.hasPrefix("Un risultato per «faro»."), "nella lista del libro il conteggio detto subito: «\(list)»")
+        let attachment = XCTAttachment(string: [summary, first, second, list].joined(separator: "\n"))
+        attachment.name = "voiceover-libreria"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}

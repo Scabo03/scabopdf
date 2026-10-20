@@ -609,3 +609,518 @@ final class BookSearchBenchTests: XCTestCase {
         try json.write(to: URL(fileURLWithPath: out))
     }
 }
+
+// MARK: - Ricerca nel testo di tutti i libri (tab Ricerca) e Esc nelle finestre (giro «ricerca nella libreria», 2026-10-20)
+
+/// Il testo di ricerca accanto alla cache (scritto, rimesso con la lettura precedente, cancellato col libro, riscritto in
+/// sottofondo quando non vale), la ricerca su tutti i libri, il tab Ricerca, l'apertura di un libro sulla sua lista, e Esc
+/// come «Annulla»/«Chiudi» della finestra più in alto. Libri e testi INVENTATI, mai di un volume.
+final class LibrarySearchAppTests: XCTestCase {
+
+    private var service: LibraryService { .shared }
+    private var created: [String] = []
+
+    override func tearDown() {
+        for id in created {
+            service.store.deleteDocumentFromArchive(id: id)
+            service.deleteFiles(forDocumentId: id)
+        }
+        created = []
+        super.tearDown()
+    }
+
+    private func seg(_ id: String, _ role: String, _ text: String) -> ContentSegment {
+        ContentSegment(id: id, role: role, text: text, lengthCategory: role == "NOTE" ? "SHORT" : "", acousticIntro: "")
+    }
+
+    private func content(_ segs: [ContentSegment]) -> PaginatedContent {
+        PaginatedContent(pages: [ContentPage(pageNumber: 1, segments: segs)], totalSegments: segs.count)
+    }
+
+    /// Un libro nell'archivio con la cache (e quindi il testo di ricerca, in sottofondo).
+    @discardableResult
+    private func addBook(_ title: String, _ segs: [ContentSegment]) -> String {
+        let doc = service.store.addDocument(title: title, sourceFileName: "prova-libreria.pdf", sourcePageCount: 1)
+        created.append(doc.id)
+        XCTAssertTrue(service.writeCache(content(segs), pageMap: [:], doctrineContent: nil, quickConsultTree: nil,
+                                         contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id))
+        LibrarySearchIndex.shared.waitForPendingWrites()
+        return doc.id
+    }
+
+    private func countIn(_ id: String, _ q: String, whole: Bool = false) -> Int? {
+        LibrarySearchIndex.shared.searchNow(q, wholeWord: whole).books.first { $0.documentId == id }?.count
+    }
+
+    private let lantern = "zxlanterna"   // parola inventata, che nessun altro libro di prova contiene
+
+    func test_searchText_isWrittenWithTheCache_andCountsLikeTheBookSearch() {
+        let segs = [seg("b1", "BODY", "Il \(lantern)12 resta acceso tutta la notte, \(lantern) dopo \(lantern)."),
+                    seg("n12", "NOTE", "12 Nota inventata sul \(lantern).")]
+        let id = addBook("Libro della lanterna", segs)
+        XCTAssertNotNil(service.validSearchText(forDocumentId: id), "scritto con la cache")
+        XCTAssertFalse(service.needsSearchText(forDocumentId: id))
+        let corpus = BookSearchCorpus(segments: segs)
+        for whole in [false, true] {
+            XCTAssertEqual(countIn(id, lantern, whole: whole), corpus.search(lantern, options: BookSearchOptions(wholeWord: whole)).totalCount)
+        }
+        XCTAssertEqual(countIn(id, lantern, whole: true), 4, "anche quello col richiamo 12 attaccato")
+    }
+
+    func test_searchText_followsTheReprocessing_andTheReturnToThePreviousReading() throws {
+        let id = addBook("Libro che cambia", [seg("b", "BODY", "Prima lettura: il zxfaro sulla scogliera.")])
+        XCTAssertEqual(countIn(id, "zxfaro"), 1)
+        try service.stashPreviousReading(XCTUnwrap(service.store.readingSnapshot(documentId: id)), forDocumentId: id)
+        XCTAssertTrue(service.writeCache(content([seg("b", "BODY", "Seconda lettura: la zxneve sui tetti.")]), pageMap: [:],
+                                         doctrineContent: nil, quickConsultTree: nil, contentTarget: DEFAULT_GRANULARITY_TARGET,
+                                         forDocumentId: id))
+        LibrarySearchIndex.shared.waitForPendingWrites()
+        XCTAssertNil(countIn(id, "zxfaro"), "la lettura nuova non ha più il faro")
+        XCTAssertEqual(countIn(id, "zxneve"), 1, "aggiornato alla rielaborazione")
+        XCTAssertNotNil(service.restorePreviousCache(forDocumentId: id))
+        // Il testo di ricerca della lettura precedente torna con lei; se il timbro non coincidesse, la messa in pari lo
+        // riscrive (mai un risultato da una lettura che non c'è più).
+        let immediate = service.validSearchText(forDocumentId: id) != nil
+        if !immediate { runCatchUp() }
+        XCTAssertEqual(countIn(id, "zxfaro"), 1, "torna con la lettura precedente")
+        XCTAssertNil(countIn(id, "zxneve"))
+        print("[libreria] testo di ricerca valido subito dopo il ritorno alla lettura precedente: \(immediate)")
+        service.discardPreviousReading(forDocumentId: id)
+    }
+
+    func test_searchText_isDeletedWithTheBook() throws {
+        let id = addBook("Libro da eliminare", [seg("b", "BODY", "Il zxmulino gira.")])
+        try service.stashPreviousReading(XCTUnwrap(service.store.readingSnapshot(documentId: id)), forDocumentId: id)
+        let url = service.searchTextURL(forDocumentId: id)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+        service.store.deleteDocumentFromArchive(id: id)
+        service.deleteFiles(forDocumentId: id)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: url.path), "cancellato col libro")
+        let dir = url.deletingLastPathComponent()
+        let left = (try? FileManager.default.contentsOfDirectory(atPath: dir.path))?.filter { $0.hasPrefix(id) } ?? []
+        XCTAssertEqual(left, [], "nessun file del libro resta nella cache (né quello della lettura precedente)")
+        XCTAssertNil(LibrarySearchIndex.shared.searchNow("zxmulino", wholeWord: false).books.first { $0.documentId == id })
+    }
+
+    private func runCatchUp() {
+        let done = expectation(description: "messa in pari")
+        LibrarySearchIndex.shared.catchUp(isIdle: { true }) { done.fulfill() }
+        wait(for: [done], timeout: 60)
+    }
+
+    func test_staleText_isNotReady_neverSearched_andTheCatchUpRewritesIt() throws {
+        let id = addBook("Libro aggiornato altrove", [seg("b", "BODY", "Il zxpozzo è profondo.")])
+        // La cache riscritta da un'altra versione dell'app, senza il testo di ricerca: il timbro non coincide più.
+        Thread.sleep(forTimeInterval: 0.01)
+        let url = service.cacheURLForTesting(forDocumentId: id)
+        let data = try Data(contentsOf: url)
+        let replaced = try XCTUnwrap(String(data: data, encoding: .utf8)?.replacingOccurrences(of: "zxpozzo", with: "zxcanale"))
+        try Data(replaced.utf8).write(to: url, options: .atomic)
+        XCTAssertNil(service.validSearchText(forDocumentId: id), "un testo nato da un'altra cache non vale")
+        XCTAssertTrue(service.needsSearchText(forDocumentId: id))
+        let r = LibrarySearchIndex.shared.searchNow("zxpozzo", wholeWord: false)
+        XCTAssertNil(r.books.first { $0.documentId == id }, "mai un risultato dalla lettura vecchia")
+        XCTAssertGreaterThanOrEqual(r.notReady, 1)
+        runCatchUp()
+        XCTAssertFalse(service.needsSearchText(forDocumentId: id))
+        XCTAssertEqual(countIn(id, "zxcanale"), 1, "riscritto dalla cache di adesso")
+        XCTAssertNil(countIn(id, "zxpozzo"))
+    }
+
+    func test_catchUp_stopsWhenTheAppIsNotIdle() {
+        let id = addBook("Libro in attesa", [seg("b", "BODY", "Il zxtorrente scorre.")])
+        try? FileManager.default.removeItem(at: service.searchTextURL(forDocumentId: id))
+        let done = expectation(description: "messa in pari ferma")
+        LibrarySearchIndex.shared.catchUp(isIdle: { false }) { done.fulfill() }
+        wait(for: [done], timeout: 10)
+        XCTAssertTrue(service.needsSearchText(forDocumentId: id), "con un libro aperto non si scrive nulla")
+        runCatchUp()
+        XCTAssertFalse(service.needsSearchText(forDocumentId: id))
+    }
+
+    // MARK: Il tab Ricerca
+
+    private func hostedSearch() -> (SearchViewController, UIWindow) {
+        let vc = SearchViewController()
+        let nav = UINavigationController(rootViewController: vc)
+        let w = UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        w.rootViewController = nav
+        w.makeKeyAndVisible()
+        vc.loadViewIfNeeded()
+        vc.view.layoutIfNeeded()
+        return (vc, w)
+    }
+
+    private func labels(_ vc: SearchViewController) -> [String] {
+        guard let table = vc.view.subviews.compactMap({ $0 as? UITableView }).first else { return [] }
+        table.reloadData()
+        table.layoutIfNeeded()
+        var out: [String] = []
+        for s in 0..<table.numberOfSections {
+            for r in 0..<table.numberOfRows(inSection: s) {
+                guard let cell = table.dataSource?.tableView(table, cellForRowAt: IndexPath(row: r, section: s)) else { continue }
+                if let l = cell.accessibilityLabel, !l.isEmpty { out.append(l) }
+                else if let c = cell.contentConfiguration as? UIListContentConfiguration, let t = c.text { out.append(t) }
+                else if let row = cell as? LibraryRowCell { out.append("titolo:" + (row.accessibilityElements?.compactMap { ($0 as? UIView)?.accessibilityLabel }.joined(separator: "|") ?? "")) }
+            }
+        }
+        return out
+    }
+
+    func test_searchTab_textOfAllBooks_summaryFirst_thenOneRowPerBook_andTitlesAsBefore() {
+        addBook("Zx primo libro", [seg("b", "BODY", "Il zxgabbiano vola. Un altro zxgabbiano.")])
+        addBook("Zx secondo libro", [seg("b", "BODY", "Nessun uccello qui."), seg("n", "NOTE", "1 Un zxgabbiano in nota.")])
+        addBook("Zxgabbiano nel titolo", [seg("b", "BODY", "Testo senza la parola.")])
+        let (vc, w) = hostedSearch()
+        defer { w.isHidden = true }
+        vc.searchBar.text = "zxgabbiano"
+        vc.searchBar(vc.searchBar, textDidChange: "zxgabbiano")
+        var before = labels(vc)
+        XCTAssertTrue(before.contains("Cerca «zxgabbiano» nel testo dei libri"), "prima di «Cerca» la riga che lo fa: \(before)")
+        let done = expectation(description: "ricerca nel testo")
+        vc.runTextSearch(announce: true) { done.fulfill() }
+        wait(for: [done], timeout: 30)
+        before = labels(vc)
+        let summary = "2 libri, 3 risultati in tutto per «zxgabbiano»."
+        let iSummary = before.firstIndex(of: summary)
+        XCTAssertNotNil(iSummary, "il riassunto: \(before)")
+        let iFirst = before.firstIndex(of: "Zx primo libro, 2 risultati")
+        let iSecond = before.firstIndex(of: "Zx secondo libro, un risultato")
+        XCTAssertNotNil(iFirst); XCTAssertNotNil(iSecond)
+        if let a = iSummary, let b = iFirst, let c = iSecond { XCTAssertTrue(a < b && b < c, "riassunto, poi i libri in ordine") }
+        XCTAssertTrue(before.contains { $0.contains("Zxgabbiano nel titolo") }, "il titolo resta trovabile come prima: \(before)")
+        XCTAssertFalse(before.contains("Zxgabbiano nel titolo, un risultato"), "un libro col nome nel titolo ma non nel testo non è fra i risultati del testo")
+        // «Parola intera» vale come nel libro.
+        vc.wholeWordSwitch.isOn = true
+        let again = expectation(description: "parola intera")
+        vc.runTextSearch(announce: true, moveFocus: false) { again.fulfill() }
+        wait(for: [again], timeout: 30)
+        XCTAssertEqual(vc.textResult?.totalCount, 3)
+        XCTAssertEqual(vc.textResult?.options.wholeWord, true)
+        // Una ricerca scritta diversa: il testo va cercato di nuovo.
+        vc.searchBar.text = "zxgabbian"
+        vc.searchBar(vc.searchBar, textDidChange: "zxgabbian")
+        XCTAssertNil(vc.textResult)
+    }
+
+    func test_searchTab_zeroResults_areSaidWithASuggestion_andNoDeadEnd() {
+        addBook("Zx libro qualsiasi", [seg("b", "BODY", "Il fiume scorre.")])
+        let (vc, w) = hostedSearch()
+        defer { w.isHidden = true }
+        vc.wholeWordSwitch.isOn = true
+        vc.searchBar.text = "zxnonesiste"
+        vc.searchBar(vc.searchBar, textDidChange: "zxnonesiste")
+        let done = expectation(description: "ricerca nel testo")
+        vc.runTextSearch(announce: true) { done.fulfill() }
+        wait(for: [done], timeout: 30)
+        XCTAssertTrue(vc.textStatusSentence.hasPrefix("Nel testo dei libri nessun risultato per «zxnonesiste»."), vc.textStatusSentence)
+        XCTAssertTrue(vc.textStatusSentence.contains("togliere «Parola intera»"), vc.textStatusSentence)
+    }
+
+    /// Aprendo un libro dalla lista si arriva alla sua lista dei risultati: «Cerca nel libro» con la stessa ricerca già fatta.
+    func test_reader_openedFromTheLibrary_opensItsListWithTheSameSearch() {
+        let segs = [seg("h", "HEADING_1", "Capitolo"), seg("b1", "BODY", "Il zxcorvo nero."), seg("b2", "BODY", "Un altro ZXCORVO.")]
+        let vc = ContinuousReadingViewController(content: content(segs), documentId: "", signalPlayer: SilentLibrarySignals())
+        vc.pendingLibrarySearch = (query: "zxcorvo", wholeWord: true)
+        // Senza animazioni: nelle prove d'unità la transizione a schermo intero non si conclude da sola.
+        UIView.setAnimationsEnabled(false)
+        defer { UIView.setAnimationsEnabled(true) }
+        // Una finestra della scena dell'app: senza scena la presentazione non mette la finestra a schermo.
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+        let w = scene.map { UIWindow(windowScene: $0) } ?? UIWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        w.rootViewController = vc
+        w.makeKeyAndVisible()
+        defer { w.isHidden = true }
+        let deadline = Date().addingTimeInterval(8)
+        var window: BookSearchViewController?
+        while Date() < deadline, window == nil {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+            window = (vc.presentedViewController as? UINavigationController)?.topViewController as? BookSearchViewController
+        }
+        XCTAssertNotNil(window, "la lista dei risultati del libro si apre da sola")
+        let session = vc.searchSessionForTesting
+        let until = Date().addingTimeInterval(8)
+        while Date() < until, session.result == nil { RunLoop.main.run(until: Date().addingTimeInterval(0.1)) }
+        XCTAssertEqual(session.result?.totalCount, 2, "la ricerca è già fatta")
+        XCTAssertEqual(session.result?.options.wholeWord, true, "con la stessa «Parola intera»")
+        XCTAssertEqual(window?.searchField.text, "zxcorvo")
+        XCTAssertNil(vc.pendingLibrarySearch, "una volta sola")
+        window?.chooseResultForTesting(1)
+        let back = Date().addingTimeInterval(5)
+        while Date() < back, vc.presentedViewController != nil { RunLoop.main.run(until: Date().addingTimeInterval(0.1)) }
+        RunLoop.main.run(until: Date().addingTimeInterval(0.6))
+        XCTAssertTrue(session.isActive, "nella lettura la ricerca è attiva")
+        XCTAssertTrue(vc.textContainerForTesting.customRotorNamesForTesting.contains(ContinuousReadingView.searchRotorName),
+                      "il rotore «Risultati della ricerca» c'è già")
+        XCTAssertEqual(vc.textContainerForTesting.currentOrTopIndex, 2, "la lettura è sul risultato scelto")
+    }
+
+    // MARK: Esc come «Annulla» o «Chiudi»
+
+    func test_escape_goesToTheTopmostWindowWithCancelOrClose_neverBelow() {
+        let root = UIViewController()
+        let w = ScaboWindow(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        w.rootViewController = root
+        w.makeKeyAndVisible()
+        defer { w.isHidden = true }
+        XCTAssertNil(ScaboWindow.escapeTarget(from: root), "nessuna finestra: Esc non fa nulla")
+        XCTAssertFalse((w.keyCommands ?? []).contains { $0.input == UIKeyCommand.inputEscape })
+        let doc = service.store.addDocument(title: "Zx referto", sourceFileName: "x.pdf", sourcePageCount: 1)
+        created.append(doc.id)
+        let report = ReportViewController(document: doc)
+        let nav = UINavigationController(rootViewController: report)
+        root.present(nav, animated: false)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+        XCTAssertTrue(ScaboWindow.escapeTarget(from: root) === report)
+        let esc = (w.keyCommands ?? []).first { $0.input == UIKeyCommand.inputEscape }
+        XCTAssertNotNil(esc, "con una finestra con «Chiudi», la finestra della scena tiene Esc")
+        // Un avviso sopra la finestra: Esc lo gestisce il sistema; mai «Chiudi» della finestra sotto.
+        let alert = UIAlertController(title: "Prova", message: nil, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Annulla", style: .cancel))
+        nav.present(alert, animated: false)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+        XCTAssertTrue(ScaboWindow.topmostPresented(from: root) === alert)
+        XCTAssertNil(ScaboWindow.escapeTarget(from: root), "con un avviso in cima, niente a chi sta sotto")
+        alert.dismiss(animated: false)
+        RunLoop.main.run(until: Date().addingTimeInterval(0.4))
+        XCTAssertTrue(ScaboWindow.escapeTarget(from: root) === report)
+        if let action = esc?.action { w.perform(action) }
+        let until = Date().addingTimeInterval(3)
+        while Date() < until, root.presentedViewController != nil { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+        XCTAssertNil(root.presentedViewController, "Esc ha fatto «Chiudi»")
+    }
+
+    func test_escape_destinationChooser_onlyAtTheFirstLevel() {
+        let first = DestinationChooserViewController(level: .root, excluded: nil) { _ in }
+        XCTAssertTrue(first.hasEscapeAction, "al primo livello c'è «Annulla»")
+        let ws = service.store.createWorkspace(name: "Zx spazio")
+        defer { service.store.deleteWorkspace(id: ws.id) }
+        let inner = DestinationChooserViewController(level: .workspace(ws.id), excluded: nil) { _ in }
+        XCTAssertFalse(inner.hasEscapeAction, "ai livelli interni c'è «Indietro», non «Annulla»")
+    }
+
+    /// Il censimento: ogni finestra dell'app con «Annulla» o «Chiudi» dichiara l'azione a Esc. Le finestre che arrivano
+    /// dal Mac (lettura offerta, libro assente, quale copia) le prova il test d'interfaccia delle letture dal Mac.
+    func test_escape_census_everyWindowWithCancelOrClose() throws {
+        let doc = service.store.addDocument(title: "Zx censimento", sourceFileName: "x.pdf", sourcePageCount: 1)
+        created.append(doc.id)
+        let root = UIViewController()
+        let w = ScaboWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1180))
+        w.rootViewController = root
+        w.makeKeyAndVisible()
+        defer { w.isHidden = true }
+        let segs = [seg("b", "BODY", "Una riga di prova per le sottolineature.")]
+        let presenters: [(String, () -> Void)] = [
+            ("Segnalibri", { root.present(UINavigationController(rootViewController: BookmarksWindowViewController.makeForTesting(
+                store: self.service.store, documentId: doc.id)), animated: false) }),
+            ("Nuovo segnalibro", { BookmarkEditorViewController.present(from: root, title: "Nuovo segnalibro", preview: "Prova",
+                                                                         tags: [], initialName: nil, initialTagIds: [], onConfirm: { _, _ in }) }),
+            ("Sottolinea", { UnderlineSelectionViewController.present(from: root, segments: segs, startIndex: 0,
+                                                                      blockedIntervals: { _ in [] }, onCommit: { _, _ in true }) }),
+            ("Referto", { root.present(UINavigationController(rootViewController: ReportViewController(document: doc)), animated: false) }),
+            ("Aggiungi un file", { DocumentChooserViewController.present(from: root) { _ in } }),
+            ("Scegli dove collocare", { DestinationChooserViewController.present(from: root, excluded: nil) { _ in } }),
+            ("Lettura migliore", { root.present(UINavigationController(rootViewController: ReprocessOfferViewController(
+                document: doc, reason: .cure, onDone: {})), animated: false) }),
+            ("Conferma", { ReprocessConfirmViewController.present(from: root, identifier: "zx", question: "Prova?", explanation: "Prova.",
+                                                                  actionTitle: "Fai", onConfirm: {}) }),
+            ("Libro già presente", { DuplicateImportViewController.present(existing: doc, copies: 1, from: root) { _ in } }),
+            ("Lettura non usabile", { ReceivedProblemViewController.present(problem: .notAPackage,
+                                                                            fileURL: URL(fileURLWithPath: "/dev/null"), from: root, onDone: {}) }),
+            ("Elaborazione", {
+                let p = ProcessingViewController(fileURL: URL(fileURLWithPath: "/dev/null"), sourceName: "Zx",
+                                                 processor: NeverEndingProcessor(), signalPlayer: SilentLibrarySignals())
+                // Come fa chi la apre (DocumentOpener): l'esito, anche «Annulla», chiude la finestra.
+                p.onOutcome = { _ in root.dismiss(animated: false) }
+                root.present(p, animated: false)
+            }),
+            ("Cerca nel libro", { BookSearchViewController.present(from: root, session: BookSearchSession(segments: segs), pageProvider: nil,
+                                                                    onChoose: { _ in }, onReturnToStart: { _ in }, onEnd: {}, onCancel: {},
+                                                                    onResultsChanged: {}) }),
+        ]
+        for (name, present) in presenters {
+            present()
+            let until = Date().addingTimeInterval(3)
+            while Date() < until, ScaboWindow.escapeTarget(from: root) == nil { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+            XCTAssertNotNil(ScaboWindow.escapeTarget(from: root), "\(name): Esc fa «Annulla» o «Chiudi»")
+            let esc = (w.keyCommands ?? []).first { $0.input == UIKeyCommand.inputEscape }
+            XCTAssertNotNil(esc, "\(name): la finestra della scena tiene Esc")
+            if let action = esc?.action { w.perform(action) }
+            let gone = Date().addingTimeInterval(4)
+            while Date() < gone, root.presentedViewController != nil { RunLoop.main.run(until: Date().addingTimeInterval(0.05)) }
+            XCTAssertNil(root.presentedViewController, "\(name): Esc ha chiuso la finestra")
+            if root.presentedViewController != nil {
+                root.dismiss(animated: false)
+                RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+            }
+        }
+    }
+}
+
+/// Un'elaborazione che non finisce da sola (la finestra «Elaborazione» resta aperta finché non si annulla).
+private final class NeverEndingProcessor: DocumentProcessing {
+    func process(fileURL: URL, sourceName: String, granularityTarget: Int, buildDoctrine: Bool,
+                 onProgress: @escaping (DocumentProcessor.Progress) -> Void,
+                 completion: @escaping (DocumentProcessor.Outcome) -> Void) {}
+    func cancel() {}
+}
+
+private final class SilentLibrarySignals: SignalPlaying {
+    func play(_ signal: AudioSignal) {}
+    func playLooping(_ signal: AudioSignal) {}
+    func stop(_ signal: AudioSignal) {}
+}
+
+/// BANCO DELLA RICERCA NELLA LIBRERIA (giro «ricerca nella libreria», 2026-10-20). La richiesta
+/// (`/tmp/scabo_library_bench_request.json`, o `SCABO_LIBRARY_BENCH_REQUEST`) porta SOLO percorsi: le letture intere del
+/// banco (`.lettura.json`, la forma della cache dell'iPad), il file delle domande (nel laboratorio) e la cartella d'uscita
+/// (nel laboratorio). Ogni lettura entra nella libreria dell'app come un libro vero (`writeCache`, che scrive anche il testo di
+/// ricerca come all'elaborazione); poi la messa in pari da zero (testi di ricerca tolti); poi ogni domanda cercata nel testo
+/// di TUTTI i libri, come il tab Ricerca. Esce: per domanda e per libro il numero di risultati (per la rete di correttezza,
+/// nel laboratorio), i confini dei richiami per libro, e tempi e memoria (solo numeri). Alla fine i libri si tolgono.
+/// `XCTSkip` senza richiesta.
+final class LibrarySearchBenchTests: XCTestCase {
+
+    private struct Request: Decodable {
+        let letture: [String]
+        let domande: String
+        let outDir: String
+    }
+    private struct Domanda: Decodable { let id: String; let q: String; let intera: Bool }
+    private struct Lettura: Decodable {
+        let content: PaginatedContent
+        let pageMap: [String: Int]
+        let doctrineContent: PaginatedContent?
+        let quickConsultTree: [QuickConsultNode]?
+        let contentTarget: Int?
+    }
+
+    private func ms(_ t: TimeInterval) -> Double { (t * 1000 * 10).rounded() / 10 }
+
+    func test_librarySearchBench_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_LIBRARY_BENCH_REQUEST"] ?? "/tmp/scabo_library_bench_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(Request.self, from: data) else {
+            throw XCTSkip("nessuna richiesta del banco della libreria in \(reqPath).")
+        }
+        let service = LibraryService.shared
+        let index = LibrarySearchIndex.shared
+        try? FileManager.default.createDirectory(atPath: req.outDir, withIntermediateDirectories: true)
+        let domande = try JSONDecoder().decode([Domanda].self, from: Data(contentsOf: URL(fileURLWithPath: req.domande)))
+        // Le altre prove possono aver lasciato libri: il banco cerca solo nei suoi (titoli col prefisso), ma la libreria
+        // intera conta per i tempi; si annota quanti libri c'erano già.
+        let before = service.store.allDocuments().count
+        var ids: [String: String] = [:]      // id → nome della lettura
+        var books: [[String: Any]] = []
+        var boundaries: [String: [[Int]]] = [:]
+        let mem0 = physFootprintMB()
+        let seedPeak = PeakBox(mem0)
+        let sampler = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        sampler.schedule(deadline: .now(), repeating: .milliseconds(5))
+        sampler.setEventHandler { seedPeak.update(physFootprintMB()) }
+        sampler.resume()
+        for path in req.letture {
+            let stem = ((path as NSString).lastPathComponent as NSString).deletingPathExtension
+                .replacingOccurrences(of: ".lettura", with: "")
+            let rel = path.components(separatedBy: "/").suffix(2).joined(separator: "/").replacingOccurrences(of: ".lettura.json", with: "")
+            try autoreleasepool {
+                let l = try JSONDecoder().decode(Lettura.self, from: Data(contentsOf: URL(fileURLWithPath: path)))
+                let doc = service.store.addDocument(title: "banco-libreria: \(rel)", sourceFileName: "\(stem).pdf", sourcePageCount: 0)
+                ids[doc.id] = rel
+                let t0 = Date()
+                XCTAssertTrue(service.writeCache(l.content, pageMap: l.pageMap, doctrineContent: l.doctrineContent,
+                                                 quickConsultTree: l.quickConsultTree,
+                                                 contentTarget: l.contentTarget ?? DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id))
+                let t1 = Date()
+                index.waitForPendingWrites()
+                let t2 = Date()
+                let segs = l.content.pages.flatMap { $0.segments }
+                let corpus = BookSearchCorpus(segments: segs)
+                boundaries[rel] = corpus.callBoundariesBySegment.map { [$0.segment, $0.offset] }
+                let size = { (u: URL) in ((try? FileManager.default.attributesOfItem(atPath: u.path)[.size]) as? NSNumber)?.intValue ?? 0 }
+                books.append(["lettura": rel, "segmenti": segs.count, "byte_normalizzati": corpus.normalizedByteCount,
+                              "confini_richiami": corpus.callBoundaryCount, "scrittura_cache_ms": ms(t1.timeIntervalSince(t0)),
+                              "scrittura_testo_ricerca_ms": ms(t2.timeIntervalSince(t1)),
+                              "file_cache_byte": size(service.cacheURLForTesting(forDocumentId: doc.id)),
+                              "file_testo_ricerca_byte": size(service.searchTextURL(forDocumentId: doc.id))])
+            }
+        }
+        sampler.cancel()
+        defer {
+            for id in ids.keys { service.store.deleteDocumentFromArchive(id: id); service.deleteFiles(forDocumentId: id) }
+        }
+        let mem1 = physFootprintMB()
+
+        // Messa in pari da zero: prima libro per libro (i tempi di ciascuno), poi la messa in pari vera, di nuovo da zero.
+        for id in ids.keys { try? FileManager.default.removeItem(at: service.searchTextURL(forDocumentId: id)) }
+        var perBook: [Double] = []
+        for id in ids.keys {
+            let t = Date()
+            autoreleasepool {
+                if let c = service.cachedContentForSearchText(forDocumentId: id) {
+                    try? LibrarySearchText.encode(segments: c.segments, stamp: c.stamp).write(to: service.searchTextURL(forDocumentId: id))
+                }
+            }
+            perBook.append(Date().timeIntervalSince(t))
+        }
+        for id in ids.keys { try? FileManager.default.removeItem(at: service.searchTextURL(forDocumentId: id)) }
+        let catchPeak = PeakBox(physFootprintMB())
+        let memCatch0 = physFootprintMB()
+        let s2 = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        s2.schedule(deadline: .now(), repeating: .milliseconds(5))
+        s2.setEventHandler { catchPeak.update(physFootprintMB()) }
+        s2.resume()
+        let tc = Date()
+        let done = expectation(description: "messa in pari")
+        index.catchUp(isIdle: { true }) { done.fulfill() }
+        wait(for: [done], timeout: 3600)
+        let catchUp = Date().timeIntervalSince(tc)
+        s2.cancel()
+        XCTAssertEqual(ids.keys.filter { service.needsSearchText(forDocumentId: $0) }, [], "tutto in pari")
+
+        // Le ricerche su tutta la libreria.
+        let memS0 = physFootprintMB()
+        let searchPeak = PeakBox(memS0)
+        let s3 = DispatchSource.makeTimerSource(queue: .global(qos: .utility))
+        s3.schedule(deadline: .now(), repeating: .milliseconds(5))
+        s3.setEventHandler { searchPeak.update(physFootprintMB()) }
+        s3.resume()
+        var risultati: [String: [String: Int]] = [:]
+        var tempi: [Double] = []
+        var notReady = 0
+        for d in domande {
+            let t = Date()
+            let r = index.searchNow(d.q, wholeWord: d.intera)
+            tempi.append(Date().timeIntervalSince(t))
+            notReady = max(notReady, r.notReady)
+            var perVol: [String: Int] = [:]
+            for b in r.books { if let rel = ids[b.documentId] { perVol[rel] = b.count } }
+            risultati[d.id] = perVol
+        }
+        s3.cancel()
+        let memS1 = physFootprintMB()
+        let sorted = tempi.sorted()
+        perBook.sort()
+        let numeri: [String: Any] = [
+            "libri_del_banco": ids.count, "libri_gia_presenti": before, "domande": domande.count,
+            "mem_prima_MB": (mem0 * 10).rounded() / 10, "mem_dopo_libri_MB": (mem1 * 10).rounded() / 10,
+            "mem_picco_inserimento_MB": (seedPeak.value * 10).rounded() / 10,
+            "messa_in_pari_s": (catchUp * 10).rounded() / 10, "messa_in_pari_mem_prima_MB": (memCatch0 * 10).rounded() / 10,
+            "messa_in_pari_mem_picco_MB": (catchPeak.value * 10).rounded() / 10,
+            "messa_in_pari_per_libro_mediana_ms": ms(perBook[perBook.count / 2]), "messa_in_pari_per_libro_max_ms": ms(perBook.last ?? 0),
+            "ricerca_mediana_ms": ms(sorted[sorted.count / 2]), "ricerca_p90_ms": ms(sorted[sorted.count * 9 / 10]),
+            "ricerca_max_ms": ms(sorted.last ?? 0), "ricerca_mem_prima_MB": (memS0 * 10).rounded() / 10,
+            "ricerca_mem_picco_MB": (searchPeak.value * 10).rounded() / 10, "ricerca_mem_dopo_MB": (memS1 * 10).rounded() / 10,
+            "non_pronti_max": notReady, "libri": books,
+        ]
+        let out = URL(fileURLWithPath: req.outDir)
+        try JSONSerialization.data(withJSONObject: numeri, options: [.prettyPrinted, .sortedKeys])
+            .write(to: out.appendingPathComponent("banco_libreria.json"))
+        try JSONSerialization.data(withJSONObject: ["risultati": risultati], options: [.sortedKeys])
+            .write(to: out.appendingPathComponent("motore_libreria.json"))
+        try JSONSerialization.data(withJSONObject: ["confini": boundaries], options: [.sortedKeys])
+            .write(to: out.appendingPathComponent("confini_libreria.json"))
+        print("[libreria-banco] libri \(ids.count), domande \(domande.count), ricerca mediana \(ms(sorted[sorted.count / 2])) ms, "
+              + "massimo \(ms(sorted.last ?? 0)) ms, messa in pari \(Int(catchUp)) s, picco ricerca +\(Int(searchPeak.value - memS0)) MB")
+    }
+}

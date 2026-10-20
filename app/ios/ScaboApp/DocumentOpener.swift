@@ -129,9 +129,12 @@ enum DocumentOpener {
     /// rielabora dal PDF d'archivio. `onClosed` è chiamato quando il lettore viene chiuso (per far
     /// aggiornare i Recenti alla schermata chiamante). `focusAnchor`, se presente, apre a un
     /// segnalibro (§ 5.6) invece che alla posizione ricordata.
+    /// `librarySearch`, dal tab Ricerca della Home: appena il lettore compare si apre «Cerca nel libro» con quella ricerca
+    /// già fatta (la lista dei risultati del libro), e scegliendo un risultato la lettura va lì con il rotore attivo.
     static func open(
         documentId id: String, from presenter: UIViewController,
-        focusAnchor: BookmarkFocus? = nil, onClosed: (() -> Void)? = nil
+        focusAnchor: BookmarkFocus? = nil, librarySearch: (query: String, wholeWord: Bool)? = nil,
+        onClosed: (() -> Void)? = nil
     ) {
         guard let doc = service.store.document(id: id) else {
             presentError("Il documento non è più disponibile.", from: presenter)
@@ -156,7 +159,7 @@ enum DocumentOpener {
             presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
                           doctrineContent: large ? nil : cached.doctrineContent,
                           quickConsultTree: large ? nil : cached.quickConsultTree,
-                          focusAnchor: focusAnchor, from: presenter, onClosed: onClosed)
+                          focusAnchor: focusAnchor, librarySearch: librarySearch, from: presenter, onClosed: onClosed)
             return
         }
 
@@ -207,7 +210,7 @@ enum DocumentOpener {
                     let doc = reanchorAfterProcessing(documentId: id, content: content) ?? doc
                     presentReader(content: content, document: doc, pageMap: pageMap,
                                   doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
-                                  focusAnchor: focusAnchor, from: presenter, onClosed: onClosed)
+                                  focusAnchor: focusAnchor, librarySearch: librarySearch, from: presenter, onClosed: onClosed)
                 case .cancelled:
                     break
                 case .failure(let message):
@@ -251,6 +254,7 @@ enum DocumentOpener {
         doctrineContent: PaginatedContent?,
         quickConsultTree: [QuickConsultNode]?,
         focusAnchor: BookmarkFocus? = nil,
+        librarySearch: (query: String, wholeWord: Bool)? = nil,
         from presenter: UIViewController,
         onClosed: (() -> Void)?
     ) {
@@ -273,6 +277,7 @@ enum DocumentOpener {
             quickConsultTree: quickConsultTree,
             anchorBox: anchors)
         reader.onAnchorIndexReady = { index in mintMissingAnchors(documentId: doc.id, in: index) }
+        reader.pendingLibrarySearch = librarySearch
         reader.modalPresentationStyle = .fullScreen
         // Posizione ritrovata solo per pagina dopo una rielaborazione (§ 12.14): lo si dice.
         // Senza le pagine del file originale (un testo normativo) si riparte vicino al punto di prima.

@@ -160,3 +160,8 @@ extension BookmarkEditorViewController: UITextFieldDelegate {
         return true
     }
 }
+
+// Esc = «Annulla» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension BookmarkEditorViewController: EscapeClosable {
+    func performEscapeAction() { cancelTapped() }
+}

@@ -11,7 +11,8 @@
 //       verità da cui si rielabora (§ 12.6);
 //    3. la CACHE del contenuto elaborato → `Cache/<id>.json`, così la riapertura è IMMEDIATA invece
 //       di rielaborare il PDF da capo. La cache è un'ottimizzazione: se manca, è corrotta, o cambia
-//       il formato, si rielabora dal PDF d'archivio (degradazione pulita, § 2.5).
+//       il formato, si rielabora dal PDF d'archivio (degradazione pulita, § 2.5). Accanto, dal giro
+//       «ricerca nella libreria» (2026-10-20), `Cache/<id>.search`: il testo di ricerca del libro.
 //
 //  Le preferenze globali (tema, granularità, toggle pagine, § 4.2 / § 7.7) usano lo stesso confine
 //  `KeyValueStore` di ScaboCore, qui radicato su `UserDefaults`.
@@ -169,15 +170,82 @@ final class LibraryService {
             pageMap: pageMap, doctrineContent: doctrineContent, quickConsultTree: quickConsultTree,
             contentTarget: contentTarget)
         guard let data = try? JSONEncoder().encode(wrapped) else { return false }
-        return (try? data.write(to: cacheURL(forDocumentId: id), options: .atomic)) != nil
+        guard (try? data.write(to: cacheURL(forDocumentId: id), options: .atomic)) != nil else { return false }
+        // Il testo di ricerca della libreria nasce dagli stessi segmenti, timbrato con la cache appena scritta.
+        if let stamp = cacheStamp(forDocumentId: id) {
+            writeSearchTextInBackground(segments: content.pages.flatMap { $0.segments }, stamp: stamp, forDocumentId: id)
+        }
+        return true
     }
 
-    /// Rimuove sorgente (PDF o AKN) e cache di un documento dal disco (eliminazione definitiva).
+    /// Rimuove sorgente (PDF o AKN), cache e testo di ricerca di un documento dal disco (eliminazione definitiva).
     func deleteFiles(forDocumentId id: String) {
         try? fileManager.removeItem(at: archivedPDFURL(forDocumentId: id))
         try? fileManager.removeItem(at: archivedSourceURL(forDocumentId: id, kind: "akn"))
         try? fileManager.removeItem(at: cacheURL(forDocumentId: id))
+        Self.searchTextQueue.sync { try? fileManager.removeItem(at: searchTextURL(forDocumentId: id)) }
         discardPreviousReading(forDocumentId: id)
+    }
+
+    // MARK: - Testo di ricerca della libreria (tab Ricerca, § 13.2; ScaboCore LibrarySearch.swift)
+    //
+    // Per ogni libro `<id>.search` accanto alla cache: il testo normalizzato della lettura, timbrato con dimensione e data
+    // di modifica della cache da cui è nato. Si scrive a ogni scrittura della cache (elaborazione, rielaborazione,
+    // ricezione di una lettura dal Mac), si mette da parte e si rimette con la lettura precedente, si cancella con il libro.
+    // Un timbro che non coincide con la cache di adesso vuol dire «non vale»: lo si riscrive in sottofondo
+    // (`LibrarySearchIndex.catchUp`), e intanto il libro si dice «non ancora pronto», mai cercato su una lettura vecchia.
+
+    /// Coda seriale di ogni scrittura e cancellazione dei testi di ricerca: l'ultima scrittura chiesta è l'ultima eseguita.
+    static let searchTextQueue = DispatchQueue(label: "com.scabo.scabopdf.testo-di-ricerca", qos: .utility)
+
+    func searchTextURL(forDocumentId id: String) -> URL { cacheDir.appendingPathComponent("\(id).search") }
+    private func previousSearchTextURL(_ id: String) -> URL { cacheDir.appendingPathComponent("\(id).prev.search") }
+
+    /// Il timbro della cache del documento (dimensione e data di modifica), o `nil` se la cache non c'è.
+    func cacheStamp(forDocumentId id: String) -> LibrarySearchText.SourceStamp? {
+        guard let attrs = try? fileManager.attributesOfItem(atPath: cacheURL(forDocumentId: id).path),
+              let size = (attrs[.size] as? NSNumber)?.int64Value,
+              let date = attrs[.modificationDate] as? Date else { return nil }
+        return LibrarySearchText.SourceStamp(size: size, modifiedNanoseconds: Int64((date.timeIntervalSince1970 * 1e9).rounded()))
+    }
+
+    /// Scrive il testo di ricerca in sottofondo (la costruzione è un'altra passata sul testo del libro: ≤ 0,1 s sul Mac
+    /// per il volume più grande). `completion`, se c'è, arriva sulla coda dei testi di ricerca.
+    func writeSearchTextInBackground(segments: [ContentSegment], stamp: LibrarySearchText.SourceStamp,
+                                     forDocumentId id: String, completion: (() -> Void)? = nil) {
+        let url = searchTextURL(forDocumentId: id)
+        Self.searchTextQueue.async {
+            let data = LibrarySearchText.encode(segments: segments, stamp: stamp)
+            try? data.write(to: url, options: .atomic)
+            completion?()
+        }
+    }
+
+    /// Il testo di ricerca del documento, mappato in memoria, se vale per la cache di adesso; `nil` altrimenti (assente,
+    /// danneggiato, di un'altra versione, o nato da una cache che non c'è più).
+    func validSearchText(forDocumentId id: String) -> Data? {
+        guard let stamp = cacheStamp(forDocumentId: id),
+              let data = try? Data(contentsOf: searchTextURL(forDocumentId: id), options: .alwaysMapped),
+              LibrarySearchText.stamp(of: data) == stamp else { return nil }
+        return data
+    }
+
+    /// Vero se il documento ha la cache ma non un testo di ricerca valido (da riscrivere in sottofondo).
+    func needsSearchText(forDocumentId id: String) -> Bool {
+        // La mappatura non legge il file: dell'intestazione si tocca una pagina sola.
+        hasCache(forDocumentId: id) && validSearchText(forDocumentId: id) == nil
+    }
+
+    /// Il solo contenuto di Lettura Continua di una cache (per riscrivere il testo di ricerca), con il timbro letto prima e
+    /// dopo: `nil` se la cache manca, non si legge, o è cambiata nel frattempo.
+    func cachedContentForSearchText(forDocumentId id: String) -> (segments: [ContentSegment], stamp: LibrarySearchText.SourceStamp)? {
+        struct ContentOnly: Decodable { var formatVersion: Int; var content: PaginatedContent }
+        guard let before = cacheStamp(forDocumentId: id),
+              let data = try? Data(contentsOf: cacheURL(forDocumentId: id)),
+              let cached = try? JSONDecoder().decode(ContentOnly.self, from: data),
+              cached.formatVersion >= Self.minReadableCacheFormatVersion, cached.formatVersion <= Self.cacheFormatVersion,
+              cacheStamp(forDocumentId: id) == before else { return nil }
+        return (cached.content.pages.flatMap { $0.segments }, before)
     }
 
     // MARK: - Lettura precedente (offerta di rielaborazione, § 12.13 / § 12.14)
@@ -204,6 +272,11 @@ final class LibraryService {
             try? fileManager.removeItem(at: previousCacheURL(id))
             try fileManager.copyItem(at: cache, to: previousCacheURL(id))
         }
+        // Il testo di ricerca segue la cache (se la copia non porta la stessa data, il timbro non coincide e si riscrive).
+        Self.searchTextQueue.sync {
+            try? fileManager.removeItem(at: previousSearchTextURL(id))
+            try? fileManager.copyItem(at: searchTextURL(forDocumentId: id), to: previousSearchTextURL(id))
+        }
         let enc = JSONEncoder()
         try enc.encode(snapshot).write(to: previousStateURL(id), options: .atomic)
     }
@@ -222,6 +295,11 @@ final class LibraryService {
         if fileManager.fileExists(atPath: previousCacheURL(id).path) {
             try? fileManager.moveItem(at: previousCacheURL(id), to: cache)
         }
+        // Il testo di ricerca della lettura precedente torna con lei; quello della lettura nuova se ne va.
+        Self.searchTextQueue.sync {
+            try? fileManager.removeItem(at: searchTextURL(forDocumentId: id))
+            try? fileManager.moveItem(at: previousSearchTextURL(id), to: searchTextURL(forDocumentId: id))
+        }
         try? fileManager.removeItem(at: previousStateURL(id))
         return snapshot
     }
@@ -230,6 +308,7 @@ final class LibraryService {
     func discardPreviousReading(forDocumentId id: String) {
         try? fileManager.removeItem(at: previousCacheURL(id))
         try? fileManager.removeItem(at: previousStateURL(id))
+        Self.searchTextQueue.sync { try? fileManager.removeItem(at: previousSearchTextURL(id)) }
     }
 
     // MARK: - Archivio sorgente generico (PDF o AKN)

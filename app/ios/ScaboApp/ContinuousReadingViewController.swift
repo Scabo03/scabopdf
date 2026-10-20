@@ -560,6 +560,7 @@ final class ContinuousReadingViewController: UIViewController {
         if !embedded {
             signalPlayer.play(.mode1)
             restoreReadingPositionIfNeeded()
+            openPendingLibrarySearchIfAny()
         }
         updatePageIndicator()
     }
@@ -1123,8 +1124,25 @@ final class ContinuousReadingViewController: UIViewController {
         readingView.onSearchStop = { [weak self] in self?.rememberPositionBeforeSearch() }
     }
 
+    /// Una ricerca da aprire appena il lettore compare (dal tab Ricerca della Home, `DocumentOpener.open(librarySearch:)`):
+    /// la finestra «Cerca nel libro» si apre con quella ricerca già fatta.
+    var pendingLibrarySearch: (query: String, wholeWord: Bool)?
+
+    /// Apre la ricerca proposta dal tab Ricerca, se c'è (alla prima comparsa, dopo il ripristino della posizione).
+    private func openPendingLibrarySearchIfAny() {
+        guard let pending = pendingLibrarySearch else { return }
+        pendingLibrarySearch = nil
+        searchSession.prefill(query: pending.query, wholeWord: pending.wholeWord)
+        // Dopo un istante: la posizione ripristinata e l'annuncio d'ingresso vanno prima; la finestra poi prende il fuoco.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            guard let self, self.view.window != nil else { return }
+            self.openSearch(runImmediately: true)
+        }
+    }
+
     /// Apre la finestra «Cerca nel libro» (pulsante in barra, ⌘F). Da ogni Layout: i risultati si leggono in Lettura Continua.
-    func openSearch() {
+    /// `runImmediately`: la ricerca proposta (dal tab Ricerca) si esegue appena la finestra compare.
+    func openSearch(runImmediately: Bool = false) {
         guard presentedViewController == nil else { return }
         let readingIndex = readingView.currentReadingElementIndex
         // In Consultazione Rapida: la riga dell'albero che ha il fuoco, per riportarlo lì dopo «Annulla».
@@ -1135,7 +1153,8 @@ final class ContinuousReadingViewController: UIViewController {
             onReturnToStart: { [weak self] position in self?.returnToPositionBeforeSearch(position) },
             onEnd: { [weak self] in self?.endSearch() },
             onCancel: { [weak self] in self?.restoreFocusAfterSearchWindow(readingIndex, quickRow: quickRow) },
-            onResultsChanged: { [weak self] in self?.searchResultsChangedWhileTheWindowIsOpen() })
+            onResultsChanged: { [weak self] in self?.searchResultsChangedWhileTheWindowIsOpen() },
+            runImmediately: runImmediately)
     }
 
     /// La finestra copre il lettore (schermo intero): la vista di lettura è fuori dalla finestra, e riconfigurarne le celle

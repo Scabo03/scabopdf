@@ -417,7 +417,8 @@ final class ReceivedProblemViewController: ReprocessTextViewController {
         title = "Lettura dal Mac"
         heading = addHeading("Questa lettura non si può usare")
         addParagraph(problem.prose, identifier: "received.problem")
-        addButton("Chiudi", prominent: true, identifier: "received.close") { [weak self] in self?.close() }
+        escapeAction = { [weak self] in self?.close() }
+        addButton("Chiudi", prominent: true, identifier: "received.close") { [weak self] in self?.escapeAction?() }
         addButton("Togli il file dalle letture arrivate", prominent: false, identifier: "received.remove") { [weak self] in
             guard let self else { return }
             ReceivedReadings.remove(self.fileURL)
@@ -467,11 +468,12 @@ final class MissingBookViewController: ReprocessTextViewController {
             let d = self.onDone
             self.dismiss(animated: true) { DocumentOpener.startImport(from: presenter, onImported: d) }
         }
-        addButton("Chiudi", prominent: false, identifier: "missing.close") { [weak self] in
+        escapeAction = { [weak self] in
             guard let self else { return }
             let d = self.onDone
             self.dismiss(animated: true) { d() }
         }
+        addButton("Chiudi", prominent: false, identifier: "missing.close") { [weak self] in self?.escapeAction?() }
         addButton("Togli questa lettura dall'\(SystemGeneration.deviceName)…", prominent: false, identifier: "missing.discard") { [weak self] in
             guard let self, let nav = self.navigationController else { return }
             ReprocessConfirmViewController.push(
@@ -535,7 +537,8 @@ final class ChooseCopyViewController: ReprocessTextViewController {
         for (i, d) in copies.enumerated() {
             addButton(Self.copyLabel(d, index: i), prominent: i == 0, identifier: "copies.\(i)") { [weak self] in self?.choose(d) }
         }
-        addButton("Annulla", prominent: false, identifier: "copies.cancel") { [weak self] in self?.choose(nil) }
+        escapeAction = { [weak self] in self?.choose(nil) }
+        addButton("Annulla", prominent: false, identifier: "copies.cancel") { [weak self] in self?.escapeAction?() }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -575,7 +578,8 @@ final class ReceiveOfferViewController: ReprocessTextViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Lettura migliore"
-        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Chiudi", primaryAction: UIAction { [weak self] _ in self?.later() })
+        escapeAction = { [weak self] in self?.later() }
+        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Chiudi", primaryAction: UIAction { [weak self] _ in self?.escapeAction?() })
         heading = addHeading("Lettura migliore disponibile per «\(document.title)»")
         addParagraph("Cosa arriva. " + ReadingFromMac.whatArrives(header, document: document), identifier: "receive.what")
         addParagraph("Da dove. Preparata con \(ReadingPackage.producerName(header.producer.app, header.producer.version)) "

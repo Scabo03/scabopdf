@@ -89,7 +89,8 @@ final class DuplicateImportViewController: ReprocessTextViewController {
         addParagraph(DuplicateImport.explanation(existing: existing, copies: copies), identifier: "duplicate.text")
         addButton("Apri il libro che hai già", prominent: true, identifier: "duplicate.open") { [weak self] in self?.decide(.openExisting) }
         addButton("Importa come copia a parte", prominent: false, identifier: "duplicate.copy") { [weak self] in self?.decide(.importAsCopy) }
-        addButton("Annulla", prominent: false, identifier: "duplicate.cancel") { [weak self] in self?.decide(.cancel) }
+        escapeAction = { [weak self] in self?.decide(.cancel) }
+        addButton("Annulla", prominent: false, identifier: "duplicate.cancel") { [weak self] in self?.escapeAction?() }
     }
 
     override func viewDidAppear(_ animated: Bool) {

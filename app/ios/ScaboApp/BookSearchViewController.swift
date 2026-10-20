@@ -105,6 +105,13 @@ final class BookSearchSession {
         lastBuildDuration = build
     }
 
+    /// Propone una ricerca da fare all'apertura della finestra (dal tab Ricerca della Home: la stessa parola e la stessa
+    /// «Parola intera» della ricerca nella libreria).
+    func prefill(query: String, wholeWord: Bool) {
+        self.query = query
+        self.wholeWord = wholeWord
+    }
+
     /// Chiude la ricerca: niente più rotore, valori, evidenze, frecce; il punto di prima si dimentica.
     func end() {
         result = nil
@@ -184,6 +191,8 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
     private var rowCache: [Int: BookSearchSession.Row] = [:]
     /// Vero dopo una chiusura già instradata (una sola uscita per apertura).
     private var finished = false
+    /// La ricerca proposta si esegue alla prima comparsa (aperto dal tab Ricerca della Home).
+    private var runOnAppear = false
 
     private enum Section { case controls, ongoing, results }
     private enum Ongoing { case returnToStart, end }
@@ -197,11 +206,13 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
         onReturnToStart: @escaping (Int) -> Void,
         onEnd: @escaping () -> Void,
         onCancel: @escaping () -> Void,
-        onResultsChanged: @escaping () -> Void
+        onResultsChanged: @escaping () -> Void,
+        runImmediately: Bool = false
     ) -> BookSearchViewController {
         let vc = BookSearchViewController(session: session, pageProvider: pageProvider, onChoose: onChoose,
                                           onReturnToStart: onReturnToStart, onEnd: onEnd, onCancel: onCancel,
                                           onResultsChanged: onResultsChanged)
+        vc.runOnAppear = runImmediately
         let nav = UINavigationController(rootViewController: vc)
         // A schermo intero, anche sull'iPad: attorno a un foglio resterebbe visibile il testo del libro, fuori da
         // VoiceOver finché la finestra è aperta (l'audit d'accessibilità dell'iPad ne contava sei righe, campo); e alla
@@ -288,6 +299,13 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        if runOnAppear {
+            // Dal tab Ricerca della Home: la ricerca è già scritta, si esegue subito e VoiceOver dice il conteggio (il
+            // fuoco va alla frase del conteggio, come dopo «Cerca»); lo swipe dopo è il primo risultato.
+            runOnAppear = false
+            runSearch(moveFocusToCount: true)
+            return
+        }
         if session.result != nil {
             // Si riapre su una ricerca in corso: VoiceOver comincia dalla frase del conteggio, i risultati subito dopo; la
             // finestra riceve i tasti (Esc = Annulla, ⌘F = il campo), come dopo «Cerca».
@@ -581,4 +599,9 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
         guard let s = sectionIndex(.results) else { return }
         tableView(tableView, didSelectRowAt: IndexPath(row: k + 1, section: s))
     }
+}
+
+// Esc = «Annulla» (EscapeKey.swift, giro «ricerca nella libreria»).
+extension BookSearchViewController: EscapeClosable {
+    func performEscapeAction() { cancelTapped() }
 }
