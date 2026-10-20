@@ -33,6 +33,14 @@
 //  lati della ricerca che cominciano o finiscono con una lettera o una cifra; un apostrofo, un trattino, una parentesi sono
 //  confini: «obbligazione» intera si trova in «l'obbligazione»). Un candidato scartato non consuma testo.
 //
+//  Il RICHIAMO DI NOTA attaccato a una parola è un confine (giro «ricerca nella libreria», 2026-10-20; revisione del giro
+//  di prima, R10): la lettura dà spesso la parola con il numero del richiamo incollato («obbligazione12»), e per la regola
+//  qui sopra «obbligazione» intera non si trovava (sul banco circa 2.400 casi in 18 volumi). Il confine si mette solo dove
+//  la lettura SA che c'è un richiamo: nel segmento a cui il salto fra nota e richiamo (`noteCallLinks`, NoteJump.swift)
+//  lega una nota numero N, il punto fra una lettera e le cifre di N (al più tre, senza zero in testa, non seguite da altre
+//  cifre); se nello stesso segmento le cifre di N attaccate a una lettera compaiono più di una volta, nessun confine (nel
+//  dubbio non si tocca). Senza «Parola intera» nulla cambia.
+//
 //  ── Memoria e tempi ──────────────────────────────────────────────────────────────────────────────────────────
 //
 //  Il `BookSearchCorpus` è il testo normalizzato del libro in UN buffer di byte UTF-8 (in pratica quasi tutto ASCII) più
@@ -360,11 +368,26 @@ public final class BookSearchCorpus: @unchecked Sendable {
     /// Inizi dei segmenti nell'ordine del buffer (crescenti) e i loro indici, per risalire da un byte al segmento.
     private let orderedStarts: [Int32]
     private let orderedSegments: [Int32]
+    /// I confini di parola dei richiami di nota (vedi l'intestazione): posizioni nel buffer, crescenti — il byte della
+    /// prima cifra del richiamo.
+    let wordBoundaries: [Int32]
 
     /// Byte normalizzati in tutto (per le misure).
     public var normalizedByteCount: Int { buffer.count }
+    /// Quanti richiami di nota fanno da confine di parola (per le misure e le reti).
+    public var callBoundaryCount: Int { wordBoundaries.count }
 
-    public init(segments: [ContentSegment]) {
+    /// I confini dei richiami come (segmento, posizione in byte nel testo normalizzato del segmento): per le reti.
+    public var callBoundariesBySegment: [(segment: Int, offset: Int)] {
+        wordBoundaries.map { b in
+            let s = segment(containingByte: Int(b))
+            return (s, Int(b - segmentStart[s]))
+        }
+    }
+
+    /// `noteLinks`: i legami fra note e richiami già calcolati dalla lettura sugli stessi segmenti (`nil`: si calcolano
+    /// qui, con la stessa funzione).
+    public init(segments: [ContentSegment], noteLinks: NoteCallLinks? = nil) {
         segmentCount = segments.count
         var buffer: [UInt8] = []
         buffer.reserveCapacity(segments.reduce(0) { $0 + $1.text.utf8.count } + segments.count + 16)
@@ -392,6 +415,14 @@ public final class BookSearchCorpus: @unchecked Sendable {
             isNote[i] = isBookSearchNoteRole(s.role)
         }
 
+        // I numeri delle note richiamate in ciascun segmento (per i confini dei richiami).
+        var calledNumbers: [Int: Set<Int>] = [:]
+        for (call, notes) in (noteLinks ?? noteCallLinks(segments)).notesOfCall {
+            let numbers = Set(notes.compactMap { $0 < segments.count ? noteOpening(segments[$0].text) : nil })
+            if !numbers.isEmpty { calledNumbers[call] = numbers }
+        }
+        var boundaries: [Int32] = []
+
         // 1. Il flusso del corpo.
         var bodyHasText = false
         for (i, s) in segments.enumerated() where !isNote[i] && !BOOK_SEARCH_EXCLUDED_ROLES.contains(s.role) {
@@ -402,6 +433,10 @@ public final class BookSearchCorpus: @unchecked Sendable {
             length[i] = Int32(bytes.count)
             oStarts.append(Int32(buffer.count))
             oSegs.append(Int32(i))
+            if let numbers = calledNumbers[i] {
+                let base = buffer.count
+                boundaries.append(contentsOf: Self.callBoundaries(in: bytes, numbers: numbers).map { Int32(base + $0) })
+            }
             buffer.append(contentsOf: bytes)
             bodyHasText = true
         }
@@ -441,6 +476,43 @@ public final class BookSearchCorpus: @unchecked Sendable {
         self.headingAtOrBefore = heading
         self.orderedStarts = oStarts
         self.orderedSegments = oSegs
+        self.wordBoundaries = boundaries
+    }
+
+    /// Le posizioni (in byte del testo normalizzato `bytes` di un segmento) dove comincia un richiamo di nota attaccato
+    /// a una parola: cifre di uno dei `numbers` (al più tre, senza zero in testa, non seguite né precedute da altre cifre)
+    /// subito dopo una lettera. Un numero che vi compare così più di una volta non dà confini (nel dubbio non si tocca).
+    static func callBoundaries(in bytes: [UInt8], numbers: Set<Int>) -> [Int] {
+        @inline(__always) func isDigit(_ b: UInt8) -> Bool { b >= 0x30 && b <= 0x39 }
+        var found: [Int: [Int]] = [:]
+        let n = bytes.count
+        var p = 1
+        bytes.withUnsafeBufferPointer { buf in
+            while p < n {
+                guard isDigit(buf[p]), !isDigit(buf[p - 1]) else { p += 1; continue }
+                var q = p
+                var value = 0
+                while q < n, isDigit(buf[q]) { value = value &* 10 &+ Int(buf[q] - 0x30); q += 1 }
+                if q - p <= 3, buf[p] != 0x30, numbers.contains(value), Self.isLetterBefore(buf, p) {
+                    found[value, default: []].append(p)
+                }
+                p = q
+            }
+        }
+        return found.values.compactMap { $0.count == 1 ? $0[0] : nil }.sorted()
+    }
+
+    /// Vero se lo scalare che finisce subito prima di `j` è una lettera (non una cifra).
+    static func isLetterBefore(_ b: UnsafeBufferPointer<UInt8>, _ j: Int) -> Bool {
+        guard j > 0 else { return false }
+        var k = j - 1
+        if b[k] < 0x80 { return (b[k] >= 0x61 && b[k] <= 0x7A) || (b[k] >= 0x41 && b[k] <= 0x5A) }
+        while k > 0, b[k] & 0xC0 == 0x80 { k -= 1 }
+        guard let s = Unicode.Scalar(decode(b, at: k)) else { return false }
+        switch s.properties.generalCategory {
+        case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter: return true
+        default: return false
+        }
     }
 
     /// Il segmento che contiene il byte `offset` del buffer (il più grande inizio ≤ offset).
@@ -461,40 +533,26 @@ public final class BookSearchCorpus: @unchecked Sendable {
     /// Cerca `query` in tutto il libro. Il conteggio è esatto; le occorrenze, in ordine di lettura, sono al più `limit`.
     public func search(_ query: String, options: BookSearchOptions = BookSearchOptions(),
                        limit: Int = BookSearchCorpus.defaultHitLimit) -> BookSearchResult {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let needle = SearchNormalizer.normalizedBytes(trimmed)
-        guard !needle.isEmpty else { return .empty(query: trimmed, options: options) }
-        let normalizedQuery = String(decoding: needle, as: UTF8.self)
-        let checkLeft = options.wholeWord && SearchNormalizer.isWordScalar(Self.firstScalar(needle))
-        let checkRight = options.wholeWord && SearchNormalizer.isWordScalar(Self.lastScalar(needle))
+        search(PreparedBookSearch(query, options: options), limit: limit)
+    }
+
+    /// La stessa ricerca, già preparata (la ricerca nella libreria la prepara una volta per tutti i libri).
+    public func search(_ prepared: PreparedBookSearch, limit: Int = BookSearchCorpus.defaultHitLimit) -> BookSearchResult {
+        let trimmed = prepared.query, options = prepared.options
+        guard !prepared.isEmpty else { return .empty(query: trimmed, options: options) }
+        let normalizedQuery = prepared.normalizedQuery
         var offsets: [Int32] = []
-        var total = 0
-        buffer.withUnsafeBufferPointer { hay in
-            needle.withUnsafeBufferPointer { ndl in
-                guard let h = hay.baseAddress, let q = ndl.baseAddress else { return }
-                let n = hay.count, m = ndl.count
-                guard m <= n else { return }
-                let first = Int32(ndl[0])
-                var i = 0
-                while i <= n - m {
-                    guard let p = memchr(h + i, first, n - m - i + 1) else { break }
-                    let j = h.distance(to: p.assumingMemoryBound(to: UInt8.self))
-                    if memcmp(h + j, q, m) == 0
-                        && (!checkLeft || !Self.isWordBefore(hay, j))
-                        && (!checkRight || !Self.isWordAt(hay, j + m)) {
-                        total += 1
-                        if offsets.count < Self.collectLimit { offsets.append(Int32(j)) }
-                        i = j + m
-                    } else {
-                        i = j + 1
-                    }
+        let total = buffer.withUnsafeBufferPointer { hay in
+            wordBoundaries.withUnsafeBufferPointer { bounds in
+                prepared.scan(hay, boundaries: bounds) { j in
+                    if offsets.count < Self.collectLimit { offsets.append(Int32(j)) }
                 }
             }
         }
         // Dal byte al segmento; ordine di lettura (le note seguono il corpo nel buffer, non nel flusso).
         var keyed: [(seg: Int32, off: Int32, end: Int32)] = []
         keyed.reserveCapacity(offsets.count)
-        let m = needle.count
+        let m = prepared.needle.count
         for o in offsets {
             let s = segment(containingByte: Int(o))
             let e = segment(containingByte: Int(o) + m - 1)
@@ -537,6 +595,19 @@ public final class BookSearchCorpus: @unchecked Sendable {
         guard i + len <= b.count else { return 0 }
         for k in 1..<len { v = (v << 6) | UInt32(b[i + k] & 0x3F) }
         return v
+    }
+
+    /// Vero se `pos` è uno dei confini dei richiami (`bounds` crescenti).
+    @inline(__always)
+    static func isCallBoundary(_ bounds: UnsafeBufferPointer<Int32>, _ pos: Int) -> Bool {
+        var lo = 0, hi = bounds.count
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            let v = Int(bounds[mid])
+            if v == pos { return true }
+            if v < pos { lo = mid + 1 } else { hi = mid }
+        }
+        return false
     }
 
     @inline(__always)
@@ -648,6 +719,62 @@ public final class BookSearchCorpus: @unchecked Sendable {
         var cut = String(collapsed.prefix(radius))
         if let space = cut.lastIndex(of: " ") { cut = String(cut[..<space]) }
         return cut + "…"
+    }
+}
+
+// MARK: - Una ricerca pronta
+
+/// Una ricerca preparata: la domanda normalizzata e i lati su cui vale «Parola intera». Si prepara una volta e si scorre su
+/// uno o più testi (la ricerca nella libreria la scorre sul testo di ogni libro, `LibrarySearch.swift`), sempre con la
+/// stessa scansione: le regole sono le stesse dappertutto.
+public struct PreparedBookSearch: Sendable {
+    /// La ricerca come l'ha scritta l'utente, senza spazi in testa e in coda.
+    public let query: String
+    public let options: BookSearchOptions
+    let needle: [UInt8]
+    let checkLeft: Bool
+    let checkRight: Bool
+
+    public init(_ query: String, options: BookSearchOptions = BookSearchOptions()) {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.query = trimmed
+        self.options = options
+        let needle = SearchNormalizer.normalizedBytes(trimmed)
+        self.needle = needle
+        checkLeft = options.wholeWord && !needle.isEmpty && SearchNormalizer.isWordScalar(BookSearchCorpus.firstScalar(needle))
+        checkRight = options.wholeWord && !needle.isEmpty && SearchNormalizer.isWordScalar(BookSearchCorpus.lastScalar(needle))
+    }
+
+    /// La ricerca normalizzata (vuota: nulla da cercare).
+    public var normalizedQuery: String { String(decoding: needle, as: UTF8.self) }
+    public var isEmpty: Bool { needle.isEmpty }
+
+    /// Scorre `hay` da sinistra a destra senza sovrapposizioni; `found` riceve l'inizio (in byte) di ogni occorrenza.
+    /// `boundaries`: i confini dei richiami di nota (crescenti). Restituisce quante occorrenze.
+    func scan(_ hay: UnsafeBufferPointer<UInt8>, boundaries: UnsafeBufferPointer<Int32>, found: (Int) -> Void) -> Int {
+        var total = 0
+        let checkLeft = self.checkLeft, checkRight = self.checkRight
+        needle.withUnsafeBufferPointer { ndl in
+            guard let h = hay.baseAddress, let q = ndl.baseAddress else { return }
+            let n = hay.count, m = ndl.count
+            guard m <= n else { return }
+            let first = Int32(ndl[0])
+            var i = 0
+            while i <= n - m {
+                guard let p = memchr(h + i, first, n - m - i + 1) else { break }
+                let j = h.distance(to: p.assumingMemoryBound(to: UInt8.self))
+                if memcmp(h + j, q, m) == 0
+                    && (!checkLeft || BookSearchCorpus.isCallBoundary(boundaries, j) || !BookSearchCorpus.isWordBefore(hay, j))
+                    && (!checkRight || BookSearchCorpus.isCallBoundary(boundaries, j + m) || !BookSearchCorpus.isWordAt(hay, j + m)) {
+                    total += 1
+                    found(j)
+                    i = j + m
+                } else {
+                    i = j + 1
+                }
+            }
+        }
+        return total
     }
 }
 
