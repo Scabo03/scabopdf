@@ -107,6 +107,45 @@ Nello stesso giro, prima delle cure per capacità, le due cure mirate esistenti 
 accese solo dall'impronta): la rielaborazione si offre di nuovo ai due documenti di
 studio, e solo a loro, e la lettura di ogni altro volume resta identica al byte.
 
+**Le cure per capacità del giro (build 64, livello di cure 64).** Ognuna è descritta
+per forma, senza parole dei libri, e regge sul banco dei 52 volumi e sui tre volumi di
+studio, con iOS 26.5 e 27 (ogni differenza giudicata contro la pagina, nessuna
+regressione):
+
+1. **Il titolo che la testatina ripete non è mobilia** (testo perso). Un titolo di
+   capitolo stampato in grande in cima alla pagina d'apertura e ripetuto in piccolo
+   come testatina sulle pagine seguenti cadeva col canale delle righe ricorrenti.
+   Ora un'occorrenza molto più grande della taglia tipica delle altre (almeno una
+   volta e un quarto, e almeno il corpo più un punto e mezzo), rara fra le occorrenze
+   (al più una su tre), resta testo; le testatine restano mobilia. Si contano solo le
+   righe con lettere vere.
+2. **I titoli in grassetto alla taglia del corpo delle dispense Word** (decisione 1):
+   capacità con la sua firma (`WordBoldTitles.swift`: produttore o creatore Word,
+   grassetto solo su righe intere, righe in grassetto poche). Sulla dispensa di studio
+   dà la stessa lettura della regola mirata, al byte, su entrambe le generazioni: la
+   regola mirata si è tolta dal registro. Sul banco la firma non si accende su nessun
+   volume.
+3. **Il titolo di sezione isolato da stacchi** (`IsolatedSectionTitles.swift`): una
+   riga alla taglia del corpo, corta, al bordo sinistro della colonna, staccata da
+   almeno 2,2 passi di riga sopra e 1,6 sotto, seguita da un capoverso rientrato,
+   diventa un titolo; la calibrazione (passo, colonna, rientro) si misura sul libro.
+   Fuori dai monotipografici e dai rami con regole proprie.
+4. **Le note di chiusura col salto al richiamo**: un blocco di note numerate 1…k
+   (almeno 3) senza alcun legame riceve il salto solo dove il richiamo attaccato è
+   unico nel tratto di testo che lo precede, in ordine (§ 7.12: nessun legame
+   inventato). E **le note coi numeri in una colonna a parte**, che il lettore di
+   sistema emette prima dei loro testi, si rimettono nell'ordine della pagina.
+5. **Le figure ricorrenti per contenuto**: due figure nella stessa posizione su più
+   pagine non contano più come arredo ripetuto se sono diverse in tutto quello che se
+   ne misura (le lettere che contengono e gli oggetti dipinti); un logo, una testata o
+   una filigrana disegnata sopra il testo restano arredo. Nel dubbio resta arredo.
+6. **Il trattino morbido seguito da uno spazio** (solo iOS 26.5): il lettore di sistema
+   aggiungeva uno spazio dopo il trattino morbido, e la parola si leggeva spezzata in
+   due; lo spazio si toglie quando segue una lettera. Nessuna lettera cambia.
+
+L'offerta «Lettura migliore disponibile» della cura 64 va a **tutti e soli** i libri la
+cui lettura cambia, per quanto si sa senza rielaborarli (§ 12.13).
+
 ## 1. Identità del progetto e scopo del documento
 
 ### 1.1 Identità del progetto
@@ -1306,6 +1345,16 @@ non sceglie quale tenere.
 
 **Cure mirate (2026-11-06, § 0-ter):** una cura mirata su un documento di studio si offre **solo ai libri la cui impronta
 è nel registro** delle cure mirate (`docs/CURE_MIRATE.md`); agli altri libri la rielaborazione non si propone.
+
+**Tutti e soli i libri che la cura cambia (2026-11-07, cura 64, richiesta del maintainer):** una cura della catena non si
+offre più a ogni libro elaborato prima di lei. Nel giro che la porta si misura al banco quali libri la cura lascia
+**identici al byte** (catena dell'iPad, cinque file della lettura per volume, per generazione: iOS 26.5 e 27); le loro
+impronte (`ProcessingChain.booksUnchangedByCure`, mai nomi né titoli) entrano nell'app, e un libro che manca solo di cure
+che lo lasciano com'è non riceve l'offerta. Ogni altro libro la riceve: un libro sconosciuto, o una copia diversa dello
+stesso libro, può cambiare, e senza rielaborarlo non si sa. La frase «cosa cambia» non promette una cura che lascia il
+libro com'è. Limite dichiarato: sui libri fuori dal banco l'offerta può arrivare anche se la lettura resta uguale (la
+frase lo dice: «Se questo libro non è fra quelli, la nuova lettura resta uguale»); toglierlo richiederebbe di rielaborare
+in silenzio ogni libro per confrontare, una scelta di prodotto lasciata al maintainer.
 
 ### 12.14 Un'annotazione non si sposta mai in silenzio (principio, 2026-10-07)
 

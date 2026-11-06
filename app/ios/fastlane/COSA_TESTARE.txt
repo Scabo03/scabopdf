@@ -1,20 +1,19 @@
-Build 63 — la lettura dei due documenti di studio è stata rifinita
+Build 64 — alcuni libri si leggono meglio
 
 Che cosa cambia
-- La cura dedicata ai due documenti di studio del maintainer (la dispensa scritta con Word e il manuale a più mani) è stata rifinita. L'app li riconosce ancora dal contenuto del file.
-- Nella dispensa le frasi finiscono di nuovo col loro punto anche quando c'è un richiamo di nota: prima quel punto si perdeva e due frasi si leggevano attaccate. Le note brevi si leggono subito dopo la frase che le richiama, non più alla fine del capoverso, e molte più note hanno l'azione «Vai al testo del richiamo».
-- In tutti e due i documenti il testo è diviso nei capoversi del libro, le frasi finiscono col loro punto anche dopo un richiamo di nota, un numero di pagina andato a capo in una citazione non diventa più una nota a sé, e le citazioni dei decreti legislativi e dei codici abbreviati non si spezzano più a metà.
-- Nel manuale i riquadri di approfondimento sono annunciati come «Riquadro» e si leggono al loro posto, a pezzi come le note lunghe; prima sembravano note. La bibliografia alla fine di ogni capitolo ha il suo titolo nella navigazione per intestazioni e si legge col segnale della bibliografia. Nell'indice analitico in fondo non ci sono più note finte.
-- Il testo dei due documenti resta identico, lettera per lettera: cambiano punteggiatura recuperata, confini degli elementi, ruoli e annunci.
+- In alcuni libri i titoli di capitolo che sparivano, perché la stessa frase è ripetuta in piccolo in testa alle pagine seguenti, ora si leggono e si trovano nella navigazione per intestazioni. Le righe ripetute in testa alle pagine continuano a non essere lette.
+- Nelle dispense scritte con Word i titoli in grassetto si riconoscono anche quando hanno la stessa grandezza del testo.
+- In alcuni libri i titoli di sezione, separati dal testo solo da uno spazio bianco, ora sono intestazioni e non restano incollati al capoverso che segue.
+- Le note raccolte alla fine di un capitolo hanno l'azione «Vai al testo del richiamo» dove il richiamo si trova con sicurezza; dove manca la sicurezza, l'azione resta assente. Non serve rielaborare il libro per averla.
+- Alcune note stampate con i numeri in una colonna a parte si leggono intere e nel loro ordine.
+- Alcune carte geografiche e figure impaginate allo stesso modo su più pagine sono annunciate come «Risorsa visiva»: prima venivano scartate come se fossero un fregio ripetuto. Un logo o una filigrana ripetuti restano esclusi.
+- Con iOS 26.5 le parole spezzate in due da un trattino invisibile si leggono intere, come con iOS 27.
 
 Alla prossima apertura
-- Nella Home ricompare la riga «Lettura migliore disponibile» per questi due documenti, anche se li avevi già rielaborati con la build 62. Toccala due volte, scegli il documento e conferma la rielaborazione. Si fa solo se la confermi.
-- Segnalibri, sottolineature e punto di lettura vengono ritrovati nel testo nuovo. Quello che l'app non ritrova con sicurezza resta nella lista dei segnalibri come «da ricollocare». Nel manuale può capitare a un segnalibro messo su una bibliografia di fine capitolo o su una nota che conteneva solo un numero di pagina. Non si cancella nulla, e finché non confermi puoi tornare alla lettura di prima.
-- Se la copia sull'iPad è un file diverso dello stesso libro, l'offerta non compare.
-
-Per tutti gli altri libri non cambia nulla
-- La lettura di tutti gli altri libri è identica a quella della build 62, lettera per lettera, con iOS 26.5 e con iOS 27. Nessuna offerta compare per gli altri libri.
+- Nella Home compare la riga «Lettura migliore disponibile» per i libri la cui lettura cambia. Per i libri già verificati che restano identici l'offerta non compare. Per un libro mai verificato l'offerta può comparire anche se la sua lettura poi resta uguale: in quel caso la rielaborazione non cambia nulla. Toccala due volte, scegli il libro e conferma la rielaborazione. Si fa solo se la confermi.
+- Segnalibri, sottolineature e punto di lettura vengono ritrovati nel testo nuovo. Quello che l'app non ritrova con sicurezza resta nella lista dei segnalibri come «da ricollocare». Non si cancella nulla, e finché non confermi puoi tornare alla lettura di prima.
+- I due documenti di studio rifiniti con la build 63 non cambiano e non ricevono l'offerta. Le letture preparate dal Mac non la ricevono: la lettura nuova arriverà dal Mac aggiornato.
 
 Due cose da provare
-- Nella dispensa ascolta una pagina con molte note: dicci se le note brevi arrivano al momento giusto e se il salto al richiamo c'è.
-- Nel manuale arriva a un riquadro e a una bibliografia di fine capitolo: dicci se l'annuncio e il segnale ti bastano per capire dove sei.
+- In un libro con le note alla fine del capitolo, usa l'azione «Vai al testo del richiamo» su qualche nota: dicci se arrivi al punto giusto.
+- In un libro con carte o figure, dicci se l'annuncio «Risorsa visiva» arriva al posto giusto e se ti serve.

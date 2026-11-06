@@ -65,7 +65,7 @@ un'altra impronta e resta com'è: per costruzione, mai una cura su un file sbagl
 
 | Etichetta | Impronta | Regole | Build | Condizione di rimozione |
 |---|---|---|---|---|
-| studio-A | `d0272b21…bca815` | titoli in grassetto alla taglia del corpo; sommario di capitolo in prosa dopo il titolo; dalla build 63: interpunzione staccata dopo il richiamo, numero a taglia piena che continua la nota, abbreviazioni delle citazioni e date spezzate, capoversi rientrati | 63 | la lettura del documento SENZA la voce è identica al byte a quella con la voce, o giudicata non peggiore contro la pagina (per esempio dopo una cura per capacità dei titoli in grassetto a taglia di corpo); oppure il maintainer adotta una lettura del Mac che la contiene |
+| studio-A | `d0272b21…bca815` | sommario di capitolo in prosa dopo il titolo; dalla build 63: interpunzione staccata dopo il richiamo, numero a taglia piena che continua la nota, abbreviazioni delle citazioni e date spezzate, capoversi rientrati, salto al richiamo ampliato. (La regola dei titoli in grassetto alla taglia del corpo si è tolta con la build 64: la riconosce una cura per capacità, § 4.2) | 63 | la lettura del documento SENZA la voce è identica al byte a quella con la voce, o giudicata non peggiore contro la pagina; oppure il maintainer adotta una lettura del Mac che la contiene |
 | studio-B | `f0a98bcd…83a6a4` | etichette di struttura con ornamenti; sommario di capitolo con etichetta (anche oltre la pagina); etichette di sezione; titoli di paragrafo più piccoli del corpo; dalla build 63: le quattro regole condivise con studio-A, riquadri di approfondimento, etichette di bibliografia | 63 | come sopra (per esempio dopo una cura per capacità dei titoli numerati più piccoli del corpo e dei sommari etichettati) |
 
 Dalla build 63 una regola descritta per forma può servire a più voci (i due documenti hanno lo stesso difetto del lettore
@@ -79,12 +79,19 @@ Le impronte complete, il motivo per esteso e la frase dell'offerta stanno nel co
 (`TargetedCuresTests.test_registry_isWellFormed`) verifica che ogni voce abbia etichetta neutra, impronte ben formate e
 mai condivise, regole, motivo, condizione di rimozione e build.
 
-### 4.1 Le regole, per forma (dettaglio in `TargetedRules.swift`)
+### 4.2 Regole tolte perché coperte da una cura per capacità
 
-- **Titoli in grassetto alla taglia del corpo** (studio A): righe consecutive dentro un blocco di corpo con tutte le
-  lettere in grassetto e la taglia del corpo (±0,6 pt); un'etichetta «parola-chiave di struttura + numero romano» con le
-  righe che la seguono è il capitolo; ogni riga che apre con un numero apre un titolo di paragrafo, le righe senza numero
-  ne sono la continuazione. In posizione, i titoli di paragrafo stanno un livello sotto l'unità che li contiene.
+- **Titoli in grassetto alla taglia del corpo** (studio A, build 62-63; tolta con la build 64, giro «rifiniture e cure
+  per capacità», decisione 1 del maintainer): righe consecutive dentro un blocco di corpo con tutte le lettere in
+  grassetto alla taglia del corpo; l'etichetta «parola-chiave di struttura + numero romano» con le righe che la seguono è
+  il capitolo; ogni riga che apre con un numero apre un titolo di paragrafo. La stessa forma, con la stessa lettura, la
+  riconosce ora la capacità del tronco `WordBoldTitles.swift`, accesa da una firma di documento (produttore Word,
+  grassetto solo su righe intere, poche righe in grassetto). Misurato: sulla dispensa la lettura senza la regola mirata e
+  con la capacità è identica al byte a quella della build 63 (cinque file della lettura, iOS 26.5 e 27); sul banco la
+  firma non si accende su nessun volume. La voce dello studio A resta con le altre regole; la sua build della cura resta
+  63 (nessuna offerta nuova per lei).
+
+### 4.1 Le regole, per forma (dettaglio in `TargetedRules.swift`)
 - **Sommario di capitolo in prosa** (studio A): il blocco di corpo subito dopo l'intestazione di capitolo, se apre con «1»
   seguito dal punto o da una lineetta e ha almeno due voci «– N.» o «. N.», è il sommario del capitolo.
 - **Etichette di struttura con ornamenti** (studio B): un'etichetta «parte/capitolo + romano» fra due glifi dell'area
@@ -152,6 +159,13 @@ con nomi neutri), li legge con il codice del giro, confronta al byte la lettura 
 (`<lab>/studio_mirato/riferimento_cure_mirate/`), controlla che passino dal ramo generico, e rifà la prova al contrario
 (impronta non registrata = nessuna impronta, al byte). Una differenza dal riferimento è rossa finché non è giudicata contro
 la pagina; se la lettura curata non differisce più da quella senza impronta, la voce è forse superflua (§ 4).
+
+**Volumi stabili fuori dal banco** (dal giro «rifiniture e cure per capacità», 2026-11-07, scelta registrata): i due
+documenti di studio e il volume della prova alla cieca («ignoto C») restano FUORI dalla lista dei 52 del banco (che nel
+repo porta i nomi dei file) ed entrano come volumi stabili di questa rete, con etichette neutre: lo stesso confronto al
+byte col riferimento congelato, su iOS 26.5 e 27, in ogni giro. Per «ignoto C», che non ha cura mirata, la prova al
+contrario verifica che la sua impronta vera non cambi nulla. Il banco dei 52 non cambia numero; questa rete passa da due a
+tre documenti.
 
 ## 5-bis. Decisioni del maintainer per il giro «rifiniture e cure per capacità» (2026-11-06 sera)
 
