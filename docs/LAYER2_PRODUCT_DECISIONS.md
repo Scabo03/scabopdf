@@ -51,6 +51,39 @@ l'interfoliazione a due colonne dei codici): sono tornate, o torneranno,
 on-device. Il conto onesto «quanto è irriducibile vs quanto è prudenza» va tenuto
 aggiornato nella mappa.
 
+## 0-ter. Cure per capacità e cure mirate dichiarate (decisione del 2026-11-06)
+
+> Decisione di prodotto del maintainer, all'apertura del giro «cure mirate per lo
+> studio» (2026-11-06). Il registro e il metodo sono in `docs/CURE_MIRATE.md`.
+
+La classificazione di ScaboPDF è fondata per **capacità**: una regola si accende
+per un segnale che il documento porta (tipografia, geometria, struttura), mai per
+il nome di un libro, e vale per ogni documento che porta quel segnale. Questo resta
+il principio. Accanto ad esso il maintainer ammette un'eccezione stretta, per lo
+studio quotidiano:
+
+1. **Sono ammesse cure temporanee mirate su singoli documenti di studio del
+   maintainer**, accese solo dall'**impronta del contenuto** del documento (lo
+   SHA-256 dei byte del file, la stessa `sourceSha256` dell'identità del libro).
+   Dove l'impronta non coincide, la regola non viene nemmeno eseguita: la lettura
+   di **ogni altro file resta identica al byte**.
+2. **Ogni cura mirata è dichiarata in un registro unico**, nella catena condivisa
+   (uguale per iPad, iPhone e Mac), con il motivo, i documenti a cui si applica per
+   etichetta neutra (mai il nome del file d'origine, mai parole del libro) e la
+   **condizione per toglierla**: quando una cura per capacità la copre, oppure
+   quando la lettura preparata dal Mac la rende superflua.
+3. **La cura per capacità resta il principio; la cura mirata è un'eccezione
+   dichiarata**, per lo studio quotidiano. Una cura mirata che si riveli sicura e
+   generale non si allarga al corpus nel giro che la scopre: si propone fra le
+   decisioni per il maintainer, e diventa cura per capacità solo con le sue reti.
+
+Conseguenze. Le regole mirate si scrivono con geometria, tipografia, posizioni e
+forme generali, mai con parole, titoli o frasi del libro: dove serve un dato del
+libro, sta nel laboratorio, non nel repo. La lettura dei documenti curati cambia,
+quindi l'offerta «Lettura migliore disponibile» (§ 12.13) si propone **solo a
+loro**, e le loro annotazioni restano al loro posto o diventano «da ricollocare»
+(§ 12.14), mai spostate in silenzio.
+
 ## 1. Identità del progetto e scopo del documento
 
 ### 1.1 Identità del progetto
@@ -1247,6 +1280,9 @@ le note per i tester devono dire che crea una copia nuova senza le annotazioni d
 ricollocazioni sbagliate su entrambe le generazioni (`docs/ANCORE_ANNOTAZIONI.md`) — e l'offerta è costruita: riga in Home,
 opzione del libro, stato nel referto; due gesti per accettare; la lettura precedente resta sul dispositivo finché l'utente
 non sceglie quale tenere.
+
+**Cure mirate (2026-11-06, § 0-ter):** una cura mirata su un documento di studio si offre **solo ai libri la cui impronta
+è nel registro** delle cure mirate (`docs/CURE_MIRATE.md`); agli altri libri la rielaborazione non si propone.
 
 ### 12.14 Un'annotazione non si sposta mai in silenzio (principio, 2026-10-07)
 
