@@ -31,11 +31,14 @@ enum ReprocessOffer {
     /// resta la 50 e l'offerta non promette ciò che il dispositivo non può fare. Dal 2026-10-16 il numero della cura vive
     /// in un posto solo, il livello di cure della catena condivisa (`ProcessingChain.cureLevel`, ScaboChain), che porta
     /// anche il pacchetto del Mac.
+    /// Le cure MIRATE su singoli documenti di studio (LAYER2 § 0-ter, giro del 2026-11-06) entrano con il registro della
+    /// catena condivisa (`TargetedCures`): solo i libri la cui impronta è nel registro le ricevono.
     static var policy: ReprocessingPolicy {
         let latest = visualResourcesAvailable ? ProcessingChain.cureLevel : 50
         return ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: latest,
                                   latestCureBuildForMacReadings: latestCureForMacReadings(upTo: latest),
-                                  latestCureBuildForAknActs: latestCureForAknActs)
+                                  latestCureBuildForAknActs: latestCureForAknActs,
+                                  targetedCureBuilds: TargetedCures.cureBuildByFingerprint)
     }
 
     /// L'ultima cura da offrire a un testo normativo già importato (decisione 1 del maintainer, 2026-10-17): la più recente
@@ -174,6 +177,11 @@ enum ReprocessOffer {
             // cambia non si aspetta una lettura diversa (revisione indipendente del giro «titoli e testatine»).
             text += "Da quando il libro è stato aperto la prima volta, l'app ha imparato a leggere meglio alcuni libri: "
                 + list.joined(separator: "; ") + ". Se questo libro non è fra quelli, la nuova lettura resta uguale."
+        }
+        // Cura mirata (LAYER2 § 0-ter): solo per i libri del registro, detta per loro (mai titoli né nomi di file).
+        if policy.pendingTargetedCureBuild(for: doc, currentAppBuild: SystemGeneration.appBuild) != nil,
+           let entry = TargetedCures.entry(forFingerprint: doc.sourceSha256) {
+            text += (text.isEmpty ? "" : " ") + "Per questo documento c'è una cura dedicata: " + entry.whatChanges + "."
         }
         return text
     }

@@ -146,6 +146,9 @@ public struct PdfKitExtractor: PdfExtracting {
         let attributes = probe.documentAttributes
         let producer = attributes?[PDFDocumentAttribute.producerAttribute] as? String
         let creator = attributes?[PDFDocumentAttribute.creatorAttribute] as? String
+        // L'impronta del file (SHA-256 dei byte, a flusso): la porta delle cure mirate (`TargetedCures`, LAYER2 § 0-ter).
+        // Dieci-venti millisecondi anche sui volumi più grandi; se il file non si rilegge, nessuna impronta e nessuna cura.
+        let sourceSha256 = try? DocumentFingerprint.sha256Hex(ofFileAt: url)
 
         let pageCount = probe.pageCount
         var pages: [PdfPageExtraction] = []
@@ -193,7 +196,7 @@ public struct PdfKitExtractor: PdfExtracting {
 
         return PdfExtraction(
             version: 2, pageCount: pageCount, pages: pages,
-            producer: producer, creator: creator)
+            producer: producer, creator: creator, sourceSha256: sourceSha256)
     }
 
     // MARK: - Line / span extraction

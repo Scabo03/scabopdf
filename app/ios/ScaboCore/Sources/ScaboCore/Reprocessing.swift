@@ -43,16 +43,32 @@ public struct ReprocessingPolicy: Sendable {
     /// L'ultima cura da offrire ai TESTI NORMATIVI (AKN) già importati: la più recente fra le cure che cambiano anche la
     /// loro lettura (i pezzi delle note lunghe, build 56). `nil`: nessuna offerta ai testi normativi (fino alla build 56).
     public let latestCureBuildForAknActs: Int?
+    /// Le CURE MIRATE (LAYER2 § 0-ter, `TargetedCures`): impronta del file → build della cura. Un libro PDF con una di
+    /// queste impronte (`sourceSha256`), elaborato sull'iPad prima di quella build e non da questa stessa build, riceve
+    /// l'offerta; nessun altro libro la riceve per una cura mirata. Le letture arrivate dal Mac non la ricevono: come per le
+    /// cure 56-58, la cura arriva dal Mac con una lettura nuova (rielaborare sull'iPad toglierebbe l'innesto del Mac).
+    public let targetedCureBuilds: [String: Int]
     /// La build della cura delle risorse visive (tabelle e figure): un libro il cui riconoscimento è saltato per una
     /// ragione da riprovare (`visualResourcesSkipped`) riceve l'offerta dove il dispositivo sa riconoscere (cura ≥ 53).
     public static let visualResourcesCureBuild = 53
 
     public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int, latestCureBuildForMacReadings: Int? = nil,
-                latestCureBuildForAknActs: Int? = nil) {
+                latestCureBuildForAknActs: Int? = nil, targetedCureBuilds: [String: Int] = [:]) {
         self.validatedSystemMajors = validatedSystemMajors
         self.latestCureBuild = latestCureBuild
         self.latestCureBuildForMacReadings = latestCureBuildForMacReadings ?? latestCureBuild
         self.latestCureBuildForAknActs = latestCureBuildForAknActs
+        self.targetedCureBuilds = targetedCureBuilds
+    }
+
+    /// La build della cura mirata da offrire a questo documento, se la sua impronta è nel registro e il libro è stato
+    /// elaborato prima (e non da questa stessa build). `nil` per ogni altro libro.
+    public func pendingTargetedCureBuild(for doc: ArchivedDocument, currentAppBuild: String? = nil) -> Int? {
+        guard (doc.sourceKind ?? "pdf") == "pdf", doc.readingOrigin != ReadingOrigin.mac,
+              let sha = doc.sourceSha256, let cureBuild = targetedCureBuilds[sha] else { return nil }
+        let build = doc.processedAppBuild.flatMap { Int($0) }
+        let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
+        return !sameBuild && (build ?? 0) < cureBuild ? cureBuild : nil
     }
 
     /// Il numero maggiore da una stringa come «iPadOS 27.0.1» / «iOS 26.5».
@@ -96,6 +112,8 @@ public struct ReprocessingPolicy: Sendable {
             return (build ?? 0) < latestCureBuildForMacReadings ? .cure : nil
         }
         let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
+        // Cura mirata (LAYER2 § 0-ter): solo il libro la cui impronta è nel registro.
+        if pendingTargetedCureBuild(for: doc, currentAppBuild: currentAppBuild) != nil { return .cure }
         if !sameBuild, build == nil || build! < latestCureBuild { return .cure }
         if let was = Self.major(of: doc.processedSystemVersion), let now = Self.major(of: currentSystemVersion), was != now {
             return .systemUpdate

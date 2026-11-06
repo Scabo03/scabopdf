@@ -134,19 +134,27 @@ public struct PdfExtraction: Codable, Equatable, Sendable {
     /// Document `Creator` metadata (the authoring app), or `nil`. Same role as
     /// `producer`; some pipelines stamp the family signal here instead.
     public var creator: String?
+    /// L'IMPRONTA del file da cui viene l'estrazione (SHA-256 esadecimale dei byte, `DocumentFingerprint`: la stessa
+    /// `sourceSha256` dell'identità del libro), o `nil` se l'estrattore non l'ha calcolata (estrazioni catturate prima del
+    /// giro «cure mirate per lo studio», 2026-11-06, costruzioni sintetiche). La legge un solo punto della catena: il
+    /// cancello delle cure mirate (`TargetedCures`, LAYER2 § 0-ter), consultato da `estimateProfile`. Opzionale e additivo
+    /// come `producer`: un JSON senza la chiave si decodifica a `nil`, e un `nil` non si scrive.
+    public var sourceSha256: String?
 
     public init(
         version: Int,
         pageCount: Int,
         pages: [PdfPageExtraction],
         producer: String? = nil,
-        creator: String? = nil
+        creator: String? = nil,
+        sourceSha256: String? = nil
     ) {
         self.version = version
         self.pageCount = pageCount
         self.pages = pages
         self.producer = producer
         self.creator = creator
+        self.sourceSha256 = sourceSha256
     }
 }
 

@@ -180,4 +180,50 @@ final class ReprocessingTests: XCTestCase {
         XCTAssertEqual(store.bookmarks(documentId: d.id).first { $0.preview == "altro" }?.isOrphan, true)
         XCTAssertGreaterThan(r2.carried, 0)
     }
+
+    // MARK: - Cure mirate (LAYER2 § 0-ter, giro del 2026-11-06)
+
+    private let targetedSha = "d0272b2123af0ae040045ef2942c9d8414c2a779a3457a0f3087f62de8bca815"
+    private func targetedDoc(sha: String?, build: String?, origin: String? = nil, kind: String? = nil) -> ArchivedDocument {
+        ArchivedDocument(id: "m", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
+                         sourceKind: kind, processedSystemVersion: "iPadOS 27.0.1", processedAppBuild: build,
+                         sourceSha256: sha, readingOrigin: origin)
+    }
+
+    func test_targetedCure_offeredOnlyToTheRegisteredFingerprint() {
+        let p = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 58,
+                                   targetedCureBuilds: [targetedSha: 62])
+        // Il documento registrato, elaborato prima della build della cura: offerta.
+        XCTAssertEqual(p.reason(for: targetedDoc(sha: targetedSha, build: "61"), currentSystemVersion: "iPadOS 27.0.1",
+                                currentAppBuild: "62"), .cure)
+        XCTAssertEqual(p.pendingTargetedCureBuild(for: targetedDoc(sha: targetedSha, build: "61"), currentAppBuild: "62"), 62)
+        // Già elaborato con la cura, o da questa stessa build: niente.
+        XCTAssertNil(p.reason(for: targetedDoc(sha: targetedSha, build: "62"), currentSystemVersion: "iPadOS 27.0.1",
+                              currentAppBuild: "62"))
+        XCTAssertNil(p.reason(for: targetedDoc(sha: targetedSha, build: "63"), currentSystemVersion: "iPadOS 27.0.1",
+                              currentAppBuild: "63"))
+        // Ogni altro libro elaborato dopo l'ultima cura generale: niente, la cura mirata non si propone agli altri.
+        let other = String(repeating: "a", count: 64)
+        XCTAssertNil(p.reason(for: targetedDoc(sha: other, build: "61"), currentSystemVersion: "iPadOS 27.0.1",
+                              currentAppBuild: "62"))
+        XCTAssertNil(p.reason(for: targetedDoc(sha: nil, build: "61"), currentSystemVersion: "iPadOS 27.0.1",
+                              currentAppBuild: "62"))
+        // Le letture arrivate dal Mac e i testi normativi non la ricevono.
+        XCTAssertNil(p.reason(for: targetedDoc(sha: targetedSha, build: "58", origin: ReadingOrigin.mac),
+                              currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "62"))
+        XCTAssertNil(p.pendingTargetedCureBuild(for: targetedDoc(sha: targetedSha, build: "58", origin: ReadingOrigin.mac)))
+        XCTAssertNil(p.pendingTargetedCureBuild(for: targetedDoc(sha: targetedSha, build: "61", kind: "akn")))
+        // Una generazione non validata: nessuna offerta, nemmeno mirata.
+        XCTAssertNil(p.reason(for: targetedDoc(sha: targetedSha, build: "61"), currentSystemVersion: "iPadOS 28.0",
+                              currentAppBuild: "62"))
+    }
+
+    func test_targetedCure_registryAndPolicyAgree() {
+        // La politica senza cure mirate (com'era fino alla build 61) non offre nulla al documento registrato elaborato dopo
+        // l'ultima cura generale.
+        let before = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 58)
+        XCTAssertNil(before.reason(for: targetedDoc(sha: targetedSha, build: "61"), currentSystemVersion: "iPadOS 27.0.1",
+                                   currentAppBuild: "62"))
+        XCTAssertEqual(TargetedCures.cureBuildByFingerprint[targetedSha], 62)
+    }
 }

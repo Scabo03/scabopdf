@@ -267,6 +267,14 @@ struct Profile {
     /// Export DeJure (firma di `extractionIsDejure`, la stessa della porta del ramo): accende al livello delle righe la
     /// foglia dei titoli in grassetto (DejureTitles.swift) e la guardia del timbro nel colophon di front-matter.
     var isDejure: Bool = false
+    /// Le CURE MIRATE accese su questo documento (TargetedCures.swift, LAYER2 § 0-ter): l'insieme delle regole che il
+    /// registro associa all'impronta del file (`PdfExtraction.sourceSha256`). Vuoto per ogni documento non registrato —
+    /// cioè per tutti tranne i documenti di studio dichiarati nel registro — e allora nessuna regola mirata viene
+    /// eseguita (`applyTargetedPageRules` ritorna gli item invariati senza guardarli).
+    var targeted: Set<TargetedRule> = []
+    /// Solo con regole mirate accese: il bordo sinistro della colonna del corpo stimato su TUTTO il documento (modo dei bordi
+    /// sinistri delle righe di corpo larghe), più stabile della stima per pagina sulle pagine con poco corpo. 0 altrimenti.
+    var targetedLeftEdge: Double = 0
 }
 
 // MARK: - The plugin
@@ -365,6 +373,9 @@ public final class GenericPlugin: ExtractionPlugin {
         // Non nei monotipografici, nell'Estratto (struttura blindata) né nei DeJure (costruiti col Generic).
         let manualLevels = profile.mono == nil && !profile.isEstrattoChrome && !profile.isDejure
             ? normalizeManualLevels(&nodes) : 0
+        // CURE MIRATE (TargetedCures.swift, LAYER2 § 0-ter), in posizione (nessun nodo aggiunto o tolto): solo sui documenti
+        // del registro; per ogni altro documento questa riga non esegue nulla.
+        if !profile.targeted.isEmpty { applyTargetedDocumentRules(&nodes, profile) }
         // Testatina corrente ricorrente (titolo capitolo recto, lunga, ripetuta) sfuggita al
         // cap-caratteri della furniture e finita come NOTE → ARTIFACT_RUNNING_HEADER (non-letta).
         // GATED Estratto: no-op (e nodi invariati) sugli altri volumi.
@@ -557,10 +568,16 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
     let mono = bodySize > 0 && isMonotypographic(styleCensus, pageCount: extraction.pages.count)
         ? monotypographicCalibration(extraction) : nil
 
+    // Cure mirate: le regole del registro per l'impronta del file (vuoto per ogni documento non registrato).
+    let targeted = TargetedCures.rules(forFingerprint: extraction.sourceSha256)
+
     return Profile(
         bodySize: bodySize, bodyColor: bodyColor,
         isEstrattoChrome: isEstratto, isRivistaDpc: isRivistaDpc, isCodici: isCodici,
-        isGiappichelliPhotoshop: isGiappichelliPhotoshop, mono: mono, isDejure: extractionIsDejure(extraction))
+        isGiappichelliPhotoshop: isGiappichelliPhotoshop, mono: mono, isDejure: extractionIsDejure(extraction),
+        // Il cancello delle cure mirate: l'impronta del file nel registro, o l'insieme vuoto (LAYER2 § 0-ter).
+        targeted: targeted,
+        targetedLeftEdge: targeted.isEmpty ? 0 : targetedBodyLeftEdge(extraction, body: bodySize))
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
@@ -1884,7 +1901,11 @@ func pageItems(
     // No-op nei codici, nella DPC, nei monotipografici, nell'Estratto e nei DeJure.
     // Titoli in grassetto a taglia di corpo degli export DeJure (DejureTitles.swift); no-op fuori da DeJure.
     let withDejure = recognizeDejureBoldTitles(withMono, profile)
-    return fuseStructureUnits(consolidateAdjacentHeadings(withDejure, profile), pageWidth: page.width, profile)
+    let fused = fuseStructureUnits(consolidateAdjacentHeadings(withDejure, profile), pageWidth: page.width, profile)
+    // CURE MIRATE (TargetedCures.swift, LAYER2 § 0-ter): solo sui documenti del registro, in coda a tutto il resto. Dove il
+    // profilo non porta regole mirate (ogni altro documento) gli item tornano invariati e il codice delle regole non gira.
+    guard !profile.targeted.isEmpty else { return fused }
+    return applyTargetedPageRules(fused, profile)
 }
 
 // ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────
