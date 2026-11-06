@@ -353,19 +353,21 @@ final class VisualResourceTests: XCTestCase {
                              processedSystemVersion: SystemGeneration.current, processedAppBuild: build, sourceSha256: sha)
         }
         XCTAssertEqual(ProcessingChain.cureLevel, 58, "le cure mirate non alzano il livello di cure generale")
-        let cured = pdf(sha, build: "61")
+        // Le build relative alla build della cura della voce (62 nel giro che l'ha introdotta, 63 dopo le rifiniture).
+        let b = entry.cureBuild
+        let cured = pdf(sha, build: String(b - 1))
         XCTAssertEqual(ReprocessOffer.policy.reason(for: cured, currentSystemVersion: SystemGeneration.current,
-                                                    currentAppBuild: "62"), .cure)
+                                                    currentAppBuild: String(b)), .cure)
         let text = ReprocessOffer.whatChanges(cured, reason: .cure)
         XCTAssertTrue(text.contains("cura dedicata") && text.contains(entry.whatChanges), text)
         XCTAssertFalse(text.lowercased().contains(".pdf"), text)
-        let other = pdf(String(repeating: "b", count: 64), build: "61")
+        let other = pdf(String(repeating: "b", count: 64), build: String(b - 1))
         XCTAssertNil(ReprocessOffer.policy.reason(for: other, currentSystemVersion: SystemGeneration.current,
-                                                  currentAppBuild: "62"))
+                                                  currentAppBuild: String(b)))
         XCTAssertFalse(ReprocessOffer.whatChanges(other, reason: .cure).contains("cura dedicata"))
         // Già rielaborato con la build della cura: niente più offerta.
-        XCTAssertNil(ReprocessOffer.policy.reason(for: pdf(sha, build: "62"), currentSystemVersion: SystemGeneration.current,
-                                                  currentAppBuild: "63"))
+        XCTAssertNil(ReprocessOffer.policy.reason(for: pdf(sha, build: String(b)), currentSystemVersion: SystemGeneration.current,
+                                                  currentAppBuild: String(b + 1)))
     }
 
     /// Decisione 1 del maintainer (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17): un testo normativo già
