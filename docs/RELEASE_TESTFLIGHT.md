@@ -196,6 +196,25 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 62 — 2026-11-06, commit `f0a71e5` (giro «cure mirate per lo studio», livello di verifica pieno: due documenti di
+  studio del maintainer curati con regole accese solo dalla loro impronta, registro `TargetedCures`, offerta «Lettura
+  migliore disponibile» solo a loro; tutti gli altri libri identici al byte; `docs/CARRYOVER.md` STATO del 2026-11-06,
+  `LAYER2_PRODUCT_DECISIONS.md` § 0-ter, `docs/CURE_MIRATE.md`).** Prima build con **Xcode 27.2 (27B52)**. `fastlane beta`
+  da main: `CURRENT_PROJECT_VERSION` 62 (calcolato dalla corsia; coincide con la build della cura del registro), archivio
+  ed EXPORT SUCCEEDED alle 21:47:39, altool «UPLOAD SUCCEEDED with no errors» alle 21:50:12, Delivery UUID
+  `6d2663a6-2a56-4bb2-b37c-fae0ffcfabed`; **subito dopo** il caricatore ha dato «Failed to create URL for
+  'CDUploaderStateInfoResumeFilePath'. The file doesn't exist» e la corsia è uscita con exit 1 («Error uploading ipa file»)
+  prima di attendere l'elaborazione e di scrivere le note; pochi secondi dopo anche la verifica in sola lettura falliva per un
+  errore di DNS (nome del server non risolto), tornato normale entro un minuto. **Lezione della build 55 applicata**, nessun
+  rilancio: verificato con la chiave API in sola lettura che la build 62 c'era (comparsa dopo circa 4 minuti, caricata alle
+  21:52:06 ora italiana, elaborazione VALID, «Cosa testare» vuoto); provate le note con `fastlane note_tester` (exit 0);
+  impostato il solo «Cosa testare» (it) col testo di `app/ios/fastlane/COSA_TESTARE.txt` (script di laboratorio
+  `studio_mirato/build62/asc_imposta_note.rb`) e riletto: 2 732 caratteri, identico al file. IPA 163 211 867 byte; nel binario
+  caricato `CFBundleVersion` 62 e le due impronte del registro. I due `log stream` nati durante la corsa fermati per PID.
+  Reti prima del caricamento: invarianza al byte dei 52 volumi (runner e catena dell'iPad, iOS 26.5 e 27, con catture nuove
+  che portano l'impronta), annotazioni 416/416 per generazione, risorse visive 110/110, parità iPad-Mac 52/52, rete delle cure
+  mirate verde, suite complete sui quattro simulatori (2 rossi d'ambiente su iPad iOS 27, verdi a libreria pulita); revisione
+  indipendente senza bloccanti, rilievi corretti.
 - **Build 61 — 2026-10-20, commit `6d90262` (giro «ricerca nella libreria», livello di verifica leggero: dal tab Ricerca
   della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla» o
   «Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; frasi del Mac con iPad e

@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.52 (6 novembre 2026, giro «cure mirate per lo studio», livello di verifica pieno, **CONCLUSO** con la **build 62** su TestFlight: due documenti di studio del maintainer curati con regole accese solo dalla loro impronta (registro `TargetedCures`, LAYER2 § 0-ter, `docs/CURE_MIRATE.md`), letture di tutti i 52 volumi del banco identiche al byte su iOS 26.5 e 27, offerta «Lettura migliore disponibile» solo ai due documenti; prova alla cieca su un volume ignoto, giudicato senza cure. Ambiente: Xcode 27.2. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.51 (20 ottobre 2026, giro «ricerca nella libreria», livello di verifica leggero, **CONCLUSO** con la **build 61** su TestFlight: dal tab Ricerca della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla»/«Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; le frasi del Mac nominano iPad e iPhone. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.50 (18-19 ottobre 2026, giro «accessibilità e completamento», **CONCLUSO** con la **build 59** su TestFlight (VALID, note per i tester impostate): **l'ordine di lettura segue l'importanza** in ogni schermata con le schede (titolo, poi le tre schede, poi i comandi, poi il contenuto; prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime e sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero nei test d'interfaccia da iOS 27 (`XCUIDevice.voiceOverService`); **salto fra nota e richiamo** per 8.879 delle 9.030 note differite (1.224 → 151 senza salto, ogni legame nuovo verificato contro la pagina stampata; INBOX D.16); **lacune WCAG di livello A chiuse**: tastiera nello split e ⌘J (2.1.1/2.1.2, con due difetti preesistenti curati: ⌘= impossibile dalla tastiera italiana, menu degli strumenti che Esc non chiudeva sull'iPad), lingua dell'interfaccia dichiarata e lingua del documento ricavata (3.1.1); le due voci rosse dell'audit sull'iPad spiegate (barra delle schede di sistema, testo sotto un foglio) e accettate con condizioni e un tetto, dichiarate; letture identiche al byte alla build 58 su entrambe le generazioni. Vedi STATO del 2026-10-18 sera)
 > Versione: 2.49 (18 ottobre 2026, giro «chiusura del capitolo note e pulizia del repo», **CONCLUSO** con la **build 58** su TestFlight (VALID): registrate all'apertura le quattro decisioni del maintainer (nessun tetto alla distanza delle note lunghe; cura delle 13 note dei Mandrioli spezzate vicino a una glossa a margine; codici in attesa di una cura vera dell'ordine delle colonne; rete delle risorse visive che giudica anche il posto); le 13 note ricucite con la glossa al suo posto (659 → 672 ricuciture, 25/25 coppie giudicate sulla pagina); la rete delle risorse visive giudica il posto contro una verità registrata, con la prova al contrario; testo dei volumi tolto dall'albero del repo (74 file); **il capitolo delle note è chiuso**, con le voci aperte per scelta elencate nello STATO del 2026-10-18)
@@ -90,9 +91,55 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   richiesta; la stessa ricerca su una riga l'ha fatta scattare): quel varco non si usa mai per raggiungere le cartelle; le
   verifiche di soli file dei laboratori che devono nominarle, a maintainer assente, passano da uno script del laboratorio
   dichiarato. L'esito si legge nel registro della sessione (`permissionDecision` «user_temporary» contro «mode»).
+- **Rete delle cure mirate in ogni giro (dal 2026-11-06).** Finché il registro delle cure mirate (`ScaboCore/TargetedCures.swift`,
+  `docs/CURE_MIRATE.md`) ha voci, ogni giro che tocca la catena esegue `app/ios/scripts/rete_cure_mirate.sh <etichetta>`: i
+  documenti curati non sono fra i 52 del banco, e solo questa rete si accorge se una modifica del tronco cambia la loro lettura.
 - Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
   commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
   solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
+
+---
+
+## ▶ STATO — Giro «cure mirate per lo studio»: due documenti di studio curati per impronta, invarianza al byte sul banco, prova alla cieca su un volume ignoto, build 62 — 2026-11-06
+
+**Partenza:** `2c935be` (main = origin, build 61 VALID). **Arrivo:** codice della build `f0a71e5`, poi questo commit di documenti (ramo
+`feat/cure-mirate-studio` fuso in main in avanti veloce prima della build, poi cancellato); build 62 su TestFlight (voce in
+`docs/RELEASE_TESTFLIGHT.md`). Livello di verifica **pieno**, deciso dal maintainer. Ambiente: **Xcode 27.2 (27B52), Swift
+6.4.2** (il giro precedente usava 27.1); macOS 27.0.1 e simulatori iOS 26.5 e 27.0 invariati. Prima di ogni cura: letture
+identiche al byte alle build 60/61 su entrambe le generazioni (runner 260/260 + 260/260, catena dell'iPad 260/260).
+Referto (nessun testo dei volumi, documenti per etichetta neutra) e laboratorio: `~/Developer/scabopdf-gen-lab/referto/` e
+`~/Developer/scabopdf-gen-lab/studio_mirato/`.
+
+- **Raccolta dei permessi** all'inizio: nessuna richiesta scattata, né allora né dopo (374 operazioni, tutte «mode»).
+- **Decisioni del maintainer** in LAYER2 § 0-ter (rimando nel § 12.13): cure temporanee mirate su singoli documenti di
+  studio, accese solo dall'impronta del contenuto; registro unico con motivo, etichetta neutra e condizione di rimozione;
+  la cura per capacità resta il principio.
+- **Meccanismo** (`docs/CURE_MIRATE.md`): l'estrattore mette l'impronta del file nell'estrazione
+  (`PdfExtraction.sourceSha256`, additivo); `estimateProfile` consulta il registro (`ScaboCore/TargetedCures.swift`); le
+  regole (`TargetedRules.swift`, private, per forma e geometria) girano solo se il profilo ne porta; offerta solo ai libri del
+  registro (`ReprocessingPolicy.targetedCureBuilds`; `ProcessingChain.cureLevel` resta 58; esclusi letture dal Mac e testi
+  normativi). Due voci: **studio-A** (dispensa Word: titoli in grassetto alla taglia del corpo, sommari di capitolo) e
+  **studio-B** (manuale: titoli di paragrafo più piccoli del corpo, sezioni, sommari etichettati, etichette con ornamenti).
+- **Numeri** (identici su iOS 26.5 e 27): studio A titoli 0 → 97/97 ritrovati (0 inventati), indice stampato 0 → 101/102,
+  note lunghe da una mediana di 115 pagine di distanza a 1; studio B indice stampato 20 → 312/331, 284 paragrafi + 20
+  sezioni + 19 unità di parte e capitolo, 16 sommari non più letti come note; lettere e cifre identiche (tolti solo 38 glifi
+  d'ornamento e un trattino ricomposto). Annotazioni sintetiche dei due documenti: 0 ricollocazioni sbagliate (nel manuale
+  i segnalibri sulle vecchie etichette di capitolo diventano «da ricollocare», detto nelle note per i tester).
+- **Reti**: invarianza sui 52 volumi con catture nuove (impronta in ogni estrazione) runner 260/260 e catena 260/260 per
+  generazione; Marotta identico; risorse visive 110/110 al posto; annotazioni 416/416 per generazione, 0 sbagliate;
+  parità iPad-Mac 52/52; prova al contrario sintetica e sul vero; suite complete sui quattro simulatori verdi salvo 2 test
+  della ricerca nella libreria su iPad iOS 27 rossi per libri rimasti nella libreria del simulatore (passano a libreria
+  pulita: fragilità d'isolamento di quei test, da sistemare).
+- **Revisione indipendente** con catena a sonde: sette risposte favorevoli, nessun bloccante; corretti i rilievi D1-D4 e
+  M1, M4, M5 (`2c841be`, `17ae366`, `f0a71e5`). Nuova rete fissa: `app/ios/scripts/rete_cure_mirate.sh`, **da rifare in
+  ogni giro finché il registro ha voci** (i documenti curati non sono fra i 52 del banco).
+- **Prova alla cieca** su un libro di storia mai visto (fotografia congelata prima di ogni modifica): ordine di lettura
+  giusto, ma 4 titoli di capitolo cancellati come testatina, sezioni incollate al corpo, carte scartate per la filigrana,
+  note di chiusura non legate al richiamo, 314 parole spezzate su iOS 26.5; l'officina del Mac dà la stessa lettura
+  (INBOX § H). Nessuna cura in questo giro.
+- **Aperto per il giro dopo** (referto § 10): decisione sulla cura per capacità dei titoli in grassetto a taglia di corpo;
+  cure per capacità dei difetti del libro ignoto (titoli cancellati come testatina per primi); isolamento dei due test della
+  ricerca nella libreria.
 
 ---
 
