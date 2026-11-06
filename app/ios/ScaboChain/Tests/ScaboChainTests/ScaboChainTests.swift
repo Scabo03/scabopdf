@@ -93,6 +93,16 @@ final class EstrattoreSulMacTests: XCTestCase {
         XCTAssertGreaterThan(lines[0].bbox.y, lines[1].bbox.y)
     }
 
+    /// L'impronta del file viaggia con l'estrazione (cure mirate, LAYER2 § 0-ter): è lo SHA-256 dei byte del file letto,
+    /// la stessa impronta dell'identità del libro.
+    func test_impronta_delFileNellEstrazione() throws {
+        let url = SyntheticPDF.smallBook(pages: 2)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let ex = try PdfKitExtractor().extract(fromUri: url.absoluteString)
+        XCTAssertEqual(ex.sourceSha256, try DocumentFingerprint.sha256Hex(ofFileAt: url))
+        XCTAssertTrue(TargetedCures.rules(forFingerprint: ex.sourceSha256).isEmpty, "un PDF sintetico non è nel registro")
+    }
+
     func test_estrazioneAFlusso_chunkPiccoloUgualeAChunkEnorme() throws {
         let url = SyntheticPDF.smallBook(pages: 5)
         defer { try? FileManager.default.removeItem(at: url) }

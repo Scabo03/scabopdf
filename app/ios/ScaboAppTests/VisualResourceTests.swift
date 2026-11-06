@@ -341,6 +341,33 @@ final class VisualResourceTests: XCTestCase {
         XCTAssertTrue(ReprocessOffer.cures.contains { $0.build == 53 && $0.text.contains("risorse visive") })
     }
 
+    /// Cure mirate (LAYER2 § 0-ter, giro del 2026-11-06): l'offerta arriva solo al libro la cui impronta è nel registro, con la
+    /// frase della cura dedicata e nessun titolo né nome di file; un altro libro elaborato dalla stessa build non riceve nulla,
+    /// e il livello di cure generale della catena non cambia.
+    func test_offer_targetedCure_onlyForRegisteredFingerprints() {
+        guard let entry = TargetedCures.registry.first, let sha = entry.fingerprints.first else {
+            return XCTFail("registro delle cure mirate vuoto")
+        }
+        func pdf(_ sha: String?, build: String) -> ArchivedDocument {
+            ArchivedDocument(id: "p", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
+                             processedSystemVersion: SystemGeneration.current, processedAppBuild: build, sourceSha256: sha)
+        }
+        XCTAssertEqual(ProcessingChain.cureLevel, 58, "le cure mirate non alzano il livello di cure generale")
+        let cured = pdf(sha, build: "61")
+        XCTAssertEqual(ReprocessOffer.policy.reason(for: cured, currentSystemVersion: SystemGeneration.current,
+                                                    currentAppBuild: "62"), .cure)
+        let text = ReprocessOffer.whatChanges(cured, reason: .cure)
+        XCTAssertTrue(text.contains("cura dedicata") && text.contains(entry.whatChanges), text)
+        XCTAssertFalse(text.lowercased().contains(".pdf"), text)
+        let other = pdf(String(repeating: "b", count: 64), build: "61")
+        XCTAssertNil(ReprocessOffer.policy.reason(for: other, currentSystemVersion: SystemGeneration.current,
+                                                  currentAppBuild: "62"))
+        XCTAssertFalse(ReprocessOffer.whatChanges(other, reason: .cure).contains("cura dedicata"))
+        // Già rielaborato con la build della cura: niente più offerta.
+        XCTAssertNil(ReprocessOffer.policy.reason(for: pdf(sha, build: "62"), currentSystemVersion: SystemGeneration.current,
+                                                  currentAppBuild: "63"))
+    }
+
     /// Decisione 1 del maintainer (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17): un testo normativo già
     /// importato riceve le cure della SUA catena (i pezzi nuovi delle note), con un testo che parla di lui; mai quelle dei
     /// soli PDF, e nessun discorso sul lettore di sistema.
