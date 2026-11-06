@@ -12,12 +12,13 @@
 //  registro unico di quelle cure: ogni voce dichiara le impronte dei suoi documenti, il motivo, la condizione per toglierla
 //  e la build che la porta (per l'offerta «Lettura migliore disponibile», che si propone SOLO a quei documenti).
 //
-//  Il cancello è uno solo: `TargetedCures.rules(forFingerprint:)`, consultato una volta da `estimateProfile` con
-//  l'impronta che l'estrattore mette nell'estrazione (`PdfExtraction.sourceSha256`). Dove l'impronta non è nel registro
-//  (o manca, come nelle estrazioni catturate prima di questo giro) il risultato è l'insieme vuoto, e il codice delle regole
-//  NON viene nemmeno eseguito: ogni regola si apre con la guardia sul proprio caso dell'insieme (`profile.targeted`). La
-//  lettura di ogni altro file resta identica al byte per costruzione; lo provano la prova al contrario (stesso difetto,
-//  impronta diversa → uscita identica a prima) e la rete d'invarianza sui 52 volumi del banco.
+//  Il cancello è uno solo: `TargetedCures.rules(forFingerprint:)`, consultato da `estimateProfile` (a ogni stima del
+//  profilo) con l'impronta che l'estrattore mette nell'estrazione (`PdfExtraction.sourceSha256`). Dove l'impronta non è nel
+//  registro (o manca, come nelle estrazioni catturate prima di questo giro) il risultato è l'insieme vuoto, e il codice delle
+//  regole NON viene nemmeno eseguito: `pageItems` e `assembleDocument` chiamano i due smistatori solo se l'insieme
+//  (`profile.targeted`) non è vuoto, e gli smistatori chiamano solo le regole del caso. La lettura di ogni altro file resta
+//  identica al byte per costruzione; lo provano la prova al contrario (stesso difetto, impronta diversa → uscita identica a
+//  prima), una catena con sonde (0 ingressi nelle regole sui 52 volumi) e la rete d'invarianza sui 52 volumi del banco.
 //
 //  Le regole NON contengono parole, titoli o frasi dei libri: si esprimono con geometria, tipografia, posizioni e forme
 //  generali (una parola-chiave di struttura come «Capitolo» o «Sezione» non è testo di un libro). I documenti si chiamano
@@ -49,6 +50,9 @@ public enum TargetedRule: String, CaseIterable, Sendable {
     /// Studio B: il titolo di paragrafo «N. …» composto più piccolo del corpo (≈ 0,9), non in grassetto né in corsivo, al
     /// bordo sinistro della colonna e staccato sopra e sotto, con le sue righe di continuazione rientrate, diventa un titolo.
     case smallerNumberedParagraphTitles = "titoli_di_paragrafo_sotto_la_taglia_del_corpo"
+
+    /// Le regole che misurano il bordo sinistro della colonna del corpo sul documento (`Profile.targetedLeftEdge`).
+    static let usingBodyLeftEdge: Set<TargetedRule> = [.sectionLabels, .smallerNumberedParagraphTitles]
 }
 
 /// Una voce del registro.
@@ -94,9 +98,10 @@ public enum TargetedCures {
                 + "alla taglia del corpo, e il tronco riconosce un titolo solo per taglia, colore o grassetto più grande del "
                 + "corpo. Tutti i titoli finivano dentro il corpo, la navigazione per intestazioni era vuota e le note lunghe "
                 + "si leggevano in fondo al documento.",
-            removalCondition: "Si toglie quando una cura per capacità riconosce i titoli in grassetto a taglia di corpo dei "
-                + "documenti Word (proposta fra le decisioni del giro), oppure quando la lettura preparata dal Mac per questo "
-                + "documento la rende superflua.",
+            removalCondition: "Si toglie quando la lettura del documento SENZA questa voce è identica al byte a quella con la "
+                + "voce, o giudicata non peggiore contro la pagina (per esempio perché una cura per capacità riconosce i titoli "
+                + "in grassetto a taglia di corpo dei documenti Word: proposta fra le decisioni del giro); oppure quando il "
+                + "maintainer adotta per questo documento una lettura preparata dal Mac che la contiene.",
             cureBuild: 62,
             whatChanges: "i titoli dei capitoli e dei paragrafi si trovano nella navigazione per intestazioni, le note lunghe "
                 + "si leggono alla fine del loro paragrafo e non più in fondo al documento, e il sommario di ogni capitolo si "
@@ -109,9 +114,10 @@ public enum TargetedCures {
                 + "alla taglia del corpo e le etichette di Parte e Capitolo fra due ornamenti. Sul dispositivo il carattere si "
                 + "perde e resta solo la taglia: i titoli di paragrafo e le sezioni finivano dentro il corpo, i sommari di "
                 + "capitolo si leggevano come note, e le etichette di capitolo stavano separate dal loro titolo.",
-            removalCondition: "Si toglie quando una cura per capacità riconosce i titoli di paragrafo numerati più piccoli del "
-                + "corpo e i sommari etichettati (proposta fra le decisioni del giro), oppure quando la lettura preparata dal "
-                + "Mac per questo documento la rende superflua.",
+            removalCondition: "Si toglie quando la lettura del documento SENZA questa voce è identica al byte a quella con la "
+                + "voce, o giudicata non peggiore contro la pagina (per esempio perché una cura per capacità riconosce i titoli "
+                + "di paragrafo numerati più piccoli del corpo e i sommari etichettati); oppure quando il maintainer adotta per "
+                + "questo documento una lettura preparata dal Mac che la contiene.",
             cureBuild: 62,
             whatChanges: "i titoli dei paragrafi e delle sezioni si trovano nella navigazione per intestazioni, il sommario "
                 + "all'inizio di ogni capitolo si legge come sommario e non più come una nota, e l'etichetta di ogni capitolo e "

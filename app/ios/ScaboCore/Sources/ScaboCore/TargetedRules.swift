@@ -7,7 +7,12 @@
 //
 //  Si eseguono SOLO dove il profilo porta regole mirate (`profile.targeted`: l'impronta del file nel registro):
 //  `pageItems` chiama `applyTargetedPageRules` e `assembleDocument` chiama `applyTargetedDocumentRules` solo in quel caso.
-//  Ogni regola si apre con la guardia sul proprio caso: un documento del registro esegue soltanto le regole della sua voce.
+//  I due smistatori chiamano una regola solo se il suo caso è nell'insieme: un documento del registro esegue soltanto le
+//  regole della sua voce. Le regole sono `private`: fuori da questo file si raggiungono solo attraverso i due smistatori.
+//  Attenzione (revisione indipendente del giro): le regole di pagina vivono in `pageItems`, che usano anche i rami appunti
+//  e Cortina, mentre quelle di documento solo nel Generic. I documenti registrati vanno al Generic (verificato, e
+//  ricontrollato dalla rete di ogni giro, `docs/CURE_MIRATE.md` § 5): se un giorno finissero in un altro ramo, la voce va
+//  rivista.
 //
 //  Le regole di PAGINA lavorano sugli item della pagina, come le foglie del tronco: la costruzione del documento e
 //  l'aggancio delle note (`bindAndPlaceNotes`, che rideriva gli item della pagina e li accoppia uno a uno ai nodi) vedono
@@ -191,7 +196,7 @@ private func targetedIsBoldBodySizeLine(_ sm: LineSummary, body: Double) -> Bool
 /// (parola-chiave + romano) assorbe le righe successive che non aprono un numero (il titolo del capitolo) e diventa
 /// un'intestazione di capitolo; ogni riga che apre con un numero apre un titolo di paragrafo, e le righe che seguono senza
 /// numero sono la sua continuazione. Un gruppo che non apre né con l'etichetta né con un numero resta un titolo a sé.
-func targetedBoldBodySizeTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+private func targetedBoldBodySizeTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
     guard profile.bodySize > 0 else { return items }
     let body = profile.bodySize
     return targetedSplitBodyRuns(items) { lines, start, _ in
@@ -228,7 +233,7 @@ private func targetedOpensWithUnitLabel(_ text: String) -> Bool {
 
 /// Il blocco di corpo che segue l'intestazione di capitolo sulla stessa pagina, se ha la forma di un sommario in prosa
 /// («1. … – 2. … – 3. …», almeno due voci dopo la prima), è il sommario del capitolo: un'unità sola, letta come tale.
-func targetedChapterSummaryAfterChapterTitle(_ items: [GenItem]) -> [GenItem] {
+private func targetedChapterSummaryAfterChapterTitle(_ items: [GenItem]) -> [GenItem] {
     var out: [GenItem] = []
     for item in items {
         if case .run(.body, let lines) = item, let last = out.last, case .heading(let h, _) = last,
@@ -248,7 +253,7 @@ func targetedChapterSummaryAfterChapterTitle(_ items: [GenItem]) -> [GenItem] {
 /// contiene (capitolo, o sezione dove c'è). Un titolo il cui numero non porta subito il punto (un refuso della stampa, un
 /// «N bis.») non deve trascinare più in basso i titoli che lo seguono, come farebbe il calcolo relativo dei manuali, che
 /// lo prende per un titolo non numerato.
-func targetedFlatParagraphLevels(_ nodes: inout [NodeDict]) -> Int {
+private func targetedFlatParagraphLevels(_ nodes: inout [NodeDict]) -> Int {
     var chapterLevel: Int?
     var touched = 0
     for i in nodes.indices {
@@ -274,7 +279,7 @@ func targetedFlatParagraphLevels(_ nodes: inout [NodeDict]) -> Int {
 
 /// L'etichetta di Parte o di Capitolo composta fra due glifi d'ornamento (area d'uso privato), seguita dal suo titolo:
 /// un'intestazione sola, senza gli ornamenti, al livello del titolo (lo normalizza poi `normalizeManualLevels` per classe).
-func targetedOrnamentedStructureLabels(_ items: [GenItem]) -> [GenItem] {
+private func targetedOrnamentedStructureLabels(_ items: [GenItem]) -> [GenItem] {
     var out: [GenItem] = []
     var i = 0
     while i < items.count {
@@ -297,7 +302,7 @@ func targetedOrnamentedStructureLabels(_ items: [GenItem]) -> [GenItem] {
 /// L'etichetta del sommario di capitolo, sola in un blocco di corpo, seguita dall'elenco composto alla taglia delle note
 /// sulla stessa pagina: un sommario di capitolo solo (etichetta + elenco), non corpo e note. Le righe dell'elenco si
 /// rimettono in ordine di posizione (dall'alto in basso): il lettore di sistema può emetterne una fuori posto.
-func targetedLabelledChapterSummary(_ items: [GenItem]) -> [GenItem] {
+private func targetedLabelledChapterSummary(_ items: [GenItem]) -> [GenItem] {
     var out: [GenItem] = []
     var i = 0
     while i < items.count {
@@ -319,7 +324,7 @@ func targetedLabelledChapterSummary(_ items: [GenItem]) -> [GenItem] {
 
 /// Studio B, in posizione: il primo blocco di una pagina composto alla taglia delle note che continua l'elenco del
 /// sommario rimasto aperto in fondo alla pagina precedente («… – N. …», almeno due voci) è ancora il sommario.
-func targetedChapterSummaryContinuation(_ nodes: inout [NodeDict]) -> Int {
+private func targetedChapterSummaryContinuation(_ nodes: inout [NodeDict]) -> Int {
     var touched = 0
     for i in nodes.indices where i > 0 && nodes[i].type == .NOTE {
         let prev = nodes[i - 1]
@@ -337,7 +342,7 @@ func targetedChapterSummaryContinuation(_ nodes: inout [NodeDict]) -> Int {
 
 /// L'etichetta di sezione (parola-chiave + romano) alla taglia del corpo, al bordo sinistro della colonna, seguita da una a
 /// tre righe tutte maiuscole alla stessa taglia (il titolo della sezione): un'intestazione di sezione.
-func targetedSectionLabels(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+private func targetedSectionLabels(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
     guard profile.bodySize > 0, profile.targetedLeftEdge > 0 else { return items }
     let body = profile.bodySize, left = profile.targetedLeftEdge
     func atLeftEdge(_ sm: LineSummary) -> Bool { abs(sm.x0 - left) <= 3 }
@@ -359,7 +364,7 @@ func targetedSectionLabels(_ items: [GenItem], _ profile: Profile) -> [GenItem] 
 /// Il titolo di paragrafo numerato composto in un carattere più piccolo del corpo (≈ 0,9 del corpo: fra corpo − 1,3 e
 /// corpo − 0,7 pt), non in grassetto né in corsivo, al bordo sinistro della colonna, staccato dalla riga di sopra e da
 /// quella di sotto; le sue righe di continuazione (fino a due) sono alla stessa taglia e rientrate rispetto al numero.
-func targetedSmallerNumberedParagraphTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+private func targetedSmallerNumberedParagraphTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
     guard profile.bodySize > 0, profile.targetedLeftEdge > 0 else { return items }
     let body = profile.bodySize, left = profile.targetedLeftEdge
     func titleSized(_ sm: LineSummary) -> Bool {

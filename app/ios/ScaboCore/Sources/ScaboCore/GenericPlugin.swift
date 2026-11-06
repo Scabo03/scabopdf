@@ -270,10 +270,11 @@ struct Profile {
     /// Le CURE MIRATE accese su questo documento (TargetedCures.swift, LAYER2 § 0-ter): l'insieme delle regole che il
     /// registro associa all'impronta del file (`PdfExtraction.sourceSha256`). Vuoto per ogni documento non registrato —
     /// cioè per tutti tranne i documenti di studio dichiarati nel registro — e allora nessuna regola mirata viene
-    /// eseguita (`applyTargetedPageRules` ritorna gli item invariati senza guardarli).
+    /// eseguita (`pageItems` e `assembleDocument` non chiamano nemmeno gli smistatori delle regole).
     var targeted: Set<TargetedRule> = []
-    /// Solo con regole mirate accese: il bordo sinistro della colonna del corpo stimato su TUTTO il documento (modo dei bordi
-    /// sinistri delle righe di corpo larghe), più stabile della stima per pagina sulle pagine con poco corpo. 0 altrimenti.
+    /// Solo per le regole mirate che lo usano (sezioni, titoli di paragrafo sotto la taglia del corpo): il bordo sinistro
+    /// della colonna del corpo stimato su TUTTO il documento (modo dei bordi sinistri delle righe di corpo larghe), più
+    /// stabile della stima per pagina sulle pagine con poco corpo. 0 altrimenti (e allora non si calcola).
     var targetedLeftEdge: Double = 0
 }
 
@@ -577,7 +578,8 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
         isGiappichelliPhotoshop: isGiappichelliPhotoshop, mono: mono, isDejure: extractionIsDejure(extraction),
         // Il cancello delle cure mirate: l'impronta del file nel registro, o l'insieme vuoto (LAYER2 § 0-ter).
         targeted: targeted,
-        targetedLeftEdge: targeted.isEmpty ? 0 : targetedBodyLeftEdge(extraction, body: bodySize))
+        targetedLeftEdge: targeted.isDisjoint(with: TargetedRule.usingBodyLeftEdge)
+            ? 0 : targetedBodyLeftEdge(extraction, body: bodySize))
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
