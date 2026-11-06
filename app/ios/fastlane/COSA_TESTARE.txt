@@ -2,8 +2,8 @@ Build 63 — la lettura dei due documenti di studio è stata rifinita
 
 Che cosa cambia
 - La cura dedicata ai due documenti di studio del maintainer (la dispensa scritta con Word e il manuale a più mani) è stata rifinita. L'app li riconosce ancora dal contenuto del file.
-- Nella dispensa le frasi finiscono di nuovo col loro punto anche quando c'è un richiamo di nota: prima quel punto si perdeva e due frasi si leggevano attaccate. Le note brevi si leggono subito dopo la frase che le richiama, non più alla fine del capoverso. Il testo è diviso nei capoversi del libro: un elemento non scavalca più l'a capo. Molte più note hanno l'azione «Vai al testo del richiamo».
-- In tutti e due i documenti un numero di pagina andato a capo in una citazione non diventa più una nota a sé, e le citazioni dei decreti legislativi e dei codici abbreviati non si spezzano più a metà.
+- Nella dispensa le frasi finiscono di nuovo col loro punto anche quando c'è un richiamo di nota: prima quel punto si perdeva e due frasi si leggevano attaccate. Le note brevi si leggono subito dopo la frase che le richiama, non più alla fine del capoverso, e molte più note hanno l'azione «Vai al testo del richiamo».
+- In tutti e due i documenti il testo è diviso nei capoversi del libro, le frasi finiscono col loro punto anche dopo un richiamo di nota, un numero di pagina andato a capo in una citazione non diventa più una nota a sé, e le citazioni dei decreti legislativi e dei codici abbreviati non si spezzano più a metà.
 - Nel manuale i riquadri di approfondimento sono annunciati come «Riquadro» e si leggono al loro posto, a pezzi come le note lunghe; prima sembravano note. La bibliografia alla fine di ogni capitolo ha il suo titolo nella navigazione per intestazioni e si legge col segnale della bibliografia. Nell'indice analitico in fondo non ci sono più note finte.
 - Il testo dei due documenti resta identico, lettera per lettera: cambiano punteggiatura recuperata, confini degli elementi, ruoli e annunci.
 

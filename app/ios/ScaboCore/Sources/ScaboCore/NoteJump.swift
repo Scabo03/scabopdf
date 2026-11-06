@@ -116,7 +116,7 @@ public struct NoteJumpOptions: Equatable, Sendable {
     public init(targetedInline: Bool = false) { self.targetedInline = targetedInline }
     /// Le opzioni per un documento con queste regole mirate (le predefinite per ogni documento non registrato).
     public static func forTargeted(_ rules: Set<TargetedRule>) -> NoteJumpOptions {
-        NoteJumpOptions(targetedInline: rules.contains(.detachedCallPunctuation))
+        NoteJumpOptions(targetedInline: rules.contains(.widerNoteJump))
     }
 }
 

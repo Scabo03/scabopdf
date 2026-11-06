@@ -160,13 +160,24 @@ func targetedIsDetachedCallPunctuation(_ index: Int, in lines: [PdfTextLine]) ->
     return false
 }
 
+/// Vero se il testo comincia con un segno d'interpunzione di fine frase o di chiusura seguito da uno spazio (o è solo
+/// quello): il resto della stessa riga fisica, che il lettore di sistema ha separato dal richiamo in apice («. Ne derivano…»).
+private func targetedStartsWithDetachedPunctuation(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    guard let first = t.first, TARGETED_DETACHED_PUNCTUATION.contains(first) else { return false }
+    let rest = t.dropFirst()
+    return rest.isEmpty || rest.first == " " || targetedIsPunctuationOnly(t)
+}
+
 /// Riattacca l'interpunzione staccata alla riga che finisce col richiamo (stessa linea di base, contigua), senza spazio:
-/// «parola¹⁴» + «.» → «parola¹⁴.». E una riga di corpo spezzata che finisce con un richiamo in apice prende la taglia del
-/// suo testo (la media col richiamo la faceva sembrare una nota). Testo invariato salvo lo spazio che non c'è sulla pagina.
+/// «parola¹⁴» + «.» → «parola¹⁴.». Vale anche quando la riga staccata porta, dopo l'interpunzione, il resto della stessa
+/// riga fisica («parola¹⁴» + «. Ne derivano…» → «parola¹⁴. Ne derivano…»). E una riga di corpo spezzata che finisce con un
+/// richiamo in apice prende la taglia del suo testo (la media col richiamo la faceva sembrare una nota). Testo invariato
+/// salvo lo spazio che non c'è sulla pagina.
 private func targetedReattachCallPunctuation(_ lines: [LineSummary], _ profile: Profile) -> [LineSummary] {
     var out: [LineSummary] = []
     for sm in lines {
-        if targetedIsPunctuationOnly(sm.text), let prev = out.last, targetedEndsWithSuperscriptCall(prev.spans),
+        if targetedStartsWithDetachedPunctuation(sm.text), let prev = out.last, targetedEndsWithSuperscriptCall(prev.spans),
            abs(prev.yBottom - sm.yBottom) <= 1.5, abs(prev.x1 - sm.x0) <= 2 {
             out[out.count - 1] = LineSummary(
                 text: prev.text + jsTrim(sm.text), fontSize: prev.fontSize, bold: prev.bold, italic: prev.italic,

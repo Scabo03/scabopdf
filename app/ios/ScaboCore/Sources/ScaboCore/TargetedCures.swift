@@ -78,6 +78,10 @@ public enum TargetedRule: String, CaseIterable, Sendable {
     /// nuovo: la lettura non lo incolla al precedente (i blocchi di lettura non scavalcano più l'a capo, e le note brevi
     /// richiamate in fondo a un capoverso si leggono lì).
     case indentedParagraphs = "capoversi_rientrati"
+    /// Studi A e B, nella vista di lettura: il salto «Vai al testo del richiamo» di una nota letta in linea cerca il
+    /// richiamo anche nell'ultima frase intera del segmento che la precede (oltre i 400 caratteri) e dopo una sigla col punto
+    /// (`NoteJumpOptions`). Regola a sé, così togliere un'altra regola non lo spegne in silenzio.
+    case widerNoteJump = "salto_al_richiamo_ampliato"
 
     /// Le regole che misurano il bordo sinistro della colonna del corpo sul documento (`Profile.targetedLeftEdge`).
     static let usingBodyLeftEdge: Set<TargetedRule> = [
@@ -126,38 +130,41 @@ public enum TargetedCures {
             label: "studio-A",
             fingerprints: ["d0272b2123af0ae040045ef2942c9d8414c2a779a3457a0f3087f62de8bca815"],
             rules: [.boldBodySizeTitles, .chapterSummaryAfterChapterTitle, .detachedCallPunctuation,
-                    .fullSizeNumberContinuesNote, .citationAbbreviations, .indentedParagraphs],
+                    .fullSizeNumberContinuesNote, .citationAbbreviations, .indentedParagraphs, .widerNoteJump],
             reason: "Dispensa scritta con Word, a carattere unico: titoli di capitolo e di paragrafo sono composti in grassetto "
                 + "alla taglia del corpo, e il tronco riconosce un titolo solo per taglia, colore o grassetto più grande del "
                 + "corpo. Tutti i titoli finivano dentro il corpo, la navigazione per intestazioni era vuota e le note lunghe "
                 + "si leggevano in fondo al documento. Rifiniture (build 63): il punto dopo un richiamo di nota si perdeva come "
                 + "mobilia ricorrente (le frasi si incollavano e le note brevi si leggevano a fine capoverso, spesso senza il "
                 + "salto al richiamo); il numero di pagina di una citazione andato a capo apriva una nota finta; le citazioni "
-                + "di decreti legislativi si spezzavano dopo «lgs.».",
+                + "di decreti legislativi si spezzavano dopo «lgs.»; un elemento di lettura scavalcava l'a capo dei capoversi.",
             removalCondition: "Si toglie quando la lettura del documento SENZA questa voce è identica al byte a quella con la "
                 + "voce, o giudicata non peggiore contro la pagina (per esempio perché una cura per capacità riconosce i titoli "
-                + "in grassetto a taglia di corpo dei documenti Word: proposta fra le decisioni del giro); oppure quando il "
-                + "maintainer adotta per questo documento una lettura preparata dal Mac che la contiene.",
+                + "in grassetto a taglia di corpo delle dispense Word, decisa dal maintainer il 2026-11-06, LAYER2 § 0-ter); "
+                + "oppure quando il maintainer adotta per questo documento una lettura preparata dal Mac che la contiene. Una "
+                + "sola regola della voce si toglie quando la lettura senza quella regola è identica al byte, o giudicata non "
+                + "peggiore contro la pagina; la voce resta con le altre.",
             cureBuild: 63,
             whatChanges: "i titoli dei capitoli e dei paragrafi si trovano nella navigazione per intestazioni, le note lunghe "
                 + "si leggono alla fine del loro paragrafo e non più in fondo al documento, il sommario di ogni capitolo si "
                 + "legge intero, come sommario; in più ora le frasi finiscono col loro punto anche dopo un richiamo di nota, "
                 + "le note brevi si leggono subito dopo la frase che le richiama e più note hanno il salto al testo del "
-                + "richiamo, nessun numero di pagina diventa una nota a sé, e le citazioni dei decreti legislativi non si "
-                + "spezzano più"),
+                + "richiamo, il testo è diviso nei capoversi del libro, nessun numero di pagina diventa una nota a sé, e le "
+                + "citazioni dei decreti legislativi non si spezzano più"),
         TargetedCureEntry(
             label: "studio-B",
             fingerprints: ["f0a98bcdcd46a5af734f8879a2d10d36de172200896c4e7e1ab9f885cc83a6a4"],
             rules: [.ornamentedStructureLabels, .labelledChapterSummary, .sectionLabels, .smallerNumberedParagraphTitles,
                     .detachedCallPunctuation, .fullSizeNumberContinuesNote, .citationAbbreviations, .framedAsideBoxes,
-                    .bibliographyLabels, .indentedParagraphs],
+                    .bibliographyLabels, .indentedParagraphs, .widerNoteJump],
             reason: "Manuale a più mani: i titoli di paragrafo sono composti in un carattere più piccolo del corpo, le sezioni "
                 + "alla taglia del corpo e le etichette di Parte e Capitolo fra due ornamenti. Sul dispositivo il carattere si "
                 + "perde e resta solo la taglia: i titoli di paragrafo e le sezioni finivano dentro il corpo, i sommari di "
                 + "capitolo si leggevano come note, e le etichette di capitolo stavano separate dal loro titolo. Rifiniture "
                 + "(build 63): i riquadri di approfondimento si leggevano come note senza annuncio; l'etichetta di bibliografia "
                 + "di fine capitolo era incollata alle voci, lette come corpo; il numero di pagina di una citazione andato a "
-                + "capo apriva una nota finta; alcune citazioni si spezzavano dopo un codice abbreviato.",
+                + "capo apriva una nota finta; alcune citazioni si spezzavano dopo un codice abbreviato; un elemento di lettura "
+                + "scavalcava l'a capo dei capoversi; il punto dopo un richiamo di nota restava staccato.",
             removalCondition: "Si toglie quando la lettura del documento SENZA questa voce è identica al byte a quella con la "
                 + "voce, o giudicata non peggiore contro la pagina (per esempio perché una cura per capacità riconosce i titoli "
                 + "di paragrafo numerati più piccoli del corpo e i sommari etichettati); oppure quando il maintainer adotta per "
@@ -167,7 +174,9 @@ public enum TargetedCures {
                 + "all'inizio di ogni capitolo si legge come sommario e non più come una nota, e l'etichetta di ogni capitolo e "
                 + "di ogni parte sta insieme al suo titolo; in più ora i riquadri di approfondimento sono annunciati come "
                 + "riquadri, la bibliografia di fine capitolo ha il suo titolo nella navigazione e si legge col segnale della "
-                + "bibliografia, e nessun numero di pagina diventa una nota a sé"),
+                + "bibliografia, il testo è diviso nei capoversi del libro, le frasi finiscono col loro punto anche dopo un "
+                + "richiamo, le citazioni non si spezzano, più note hanno il salto al testo del richiamo e nessun numero di "
+                + "pagina diventa una nota a sé"),
     ]
 
     private static let byFingerprint: [String: TargetedCureEntry] = {
@@ -193,8 +202,8 @@ public enum TargetedCures {
     /// Le abbreviazioni delle citazioni di norme che la regola `.citationAbbreviations` aggiunge alla lista generale della
     /// segmentazione di frase (`SENTENCE_ABBREVIATIONS`), nella stessa forma (minuscola, punti interni conservati, senza il
     /// punto finale): «D. lgs.», «d. lg.», codice del consumo, codice della navigazione, decreto del Capo provvisorio dello
-    /// Stato, «Abs.» (comma, nelle citazioni tedesche). Forme di citazione, non parole di un libro.
-    public static let citationAbbreviations: Set<String> = ["lgs", "lg", "c.cons", "c.n", "c.p.s", "abs"]
+    /// Stato, «Abs.» (comma, nelle citazioni tedesche), «all.» (allegato). Forme di citazione, non parole di un libro.
+    public static let citationAbbreviations: Set<String> = ["lgs", "lg", "c.cons", "c.n", "c.p.s", "abs", "all"]
 
     /// Le regole di frase da accendere per un insieme di regole mirate (vuote per ogni documento non registrato): le
     /// abbreviazioni aggiuntive e la data spezzata a fine riga («18.2.» seguito dall'anno) che non chiude la frase.

@@ -325,6 +325,15 @@ final class TargetedCuresTests: XCTestCase {
         moved[2].bbox.y = 640
         XCTAssertFalse(targetedIsDetachedCallPunctuation(2, in: moved), "un punto su un'altra riga non è staccato")
         XCTAssertFalse(targetedIsDetachedCallPunctuation(0, in: lines))
+        // La riga staccata può portare, dopo il punto, il resto della stessa riga fisica: si riattacca anche lei.
+        let call = summarizeLine(callLine("una frase che finisce col richiamo", call: "7", x: 64, y: 425, width: 300))
+        let rest = summarizeLine(line(". Ne segue un'altra frase inventata.", size: 12, x: 372, y: 425, width: 117))
+        let p = Profile(bodySize: 12, bodyColor: "#000000", targeted: [.detachedCallPunctuation])
+        let out = applyTargetedLineRules([call, rest], p)
+        XCTAssertEqual(out.count, 1)
+        XCTAssertEqual(out.first?.text, "una frase che finisce col richiamo7. Ne segue un'altra frase inventata.")
+        let far = summarizeLine(line(". Ne segue un'altra frase inventata.", size: 12, x: 400, y: 425, width: 117))
+        XCTAssertEqual(applyTargetedLineRules([call, far], p).count, 2, "non contigua: resta com'è")
     }
 
     func test_bodyLineEndingWithCall_takesTheSizeOfItsText() {
@@ -370,6 +379,10 @@ final class TargetedCuresTests: XCTestCase {
                        "le regole di frase si accendono solo con la loro regola")
         XCTAssertEqual(TargetedSentenceRules.with([.citationAbbreviations]) { splitIntoSentences("Il 18.2. Poi altro.") },
                        ["Il 18.2.", "Poi altro."], "senza l'anno dopo, la data non trattiene la frase")
+        let allegato = "Il testo inventato dell'all. B riguarda la prova."
+        XCTAssertEqual(splitIntoSentences(allegato).count, 2, "il difetto: «all.» chiudeva la frase")
+        XCTAssertEqual(TargetedSentenceRules.with([.citationAbbreviations]) { splitIntoSentences(allegato) }, [allegato],
+                       "«all.» (allegato) non chiude la frase")
     }
 
     func test_framedAsideBox_andNotesAroundIt() {
@@ -506,5 +519,7 @@ final class TargetedCuresTests: XCTestCase {
         XCTAssertNil(cured.callOfNote[5], "dopo la sigla di un atto il numero è il giorno, non un richiamo")
         XCTAssertEqual(NoteJumpOptions.forTargeted(TargetedCures.rules(forFingerprint: unregistered)), NoteJumpOptions())
         XCTAssertEqual(NoteJumpOptions.forTargeted(TargetedCures.rules(forFingerprint: studioA)).targetedInline, true)
+        XCTAssertEqual(NoteJumpOptions.forTargeted([.detachedCallPunctuation]), NoteJumpOptions(),
+                       "il salto ampliato ha la sua regola: non dipende da un'altra")
     }
 }

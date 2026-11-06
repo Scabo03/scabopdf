@@ -25,7 +25,16 @@ La lettura di ogni altro file resta identica al byte.
 - **Le regole non girano se il profilo non le porta.** `pageItems` chiama lo smistatore `applyTargetedPageRules` solo se
   `profile.targeted` non è vuoto; `assembleDocument` chiama `applyTargetedDocumentRules` alla stessa condizione; i due
   smistatori chiamano una regola solo se il suo caso è nell'insieme, e le regole sono `private` (fuori dal file si
-  raggiungono solo dagli smistatori). La revisione indipendente l'ha provato con una catena a sonde: 0 ingressi nelle
+  raggiungono solo dagli smistatori). Dalla build 63 i punti d'ingresso sono sei, tutti dietro lo stesso insieme di regole
+  dell'impronta: le regole sulle RIGHE prima della classificazione (`applyTargetedLineRules`, in `pageItems`), l'esenzione
+  dell'interpunzione staccata dalla mobilia (in `detectFurniture`, solo se il profilo porta la regola), le regole di PAGINA
+  e di DOCUMENTO (i due smistatori), le regole di FRASE (`TargetedSentenceRules`, valori legati al compito accesi da
+  `ProcessingChain.run` attorno all'aggancio delle note e all'impaginazione, solo con la regola delle abbreviazioni), le
+  regole sui SEGMENTI (`applyTargetedSegmentRules`, in `ContinuousBodyBuilder`: i riquadri) e, nella vista di lettura, le
+  opzioni del salto nota→richiamo (`NoteJumpOptions.forTargeted`, con la regola del salto ampliato). Due effetti non passano
+  dall'impronta ma da un valore che solo le regole mirate producono: l'annuncio «Riquadro.» del ruolo `EXAMPLE_BOX` e la
+  famiglia `capoversi_rientrati` che fa rispettare i capoversi alla granularità; nessun altro documento li porta (verificato
+  sui 52 volumi). La revisione indipendente l'ha provato con una catena a sonde: 0 ingressi nelle
   regole sui 52 volumi del banco, su entrambe le generazioni. Le regole di pagina lavorano sugli item della pagina (come le foglie del
   tronco): la costruzione del documento e l'aggancio delle note (`bindAndPlaceNotes`, che rideriva gli item della pagina e
   li accoppia uno a uno ai nodi) vedono la stessa scomposizione. Le regole di documento sono rietichettature in posizione.
@@ -116,9 +125,12 @@ Regole della build 63 (giro «rifiniture e cure per capacità»):
   (misurato sulle righe di corpo) dopo una riga che chiude la frase o finisce corta apre un capoverso; il documento porta la
   famiglia `capoversi_rientrati`, e la granularità chiude il blocco dove comincia un capoverso (`opensParagraph`, come nei
   documenti monotipografici).
-- **Salto nota→richiamo** (studi A e B, nella vista di lettura): per i libri del registro (`NoteJumpOptions.forTargeted`)
-  il richiamo di una nota letta in linea si cerca anche nell'ultima frase intera del segmento che la precede (oltre i 400
-  caratteri) e dopo una sigla col punto; mai dopo la sigla di un atto («d.lgs.», «d.P.R.», …).
+- **Salto al richiamo ampliato** (studi A e B, nella vista di lettura; regola a sé `widerNoteJump`): per i libri del
+  registro (`NoteJumpOptions.forTargeted`) il richiamo di una nota letta in linea si cerca anche nell'ultima frase intera
+  del segmento che la precede (oltre i 400 caratteri) e dopo una sigla col punto; mai dopo la sigla di un atto («d.lgs.»,
+  «d.P.R.», …). Vale anche sulla lettura di prima, finché il libro non è rielaborato: aggiunge solo legami.
+- L'interpunzione staccata si riattacca anche quando la «riga» staccata porta, dopo il punto, il resto della stessa riga
+  fisica; «all.» (allegato) è fra le abbreviazioni delle citazioni.
 
 ## 5. Le reti di una cura mirata (obbligatorie)
 
