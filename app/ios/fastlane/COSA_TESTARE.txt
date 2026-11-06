@@ -1,23 +1,20 @@
-Build 61 — cercare nel testo di tutti i libri, Esc in ogni finestra
+Build 62 — due documenti di studio si leggono meglio
 
-Cercare in tutti i libri
-- Nel tab Ricerca della Home ora si cerca anche nel testo di tutti i libri, non solo nei titoli. Mentre scrivi, la lista mostra come prima i titoli e i nomi dei file che contengono ciò che scrivi.
-- Per cercare nel testo premi Cerca sulla tastiera (con la tastiera esterna: A capo), oppure tocca la riga «Cerca … nel testo dei libri». Valgono le stesse regole di «Cerca nel libro»: maiuscole, accenti, apostrofi e virgolette non contano. Sopra i risultati c'è anche «Parola intera».
-- VoiceOver ti dice subito quanti libri e quanti risultati in tutto, per esempio «3 libri, 47 risultati in tutto per «x».». Scorrendo senti un libro per riga, con il titolo e il numero dei suoi risultati. Sotto, nella sezione «Titoli e nomi dei file», trovi i titoli come prima.
-- Tocca due volte un libro: il libro si apre sulla sua lista dei risultati, cioè la schermata «Cerca nel libro» con la ricerca già fatta, e VoiceOver ti dice quanti risultati ci sono in quel libro. Scegli un risultato: la lettura va lì, e nel rotore la voce «Risultati della ricerca» è già pronta per andare agli altri risultati del libro.
-- «Annulla» chiude la lista e ti lascia nel libro, al punto in cui eri. Con «Indietro» torni alla Ricerca e ritrovi i risultati di prima.
-- I libri che avevi già in libreria vengono preparati per la ricerca nel testo una volta sola, in sottofondo, mentre sei sulla Home: di solito meno di un secondo per libro, qualche secondo per i più grandi. Se cerchi prima che sia finito, VoiceOver ti dice quanti libri non è ancora riuscito a cercare. I libri nuovi sono pronti appena importati.
-- Il testo dei libri resta sul tuo apparecchio: non va da nessuna parte.
+Che cosa cambia
+- Due documenti di studio del maintainer ora si leggono meglio. Uno è una dispensa scritta con Word; l'altro è un manuale a più mani. Per questi due documenti l'app ha una cura dedicata, che li riconosce dal contenuto del file.
+- Nella dispensa i titoli dei capitoli e dei paragrafi si trovano nella navigazione per intestazioni (rotore «Intestazioni») e nella Consultazione Rapida. Prima non c'era nessun titolo. Le note lunghe si leggono alla fine del loro paragrafo, non più in fondo al documento. Il sommario all'inizio di ogni capitolo si legge intero, come sommario.
+- Nel manuale si trovano nella navigazione anche i titoli dei paragrafi e delle sezioni, non solo quelli dei capitoli. Il sommario all'inizio di ogni capitolo non si legge più come una nota. L'etichetta di ogni capitolo e di ogni parte sta insieme al suo titolo, in un'intestazione sola.
+- Il testo dei due documenti resta identico, lettera per lettera: cambiano soltanto titoli, sommari e momento di lettura delle note lunghe.
 
-Esc in ogni finestra
-- Con una tastiera esterna, il tasto Esc chiude o annulla ogni finestra che ha un pulsante «Annulla» o «Chiudi»: Segnalibri, nuovo segnalibro, sottolineatura, Referto, Aggiungi un file, l'offerta di una lettura migliore, le letture arrivate dal Mac, e le altre. Fa la stessa cosa del pulsante, e mai qualcosa nella schermata che sta sotto: il libro aperto resta aperto.
+Alla prossima apertura
+- Se hai già importato uno di questi due documenti, nella Home compare la riga «Lettura migliore disponibile». Toccala due volte e scegli il documento: l'app ti dice che per questo documento c'è una cura dedicata e ti propone di rielaborarlo. La rielaborazione si fa solo se la confermi.
+- Segnalibri, sottolineature e il punto in cui eri arrivato vengono ritrovati nel testo nuovo. Quello che l'app non ritrova con sicurezza resta nella lista dei segnalibri come «da ricollocare», e te lo dice. Non si cancella nulla. Finché non confermi la lettura nuova, puoi tornare a quella di prima.
+- Nel manuale, un segnalibro messo proprio sull'etichetta di un capitolo o di una parte, o sul titolo del capitolo, diventerà quasi sempre «da ricollocare»: ora etichetta e titolo sono un'intestazione sola. I segnalibri nel testo restano al loro posto.
+- La cura riconosce il file dal suo contenuto. Se la copia sull'iPad è un file diverso dello stesso libro, per esempio scaricato da un'altra parte, l'offerta non compare e la lettura resta quella di prima.
 
-«Parola intera» e le note
-- «Parola intera» ora trova anche le parole con il numero della nota attaccato. Per esempio «obbligazione» si trova anche dove il testo dice «obbligazione12», con 12 il richiamo della nota. Vale in «Cerca nel libro» e nella ricerca di tutti i libri.
-
-Cosa non cambia
-- Il testo che senti nei libri è lo stesso di prima, lettera per lettera: lo abbiamo verificato su tutti i libri di prova con iOS 27. Segnalibri e sottolineature restano dove sono. Nessuna offerta «Lettura migliore disponibile»: non c'è nulla da rielaborare.
+Per tutti gli altri libri non cambia nulla
+- La lettura di tutti gli altri libri è identica a quella della build 61, lettera per lettera. L'abbiamo verificato su tutti i libri di prova, con iOS 26.5 e con iOS 27. Nessuna offerta di rielaborazione compare per gli altri libri.
 
 Due cose da provare, un minuto ciascuna
-- Nel tab Ricerca cerca una parola che sai essere in più libri. Dicci se ti basta sentire prima quanti libri e quanti risultati, e poi ogni libro con il suo numero.
-- Apri un libro dalla lista e scegli un risultato, poi con il rotore su «Risultati della ricerca» vai avanti. Dicci se ti è chiaro di essere passato dalla ricerca di tutti i libri a quella dentro il libro.
+- Apri la dispensa dopo la rielaborazione e scorri con il rotore sulle intestazioni. Dicci se i titoli dei paragrafi ti bastano per orientarti.
+- Ascolta una nota lunga nella dispensa. Dicci se ora arriva al momento giusto, alla fine del paragrafo in cui c'è il richiamo.
