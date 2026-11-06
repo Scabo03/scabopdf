@@ -84,6 +84,29 @@ quindi l'offerta «Lettura migliore disponibile» (§ 12.13) si propone **solo a
 loro**, e le loro annotazioni restano al loro posto o diventano «da ricollocare»
 (§ 12.14), mai spostate in silenzio.
 
+**Decisioni del maintainer sulle tre proposte del giro «cure mirate per lo studio»**
+(registrate il 2026-11-06 sera, all'apertura del giro «rifiniture e cure per
+capacità», livello di verifica pieno):
+
+1. **Sì alla cura per capacità dei titoli in grassetto alla taglia del corpo delle
+   dispense scritte con Word**, con una **firma di documento** che dichiari quando
+   si accende e la rete sull'intero corpus. Se sulla dispensa di studio la cura per
+   capacità dà la stessa lettura della regola mirata, la regola mirata si toglie dal
+   registro (`docs/CURE_MIRATE.md`), e lo si dichiara; se dà una lettura diversa, la
+   regola mirata resta e se ne spiega il perché.
+2. **Sì alla cura per capacità sull'iPad dei difetti del volume «ignoto C»** (la
+   prova alla cieca del giro precedente), in questo stesso giro, a partire dai
+   titoli di capitolo scartati come testatine (testo perso). Le cure devono reggere
+   per la **forma del difetto**, non per il libro: una cura che funzionasse solo su
+   quel volume sarebbe una cura mirata, e andrebbe nel registro o non si farebbe.
+3. **No, per ora, all'estensione dell'innesto del Mac**: prima le cure sull'iPad
+   (§ 0-bis).
+
+Nello stesso giro, prima delle cure per capacità, le due cure mirate esistenti si
+**rifiniscono** (diagnosi completata contro la pagina, regole mirate nuove sempre
+accese solo dall'impronta): la rielaborazione si offre di nuovo ai due documenti di
+studio, e solo a loro, e la lettura di ogni altro volume resta identica al byte.
+
 ## 1. Identità del progetto e scopo del documento
 
 ### 1.1 Identità del progetto

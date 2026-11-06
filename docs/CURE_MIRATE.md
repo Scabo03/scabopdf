@@ -106,6 +106,22 @@ con nomi neutri), li legge con il codice del giro, confronta al byte la lettura 
 (impronta non registrata = nessuna impronta, al byte). Una differenza dal riferimento è rossa finché non è giudicata contro
 la pagina; se la lettura curata non differisce più da quella senza impronta, la voce è forse superflua (§ 4).
 
+## 5-bis. Decisioni del maintainer per il giro «rifiniture e cure per capacità» (2026-11-06 sera)
+
+Registrate anche in `LAYER2_PRODUCT_DECISIONS.md` § 0-ter.
+
+- **Rifiniture delle due voci** (prima parte del giro): la diagnosi di studio-A e studio-B si completa contro la pagina
+  (livelli dei titoli, voci d'indice non ritrovate una per una, legame fra note e richiami, granularità e confini dei
+  blocchi, citazioni spezzate dalle abbreviazioni col punto, riquadri, bibliografie) e i difetti si curano con regole
+  mirate nuove, sempre accese solo dall'impronta, in questo registro. La build della cura delle due voci sale, così la
+  rielaborazione si offre di nuovo ai due documenti, e solo a loro.
+- **Studio-A → cura per capacità** (seconda parte del giro): sì alla cura per capacità dei titoli in grassetto alla
+  taglia del corpo delle dispense scritte con Word, con una firma di documento e la rete sul corpus. Se sulla dispensa dà
+  la stessa lettura della regola mirata, la regola mirata si toglie da qui e lo si dichiara; altrimenti resta, con il
+  perché.
+- **Volume «ignoto C»**: sì alle cure per capacità sull'iPad dei suoi difetti, nello stesso giro, mai come cure mirate;
+  no, per ora, all'estensione dell'innesto del Mac.
+
 ## 6. Aggiungere o togliere una voce
 
 Aggiungere: una voce nuova nel registro con impronta, regole (nuovi casi di `TargetedRule` con la descrizione della forma),
