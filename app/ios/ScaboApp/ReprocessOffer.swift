@@ -33,12 +33,17 @@ enum ReprocessOffer {
     /// anche il pacchetto del Mac.
     /// Le cure MIRATE su singoli documenti di studio (LAYER2 § 0-ter, giro del 2026-11-06) entrano con il registro della
     /// catena condivisa (`TargetedCures`): solo i libri la cui impronta è nel registro le ricevono.
+    /// Dalla cura 64 (giro «rifiniture e cure per capacità», 2026-11-07) una cura della catena va a TUTTI E SOLI i libri la
+    /// cui lettura cambia, per quanto si sa senza rielaborarli: i libri misurati al banco che la cura lascia identici
+    /// (`ProcessingChain.booksUnchangedByCure`) non la ricevono; ogni altro libro sì.
     static var policy: ReprocessingPolicy {
         let latest = visualResourcesAvailable ? ProcessingChain.cureLevel : 50
         return ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: latest,
                                   latestCureBuildForMacReadings: latestCureForMacReadings(upTo: latest),
                                   latestCureBuildForAknActs: latestCureForAknActs,
-                                  targetedCureBuilds: TargetedCures.cureBuildByFingerprint)
+                                  targetedCureBuilds: TargetedCures.cureBuildByFingerprint,
+                                  cureBuilds: cures.map { $0.build },
+                                  unchangedByCure: ProcessingChain.booksUnchangedByCure)
     }
 
     /// L'ultima cura da offrire a un testo normativo già importato (decisione 1 del maintainer, 2026-10-17): la più recente
@@ -98,6 +103,12 @@ enum ReprocessOffer {
             + "da sola alla fine di un pezzo"),
         (58, "alcune note dei manuali che si interrompevano a fine pagina, vicino a una scritta a margine, si leggono "
             + "intere; la scritta a margine resta al suo posto"),
+        (64, "alcuni titoli di capitolo che sparivano insieme alla testatina che li ripete si leggono di nuovo; nelle "
+            + "dispense scritte con Word i titoli in grassetto si trovano nella navigazione per intestazioni; in alcuni libri "
+            + "i titoli di sezione separati dal testo da uno spazio bianco sono intestazioni; alcune note stampate coi numeri "
+            + "in una colonna a parte si leggono intere e nel loro ordine; alcune carte e figure impaginate allo stesso modo "
+            + "su più pagine sono annunciate come risorse visive; con iOS 26.5 alcune parole spezzate in due da un trattino "
+            + "invisibile si leggono intere"),
     ]
 
     /// Le cure che cambiano la lettura dei testi normativi, in parole semplici (la parte che li riguarda).
@@ -158,8 +169,10 @@ enum ReprocessOffer {
         // Una lettura arrivata dal Mac ha già le cure che il Mac fa da sempre (il frazionamento delle note lunghe), e quelle
         // che riceve dal Mac con una lettura nuova (la 56): non si promettono come novità della rielaborazione sull'iPad.
         let fromMac = doc.readingOrigin == ReadingOrigin.mac
+        // Una cura misurata come cura che lascia identico questo libro non si promette (cura 64 in poi).
         let list = cures.filter {
             $0.build > since && $0.build <= policy.latestCureBuild && !(fromMac && isNotOfferedToMacReadings($0.build))
+                && !policy.cureLeavesUnchanged($0.build, doc, currentSystemVersion: SystemGeneration.current)
         }.map { $0.text }
         var text = ""
         if doc.readingOrigin == ReadingOrigin.mac {

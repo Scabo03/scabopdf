@@ -352,7 +352,8 @@ final class VisualResourceTests: XCTestCase {
             ArchivedDocument(id: "p", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
                              processedSystemVersion: SystemGeneration.current, processedAppBuild: build, sourceSha256: sha)
         }
-        XCTAssertEqual(ProcessingChain.cureLevel, 58, "le cure mirate non alzano il livello di cure generale")
+        XCTAssertGreaterThan(ProcessingChain.cureLevel, entry.cureBuild,
+                             "le cure mirate non alzano il livello di cure generale (64: le cure per capacità)")
         // Le build relative alla build della cura della voce (62 nel giro che l'ha introdotta, 63 dopo le rifiniture).
         let b = entry.cureBuild
         let cured = pdf(sha, build: String(b - 1))
@@ -361,13 +362,49 @@ final class VisualResourceTests: XCTestCase {
         let text = ReprocessOffer.whatChanges(cured, reason: .cure)
         XCTAssertTrue(text.contains("cura dedicata") && text.contains(entry.whatChanges), text)
         XCTAssertFalse(text.lowercased().contains(".pdf"), text)
-        let other = pdf(String(repeating: "b", count: 64), build: String(b - 1))
+        // La cura per capacità della build 64 lascia identici i documenti delle cure mirate: non si promette loro.
+        XCTAssertFalse(text.contains(ReprocessOffer.cures.first { $0.build == 64 }?.text ?? "—"), text)
+        let other = pdf(String(repeating: "b", count: 64), build: String(ProcessingChain.cureLevel))
         XCTAssertNil(ReprocessOffer.policy.reason(for: other, currentSystemVersion: SystemGeneration.current,
-                                                  currentAppBuild: String(b)))
+                                                  currentAppBuild: String(ProcessingChain.cureLevel + 1)))
         XCTAssertFalse(ReprocessOffer.whatChanges(other, reason: .cure).contains("cura dedicata"))
         // Già rielaborato con la build della cura: niente più offerta.
         XCTAssertNil(ReprocessOffer.policy.reason(for: pdf(sha, build: String(b)), currentSystemVersion: SystemGeneration.current,
                                                   currentAppBuild: String(b + 1)))
+    }
+
+    /// Cura per capacità della build 64 (giro «rifiniture e cure per capacità», 2026-11-07): l'offerta va a tutti e soli i
+    /// libri la cui lettura cambia, per quanto si sa senza rielaborarli. Un libro misurato al banco che la cura lascia
+    /// identico non la riceve; un libro sconosciuto sì, con la frase della cura; le letture del Mac la ricevono dal Mac.
+    func test_offer_capabilityCure_reachesAllAndOnlyTheBooksItChanges() {
+        guard ReprocessOffer.visualResourcesAvailable else { return }
+        XCTAssertEqual(ProcessingChain.cureLevel, 64)
+        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.contains(64))
+        guard let major = ReprocessingPolicy.major(of: SystemGeneration.current),
+              let unchanged = ProcessingChain.booksUnchangedByCure[64]?[major]?.sorted().first else {
+            return XCTFail("nessuna misura della cura 64 per questa generazione")
+        }
+        func pdf(_ sha: String?, build: String, origin: String? = nil) -> ArchivedDocument {
+            ArchivedDocument(id: "c", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
+                             processedSystemVersion: SystemGeneration.current, processedAppBuild: build, sourceSha256: sha,
+                             readingOrigin: origin)
+        }
+        func reason(_ d: ArchivedDocument) -> ReprocessingReason? {
+            ReprocessOffer.policy.reason(for: d, currentSystemVersion: SystemGeneration.current, currentAppBuild: "64")
+        }
+        XCTAssertNil(reason(pdf(unchanged, build: "63")), "misurato identico: nessuna offerta")
+        XCTAssertNil(reason(pdf(unchanged, build: "58")))
+        let unknown = pdf(String(repeating: "f", count: 64), build: "63")
+        XCTAssertEqual(reason(unknown), .cure, "sconosciuto: l'offerta c'è")
+        let cure64 = ReprocessOffer.cures.first { $0.build == 64 }?.text ?? ""
+        XCTAssertFalse(cure64.isEmpty)
+        XCTAssertTrue(ReprocessOffer.whatChanges(unknown, reason: .cure).contains(cure64))
+        // Gli manca una cura più vecchia: l'offerta c'è, e la frase non promette la 64 che non lo cambia.
+        let older = pdf(unchanged, build: "57")
+        XCTAssertEqual(reason(older), .cure)
+        XCTAssertFalse(ReprocessOffer.whatChanges(older, reason: .cure).contains(cure64))
+        // Lettura arrivata dal Mac: la cura 64 arriva dal Mac con una lettura nuova.
+        XCTAssertNil(reason(pdf(String(repeating: "f", count: 64), build: "58", origin: ReadingOrigin.mac)))
     }
 
     /// Decisione 1 del maintainer (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17): un testo normativo già

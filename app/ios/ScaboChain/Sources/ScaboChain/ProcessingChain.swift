@@ -169,7 +169,13 @@ public enum ProcessingChain {
     /// flusso (giro «chiusura del capitolo note», 2026-10-18, decisione 2 del maintainer: 13 note dei manuali Mandrioli).
     /// Come la 56 e la 57: dal Mac per le sue letture. Non tocca i testi normativi (la loro catena non ricuce note fra
     /// pagine: 14 atti su 14 identici), quindi non entra in `curesForAknActs`.
-    public static let cureLevel = 58
+    /// 64: le cure per capacità del giro «rifiniture e cure per capacità» (2026-11-07): titoli di capitolo che si
+    /// scartavano come testatine, titoli in grassetto delle dispense Word, titoli di sezione isolati da stacchi, note coi
+    /// numeri in colonna rimesse in ordine, figure diverse impaginate allo stesso modo non più prese per arredo, parole col
+    /// trattino morbido riunite con iOS 26.5. Si offre a TUTTI E SOLI i libri la cui lettura cambia, per quanto si sa
+    /// senza rielaborarli (`booksUnchangedByCure`, CureInvariance.swift). Come la 56-58: dal Mac per le sue letture. Non
+    /// tocca i testi normativi.
+    public static let cureLevel = 64
 
     /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
     /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata
@@ -183,8 +189,10 @@ public enum ProcessingChain {
     /// revisione indipendente): la catena del Mac le contiene dalla sua versione con questo livello di cure. Confermato dal
     /// maintainer il 2026-10-17 (decisione 1 del giro «pulizia e rifinitura finale del capitolo note»): le letture del Mac
     /// si rifanno dal Mac aggiornato. 57: la cura delle note di quel giro, con la stessa regola. 58: la ricucitura vicino
-    /// alle glosse a margine (giro «chiusura del capitolo note», 2026-10-18), con la stessa regola.
-    public static let curesFromTheMacOnly: Set<Int> = [56, 57, 58]
+    /// alle glosse a margine (giro «chiusura del capitolo note», 2026-10-18), con la stessa regola. 64: le cure per
+    /// capacità del giro «rifiniture e cure per capacità» (2026-11-07), con la stessa regola (la catena del Mac le contiene
+    /// dalla sua versione con questo livello di cure).
+    public static let curesFromTheMacOnly: Set<Int> = [56, 57, 58, 64]
 
     /// Le cure che cambiano anche la lettura dei TESTI NORMATIVI (AKN): solo queste si offrono a un testo normativo già
     /// importato (decisione 1 del maintainer, 2026-10-17). La catena AKN non passa dall'estrazione dei PDF; la tocca solo

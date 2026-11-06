@@ -11,6 +11,9 @@
 //    aggiornamento maggiore non ancora giudicato, nessuna offerta, mai;
 //  - ed è stato elaborato con una catena precedente all'ultima cura dichiarata «da offrire» (etichetta
 //    `processedAppBuild` assente o minore), oppure con un'altra generazione maggiore del sistema.
+//  Dalla cura 64 (giro «rifiniture e cure per capacità», 2026-11-07) l'offerta per una cura va a TUTTI E SOLI i libri la
+//  cui lettura cambia, nei limiti di quel che si sa senza rielaborare: un libro misurato al banco, la cui lettura la cura
+//  lascia identica al byte sulla generazione corrente (`unchangedByCure`), non la riceve; un libro sconosciuto sì.
 //  I testi normativi (AKN) non dipendono dal lettore PDF: ricevono l'offerta solo per una cura della LORO catena
 //  (`latestCureBuildForAknActs`, giro «pulizia e rifinitura finale del capitolo note», 2026-10-17, decisione 1 del
 //  maintainer: i pezzi nuovi delle note), mai per un aggiornamento del sistema. I libri EPUB non la ricevono.
@@ -51,14 +54,40 @@ public struct ReprocessingPolicy: Sendable {
     /// La build della cura delle risorse visive (tabelle e figure): un libro il cui riconoscimento è saltato per una
     /// ragione da riprovare (`visualResourcesSkipped`) riceve l'offerta dove il dispositivo sa riconoscere (cura ≥ 53).
     public static let visualResourcesCureBuild = 53
+    /// Le build delle cure della catena (quelle della lista «cosa cambia» dell'app), in ordine.
+    public let cureBuilds: [Int]
+    /// I libri che una cura NON cambia, MISURATI (giro «rifiniture e cure per capacità», 2026-11-07: l'offerta va a tutti
+    /// e soli i libri la cui lettura cambia): cura → versione maggiore del sistema → impronte dei PDF la cui lettura resta
+    /// identica al byte con la cura, su quella generazione. Un libro che manca solo di cure che lo lasciano com'è non
+    /// riceve l'offerta per la cura; un libro sconosciuto (impronta non misurata) la riceve, perché la sua lettura può
+    /// cambiare e senza rielaborarlo non si sa.
+    public let unchangedByCure: [Int: [Int: Set<String>]]
 
     public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int, latestCureBuildForMacReadings: Int? = nil,
-                latestCureBuildForAknActs: Int? = nil, targetedCureBuilds: [String: Int] = [:]) {
+                latestCureBuildForAknActs: Int? = nil, targetedCureBuilds: [String: Int] = [:],
+                cureBuilds: [Int] = [], unchangedByCure: [Int: [Int: Set<String>]] = [:]) {
         self.validatedSystemMajors = validatedSystemMajors
         self.latestCureBuild = latestCureBuild
         self.latestCureBuildForMacReadings = latestCureBuildForMacReadings ?? latestCureBuild
         self.latestCureBuildForAknActs = latestCureBuildForAknActs
         self.targetedCureBuilds = targetedCureBuilds
+        self.cureBuilds = cureBuilds
+        self.unchangedByCure = unchangedByCure
+    }
+
+    /// Vero se la cura `cure` è stata misurata come cura che lascia identica la lettura di questo libro sulla generazione
+    /// corrente (la sua impronta è nell'elenco della cura per quella versione maggiore del sistema).
+    public func cureLeavesUnchanged(_ cure: Int, _ doc: ArchivedDocument, currentSystemVersion: String) -> Bool {
+        guard let sha = doc.sourceSha256, let major = Self.major(of: currentSystemVersion) else { return false }
+        return unchangedByCure[cure]?[major]?.contains(sha) ?? false
+    }
+
+    /// Vero se TUTTE le cure che il libro non ha (dopo la build che l'ha elaborato, fino all'ultima) lo lasciano com'è,
+    /// misurato: allora l'offerta per la cura non serve. Falso se manca anche una sola cura non misurata per lui.
+    public func pendingCuresLeaveUnchanged(_ doc: ArchivedDocument, since: Int?, currentSystemVersion: String) -> Bool {
+        let pending = cureBuilds.filter { $0 > (since ?? 0) && $0 <= latestCureBuild }
+        guard !pending.isEmpty else { return false }
+        return pending.allSatisfy { cureLeavesUnchanged($0, doc, currentSystemVersion: currentSystemVersion) }
     }
 
     /// La build della cura mirata da offrire a questo documento, se la sua impronta è nel registro e il libro è stato
@@ -114,7 +143,9 @@ public struct ReprocessingPolicy: Sendable {
         let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
         // Cura mirata (LAYER2 § 0-ter): solo il libro la cui impronta è nel registro.
         if pendingTargetedCureBuild(for: doc, currentAppBuild: currentAppBuild) != nil { return .cure }
-        if !sameBuild, build == nil || build! < latestCureBuild { return .cure }
+        // Cura della catena: a meno che le cure che il libro non ha siano tutte misurate come cure che non lo cambiano.
+        if !sameBuild, build == nil || build! < latestCureBuild,
+           !pendingCuresLeaveUnchanged(doc, since: build, currentSystemVersion: currentSystemVersion) { return .cure }
         if let was = Self.major(of: doc.processedSystemVersion), let now = Self.major(of: currentSystemVersion), was != now {
             return .systemUpdate
         }

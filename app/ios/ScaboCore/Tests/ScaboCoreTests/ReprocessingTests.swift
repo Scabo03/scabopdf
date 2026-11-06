@@ -236,4 +236,54 @@ final class ReprocessingTests: XCTestCase {
         XCTAssertNil(now.reason(for: targetedDoc(sha: String(repeating: "a", count: 64), build: "62"),
                                 currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "63"))
     }
+
+    // MARK: - Tutti e soli i libri la cui lettura cambia (cura 64, giro «rifiniture e cure per capacità»)
+
+    private func measuredDoc(sha: String?, build: String?, system: String = "iPadOS 27.0.1",
+                             origin: String? = nil) -> ArchivedDocument {
+        ArchivedDocument(id: "u", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
+                         sourceKind: nil, processedSystemVersion: system, processedAppBuild: build,
+                         sourceSha256: sha, readingOrigin: origin)
+    }
+
+    func test_capabilityCure_offeredToAllAndOnlyTheBooksItChanges() {
+        let unchanged27 = String(repeating: "b", count: 64), unchangedOnly27 = String(repeating: "c", count: 64)
+        let changed = String(repeating: "d", count: 64)
+        let p = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 64,
+                                   cureBuilds: [45, 53, 55, 56, 57, 58, 64],
+                                   unchangedByCure: [64: [27: [unchanged27, unchangedOnly27], 26: [unchanged27]]])
+        func reason(_ sha: String?, _ build: String?, now: String = "iPadOS 27.0.1",
+                    system: String = "iPadOS 27.0.1") -> ReprocessingReason? {
+            p.reason(for: measuredDoc(sha: sha, build: build, system: system), currentSystemVersion: now, currentAppBuild: "64")
+        }
+        // Un libro misurato che la cura 64 lascia identico, elaborato dopo l'ultima cura precedente: nessuna offerta.
+        XCTAssertNil(reason(unchanged27, "63"))
+        XCTAssertNil(reason(unchanged27, "58"))
+        // Un libro misurato che la cura cambia, o sconosciuto, o senza impronta: l'offerta c'è.
+        XCTAssertEqual(reason(changed, "63"), .cure)
+        XCTAssertEqual(reason(String(repeating: "e", count: 64), "63"), .cure, "sconosciuto: senza rielaborare non si sa")
+        XCTAssertEqual(reason(nil, "63"), .cure)
+        // Gli manca anche una cura più vecchia (non misurata per lui): l'offerta c'è.
+        XCTAssertEqual(reason(unchanged27, "57"), .cure)
+        XCTAssertEqual(reason(unchanged27, nil), .cure)
+        // La misura vale per generazione: un libro identico solo su iOS 27 riceve l'offerta su iOS 26.
+        XCTAssertNil(reason(unchangedOnly27, "63"))
+        XCTAssertEqual(reason(unchangedOnly27, "63", now: "iPadOS 26.5", system: "iPadOS 26.5"), .cure)
+        XCTAssertNil(reason(unchanged27, "63", now: "iPadOS 26.5", system: "iPadOS 26.5"))
+        // Elaborato con un'altra generazione: l'aggiornamento del sistema resta un motivo, anche se la cura non lo cambia.
+        XCTAssertEqual(reason(unchanged27, "63", system: "iPadOS 26.5"), .systemUpdate)
+        // Elaborato da questa stessa build: niente.
+        XCTAssertNil(reason(changed, "64"))
+        // Le domande una per una.
+        XCTAssertTrue(p.cureLeavesUnchanged(64, measuredDoc(sha: unchanged27, build: "63"), currentSystemVersion: "iPadOS 27.0.1"))
+        XCTAssertFalse(p.cureLeavesUnchanged(58, measuredDoc(sha: unchanged27, build: "57"), currentSystemVersion: "iPadOS 27.0.1"))
+        XCTAssertFalse(p.pendingCuresLeaveUnchanged(measuredDoc(sha: unchanged27, build: "64"), since: 64,
+                                                    currentSystemVersion: "iPadOS 27.0.1"), "nessuna cura in sospeso")
+    }
+
+    func test_capabilityCure_withoutMeasurements_behavesAsBefore() {
+        let before = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 64)
+        XCTAssertEqual(before.reason(for: measuredDoc(sha: String(repeating: "b", count: 64), build: "63"),
+                                     currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "64"), .cure)
+    }
 }
