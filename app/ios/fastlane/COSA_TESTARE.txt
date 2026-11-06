@@ -1,20 +1,20 @@
-Build 62 — due documenti di studio si leggono meglio
+Build 63 — la lettura dei due documenti di studio è stata rifinita
 
 Che cosa cambia
-- Due documenti di studio del maintainer ora si leggono meglio. Uno è una dispensa scritta con Word; l'altro è un manuale a più mani. Per questi due documenti l'app ha una cura dedicata, che li riconosce dal contenuto del file.
-- Nella dispensa i titoli dei capitoli e dei paragrafi si trovano nella navigazione per intestazioni (rotore «Intestazioni») e nella Consultazione Rapida. Prima non c'era nessun titolo. Le note lunghe si leggono alla fine del loro paragrafo, non più in fondo al documento. Il sommario all'inizio di ogni capitolo si legge intero, come sommario.
-- Nel manuale si trovano nella navigazione anche i titoli dei paragrafi e delle sezioni, non solo quelli dei capitoli. Il sommario all'inizio di ogni capitolo non si legge più come una nota. L'etichetta di ogni capitolo e di ogni parte sta insieme al suo titolo, in un'intestazione sola.
-- Il testo dei due documenti resta identico, lettera per lettera: cambiano soltanto titoli, sommari e momento di lettura delle note lunghe.
+- La cura dedicata ai due documenti di studio del maintainer (la dispensa scritta con Word e il manuale a più mani) è stata rifinita. L'app li riconosce ancora dal contenuto del file.
+- Nella dispensa le frasi finiscono di nuovo col loro punto anche quando c'è un richiamo di nota: prima quel punto si perdeva e due frasi si leggevano attaccate. Le note brevi si leggono subito dopo la frase che le richiama, non più alla fine del capoverso. Il testo è diviso nei capoversi del libro: un elemento non scavalca più l'a capo. Molte più note hanno l'azione «Vai al testo del richiamo».
+- In tutti e due i documenti un numero di pagina andato a capo in una citazione non diventa più una nota a sé, e le citazioni dei decreti legislativi e dei codici abbreviati non si spezzano più a metà.
+- Nel manuale i riquadri di approfondimento sono annunciati come «Riquadro» e si leggono al loro posto, a pezzi come le note lunghe; prima sembravano note. La bibliografia alla fine di ogni capitolo ha il suo titolo nella navigazione per intestazioni e si legge col segnale della bibliografia. Nell'indice analitico in fondo non ci sono più note finte.
+- Il testo dei due documenti resta identico, lettera per lettera: cambiano punteggiatura recuperata, confini degli elementi, ruoli e annunci.
 
 Alla prossima apertura
-- Se hai già importato uno di questi due documenti, nella Home compare la riga «Lettura migliore disponibile». Toccala due volte e scegli il documento: l'app ti dice che per questo documento c'è una cura dedicata e ti propone di rielaborarlo. La rielaborazione si fa solo se la confermi.
-- Segnalibri, sottolineature e il punto in cui eri arrivato vengono ritrovati nel testo nuovo. Quello che l'app non ritrova con sicurezza resta nella lista dei segnalibri come «da ricollocare», e te lo dice. Non si cancella nulla. Finché non confermi la lettura nuova, puoi tornare a quella di prima.
-- Nel manuale, un segnalibro messo proprio sull'etichetta di un capitolo o di una parte, o sul titolo del capitolo, diventerà quasi sempre «da ricollocare»: ora etichetta e titolo sono un'intestazione sola. I segnalibri nel testo restano al loro posto.
-- La cura riconosce il file dal suo contenuto. Se la copia sull'iPad è un file diverso dello stesso libro, per esempio scaricato da un'altra parte, l'offerta non compare e la lettura resta quella di prima.
+- Nella Home ricompare la riga «Lettura migliore disponibile» per questi due documenti, anche se li avevi già rielaborati con la build 62. Toccala due volte, scegli il documento e conferma la rielaborazione. Si fa solo se la confermi.
+- Segnalibri, sottolineature e punto di lettura vengono ritrovati nel testo nuovo. Quello che l'app non ritrova con sicurezza resta nella lista dei segnalibri come «da ricollocare». Nel manuale può capitare a un segnalibro messo su una bibliografia di fine capitolo o su una nota che conteneva solo un numero di pagina. Non si cancella nulla, e finché non confermi puoi tornare alla lettura di prima.
+- Se la copia sull'iPad è un file diverso dello stesso libro, l'offerta non compare.
 
 Per tutti gli altri libri non cambia nulla
-- La lettura di tutti gli altri libri è identica a quella della build 61, lettera per lettera. L'abbiamo verificato su tutti i libri di prova, con iOS 26.5 e con iOS 27. Nessuna offerta di rielaborazione compare per gli altri libri.
+- La lettura di tutti gli altri libri è identica a quella della build 62, lettera per lettera, con iOS 26.5 e con iOS 27. Nessuna offerta compare per gli altri libri.
 
-Due cose da provare, un minuto ciascuna
-- Apri la dispensa dopo la rielaborazione e scorri con il rotore sulle intestazioni. Dicci se i titoli dei paragrafi ti bastano per orientarti.
-- Ascolta una nota lunga nella dispensa. Dicci se ora arriva al momento giusto, alla fine del paragrafo in cui c'è il richiamo.
+Due cose da provare
+- Nella dispensa ascolta una pagina con molte note: dicci se le note brevi arrivano al momento giusto e se il salto al richiamo c'è.
+- Nel manuale arriva a un riquadro e a una bibliografia di fine capitolo: dicci se l'annuncio e il segnale ti bastano per capire dove sei.

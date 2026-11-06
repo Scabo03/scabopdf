@@ -56,8 +56,12 @@ un'altra impronta e resta com'è: per costruzione, mai una cura su un file sbagl
 
 | Etichetta | Impronta | Regole | Build | Condizione di rimozione |
 |---|---|---|---|---|
-| studio-A | `d0272b21…bca815` | titoli in grassetto alla taglia del corpo; sommario di capitolo in prosa dopo il titolo | 62 | la lettura del documento SENZA la voce è identica al byte a quella con la voce, o giudicata non peggiore contro la pagina (per esempio dopo una cura per capacità dei titoli in grassetto a taglia di corpo); oppure il maintainer adotta una lettura del Mac che la contiene |
-| studio-B | `f0a98bcd…83a6a4` | etichette di struttura con ornamenti; sommario di capitolo con etichetta (anche oltre la pagina); etichette di sezione; titoli di paragrafo più piccoli del corpo | 62 | come sopra (per esempio dopo una cura per capacità dei titoli numerati più piccoli del corpo e dei sommari etichettati) |
+| studio-A | `d0272b21…bca815` | titoli in grassetto alla taglia del corpo; sommario di capitolo in prosa dopo il titolo; dalla build 63: interpunzione staccata dopo il richiamo, numero a taglia piena che continua la nota, abbreviazioni delle citazioni e date spezzate, capoversi rientrati | 63 | la lettura del documento SENZA la voce è identica al byte a quella con la voce, o giudicata non peggiore contro la pagina (per esempio dopo una cura per capacità dei titoli in grassetto a taglia di corpo); oppure il maintainer adotta una lettura del Mac che la contiene |
+| studio-B | `f0a98bcd…83a6a4` | etichette di struttura con ornamenti; sommario di capitolo con etichetta (anche oltre la pagina); etichette di sezione; titoli di paragrafo più piccoli del corpo; dalla build 63: le quattro regole condivise con studio-A, riquadri di approfondimento, etichette di bibliografia | 63 | come sopra (per esempio dopo una cura per capacità dei titoli numerati più piccoli del corpo e dei sommari etichettati) |
+
+Dalla build 63 una regola descritta per forma può servire a più voci (i due documenti hanno lo stesso difetto del lettore
+di sistema sull'interpunzione dopo i richiami): il test del registro verifica che ogni regola del catalogo sia usata da
+almeno una voce, e una regola rimasta senza voce si toglie (§ 6).
 
 La condizione si misura con la rete di ogni giro (§ 5): quando la lettura curata non differisce più da quella senza
 impronta, la rete lo dice e la voce si può togliere.
@@ -84,6 +88,37 @@ mai condivise, regole, motivo, condizione di rimozione e build.
 - **Titoli di paragrafo più piccoli del corpo** (studio B): riga numerata «N.» (anche «N bis.») fra corpo − 1,3 e corpo −
   0,7 pt, non in grassetto né in corsivo, al bordo sinistro della colonna, staccata sopra e sotto; continuazioni rientrate
   alla stessa taglia (al più due).
+
+Regole della build 63 (giro «rifiniture e cure per capacità»):
+
+- **Interpunzione staccata dopo il richiamo** (studi A e B): il lettore di sistema emette il punto (o la virgola) che segue
+  un richiamo in apice come una «riga» a sé, sulla stessa linea di base e attaccata all'apice (± 1,5 pt in verticale, ± 2
+  pt in orizzontale). La riga non entra nei canali della mobilia ricorrente (nella dispensa il punto ricorreva su più di
+  metà delle pagine e il canale per maggioranza lo toglieva) e torna attaccata alla sua riga, senza spazio. La riga di corpo
+  spezzata che finisce con un richiamo in apice prende la taglia del suo testo, non la media col richiamo.
+- **Numero a taglia piena che continua la nota** (studi A e B): nell'apparato di note, una riga (non la prima del blocco)
+  aperta da un numero in forma di richiamo, ma alla taglia del testo e non più piccolo come il vero richiamo,
+  continua la riga di prima (numero di pagina di una citazione andato a capo).
+- **Abbreviazioni delle citazioni e date spezzate** (studi A e B): durante l'aggancio delle note e l'impaginazione del
+  documento (`TargetedSentenceRules`, valori legati al compito accesi da `ProcessingChain.run` solo con questa regola)
+  «lgs.», «lg.», i codici abbreviati del consumo e della navigazione, la sigla «C.P.S.» e «Abs.»
+  non chiudono la frase, e nemmeno la data «giorno.mese.» seguita dall'anno a quattro cifre.
+- **Riquadri di approfondimento** (studio B): righe consecutive alla taglia delle note con lo stesso bordo sinistro
+  rientrato di 6-16 pt rispetto alla colonna, mai oltre il bordo destro meno 6 pt, senza numero di nota in testa, almeno
+  due, metà almeno giustificate, nessuna voce di sommario: un riquadro (`EXAMPLE_BOX`), annunciato «Riquadro.», letto al
+  suo posto, unito alla continuazione in cima alla pagina dopo e diviso in pezzi come una nota lunga (§ 10.6). La forma
+  coincide, riga per riga, col testo dentro ogni cornice disegnata del documento e con nient'altro (verità PyMuPDF).
+- **Etichette di bibliografia** (studio B): la parola-chiave da sola sulla riga, composta come i titoli di paragrafo, al
+  bordo sinistro e staccata, è un titolo un livello sotto il capitolo (anche dentro un capitolo diviso in sezioni); le righe
+  più piccole del corpo che la seguono sono il blocco bibliografico (`LETTERATURA`, col segnale della bibliografia), che
+  continua sul primo corpo della pagina dopo (un capitolo nuovo comincia sempre con un titolo).
+- **Capoversi rientrati** (studi A e B): dentro un blocco di corpo, una riga col rientro di prima riga del documento
+  (misurato sulle righe di corpo) dopo una riga che chiude la frase o finisce corta apre un capoverso; il documento porta la
+  famiglia `capoversi_rientrati`, e la granularità chiude il blocco dove comincia un capoverso (`opensParagraph`, come nei
+  documenti monotipografici).
+- **Salto nota→richiamo** (studi A e B, nella vista di lettura): per i libri del registro (`NoteJumpOptions.forTargeted`)
+  il richiamo di una nota letta in linea si cerca anche nell'ultima frase intera del segmento che la precede (oltre i 400
+  caratteri) e dopo una sigla col punto; mai dopo la sigla di un atto («d.lgs.», «d.P.R.», …).
 
 ## 5. Le reti di una cura mirata (obbligatorie)
 
