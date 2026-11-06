@@ -816,3 +816,32 @@ più l'innesto dei verdetti del modello d'impaginazione col fusore portato in Sw
   ora che anche l'iPad fraziona, fra la lettura del Mac e quella dell'iPad 55 il residuo sparisce (2 segnalibri e 6
   citazioni orfani, tutti nei volumi dell'indice analitico, 0 sbagliati); resta solo per chi torna dalla lettura 55 a
   quella della 54 («Torna alla lettura precedente»): 283 segnalibri su 10.909, dichiarati, 0 sbagliati.
+
+## H. Il giro «cure mirate per lo studio» (2026-11-06, build 62): la prova alla cieca su un volume ignoto
+
+Il volume «ignoto C» (libretto di storia, editore mai incontrato, 198 pagine, iText + pdftk) è stato fotografato alla
+cieca prima di ogni modifica e giudicato senza cure (referto del giro, § 8; nessun testo del volume qui). La catena del Mac
+con l'innesto acceso dà la **stessa lettura dell'iPad** (iOS 27): l'innesto non trova pagine candidate. Il modello
+d'impaginazione (Heron) però vede i segnali di tre difetti dell'iPad. Collocazione secondo il § 0-bis (la via on-device
+batte l'officina a parità di sicurezza):
+
+### H.1 Titoli di capitolo cancellati come testatina — **non officina: cura per capacità nel tronco (iPad)**
+La testatina corrente ripete il titolo del capitolo; il canale della mobilia per ricorrenza toglie anche il titolo vero
+della pagina d'apertura (taglia e quota diverse): 4 titoli d'apertura persi come testo. La via on-device sicura esiste
+(una riga alla taglia di titolo, fuori dalla banda della testatina, non è mobilia anche se il suo testo ricorre in testa
+alle pagine): non va all'officina. Proposta fra le decisioni del giro.
+
+### H.2 Titoli di sezione in corsivo alla taglia del corpo — **officina candidata**
+Sul dispositivo il corsivo si perde; la riga è corta, isolata e a filo della colonna, ma senza segnale tipografico. Il
+modello la etichetta «section_header» (12 pagine provate). Un canale geometrico on-device è possibile ma rischioso
+(righe corte di prosa a filo); l'innesto dei titoli di sezione dal modello è la candidata d'officina. Da misurare su più
+volumi prima di decidere.
+
+### H.3 Note di chiusura con la colonna dei numeri emessa prima dei testi — **prima on-device, officina di riserva**
+PDFKit emette i numeri in apice tutti insieme, poi i testi (2 blocchi su 5): note vuote e testi fusi. Il modello vede le
+voci («list_item»). La via on-device è riordinare per posizione i numeri accanto ai loro testi (geometria pura); l'officina
+resta di riserva.
+
+### H.4 Carte geografiche scartate dalla guardia — **non officina: cura per capacità (iPad)**
+Il modello dell'iPad le riconosce (figura, fiducia 0,98) ma la guardia le scarta come «ricorrenti», perché il disegno della
+filigrana su ogni pagina cade dentro la regione. La guardia può ignorare i disegni presenti su quasi tutte le pagine.
