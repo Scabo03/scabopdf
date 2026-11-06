@@ -34,16 +34,20 @@ final class TargetedCuresTests: XCTestCase {
                     bbox: BBox(x: x, y: y, width: width, height: height))
     }
 
-    private func extraction(_ pages: [[PdfTextLine]], width: Double, height: Double, sha: String?) -> PdfExtraction {
+    private func extraction(_ pages: [[PdfTextLine]], width: Double, height: Double, sha: String?,
+                            producer: String? = nil) -> PdfExtraction {
         PdfExtraction(version: 2, pageCount: pages.count,
                       pages: pages.enumerated().map { PdfPageExtraction(pageIndex: $0.offset, width: width,
                                                                         height: height, lines: $0.element) },
-                      sourceSha256: sha)
+                      producer: producer, sourceSha256: sha)
     }
 
     /// La forma del difetto dello studio A: titoli di capitolo e di paragrafo in grassetto alla taglia del corpo, e il
-    /// sommario del capitolo in prosa subito dopo il titolo.
-    private func shapeA(sha: String?) -> PdfExtraction {
+    /// sommario del capitolo in prosa subito dopo il titolo. Dal giro «rifiniture e cure per capacità» (voce 2.2) i titoli
+    /// in grassetto delle dispense Word li riconosce una capacità del tronco con la sua firma (produttore Word, grassetto solo
+    /// su righe intere, poche righe in grassetto): la forma porta il produttore e quattro pagine di corpo in più, così la
+    /// firma regge; con `producer: nil` la capacità resta spenta.
+    private func shapeA(sha: String?, producer: String? = "Microsoft® Word per Microsoft 365") -> PdfExtraction {
         var p0: [PdfTextLine] = []
         var y = 760.0
         for k in 0..<6 {
@@ -70,7 +74,18 @@ final class TargetedCuresTests: XCTestCase {
             p1.append(line("Il corpo inventato del secondo argomento prosegue alla riga \(k) fino in fondo.",
                            size: 12, x: k == 0 ? 78 : 64, y: y, width: 411)); y -= 20
         }
-        return extraction([p0, p1], width: 595, height: 842, sha: sha)
+        let words = ["alba", "bosco", "cielo", "duna", "eco", "faro", "golfo", "isola", "lago", "monte", "nube", "onda"]
+        var more: [[PdfTextLine]] = []
+        for q in 0..<4 {
+            var p: [PdfTextLine] = []
+            y = 760
+            for k in 0..<12 {
+                p.append(line("Il seguito inventato sulla parola \(words[(q * 5 + k) % 12]) e sulla \(words[(q + k * 7) % 12]) "
+                              + "prosegue lungo la colonna.", size: 12, x: 64, y: y, width: 425)); y -= 20
+            }
+            more.append(p)
+        }
+        return extraction([p0, p1] + more, width: 595, height: 842, sha: sha, producer: producer)
     }
 
     /// La forma del difetto dello studio B: etichetta di capitolo fra due ornamenti, sommario etichettato composto a
@@ -170,8 +185,10 @@ final class TargetedCuresTests: XCTestCase {
         let none = buildDocumentFromPdf(shapeA(sha: nil), sourceName: "prova.pdf")
         let other = buildDocumentFromPdf(shapeA(sha: unregistered), sourceName: "prova.pdf")
         XCTAssertEqual(json(none), json(other), "impronta diversa: documento identico a prima")
-        XCTAssertFalse(none.structure.contains { $0.type.rawValue.hasPrefix("HEADING") },
-                       "il difetto c'è: senza la cura i titoli in grassetto restano corpo")
+        XCTAssertFalse(none.structure.contains { $0.type == .CHAPTER_SUMMARY },
+                       "il difetto c'è: senza la cura il sommario del capitolo resta corpo")
+        XCTAssertTrue(none.structure.contains { $0.type.rawValue.hasPrefix("HEADING") },
+                      "i titoli in grassetto della dispensa Word li riconosce la capacità, senza impronta")
         XCTAssertNotEqual(json(none), json(buildDocumentFromPdf(shapeA(sha: studioA), sourceName: "prova.pdf")),
                           "con l'impronta registrata la cura si accende")
         // E la lettura (aggancio delle note + corpo) resta identica.
@@ -209,6 +226,17 @@ final class TargetedCuresTests: XCTestCase {
         XCTAssertEqual(summaries.count, 1)
         XCTAssertTrue((summaries[0].text ?? "").hasPrefix("1. Primo argomento di prova. 2."))
         XCTAssertEqual(alnum(cured), alnum(plain), "lettere e cifre identiche: la cura non scrive testo")
+        // I titoli vengono dalla capacità: uguali senza impronta; senza il produttore Word la capacità resta spenta.
+        XCTAssertEqual(plain.structure.filter { $0.type.rawValue.hasPrefix("HEADING") }.map { $0.text ?? "" },
+                       headings.map { $0.text ?? "" })
+        let notWord = buildDocumentFromPdf(shapeA(sha: studioA, producer: nil), sourceName: "prova.pdf")
+        func headingTexts(_ d: ScabopdfDocument) -> [String] {
+            d.structure.filter { $0.type.rawValue.hasPrefix("HEADING") }.map { $0.text ?? "" }
+        }
+        // La voce dello studio A non porta più la regola dei titoli: senza il produttore Word i titoli di paragrafo in
+        // grassetto restano corpo anche con l'impronta registrata (l'etichetta di capitolo, isolata dalla regola dei
+        // capoversi, la riconosce il canale del tronco delle etichette di struttura).
+        XCTAssertFalse(headingTexts(notWord).contains { $0.hasPrefix("1.") || $0.hasPrefix("2.") }, "\(headingTexts(notWord))")
     }
 
     func test_studioA_summaryOpeningWithDashTypoIsStillASummary() {
@@ -375,7 +403,7 @@ final class TargetedCuresTests: XCTestCase {
         XCTAssertEqual(cured, ["Vale il D. lgs. 123/2099 per la prova.",
                                "Cfr. la pronuncia inventata del 7.3. 2041, n. 4321.", "Fine."])
         XCTAssertEqual(splitIntoSentences(text), plain, "fuori dall'ambito le regole tornano quelle di sempre")
-        XCTAssertEqual(TargetedSentenceRules.with([.boldBodySizeTitles]) { splitIntoSentences(text) }, plain,
+        XCTAssertEqual(TargetedSentenceRules.with([.chapterSummaryAfterChapterTitle]) { splitIntoSentences(text) }, plain,
                        "le regole di frase si accendono solo con la loro regola")
         XCTAssertEqual(TargetedSentenceRules.with([.citationAbbreviations]) { splitIntoSentences("Il 18.2. Poi altro.") },
                        ["Il 18.2.", "Poi altro."], "senza l'anno dopo, la data non trattiene la frase")

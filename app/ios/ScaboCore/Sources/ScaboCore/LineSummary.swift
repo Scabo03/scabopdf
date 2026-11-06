@@ -120,7 +120,7 @@ public func summarizeLine(_ line: PdfTextLine) -> LineSummary {
 
     let bbox = line.bbox
     return LineSummary(
-        text: jsTrim(text),
+        text: repairingSoftHyphenSpaces(jsTrim(text)),
         fontSize: sizeWeight > 0 ? weightedSize / Double(sizeWeight) : 0,
         bold: total > 0 && Double(boldChars) / Double(total) >= 0.6,
         italic: total > 0 && Double(italicChars) / Double(total) >= 0.6,
@@ -141,4 +141,19 @@ public func summarizeLine(_ line: PdfTextLine) -> LineSummary {
 /// limited to exotic format characters (e.g. U+FEFF), not exercised here.
 func jsTrim(_ s: String) -> String {
     s.trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+// MARK: - Trattino morbido seguito da uno spazio (giro «rifiniture e cure per capacità», voce 2.6)
+
+/// Il trattino morbido (U+00AD) segna un punto di sillabazione DENTRO una parola: dove la parola non va a capo resta
+/// invisibile. Il lettore di sistema di iOS 26.5 mette uno spazio subito dopo («qualsia\u{00AD} si»), e la parola si legge
+/// spezzata in due; iOS 27 no («qualsia\u{00AD}si»). Si toglie lo spazio fra un trattino morbido preceduto da una lettera e
+/// una lettera minuscola che segue: la parola torna intera, come su iOS 27. Sicuro per costruzione (il trattino morbido sta
+/// solo dentro una parola) e nessuna lettera cambia. Dove il testo non ha trattini morbidi non si esegue nulla.
+private let SOFT_HYPHEN_SPACE_RE = try! NSRegularExpression(pattern: "(?<=[\\p{L} ])\u{00AD}[ \\t]+(?=\\p{L})")
+
+func repairingSoftHyphenSpaces(_ text: String) -> String {
+    guard text.contains("\u{00AD}") else { return text }
+    return SOFT_HYPHEN_SPACE_RE.stringByReplacingMatches(
+        in: text, range: NSRange(text.startIndex..<text.endIndex, in: text), withTemplate: "\u{00AD}")
 }

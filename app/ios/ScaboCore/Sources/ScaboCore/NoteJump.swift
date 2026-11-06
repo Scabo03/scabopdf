@@ -234,8 +234,84 @@ public func noteCallLinks(_ segments: [ContentSegment], options: NoteJumpOptions
         links.callOfNote[i] = c
         links.notesOfCall[c, default: []].append(i)
     }
+    if !normative { linkEndnoteBlocks(segments, &links) }
     linkNoteContinuations(segments, &links)
     return links
+}
+
+// ── Note di CHIUSURA (giro «rifiniture e cure per capacità», voce 2.4) ────────────────────────────────────────────────
+//
+// Le note raccolte in fondo al capitolo (o al libro), lette dove il libro le mette, non avevano il salto: il richiamo sta
+// molte pagine prima, e le regole qui sopra cercano solo nel segmento che precede la nota o nella frase del rinfresco. Con
+// la prudenza del § 7.12 (nessun legame inventato) si lega una nota di chiusura al suo richiamo solo se:
+//  • la nota sta in un BLOCCO di almeno tre note consecutive nel flusso, numerate 1, 2, 3, … senza salti, e nessuna nota del
+//    blocco ha già un legame (un blocco di note di fondo pagina già agganciate resta com'era);
+//  • il richiamo è nella forma del richiamo in apice: il numero ATTACCATO alla parola o alla punteggiatura che lo precede,
+//    senza spazio («parola¹²» → «parola12»), mai dopo un'abbreviazione di riferimento;
+//  • il richiamo sta nell'AMBITO della nota: i segmenti di testo dopo il blocco di note precedente (o dall'inizio) e prima
+//    di questo, ed è UNICO lì (due segmenti con lo stesso numero attaccato: nessun legame);
+//  • i richiami trovati sono in ORDINE: il richiamo della nota n non sta prima di quello di una nota precedente del blocco.
+// Si aggiungono solo legami, mai se ne tolgono: una nota già legata dalle regole di sempre resta com'era.
+
+/// Numero minimo di note di un blocco di chiusura.
+let ENDNOTE_BLOCK_MIN_NOTES = 3
+
+private func linkEndnoteBlocks(_ segments: [ContentSegment], _ links: inout NoteCallLinks) {
+    func isOpeningNote(_ k: Int) -> Bool {
+        segments[k].role == SemanticCategory.NOTE.rawValue || segments[k].role == SemanticCategory.EDITORIAL_NOTE.rawValue
+    }
+    func isText(_ k: Int) -> Bool { !isNoteRole(segments[k].role) && segments[k].role != VISUAL_RESOURCE_ROLE }
+    var scopeStart = 0
+    var i = 0
+    while i < segments.count {
+        guard isNoteRole(segments[i].role) || segments[i].role == VISUAL_RESOURCE_ROLE else { i += 1; continue }
+        // La corsa di note (con i pezzi delle note lunghe e gli elementi «risorsa visiva», trasparenti).
+        var j = i
+        var notes: [(index: Int, number: Int?)] = []
+        while j < segments.count, isNoteRole(segments[j].role) || segments[j].role == VISUAL_RESOURCE_ROLE {
+            if isOpeningNote(j) { notes.append((j, noteOpening(segments[j].text))) }
+            j += 1
+        }
+        defer { scopeStart = j; i = j }
+        // Il blocco: le note numerate 1, 2, 3, … dall'inizio della corsa, fino alla prima che rompe la successione (le note
+        // dopo restano senza legame); almeno tre, e nessuna nota della corsa già legata.
+        guard notes.allSatisfy({ links.callOfNote[$0.index] == nil }) else { continue }
+        var prefix = 0
+        while prefix < notes.count, notes[prefix].number == prefix + 1 { prefix += 1 }
+        guard prefix >= ENDNOTE_BLOCK_MIN_NOTES else { continue }
+        notes = Array(notes.prefix(prefix))
+        // Le occorrenze di ogni numero attaccato nell'ambito, per segmento.
+        var lastCall = -1
+        for note in notes {
+            guard let n = note.number else { continue }
+            var found: [Int] = []
+            for k in scopeStart..<i where isText(k) && containsAttachedCall(segments[k].text, n) {
+                found.append(k)
+                if found.count > 1 { break }
+            }
+            guard found.count == 1, let c = found.first, c >= lastCall else { continue }
+            lastCall = c
+            links.callOfNote[note.index] = c
+            links.notesOfCall[c, default: []].append(note.index)
+        }
+    }
+}
+
+/// Vero se il testo contiene il numero `n` nella forma del richiamo in apice: attaccato, senza spazio, a una lettera o a
+/// una chiusura di citazione o di parentesi o a un segno d'interpunzione («parola12», «»12», «)12», «parola.12»), seguito
+/// da una non-cifra; mai dopo un'abbreviazione di riferimento («art.12», «n.12»).
+func containsAttachedCall(_ text: String, _ n: Int) -> Bool {
+    guard let re = try? NSRegularExpression(
+        pattern: "([A-Za-zÀ-ÿ]*)([A-Za-zÀ-ÿ»”’\\)\\]\\.,;:])\(n)(?![0-9])") else { return false }
+    for m in re.matches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text)) {
+        // il carattere prima del numero non deve essere una cifra (lo garantisce la classe) né l'inizio di un numero più
+        // lungo; la parola davanti non è un'abbreviazione di riferimento
+        guard let r = Range(m.range(at: 1), in: text) else { continue }
+        let word = text[r].lowercased()
+        if NOT_A_CALL_BEFORE.contains(word) { continue }
+        return true
+    }
+    return false
 }
 
 /// Vero se in `text` (lettere/cifre minuscole) la coda `tail` è seguita SUBITO dal numero `digits` e poi da una non-cifra

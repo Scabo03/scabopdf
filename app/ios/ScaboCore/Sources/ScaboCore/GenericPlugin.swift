@@ -282,6 +282,13 @@ struct Profile {
     /// Solo per la regola mirata dei capoversi rientrati: il rientro di prima riga del documento (pt dal bordo sinistro
     /// della colonna), il più frequente fra 8 e 24 pt sulle righe di corpo. 0 altrimenti.
     var targetedParagraphIndent: Double = 0
+    /// Firma delle dispense scritte con Word con i titoli in grassetto alla taglia del corpo (WordBoldTitles.swift, giro
+    /// «rifiniture e cure per capacità», voce 2.2): quando c'è, `pageItems` riconosce quei titoli e `assembleDocument` ne
+    /// fissa i livelli. Falsa su ogni volume del banco (misurato): no-op, byte-identico.
+    var wordBoldTitles: Bool = false
+    /// Calibrazione del canale dei titoli di sezione isolati (IsolatedSectionTitles.swift, voce 2.3): passo di riga,
+    /// bordi della colonna e rientro di capoverso del corpo, misurati sul documento. `nil` dove il canale non si applica.
+    var isolatedTitles: IsolatedTitleCalibration? = nil
 }
 
 // MARK: - The plugin
@@ -382,6 +389,8 @@ public final class GenericPlugin: ExtractionPlugin {
             ? normalizeManualLevels(&nodes) : 0
         // CURE MIRATE (TargetedCures.swift, LAYER2 § 0-ter), in posizione (nessun nodo aggiunto o tolto): solo sui documenti
         // del registro; per ogni altro documento questa riga non esegue nulla.
+        // Livelli dei titoli in grassetto delle dispense Word (WordBoldTitles.swift): solo dove la firma regge.
+        if profile.wordBoldTitles { flatNumberedParagraphLevels(&nodes) }
         if !profile.targeted.isEmpty { applyTargetedDocumentRules(&nodes, profile) }
         // Testatina corrente ricorrente (titolo capitolo recto, lunga, ripetuta) sfuggita al
         // cap-caratteri della furniture e finita come NOTE → ARTIFACT_RUNNING_HEADER (non-letta).
@@ -591,7 +600,15 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
         targetedRightEdge: targeted.isDisjoint(with: TargetedRule.usingBodyRightEdge)
             ? 0 : targetedBodyRightEdge(extraction, body: bodySize),
         targetedParagraphIndent: targeted.contains(.indentedParagraphs)
-            ? targetedBodyParagraphIndent(extraction, body: bodySize, left: targetedBodyLeftEdge(extraction, body: bodySize)) : 0)
+            ? targetedBodyParagraphIndent(extraction, body: bodySize, left: targetedBodyLeftEdge(extraction, body: bodySize)) : 0,
+        // Titoli in grassetto delle dispense Word (WordBoldTitles.swift): la firma si misura solo fuori dai rami che hanno
+        // le loro regole e fuori dai documenti monotipografici.
+        wordBoldTitles: mono == nil && !isRivistaDpc && !isCodici && !isEstratto && !isGiappichelliPhotoshop
+            && !extractionIsDejure(extraction) && wordBoldTitlesSignature(extraction, body: bodySize),
+        // Titoli di sezione isolati da stacchi (IsolatedSectionTitles.swift): fuori dai monotipografici (hanno il loro
+        // canale) e dai rami con regole proprie.
+        isolatedTitles: mono == nil && !isRivistaDpc && !isCodici && !isEstratto && !extractionIsDejure(extraction)
+            ? isolatedTitleCalibration(extraction, body: bodySize) : nil)
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
@@ -691,6 +708,9 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         var joinsRows = false }
     var bandRows: [BandRow] = []
     var bareFolioRows: [FusedFolioLine] = []
+    // Titolo ripetuto dalla testatina (giro «rifiniture e cure per capacità», voce 2.1): per ogni norma di testo, le righe
+    // con la loro taglia, per riconoscere dopo i canali il titolo vero composto molto più grande delle testatine.
+    var sizesByNorm: [String: [(key: String, size: Double)]] = [:]
 
     func track(_ map: inout [String: Set<Int>], _ norm: String, _ pageIndex: Int) {
         map[norm, default: []].insert(pageIndex)
@@ -731,6 +751,8 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                targetedIsDetachedCallPunctuation(lineIndex, in: page.lines) {
                 continue
             }
+            // Solo righe con testo (almeno due lettere): un titolo; non l'interpunzione staccata, né un numero.
+            if sm.fontSize > 0, isSubstantial(sm.text) { sizesByNorm[norm, default: []].append((key, sm.fontSize)) }
             // General majority-recurrence applies at any length.
             generalCandidates.append(Candidate(key: key, norm: norm))
             track(&generalPages, norm, page.pageIndex)
@@ -914,6 +936,25 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         let variance = ys.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(ys.count)
         if variance.squareRoot() < RUNNING_HEADER_POSITION_LOCK {
             for c in lines { furniture.insert(c.key) }
+        }
+    }
+    // IL TITOLO CHE LA TESTATINA RIPETE NON È MOBILIA (giro «rifiniture e cure per capacità», voce 2.1). In molti libri la
+    // testatina corrente di ogni pagina di un capitolo ripete il titolo del capitolo: stesso testo, quindi stessa norma, e
+    // i canali per ricorrenza (banda, testatina in cima) toglievano anche il titolo VERO della pagina d'apertura — testo
+    // perso in silenzio. La forma che li distingue è la taglia: la testatina ricorre piccola su molte pagine, il titolo
+    // compare una volta, molto più grande. In una norma con almeno tre righe, le righe composte almeno 1,25 volte la taglia
+    // più frequente della norma e almeno 1,5 pt sopra il corpo, se sono al più un terzo della norma, non sono mobilia
+    // (una sezione breve può avere la pagina divisoria e la pagina d'apertura col titolo grande, e poche testatine).
+    // Una testatina che cambia taglia fra recto e verso (metà e metà) resta mobilia: non è rara.
+    if bodySizeForFurniture > 0 {
+        for (_, members) in sizesByNorm where members.count >= 3 && members.contains(where: { furniture.contains($0.key) }) {
+            var modal: [Double: Int] = [:]
+            for m in members { modal[(m.size * 2).rounded() / 2, default: 0] += 1 }
+            guard let mode = modal.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) })?.key
+            else { continue }
+            let big = members.filter { $0.size >= max(bodySizeForFurniture + 1.5, mode * 1.25) }
+            guard !big.isEmpty, big.count * 3 <= members.count else { continue }
+            for b in big { furniture.remove(b.key) }
         }
     }
     // Ramo Riviste (porta DPC): testatine correnti separate per posizione (additivo).
@@ -1923,12 +1964,17 @@ func pageItems(
     // Unità «etichetta + titolo» dei manuali (D.10): un titolo solo, livello fissato poi da `normalizeManualLevels`.
     // No-op nei codici, nella DPC, nei monotipografici, nell'Estratto e nei DeJure.
     // Titoli in grassetto a taglia di corpo degli export DeJure (DejureTitles.swift); no-op fuori da DeJure.
-    let withDejure = recognizeDejureBoldTitles(withMono, profile)
+    let withDejure = recognizeIsolatedSectionTitles(recognizeDejureBoldTitles(withMono, profile), profile)
     let fused = fuseStructureUnits(consolidateAdjacentHeadings(withDejure, profile), pageWidth: page.width, profile)
     // CURE MIRATE (TargetedCures.swift, LAYER2 § 0-ter): solo sui documenti del registro, in coda a tutto il resto. Dove il
     // profilo non porta regole mirate (ogni altro documento) gli item tornano invariati e il codice delle regole non gira.
-    guard !profile.targeted.isEmpty else { return fused }
-    return applyTargetedPageRules(fused, profile)
+    // Note col numero emesso prima del testo (giro «rifiniture e cure per capacità», voce 2.4): la colonna dei richiami
+    // rimessa in ordine di posizione accanto ai suoi testi. No-op dove le note sono già in ordine (tutti i volumi del banco).
+    let withNoteOrder = reorderMarkerColumnNoteRuns(fused)
+    // Titoli in grassetto alla taglia del corpo delle dispense Word (WordBoldTitles.swift): solo dove la firma regge.
+    let withWordBold = profile.wordBoldTitles ? recognizeWordBoldTitles(withNoteOrder, profile) : withNoteOrder
+    guard !profile.targeted.isEmpty else { return withWordBold }
+    return applyTargetedPageRules(withWordBold, profile)
 }
 
 // ── Fusione dei titoli spezzati su più righe (capacità posizionale, § navigazione) ──────────
@@ -2577,4 +2623,42 @@ private func stripLastExtension(_ name: String) -> String {
 
 private func isAsciiAlphanumeric(_ c: Character) -> Bool {
     ("a"..."z").contains(c) || ("0"..."9").contains(c)
+}
+
+// ── Note col numero emesso prima del testo (giro «rifiniture e cure per capacità», voce 2.4) ─────────────────────────────
+//
+// In alcuni PDF il lettore di sistema emette la colonna dei richiami di un blocco di note (i numeri in apice, ciascuno una
+// «riga» a sé) PRIMA dei testi delle note: nel flusso il blocco diventava note vuote (solo il numero) e una nota che fondeva
+// i testi di più note. La forma: nello stesso blocco di righe a taglia di nota ci sono almeno due righe fatte solo di un
+// numero composto più piccolo (i richiami in apice), le righe non sono in ordine dall'alto in basso, e stanno tutte nella
+// stessa colonna (bordi sinistri entro 40 pt). Allora il blocco si rimette in ordine di posizione (dall'alto in basso, a
+// parità da sinistra): ogni numero torna davanti al suo testo. Nessun testo scritto, nessuna riga tolta.
+
+/// Vero se la riga è solo un richiamo in apice: da una a tre cifre, composte più piccole (≤ 0,8) della taglia `text`.
+private func isBareMarkerLine(_ sm: LineSummary, textSize: Double) -> Bool {
+    let t = jsTrim(sm.text)
+    return !t.isEmpty && t.count <= 3 && t.allSatisfy({ $0.isASCII && $0.isNumber }) && sm.fontSize <= textSize * 0.8
+}
+
+func reorderMarkerColumnNoteRuns(_ items: [GenItem]) -> [GenItem] {
+    items.map { item in
+        guard case .run(.note, let lines) = item, lines.count >= 3 else { return item }
+        let textSize = lines.map { $0.fontSize }.max() ?? 0
+        guard textSize > 0, lines.filter({ isBareMarkerLine($0, textSize: textSize) }).count >= 2 else { return item }
+        let x0s = lines.map { $0.x0 }
+        guard let lo = x0s.min(), let hi = x0s.max(), hi - lo <= 40 else { return item }
+        // fuori ordine: una riga che sta sopra una riga emessa prima di lei (più di 2 pt)
+        var outOfOrder = false
+        var lowest = Double.greatestFiniteMagnitude
+        for sm in lines {
+            if sm.yBottom > lowest + 2 { outOfOrder = true; break }
+            lowest = min(lowest, sm.yBottom)
+        }
+        guard outOfOrder else { return item }
+        let sorted = lines.enumerated().sorted {
+            abs($0.element.yBottom - $1.element.yBottom) > 2 ? $0.element.yBottom > $1.element.yBottom
+                : ($0.element.x0 != $1.element.x0 ? $0.element.x0 < $1.element.x0 : $0.offset < $1.offset)
+        }.map { $0.element }
+        return .run(.note, sorted)
+    }
 }

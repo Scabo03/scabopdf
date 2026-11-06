@@ -34,9 +34,6 @@ import Foundation
 /// Applica, in ordine, le regole mirate di PAGINA accese nel profilo. Chiamata SOLO quando `profile.targeted` non è vuoto.
 func applyTargetedPageRules(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
     var out = items
-    if profile.targeted.contains(.boldBodySizeTitles) {
-        out = targetedBoldBodySizeTitles(out, profile)
-    }
     if profile.targeted.contains(.chapterSummaryAfterChapterTitle) {
         out = targetedChapterSummaryAfterChapterTitle(out)
     }
@@ -80,8 +77,8 @@ func applyTargetedLineRules(_ lines: [LineSummary], _ profile: Profile) -> [Line
 @discardableResult
 func applyTargetedDocumentRules(_ nodes: inout [NodeDict], _ profile: Profile) -> Int {
     var touched = 0
-    if profile.targeted.contains(.boldBodySizeTitles) || profile.targeted.contains(.smallerNumberedParagraphTitles) {
-        touched += targetedFlatParagraphLevels(&nodes)
+    if profile.targeted.contains(.smallerNumberedParagraphTitles) {
+        touched += flatNumberedParagraphLevels(&nodes)
     }
     if profile.targeted.contains(.bibliographyLabels) {
         touched += targetedBibliographyLevels(&nodes)
@@ -218,7 +215,7 @@ private func targetedBodyLineWithCallSize(_ sm: LineSummary, _ profile: Profile)
 // MARK: - Forme generali
 
 /// Etichetta di capitolo o di parte: parola-chiave di struttura + numero romano, da sola sulla riga.
-private let TARGETED_UNIT_LABEL_RE = try! NSRegularExpression(
+let TARGETED_UNIT_LABEL_RE = try! NSRegularExpression(
     pattern: "^(?i:(capitolo|parte))\\s+[IVXLCDM]{1,6}\\.?$")
 /// Etichetta di sezione: parola-chiave + numero romano, da sola sulla riga.
 private let TARGETED_SECTION_LABEL_RE = try! NSRegularExpression(pattern: "^(?i:sezione)\\s+[IVXLCDM]{1,6}\\.?$")
@@ -226,9 +223,9 @@ private let TARGETED_SECTION_LABEL_RE = try! NSRegularExpression(pattern: "^(?i:
 private let TARGETED_SUMMARY_LABEL_RE = try! NSRegularExpression(pattern: "^(?i:sommario)\\s*[.:]?$")
 /// Un titolo di paragrafo numerato comincia con un numero (fino a tre cifre) seguito dal punto, da uno spazio o da un
 /// trattino.
-private let TARGETED_NUMBER_OPENING_RE = try! NSRegularExpression(pattern: "^\\d{1,3}(?:\\.|\\s|-)")
+let TARGETED_NUMBER_OPENING_RE = try! NSRegularExpression(pattern: "^\\d{1,3}(?:\\.|\\s|-)")
 /// Etichetta d'unità che apre un'intestazione già fusa col suo titolo: parte, capitolo o sezione + romano.
-private let TARGETED_ANY_UNIT_LABEL_RE = try! NSRegularExpression(
+let TARGETED_ANY_UNIT_LABEL_RE = try! NSRegularExpression(
     pattern: "^(?i:(capitolo|parte|sezione))\\s+[IVXLCDM]{1,6}\\.?$")
 /// Titolo di paragrafo numerato «N. …» (fino a tre cifre, eventualmente «bis»/«ter»…, punto, spazio, testo).
 private let TARGETED_NUMBERED_TITLE_RE = try! NSRegularExpression(
@@ -238,7 +235,7 @@ private let TARGETED_SUMMARY_OPENING_RE = try! NSRegularExpression(pattern: "^\\
 /// Voce successiva di un sommario: dopo una lineetta o un punto, «N.» seguito da testo.
 private let TARGETED_SUMMARY_ITEM_RE = try! NSRegularExpression(pattern: "(?:[\u{2013}\u{2014}-]|\\.)\\s+\\d{1,3}\\.\\s+\\S")
 
-private func targetedMatches(_ re: NSRegularExpression, _ text: String) -> Bool {
+func targetedMatches(_ re: NSRegularExpression, _ text: String) -> Bool {
     re.firstMatch(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text)) != nil
 }
 
@@ -247,7 +244,7 @@ private func targetedMatchCount(_ re: NSRegularExpression, _ text: String) -> In
 }
 
 /// Tutti gli span con lettere sono in grassetto (e ce n'è almeno uno).
-private func targetedLettersAllBold(_ sm: LineSummary) -> Bool {
+func targetedLettersAllBold(_ sm: LineSummary) -> Bool {
     let letterSpans = sm.spans.filter { $0.text.contains { $0.isLetter } }
     return !letterSpans.isEmpty && letterSpans.allSatisfy { $0.bold }
 }
@@ -270,7 +267,7 @@ private func targetedGapBetween(_ upper: LineSummary, _ lower: LineSummary) -> B
 }
 
 /// Livello di un nodo intestazione, o nil.
-private func targetedHeadingLevel(_ node: NodeDict) -> Int? {
+func targetedHeadingLevel(_ node: NodeDict) -> Int? {
     switch node.type {
     case .HEADING_1: return 1
     case .HEADING_2: return 2
@@ -280,7 +277,7 @@ private func targetedHeadingLevel(_ node: NodeDict) -> Int? {
     }
 }
 
-private func targetedHeadingCategory(_ level: Int) -> SemanticCategory {
+func targetedHeadingCategory(_ level: Int) -> SemanticCategory {
     switch level {
     case 1: return .HEADING_1
     case 2: return .HEADING_2
@@ -292,7 +289,7 @@ private func targetedHeadingCategory(_ level: Int) -> SemanticCategory {
 /// Spezza i run di corpo dove `group` riconosce l'inizio di un gruppo di righe da sostituire (fine del gruppo e item
 /// sostitutivi), lasciando il resto al corpo. Righe e ordine invariati. `previous` è l'item che precede la riga di partenza
 /// (il corpo accumulato, o l'ultimo item già emesso).
-private func targetedSplitBodyRuns(
+func targetedSplitBodyRuns(
     _ items: [GenItem],
     group: (_ lines: [LineSummary], _ start: Int, _ previous: GenItem?) -> (end: Int, items: [GenItem])?
 ) -> [GenItem] {
@@ -316,44 +313,7 @@ private func targetedSplitBodyRuns(
     return out
 }
 
-// MARK: - Studio A — titoli in grassetto alla taglia del corpo
-
-/// Riga di titolo dello studio A: tutte le lettere in grassetto, alla taglia del corpo (±0,6 pt).
-private func targetedIsBoldBodySizeLine(_ sm: LineSummary, body: Double) -> Bool {
-    abs(sm.fontSize - body) <= 0.6 && targetedLettersAllBold(sm) && sm.text.contains { $0.isLetter }
-}
-
-/// Le righe in grassetto a taglia di corpo, consecutive dentro un blocco di corpo, sono titoli: l'etichetta di capitolo
-/// (parola-chiave + romano) assorbe le righe successive che non aprono un numero (il titolo del capitolo) e diventa
-/// un'intestazione di capitolo; ogni riga che apre con un numero apre un titolo di paragrafo, e le righe che seguono senza
-/// numero sono la sua continuazione. Un gruppo che non apre né con l'etichetta né con un numero resta un titolo a sé.
-private func targetedBoldBodySizeTitles(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
-    guard profile.bodySize > 0 else { return items }
-    let body = profile.bodySize
-    return targetedSplitBodyRuns(items) { lines, start, _ in
-        guard targetedIsBoldBodySizeLine(lines[start], body: body) else { return nil }
-        var end = start
-        while end < lines.count, targetedIsBoldBodySizeLine(lines[end], body: body) { end += 1 }
-        var units: [(lines: [LineSummary], numbered: Bool)] = []
-        for sm in lines[start..<end] {
-            let t = jsTrim(sm.text)
-            if targetedMatches(TARGETED_UNIT_LABEL_RE, t) {
-                units.append(([sm], false))
-            } else if targetedMatches(TARGETED_NUMBER_OPENING_RE, t) {
-                units.append(([sm], true))
-            } else if units.isEmpty {
-                units.append(([sm], false))
-            } else {
-                units[units.count - 1].lines.append(sm)
-            }
-        }
-        let made: [GenItem] = units.map { u in
-            let merged = mergedLine(u.lines)
-            return u.numbered ? .numberedTitle(merged, depth: 1) : .heading(merged, level: 2)
-        }
-        return (end, made)
-    }
-}
+// MARK: - Studio A — sommario di capitolo in prosa
 
 /// Vero se il testo di un'intestazione apre con l'etichetta di capitolo o di parte (parola-chiave + romano).
 private func targetedOpensWithUnitLabel(_ text: String) -> Bool {
@@ -378,32 +338,6 @@ private func targetedChapterSummaryAfterChapterTitle(_ items: [GenItem]) -> [Gen
         out.append(item)
     }
     return out
-}
-
-/// Studi A e B, in posizione: i titoli di paragrafo (che aprono con un numero) stanno tutti un livello sotto l'unità che li
-/// contiene (capitolo, o sezione dove c'è). Un titolo il cui numero non porta subito il punto (un refuso della stampa, un
-/// «N bis.») non deve trascinare più in basso i titoli che lo seguono, come farebbe il calcolo relativo dei manuali, che
-/// lo prende per un titolo non numerato.
-private func targetedFlatParagraphLevels(_ nodes: inout [NodeDict]) -> Int {
-    var chapterLevel: Int?
-    var touched = 0
-    for i in nodes.indices {
-        guard let level = targetedHeadingLevel(nodes[i]) else { continue }
-        let text = jsTrim(nodes[i].text ?? "")
-        let words = text.split(separator: " ")
-        if words.count >= 2, targetedMatches(TARGETED_ANY_UNIT_LABEL_RE, words.prefix(2).joined(separator: " ")) {
-            chapterLevel = level
-            continue
-        }
-        guard let chapter = chapterLevel, targetedMatches(TARGETED_NUMBER_OPENING_RE, text) else { continue }
-        let want = min(4, chapter + 1)
-        if level != want {
-            nodes[i].type = targetedHeadingCategory(want)
-            nodes[i].level = want
-            touched += 1
-        }
-    }
-    return touched
 }
 
 // MARK: - Studio B — etichette con ornamenti, sommari etichettati, sezioni, titoli di paragrafo sotto la taglia del corpo

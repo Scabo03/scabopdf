@@ -247,15 +247,53 @@ private func iou(_ a: [Double], _ b: [Double]) -> Double {
 /// Indici delle FIGURE che ricorrono nella stessa posizione su almeno `VISUAL_RECURRENCE_PAGES` pagine. Le tabelle
 /// no: una tabella che continua per più pagine, o una serie di tabelle impaginate allo stesso modo, ricorre di
 /// proposito (misurato: le tabelle dei parametri forensi dei codici, l'appendice della Rivista DPC).
-func recurringCandidateIndices(_ candidates: [VisualRegionCandidate]) -> Set<Int> {
+///
+/// Ricorre l'ARREDO: lo stesso logo, la stessa testata, lo stesso fregio, la stessa filigrana — stessa posizione e stesso
+/// CONTENUTO. Dal giro «rifiniture e cure per capacità» (voce 2.5) due figure nella stessa posizione NON contano come la
+/// stessa solo se è diverso TUTTO quello che se ne misura: le lettere del testo che contengono (`letters`) E il numero di
+/// oggetti dipinti che le toccano (`graphicsInside`). Tre tavole diverse impaginate allo stesso modo (tre carte geografiche
+/// a piena pagina, con nomi e disegni diversi) non sono più prese per un fregio ripetuto. Basta invece che una delle due
+/// misure coincida, o che manchi, perché la ricorrenza resti: una filigrana disegnata sopra il testo (lettere diverse a
+/// ogni pagina, stesso disegno), un logo o una testata (stesse lettere) restano arredo, come prima. Nel dubbio resta
+/// arredo. Misurato sui 52 volumi: nessuna figura ricorrente cambia; nel volume di prova alla cieca le tre carte non
+/// ricorrono più.
+func recurringCandidateIndices(_ candidates: [VisualRegionCandidate], letters: (Int) -> String? = { _ in nil }) -> Set<Int> {
     var out = Set<Int>()
+    var memo: [Int: String?] = [:]
+    func lettersOf(_ i: Int) -> String? {
+        if let k = memo[i] { return k }
+        let k = letters(i)
+        memo[i] = k
+        return k
+    }
+    func sameContent(_ i: Int, _ j: Int) -> Bool {
+        let li = lettersOf(i), lj = lettersOf(j)
+        let lettersDiffer = li != nil && lj != nil && li != lj
+        let gi = candidates[i].graphicsInside, gj = candidates[j].graphicsInside
+        let graphicsDiffer = gi != nil && gj != nil && gi != gj
+        return !(lettersDiffer && graphicsDiffer)
+    }
     for (i, a) in candidates.enumerated() where a.bbox.count == 4 && a.label == "picture" {
         var pages = Set([a.pageIndex])
-        for b in candidates where b.label == "picture" && b.pageIndex != a.pageIndex && b.bbox.count == 4 && iou(a.bbox, b.bbox) >= 0.8 {
+        for (j, b) in candidates.enumerated()
+        where b.label == "picture" && b.pageIndex != a.pageIndex && b.bbox.count == 4 && iou(a.bbox, b.bbox) >= 0.8
+            && sameContent(i, j) {
             pages.insert(b.pageIndex)
             if pages.count >= VISUAL_RECURRENCE_PAGES { break }
         }
         if pages.count >= VISUAL_RECURRENCE_PAGES { out.insert(i) }
+    }
+    return out
+}
+
+/// Le lettere (minuscole) del testo delle righe dell'estrazione il cui centro cade nella regione: il contenuto testuale di
+/// una figura, per riconoscere l'arredo ripetuto identico (`recurringCandidateIndices`).
+func visualRegionLetters(_ c: VisualRegionCandidate, _ page: PdfPageExtraction) -> String {
+    guard c.bbox.count == 4 else { return "" }
+    let H = page.height
+    var out = ""
+    for line in page.lines where lineCenterInside(topLeftBox(line.bbox, pageHeight: H), c.bbox) {
+        for span in line.spans { out += span.text.lowercased().filter { $0.isLetter } }
     }
     return out
 }
@@ -493,7 +531,9 @@ public func insertingVisualResources(
     var acceptedBoxes: [Int: [[Double]]] = [:]
     var perPageCount: [Int: Int] = [:]
 
-    let recurring = recurringCandidateIndices(candidates)
+    let recurring = recurringCandidateIndices(candidates) { i in
+        pages[candidates[i].pageIndex].map { visualRegionLetters(candidates[i], $0) }
+    }
     // Ordine (pagina, alto, sinistra); un candidato malformato (riquadro senza quattro valori) non fa cadere l'ordinamento:
     // la guardia lo scarta subito dopo.
     func topLeft(_ c: VisualRegionCandidate) -> (Double, Double) { c.bbox.count == 4 ? (c.bbox[1], c.bbox[0]) : (0, 0) }
