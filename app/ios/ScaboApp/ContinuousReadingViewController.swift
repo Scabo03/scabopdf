@@ -301,6 +301,9 @@ final class ContinuousReadingViewController: UIViewController {
             }
             appearanceObservers.append(token)
         }
+        // Cure mirate (LAYER2 § 0-ter): i legami nota↔richiamo con le opzioni del registro, solo se l'impronta del libro c'è.
+        readingView.noteJumpOptions = NoteJumpOptions.forTargeted(
+            TargetedCures.rules(forFingerprint: libraryStore.document(id: documentId)?.sourceSha256))
         readingView.render(content)
         // I legami fra note e richiami del flusso di Lettura Continua, già calcolati dalla vista: la ricerca nel libro li
         // riusa per i confini dei richiami (calcolarli di nuovo costava fino a quasi mezzo secondo sul Mac, campo).

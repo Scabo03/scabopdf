@@ -830,7 +830,8 @@ public func sentenceBoundaryOffsets(_ text: String) -> [Int] {
                 var nextStart = afterClosings
                 while nextStart < count, chars[nextStart].isWhitespace { nextStart += 1 }
                 if nextStart < count, isSentenceStart(chars[nextStart]) {
-                    let isBoundary = (ch == ".") ? !isAbbreviationBefore(chars, periodIndex: i) : true
+                    let isBoundary = (ch == ".")
+                        ? !isAbbreviationBefore(chars, periodIndex: i) && !targetedSplitDateAt(chars, i, nextStart) : true
                     if isBoundary {
                         bounds.append(afterClosings)
                         i = nextStart
@@ -924,7 +925,8 @@ public func splitIntoSentences(_ text: String) -> [String] {
                 var nextStart = afterClosings
                 while nextStart < count, chars[nextStart].isWhitespace { nextStart += 1 }
                 if nextStart < count, isSentenceStart(chars[nextStart]) {
-                    let isBoundary = (ch == ".") ? !isAbbreviationBefore(chars, periodIndex: i) : true
+                    let isBoundary = (ch == ".")
+                        ? !isAbbreviationBefore(chars, periodIndex: i) && !targetedSplitDateAt(chars, i, nextStart) : true
                     if isBoundary {
                         let sentence = String(chars[start..<afterClosings])
                             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -970,6 +972,45 @@ private func isAbbreviationBefore(_ chars: [Character], periodIndex: Int) -> Boo
     let dotted = String(token).lowercased()
     let dottedNoTrailingDot = dotted.hasSuffix(".") ? String(dotted.dropLast()) : dotted
     let plain = String(letters).lowercased()
-    return SENTENCE_ABBREVIATIONS.contains(dottedNoTrailingDot)
-        || SENTENCE_ABBREVIATIONS.contains(plain)
+    if SENTENCE_ABBREVIATIONS.contains(dottedNoTrailingDot) || SENTENCE_ABBREVIATIONS.contains(plain) { return true }
+    // Cure mirate (TargetedSentenceRules): vuoto per ogni documento non registrato.
+    let extra = TargetedSentenceRules.extraAbbreviations
+    return !extra.isEmpty && (extra.contains(dottedNoTrailingDot) || extra.contains(plain))
+}
+
+// MARK: - Regole di frase delle cure mirate
+
+/// Regole di frase aggiuntive delle CURE MIRATE (LAYER2 § 0-ter, `TargetedCures.sentenceRules`): le abbreviazioni delle
+/// citazioni che un documento del registro usa e la lista generale non conosce, e la data spezzata a fine riga («18.2.»
+/// seguito dall'anno) che non chiude la frase. Valori legati al compito (`TaskLocal`) e accesi SOLO da
+/// `TargetedSentenceRules.with(_:_:)` attorno all'aggancio delle note e alla granularità di un documento del registro
+/// (`ProcessingChain.run`): per ogni altro documento restano vuoti, e la segmentazione di frase è quella di sempre.
+public enum TargetedSentenceRules {
+    @TaskLocal public static var extraAbbreviations: Set<String> = []
+    @TaskLocal public static var splitDates: Bool = false
+
+    /// Esegue `body` con le regole di frase delle regole mirate date (nessun cambiamento se non ne portano).
+    public static func with<R>(_ rules: Set<TargetedRule>, _ body: () throws -> R) rethrows -> R {
+        let r = TargetedCures.sentenceRules(for: rules)
+        if r.abbreviations.isEmpty && !r.splitDates { return try body() }
+        return try $extraAbbreviations.withValue(r.abbreviations) {
+            try $splitDates.withValue(r.splitDates) { try body() }
+        }
+    }
+}
+
+/// Vero (solo con `TargetedSentenceRules.splitDates`) se il punto in `periodIndex` chiude giorno e mese di una data
+/// («18.2.») e il testo riprende con l'anno a quattro cifre (19.. o 20..): la data andata a capo, non una fine di frase.
+func targetedSplitDateAt(_ chars: [Character], _ periodIndex: Int, _ nextStart: Int) -> Bool {
+    guard TargetedSentenceRules.splitDates else { return false }
+    var k = periodIndex - 1, month = 0
+    while k >= 0, chars[k].isASCII, chars[k].isNumber { k -= 1; month += 1 }
+    guard (1...2).contains(month), k >= 0, chars[k] == "." else { return false }
+    var d = k - 1, day = 0
+    while d >= 0, chars[d].isASCII, chars[d].isNumber { d -= 1; day += 1 }
+    guard (1...2).contains(day), d < 0 || !(chars[d].isNumber || chars[d] == ".") else { return false }
+    guard nextStart + 4 <= chars.count else { return false }
+    let year = String(chars[nextStart..<(nextStart + 4)])
+    guard year.allSatisfy({ $0.isASCII && $0.isNumber }), year.hasPrefix("19") || year.hasPrefix("20") else { return false }
+    return nextStart + 4 == chars.count || !chars[nextStart + 4].isNumber
 }

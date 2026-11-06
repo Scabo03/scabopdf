@@ -102,11 +102,17 @@ public enum ContinuousBodyBuilder {
         target: Int = DEFAULT_GRANULARITY_TARGET,
         segmentsPerPage: Int = DEFAULT_SEGMENTS_PER_PAGE,
         visual: VisualInput?,
-        fractionLongNotes: Bool = true
+        fractionLongNotes: Bool = true,
+        targeted: Set<TargetedRule> = []
     ) throws -> (content: PaginatedContent, report: VisualResourcesReport?) {
         var segments = bodySegments(from: document, target: target)
         if fractionLongNotes {
             segments = fractionLongNoteSegments(segments, target: target)
+        }
+        // CURE MIRATE sui segmenti (TargetedRules.swift, LAYER2 § 0-ter): le regole dell'impronta del file; insieme vuoto
+        // per ogni documento non registrato, e allora il flusso resta invariato.
+        if !targeted.isEmpty {
+            segments = applyTargetedSegmentRules(segments, targeted, target: target)
         }
         var report: VisualResourcesReport?
         if let visual {

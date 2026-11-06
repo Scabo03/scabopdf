@@ -276,6 +276,12 @@ struct Profile {
     /// della colonna del corpo stimato su TUTTO il documento (modo dei bordi sinistri delle righe di corpo larghe), più
     /// stabile della stima per pagina sulle pagine con poco corpo. 0 altrimenti (e allora non si calcola).
     var targetedLeftEdge: Double = 0
+    /// Solo per le regole mirate che lo usano (riquadri): il bordo DESTRO della colonna del corpo stimato su tutto il
+    /// documento, come `targetedLeftEdge`. 0 altrimenti (e allora non si calcola).
+    var targetedRightEdge: Double = 0
+    /// Solo per la regola mirata dei capoversi rientrati: il rientro di prima riga del documento (pt dal bordo sinistro
+    /// della colonna), il più frequente fra 8 e 24 pt sulle righe di corpo. 0 altrimenti.
+    var targetedParagraphIndent: Double = 0
 }
 
 // MARK: - The plugin
@@ -445,7 +451,9 @@ public final class GenericPlugin: ExtractionPlugin {
                 // `editorial_family` porta la firma di famiglia allo strato dei segmenti.
                 // `monotipografico`: la granularità rispetta i paragrafi dell'editor (buildBaseSegments).
                 editorial_family: profile.isGiappichelliPhotoshop ? GIAPPICHELLI_PHOTOSHOP_FAMILY
-                    : (profile.mono != nil ? MONOTYPOGRAPHIC_FAMILY : "generic"),
+                    : (profile.mono != nil ? MONOTYPOGRAPHIC_FAMILY
+                        // cura mirata dei capoversi rientrati (TargetedRules.swift): la granularità rispetta i capoversi
+                        : (profile.targeted.contains(.indentedParagraphs) ? TARGETED_PARAGRAPHS_FAMILY : "generic")),
                 genre: "unknown",
                 confidence: matches(extraction)
             ),
@@ -579,7 +587,11 @@ func estimateProfile(_ extraction: PdfExtraction) -> Profile {
         // Il cancello delle cure mirate: l'impronta del file nel registro, o l'insieme vuoto (LAYER2 § 0-ter).
         targeted: targeted,
         targetedLeftEdge: targeted.isDisjoint(with: TargetedRule.usingBodyLeftEdge)
-            ? 0 : targetedBodyLeftEdge(extraction, body: bodySize))
+            ? 0 : targetedBodyLeftEdge(extraction, body: bodySize),
+        targetedRightEdge: targeted.isDisjoint(with: TargetedRule.usingBodyRightEdge)
+            ? 0 : targetedBodyRightEdge(extraction, body: bodySize),
+        targetedParagraphIndent: targeted.contains(.indentedParagraphs)
+            ? targetedBodyParagraphIndent(extraction, body: bodySize, left: targetedBodyLeftEdge(extraction, body: bodySize)) : 0)
 }
 
 /// Il formato di pagina più frequente del documento (pt), arrotondato per il conteggio.
@@ -711,6 +723,12 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                         bareFolioRows.append(FusedFolioLine(key: key, page: page.pageIndex, yFrac: yFracBare, value: value))
                     }
                 }
+                continue
+            }
+            // CURA MIRATA (TargetedRules.swift): l'interpunzione staccata dopo un richiamo in apice è testo, non mobilia
+            // ricorrente. Solo sui documenti del registro; altrove questa riga non esegue nulla.
+            if profileForFurniture.targeted.contains(.detachedCallPunctuation),
+               targetedIsDetachedCallPunctuation(lineIndex, in: page.lines) {
                 continue
             }
             // General majority-recurrence applies at any length.
@@ -1747,6 +1765,9 @@ func pageItems(
         if isNearWhite(sm.color), !(profile.isRivistaDpc && sm.fontSize >= DPC_WHITE_MIN_SIZE) { continue }
         content.append(sm)
     }
+    // CURE MIRATE sulle righe, prima della classificazione (TargetedRules.swift): solo sui documenti del registro. Dove il
+    // profilo non porta regole mirate (ogni altro documento) le righe restano invariate e il codice delle regole non gira.
+    if !profile.targeted.isEmpty { content = applyTargetedLineRules(content, profile) }
 
     // FRONT-MATTER APPARATO (solo regione iniziale): una pagina di colophon/legale
     // → ARTIFACT_STAMP; una pagina d'indice/sommario → TOC_GENERAL. Entrambe

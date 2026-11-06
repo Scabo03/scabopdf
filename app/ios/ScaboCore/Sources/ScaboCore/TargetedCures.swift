@@ -51,8 +51,40 @@ public enum TargetedRule: String, CaseIterable, Sendable {
     /// bordo sinistro della colonna e staccato sopra e sotto, con le sue righe di continuazione rientrate, diventa un titolo.
     case smallerNumberedParagraphTitles = "titoli_di_paragrafo_sotto_la_taglia_del_corpo"
 
+    // ── Rifiniture del giro «rifiniture e cure per capacità» (2026-11-06 sera, build 63) ──────────────────────────────
+    /// Studi A e B: il segno d'interpunzione che segue un richiamo di nota in apice (il punto, la virgola) il lettore di
+    /// sistema lo emette come una «riga» a sé, sulla stessa linea di base e attaccata all'apice. Resta testo (non mobilia
+    /// ricorrente) e torna attaccato alla sua riga, senza spazio; la riga di corpo spezzata che finisce con un richiamo
+    /// in apice prende la taglia del suo testo, non la media col richiamo.
+    case detachedCallPunctuation = "punteggiatura_staccata_dopo_il_richiamo"
+    /// Studi A e B: dentro l'apparato di note, una riga che comincia con un numero composto alla taglia del testo della
+    /// nota (il numero di pagina di una citazione andato a capo) continua la nota: apre una nota nuova solo il numero
+    /// composto più piccolo (il richiamo in apice).
+    case fullSizeNumberContinuesNote = "numero_a_taglia_piena_continua_la_nota"
+    /// Studi A e B: le abbreviazioni delle citazioni di norme che il documento usa e la lista generale non conosce
+    /// («lgs.», «lg.», codici abbreviati, «Abs.») e le date spezzate a fine riga («18.2.» + anno) non chiudono la frase.
+    case citationAbbreviations = "abbreviazioni_delle_citazioni"
+    /// Studio B: il riquadro di approfondimento (righe alla taglia delle note, tutte rientrate di 6-16 pt dal bordo
+    /// sinistro della colonna allo stesso modo, larghe quasi quanto la colonna, senza numero di nota in testa) è un
+    /// riquadro: annunciato «Riquadro.», letto al suo posto, unito alla sua continuazione sulla pagina dopo e diviso in
+    /// pezzi come una nota lunga.
+    case framedAsideBoxes = "riquadri_di_approfondimento"
+    /// Studio B: l'etichetta di bibliografia di fine capitolo (la parola-chiave da sola sulla riga, composta come i titoli
+    /// di paragrafo, al bordo sinistro della colonna e staccata) è un titolo un livello sotto il capitolo, e le voci che la
+    /// seguono (più piccole del corpo) sono il blocco bibliografico, letto col segnale della bibliografia.
+    case bibliographyLabels = "etichette_di_bibliografia"
+    /// Studi A e B: il capoverso dell'autore. Dentro un blocco di corpo, una riga rientrata del rientro di prima riga del
+    /// documento (misurato sulle righe di corpo), dopo una riga che chiude la frase o finisce corta, apre un capoverso
+    /// nuovo: la lettura non lo incolla al precedente (i blocchi di lettura non scavalcano più l'a capo, e le note brevi
+    /// richiamate in fondo a un capoverso si leggono lì).
+    case indentedParagraphs = "capoversi_rientrati"
+
     /// Le regole che misurano il bordo sinistro della colonna del corpo sul documento (`Profile.targetedLeftEdge`).
-    static let usingBodyLeftEdge: Set<TargetedRule> = [.sectionLabels, .smallerNumberedParagraphTitles]
+    static let usingBodyLeftEdge: Set<TargetedRule> = [
+        .sectionLabels, .smallerNumberedParagraphTitles, .framedAsideBoxes, .bibliographyLabels, .indentedParagraphs,
+    ]
+    /// Le regole che misurano anche il bordo DESTRO della colonna (`Profile.targetedRightEdge`).
+    static let usingBodyRightEdge: Set<TargetedRule> = [.framedAsideBoxes, .indentedParagraphs]
 }
 
 /// Una voce del registro.
@@ -93,35 +125,49 @@ public enum TargetedCures {
         TargetedCureEntry(
             label: "studio-A",
             fingerprints: ["d0272b2123af0ae040045ef2942c9d8414c2a779a3457a0f3087f62de8bca815"],
-            rules: [.boldBodySizeTitles, .chapterSummaryAfterChapterTitle],
+            rules: [.boldBodySizeTitles, .chapterSummaryAfterChapterTitle, .detachedCallPunctuation,
+                    .fullSizeNumberContinuesNote, .citationAbbreviations, .indentedParagraphs],
             reason: "Dispensa scritta con Word, a carattere unico: titoli di capitolo e di paragrafo sono composti in grassetto "
                 + "alla taglia del corpo, e il tronco riconosce un titolo solo per taglia, colore o grassetto più grande del "
                 + "corpo. Tutti i titoli finivano dentro il corpo, la navigazione per intestazioni era vuota e le note lunghe "
-                + "si leggevano in fondo al documento.",
+                + "si leggevano in fondo al documento. Rifiniture (build 63): il punto dopo un richiamo di nota si perdeva come "
+                + "mobilia ricorrente (le frasi si incollavano e le note brevi si leggevano a fine capoverso, spesso senza il "
+                + "salto al richiamo); il numero di pagina di una citazione andato a capo apriva una nota finta; le citazioni "
+                + "di decreti legislativi si spezzavano dopo «lgs.».",
             removalCondition: "Si toglie quando la lettura del documento SENZA questa voce è identica al byte a quella con la "
                 + "voce, o giudicata non peggiore contro la pagina (per esempio perché una cura per capacità riconosce i titoli "
                 + "in grassetto a taglia di corpo dei documenti Word: proposta fra le decisioni del giro); oppure quando il "
                 + "maintainer adotta per questo documento una lettura preparata dal Mac che la contiene.",
-            cureBuild: 62,
+            cureBuild: 63,
             whatChanges: "i titoli dei capitoli e dei paragrafi si trovano nella navigazione per intestazioni, le note lunghe "
-                + "si leggono alla fine del loro paragrafo e non più in fondo al documento, e il sommario di ogni capitolo si "
-                + "legge intero, come sommario"),
+                + "si leggono alla fine del loro paragrafo e non più in fondo al documento, il sommario di ogni capitolo si "
+                + "legge intero, come sommario; in più ora le frasi finiscono col loro punto anche dopo un richiamo di nota, "
+                + "le note brevi si leggono subito dopo la frase che le richiama e più note hanno il salto al testo del "
+                + "richiamo, nessun numero di pagina diventa una nota a sé, e le citazioni dei decreti legislativi non si "
+                + "spezzano più"),
         TargetedCureEntry(
             label: "studio-B",
             fingerprints: ["f0a98bcdcd46a5af734f8879a2d10d36de172200896c4e7e1ab9f885cc83a6a4"],
-            rules: [.ornamentedStructureLabels, .labelledChapterSummary, .sectionLabels, .smallerNumberedParagraphTitles],
+            rules: [.ornamentedStructureLabels, .labelledChapterSummary, .sectionLabels, .smallerNumberedParagraphTitles,
+                    .detachedCallPunctuation, .fullSizeNumberContinuesNote, .citationAbbreviations, .framedAsideBoxes,
+                    .bibliographyLabels, .indentedParagraphs],
             reason: "Manuale a più mani: i titoli di paragrafo sono composti in un carattere più piccolo del corpo, le sezioni "
                 + "alla taglia del corpo e le etichette di Parte e Capitolo fra due ornamenti. Sul dispositivo il carattere si "
                 + "perde e resta solo la taglia: i titoli di paragrafo e le sezioni finivano dentro il corpo, i sommari di "
-                + "capitolo si leggevano come note, e le etichette di capitolo stavano separate dal loro titolo.",
+                + "capitolo si leggevano come note, e le etichette di capitolo stavano separate dal loro titolo. Rifiniture "
+                + "(build 63): i riquadri di approfondimento si leggevano come note senza annuncio; l'etichetta di bibliografia "
+                + "di fine capitolo era incollata alle voci, lette come corpo; il numero di pagina di una citazione andato a "
+                + "capo apriva una nota finta; alcune citazioni si spezzavano dopo un codice abbreviato.",
             removalCondition: "Si toglie quando la lettura del documento SENZA questa voce è identica al byte a quella con la "
                 + "voce, o giudicata non peggiore contro la pagina (per esempio perché una cura per capacità riconosce i titoli "
                 + "di paragrafo numerati più piccoli del corpo e i sommari etichettati); oppure quando il maintainer adotta per "
                 + "questo documento una lettura preparata dal Mac che la contiene.",
-            cureBuild: 62,
+            cureBuild: 63,
             whatChanges: "i titoli dei paragrafi e delle sezioni si trovano nella navigazione per intestazioni, il sommario "
                 + "all'inizio di ogni capitolo si legge come sommario e non più come una nota, e l'etichetta di ogni capitolo e "
-                + "di ogni parte sta insieme al suo titolo"),
+                + "di ogni parte sta insieme al suo titolo; in più ora i riquadri di approfondimento sono annunciati come "
+                + "riquadri, la bibliografia di fine capitolo ha il suo titolo nella navigazione e si legge col segnale della "
+                + "bibliografia, e nessun numero di pagina diventa una nota a sé"),
     ]
 
     private static let byFingerprint: [String: TargetedCureEntry] = {
@@ -142,6 +188,18 @@ public enum TargetedCures {
     /// Le regole mirate da accendere per un'impronta (vuoto per ogni documento non registrato).
     public static func rules(forFingerprint fingerprint: String?) -> Set<TargetedRule> {
         entry(forFingerprint: fingerprint)?.rules ?? []
+    }
+
+    /// Le abbreviazioni delle citazioni di norme che la regola `.citationAbbreviations` aggiunge alla lista generale della
+    /// segmentazione di frase (`SENTENCE_ABBREVIATIONS`), nella stessa forma (minuscola, punti interni conservati, senza il
+    /// punto finale): «D. lgs.», «d. lg.», codice del consumo, codice della navigazione, decreto del Capo provvisorio dello
+    /// Stato, «Abs.» (comma, nelle citazioni tedesche). Forme di citazione, non parole di un libro.
+    public static let citationAbbreviations: Set<String> = ["lgs", "lg", "c.cons", "c.n", "c.p.s", "abs"]
+
+    /// Le regole di frase da accendere per un insieme di regole mirate (vuote per ogni documento non registrato): le
+    /// abbreviazioni aggiuntive e la data spezzata a fine riga («18.2.» seguito dall'anno) che non chiude la frase.
+    public static func sentenceRules(for rules: Set<TargetedRule>) -> (abbreviations: Set<String>, splitDates: Bool) {
+        rules.contains(.citationAbbreviations) ? (citationAbbreviations, true) : ([], false)
     }
 
     /// Per l'offerta di rielaborazione: impronta → build della cura mirata.

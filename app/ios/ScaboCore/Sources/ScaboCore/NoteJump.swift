@@ -103,8 +103,51 @@ func containsCallNumber(_ text: String, _ n: Int, tail: Int? = nil) -> Bool {
 /// (il pezzo di corpo finisce alla frase del richiamo).
 let NOTE_JUMP_INLINE_TAIL = 400
 
+/// Opzioni del calcolo dei legami. Il valore predefinito è il comportamento di sempre, per ogni libro. Le CURE MIRATE
+/// (LAYER2 § 0-ter, `TargetedCures`) accendono `targetedInline` SOLO per i documenti del registro (`forTargeted`): la vista
+/// di lettura la riceve dall'impronta del libro.
+public struct NoteJumpOptions: Equatable, Sendable {
+    /// Nota letta in linea: il richiamo si cerca nell'ULTIMA FRASE del segmento che precede le note, anche quando è più
+    /// lunga della coda di 400 caratteri (la nota è piazzata a fine frase del richiamo: una frase lunga, con elenchi a
+    /// punto e virgola, porta il richiamo più indietro); e vale anche il richiamo attaccato a una sigla col punto (la
+    /// sigla di un codice o «ecc.», seguita dall'apice), che la regola di parola non riconosce. Solo un ampliamento: un legame trovato
+    /// dalla regola di sempre si trova ancora, nello stesso segmento.
+    public var targetedInline: Bool
+    public init(targetedInline: Bool = false) { self.targetedInline = targetedInline }
+    /// Le opzioni per un documento con queste regole mirate (le predefinite per ogni documento non registrato).
+    public static func forTargeted(_ rules: Set<TargetedRule>) -> NoteJumpOptions {
+        NoteJumpOptions(targetedInline: rules.contains(.detachedCallPunctuation))
+    }
+}
+
+/// Il richiamo attaccato a una sigla col punto (forma delle cure mirate): una sigla di lettere separate da punti (i codici
+/// abbreviati) o «ecc.»/«etc.», poi al più uno spazio e il numero.
+private func containsCallAfterSigla(_ text: String, _ n: Int, tail: Int) -> Bool {
+    let t = String(text.suffix(tail))
+    guard let re = try? NSRegularExpression(
+        pattern: "(?<![A-Za-zÀ-ÿ])([A-Za-zÀ-ÿ]{1,4}(?:\\.[A-Za-zÀ-ÿ]{1,4})+|ecc|etc)\\.\\s?\(n)(?![0-9])") else { return false }
+    for m in re.matches(in: t, range: NSRange(t.startIndex..<t.endIndex, in: t)) {
+        guard let r = Range(m.range(at: 1), in: t) else { continue }
+        // dopo la sigla di un atto viene il suo numero (o il giorno della sua data), mai un richiamo di nota
+        if !NOT_A_CALL_AFTER_SIGLA.contains(t[r].lowercased()) { return true }
+    }
+    return false
+}
+
+/// Sigle dopo le quali un numero è il numero o il giorno di un atto, non un richiamo di nota.
+private let NOT_A_CALL_AFTER_SIGLA: Set<String> = [
+    "d.lgs", "d.l", "d.p.r", "r.d", "r.d.l", "d.m", "g.u", "t.u", "d.p.c.m", "l.r", "d.lg", "c.d",
+]
+
+/// La lunghezza (caratteri) dell'ultima frase di un testo, coi confini di frase della granularità.
+private func lastSentenceLength(_ text: String) -> Int {
+    let count = text.count
+    guard let start = sentenceBoundaryOffsets(text).last, start < count else { return count }
+    return count - start
+}
+
 /// Calcola i legami nota↔richiamo sul flusso di lettura già piazzato.
-public func noteCallLinks(_ segments: [ContentSegment]) -> NoteCallLinks {
+public func noteCallLinks(_ segments: [ContentSegment], options: NoteJumpOptions = NoteJumpOptions()) -> NoteCallLinks {
     var links = NoteCallLinks()
     var normCache: [Int: String] = [:]
     func norm(_ i: Int) -> String {
@@ -178,10 +221,16 @@ public func noteCallLinks(_ segments: [ContentSegment]) -> NoteCallLinks {
             links.notesOfCall[c, default: []].append(i)
             continue
         }
-        guard let c = call,
-              containsCallNumber(segments[c].text, number,
-                                 tail: seg.memoryRefresh.isEmpty ? NOTE_JUMP_INLINE_TAIL : nil)
-        else { continue }
+        guard let c = call else { continue }
+        var linked = containsCallNumber(segments[c].text, number,
+                                        tail: seg.memoryRefresh.isEmpty ? NOTE_JUMP_INLINE_TAIL : nil)
+        if !linked, options.targetedInline, seg.memoryRefresh.isEmpty, !normative {
+            // Cure mirate: ultima frase del segmento (anche oltre i 400 caratteri) e richiamo dopo una sigla col punto.
+            let window = max(NOTE_JUMP_INLINE_TAIL, lastSentenceLength(segments[c].text))
+            linked = containsCallNumber(segments[c].text, number, tail: window)
+                || containsCallAfterSigla(segments[c].text, number, tail: window)
+        }
+        guard linked else { continue }
         links.callOfNote[i] = c
         links.notesOfCall[c, default: []].append(i)
     }

@@ -52,7 +52,27 @@ func applyTargetedPageRules(_ items: [GenItem], _ profile: Profile) -> [GenItem]
     if profile.targeted.contains(.smallerNumberedParagraphTitles) {
         out = targetedSmallerNumberedParagraphTitles(out, profile)
     }
+    if profile.targeted.contains(.bibliographyLabels) {
+        out = targetedBibliographyLabels(out, profile)
+    }
+    if profile.targeted.contains(.framedAsideBoxes) {
+        out = targetedFramedAsideBoxes(out, profile)
+    }
+    if profile.targeted.contains(.fullSizeNumberContinuesNote) {
+        out = targetedFullSizeNumberContinuesNote(out)
+    }
+    if profile.targeted.contains(.indentedParagraphs) {
+        out = targetedIndentedParagraphs(out, profile)
+    }
     return out
+}
+
+/// Applica, prima della classificazione, le regole mirate sulle RIGHE della pagina (già tolte mobilia e ancore
+/// invisibili). Chiamata SOLO quando `profile.targeted` non è vuoto. Righe e testo restano gli stessi: si riattacca a una
+/// riga l'interpunzione che il lettore di sistema ne aveva staccato.
+func applyTargetedLineRules(_ lines: [LineSummary], _ profile: Profile) -> [LineSummary] {
+    guard profile.targeted.contains(.detachedCallPunctuation) else { return lines }
+    return targetedReattachCallPunctuation(lines, profile)
 }
 
 /// Applica, in posizione, le regole mirate di DOCUMENTO accese nel profilo. Chiamata SOLO quando `profile.targeted` non è
@@ -62,6 +82,10 @@ func applyTargetedDocumentRules(_ nodes: inout [NodeDict], _ profile: Profile) -
     var touched = 0
     if profile.targeted.contains(.boldBodySizeTitles) || profile.targeted.contains(.smallerNumberedParagraphTitles) {
         touched += targetedFlatParagraphLevels(&nodes)
+    }
+    if profile.targeted.contains(.bibliographyLabels) {
+        touched += targetedBibliographyLevels(&nodes)
+        touched += targetedBibliographyContinuation(&nodes)
     }
     if profile.targeted.contains(.labelledChapterSummary) {
         touched += targetedChapterSummaryContinuation(&nodes)
@@ -82,6 +106,102 @@ func targetedBodyLeftEdge(_ extraction: PdfExtraction, body: Double) -> Double {
         }
     }
     return counts.max { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }?.key ?? 0
+}
+
+/// Il bordo destro della colonna del corpo su tutto il documento: il bordo destro più frequente (al mezzo punto) delle
+/// righe alla taglia del corpo larghe più di metà pagina. Calcolato solo per le regole mirate che lo usano (riquadri).
+func targetedBodyRightEdge(_ extraction: PdfExtraction, body: Double) -> Double {
+    guard body > 0 else { return 0 }
+    var counts: [Double: Int] = [:]
+    for page in extraction.pages {
+        for line in page.lines {
+            let sm = summarizeLine(line)
+            guard abs(sm.fontSize - body) <= 0.3, sm.width > page.width * 0.5 else { continue }
+            counts[(sm.x1 * 2).rounded() / 2, default: 0] += 1
+        }
+    }
+    return counts.max { $0.value < $1.value || ($0.value == $1.value && $0.key < $1.key) }?.key ?? 0
+}
+
+// MARK: - Interpunzione staccata dopo un richiamo (studi A e B)
+
+/// L'interpunzione che segue un richiamo e che il lettore di sistema emette come riga a sé: da uno a tre caratteri, tutti
+/// punteggiatura di fine frase o di chiusura, nessuna lettera né cifra.
+private let TARGETED_DETACHED_PUNCTUATION: Set<Character> = [".", ",", ";", ":", "!", "?", ")", "]", "»", "\u{201D}", "\u{2019}"]
+
+private func targetedIsPunctuationOnly(_ text: String) -> Bool {
+    let t = jsTrim(text)
+    return !t.isEmpty && t.count <= 3 && t.allSatisfy { TARGETED_DETACHED_PUNCTUATION.contains($0) }
+}
+
+/// Vero se l'ultimo span con testo della riga è un richiamo in apice: sole cifre (al più tre-quattro), composte più
+/// piccole (≤ 0,8) del testo più grande della riga.
+private func targetedEndsWithSuperscriptCall(_ spans: [PdfSpan]) -> Bool {
+    let withText = spans.filter { !jsTrim($0.text).isEmpty }
+    guard let last = withText.last, withText.count >= 2 else { return false }
+    let digits = jsTrim(last.text)
+    guard !digits.isEmpty, digits.count <= 4, digits.allSatisfy({ $0.isASCII && $0.isNumber }) else { return false }
+    let biggest = withText.map { $0.fontSize }.max() ?? 0
+    return biggest > 0 && last.fontSize <= biggest * 0.8
+}
+
+/// Vero se la riga `index` della pagina è interpunzione staccata dopo un richiamo in apice: una delle tre righe che la
+/// precedono nell'ordine del lettore di sistema finisce con un richiamo in apice, sta sulla stessa linea di base (±1,5 pt)
+/// e finisce dove l'interpunzione comincia (±2 pt).
+func targetedIsDetachedCallPunctuation(_ index: Int, in lines: [PdfTextLine]) -> Bool {
+    guard index > 0, index < lines.count else { return false }
+    let line = lines[index]
+    guard targetedIsPunctuationOnly(line.spans.map { $0.text }.joined()) else { return false }
+    for k in stride(from: index - 1, through: max(0, index - 3), by: -1) {
+        let prev = lines[k]
+        guard targetedEndsWithSuperscriptCall(prev.spans) else { continue }
+        if abs(prev.bbox.y - line.bbox.y) <= 1.5, abs(prev.bbox.x + prev.bbox.width - line.bbox.x) <= 2 { return true }
+    }
+    return false
+}
+
+/// Riattacca l'interpunzione staccata alla riga che finisce col richiamo (stessa linea di base, contigua), senza spazio:
+/// «parola¹⁴» + «.» → «parola¹⁴.». E una riga di corpo spezzata che finisce con un richiamo in apice prende la taglia del
+/// suo testo (la media col richiamo la faceva sembrare una nota). Testo invariato salvo lo spazio che non c'è sulla pagina.
+private func targetedReattachCallPunctuation(_ lines: [LineSummary], _ profile: Profile) -> [LineSummary] {
+    var out: [LineSummary] = []
+    for sm in lines {
+        if targetedIsPunctuationOnly(sm.text), let prev = out.last, targetedEndsWithSuperscriptCall(prev.spans),
+           abs(prev.yBottom - sm.yBottom) <= 1.5, abs(prev.x1 - sm.x0) <= 2 {
+            out[out.count - 1] = LineSummary(
+                text: prev.text + jsTrim(sm.text), fontSize: prev.fontSize, bold: prev.bold, italic: prev.italic,
+                color: prev.color, x0: prev.x0, x1: max(prev.x1, sm.x1), yTop: prev.yTop, yBottom: prev.yBottom,
+                width: max(prev.x1, sm.x1) - prev.x0, height: prev.height, spans: prev.spans + sm.spans)
+            continue
+        }
+        out.append(targetedBodyLineWithCallSize(sm, profile))
+    }
+    return out
+}
+
+/// La riga di corpo spezzata che comincia alla taglia del corpo e finisce con un richiamo in apice: la sua taglia è
+/// quella del testo senza il richiamo (con pochi caratteri di corpo, la media col richiamo scendeva sotto la soglia delle
+/// note). Ogni altra riga resta com'è.
+private func targetedBodyLineWithCallSize(_ sm: LineSummary, _ profile: Profile) -> LineSummary {
+    let body = profile.bodySize
+    guard body > 0, sm.fontSize < body * 0.85 else { return sm }
+    let withText = sm.spans.filter { !jsTrim($0.text).isEmpty }
+    guard let first = withText.first, abs(first.fontSize - body) <= 0.6 else { return sm }
+    var callStart = withText.count
+    while callStart > 0 {
+        let s = withText[callStart - 1]
+        let t = jsTrim(s.text)
+        guard s.fontSize <= body * 0.8, !t.isEmpty,
+              t.allSatisfy({ ($0.isASCII && $0.isNumber) || TARGETED_DETACHED_PUNCTUATION.contains($0) }) else { break }
+        callStart -= 1
+    }
+    guard callStart > 0, callStart < withText.count else { return sm }
+    let text = withText[..<callStart]
+    let chars = text.reduce(0) { $0 + $1.text.utf16.count }
+    guard chars > 0 else { return sm }
+    let size = text.reduce(0.0) { $0 + $1.fontSize * Double($1.text.utf16.count) } / Double(chars)
+    return LineSummary(text: sm.text, fontSize: size, bold: sm.bold, italic: sm.italic, color: sm.color, x0: sm.x0,
+                       x1: sm.x1, yTop: sm.yTop, yBottom: sm.yBottom, width: sm.width, height: sm.height, spans: sm.spans)
 }
 
 // MARK: - Forme generali
@@ -391,4 +511,263 @@ private func targetedSmallerNumberedParagraphTitles(_ items: [GenItem], _ profil
         }
         return (end, [.numberedTitle(mergedLine(Array(lines[start..<end])), depth: 1)])
     }
+}
+
+// MARK: - Rifiniture del giro «rifiniture e cure per capacità» (build 63)
+
+/// Etichetta di bibliografia: la parola-chiave da sola sulla riga (eventualmente col punto).
+private let TARGETED_BIBLIOGRAPHY_LABEL_RE = try! NSRegularExpression(pattern: "^(?i:bibliografia)\\s*\\.?$")
+/// Una riga che apre una nota col suo numero di richiamo («12 Cass. …», «12. …»), come la forma di `noteOpening`.
+private let TARGETED_NOTE_NUMBER_OPENING_RE = try! NSRegularExpression(pattern: "^[\\(\\[]?\\s?\\d{1,3}\\s?[\\)\\]]?[\\.\\)]?(\\s+\\S|$)")
+
+/// Studio B. L'etichetta di bibliografia di fine capitolo (parola-chiave sola, composta come i titoli di paragrafo: fra
+/// corpo − 1,3 e corpo − 0,7 pt, non in grassetto, al bordo sinistro della colonna), dentro un blocco di corpo, staccata
+/// dalla riga di sopra, diventa un titolo; le righe che la seguono nel blocco, più piccole del corpo (le voci, con le
+/// loro righe rientrate), diventano il blocco bibliografico (`LETTERATURA`: si legge al suo posto, col segnale della
+/// bibliografia). Il blocco finisce alla prima riga alla taglia del corpo.
+private func targetedBibliographyLabels(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+    guard profile.bodySize > 0, profile.targetedLeftEdge > 0 else { return items }
+    let body = profile.bodySize, left = profile.targetedLeftEdge
+    func labelSized(_ sm: LineSummary) -> Bool { sm.fontSize >= body - 1.3 && sm.fontSize <= body - 0.7 && !sm.bold }
+    return targetedSplitBodyRuns(items) { lines, start, previous in
+        let label = lines[start]
+        guard labelSized(label), abs(label.x0 - left) <= 3,
+              targetedMatches(TARGETED_BIBLIOGRAPHY_LABEL_RE, jsTrim(label.text)) else { return nil }
+        if case .run(.body, let prevLines)? = previous, let p = prevLines.last {
+            guard targetedGapBetween(p, label) else { return nil }
+        }
+        var end = start + 1
+        while end < lines.count, lines[end].fontSize <= body - 0.5, !lines[end].bold { end += 1 }
+        var made: [GenItem] = [.heading(label, level: 3)]
+        if end > start + 1 { made.append(.apparatus(.LETTERATURA, Array(lines[(start + 1)..<end]))) }
+        return (end, made)
+    }
+}
+
+/// Una riga che apre una nota col numero seguito da uno spazio («12 Cass. …»): esclude le note dai riquadri (un elenco
+/// «1) …» dentro un riquadro resta del riquadro).
+private let TARGETED_BOX_NOTE_OPENING_RE = try! NSRegularExpression(pattern: "^\\d{1,3}\\s")
+
+/// Studio B. Il riquadro di approfondimento dentro l'apparato a taglia di nota: le righe consecutive alla taglia delle note
+/// (≤ 0,85 del corpo) con lo stesso bordo sinistro (±1 pt) rientrato di 6-16 pt rispetto alla colonna, mai oltre il bordo
+/// destro della colonna meno 6 pt, che non aprono con un numero di nota; almeno due righe, almeno metà arrivano a 16 pt
+/// dal bordo destro (righe giustificate del riquadro) e nessuna porta una voce di sommario «– N. …». Le note vere
+/// cominciano col numero di richiamo e vanno a capo al bordo della colonna; i sommari elencano «– N.».
+private func targetedFramedAsideBoxes(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+    guard profile.bodySize > 0, profile.targetedLeftEdge > 0, profile.targetedRightEdge > profile.targetedLeftEdge else {
+        return items
+    }
+    let body = profile.bodySize, left = profile.targetedLeftEdge, right = profile.targetedRightEdge
+    func candidate(_ sm: LineSummary) -> Bool {
+        let inset = sm.x0 - left
+        return !jsTrim(sm.text).isEmpty && sm.fontSize <= body * 0.85 && inset >= 6 && inset <= 16
+            && right - sm.x1 >= 6 && !targetedMatches(TARGETED_BOX_NOTE_OPENING_RE, jsTrim(sm.text))
+    }
+    var out: [GenItem] = []
+    for item in items {
+        guard case .run(.note, let lines) = item else { out.append(item); continue }
+        var buf: [LineSummary] = []
+        var i = 0
+        while i < lines.count {
+            if candidate(lines[i]) {
+                var j = i + 1
+                while j < lines.count, candidate(lines[j]), abs(lines[j].x0 - lines[i].x0) <= 1 { j += 1 }
+                let run = Array(lines[i..<j])
+                let justified = run.filter { right - $0.x1 <= 16 }.count
+                let summary = run.contains { targetedMatchCount(TARGETED_SUMMARY_ITEM_RE, $0.text) > 0 }
+                if run.count >= 2, Double(justified) >= max(1, 0.5 * Double(run.count)), !summary {
+                    if !buf.isEmpty { out.append(.run(.note, buf)); buf = [] }
+                    out.append(.apparatus(.EXAMPLE_BOX, run))
+                    i = j
+                    continue
+                }
+            }
+            buf.append(lines[i]); i += 1
+        }
+        if !buf.isEmpty { out.append(.run(.note, buf)) }
+    }
+    return out
+}
+
+/// Studi A e B. Nell'apparato di note, una riga (non la prima del blocco) che comincia con un numero nella forma
+/// dell'apertura di nota ma composto alla taglia del testo, non più piccolo come il richiamo in apice, continua la riga di
+/// prima: è il numero di pagina di una citazione andato a capo, non una nota nuova. Si unisce alla riga precedente con
+/// lo stesso spazio con cui il testo della nota la univa: lettere e cifre invariate.
+private func targetedFullSizeNumberContinuesNote(_ items: [GenItem]) -> [GenItem] {
+    items.map { item in
+        guard case .run(.note, let lines) = item, lines.count > 1 else { return item }
+        var out: [LineSummary] = [lines[0]]
+        for sm in lines.dropFirst() {
+            if targetedMatches(TARGETED_NOTE_NUMBER_OPENING_RE, jsTrim(sm.text)), !targetedOpensWithSmallerNumber(sm) {
+                let prev = out[out.count - 1]
+                out[out.count - 1] = LineSummary(
+                    text: joinLines([prev.text, sm.text]), fontSize: prev.fontSize, bold: prev.bold, italic: prev.italic,
+                    color: prev.color, x0: prev.x0, x1: prev.x1, yTop: prev.yTop, yBottom: prev.yBottom, width: prev.width,
+                    height: prev.height, spans: prev.spans + sm.spans)
+            } else {
+                out.append(sm)
+            }
+        }
+        return .run(.note, out)
+    }
+}
+
+/// Vero se la riga comincia con un numero composto più piccolo (≤ 0,8) del testo più grande della riga: il richiamo in
+/// apice con cui una nota si apre.
+private func targetedOpensWithSmallerNumber(_ sm: LineSummary) -> Bool {
+    let withText = sm.spans.filter { !jsTrim($0.text).isEmpty }
+    guard let first = withText.first, jsTrim(first.text).first.map({ $0.isNumber || $0 == "(" || $0 == "[" }) == true else {
+        return false
+    }
+    let biggest = withText.map { $0.fontSize }.max() ?? 0
+    return withText.count >= 2 && biggest > 0 && first.fontSize <= biggest * 0.8
+}
+
+/// Studio B, in posizione: il titolo di bibliografia sta un livello sotto il CAPITOLO (o la parte) che lo contiene, anche
+/// dentro un capitolo diviso in sezioni: la bibliografia è del capitolo, non dell'ultima sezione.
+private func targetedBibliographyLevels(_ nodes: inout [NodeDict]) -> Int {
+    var unitLevel: Int?
+    var touched = 0
+    for i in nodes.indices {
+        guard let level = targetedHeadingLevel(nodes[i]) else { continue }
+        let text = jsTrim(nodes[i].text ?? "")
+        let words = text.split(separator: " ")
+        if words.count >= 2, targetedMatches(TARGETED_UNIT_LABEL_RE, words.prefix(2).joined(separator: " ")) {
+            unitLevel = level
+            continue
+        }
+        guard let unit = unitLevel, targetedMatches(TARGETED_BIBLIOGRAPHY_LABEL_RE, text) else { continue }
+        let want = min(4, unit + 1)
+        if level != want {
+            nodes[i].type = targetedHeadingCategory(want)
+            nodes[i].level = want
+            touched += 1
+        }
+    }
+    return touched
+}
+
+// MARK: - Regole sui segmenti di lettura (dopo l'impaginazione del corpo)
+
+/// Applica le regole mirate sul flusso dei segmenti (dopo la granularità e il frazionamento delle note, prima delle risorse
+/// visive). Chiamata da `ContinuousBodyBuilder` con le regole dell'impronta del file: per ogni documento non registrato
+/// l'insieme è vuoto e il flusso torna invariato senza eseguire nulla.
+public func applyTargetedSegmentRules(
+    _ segments: [ContentSegment], _ rules: Set<TargetedRule>, target: Int
+) -> [ContentSegment] {
+    guard rules.contains(.framedAsideBoxes) else { return segments }
+    return targetedJoinAndFractionAsideBoxes(segments, target: target)
+}
+
+/// Studio B. I riquadri (`EXAMPLE_BOX`): il pezzo in fondo a una pagina e la sua continuazione in cima alla pagina dopo,
+/// consecutivi nel flusso, diventano un riquadro solo (la parola spezzata a fine pagina si ricompone come nelle note);
+/// poi un riquadro più lungo della soglia si divide in pezzi con la regola delle note lunghe (§ 10.6): il primo pezzo
+/// porta l'annuncio «Riquadro.», gli altri seguono senza annuncio. Lettere e cifre invariate.
+private func targetedJoinAndFractionAsideBoxes(_ segments: [ContentSegment], target: Int) -> [ContentSegment] {
+    let box = SemanticCategory.EXAMPLE_BOX.rawValue
+    // 1. unione dei pezzi consecutivi su pagine contigue (con la pagina d'inizio di ciascuna parte)
+    var joined: [(segment: ContentSegment, parts: [(offset: Int, page: Int?)])] = []
+    for seg in segments {
+        if seg.role == box, let last = joined.last, last.segment.role == box,
+           let p = last.parts.last?.page, let q = seg.sourcePage, q == p + 1 {
+            var merged = last.segment
+            let text = joinFootnoteTexts(merged.text, seg.text)
+            let offset = text.count - jsTrim(seg.text).count
+            merged.text = text
+            joined[joined.count - 1] = (merged, last.parts + [(offset, seg.sourcePage)])
+            continue
+        }
+        joined.append((seg, [(0, seg.sourcePage)]))
+    }
+    // 2. pezzi alla soglia, con la pagina su cui ogni pezzo comincia
+    var out: [ContentSegment] = []
+    for (seg, parts) in joined {
+        guard seg.role == box, seg.text.count > target else { out.append(seg); continue }
+        let pieces = notePieces(seg.text, target: target)
+        guard pieces.count > 1 else { out.append(seg); continue }
+        var cursor = 0
+        for (i, text) in pieces.enumerated() {
+            let page = parts.last(where: { $0.offset <= cursor })?.page ?? seg.sourcePage
+            out.append(ContentSegment(
+                id: "\(seg.id)#\(i)", role: box, text: text, lengthCategory: "",
+                acousticIntro: i == 0 ? seg.acousticIntro : "", sourcePage: page))
+            cursor += text.count
+            // gli spazi fra un pezzo e l'altro non sono nei pezzi: si riallinea il cursore al testo intero
+            let all = Array(seg.text)
+            while cursor < all.count, all[cursor].isWhitespace { cursor += 1 }
+        }
+    }
+    return out
+}
+
+// MARK: - Capoversi rientrati (studi A e B)
+
+/// La famiglia del documento con la cura mirata dei capoversi rientrati: come per i documenti monotipografici, la
+/// granularità chiude il blocco dove comincia un capoverso (`buildBaseSegments` → `ContentSegment.opensParagraph`).
+public let TARGETED_PARAGRAPHS_FAMILY = "capoversi_rientrati"
+
+/// Il rientro di prima riga del documento: lo scarto dal bordo sinistro (al mezzo punto) più frequente fra 8 e 24 pt sulle
+/// righe alla taglia del corpo. 0 se non c'è.
+func targetedBodyParagraphIndent(_ extraction: PdfExtraction, body: Double, left: Double) -> Double {
+    guard body > 0, left > 0 else { return 0 }
+    var counts: [Double: Int] = [:]
+    for page in extraction.pages {
+        for line in page.lines {
+            let sm = summarizeLine(line)
+            let indent = ((sm.x0 - left) * 2).rounded() / 2
+            guard abs(sm.fontSize - body) <= 0.3, indent >= 8, indent <= 24 else { continue }
+            counts[indent, default: 0] += 1
+        }
+    }
+    return counts.max { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }?.key ?? 0
+}
+
+/// Caratteri che chiudono una frase (anche dopo una chiusura di citazione o di parentesi).
+private let TARGETED_SENTENCE_CLOSERS: Set<Character> = [".", ":", ";", "!", "?", "»", "\u{201D}", ")", "\""]
+
+/// Dentro un blocco di corpo, la riga rientrata del rientro di prima riga (±1,5 pt) apre un capoverso nuovo se la riga
+/// di prima chiude la frase o finisce corta (oltre 10 pt prima del bordo destro della colonna) e se essa stessa comincia
+/// come un inizio di frase (maiuscola, cifra, virgolette, parentesi). Il blocco si spezza lì: righe e testo invariati.
+private func targetedIndentedParagraphs(_ items: [GenItem], _ profile: Profile) -> [GenItem] {
+    let left = profile.targetedLeftEdge, right = profile.targetedRightEdge, indent = profile.targetedParagraphIndent
+    guard profile.bodySize > 0, left > 0, right > left, indent > 0 else { return items }
+    let body = profile.bodySize
+    func opensParagraph(_ prev: LineSummary, _ sm: LineSummary) -> Bool {
+        guard abs(sm.x0 - (left + indent)) <= 1.5, abs(sm.fontSize - body) <= 0.6, abs(prev.fontSize - body) <= 0.6,
+              let first = jsTrim(sm.text).first, first.isUppercase || first.isNumber || "«“\"(".contains(first) else {
+            return false
+        }
+        let closes = jsTrim(prev.text).last.map { TARGETED_SENTENCE_CLOSERS.contains($0) } ?? false
+        return closes || prev.x1 < right - 10
+    }
+    var out: [GenItem] = []
+    for item in items {
+        guard case .run(.body, let lines) = item, lines.count > 1 else { out.append(item); continue }
+        var current: [LineSummary] = [lines[0]]
+        for sm in lines.dropFirst() {
+            if opensParagraph(current[current.count - 1], sm) {
+                out.append(.run(.body, current))
+                current = [sm]
+            } else {
+                current.append(sm)
+            }
+        }
+        out.append(.run(.body, current))
+    }
+    return out
+}
+
+/// Studio B, in posizione: il blocco bibliografico che continua in cima alla pagina dopo. Il primo nodo che segue il blocco
+/// (saltate le note della stessa pagina), se è corpo sulla pagina successiva, ne è la continuazione: un capitolo finisce
+/// con la sua bibliografia e il capitolo dopo comincia sempre con un titolo, quindi nessun corpo vero sta lì.
+private func targetedBibliographyContinuation(_ nodes: inout [NodeDict]) -> Int {
+    var touched = 0
+    for i in nodes.indices where nodes[i].type == .LETTERATURA {
+        var j = i + 1
+        while j < nodes.count, nodes[j].type == .NOTE, nodes[j].page_index == nodes[i].page_index { j += 1 }
+        guard j < nodes.count, nodes[j].type == .BODY, nodes[j].page_index == nodes[i].page_index + 1 else { continue }
+        nodes[j].type = .LETTERATURA
+        touched += 1
+    }
+    return touched
 }

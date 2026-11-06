@@ -105,8 +105,11 @@ func noteTokenIsAbbreviation(_ token: ArraySlice<Character>) -> Bool {
     if isInitialsSigla(t) { return true }
     let dotted = String(t.dropLast()).lowercased()
     let plain = String(letters).lowercased()
-    return SENTENCE_ABBREVIATIONS.contains(dotted) || SENTENCE_ABBREVIATIONS.contains(plain)
-        || NOTE_EXTRA_ABBREVIATIONS.contains(dotted) || NOTE_EXTRA_ABBREVIATIONS.contains(plain)
+    if SENTENCE_ABBREVIATIONS.contains(dotted) || SENTENCE_ABBREVIATIONS.contains(plain)
+        || NOTE_EXTRA_ABBREVIATIONS.contains(dotted) || NOTE_EXTRA_ABBREVIATIONS.contains(plain) { return true }
+    // Cure mirate (TargetedSentenceRules, Granularity.swift): vuoto per ogni documento non registrato.
+    let extra = TargetedSentenceRules.extraAbbreviations
+    return !extra.isEmpty && (extra.contains(dotted) || extra.contains(plain))
 }
 
 /// Sigla di iniziali multiple: due o più lettere MAIUSCOLE singole, ciascuna seguita dal punto («X.Y.», «X.Y.Z.»).
@@ -148,6 +151,7 @@ func noteSentenceRanges(_ chars: [Character]) -> [Range<Int>] {
                         var begin = i - 1
                         while begin >= 0, chars[begin].isLetter || chars[begin] == "." { begin -= 1 }
                         isBoundary = !noteTokenIsAbbreviation(chars[(begin + 1)...i])
+                            && !targetedSplitDateAt(chars, i, next)
                     }
                     if isBoundary {
                         push(start, after)

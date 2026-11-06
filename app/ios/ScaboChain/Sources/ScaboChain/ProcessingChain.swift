@@ -287,7 +287,10 @@ public enum ProcessingChain {
         // Tra classificazione e impaginazione: aggancia ogni richiamo alla sua nota e riposiziona le note nell'albero
         // (brevi a fine frase, lunghe a fine sezione, § 7.3). Le non agganciate restano in posizione (lette, mai perse).
         // Richiede l'estrazione (i segnali di dimensione/parentesi degli span che la classificazione collassa).
-        let document = bindAndPlaceNotes(rawDocument, extraction).document
+        // Cure mirate (LAYER2 § 0-ter): le regole dell'impronta del file (vuote per ogni documento non registrato). Le regole
+        // di frase (abbreviazioni delle citazioni, date spezzate) valgono durante l'aggancio delle note e l'impaginazione.
+        let targeted = TargetedCures.rules(forFingerprint: extraction.sourceSha256)
+        let document = TargetedSentenceRules.with(targeted) { bindAndPlaceNotes(rawDocument, extraction).document }
         // Il documento ha note? (decide se Dottrina Inline è disponibile, § 10.3.)
         let hasNotes = rawDocument.structure.contains {
             $0.type == .NOTE || $0.type == .EDITORIAL_NOTE
@@ -304,20 +307,24 @@ public enum ProcessingChain {
         let visualReport: VisualResourcesReport?
         do {
             let visual = visualCandidates.isEmpty ? nil : VisualInput(candidates: visualCandidates, extraction: extraction)
-            let (built, report) = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
-                from: document, target: options.granularityTarget, visual: visual,
-                fractionLongNotes: options.fractionLongNotes)
+            let (built, report) = try TargetedSentenceRules.with(targeted) {
+                try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
+                    from: document, target: options.granularityTarget, visual: visual,
+                    fractionLongNotes: options.fractionLongNotes, targeted: targeted)
+            }
             content = built
             visualReport = report
             // Dottrina Inline (§ 10): SOLO se ci sono note E se `buildDoctrine` (per i volumi enormi lo si salta: è un
             // secondo flusso da decine di migliaia di segmenti). Stesso aggancio, piazzamento tutto-inline a fine frase
             // del richiamo (§ 10.2).
             if hasNotes && options.buildDoctrine {
-                let doctrineDoc = bindAndPlaceNotes(
-                    rawDocument, extraction, placement: .doctrineInline).document
-                doctrineContent = try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
-                    from: doctrineDoc, target: options.granularityTarget, visual: visual,
-                    fractionLongNotes: options.fractionLongNotes).content
+                doctrineContent = try TargetedSentenceRules.with(targeted) {
+                    let doctrineDoc = bindAndPlaceNotes(
+                        rawDocument, extraction, placement: .doctrineInline).document
+                    return try ContinuousBodyBuilder.bodyPaginatedContentWithVisual(
+                        from: doctrineDoc, target: options.granularityTarget, visual: visual,
+                        fractionLongNotes: options.fractionLongNotes, targeted: targeted).content
+                }
             }
         } catch {
             return .failure(message: proseMessage(from: error))

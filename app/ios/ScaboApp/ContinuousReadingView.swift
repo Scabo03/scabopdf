@@ -377,6 +377,9 @@ final class ContinuousReadingView: UIView {
 
     /// Legami nota ↔ segmento del richiamo (§ 7.12), calcolati a ogni render (`noteCallLinks`).
     private(set) var noteLinks = NoteCallLinks()
+    /// Opzioni dei legami nota↔richiamo: le predefinite per ogni libro; quelle delle CURE MIRATE (LAYER2 § 0-ter) solo per
+    /// i documenti del registro, impostate dal controller dall'impronta del libro PRIMA di `render`.
+    var noteJumpOptions = NoteJumpOptions()
 
     /// Indice dell'ultimo elemento messo a fuoco (o preimpostato), o `nil`. La posizione di lettura.
     private var lastFocusedIndex: Int?
@@ -599,7 +602,7 @@ final class ContinuousReadingView: UIView {
         searchHighlighter = nil
         recomputePageStarts()
         rebuildHeadingIndexAndRotors()
-        noteLinks = noteCallLinks(segments)
+        noteLinks = noteCallLinks(segments, options: noteJumpOptions)
         contentLanguage = DocumentLanguage.code(for: segments)
         resetHeightCache()  // nuovo contenuto → nuove altezze da misurare
         collectionView.reloadData()

@@ -282,7 +282,9 @@ public func buildBaseSegments(_ doc: ScabopdfDocument) -> [ContentSegment] {
     // Documento MONOTIPOGRAFICO (dispense): un corpo che segue un corpo della STESSA pagina apre un
     // paragrafo dell'editor — sulla pagina il canale di MonoTitles.swift crea confini corpo|corpo solo agli
     // stacchi di paragrafo a frase chiusa. La granularità li rispetta (`opensParagraph`). Altrove no-op.
-    if doc.profile.editorial_family == MONOTYPOGRAPHIC_FAMILY {
+    // Lo stesso per i documenti con la cura mirata dei capoversi rientrati (TargetedRules.swift): lì i corpi consecutivi
+    // della stessa pagina nascono solo dai capoversi.
+    if doc.profile.editorial_family == MONOTYPOGRAPHIC_FAMILY || doc.profile.editorial_family == TARGETED_PARAGRAPHS_FAMILY {
         let bodyRole = SemanticCategory.BODY.rawValue
         for i in out.indices.dropFirst()
         where out[i].role == bodyRole && out[i - 1].role == bodyRole

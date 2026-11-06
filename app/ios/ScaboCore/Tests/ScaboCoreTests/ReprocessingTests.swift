@@ -224,6 +224,16 @@ final class ReprocessingTests: XCTestCase {
         let before = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 58)
         XCTAssertNil(before.reason(for: targetedDoc(sha: targetedSha, build: "61"), currentSystemVersion: "iPadOS 27.0.1",
                                    currentAppBuild: "62"))
-        XCTAssertEqual(TargetedCures.cureBuildByFingerprint[targetedSha], 62)
+        // Rifiniture del giro «rifiniture e cure per capacità» (build 63): la build della cura sale.
+        XCTAssertEqual(TargetedCures.cureBuildByFingerprint[targetedSha], 63)
+        // Il documento già elaborato con la cura 62 riceve di nuovo l'offerta; nessun altro libro la riceve.
+        let now = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 58,
+                                     targetedCureBuilds: TargetedCures.cureBuildByFingerprint)
+        XCTAssertEqual(now.reason(for: targetedDoc(sha: targetedSha, build: "62"), currentSystemVersion: "iPadOS 27.0.1",
+                                  currentAppBuild: "63"), .cure)
+        XCTAssertNil(now.reason(for: targetedDoc(sha: targetedSha, build: "63"), currentSystemVersion: "iPadOS 27.0.1",
+                                currentAppBuild: "63"))
+        XCTAssertNil(now.reason(for: targetedDoc(sha: String(repeating: "a", count: 64), build: "62"),
+                                currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "63"))
     }
 }
