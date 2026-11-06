@@ -19,17 +19,23 @@ La lettura di ogni altro file resta identica al byte.
   anche sui volumi più grandi) e la mette in `PdfExtraction.sourceSha256` (campo opzionale e additivo, come `producer`).
   Tutte le trasformazioni dell'estrazione lavorano su una copia della struttura, quindi l'impronta resta anche dopo la
   de-interfoliazione dei codici e l'innesto del Mac.
-- **Un solo cancello.** `estimateProfile` chiama una volta `TargetedCures.rules(forFingerprint:)`: per un'impronta
-  assente, malformata o non registrata il risultato è l'insieme vuoto, e il profilo non porta regole mirate.
-- **Le regole non girano se il profilo non le porta.** `pageItems` chiama `applyTargetedPageRules` solo se
-  `profile.targeted` non è vuoto; `assembleDocument` chiama `applyTargetedDocumentRules` alla stessa condizione; ogni
-  regola si apre con la guardia sul proprio caso. Le regole di pagina lavorano sugli item della pagina (come le foglie del
+- **Un solo cancello.** `estimateProfile` (a ogni stima del profilo, alcune volte per documento) chiama
+  `TargetedCures.rules(forFingerprint:)`: per un'impronta assente, malformata o non registrata il risultato è l'insieme
+  vuoto, e il profilo non porta regole mirate.
+- **Le regole non girano se il profilo non le porta.** `pageItems` chiama lo smistatore `applyTargetedPageRules` solo se
+  `profile.targeted` non è vuoto; `assembleDocument` chiama `applyTargetedDocumentRules` alla stessa condizione; i due
+  smistatori chiamano una regola solo se il suo caso è nell'insieme, e le regole sono `private` (fuori dal file si
+  raggiungono solo dagli smistatori). La revisione indipendente l'ha provato con una catena a sonde: 0 ingressi nelle
+  regole sui 52 volumi del banco, su entrambe le generazioni. Le regole di pagina lavorano sugli item della pagina (come le foglie del
   tronco): la costruzione del documento e l'aggancio delle note (`bindAndPlaceNotes`, che rideriva gli item della pagina e
   li accoppia uno a uno ai nodi) vedono la stessa scomposizione. Le regole di documento sono rietichettature in posizione.
 - **Nessuna regola scrive testo.** Spezzano un blocco di corpo dove comincia un titolo, uniscono righe adiacenti in un
   titolo o in un sommario, rimettono in ordine di posizione righe emesse fuori posto, tolgono glifi d'ornamento dell'area
   d'uso privato (non sono lettere né cifre), fissano un livello. Lettere e cifre restano le stesse.
 - **Stessa catena ovunque.** Registro e regole stanno in ScaboCore, condiviso da iPad, iPhone, Mac e dalle reti.
+- **Un limite da sapere.** Le regole di pagina girano in `pageItems`, che usano anche i rami appunti e Cortina; quelle di
+  documento solo nel Generic. I documenti registrati oggi passano dal Generic, e la rete di ogni giro (§ 5) lo
+  ricontrolla: se uno passasse da un altro ramo, la sua voce va rivista.
 
 ## 3. L'offerta di rielaborazione (§ 12.13) e le annotazioni (§ 12.14)
 
@@ -50,8 +56,11 @@ un'altra impronta e resta com'è: per costruzione, mai una cura su un file sbagl
 
 | Etichetta | Impronta | Regole | Build | Condizione di rimozione |
 |---|---|---|---|---|
-| studio-A | `d0272b21…bca815` | titoli in grassetto alla taglia del corpo; sommario di capitolo in prosa dopo il titolo | 62 | una cura per capacità che riconosca i titoli in grassetto a taglia di corpo dei documenti Word, oppure la lettura del Mac che la renda superflua |
-| studio-B | `f0a98bcd…83a6a4` | etichette di struttura con ornamenti; sommario di capitolo con etichetta (anche oltre la pagina); etichette di sezione; titoli di paragrafo più piccoli del corpo | 62 | una cura per capacità che riconosca i titoli numerati più piccoli del corpo e i sommari etichettati, oppure la lettura del Mac che la renda superflua |
+| studio-A | `d0272b21…bca815` | titoli in grassetto alla taglia del corpo; sommario di capitolo in prosa dopo il titolo | 62 | la lettura del documento SENZA la voce è identica al byte a quella con la voce, o giudicata non peggiore contro la pagina (per esempio dopo una cura per capacità dei titoli in grassetto a taglia di corpo); oppure il maintainer adotta una lettura del Mac che la contiene |
+| studio-B | `f0a98bcd…83a6a4` | etichette di struttura con ornamenti; sommario di capitolo con etichetta (anche oltre la pagina); etichette di sezione; titoli di paragrafo più piccoli del corpo | 62 | come sopra (per esempio dopo una cura per capacità dei titoli numerati più piccoli del corpo e dei sommari etichettati) |
+
+La condizione si misura con la rete di ogni giro (§ 5): quando la lettura curata non differisce più da quella senza
+impronta, la rete lo dice e la voce si può togliere.
 
 Le impronte complete, il motivo per esteso e la frase dell'offerta stanno nel codice (`TargetedCures.registry`); un test
 (`TargetedCuresTests.test_registry_isWellFormed`) verifica che ogni voce abbia etichetta neutra, impronte ben formate e
@@ -83,11 +92,19 @@ mai condivise, regole, motivo, condizione di rimozione e build.
 2. **Prova al contrario**: un documento sintetico con la stessa forma di difetto e un'impronta diversa esce identico a
    quello senza impronta; con l'impronta registrata esce curato (test `TargetedCuresTests`). Sul vero: la stessa estrazione
    del documento curato con l'impronta cambiata dà la lettura di prima.
-3. **Sui documenti curati**: lettere e cifre identiche fra prima e dopo (salvo il testo tolto per motivo dichiarato, qui gli
-   ornamenti), misura dei titoli e della struttura prima e dopo, ogni differenza giudicata contro la pagina.
+3. **Sui documenti curati**: lettere e cifre identiche fra prima e dopo (salvo i caratteri tolti per motivo dichiarato: qui
+   gli ornamenti dell'area privata e un trattino di sillabazione ricomposto), misura dei titoli e della struttura prima e
+   dopo, ogni differenza giudicata contro la pagina.
 4. **Annotazioni**: la rete sulle annotazioni verde, e le annotazioni sintetiche dei documenti curati riancorate dalla
    lettura di prima a quella di dopo con zero ricollocazioni sbagliate.
 5. **Parità iPad-Mac** e **risorse visive** invariate sui volumi del banco.
+
+**In ogni giro successivo, finché il registro ha voci** (i documenti curati non sono fra i 52 del banco):
+`app/ios/scripts/rete_cure_mirate.sh <etichetta>` ricattura i documenti del registro (che stanno solo nel laboratorio,
+con nomi neutri), li legge con il codice del giro, confronta al byte la lettura con il riferimento curato congelato
+(`<lab>/studio_mirato/riferimento_cure_mirate/`), controlla che passino dal ramo generico, e rifà la prova al contrario
+(impronta non registrata = nessuna impronta, al byte). Una differenza dal riferimento è rossa finché non è giudicata contro
+la pagina; se la lettura curata non differisce più da quella senza impronta, la voce è forse superflua (§ 4).
 
 ## 6. Aggiungere o togliere una voce
 
