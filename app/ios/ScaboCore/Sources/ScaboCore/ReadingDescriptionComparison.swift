@@ -193,6 +193,14 @@ public enum ReadingDescriptionComparison {
         // Una testata che dichiara un numero di elementi diverso da quelli che porta è una descrizione rotta.
         header("elementi dichiarati nella prima", "\(ha.elementCount)", "\(a.elements.count)")
         header("elementi dichiarati nella seconda", "\(hb.elementCount)", "\(b.elements.count)")
+        // Ogni elemento porta il proprio posto nella sequenza: un indice fuori posto è una descrizione rotta (la si dice una
+        // volta, al primo, senza la cascata che darebbe il confronto elemento per elemento).
+        for (name, d) in [("indici della prima", a), ("indici della seconda", b)] {
+            if let k = d.elements.indices.first(where: { d.elements[$0].index != $0 }) {
+                acc.add(ReadingDivergence(kind: .header, indexA: nil, indexB: nil, segmentId: d.elements[k].segmentId,
+                                          field: name, valueA: "posto \(k)", valueB: "indice \(d.elements[k].index)"))
+            }
+        }
         if ha.rotors != hb.rotors {
             acc.add(ReadingDivergence(kind: .rotor, indexA: nil, indexB: nil, segmentId: nil, field: "rotori installati",
                                       valueA: ha.rotors.joined(separator: " | "), valueB: hb.rotors.joined(separator: " | ")))
@@ -213,6 +221,8 @@ public enum ReadingDescriptionComparison {
         check(.signal, "segnale", x.signal, y.signal)
         check(.rotor, "rotori", x.rotors.joined(separator: " | "), y.rotors.joined(separator: " | "))
         check(.action, "azioni", x.actions.joined(separator: " | "), y.actions.joined(separator: " | "))
+        func targets(_ v: [Int?]) -> String { v.map { $0.map(String.init) ?? "nessuno" }.joined(separator: " | ") }
+        check(.action, "bersagli", targets(x.actionTargets), targets(y.actionTargets))
         check(.container, "contenitore", x.container, y.container)
     }
 

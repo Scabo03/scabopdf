@@ -739,16 +739,10 @@ final class ContinuousReadingView: UIView {
     /// testo che richiama, la prima delle sue note). Falso se l'elemento non è né una nota legata né un testo che richiama.
     @discardableResult
     func jumpBetweenNoteAndCall() -> Bool {
-        let index = currentOrTopIndex
-        if let call = noteLinks.callOfNote[index] {
-            goToElement(atIndex: call, focus: true)
-            return true
-        }
-        if let note = noteLinks.notesOfCall[index]?.first, note < segments.count {
-            goToElement(atIndex: note, focus: true)
-            return true
-        }
-        return false
+        // Il bersaglio lo dà la fonte unica del parlato (lo stesso delle azioni «Vai al testo del richiamo» / «Vai alla nota»).
+        guard let target = speech.noteCallJumpTarget(from: currentOrTopIndex) else { return false }
+        goToElement(atIndex: target, focus: true)
+        return true
     }
 
     /// Le azioni della RISORSA VISIVA per l'elemento di indice dato (§ 7.9, `docs/RISORSE_VISIVE.md`): «Estrai come

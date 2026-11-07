@@ -515,7 +515,7 @@ final class ContinuousReadingViewController: UIViewController {
     /// c'è nulla da raggiungere lo dice (a voce, con VoiceOver), senza muovere la lettura.
     @objc private func kbNoteJump() {
         guard currentLayout != .quick, readingView.jumpBetweenNoteAndCall() else {
-            UIAccessibility.post(notification: .announcement, argument: "Qui non c'è una nota né un richiamo da raggiungere.")
+            UIAccessibility.post(notification: .announcement, argument: ReadingSpeech.noNoteOrCallToReach)
             return
         }
     }

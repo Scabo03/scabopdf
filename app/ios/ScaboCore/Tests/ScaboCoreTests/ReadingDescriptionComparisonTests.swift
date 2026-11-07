@@ -36,6 +36,14 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
                                                                settings: ReadingSpeechSettings())
     }
 
+    /// Una fonte vera numera i propri elementi: dopo una rimozione gli indici ripartono consecutivi.
+    private func renumbered(_ d: ReadingDescription) -> ReadingDescription {
+        var d = d
+        for k in d.elements.indices { d.elements[k].index = k }
+        d.header.elementCount = d.elements.count
+        return d
+    }
+
     func test_identical_isIdentical_andSaysSo() {
         let r = ReadingDescriptionComparison.compare(sample(), sample())
         XCTAssertTrue(r.identical)
@@ -45,7 +53,7 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
                        "iPad ↔ Mac: IDENTICHE (8 elementi, tutti confrontati)")
     }
 
-    /// Prova al contrario esaustiva sul flusso di prova: per OGNI elemento e OGNI campo, un'alterazione sola deve dare
+    /// Prova al contrario esaustiva sul flusso di prova: per OGNI elemento e OGNI campo (bersagli delle azioni compresi), un'alterazione sola deve dare
     /// una divergenza sola, su quell'elemento, col tipo del campo. Nessun falso verde, nessuna cascata.
     func test_counterProof_everySingleFieldChangeIsFoundWithItsKind() {
         let base = sample()
@@ -57,6 +65,7 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
             (.signal, { $0.signal = $0.signal == nil ? "medium" : nil }),
             (.rotor, { $0.rotors.append("titoli-9") }),
             (.action, { $0.actions = $0.actions.isEmpty ? ["Aggiungi segnalibro"] : Array($0.actions.dropLast()) }),
+            (.action, { $0.actionTargets = $0.actionTargets.isEmpty ? [5] : $0.actionTargets.map { ($0 ?? -1) + 1 } }),
             (.container, { $0.container = "interfaccia" }),
         ]
         var checked = 0
@@ -73,12 +82,12 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
                 checked += 1
             }
         }
-        XCTAssertEqual(checked, 64)
+        XCTAssertEqual(checked, 72)
     }
 
     func test_missingAndExtraElements_areFoundWithoutCascade() {
         let base = sample()
-        var less = base; less.elements.remove(at: 3); less.header.elementCount -= 1
+        var less = base; less.elements.remove(at: 3); less = renumbered(less)
         var r = ReadingDescriptionComparison.compare(base, less)
         XCTAssertEqual(r.totalDivergences, 1)
         XCTAssertEqual(r.first?.kind, .missingElement)
@@ -90,7 +99,7 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
         XCTAssertEqual(r.first?.kind, .extraElement)
         XCTAssertEqual(r.first?.indexB, 3)
         // Due elementi mancanti di fila, e un elemento sostituito da un altro.
-        var two = base; two.elements.removeSubrange(1...2); two.header.elementCount -= 2
+        var two = base; two.elements.removeSubrange(1...2); two = renumbered(two)
         r = ReadingDescriptionComparison.compare(base, two)
         XCTAssertEqual(r.counts[.missingElement], 2)
         XCTAssertEqual(r.totalDivergences, 2)
@@ -100,10 +109,10 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
         XCTAssertEqual(r.counts[.extraElement], 1)
         XCTAssertEqual(r.first?.kind, .missingElement)
         // Coda: la seconda finisce prima, o continua oltre.
-        var short = base; short.elements.removeLast(); short.header.elementCount -= 1
+        var short = base; short.elements.removeLast(); short = renumbered(short)
         r = ReadingDescriptionComparison.compare(base, short)
         XCTAssertEqual(r.first?.kind, .missingElement); XCTAssertEqual(r.first?.indexA, 7)
-        var empty = base; empty.elements = []; empty.header.elementCount = 0
+        var empty = base; empty.elements = []; empty = renumbered(empty)
         r = ReadingDescriptionComparison.compare(base, empty)
         XCTAssertEqual(r.counts[.missingElement], 8)
         XCTAssertEqual(r.alignedElements, 0)
@@ -113,7 +122,7 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
         var a = sample()
         a.elements[6].segmentId = "b2"   // la stessa identità due volte nel flusso
         var b = a
-        b.elements.remove(at: 4); b.header.elementCount -= 1
+        b.elements.remove(at: 4); b = renumbered(b)
         let r = ReadingDescriptionComparison.compare(a, b)
         XCTAssertEqual(r.totalDivergences, 1)
         XCTAssertEqual(r.first?.kind, .missingElement)
@@ -133,6 +142,11 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
         XCTAssertEqual(ReadingDescriptionComparison.compare(base, b).first?.field, "elementi dichiarati nella seconda")
         b = base; b.header.book = "altro libro"
         XCTAssertEqual(ReadingDescriptionComparison.compare(base, b).first?.field, "libro")
+        // Un indice fuori posto: la descrizione è rotta, e lo si dice una volta sola (nessuna cascata).
+        b = base; b.elements[3].index = 99
+        r = ReadingDescriptionComparison.compare(base, b)
+        XCTAssertEqual(r.totalDivergences, 1)
+        XCTAssertEqual(r.first?.kind, .header); XCTAssertEqual(r.first?.field, "indici della seconda")
     }
 
     func test_report_withoutText_carriesNoTextOfTheLabels() {
@@ -145,7 +159,7 @@ final class ReadingDescriptionComparisonTests: XCTestCase {
         XCTAssertFalse(quiet.contains("paragrafo"), "senza testo: solo lunghezze e impronte")
         let loud = ReadingDescriptionComparison.report(r, nameA: "iPad", nameB: "Mac", showText: true)
         XCTAssertTrue(loud.contains("«Un altro paragrafo di prova, diverso.»"))
-        var m = base; m.elements.remove(at: 2); m.header.elementCount -= 1
+        var m = base; m.elements.remove(at: 2); m = renumbered(m)
         let missingQuiet = ReadingDescriptionComparison.report(ReadingDescriptionComparison.compare(base, m), nameA: "a", nameB: "b")
         XCTAssertFalse(missingQuiet.contains("nota di prova"), "anche l'elemento mancante si dice senza testo")
     }

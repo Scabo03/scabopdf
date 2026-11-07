@@ -11,8 +11,13 @@
 //  senza cambiare un byte di ciò che si pronuncia, perché la lettura del Mac la usi per costruzione e dica le stesse
 //  parole dell'iPad.
 //
-//  Solo Foundation, come tutto ScaboCore (compila per iOS e per macOS). Le viste restano padrone del QUANDO (il fuoco, lo
-//  scorrimento, la materializzazione delle celle, il riproduttore audio, i gestori delle azioni): qui si decide il CHE COSA.
+//  Importa solo Foundation; ScaboCore non usa né UIKit né AppKit e compila per iOS e per macOS. Le viste restano padrone del
+//  QUANDO (il fuoco, lo scorrimento, la materializzazione delle celle, il riproduttore audio, i gestori delle azioni): qui si
+//  decide il CHE COSA.
+//
+//  Perimetro: gli elementi della lettura (Lettura Continua e Dottrina Inline, la stessa vista). Le righe dell'albero della
+//  Consultazione Rapida (`QuickConsultView`) hanno ancora le loro etichette: allinearle cambierebbe ciò che si pronuncia (il
+//  valore della risorsa visiva lì non dice «2 di 4»), quindi resta a un giro dedicato, su decisione del maintainer.
 //
 //  Oltre alle funzioni che la vista chiama, il modulo dà per ogni elemento una DESCRIZIONE COMPLETA E NEUTRA
 //  (`ReadingElementDescription`): testo pronunciato, valore, ruolo, livello d'intestazione, segnale previsto in lettura
@@ -152,6 +157,15 @@ public enum ReadingAction: Equatable, Sendable {
     /// vocale, Controllo interruttori, tastiera completa), che non hanno il tocco prolungato. Mai con VoiceOver acceso.
     case elementTools
 
+    /// Dove porta l'azione (l'indice dell'elemento d'arrivo) per le azioni di navigazione; `nil` per le altre.
+    public var target: Int? {
+        switch self {
+        case .skipVisualResource(let t), .goToCall(let t): return t
+        case .goToNote(let t, _): return t
+        case .extractVisualResource, .addBookmark, .editBookmark, .removeBookmark, .elementTools: return nil
+        }
+    }
+
     /// Il nome pronunciato.
     public var name: String {
         switch self {
@@ -196,6 +210,9 @@ public enum ReadingSpeech {
 
     /// Il nome del rotore della ricerca nel libro (VoiceOver lo dice ruotando).
     public static let searchRotorName = "Risultati della ricerca"
+
+    /// L'annuncio del salto fra nota e richiamo da tastiera (⌘J) quando dall'elemento in lettura non c'è nulla da raggiungere.
+    public static let noNoteOrCallToReach = "Qui non c'è una nota né un richiamo da raggiungere."
 
     /// Il ruolo di ogni elemento della lettura (vedi `ReadingElementRole`).
     public static func role(for segment: ContentSegment) -> ReadingElementRole { .staticText }
@@ -440,6 +457,15 @@ public struct ReadingSpeechModel: Sendable {
         return actions
     }
 
+    /// Il bersaglio del salto fra nota e richiamo da tastiera (⌘J) dall'elemento all'indice dato: sulla nota, il testo del
+    /// richiamo; sul testo che richiama, la prima delle sue note; altrimenti nessuno. È ciò che fanno le azioni «Vai al testo
+    /// del richiamo» e «Vai alla nota N» (la prima).
+    public func noteCallJumpTarget(from index: Int) -> Int? {
+        if let call = noteLinks.callOfNote[index] { return call }
+        if let note = noteLinks.notesOfCall[index]?.first, note < segments.count { return note }
+        return nil
+    }
+
     /// Le azioni di segnalibro (§ 5.1) secondo lo stato.
     public static func bookmarkActions(_ state: ReadingBookmarkState) -> [ReadingAction] {
         switch state {
@@ -455,7 +481,8 @@ public struct ReadingSpeechModel: Sendable {
     public func actions(
         forIndex index: Int, bookmark: ReadingBookmarkState, settings: ReadingSpeechSettings
     ) -> [ReadingAction] {
-        guard index >= 0, index < segments.count else { return [] }
+        // Nessun controllo dell'indice qui, come nella vista di prima: le azioni di segnalibro e «Strumenti elemento» non
+        // dipendono dall'indice; quelle della risorsa visiva e dei salti si controllano da sé.
         var actions = visualResourceActions(forIndex: index)
         actions += noteJumpActions(forIndex: index)
         actions += Self.bookmarkActions(bookmark)
@@ -486,6 +513,7 @@ public struct ReadingSpeechModel: Sendable {
                 : (bookmarkedSegmentIds.contains(s.id) ? .present : .absent)
             let signals = ReadingSpeech.focusSignals(
                 for: s, previousFocusedRole: previousRole, noteSpokenLabels: settings.noteSpokenLabels)
+            let acts = actions(forIndex: i, bookmark: bookmark, settings: settings)
             elements.append(ReadingElementDescription(
                 index: i, segmentId: s.id,
                 spokenText: ReadingSpeech.intendedAccessibilityLabel(for: s, restoreNoteIntro: settings.noteSpokenLabels),
@@ -494,7 +522,7 @@ public struct ReadingSpeechModel: Sendable {
                 headingLevel: ReadingSpeech.headingLevel(for: s.role),
                 signal: ReadingElementDescription.signalCode(signals),
                 rotors: rotors(ofElementAt: i, search: active).map(\.code),
-                actions: actions(forIndex: i, bookmark: bookmark, settings: settings).map(\.name),
+                actions: acts.map(\.name), actionTargets: acts.map(\.target),
                 container: ReadingSpeech.container(for: s).rawValue))
             previousRole = s.role
         }
@@ -522,7 +550,9 @@ public struct ReadingDescriptionHeader: Codable, Equatable, Sendable {
     public var rotors: [String]
 
     public static let formatName = "descrizione-lettura-scabopdf"
-    public static let currentVersion = 1
+    /// Versione 2 (giro «fondamenta della lettura per Mac», dopo la revisione indipendente): le azioni portano anche il loro
+    /// bersaglio (`bersagli`), così un salto che cambia destinazione non passa inosservato.
+    public static let currentVersion = 2
 
     public init(book: String, layout: String, noteSpokenLabels: Bool, voiceOverRunning: Bool, elementCount: Int,
                 rotors: [String]) {
@@ -558,14 +588,17 @@ public struct ReadingElementDescription: Codable, Equatable, Sendable {
     public var rotors: [String]
     /// Le azioni disponibili, per nome, nell'ordine offerto.
     public var actions: [String]
+    /// Per ogni azione, nello stesso ordine, l'indice dell'elemento in cui porta (le azioni di navigazione: salti nota ↔
+    /// richiamo, «Salta la risorsa»), o nessuno.
+    public var actionTargets: [Int?]
     /// Il contenitore di accessibilità (`ReadingContainer`).
     public var container: String
 
     public init(index: Int, segmentId: String, spokenText: String, value: String?, role: String, headingLevel: Int?,
-                signal: String?, rotors: [String], actions: [String], container: String) {
+                signal: String?, rotors: [String], actions: [String], actionTargets: [Int?], container: String) {
         self.index = index; self.segmentId = segmentId; self.spokenText = spokenText; self.value = value
         self.role = role; self.headingLevel = headingLevel; self.signal = signal; self.rotors = rotors
-        self.actions = actions; self.container = container
+        self.actions = actions; self.actionTargets = actionTargets; self.container = container
     }
 
     /// Il codice del segnale per una lista di segnali (nessuno → `nil`).
@@ -575,7 +608,8 @@ public struct ReadingElementDescription: Codable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case index = "i", segmentId = "id", spokenText = "testo", value = "valore", role = "ruolo",
-             headingLevel = "livello", signal = "segnale", rotors = "rotori", actions = "azioni", container = "contenitore"
+             headingLevel = "livello", signal = "segnale", rotors = "rotori", actions = "azioni",
+             actionTargets = "bersagli", container = "contenitore"
     }
 }
 

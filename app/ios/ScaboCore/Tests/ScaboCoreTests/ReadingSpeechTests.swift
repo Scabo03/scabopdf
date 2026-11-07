@@ -178,6 +178,19 @@ final class ReadingSpeechTests: XCTestCase {
         XCTAssertEqual(ReadingAction.goToCall(target: 0).name, "Vai al testo del richiamo")
         XCTAssertEqual(ReadingAction.extractVisualResource.name, "Estrai come immagine")
         XCTAssertEqual(ReadingAction.skipVisualResource(target: 0).name, "Salta la risorsa")
+        // Dove portano: solo le azioni di navigazione hanno un bersaglio.
+        XCTAssertEqual(ReadingAction.goToNote(target: 7, number: "3").target, 7)
+        XCTAssertEqual(ReadingAction.skipVisualResource(target: 9).target, 9)
+        XCTAssertNil(ReadingAction.addBookmark.target)
+        XCTAssertNil(ReadingAction.elementTools.target)
+        // Il salto da tastiera (⌘J): dalla nota al richiamo, dal richiamo alla prima nota, altrimenti nessuno.
+        XCTAssertEqual(m.noteCallJumpTarget(from: 2), 1)
+        XCTAssertEqual(m.noteCallJumpTarget(from: 3), 1)
+        XCTAssertEqual(m.noteCallJumpTarget(from: 1), 2)
+        XCTAssertNil(m.noteCallJumpTarget(from: 0))
+        XCTAssertEqual(ReadingSpeech.noNoteOrCallToReach, "Qui non c'è una nota né un richiamo da raggiungere.")
+        // Un indice fuori dal flusso: nessuna azione del flusso, ma segnalibro e strumenti come nella vista di prima.
+        XCTAssertEqual(m.actions(forIndex: 99, bookmark: .absent, settings: off), [.addBookmark, .elementTools])
     }
 
     // MARK: - La descrizione
@@ -195,6 +208,10 @@ final class ReadingSpeechTests: XCTestCase {
         XCTAssertEqual(d.elements[8].headingLevel, 5)
         XCTAssertEqual(d.elements[4].value, "pagina 3 del file originale, 1 di 2")
         XCTAssertEqual(d.elements[4].actions, ["Estrai come immagine", "Salta la risorsa", "Aggiungi segnalibro", "Strumenti elemento"])
+        XCTAssertEqual(d.elements[4].actionTargets, [nil, 6, nil, nil])
+        XCTAssertEqual(d.elements[1].actionTargets, [2, nil, nil], "«Vai alla nota 37» porta alla nota")
+        XCTAssertEqual(d.elements[3].actionTargets, [1, nil, nil], "il pezzo di seguito torna al richiamo")
+        XCTAssertEqual(d.header.version, 2)
         XCTAssertEqual(d.elements[2].signal, "long")
         XCTAssertEqual(d.elements[2].spokenText,
                        "Frase di prova del corpo con il richiamo alla nota di prova 37 Primo pezzo della nota di prova.")
@@ -252,6 +269,7 @@ final class ReadingSpeechTests: XCTestCase {
         XCTAssertTrue(lines[0].hasPrefix("{\"elementi\":11,\"formato\":\"descrizione-lettura-scabopdf\""))
         XCTAssertTrue(lines[0].contains("\"libro\":\"prova/libro\""), "barre non protette")
         XCTAssertTrue(lines[1].hasPrefix("{\"azioni\":["), "chiavi ordinate")
+        XCTAssertTrue(lines[2].contains("\"bersagli\":[2,null,null]"), "i bersagli: un numero o null per azione")
         XCTAssertFalse(lines[1].contains("\"valore\""), "un valore assente non si scrive")
         XCTAssertEqual(try ReadingDescription.decode(data), d)
         XCTAssertEqual(try d.encoded(), data, "stessa descrizione, stessi byte")
