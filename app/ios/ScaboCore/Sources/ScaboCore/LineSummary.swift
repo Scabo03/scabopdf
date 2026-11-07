@@ -153,7 +153,8 @@ func jsTrim(_ s: String) -> String {
 private let SOFT_HYPHEN_SPACE_RE = try! NSRegularExpression(pattern: "(?<=[\\p{L} ])\u{00AD}[ \\t]+(?=\\p{L})")
 
 func repairingSoftHyphenSpaces(_ text: String) -> String {
-    guard text.contains("\u{00AD}") else { return text }
+    // Controllo per scalari: la ricerca di una sottostringa sarebbe troppo lenta per una funzione chiamata a ogni riga.
+    guard text.unicodeScalars.contains("\u{00AD}") else { return text }
     return SOFT_HYPHEN_SPACE_RE.stringByReplacingMatches(
         in: text, range: NSRange(text.startIndex..<text.endIndex, in: text), withTemplate: "\u{00AD}")
 }

@@ -845,3 +845,19 @@ resta di riserva.
 ### H.4 Carte geografiche scartate dalla guardia — **non officina: cura per capacità (iPad)**
 Il modello dell'iPad le riconosce (figura, fiducia 0,98) ma la guardia le scarta come «ricorrenti», perché il disegno della
 filigrana su ogni pagina cade dentro la regione. La guardia può ignorare i disegni presenti su quasi tutte le pagine.
+
+
+### H.5 Esito del giro «rifiniture e cure per capacità» (2026-11-07, build 64) e ciò che resta all'officina
+Curati sull'iPad, per capacità (forma del difetto, non il libro; LAYER2 § 0-ter): H.1 (6 titoli tornati, 113 lettere;
+nessuna testatina vera tornata sul banco), H.2 in parte (11 titoli di sezione isolati da stacchi, tutti veri; canale
+geometrico prudente, non il modello), H.3 (colonna dei numeri rimessa in ordine; note di chiusura col salto: 58 su 68),
+H.4 (la causa vera non era la filigrana: tre carte diverse nella stessa posizione; due ora annunciate), più le parole
+spezzate dal trattino morbido con iOS 26.5 (302 → 0). Restano, materia d'officina o di un giro futuro:
+- **H.5.1** circa metà dei titoli di sezione resta incollata al corpo (lo stacco o il rientro che segue non hanno la forma
+  prudente): il modello li vede come «section_header», candidata d'officina come in H.2;
+- **H.5.2** le etichette e la legenda delle carte sono lette come note (7 delle 10 note senza salto) e la terza carta resta
+  scartata perché la legenda numerata somiglia a richiami di nota: serve un trattamento del testo contenuto in una figura;
+- **H.5.3** il prologo e l'epilogo stanno al secondo livello, i capitoli al primo;
+- **H.5.4** due pseudo-note del frontespizio e una nota del prologo senza salto;
+- **H.5.5** fra iOS 26.5 e 27 restano 7 differenze di spazi che si leggono uguali (trattino morbido a fine riga, spazio
+  prima di una virgola).

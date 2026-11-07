@@ -679,7 +679,7 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // rimosse come mobilia (regressione: si mangia un'intestazione vera).
     let profileForFurniture = estimateProfile(extraction)
     let bodySizeForFurniture = profileForFurniture.bodySize
-    struct Candidate { let key: String; let norm: String }
+    struct Candidate { let key: String; let norm: String; var page = 0; var line = 0 }
     struct FolioCandidate { let key: String; let page: Int; let value: Int }
     var bandCandidates: [Candidate] = []
     var colorCandidates: [Candidate] = []
@@ -708,15 +708,12 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
         var joinsRows = false }
     var bandRows: [BandRow] = []
     var bareFolioRows: [FusedFolioLine] = []
-    // Titolo ripetuto dalla testatina (giro «rifiniture e cure per capacità», voce 2.1): per ogni norma di testo, le righe
-    // con la loro taglia, per riconoscere dopo i canali il titolo vero composto molto più grande delle testatine.
-    var sizesByNorm: [String: [(key: String, size: Double)]] = [:]
 
     func track(_ map: inout [String: Set<Int>], _ norm: String, _ pageIndex: Int) {
         map[norm, default: []].insert(pageIndex)
     }
 
-    for page in extraction.pages {
+    for (pageArrayIndex, page) in extraction.pages.enumerated() {
         let height = page.height
         // Candidata-testatina della pagina: la riga PIÙ IN ALTO fra le sostanziali corte
         // in banda superiore (i bare-number/folii sono saltati: non sostanziali).
@@ -751,10 +748,8 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
                targetedIsDetachedCallPunctuation(lineIndex, in: page.lines) {
                 continue
             }
-            // Solo righe con testo (almeno due lettere): un titolo; non l'interpunzione staccata, né un numero.
-            if sm.fontSize > 0, isSubstantial(sm.text) { sizesByNorm[norm, default: []].append((key, sm.fontSize)) }
             // General majority-recurrence applies at any length.
-            generalCandidates.append(Candidate(key: key, norm: norm))
+            generalCandidates.append(Candidate(key: key, norm: norm, page: pageArrayIndex, line: lineIndex))
             track(&generalPages, norm, page.pageIndex)
             let yFrac = height > 0 ? sm.yTop / height : 0.5
             // Riga del folio: una riga in banda alta/bassa il cui PRIMO o ULTIMO token è un intero
@@ -947,6 +942,14 @@ func detectFurniture(_ extraction: PdfExtraction) -> Set<String> {
     // (una sezione breve può avere la pagina divisoria e la pagina d'apertura col titolo grande, e poche testatine).
     // Una testatina che cambia taglia fra recto e verso (metà e metà) resta mobilia: non è rara.
     if bodySizeForFurniture > 0 {
+        // Solo le norme che hanno righe di mobilia, con le loro righe di testo (almeno due lettere) e la loro taglia: si
+        // riassumono di nuovo solo quelle righe (poche: testatine e simili), non tutto il libro.
+        let furnitureNorms = Set(generalCandidates.lazy.filter { furniture.contains($0.key) }.map { $0.norm })
+        var sizesByNorm: [String: [(key: String, size: Double)]] = [:]
+        for c in generalCandidates where furnitureNorms.contains(c.norm) {
+            let sm = summarizeLine(extraction.pages[c.page].lines[c.line])
+            if sm.fontSize > 0, isSubstantial(sm.text) { sizesByNorm[c.norm, default: []].append((c.key, sm.fontSize)) }
+        }
         for (_, members) in sizesByNorm where members.count >= 3 && members.contains(where: { furniture.contains($0.key) }) {
             var modal: [Double: Int] = [:]
             for m in members { modal[(m.size * 2).rounded() / 2, default: 0] += 1 }

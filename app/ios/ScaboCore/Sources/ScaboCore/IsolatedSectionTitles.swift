@@ -37,26 +37,28 @@ let ISOLATED_TITLE_MAX_WIDTH_FRACTION = 0.75
 func isolatedTitleCalibration(_ extraction: PdfExtraction, body: Double) -> IsolatedTitleCalibration? {
     guard body > 0 else { return nil }
     var steps: [Double: Int] = [:], lefts: [Double: Int] = [:], rights: [Double: Int] = [:]
+    // Una sola passata: i bordi sinistri (a mezzo punto) di tutte le righe di corpo servono poi al rientro.
+    var starts: [Double: Int] = [:]
     for page in extraction.pages {
         let lines = page.lines.map(summarizeLine)
         for (a, b) in zip(lines, lines.dropFirst()) where abs(a.fontSize - body) <= 0.4 && abs(b.fontSize - body) <= 0.4 {
             let d = a.yBottom - b.yBottom
             if d > 0, d < 3 * body { steps[(d * 2).rounded() / 2, default: 0] += 1 }
         }
-        for sm in lines where abs(sm.fontSize - body) <= 0.4 && sm.width > page.width * 0.4 {
+        for sm in lines where abs(sm.fontSize - body) <= 0.4 {
+            starts[(sm.x0 * 2).rounded() / 2, default: 0] += 1
+            guard sm.width > page.width * 0.4 else { continue }
             lefts[(sm.x0 * 2).rounded() / 2, default: 0] += 1
             rights[(sm.x1 * 2).rounded() / 2, default: 0] += 1
         }
     }
     func mode(_ c: [Double: Int]) -> Double? { c.max { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }?.key }
     guard let step = mode(steps), let left = mode(lefts), let right = mode(rights), right > left else { return nil }
+    // Il rientro: lo scarto fra un bordo e il bordo sinistro della colonna (entrambi sulla griglia del mezzo punto).
     var indents: [Double: Int] = [:]
-    for page in extraction.pages {
-        for line in page.lines {
-            let sm = summarizeLine(line)
-            let ind = ((sm.x0 - left) * 2).rounded() / 2
-            if abs(sm.fontSize - body) <= 0.4, ind >= 8, ind <= 24 { indents[ind, default: 0] += 1 }
-        }
+    for (x, n) in starts {
+        let ind = x - left
+        if ind >= 8, ind <= 24 { indents[ind, default: 0] += n }
     }
     guard let indent = mode(indents) else { return nil }
     return IsolatedTitleCalibration(step: step, left: left, right: right, indent: indent)
