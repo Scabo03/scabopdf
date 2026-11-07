@@ -17,7 +17,7 @@
 //  di ricerca sia stato riscritto, il timbro non coincide e il testo non vale (l'app lo riscrive in sottofondo). Così un
 //  risultato non viene mai da una lettura che non è più quella del libro.
 //
-//  ── Formato (versione 1, little-endian) ───────────────────────────────────────────────────────────────────────
+//  ── Formato (versione 2, little-endian; la 1 aveva lo stesso formato e le regole dei richiami di prima) ───────────────────────────────────────────────────────────────────
 //
 //      0  «SCABORIC»                       8 byte
 //      8  versione del formato             UInt32
@@ -37,7 +37,10 @@ import Foundation
 public enum LibrarySearchText {
     /// Versione del formato del file. Va alzata se cambia il formato o cambiano le regole del testo da cercare
     /// (normalizzazione, flussi, confini): un file di versione diversa non vale e si riscrive.
-    public static let formatVersion: UInt32 = 1
+    /// 2 (giro «rifiniture e cure per capacità», build 64): i confini dei richiami seguono i legami nuovi fra nota e richiamo
+    /// (note di chiusura; richiamo lontano dalla fine del pezzo o attaccato a un anno). I testi di versione 1 si riscrivono
+    /// in sottofondo dalla cache, senza rielaborare il libro.
+    public static let formatVersion: UInt32 = 2
     static let magic: [UInt8] = Array("SCABORIC".utf8)
     static let headerSize = 40
 

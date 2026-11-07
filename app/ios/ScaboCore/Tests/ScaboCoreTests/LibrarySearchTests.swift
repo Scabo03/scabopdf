@@ -136,10 +136,20 @@ final class LibrarySearchTests: XCTestCase {
         ]
         let corpus = BookSearchCorpus(segments: sample)
         let fingerprint = corpus.buffer.reduce(UInt64(1469598103934665603)) { ($0 ^ UInt64($1)) &* 1099511628211 }
-        XCTAssertEqual(LibrarySearchText.formatVersion, 1)
+        // Versione 2 (build 64): il testo e la sua impronta sono quelli della versione 1; cambiano i confini dei richiami,
+        // che seguono i legami nuovi fra nota e richiamo (qui sotto il richiamo lontano dalla fine del pezzo).
+        XCTAssertEqual(LibrarySearchText.formatVersion, 2)
         XCTAssertEqual(corpus.wordBoundaries, [Int32(corpus.buffer.firstIndex(of: 0x37)!)], "il richiamo 7 attaccato")
         XCTAssertEqual(fingerprint, LibrarySearchTests.rulesFingerprintV1,
                        "le regole del testo da cercare sono cambiate: alzare LibrarySearchText.formatVersion e aggiornare l'impronta")
+        let filler = String(repeating: "Una frase inventata che allunga il pezzo. ", count: 12)
+        let far = [
+            ContentSegment(id: "b", role: "BODY", text: "Il richiamo inventato lanterna8 sta all'inizio. " + filler,
+                           lengthCategory: "", acousticIntro: "", sourcePage: nil),
+            ContentSegment(id: "n8", role: "NOTE", text: "8 Nota di prova.", lengthCategory: "", acousticIntro: "", sourcePage: nil),
+            ContentSegment(id: "n9", role: "NOTE", text: "9 Altra nota.", lengthCategory: "", acousticIntro: "", sourcePage: nil),
+        ]
+        XCTAssertEqual(BookSearchCorpus(segments: far).callBoundaryCount, 1, "versione 2: il richiamo lontano dalla fine del pezzo")
     }
     static let rulesFingerprintV1: UInt64 = 1621835139919584941
 

@@ -346,17 +346,20 @@ private func linkEndnoteBlocks(_ segments: [ContentSegment], _ links: inout Note
 }
 
 /// Vero se il testo contiene il numero `n` nella forma del richiamo in apice: attaccato, senza spazio, a una lettera o a
-/// una chiusura di citazione o di parentesi o a un segno d'interpunzione («parola12», «»12», «)12», «parola.12»), seguito
-/// da una non-cifra; mai dopo un'abbreviazione di riferimento («art.12», «n.12»).
+/// una chiusura di citazione o di parentesi, o a un segno d'interpunzione che segue una LETTERA («parola12», «»12», «)12»,
+/// «parola.12»), seguito da una non-cifra; mai dopo un'abbreviazione di riferimento («art.12», «n.12»), mai dentro una
+/// data o un numero decimale («12.3.2010», «1,5»: davanti al segno c'è una cifra; revisione indipendente del giro).
 func containsAttachedCall(_ text: String, _ n: Int) -> Bool {
     guard let re = try? NSRegularExpression(
         pattern: "([A-Za-zÀ-ÿ]*)([A-Za-zÀ-ÿ»”’\\)\\]\\.,;:])\(n)(?![0-9])") else { return false }
     for m in re.matches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text)) {
         // il carattere prima del numero non deve essere una cifra (lo garantisce la classe) né l'inizio di un numero più
         // lungo; la parola davanti non è un'abbreviazione di riferimento
-        guard let r = Range(m.range(at: 1), in: text) else { continue }
+        guard let r = Range(m.range(at: 1), in: text), let rs = Range(m.range(at: 2), in: text) else { continue }
         let word = text[r].lowercased()
         if NOT_A_CALL_BEFORE.contains(word) { continue }
+        // un segno d'interpunzione vale solo dopo una lettera: «12.3.2010» e «1,5» non sono richiami
+        if ".,;:".contains(text[rs]), word.isEmpty { continue }
         return true
     }
     return false

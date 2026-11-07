@@ -192,8 +192,12 @@ final class CureCapacitaTests: XCTestCase {
         XCTAssertEqual(links.callOfNote[7], 2)
         XCTAssertNil(links.callOfNote[8], "il richiamo della quarta nota compare due volte: nessun legame")
         XCTAssertEqual(links.notesOfCall[2], [6, 7])
-        // Un numero staccato da uno spazio («30 mila») non è un richiamo in apice.
+        // Un numero staccato da uno spazio («30 mila») non è un richiamo in apice; nemmeno dentro una data o un decimale.
         XCTAssertFalse(containsAttachedCall("con il numero 30 mila uomini", 30))
+        XCTAssertFalse(containsAttachedCall("il giorno 12.3.2010 inventato", 3), "una data non è un richiamo")
+        XCTAssertFalse(containsAttachedCall("una quota di 1,5 inventata", 5), "un decimale non è un richiamo")
+        XCTAssertTrue(containsAttachedCall("la parola inventata.5 dopo il punto", 5), "dopo una lettera e il punto sì")
+        XCTAssertTrue(containsAttachedCall("la «citazione»5 inventata", 5), "dopo la chiusura delle virgolette sì")
         XCTAssertFalse(containsAttachedCall("secondo l'art.12 inventato", 12), "mai dopo un'abbreviazione di riferimento")
         // Due note sole non fanno un blocco di chiusura.
         XCTAssertTrue(noteCallLinks(Array(segs[0...6])).callOfNote.isEmpty)

@@ -1972,7 +1972,8 @@ func pageItems(
     // CURE MIRATE (TargetedCures.swift, LAYER2 § 0-ter): solo sui documenti del registro, in coda a tutto il resto. Dove il
     // profilo non porta regole mirate (ogni altro documento) gli item tornano invariati e il codice delle regole non gira.
     // Note col numero emesso prima del testo (giro «rifiniture e cure per capacità», voce 2.4): la colonna dei richiami
-    // rimessa in ordine di posizione accanto ai suoi testi. No-op dove le note sono già in ordine (tutti i volumi del banco).
+    // rimessa in ordine di posizione accanto ai suoi testi. No-op dove le note sono già in ordine; sul banco cambia due
+    // volumi (Mosconi, Compendio di procedura penale), con le note giuste contro il PDF.
     let withNoteOrder = reorderMarkerColumnNoteRuns(fused)
     // Titoli in grassetto alla taglia del corpo delle dispense Word (WordBoldTitles.swift): solo dove la firma regge.
     let withWordBold = profile.wordBoldTitles ? recognizeWordBoldTitles(withNoteOrder, profile) : withNoteOrder
