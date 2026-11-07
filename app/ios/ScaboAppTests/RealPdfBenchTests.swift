@@ -1369,11 +1369,15 @@ extension RealPdfBenchTests {
     /// all'ultimo con il loro blocco di ricerca (lo stesso che chiama VoiceOver: scorre e materializza la cella bersaglio);
     /// (3) ogni elemento, in ordine, materializzato dalla collezione che ricicla scorrendo una schermata alla volta, letto
     /// dalle sue proprietà di accessibilità (etichetta, valore, tratti, azioni) e messo a fuoco col gancio di VoiceOver
-    /// (`accessibilityElementDidBecomeFocused`) in lettura lineare, per sentire quale segnale la vista chiede. Ne esce la
+    /// (`accessibilityElementDidBecomeFocused`) in lettura lineare, per sentire quale segnale la vista chiede; (4) dove portano
+    /// le azioni di navigazione (salti nota ↔ richiamo, «Salta la risorsa»), eseguendone il gestore vero. Ne esce la
     /// descrizione nella forma del modulo del parlato, da confrontare con quella del Mac (`scabomac-officina
-    /// confronta-descrizioni`). NON copre: VoiceOver vero (né il suo percorso, né le sue pause), gli annunci, la tastiera, la
-    /// barra, lo split, la Consultazione Rapida; la lingua degli elementi è nel referto del percorso, non nella descrizione.
-    /// Le uscite CONTENGONO TESTO dei volumi: solo nel laboratorio. `XCTSkip` senza richiesta.
+    /// confronta-descrizioni`), più un referto del percorso senza testo (copertura, sigillo, ordine, rotori percorsi e attesi,
+    /// lingua di ogni elemento, suggerimenti). Un'anomalia (elementi non descritti, percorso bloccato, contenitori non
+    /// sigillati, ordine, rotori interrotti, layout diverso da quello chiesto) fa FALLIRE il banco. NON copre: VoiceOver vero
+    /// (né il suo percorso, né le sue pause), gli annunci, la tastiera, la barra, lo split, la Consultazione Rapida, le azioni
+    /// che aprono finestre (segnalibro, strumenti, estrazione: solo il nome). Le uscite CONTENGONO TESTO dei volumi: solo nel
+    /// laboratorio. `XCTSkip` senza richiesta.
     @objc func test_readingViewDescriptionWalk_fromRequest() throws {
         let reqPath = ProcessInfo.processInfo.environment["SCABO_DESCRIZIONI_REQUEST"] ?? "/tmp/scabo_descrizioni_request.json"
         guard let data = FileManager.default.contents(atPath: reqPath),
@@ -1462,6 +1466,10 @@ extension RealPdfBenchTests {
             vc.view.layoutIfNeeded()
             RunLoop.main.run(until: Date().addingTimeInterval(0.1))
         }
+        // Il flusso che la vista ha davvero (non quello chiesto): un cambio di Layout fallito non passa per buono.
+        let activeLayout = vc.currentLayoutForTesting
+        let layoutCode: String = activeLayout == .doctrine ? ReadingLayoutCode.doctrineInline.rawValue
+            : (activeLayout == .continuous ? ReadingLayoutCode.continuousReading.rawValue : "layout \(activeLayout.rawValue)")
         let text = vc.textContainerForTesting
         let spy = RecordingSignalPlayer()
         text.signalPlayer = spy
@@ -1517,11 +1525,22 @@ extension RealPdfBenchTests {
             rotorCounts[code] = members.count
             for m in members { membership[m, default: []].append(code) }
         }
+        // Quanti elementi ogni rotore dovrebbe raggiungere secondo il modello della vista: un rotore che si ferma prima della
+        // fine (una cella che non si materializza) è un rotore interrotto, non un libro con meno titoli.
+        var expected: [String: Int] = ["titoli": text.headingIndex.count]
+        for h in text.headingIndex { expected["titoli-\(h.level)", default: 0] += 1 }
+        for v in text.visualIndex { expected[v.kind == .table ? "tabelle" : "immagini", default: 0] += 1 }
+        for code in codes where (rotorCounts[code] ?? 0) != (expected[code] ?? 0) && !rotorIncomplete.contains(code) {
+            rotorIncomplete.append(code)
+        }
         // (3) Ogni elemento, in ordine, dalla cella materializzata; il fuoco in lettura lineare dal primo all'ultimo.
         _ = materialize(0)
-        var elements: [ReadingElementDescription] = []
-        elements.reserveCapacity(n)
+        struct Seen { var segmentId: String; var label: String; var value: String?; var role: String; var signal: String?
+                      var actions: [String]; var inText: Bool }
+        var seen: [Seen] = []
+        seen.reserveCapacity(n)
         var next = 0, screens = 0, orderOK = true, lastMaxY = -CGFloat.infinity, stuck = false
+        var otherLanguage = 0, withHint = 0, attributedDiffers = 0
         while next < n {
             screens += 1
             if screens > 4 * n + 100 { stuck = true; break }
@@ -1535,28 +1554,60 @@ extension RealPdfBenchTests {
                 lastMaxY = cell.frame.maxY
                 spy.played.removeAll()
                 cell.accessibilityElementDidBecomeFocused()
-                let rotors = membership[next] ?? []
-                let level = rotors.compactMap { $0.hasPrefix("titoli-") ? Int($0.dropFirst("titoli-".count)) : nil }.first
-                let inText = containersOK && cell.isAccessibilityElement && cell.isDescendant(of: cv) && !cell.isDescendant(of: bar)
-                elements.append(ReadingElementDescription(
-                    index: next, segmentId: cell.segment?.id ?? "", spokenText: cell.accessibilityLabel ?? "",
-                    value: cell.accessibilityValue, role: neutralRole(cell.accessibilityTraits), headingLevel: level,
-                    signal: ReadingElementDescription.signalCode(spy.played), rotors: rotors,
+                if cell.accessibilityLanguage != text.contentLanguage { otherLanguage += 1 }
+                if cell.accessibilityHint != nil { withHint += 1 }
+                if let attributed = cell.accessibilityAttributedLabel, attributed.string != (cell.accessibilityLabel ?? "") {
+                    attributedDiffers += 1
+                }
+                seen.append(Seen(
+                    segmentId: cell.segment?.id ?? "", label: cell.accessibilityLabel ?? "", value: cell.accessibilityValue,
+                    role: neutralRole(cell.accessibilityTraits), signal: ReadingElementDescription.signalCode(spy.played),
                     actions: (cell.accessibilityCustomActions ?? []).map(\.name),
-                    container: inText ? "testo" : "fuori dal contenitore del testo"))
+                    inText: containersOK && cell.isAccessibilityElement && cell.isDescendant(of: cv) && !cell.isDescendant(of: bar)))
                 next += 1
             }
             if next < n, materialize(next) == nil { stuck = true; break }
         }
+        // (4) Dove portano le azioni di navigazione (salti nota ↔ richiamo, «Salta la risorsa»): si ESEGUE il gestore vero
+        // dell'azione, partendo dall'elemento stesso, e si legge dove la vista ha portato la lettura. Le altre azioni (che
+        // aprono finestre) non si eseguono: nessun bersaglio.
+        var targets: [[Int?]] = seen.map { Array(repeating: nil, count: $0.actions.count) }
+        var executed = 0
+        for i in seen.indices where seen[i].actions.contains(where: { $0.hasPrefix("Vai ") || $0.hasPrefix("Salta ") }) {
+            guard let cell = materialize(i) else { stuck = true; break }
+            let actions = cell.accessibilityCustomActions ?? []
+            for (k, action) in actions.enumerated() where action.name.hasPrefix("Vai ") || action.name.hasPrefix("Salta ") {
+                text.goToElement(atIndex: i, focus: false)
+                _ = action.actionHandler?(action)
+                if k < targets[i].count { targets[i][k] = text.currentReadingElementIndex }
+                executed += 1
+            }
+        }
+        let elements = seen.enumerated().map { i, s in
+            ReadingElementDescription(
+                index: i, segmentId: s.segmentId, spokenText: s.label, value: s.value, role: s.role,
+                headingLevel: (membership[i] ?? []).compactMap { $0.hasPrefix("titoli-") ? Int($0.dropFirst("titoli-".count)) : nil }.first,
+                signal: s.signal, rotors: membership[i] ?? [], actions: s.actions, actionTargets: targets[i],
+                container: s.inText ? "testo" : "fuori dal contenitore del testo")
+        }
         let header = ReadingDescriptionHeader(
-            book: book, layout: flow == "di" ? ReadingLayoutCode.doctrineInline.rawValue : ReadingLayoutCode.continuousReading.rawValue,
-            noteSpokenLabels: text.currentReadingStyle?.noteSpokenLabels ?? false,
+            book: book, layout: layoutCode, noteSpokenLabels: text.currentReadingStyle?.noteSpokenLabels ?? false,
             voiceOverRunning: UIAccessibility.isVoiceOverRunning, elementCount: n, rotors: codes)
+        let wanted = flow == "di" ? LayoutId.doctrine : LayoutId.continuous
+        // Le anomalie del percorso fanno fallire il banco: una corsa con un'anomalia non è una corsa verde.
+        XCTAssertEqual(elements.count, n, "[vista] \(book) \(flow): elementi descritti")
+        XCTAssertFalse(stuck, "[vista] \(book) \(flow): percorso bloccato")
+        XCTAssertTrue(containersOK, "[vista] \(book) \(flow): contenitori non sigillati")
+        XCTAssertTrue(orderOK, "[vista] \(book) \(flow): ordine verticale")
+        XCTAssertTrue(rotorIncomplete.isEmpty, "[vista] \(book) \(flow): rotori interrotti \(rotorIncomplete)")
+        XCTAssertEqual(activeLayout, wanted, "[vista] \(book) \(flow): layout attivo")
         let walk: [String: Any] = [
             "libro": book, "flusso": flow, "elementi": n, "descritti": elements.count, "schermate": screens,
             "bloccato": stuck, "ordineVerticale": orderOK, "contenitoriSigillati": containersOK,
-            "rotoriPercorsi": rotorCounts, "rotoriInterrotti": rotorIncomplete, "lingua": text.contentLanguage,
-            "layoutAttivo": vc.currentLayoutForTesting.rawValue,
+            "rotoriPercorsi": rotorCounts, "rotoriAttesi": expected, "rotoriInterrotti": rotorIncomplete,
+            "linguaDellaVista": text.contentLanguage, "elementiInAltraLingua": otherLanguage,
+            "elementiConSuggerimento": withHint, "etichetteAttribuiteDiverse": attributedDiffers,
+            "azioniDiNavigazioneEseguite": executed, "layoutAttivo": activeLayout.rawValue, "layoutChiesto": wanted.rawValue,
         ]
         return (ReadingDescription(header: header, elements: elements), walk)
     }

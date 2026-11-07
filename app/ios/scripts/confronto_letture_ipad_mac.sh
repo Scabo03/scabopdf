@@ -8,7 +8,8 @@
 #   2. la VISTA VERA DELL'IPAD sul simulatore iPad Pro 11-inch (M5) con iOS 27, interrogata dentro il processo (banco
 #      `RealPdfBenchTests/test_readingViewDescriptionWalk_fromRequest`): il lettore come lo apre l'app, ogni libro percorso per
 #      intero senza tasti né VoiceOver (contenitori, rotori coi loro blocchi di ricerca, ogni elemento materializzato e messo a
-#      fuoco in lettura lineare) → le descrizioni di ciò che la vista ESPONE;
+#      fuoco in lettura lineare, i gestori delle azioni di navigazione eseguiti per sapere dove portano) → le descrizioni di ciò
+#      che la vista ESPONE, più i referti del percorso, giudicati (`generazioni/verifica_percorsi_vista.py`);
 #   3. la CATENA DEL MAC a innesto spento (`scabomac-officina catena --politica spenta`), passata nella fonte unica del parlato →
 #      le descrizioni di ciò che il Mac dirà per costruzione;
 #   4. `scabomac-officina confronta-descrizioni --al-byte`: per ogni libro e flusso coincidono o no, e se no la prima divergenza
@@ -109,6 +110,10 @@ fi
 [ "$ACCESO_PRIMA" = 0 ] && xcrun simctl shutdown "$UDID" >/dev/null 2>&1
 # xcodebuild riordina due righe del progetto: si ripristina SOLO se era pulito prima (mai modifiche altrui perse).
 [ "$PBX_PULITO" = 0 ] && ( cd "$REPO_ROOT" && git checkout -q -- "$PBX" )
+# Il giudice dei referti del percorso: una corsa con un flusso percorso a metà, un layout sbagliato o un rotore interrotto è rossa.
+"$PY" -I "$SCRIPT_DIR/generazioni/verifica_percorsi_vista.py" "$OUT/vista_ipad" > "$OUT/percorsi_vista.txt" 2>&1; rc=$?
+say "[2] referti del percorso: exit=$rc ($(head -1 "$OUT/percorsi_vista.txt"))"
+[ "$rc" = 0 ] || RC=1
 
 # ── 3. la catena del Mac, a innesto spento, nel modulo del parlato ──
 ( cd "$MAC" && swift build -c release --product scabomac-officina --scratch-path "$OUT/officina_build" ) > "$OUT/logs/officina_build.log" 2>&1; rc=$?
