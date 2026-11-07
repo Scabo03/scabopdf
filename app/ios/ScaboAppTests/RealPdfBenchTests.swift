@@ -1335,3 +1335,229 @@ extension RealPdfBenchTests {
         try sorted.encode(reports).write(to: URL(fileURLWithPath: req.outDir + "/andata_ritorno.json"))
     }
 }
+
+// MARK: - La vista di lettura vera, descritta da ciò che espone (giro «fondamenta della lettura per Mac», 2026-11-07)
+
+/// Richiesta del percorso della vista (`/tmp/scabo_descrizioni_request.json`; oppure SCABO_DESCRIZIONI_REQUEST passata come
+/// TEST_RUNNER_SCABO_DESCRIZIONI_REQUEST): `{"letture": [{"libro", "lettura", "impronta"}], "outDir", "flussi": ["lc", "di"],
+/// "noteAVoce": [false, true]}` (gli ultimi due facoltativi, predefiniti entrambi). `lettura` è la lettura nella forma della
+/// cache (`<stem>.lettura.json`), `impronta` lo SHA-256 del PDF d'origine (le cure mirate dei legami nota ↔ richiamo).
+private struct ViewDescriptionWalkRequest: Codable {
+    struct Book: Codable { let libro: String; let lettura: String; let impronta: String? }
+    let letture: [Book]
+    let outDir: String
+    var flussi: [String]? = nil
+    var noteAVoce: [Bool]? = nil
+}
+
+/// Registra i segnali che la vista chiede di suonare: nessun suono nei test (un earcon vero fa scattare in Xcode 27 la
+/// diagnosi lunga del simulatore).
+private final class RecordingSignalPlayer: SignalPlaying {
+    var played: [AudioSignal] = []
+    func play(_ signal: AudioSignal) { played.append(signal) }
+    func playLooping(_ signal: AudioSignal) {}
+    func stop(_ signal: AudioSignal) {}
+}
+
+extension RealPdfBenchTests {
+
+    /// LA VISTA DI LETTURA VERA, DESCRITTA DA CIÒ CHE ESPONE (giro «fondamenta della lettura per Mac», 2026-11-07): per ogni
+    /// lettura della richiesta, il lettore come lo apre l'app (`ContinuousReadingViewController` con il documento in libreria,
+    /// la sua impronta e l'impostazione «note annunciate a voce» nelle preferenze), in una finestra della scena dell'app, poi
+    /// il libro INTERO percorso senza tasti né VoiceOver: (1) i contenitori, dall'array di accessibilità della radice e dalla
+    /// gerarchia delle viste; (2) i rotori che VoiceOver troverebbe risalendo dalla cella, percorsi ciascuno dal primo
+    /// all'ultimo con il loro blocco di ricerca (lo stesso che chiama VoiceOver: scorre e materializza la cella bersaglio);
+    /// (3) ogni elemento, in ordine, materializzato dalla collezione che ricicla scorrendo una schermata alla volta, letto
+    /// dalle sue proprietà di accessibilità (etichetta, valore, tratti, azioni) e messo a fuoco col gancio di VoiceOver
+    /// (`accessibilityElementDidBecomeFocused`) in lettura lineare, per sentire quale segnale la vista chiede. Ne esce la
+    /// descrizione nella forma del modulo del parlato, da confrontare con quella del Mac (`scabomac-officina
+    /// confronta-descrizioni`). NON copre: VoiceOver vero (né il suo percorso, né le sue pause), gli annunci, la tastiera, la
+    /// barra, lo split, la Consultazione Rapida; la lingua degli elementi è nel referto del percorso, non nella descrizione.
+    /// Le uscite CONTENGONO TESTO dei volumi: solo nel laboratorio. `XCTSkip` senza richiesta.
+    @objc func test_readingViewDescriptionWalk_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_DESCRIZIONI_REQUEST"] ?? "/tmp/scabo_descrizioni_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(ViewDescriptionWalkRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta di descrizione della vista in \(reqPath).")
+        }
+        guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else {
+            throw XCTSkip("nessuna scena dell'app: il lettore non andrebbe a schermo")
+        }
+        let prefs = UserDefaultsKeyValueStore()
+        let savedSpoken = getStoredNoteSpokenLabels(prefs)
+        defer { setStoredNoteSpokenLabels(prefs, savedSpoken) }
+        UIView.setAnimationsEnabled(false)
+        defer { UIView.setAnimationsEnabled(true) }
+        let store = LibraryService.shared.store
+        for book in req.letture {
+            let reading = try JSONDecoder().decode(PackagedReading.self, from: Data(contentsOf: URL(fileURLWithPath: book.lettura)))
+            let pages = reading.pageMap.values.max() ?? 0
+            let doc = store.addDocument(title: "Descrizione della vista", sourceFileName: "descrizione.pdf",
+                                        sourcePageCount: pages, sourceSha256: book.impronta)
+            defer { store.deleteDocumentFromArchive(id: doc.id) }
+            for spoken in req.noteAVoce ?? [false, true] {
+                setStoredNoteSpokenLabels(prefs, spoken)
+                for flow in req.flussi ?? ["lc", "di"] where flow == "lc" || reading.doctrineContent != nil {
+                    try autoreleasepool {
+                        let t0 = Date()
+                        let (description, walk) = try walkReadingView(
+                            reading: reading, documentId: doc.id, pages: pages, flow: flow, book: book.libro, scene: scene)
+                        let base = req.outDir + "/\(book.libro).\(flow).n\(spoken ? 1 : 0)"
+                        try FileManager.default.createDirectory(atPath: (base as NSString).deletingLastPathComponent,
+                                                                withIntermediateDirectories: true)
+                        try description.encoded().write(to: URL(fileURLWithPath: base + ".jsonl"))
+                        var report = walk
+                        report["secondi"] = (Date().timeIntervalSince(t0) * 10).rounded() / 10
+                        try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys, .prettyPrinted])
+                            .write(to: URL(fileURLWithPath: base + ".percorso.json"))
+                        print(String(format: "[vista] %@ %@ n%d: %d elementi, %.1f s", book.libro, flow, spoken ? 1 : 0,
+                                     description.elements.count, Date().timeIntervalSince(t0)))
+                    }
+                }
+            }
+        }
+    }
+
+    /// Il codice neutro di un rotore di UIKit (il vocabolario di `ReadingRotor.code`, ricostruito qui dal lato UIKit).
+    private func neutralRotorCode(_ rotor: UIAccessibilityCustomRotor) -> String {
+        switch rotor.systemRotorType {
+        case .heading: return "titoli"
+        case .headingLevel1: return "titoli-1"
+        case .headingLevel2: return "titoli-2"
+        case .headingLevel3: return "titoli-3"
+        case .headingLevel4: return "titoli-4"
+        case .headingLevel5: return "titoli-5"
+        case .headingLevel6: return "titoli-6"
+        case .table: return "tabelle"
+        case .image: return "immagini"
+        case .none: return rotor.name == "Risultati della ricerca" ? "risultati-ricerca" : "rotore «\(rotor.name)»"
+        default: return "rotore di sistema \(rotor.systemRotorType.rawValue)"
+        }
+    }
+
+    /// Il ruolo neutro dai tratti UIKit (il vocabolario di `ReadingElementRole`, ricostruito qui dal lato UIKit).
+    private func neutralRole(_ traits: UIAccessibilityTraits) -> String {
+        traits == .staticText ? "testo statico" : "tratti \(String(traits.rawValue, radix: 16))"
+    }
+
+    /// Un flusso del lettore vero, percorso per intero (vedi `test_readingViewDescriptionWalk_fromRequest`).
+    private func walkReadingView(
+        reading: PackagedReading, documentId: String, pages: Int, flow: String, book: String, scene: UIWindowScene
+    ) throws -> (ReadingDescription, [String: Any]) {
+        let quiet = RecordingSignalPlayer()
+        let pageMap = reading.pageMap
+        let vc = ContinuousReadingViewController(
+            content: reading.content, sourceName: "Descrizione della vista", documentId: documentId,
+            initialReadingPosition: 0, sourcePageCount: pages, showOriginalPages: false,
+            sourcePage: { id in pageMap[id] ?? pageMap[ContinuousReadingView.baseNodeId(id)] },
+            doctrineContent: reading.doctrineContent, quickConsultTree: reading.quickConsultTree, signalPlayer: quiet)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = vc
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true; window.rootViewController = nil }
+        vc.view.layoutIfNeeded()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.15))
+        if flow == "di" {
+            vc.switchLayoutForTesting(to: .doctrine)
+            vc.view.layoutIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        }
+        let text = vc.textContainerForTesting
+        let spy = RecordingSignalPlayer()
+        text.signalPlayer = spy
+        guard let cv = text.subviews.compactMap({ $0 as? UICollectionView }).first else {
+            XCTFail("[vista] \(book): nessuna collezione nel contenitore del testo")
+            throw XCTSkip("contenitore del testo senza collezione")
+        }
+        // (1) I contenitori: la radice espone SOLO il contenitore del testo (il sigillo, LAYER2 § 2.3), che è un contenitore
+        // e non un elemento; la barra è un oggetto distinto, fuori dall'array della radice.
+        let rootElements = (vc.view.accessibilityElements ?? []).map { $0 as AnyObject }
+        let bar = vc.interfaceContainerForTesting
+        let rootIsTextOnly = rootElements.count == 1 && rootElements[0] === text
+        let containersOK = rootIsTextOnly && !text.isAccessibilityElement && !cv.isAccessibilityElement
+            && !rootElements.contains { $0 === bar } && cv.isDescendant(of: text) && !text.isDescendant(of: bar)
+        let n = cv.numberOfItems(inSection: 0)
+        func materialize(_ i: Int) -> SegmentCell? {
+            let ip = IndexPath(item: i, section: 0)
+            cv.scrollToItem(at: ip, at: .top, animated: false)
+            cv.layoutIfNeeded()
+            return cv.cellForItem(at: ip) as? SegmentCell
+        }
+        // (2) I rotori che VoiceOver trova risalendo dalla prima cella, ognuno percorso con il suo blocco di ricerca.
+        var installed: [UIAccessibilityCustomRotor] = []
+        if n > 0, let first = materialize(0) {
+            var v: UIView? = first
+            while let cur = v { installed += cur.accessibilityCustomRotors ?? []; v = cur.superview }
+        }
+        let codes = installed.map(neutralRotorCode)
+        var membership: [Int: [String]] = [:]
+        var rotorCounts: [String: Int] = [:]
+        var rotorIncomplete: [String] = []
+        for (rotor, code) in zip(installed, codes) {
+            var members: [Int] = []
+            if n > 1, let second = materialize(1) {
+                let p = UIAccessibilityCustomRotorSearchPredicate()
+                p.searchDirection = .previous
+                p.currentItem = UIAccessibilityCustomRotorItemResult(targetElement: second, targetRange: nil)
+                if let cell = rotor.itemSearchBlock(p)?.targetElement as? SegmentCell, cell.readingIndex == 0 { members.append(0) }
+            }
+            if n > 0, var current = materialize(0) {
+                while members.count <= n {
+                    let p = UIAccessibilityCustomRotorSearchPredicate()
+                    p.searchDirection = .next
+                    p.currentItem = UIAccessibilityCustomRotorItemResult(targetElement: current, targetRange: nil)
+                    guard let result = rotor.itemSearchBlock(p) else { break }
+                    guard let cell = result.targetElement as? SegmentCell, cell.readingIndex > (members.last ?? -1) else {
+                        rotorIncomplete.append(code); break
+                    }
+                    members.append(cell.readingIndex)
+                    current = cell
+                }
+            }
+            rotorCounts[code] = members.count
+            for m in members { membership[m, default: []].append(code) }
+        }
+        // (3) Ogni elemento, in ordine, dalla cella materializzata; il fuoco in lettura lineare dal primo all'ultimo.
+        _ = materialize(0)
+        var elements: [ReadingElementDescription] = []
+        elements.reserveCapacity(n)
+        var next = 0, screens = 0, orderOK = true, lastMaxY = -CGFloat.infinity, stuck = false
+        while next < n {
+            screens += 1
+            if screens > 4 * n + 100 { stuck = true; break }
+            let visible = Set(cv.indexPathsForVisibleItems.map(\.item))
+            guard visible.contains(next) else {
+                if materialize(next) == nil { stuck = true; break }
+                continue
+            }
+            while next < n, visible.contains(next), let cell = cv.cellForItem(at: IndexPath(item: next, section: 0)) as? SegmentCell {
+                if cell.frame.minY < lastMaxY - 0.5 { orderOK = false }
+                lastMaxY = cell.frame.maxY
+                spy.played.removeAll()
+                cell.accessibilityElementDidBecomeFocused()
+                let rotors = membership[next] ?? []
+                let level = rotors.compactMap { $0.hasPrefix("titoli-") ? Int($0.dropFirst("titoli-".count)) : nil }.first
+                let inText = containersOK && cell.isAccessibilityElement && cell.isDescendant(of: cv) && !cell.isDescendant(of: bar)
+                elements.append(ReadingElementDescription(
+                    index: next, segmentId: cell.segment?.id ?? "", spokenText: cell.accessibilityLabel ?? "",
+                    value: cell.accessibilityValue, role: neutralRole(cell.accessibilityTraits), headingLevel: level,
+                    signal: ReadingElementDescription.signalCode(spy.played), rotors: rotors,
+                    actions: (cell.accessibilityCustomActions ?? []).map(\.name),
+                    container: inText ? "testo" : "fuori dal contenitore del testo"))
+                next += 1
+            }
+            if next < n, materialize(next) == nil { stuck = true; break }
+        }
+        let header = ReadingDescriptionHeader(
+            book: book, layout: flow == "di" ? ReadingLayoutCode.doctrineInline.rawValue : ReadingLayoutCode.continuousReading.rawValue,
+            noteSpokenLabels: text.currentReadingStyle?.noteSpokenLabels ?? false,
+            voiceOverRunning: UIAccessibility.isVoiceOverRunning, elementCount: n, rotors: codes)
+        let walk: [String: Any] = [
+            "libro": book, "flusso": flow, "elementi": n, "descritti": elements.count, "schermate": screens,
+            "bloccato": stuck, "ordineVerticale": orderOK, "contenitoriSigillati": containersOK,
+            "rotoriPercorsi": rotorCounts, "rotoriInterrotti": rotorIncomplete, "lingua": text.contentLanguage,
+            "layoutAttivo": vc.currentLayoutForTesting.rawValue,
+        ]
+        return (ReadingDescription(header: header, elements: elements), walk)
+    }
+}
