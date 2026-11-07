@@ -10,7 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
-> Versione: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti, **CONCLUSO**: **prima parte con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); **seconda parte con la build 64** su TestFlight (sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; i tre documenti del giro diventano volumi stabili della rete dei documenti di studio). Vedi i due STATO qui sotto.)
+> Versione: 2.54 (7 novembre 2026, giro «fondamenta della lettura per Mac», livello di verifica medio, iOS 27, nessuna build, **CONCLUSO**: le decisioni del maintainer sulla lettura per Mac in LAYER2 § 12.16 e lo studio nel repo; la fonte unica del parlato in ScaboCore, usata dalla vista dell'iPad; la rete sul parlato e il confronto automatico fra la lettura dell'iPad e quella del Mac, identiche sui 52 volumi e sui tre documenti di studio. Vedi lo STATO qui sotto.) Versione precedente: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti, **CONCLUSO**: **prima parte con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); **seconda parte con la build 64** su TestFlight (sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; i tre documenti del giro diventano volumi stabili della rete dei documenti di studio). Vedi i due STATO qui sotto.)
 > Versione: 2.52 (6 novembre 2026, giro «cure mirate per lo studio», livello di verifica pieno, **CONCLUSO** con la **build 62** su TestFlight: due documenti di studio del maintainer curati con regole accese solo dalla loro impronta (registro `TargetedCures`, LAYER2 § 0-ter, `docs/CURE_MIRATE.md`), letture di tutti i 52 volumi del banco identiche al byte su iOS 26.5 e 27, offerta «Lettura migliore disponibile» solo ai due documenti; prova alla cieca su un volume ignoto, giudicato senza cure. Ambiente: Xcode 27.2. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.51 (20 ottobre 2026, giro «ricerca nella libreria», livello di verifica leggero, **CONCLUSO** con la **build 61** su TestFlight: dal tab Ricerca della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla»/«Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; le frasi del Mac nominano iPad e iPhone. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.50 (18-19 ottobre 2026, giro «accessibilità e completamento», **CONCLUSO** con la **build 59** su TestFlight (VALID, note per i tester impostate): **l'ordine di lettura segue l'importanza** in ogni schermata con le schede (titolo, poi le tre schede, poi i comandi, poi il contenuto; prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime e sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero nei test d'interfaccia da iOS 27 (`XCUIDevice.voiceOverService`); **salto fra nota e richiamo** per 8.879 delle 9.030 note differite (1.224 → 151 senza salto, ogni legame nuovo verificato contro la pagina stampata; INBOX D.16); **lacune WCAG di livello A chiuse**: tastiera nello split e ⌘J (2.1.1/2.1.2, con due difetti preesistenti curati: ⌘= impossibile dalla tastiera italiana, menu degli strumenti che Esc non chiudeva sull'iPad), lingua dell'interfaccia dichiarata e lingua del documento ricavata (3.1.1); le due voci rosse dell'audit sull'iPad spiegate (barra delle schede di sistema, testo sotto un foglio) e accettate con condizioni e un tetto, dichiarate; letture identiche al byte alla build 58 su entrambe le generazioni. Vedi STATO del 2026-10-18 sera)
@@ -95,22 +95,57 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - **Rete delle cure mirate in ogni giro (dal 2026-11-06).** Finché il registro delle cure mirate (`ScaboCore/TargetedCures.swift`,
   `docs/CURE_MIRATE.md`) ha voci, ogni giro che tocca la catena esegue `app/ios/scripts/rete_cure_mirate.sh <etichetta>`: i
   documenti curati non sono fra i 52 del banco, e solo questa rete si accorge se una modifica del tronco cambia la loro lettura.
+- **Rete sul parlato in ogni giro che tocca la lettura (dal 2026-11-07).** Ciò che VoiceOver dice di ogni elemento viene da
+  una fonte sola (ScaboCore `ReadingSpeech`); ogni giro che tocca la vista di lettura, il parlato, i rotori, le azioni o i
+  segnali esegue `app/ios/scripts/rete_parlato.sh <etichetta>` (letture e riferimento congelati nel laboratorio), con `--vista`
+  se tocca la vista dell'iPad; il lavoro sulla lettura del Mac si misura con `app/ios/scripts/confronto_letture_ipad_mac.sh`.
 - Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
   commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
   solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
 
 ---
 
-## ▶ STATO — Giro «fondamenta della lettura per Mac»: decisioni del 20 ottobre, studio nel repo, fonte unica del parlato, confronto automatico iPad-Mac (nessuna build) — 2026-11-07 — IN CORSO
+## ▶ STATO — Giro «fondamenta della lettura per Mac»: decisioni del 20 ottobre, studio nel repo, fonte unica del parlato, confronto automatico iPad-Mac (nessuna build) — 2026-11-07
 
-**Partenza:** `56aaafe` (main = origin, build 64 VALID). **Ramo:** `feat/mac-lettura-fondamenta`. Livello di verifica
-medio, iOS 27 soltanto. Laboratorio `~/Developer/scabopdf-gen-lab/fondamenta_mac/`.
+**Partenza:** `56aaafe` (main = origin, build 64 VALID). **Ramo:** `feat/mac-lettura-fondamenta`, fuso in main in avanti
+veloce e cancellato in locale e su origin. Livello di verifica medio, iOS 27 soltanto; nessuna build (la prossima resta la
+65). Laboratorio `~/Developer/scabopdf-gen-lab/fondamenta_mac/`, referto `referto/REFERTO_FONDAMENTA_LETTURA_MAC.md`.
 
-- **Parte 1 — decisioni e studio** (fatta): le cinque decisioni del maintainer del 2026-10-20 sulla lettura per Mac in
-  LAYER2 § 12.16 (rimando da § 12.12); lo studio su VoiceOver di macOS in `docs/STUDIO_LETTURA_MAC.md`, con le decisioni
-  in testa e una riga «Superato» in ognuna delle 13 parti superate (il resto identico al laboratorio); rimando in MAC_BASE § 7.
-- **Parte 2 — fonte unica del parlato**: in corso.
-- **Parte 3 — confronto automatico fra la lettura dell'iPad e quella del Mac**: da fare.
+- **Decisioni e studio**: le cinque decisioni del maintainer del 20 ottobre sulla lettura per Mac in LAYER2 § 12.16, alla
+  lettera, con l'esito del giro; lo studio in `docs/STUDIO_LETTURA_MAC.md` con le decisioni in testa e una riga «Superato» in
+  ognuna delle 13 parti superate (tolte le aggiunte, identico al byte all'originale del laboratorio); rimandi in MAC_BASE.
+- **La fonte unica del parlato**: ScaboCore `ReadingSpeech.swift` (importa solo Foundation): etichetta, qualifiche dei
+  titoli, intro delle note e sua soppressione col segnale, rinfresco, segnali al fuoco, ruolo, rotori e appartenenza, valori,
+  azioni con nome, ordine e bersaglio, salto da tastiera e la sua frase; l'identità dei segnali (`AudioSignal`). La vista
+  dell'iPad lo usa e non ha più parole proprie. `ReadingSpeechModel.describe` dà la descrizione neutra di ogni elemento
+  (formato 2, a righe JSON). Perimetro: Lettura Continua e Dottrina Inline; la Consultazione Rapida ha ancora le sue
+  etichette (residuo: allinearle cambierebbe ciò che si pronuncia).
+- **Rete sul parlato** (nuova, regola fissa): `app/ios/scripts/rete_parlato.sh <etichetta> [--vista] [--solo STEM]`, letture e
+  riferimento congelati in `~/Developer/scabopdf-gen-lab/parlato/`. Vista di prima (HEAD di partenza, gestori dei salti
+  eseguiti) ↔ modulo: 192/192 descrizioni identiche al byte, 630.124 elementi dei 52 volumi del banco e dei tre documenti di
+  studio, Lettura Continua e Dottrina Inline, «note a voce» spenta e accesa, 142.930 bersagli dei salti compresi; prova al
+  contrario rossa (qualifica del livello 3: 144 file; segnale del regime SHORT: 57). A VoiceOver acceso il riferimento viene
+  dal modulo (nei test la vista ha VoiceOver spento). Sulla HEAD finale: verde in 88 s; con `--vista` su un libro, verde.
+- **Confronto automatico iPad-Mac**: ScaboCore `ReadingDescriptionComparison` (prima divergenza col tipo, conteggi, libro
+  intero, allineamento per identità), `scabomac-officina descrivi | catena --descrizioni | confronta-descrizioni`, banco della
+  vista vera `RealPdfBenchTests.test_readingViewDescriptionWalk_fromRequest` (il lettore come lo apre l'app, percorso per
+  intero senza tasti: contenitori, rotori coi loro blocchi di ricerca, ogni elemento materializzato e messo a fuoco, i gestori
+  dei salti eseguiti), giudice dei referti `scripts/generazioni/verifica_percorsi_vista.py`, script
+  `app/ios/scripts/confronto_letture_ipad_mac.sh`. Esito sulla HEAD finale: vista vera dell'iPad ↔ catena del Mac a innesto
+  spento, 192/192 identiche al byte, 630.124 elementi; referti 192 senza anomalie; prove al contrario rosse sui dati veri (un
+  elemento tolto, un rotore, un'azione) e sulla vista alterata di proposito (16 testi, 103 bersagli).
+- **Revisione indipendente**: 14 rilievi, nessuno bloccante; corretti R1-R3 (la rete anche sulla vista, i bersagli delle
+  azioni, il percorso severo coi referti giudicati), R5, R7-R11, R13-R14; R4 (Consultazione Rapida) residuo dichiarato; R6
+  coperto in parte (VoiceOver acceso nella rete; segnalibro, ricerca e granularità 600/900 nei test d'unità); R12 questo STATO.
+- **Verifiche sul codice finale** (iOS 27): letture della catena dell'iPad e del runner identiche al byte alla build 64 (55 e
+  260 file; Marotta identico; risorse visive 110/110 al posto); `rete_cure_mirate.sh` verde con `SCABO_GENS="27.0:ios27"`
+  (nuova variabile, predefinite le due generazioni); rete sulle annotazioni non necessaria (identificativi, ordine e testo dei
+  segmenti invariati); ScaboCore 1.082/0; ScaboMac 68/0 (3 saltati col loro motivo); app e interfaccia su iPhone 233 e 42, su
+  iPad 233 e 42, 0 falliti, audit di accessibilità compresi (saltati i banchi a richiesta e, sull'iPhone, 2 test che dipendono
+  dal dispositivo).
+- **Prossima tappa**: lo scheletro dell'app di lettura del Mac (referto § 6: nello stesso pacchetto ScaboMac, gruppo del testo
+  con elementi foglia, rotori e azioni dal modulo duplicati nei menu, annuncio a voce delle note; terza fonte del confronto
+  descritta dentro il processo). Due decisioni al maintainer nel referto § 8.
 
 ## ▶ STATO — Giro «rifiniture e cure per capacità», seconda parte: cure per capacità dai difetti del volume della prova alla cieca, offerta a tutti e soli i libri che cambiano, build 64 — 2026-11-07
 
