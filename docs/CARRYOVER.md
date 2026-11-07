@@ -101,6 +101,17 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Giro «fondamenta della lettura per Mac»: decisioni del 20 ottobre, studio nel repo, fonte unica del parlato, confronto automatico iPad-Mac (nessuna build) — 2026-11-07 — IN CORSO
+
+**Partenza:** `56aaafe` (main = origin, build 64 VALID). **Ramo:** `feat/mac-lettura-fondamenta`. Livello di verifica
+medio, iOS 27 soltanto. Laboratorio `~/Developer/scabopdf-gen-lab/fondamenta_mac/`.
+
+- **Parte 1 — decisioni e studio** (fatta): le cinque decisioni del maintainer del 2026-10-20 sulla lettura per Mac in
+  LAYER2 § 12.16 (rimando da § 12.12); lo studio su VoiceOver di macOS in `docs/STUDIO_LETTURA_MAC.md`, con le decisioni
+  in testa e una riga «Superato» in ognuna delle 13 parti superate (il resto identico al laboratorio); rimando in MAC_BASE § 7.
+- **Parte 2 — fonte unica del parlato**: in corso.
+- **Parte 3 — confronto automatico fra la lettura dell'iPad e quella del Mac**: da fare.
+
 ## ▶ STATO — Giro «rifiniture e cure per capacità», seconda parte: cure per capacità dai difetti del volume della prova alla cieca, offerta a tutti e soli i libri che cambiano, build 64 — 2026-11-07
 
 **Partenza:** `2bb0adc` (main dopo la build 63). **Ramo:** `feat/cure-capacita-titoli-ignoto-c` (nome neutro: quello del

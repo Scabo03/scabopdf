@@ -224,6 +224,6 @@ Vedi il referto del giro per i numeri finali. Impronte prima/dopo dei file di pr
 ## 7. Decisioni che spettano al maintainer (da questo documento)
 
 - **Riferimento delle reti**: restare su iOS 26.5, passare a iOS 27, o tenere due fotografie. Blocca ogni giudizio futuro sulla lettura.
-- **Forma della lettura su Mac**: Catalyst (prova a orecchio sulla build nel laboratorio) o nativa.
+- **Forma della lettura su Mac**: Catalyst (prova a orecchio sulla build nel laboratorio) o nativa. → **Decisa il 2026-10-20**: app nativa separata dall'officina, a tappe, Catalyst solo strumento di laboratorio (`LAYER2_PRODUCT_DECISIONS.md` § 12.16; studio in `docs/STUDIO_LETTURA_MAC.md`).
 - **Record App Store**: aggiungere macOS al record di ScaboPDF (irreversibile dopo l'approvazione) o record separato.
 - **Identità da contenuto**: aggiungere l'impronta SHA-256 ad `ArchivedDocument` (additivo; un giro piccolo).
