@@ -7,8 +7,8 @@
 > elaborato completo in un file da aprire; niente canale iCloud). L'identità da contenuto proposta al § 4.6 è **realizzata**
 > (build 52, `ArchivedDocument.sourceSha256`). Il riferimento delle reti del § 7 è **deciso**: doppio, iOS 27 principale e
 > iOS 26.5 secondario (2026-10-06). Il riconoscimento della struttura è **deciso**: Heron di docling in Core ML, incorporato
-> (`app/ios/ScaboPageStructure`, giri del 2026-10-12). Restano aperte la forma della lettura su Mac (Catalyst o nativa) e il
-> record App Store. Lo stato corrente della linea Mac è nella sezione STATO del 2026-10-16 di `CARRYOVER.md`.
+> (`app/ios/ScaboPageStructure`, giri del 2026-10-12). La forma della lettura su Mac è **decisa** il 2026-10-20 (§ 7,
+> `LAYER2_PRODUCT_DECISIONS.md` § 12.16); resta aperto il record App Store. Lo stato corrente della linea Mac è nella sezione STATO del 2026-10-16 di `CARRYOVER.md`.
 
 > Giro «linea Mac» del 2026-10-05/06, HEAD di partenza `9d65fef` (main = origin/main, build 45 su TestFlight).
 > Documento privo di contenuto dei volumi: solo nomi di volumi, conteggi, indici e impronte.

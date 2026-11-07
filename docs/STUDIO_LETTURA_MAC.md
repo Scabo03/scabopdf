@@ -7,8 +7,13 @@
 > rapporti di ricerca, la copia del dizionario AppleScript e la revisione indipendente restano nel laboratorio
 > (`~/Developer/scabopdf-mac-lab/lettura_mac/`): dove il testo dice «accanto a questo file», s'intende là. Le decisioni
 > sono registrate anche in `docs/LAYER2_PRODUCT_DECISIONS.md` § 12.16.
+>
+> **Realizzato nel giro del 2026-11-07:** la fonte unica del parlato (ScaboCore `ReadingSpeech`) e lo strato 1 del confronto
+> automatico di § 5 (la Tappa 1 di § 6.3), nel repo e in Swift invece che in Python nel laboratorio: la vista vera dell'iPad,
+> interrogata in un test, e la catena del Mac passata nel modulo danno descrizioni identiche sui libri del banco. Vedi
+> `docs/CARRYOVER.md`, STATO del 2026-11-07.
 
-Il 20 ottobre, letto lo studio, il maintainer ha deciso:
+Il 20 ottobre il maintainer ha deciso:
 
 1. **La lettura sul Mac è un'app nativa separata dall'officina, costruita a tappe; Catalyst resta solo uno strumento di
    laboratorio.**
@@ -23,17 +28,17 @@ Il 20 ottobre, letto lo studio, il maintainer ha deciso:
 
 **Parti dello studio che ne risultano superate** (nel corpo ciascuna porta una riga «Superato»):
 
-- dalla decisione 1: in § 6.3 l'ipotesi di Catalyst come ponte in TestFlight per Mac (Catalyst resta solo strumento di
-  laboratorio, non prodotto nemmeno di passaggio). La raccomandazione di § 6.1 sulla destinazione nativa è confermata.
+- dalla decisione 1: in § 6.3 l'ipotesi di Catalyst come ponte in TestFlight per Mac (Catalyst resta solo uno strumento di
+  laboratorio).
 - dalla decisione 2: in § 1.2 il «requisito perentorio» di nessun gruppo annidato dentro il testo e, in § 4 (premessa
   comune), i «figli tutti foglie»; in § 6.2 il punto 1, dove tratta la navigazione per contenitori come un
   ostacolo in sé.
 - dalla decisione 3: la Forma C (§ 4.3) come tappa e come destinazione, con la sua colonna in § 4.4, la seconda metà di
   § 6.1 («e poi Forma C») e la Tappa 4 di § 6.3; la domanda d'orecchio n. 1 di § 6.6, ora decisa; il residuo n. 4 di § 8.
-- dalla decisione 4: la domanda d'orecchio n. 2 di § 6.6, ora decisa: l'intro parlata è il ripiego e il punto di
-  partenza, la soluzione acustica vera resta da cercare.
+- dalla decisione 4: la domanda d'orecchio n. 2 di § 6.6, ora decisa: l'annuncio a voce è il ripiego e il punto di
+  partenza; per le note si cercherà una soluzione acustica vera.
 - dalla decisione 5: in § 5, strato 3, la lettura di `last phrase` di VoiceOver via AppleScript come eccezione
-  autorizzabile; il residuo n. 8 di § 8. Le conclusioni di § 2.3-2.5 sono confermate.
+  autorizzabile; il residuo n. 8 di § 8.
 
 
 Giro di studio del 2026-10-20, senza costruzione. Repo letto in sola lettura a `2c935be` (main, albero pulito all'inizio e alla

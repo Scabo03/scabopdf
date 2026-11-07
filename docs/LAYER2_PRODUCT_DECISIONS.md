@@ -1401,21 +1401,28 @@ Decisioni del maintainer per l'ultimo giro su titoli e testatine prima della fas
 
 ### 12.16 La lettura sul Mac: cinque decisioni del maintainer (2026-10-20)
 
-Decisioni del maintainer del 2026-10-20, prese dopo lo studio su VoiceOver di macOS chiesto dalla decisione 4 del
-2026-10-16 (§ 12.12) e registrate all'apertura del giro «fondamenta della lettura per Mac» (2026-11-07). Lo studio è in
-`docs/STUDIO_LETTURA_MAC.md`: in testa riporta queste decisioni e indica le sue parti che ne risultano superate.
+Decisioni del maintainer del 20 ottobre 2026 sulla lettura per Mac, registrate all'apertura del giro «fondamenta della lettura
+per Mac» (2026-11-07). Lo studio su VoiceOver di macOS chiesto dalla decisione 4 del 2026-10-16 (§ 12.12) è in
+`docs/STUDIO_LETTURA_MAC.md`, che in testa riporta queste decisioni e indica le sue parti superate.
 
-1. **Un'app nativa, separata dall'officina, costruita a tappe.** La lettura sul Mac è un'app nativa per macOS, separata
-   dall'officina che prepara i libri, e si costruisce a tappe. Catalyst resta solo uno strumento di laboratorio.
-2. **I contenitori si tengono dove migliorano la funzionalità e l'efficienza dell'app.** Navigare i contenitori è parte
-   normale di VoiceOver sul Mac, anche nelle impostazioni di sistema, e non è un ostacolo in più: si evitano solo gli
-   annidamenti che non servono a nulla.
-3. **Nessuna lettura per frasi e righe.** Gli elementi della lettura sono i blocchi dei quattro livelli di granularità
-   attuali, 400, 600, 900 e 1200 caratteri (§ 7.6, § 7.7), senza frammentazioni ulteriori. La tappa «righe e frasi come in
-   Pages» esce dal piano.
-4. **Per le note si cercherà una soluzione acustica vera.** L'annuncio a voce, che sull'iPad esiste già come opzione «note
+1. La lettura sul Mac è **un'app nativa separata dall'officina, costruita a tappe**; Catalyst resta solo uno strumento di
+   laboratorio.
+2. I **contenitori si tengono dove migliorano la funzionalità e l'efficienza dell'app**: navigarli è parte normale di VoiceOver
+   sul Mac, anche nelle impostazioni di sistema, e non è un ostacolo in più; si evitano solo gli annidamenti che non servono a
+   nulla.
+3. **Nessuna lettura per frasi e righe**: gli elementi sono i blocchi dei quattro livelli di granularità attuali, 400, 600, 900 e
+   1200 caratteri (§ 7.6, § 7.7), senza frammentazioni ulteriori; la tappa «righe e frasi come in Pages» esce dal piano.
+4. Per le note si cercherà **una soluzione acustica vera**; l'annuncio a voce, che sull'iPad esiste già come opzione «note
    annunciate a voce», è il ripiego e il punto di partenza.
-5. **Comandi e script personalizzati di VoiceOver non si perseguono**: è una via chiusa per un'app pubblicabile.
+5. **Comandi e script personalizzati di VoiceOver non si perseguono**: via chiusa per un'app pubblicabile.
+
+**Esito del giro (2026-11-07, nessuna build).** Il giro non costruisce ancora la lettura del Mac: ne posa le fondamenta. Ciò che
+VoiceOver dice di ogni elemento della lettura ha ora **una fonte sola** nel codice condiviso da iPad e Mac (ScaboCore,
+`ReadingSpeech`): la vista dell'iPad la usa e non ha più parole proprie, la lettura del Mac la userà per costruzione. E il
+**confronto fra la lettura dell'iPad e quella del Mac lo fa Code**: uno strumento prende le due descrizioni complete di un libro e
+dice se coincidono, o la prima divergenza e il suo tipo. Sui 52 volumi del banco e sui tre documenti di studio la vista vera
+dell'iPad e la catena del Mac danno la stessa lettura, elemento per elemento, salti compresi. Dettagli: `docs/STUDIO_LETTURA_MAC.md`
+(testa) e `docs/CARRYOVER.md`, STATO del 2026-11-07.
 
 ---
 
