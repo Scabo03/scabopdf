@@ -119,9 +119,9 @@ final class MotorAccessibilityTests: XCTestCase {
 
     func test_noteLabel_stripsIntroByDefault_restoresWhenOptionOn() {
         let seg = noteSegment()
-        let stripped = ContinuousReadingView.intendedAccessibilityLabel(for: seg, restoreNoteIntro: false)
+        let stripped = ReadingSpeech.intendedAccessibilityLabel(for: seg, restoreNoteIntro: false)
         XCTAssertFalse(stripped.contains("Nota."), "di default l'intro è portata dall'earcon, non dal parlato")
-        let restored = ContinuousReadingView.intendedAccessibilityLabel(for: seg, restoreNoteIntro: true)
+        let restored = ReadingSpeech.intendedAccessibilityLabel(for: seg, restoreNoteIntro: true)
         XCTAssertTrue(restored.contains("Nota."), "con l'opzione, l'identità della nota torna nel testo")
     }
 

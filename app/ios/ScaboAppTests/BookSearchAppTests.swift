@@ -79,14 +79,14 @@ final class BookSearchAppTests: XCTestCase {
         defer { w.isHidden = true }
         let segs = book()
         view.render(segs)
-        XCTAssertFalse(view.customRotorNamesForTesting.contains(ContinuousReadingView.searchRotorName))
+        XCTAssertFalse(view.customRotorNamesForTesting.contains(ReadingSpeech.searchRotorName))
         let corpus = BookSearchCorpus(segments: segs)
         view.setSearchResult(corpus.search("faro"), highlighter: nil)
         XCTAssertEqual(view.customRotorNamesForTesting.first, "Risultati della ricerca")
         view.setSearchResult(corpus.search("nessunaparola"), highlighter: nil)
-        XCTAssertFalse(view.customRotorNamesForTesting.contains(ContinuousReadingView.searchRotorName), "zero risultati: niente rotore")
+        XCTAssertFalse(view.customRotorNamesForTesting.contains(ReadingSpeech.searchRotorName), "zero risultati: niente rotore")
         view.setSearchResult(nil, highlighter: nil)
-        XCTAssertFalse(view.customRotorNamesForTesting.contains(ContinuousReadingView.searchRotorName))
+        XCTAssertFalse(view.customRotorNamesForTesting.contains(ReadingSpeech.searchRotorName))
     }
 
     func test_readingView_rotorAndKeys_stopOnEveryElementWithResults_inOrder_withoutDeadEnds() {
@@ -182,7 +182,7 @@ final class BookSearchAppTests: XCTestCase {
         vc.endSearchForTesting()
         XCTAssertFalse(session.isActive)
         XCTAssertTrue(vc.interfaceContainerForTesting.nextResultButton.isHidden)
-        XCTAssertFalse(view.customRotorNamesForTesting.contains(ContinuousReadingView.searchRotorName))
+        XCTAssertFalse(view.customRotorNamesForTesting.contains(ReadingSpeech.searchRotorName))
         XCTAssertEqual(view.currentOrTopIndex, 2, "chiudere la ricerca non sposta la lettura")
     }
 
@@ -876,7 +876,7 @@ final class LibrarySearchAppTests: XCTestCase {
         while Date() < back, vc.presentedViewController != nil { RunLoop.main.run(until: Date().addingTimeInterval(0.1)) }
         RunLoop.main.run(until: Date().addingTimeInterval(0.6))
         XCTAssertTrue(session.isActive, "nella lettura la ricerca è attiva")
-        XCTAssertTrue(vc.textContainerForTesting.customRotorNamesForTesting.contains(ContinuousReadingView.searchRotorName),
+        XCTAssertTrue(vc.textContainerForTesting.customRotorNamesForTesting.contains(ReadingSpeech.searchRotorName),
                       "il rotore «Risultati della ricerca» c'è già")
         XCTAssertEqual(vc.textContainerForTesting.currentOrTopIndex, 2, "la lettura è sul risultato scelto")
     }

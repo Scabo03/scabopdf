@@ -262,23 +262,15 @@ final class SegmentCell: UICollectionViewCell {
             }
         }
 
-        // Resa accessibile: etichetta mai vuota. Con l'opzione «note a voce» l'intro della nota è
-        // ripristinata (mai-solo-suono); default OFF → parlato byte-identico al modello storico.
-        accessibilityLabel = ContinuousReadingView.intendedAccessibilityLabel(
+        // Resa accessibile: tutto ciò che VoiceOver dice dell'elemento viene dalla FONTE UNICA DEL PARLATO (ScaboCore,
+        // `ReadingSpeech`, condivisa col Mac): l'etichetta mai vuota (con l'opzione «note a voce» l'intro della nota è
+        // ripristinata, mai-solo-suono), il ruolo (testo statico: niente tratto di intestazione sulle celle-titolo, la
+        // navigazione per titoli passa ai rotori su misura e la qualifica è nel parlato) e il valore (la pagina della risorsa
+        // visiva, o i risultati della ricerca). Qui si traduce soltanto nel vocabolario di UIKit.
+        accessibilityLabel = ReadingSpeech.intendedAccessibilityLabel(
             for: segment, restoreNoteIntro: style?.noteSpokenLabels ?? false)
-        // NIENTE tratto `.header` sulle celle-titolo. Se le celle lo esponessero, il rotore
-        // Intestazioni INCORPORATO di VoiceOver le scandirebbe — ma vede solo la finestra, quindi
-        // salterebbe in modo capriccioso i titoli fuori finestra (osservato al collaudo). Tolto
-        // `.header`, il rotore incorporato non ha nulla da scandire e la navigazione titoli passa
-        // interamente ai rotori su misura (`.heading`/`.headingLevelN`), che vedono TUTTI i titoli
-        // dal `headingIndex`. La qualifica di intestazione è reintrodotta nel parlato (vedi
-        // `headingQualifier`), così non si perde il segnale acustico "è un titolo, di livello N".
-        accessibilityTraits = .staticText
-        // Risorsa visiva (§ 7.9): la pagina vera della regione come valore e, se la pagina ne ha più d'una, quale: annunci
-        // altrimenti identici di fila si distinguono. Ricerca nel libro (§ 13.3): sull'elemento che contiene risultati,
-        // quali («risultato 4 di 12»); le risorse visive non si cercano, quindi i due valori non si incontrano. Per ogni
-        // altro elemento nessun valore, come prima.
-        accessibilityValue = host.searchValue(forIndex: index) ?? host.visualResourceValue(forIndex: index)
+        accessibilityTraits = ContinuousReadingView.traits(for: ReadingSpeech.role(for: segment))
+        accessibilityValue = host.elementValue(forIndex: index)
         // La lingua del documento (WCAG 3.1.1): l'italiano, o la lingua di un libro chiaramente in un'altra lingua.
         accessibilityLanguage = host.contentLanguage
 
@@ -307,28 +299,17 @@ final class SegmentCell: UICollectionViewCell {
         textLabel.attributedText = base
     }
 
-    /// Azioni-segnalibro costruite PIGRAMENTE dall'host solo per la cella a fuoco (§ 5.1): nessun peso
-    /// per-elemento. `nil` (nessun host/coordinatore) → nessuna azione, comportamento storico invariato.
+    /// Le azioni dell'elemento, costruite PIGRAMENTE dall'host solo per la cella a fuoco: nessun peso per elemento. Quali
+    /// azioni e con quale nome lo decide la fonte unica del parlato (ScaboCore, `ReadingSpeechModel.actions`): risorsa visiva
+    /// (§ 7.9), salti nota ↔ richiamo (§ 7.12), segnalibro (§ 5.1) e, a VoiceOver spento, «Strumenti elemento» per le
+    /// altre tecnologie assistive non gestuali (la sottolineatura è solo-vedenti, § 6: VoiceOver non la offre fra le sue
+    /// azioni; WCAG 2.5.1 / 2.1.1). L'host costruisce i gestori. `nil` senza host → nessuna azione.
     override var accessibilityCustomActions: [UIAccessibilityCustomAction]? {
         get {
-            guard let segment else { return nil }
-            // Risorsa visiva (§ 7.9): «Estrai come immagine» e, se la regione ha testo, «Salta la risorsa».
-            var actions = host?.visualResourceActions(forIndex: readingIndex, sourceRect: host.map { convert(bounds, to: $0) } ?? .zero) ?? []
-            // Salto nota ↔ testo del richiamo (§ 7.12): sono le azioni di lettura.
-            actions += host?.noteJumpActions(forIndex: readingIndex) ?? []
-            actions += host?.bookmarkActions(forSegment: segment, orderIndex: readingIndex) ?? []
-            // La SOTTOLINEATURA è dichiarata solo-vedenti (§6): NON esposta a VoiceOver. Ma per gli
-            // altri AT non-gestuali (Voice Control / Switch Control / Full Keyboard Access), per cui
-            // `isVoiceOverRunning` è falso, la si rende raggiungibile senza il long-press: un'azione
-            // che apre gli strumenti dell'elemento (segnalibro + sottolineatura). WCAG 2.5.1 / 2.1.1.
-            if !UIAccessibility.isVoiceOverRunning, let host {
-                let index = readingIndex
-                let center = CGPoint(x: bounds.midX, y: bounds.midY)
-                actions.append(UIAccessibilityCustomAction(name: "Strumenti elemento") { [weak host] _ in
-                    host?.openElementMenu(forSegmentAt: index, sourcePoint: center)
-                    return true
-                })
-            }
+            guard let segment, let host else { return nil }
+            let actions = host.customActions(
+                forIndex: readingIndex, segment: segment, sourceRect: convert(bounds, to: host),
+                toolsSourcePoint: CGPoint(x: bounds.midX, y: bounds.midY))
             return actions.isEmpty ? nil : actions
         }
         set { /* sola lettura: derivano dallo stato dei segnalibri */ }
@@ -365,18 +346,22 @@ final class ContinuousReadingView: UIView {
     /// nozione di "pagina" nel verticale (Opzione A). Ricostruita a ogni render dalla `pageProvider`.
     private(set) var pageStartElementIndices: [Int] = []
 
-    /// Indice LEGGERO delle intestazioni (indice-di-lettura + livello), in ordine, costruito dal modello
-    /// dei segmenti a ogni render. È il dato che il rotore Intestazioni consulta per saltare a titoli
-    /// anche FUORI dalla finestra: i titoli non materializzati non sono elementi di accessibilità vivi
-    /// (nessun muro di memoria), ma i loro indice+livello vivono qui e il rotore li raggiunge scorrendo
-    /// e materializzando la sola cella bersaglio (meccanismo validato in Fase 0).
-    private(set) var headingIndex: [(index: Int, level: Int)] = []
+    /// Il PARLATO del flusso reso (ScaboCore, `ReadingSpeechModel`, la fonte unica condivisa col Mac): gli indici leggeri
+    /// dei titoli e delle risorse visive che i rotori percorrono, i legami nota ↔ richiamo, i valori e le azioni di ogni
+    /// elemento. Ricostruito a ogni render dai segmenti e dalle opzioni dei legami.
+    private(set) var speech = ReadingSpeechModel.empty
+
+    /// Indice LEGGERO delle intestazioni (indice-di-lettura + livello), in ordine, dal parlato del flusso. È il dato che il
+    /// rotore Intestazioni consulta per saltare a titoli anche FUORI dalla finestra: i titoli non materializzati non sono
+    /// elementi di accessibilità vivi (nessun muro di memoria), ma i loro indice+livello vivono qui e il rotore li raggiunge
+    /// scorrendo e materializzando la sola cella bersaglio (meccanismo validato in Fase 0).
+    var headingIndex: [ReadingHeadingEntry] { speech.headingIndex }
     /// La lingua del contenuto (WCAG 3.1.1, `DocumentLanguage`): l'italiano, salvo un documento chiaramente in un'altra
     /// lingua. Ogni cella la dichiara a VoiceOver e al display braille.
     private(set) var contentLanguage = DocumentLanguage.defaultCode
 
-    /// Legami nota ↔ segmento del richiamo (§ 7.12), calcolati a ogni render (`noteCallLinks`).
-    private(set) var noteLinks = NoteCallLinks()
+    /// Legami nota ↔ segmento del richiamo (§ 7.12), calcolati a ogni render (`noteCallLinks`, nel parlato del flusso).
+    var noteLinks: NoteCallLinks { speech.noteLinks }
     /// Opzioni dei legami nota↔richiamo: le predefinite per ogni libro; quelle delle CURE MIRATE (LAYER2 § 0-ter) solo per
     /// i documenti del registro, impostate dal controller dall'impronta del libro PRIMA di `render`.
     var noteJumpOptions = NoteJumpOptions()
@@ -601,8 +586,9 @@ final class ContinuousReadingView: UIView {
         searchResult = nil
         searchHighlighter = nil
         recomputePageStarts()
+        // Il parlato del flusso (titoli, risorse visive, legami nota ↔ richiamo) PRIMA dei rotori, che lo percorrono.
+        speech = ReadingSpeechModel(segments: segments, noteJumpOptions: noteJumpOptions)
         rebuildHeadingIndexAndRotors()
-        noteLinks = noteCallLinks(segments, options: noteJumpOptions)
         contentLanguage = DocumentLanguage.code(for: segments)
         resetHeightCache()  // nuovo contenuto → nuove altezze da misurare
         collectionView.reloadData()
@@ -666,14 +652,12 @@ final class ContinuousReadingView: UIView {
         if readingStyle?.readingGuide == true, previous != index {
             reconfigureVisibleCells()
         }
-        // Earcon-nota: soppresso quando l'utente ha scelto «note annunciate a voce» (l'identità della
-        // nota è già nel parlato/braille → niente doppio segnale). Altrimenti resta com'era (§10.4).
-        if readingStyle?.noteSpokenLabels != true, let noteSignal = Self.noteSignal(for: segment) {
-            signalPlayer.play(noteSignal)
-        }
-        // Earcon di blocco bibliografico: una volta all'INGRESSO del blocco LETTERATURA.
-        if segment.role == SemanticCategory.LETTERATURA.rawValue, lastFocusedRole != segment.role {
-            signalPlayer.play(.bibliography)
+        // I segnali li sceglie la fonte unica del parlato (ScaboCore, `ReadingSpeech.focusSignals`): l'earcon della nota
+        // (taciuto con «note annunciate a voce», § 10.4) e quello d'ingresso nel blocco bibliografico, una volta sola. La
+        // vista tiene lo stato del fuoco e il riproduttore.
+        for signal in ReadingSpeech.focusSignals(
+            for: segment, previousFocusedRole: lastFocusedRole, noteSpokenLabels: readingStyle?.noteSpokenLabels == true) {
+            signalPlayer.play(signal)
         }
         lastFocusedRole = segment.role
     }
@@ -719,27 +703,35 @@ final class ContinuousReadingView: UIView {
     }
 
     // MARK: - Azioni sull'elemento (§ 5 / § 6)
+    //
+    // QUALI azioni ha un elemento, in quale ordine e con quale NOME, lo decide la fonte unica del parlato (`speech`,
+    // ScaboCore `ReadingSpeechModel.actions`, condivisa col Mac). Qui la vista costruisce soltanto i GESTORI: i salti con
+    // scorrimento e fuoco VoiceOver sulla cella materializzata (`goToElement`), i segnalibri e gli strumenti col
+    // coordinatore. Nessun legame nota ↔ richiamo riscontrato → nessuna azione di salto (un salto sbagliato è peggio di
+    // nessun salto).
 
-    /// Azioni di salto nota ↔ testo (§ 7.12) per l'elemento di indice dato: sulla nota «Vai al
-    /// testo del richiamo»; sul blocco che richiama note «Vai alla nota N» (una per nota). Il salto
-    /// usa `goToElement` (scroll + fuoco VoiceOver sulla cella materializzata). Nessun legame
-    /// riscontrato → nessuna azione (un salto sbagliato è peggio di nessun salto).
+    /// Le azioni dell'elemento all'indice dato, nell'ordine in cui VoiceOver le offre: risorsa visiva (§ 7.9), salti nota ↔
+    /// richiamo (§ 7.12), segnalibro (§ 5.1), «Strumenti elemento» a VoiceOver spento. `sourceRect` (nel sistema della
+    /// reading view) serve al popover di «Estrai come immagine»; `toolsSourcePoint` al menù degli strumenti.
+    func customActions(
+        forIndex index: Int, segment: ContentSegment, sourceRect: CGRect, toolsSourcePoint: CGPoint
+    ) -> [UIAccessibilityCustomAction] {
+        let coordinator = elementCoordinator
+        let bookmark = coordinator?.existingBookmark(forSegmentId: segment.id)
+        let state: ReadingBookmarkState = coordinator == nil ? .unavailable : (bookmark == nil ? .absent : .present)
+        let settings = ReadingSpeechSettings(voiceOverRunning: UIAccessibility.isVoiceOverRunning)
+        return speech.actions(forIndex: index, bookmark: state, settings: settings).map {
+            uiAction($0, index: index, segment: segment, coordinator: coordinator, bookmark: bookmark,
+                     sourceRect: sourceRect, toolsSourcePoint: toolsSourcePoint)
+        }
+    }
+
+    /// Le azioni di salto nota ↔ testo (§ 7.12) per l'elemento di indice dato: sulla nota «Vai al testo del richiamo»; sul
+    /// blocco che richiama note «Vai alla nota N» (una per nota).
     func noteJumpActions(forIndex index: Int) -> [UIAccessibilityCustomAction] {
-        var actions: [UIAccessibilityCustomAction] = []
-        if let call = noteLinks.callOfNote[index] {
-            actions.append(UIAccessibilityCustomAction(name: "Vai al testo del richiamo") { [weak self] _ in
-                self?.goToElement(atIndex: call, focus: true); return true
-            })
+        speech.noteJumpActions(forIndex: index).map {
+            uiAction($0, index: index, segment: nil, coordinator: nil, bookmark: nil, sourceRect: .zero, toolsSourcePoint: .zero)
         }
-        for note in noteLinks.notesOfCall[index] ?? [] where note < segments.count {
-            let number = segments[note].text.prefix(while: { $0.isNumber || $0 == "(" || $0 == ")" })
-                .filter { $0.isNumber }
-            let name = number.isEmpty ? "Vai alla nota" : "Vai alla nota \(number)"
-            actions.append(UIAccessibilityCustomAction(name: name) { [weak self] _ in
-                self?.goToElement(atIndex: note, focus: true); return true
-            })
-        }
-        return actions
     }
 
     /// Salto fra nota e richiamo DA TASTIERA (WCAG 2.1.1; giro «accessibilità e completamento», 2026-10-18): sull'elemento
@@ -759,60 +751,77 @@ final class ContinuousReadingView: UIView {
         return false
     }
 
-    /// Azioni della RISORSA VISIVA per l'elemento di indice dato (§ 7.9, `docs/RISORSE_VISIVE.md`): «Estrai come
-    /// immagine» sempre; «Salta la risorsa» solo se la regione contiene testo, che resta comunque nel flusso subito
-    /// dopo (nessun testo diventa irraggiungibile: saltarlo è una scelta, non un obbligo).
+    /// Le azioni della RISORSA VISIVA per l'elemento di indice dato (§ 7.9, `docs/RISORSE_VISIVE.md`): «Estrai come
+    /// immagine» sempre; «Salta la risorsa» solo se la regione contiene testo, che resta comunque nel flusso subito dopo.
     func visualResourceActions(forIndex index: Int, sourceRect: CGRect) -> [UIAccessibilityCustomAction] {
-        guard index >= 0, index < segments.count, let payload = segments[index].visualResource else { return [] }
-        let label = segments[index].text
-        var actions = [UIAccessibilityCustomAction(name: "Estrai come immagine") { [weak self] _ in
-            self?.elementCoordinator?.extractVisualResource(payload, label: label, sourceRect: sourceRect)
-            return self?.elementCoordinator != nil
-        }]
-        if payload.containedElements > 0 {
-            actions.append(UIAccessibilityCustomAction(name: "Salta la risorsa") { [weak self] _ in
-                guard let self else { return false }
-                self.goToElement(atIndex: self.indexAfterVisualResource(at: index), focus: true)
-                return true
-            })
+        speech.visualResourceActions(forIndex: index).map {
+            uiAction($0, index: index, segment: nil, coordinator: nil, bookmark: nil, sourceRect: sourceRect,
+                     toolsSourcePoint: .zero)
         }
-        return actions
     }
 
-    /// L'elemento subito dopo il testo della risorsa all'indice dato: si contano `containedElements` elementi
-    /// di testo dopo di lei, poi il primo che segue. Un'altra risorsa annunciata subito dopo di lei (due risorse sullo
-    /// stesso testo) si scavalca; ma se l'annuncio di un'altra risorsa cade DENTRO il suo testo (il flusso ha fuso il
-    /// testo di due tabelle vicine), il salto si ferma su quell'annuncio, che non va perso e si può saltare a sua volta.
-    func indexAfterVisualResource(at index: Int) -> Int {
-        guard index >= 0, index < segments.count, let payload = segments[index].visualResource else { return index }
-        var i = index + 1, counted = 0
-        while i < segments.count && counted < payload.containedElements {
-            if segments[i].visualResource == nil { counted += 1 } else if counted > 0 { return i }
-            i += 1
-        }
-        return min(i, max(0, segments.count - 1))
-    }
+    /// L'elemento subito dopo il testo della risorsa all'indice dato (il bersaglio di «Salta la risorsa»).
+    func indexAfterVisualResource(at index: Int) -> Int { speech.indexAfterVisualResource(at: index) }
 
-    /// Costruisce le azioni-segnalibro VoiceOver per il segmento a fuoco (§ 5.1).
+    /// Le azioni-segnalibro VoiceOver per il segmento a fuoco (§ 5.1), `nil` senza coordinatore.
     func bookmarkActions(forSegment segment: ContentSegment, orderIndex: Int) -> [UIAccessibilityCustomAction]? {
         guard let coordinator = elementCoordinator else { return nil }
-        if let bookmark = coordinator.existingBookmark(forSegmentId: segment.id) {
-            return [
-                UIAccessibilityCustomAction(name: "Modifica segnalibro") { [weak coordinator] _ in
-                    coordinator?.editBookmark(bookmark); return true
-                },
-                UIAccessibilityCustomAction(name: "Rimuovi segnalibro") { [weak coordinator] _ in
-                    coordinator?.removeBookmark(bookmark); return true
-                },
-            ]
+        let bookmark = coordinator.existingBookmark(forSegmentId: segment.id)
+        return ReadingSpeechModel.bookmarkActions(bookmark == nil ? .absent : .present).map {
+            uiAction($0, index: orderIndex, segment: segment, coordinator: coordinator, bookmark: bookmark,
+                     sourceRect: .zero, toolsSourcePoint: .zero)
         }
-        return [
-            UIAccessibilityCustomAction(name: "Aggiungi segnalibro") { [weak coordinator] _ in
-                coordinator?.addBookmark(
-                    segmentId: segment.id, orderIndex: orderIndex, segmentText: segment.text)
+    }
+
+    /// Il gestore UIKit di un'azione del parlato. Il nome viene dal modulo; qui solo ciò che l'azione FA.
+    private func uiAction(
+        _ action: ReadingAction, index: Int, segment: ContentSegment?, coordinator: ReadingElementCoordinator?,
+        bookmark: Bookmark?, sourceRect: CGRect, toolsSourcePoint: CGPoint
+    ) -> UIAccessibilityCustomAction {
+        switch action {
+        case .extractVisualResource:
+            let inRange = index >= 0 && index < segments.count
+            let payload = inRange ? segments[index].visualResource : nil
+            let label = inRange ? segments[index].text : ""
+            return UIAccessibilityCustomAction(name: action.name) { [weak self] _ in
+                guard let payload else { return false }
+                self?.elementCoordinator?.extractVisualResource(payload, label: label, sourceRect: sourceRect)
+                return self?.elementCoordinator != nil
+            }
+        case .skipVisualResource:
+            return UIAccessibilityCustomAction(name: action.name) { [weak self] _ in
+                guard let self else { return false }
+                // Il bersaglio si calcola al gesto, sul flusso di quel momento.
+                self.goToElement(atIndex: self.speech.indexAfterVisualResource(at: index), focus: true)
                 return true
-            },
-        ]
+            }
+        case .goToCall(let target), .goToNote(let target, _):
+            return UIAccessibilityCustomAction(name: action.name) { [weak self] _ in
+                self?.goToElement(atIndex: target, focus: true); return true
+            }
+        case .addBookmark:
+            return UIAccessibilityCustomAction(name: action.name) { [weak coordinator] _ in
+                if let segment {
+                    coordinator?.addBookmark(segmentId: segment.id, orderIndex: index, segmentText: segment.text)
+                }
+                return true
+            }
+        case .editBookmark:
+            return UIAccessibilityCustomAction(name: action.name) { [weak coordinator] _ in
+                if let bookmark { coordinator?.editBookmark(bookmark) }
+                return true
+            }
+        case .removeBookmark:
+            return UIAccessibilityCustomAction(name: action.name) { [weak coordinator] _ in
+                if let bookmark { coordinator?.removeBookmark(bookmark) }
+                return true
+            }
+        case .elementTools:
+            return UIAccessibilityCustomAction(name: action.name) { [weak self] _ in
+                self?.openElementMenu(forSegmentAt: index, sourcePoint: toolsSourcePoint)
+                return true
+            }
+        }
     }
 
     /// Apre il menù d'azione dei vedenti (§ 5 + § 6) per il segmento all'indice dato: instrada al
@@ -857,13 +866,13 @@ final class ContinuousReadingView: UIView {
     func structuralUnitIndex(ofElementAt index: Int) -> Int {
         guard index >= 0, index < segments.count else { return 0 }
         var unit = 0
-        for i in 0...index where Self.isHeadingRole(segments[i].role) { unit += 1 }
+        for i in 0...index where ReadingSpeech.isHeadingRole(segments[i].role) { unit += 1 }
         return max(0, unit)
     }
 
     /// Numero totale di unità strutturali (intestazioni), minimo 1.
     var structuralUnitCount: Int {
-        let headings = segments.reduce(0) { $0 + (Self.isHeadingRole($1.role) ? 1 : 0) }
+        let headings = segments.reduce(0) { $0 + (ReadingSpeech.isHeadingRole($1.role) ? 1 : 0) }
         return max(1, headings)
     }
 
@@ -872,7 +881,7 @@ final class ContinuousReadingView: UIView {
         guard !segments.isEmpty else { return nil }
         if unit <= 0 { return 0 }
         var seen = 0
-        for (i, s) in segments.enumerated() where Self.isHeadingRole(s.role) {
+        for (i, s) in segments.enumerated() where ReadingSpeech.isHeadingRole(s.role) {
             seen += 1
             if seen == unit { return i }
         }
@@ -888,22 +897,6 @@ final class ContinuousReadingView: UIView {
     // bersaglio dal `headingIndex` (che copre ANCHE i titoli fuori finestra), poi scorre e materializza
     // la sola cella bersaglio (Fase 0): nessun titolo fuori finestra è un elemento di accessibilità vivo.
 
-    /// Livello (1…6) del ruolo se è un'intestazione navigabile dal rotore, o `nil`. Deriva dal ruolo
-    /// prodotto dalla classificazione: HEADING_1…4 → 1…4; ARTICLE_HEADER (l'articolo dei codici, sotto
-    /// le quattro divisioni LIBRO/TITOLO/CAPO/SEZIONE) → 5. `SECTION_DIVIDER` (contenitore editoriale
-    /// sintetico del backend XML AKN) è deliberatamente ESCLUSO dal rotore, coerente con l'intento
-    /// dichiarato in `RoleStyle` ("keeps them out of any future Headings rotor").
-    static func headingLevel(for role: String) -> Int? {
-        switch role {
-        case "HEADING_1": return 1
-        case "HEADING_2": return 2
-        case "HEADING_3": return 3
-        case "HEADING_4": return 4
-        case "ARTICLE_HEADER": return 5
-        default: return nil
-        }
-    }
-
     private static func systemRotorType(forLevel level: Int?) -> UIAccessibilityCustomRotor.SystemRotorType {
         switch level {
         case 1: return .headingLevel1
@@ -916,29 +909,24 @@ final class ContinuousReadingView: UIView {
         }
     }
 
-    /// I livelli di intestazione presenti nel documento, in ordine (per esporre un rotore per-livello
-    /// solo per i livelli che esistono davvero).
-    var headingLevelsPresent: [Int] { Array(Set(headingIndex.map { $0.level })).sorted() }
+    /// I livelli di intestazione presenti nel documento, in ordine (un rotore per livello solo per i livelli presenti).
+    var headingLevelsPresent: [Int] { speech.headingLevelsPresent }
 
-    /// Ricostruisce l'indice leggero delle intestazioni e (re)installa i rotori di sistema. Chiamata a
-    /// ogni render. Il rotore Intestazioni (`.heading`) c'è sempre; i rotori per-livello solo per i
-    /// livelli presenti.
+    /// (Re)installa i rotori sul contenitore del testo, nell'ordine e nell'insieme che dice il parlato del flusso
+    /// (`ReadingSpeechModel.installedRotors`): «Risultati della ricerca» per primo con una ricerca attiva, Intestazioni
+    /// sempre, un rotore per livello presente, Tabelle e Immagini se il documento ne ha. Qui solo la traduzione in rotori
+    /// UIKit, con la stessa meccanica per tutti (indice leggero, poi scorrimento e materializzazione della sola cella).
+    /// Chiamata a ogni render e a ogni cambio della ricerca.
     private func rebuildHeadingIndexAndRotors() {
-        headingIndex = segments.enumerated().compactMap { i, s in
-            Self.headingLevel(for: s.role).map { (index: i, level: $0) }
+        collectionView.accessibilityCustomRotors = speech.installedRotors(searchActive: searchResult != nil).map { rotor in
+            switch rotor {
+            case .searchResults: return searchRotor()
+            case .headings: return headingRotor(level: nil)
+            case .headingLevel(let level): return headingRotor(level: level)
+            case .tables: return visualRotor(.table)
+            case .images: return visualRotor(.figure)
+            }
         }
-        var rotors = [headingRotor(level: nil)]  // .heading — tutte le intestazioni, in sequenza
-        for level in headingLevelsPresent {
-            rotors.append(headingRotor(level: level))  // .headingLevelN — stesso livello
-        }
-        // Risorse visive: i rotori di SISTEMA «Tabelle» e «Immagini», solo se il documento ne ha (stessa meccanica
-        // dei titoli: indice leggero, materializzazione della sola cella bersaglio).
-        visualIndex = segments.enumerated().compactMap { i, s in s.visualResource.map { (index: i, kind: $0.kind) } }
-        if visualIndex.contains(where: { $0.kind == .table }) { rotors.append(visualRotor(.table)) }
-        if visualIndex.contains(where: { $0.kind == .figure }) { rotors.append(visualRotor(.figure)) }
-        // Ricerca nel libro (§ 13.3): il rotore «Risultati della ricerca» solo con una ricerca attiva, primo della lista.
-        if searchResult != nil { rotors.insert(searchRotor(), at: 0) }
-        collectionView.accessibilityCustomRotors = rotors
     }
 
     // MARK: - Ricerca nel libro (§ 13.3): fermate, valore parlato, evidenza, rotore «Risultati della ricerca»
@@ -952,8 +940,6 @@ final class ContinuousReadingView: UIView {
     private(set) var searchResult: BookSearchResult?
     /// Gli intervalli (UTF-16 del testo del segmento) da evidenziare, per indice di segmento e testo.
     private var searchHighlighter: ((Int, String) -> [NSRange])?
-    /// Nome del rotore della ricerca (VoiceOver lo dice ruotando).
-    static let searchRotorName = "Risultati della ricerca"
 
     /// Imposta (o toglie, con `nil`) la ricerca attiva: rotore, valori parlati ed evidenze delle celle visibili.
     func setSearchResult(_ result: BookSearchResult?, highlighter: ((Int, String) -> [NSRange])?) {
@@ -968,10 +954,11 @@ final class ContinuousReadingView: UIView {
     var onSearchStop: (() -> Void)?
 
     /// Il valore parlato dell'elemento che contiene risultati della ricerca attiva («risultato 4 di 12»), o `nil`.
-    func searchValue(forIndex index: Int) -> String? {
-        guard let r = searchResult, let ordinals = r.ordinals(inElement: index) else { return nil }
-        return BookSearchWording.positionValue(ordinals: ordinals, total: r.totalCount)
-    }
+    func searchValue(forIndex index: Int) -> String? { speech.searchValue(forIndex: index, search: searchResult) }
+
+    /// Il valore che l'elemento annuncia (dal parlato del flusso): i risultati della ricerca, o la pagina della risorsa
+    /// visiva, o nessuno.
+    func elementValue(forIndex index: Int) -> String? { speech.value(forIndex: index, search: searchResult) }
 
     /// Porta la lettura all'elemento con risultati successivo (`forward`) o precedente a quello in lettura, col fuoco di
     /// VoiceOver. L'indice raggiunto, o `nil` se non ce n'è (oltre l'ultimo o prima del primo) o non c'è una ricerca.
@@ -987,7 +974,7 @@ final class ContinuousReadingView: UIView {
 
     /// Il rotore «Risultati della ricerca» (solo con una ricerca attiva): fermate dal risultato, come i titoli.
     private func searchRotor() -> UIAccessibilityCustomRotor {
-        UIAccessibilityCustomRotor(name: Self.searchRotorName) { [weak self] predicate in
+        UIAccessibilityCustomRotor(name: ReadingSpeech.searchRotorName) { [weak self] predicate in
             guard let self, let r = self.searchResult else { return nil }
             let current: Int
             if let cell = predicate.currentItem.targetElement as? SegmentCell { current = cell.readingIndex }
@@ -1011,7 +998,7 @@ final class ContinuousReadingView: UIView {
 
     /// Esegue il rotore «Risultati della ricerca» come farebbe VoiceOver (per i test): l'indice della cella restituita.
     func searchRotorStepForTesting(from current: Int?, forward: Bool) -> Int? {
-        guard let rotor = (collectionView.accessibilityCustomRotors ?? []).first(where: { $0.name == Self.searchRotorName })
+        guard let rotor = (collectionView.accessibilityCustomRotors ?? []).first(where: { $0.name == ReadingSpeech.searchRotorName })
         else { return nil }
         let predicate = UIAccessibilityCustomRotorSearchPredicate()
         predicate.searchDirection = forward ? .next : .previous
@@ -1022,8 +1009,8 @@ final class ContinuousReadingView: UIView {
         return (result?.targetElement as? SegmentCell)?.readingIndex
     }
 
-    /// Indice leggero degli elementi «risorsa visiva» (indice di lettura, tipo).
-    private(set) var visualIndex: [(index: Int, kind: VisualResourceKind)] = []
+    /// Indice leggero degli elementi «risorsa visiva» (indice di lettura, tipo), dal parlato del flusso.
+    var visualIndex: [ReadingVisualEntry] { speech.visualIndex }
 
     private func visualRotor(_ kind: VisualResourceKind) -> UIAccessibilityCustomRotor {
         UIAccessibilityCustomRotor(systemType: kind == .table ? .table : .image) { [weak self] predicate in
@@ -1042,24 +1029,13 @@ final class ContinuousReadingView: UIView {
         }
     }
 
-    /// Il valore annunciato sull'elemento «risorsa visiva» all'indice dato: «pagina N del file originale» (la pagina vera
-    /// della regione, quella del ritaglio) e, se la pagina ha più risorse, quale («2 di 4», nell'ordine del flusso).
-    /// Rilievo della revisione indipendente: risorse senza didascalia di fila si annunciavano tutte uguali. `nil` per ogni
-    /// altro elemento.
-    func visualResourceValue(forIndex index: Int) -> String? {
-        guard index >= 0, index < segments.count, let payload = segments[index].visualResource else { return nil }
-        let samePage = visualIndex.filter { segments[$0.index].visualResource?.pageIndex == payload.pageIndex }
-        var value = "pagina \(payload.pageIndex + 1) del file originale"
-        if samePage.count > 1, let k = samePage.firstIndex(where: { $0.index == index }) {
-            value += ", \(k + 1) di \(samePage.count)"
-        }
-        return value
-    }
+    /// Il valore annunciato sull'elemento «risorsa visiva» all'indice dato (dal parlato del flusso): «pagina N del file
+    /// originale» e, se la pagina ha più risorse, quale. `nil` per ogni altro elemento.
+    func visualResourceValue(forIndex index: Int) -> String? { speech.visualResourceValue(forIndex: index) }
 
-    /// Indice della risorsa visiva del tipo dato successiva (o precedente) a `current`. Puro e testabile.
+    /// Indice della risorsa visiva del tipo dato successiva (o precedente) a `current`.
     func nextVisualIndex(from current: Int, kind: VisualResourceKind, forward: Bool) -> Int? {
-        let candidates = visualIndex.filter { $0.kind == kind }
-        return forward ? candidates.first(where: { $0.index > current })?.index : candidates.last(where: { $0.index < current })?.index
+        speech.nextVisualIndex(from: current, kind: kind, forward: forward)
     }
 
     private func headingRotor(level: Int?) -> UIAccessibilityCustomRotor {
@@ -1106,14 +1082,10 @@ final class ContinuousReadingView: UIView {
         return UIAccessibilityCustomRotorItemResult(targetElement: cell, targetRange: nil)
     }
 
-    /// Indice-di-lettura del titolo successivo (`forward`) o precedente rispetto a `current`, filtrato
-    /// per `level` (nil = qualsiasi livello). Puro e testabile: è la logica di sequenza del rotore, che
-    /// legge il `headingIndex` (titoli anche fuori finestra) senza toccare celle o VoiceOver.
+    /// Indice-di-lettura del titolo successivo (`forward`) o precedente rispetto a `current`, filtrato per `level` (nil =
+    /// qualsiasi livello): la logica di sequenza del rotore, dal parlato del flusso (titoli anche fuori finestra).
     func nextHeadingIndex(from current: Int, level: Int?, forward: Bool) -> Int? {
-        let candidates = level == nil ? headingIndex : headingIndex.filter { $0.level == level }
-        return forward
-            ? candidates.first(where: { $0.index > current })?.index
-            : candidates.last(where: { $0.index < current })?.index
+        speech.nextHeadingIndex(from: current, level: level, forward: forward)
     }
 
     // MARK: - Supporto ai comandi da tastiera (accessibilità motoria, WCAG 2.1.1)
@@ -1496,65 +1468,13 @@ final class ContinuousReadingView: UIView {
         remeasurePreservingPosition()
     }
 
-    // MARK: - Mappature ruolo → stile / semantica (INVARIATE: unica fonte del parlato)
+    // MARK: - Mappature ruolo → stile (la semantica del parlato è in ScaboCore, `ReadingSpeech`)
 
-    /// Testo che VoiceOver pronuncia: intro acustica (se presente) + rinfresco di contesto + testo.
-    static func spokenText(for segment: ContentSegment) -> String {
-        spoken(intro: segment.acousticIntro, segment: segment)
-    }
-
-    /// L'etichetta accessibile INTESA per un segmento — l'unica fonte del parlato (byte-identica con o
-    /// senza underline, rete A). Una nota vera col segnale acustico perde solo l'intro verbale (§ 10.4).
-    static func intendedAccessibilityLabel(for segment: ContentSegment, restoreNoteIntro: Bool = false) -> String {
-        // Di default una nota vera «perde» l'intro verbale perché la porta l'earcon (§10.4). Con
-        // l'opzione «note annunciate a voce» (mai-solo-suono) l'intro «Nota.»/«Nota lunga.» è
-        // ripristinata nell'etichetta, così un display braille o chi non sente la riceve come TESTO.
-        let base = (noteSignal(for: segment) == nil || restoreNoteIntro)
-            ? spokenText(for: segment)
-            : spoken(intro: "", segment: segment)
-        // Reintroduzione della qualifica di intestazione NEL PARLATO (rimedio approvato): tolto il
-        // tratto `.header` dalle celle (perché il rotore Intestazioni incorporato non le scandisca),
-        // l'orecchio in lettura lineare perderebbe il segnale "è un titolo". Lo restituiamo qui,
-        // meglio ancora per livello, così il titolo suona qualificato senza reintrodurre `.header`.
-        let qualifier = headingQualifier(for: segment.role)
-        return qualifier.isEmpty ? base : "\(qualifier) \(base)"
-    }
-
-    /// Qualifica parlata anteposta a un titolo, per LIVELLO reale (letto dal ruolo prodotto dalla
-    /// classificazione). `ARTICLE_HEADER` → "Articolo." (l'articolo dei codici); HEADING_1…4 →
-    /// "Intestazione di livello N." Vuota per i non-titoli (e per `SECTION_DIVIDER`, che ha già il
-    /// suo intro "Sezione." e resta fuori dal rotore). Sostituisce l'annuncio nativo "intestazione"
-    /// perso con `.header`, differenziando i livelli come chiesto.
-    static func headingQualifier(for role: String) -> String {
+    /// Il ruolo di accessibilità del parlato nel vocabolario di UIKit.
+    static func traits(for role: ReadingElementRole) -> UIAccessibilityTraits {
         switch role {
-        case "ARTICLE_HEADER": return "Articolo."
-        case "HEADING_1": return "Intestazione di livello 1."
-        case "HEADING_2": return "Intestazione di livello 2."
-        case "HEADING_3": return "Intestazione di livello 3."
-        case "HEADING_4": return "Intestazione di livello 4."
-        default: return ""
+        case .staticText: return .staticText
         }
-    }
-
-    /// Compone `[intro] [memoryRefresh] [text]`, scartando le parti vuote. Il testo è sempre presente.
-    static func spoken(intro: String, segment: ContentSegment) -> String {
-        [intro, segment.memoryRefresh, segment.text]
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-    }
-
-    /// Il segnale-nota per il segmento, o `nil` se non è una nota vera con regime.
-    static func noteSignal(for segment: ContentSegment) -> AudioSignal? {
-        guard segment.role == SemanticCategory.NOTE.rawValue,
-              !segment.acousticIntro.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        else { return nil }
-        return AudioSignal.noteSignal(forLengthCategory: segment.lengthCategory)
-    }
-
-    /// Vero per i ruoli da trattare come intestazione (tratto `.header`).
-    static func isHeadingRole(_ role: String) -> Bool {
-        role.hasPrefix("HEADING_") || role == SECTION_DIVIDER_ROLE || role == "ARTICLE_HEADER"
     }
 
     /// Stile tipografico (Dynamic Type) per ruolo.
@@ -1579,7 +1499,7 @@ final class ContinuousReadingView: UIView {
     static func textColor(for role: String, style: ResolvedReadingStyle) -> UIColor {
         let primary = UIColor.fromHex(style.colors.textPrimary)
         if style.mutedAccents { return primary }
-        if isHeadingRole(role) { return UIColor.fromHex(style.colors.accentHeading, fallback: primary) }
+        if ReadingSpeech.isHeadingRole(role) { return UIColor.fromHex(style.colors.accentHeading, fallback: primary) }
         return primary
     }
 

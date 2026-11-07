@@ -562,9 +562,9 @@ final class RealPdfBenchTests: XCTestCase {
                 let elements: [[String: Any]] = indices.map { i in
                     [
                         "index": i, "role": segs[i].role, "id": segs[i].id, "page": pageMap[segs[i].id] ?? -1,
-                        "label": ContinuousReadingView.intendedAccessibilityLabel(for: segs[i], restoreNoteIntro: false),
-                        "labelAVoce": ContinuousReadingView.intendedAccessibilityLabel(for: segs[i], restoreNoteIntro: true),
-                        "segnale": ContinuousReadingView.noteSignal(for: segs[i]) != nil,
+                        "label": ReadingSpeech.intendedAccessibilityLabel(for: segs[i], restoreNoteIntro: false),
+                        "labelAVoce": ReadingSpeech.intendedAccessibilityLabel(for: segs[i], restoreNoteIntro: true),
+                        "segnale": ReadingSpeech.noteSignal(for: segs[i]) != nil,
                         "salti": view.noteJumpActions(forIndex: i).map { $0.name },
                         "chiamata": links.callOfNote[i] ?? -1,
                     ]
@@ -618,7 +618,7 @@ final class RealPdfBenchTests: XCTestCase {
             }
             let file = base + "_vr\(k).png"
             try? image.pngData()?.write(to: URL(fileURLWithPath: file))
-            let labels = (i..<min(segs.count, i + 4)).map { ContinuousReadingView.intendedAccessibilityLabel(for: segs[$0]) }
+            let labels = (i..<min(segs.count, i + 4)).map { ReadingSpeech.intendedAccessibilityLabel(for: segs[$0]) }
             index.append(["k": k, "index": i, "page": (segs[i].visualResource?.pageIndex ?? -1) + 1,
                           "kind": segs[i].visualResource?.kind.rawValue ?? "", "labels": labels])
         }

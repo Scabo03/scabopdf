@@ -57,7 +57,7 @@ final class ContinuousReadingViewTests: XCTestCase {
         ]
         let content = PaginatedContent(
             pages: [ContentPage(pageNumber: 1, segments: all)], totalSegments: all.count)
-        return (content, all.map { ContinuousReadingView.intendedAccessibilityLabel(for: $0) }, all.map { $0.id })
+        return (content, all.map { ReadingSpeech.intendedAccessibilityLabel(for: $0) }, all.map { $0.id })
     }
 
     /// La cella riciclante configurata per l'indice dato: riflette la resa (testo, parlato, tratto).
@@ -340,11 +340,11 @@ final class ContinuousReadingViewTests: XCTestCase {
     }
 
     func test_headingQualifier_perLevel() {
-        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_1"), "Intestazione di livello 1.")
-        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "HEADING_4"), "Intestazione di livello 4.")
-        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "ARTICLE_HEADER"), "Articolo.")
-        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: "BODY"), "")
-        XCTAssertEqual(ContinuousReadingView.headingQualifier(for: SECTION_DIVIDER_ROLE), "", "il divisore ha già il suo intro 'Sezione.'")
+        XCTAssertEqual(ReadingSpeech.headingQualifier(for: "HEADING_1"), "Intestazione di livello 1.")
+        XCTAssertEqual(ReadingSpeech.headingQualifier(for: "HEADING_4"), "Intestazione di livello 4.")
+        XCTAssertEqual(ReadingSpeech.headingQualifier(for: "ARTICLE_HEADER"), "Articolo.")
+        XCTAssertEqual(ReadingSpeech.headingQualifier(for: "BODY"), "")
+        XCTAssertEqual(ReadingSpeech.headingQualifier(for: SECTION_DIVIDER_ROLE), "", "il divisore ha già il suo intro 'Sezione.'")
     }
 
     // MARK: - 6. Re-render sostituisce il modello (nessun residuo)
@@ -461,7 +461,7 @@ final class ContinuousReadingViewTests: XCTestCase {
         let texts = segs.map { $0.text }
 
         // Il titolo emerge come heading (tratto header) tra i segmenti.
-        let headingIdx = segs.firstIndex { ContinuousReadingView.isHeadingRole($0.role) && $0.text.contains("Capitolo Primo") }
+        let headingIdx = segs.firstIndex { ReadingSpeech.isHeadingRole($0.role) && $0.text.contains("Capitolo Primo") }
         XCTAssertNotNil(headingIdx, "il titolo grande è reso come intestazione")
         XCTAssertTrue(texts.contains { $0.contains("creditore") }, "il corpo è reso")
         XCTAssertTrue(texts.contains { $0.contains("1218") }, "le note sono lette (non più escluse)")
@@ -678,9 +678,9 @@ final class ContinuousReadingViewTests: XCTestCase {
     func test_spokenComposition_includesMemoryRefresh() {
         let seg = ContentSegment(id: "n", role: "NOTE", text: "contenuto della nota.", lengthCategory: "LONG",
                                  acousticIntro: "Nota lunga.", memoryRefresh: "il contesto del richiamo")
-        XCTAssertEqual(ContinuousReadingView.spokenText(for: seg),
+        XCTAssertEqual(ReadingSpeech.spokenText(for: seg),
                        "Nota lunga. il contesto del richiamo contenuto della nota.")
-        XCTAssertEqual(ContinuousReadingView.spoken(intro: "", segment: seg),
+        XCTAssertEqual(ReadingSpeech.spoken(intro: "", segment: seg),
                        "il contesto del richiamo contenuto della nota.")
     }
 
@@ -697,20 +697,20 @@ final class ContinuousReadingViewTests: XCTestCase {
 
     func test_bodySegment_withoutRefresh_spokenUnchanged() {
         let body = bodySegment("b", "Un paragrafo qualunque del corpo.")
-        XCTAssertEqual(ContinuousReadingView.spokenText(for: body), "Un paragrafo qualunque del corpo.")
+        XCTAssertEqual(ReadingSpeech.spokenText(for: body), "Un paragrafo qualunque del corpo.")
     }
 
     // MARK: - Navigazione per intestazioni: mappa dei livelli, indice, sequenza, per-livello
 
     func test_headingLevel_mapsRolesToLevels() {
-        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_1"), 1)
-        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_2"), 2)
-        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_3"), 3)
-        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "HEADING_4"), 4)
-        XCTAssertEqual(ContinuousReadingView.headingLevel(for: "ARTICLE_HEADER"), 5, "l'articolo dei codici è il livello 5")
-        XCTAssertNil(ContinuousReadingView.headingLevel(for: "BODY"))
-        XCTAssertNil(ContinuousReadingView.headingLevel(for: "NOTE"))
-        XCTAssertNil(ContinuousReadingView.headingLevel(for: SECTION_DIVIDER_ROLE), "il divisore sintetico è fuori dal rotore")
+        XCTAssertEqual(ReadingSpeech.headingLevel(for: "HEADING_1"), 1)
+        XCTAssertEqual(ReadingSpeech.headingLevel(for: "HEADING_2"), 2)
+        XCTAssertEqual(ReadingSpeech.headingLevel(for: "HEADING_3"), 3)
+        XCTAssertEqual(ReadingSpeech.headingLevel(for: "HEADING_4"), 4)
+        XCTAssertEqual(ReadingSpeech.headingLevel(for: "ARTICLE_HEADER"), 5, "l'articolo dei codici è il livello 5")
+        XCTAssertNil(ReadingSpeech.headingLevel(for: "BODY"))
+        XCTAssertNil(ReadingSpeech.headingLevel(for: "NOTE"))
+        XCTAssertNil(ReadingSpeech.headingLevel(for: SECTION_DIVIDER_ROLE), "il divisore sintetico è fuori dal rotore")
     }
 
     func test_headingIndex_capturesAllHeadingsWithLevels_inOrder() {
