@@ -196,6 +196,21 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 63 — 2026-11-07, commit `30d6819` (giro «rifiniture e cure per capacità», prima parte, livello di verifica
+  pieno: le due cure mirate dei documenti di studio rifinite, regole nuove sempre accese solo dall'impronta; offerta di
+  nuovo ai due documenti e solo a loro; ogni altro libro identico al byte alla build 62; `docs/CARRYOVER.md` STATO del
+  2026-11-07, `docs/CURE_MIRATE.md` § 4.1).** Xcode 27.2 (27B52). `fastlane beta` da main: «Latest upload … is build: 62»,
+  `CURRENT_PROJECT_VERSION` 63, EXPORT SUCCEEDED alle 01:48:28, altool «UPLOAD SUCCEEDED with no errors» alle 01:50:55,
+  Delivery UUID `e1981740-c162-4691-84bc-4fa89fe4c8cf`; subito dopo **lo stesso errore della build 62** («Failed to create
+  URL for 'CDUploaderStateInfoResumeFilePath'. The file doesn't exist»), corsia uscita con exit 1 prima dell'elaborazione e
+  delle note. **Lezione della build 55 applicata**, nessun rilancio: verifica in sola lettura con la chiave API dopo circa
+  tre minuti (build 63 caricata alle 01:51:45 ora italiana, elaborazione VALID, «Cosa testare» vuoto), poi impostato il solo
+  «Cosa testare» (it) col testo di `app/ios/fastlane/COSA_TESTARE.txt` (script di laboratorio
+  `studio_mirato/build62/asc_imposta_note.rb`) e riletto: 2 641 caratteri, identico al file. IPA 163 256 195 byte; nel
+  binario archiviato `CFBundleVersion` 63, le due impronte del registro e la regola `salto_al_richiamo_ampliato`. I due
+  `log stream` nati durante la corsa (sul processo «Xcode» e su «altool», padre launchd) fermati per PID. Con due build di
+  fila, l'errore del file di ripresa del caricatore di Xcode 27.2 è ormai il comportamento atteso: dopo «UPLOAD SUCCEEDED»
+  la verifica in sola lettura e le note impostate a mano sono il passo normale, non un'eccezione.
 - **Build 62 — 2026-11-06, commit `f0a71e5` (giro «cure mirate per lo studio», livello di verifica pieno: due documenti di
   studio del maintainer curati con regole accese solo dalla loro impronta, registro `TargetedCures`, offerta «Lettura
   migliore disponibile» solo a loro; tutti gli altri libri identici al byte; `docs/CARRYOVER.md` STATO del 2026-11-06,

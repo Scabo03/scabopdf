@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti: **prima parte CONCLUSA con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); seconda parte (cure per capacità dai difetti del volume della prova alla cieca, build 64) in corso sul ramo `feat/cure-capacita-titoli-brizzi`.)
 > Versione: 2.52 (6 novembre 2026, giro «cure mirate per lo studio», livello di verifica pieno, **CONCLUSO** con la **build 62** su TestFlight: due documenti di studio del maintainer curati con regole accese solo dalla loro impronta (registro `TargetedCures`, LAYER2 § 0-ter, `docs/CURE_MIRATE.md`), letture di tutti i 52 volumi del banco identiche al byte su iOS 26.5 e 27, offerta «Lettura migliore disponibile» solo ai due documenti; prova alla cieca su un volume ignoto, giudicato senza cure. Ambiente: Xcode 27.2. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.51 (20 ottobre 2026, giro «ricerca nella libreria», livello di verifica leggero, **CONCLUSO** con la **build 61** su TestFlight: dal tab Ricerca della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla»/«Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; le frasi del Mac nominano iPad e iPhone. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.50 (18-19 ottobre 2026, giro «accessibilità e completamento», **CONCLUSO** con la **build 59** su TestFlight (VALID, note per i tester impostate): **l'ordine di lettura segue l'importanza** in ogni schermata con le schede (titolo, poi le tre schede, poi i comandi, poi il contenuto; prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime e sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero nei test d'interfaccia da iOS 27 (`XCUIDevice.voiceOverService`); **salto fra nota e richiamo** per 8.879 delle 9.030 note differite (1.224 → 151 senza salto, ogni legame nuovo verificato contro la pagina stampata; INBOX D.16); **lacune WCAG di livello A chiuse**: tastiera nello split e ⌘J (2.1.1/2.1.2, con due difetti preesistenti curati: ⌘= impossibile dalla tastiera italiana, menu degli strumenti che Esc non chiudeva sull'iPad), lingua dell'interfaccia dichiarata e lingua del documento ricavata (3.1.1); le due voci rosse dell'audit sull'iPad spiegate (barra delle schede di sistema, testo sotto un foglio) e accettate con condizioni e un tetto, dichiarate; letture identiche al byte alla build 58 su entrambe le generazioni. Vedi STATO del 2026-10-18 sera)
@@ -97,6 +98,34 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
   commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
   solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
+
+---
+
+## ▶ STATO — Giro «rifiniture e cure per capacità», prima parte: le due cure mirate rifinite, build 63 — 2026-11-07
+
+**Partenza:** `09652f0` (main = origin, build 62 VALID). **Arrivo della prima parte:** `30d6819` (ramo `feat/rifiniture-studio`
+fuso in main in avanti veloce, poi cancellato), build 63 su TestFlight (voce in `docs/RELEASE_TESTFLIGHT.md`). Ambiente
+invariato (macOS 27.0.1, Xcode 27.2, Swift 6.4.2, simulatori iOS 26.5 e 27.0). Referto e laboratorio:
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_RIFINITURE_CAPACITA.md`, `~/Developer/scabopdf-gen-lab/rifiniture_capacita/`.
+
+- **Decisioni del maintainer** registrate all'apertura (LAYER2 § 0-ter, CURE_MIRATE § 5-bis): sì alla capacità dei titoli
+  in grassetto delle dispense Word con firma; sì alle cure per capacità dei difetti del volume «ignoto C» in questo giro; no,
+  per ora, all'estensione dell'innesto del Mac.
+- **Rifiniture** (regole nuove in `TargetedRules.swift`, sempre accese solo dall'impronta; dettaglio CURE_MIRATE § 4.1): punto
+  dopo il richiamo staccato dal lettore di sistema (la dispensa perdeva 408 punti come mobilia), numero a taglia piena che
+  continua la nota, abbreviazioni e date delle citazioni («lgs.», «all.», …), riquadri «Riquadro.» (19, uniti fra pagine e a
+  pezzi), bibliografie di fine capitolo (16 titoli H3 + 18 blocchi col segnale), capoversi rientrati, salto al richiamo
+  ampliato con una regola sua. Numeri identici su iOS 26.5 e 27: dispensa salti 672 → 800 (nessuno perso), note finte 0;
+  manuale indice 312 → 328/331, salti 273 → 278; lettere e cifre identiche (salvo i 408 punti tornati).
+- **Reti**: catena e runner 260/260 per generazione contro la build 62; Marotta identico; risorse visive 110/110 al posto;
+  annotazioni 0 rosse sul banco, 0 sbagliate sui due documenti con 3 prove al contrario; parità iPad-Mac 52/52;
+  `rete_cure_mirate.sh` verde con catture nuove; suite complete sui quattro simulatori verdi a `30d6819` (validate.sh 1.092;
+  app 231 e interfaccia 42 su iPhone e iPad, iOS 26.5 e 27, audit di accessibilità compresi; nessun rosso).
+- **Revisione indipendente**: due risposte sì e due in parte; corretti i rilievi in `17b9773` e `30d6819` (test dell'app che
+  fissava la build 62, CURE_MIRATE § 2 coi sei punti d'ingresso, frasi dell'offerta e condizione di rimozione, salto ampliato
+  con una regola sua, 32 punti ancora staccati, «all.»).
+- **Build 63**: caricata (Delivery UUID `e1981740…`), di nuovo l'errore del file di ripresa del caricatore dopo «UPLOAD
+  SUCCEEDED»: verificata VALID in sola lettura e note impostate a mano (2 641 caratteri, identiche al file).
 
 ---
 
