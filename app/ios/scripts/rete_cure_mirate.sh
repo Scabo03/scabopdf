@@ -20,6 +20,8 @@
 # lettura», che per loro non ha senso.
 #
 # Uso: app/ios/scripts/rete_cure_mirate.sh <etichetta>        (uscite in <lab>/studio_mirato/rete_cure_mirate/<etichetta>)
+# Variabile SCABO_GENS (default "26.5:ios265 27.0:ios27"): le generazioni «runtime:sigla», come in rete_generazioni.sh; per un
+# giro di livello medio su iOS 27 soltanto, SCABO_GENS="27.0:ios27".
 # Codici d'uscita: 0 verde, 1 rosso, 2 prerequisito mancante.
 set -uo pipefail
 export DEVELOPER_DIR="/Applications/Xcode.app/Contents/Developer"
@@ -33,6 +35,7 @@ DOCS=(studio_a studio_b)
 STABILI=(ignoto_c)
 TUTTI=("${DOCS[@]}" "${STABILI[@]}")
 RIF="$SM/riferimento_cure_mirate"
+read -r -a GENS <<< "${SCABO_GENS:-26.5:ios265 27.0:ios27}"
 OUT="$SM/rete_cure_mirate/$TAG"
 CATENA_SRC="$LAB/frazionamento/strumenti/costruisci_catena.sh"
 [ -d "$SM/corpus/studio" ] && [ -d "$RIF" ] && [ -x "$CATENA_SRC" ] || { echo "prerequisiti del laboratorio assenti"; exit 2; }
@@ -42,7 +45,7 @@ say() { printf '%s\n' "$*"; }
 
 # ── 1. cattura (banco dell'app, i due simulatori iPad Pro 11-inch (M5)); spegne solo il proprio simulatore, per UDID ──
 "$PY" -c "import json; json.dump(['studio/%s.pdf' % d for d in '${TUTTI[*]}'.split()], open('$OUT/lista.json', 'w'))"
-for g in "26.5:ios265" "27.0:ios27"; do
+for g in "${GENS[@]}"; do
   RT="${g%%:*}"; GEN="${g##*:}"; C="$OUT/catture_$GEN"; mkdir -p "$C/studio"
   UDID="$(xcrun simctl list devices -j | "$PY" -c "import json,sys; d=json.load(sys.stdin)['devices'].get('com.apple.CoreSimulator.SimRuntime.iOS-${RT//./-}',[]); print(next((x['udid'] for x in d if x['name']=='iPad Pro 11-inch (M5)'),''))")"
   [ -n "$UDID" ] || { say "[1] simulatore iOS $RT assente"; RC=1; continue; }
@@ -66,8 +69,8 @@ say "[2] catena compilata a HEAD $(cd "$REPO_ROOT" && git rev-parse --short HEAD
 [ "$rc" = 0 ] || exit 1
 CAT="$OUT/catena/.build/release/catena-ipad"
 
-for GEN in ios265 ios27; do
-  C="$OUT/catture_$GEN"; L="$OUT/letture_$GEN"; mkdir -p "$L"
+for g in "${GENS[@]}"; do
+  GEN="${g##*:}"; C="$OUT/catture_$GEN"; L="$OUT/letture_$GEN"; mkdir -p "$L"
   "$CAT" --lista "$OUT/lista.json" --estrazioni "$C" --regioni "$C" --out "$L" > "$OUT/letture_$GEN.log" 2>&1 || { say "[2] letture $GEN fallite"; RC=1; continue; }
   # ── 3. confronto al byte col riferimento curato (e, per i volumi stabili, col loro riferimento); 4. ramo generico ──
   for d in "${TUTTI[@]}"; do
