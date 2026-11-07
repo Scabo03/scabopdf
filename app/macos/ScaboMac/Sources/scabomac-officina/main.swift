@@ -27,6 +27,21 @@
 //    scabomac-officina verdetti-confronta --pdf VOLUME.pdf --dir CARTELLA --prefisso P
 //        Confronta i verdetti DAL VIVO del modulo (`analyzeWithRegionTexts` sulla pagina del volume intero, sul Mac) con i
 //        verdetti su file del laboratorio (`<P>NNN.pdf.json`): etichette, ordini, riquadri e testo normalizzato per pagina.
+//    scabomac-officina descrivi --libri LIBRI.json --out DIR [--voiceover]
+//        La DESCRIZIONE di ogni elemento con la fonte unica del parlato (ScaboCore `ReadingSpeech`, giro «fondamenta della
+//        lettura per Mac», 2026-11-07) per ogni lettura della lista (`{"letture": [{"libro", "lettura", "impronta"}]}`, la
+//        lettura nella forma della cache, `<stem>.lettura.json`): `<out>/<libro>.<lc|di>.<n0|n1>.jsonl`, Lettura Continua e
+//        Dottrina Inline, «note annunciate a voce» spenta e accesa. È la rete sul parlato (`rete_parlato.sh`).
+//    Con `catena … --descrizioni DIR` la catena del Mac scrive anche le descrizioni della sua lettura (impronta presa
+//        dall'estrazione): la parte del Mac nel confronto automatico con la vista dell'iPad.
+//    scabomac-officina confronta-descrizioni --a FILE|CARTELLA --b FILE|CARTELLA [--nomi PRIMA,SECONDA] [--testo] [--al-byte]
+//                                            [--dettagli N]
+//        IL CONFRONTO AUTOMATICO di due letture dello stesso libro (ScaboCore `ReadingDescriptionComparison`): per ogni
+//        descrizione (`.jsonl`; due cartelle si confrontano file per file, per percorso), coincidono o no, e se no la prima
+//        divergenza col suo tipo (elemento mancante o in più, testo pronunciato, valore, ruolo, livello, segnale, rotore,
+//        azione, contenitore, testata) e i conteggi per tipo. Senza `--testo` i testi si dicono per lunghezza e impronta,
+//        mai col loro testo. Con `--al-byte` anche due file uguali nel contenuto ma diversi nei byte sono rossi. Uscita 0
+//        se tutte coincidono, 1 se no.
 //
 
 import Foundation
@@ -201,6 +216,8 @@ case "catena":
             MacProcessor.process(pdfURL: pdf, policy: policy, granularityTarget: target, extractor: recorder,
                                  visualCandidates: candidates, onVisualDetection: { detected = $0.candidates })
         }
+        // L'impronta del file letto (cure mirate, LAYER2 § 0-ter): serve alle descrizioni, come al lettore dell'iPad.
+        let impronta = recorder.recorded?.sourceSha256
         if let dir = arg("salva-catture") {
             let base = URL(fileURLWithPath: dir).appendingPathComponent(stem)
             try? FileManager.default.createDirectory(at: base.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -223,11 +240,95 @@ case "catena":
             if CommandLine.arguments.contains("--lettura") {
                 try encoder.encode(r.reading).write(to: URL(fileURLWithPath: base.path + ".lettura.json"))
             }
+            if let dir = arg("descrizioni") {
+                try DescrizioneLettura.scrivi(
+                    DescrizioneLettura.flussi(lettura: r.reading, libro: stem, impronta: impronta,
+                                              voiceOverAcceso: CommandLine.arguments.contains("--voiceover")),
+                    libro: stem, in: URL(fileURLWithPath: dir))
+            }
         } catch { say("\(stem): scrittura fallita"); rc = 1; continue }
         say("\(stem): \(segs.count) segmenti, \(r.visualResources) risorse, modello su \(r.report.modelPages.count) pagine, "
             + "ricuciture \(r.report.stitches.count), rietichettature \(r.report.relabels), \(String(format: "%.1f", Date().timeIntervalSince(t0))) s")
     }
     exit(rc)
+
+case "descrivi":
+    guard let libri = arg("libri"), let outDir = arg("out") else { fail("uso: descrivi --libri LIBRI.json --out DIR [--voiceover]") }
+    struct Libri: Decodable {
+        struct Libro: Decodable { let libro: String; let lettura: String; let impronta: String? }
+        let letture: [Libro]
+    }
+    let elenco: Libri
+    do { elenco = try JSONDecoder().decode(Libri.self, from: Data(contentsOf: URL(fileURLWithPath: libri))) }
+    catch { fail("elenco dei libri illeggibile: \(error)") }
+    var rcd: Int32 = 0
+    for b in elenco.letture {
+        let t0 = Date()
+        do {
+            let lettura = try JSONDecoder().decode(PackagedReading.self, from: Data(contentsOf: URL(fileURLWithPath: b.lettura)))
+            let flussi = DescrizioneLettura.flussi(lettura: lettura, libro: b.libro, impronta: b.impronta,
+                                                   voiceOverAcceso: CommandLine.arguments.contains("--voiceover"))
+            try DescrizioneLettura.scrivi(flussi, libro: b.libro, in: URL(fileURLWithPath: outDir))
+            say("\(b.libro): \(flussi.count) flussi, \(flussi.map { $0.descrizione.elements.count }.reduce(0, +)) elementi, "
+                + String(format: "%.1f s", Date().timeIntervalSince(t0)))
+        } catch { say("\(b.libro): FALLITO (\(error))"); rcd = 1 }
+    }
+    exit(rcd)
+
+case "confronta-descrizioni":
+    guard let pa = arg("a"), let pb = arg("b") else {
+        fail("uso: confronta-descrizioni --a FILE|CARTELLA --b FILE|CARTELLA [--nomi PRIMA,SECONDA] [--testo] [--al-byte] [--dettagli N]")
+    }
+    let nomi = (arg("nomi") ?? "prima,seconda").split(separator: ",").map(String.init)
+    let (nomeA, nomeB) = (nomi.first ?? "prima", nomi.count > 1 ? nomi[1] : "seconda")
+    let conTesto = CommandLine.arguments.contains("--testo"), alByte = CommandLine.arguments.contains("--al-byte")
+    let dettagli = arg("dettagli").flatMap(Int.init) ?? 20
+    func descrizioni(_ radice: String) -> [String] {
+        var cartella: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: radice, isDirectory: &cartella) else { return [] }
+        guard cartella.boolValue else { return [""] }
+        let base = URL(fileURLWithPath: radice).standardizedFileURL.path
+        var out: [String] = []
+        if let e = FileManager.default.enumerator(atPath: base) {
+            while let rel = e.nextObject() as? String { if rel.hasSuffix(".jsonl") { out.append(rel) } }
+        }
+        return out.sorted()
+    }
+    let fa = descrizioni(pa), fb = descrizioni(pb)
+    guard !fa.isEmpty || !fb.isEmpty else { fail("nessuna descrizione in \(pa) né in \(pb)") }
+    func percorso(_ radice: String, _ rel: String) -> String { rel.isEmpty ? radice : radice + "/" + rel }
+    var uguali = 0, ugualiAlByte = 0, diverse = 0, soloA = 0, soloB = 0, elementi = 0, mostrati = 0
+    var perTipo: [ReadingDivergenceKind: Int] = [:]
+    let insiemeB = Set(fb)
+    for rel in fa where !insiemeB.contains(rel) { soloA += 1; say("SOLO NELLA \(nomeA.uppercased()): \(rel)") }
+    for rel in fb where !Set(fa).contains(rel) { soloB += 1; say("SOLO NELLA \(nomeB.uppercased()): \(rel)") }
+    for rel in fa where insiemeB.contains(rel) {
+        do {
+            let da = try Data(contentsOf: URL(fileURLWithPath: percorso(pa, rel)))
+            let db = try Data(contentsOf: URL(fileURLWithPath: percorso(pb, rel)))
+            let r = ReadingDescriptionComparison.compare(try ReadingDescription.decode(da), try ReadingDescription.decode(db))
+            elementi += r.alignedElements
+            for (k, c) in r.counts { perTipo[k, default: 0] += c }
+            let byteUguali = da == db
+            if r.identical && (byteUguali || !alByte) {
+                uguali += 1; if byteUguali { ugualiAlByte += 1 }
+                continue
+            }
+            diverse += 1
+            if mostrati < dettagli {
+                mostrati += 1
+                if r.identical { say("\(rel.isEmpty ? pa : rel): uguali nel contenuto ma DIVERSE al byte") }
+                else { say("\(rel.isEmpty ? pa : rel)\n" + ReadingDescriptionComparison.report(r, nameA: nomeA, nameB: nomeB, showText: conTesto)) }
+            }
+        } catch { diverse += 1; say("\(rel): ILLEGGIBILE (\(error))") }
+    }
+    say("descrizioni confrontate \(fa.count - soloA): coincidono \(uguali) (al byte \(ugualiAlByte)), diverse \(diverse); "
+        + "solo nella \(nomeA) \(soloA), solo nella \(nomeB) \(soloB); elementi confrontati campo per campo \(elementi)")
+    if !perTipo.isEmpty {
+        say("divergenze per tipo: " + ReadingDivergenceKind.allCases.compactMap { k in perTipo[k].map { "\(k.rawValue) \($0)" } }
+            .joined(separator: ", "))
+    }
+    exit(diverse == 0 && soloA == 0 && soloB == 0 ? 0 : 1)
 
 case "pacchetto":
     guard let pdfPath = arg("pdf"), let out = arg("out") else { fail("uso: pacchetto --pdf FILE.pdf --out FILE.scabolettura") }
@@ -251,7 +352,7 @@ case "pacchetto":
     } catch { fail("pacchetto non scritto: \(error)", code: 1) }
 
 default:
-    fail("uso: scabomac-officina <fusore-caso|confronta-fusi|verdetti-confronta|catena|pacchetto> …")
+    fail("uso: scabomac-officina <fusore-caso|confronta-fusi|verdetti-confronta|catena|pacchetto|descrivi|confronta-descrizioni> …")
 }
 
 /// Un estrattore che conserva l'estrazione restituita (per salvarla accanto alla lettura: reti).
