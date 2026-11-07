@@ -101,6 +101,35 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Giro «rifiniture e cure per capacità», seconda parte: cure per capacità dai difetti del volume della prova alla cieca, offerta a tutti e soli i libri che cambiano, build 64 — 2026-11-07
+
+**Partenza:** `2bb0adc` (main dopo la build 63). **Ramo:** `feat/cure-capacita-titoli-ignoto-c` (nome neutro: quello del
+brief portava un segno d'origine del volume). Livello di cure **64**. Dettaglio per forma in LAYER2 § 0-ter; offerta in
+§ 12.13; registro in CURE_MIRATE § 4.2 e § 5; residui del volume in ULTRAFOCUS_INBOX § H.5.
+
+- **Cure per capacità** (iOS 26.5 e 27): 2.1 il titolo che la testatina ripete non è mobilia (ignoto C 6 titoli e 113 lettere
+  tornate; sul banco una riga d'autore tornata, nessuna testatina vera tornata); 2.2 titoli in grassetto delle dispense Word
+  con firma (`WordBoldTitles.swift`), regola mirata dello studio A tolta (lettura identica al byte); 2.3 titoli di sezione
+  isolati da stacchi (`IsolatedSectionTitles.swift`, 11 nell'ignoto C, tutti veri); 2.4 note di chiusura col salto (ignoto C
+  0 → 58 su 68), colonna dei numeri delle note rimessa in ordine (Mosconi 140 note giuste, Compendio 36), salto per la nota
+  in linea col richiamo lontano dalla fine del pezzo (banco 406 legami nuovi tutti veri contro il PDF, salti 14.004 →
+  14.409, nessuno perso); 2.5 figure ricorrenti diverse solo se diverse in tutto (2 carte annunciate); 2.6 trattino morbido
+  seguito da uno spazio con iOS 26.5 (ignoto C 302 parole spezzate → 0, banco 6 → 0).
+- **Offerta «tutti e soli»**: `ProcessingChain.booksUnchangedByCure` (impronte dei libri misurati identici al byte per
+  generazione: 51 su iOS 27, 50 su iOS 26.5) e `ReprocessingPolicy.unchangedByCure`; un libro sconosciuto riceve l'offerta
+  (limite dichiarato, decisione al maintainer). La cura 64 arriva alle letture del Mac dal Mac (`curesFromTheMacOnly`).
+  `LibrarySearchText.formatVersion` 2: i testi di ricerca della libreria si riscrivono in sottofondo coi legami nuovi.
+- **Banco**: i due documenti di studio e il volume della prova alla cieca sono **volumi stabili** della rete dei documenti
+  di studio (`rete_cure_mirate.sh`, `STABILI=(ignoto_c)`), non della lista dei 52: il banco resta di 52, quella rete passa da
+  2 a 3 documenti.
+- **Reti**: catena e runner, sul banco 49 identici con iOS 27 e 48 con iOS 26.5, ogni differenza giudicata (Mosconi,
+  Compendio, una riga d'autore; con iOS 26.5 anche i trattini morbidi di una rivista); Marotta identico; risorse visive
+  110/110 al posto + 2 nuove giudicate; titoli del banco invariati; annotazioni 0 rosse sul banco e 0 sbagliate sui tre
+  documenti con 3 prove al contrario; parità iPad-Mac 52/52 + 3/3; tempo della catena +8 % dopo aver tolto un controllo
+  lento (una ricerca di sottostringa a ogni riga).
+- **Revisione indipendente**: misure confermate da sé; R1 e R2 corretti, R3 eseguito; il controllo del testo dei volumi
+  guarda sempre il repo principale (non una copia di lavoro): rifatto sul ramo, frasi comuni riformulate, 0 righe.
+
 ## ▶ STATO — Giro «rifiniture e cure per capacità», prima parte: le due cure mirate rifinite, build 63 — 2026-11-07
 
 **Partenza:** `09652f0` (main = origin, build 62 VALID). **Arrivo della prima parte:** `30d6819` (ramo `feat/rifiniture-studio`
