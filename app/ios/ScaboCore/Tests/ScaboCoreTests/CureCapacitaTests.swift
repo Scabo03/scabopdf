@@ -199,6 +199,29 @@ final class CureCapacitaTests: XCTestCase {
         XCTAssertTrue(noteCallLinks(Array(segs[0...6])).callOfNote.isEmpty)
     }
 
+    func test_inlineNote_callFarFromTheSegmentEnd_orGluedToAYear_isLinkedOnlyIfUniqueAndInSequence() {
+        let filler = String(repeating: "Una frase inventata di riempimento che allunga il pezzo di corpo. ", count: 9)
+        let segs = [
+            seg("b0", "BODY", "Il primo argomento inventato porta il richiamo parola41 subito. " + filler),
+            seg("n41", "NOTE", "41 La nota inventata del primo richiamo."),
+            seg("b1", "BODY", "Lo dice una pronuncia inventata del 201842 ancora. " + filler),
+            seg("n42", "NOTE", "42 La nota inventata del richiamo attaccato all'anno."),
+            seg("b2", "BODY", "Un testo inventato con la parola43 e di nuovo la parola43. " + filler),
+            seg("n43", "NOTE", "43 Una nota inventata col richiamo ripetuto."),
+            seg("b3", "BODY", "Un testo inventato che cita il giorno 12 come mese12 lontano. " + filler),
+            seg("n12", "NOTE", "12 marzo 2099, una data inventata che apre un pezzo di nota."),
+        ]
+        XCTAssertGreaterThan(segs[0].text.count, 500)
+        let links = noteCallLinks(segs)
+        XCTAssertEqual(links.callOfNote[1], 0, "richiamo unico all'inizio di un pezzo lungo, nota in sequenza (41, 42)")
+        XCTAssertEqual(links.callOfNote[3], 2, "richiamo in apice attaccato all'anno")
+        XCTAssertNil(links.callOfNote[5], "richiamo ripetuto nel pezzo: nel dubbio nessun salto")
+        XCTAssertNil(links.callOfNote[7], "un pezzo di nota che comincia con una data non è in sequenza: nessun salto")
+        XCTAssertTrue(uniqueCallInWholeSegment("del 201842 ancora", 42))
+        XCTAssertFalse(uniqueCallInWholeSegment("vedi n. 201842 ancora", 42), "mai dopo un'abbreviazione di riferimento")
+        XCTAssertFalse(uniqueCallInWholeSegment("la parola43 e la parola43", 43))
+    }
+
     func test_markerColumnEmittedBeforeTheTexts_isPutBackInPositionOrder() {
         func sm(_ t: String, _ size: Double, x: Double, y: Double) -> LineSummary {
             summarizeLine(line(t, size: size, x: x, y: y, width: t.count > 3 ? 200 : 3, height: size))

@@ -134,7 +134,13 @@ regressione):
    (almeno 3) senza alcun legame riceve il salto solo dove il richiamo attaccato è
    unico nel tratto di testo che lo precede, in ordine (§ 7.12: nessun legame
    inventato). E **le note coi numeri in una colonna a parte**, che il lettore di
-   sistema emette prima dei loro testi, si rimettono nell'ordine della pagina.
+   sistema emette prima dei loro testi, si rimettono nell'ordine della pagina. Per la
+   nota letta in linea il richiamo si cerca anche oltre gli ultimi 400 caratteri del
+   pezzo di corpo che la precede (il richiamo nella prima frase di un pezzo lungo, o
+   attaccato a un anno), solo se è **unico** nel pezzo e se la nota è **in sequenza**
+   con la nota vicina (la precedente è la n−1 o la seguente la n+1): sul banco 406
+   legami nuovi, tutti veri contro il PDF (386 col verificatore, 20 a vista), nessun
+   legame perso; un pezzo di nota che comincia con una data non si lega.
 5. **Le figure ricorrenti per contenuto**: due figure nella stessa posizione su più
    pagine non contano più come arredo ripetuto se sono diverse in tutto quello che se
    ne misura (le lettere che contengono e gli oggetti dipinti); un logo, una testata o

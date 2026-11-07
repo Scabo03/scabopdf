@@ -120,6 +120,31 @@ public struct NoteJumpOptions: Equatable, Sendable {
     }
 }
 
+/// Vero se in tutto `text` il numero `n` compare UNA volta sola nella forma del richiamo (attaccato alla parola o alla
+/// chiusura che lo precede, o fra parentesi: `containsCallNumber`), oppure una volta sola attaccato a un anno a quattro cifre
+/// («nel 2018⁵²» letto «201852»: l'anno 1900-2099 seguito dalle cifre del numero, mai dopo un'abbreviazione di riferimento),
+/// e in nessun'altra forma di richiamo. Nel dubbio (due occorrenze, o una per forma), nessun salto.
+func uniqueCallInWholeSegment(_ text: String, _ n: Int) -> Bool {
+    let digits = String(n)
+    var count = 0
+    let patterns = [
+        "([A-Za-zÀ-ÿ»”’\\)\\]]+)\\s?(?<![0-9])\(digits)(?![0-9])",
+        "([A-Za-zÀ-ÿ»”’\\)\\]]+)\\.?\\s?\\(\(digits)\\)",
+        "([A-Za-zÀ-ÿ»”’\\)\\]]+)\\s(?:19|20)[0-9]{2}\(digits)(?![0-9])",
+    ]
+    for (k, pattern) in patterns.enumerated() {
+        guard let re = try? NSRegularExpression(pattern: pattern) else { return false }
+        for m in re.matches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text)) {
+            guard let r = Range(m.range(at: 1), in: text) else { continue }
+            let word = text[r].lowercased().filter { $0.isLetter }
+            let last = String(text[r].lowercased().split(whereSeparator: { !$0.isLetter }).last ?? "")
+            if NOT_A_CALL_BEFORE.contains(word) || ((k == 1 || k == 2) && NOT_A_CALL_BEFORE.contains(last)) { continue }
+            count += 1
+        }
+    }
+    return count == 1
+}
+
 /// Il richiamo attaccato a una sigla col punto (forma delle cure mirate): una sigla di lettere separate da punti (i codici
 /// abbreviati) o «ecc.»/«etc.», poi al più uno spazio e il numero.
 private func containsCallAfterSigla(_ text: String, _ n: Int, tail: Int) -> Bool {
@@ -161,6 +186,21 @@ public func noteCallLinks(_ segments: [ContentSegment], options: NoteJumpOptions
     func isText(_ k: Int) -> Bool { !isNoteRole(segments[k].role) && segments[k].role != VISUAL_RESOURCE_ROLE }
     func isHeading(_ k: Int) -> Bool {
         segments[k].role.hasPrefix("HEADING_") || segments[k].role == SemanticCategory.ARTICLE_HEADER.rawValue
+    }
+    // Vero se la nota d'indice `i` col numero `n` è in sequenza con la nota aperta più vicina prima o dopo di lei nel flusso
+    // (primi pezzi delle note, entro 12 segmenti): la precedente porta n−1 o la seguente n+1.
+    func inNumberSequence(_ i: Int, _ n: Int) -> Bool {
+        func opening(_ k: Int) -> Int? {
+            let s = segments[k]
+            guard s.role == SemanticCategory.NOTE.rawValue || s.role == SemanticCategory.EDITORIAL_NOTE.rawValue,
+                  !s.id.contains("#") || s.id.hasSuffix("#0") else { return nil }
+            return noteOpening(s.text)
+        }
+        var k = i - 1
+        while k >= max(0, i - 12) { if let m = opening(k) { if m == n - 1 { return true }; break }; k -= 1 }
+        k = i + 1
+        while k < min(segments.count, i + 13) { if let m = opening(k) { if m == n + 1 { return true }; break }; k += 1 }
+        return false
     }
     for (i, seg) in segments.enumerated()
     where seg.role == SemanticCategory.NOTE.rawValue || seg.role == SemanticCategory.EDITORIAL_NOTE.rawValue {
@@ -224,6 +264,14 @@ public func noteCallLinks(_ segments: [ContentSegment], options: NoteJumpOptions
         guard let c = call else { continue }
         var linked = containsCallNumber(segments[c].text, number,
                                         tail: seg.memoryRefresh.isEmpty ? NOTE_JUMP_INLINE_TAIL : nil)
+        if !linked, seg.memoryRefresh.isEmpty, !normative, inNumberSequence(i, number) {
+            // Giro «rifiniture e cure per capacità»: la nota in linea sta dopo il segmento del suo richiamo, che può essere
+            // più lungo della coda di 400 caratteri (il richiamo nella prima frase di un pezzo lungo), o il richiamo in apice
+            // attaccato a un anno («nel 2018⁵²» → «201852»). Si cerca in tutto il segmento, e vale solo se è UNICO lì e se
+            // la nota è in SEQUENZA con la nota vicina (la precedente è la n−1 o la seguente la n+1): un pezzo di nota che
+            // comincia con una data o con un numero di pagina non è una nota aperta dal suo numero, e non si lega.
+            linked = uniqueCallInWholeSegment(segments[c].text, number)
+        }
         if !linked, options.targetedInline, seg.memoryRefresh.isEmpty, !normative {
             // Cure mirate: ultima frase del segmento (anche oltre i 400 caratteri) e richiamo dopo una sigla col punto.
             let window = max(NOTE_JUMP_INLINE_TAIL, lastSentenceLength(segments[c].text))

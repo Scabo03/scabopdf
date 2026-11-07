@@ -4,7 +4,7 @@ Che cosa cambia
 - In alcuni libri i titoli di capitolo che sparivano, perché la stessa frase è ripetuta in piccolo in testa alle pagine seguenti, ora si leggono e si trovano nella navigazione per intestazioni. Le righe ripetute in testa alle pagine continuano a non essere lette.
 - Nelle dispense scritte con Word i titoli in grassetto si riconoscono anche quando hanno la stessa grandezza del testo.
 - In alcuni libri i titoli di sezione, separati dal testo solo da uno spazio bianco, ora sono intestazioni e non restano incollati al capoverso che segue.
-- Le note raccolte alla fine di un capitolo hanno l'azione «Vai al testo del richiamo» dove il richiamo si trova con sicurezza; dove manca la sicurezza, l'azione resta assente. Non serve rielaborare il libro per averla.
+- Le note raccolte alla fine di un capitolo hanno l'azione «Vai al testo del richiamo» dove il richiamo si trova con sicurezza; dove manca la sicurezza, l'azione resta assente. Anche molte altre note, in tanti libri, ora hanno l'azione: quelle il cui richiamo sta all'inizio di un capoverso lungo. Non serve rielaborare il libro per averla.
 - Alcune note stampate con i numeri in una colonna a parte si leggono intere e nel loro ordine.
 - Alcune carte geografiche e figure impaginate allo stesso modo su più pagine sono annunciate come «Risorsa visiva»: prima venivano scartate come se fossero un fregio ripetuto. Un logo o una filigrana ripetuti restano esclusi.
 - Con iOS 26.5 le parole spezzate in due da un trattino invisibile si leggono intere, come con iOS 27.
