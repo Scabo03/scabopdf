@@ -1229,7 +1229,8 @@ build 54).** Le tre decisioni qui sopra, rese concrete.
 3. **Il record App Store del Mac** sarà un record nuovo, da aprire solo quando il Mac andrà distribuito.
 4. **Sul Mac, due app separate:** l'officina e, se verrà, un'app di lettura, per non mescolare lavoro e lettura. La vista
    di lettura per Mac sarà oggetto di uno studio dedicato e approfondito su VoiceOver di macOS, che è molto diverso da
-   quello dei dispositivi mobili, con documentazione e prove; non è materia del giro che registra queste decisioni.
+   quello dei dispositivi mobili, con documentazione e prove; non è materia del giro che registra queste decisioni. (Lo
+   studio è del 2026-10-20, `docs/STUDIO_LETTURA_MAC.md`; le decisioni che ne seguono sono in § 12.16.)
 
 **Esito del giro per le decisioni 1 e 2 (2026-10-16).** La decisione 1 è realizzata nella build 55 (§ 10.6). Per la
 decisione 2, il conteggio (`docs/CONTEGGIO_NOTE_SPEZZATE.md`, giudicato contro la pagina stampata su un campione di 202
@@ -1397,6 +1398,24 @@ Decisioni del maintainer per l'ultimo giro su titoli e testatine prima della fas
 4. **Marrone su iOS 26.5**: il piè «Pag. N-M» che PDFKit fonde con l'ultima riga di corpo è un **residuo accettato**, da
    documentare e non da inseguire con regole sul testo. (Esito del giro: vedi `TESTATINE_MISURA_STRUTTURA.md` § 6, la
    separazione delle righe fuse nell'estrattore lo tocca senza regole sul testo.)
+
+### 12.16 La lettura sul Mac: cinque decisioni del maintainer (2026-10-20)
+
+Decisioni del maintainer del 2026-10-20, prese dopo lo studio su VoiceOver di macOS chiesto dalla decisione 4 del
+2026-10-16 (§ 12.12) e registrate all'apertura del giro «fondamenta della lettura per Mac» (2026-11-07). Lo studio è in
+`docs/STUDIO_LETTURA_MAC.md`: in testa riporta queste decisioni e indica le sue parti che ne risultano superate.
+
+1. **Un'app nativa, separata dall'officina, costruita a tappe.** La lettura sul Mac è un'app nativa per macOS, separata
+   dall'officina che prepara i libri, e si costruisce a tappe. Catalyst resta solo uno strumento di laboratorio.
+2. **I contenitori si tengono dove migliorano la funzionalità e l'efficienza dell'app.** Navigare i contenitori è parte
+   normale di VoiceOver sul Mac, anche nelle impostazioni di sistema, e non è un ostacolo in più: si evitano solo gli
+   annidamenti che non servono a nulla.
+3. **Nessuna lettura per frasi e righe.** Gli elementi della lettura sono i blocchi dei quattro livelli di granularità
+   attuali, 400, 600, 900 e 1200 caratteri (§ 7.6, § 7.7), senza frammentazioni ulteriori. La tappa «righe e frasi come in
+   Pages» esce dal piano.
+4. **Per le note si cercherà una soluzione acustica vera.** L'annuncio a voce, che sull'iPad esiste già come opzione «note
+   annunciate a voce», è il ripiego e il punto di partenza.
+5. **Comandi e script personalizzati di VoiceOver non si perseguono**: è una via chiusa per un'app pubblicabile.
 
 ---
 
