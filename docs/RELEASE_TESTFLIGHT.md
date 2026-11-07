@@ -196,6 +196,24 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 64 — 2026-11-07, commit `0b48f18` (giro «rifiniture e cure per capacità», seconda parte, livello di verifica
+  pieno: sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta
+  «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; `docs/CARRYOVER.md` STATO del 2026-11-07,
+  LAYER2 § 0-ter e § 12.13, `docs/CURE_MIRATE.md` § 4.2 e § 5).** Xcode 27.2 (27B52). `fastlane beta` da main: «Latest
+  upload … is build: 63», `CURRENT_PROJECT_VERSION` 64, EXPORT SUCCEEDED alle 03:25:15, altool «UPLOAD SUCCEEDED with no
+  errors» alle 03:27:34, Delivery UUID `1a866f6a-c7ab-4e46-b7db-4086ad3375c7`; subito dopo, per la terza build di fila,
+  l'errore del file di ripresa del caricatore, corsia uscita con exit 1 prima dell'elaborazione e delle note. Nessun
+  rilancio: verifica in sola lettura con la chiave API dopo circa tre minuti (build 64 caricata alle 03:28:29 ora italiana,
+  elaborazione VALID, «Cosa testare» vuoto), impostato il solo «Cosa testare» (it) col testo di
+  `app/ios/fastlane/COSA_TESTARE.txt` (script di laboratorio `studio_mirato/build62/asc_imposta_note.rb`) e riletto: 2 508
+  caratteri, identico al file. IPA 163 309 780 byte; nell'archivio `CFBundleVersion` 64, le 51 impronte del registro
+  d'invarianza (`ProcessingChain.booksUnchangedByCure`) e le 2 del registro delle cure mirate; il nome della regola mirata
+  tolta (`titoli_grassetto`) è assente. I due `log stream` nati durante la corsa fermati per PID. Reti prima del
+  caricamento, sul codice `80bdf8f` (il commit `0b48f18` aggiunge solo il CARRYOVER): suite complete sui quattro
+  simulatori verdi (`validate.sh` 1 104 test; app 232 e interfaccia 42 su iPhone e iPad, iOS 26.5 e 27, audit di
+  accessibilità compresi), rete dei documenti di studio verde coi tre volumi stabili, parità iPad-Mac 52/52 + 3/3,
+  annotazioni del banco 0 righe rosse, risorse visive 110/110 al posto. Per la verifica dei testi nel binario va usato
+  `strings -a` prima di cercare: `grep -F` diretto sul binario Mach-O non trovava nessuna delle impronte.
 - **Build 63 — 2026-11-07, commit `30d6819` (giro «rifiniture e cure per capacità», prima parte, livello di verifica
   pieno: le due cure mirate dei documenti di studio rifinite, regole nuove sempre accese solo dall'impronta; offerta di
   nuovo ai due documenti e solo a loro; ogni altro libro identico al byte alla build 62; `docs/CARRYOVER.md` STATO del

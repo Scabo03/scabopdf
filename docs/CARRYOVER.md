@@ -10,7 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
-> Versione: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti: **prima parte CONCLUSA con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); seconda parte (cure per capacità dai difetti del volume della prova alla cieca, build 64) in corso sul ramo della seconda parte.)
+> Versione: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti, **CONCLUSO**: **prima parte con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); **seconda parte con la build 64** su TestFlight (sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; i tre documenti del giro diventano volumi stabili della rete dei documenti di studio). Vedi i due STATO qui sotto.)
 > Versione: 2.52 (6 novembre 2026, giro «cure mirate per lo studio», livello di verifica pieno, **CONCLUSO** con la **build 62** su TestFlight: due documenti di studio del maintainer curati con regole accese solo dalla loro impronta (registro `TargetedCures`, LAYER2 § 0-ter, `docs/CURE_MIRATE.md`), letture di tutti i 52 volumi del banco identiche al byte su iOS 26.5 e 27, offerta «Lettura migliore disponibile» solo ai due documenti; prova alla cieca su un volume ignoto, giudicato senza cure. Ambiente: Xcode 27.2. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.51 (20 ottobre 2026, giro «ricerca nella libreria», livello di verifica leggero, **CONCLUSO** con la **build 61** su TestFlight: dal tab Ricerca della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla»/«Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; le frasi del Mac nominano iPad e iPhone. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.50 (18-19 ottobre 2026, giro «accessibilità e completamento», **CONCLUSO** con la **build 59** su TestFlight (VALID, note per i tester impostate): **l'ordine di lettura segue l'importanza** in ogni schermata con le schede (titolo, poi le tre schede, poi i comandi, poi il contenuto; prima, sull'iPad con iPadOS 27 e sull'iPhone, le schede si leggevano per ultime e sull'iPad con iPadOS 26.5 mancava il titolo), misurato con VoiceOver vero nei test d'interfaccia da iOS 27 (`XCUIDevice.voiceOverService`); **salto fra nota e richiamo** per 8.879 delle 9.030 note differite (1.224 → 151 senza salto, ogni legame nuovo verificato contro la pagina stampata; INBOX D.16); **lacune WCAG di livello A chiuse**: tastiera nello split e ⌘J (2.1.1/2.1.2, con due difetti preesistenti curati: ⌘= impossibile dalla tastiera italiana, menu degli strumenti che Esc non chiudeva sull'iPad), lingua dell'interfaccia dichiarata e lingua del documento ricavata (3.1.1); le due voci rosse dell'audit sull'iPad spiegate (barra delle schede di sistema, testo sotto un foglio) e accettate con condizioni e un tetto, dichiarate; letture identiche al byte alla build 58 su entrambe le generazioni. Vedi STATO del 2026-10-18 sera)
@@ -104,8 +104,10 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 ## ▶ STATO — Giro «rifiniture e cure per capacità», seconda parte: cure per capacità dai difetti del volume della prova alla cieca, offerta a tutti e soli i libri che cambiano, build 64 — 2026-11-07
 
 **Partenza:** `2bb0adc` (main dopo la build 63). **Ramo:** `feat/cure-capacita-titoli-ignoto-c` (nome neutro: quello del
-brief portava un segno d'origine del volume). Livello di cure **64**. Dettaglio per forma in LAYER2 § 0-ter; offerta in
-§ 12.13; registro in CURE_MIRATE § 4.2 e § 5; residui del volume in ULTRAFOCUS_INBOX § H.5.
+brief portava un segno d'origine del volume). **Arrivo:** codice `80bdf8f`, ramo fuso in main in avanti veloce a `0b48f18`
+e poi cancellato in locale e su origin; build 64 su TestFlight (voce in `docs/RELEASE_TESTFLIGHT.md`). Livello di cure
+**64**. Dettaglio per forma in LAYER2 § 0-ter; offerta in § 12.13; registro in CURE_MIRATE § 4.2 e § 5; residui del volume
+in ULTRAFOCUS_INBOX § H.5.
 
 - **Cure per capacità** (iOS 26.5 e 27): 2.1 il titolo che la testatina ripete non è mobilia (ignoto C 6 titoli e 113 lettere
   tornate; sul banco una riga d'autore tornata, nessuna testatina vera tornata); 2.2 titoli in grassetto delle dispense Word
@@ -129,6 +131,11 @@ brief portava un segno d'origine del volume). Livello di cure **64**. Dettaglio 
   lento (una ricerca di sottostringa a ogni riga).
 - **Revisione indipendente**: misure confermate da sé; R1 e R2 corretti, R3 eseguito; il controllo del testo dei volumi
   guarda sempre il repo principale (non una copia di lavoro): rifatto sul ramo, frasi comuni riformulate, 0 righe.
+- **Suite** (codice `80bdf8f`): `validate.sh` verde, 1.104 test (iPhone 16, iOS 26.5); app 232 e interfaccia 42 su iPhone
+  con iOS 27 e su iPad con iOS 27 e 26.5, 0 falliti, audit di accessibilità compresi; ScaboCore 1.062/1.062. Rete dei
+  documenti di studio verde con catture nuove a `0b48f18` (tre documenti per generazione, prova al contrario).
+- **Build 64**: caricata (Delivery UUID `1a866f6a…`); per la terza volta l'errore del file di ripresa del caricatore dopo
+  «UPLOAD SUCCEEDED»: verificata VALID in sola lettura e note impostate a mano (2 508 caratteri, identiche al file).
 
 ## ▶ STATO — Giro «rifiniture e cure per capacità», prima parte: le due cure mirate rifinite, build 63 — 2026-11-07
 
@@ -148,8 +155,11 @@ invariato (macOS 27.0.1, Xcode 27.2, Swift 6.4.2, simulatori iOS 26.5 e 27.0). R
   manuale indice 312 → 328/331, salti 273 → 278; lettere e cifre identiche (salvo i 408 punti tornati).
 - **Reti**: catena e runner 260/260 per generazione contro la build 62; Marotta identico; risorse visive 110/110 al posto;
   annotazioni 0 rosse sul banco, 0 sbagliate sui due documenti con 3 prove al contrario; parità iPad-Mac 52/52;
-  `rete_cure_mirate.sh` verde con catture nuove; suite complete sui quattro simulatori verdi a `30d6819` (validate.sh 1.092;
-  app 231 e interfaccia 42 su iPhone e iPad, iOS 26.5 e 27, audit di accessibilità compresi; nessun rosso).
+  `rete_cure_mirate.sh` verde con catture nuove; suite verdi a `30d6819` su tre simulatori (validate.sh 1.092 su iPhone 16
+  con iOS 26.5; app 231 e interfaccia 42 su iPhone e iPad con iOS 27, audit di accessibilità compresi; nessun rosso).
+  **Correzione di fatto:** una prima versione di questa riga diceva «quattro simulatori a `30d6819`»; l'iPad con iOS 26.5
+  era verde a `6070a23` e non è stato rifatto a `30d6819` (le correzioni toccavano ScaboCore, verde 1.050/1.050, e un test
+  dell'app); è tornato verde nella seconda parte, su un codice che contiene tutta la prima.
 - **Revisione indipendente**: due risposte sì e due in parte; corretti i rilievi in `17b9773` e `30d6819` (test dell'app che
   fissava la build 62, CURE_MIRATE § 2 coi sei punti d'ingresso, frasi dell'offerta e condizione di rimozione, salto ampliato
   con una regola sua, 32 punti ancora staccati, «all.»).
