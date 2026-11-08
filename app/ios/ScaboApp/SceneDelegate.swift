@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {

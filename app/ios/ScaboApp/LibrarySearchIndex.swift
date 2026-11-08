@@ -24,6 +24,7 @@
 //
 
 import Foundation
+import ScaboChain
 import ScaboCore
 
 final class LibrarySearchIndex {

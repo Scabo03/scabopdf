@@ -1,6 +1,6 @@
 //
 //  DocumentProcessor.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-11-08 in ScaboApp; condiviso con l'app Mac: stesse fasi, stesse parole, stessa catena)
 //
 //  Orchestratore dell'elaborazione di un PDF importato: estrazione → classificazione →
 //  impaginazione del corpo, FUORI dal main thread, con progresso REALE e cancellazione pulita.
@@ -34,30 +34,30 @@
 //
 
 import Foundation
-import ScaboChain
 import ScaboCore
 
 /// Flag di cancellazione thread-safe (impostabile dal main, letto dal background).
-final class CancellationFlag {
+public final class CancellationFlag {
+    public init() {}
     private let lock = NSLock()
     private var cancelled = false
 
-    var isCancelled: Bool {
+    public var isCancelled: Bool {
         lock.lock(); defer { lock.unlock() }
         return cancelled
     }
 
-    func cancel() {
+    public func cancel() {
         lock.lock(); defer { lock.unlock() }
         cancelled = true
     }
 }
 
 /// Orchestratore one-shot. Crearne uno per importazione; `cancel()` lo interrompe.
-final class DocumentProcessor {
+public final class DocumentProcessor {
 
     /// Esito dell'elaborazione, consegnato sul main.
-    enum Outcome {
+    public enum Outcome {
         /// Documento elaborato e corpo impaginato pronto per la reading view. `content` è il
         /// flusso di Lettura Continua (sempre presente); `doctrineContent` è il flusso di Dottrina
         /// Inline (§ 10), presente SOLO se il documento ha note (altrimenti `nil` → il layout è
@@ -74,7 +74,7 @@ final class DocumentProcessor {
     }
 
     /// Fase corrente dell'elaborazione (per l'etichetta annunciabile).
-    enum Phase {
+    public enum Phase {
         case opening
         case extraction
         /// Riconoscimento di tabelle e figure (risorse visive, `VisualRegionDetector`): la sonda di tutte le pagine
@@ -87,17 +87,21 @@ final class DocumentProcessor {
     }
 
     /// Avanzamento reale, consegnato sul main.
-    struct Progress {
-        let phase: Phase
+    public struct Progress {
+        public let phase: Phase
         /// Pagine elaborate nella fase corrente (0 in apertura/impaginazione).
-        let unitsDone: Int
+        public let unitsDone: Int
         /// Pagine totali del documento (0 finché non note).
-        let unitsTotal: Int
+        public let unitsTotal: Int
         /// Frazione complessiva 0…1 (vedi nota di testata).
-        let fraction: Double
+        public let fraction: Double
+
+        public init(phase: Phase, unitsDone: Int, unitsTotal: Int, fraction: Double) {
+            self.phase = phase; self.unitsDone = unitsDone; self.unitsTotal = unitsTotal; self.fraction = fraction
+        }
 
         /// Etichetta della fase in prosa per VoiceOver.
-        var phaseLabel: String {
+        public var phaseLabel: String {
             switch phase {
             case .opening: return "Apertura del documento"
             case .extraction: return "Estrazione del testo"
@@ -116,20 +120,20 @@ final class DocumentProcessor {
     /// Riconoscimento delle risorse visive (tabelle e figure). Spento solo nei test che non lo riguardano.
     private let detectVisualResources: Bool
     /// L'esito dell'ultimo riconoscimento (conteggi e tempi), leggibile dopo `completion` (registro, test).
-    private(set) var lastVisualDetection: VisualRegionDetector.Result?
+    public private(set) var lastVisualDetection: VisualRegionDetector.Result?
     /// Le decisioni della guardia sull'ultimo flusso costruito (Lettura Continua).
-    private(set) var lastVisualReport: VisualResourcesReport?
+    public private(set) var lastVisualReport: VisualResourcesReport?
 
     /// Perché il riconoscimento di tabelle e figure dell'ultima elaborazione non è avvenuto (o non del tutto) per una
     /// ragione da riprovare più avanti (memoria, modello: `VisualRegionDetector.retryableSkipReasons`); nil altrimenti.
     /// Chi registra l'elaborazione la segna sul libro, e l'offerta di rielaborazione glielo propone (giro del 2026-10-16).
-    var visualResourcesMissingReason: String? {
+    public var visualResourcesMissingReason: String? {
         guard let reason = lastVisualDetection?.skippedReason,
               VisualRegionDetector.retryableSkipReasons.contains(reason) else { return nil }
         return reason
     }
 
-    init(extractor: ProgressReportingPdfExtractor = PdfKitExtractor(), detectVisualResources: Bool = true) {
+    public init(extractor: ProgressReportingPdfExtractor = PdfKitExtractor(), detectVisualResources: Bool = true) {
         self.extractor = extractor
         self.detectVisualResources = detectVisualResources
     }
@@ -137,7 +141,7 @@ final class DocumentProcessor {
     /// Avvia l'elaborazione del file `fileURL` (una copia locale che il chiamante possiede) in
     /// background. `onProgress` e `completion` arrivano sul main; `completion` esattamente una
     /// volta. Idempotente rispetto a una `cancel()` già avvenuta.
-    func process(
+    public func process(
         fileURL: URL,
         sourceName: String,
         granularityTarget: Int = DEFAULT_GRANULARITY_TARGET,
@@ -184,14 +188,14 @@ final class DocumentProcessor {
 
     /// Richiesta di cancellazione cooperativa. Sicura da chiamare dal main mentre il lavoro gira:
     /// il background si ferma al prossimo checkpoint e consegna `.cancelled`.
-    func cancel() {
+    public func cancel() {
         flag.cancel()
     }
 }
 
 extension DocumentProcessor.Progress {
     /// Dall'avanzamento della catena condivisa (stessi valori, fase per fase).
-    init(_ p: ChainProgress) {
+    public init(_ p: ChainProgress) {
         let phase: DocumentProcessor.Phase
         switch p.phase {
         case .opening: phase = .opening

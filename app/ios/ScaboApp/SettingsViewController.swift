@@ -13,6 +13,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 final class SettingsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {

@@ -1,6 +1,6 @@
 //
 //  SystemGeneration.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-11-08 in ScaboApp; condiviso con l'app Mac, logica invariata)
 //
 //  La GENERAZIONE del lettore PDF di sistema con cui l'app elabora i documenti (giro «generazioni
 //  del lettore», 2026-10-06, docs/GENERAZIONI_LETTORE.md). PDFKit cambia fra versioni di sistema
@@ -16,10 +16,10 @@ import ScaboCore
 import UIKit
 #endif
 
-enum SystemGeneration {
+public enum SystemGeneration {
     /// «iOS 27.0.1» (o «iPadOS …»/«macOS …» secondo la piattaforma): nome del sistema e versione
     /// numerica completa. È la stringa che si annota sul documento e si mostra nel referto.
-    static var current: String {
+    public static var current: String {
         let v = ProcessInfo.processInfo.operatingSystemVersion
         let number = v.patchVersion == 0 ? "\(v.majorVersion).\(v.minorVersion)"
             : "\(v.majorVersion).\(v.minorVersion).\(v.patchVersion)"
@@ -28,7 +28,7 @@ enum SystemGeneration {
 
     /// Il nome dell'apparecchio per le frasi dell'app («dall'iPad», «del tuo iPhone»): iPad o iPhone secondo
     /// l'apparecchio in uso. I due nomi cominciano per vocale, quindi «l'», «dall'», «sull'» valgono per entrambi.
-    static var deviceName: String {
+    public static var deviceName: String {
         #if os(iOS)
         return UIDevice.current.userInterfaceIdiom == .pad ? "iPad" : "iPhone"
         #else
@@ -47,13 +47,13 @@ enum SystemGeneration {
     }
 
     /// Build dell'app in esecuzione (CFBundleVersion), o `nil` fuori da un bundle.
-    static var appBuild: String? {
+    public static var appBuild: String? {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
     }
 
     /// Testo per il referto di elaborazione: la generazione (e la build dell'app) con cui il contenuto in
     /// cache è stato letto, o la dichiarazione che non è registrata (elaborato prima dell'etichetta).
-    static func describe(_ document: ArchivedDocument) -> String {
+    public static func describe(_ document: ArchivedDocument) -> String {
         guard let version = document.processedSystemVersion else {
             return "non registrata (elaborato prima che l'app la annotasse; per registrarla, reimporta il file)"
         }

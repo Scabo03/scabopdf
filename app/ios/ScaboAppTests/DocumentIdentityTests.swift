@@ -13,6 +13,7 @@
 
 import XCTest
 @testable import ScaboApp
+import ScaboChain
 import ScaboCore
 
 final class DocumentIdentityTests: XCTestCase {

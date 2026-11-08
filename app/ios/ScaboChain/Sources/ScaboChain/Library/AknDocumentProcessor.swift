@@ -1,6 +1,6 @@
 //
 //  AknDocumentProcessor.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-11-08 in ScaboApp; condiviso con l'app Mac, logica invariata)
 //
 //  Orchestratore dell'importazione di un file AKN (Normattiva), PARALLELO a
 //  `DocumentProcessor` (PDF) e mai ramificato dentro di esso (scelta anti-regressione).
@@ -18,7 +18,7 @@ import ScaboCore
 
 /// Confine comune fra gli orchestratori di importazione (PDF e AKN), consumato da
 /// `ProcessingViewController`. Entrambi consegnano `onProgress`/`completion` sul main.
-protocol DocumentProcessing: AnyObject {
+public protocol DocumentProcessing: AnyObject {
     func process(
         fileURL: URL,
         sourceName: String,
@@ -33,13 +33,15 @@ protocol DocumentProcessing: AnyObject {
 extension DocumentProcessor: DocumentProcessing {}
 
 /// Orchestratore one-shot per l'import AKN. Crearne uno per importazione.
-final class AknDocumentProcessor: DocumentProcessing {
+public final class AknDocumentProcessor: DocumentProcessing {
+
+    public init() {}
 
     private let flag = CancellationFlag()
     private let workQueue = DispatchQueue(label: "scabopdf.akn-processing", qos: .userInitiated)
     private var didComplete = false
 
-    func process(
+    public func process(
         fileURL: URL,
         sourceName: String,
         granularityTarget: Int = DEFAULT_GRANULARITY_TARGET,
@@ -113,7 +115,7 @@ final class AknDocumentProcessor: DocumentProcessing {
         }
     }
 
-    func cancel() {
+    public func cancel() {
         flag.cancel()
     }
 }

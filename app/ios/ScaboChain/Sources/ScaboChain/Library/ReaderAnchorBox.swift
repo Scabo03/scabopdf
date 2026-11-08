@@ -1,6 +1,6 @@
 //
 //  ReaderAnchorBox.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-11-08 in ScaboApp; condiviso con l'app Mac)
 //
 //  Scatola condivisa fra chi costruisce una reading view (DocumentOpener) e la reading view stessa:
 //  la view vi deposita l'indice delle ancore per contenuto appena pronto (ContentAnchor.swift), così
@@ -11,7 +11,8 @@
 import Foundation
 import ScaboCore
 
-final class ReaderAnchorBox {
-    var index: ContentAnchorIndex?
-    func anchor(forIndex i: Int) -> ContentAnchor? { index?.anchor(forIndex: i) }
+public final class ReaderAnchorBox {
+    public var index: ContentAnchorIndex?
+    public init() {}
+    public func anchor(forIndex i: Int) -> ContentAnchor? { index?.anchor(forIndex: i) }
 }

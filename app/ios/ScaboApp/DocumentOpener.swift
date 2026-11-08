@@ -76,47 +76,16 @@ enum DocumentOpener {
     /// documento aggiornato. Nessuna annotazione → nessun lavoro.
     @discardableResult
     static func reanchorAfterProcessing(documentId: String, content: PaginatedContent) -> ArchivedDocument? {
-        guard let doc = service.store.document(id: documentId) else { return nil }
-        let hasAnything = !(doc.bookmarks ?? []).isEmpty || !(doc.underlines ?? []).isEmpty || doc.readingPosition > 0
-        guard hasAnything else { return doc }
-        let out = AnnotationReanchoring.reanchor(
-            bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
-            readingAnchor: doc.readingAnchor, in: ContentAnchorIndex(segments: content.pages.flatMap { $0.segments }))
-        service.store.applyAnnotationState(
-            documentId: documentId, bookmarks: out.bookmarks, underlines: out.underlines,
-            readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
-            readingPositionIsApproximate: out.readingPositionIsApproximate ? true : nil)
-        return service.store.document(id: documentId)
+        // La logica sta in ScaboChain (`LibraryReadings.swift`, dal 2026-11-08), condivisa con l'app Mac.
+        service.reanchorAfterProcessing(documentId: documentId, content: content)
     }
 
     /// Conia le ancore per contenuto MANCANTI delle annotazioni del documento, a contenuto fermo (il
     /// flusso appena presentato è quello su cui gli id correnti sono veri): è la migrazione gratuita
     /// delle annotazioni create prima delle ancore (docs/ANCORE_ANNOTAZIONI.md). Una sola scrittura,
-    /// solo se c'è qualcosa da coniare.
+    /// solo se c'è qualcosa da coniare. La logica sta in ScaboChain (`LibraryReadings.swift`).
     static func mintMissingAnchors(documentId: String, in index: ContentAnchorIndex) {
-        guard let doc = service.store.document(id: documentId) else { return }
-        // Prima la VERIFICA (§ 12.14 «al suo posto, verificato»): se un'annotazione punta per id a un segmento
-        // che non ha il contenuto della sua ancora, si riancora tutto per contenuto.
-        if AnnotationReanchoring.needsReanchoring(
-            bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
-            readingAnchor: doc.readingAnchor, in: index) {
-            let out = AnnotationReanchoring.reanchor(
-                bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
-                readingAnchor: doc.readingAnchor, in: index)
-            service.store.applyAnnotationState(
-                documentId: documentId, bookmarks: out.bookmarks, underlines: out.underlines,
-                readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
-                readingPositionIsApproximate: out.readingPositionIsApproximate ? true : doc.readingPositionIsApproximate)
-            return mintMissingAnchors(documentId: documentId, in: index)
-        }
-        let out = AnnotationReanchoring.mintMissingAnchors(
-            bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
-            readingAnchor: doc.readingAnchor, in: index)
-        guard out.minted > 0 else { return }
-        service.store.applyAnnotationState(
-            documentId: documentId, bookmarks: out.bookmarks, underlines: out.underlines,
-            readingPosition: doc.readingPosition, readingAnchor: out.readingAnchor,
-            readingPositionIsApproximate: doc.readingPositionIsApproximate)
+        service.mintMissingAnchors(documentId: documentId, in: index)
     }
 
     /// L'id-nodo base di un id-segmento, togliendo l'eventuale suffisso di granularità `#k`.
@@ -153,12 +122,11 @@ enum DocumentOpener {
         // cache SOLO se è già la versione LEGGERA (granularità grossa, `contentTarget` marcato):
         // una cache pesante a granularità fine (scritta da build precedenti) viene ignorata qui e
         // rielaborata leggera sotto (il suo decode è transitorio e rilasciato subito).
-        if let cached = service.loadCache(forDocumentId: id),
-           !large || cached.contentTarget == Self.LARGE_DOCUMENT_GRANULARITY {
+        if let cached = service.openableCachedReading(for: doc) {
             service.store.recordOpened(id: id)
             presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
-                          doctrineContent: large ? nil : cached.doctrineContent,
-                          quickConsultTree: large ? nil : cached.quickConsultTree,
+                          doctrineContent: cached.doctrineContent,
+                          quickConsultTree: cached.quickConsultTree,
                           focusAnchor: focusAnchor, librarySearch: librarySearch, from: presenter, onClosed: onClosed)
             return
         }
@@ -192,24 +160,19 @@ enum DocumentOpener {
                 guard let presenter else { return }
                 switch outcome {
                 case .success(let document, let content, let doctrineContent):
-                    let pageMap = buildPageMap(document, content: content,
-                                               doctrineContent: doctrineContent)
-                    let tree = large ? nil : quickConsultTreeIfAvailable(document)
                     // Cache SEMPRE, ma per gli enormi è la versione LEGGERA (content a granularità
                     // grossa, niente albero né Dottrina, `contentTarget` marcato): la prossima
-                    // apertura la riconosce e la usa senza rielaborare.
-                    service.writeCache(content, pageMap: pageMap,
-                                       doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
-                                       contentTarget: target, forDocumentId: id)
-                    // Etichetta di generazione: con quale lettore di sistema è stato elaborato.
-                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
-                                                  visualResourcesSkipped: visualSkipped)
+                    // apertura la riconosce e la usa senza rielaborare. Con l'etichetta di generazione:
+                    // con quale lettore di sistema è stato elaborato (ScaboChain `LibraryReadings.swift`).
+                    let reading = service.storeProcessedReading(
+                        documentId: id, document: document, content: content, doctrineContent: doctrineContent,
+                        large: large, target: target, visualResourcesSkipped: visualSkipped)
                     service.store.recordOpened(id: id)
                     // La cache mancava (o era illeggibile): il contenuto è nuovo, gli id di prima non valgono.
                     // Le annotazioni si riancorano per contenuto (§ 12.14): mai per id.
                     let doc = reanchorAfterProcessing(documentId: id, content: content) ?? doc
-                    presentReader(content: content, document: doc, pageMap: pageMap,
-                                  doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
+                    presentReader(content: content, document: doc, pageMap: reading.pageMap,
+                                  doctrineContent: reading.doctrineContent, quickConsultTree: reading.quickConsultTree,
                                   focusAnchor: focusAnchor, librarySearch: librarySearch, from: presenter, onClosed: onClosed)
                 case .cancelled:
                     break
@@ -330,12 +293,11 @@ enum DocumentOpener {
         guard let doc = service.store.document(id: id) else { completion(nil); return }
         let large = doc.sourcePageCount > Self.LARGE_DOCUMENT_PAGE_THRESHOLD
 
-        if let cached = service.loadCache(forDocumentId: id),
-           !large || cached.contentTarget == Self.LARGE_DOCUMENT_GRANULARITY {
+        if let cached = service.openableCachedReading(for: doc) {
             completion(makeEmbeddedReader(
                 doc: doc, content: cached.content, pageMap: cached.pageMap,
-                doctrine: large ? nil : cached.doctrineContent,
-                tree: large ? nil : cached.quickConsultTree, onPositionChanged: onPositionChanged))
+                doctrine: cached.doctrineContent,
+                tree: cached.quickConsultTree, onPositionChanged: onPositionChanged))
             return
         }
 
@@ -349,17 +311,12 @@ enum DocumentOpener {
             presenter?.dismiss(animated: true) {
                 switch outcome {
                 case .success(let document, let content, let doctrineContent):
-                    let pageMap = buildPageMap(document, content: content,
-                                               doctrineContent: doctrineContent)
-                    let tree = large ? nil : quickConsultTreeIfAvailable(document)
-                    service.writeCache(content, pageMap: pageMap,
-                                       doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
-                                       contentTarget: target, forDocumentId: id)
-                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
-                                                  visualResourcesSkipped: visualSkipped)
+                    let reading = service.storeProcessedReading(
+                        documentId: id, document: document, content: content, doctrineContent: doctrineContent,
+                        large: large, target: target, visualResourcesSkipped: visualSkipped)
                     completion(makeEmbeddedReader(
-                        doc: doc, content: content, pageMap: pageMap,
-                        doctrine: large ? nil : doctrineContent, tree: tree, onPositionChanged: onPositionChanged))
+                        doc: doc, content: content, pageMap: reading.pageMap,
+                        doctrine: reading.doctrineContent, tree: reading.quickConsultTree, onPositionChanged: onPositionChanged))
                 case .cancelled, .failure:
                     completion(nil)
                 }
@@ -603,59 +560,19 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         presenter: UIViewController,
         visualSkipped: String? = nil
     ) {
-        let service = LibraryService.shared
-        let sourceKind: String? = isAkn ? "akn" : nil
         switch outcome {
         case .success(let document, let content, let doctrineContent):
-            // Il titolo di default è il nome del file senza estensione (modificabile poi).
-            let title = (sourceName as NSString).deletingPathExtension
-            // L'AKN non ha pagine fisiche (§4): sourcePageCount=0 → indicatore di pagina inerte.
-            let sourcePageCount = isAkn ? 0 : document.metadata.pages_pdf
-            let doc = service.store.addDocument(
-                title: title.isEmpty ? sourceName : title,
-                sourceFileName: sourceName,
-                sourcePageCount: sourcePageCount,
-                warnings: document.warnings,
-                sourceKind: sourceKind)
-            // Archivia la sorgente (PDF o XML AKN, sorgente di verità §12.6) e la cache del contenuto.
-            var archived = false
-            do {
-                try service.storeSource(from: localCopy, forDocumentId: doc.id, kind: sourceKind)
-                archived = true
-            } catch {
-                // L'archiviazione è fallita: il documento resta apribile ora dalla cache, ma non
-                // rielaborabile in futuro. Si avvisa in prosa senza bloccare la lettura.
-                service.store.renameDocument(id: doc.id, to: doc.title)  // no-op, mantiene il record
-            }
-            // L'impronta del contenuto (DocumentIdentity.swift): quella del file scelto, già calcolata prima
-            // dell'elaborazione (la copia d'archivio è byte-identica: la fa FileManager); se non c'era, si
-            // calcola sulla copia d'archivio. Se l'archiviazione è fallita il libro resta SENZA impronta:
-            // non si propone mai di «aprire» un libro che non ha più il suo file (rilievo della revisione).
-            if archived, let fingerprint = sha256 ?? DocumentIdentity.fingerprintOfArchivedSource(service.store.document(id: doc.id) ?? doc) {
-                service.store.setSourceSha256(id: doc.id, fingerprint)
-            }
-            let pageMap = DocumentOpener.buildPageMap(document, content: content,
-                                                      doctrineContent: doctrineContent)
-            // Volume ENORME: apertura alleggerita (niente albero né Dottrina) e NON cachato — la
-            // prossima apertura dai Recenti lo rielabora leggero (granularità grossa) via `open`.
-            // L'AKN non è mai "large" (sourcePageCount=0): la finestra della reading view lo regge.
-            let large = sourcePageCount > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
-            let tree = large ? nil : DocumentOpener.quickConsultTreeIfAvailable(document)
-            if !large {
-                service.writeCache(content, pageMap: pageMap,
-                                   doctrineContent: doctrineContent, quickConsultTree: tree,
-                                   contentTarget: DEFAULT_GRANULARITY_TARGET, forDocumentId: doc.id)
-            }
-            // Etichetta di generazione (anche per l'enorme non cachato: è comunque stato elaborato ora).
-            service.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
-                                          visualResourcesSkipped: visualSkipped)
-            if let destination { service.store.addCollocation(documentId: doc.id, to: destination) }
-            service.store.recordOpened(id: doc.id)
+            // La registrazione (libro, sorgente d'archivio, impronta, mappa delle pagine, cache, generazione, collocazione,
+            // apertura) è la logica condivisa con l'app Mac: ScaboChain `LibraryReadings.swift` (dal 2026-11-08), invariata.
+            let registered = LibraryService.shared.registerImported(
+                document: document, content: content, doctrineContent: doctrineContent,
+                sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256,
+                visualResourcesSkipped: visualSkipped, destination: destination)
             onImported?()
             // Apertura automatica del lettore sul documento appena importato (al primo elemento).
             DocumentOpener.presentReaderAfterImport(
-                content: content, document: doc, pageMap: pageMap,
-                doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
+                content: content, document: registered.document, pageMap: registered.pageMap,
+                doctrineContent: registered.isLarge ? nil : doctrineContent, quickConsultTree: registered.quickConsultTree,
                 from: presenter, onImported: onImported)
         case .cancelled:
             break

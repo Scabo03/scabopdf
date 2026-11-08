@@ -70,6 +70,7 @@
 
 import UIKit
 import os
+import ScaboChain
 import ScaboCore
 
 final class ContinuousReadingViewController: UIViewController {

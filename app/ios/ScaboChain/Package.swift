@@ -11,6 +11,13 @@
 //   * il corpo della Lettura Continua (`ContinuousBodyBuilder`);
 //   * l'orchestrazione estrazione → risorse visive → classificazione → aggancio delle note → corpo
 //     (`ProcessingChain`), di cui `DocumentProcessor` dell'app è ora solo l'involucro (coda, avanzamento sul main).
+//   * dal giro «app unica per Mac, tappa A» (2026-11-08) anche la LIBRERIA senza interfaccia (`Library/`), spostata dal
+//     bersaglio dell'app iOS senza cambiarne la logica perché l'app Mac (ScaboPDF per Mac) importi e legga come l'iPad:
+//     `LibraryService` (archivio, cache nel formato dell'iPad, testo di ricerca, lettura precedente), `DocumentIdentity`
+//     (impronta, «Libro già presente»), `DocumentProcessor` e `AknDocumentProcessor` (l'involucro della catena e degli
+//     atti), `SystemGeneration`, `ReaderAnchorBox`, `LibraryFormatting`; e, estratte dai file UIKit, la registrazione dopo
+//     l'importazione, la regola della cache all'apertura, il riancoraggio (`LibraryReadings`), le parole di «Libro già
+//     presente» (`DuplicateImportWording`) e quelle della schermata d'elaborazione (`ProcessingWording`).
 //
 // Perché un pacchetto a sé e non dentro ScaboCore: ScaboCore resta SOLO Foundation (più CryptoKit per le impronte) e
 // si prova sull'host senza simulatore; qui si importano PDFKit e CoreGraphics. Perché non dentro ScaboPageStructure:

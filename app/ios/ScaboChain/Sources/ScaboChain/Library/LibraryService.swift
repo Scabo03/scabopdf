@@ -1,6 +1,7 @@
 //
 //  LibraryService.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-11-08 nel bersaglio ScaboApp; spostato senza cambiarne la logica perché l'app
+//  Mac, ScaboPDF per Mac, tiene la libreria nella stessa forma dell'iPad: giro «app unica per Mac, tappa A»)
 //
 //  La facciata applicativa che radica la libreria sul filesystem reale e tiene insieme i tre pezzi
 //  di stato persistente dell'app:
@@ -22,18 +23,17 @@
 //
 
 import Foundation
-import ScaboChain
 import ScaboCore
 
 /// Singleton di servizio per lo stato persistente dell'app.
-final class LibraryService {
+public final class LibraryService {
 
-    static let shared = LibraryService()
+    public static let shared = LibraryService()
 
     /// Lo store della libreria (metadati + organizzazione + stato di lettura).
-    let store: LibraryStore
+    public let store: LibraryStore
     /// Le preferenze globali (tema, granularità, toggle pagine).
-    let prefs: KeyValueStore
+    public let prefs: KeyValueStore
 
     private let fileManager = FileManager.default
     private let archiveDir: URL
@@ -67,9 +67,16 @@ final class LibraryService {
     /// rielabora UNA volta, alla prima apertura, come col formato 5.
     private static let minReadableCacheFormatVersion = ReadingAssembly.minReadableCacheFormatVersion   // 6
 
-    private init() {
-        let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+    /// La libreria dell'app: `Application Support/ScaboPDF/` (sull'iPad e, dentro il contenitore della sandbox, sul Mac).
+    private convenience init() {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let root = support.appendingPathComponent("ScaboPDF", isDirectory: true)
+        self.init(rootDirectory: root, prefs: UserDefaultsKeyValueStore())
+    }
+
+    /// Una libreria radicata in `root`, nella stessa forma (`library.json`, `Archive/`, `Cache/`): l'app usa `shared`; i test
+    /// e il banco del Mac una cartella propria.
+    public init(rootDirectory root: URL, prefs: KeyValueStore) {
         archiveDir = root.appendingPathComponent("Archive", isDirectory: true)
         cacheDir = root.appendingPathComponent("Cache", isDirectory: true)
         try? fileManager.createDirectory(at: archiveDir, withIntermediateDirectories: true)
@@ -77,23 +84,23 @@ final class LibraryService {
 
         let libraryURL = root.appendingPathComponent("library.json")
         store = LibraryStore(persistence: FileLibraryPersistence(url: libraryURL))
-        prefs = UserDefaultsKeyValueStore()
+        self.prefs = prefs
     }
 
     // MARK: - Archivio PDF (sorgente di verità)
 
     /// Il percorso d'archivio del PDF di origine di un documento.
-    func archivedPDFURL(forDocumentId id: String) -> URL {
+    public func archivedPDFURL(forDocumentId id: String) -> URL {
         archiveDir.appendingPathComponent("\(id).pdf")
     }
 
     /// Vero se il PDF d'archivio esiste (necessario per rielaborare in caso di cache mancante).
-    func hasArchivedPDF(forDocumentId id: String) -> Bool {
+    public func hasArchivedPDF(forDocumentId id: String) -> Bool {
         fileManager.fileExists(atPath: archivedPDFURL(forDocumentId: id).path)
     }
 
     /// Copia il PDF importato (una copia temporanea) nell'archivio sotto l'id del documento.
-    func storePDF(from temporaryURL: URL, forDocumentId id: String) throws {
+    public func storePDF(from temporaryURL: URL, forDocumentId id: String) throws {
         let destination = archivedPDFURL(forDocumentId: id)
         if fileManager.fileExists(atPath: destination.path) {
             try? fileManager.removeItem(at: destination)
@@ -128,16 +135,16 @@ final class LibraryService {
     }
 
     /// URL del file di cache di un documento (per i test: simulare una cache di formato vecchio).
-    func cacheURLForTesting(forDocumentId id: String) -> URL { cacheURL(forDocumentId: id) }
+    public func cacheURLForTesting(forDocumentId id: String) -> URL { cacheURL(forDocumentId: id) }
 
     /// Vero se esiste un file di cache (senza decodificarlo): un libro con la cache si apre anche senza il file d'archivio.
-    func hasCache(forDocumentId id: String) -> Bool {
+    public func hasCache(forDocumentId id: String) -> Bool {
         fileManager.fileExists(atPath: cacheURL(forDocumentId: id).path)
     }
 
     /// Contenuto + mappa pagine + (se presente) flusso Dottrina Inline in cache, o `nil` se
     /// assente/corrotto/di formato superato (→ si rielabora dal PDF d'archivio).
-    func loadCache(forDocumentId id: String)
+    public func loadCache(forDocumentId id: String)
         -> (content: PaginatedContent, pageMap: [String: Int], doctrineContent: PaginatedContent?,
             quickConsultTree: [QuickConsultNode]?, contentTarget: Int?)? {
         guard let data = try? Data(contentsOf: cacheURL(forDocumentId: id)),
@@ -152,7 +159,7 @@ final class LibraryService {
     }
 
     /// Il solo contenuto elaborato in cache (riapertura all'avvio).
-    func cachedContent(forDocumentId id: String) -> PaginatedContent? {
+    public func cachedContent(forDocumentId id: String) -> PaginatedContent? {
         loadCache(forDocumentId: id)?.content
     }
 
@@ -160,7 +167,7 @@ final class LibraryService {
     /// scrittura è riuscita (scrittura atomica: se fallisce, la cache di prima resta intatta). I chiamanti storici
     /// ignorano l'esito; la ricezione della lettura dal Mac lo controlla (giro del 2026-10-16).
     @discardableResult
-    func writeCache(
+    public func writeCache(
         _ content: PaginatedContent, pageMap: [String: Int],
         doctrineContent: PaginatedContent?, quickConsultTree: [QuickConsultNode]?,
         contentTarget: Int, forDocumentId id: String
@@ -179,7 +186,7 @@ final class LibraryService {
     }
 
     /// Rimuove sorgente (PDF o AKN), cache e testo di ricerca di un documento dal disco (eliminazione definitiva).
-    func deleteFiles(forDocumentId id: String) {
+    public func deleteFiles(forDocumentId id: String) {
         try? fileManager.removeItem(at: archivedPDFURL(forDocumentId: id))
         try? fileManager.removeItem(at: archivedSourceURL(forDocumentId: id, kind: "akn"))
         try? fileManager.removeItem(at: cacheURL(forDocumentId: id))
@@ -196,13 +203,13 @@ final class LibraryService {
     // (`LibrarySearchIndex.catchUp`), e intanto il libro si dice «non ancora pronto», mai cercato su una lettura vecchia.
 
     /// Coda seriale di ogni scrittura e cancellazione dei testi di ricerca: l'ultima scrittura chiesta è l'ultima eseguita.
-    static let searchTextQueue = DispatchQueue(label: "com.scabo.scabopdf.testo-di-ricerca", qos: .utility)
+    public static let searchTextQueue = DispatchQueue(label: "com.scabo.scabopdf.testo-di-ricerca", qos: .utility)
 
-    func searchTextURL(forDocumentId id: String) -> URL { cacheDir.appendingPathComponent("\(id).search") }
+    public func searchTextURL(forDocumentId id: String) -> URL { cacheDir.appendingPathComponent("\(id).search") }
     private func previousSearchTextURL(_ id: String) -> URL { cacheDir.appendingPathComponent("\(id).prev.search") }
 
     /// Il timbro della cache del documento (dimensione e data di modifica), o `nil` se la cache non c'è.
-    func cacheStamp(forDocumentId id: String) -> LibrarySearchText.SourceStamp? {
+    public func cacheStamp(forDocumentId id: String) -> LibrarySearchText.SourceStamp? {
         guard let attrs = try? fileManager.attributesOfItem(atPath: cacheURL(forDocumentId: id).path),
               let size = (attrs[.size] as? NSNumber)?.int64Value,
               let date = attrs[.modificationDate] as? Date else { return nil }
@@ -211,7 +218,7 @@ final class LibraryService {
 
     /// Scrive il testo di ricerca in sottofondo (la costruzione è un'altra passata sul testo del libro: ≤ 0,1 s sul Mac
     /// per il volume più grande). `completion`, se c'è, arriva sulla coda dei testi di ricerca.
-    func writeSearchTextInBackground(segments: [ContentSegment], stamp: LibrarySearchText.SourceStamp,
+    public func writeSearchTextInBackground(segments: [ContentSegment], stamp: LibrarySearchText.SourceStamp,
                                      forDocumentId id: String, completion: (() -> Void)? = nil) {
         let url = searchTextURL(forDocumentId: id)
         Self.searchTextQueue.async {
@@ -223,7 +230,7 @@ final class LibraryService {
 
     /// Il testo di ricerca del documento, mappato in memoria, se vale per la cache di adesso; `nil` altrimenti (assente,
     /// danneggiato, di un'altra versione, o nato da una cache che non c'è più).
-    func validSearchText(forDocumentId id: String) -> Data? {
+    public func validSearchText(forDocumentId id: String) -> Data? {
         guard let stamp = cacheStamp(forDocumentId: id),
               let data = try? Data(contentsOf: searchTextURL(forDocumentId: id), options: .alwaysMapped),
               LibrarySearchText.stamp(of: data) == stamp else { return nil }
@@ -231,14 +238,14 @@ final class LibraryService {
     }
 
     /// Vero se il documento ha la cache ma non un testo di ricerca valido (da riscrivere in sottofondo).
-    func needsSearchText(forDocumentId id: String) -> Bool {
+    public func needsSearchText(forDocumentId id: String) -> Bool {
         // La mappatura non legge il file: dell'intestazione si tocca una pagina sola.
         hasCache(forDocumentId: id) && validSearchText(forDocumentId: id) == nil
     }
 
     /// Il solo contenuto di Lettura Continua di una cache (per riscrivere il testo di ricerca), con il timbro letto prima e
     /// dopo: `nil` se la cache manca, non si legge, o è cambiata nel frattempo.
-    func cachedContentForSearchText(forDocumentId id: String) -> (segments: [ContentSegment], stamp: LibrarySearchText.SourceStamp)? {
+    public func cachedContentForSearchText(forDocumentId id: String) -> (segments: [ContentSegment], stamp: LibrarySearchText.SourceStamp)? {
         struct ContentOnly: Decodable { var formatVersion: Int; var content: PaginatedContent }
         guard let before = cacheStamp(forDocumentId: id),
               let data = try? Data(contentsOf: cacheURL(forDocumentId: id)),
@@ -258,14 +265,14 @@ final class LibraryService {
     private func previousStateURL(_ id: String) -> URL { cacheDir.appendingPathComponent("\(id).prev-state.json") }
 
     /// Vero se il documento ha una lettura precedente in attesa di conferma.
-    func hasPreviousReading(forDocumentId id: String) -> Bool {
+    public func hasPreviousReading(forDocumentId id: String) -> Bool {
         fileManager.fileExists(atPath: previousStateURL(id).path)
     }
 
     /// Mette da parte la cache corrente (se c'è) e la fotografia dello stato. Una sola lettura
     /// precedente: se ne esisteva già una non confermata, si tiene quella PIÙ VECCHIA (è la lettura
     /// da cui l'utente era partito).
-    func stashPreviousReading(_ snapshot: ReadingSnapshot, forDocumentId id: String) throws {
+    public func stashPreviousReading(_ snapshot: ReadingSnapshot, forDocumentId id: String) throws {
         guard !hasPreviousReading(forDocumentId: id) else { return }
         let cache = cacheURL(forDocumentId: id)
         if fileManager.fileExists(atPath: cache.path) {
@@ -281,14 +288,14 @@ final class LibraryService {
         try enc.encode(snapshot).write(to: previousStateURL(id), options: .atomic)
     }
 
-    func previousReadingSnapshot(forDocumentId id: String) -> ReadingSnapshot? {
+    public func previousReadingSnapshot(forDocumentId id: String) -> ReadingSnapshot? {
         guard let data = try? Data(contentsOf: previousStateURL(id)) else { return nil }
         return try? JSONDecoder().decode(ReadingSnapshot.self, from: data)
     }
 
     /// Rimette la cache precedente al suo posto (o, se non c'era, toglie quella nuova: il libro si
     /// rielaborerà all'apertura come prima). Ritorna la fotografia dello stato da ripristinare.
-    func restorePreviousCache(forDocumentId id: String) -> ReadingSnapshot? {
+    public func restorePreviousCache(forDocumentId id: String) -> ReadingSnapshot? {
         guard let snapshot = previousReadingSnapshot(forDocumentId: id) else { return nil }
         let cache = cacheURL(forDocumentId: id)
         try? fileManager.removeItem(at: cache)
@@ -305,7 +312,7 @@ final class LibraryService {
     }
 
     /// Conferma la nuova lettura: la precedente si cancella.
-    func discardPreviousReading(forDocumentId id: String) {
+    public func discardPreviousReading(forDocumentId id: String) {
         try? fileManager.removeItem(at: previousCacheURL(id))
         try? fileManager.removeItem(at: previousStateURL(id))
         Self.searchTextQueue.sync { try? fileManager.removeItem(at: previousSearchTextURL(id)) }
@@ -315,19 +322,19 @@ final class LibraryService {
 
     /// Percorso d'archivio della sorgente secondo il formato: `<id>.pdf` (default/PDF) o
     /// `<id>.xml` (AKN). È la sorgente di verità da cui si rielabora quando la cache manca (§12.6).
-    func archivedSourceURL(forDocumentId id: String, kind: String?) -> URL {
+    public func archivedSourceURL(forDocumentId id: String, kind: String?) -> URL {
         let ext = (kind == "akn") ? "xml" : "pdf"
         return archiveDir.appendingPathComponent("\(id).\(ext)")
     }
 
     /// Vero se la sorgente d'archivio del formato dato esiste (necessaria per rielaborare).
-    func hasArchivedSource(forDocumentId id: String, kind: String?) -> Bool {
+    public func hasArchivedSource(forDocumentId id: String, kind: String?) -> Bool {
         fileManager.fileExists(atPath: archivedSourceURL(forDocumentId: id, kind: kind).path)
     }
 
     /// Copia la sorgente importata (copia temporanea) nell'archivio sotto l'id del documento,
     /// con l'estensione del formato. Simmetrico a `storePDF` (§12.6).
-    func storeSource(from temporaryURL: URL, forDocumentId id: String, kind: String?) throws {
+    public func storeSource(from temporaryURL: URL, forDocumentId id: String, kind: String?) throws {
         let destination = archivedSourceURL(forDocumentId: id, kind: kind)
         if fileManager.fileExists(atPath: destination.path) {
             try? fileManager.removeItem(at: destination)

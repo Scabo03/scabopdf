@@ -17,6 +17,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 final class HomeViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {

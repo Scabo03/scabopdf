@@ -15,6 +15,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 // MARK: - Scelta del contenitore di destinazione

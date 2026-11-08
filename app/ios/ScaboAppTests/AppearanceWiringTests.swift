@@ -9,6 +9,7 @@
 import XCTest
 import UIKit
 @testable import ScaboApp
+import ScaboChain
 import ScaboCore
 
 final class AppearanceWiringTests: XCTestCase {

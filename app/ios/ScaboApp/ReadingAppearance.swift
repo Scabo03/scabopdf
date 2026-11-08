@@ -10,6 +10,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 extension UIColor {

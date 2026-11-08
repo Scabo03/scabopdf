@@ -13,6 +13,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 final class ContainerViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {

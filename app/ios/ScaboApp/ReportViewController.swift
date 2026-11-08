@@ -9,6 +9,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 final class ReportViewController: UIViewController, UITableViewDataSource {

@@ -37,6 +37,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 /// La linea verticale di divisione (§ 11.7): elemento di accessibilità percettibile e container

@@ -28,6 +28,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 final class ProcessingViewController: UIViewController {
@@ -54,9 +55,9 @@ final class ProcessingViewController: UIViewController {
     /// Una sola consegna dell'esito (Annulla immediato + completion del processor convergono qui).
     private var finished = false
 
-    /// Ultimo decile annunciato (-1 = nessuno) e ultima etichetta di fase annunciata.
-    private var lastAnnouncedDecile = -1
-    private var lastAnnouncedPhase = ""
+    /// Gli annunci moderati (ultimo decile e ultima fase annunciati): la regola condivisa con il Mac (ScaboChain
+    /// `ProcessingWording.swift`, dal 2026-11-08).
+    private var announcements = ProcessingAnnouncements()
 
     // MARK: - UI
 
@@ -70,7 +71,7 @@ final class ProcessingViewController: UIViewController {
 
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.text = "Elaborazione del documento"
+        label.text = ProcessingWording.title
         label.font = UIFont.preferredFont(forTextStyle: .headline)
         label.adjustsFontForContentSizeCategory = true
         label.numberOfLines = 0
@@ -113,12 +114,12 @@ final class ProcessingViewController: UIViewController {
 
     private let cancelButton: UIButton = {
         var config = UIButton.Configuration.bordered()
-        config.title = "Annulla"
+        config.title = ProcessingWording.cancelTitle
         let button = UIButton(configuration: config)
         button.titleLabel?.adjustsFontForContentSizeCategory = true
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.accessibilityLabel = "Annulla"
-        button.accessibilityHint = "Interrompe l'elaborazione e torna alla schermata iniziale"
+        button.accessibilityLabel = ProcessingWording.cancelTitle
+        button.accessibilityHint = ProcessingWording.cancelHint
         return button
     }()
 
@@ -157,7 +158,7 @@ final class ProcessingViewController: UIViewController {
         view.backgroundColor = UIColor.black.withAlphaComponent(0.6)
         layoutCard()
         fileLabel.text = sourceName
-        applyStatus(phaseLabel: "Apertura del documento", percent: 0)
+        applyStatus(phaseLabel: ProcessingWording.openingPhaseLabel, percent: 0)
         cancelButton.addTarget(self, action: #selector(cancelTapped), for: .touchUpInside)
 
         // Sigillatura modale di accessibilità: solo stato + Annulla raggiungibili via swipe.
@@ -192,29 +193,23 @@ final class ProcessingViewController: UIViewController {
     // MARK: - Avanzamento
 
     private func apply(_ progress: DocumentProcessor.Progress) {
-        let fraction = max(0, min(1, progress.fraction))
-        let percent = Int((fraction * 100).rounded())
+        let fraction = ProcessingWording.clampedFraction(progress.fraction)
+        let percent = ProcessingWording.percent(ofClampedFraction: fraction)
         progressView.setProgress(Float(fraction), animated: true)
         applyStatus(phaseLabel: progress.phaseLabel, percent: percent)
         announceModerately(phaseLabel: progress.phaseLabel, percent: percent, fraction: fraction)
     }
 
     private func applyStatus(phaseLabel: String, percent: Int) {
-        statusLabel.text = "\(phaseLabel) — \(percent)%"
+        statusLabel.text = ProcessingWording.statusText(phaseLabel: phaseLabel, percent: percent)
         statusLabel.accessibilityLabel = phaseLabel
-        statusLabel.accessibilityValue = "\(percent) per cento"
+        statusLabel.accessibilityValue = ProcessingWording.spokenPercent(percent)
     }
 
     /// Annunci a scatti sensati: cambio di fase e ogni nuovo decile. Mai ogni singolo tick.
     private func announceModerately(phaseLabel: String, percent: Int, fraction: Double) {
-        if phaseLabel != lastAnnouncedPhase {
-            lastAnnouncedPhase = phaseLabel
-            UIAccessibility.post(notification: .announcement, argument: phaseLabel)
-        }
-        let decile = Int(fraction * 10)
-        if decile != lastAnnouncedDecile, percent > 0 {
-            lastAnnouncedDecile = decile
-            UIAccessibility.post(notification: .announcement, argument: "\(percent) per cento")
+        for text in announcements.announcements(phaseLabel: phaseLabel, percent: percent, fraction: fraction) {
+            UIAccessibility.post(notification: .announcement, argument: text)
         }
     }
 

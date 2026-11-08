@@ -9,37 +9,13 @@
 //  importare il file come copia a parte; e si può sempre annullare. Nessun messaggio tecnico, nessun
 //  codice. Schermata dell'app (non un avviso di sistema), come le conferme dell'offerta di
 //  rielaborazione: testo grande pieno, fuoco sul titolo, audit di accessibilità nei test UI.
+//  Le parole (spiegazione, titolo, scelte) stanno dal 2026-11-08 in ScaboChain `DuplicateImportWording.swift`:
+//  le stesse sull'iPad e sul Mac. Qui resta la schermata UIKit.
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
-
-enum DuplicateImport {
-
-    /// La spiegazione in parole semplici: quale libro è, quando è stato importato, cosa ha dentro, e le
-    /// due vie. `copies` = quante copie dello stesso file ci sono già (la prima è `existing`).
-    static func explanation(existing: ArchivedDocument, copies: Int) -> String {
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "it_IT")
-        f.dateStyle = .long
-        f.timeStyle = .none
-        var text = "Il file che hai scelto è identico a «\(existing.title)», che hai importato il \(f.string(from: existing.importedAt))."
-        if copies > 1 {
-            text += " Di questo libro hai già \(copies) copie in libreria: «\(existing.title)» è quella che hai usato più di recente."
-        }
-        let b = existing.bookmarks?.count ?? 0
-        let u = existing.underlines?.count ?? 0
-        var parts: [String] = []
-        if b > 0 { parts.append(b == 1 ? "un segnalibro" : "\(b) segnalibri") }
-        if u > 0 { parts.append(u == 1 ? "una sottolineatura" : "\(u) sottolineature") }
-        text += parts.isEmpty
-            ? " Quel libro non ha ancora segnalibri né sottolineature."
-            : " In quel libro hai " + parts.joined(separator: " e ") + "."
-        text += " Puoi aprire il libro che hai già, con le sue annotazioni e il punto in cui eri arrivato, "
-            + "oppure importare il file come una copia a parte: la copia parte senza annotazioni."
-        return text
-    }
-}
 
 /// La schermata: titolo, spiegazione, tre scelte. Predefinita (in evidenza): aprire il libro che c'è già.
 final class DuplicateImportViewController: ReprocessTextViewController {
@@ -84,13 +60,13 @@ final class DuplicateImportViewController: ReprocessTextViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Libro già presente"
-        heading = addHeading("Questo libro è già nella tua libreria")
+        title = DuplicateImport.screenTitle
+        heading = addHeading(DuplicateImport.heading)
         addParagraph(DuplicateImport.explanation(existing: existing, copies: copies), identifier: "duplicate.text")
-        addButton("Apri il libro che hai già", prominent: true, identifier: "duplicate.open") { [weak self] in self?.decide(.openExisting) }
-        addButton("Importa come copia a parte", prominent: false, identifier: "duplicate.copy") { [weak self] in self?.decide(.importAsCopy) }
+        addButton(DuplicateImport.openExistingTitle, prominent: true, identifier: "duplicate.open") { [weak self] in self?.decide(.openExisting) }
+        addButton(DuplicateImport.importAsCopyTitle, prominent: false, identifier: "duplicate.copy") { [weak self] in self?.decide(.importAsCopy) }
         escapeAction = { [weak self] in self?.decide(.cancel) }
-        addButton("Annulla", prominent: false, identifier: "duplicate.cancel") { [weak self] in self?.escapeAction?() }
+        addButton(DuplicateImport.cancelTitle, prominent: false, identifier: "duplicate.cancel") { [weak self] in self?.escapeAction?() }
     }
 
     override func viewDidAppear(_ animated: Bool) {

@@ -26,6 +26,7 @@
 //
 
 import UIKit
+import ScaboChain
 import ScaboCore
 
 final class SearchViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, UISearchBarDelegate {

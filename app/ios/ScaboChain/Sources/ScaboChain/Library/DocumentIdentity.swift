@@ -1,6 +1,6 @@
 //
 //  DocumentIdentity.swift
-//  ScaboApp
+//  ScaboChain (fino al 2026-11-08 in ScaboApp; condiviso con l'app Mac, logica invariata)
 //
 //  L'IDENTITÀ DEL DOCUMENTO ricavata dal contenuto, lato app (giro «identità», 2026-10-11,
 //  `ScaboCore/DocumentFingerprint.swift`, LAYER2_PRODUCT_DECISIONS § 12.8 e § 12.12).
@@ -27,14 +27,18 @@
 import Foundation
 import ScaboCore
 
-enum DocumentIdentity {
+public enum DocumentIdentity {
 
     /// Esito della migrazione: quante impronte calcolate, quanti libri saltati (file d'archivio
     /// mancante o illeggibile: restano senza impronta, usabili), quanti l'avevano già.
-    struct MigrationReport: Equatable {
-        var computed = 0
-        var skipped = 0
-        var alreadyPresent = 0
+    public struct MigrationReport: Equatable {
+        public var computed = 0
+        public var skipped = 0
+        public var alreadyPresent = 0
+
+        public init(computed: Int = 0, skipped: Int = 0, alreadyPresent: Int = 0) {
+            self.computed = computed; self.skipped = skipped; self.alreadyPresent = alreadyPresent
+        }
     }
 
     /// Coda seriale: migrazione e controllo all'importazione non si accavallano (`utility`: non
@@ -45,7 +49,7 @@ enum DocumentIdentity {
 
     /// L'impronta della sorgente archiviata (PDF o XML AKN) del documento, o `nil` se il file manca o
     /// non si legge. Non lancia mai: un libro senza file d'archivio resta usabile dalla cache.
-    static func fingerprintOfArchivedSource(_ doc: ArchivedDocument, service: LibraryService = .shared) -> String? {
+    public static func fingerprintOfArchivedSource(_ doc: ArchivedDocument, service: LibraryService = .shared) -> String? {
         let url = service.archivedSourceURL(forDocumentId: doc.id, kind: doc.sourceKind)
         guard FileManager.default.fileExists(atPath: url.path) else { return nil }
         return try? DocumentFingerprint.sha256Hex(ofFileAt: url)
@@ -54,7 +58,7 @@ enum DocumentIdentity {
     /// MIGRAZIONE in sottofondo dei libri senza impronta (chiamata dal main all'avvio). `completion`
     /// arriva sul main a giro finito; se un giro è già in corso, o non c'è nulla da fare, arriva subito
     /// con il referto vuoto. Una scrittura per libro, sul main, mai bloccante.
-    static func fingerprintMissingDocumentsInBackground(
+    public static func fingerprintMissingDocumentsInBackground(
         service: LibraryService = .shared, completion: ((MigrationReport) -> Void)? = nil
     ) {
         dispatchPrecondition(condition: .onQueue(.main))
@@ -84,7 +88,7 @@ enum DocumentIdentity {
     /// LETTURA DAL MAC (giro «costruzione della linea Mac», 2026-10-16, § 12.12): i libri con quell'impronta (presa
     /// dall'intestazione del pacchetto), completando prima le impronte mancanti. Solo i libri che si possono aprire (file
     /// d'archivio o lettura in cache); dal più recentemente aperto. `completion` sul main.
-    static func documents(
+    public static func documents(
         withFingerprint sha256: String, service: LibraryService = .shared,
         completion: @escaping (_ matches: [ArchivedDocument]) -> Void
     ) {
@@ -107,7 +111,7 @@ enum DocumentIdentity {
     /// IMPORTAZIONE: calcola l'impronta del file scelto e cerca i libri con la stessa impronta,
     /// completando prima le impronte mancanti. `completion` arriva sul main con l'impronta (o `nil` se
     /// il file non si legge) e i libri che coincidono, dal più recentemente aperto; vuoto = libro nuovo.
-    static func existingDocuments(
+    public static func existingDocuments(
         matchingFileAt url: URL, service: LibraryService = .shared,
         completion: @escaping (_ sha256: String?, _ matches: [ArchivedDocument]) -> Void
     ) {
