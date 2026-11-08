@@ -49,13 +49,15 @@ final class CellaLibro: NSTableCellView {
 
 /// Il contenuto della Home: accetta i file trascinati in qualunque punto della finestra (la tabella vuota è piccola).
 final class PilaConArrivo: NSStackView {
-    var quandoArriva: ((URL) -> Void)?
+    /// I file importabili trascinati, tutti: entrano in coda uno dopo l'altro, come con «Apri con».
+    var quandoArrivano: (([URL]) -> Void)?
     override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
         FinestraHome.fileImportabili(sender).isEmpty ? [] : .copy
     }
     override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
-        guard let primo = FinestraHome.fileImportabili(sender).first else { return false }
-        quandoArriva?(primo)
+        let urls = FinestraHome.fileImportabili(sender)
+        guard !urls.isEmpty else { return false }
+        quandoArrivano?(urls)
         return true
     }
 }
@@ -138,7 +140,7 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
         vuota.textColor = .textColor
         vuota.font = .systemFont(ofSize: 15, weight: .medium)
         let pila = PilaConArrivo(views: [vuota, scorrimento])
-        pila.quandoArriva = { [weak importazione] url in importazione?.importa(url) }
+        pila.quandoArrivano = { [weak importazione] urls in importazione?.importa(urls) }
         pila.registerForDraggedTypes([.fileURL])
         pila.orientation = .vertical
         pila.alignment = .leading

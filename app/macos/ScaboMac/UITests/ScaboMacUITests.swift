@@ -44,6 +44,11 @@ final class ScaboMacUITests: XCTestCase {
         app.launchArguments = ["--libreria-di-prova"]
         app.launch()
         XCTAssertTrue(app.windows["home.finestra"].waitForExistence(timeout: 10))
+        // La Home si chiude (si nasconde, l'app resta aperta): la finestra dei modelli resta sola sullo schermo, e l'audit
+        // non misura il titolo della Home inattiva coperto da lei (rilievo di contrasto del sistema, non dell'app).
+        app.typeKey("w", modifierFlags: [.command])
+        let nascosta = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: app.windows["home.finestra"])
+        wait(for: [nascosta], timeout: 10)
         app.typeKey("m", modifierFlags: [.command, .shift])
         XCTAssertTrue(app.windows["modelli.finestra"].waitForExistence(timeout: 10), "la finestra «Modelli e officina»")
         return app
@@ -51,26 +56,67 @@ final class ScaboMacUITests: XCTestCase {
 
     /// L'audit d'accessibilità del sistema, con ogni rilievo scritto sul registro (elemento e motivo) prima di fallire.
     private func audit(_ app: XCUIApplication, _ nome: String) throws {
+        var tagliati: [XCUIElement] = []
+        var descrizioniTagliate = Set<String>()
         try app.performAccessibilityAudit { issue in
             let e = issue.element
             // Un rilievo di contrasto su un elemento che esce dalla cornice della sua finestra o dalla parte visibile della sua area
-            // di scorrimento non è misurabile: l'audit fotografa un rettangolo quasi vuoto (misurato l'8 novembre 2026 sul
-            // pannello dei modelli). Si scrive nel registro e non fa rosso; ogni altro rilievo sì.
-            if issue.auditType == .contrast, let el = e {
-                let f = el.frame
-                let finestre = app.windows.allElementsBoundByIndex.map(\.frame)
-                let scorrimenti = app.scrollViews.allElementsBoundByIndex.map(\.frame)
-                let dentro = finestre.contains { $0.insetBy(dx: -1, dy: -1).contains(f) }
-                    && !scorrimenti.contains { $0.intersects(f) && !$0.insetBy(dx: -1, dy: -1).contains(f) }
-                    && el.isHittable   // fuori dalla parte visibile della sua area di scorrimento: non raggiungibile sullo schermo
-                if !dentro {
-                    print("RISULTATO audit_\(nome)_tagliato {\"descrizione\": \"\(issue.compactDescription)\", \"cornice\": \"\(f)\"}")
-                    return true
-                }
+            // di scorrimento non è misurabile qui: l'audit fotografa un rettangolo quasi vuoto (misurato l'8 novembre 2026 sul
+            // pannello dei modelli). Si annota e si rimisura dopo, con l'elemento portato in vista; ogni altro rilievo fa rosso.
+            if issue.auditType == .contrast, let el = e, !Self.inVista(el, app) {
+                tagliati.append(el)
+                descrizioniTagliate.insert(issue.detailedDescription)
+                print("RISULTATO audit_\(nome)_tagliato {\"descrizione\": \"\(issue.compactDescription)\", \"cornice\": \"\(el.frame)\"}")
+                return true
             }
             print("RISULTATO audit_\(nome) {\"tipo\": \"\(issue.auditType.rawValue)\", \"descrizione\": \"\(issue.compactDescription)\", \"elemento\": \"\(e.map { "\($0.elementType.rawValue) id=\($0.identifier) label=\($0.label.prefix(40)) cornice=\($0.frame)" } ?? "-")\"}")
             return false
         }
+        try rimisuraInVista(app, nome, tagliati, descrizioniTagliate)
+    }
+
+    /// Un elemento si misura solo se è tutto in vista: dentro una finestra, non tagliato dal bordo della sua area di
+    /// scorrimento, raggiungibile sullo schermo.
+    private static func inVista(_ el: XCUIElement, _ app: XCUIApplication) -> Bool {
+        let f = el.frame
+        let finestre = app.windows.allElementsBoundByIndex.map(\.frame)
+        let scorrimenti = app.scrollViews.allElementsBoundByIndex.map(\.frame)
+        return finestre.contains { $0.insetBy(dx: -1, dy: -1).contains(f) }
+            && !scorrimenti.contains { $0.intersects(f) && !$0.insetBy(dx: -1, dy: -1).contains(f) }
+            && el.isHittable
+    }
+
+    /// Gli elementi che l'audit ha trovato tagliati si portano in vista scorrendo la loro area e il contrasto si rimisura:
+    /// nessun elemento resta senza misura (revisione del giro della tappa A, rilievo R7). Rosso se un elemento non si porta in
+    /// vista o se, in vista, il contrasto non basta.
+    private func rimisuraInVista(_ app: XCUIApplication, _ nome: String, _ tagliati: [XCUIElement], _ descrizioni: Set<String>) throws {
+        guard !tagliati.isEmpty else { return }
+        for el in tagliati where !Self.inVista(el, app) {
+            // L'area di scorrimento dell'elemento: nella finestra in primo piano (quella dell'audit; le finestre dell'app si
+            // sovrappongono sullo schermo), la più vicina fra quelle che lo contengono in orizzontale (in verticale ne esce).
+            let f = el.frame
+            let candidate = app.windows.element(boundBy: 0).scrollViews.allElementsBoundByIndex
+                .filter { $0.frame.minX <= f.midX && f.midX <= $0.frame.maxX }
+            func distanza(_ a: XCUIElement) -> CGFloat { max(0, a.frame.minY - f.maxY, f.minY - a.frame.maxY) }
+            guard let area = candidate.min(by: { distanza($0) < distanza($1) }) else { continue }
+            for passo in [-200.0, 200.0] where !Self.inVista(el, app) {
+                for _ in 0..<6 where !Self.inVista(el, app) { area.scroll(byDeltaX: 0, deltaY: passo) }
+            }
+            print("RISULTATO audit_rimisura_scorrimento {\"in_vista\": \(Self.inVista(el, app)), \"cornice\": \"\(el.frame)\"}")
+        }
+        var ancoraTagliate = Set<String>()
+        try app.performAccessibilityAudit(for: .contrast) { issue in
+            if let el = issue.element, !Self.inVista(el, app) {
+                ancoraTagliate.insert(issue.detailedDescription)
+                print("RISULTATO audit_\(nome)_tagliato_dopo {\"descrizione\": \"\(issue.detailedDescription)\", \"cornice\": \"\(el.frame)\"}")
+                return true
+            }
+            print("RISULTATO audit_\(nome)_in_vista {\"descrizione\": \"\(issue.detailedDescription)\"}")
+            return false
+        }
+        let senzaMisura = descrizioni.intersection(ancoraTagliate)
+        XCTAssertTrue(senzaMisura.isEmpty, "elementi rimasti senza misura del contrasto: \(senzaMisura)")
+        print("RISULTATO audit_\(nome)_rimisurati {\"tagliati\": \(descrizioni.count), \"senza_misura\": \(senzaMisura.count)}")
     }
 
     /// Diagnostica a richiesta (TEST_RUNNER_SCABOMAC_ALBERI=1): chi ha il fuoco della tastiera a ogni Tab nella finestra dei modelli.

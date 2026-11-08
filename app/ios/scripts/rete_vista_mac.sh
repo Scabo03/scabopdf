@@ -13,6 +13,10 @@
 # È la misura della vista del Mac che il passo 3 di `confronto_letture_ipad_mac.sh` aspettava; quello script resta la prova a
 # livello di catena (catena dell'iPad, vista vera dell'iPad, catena del Mac).
 #
+# Verde (exit 0) solo se: il banco esce pulito, l'esito ha tutti i libri attesi (almeno uno), la vista è identica su tutti,
+# e nessun esito dell'app è «non misurato» (corpus o PDF assente, impronta diversa, errore d'importazione). Le differenze
+# dell'estrattore misurate non fanno rosso: si elencano, con la loro quota (revisione del giro della tappa A, rilievo R4).
+#
 # Uso: app/ios/scripts/rete_vista_mac.sh <etichetta> [--solo STEM] [--misure STEM]
 #   --solo     un libro solo, per fine del nome
 #   --misure   il libro su cui misurare anche tempi e memoria (apertura, primo elemento, scorrimento)
@@ -47,6 +51,11 @@ r = {"libri": f"{par}/libri.json", "riferimento": f"{par}/riferimento", "riferim
 if solo: r["solo"] = solo
 if misure: r["misure"] = misure
 json.dump(r, open(f"{out}/richiesta.json", "w"), ensure_ascii=False)
+# Quanti libri ci si aspetta nell'esito (lo stesso filtro del banco): la rete è rossa se ne trova di meno, o nessuno.
+libri = json.load(open(f"{par}/libri.json"))
+voci = (libri.get("letture") or libri.get("libri") or []) if isinstance(libri, dict) else libri
+attesi = [v for v in voci if not solo or (v["libro"] if isinstance(v, dict) else v).endswith(solo)]
+open(f"{out}/attesi.txt", "w").write(str(len(attesi)))
 PYEOF
 HEADINFO="$(cd "$REPO_ROOT" && git rev-parse --short HEAD)$(cd "$REPO_ROOT" && git diff --quiet HEAD -- app || echo " con modifiche non committate")"
 ( cd "$MAC" && SCABO_BANCO_MAC_RICHIESTA="$OUT/richiesta.json" swift test -c release -Xswiftc -enable-testing \
@@ -54,26 +63,36 @@ HEADINFO="$(cd "$REPO_ROOT" && git rev-parse --short HEAD)$(cd "$REPO_ROOT" && g
 rc=$?
 echo "[1] banco della vista del Mac a HEAD $HEADINFO: exit=$rc"
 [ -f "$OUT/esiti.json" ] || { echo "esiti assenti"; exit 1; }
-/usr/bin/python3 -I - "$OUT/esiti.json" <<'PYEOF'
+/usr/bin/python3 -I - "$OUT/esiti.json" "$(cat "$OUT/attesi.txt")" "$rc" <<'PYEOF'
 import json, sys
 d = json.load(open(sys.argv[1]))["libri"]
+attesi, rc = int(sys.argv[2]), int(sys.argv[3])
 def ok(x): return isinstance(x, dict) and x.get("identiche") is True
 v = sum(1 for b in d if all(ok(b.get("vista", {}).get(k)) for k in ("n0", "n1", "n0_vo", "n1_vo")))
 f = sum(1 for b in d if all(b.get("vista", {}).get(k) is True for k in ("n0_moduloMac_rifFiltrato", "n1_moduloMac_rifFiltrato", "n0_vistaUgualeModulo_byte", "n1_vistaUgualeModulo_byte")))
 a = sum(1 for b in d if isinstance(b.get("app"), dict) and ok(b["app"].get("n0")) and ok(b["app"].get("n1")))
 s = sum(1 for b in d if isinstance(b.get("app"), dict) and b["app"].get("segmentiIdentici") is True)
+def non_misurato(app): return not isinstance(app, dict) or "non misurato" in app
+nm = [b for b in d if non_misurato(b.get("app"))]
 n = len(d)
 print(f"[2] vista del Mac sulla lettura dell'iPad ↔ vista dell'iPad (4 descrizioni per libro): {v}/{n} libri identici")
 print(f"    modulo con le impostazioni del Mac ↔ riferimento filtrato, vista ↔ modulo al byte: {f}/{n}")
 print(f"[3] app Mac (importa da sé) ↔ vista dell'iPad (2 descrizioni per libro): {a}/{n} libri identici")
 print(f"    lettura del Mac ↔ lettura congelata dell'iPad, segmento per segmento: {s}/{n} identiche")
+print(f"    libri nell'esito {n} su {attesi} attesi; esiti dell'app non misurati {len(nm)}; codice d'uscita del banco {rc}")
 for b in d:
     app = b.get("app")
     if not (isinstance(app, dict) and ok(app.get("n0")) and ok(app.get("n1"))):
-        quota = "vista" if not all(ok(b.get("vista", {}).get(k)) for k in ("n0", "n1")) else "estrattore"
+        if non_misurato(app):
+            quota = "non misurata"
+        else:
+            quota = "vista" if not all(ok(b.get("vista", {}).get(k)) for k in ("n0", "n1")) else "estrattore"
         print(f"    diverso: {b['libro'].split('/')[0]}/… quota={quota} app={json.dumps(app, ensure_ascii=False)[:400] if isinstance(app, dict) else app}")
-sys.exit(0 if v == n and f == n else 1)
+# Verde solo se il banco è uscito pulito, ha misurato tutti i libri attesi (almeno uno), la vista è identica su tutti e
+# nessun esito dell'app manca: le differenze dell'ESTRATTORE misurate si elencano (quota documentata), non fanno rosso.
+verde = rc == 0 and n > 0 and n == attesi and v == n and f == n and not nm
+sys.exit(0 if verde else 1)
 PYEOF
 r2=$?
-echo ""; echo "rete_vista_mac $TAG: exit=$r2 (la vista; le differenze dell'app sono elencate sopra, con la loro quota)"
+echo ""; echo "rete_vista_mac $TAG: exit=$r2 (verde: banco pulito, tutti i libri attesi, vista identica, nessun esito dell'app non misurato; le differenze dell'estrattore sono elencate sopra con la loro quota)"
 exit $r2

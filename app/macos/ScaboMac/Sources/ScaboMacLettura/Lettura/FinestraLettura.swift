@@ -23,6 +23,11 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
     private var osservatoreVoiceOver: NSKeyValueObservation?
     /// Chiamata quando la finestra si chiude (la Home aggiorna l'elenco e chi tiene le finestre la dimentica).
     public var quandoSiChiude: ((FinestraLettura) -> Void)?
+    /// La finestra si chiude perché lo stesso libro si riapre in una finestra nuova: la riapertura all'avvio non si tocca.
+    public var chiusaPerSostituzione = false
+    /// La frase da dire all'apertura se la posizione è stata ritrovata solo per pagina dopo una rielaborazione (§ 12.14), con
+    /// le parole dell'iPad; `nil` altrimenti.
+    public let annuncioPosizione: String?
 
     /// Le impostazioni del parlato per il Mac nella tappa A: niente «Strumenti elemento» né «Estrai come immagine» (tappe
     /// successive), le note a voce secondo le preferenze, VoiceOver come lo dice il sistema.
@@ -35,6 +40,8 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
                 voiceOver: Bool = NSWorkspace.shared.isVoiceOverEnabled) {
         self.documentId = doc.id
         self.libreria = libreria
+        annuncioPosizione = doc.readingPositionIsApproximate == true
+            ? LibraryWording.approximatePositionAnnouncement(isAkn: doc.sourceKind == "akn") : nil
         let segmenti = lettura.content.pages.flatMap { $0.segments }
         // I legami nota ↔ richiamo con le opzioni delle cure mirate del libro (dalla sua impronta), come sull'iPad.
         vista = VistaLettura(modello: ReadingSpeechModel(segments: segmenti, noteJumpOptions: NoteJumpOptions.forFingerprint(doc.sourceSha256)),
@@ -70,14 +77,16 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
         vista.impostaFuocoIniziale(doc.readingPosition)
         w.makeFirstResponder(vista)
         osservatoreVoiceOver = NSWorkspace.shared.observe(\.isVoiceOverEnabled, options: [.new]) { [weak self] _, _ in
-            Task { @MainActor in self?.aggiornaVoiceOver() }
+            Task { @MainActor in self?.aggiornaImpostazioni() }
         }
     }
 
     required init?(coder: NSCoder) { fatalError("non si usa") }
 
-    private func aggiornaVoiceOver() {
-        vista.impostazioni = Self.impostazioni(prefs: libreria.prefs, voiceOver: NSWorkspace.shared.isVoiceOverEnabled)
+    /// Rilegge le impostazioni del parlato (note a voce dalle preferenze, VoiceOver dal sistema): quando VoiceOver si accende
+    /// o si spegne, e quando cambiano le note a voce nelle Impostazioni.
+    public func aggiornaImpostazioni(voiceOver: Bool = NSWorkspace.shared.isVoiceOverEnabled) {
+        vista.impostazioni = Self.impostazioni(prefs: libreria.prefs, voiceOver: voiceOver)
     }
 
     /// Mostra la finestra e porta il cursore di VoiceOver sull'elemento della posizione di lettura.
@@ -87,12 +96,28 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
         if let f = vista.fuoco, f < vista.conteggio {
             NSAccessibility.post(element: vista.elemento(f), notification: .focusedUIElementChanged)
         }
+        // Come l'iPad: un secondo e mezzo dopo l'apertura, perché VoiceOver abbia già detto la finestra.
+        if let annuncio = annuncioPosizione {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+                guard let w = self?.window else { return }
+                NSAccessibility.post(element: w, notification: .announcementRequested,
+                                     userInfo: [.announcement: annuncio, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+            }
+        }
+    }
+
+    /// La finestra in primo piano è il libro che si riapre all'avvio (con più libri aperti vale l'ultimo usato).
+    public func windowDidBecomeKey(_ notification: Notification) {
+        libreria.service.store.setLastOpenDocument(id: documentId)
     }
 
     public func windowWillClose(_ notification: Notification) {
         osservatoreVoiceOver = nil
-        // Chiudendo il libro si torna alla Home: all'avvio seguente non si riapre (§ 2.5, come «Indietro» sull'iPad).
-        libreria.service.store.setLastOpenDocument(id: nil)
+        // Chiudendo il libro si torna alla Home: all'avvio seguente non si riapre (§ 2.5, come «Indietro» sull'iPad). Solo se
+        // era questo il libro da riaprire, e non quando lo stesso libro si riapre in una finestra nuova.
+        if !chiusaPerSostituzione, libreria.service.store.lastOpenDocumentId == documentId {
+            libreria.service.store.setLastOpenDocument(id: nil)
+        }
         libreria.avvisa()
         quandoSiChiude?(self)
     }

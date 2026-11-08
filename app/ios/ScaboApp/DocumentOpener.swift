@@ -106,7 +106,7 @@ enum DocumentOpener {
         onClosed: (() -> Void)? = nil
     ) {
         guard let doc = service.store.document(id: id) else {
-            presentError("Il documento non è più disponibile.", from: presenter)
+            presentError(LibraryWording.documentNoLongerAvailable, from: presenter)
             return
         }
 
@@ -242,10 +242,9 @@ enum DocumentOpener {
         // Posizione ritrovata solo per pagina dopo una rielaborazione (§ 12.14): lo si dice.
         // Senza le pagine del file originale (un testo normativo) si riparte vicino al punto di prima.
         if focusAnchor == nil, doc.readingPositionIsApproximate == true {
-            let where_ = doc.sourceKind == "akn" ? "riparti vicino al punto di prima." : "riparti dall'inizio della stessa pagina."
+            let announcement = LibraryWording.approximatePositionAnnouncement(isAkn: doc.sourceKind == "akn")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                UIAccessibility.post(notification: .announcement,
-                                     argument: "Dopo la rielaborazione il punto in cui eri arrivato non è stato ritrovato con sicurezza: " + where_)
+                UIAccessibility.post(notification: .announcement, argument: announcement)
             }
         }
         // Split da dentro il file (§ 11.1): il reader si chiude, si sceglie la seconda metà dal
@@ -480,7 +479,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
     private func startProcessing(originalURL: URL, presenter: UIViewController) {
         // Dispatch sul formato: XML AKN → orchestratore AKN; altrimenti PDF (invariato).
         let isAkn = originalURL.pathExtension.lowercased() == "xml"
-        guard let localCopy = copyIntoTemporary(originalURL, ext: isAkn ? "xml" : "pdf") else {
+        guard let localCopy = LibraryService.copyIntoTemporary(originalURL, ext: isAkn ? "xml" : "pdf") else {
             DocumentOpener.presentError(LibraryWording.unreadablePickedFile, from: presenter)
             finish()
             return
@@ -577,16 +576,6 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         finish()
     }
 
-    private func copyIntoTemporary(_ source: URL, ext: String = "pdf") -> URL? {
-        let destination = FileManager.default.temporaryDirectory
-            .appendingPathComponent("scabo_import_\(UUID().uuidString).\(ext)")
-        do {
-            try FileManager.default.copyItem(at: source, to: destination)
-            return destination
-        } catch {
-            return nil
-        }
-    }
 }
 
 // MARK: - Apertura post-import

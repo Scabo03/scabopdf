@@ -83,7 +83,7 @@ final class AccessibilitaVisteTests: XCTestCase {
         XCTAssertTrue(bottoni.contains(Testi.azioneScarica))
         XCTAssertTrue(bottoni.contains(Testi.azioneVerificaSistema))
         // Ordine: il titolo del pannello precede il primo ruolo, che precede la prima voce.
-        let iTitolo = labels.firstIndex(of: Testi.menuStrumenti.replacingOccurrences(of: "…", with: "")) ?? -1
+        let iTitolo = labels.firstIndex(of: Testi.pannelloTitolo) ?? -1
         let iRuolo = labels.firstIndex(of: ModelRole.allCases[0].nome) ?? -1
         XCTAssertTrue(iTitolo >= 0 && iTitolo < iRuolo)
     }

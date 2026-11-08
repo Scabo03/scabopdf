@@ -142,6 +142,25 @@ final class LibraryReadingsTests: XCTestCase {
         XCTAssertEqual(ProcessingWording.percent(ofClampedFraction: ProcessingWording.clampedFraction(1.4)), 100)
     }
 
+    func test_copiaTemporanea_eParoleCondiviseDiApertura() throws {
+        let src = try sourceFile("contenuto di prova")
+        defer { try? FileManager.default.removeItem(at: src) }
+        let copia = try XCTUnwrap(LibraryService.copyIntoTemporary(src, ext: "xml"))
+        defer { try? FileManager.default.removeItem(at: copia) }
+        XCTAssertTrue(copia.lastPathComponent.hasPrefix("scabo_import_"))
+        XCTAssertEqual(copia.pathExtension, "xml")
+        XCTAssertEqual(try Data(contentsOf: copia), try Data(contentsOf: src))
+        XCTAssertNil(LibraryService.copyIntoTemporary(src.appendingPathExtension("assente")))
+        // Le frasi che l'iPad diceva letterali e il Mac ora prende da qui: identiche.
+        XCTAssertEqual(LibraryWording.documentNoLongerAvailable, "Il documento non è più disponibile.")
+        XCTAssertEqual(LibraryWording.approximatePositionAnnouncement(isAkn: false),
+                       "Dopo la rielaborazione il punto in cui eri arrivato non è stato ritrovato con sicurezza: riparti dall'inizio della stessa pagina.")
+        XCTAssertEqual(LibraryWording.approximatePositionAnnouncement(isAkn: true),
+                       "Dopo la rielaborazione il punto in cui eri arrivato non è stato ritrovato con sicurezza: riparti vicino al punto di prima.")
+        XCTAssertEqual([ReadingCommandsWording.noteJump, ReadingCommandsWording.nextHeading, ReadingCommandsWording.previousHeading],
+                       ["Nota e richiamo", "Intestazione successiva", "Intestazione precedente"])
+    }
+
     func test_paroleDelLibroGiaPresente() {
         XCTAssertEqual(DuplicateImport.screenTitle, "Libro già presente")
         XCTAssertEqual(DuplicateImport.openExistingTitle, "Apri il libro che hai già")

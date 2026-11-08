@@ -21,6 +21,14 @@ public enum LibraryWording {
     public static let errorDismiss = "Ho capito"
     /// Il file scelto non si legge (copia temporanea fallita).
     public static let unreadablePickedFile = "Non è stato possibile leggere il file scelto. Riprova selezionandolo di nuovo."
+    /// Il libro non c'è più nella libreria (aperto da un elenco rimasto indietro).
+    public static let documentNoLongerAvailable = "Il documento non è più disponibile."
+    /// All'apertura, se dopo una rielaborazione la posizione di lettura è stata ritrovata solo per pagina (§ 12.14). Per un
+    /// testo normativo, senza pagine del file originale, si riparte vicino al punto di prima.
+    public static func approximatePositionAnnouncement(isAkn: Bool) -> String {
+        "Dopo la rielaborazione il punto in cui eri arrivato non è stato ritrovato con sicurezza: "
+            + (isAkn ? "riparti vicino al punto di prima." : "riparti dall'inizio della stessa pagina.")
+    }
     /// La sorgente d'archivio manca e la cache non si può usare: il libro non si riapre.
     public static let sourceMissing = "Il file di origine di questo documento non è più disponibile sul dispositivo, "
         + "quindi non può essere riaperto. Reimportalo per leggerlo di nuovo."

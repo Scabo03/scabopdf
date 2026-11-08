@@ -127,10 +127,16 @@ final class BancoIdentitaTests: XCTestCase {
             try? FileManager.default.removeItem(at: radiceV)
 
             // ── (A) l'app Mac importa il PDF da sé ─────────────────────────────────────────────────────────────────
-            guard let radiceCorpus = req.corpus[dir] else { esito["app"] = "corpus assente"; esiti.append(esito); continue }
+            // Un esito che non è un confronto porta «non misurato»: la rete lo conta come rosso, mai come quota dell'estrattore.
+            guard let radiceCorpus = req.corpus[dir] else { esito["app"] = "non misurato: corpus assente"; esiti.append(esito); continue }
             let pdf = URL(fileURLWithPath: radiceCorpus).appendingPathComponent(stem + ".pdf")
+            guard FileManager.default.fileExists(atPath: pdf.path) else {
+                esito["app"] = "non misurato: PDF assente nel corpus"; esiti.append(esito); continue
+            }
             let impronta = try? DocumentFingerprint.sha256Hex(ofFileAt: pdf)
-            guard impronta == b.impronta else { esito["app"] = "impronta del PDF diversa da quella della lettura"; esiti.append(esito); continue }
+            guard impronta == b.impronta else {
+                esito["app"] = "non misurato: impronta del PDF diversa da quella della lettura"; esiti.append(esito); continue
+            }
             let radiceA = FileManager.default.temporaryDirectory.appendingPathComponent("banco-a-\(UUID().uuidString)")
             let libA = LibreriaMac(service: LibraryService(rootDirectory: radiceA, prefs: InMemoryKeyValueStore()))
             let imp = ImportazioneMac(libreria: libA)
@@ -146,7 +152,7 @@ final class BancoIdentitaTests: XCTestCase {
             await fulfillment(of: [e1], timeout: 1800)
             tempi["importazione_s"] = Date().timeIntervalSince(tImp)
             guard pres.errori.isEmpty, let importato = pres.aperte.last?.0 else {
-                esito["app"] = ["errori": pres.errori]; esiti.append(esito); continue
+                esito["app"] = ["non misurato": "errore d'importazione", "errori": pres.errori]; esiti.append(esito); continue
             }
             // Riaperta come la riapre l'app (per i volumi enormi: rielaborata leggera a 1.200 e messa in cache).
             let tApr = Date()

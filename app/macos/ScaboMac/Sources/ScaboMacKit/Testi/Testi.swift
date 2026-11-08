@@ -21,11 +21,11 @@ public enum Testi {
         + "l'impaginazione delle pagine, poi la si manda all'iPad o all'iPhone con AirDrop, oppure con il cavo."
     public static let finestraSpiegazione2 =
         "Sull'iPad o sull'iPhone il libro deve essere già in libreria: basta aprire il file arrivato dal Mac e confermare. "
-        + "Gli strumenti dell'officina si trovano nel pannello, nelle Impostazioni o con il pulsante in fondo."
-    public static let apriPannello = "Apri il pannello degli strumenti"
-    public static let apriPannelloAiuto = "Mostra gli strumenti disponibili, divisi per ruolo, con descrizione, dimensione e stato"
-    public static let menuStrumenti = "Strumenti dell'officina…"
-    public static let impostazioniScheda = "Strumenti"
+        + "I modelli dell'officina si trovano nella scheda «Modelli» di questa finestra, o con il pulsante in fondo."
+    public static let apriPannello = "Apri il pannello dei modelli"
+    public static let apriPannelloAiuto = "Mostra i modelli disponibili, divisi per ruolo, con descrizione, dimensione e stato"
+    /// Il titolo del pannello: lo stesso nome della sua scheda nella finestra «Modelli e officina».
+    public static let pannelloTitolo = "Modelli"
     public static let simulazioneAvviso =
         "Attenzione: in questa versione lo scaricamento e l'esecuzione sono simulati. Non viene scaricato nulla "
         + "da internet. Sono reali solo il controllo dello spazio libero sul disco e la verifica degli strumenti di sistema Apple."
@@ -279,8 +279,8 @@ public enum Testi {
 
     /// Tutte le stringhe FISSE, per il test anti-gergo (le funzioni sono coperte con argomenti d'esempio nel test).
     public static var tutteLeStringheFisse: [String] {
-        [nomeApp, finestraTitolo, finestraSpiegazione1, finestraSpiegazione2, apriPannello, apriPannelloAiuto, menuStrumenti,
-         impostazioniScheda, simulazioneAvviso, ruoloLettoreScansioni, ruoloRicostruttore, ruoloRicucitore,
+        [nomeApp, finestraTitolo, finestraSpiegazione1, finestraSpiegazione2, apriPannello, apriPannelloAiuto, pannelloTitolo,
+         simulazioneAvviso, ruoloLettoreScansioni, ruoloRicostruttore, ruoloRicucitore,
          ruoloLettoreScansioniSpiegazione, ruoloRicostruttoreSpiegazione, ruoloRicucitoreSpiegazione, motoreNativo,
          motoreSistemaApple, motoreAccanto, motoreIncluso, statoIncluso, statoNonDisponibileQui, azioneVerificaFunzionamento,
          azioneVerificaFunzionamentoAiuto, azioneScaricaConferma, verificaInCorso, esitoVerificaFallita, validatoPrefisso, nonMisurato, provaNonEseguitaPrefisso, statoNonScaricato,

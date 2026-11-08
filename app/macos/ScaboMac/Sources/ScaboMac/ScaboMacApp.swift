@@ -111,6 +111,10 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             service = LibraryService.shared
         }
         libreria = LibreriaMac(service: service)
+        // Un libro eliminato chiude la sua finestra di lettura, se è aperta.
+        libreria.quandoElimina.append { [weak self] id in
+            self?.letture.filter { $0.documentId == id }.forEach { $0.window?.close() }
+        }
         importazione = ImportazioneMac(libreria: libreria)
         home = FinestraHome(libreria: libreria, importazione: importazione, comandi: self)
         presentatore = PresentatoreAppKit(finestra: home.window) { [weak self] doc, lettura in
@@ -136,18 +140,22 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             fileInArrivo.removeAll()
         } else if argomenti.contains("--apri-primo"), let primo = libreria.libri().first {
             importazione.apri(primo.id)
-        } else if let ultimo = service.store.lastOpenDocumentId, let doc = service.store.document(id: ultimo),
-                  service.hasCache(forDocumentId: doc.id) {
-            // Riapertura all'avvio (§ 2.5): l'ultimo libro lasciato aperto, solo se la sua lettura è pronta.
-            importazione.apri(doc.id)
+        } else if let ultimo = service.store.lastOpenDocumentId {
+            // Riapertura all'avvio (§ 2.5): l'ultimo libro lasciato aperto, solo se la sua lettura in cache si apre; mai una
+            // rielaborazione all'avvio, come l'iPad.
+            importazione.riapriAllAvvio(ultimo)
         }
     }
 
     // MARK: Le finestre
 
     @MainActor private func apriFinestraDiLettura(_ doc: ArchivedDocument, _ lettura: LibraryReading) {
-        if let aperta = letture.first(where: { $0.documentId == doc.id }) { aperta.window?.close() }
+        if let aperta = letture.first(where: { $0.documentId == doc.id }) {
+            aperta.chiusaPerSostituzione = true
+            aperta.window?.close()
+        }
         let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria)
+        f.vista.diario.attivo = argomento("--diario") != nil
         f.quandoSiChiude = { [weak self] chiusa in
             self?.letture.removeAll { $0 === chiusa }
             if let path = self?.argomento("--diario") { try? chiusa.vista.diario.scrivi(su: URL(fileURLWithPath: path)) }
@@ -196,16 +204,18 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     @objc func importaDocumento(_ sender: Any?) {
         MainActor.assumeIsolated {
             mostraHome(nil)
-            guard let w = home.window, !importazione.occupato else { return }
+            guard let w = home.window else { return }
             let pannello = NSOpenPanel()
             pannello.allowedContentTypes = [.pdf, .xml]
             pannello.allowsMultipleSelection = false
             pannello.canChooseDirectories = false
             pannello.message = LibraryWording.importDocument
-            pannello.beginSheetModal(for: w) { [weak self] r in
+            let scelto: (NSApplication.ModalResponse) -> Void = { [weak self] r in
                 guard r == .OK, let url = pannello.url else { return }
-                self?.importazione.importa(url)
+                self?.importazione.importa(url)   // durante un'elaborazione entra in coda
             }
+            // Durante un'elaborazione la Home ha già il suo foglio: il pannello si apre come finestra a sé.
+            if importazione.occupato { pannello.begin(completionHandler: scelto) } else { pannello.beginSheetModal(for: w, completionHandler: scelto) }
         }
     }
 
@@ -239,7 +249,11 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
 
     @objc func mostraImpostazioni(_ sender: Any?) {
         MainActor.assumeIsolated {
-            if impostazioni == nil { impostazioni = FinestraImpostazioni(prefs: libreria.prefs) }
+            if impostazioni == nil {
+                impostazioni = FinestraImpostazioni(prefs: libreria.prefs)
+                // Le note a voce valgono subito anche nei libri aperti.
+                impostazioni?.quandoCambianoLeNote = { [weak self] in self?.letture.forEach { $0.aggiornaImpostazioni() } }
+            }
             impostazioni?.window?.center()
             impostazioni?.showWindow(nil)
             impostazioni?.window?.makeKeyAndOrderFront(nil)

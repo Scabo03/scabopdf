@@ -10,10 +10,13 @@ import AppKit
 import ScaboCore
 
 @MainActor
-public final class SegnaliMac {
+public final class SegnaliMac: NSObject, NSSoundDelegate {
     public static let shared = SegnaliMac()
     private var suoni: [AudioSignal: NSSound] = [:]
     private let bundle: Bundle
+    /// I segnali che aspettano il loro turno e quello che suona: uno dopo l'altro, mai sovrapposti.
+    private var inFila: [AudioSignal] = []
+    private var corrente: NSSound?
 
     public init(bundle: Bundle = .main) { self.bundle = bundle }
 
@@ -25,13 +28,41 @@ public final class SegnaliMac {
         return n
     }
 
-    /// Suona i segnali uno dopo l'altro (la nota, poi la bibliografia: l'ordine del modulo).
+    /// Suona i segnali uno dopo l'altro (la nota, poi la bibliografia: l'ordine del modulo); il successivo parte quando il
+    /// precedente è finito. Una richiesta nuova (il cursore arriva altrove) interrompe la fila di prima.
     public func suona(_ segnali: [AudioSignal]) {
-        for s in segnali { suono(s)?.stop(); _ = suono(s)?.play() }
+        let interrotto = corrente
+        corrente = nil
+        interrotto?.stop()
+        inFila = segnali
+        suonaIlProssimo()
+    }
+
+    private func suonaIlProssimo() {
+        while !inFila.isEmpty {
+            let s = inFila.removeFirst()
+            guard let n = suono(s) else { continue }
+            n.loops = false
+            n.delegate = self
+            n.stop()
+            corrente = n
+            if n.play() { return }
+            corrente = nil
+        }
+    }
+
+    nonisolated public func sound(_ sound: NSSound, didFinishPlaying flag: Bool) {
+        MainActor.assumeIsolated {
+            // Solo la fine naturale del segnale che suona fa partire il successivo (un segnale fermato non conta).
+            guard flag, sound === corrente else { return }
+            corrente = nil
+            suonaIlProssimo()
+        }
     }
 
     public func suonaInGiro(_ s: AudioSignal) {
         guard let n = suono(s) else { return }
+        n.delegate = nil
         n.loops = true
         n.stop(); _ = n.play()
     }

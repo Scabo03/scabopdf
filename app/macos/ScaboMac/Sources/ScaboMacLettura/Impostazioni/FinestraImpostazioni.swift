@@ -3,7 +3,8 @@
 //  ScaboMacLettura — le Impostazioni di lettura dell'app Mac (⌘,; giro «app unica per Mac, tappa A», 2026-11-08): la
 //  granularità di lettura con i quattro livelli dell'iPad e le note annunciate a voce, con le parole dell'iPad (ScaboChain
 //  `ReadingSettingsWording`). Sul Mac la granularità si applica (DISEGNO_LETTURA_MAC § 6.7): vale dai libri aperti dopo la
-//  scelta. Le scelte si salvano subito, sulle stesse chiavi dell'iPad.
+//  scelta. Le note a voce valgono subito, anche nei libri già aperti (sul Mac le Impostazioni si aprono mentre si legge). Le
+//  scelte si salvano subito, sulle stesse chiavi dell'iPad.
 //
 import AppKit
 import ScaboChain
@@ -13,7 +14,9 @@ import ScaboCore
 public final class FinestraImpostazioni: NSWindowController {
     private let prefs: KeyValueStore
     private var livelli: [NSButton] = []
-    private let note = NSButton(checkboxWithTitle: ReadingSettingsWording.noteSpokenSwitch, target: nil, action: nil)
+    let note = NSButton(checkboxWithTitle: ReadingSettingsWording.noteSpokenSwitch, target: nil, action: nil)
+    /// Chiamata quando cambia «Annuncia le note a voce»: chi tiene le finestre di lettura le aggiorna subito.
+    public var quandoCambianoLeNote: (() -> Void)?
 
     public init(prefs: KeyValueStore) {
         self.prefs = prefs
@@ -64,7 +67,8 @@ public final class FinestraImpostazioni: NSWindowController {
         for b in livelli { b.state = b === sender ? .on : .off }
     }
 
-    @objc private func cambiaNote(_ sender: NSButton) {
+    @objc func cambiaNote(_ sender: NSButton) {
         PreferenzeLettura.impostaNoteAVoce(prefs, sender.state == .on)
+        quandoCambianoLeNote?()
     }
 }

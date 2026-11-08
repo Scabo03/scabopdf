@@ -45,6 +45,9 @@ public final class ImportazioneMac {
     }
     /// I file arrivati insieme («Apri con» di più file, trascinamento): si importano uno alla volta.
     private var coda: [URL] = []
+    /// Un libro da rielaborare chiesto mentre un'altra elaborazione era in corso: si apre appena quella finisce, invece di
+    /// non fare nulla in silenzio (rilievo della revisione del giro della tappa A).
+    private var aperturaInAttesa: String?
 
     public init(libreria: LibreriaMac) { self.libreria = libreria }
 
@@ -62,15 +65,19 @@ public final class ImportazioneMac {
     }
 
     private func prossimoInCoda() {
+        guard !occupato else { return }
+        if let id = aperturaInAttesa { aperturaInAttesa = nil; apri(id); if occupato { return } }
         guard !occupato, !coda.isEmpty else { return }
         importa(coda.removeFirst())
     }
 
     /// Importa il file `url` (scelto dall'utente: pannello, trascinamento, «Apri con»).
     public func importa(_ url: URL) {
-        guard !occupato, let presentatore else { return }
+        guard let presentatore else { return }
+        // Mentre un'altra elaborazione è in corso il file entra in coda (come più file da «Apri con»), non cade nel vuoto.
+        guard !occupato else { coda.append(url); return }
         let isAkn = url.pathExtension.lowercased() == "xml"
-        guard Self.importabile(url), let copia = copiaTemporanea(url, ext: isAkn ? "xml" : "pdf") else {
+        guard Self.importabile(url), let copia = LibraryService.copyIntoTemporary(url, ext: isAkn ? "xml" : "pdf") else {
             presentatore.mostraErrore(LibraryWording.unreadablePickedFile)
             return
         }
@@ -104,7 +111,9 @@ public final class ImportazioneMac {
 
     private func elabora(copia: URL, nome: String, isAkn: Bool, sha: String?) {
         guard let presentatore else { try? FileManager.default.removeItem(at: copia); occupato = false; return }
-        let granularita = PreferenzeLettura.granularita(libreria.prefs, per: nil, isAkn: isAkn)
+        // Prima dell'elaborazione le pagine non si conoscono: la granularità delle Impostazioni (un volume enorme non va in
+        // cache all'importazione, e alla prima apertura si prepara leggero: la regola dell'iPad, in `registerImported`).
+        let granularita = PreferenzeLettura.granularita(libreria.prefs, isAkn: isAkn, large: false)
         let processore: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         presentatore.elabora(fileURL: copia, nome: nome, granularita: granularita, dottrina: true, processore: processore) {
             [weak self] esito, saltate in
@@ -128,31 +137,32 @@ public final class ImportazioneMac {
         }
     }
 
-    private func copiaTemporanea(_ sorgente: URL, ext: String) -> URL? {
-        let accesso = sorgente.startAccessingSecurityScopedResource()
-        defer { if accesso { sorgente.stopAccessingSecurityScopedResource() } }
-        let destinazione = FileManager.default.temporaryDirectory.appendingPathComponent("scabo_import_\(UUID().uuidString).\(ext)")
-        do {
-            try FileManager.default.copyItem(at: sorgente, to: destinazione)
-            return destinazione
-        } catch {
-            return nil
-        }
-    }
-
     // MARK: Apertura (§ 2.5)
+
+    /// La riapertura all'avvio (§ 2.5): l'ultimo libro lasciato aperto, solo dalla cache e senza mai rielaborare, come la
+    /// regola dell'iPad («un avvio a freddo non scatena una rielaborazione lunga»); se la granularità è cambiata si legge la
+    /// cache com'è, e la prossima apertura esplicita la prepara di nuovo. `false` se non c'è una lettura da aprire.
+    @discardableResult
+    public func riapriAllAvvio(_ id: String) -> Bool {
+        guard let presentatore, let doc = service.store.document(id: id),
+              let pronta = service.openableCachedReading(for: doc, requiredTarget: nil) else { return false }
+        service.store.recordOpened(id: id)
+        libreria.avvisa()
+        presentatore.apriLettura(documento: service.store.document(id: id) ?? doc, lettura: pronta)
+        return true
+    }
 
     /// Apre il libro al suo punto di lettura: dalla cache se si può usare, altrimenti rielaborandolo dalla sorgente
     /// d'archivio nella schermata d'elaborazione, con il riancoraggio delle annotazioni per contenuto.
     public func apri(_ id: String) {
         guard let presentatore else { return }
         guard let doc = service.store.document(id: id) else {
-            presentatore.mostraErrore(LibraryWording.sourceMissing)
+            presentatore.mostraErrore(LibraryWording.documentNoLongerAvailable)
             return
         }
         let isAkn = doc.sourceKind == "akn"
         let large = service.isLarge(doc)
-        let granularita = PreferenzeLettura.granularita(libreria.prefs, per: doc, isAkn: isAkn)
+        let granularita = PreferenzeLettura.granularita(libreria.prefs, isAkn: isAkn, large: large)
         if let pronta = service.openableCachedReading(for: doc, requiredTarget: large ? nil : granularita) {
             service.store.recordOpened(id: id)
             libreria.avvisa()
@@ -164,10 +174,18 @@ public final class ImportazioneMac {
             service.mintMissingAnchors(documentId: id, in: ContentAnchorIndex(segments: vecchia.content.pages.flatMap { $0.segments }))
         }
         guard service.hasArchivedSource(forDocumentId: id, kind: doc.sourceKind) else {
-            presentatore.mostraErrore(LibraryWording.sourceMissing)
+            // Senza la sorgente non si rielabora: se c'è una lettura in cache che si apre (a un'altra granularità), si legge
+            // quella, come farebbe l'iPad, invece di dire che il libro non si riapre.
+            if let esistente = service.openableCachedReading(for: doc, requiredTarget: nil) {
+                service.store.recordOpened(id: id)
+                libreria.avvisa()
+                presentatore.apriLettura(documento: service.store.document(id: id) ?? doc, lettura: esistente)
+            } else {
+                presentatore.mostraErrore(LibraryWording.sourceMissing)
+            }
             return
         }
-        guard !occupato else { return }
+        guard !occupato else { aperturaInAttesa = id; return }
         occupato = true
         let processore: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         presentatore.elabora(fileURL: service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind), nome: doc.title,

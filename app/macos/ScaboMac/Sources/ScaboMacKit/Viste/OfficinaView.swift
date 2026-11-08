@@ -32,7 +32,8 @@ public struct OfficinaView: View {
                 Text(Testi.finestraSpiegazione1)
                 Text(Testi.finestraSpiegazione2)
                 Button(Testi.preparaLettura) { scegliPDF() }
-                    .keyboardShortcut("o", modifiers: [.command])
+                    // ⇧⌘O: ⌘O nell'app unica è «Importa un documento…» (rilievo della revisione del giro della tappa A).
+                    .keyboardShortcut("o", modifiers: [.command, .shift])
                     .disabled(model.inElaborazione)
                     .accessibilityHint(Testi.preparaLetturaAiuto)
                     .accessibilityIdentifier("preparaLettura")

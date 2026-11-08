@@ -20,7 +20,8 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public let statoSegnalibri: ReadingBookmarkState = .unavailable
     public var ricercaAttiva: BookSearchResult? = nil
     public let altezzaRiga: CGFloat = 28
-    public let diario = Diario()
+    /// Il diario delle richieste d'accessibilità: spento, si accende solo per le prove (argomento `--diario`, i banchi).
+    public let diario: Diario = { let d = Diario(); d.attivo = false; return d }()
 
     /// L'elemento che ha il fuoco (l'indice) e il ruolo di quello di prima (per il segnale della bibliografia).
     public private(set) var fuoco: Int? = nil

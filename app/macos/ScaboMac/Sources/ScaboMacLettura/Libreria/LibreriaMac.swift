@@ -27,10 +27,11 @@ public enum PreferenzeLettura {
     }
 
     /// La granularità con cui il Mac elabora un libro: quella delle Impostazioni per i PDF; per gli atti AKN quella
-    /// predefinita (i testi normativi seguono la loro struttura, § 7.7); per i volumi enormi la regola dell'iPad.
-    public static func granularita(_ prefs: KeyValueStore, per doc: ArchivedDocument?, isAkn: Bool) -> Int {
+    /// predefinita (i testi normativi seguono la loro struttura, § 7.7); per i volumi enormi (`large`, dalla regola condivisa
+    /// `LibraryService.isLarge`) la granularità leggera dell'iPad.
+    public static func granularita(_ prefs: KeyValueStore, isAkn: Bool, large: Bool) -> Int {
         if isAkn { return DEFAULT_GRANULARITY_TARGET }
-        if let doc, doc.sourcePageCount > ReadingAssembly.largeDocumentPageThreshold { return ReadingAssembly.largeDocumentGranularity }
+        if large { return ReadingAssembly.largeDocumentGranularity }
         return getStoredGranularityLevel(prefs).target
     }
 }
@@ -41,6 +42,8 @@ public final class LibreriaMac {
     public var prefs: KeyValueStore { service.prefs }
     /// Avvisa chi mostra l'elenco (la Home) che la libreria è cambiata.
     public var quandoCambia: [() -> Void] = []
+    /// Avvisa, prima di toglierlo, che un libro sta per essere eliminato (chi tiene la sua finestra di lettura la chiude).
+    public var quandoElimina: [(String) -> Void] = []
 
     public init(service: LibraryService) {
         self.service = service
@@ -56,6 +59,7 @@ public final class LibreriaMac {
 
     /// L'eliminazione definitiva (§ 12.7): dall'archivio, con la cache e il testo di ricerca, come sull'iPad.
     public func eliminaDefinitivamente(_ id: String) {
+        for f in quandoElimina { f(id) }
         service.store.deleteDocumentFromArchive(id: id)
         service.deleteFiles(forDocumentId: id)
         avvisa()

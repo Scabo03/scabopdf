@@ -9,15 +9,18 @@
 //
 import Foundation
 import ScaboChain
+import ScaboCore
 
 public enum Parole {
     // La lettura (il nome del gruppo è quello del disegno, DISEGNO_LETTURA_MAC § 2.2)
     public static let gruppoTesto = "Testo del documento"
     public static let menuLettura = "Lettura"
-    public static let vaiNotaRichiamo = "Vai alla nota o al richiamo"
-    public static let titoloSuccessivo = "Titolo successivo"
-    public static let titoloPrecedente = "Titolo precedente"
-    public static let saltaRisorsa = "Salta la risorsa"
+    // Le voci del menu «Lettura»: i nomi dei comandi da tastiera dell'iPad (ScaboChain `ReadingCommandsWording`) e, per la
+    // risorsa visiva, il nome dell'azione del modulo.
+    public static let vaiNotaRichiamo = ReadingCommandsWording.noteJump
+    public static let titoloSuccessivo = ReadingCommandsWording.nextHeading
+    public static let titoloPrecedente = ReadingCommandsWording.previousHeading
+    public static let saltaRisorsa = ReadingAction.skipVisualResource(target: 0).name
 
     // La Home e la libreria
     public static let elencoLibri = "Libri"

@@ -18,6 +18,7 @@
 //  sulla tastiera italiana e su quella americana; gli stessi tasti della ricerca nelle app di sistema).
 //
 
+import ScaboChain
 import UIKit
 
 struct KeyboardCommandSpec {
@@ -104,10 +105,10 @@ enum KeyboardCommandsCatalog {
         KeyboardCommandSpec(id: "scrollBack", title: "Scorri indietro",
             input: UIKeyCommand.inputUpArrow, modifiers: .command,
             description: "Torna indietro di una schermata."),
-        KeyboardCommandSpec(id: "nextHeading", title: "Intestazione successiva",
+        KeyboardCommandSpec(id: "nextHeading", title: ReadingCommandsWording.nextHeading,
             input: UIKeyCommand.inputDownArrow, modifiers: .alternate,
             description: "Salta al titolo (intestazione) successivo, come il rotore Intestazioni di VoiceOver."),
-        KeyboardCommandSpec(id: "prevHeading", title: "Intestazione precedente",
+        KeyboardCommandSpec(id: "prevHeading", title: ReadingCommandsWording.previousHeading,
             input: UIKeyCommand.inputUpArrow, modifiers: .alternate,
             description: "Salta al titolo precedente."),
         KeyboardCommandSpec(id: "textLarger", title: "Testo più grande",
@@ -123,7 +124,7 @@ enum KeyboardCommandsCatalog {
         KeyboardCommandSpec(id: "elementTools", title: "Strumenti elemento",
             input: "e", modifiers: .command,
             description: "Apre il menu con segnalibro e sottolineatura per l'elemento in lettura; Esc lo chiude."),
-        KeyboardCommandSpec(id: "noteJump", title: "Nota e richiamo",
+        KeyboardCommandSpec(id: "noteJump", title: ReadingCommandsWording.noteJump,
             input: "j", modifiers: .command,
             description: "Sulla nota va al testo del richiamo; sul testo che richiama una nota va alla nota. Come le azioni «Vai al testo del richiamo» e «Vai alla nota»."),
         KeyboardCommandSpec(id: "search", title: "Cerca nel libro",

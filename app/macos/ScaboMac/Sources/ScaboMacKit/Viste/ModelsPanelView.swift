@@ -27,7 +27,7 @@ public struct ModelsPanelView: View {
     public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text(Testi.menuStrumenti.replacingOccurrences(of: "…", with: ""))
+                Text(Testi.pannelloTitolo)
                     .font(.title)
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityHeading(.h1)
