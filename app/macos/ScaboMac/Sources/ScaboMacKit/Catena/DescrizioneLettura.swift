@@ -28,7 +28,7 @@ public enum DescrizioneLettura {
     public static func flussi(
         lettura: PackagedReading, libro: String, impronta: String?, voiceOverAcceso: Bool = false
     ) -> [Flusso] {
-        let opzioni = NoteJumpOptions.forTargeted(TargetedCures.rules(forFingerprint: impronta))
+        let opzioni = NoteJumpOptions.forFingerprint(impronta)
         var sorgenti: [(String, ReadingLayoutCode, [ContentSegment])] =
             [("lc", .continuousReading, lettura.content.pages.flatMap { $0.segments })]
         if let dottrina = lettura.doctrineContent {

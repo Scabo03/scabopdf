@@ -118,6 +118,12 @@ public struct NoteJumpOptions: Equatable, Sendable {
     public static func forTargeted(_ rules: Set<TargetedRule>) -> NoteJumpOptions {
         NoteJumpOptions(targetedInline: rules.contains(.widerNoteJump))
     }
+    /// Le opzioni per il libro con questa impronta del contenuto: quelle delle sue regole mirate, le predefinite per ogni
+    /// libro senza impronta o fuori dal registro. Una regola sola per la vista dell'iPad, la descrizione dell'officina e la
+    /// vista del Mac (giro «app unica per Mac, tappa A», 2026-11-08: la vista del Mac la dimenticava sui documenti di studio).
+    public static func forFingerprint(_ sha256: String?) -> NoteJumpOptions {
+        forTargeted(TargetedCures.rules(forFingerprint: sha256))
+    }
 }
 
 /// Vero se in tutto `text` il numero `n` compare UNA volta sola nella forma del richiamo (attaccato alla parola o alla

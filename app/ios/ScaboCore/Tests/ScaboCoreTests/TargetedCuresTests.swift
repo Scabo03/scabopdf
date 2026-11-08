@@ -549,5 +549,9 @@ final class TargetedCuresTests: XCTestCase {
         XCTAssertEqual(NoteJumpOptions.forTargeted(TargetedCures.rules(forFingerprint: studioA)).targetedInline, true)
         XCTAssertEqual(NoteJumpOptions.forTargeted([.detachedCallPunctuation]), NoteJumpOptions(),
                        "il salto ampliato ha la sua regola: non dipende da un'altra")
+        // La regola unica per impronta (vista dell'iPad, descrizione dell'officina, vista del Mac).
+        XCTAssertEqual(NoteJumpOptions.forFingerprint(studioA), NoteJumpOptions(targetedInline: true))
+        XCTAssertEqual(NoteJumpOptions.forFingerprint(unregistered), NoteJumpOptions())
+        XCTAssertEqual(NoteJumpOptions.forFingerprint(nil), NoteJumpOptions())
     }
 }

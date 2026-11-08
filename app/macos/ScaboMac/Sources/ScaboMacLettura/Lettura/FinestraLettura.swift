@@ -36,7 +36,9 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
         self.documentId = doc.id
         self.libreria = libreria
         let segmenti = lettura.content.pages.flatMap { $0.segments }
-        vista = VistaLettura(segmenti: segmenti, impostazioni: Self.impostazioni(prefs: libreria.prefs, voiceOver: voiceOver))
+        // I legami nota ↔ richiamo con le opzioni delle cure mirate del libro (dalla sua impronta), come sull'iPad.
+        vista = VistaLettura(modello: ReadingSpeechModel(segments: segmenti, noteJumpOptions: NoteJumpOptions.forFingerprint(doc.sourceSha256)),
+                             impostazioni: Self.impostazioni(prefs: libreria.prefs, voiceOver: voiceOver))
         let w = NSWindow(contentRect: NSRect(x: 160, y: 120, width: 900, height: 680),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.title = doc.title
