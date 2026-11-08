@@ -36,12 +36,8 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         (.monochrome, "Senza colore — solo forma e contrasto"),
     ]
 
-    private let granularities: [(GranularityLevel, String)] = [
-        (.fine, "Fine — 400 caratteri"),
-        (.medium, "Media — 600 caratteri"),
-        (.coarse, "Ampia — 900 caratteri"),
-        (.veryCoarse, "Piena — 1200 caratteri"),
-    ]
+    /// I quattro livelli con le loro parole: le stesse del Mac (ScaboChain `ReadingSettingsWording`, dal 2026-11-08).
+    private let granularities: [(GranularityLevel, String)] = ReadingSettingsWording.granularityLevels
 
     private enum Section: Int, CaseIterable {
         case appearance, spacing, colorSignals, readingGuide, notes, systemFilters, keyboard, granularity, pages
@@ -93,7 +89,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         case .notes: return "Note (per chi non sente)"
         case .systemFilters: return "Filtri colore di sistema"
         case .keyboard: return "Tastiera"
-        case .granularity: return "Granularità di lettura predefinita"
+        case .granularity: return ReadingSettingsWording.granularityTitle
         case .pages: return "Pagine del file originale"
         }
     }
@@ -122,8 +118,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
                 + "iOS. L'app non può rilevarli né controllarli, ma garantisce che nulla dipenda dal solo colore. "
                 + "Tocca qui per aprire le impostazioni di iOS."
         case .granularity:
-            return "Quanto testo raggruppare in ogni elemento dei testi discorsivi (manuali, saggi). "
-                + "I testi normativi seguono la loro struttura nativa."
+            return ReadingSettingsWording.granularityFooter
         case .pages:
             return "Quando attivo, gli indicatori di pagina mostrano anche la pagina del PDF di origine."
         }
@@ -164,7 +159,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         case .notes:
             if indexPath.row == 0 {
                 return switchCell(
-                    "Annuncia le note a voce", isOn: getStoredNoteSpokenLabels(prefs),
+                    ReadingSettingsWording.noteSpokenSwitch, isOn: getStoredNoteSpokenLabels(prefs),
                     action: #selector(toggleNoteSpoken(_:)))
             }
             return switchCell(

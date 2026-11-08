@@ -111,14 +111,12 @@ enum FileOptions {
         })
 
         if case .search = context {
-            sheet.addAction(UIAlertAction(title: "Elimina definitivamente", style: .destructive) { [weak presenter] _ in
+            sheet.addAction(UIAlertAction(title: LibraryWording.definitiveDeleteAction, style: .destructive) { [weak presenter] _ in
                 guard let presenter else { return }
                 LibraryDialogs.confirm(
-                    title: "Eliminare definitivamente?",
-                    message: "Il documento «\(doc.title)» viene rimosso del tutto da ScaboPDF: "
-                        + "dall'archivio, da ogni collocazione, con segnalibri e posizione di lettura. "
-                        + "L'operazione non è reversibile.",
-                    confirmTitle: "Elimina definitivamente",
+                    title: LibraryWording.definitiveDeleteTitle,
+                    message: LibraryWording.definitiveDeleteMessage(title: doc.title),
+                    confirmTitle: LibraryWording.definitiveDeleteAction,
                     from: presenter) {
                         service.store.deleteDocumentFromArchive(id: doc.id)
                         service.deleteFiles(forDocumentId: doc.id)

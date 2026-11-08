@@ -140,10 +140,7 @@ enum DocumentOpener {
 
         // Percorso di rielaborazione: serve la sorgente d'archivio (PDF o XML AKN).
         guard service.hasArchivedSource(forDocumentId: id, kind: doc.sourceKind) else {
-            presentError(
-                "Il file di origine di questo documento non è più disponibile sul dispositivo, "
-                + "quindi non può essere riaperto. Reimportalo per leggerlo di nuovo.",
-                from: presenter)
+            presentError(LibraryWording.sourceMissing, from: presenter)
             return
         }
 
@@ -418,8 +415,8 @@ enum DocumentOpener {
     // MARK: - Errore in prosa (§ 12.10)
 
     static func presentError(_ message: String, from presenter: UIViewController) {
-        let alert = UIAlertController(title: "Operazione non riuscita", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Ho capito", style: .default))
+        let alert = UIAlertController(title: LibraryWording.errorTitle, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: LibraryWording.errorDismiss, style: .default))
         presenter.present(alert, animated: true)
     }
 }
@@ -484,9 +481,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         // Dispatch sul formato: XML AKN → orchestratore AKN; altrimenti PDF (invariato).
         let isAkn = originalURL.pathExtension.lowercased() == "xml"
         guard let localCopy = copyIntoTemporary(originalURL, ext: isAkn ? "xml" : "pdf") else {
-            DocumentOpener.presentError(
-                "Non è stato possibile leggere il file scelto. Riprova selezionandolo di nuovo.",
-                from: presenter)
+            DocumentOpener.presentError(LibraryWording.unreadablePickedFile, from: presenter)
             finish()
             return
         }

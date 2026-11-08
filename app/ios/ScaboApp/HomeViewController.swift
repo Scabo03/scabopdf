@@ -41,13 +41,13 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
         super.viewDidLoad()
         // Il titolo della SCHERMATA, non quello della scheda: `title` lo copierebbe anche sulla scheda, che si chiama
         // «Home» (§ 12.1; prima si leggeva «ScaboPDF» due volte, titolo e scheda).
-        navigationItem.title = "ScaboPDF"
+        navigationItem.title = LibraryWording.homeTitle
         view.backgroundColor = .systemBackground
         navigationController?.navigationBar.prefersLargeTitles = true
 
         let importItem = UIBarButtonItem(
             barButtonSystemItem: .add, target: self, action: #selector(importTapped))
-        importItem.accessibilityLabel = "Importa un documento"
+        importItem.accessibilityLabel = LibraryWording.importDocument
         importItem.accessibilityHint = "Apre la scelta di un file PDF dal dispositivo"
         navigationItem.rightBarButtonItem = importItem
 

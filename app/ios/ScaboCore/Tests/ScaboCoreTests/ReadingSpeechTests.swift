@@ -158,6 +158,21 @@ final class ReadingSpeechTests: XCTestCase {
         XCTAssertEqual(single.value(forIndex: 0), "pagina 1 del file originale")
     }
 
+    /// L'app Mac nella sua prima tappa non ha la finestra «Strumenti elemento» né i segnalibri: nessuna delle due azioni;
+    /// le altre restano quelle del modulo, nello stesso ordine (giro «app unica per Mac, tappa A», 2026-11-08).
+    func test_model_actions_senzaStrumentiElemento() {
+        let m = ReadingSpeechModel(segments: flow())
+        let mac = ReadingSpeechSettings(noteSpokenLabels: true, voiceOverRunning: false, elementToolsAvailable: false,
+                                        visualExtractionAvailable: false)
+        XCTAssertEqual(m.actions(forIndex: 1, bookmark: .unavailable, settings: mac).map(\.name), ["Vai alla nota 37"])
+        XCTAssertEqual(m.actions(forIndex: 4, bookmark: .unavailable, settings: mac), [.skipVisualResource(target: 6)])
+        // Il predefinito lascia l'iPad com'era.
+        XCTAssertTrue(ReadingSpeechSettings().elementToolsAvailable)
+        XCTAssertTrue(ReadingSpeechSettings().visualExtractionAvailable)
+        let d = m.describe(book: "prova", layout: .continuousReading, settings: mac, bookmarksAvailable: false)
+        XCTAssertFalse(d.elements.contains { $0.actions.contains("Strumenti elemento") })
+    }
+
     func test_model_actions_orderAndAvailability() {
         let m = ReadingSpeechModel(segments: flow())
         let off = ReadingSpeechSettings(voiceOverRunning: false), on = ReadingSpeechSettings(voiceOverRunning: true)

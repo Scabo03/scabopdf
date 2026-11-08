@@ -197,10 +197,21 @@ public struct ReadingSpeechSettings: Equatable, Sendable {
     public var noteSpokenLabels: Bool
     /// VoiceOver acceso: l'azione «Strumenti elemento» (per le altre tecnologie assistive) non si offre.
     public var voiceOverRunning: Bool
+    /// La finestra «Strumenti elemento» esiste nell'app (vero sull'iPad). L'app Mac, nella sua prima tappa (giro «app unica
+    /// per Mac, tappa A», 2026-11-08), non l'ha ancora: lì è falso e l'azione non si offre. Il predefinito lascia l'iPad
+    /// com'era.
+    public var elementToolsAvailable: Bool
+    /// «Estrai come immagine» esiste nell'app (vero sull'iPad). L'app Mac lo avrà con il PDF d'archivio in una tappa
+    /// successiva: nella prima è falso e l'azione non si offre («Salta la risorsa» resta). Il predefinito lascia l'iPad
+    /// com'era.
+    public var visualExtractionAvailable: Bool
 
-    public init(noteSpokenLabels: Bool = false, voiceOverRunning: Bool = false) {
+    public init(noteSpokenLabels: Bool = false, voiceOverRunning: Bool = false, elementToolsAvailable: Bool = true,
+                visualExtractionAvailable: Bool = true) {
         self.noteSpokenLabels = noteSpokenLabels
         self.voiceOverRunning = voiceOverRunning
+        self.elementToolsAvailable = elementToolsAvailable
+        self.visualExtractionAvailable = visualExtractionAvailable
     }
 }
 
@@ -476,7 +487,7 @@ public struct ReadingSpeechModel: Sendable {
     }
 
     /// Tutte le azioni dell'elemento, nell'ordine in cui VoiceOver le offre: risorsa visiva, salti nota↔richiamo,
-    /// segnalibro, e «Strumenti elemento» solo a VoiceOver spento. La sottolineatura è dichiarata solo-vedenti (§ 6):
+    /// segnalibro, e «Strumenti elemento» solo a VoiceOver spento (e dove la finestra esiste). La sottolineatura è dichiarata solo-vedenti (§ 6):
     /// VoiceOver non la offre fra le sue azioni.
     public func actions(
         forIndex index: Int, bookmark: ReadingBookmarkState, settings: ReadingSpeechSettings
@@ -484,9 +495,10 @@ public struct ReadingSpeechModel: Sendable {
         // Nessun controllo dell'indice qui, come nella vista di prima: le azioni di segnalibro e «Strumenti elemento» non
         // dipendono dall'indice; quelle della risorsa visiva e dei salti si controllano da sé.
         var actions = visualResourceActions(forIndex: index)
+        if !settings.visualExtractionAvailable { actions.removeAll { $0 == .extractVisualResource } }
         actions += noteJumpActions(forIndex: index)
         actions += Self.bookmarkActions(bookmark)
-        if !settings.voiceOverRunning { actions.append(.elementTools) }
+        if !settings.voiceOverRunning && settings.elementToolsAvailable { actions.append(.elementTools) }
         return actions
     }
 
