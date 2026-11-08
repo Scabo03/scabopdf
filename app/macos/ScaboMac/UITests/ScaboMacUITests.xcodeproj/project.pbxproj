@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		606F3F0AB6E2E4663ED9EDEF /* ScaboPDFUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05F308C0A56C93DB7CEC7CD /* ScaboPDFUITests.swift */; };
 		760410B49206D1442FFDC6E5 /* ScaboMacUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8165AC594AA6177FE71526A /* ScaboMacUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0985FA3E19E6828E2A89543C /* ScaboMacUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScaboMacUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D8165AC594AA6177FE71526A /* ScaboMacUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScaboMacUITests.swift; sourceTree = "<group>"; };
+		E05F308C0A56C93DB7CEC7CD /* ScaboPDFUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScaboPDFUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -20,6 +22,7 @@
 			isa = PBXGroup;
 			children = (
 				D8165AC594AA6177FE71526A /* ScaboMacUITests.swift */,
+				E05F308C0A56C93DB7CEC7CD /* ScaboPDFUITests.swift */,
 				ADF31DE5061E3AE4A5FC8884 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -91,6 +94,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				760410B49206D1442FFDC6E5 /* ScaboMacUITests.swift in Sources */,
+				606F3F0AB6E2E4663ED9EDEF /* ScaboPDFUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

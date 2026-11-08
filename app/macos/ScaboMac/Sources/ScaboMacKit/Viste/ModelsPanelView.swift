@@ -105,8 +105,9 @@ struct CatalogEntryView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(entry.nome).font(.headline)
                 if entry.provvisoria {
-                    Text(Testi.voceProvvisoria).font(.caption).padding(.horizontal, 6)
-                        .background(Color(nsColor: .quaternaryLabelColor)).cornerRadius(4)
+                    // Testo semplice, senza lo sfondo grigio sotto un corpo minuscolo che l'audit di sistema del contrasto
+                    // bocciava (giro «app unica per Mac, tappa A», 2026-11-08).
+                    Text(Testi.voceProvvisoria).font(.callout)
                 }
             }
             // Lo stato è sempre una frase (mai solo un colore); durante lo scaricamento c'è anche la barra.

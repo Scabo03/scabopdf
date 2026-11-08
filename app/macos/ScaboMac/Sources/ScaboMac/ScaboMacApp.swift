@@ -11,12 +11,14 @@
 //
 //  Argomenti di lancio per le prove (nessuno cambia ciò che l'app fa per l'utente):
 //    --libreria-di-prova      una libreria a parte, svuotata all'avvio (i test non toccano la libreria vera)
+//    --libreria-di-prova-continua  la stessa libreria a parte, senza svuotarla (prove su due lanci)
 //    --libro-di-prova         scrive il PDF sintetico (ScaboMacLettura `LibroSintetico`) e lo importa col percorso vero
 //    --importa <percorso>     importa un file che sta già nel contenitore dell'app
 //    --descrivi-in <percorso> appena una lettura si apre, scrive lì la sua descrizione dalla vista (formato 2) e quella del
 //                             modulo accanto (`.modulo.jsonl`), per il confronto da fuori
 //    --diario <percorso>      registra le richieste d'accessibilità della lettura e le scrive lì all'uscita
 //    --segnali-acustici       accende i segnali delle note al gancio del fuoco (prove d'orecchio)
+//    --apri-primo             apre all'avvio il primo libro dell'elenco della Home (misure di tempi e memoria)
 //    -ScaboMacProvaPannello   la prova del laboratorio sul pannello (giro del 2026-10-16), poi l'app si chiude
 //
 import AppKit
@@ -26,24 +28,35 @@ import ScaboMacKit
 import ScaboMacLettura
 import SwiftUI
 
-/// La finestra in più: il pannello dei modelli e l'officina, in due schede.
+/// La finestra in più: il pannello dei modelli e l'officina, scelti con un selettore in alto (un controllo solo, senza i
+/// gruppi muti che le schede di SwiftUI aggiungono attorno alla pagina; rilievo dell'audit di sistema, presente anche
+/// nell'officina di prima).
 struct ModelliEOfficinaView: View {
     @ObservedObject var pannello: PanelViewModel
     @ObservedObject var officina: OfficinaViewModel
     @State private var scheda = 0
 
     var body: some View {
-        TabView(selection: $scheda) {
-            ModelsPanelView(model: pannello)
-                .tabItem { Text(Parole.schedaModelli) }
-                .tag(0)
-            OfficinaView(model: officina) { scheda = 0 }
-                .environmentObject(pannello)
-                .tabItem { Text(Parole.schedaOfficina) }
-                .tag(1)
+        VStack(alignment: .leading, spacing: 8) {
+            Picker(Parole.modelliEOfficina, selection: $scheda) {
+                Text(Parole.schedaModelli).tag(0)
+                Text(Parole.schedaOfficina).tag(1)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .accessibilityIdentifier("modelli.scheda")
+            if scheda == 0 {
+                ModelsPanelView(model: pannello)
+            } else {
+                OfficinaView(model: officina) { scheda = 0 }
+                    .environmentObject(pannello)
+            }
         }
         .padding(8)
         .frame(minWidth: 680, minHeight: 540)
+        // Il contenitore ha un nome: l'audit di sistema non vuole gruppi muti, e VoiceOver lo dice entrando.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Parole.modelliEOfficina)
     }
 }
 
@@ -69,6 +82,7 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     private var officina: OfficinaViewModel!
     private var fileInArrivo: [URL] = []
     private var pronto = false
+    private var timerDiario: Timer?
     private let argomenti = ProcessInfo.processInfo.arguments
 
     private func argomento(_ nome: String) -> String? {
@@ -88,10 +102,10 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         pannello = Self.makeModel()
         officina = OfficinaViewModel(announcer: VoiceOverAnnouncer())
         let service: LibraryService
-        if argomenti.contains("--libreria-di-prova") {
+        if argomenti.contains("--libreria-di-prova") || argomenti.contains("--libreria-di-prova-continua") {
             let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             let radice = support.appendingPathComponent("ScaboPDF-prove", isDirectory: true)
-            try? FileManager.default.removeItem(at: radice)
+            if argomenti.contains("--libreria-di-prova") { try? FileManager.default.removeItem(at: radice) }
             service = LibraryService(rootDirectory: radice, prefs: InMemoryKeyValueStore())
         } else {
             service = LibraryService.shared
@@ -111,13 +125,17 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         pronto = true
 
         if argomenti.contains("--libro-di-prova") {
+            // Lo stesso file da un lancio all'altro (un PDF riscritto porterebbe date nuove, quindi un'impronta nuova): così
+            // «Libro già presente» si prova anche da fuori.
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("Libro di prova.pdf")
-            if (try? LibroSintetico.scrivi(in: url)) != nil { fileInArrivo.append(url) }
+            if FileManager.default.fileExists(atPath: url.path) || (try? LibroSintetico.scrivi(in: url)) != nil { fileInArrivo.append(url) }
         }
         if let p = argomento("--importa") { fileInArrivo.append(URL(fileURLWithPath: p)) }
         if !fileInArrivo.isEmpty {
             importazione.importa(fileInArrivo)
             fileInArrivo.removeAll()
+        } else if argomenti.contains("--apri-primo"), let primo = libreria.libri().first {
+            importazione.apri(primo.id)
         } else if let ultimo = service.store.lastOpenDocumentId, let doc = service.store.document(id: ultimo),
                   service.hasCache(forDocumentId: doc.id) {
             // Riapertura all'avvio (§ 2.5): l'ultimo libro lasciato aperto, solo se la sua lettura è pronta.
@@ -136,6 +154,15 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         }
         letture.append(f)
         f.mostra()
+        if let path = argomento("--diario"), timerDiario == nil {
+            // Il diario (indici e nomi delle richieste, nessun testo) si riscrive ogni due secondi: resta anche se l'app si chiude
+            // di colpo.
+            timerDiario = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+                MainActor.assumeIsolated {
+                    if let ultima = self?.letture.last { try? ultima.vista.diario.scrivi(su: URL(fileURLWithPath: path)) }
+                }
+            }
+        }
         if let path = argomento("--descrivi-in") {
             let libro = (doc.sourceFileName as NSString).deletingPathExtension
             let dallaVista = f.vista.descrizioneDallaVista(libro: libro, layout: .continuousReading)
@@ -192,8 +219,12 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     @objc func mostraModelliEOfficina(_ sender: Any?) {
         MainActor.assumeIsolated {
             if modelli == nil {
-                let w = NSWindow(contentViewController: NSHostingController(
-                    rootView: ModelliEOfficinaView(pannello: pannello, officina: officina)))
+                let ospite = NSHostingController(rootView: ModelliEOfficinaView(pannello: pannello, officina: officina))
+                let w = NSWindow(contentViewController: ospite)
+                // La vista SwiftUI è il primo risponditore: così Tab gira fra i suoi controlli, come nella finestra
+                // delle impostazioni dell'officina di prima.
+                w.initialFirstResponder = ospite.view
+                ospite.view.setAccessibilityLabel(Parole.modelliEOfficina)
                 w.title = Parole.modelliEOfficina
                 w.setAccessibilityIdentifier("modelli.finestra")
                 w.isReleasedWhenClosed = false
@@ -202,6 +233,7 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             }
             modelli?.showWindow(nil)
             modelli?.window?.makeKeyAndOrderFront(nil)
+            if let w = modelli?.window, let v = w.contentView { w.makeFirstResponder(v) }
         }
     }
 

@@ -24,7 +24,8 @@ public enum LibroSintetico {
                 "Capitolo \(ordinali[k]). Pagina dedicata a \(tema)",
                 [
                     "In questa pagina si parla di \(tema), con frasi scritte apposta per la prova. Di \(cosa) si dice "
-                        + "soltanto che hanno un colore \(colore) e che stanno al loro posto.\(k + 1)",
+                        + "soltanto che hanno un colore \(colore) e che stanno al loro posto\(richiamo)\(k + 1). Il capoverso "
+                        + "prosegue ancora per una frase, perché il richiamo resti dentro il testo.",
                     "Il secondo capoverso su \(tema) aggiunge qualche parola in più: \(cosa) si contano, si guardano e si "
                         + "lasciano dove sono. Ogni frase finisce con un punto.",
                     "Chiude la pagina \(ordinali[k]) un terzo capoverso, più corto degli altri, sul tema di \(tema).",
@@ -33,6 +34,9 @@ public enum LibroSintetico {
             )
         }
     }
+
+    /// Il segno che apre il richiamo nel testo: la cifra che lo segue si disegna più piccola e rialzata, come un apice vero.
+    static let richiamo = "\u{2063}"
 
     /// Scrive il PDF in `url` (sovrascrive). Ritorna l'URL.
     @discardableResult
@@ -59,7 +63,17 @@ public enum LibroSintetico {
 
     /// Disegna un paragrafo che va a capo nella larghezza data, con il bordo superiore a `y`; ritorna il bordo inferiore.
     private static func disegna(_ testo: String, font: NSFont, in ctx: CGContext, y: CGFloat, larghezza: CGFloat) -> CGFloat {
-        let attr = NSAttributedString(string: testo, attributes: [.font: font, .foregroundColor: NSColor.black])
+        // Le cifre dopo il segno del richiamo diventano un apice (più piccole, rialzate); il segno stesso non si disegna.
+        let attr = NSMutableAttributedString()
+        let parti = testo.components(separatedBy: richiamo)
+        for (k, parte) in parti.enumerated() {
+            if k == 0 { attr.append(NSAttributedString(string: parte, attributes: [.font: font, .foregroundColor: NSColor.black])); continue }
+            let cifre = String(parte.prefix { $0.isNumber }), resto = String(parte.dropFirst(cifre.count))
+            let apice = NSFont(name: font.fontName, size: font.pointSize * 0.6) ?? font
+            attr.append(NSAttributedString(string: cifre, attributes: [.font: apice, .foregroundColor: NSColor.black,
+                                                                       .baselineOffset: font.pointSize * 0.35]))
+            attr.append(NSAttributedString(string: resto, attributes: [.font: font, .foregroundColor: NSColor.black]))
+        }
         let setter = CTFramesetterCreateWithAttributedString(attr)
         let misura = CTFramesetterSuggestFrameSizeWithConstraints(setter, CFRange(location: 0, length: 0), nil,
                                                                   CGSize(width: larghezza, height: .greatestFiniteMagnitude), nil)

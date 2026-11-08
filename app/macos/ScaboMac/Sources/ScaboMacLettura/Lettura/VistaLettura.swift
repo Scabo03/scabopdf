@@ -203,7 +203,12 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
 
     // MARK: Geometria
 
-    public func rettangolo(_ i: Int) -> NSRect { NSRect(x: 0, y: CGFloat(i) * altezzaRiga, width: bounds.width, height: altezzaRiga) }
+    /// Il margine sinistro dove si disegna la barra del fuoco: fuori dalla cornice dell'elemento, così dentro la cornice ci sono
+    /// solo il testo e il suo fondo (l'audit di sistema del contrasto misura lì).
+    public let margineFuoco: CGFloat = 10
+    public func rettangolo(_ i: Int) -> NSRect {
+        NSRect(x: margineFuoco, y: CGFloat(i) * altezzaRiga, width: max(0, bounds.width - margineFuoco), height: altezzaRiga)
+    }
     public func corniceSchermo(_ i: Int) -> NSRect {
         guard let w = window else { return .zero }
         return w.convertToScreen(convert(rettangolo(i), to: nil))
@@ -285,14 +290,25 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
 
     public override func draw(_ dirtyRect: NSRect) {
         NSColor.textBackgroundColor.setFill(); dirtyRect.fill()
-        let normale: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 15), .foregroundColor: NSColor.labelColor]
-        let titolo: [NSAttributedString.Key: Any] = [.font: NSFont.boldSystemFont(ofSize: 15), .foregroundColor: NSColor.labelColor]
+        // Il colore pieno del testo (non quello delle etichette, trasparente all'85 %), corpo 16 di peso medio, su una riga sola
+        // troncata in coda: tratti pieni, contrasto pieno (l'audit di sistema bocciava a volte il tondo sottile, misurato).
+        let riga1 = NSMutableParagraphStyle(); riga1.lineBreakMode = .byTruncatingTail
+        let normale: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 16, weight: .medium), .foregroundColor: NSColor.textColor,
+                                                      .paragraphStyle: riga1]
+        let titolo: [NSAttributedString.Key: Any] = [.font: NSFont.boldSystemFont(ofSize: 16), .foregroundColor: NSColor.textColor,
+                                                     .paragraphStyle: riga1]
         for i in righeVisibili {
             let riga = rettangolo(i)
             guard riga.intersects(dirtyRect) else { continue }
-            if fuoco == i { NSColor.selectedContentBackgroundColor.withAlphaComponent(0.25).setFill(); riga.fill() }
-            let t = String(segmento(i).text.prefix(160))
-            (t as NSString).draw(in: riga.insetBy(dx: 12, dy: 4),
+            if fuoco == i {
+                // La riga col fuoco ha una barra nel margine, non uno sfondo: il testo resta sul suo fondo, col contrasto pieno.
+                NSColor.labelColor.setFill()
+                NSBezierPath(roundedRect: NSRect(x: 2, y: riga.minY + 3, width: 5, height: riga.height - 6), xRadius: 2, yRadius: 2).fill()
+            }
+            // Si vede ciò che si sente (il testo pronunciato, qualifica del titolo compresa): la stessa resa per chi guarda e per
+            // chi ascolta, e l'audit di sistema del contrasto ritrova nell'immagine il testo dell'elemento (misurato l'8 novembre).
+            let t = String(testoPronunciato(i).prefix(160))
+            (t as NSString).draw(in: riga.insetBy(dx: 6, dy: 4),
                                  withAttributes: ReadingSpeech.isHeadingRole(segmento(i).role) ? titolo : normale)
         }
     }

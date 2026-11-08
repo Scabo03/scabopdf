@@ -174,12 +174,20 @@ final class LetturaMacTests: XCTestCase {
         XCTAssertTrue(v.titolo(avanti: true))
         let t = try XCTUnwrap(v.fuoco)
         XCTAssertTrue(ReadingSpeech.isHeadingRole(v.segmento(t).role))
-        // ⌘J dove non c'è nulla da raggiungere: la frase del modulo, e la lettura non si muove.
-        if v.modello.noteCallJumpTarget(from: t) == nil {
-            XCTAssertFalse(v.saltaNotaRichiamo())
-            XCTAssertEqual(v.annunci.last, ReadingSpeech.noNoteOrCallToReach)
-            XCTAssertEqual(v.fuoco, t)
-        }
+        // ⌘J sul titolo, dove non c'è nulla da raggiungere: la frase del modulo, e la lettura non si muove.
+        XCTAssertNil(v.modello.noteCallJumpTarget(from: t))
+        XCTAssertFalse(v.saltaNotaRichiamo())
+        XCTAssertEqual(v.annunci.last, ReadingSpeech.noNoteOrCallToReach)
+        XCTAssertEqual(v.fuoco, t)
+        // Il capoverso che richiama una nota (il libro sintetico ha un apice vero): ⌘J va alla nota e torna al richiamo.
+        let richiamo = try XCTUnwrap((0..<v.conteggio).first { i in v.azioni(i).contains { if case .goToNote = $0 { return true }; return false } })
+        v.impostaFuocoIniziale(richiamo)
+        XCTAssertTrue(v.saltaNotaRichiamo())
+        let nota = try XCTUnwrap(v.fuoco)
+        XCTAssertEqual(v.segmento(nota).role, "NOTE")
+        XCTAssertTrue(v.azioni(nota).contains(.goToCall(target: richiamo)))
+        XCTAssertTrue(v.saltaNotaRichiamo())
+        XCTAssertEqual(v.fuoco, richiamo)
     }
 
     func test_menu_vociEScorciatoie_senzaTastoVO() {

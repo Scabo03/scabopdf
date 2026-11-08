@@ -22,11 +22,13 @@ final class CellaLibro: NSTableCellView {
         super.init(frame: frame)
         testo.translatesAutoresizingMaskIntoConstraints = false
         testo.maximumNumberOfLines = 2
+        testo.font = .systemFont(ofSize: 15, weight: .medium)
+        testo.textColor = .textColor
         testo.setAccessibilityElement(false)
         addSubview(testo)
         textField = testo
         NSLayoutConstraint.activate([
-            testo.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            testo.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             testo.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
             testo.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
@@ -35,7 +37,8 @@ final class CellaLibro: NSTableCellView {
 
     private func aggiorna() {
         guard let d = documento else { testo.stringValue = ""; return }
-        testo.stringValue = "\(d.title)\n\(LibraryFormatting.fileDetail(d))"
+        // Si vede ciò che VoiceOver dice della riga (le parole della riga dell'iPad): una resa sola per chi guarda e chi ascolta.
+        testo.stringValue = LibraryFormatting.fileAccessibility(d)
     }
 
     override func isAccessibilityElement() -> Bool { true }
@@ -54,6 +57,28 @@ final class PilaConArrivo: NSStackView {
         guard let primo = FinestraHome.fileImportabili(sender).first else { return false }
         quandoArriva?(primo)
         return true
+    }
+}
+
+/// La finestra della Home: i comandi della barra prima del contenuto nell'ordine di lettura, come la Home dell'iPad (titolo,
+/// comandi, contenuto, LAYER2 § 12.1). AppKit mette la barra dopo il contenuto: qui la si porta davanti, senza togliere né
+/// aggiungere elementi.
+final class FinestraBarraPrima: NSWindow {
+    override func accessibilityChildren() -> [Any]? {
+        guard let figli = super.accessibilityChildren() else { return nil }
+        func eBarra(_ e: Any) -> Bool { (e as? NSAccessibilityProtocol)?.accessibilityRole() == .toolbar }
+        return figli.filter(eBarra) + figli.filter { !eBarra($0) }
+    }
+}
+
+/// La riga di un libro: la scelta si vede come un bordo nel colore del testo, mai come uno sfondo colorato con il testo
+/// chiaro (bianco su azzurro, o su grigio quando la finestra non è in primo piano, sotto il contrasto minimo).
+final class RigaLibro: NSTableRowView {
+    override var interiorBackgroundStyle: NSView.BackgroundStyle { .normal }
+    override func drawSelection(in dirtyRect: NSRect) {
+        // Una barra all'inizio della riga, fuori dal testo: dentro la cornice della riga restano testo e fondo.
+        NSColor.labelColor.setFill()
+        NSBezierPath(roundedRect: NSRect(x: 1, y: 5, width: 5, height: bounds.height - 10), xRadius: 2, yRadius: 2).fill()
     }
 }
 
@@ -83,7 +108,7 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
         self.libreria = libreria
         self.importazione = importazione
         self.comandi = comandi
-        let w = NSWindow(contentRect: NSRect(x: 120, y: 160, width: 720, height: 520),
+        let w = FinestraBarraPrima(contentRect: NSRect(x: 120, y: 160, width: 720, height: 520),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.title = LibraryWording.homeTitle
         w.setAccessibilityIdentifier("home.finestra")
@@ -96,7 +121,7 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
         colonna.title = Parole.elencoLibri
         tabella.addTableColumn(colonna)
         tabella.headerView = nil
-        tabella.rowHeight = 44
+        tabella.rowHeight = 52
         tabella.dataSource = self
         tabella.delegate = self
         tabella.target = self
@@ -110,6 +135,8 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
         scorrimento.documentView = tabella
         scorrimento.hasVerticalScroller = true
         vuota.setAccessibilityIdentifier("home.vuota")
+        vuota.textColor = .textColor
+        vuota.font = .systemFont(ofSize: 15, weight: .medium)
         let pila = PilaConArrivo(views: [vuota, scorrimento])
         pila.quandoArriva = { [weak importazione] url in importazione?.importa(url) }
         pila.registerForDraggedTypes([.fileURL])
@@ -143,6 +170,8 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
     // MARK: Tabella
 
     public func numberOfRows(in tableView: NSTableView) -> Int { libri.count }
+
+    public func tableView(_ tableView: NSTableView, rowViewForRow row: Int) -> NSTableRowView? { RigaLibro() }
 
     public func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         let id = NSUserInterfaceItemIdentifier("cella.libro")
