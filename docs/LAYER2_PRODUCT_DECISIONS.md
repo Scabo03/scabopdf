@@ -1424,6 +1424,16 @@ dice se coincidono, o la prima divergenza e il suo tipo. Sui 52 volumi del banco
 dell'iPad e la catena del Mac danno la stessa lettura, elemento per elemento, salti compresi. Dettagli: `docs/STUDIO_LETTURA_MAC.md`
 (testa) e `docs/CARRYOVER.md`, STATO del 2026-11-07.
 
+**Due decisioni del maintainer del 7 novembre 2026**, registrate all'apertura del giro «disegno della lettura per Mac»
+(2026-11-08):
+
+6. La **modalità automazione del Mac si attiva una volta sola**, dal maintainer con la sua password, prima della prima tappa
+   dell'app di lettura: così la misura dei contenitori — l'albero d'accessibilità visto da fuori con i test d'interfaccia — entra
+   nel confronto automatico di ogni giro invece di costare tempo d'orecchio. Attivata il 2026-11-08 con
+   `automationmodetool enable-automationmode-without-authentication`; Code non chiede né tocca mai la password.
+7. L'**app di lettura nasce nello stesso pacchetto `ScaboMac` dell'officina**, con un manifesto solo e senza duplicazioni di
+   codice; per gli utenti le due app restano separate (decisione 1).
+
 ---
 
 ## 13. Ricerca testuale
