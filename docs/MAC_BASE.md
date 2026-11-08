@@ -9,6 +9,10 @@
 > iOS 26.5 secondario (2026-10-06). Il riconoscimento della struttura è **deciso**: Heron di docling in Core ML, incorporato
 > (`app/ios/ScaboPageStructure`, giri del 2026-10-12). La forma della lettura su Mac è **decisa** il 2026-10-20 (§ 7,
 > `LAYER2_PRODUCT_DECISIONS.md` § 12.16); resta aperto il record App Store. Lo stato corrente della linea Mac è nella sezione STATO del 2026-10-16 di `CARRYOVER.md`.
+> **Il disegno dell'app di lettura** (2026-11-08) è in `docs/DISEGNO_LETTURA_MAC.md`: vista AppKit con elementi virtuali,
+> parlato dal modulo condiviso, pacchetto `ScaboMac` con i due bersagli `ScaboLetturaKit` e `ScaboLettura`, variante di
+> `scripts/build_app.sh`, piano a tappe; le due domande di prodotto sui libri (importazione, libreria condivisa sotto sandbox)
+> sono poste lì, § 6, e spettano al maintainer come quelle del § 7 qui sotto.
 
 > Giro «linea Mac» del 2026-10-05/06, HEAD di partenza `9d65fef` (main = origin/main, build 45 su TestFlight).
 > Documento privo di contenuto dei volumi: solo nomi di volumi, conteggi, indici e impronte.

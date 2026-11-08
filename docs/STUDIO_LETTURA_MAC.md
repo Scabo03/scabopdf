@@ -12,6 +12,14 @@
 > automatico di § 5 (la Tappa 1 di § 6.3), nel repo e in Swift invece che in Python nel laboratorio: la vista vera dell'iPad,
 > interrogata in un test, e la catena del Mac passata nel modulo danno descrizioni identiche sui libri del banco. Vedi
 > `docs/CARRYOVER.md`, STATO del 2026-11-07.
+>
+> **Disegnato nel giro del 2026-11-08:** lo scheletro dell'app di lettura — vista AppKit con elementi d'accessibilità
+> virtuali in un gruppo solo, parlato tutto dal modulo e descrizione della vista identica al byte a quella del modulo,
+> gancio del fuoco per il segnale delle note, rotori e azioni del modulo con i duplicati nel menu, pacchetto e piano a tappe
+> — con le prove dei prototipi di laboratorio e le prove d'orecchio che restano, in `docs/DISEGNO_LETTURA_MAC.md`. Le due
+> decisioni del maintainer del 2026-11-07 (modalità automazione una volta sola; stesso pacchetto `ScaboMac`) sono in
+> `LAYER2_PRODUCT_DECISIONS.md` § 12.16. Dove questo studio stima i costi (§ 7: 4–6 giri la lettura minima, 10–14 la
+> parità) prevale la stima del disegno (2–3 la minima; 11–12 la parità con l'iPad, 12–13 con la distribuzione).
 
 Il 20 ottobre il maintainer ha deciso:
 

@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.55 (8 novembre 2026, giro «disegno della lettura per Mac», livello di verifica leggero, nessuna build, solo documenti, **CONCLUSO**: registrate le due decisioni del maintainer del 7 novembre in LAYER2 § 12.16 (modalità automazione attivata una volta sola; app di lettura nello stesso pacchetto `ScaboMac`); **il disegno dello scheletro dell'app di lettura** in `docs/DISEGNO_LETTURA_MAC.md` — otto domande con le prove, vista AppKit con un gruppo solo di elementi d'accessibilità virtuali, parlato tutto da ScaboCore `ReadingSpeech` e descrizione della vista identica al byte a quella del modulo su 30.407 elementi, gancio del fuoco per il segnale delle note, rotori e azioni del modulo duplicate nel menu «Lettura», pacchetto e piano a tappe (2–3 giri la lettura minima, 11–12 la parità con l'iPad, 12–13 con la distribuzione) — tre prototipi di laboratorio (13 prove in processo verdi, cinque misure da fuori nella modalità automazione più una con l'API C d'accessibilità), revisione indipendente con tredici rilievi corretti, due domande di prodotto poste al maintainer e tre prove d'orecchio che restano. Vedi lo STATO del 2026-11-08.)
 > Versione: 2.54 (7 novembre 2026, giro «fondamenta della lettura per Mac», livello di verifica medio, iOS 27, nessuna build, **CONCLUSO**: le decisioni del maintainer sulla lettura per Mac in LAYER2 § 12.16 e lo studio nel repo; la fonte unica del parlato in ScaboCore, usata dalla vista dell'iPad; la rete sul parlato e il confronto automatico fra la lettura dell'iPad e quella del Mac, identiche sui 52 volumi e sui tre documenti di studio. Vedi lo STATO qui sotto.) Versione precedente: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti, **CONCLUSO**: **prima parte con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); **seconda parte con la build 64** su TestFlight (sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; i tre documenti del giro diventano volumi stabili della rete dei documenti di studio). Vedi i due STATO qui sotto.)
 > Versione: 2.52 (6 novembre 2026, giro «cure mirate per lo studio», livello di verifica pieno, **CONCLUSO** con la **build 62** su TestFlight: due documenti di studio del maintainer curati con regole accese solo dalla loro impronta (registro `TargetedCures`, LAYER2 § 0-ter, `docs/CURE_MIRATE.md`), letture di tutti i 52 volumi del banco identiche al byte su iOS 26.5 e 27, offerta «Lettura migliore disponibile» solo ai due documenti; prova alla cieca su un volume ignoto, giudicato senza cure. Ambiente: Xcode 27.2. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.51 (20 ottobre 2026, giro «ricerca nella libreria», livello di verifica leggero, **CONCLUSO** con la **build 61** su TestFlight: dal tab Ricerca della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla»/«Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; le frasi del Mac nominano iPad e iPhone. Vedi lo STATO del giro qui sotto.)
@@ -102,6 +103,58 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
   commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
   solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
+
+---
+
+## ▶ STATO — Giro «disegno della lettura per Mac»: lo scheletro dell'app di lettura, con le prove dei prototipi (solo documenti, nessuna build) — 2026-11-08
+
+**Partenza:** `cc905ed` (main = origin, build 64 su TestFlight; la prossima build resta la 65, non usata). Solo documenti su
+main, nessun file di codice del repo toccato; i prototipi vivono nel laboratorio
+`~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/` e dipendono da ScaboCore per percorso in sola lettura. Livello di
+verifica leggero. Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_DISEGNO_LETTURA_MAC.md`.
+
+- **Decisioni del maintainer del 7 novembre** (LAYER2 § 12.16, 6 e 7): la modalità automazione del Mac si attiva una volta sola
+  dal maintainer — attivata il 2026-11-08 con `automationmodetool enable-automationmode-without-authentication`, verificata con
+  un test d'interfaccia sull'officina senza tasti sintetici — così la misura dei contenitori da fuori entra nel confronto
+  automatico; l'app di lettura nasce nello stesso pacchetto `ScaboMac`, manifesto unico, nessuna duplicazione.
+- **Il disegno** (`docs/DISEGNO_LETTURA_MAC.md`, documento di riferimento di lungo periodo): vista **AppKit** con la barra degli
+  strumenti di sistema e **un gruppo solo «Testo del documento»** i cui figli sono elementi d'accessibilità virtuali
+  (`NSAccessibilityElement`), uno per blocco di granularità, tutti in albero (il servizio d'accessibilità ne consegna 30.407
+  su 30.407 a un client, campo); il parlato tutto da `ReadingSpeech` (AXValue = testo pronunciato, AXDescription = valore
+  secondario, ruolo testo statico); la **vista si descrive da sé** interrogando la propria accessibilità e coincide al byte
+  col modulo (capitolo sintetico in tre stati, flusso lungo di 30.407 elementi: 0 divergenze); **gancio del fuoco** (AXFocused
+  settabile) per il segnale delle note, che in processo emette esattamente i segnali della descrizione nei sei regimi; rotori
+  di sistema (titoli, per livello fino al quinto, tabelle, immagini) più «Risultati della ricerca», azioni personalizzate del
+  modulo e duplicati nel menu «Lettura» (⌘J, ⌘B, ⌘F, ⌘G, ⇧⌘G, ⌘E; titoli ⌥⌘↓/↑); pacchetto: `ScaboLetturaKit` +
+  `ScaboLettura` in `ScaboMac`, parti Mac comuni in una libreria piccola, variante di `build_app.sh`, sandbox senza rete, tipo
+  `.scabolettura` importato; piano: tappa A 2–3 giri (prima la rete d'identità della vista sulle 55 letture contro i
+  riferimenti dell'iPad, poi l'app), parità con l'iPad 11–12 (tappe A–E), 12–13 con la distribuzione.
+- **Prototipi** (laboratorio, tre su uno scheletro comune): P1 flusso lungo (30.407 elementi: elementi in 4,8 ms, tutte le
+  etichette in 38 ms, memoria +67 MB, identità vista↔modulo), P2 segnale delle note (gancio, sei regimi, bibliografia una
+  volta, scorrimento, diario delle richieste), P3 rotori/azioni/menu; Q2 identità in tre stati. 13 prove XCTest verdi. Da
+  fuori (XCUITest, modalità automazione): U1 capitolo 30/30 elementi, 0 divergenze testo/valore, profondità 3 livelli
+  (finestra → scorrimento → gruppo → testo); U2 flusso lungo: il runner vede 1.000 figli (tetto del runner); U3 variante
+  SwiftUI `List`: 6 livelli, outline e gruppi non chiesti; U4-bis con l'API C d'accessibilità da processo fidato, sola
+  lettura: 30.407 figli, copia completa 34 ms, elemento 30.000 in 0,2 ms.
+- **Revisione indipendente** (sub-agente a freddo, lista di controllo del brief): tredici rilievi, tutti applicati nel
+  documento. I cinque che pesano: la prova decisiva su VoiceOver davanti a trentamila figli non era scritta (ora è T1, la
+  prima, col ripiego dei figli finestrati pronto); il diario della misura con l'API C era vuoto (ricorsa con la chiusura
+  regolare: 210 richieste registrate, indice massimo 30.400); l'identità con l'iPad era detta «misurata» quando è dedotta
+  per transitività (riformulata; la misura diretta è il primo lavoro della tappa A); il misuratore automatico della
+  profondità non riconosceva «Window (Main)» (corretto e rilanciato: 3 e 6 livelli misurati); la via da fuori oltre i mille
+  non era provata (U5: `firstMatch` per identificatore trova qualunque elemento in circa due secondi). Gli altri: totali
+  dei giri rifatti (11–12 la parità, 12–13 con la distribuzione), un'affermazione contro SwiftUI tolta, il ciclo del cambio
+  di granularità disegnato, etichette aggiunte dove mancavano, numeri della memoria in una cornice sola, prefisso «LAYER2 §»
+  sui rimandi al documento di prodotto, due scelte di organizzazione dei file prese e registrate, una domanda d'orecchio
+  superflua tolta.
+- **Decisioni per il maintainer** (nel referto, § 6): le due domande di prodotto (importazione nell'app di lettura: inclinazione
+  «solo letture dell'officina»; libreria condivisa: inclinazione «gruppo di app `<team>.scabopdf`, con l'apertura di un
+  `.scabolettura` sempre possibile»), la scorciatoia dei titoli sul Mac, il predefinito delle note alla tappa A.
+- **Prove d'orecchio che restano** (DISEGNO § 10, otto minuti): T1 cosa dice VoiceOver di un elemento e dell'ultimo fuori
+  finestra; T2 il gancio del fuoco (si legge dal diario); T3 rotori e azioni come li mostra VoiceOver.
+- **Regole fisse da questo giro**: la misura dei contenitori da fuori (XCUITest nella modalità automazione) entra nelle reti di
+  ogni giro che costruisce la lettura del Mac; la descrizione della vista del Mac sostituirà il passo 3 di
+  `confronto_letture_ipad_mac.sh` dalla tappa A.
 
 ---
 

@@ -1434,6 +1434,17 @@ dell'iPad e la catena del Mac danno la stessa lettura, elemento per elemento, sa
 7. L'**app di lettura nasce nello stesso pacchetto `ScaboMac` dell'officina**, con un manifesto solo e senza duplicazioni di
    codice; per gli utenti le due app restano separate (decisione 1).
 
+**Il disegno (2026-11-08, nessuna build).** Le otto domande di disegno dello scheletro dell'app di lettura hanno risposta in
+`docs/DISEGNO_LETTURA_MAC.md`, con le prove dei prototipi di laboratorio: vista AppKit con un gruppo solo di elementi
+d'accessibilità virtuali (tutto il libro in albero, 30.407 elementi in 5 millesimi di secondo e 35 megabyte), parlato tutto
+da ScaboCore `ReadingSpeech` e descrizione della vista identica al byte a quella del modulo, gancio del fuoco per il segnale
+delle note (da confermare all'orecchio), rotori e azioni del modulo duplicate nel menu «Lettura» con le scorciatoie
+dell'iPad, pacchetto e piano a tappe (2–3 giri la lettura minima, 11–12 la parità con l'iPad, 12–13 con la distribuzione).
+Resta da sentire, prima della tappa A, come VoiceOver si comporti davanti a un gruppo di trentamila figli: se male, il
+ripiego disegnato sono i figli finestrati (un giro in più). Le due domande di prodotto che spettano
+al maintainer — se l'app di lettura importi i PDF da sé o apra solo le letture dell'officina; se le due app condividano la
+libreria sul Mac e come, sotto sandbox — sono poste al § 6 di quel documento, con pro, contro e costi, e non sono decise.
+
 ---
 
 ## 13. Ricerca testuale
