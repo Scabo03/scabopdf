@@ -6,8 +6,10 @@
 	<key>CFBundleExecutable</key><string>ScaboMac</string>
 	<key>CFBundleIdentifier</key><string>com.scabo.scabopdf.mac</string>
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-	<key>CFBundleName</key><string>ScaboPDF per Mac</string>
-	<key>CFBundleDisplayName</key><string>ScaboPDF per Mac</string>
+	<!-- L'app unica del Mac (LAYER2 § 12.16, decisioni 8-10): il nome del prodotto è ScaboPDF; l'identificativo resta quello
+	     dell'officina di prima, così il contenitore (modelli scaricati, preferenze) non cambia. -->
+	<key>CFBundleName</key><string>ScaboPDF</string>
+	<key>CFBundleDisplayName</key><string>ScaboPDF</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
 	<key>CFBundleShortVersionString</key><string>0.1</string>
 	<key>CFBundleVersion</key><string>1</string>
@@ -18,6 +20,24 @@
 	<key>NSSupportsSuddenTermination</key><false/>
 	<key>ITSAppUsesNonExemptEncryption</key><false/>
 	<key>NSHumanReadableCopyright</key><string>ScaboPDF</string>
+	<!-- I documenti che l'app importa da sé, come l'iPad: PDF e gli atti AKN di Normattiva (XML). «Apri con» e il trascinamento
+	     sull'icona arrivano qui; un XML che non è un atto si rifiuta con la spiegazione in prosa. Il pacchetto .scabolettura si
+	     aprirà dalla tappa D (DISEGNO_LETTURA_MAC § 6.3). -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key><string>Documento PDF</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+			<key>LSHandlerRank</key><string>Alternate</string>
+			<key>LSItemContentTypes</key><array><string>com.adobe.pdf</string></array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key><string>Atto normativo in XML</string>
+			<key>CFBundleTypeRole</key><string>Viewer</string>
+			<key>LSHandlerRank</key><string>Alternate</string>
+			<key>LSItemContentTypes</key><array><string>public.xml</string></array>
+		</dict>
+	</array>
 	<!-- Il pacchetto della lettura (lo stesso tipo dichiarato dall'app per iPad, giro del 2026-10-16): lo produce il Mac. -->
 	<key>UTExportedTypeDeclarations</key>
 	<array>

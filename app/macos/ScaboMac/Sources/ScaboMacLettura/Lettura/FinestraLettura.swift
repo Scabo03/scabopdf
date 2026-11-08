@@ -1,0 +1,109 @@
+//
+//  FinestraLettura.swift
+//  ScaboMacLettura — la finestra di lettura di un libro (giro «app unica per Mac, tappa A», 2026-11-08; DISEGNO_LETTURA_MAC
+//  § 2.5): AppKit puro, una finestra per libro, con la vista a scorrimento e dentro il gruppo «Testo del documento». Nella
+//  tappa A la finestra non ha ancora la barra degli strumenti (la ricerca e il selettore dei layout arrivano con le loro tappe):
+//  dalla finestra al primo elemento ci sono la vista a scorrimento e il gruppo, come nel prototipo misurato da fuori.
+//
+//  Qui: la posizione di lettura (§ 2.5) — si riapre dove si era, e a ogni arrivo del fuoco si registra con l'ancora per
+//  contenuto, come sull'iPad —; le impostazioni del parlato (note a voce; VoiceOver acceso o spento, osservato); i comandi del
+//  menu «Lettura», gli stessi delle azioni del modulo con le scorciatoie del disegno (§ 5.2).
+//
+import AppKit
+import ScaboChain
+import ScaboCore
+
+@MainActor
+public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenuItemValidation {
+    public let documentId: String
+    public let vista: VistaLettura
+    public let scorrimento = NSScrollView()
+    private let libreria: LibreriaMac
+    private let ancore = ReaderAnchorBox()
+    private var osservatoreVoiceOver: NSKeyValueObservation?
+    /// Chiamata quando la finestra si chiude (la Home aggiorna l'elenco e chi tiene le finestre la dimentica).
+    public var quandoSiChiude: ((FinestraLettura) -> Void)?
+
+    /// Le impostazioni del parlato per il Mac nella tappa A: niente «Strumenti elemento» né «Estrai come immagine» (tappe
+    /// successive), le note a voce secondo le preferenze, VoiceOver come lo dice il sistema.
+    public static func impostazioni(prefs: KeyValueStore, voiceOver: Bool) -> ReadingSpeechSettings {
+        ReadingSpeechSettings(noteSpokenLabels: PreferenzeLettura.noteAVoce(prefs), voiceOverRunning: voiceOver,
+                              elementToolsAvailable: false, visualExtractionAvailable: false)
+    }
+
+    public init(documento doc: ArchivedDocument, lettura: LibraryReading, libreria: LibreriaMac,
+                voiceOver: Bool = NSWorkspace.shared.isVoiceOverEnabled) {
+        self.documentId = doc.id
+        self.libreria = libreria
+        let segmenti = lettura.content.pages.flatMap { $0.segments }
+        vista = VistaLettura(segmenti: segmenti, impostazioni: Self.impostazioni(prefs: libreria.prefs, voiceOver: voiceOver))
+        let w = NSWindow(contentRect: NSRect(x: 160, y: 120, width: 900, height: 680),
+                         styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
+        w.title = doc.title
+        w.setAccessibilityIdentifier("lettura.finestra")
+        w.isReleasedWhenClosed = false
+        super.init(window: w)
+        w.delegate = self
+        scorrimento.documentView = vista
+        scorrimento.hasVerticalScroller = true
+        scorrimento.autohidesScrollers = false
+        scorrimento.setAccessibilityIdentifier("lettura.scorrimento")
+        w.contentView = scorrimento
+        vista.frame.size.width = scorrimento.contentSize.width
+        vista.autoresizingMask = [.width]
+
+        // Le ancore per contenuto della posizione (come sull'iPad): l'indice si costruisce all'apertura; le annotazioni
+        // senza ancora la ricevono a contenuto fermo.
+        let indice = ContentAnchorIndex(segments: segmenti)
+        ancore.index = indice
+        libreria.service.mintMissingAnchors(documentId: doc.id, in: indice)
+        let id = doc.id
+        vista.quandoCambiaIlFuoco = { [weak self] i in
+            guard let self else { return }
+            self.libreria.service.store.updateReadingPosition(id: id, position: i, anchor: self.ancore.anchor(forIndex: i))
+        }
+        if PreferenzeLettura.segnaliAcustici(libreria.prefs) {
+            vista.suonatore = { segnali in SegnaliMac.shared.suona(segnali) }
+        }
+        vista.impostaFuocoIniziale(doc.readingPosition)
+        w.makeFirstResponder(vista)
+        osservatoreVoiceOver = NSWorkspace.shared.observe(\.isVoiceOverEnabled, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor in self?.aggiornaVoiceOver() }
+        }
+    }
+
+    required init?(coder: NSCoder) { fatalError("non si usa") }
+
+    private func aggiornaVoiceOver() {
+        vista.impostazioni = Self.impostazioni(prefs: libreria.prefs, voiceOver: NSWorkspace.shared.isVoiceOverEnabled)
+    }
+
+    /// Mostra la finestra e porta il cursore di VoiceOver sull'elemento della posizione di lettura.
+    public func mostra() {
+        showWindow(nil)
+        window?.makeKeyAndOrderFront(nil)
+        if let f = vista.fuoco, f < vista.conteggio {
+            NSAccessibility.post(element: vista.elemento(f), notification: .focusedUIElementChanged)
+        }
+    }
+
+    public func windowWillClose(_ notification: Notification) {
+        osservatoreVoiceOver = nil
+        // Chiudendo il libro si torna alla Home: all'avvio seguente non si riapre (§ 2.5, come «Indietro» sull'iPad).
+        libreria.service.store.setLastOpenDocument(id: nil)
+        libreria.avvisa()
+        quandoSiChiude?(self)
+    }
+
+    // MARK: Il menu «Lettura» (gli stessi comandi delle azioni, DISEGNO § 5.2)
+
+    @objc public func saltaNotaRichiamo(_ sender: Any?) { vista.saltaNotaRichiamo() }
+    @objc public func titoloSuccessivo(_ sender: Any?) { vista.titolo(avanti: true) }
+    @objc public func titoloPrecedente(_ sender: Any?) { vista.titolo(avanti: false) }
+    @objc public func saltaRisorsa(_ sender: Any?) { vista.saltaRisorsa() }
+
+    public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem.action == #selector(saltaRisorsa(_:)) { return vista.risorsaInLettura }
+        return true
+    }
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# build_app.sh — compila ScaboMac e assembla il bundle `ScaboMac.app` con sandbox attiva e firma LOCALE.
+# build_app.sh — compila ScaboMac e assembla il bundle `ScaboPDF.app` (ScaboPDF per Mac, l'app unica del Mac dal giro «app
+# unica per Mac, tappa A», 2026-11-08; prima si chiamava ScaboMac.app) con sandbox attiva e firma LOCALE.
 #
 #   uso: scripts/build_app.sh [cartella_di_uscita]      (predefinita: build/)
 #
@@ -15,6 +16,8 @@
 #   Contents/XPCServices/com.scabo.scabopdf.mac.scaricatore.xpc
 #                                                il servizio di scaricamento: sandbox e SOLO la rete in uscita
 #   Contents/Resources/*.bundle                  risorse dei moduli (catalogo, pagina di prova, modello Heron)
+#   Contents/Resources/Audio/*.mp3               i segnali acustici dell'iPad (app/ios/ScaboApp/Audio), copiati qui: un solo
+#                                                originale nel repo
 # Le impostazioni e i pesi scaricati vivono nel CONTENITORE dell'app, mai qui dentro: la firma resta intatta.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -31,7 +34,7 @@ swift build -c release --arch arm64
 BIN=".build/arm64-apple-macosx/release"
 [ -x "$BIN/ScaboMac" ] || BIN=".build/release"
 
-APP="$OUT/ScaboMac.app"
+APP="$OUT/ScaboPDF.app"
 XPC="$APP/Contents/XPCServices/com.scabo.scabopdf.mac.scaricatore.xpc"
 echo "[2/5] assemblaggio di $APP"
 rm -rf "${APP:?}"
@@ -46,11 +49,16 @@ for b in "$BIN"/*.bundle; do
   [ -d "$b" ] && cp -R "$b" "$APP/Contents/Resources/"
 done
 cp scripts/Info.plist "$APP/Contents/Info.plist"
+# I suoni dell'iPad (le stesse identità di ScaboCore `AudioSignal`).
+mkdir -p "$APP/Contents/Resources/Audio"
+cp ../../ios/ScaboApp/Audio/*.mp3 "$APP/Contents/Resources/Audio/"
 echo -n "APPL????" > "$APP/Contents/PkgInfo"
 # Il servizio di scaricamento.
 cp "$BIN/ScaboMacScaricatore" "$XPC/Contents/MacOS/ScaboMacScaricatore"
 cp scripts/ScaboMacScaricatore-Info.plist "$XPC/Contents/Info.plist"
 
+# Gli attributi estesi dei file copiati (per esempio quelli del Finder sui suoni) non sono ammessi dentro un bundle firmato.
+xattr -cr "$APP"
 echo "[3/5] firma con «${IDENTITY}», dall'interno verso l'esterno"
 codesign --force --sign "$IDENTITY" --timestamp=none "$APP/Contents/Frameworks/llama.framework"
 for b in "$APP"/Contents/Resources/*.bundle; do [ -d "$b" ] && codesign --force --sign "$IDENTITY" --timestamp=none "$b"; done
