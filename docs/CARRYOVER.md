@@ -10,8 +10,8 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
-> Versione: 2.56 (8 novembre 2026, giro «app unica per Mac, tappa A», livello di verifica medio, nessuna build, **IN CORSO** sul ramo `feat/mac-app-unica-tappa-a`: registrate in LAYER2 § 12.16 le tre decisioni del maintainer dell'8 novembre — **sul Mac c'è un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro; «app diverse» vuol dire i due prodotti per Apple, mobile e Mac; l'app Mac importa PDF e atti AKN da sé con la catena condivisa — e corretto il fraintendimento delle «due app sul Mac» ovunque compariva, con la sua origine (§ 12.12, decisione 4 del 16 ottobre). Vedi lo STATO qui sotto.)
-> Versione: 2.55 (8 novembre 2026, giro «disegno della lettura per Mac», livello di verifica leggero, nessuna build, solo documenti, **CONCLUSO**: registrate le due decisioni del maintainer del 7 novembre in LAYER2 § 12.16 (modalità automazione attivata una volta sola; app di lettura nello stesso pacchetto `ScaboMac`); **il disegno dello scheletro dell'app di lettura** in `docs/DISEGNO_LETTURA_MAC.md` — otto domande con le prove, vista AppKit con un gruppo solo di elementi d'accessibilità virtuali, parlato tutto da ScaboCore `ReadingSpeech` e descrizione della vista identica al byte a quella del modulo su 30.407 elementi, gancio del fuoco per il segnale delle note, rotori e azioni del modulo duplicate nel menu «Lettura», pacchetto e piano a tappe (2–3 giri la lettura minima, 11–12 la parità con l'iPad, 12–13 con la distribuzione) — tre prototipi di laboratorio (13 prove in processo verdi, cinque misure da fuori nella modalità automazione più una con l'API C d'accessibilità), revisione indipendente con tredici rilievi corretti, due domande di prodotto poste al maintainer e tre prove d'orecchio che restano. Vedi lo STATO del 2026-11-08.)
+> Versione: 2.56 (8 novembre 2026, giro «app unica per Mac, tappa A», livello di verifica medio, nessuna build, **CONCLUSO**, ramo `feat/mac-app-unica-tappa-a` unito in main con un avanzamento rapido e cancellato: registrate in LAYER2 § 12.16 le tre decisioni del maintainer dell'8 novembre — **sul Mac c'è un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro; «app diverse» vuol dire i due prodotti per Apple; l'app Mac importa PDF e atti AKN da sé con la catena condivisa — e corretto ovunque il fraintendimento delle «due app sul Mac», con la sua origine (§ 12.12, decisione 4 del 16 ottobre); disegno rifatto (`DISEGNO_LETTURA_MAC.md` § 6, § 8, § 9, § 10); costruita la **prima versione di ScaboPDF per Mac** (Home, importazione con la catena condivisa, «Libro già presente», lettura AppKit col parlato tutto da `ReadingSpeech`, menu «Lettura», finestra «Modelli e officina»), con la logica senza interfaccia dell'iPad spostata in ScaboChain; **vista del Mac identica alla vista dell'iPad su 55 libri su 55** (rete nuova `rete_vista_mac.sh`), quota dell'estrattore di macOS documentata (5 libri, 6 pagine); iPad identico (catena e runner al byte, rete sul parlato con la vista vera, cure mirate, suite su iPad e iPhone iOS 27); revisione indipendente con 22 rilievi, nessuno bloccante; tre prove d'orecchio da fare e tre decisioni per il maintainer. Vedi lo STATO qui sotto.)
+> Versione: 2.55 (8 novembre 2026, giro «disegno della lettura per Mac», livello di verifica leggero, nessuna build, solo documenti, **CONCLUSO**: registrate le due decisioni del maintainer del 7 novembre in LAYER2 § 12.16 (modalità automazione attivata una volta sola; app di lettura nello stesso pacchetto `ScaboMac`); **il disegno dello scheletro dell'app di lettura** in `docs/DISEGNO_LETTURA_MAC.md` — otto domande con le prove, vista AppKit con un gruppo solo di elementi d'accessibilità virtuali, parlato tutto da ScaboCore `ReadingSpeech` e descrizione della vista identica al byte a quella del modulo su 30.407 elementi, gancio del fuoco per il segnale delle note, rotori e azioni del modulo duplicate nel menu «Lettura», pacchetto e piano a tappe (2–3 giri la lettura minima, 11–12 la parità con l'iPad, 12–13 con la distribuzione) — tre prototipi di laboratorio (13 prove in processo verdi, cinque misure da fuori nella modalità automazione più una con l'API C d'accessibilità), revisione indipendente con tredici rilievi corretti, due domande di prodotto poste al maintainer e tre prove d'orecchio che restano. Vedi lo STATO del 2026-11-08. *[«App di lettura» corretto l'8 novembre: la lettura sta dentro l'app unica ScaboPDF per Mac; versione 2.56.]*)
 > Versione: 2.54 (7 novembre 2026, giro «fondamenta della lettura per Mac», livello di verifica medio, iOS 27, nessuna build, **CONCLUSO**: le decisioni del maintainer sulla lettura per Mac in LAYER2 § 12.16 e lo studio nel repo; la fonte unica del parlato in ScaboCore, usata dalla vista dell'iPad; la rete sul parlato e il confronto automatico fra la lettura dell'iPad e quella del Mac, identiche sui 52 volumi e sui tre documenti di studio. Vedi lo STATO qui sotto.) Versione precedente: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti, **CONCLUSO**: **prima parte con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); **seconda parte con la build 64** su TestFlight (sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; i tre documenti del giro diventano volumi stabili della rete dei documenti di studio). Vedi i due STATO qui sotto.)
 > Versione: 2.52 (6 novembre 2026, giro «cure mirate per lo studio», livello di verifica pieno, **CONCLUSO** con la **build 62** su TestFlight: due documenti di studio del maintainer curati con regole accese solo dalla loro impronta (registro `TargetedCures`, LAYER2 § 0-ter, `docs/CURE_MIRATE.md`), letture di tutti i 52 volumi del banco identiche al byte su iOS 26.5 e 27, offerta «Lettura migliore disponibile» solo ai due documenti; prova alla cieca su un volume ignoto, giudicato senza cure. Ambiente: Xcode 27.2. Vedi lo STATO del giro qui sotto.)
 > Versione: 2.51 (20 ottobre 2026, giro «ricerca nella libreria», livello di verifica leggero, **CONCLUSO** con la **build 61** su TestFlight: dal tab Ricerca della Home si cerca nel testo di tutti i libri, con un testo di ricerca per libro accanto alla cache; Esc come «Annulla»/«Chiudi» in ogni finestra; «Parola intera» trova le parole col richiamo di nota attaccato; le frasi del Mac nominano iPad e iPhone. Vedi lo STATO del giro qui sotto.)
@@ -100,17 +100,25 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - **Rete sul parlato in ogni giro che tocca la lettura (dal 2026-11-07).** Ciò che VoiceOver dice di ogni elemento viene da
   una fonte sola (ScaboCore `ReadingSpeech`); ogni giro che tocca la vista di lettura, il parlato, i rotori, le azioni o i
   segnali esegue `app/ios/scripts/rete_parlato.sh <etichetta>` (letture e riferimento congelati nel laboratorio), con `--vista`
-  se tocca la vista dell'iPad; il lavoro sulla lettura del Mac si misura con `app/ios/scripts/confronto_letture_ipad_mac.sh`.
+  se tocca la vista dell'iPad; il lavoro sulla lettura del Mac si misura con `app/ios/scripts/rete_vista_mac.sh <etichetta>`
+  (dal 2026-11-08, sotto; `confronto_letture_ipad_mac.sh` resta la prova a livello di catena).
+- **Rete della vista del Mac in ogni giro che tocca la lettura del Mac, il parlato o la catena (dal 2026-11-08).**
+  `app/ios/scripts/rete_vista_mac.sh <etichetta>` (banco `BancoIdentitaTests` del pacchetto ScaboMac, in release, circa un
+  quarto d'ora): la vista del Mac sulle 55 letture congelate contro la vista dell'iPad, e la quota dell'estrattore del Mac
+  (il PDF importato dall'app) elencata a parte. Verde solo con tutti i libri, vista identica e nessun esito non misurato;
+  le differenze dell'estrattore non fanno rosso ma si confrontano con quelle fra le due generazioni di iOS
+  (`~/Developer/scabopdf-mac-lab/lettura_mac/app_unica/strumenti/confronta_detto.py`). Uscite solo nel laboratorio.
 - Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
   commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
   solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
 
 ---
 
-## ▶ STATO — Giro «app unica per Mac, tappa A»: il fraintendimento delle due app corretto, il disegno rifatto, la prima versione di ScaboPDF per Mac (nessuna build) — 2026-11-08 — IN CORSO
+## ▶ STATO — Giro «app unica per Mac, tappa A»: il fraintendimento delle due app corretto, il disegno rifatto, la prima versione di ScaboPDF per Mac (nessuna build) — 2026-11-08 — CONCLUSO
 
 **Partenza:** `358617b` (main = origin, build 64 su TestFlight; la prossima build resta la 65, non usata). **Ramo:**
-`feat/mac-app-unica-tappa-a`, pushato a ogni voce conclusa. Livello di verifica medio. Referto:
+`feat/mac-app-unica-tappa-a`, pushato a ogni voce conclusa, unito in main con un avanzamento rapido a verifiche verdi e
+revisione chiusa, poi cancellato in locale e sul remoto. Livello di verifica medio. Referto:
 `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_APP_UNICA_TAPPA_A.md`.
 
 - **Decisioni del maintainer dell'8 novembre** (LAYER2 § 12.16, 8-10): sul Mac c'è un'app sola, ScaboPDF per Mac, l'app
@@ -121,6 +129,62 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   mescolare lavoro e lettura»), passato nelle decisioni 1 e 7 di § 12.16 (riscritte, con la traccia di cosa dicevano), nello
   studio (testa e due righe «Superato»), in MAC_BASE (testa e § 7), con una nota in ANALYSIS_ULTRAFOCUS_MACOS § 5, nel
   disegno e in questo CARRYOVER (note negli STATO del 16 ottobre pomeriggio, del 7 e dell'8 novembre).
+- **Il disegno rifatto** (`0a22c14`, `DISEGNO_LETTURA_MAC.md`): § 6 da dove vengono i libri (importazione con la catena
+  condivisa, PDF e AKN, impronta e «Libro già presente», libreria unica nella forma dell'iPad, ricezione e passaggio per
+  AirDrop o cavo, risorse visive dal PDF archiviato; § 6.6 importazione e modelli come domanda al maintainer, inclinazione
+  (A); § 6.7 granularità applicata sul Mac), § 8 il pacchetto (un'app sola in `ScaboMac`), § 9 il piano (tappa A in un giro;
+  parità con l'iPad in sette-nove giri, otto-dieci con la distribuzione, prima 11-12 e 12-13), § 10 le prove d'orecchio
+  sull'app vera; restano la vista, il parlato, i rotori, il menu «Lettura», il gancio del fuoco, il confronto automatico.
+- **ScaboPDF per Mac, tappa A** (`5fcdc80`, `a204179`, `d78d9f3`, `fc739ba`, `e66337f`, `21b2db7`): bersaglio
+  `ScaboMacLettura` nel pacchetto `ScaboMac`, ciclo di vita AppKit, `scripts/build_app.sh` → `build/ScaboPDF.app` (sandbox,
+  nessuna rete; la rete solo nel servizio di scaricamento; identificativo invariato). Home con la barra dei comandi prima del
+  contenuto come l'iPad, elenco dei libri, importazione da ⌘O, trascinamento e «Apri con» (provato nell'app vera con un file
+  fuori dal contenitore), «Libro già presente», eliminazione definitiva con conferma; importazione con la catena condivisa
+  dell'iPad (innesto dell'officina spento), annunci della schermata d'elaborazione e cache nella forma dell'iPad, cure mirate
+  per impronta, coda quando l'app è occupata; lettura AppKit con un gruppo solo «Testo del documento» di elementi virtuali,
+  parlato tutto da `ReadingSpeech`, granularità globale applicata (§ 6.7), rotori dei titoli per livello e delle risorse
+  visive, note a voce per impostazione predefinita (valgono subito anche nei libri aperti), gancio del fuoco pronto e spento,
+  menu «Lettura» coi nomi dei comandi dell'iPad, posizione per documento con l'ancora di contenuto e l'annuncio della
+  posizione approssimata, riapertura all'avvio solo dalla cache; officina e pannello nella finestra «Modelli e officina»
+  (⌘⇧M), con le stesse viste. Logica senza interfaccia della libreria dell'iPad spostata in `ScaboChain/Library/` (iPad con le
+  stesse frasi: `LibraryWording`, `ReadingSettingsWording`, `DuplicateImport`, `ProcessingWording`, `ReadingCommandsWording`,
+  copia temporanea); ScaboCore resta solo Foundation (due interruttori additivi in `ReadingSpeechSettings`,
+  `NoteJumpOptions.forFingerprint`). Non costruiti, tappe seguenti: Consultazione Rapida, Dottrina Inline, vista affiancata,
+  ricerca, segnalibri, sottolineature, «Strumenti elemento», estrazione dell'immagine, ricezione di `.scabolettura`.
+- **Il confronto con l'iPad** (rete nuova `app/ios/scripts/rete_vista_mac.sh`, regola fissa sopra): corsa finale al codice `21b2db7`: **vista del Mac identica alla vista dell'iPad su 55 libri su 55** (52 volumi del banco e 3
+  documenti di studio, quattro descrizioni per libro: «note a voce» spenta e accesa, VoiceOver spento e acceso; vista uguale
+  al modulo al byte su tutti), 55 libri su 55 attesi, nessun esito non misurato, banco pulito; l'app che importa il PDF da sé
+  dà la stessa descrizione della vista dell'iPad su 50 libri su 55, e le 5 differenze sono tutte della quota dell'estrattore. Quota
+  dell'estrattore (il PDF importato dall'app, PDFKit di macOS 27, contro la catena dell'iPad sulle catture di iOS 27): letture
+  identiche al byte 46/55, 4 diverse solo in campi che non si dicono, 5 con differenze dette su 6 pagine (tre didascalie di
+  risorse visive, una nota non separata dal capoverso, un titolo di quarto livello in più); fra le due generazioni di iOS
+  (26.5 contro 27) le differenze dette sono in 37 libri su 918 pagine: stessa natura, molto più piccola, documentata.
+- **Tempi e memoria** (volume più grande del banco, app vera): importazione 72 s, picco 748 MB; la prima riapertura lo prepara
+  a 1.200 e lo mette in cache in 64 s (regola dell'iPad per i volumi enormi); apertura dalla cache sotto i 2 s, 218 MB; in
+  processo primo elemento letto in 1,6 s, scorrimento del fuoco su 30.407 elementi in 13 s. Da fuori (modalità automazione):
+  profondità 3 (finestra → scorrimento → gruppo → testo), campione di 13 elementi uguale alla descrizione dell'app 13/13.
+- **Verifiche** (campo): letture della catena dell'iPad 275/275 e del runner 260/260 al byte contro la build 64 (codice
+  `d78d9f3`; dopo, l'iPad cambia solo per frasi e una copia temporanea spostate nel modulo condiviso, identiche); rete sul
+  parlato con la vista vera dell'iPad a `e66337f`: 192/192 al byte modulo e vista (630.124 elementi, 0 anomalie), prova al
+  contrario trovata; rete delle cure mirate su iOS 27 verde; rete sulle annotazioni non necessaria (il diff non tocca
+  `ContentAnchor`, `AnnotationReanchoring` né il modello della libreria di ScaboCore, e le letture, identità e ordine dei
+  segmenti, sono al byte quelle della build 64); suite dell'app iPad al codice finale `21b2db7`: su iPad Pro iOS 27 233 test d'unità (17 saltati) e 42 d'interfaccia, su iPhone 16 iOS 27 233 (17 saltati) e 42 (2 saltati), 0 falliti, app disinstallata prima di ciascuna; ScaboCore 1.083 test, ScaboChain 17, pacchetto ScaboMac 19
+  (lettura) + 68 (officina) verdi; test d'interfaccia del Mac nella modalità automazione: 11, 6 passati e 5 saltati col
+  motivo (due diagnostiche a richiesta, la misura su un volume vero a richiesta, i due percorsi solo tastiera con la
+  navigazione da tastiera del sistema spenta), due corse verdi, audit di sistema su Home, importazione, «Libro già presente»,
+  eliminazione, lettura, pannello e officina.
+- **Revisione indipendente**: 22 rilievi, nessuno bloccante; corretti tutti quelli del ramo (`21b2db7` e i documenti),
+  salvo R8 (percorsi solo tastiera non verificati su questo Mac), R12 (la sequenza d'importazione e apertura scritta due
+  volte: decisione 3 qui sotto) e due fuori dal ramo: R19 (la rete delle generazioni con una generazione sola chiude verde
+  anche con due passi fermi) e R22 (il repo contiene dal `2969c09` la lista dei nomi dei 52 volumi del banco,
+  `app/ios/scripts/generazioni/lista_volumi.json`: da spostare nel laboratorio in un giro dedicato).
+- **Prove d'orecchio**: T1 (libro grande), T2 (segnale delle note), T3 (rotori, azioni, menu), istruzioni in DISEGNO § 10;
+  si avviano con `~/Developer/scabopdf-mac-lab/lettura_mac/app_unica/prove_orecchio/prova.sh 1|2|3` e i diari restano in
+  `prove_orecchio/diari/`: leggerli all'apertura del prossimo giro del Mac.
+- **Tre decisioni per il maintainer** (referto, § 10): (1) importazione e modelli, inclinazione (A); (2) la granularità
+  anche sull'iPad, inclinazione sì, in un giro dell'iPad; (3) un solo controllore condiviso per la sequenza d'importazione e
+  apertura di iPad e Mac, inclinazione sì, nella tappa B. Resta da scegliere, dopo T3, la scorciatoia delle intestazioni.
+- **Dove riprendere**: tappa B (DISEGNO § 9) dopo le prove d'orecchio e le decisioni.
 
 ---
 
@@ -148,7 +212,8 @@ verifica leggero. Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_DIS
   modulo e duplicati nel menu «Lettura» (⌘J, ⌘B, ⌘F, ⌘G, ⇧⌘G, ⌘E; titoli ⌥⌘↓/↑); pacchetto: `ScaboLetturaKit` +
   `ScaboLettura` in `ScaboMac`, parti Mac comuni in una libreria piccola, variante di `build_app.sh`, sandbox senza rete, tipo
   `.scabolettura` importato; piano: tappa A 2–3 giri (prima la rete d'identità della vista sulle 55 letture contro i
-  riferimenti dell'iPad, poi l'app), parità con l'iPad 11–12 (tappe A–E), 12–13 con la distribuzione.
+  riferimenti dell'iPad, poi l'app), parità con l'iPad 11–12 (tappe A–E), 12–13 con la distribuzione. *[Superato l'8
+  novembre: un'app sola — il bersaglio `ScaboMacLettura` nell'app ScaboPDF, DISEGNO § 8 — e le stime nuove, § 9.]*
 - **Prototipi** (laboratorio, tre su uno scheletro comune): P1 flusso lungo (30.407 elementi: elementi in 4,8 ms, tutte le
   etichette in 38 ms, memoria +67 MB, identità vista↔modulo), P2 segnale delle note (gancio, sei regimi, bibliografia una
   volta, scorrimento, diario delle richieste), P3 rotori/azioni/menu; Q2 identità in tre stati. 13 prove XCTest verdi. Da

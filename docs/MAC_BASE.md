@@ -22,6 +22,13 @@
 > domande di prodotto sui libri del disegno sono superate; il disegno rifatto è in `docs/DISEGNO_LETTURA_MAC.md` § 6, § 8 e
 > § 9. Il «record App Store» del § 7 qui sotto è quindi deciso: un record nuovo per il Mac (§ 12.12, decisione 3 del
 > 2026-10-16), da aprire quando si distribuisce.
+> **La prima versione dell'app unica (tappa A, giro dell'8 novembre 2026)**: `scripts/build_app.sh` assembla
+> `build/ScaboPDF.app` (non più `ScaboMac.app`), con il bersaglio nuovo `ScaboMacLettura` (Home, importazione con la catena
+> condivisa, libreria nella forma dell'iPad, Impostazioni di lettura, lettura AppKit) e l'officina nella finestra «Modelli e
+> officina»; la logica senza interfaccia della libreria dell'iPad è passata in `ScaboChain/Library/`. Reti nuove: la rete
+> d'identità della vista del Mac contro la vista dell'iPad, `app/ios/scripts/rete_vista_mac.sh`, e i test d'interfaccia
+> dell'app (`UITests/ScaboPDFUITests.swift`) nella modalità automazione. Stato e numeri nello STATO del 2026-11-08 di
+> `CARRYOVER.md` e nel README del pacchetto.
 
 > Giro «linea Mac» del 2026-10-05/06, HEAD di partenza `9d65fef` (main = origin/main, build 45 su TestFlight).
 > Documento privo di contenuto dei volumi: solo nomi di volumi, conteggi, indici e impronte.

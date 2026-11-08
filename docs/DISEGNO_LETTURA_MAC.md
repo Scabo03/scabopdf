@@ -1,8 +1,9 @@
 # Il disegno della lettura per Mac
 
 > Documento di riferimento di lungo periodo del giro «disegno della lettura per Mac» (2026-11-08, nessuna build, nessun
-> codice di prodotto). Risponde alle otto domande di disegno poste dal maintainer, posa le due domande di prodotto che
-> spettano a lui, dà il piano a tappe con i costi e le prove d'orecchio che restano. Punto di partenza: `cc905ed`
+> codice di prodotto). Risponde alle otto domande di disegno poste dal maintainer, dà il piano a tappe con i costi e le prove
+> d'orecchio che restano. (Diceva anche che posava «le due domande di prodotto che spettano a lui»: nate dal fraintendimento
+> delle due app, superate l'8 novembre, § 6.) Punto di partenza: `cc905ed`
 > (CARRYOVER 2.54, build 64 su TestFlight). Le decisioni del maintainer che lo vincolano sono le dieci di
 > `LAYER2_PRODUCT_DECISIONS.md` § 12.16 (cinque del 2026-10-20, due del 2026-11-07, tre del 2026-11-08). Lo studio che lo precede è
 > `STUDIO_LETTURA_MAC.md`; le fondamenta nel codice sono del giro del 2026-11-07 (ScaboCore `ReadingSpeech`,
@@ -315,16 +316,21 @@ letture vere (il flusso lungo sintetico non ha risorse visive né ricerca: la de
 sono stati esercitati solo sui 30 elementi del capitolo):
 
 1. **In processo (XCTest per macOS, nel pacchetto `ScaboMac`)**: per ciascuna delle 55 letture congelate del laboratorio,
-   aprire la lettura nella vista vera (finestra non mostrata), chiamare la descrizione dalla vista, scrivere il JSONL;
-   `confronta-descrizioni` contro il riferimento dell'iPad: le 192 descrizioni, al byte (ogni lettura con «note a voce»
-   spenta e accesa per la Lettura Continua, e le 41 letture che hanno la Dottrina Inline anche per quel flusso, nei due stati;
-   le letture congelate sono a 400 caratteri, a 1.200 i volumi enormi — corretto l'8 novembre: diceva «a due granularità»). È il
-   «passo 3» che `confronto_letture_ipad_mac.sh` aspetta: la vista del Mac al posto della catena. È **la prima cosa della
-   tappa A**: l'unica misura che può falsificare la mappa di § 3.1 su dati reali.
+   aprire la lettura nella vista vera (finestra non mostrata), chiamare la descrizione dalla vista e confrontarla, campo per
+   campo, con il riferimento della vista dell'iPad della **Lettura Continua**: ogni lettura con «note a voce» spenta e accesa,
+   a VoiceOver spento e acceso (le letture congelate sono a 400 caratteri, a 1.200 i volumi enormi — corretto l'8 novembre:
+   diceva «a due granularità»). Dal riferimento si tolgono soltanto le azioni che la tappa non ha ancora (nella tappa A:
+   segnalibro, «Strumenti elemento», «Estrai come immagine»), e un controllo prova che il filtro toglie esattamente ciò che
+   le impostazioni del Mac tolgono; la descrizione dalla vista dev'essere identica al byte a quella del modulo. La Dottrina
+   Inline (le descrizioni delle 41 letture che la hanno, nelle 192 della rete sul parlato) entra con la sua tappa. Accanto,
+   la quota dell'estrattore: il PDF importato dall'app col percorso vero, descritto dalla vista, contro la vista dell'iPad,
+   con le differenze elencate (non fanno rosso; un esito non misurato sì). È il banco `BancoIdentitaTests`, lanciato da
+   `app/ios/scripts/rete_vista_mac.sh`: il «passo 3» che `confronto_letture_ipad_mac.sh` aspettava (riscritto l'8 novembre,
+   alla tappa A, perché dica ciò che il banco misura: rilievo della revisione del giro).
 2. **Da fuori (XCUITest, modalità automazione)**: aprire l'app assemblata su una lettura e misurare l'albero: contenitori e
    profondità, conteggio dei figli, testo e valore di un campione di elementi contro la descrizione, cornici, menu. Entra
    nel confronto automatico (decisione 6) e sostituisce il tempo d'orecchio sui contenitori.
-3. **All'orecchio**, solo ciò che la misura non decide: le tre prove di § 10, una volta, sul prototipo o sulla prima tappa.
+3. **All'orecchio**, solo ciò che la misura non decide: le tre prove di § 10, una volta, sull'app vera alla fine della tappa A.
 
 Una tappa è accettata quando il passo 1 dà identità su **tutti** i volumi e i documenti di studio (come oggi per la catena)
 e il passo 2 non trova contenitori né elementi inattesi.
@@ -444,7 +450,10 @@ esistono.
 | Testo più grande / più piccolo | ⌘= / ⌘- | ⌘= / ⌘- | tappa dell'aspetto |
 | Chiudi finestra / Annulla | Esc | Esc nelle finestre modali | |
 
-Nessuna voce usa Control+Opzione, il tasto VO (campo: controllato sul menu del prototipo). **Campo (P3):** le voci del
+Le voci del menu «Lettura» dell'app portano i **nomi dei comandi da tastiera dell'iPad** — «Nota e richiamo», «Intestazione
+successiva», «Intestazione precedente» (ScaboChain `ReadingCommandsWording`, usato anche dall'iPad) — e, per la risorsa, il
+nome dell'azione del modulo, «Salta la risorsa» (campo, tappa A: la revisione del giro ha trovato nomi diversi dall'iPad, ora
+gli stessi). Nessuna voce usa Control+Opzione, il tasto VO (campo: controllato sul menu del prototipo e su quello dell'app). **Campo (P3):** le voci del
 menu portano queste scorciatoie, puntano al controllore della finestra, e fanno ciò che fanno le azioni: ⌘J salta dalla
 nota al richiamo e viceversa, i titoli avanti e indietro, il segnalibro si aggiunge e si toglie.
 
@@ -666,6 +675,13 @@ la descrizione dalla vista in processo e la misura da fuori nella modalità auto
 sui 52 volumi del banco e sui tre documenti di studio importati dall'app, con la quota dell'estrattore separata da quella
 della vista. *Reti:* `rete_parlato.sh`, letture della catena e del runner al byte, `rete_cure_mirate.sh`, la rete d'identità
 della vista del Mac. *Verifica:* media. *Prove d'orecchio:* le tre di § 10, sull'app vera.
+*Fatta l'8 novembre 2026, in un giro* (CARRYOVER, STATO del 2026-11-08; referto nel laboratorio): vista del Mac identica alla
+vista dell'iPad su 55 libri su 55 (campo, `rete_vista_mac.sh` al codice finale); l'app che importa da sé coincide su 50 su 55,
+e le 5 differenze sono dell'estrattore di macOS (tre didascalie, una nota non separata, un titolo in più: stessa natura della
+differenza fra iOS 26.5 e 27, molto più piccola); iPad identico; revisione indipendente con 22 rilievi, nessuno bloccante.
+Restano le prove d'orecchio e tre decisioni per il maintainer (importazione e modelli, § 6.6; la granularità sull'iPad,
+§ 6.7; un controllore condiviso per la sequenza d'importazione e apertura di iPad e Mac, oggi scritta due volte con i passi
+condivisi).
 
 **Tappa B — ciò che l'orecchio sposta, annotazioni, strumenti (1–2 giri).** Gli esiti di T1–T3 (i figli finestrati di
 § 2.3 se T1 è rossa: un giro in più; i segnali delle note accesi se T2 è verde); segnalibri e tag (⌘B, la finestra dei
@@ -695,22 +711,38 @@ Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 ## 10. Le prove d'orecchio
 
 > **Rifatto l'8 novembre 2026.** Le tre prove non si fanno più sul prototipo del laboratorio ma **sull'app vera**, alla fine
-> della tappa A: ciò che si sente è ciò che l'utente avrà. Restano tre, brevi, solo per ciò che la misura non decide; le
-> istruzioni passo per passo, scritte per chi usa VoiceOver sul Mac, stanno nel referto del giro
-> (`~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_APP_UNICA_TAPPA_A.md`, § 8) e, a giro concluso, qui sotto.
+> della tappa A: ciò che si sente è ciò che l'utente avrà. Restano tre, brevi, solo per ciò che la misura non decide.
 
-- **T1 — VoiceOver davanti a un libro grande.** Come VoiceOver entra nel gruppo «Testo del documento» di un libro di decine di
-  migliaia di elementi, quanto ci mette a dire il primo, se ogni passo risponde subito e se l'ultimo elemento si raggiunge.
-  Decide se il gruppo unico regge o se servono i figli finestrati (§ 2.3).
-- **T2 — Il gancio del fuoco e le parole di VoiceOver.** Se l'arrivo del cursore porta davvero AXFocused all'elemento (il
-  diario delle richieste lo registra, nel laboratorio), che cosa VoiceOver aggiunge al testo dell'elemento e in che ordine dice
-  valore e descrizione. Decide la via delle note (§ 4.2) e la mappa di § 3.1.
-- **T3 — Rotori, azioni, menu.** Come VoiceOver presenta i rotori dei titoli per livello e delle risorse visive (VO+U), le
-  azioni dell'elemento (VO+⌘+Spazio) e il menu «Lettura» con le sue scorciatoie.
+**Prima di cominciare (una volta).** VoiceOver acceso (Comando+F5). Apri il Terminale (Comando+Spazio, «Terminale», Invio).
+Ogni prova si avvia con una riga sola, `~/Developer/scabopdf-mac-lab/lettura_mac/app_unica/prove_orecchio/prova.sh` seguita
+dal numero della prova, e Invio: lo script del laboratorio apre la copia dell'app di questo giro con una **libreria di
+prova** (la libreria vera del Mac non si tocca), aspetta che la si chiuda con **Comando+Q**, poi mette nel laboratorio il
+diario delle richieste di VoiceOver (numeri e nomi delle richieste, nessun testo) e toglie dal contenitore dell'app i file
+della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintainer basta dire, a sensazione, com'è andata.
 
-Il libro di prova è un volume del banco, importato dal maintainer dalla copia del laboratorio, o il capitolo sintetico che
-l'app crea da sé con un argomento di lancio: mai testo dei volumi nel repo. Il diario delle richieste (indici e nomi delle
-richieste, nessun testo) lo scrive l'app nel proprio contenitore; Code lo copia nel laboratorio e lo legge dopo le prove.
+- **T1 — Un libro grande (circa cinque minuti; la prima).** `prova.sh 1`: l'app importa il volume più grande del banco
+  (copiato nel contenitore per la sola durata della prova) e VoiceOver annuncia fasi e percentuali; poi si apre il libro.
+  (1) VoiceOver dovrebbe essere sul primo elemento; se annuncia il gruppo «Testo del documento», entrare con
+  VO+Maiuscole+Freccia giù e badare a quanto passa prima del primo elemento. (2) VO+Freccia destra tre volte, VO+Freccia
+  sinistra una. (3) VO+Fn+Freccia destra (VO+Fine): ascoltare dove arriva (ci si aspetta l'ultimo elemento del libro). (4) VO+A per una decina di secondi, Control
+  per fermare. (5) Comando+Q. *Da riferire:* ingresso immediato, di qualche secondo o lungo; passi pronti o no; VO+Fine ha
+  letto; la lettura continua passa da un elemento all'altro senza fermarsi. *Decide* se il gruppo unico regge o servono i
+  figli finestrati (§ 2.3-2.4).
+- **T2 — Il segnale delle note (circa tre minuti).** `prova.sh 2`: il capitolo sintetico che l'app scrive da sé (sei pagine,
+  un titolo per pagina, capoversi, una nota per pagina col suo richiamo; nessun testo dei volumi), con i segnali al gancio
+  accesi. (1) Comando+virgola, VO+Freccia destra fino a «Annuncia le note a voce», VO+Barra spaziatrice per toglierla, Comando+W:
+  da qui, sulle note, al posto della parola «Nota» suona il segnale della nota (la scelta vale subito anche nel libro
+  aperto). (2) Nel libro, VO+Freccia destra sui primi otto elementi, un secondo ciascuno; poi VO+Freccia sinistra tre
+  volte. (3) Comando+Q. *Da riferire:* il segnale sulle note (subito, in ritardo, mai); che cosa VoiceOver aggiunge dopo il
+  testo di un elemento e entrando nel testo. *Decide* la via delle note (§ 4.2) e l'ordine di valore e descrizione (§ 3.1);
+  il diario registra da sé se a ogni arrivo del cursore l'app ha ricevuto il fuoco.
+- **T3 — Rotori, azioni e menu (circa tre minuti).** `prova.sh 3`: stesso capitolo, note di nuovo a voce. (1) VO+U: quali
+  rotori compaiono; in quello delle intestazioni, Freccia giù fino al terzo capitolo e Invio. (2) VO+Freccia destra fino al
+  capoverso col richiamo, VO+Comando+Spazio: «Vai alla nota 3», Invio, si è sulla nota; di nuovo VO+Comando+Spazio: «Vai al
+  testo del richiamo», Invio, si torna. (3) VO+M, menu «Lettura», ascoltare le voci con le scorciatoie, Esc; Comando+J sul
+  capoverso col richiamo e di nuovo; Opzione+Comando+Freccia giù. (4) Comando+Q. *Da riferire:* i nomi dei rotori, se salti
+  e azioni portano dove dicono, se voci e scorciatoie si capiscono, quale scorciatoia per le intestazioni si preferisce
+  (§ 5.2).
 
 ## 11. Residui e cose non verificate
 
@@ -720,9 +752,12 @@ richieste, nessun testo) lo scrive l'app nel proprio contenitore; Code lo copia 
   che VoiceOver dà ai rotori di livello (T3); il giro di Tab dalla barra al testo (§ 5.3); come SwiftUI esponga AXFocused
   (§ 2.1, non serve al disegno). (Il comportamento dei gruppi di app sotto macOS 15 e seguenti non serve più: l'app è una
   sola, § 6.)
-- **Dedotto, non misurato** (al 2026-11-08, prima della tappa A): l'identità vista-del-Mac ↔ iPad sulle letture vere (per
-  transitività, § 0 e § 3.4; la misura è il primo lavoro della tappa A, e il suo esito sta nel referto del giro); il controllo delle righe fuori schermo di `NSTableView` (§ 2.6); l'assenza di effetti collaterali del
-  gancio sul primo risponditore con VoiceOver acceso (§ 4.1).
+- **Misurato alla tappa A** (2026-11-08): l'identità vista-del-Mac ↔ vista dell'iPad sulle 55 letture vere (55/55, § 3.4,
+  prima dedotta per transitività); la quota dell'estrattore di macOS (5 libri con differenze dette su 6 pagine); l'albero da
+  fuori sull'app vera (profondità 3, campione uguale alla descrizione). **Dedotto, non misurato:** il controllo delle righe
+  fuori schermo di `NSTableView` (§ 2.6); l'assenza di effetti collaterali del gancio sul primo risponditore con VoiceOver
+  acceso (§ 4.1). **Non verificati sul Mac di sviluppo:** i percorsi solo tastiera con Tab (la navigazione da tastiera del
+  sistema è spenta; i test si saltano col motivo).
 - **Non misurato in questo giro:** il costo del gancio con il suono vero (i prototipi non suonano); il ciclo del cambio di
   granularità sulla vista (sostituito, per la tappa A, dalla regola di § 6.7); la vista con il PDF archiviato e l'estrazione
   dell'immagine; la finestra modale degli strumenti; la ricerca.
@@ -732,7 +767,9 @@ richieste, nessun testo) lo scrive l'app nel proprio contenitore; Code lo copia 
   letture puntuali costano fra 0,2 e 1,1 secondi l'una (campioni piccoli). L'API C d'accessibilità da un processo fidato è
   una misura di laboratorio, non una rete di prodotto.
 - **Da decidere:** il rapporto fra importazione e modelli (§ 6.6); se portare la granularità delle Impostazioni anche
-  sull'iPad (§ 6.7); la scorciatoia dei titoli sul Mac (⌥⌘↓ / ⌥⌘↑, § 5.2). Le due domande di prodotto della versione
+  sull'iPad (§ 6.7); se riunire in un controllore condiviso la sequenza d'importazione e apertura, oggi scritta due volte
+  (iPad e Mac) con i passi condivisi (rilievo della revisione della tappa A); dopo la prova T3, la scorciatoia delle
+  intestazioni sul Mac (⌥⌘↓ / ⌥⌘↑, § 5.2). Le due domande di prodotto della versione
   precedente sono superate (§ 6); il predefinito delle note alla tappa A è deciso dal disegno (§ 4.2: note a voce, finché
   T2 non dice altro).
 

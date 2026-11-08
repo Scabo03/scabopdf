@@ -1436,7 +1436,7 @@ dell'iPad e la catena del Mac danno la stessa lettura, elemento per elemento, sa
 (2026-11-08):
 
 6. La **modalità automazione del Mac si attiva una volta sola**, dal maintainer con la sua password, prima della prima tappa
-   dell'app di lettura: così la misura dei contenitori — l'albero d'accessibilità visto da fuori con i test d'interfaccia — entra
+   dell'app di lettura (dall'8 novembre: della lettura dentro l'app unica, decisione 8): così la misura dei contenitori — l'albero d'accessibilità visto da fuori con i test d'interfaccia — entra
    nel confronto automatico di ogni giro invece di costare tempo d'orecchio. Attivata il 2026-11-08 con
    `automationmodetool enable-automationmode-without-authentication`; Code non chiede né tocca mai la password.
 7. La **lettura nasce nello stesso pacchetto `ScaboMac` dell'officina**, con un manifesto solo e senza duplicazioni di
@@ -1482,6 +1482,17 @@ libreria, lettura — più la finestra dei modelli, che è il senso della versio
 l'altra: ciò che non è la finestra in più deve essere quasi identico, così che un utente poco pratico o ipovedente importi un
 PDF e lo legga sul Mac esattamente come sull'iPad. «App diverse», in questo progetto, vuol dire iPad e iPhone da una parte,
 Mac dall'altra.
+
+**Esito della tappa A (giro «app unica per Mac, tappa A», 2026-11-08, nessuna build).** La prima versione di ScaboPDF per
+Mac esiste: la Home con l'elenco dei libri, l'importazione di PDF e atti AKN con la catena condivisa dell'iPad («Libro già
+presente», gli annunci dell'elaborazione, la cache nella forma dell'iPad, le cure mirate), la lettura con un gruppo solo di
+elementi il cui parlato viene tutto dal modulo condiviso, e la finestra «Modelli e officina» con il pannello e l'officina di
+prima. La vista del Mac dice ciò che dice la vista dell'iPad su tutti i 55 libri della rete sul parlato (misura automatica,
+non più deduzione); quando è l'app Mac a preparare la lettura dal PDF, l'estrattore di macOS cambia ciò che si dice in 5
+libri, su 6 pagine in tutto (fra iOS 26.5 e iOS 27 la differenza è in 37 libri): stessa natura, molto più piccola. L'iPad è
+rimasto identico. Restano tre prove d'orecchio sull'app vera e tre domande per il maintainer: il rapporto fra importazione e
+modelli, la granularità anche sull'iPad, un controllore condiviso per la sequenza d'importazione e apertura
+(`docs/DISEGNO_LETTURA_MAC.md` § 9-11). Dettagli: `docs/CARRYOVER.md`, STATO del 2026-11-08.
 
 ---
 

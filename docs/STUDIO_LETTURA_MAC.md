@@ -636,7 +636,7 @@ elemento, in ordine, (ruolo, etichetta parlata, valore, lingua, tipo di elemento
 personalizzate, appartenenza ai rotori: titolo di livello N, tabella/figura, risultato di ricerca, contenuti personalizzati).
 Sull'iPad esiste già il meccanismo a file-richiesta (`test_readingFidelityDump_fromRequest`, memoria «On-device reading bench»)
 che produce le etichette in ordine: va esteso con azioni e rotori. Sul Mac la stessa esportazione nell'app di lettura (porta di
-sviluppo). Confronto con uno script Python di laboratorio sullo stesso `.scabolettura` (stessa elaborazione, così si misura la
+sviluppo; dall'8 novembre la lettura sta nell'app unica ScaboPDF per Mac, decisione 8 di LAYER2 § 12.16). Confronto con uno script Python di laboratorio sullo stesso `.scabolettura` (stessa elaborazione, così si misura la
 *presentazione* e non la catena): referto privo di contenuto (conteggi per ruolo, posizioni delle divergenze, impronte SHA-256
 delle etichette invece del testo). Criterio: identità delle sequenze di impronte; stesso insieme di azioni per tipo di elemento;
 stesse fermate dei rotori titoli. Se il Mac usa gli stessi segmenti di ScaboCore, l'identità vale per costruzione e lo strato 1
