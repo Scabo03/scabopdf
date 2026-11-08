@@ -3,10 +3,20 @@
 > Documento di riferimento di lungo periodo del giro «disegno della lettura per Mac» (2026-11-08, nessuna build, nessun
 > codice di prodotto). Risponde alle otto domande di disegno poste dal maintainer, posa le due domande di prodotto che
 > spettano a lui, dà il piano a tappe con i costi e le prove d'orecchio che restano. Punto di partenza: `cc905ed`
-> (CARRYOVER 2.54, build 64 su TestFlight). Le decisioni del maintainer che lo vincolano sono le sette di
-> `LAYER2_PRODUCT_DECISIONS.md` § 12.16 (cinque del 2026-10-20, due del 2026-11-07). Lo studio che lo precede è
+> (CARRYOVER 2.54, build 64 su TestFlight). Le decisioni del maintainer che lo vincolano sono le dieci di
+> `LAYER2_PRODUCT_DECISIONS.md` § 12.16 (cinque del 2026-10-20, due del 2026-11-07, tre del 2026-11-08). Lo studio che lo precede è
 > `STUDIO_LETTURA_MAC.md`; le fondamenta nel codice sono del giro del 2026-11-07 (ScaboCore `ReadingSpeech`,
 > `ReadingDescriptionComparison`, le reti sul parlato).
+>
+> **Rifatto in parte l'8 novembre 2026** (giro «app unica per Mac, tappa A»), per correggere un fraintendimento: il
+> documento disegnava un'app di lettura accanto all'officina, mentre sul Mac c'è **un'app sola, ScaboPDF per Mac** —
+> l'app dell'iPad con importazione, libreria, Home e lettura, più il pannello dei modelli, con l'officina fusa dentro
+> (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisioni 8-10, e la nota sul fraintendimento con la sua origine). Rifatti: l'ultimo
+> capoverso di § 0, le decisioni in § 1, § 6 (da dove vengono i libri, con la domanda nuova su importazione e modelli),
+> la colonna delle tappe di § 7, § 8 (il pacchetto), § 9 (il piano, con le stime nuove), § 10 (le prove d'orecchio,
+> sull'app vera) e § 11. Corretto un rimando in § 3.4 (le descrizioni di riferimento sono a «note a voce» spenta e
+> accesa, non a due granularità). Restano come erano la vista di lettura, il parlato, i rotori, il menu «Lettura», il
+> gancio per i suoni delle note e il confronto automatico (§ 2-5).
 >
 > **Etichette di prova.** Ogni affermazione che pesa porta la sua: **campo** (misurata in questo giro, nei prototipi del
 > laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/`), **fonte** (un documento, con il collegamento;
@@ -55,13 +65,16 @@ dei codici), tabelle e immagini, più il rotore «Risultati della ricerca» col 
 duplicate nel menu «Lettura» con le scorciatoie dell'iPad (⌘J, ⌘B, ⌘F, ⌘G, ⇧⌘G, ⌘E). Il delegato dei rotori trova avanti e
 indietro, anche col filtro di testo, esattamente come il modulo (campo, § 5).
 
-I libri: due domande spettano al maintainer (§ 6) e non si decidono qui. L'app di lettura **nasce nel pacchetto `ScaboMac`**
-come libreria `ScaboLetturaKit` più eseguibile `ScaboLettura`, assemblata e firmata da una variante di `build_app.sh`, con
-sandbox e solo i file scelti dall'utente (§ 8). Il piano (§ 9): una **prima tappa di due o tre giri** dà la lettura vera di
-un libro preparato dall'officina, con titoli, rotori, granularità, note a voce, menu e l'identità con l'iPad misurata;
-la parità con l'iPad (tappe A–E) sta in **undici-dodici giri**, dodici-tredici con la distribuzione (F); lo studio diceva
-quattro-sei per la minima e dieci-quattordici per la parità: il giro delle fondamenta e questi prototipi hanno già pagato
-una parte del conto della prima tappa, non delle ultime.
+I libri (§ 6, rifatto l'8 novembre): sul Mac c'è un'app sola, **ScaboPDF**, che importa PDF e atti AKN da sé con la catena
+condivisa dell'iPad e ha una libreria sola nella forma dell'iPad; la logica d'importazione e di libreria si sposta
+dall'app dell'iPad nei moduli condivisi, e l'iPad resta identico al byte. L'officina diventa la finestra dei modelli e il
+motore della lettura migliore, che all'importazione si propone di **offrire** come fa l'iPad con «Lettura migliore
+disponibile» invece di imporla (domanda per il maintainer, § 6.6). Il pacchetto (§ 8): un'app sola in `ScaboMac`, con un
+bersaglio nuovo `ScaboMacLettura` per ciò che l'app ha in comune con l'iPad, assemblata e firmata dallo stesso
+`build_app.sh`, sandbox e solo i file scelti dall'utente. Il piano (§ 9): la **tappa A in un giro** (questo) dà l'app che
+importa e legge un libro intero con VoiceOver come sull'iPad, con l'identità misurata; la parità con l'iPad (tappe A–E) sta
+in **sette-nove giri**, otto-dieci con la distribuzione (F). La stima del giro precedente (undici-dodici e dodici-tredici)
+contava due app e una libreria condivisa fra loro.
 
 ## 1. Il quadro
 
@@ -75,12 +88,15 @@ e il suo tipo. Le 192 descrizioni di riferimento dell'iPad (630.124 elementi) so
 prevede che «quando la vista di lettura del Mac esisterà, la sua descrizione (XCTest per macOS, modalità automazione)
 sostituirà il passo 3». Questo documento disegna quella vista e dimostra sui prototipi che quella descrizione si ottiene.
 
-**Le decisioni che vincolano** (LAYER2 § 12.16): app nativa separata dall'officina, a tappe (1); contenitori dove servono, niente
-annidamenti inutili (2); gli elementi sono i blocchi di granularità 400/600/900/1200, nessuna lettura per frasi e righe (3);
-soluzione acustica vera per le note, l'annuncio a voce è il ripiego e il punto di partenza (4); niente comandi o script
-personalizzati di VoiceOver (5); modalità automazione attivata una volta dal maintainer, così la misura dei contenitori
-entra nel confronto automatico (6, attivata il 2026-11-08); l'app di lettura nasce nello stesso pacchetto `ScaboMac`,
-manifesto unico, nessuna duplicazione (7).
+**Le decisioni che vincolano** (LAYER2 § 12.16): lettura nativa a tappe, dentro l'app unica (1, riscritta l'8 novembre: diceva
+«separata dall'officina»); contenitori dove servono, niente annidamenti inutili (2); gli elementi sono i blocchi di granularità
+400/600/900/1200, nessuna lettura per frasi e righe (3); soluzione acustica vera per le note, l'annuncio a voce è il ripiego e il
+punto di partenza (4); niente comandi o script personalizzati di VoiceOver (5); modalità automazione attivata una volta dal
+maintainer, così la misura dei contenitori entra nel confronto automatico (6, attivata il 2026-11-08); la lettura nasce nello
+stesso pacchetto `ScaboMac`, manifesto unico, nessuna duplicazione (7, riscritta l'8 novembre: diceva «per gli utenti le due app
+restano separate»); **sul Mac un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa
+dentro (8); «app diverse» sono i due prodotti per Apple, mobile e Mac (9); l'app Mac importa PDF e atti AKN da sé con la catena
+condivisa, così la lettura è identica per costruzione (10).
 
 **I prototipi del giro** (laboratorio `prototipi/ScaboLetturaProto`, pacchetto SwiftPM che dipende da ScaboCore per percorso
 in sola lettura; nessuna riga entra nel repo): uno scheletro AppKit comune — elemento virtuale, gruppo del testo, finestra
@@ -186,7 +202,7 @@ che leggesse così tutto il gruppo starebbe nell'ordine del minuto. Non è una p
 posa, ma è il rischio che T1 deve escludere. Se T1 fosse rossa il ripiego è già disegnato: **figli finestrati** — il gruppo
 espone come figli una finestra di qualche centinaio di elementi attorno al fuoco, la sposta quando il fuoco si avvicina al
 bordo e lo annuncia con `layoutChanged`, mentre i rotori e i salti continuano a lavorare sull'indice completo del modulo e
-portano il fuoco dove serve ricentrando la finestra. Costa un giro in più nella tappa A e cambia solo § 2.2.
+portano il fuoco dove serve ricentrando la finestra. Costa un giro in più (nella tappa B del piano rifatto, § 9) e cambia solo § 2.2.
 
 ### 2.4 Quando il flusso supera la finestra
 
@@ -300,8 +316,9 @@ sono stati esercitati solo sui 30 elementi del capitolo):
 
 1. **In processo (XCTest per macOS, nel pacchetto `ScaboMac`)**: per ciascuna delle 55 letture congelate del laboratorio,
    aprire la lettura nella vista vera (finestra non mostrata), chiamare la descrizione dalla vista, scrivere il JSONL;
-   `confronta-descrizioni` contro il riferimento dell'iPad: le 192 descrizioni, al byte (ogni lettura a due granularità per
-   la Lettura Continua, e le 41 letture che hanno la Dottrina Inline anche per quel flusso, a due granularità). È il
+   `confronta-descrizioni` contro il riferimento dell'iPad: le 192 descrizioni, al byte (ogni lettura con «note a voce»
+   spenta e accesa per la Lettura Continua, e le 41 letture che hanno la Dottrina Inline anche per quel flusso, nei due stati;
+   le letture congelate sono a 400 caratteri, a 1.200 i volumi enormi — corretto l'8 novembre: diceva «a due granularità»). È il
    «passo 3» che `confronto_letture_ipad_mac.sh` aspetta: la vista del Mac al posto della catena. È **la prima cosa della
    tappa A**: l'unica misura che può falsificare la mappa di § 3.1 su dati reali.
 2. **Da fuori (XCUITest, modalità automazione)**: aprire l'app assemblata su una lettura e misurare l'albero: contenitori e
@@ -341,7 +358,7 @@ seguimento spento → nessun AXFocused → nessun segnale, e l'app non può legg
 processo). Ripiego misurabile: l'app sa se VoiceOver è acceso (`NSWorkspace.isVoiceOverEnabled`, osservabile con KVO,
 macOS 10.13+, fonte: https://developer.apple.com/documentation/appkit/nsworkspace/isvoiceoverenabled) e sa se le richieste
 di valore arrivano senza che arrivi mai un fuoco: in quel caso può proporre, una volta, «note annunciate a voce». È una
-regola della tappa A, da scrivere solo se T2 mostra che il gancio funziona (altrimenti le note restano a voce e basta).
+regola da scrivere solo se T2 mostra che il gancio funziona (tappa B del piano rifatto; altrimenti le note restano a voce e basta).
 
 **(b) Le notifiche d'accessibilità** — esclusa. L'app *posta* notifiche (annunci, cambio del fuoco), non le *riceve*: non
 esiste una notifica di AppKit per lo spostamento del cursore di VoiceOver (fonte: thread 776129; studio § 6). Un
@@ -370,8 +387,9 @@ controllo vocale, dove il segnale è un aiuto in più.
 La via (a) è il disegno. La **tappa A** parte però dall'annuncio a voce — `noteSpokenLabels` acceso per impostazione
 predefinita sul Mac — finché T2 non abbia mostrato che VoiceOver imposta il fuoco sugli elementi virtuali:
 con l'opzione accesa l'intro «Nota.» / «Nota lunga.» torna nel testo pronunciato e il segnale tace, esattamente come
-sull'iPad (campo, P2: con l'opzione nessun segnale di nota, l'intro in testa all'etichetta). Se T2 è verde, la tappa A
-nasce con i segnali accesi e l'opzione spenta, come l'iPad; se è rossa, la tappa A nasce a voce e la ricerca della soluzione
+sull'iPad (campo, P2: con l'opzione nessun segnale di nota, l'intro in testa all'etichetta). Le prove d'orecchio si fanno
+sull'app vera alla fine della tappa A (§ 10, rifatto): se T2 è verde, i segnali si accendono e l'opzione si spegne, come
+sull'iPad (tappa B); se è rossa, le note restano a voce e la ricerca della soluzione
 acustica continua con la via (c) come unica candidata rimasta. La libreria dei segnali (`AudioSignal`, i file sonori
 dell'iPad) è pronta e comune; i prototipi non suonano nulla di proposito.
 
@@ -438,268 +456,285 @@ test non usano tasti sintetici). Lo stesso gancio del fuoco suona i segnali anch
 
 ## 6. Domanda 5 — Da dove vengono i libri
 
-Due domande di prodotto spettano al maintainer. Si posano con le alternative, vantaggi e svantaggi, i costi e la mia
-inclinazione; non si decidono qui.
+> **Rifatto l'8 novembre 2026** (giro «app unica per Mac, tappa A»). La versione precedente poneva al maintainer due domande
+> di prodotto — se l'app di lettura importasse i PDF da sé o aprisse solo le letture dell'officina; se le due app
+> condividessero la libreria sotto sandbox, con un contenitore di gruppo o una cartella scelta — che nascevano dal
+> fraintendimento delle due app sul Mac (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, nota dopo la decisione 10). Sul Mac c'è
+> un'app sola, ScaboPDF, che importa da sé (decisione 10) e ha una libreria sola: le due domande cadono, e con loro il
+> contenitore di gruppo, i segnalibri con ambito di sicurezza e il coordinamento dei file fra due processi. Resta una
+> domanda più piccola, il rapporto fra importazione e modelli (§ 6.6).
 
-### 6.1 Prima domanda: l'app di lettura importa i PDF da sé, o apre solo le letture preparate dall'officina?
+### 6.1 L'importazione: la catena dell'iPad, la stessa logica
 
-**A1 — Solo letture preparate.** L'officina prepara (catena condivisa ScaboChain, Heron in Core ML, GLM-OCR via XPC con la
-rete, modelli scaricati) e produce la lettura (`.scabolettura`: testata in chiaro + carico LZFSE nella forma della cache
-dell'iPad, LAYER2 § 12.12); l'app di lettura la apre e legge. *Pro:* l'app di lettura è piccola, senza rete, senza modelli, senza
-XPC; una catena sola, quindi l'identità con l'iPad è per costruzione anche nella preparazione; rispetta la decisione 1 (due
-app). *Contro:* due passaggi per leggere un PDF nuovo (prepara, poi apri), mitigati dalla libreria condivisa (§ 6.2).
-*Costo:* nullo in più rispetto al piano (§ 9).
+L'app importa PDF e atti AKN (l'XML di Normattiva) da sé, con lo stesso percorso dell'iPad: la lettura è identica per
+costruzione (decisione 10). Le porte sono quelle del Mac: il comando «Importa un documento…» (menu Archivio, ⌘O, e la barra
+della Home), il trascinamento di un file sulla finestra della Home o sull'icona dell'app, «Apri con» dal Finder. Dietro le
+porte il percorso è uno solo, quello dell'iPad (LAYER2 § 12.8-12.10):
 
-**A2 — L'app di lettura importa anche da sé.** Porta dentro la catena intera: ScaboChain più il motore d'impaginazione
-(Heron, Core ML) più l'OCR (GLM-OCR, llama, l'XPC con la rete per scaricare i modelli). *Pro:* un gesto solo. *Contro:*
-l'app di lettura diventa l'officina con una finestra in più: dimensione, rete nell'XPC, scaricamenti, due app che fanno la
-stessa cosa (contro la decisione 1 e la 7, che vuole niente duplicazioni: la duplicazione qui sarebbe di prodotto, non di
-codice). *Costo:* un giro per l'innesto e la revisione della sandbox e dell'XPC, più la manutenzione doppia a ogni cura.
+1. una copia temporanea del file scelto;
+2. l'impronta del contenuto e, se il libro c'è già, la schermata «Libro già presente» con le stesse parole e le stesse tre
+   scelte («Apri il libro che hai già», predefinita; «Importa come copia a parte»; «Annulla»);
+3. l'elaborazione nella schermata bloccante, con le fasi dette a voce come sull'iPad («Apertura del documento», «Estrazione
+   del testo», «Riconoscimento di tabelle e figure», «Riconoscimento della struttura», «Impaginazione»), la percentuale come
+   valore interrogabile, un annuncio a ogni decile, e «Annulla»;
+4. la catena condivisa `ScaboChain` con le opzioni dell'iPad (l'innesto dell'officina spento), o la catena degli atti per
+   l'XML; le cure mirate del registro (LAYER2 § 0-ter) valgono da sé, perché la catena le accende dall'impronta;
+5. la registrazione nella libreria: la sorgente archiviata, l'impronta, la mappa delle pagine, l'albero della Consultazione
+   Rapida, la cache nel formato dell'iPad, l'etichetta di generazione («macOS 27.0.1»), l'apertura della lettura.
 
-**A3 — Importazione «leggera»** (solo PDF con testo, senza modelli). *Contro decisivo:* una seconda catena con esiti
-diversi dalla prima rompe l'identità con l'iPad; esclusa dal disegno.
+Nessuna di queste parti si riscrive per il Mac. Ciò che non è interfaccia oggi sta dentro l'app dell'iPad
+(`LibraryService`, `DocumentIdentity`, `DocumentProcessor`, `AknDocumentProcessor`, la registrazione dopo l'elaborazione,
+la scelta fra cache e rielaborazione, il riancoraggio, le parole di «Libro già presente», della schermata d'elaborazione e
+delle righe della libreria) e si **sposta** nel modulo condiviso `ScaboChain`, che l'iPad e il Mac usano già; l'iPad resta
+identico al byte, e lo provano le sue reti e le sue suite (§ 9). Sul Mac resta l'interfaccia: il pannello di apertura, il
+trascinamento, le finestre. Sotto sandbox un file arrivato da una di quelle porte si legge senza diritti in più
+(`com.apple.security.files.user-selected.read-write`, il diritto che l'officina ha già); la copia d'archivio vive nel
+contenitore dell'app.
 
-*Inclinazione:* **A1** per tutte le tappe del piano; A2 solo se un giorno il maintainer volesse un'app sola, che oggi non
-vuole.
+### 6.2 La libreria: una sola, nella forma dell'iPad
 
-### 6.2 Seconda domanda: officina e lettura condividono la libreria sul Mac? E come, sotto sandbox?
+La libreria vive nel contenitore dell'app, nella forma dell'iPad: `Application Support/ScaboPDF/` con `library.json` (lo
+store di ScaboCore), `Archive/<id>.pdf` o `.xml` (la sorgente da cui si rielabora, LAYER2 § 12.6) e `Cache/<id>.json` (la
+lettura, formato 6), con il testo di ricerca accanto. Lo stesso file importato sul Mac e sull'iPad dà la stessa impronta e,
+a parità di estrazione, la stessa lettura (§ 3.4 e la misura del giro).
 
-**B1 — Nessuna condivisione.** L'officina salva la lettura dove l'utente sceglie; l'app di lettura la apre dal pannello
-di sistema o dal Finder (tipo di file `com.scabo.scabopdf.lettura`, già esportato dall'officina; l'app di lettura lo
-*importa*, § 8.3) e la copia nella propria libreria dentro il suo contenitore (i doppioni si riconoscono dall'impronta della
-sorgente, `sourceSha256`). *Pro:* zero diritti in più, due app davvero indipendenti, funziona anche con file arrivati da
-altrove (AirDrop dall'iPad). *Contro:* ogni libro passa per un pannello di salvataggio e uno di apertura; le annotazioni
-vivono solo nell'app di lettura; la risorsa visiva non si può estrarre perché la lettura non porta il PDF. *Costo:* il più
-basso, già compreso nel piano.
+La Home segue quella dell'iPad (LAYER2 § 12.1) per quanto vale sul Mac: titolo della finestra, comandi, contenuto. Nella
+tappa A i comandi sono quelli della Home dell'iPad che esistono già («Importa un documento») più la finestra in più
+(«Modelli e officina»); il contenuto è l'elenco dei libri dal più recentemente aperto, con le parole delle righe
+dell'iPad; un libro si apre con Invio o col doppio clic, e il menu del libro (il tasto «Opzioni» dell'iPad, LAYER2 § 12.4; sul Mac il menu
+«Libro» della barra dei menu e il menu contestuale della riga) porta «Apri» ed «Elimina definitivamente…», con la conferma in prosa dell'iPad (§ 12.7). Workspace, cartelle e
+collocazioni (§ 12.2-12.7), i Recenti come sezione a sé, la Ricerca, il referto di elaborazione e la rinomina arrivano con
+le tappe (§ 9); finché non ci sono collocazioni, l'eliminazione definitiva è l'unica.
 
-**B2 — Un contenitore di gruppo condiviso** (`com.apple.security.application-groups`). Sul Mac il gruppo si nomina
-`<team identifier>.<nome>` senza registrazione sul portale (fonte: Apple, diritto App Groups,
-https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.application-groups), «macOS
-verifica che la firma del processo che accede al contenitore porti lo stesso Team ID» (fonte: Apple, *Configuring app
-groups*, https://developer.apple.com/documentation/xcode/configuring-app-groups); il contenitore sta in
-`~/Library/Group Containers/<id>`, lo crea il sistema alla prima richiesta e non lo rimuove mai, con le sottocartelle
-`Library/Application Support`, `Caches`, `Preferences`; «sul Mac la chiamata restituisce sempre un URL della forma
-attesa, anche per un gruppo non autorizzato: verificare di poterlo usare» (fonte: Apple,
-`containerURL(forSecurityApplicationGroupIdentifier:)`,
-https://developer.apple.com/documentation/foundation/filemanager/containerurl(forsecurityapplicationgroupidentifier:)).
-Entrambe le app mettono lì la libreria (letture, annotazioni, e il PDF archiviato come fa l'iPad, se il maintainer lo
-vuole); l'officina prepara e la lettura vede il libro subito. *Pro:* nessun pannello; una libreria sola; le cure «da Mac
-solo per le letture del Mac» (LAYER2 § 12.12) si applicano dove il libro vive; la risorsa visiva si può estrarre perché il PDF
-archiviato è lì. *Contro:* un diritto in più per entrambe le app; un modulo di libreria condiviso con coordinamento dei
-file fra due processi (`NSFileCoordinator`); entrambe le app devono essere firmate con lo stesso Team ID (lo sono).
-*Costo:* un giro, dentro la tappa D (§ 9). **Non verificato:** il comportamento di macOS 15 e seguenti sui gruppi con
-prefisso di team senza profilo di provisioning (le due fonti Apple non lo trattano; una prova di campo con le due app
-firmate dalla stessa identità sta nella tappa D, prima di fissare il formato).
+### 6.3 Il passaggio con l'iPad e con un altro Mac
 
-**B3 — Una cartella scelta dall'utente, ricordata con un segnalibro con ambito di sicurezza** (`bookmarkData(options:
-.withSecurityScope)`, `startAccessingSecurityScopedResource`; fonte: Apple, *Accessing files from the macOS App Sandbox*,
-https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox). Ogni app chiede una volta
-la cartella (anche su iCloud Drive) e la ricorda. *Pro:* il maintainer sceglie dove sta la libreria, anche in una cartella
-che l'iPad vede. *Contro:* due pannelli una volta per app; il segnalibro invecchia se la cartella si sposta; un sistema di
-file condiviso in rete (iCloud) con due scrittori richiede una disciplina di coordinamento che oggi non c'è. *Costo:* come
-B2 più la gestione dei segnalibri invecchiati.
+Solo AirDrop o cavo, mai iCloud o server (LAYER2 § 12.12). **Dal Mac all'iPad**: l'esportazione del pacchetto
+`.scabolettura` che l'officina fa oggi resta, nella sua finestra (§ 8); diventa un'opzione del libro in libreria («Manda
+all'iPad…», con la casella delle annotazioni) nella tappa D. **Verso il Mac**: l'app apre un `.scabolettura` arrivato da un
+iPad o da un altro Mac con le regole dell'iPad (§ 12.12): libro riconosciuto per impronta, scelta fra più copie, lettura
+precedente conservata finché non si conferma, annotazioni unite per contenuto; la logica di ricezione (`ReadingFromMac.swift`
+sull'iPad) si sposta nel modulo condiviso come quella dell'importazione. Il pacchetto non porta il PDF: un libro arrivato
+così si legge, ma non si rielabora e non estrae immagini, come sull'iPad. Tappa D.
 
-*Inclinazione:* **B2** per la libreria di casa, con **B1 sempre disponibile** per aprire un `.scabolettura` arrivato da
-fuori. B2 è anche la via che rende possibile «Estrai come immagine» sul Mac.
+### 6.4 Le risorse visive dal PDF archiviato
 
-### 6.3 Le annotazioni sul Mac e il passaggio da e per l'iPad
+Il Mac archivia la sorgente come l'iPad, quindi «Estrai come immagine» (LAYER2 § 7.9) ritaglia la regione dal PDF
+d'archivio con la regola dell'iPad (solo la regione, mai oltre l'85 % della pagina) e la salva col pannello di salvataggio;
+«Salta la risorsa» è un'azione del modulo e c'è dalla tappa A. Per un libro arrivato senza PDF l'azione non compare. Tappa E.
 
-Segnalibri, tag e sottolineature usano gli stessi modelli dell'iPad (ScaboCore: ancore per contenuto, impronte del testo
-normalizzato; `Library`), nella libreria del Mac. Il passaggio da e per l'iPad resta **solo AirDrop o cavo** (LAYER2 § 12.12), dentro
-il `.scabolettura` con la casella «annotazioni» del pannello di esportazione; nessun servizio di rete. All'importazione di
-una lettura già in libreria l'app chiede che cosa fare delle annotazioni che arrivano: sostituire, unire (le ancore rendono
-l'unione ben definita: stessa ancora, stessa annotazione), lasciare. È lavoro della tappa D.
+### 6.5 Annotazioni e posizione
 
-### 6.4 La granularità
+Segnalibri, tag e sottolineature usano gli stessi modelli dell'iPad (ScaboCore: ancore per contenuto, `Library`) nella
+libreria dell'app e arrivano con la tappa B. La posizione di lettura (LAYER2 § 2.5) c'è dalla tappa A: si registra con
+l'ancora per contenuto dell'elemento in lettura, come sull'iPad, e il libro si riapre lì.
 
-Globale, come oggi sull'iPad: il selettore nella barra degli strumenti (400, 600, 900, 1200) con lo stesso valore
-predefinito, salvato nelle preferenze dell'app (ScaboCore `Preferences`, `KeyValueStore`); i testi normativi hanno il
-selettore disabilitato e la struttura nativa (decisione 3). I blocchi li produce `Granularity` di ScaboCore sulla cache
-della lettura, la stessa funzione dell'iPad e della catena del Mac: le descrizioni di riferimento esistono per ogni
-granularità (i file `.lc.n0`…) e la rete della tappa A le percorre tutte. Il controllo per documento non esiste ancora
-sull'iPad: quando nascerà, nascerà in ScaboCore e arriverà alle due app insieme; il Mac non lo anticipa.
+### 6.6 Importazione e modelli: la lettura migliore (domanda per il maintainer)
 
-**Il ciclo del cambio di granularità** (lavoro della tappa A; nel prototipo il selettore è inerte). Cambiare granularità
-ricostruisce i segmenti e quindi il modello e tutti i figli del gruppo: non contraddice «costruiti una volta sola», che
-vale per una granularità data. La vista ricorda dove si era con l'ancora per contenuto dell'elemento col fuoco (le stesse
-ancore di posizione dell'iPad, LAYER2 § 2.5), ricostruisce modello ed elementi, ritrova l'elemento che contiene quell'ancora
-nella nuova granularità, annuncia all'accessibilità il cambio (`layoutChanged` sul gruppo, con il nuovo elemento col fuoco
-fra gli elementi da annunciare) e vi porta il fuoco (`focusedUIElementChanged`). La rete d'identità della tappa A percorre
-**ogni granularità sulla vista**, non solo sul modulo: le descrizioni di riferimento esistono a due granularità per lettura
-e il confronto si fa su ciascuna dopo il cambio, così il ciclo di ricostruzione è misurato, non supposto.
+Che cosa fa l'app quando importa un libro e sul Mac ci sono i modelli? Oggi la preparazione dell'officina dà una lettura
+diversa da quella dell'iPad su una parte dei libri: l'innesto dei verdetti del modello d'impaginazione (Heron, incorporato
+nell'app) rietichetta le righe degli indici analitici (5 volumi del banco su 52, LAYER2 § 10.6), e i modelli che si
+installano dal pannello (oggi GLM-OCR, verificato su una pagina di prova ma non ancora usato nella preparazione) potranno
+aggiungere altre differenze. Tre vie.
+
+**(A) Proposta: all'importazione la lettura della catena condivisa, identica all'iPad; la lettura migliore si offre.** Il
+libro importato si legge subito come sull'iPad. Se i modelli darebbero a quel libro una lettura diversa, l'app la offre con
+lo stesso meccanismo e le stesse parole dell'offerta «Lettura migliore disponibile» dell'iPad (§ 12.13): una riga nella
+Home e un'opzione del libro, la lettura precedente conservata finché l'utente non sceglie, le annotazioni riancorate per
+contenuto (§ 12.14), il ritorno possibile. *Pro:* l'identità con l'iPad vale per ogni libro importato ed è misurabile (§ 3.4);
+la lettura del modello non arriva mai in silenzio; il meccanismo esiste ed è provato dalla rete sulle annotazioni; chi non sa
+che cosa siano i modelli non ha bisogno di saperlo. *Contro:* due gesti in più per avere la lettura migliore; l'offerta deve
+sapere, prima di rielaborare, se la lettura cambierebbe (l'iPad lo sa dalle impronte misurate al banco,
+`booksUnchangedByCure`; per l'innesto basta una prova economica, la presenza delle pagine d'indice che la politica sceglie).
+*Costo:* un giro, nella tappa D.
+
+**(B) All'importazione direttamente la lettura migliore, se c'è.** *Pro:* un gesto. *Contro:* sui libri che l'innesto tocca
+la lettura del Mac diverge da quella dell'iPad per costruzione, senza che l'utente lo sappia; il confronto automatico non vale
+più per quei libri; e una lettura del Mac mandata all'iPad non si rielabora là (`curesFromTheMacOnly`), quindi la differenza
+viaggia.
+
+**(C) Chiederlo a ogni importazione.** *Contro:* una domanda tecnica, a ogni libro, a un utente poco pratico.
+
+*Inclinazione:* **(A)**. La tappa A ne costruisce la prima metà (l'importazione con la catena condivisa, innesto spento); la
+seconda, l'offerta, entra nella tappa D. Fino ad allora la lettura migliore si prepara e si esporta nella finestra
+dell'officina, come oggi.
+
+### 6.7 La granularità
+
+Globale, nelle Impostazioni dell'app (⌘,), con i quattro livelli e le parole dell'iPad («Fine — 400 caratteri», «Media — 600
+caratteri», «Ampia — 900 caratteri», «Piena — 1200 caratteri»; LAYER2 § 7.6-7.7). **Un fatto trovato in questo giro**
+(campo: il codice dell'app per iPad alla build 64): sull'iPad la scelta si salva nelle Impostazioni, ma la lettura non la usa —
+ogni libro si elabora a 400 caratteri, e a 1.200 i volumi oltre le 1.500 pagine — e il controllo per documento in barra
+(§ 7.7) non esiste. Sul Mac la scelta **si applica**: entra nell'elaborazione (la granularità della catena; i blocchi li fa
+`granularizeBody`, la stessa funzione dell'iPad), con la regola dei volumi enormi dell'iPad. Un libro letto a un'altra
+granularità si rielabora alla prossima apertura, una volta, nella schermata d'elaborazione, e la posizione si ritrova per
+ancora di contenuto; la finestra già aperta resta com'è (la scelta lo dice). Al valore predefinito Mac e iPad danno la
+stessa lettura; agli altri valori il Mac dà la lettura che la catena condivisa dà a quella granularità e che l'iPad oggi non
+mostra. Portare la scelta anche sull'iPad è una decisione per il maintainer (referto del giro). I testi normativi hanno la
+granularità della loro struttura (§ 7.7). Questa regola sostituisce, per la tappa A, il ciclo di ricostruzione nella
+finestra aperta descritto nella versione precedente.
 
 ## 7. Domanda 6 — Il resto del prodotto, a tappe
 
 | parte del prodotto | tappa | che cosa serve | costo stimato |
 |---|---|---|---|
-| Lettura Continua di un libro preparato, titoli e rotori, granularità, note a voce (o segnali, se T2), menu «Lettura», identità con l'iPad | **A** | § 9 | 2–3 giri |
-| Segnalibri e tag (LAYER2 § 5), ⌘B, finestra «Strumenti elemento» (⌘E, Conferma/Annulla, Esc), posizione per documento (LAYER2 § 2.5) | **B** | ScaboCore `Library`, `ContentAnchor`; una finestra modale AppKit; persistenza nel contenitore | 1 giro |
+| L'app unica: la Home con l'elenco dei libri, l'importazione di PDF e atti AKN con la catena condivisa, «Libro già presente», l'eliminazione; la Lettura Continua con titoli e rotori, granularità dalle Impostazioni, note a voce (o segnali, se T2), menu «Lettura», posizione per documento (LAYER2 § 2.5); l'officina come finestra; identità con l'iPad | **A** | § 6, § 9; la logica dell'iPad spostata in `ScaboChain` | 1 giro (rifatto l'8 novembre; prima: 2–3) |
+| Segnalibri e tag (LAYER2 § 5), ⌘B, finestra «Strumenti elemento» (⌘E, Conferma/Annulla, Esc) | **B** | ScaboCore `Library`, `ContentAnchor`; una finestra modale AppKit | 1 giro |
 | Sottolineature solo-vedenti (LAYER2 § 6), aspetto (carattere, ⌘= / ⌘-, colori, tema) | **B** | disegno delle righe nella vista; preferenze | 1 giro (con il precedente: 2) |
 | Ricerca nel libro (LAYER2 § 13.3): finestra «Cerca nel libro», rotore «Risultati della ricerca», ⌘F/⌘G/⇧⌘G, Esc | **C** | ScaboCore `BookSearch` (già pensato per il Mac); il rotore col nome nostro è già nel modulo | 1 giro |
-| Ricerca nella libreria (LAYER2 § 13.2) | **C** (o D se dipende dalla libreria condivisa) | ScaboCore `LibrarySearch`, testo di ricerca accanto alla cache | 1 giro |
-| Libreria: elenco, apertura, doppioni per impronta, importazione/esportazione `.scabolettura` con annotazioni, decisione B | **D** | ScaboCore `Library`, `ReadingPackage`; eventuale gruppo di app | 2 giri |
+| Ricerca nella libreria (LAYER2 § 13.2), con l'eliminazione definitiva dalla Ricerca | **C** | ScaboCore `LibrarySearch`, testo di ricerca accanto alla cache (l'app lo scrive già dalla tappa A) | con la precedente, 1 giro |
+| Libreria intera: Recenti, workspace, cartelle, collocazioni, ordinamenti; ricezione e invio di `.scabolettura` con annotazioni; la lettura migliore dai modelli offerta come sull'iPad (§ 6.6) | **D** | ScaboCore `Library`, `ReadingPackage`; la ricezione dell'iPad spostata nel modulo condiviso | 2 giri |
 | Consultazione Rapida (LAYER2 § 8) | **E** | ScaboCore `QuickConsultTree`; una seconda vista ad albero (outline) con lo stesso parlato | 1 giro |
 | Dottrina Inline (LAYER2 § 10) | **E** | il layout è già nel modulo (`doctrineInline`); un interruttore di layout | ½ giro |
 | Vista affiancata (split, LAYER2 § 11): due viste nella stessa finestra, ⌥⌘← / ⌥⌘→ | **E** | due gruppi del testo affiancati, uno per metà, con posizione per metà | 1 giro |
-| Risorse visive: «Estrai come immagine» (serve il PDF archiviato: decisione B), «Salta la risorsa» (già nel modulo) | **E** | PDFKit per il ritaglio; pannello di salvataggio o appunti | ½ giro (1 se il PDF non c'è e va chiesto) |
+| Risorse visive: «Estrai come immagine» dal PDF archiviato (§ 6.4), «Salta la risorsa» (già nel modulo, c'è dalla tappa A) | **E** | PDFKit per il ritaglio; pannello di salvataggio | ½ giro |
 | Distribuzione: scheda App Store nuova, firma di distribuzione, notarizzazione | **F** | aperta solo quando si distribuisce (LAYER2 § 12.12) | 1 giro |
 
 ## 8. Domanda 7 — Pacchetto e distribuzione
 
-### 8.1 Dove nasce l'app nel pacchetto `ScaboMac` (decisione 7)
+> **Rifatto l'8 novembre 2026.** La versione precedente faceva nascere nel pacchetto una seconda app (`ScaboLetturaKit` più
+> `ScaboLettura`, identificativo `com.scabo.scabopdf.mac.lettura`, nome «ScaboPDF Lettura», una libreria comune
+> `ScaboMacComune` tolta all'officina, una variante di `build_app.sh`, il tipo `.scabolettura` importato). Con l'app unica
+> nulla di questo serve.
 
-Due bersagli nuovi nello stesso `Package.swift`: la libreria **`ScaboLetturaKit`** (la vista di lettura, l'elemento
-virtuale, la finestra, il menu, la descrizione dalla vista, il diario; dipende da ScaboCore e, per la libreria, da
-ScaboChain solo per leggere il `.scabolettura` se la lettura del pacchetto sta lì) e l'eseguibile **`ScaboLettura`**
-(l'avvio AppKit senza storyboard, come il prototipo: `NSApplication`, delegato, finestra, menu). I test della libreria
-stanno in un bersaglio nuovo, `ScaboLetturaKitTests` (scelta di questo giro: i test dell'officina restano separati e la
-rete d'identità della vista ha il suo bersaglio). Che cosa condivide con l'officina: ScaboCore,
-ScaboChain (lettura del pacchetto), ScaboPageStructure se serve, e le poche parti Mac comuni (l'annunciatore
-`Announcer.swift`, i testi) che oggi stanno in `ScaboMacKit`: poiché `ScaboMacKit` porta con sé il catalogo dei modelli e
-la catena con `llama`, l'app di lettura **non** lo collega; le parti comuni si spostano in una libreria piccola
-(`ScaboMacComune`) usata da entrambe, senza duplicare una riga (decisione 7). Che cosa non condivide: il catalogo, lo
-scaricatore XPC, la finestra dell'officina, `llama`.
+### 8.1 Un'app sola nel pacchetto `ScaboMac`
 
-### 8.2 Come `build_app.sh` la assembla e la firma
+L'app si chiama **ScaboPDF** («ScaboPDF per Mac» quando serve distinguerla dall'app mobile) e tiene l'identificativo di oggi,
+`com.scabo.scabopdf.mac`: lo stesso contenitore, quindi i modelli già scaricati e le preferenze restano dove sono. Un
+manifesto solo (decisione 7), con questi bersagli:
 
-Lo script di oggi compila in release, assembla `ScaboMac.app` (binario, `llama.framework` con l'rpath, i bundle delle
-risorse, Info.plist, PkgInfo, l'XPC) e firma dall'interno verso l'esterno con «Apple Development» se c'è, altrimenti ad hoc,
-con hardened runtime e i diritti, e verifica che l'app abbia la sandbox e nessuna rete. L'app di lettura si assembla con
-**lo stesso script, parametrizzato** (`build_app.sh lettura`; scelta di questo giro: uno script solo, niente funzioni
-duplicate, decisione 7): prodotto
-`ScaboLettura`, `Info.plist` proprio (`com.scabo.scabopdf.mac.lettura`, nome «ScaboPDF Lettura»), diritti propri, **niente
-`llama.framework`, niente XPC**, stessa identità e stesse opzioni di firma, la stessa verifica finale (sandbox sì, rete no)
-più una in più: nessun servizio XPC dentro. Il prototipo ha fatto il percorso in piccolo (campo: `assembla_app.sh` del
-laboratorio compila, assembla il bundle con Info.plist, firma ad hoc e verifica; l'app assemblata si lancia dal runner
-della modalità automazione e da `open`).
+- `ScaboMacKit` (c'è): l'officina — catalogo e servizio dei modelli, pannello, la catena del Mac con l'innesto, il pacchetto
+  `.scabolettura`, la descrizione per il confronto, l'annunciatore. Diventa il **pannello e il motore della lettura
+  migliore** dell'app (decisione 8); nessuna sua funzione cambia.
+- `ScaboMacLettura` (nuovo): ciò che l'app ha in comune con l'iPad — la Home con la libreria, l'importazione, le
+  impostazioni, la vista di lettura del disegno (gruppo, elementi virtuali, gancio del fuoco, rotori, azioni, menu
+  «Lettura», descrizione dalla vista). Dipende da ScaboCore e ScaboChain, **non** da `llama` né dal catalogo, e si prova
+  da sola.
+- `ScaboMac` (c'è): l'eseguibile, ora con il ciclo di vita AppKit (delegato e menu in codice, come il prototipo): apre la
+  Home come finestra principale, e l'officina e il pannello dei modelli come finestre in più dal menu «Finestra» («Modelli
+  e officina», ⌘⇧M, la scorciatoia di oggi del pannello).
+- `scabomac-officina`, `ScaboMacOCR`, `ScaricatoreProtocollo`, `ScaboMacScaricatore`: invariati.
+- Test: `ScaboMacKitTests` (l'officina, invariati) e `ScaboMacLetturaTests` (la rete d'identità della vista,
+  l'importazione, la Home, il menu).
+
+La logica condivisa con l'iPad vive in ScaboCore e `ScaboChain` (§ 6.1), mai copiata in `ScaboMacLettura`: chi la cerca la
+trova in un posto solo.
+
+### 8.2 `build_app.sh`
+
+Uno script, quello di oggi, che assembla **`ScaboPDF.app`**: il binario, `llama.framework` con il suo percorso di ricerca, i
+bundle delle risorse dei moduli, il servizio di scaricamento XPC, `Info.plist`, `PkgInfo` e i suoni delle note, copiati
+dall'app dell'iPad al momento dell'assemblaggio (nessuna copia nel repo). Firma dall'interno verso l'esterno con «Apple
+Development» se c'è, altrimenti ad hoc, con hardened runtime, e verifica come oggi: sandbox sì, rete no per l'app; sandbox
+sì, rete solo in uscita per il servizio.
 
 ### 8.3 Sandbox, diritti, tipi di file
 
-`com.apple.security.app-sandbox` e `com.apple.security.files.user-selected.read-write`, come l'officina; **nessuna rete**;
-in più, secondo la decisione B: `com.apple.security.application-groups` con `<team>.scabopdf` (B2) oppure
-`com.apple.security.files.bookmarks.app-scope` (B3). Il tipo `com.scabo.scabopdf.lettura` (`.scabolettura`) è *esportato*
-dall'officina, che ne è la proprietaria; l'app di lettura lo dichiara *importato* (`UTImportedTypeDeclarations`: «gli
-identificatori di tipo uniformi supportati ma non posseduti dall'app», fonte: Apple,
-https://developer.apple.com/documentation/bundleresources/information-property-list/utimportedtypedeclarations) e lo
-elenca fra i documenti che apre (`CFBundleDocumentTypes`), così «Apri con» e il doppio clic funzionano anche se l'officina
-non è installata.
+Gli stessi diritti di oggi: `com.apple.security.app-sandbox` e `com.apple.security.files.user-selected.read-write`, nessuna
+rete nell'app (la rete resta nel solo servizio di scaricamento). Nessun gruppo di app, nessun segnalibro con ambito di
+sicurezza: la libreria è dell'app. Tipi di documento dichiarati, per «Apri con» e il trascinamento: PDF (`com.adobe.pdf`),
+XML (`public.xml`, per gli atti AKN; un XML che non è un atto si rifiuta con la spiegazione in prosa dell'iPad) e il
+`.scabolettura` (`com.scabo.scabopdf.lettura`, esportato come oggi; si apre dalla tappa D).
 
 ### 8.4 I test d'interfaccia
 
-Un secondo bersaglio nel progetto `UITests` (o un secondo progetto xcodegen, come il prototipo), che apre
-`build/ScaboLettura.app` per percorso, senza tasti sintetici: la misura dei contenitori e dei conteggi di § 3.4, passo 2.
-Il tetto di mille figli del runner (§ 2.2) si accetta per il conteggio («almeno mille») e si supera per il campione con le
-query per identificatore e `firstMatch` (campo, U5: ogni elemento a qualunque indice in circa due secondi; un campione di
-venti elementi per lettura costa meno di un minuto). Il misuratore della profondità legge l'albero del runner
-(`debugDescription`) riconoscendo la riga della finestra dal prefisso.
+Il progetto `UITests` (xcodegen) apre `build/ScaboPDF.app` per percorso, nella modalità automazione, senza tasti
+sintetici: i test di oggi dell'officina e del pannello, aggiornati alla finestra che li apre, e quelli nuovi della Home,
+dell'importazione (un PDF sintetico che l'app di prova crea da sé con un argomento di lancio: mai testo dei volumi),
+dell'apertura, della lettura e del menu, con l'audit d'accessibilità del sistema. Il tetto di mille figli del runner
+(§ 2.2) si accetta per il conteggio e si supera per il campione con le query per identificatore e `firstMatch`.
 
 ### 8.5 La scheda App Store
 
-Nuova e separata, con l'identificatore dell'app di lettura; si apre solo quando si distribuisce (LAYER2 § 12.12, tappa F). Fino ad
-allora l'app corre dal `build/` del maintainer, firmata con «Apple Development» come l'officina.
+L'app Mac è il secondo prodotto per Apple (decisione 9): una scheda App Store nuova, distinta da quella dell'app mobile, da
+aprire solo quando si distribuisce (LAYER2 § 12.12, decisione 3 del 2026-10-16; tappa F). Fino ad allora l'app corre dal
+`build/` del maintainer, firmata «Apple Development».
 
 ## 9. Domanda 8 — Il piano a tappe
 
-**Tappa A — la lettura vera (2–3 giri).** Giro A1, nell'ordine: **prima la rete d'identità** — la vista di lettura portata
-dal prototipo nella libreria `ScaboLetturaKit` (gruppo, elementi virtuali, gancio del fuoco, rotori, azioni, descrizione
-dalla vista) e la sua descrizione sulle 55 letture congelate contro i 192 riferimenti dell'iPad (passo 1 di § 3.4), a ogni
-granularità, col ciclo di ricostruzione di § 6.4; poi il bersaglio eseguibile `ScaboLettura` (AppKit senza storyboard),
-l'apertura di un `.scabolettura` dal pannello di sistema, il menu «Lettura» con ⌘J e i titoli, il selettore della
-granularità, note a voce come predefinito del Mac (o segnali, se T2 è già verde). Giro A2: l'estrazione della libreria
-comune `ScaboMacComune` dall'officina (passo a sé, con `rete_parlato.sh` sull'officina), la variante di `build_app.sh`, la
-misura da fuori nel progetto UITests (passo 2), le prove d'orecchio T1–T3 sull'app vera se non fatte sul prototipo, le
-correzioni che ne vengono, la posizione per documento (riapertura dove si era), il primo `ScaboLettura.app` nel `build/` del
-maintainer. Un eventuale A3 assorbe ciò che le prove d'orecchio spostano (il ripiego dei figli finestrati di § 2.3, se T1
-fosse rossa, è un giro). *Reti:*
-`rete_parlato.sh` (tocca la lettura), la rete d'identità della vista (nuova, entra in `confronto_letture_ipad_mac.sh` come
-passo 3), la misura da fuori. *Livello di verifica proposto:* medio — misure complete, tre prove d'orecchio brevi.
+> **Rifatto l'8 novembre 2026, dall'app unica.** Le stime della versione precedente (2–3 giri la lettura minima, 11–12 la
+> parità con l'iPad, 12–13 con la distribuzione) contavano due app: la libreria condivisa sotto sandbox e la sua prova di
+> campo (un giro nella tappa D), l'estrazione di una libreria comune dall'officina, una seconda scheda e una seconda firma; e
+> rimandavano Home e importazione alla tappa D. Con l'app unica quel lavoro sparisce, e Home e importazione entrano nella
+> prima tappa: costano poco, perché la loro logica esiste già nell'app dell'iPad e si sposta nei moduli condivisi.
 
-**Tappa B — annotazioni, strumenti, aspetto (2 giri).** Segnalibri e tag con ⌘B e la finestra «Strumenti elemento»;
-sottolineature solo-vedenti; aspetto e dimensione del testo; persistenza nel contenitore. *Reti:* identità della vista
-(le azioni di segnalibro entrano nella descrizione), `rete_annotazioni.sh` dove applicabile. *Verifica:* leggera.
+**Tappa A — l'app unica, prima versione (un giro: questo).** L'officina dentro l'app, come finestra, con tutte le sue
+funzioni; la Home con l'elenco dei libri, l'importazione di PDF e atti AKN dal comando, dal trascinamento e da «Apri con»,
+l'apertura, l'eliminazione con conferma, «Libro già presente»; la logica dell'iPad spostata nei moduli condivisi, iPad
+identico al byte; la vista di lettura del disegno con la granularità dalle Impostazioni (§ 6.7), i rotori per livello e
+delle risorse visive, le note annunciate a voce, il gancio del fuoco pronto, il menu «Lettura», la posizione per documento;
+la descrizione dalla vista in processo e la misura da fuori nella modalità automazione; il confronto con la vista dell'iPad
+sui 52 volumi del banco e sui tre documenti di studio importati dall'app, con la quota dell'estrattore separata da quella
+della vista. *Reti:* `rete_parlato.sh`, letture della catena e del runner al byte, `rete_cure_mirate.sh`, la rete d'identità
+della vista del Mac. *Verifica:* media. *Prove d'orecchio:* le tre di § 10, sull'app vera.
 
-**Tappa C — ricerca (2 giri).** «Cerca nel libro» con rotore e ⌘F/⌘G/⇧⌘G, Esc; ricerca nella libreria. *Reti:* identità
-della vista con ricerca attiva (il rotore «Risultati della ricerca» e i valori «risultato N di M» sono nel modulo), la rete
-di correttezza della ricerca dell'iPad riusata. *Verifica:* leggera.
+**Tappa B — ciò che l'orecchio sposta, annotazioni, strumenti (1–2 giri).** Gli esiti di T1–T3 (i figli finestrati di
+§ 2.3 se T1 è rossa: un giro in più; i segnali delle note accesi se T2 è verde); segnalibri e tag (⌘B, la finestra dei
+segnalibri, i tag), «Strumenti elemento» (⌘E, Conferma/Annulla, Esc), sottolineature solo-vedenti, aspetto (carattere,
+⌘= / ⌘-, temi); rinomina e referto di elaborazione. *Verifica:* media, con la rete sulle annotazioni.
 
-**Tappa D — libreria e passaggio (2 giri).** La libreria del Mac, i doppioni, importazione ed esportazione con annotazioni,
-la decisione B (gruppo di app o cartella), la prova di campo sui gruppi di app con le due app firmate. *Verifica:* media
-(una prova d'orecchio sul passaggio iPad→Mac→iPad).
+**Tappa C — ricerca (un giro).** «Cerca nel libro» (⌘F, ⌘G, ⇧⌘G, rotore «Risultati della ricerca», Esc) e la ricerca nella
+libreria, con l'eliminazione definitiva dalla Ricerca come sull'iPad. *Reti:* la rete di correttezza della ricerca
+dell'iPad, riusata. *Verifica:* leggera.
 
-**Tappa E — layout e viste (3 giri).** Consultazione Rapida, Dottrina Inline, vista affiancata, estrazione delle risorse
-visive. *Reti:* identità della vista anche sul flusso `dottrina-inline` (i riferimenti esistono: `--flussi lc,di`).
-*Verifica:* media.
+**Tappa D — la libreria intera e il passaggio (2 giri).** Recenti, workspace, cartelle, sottocartelle, collocazioni e
+ordinamenti (LAYER2 § 12.1-12.7); la ricezione di un `.scabolettura`; «Manda all'iPad…» dal libro; la lettura migliore dai
+modelli con l'offerta dell'iPad, se il maintainer sceglie la via (A) di § 6.6; l'offerta di rielaborazione per le cure.
+*Verifica:* media, con una prova d'orecchio sul passaggio iPad → Mac → iPad.
 
-**Tappa F — distribuzione (1 giro).** Scheda, firma di distribuzione, notarizzazione o TestFlight per Mac, quando il
-maintainer lo decide.
+**Tappa E — layout e viste (2–3 giri).** Consultazione Rapida, Dottrina Inline (i riferimenti dell'iPad ci sono già:
+`--flussi lc,di`), vista affiancata, estrazione delle risorse visive. *Verifica:* media.
 
-**Totale: 2–3 giri per la lettura minima; 11–12 per la parità con l'iPad (tappe A–E: 2–3 + 2 + 2 + 2 + 3); 12–13 con la
-distribuzione (F).** Lo studio stimava 4–6 e 10–14: la stima minima scende perché il giro delle fondamenta ha già dato il
-parlato unico e lo strumento di confronto, e questi prototipi hanno già dimostrato lo scheletro (elementi virtuali, gancio,
-rotori, azioni, menu, descrizione dalla vista) con i suoi numeri; la stima della parità resta nella fascia alta dello studio
-perché la libreria condivisa e la vista affiancata sono lavoro nuovo, non rimpicciolito dalle fondamenta.
+**Tappa F — distribuzione (un giro).** La scheda App Store del Mac, la firma di distribuzione, la notarizzazione o TestFlight
+per Mac, quando il maintainer lo decide.
+
+**Totale (dedotto, non misurato): la tappa A in un giro; la parità con l'iPad, tappe A–E, in sette-nove giri (la somma
+delle stime delle cinque tappe); otto-dieci con la distribuzione.** Rispetto alla stima di ieri (11–12 e 12–13) si toglie il lavoro delle due app e si
+anticipa ciò che il codice condiviso rende economico; restano intere le parti nuove per il Mac (la vista affiancata, la
+Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 
 ## 10. Le prove d'orecchio
 
-Tre, brevi, sul prototipo già pronto nel laboratorio; solo ciò che la misura non decide. Si fanno con VoiceOver acceso e il
-volume al minimo che si vuole: il prototipo non emette alcun suono proprio, parla solo VoiceOver. L'app si apre dal
-Terminale (una riga, nessuna password), si naviga con i soli comandi normali di VoiceOver, si chiude con ⌘Q. Dopo ogni
-prova il diario resta nel laboratorio e Code lo legge: non serve prendere appunti sui dettagli, basta dire come è andata.
-Il percorso del prototipo: `~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/ScaboLetturaProto/build/ProtoLettura.app`.
+> **Rifatto l'8 novembre 2026.** Le tre prove non si fanno più sul prototipo del laboratorio ma **sull'app vera**, alla fine
+> della tappa A: ciò che si sente è ciò che l'utente avrà. Restano tre, brevi, solo per ciò che la misura non decide; le
+> istruzioni passo per passo, scritte per chi usa VoiceOver sul Mac, stanno nel referto del giro
+> (`~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_APP_UNICA_TAPPA_A.md`, § 8) e, a giro concluso, qui sotto.
 
-**T1 — Il gruppo di trentamila figli (tre minuti; la prova decisiva, da fare per prima).** Apri il Terminale e incolla, su
-una riga sola:
-`open -n ~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/ScaboLetturaProto/build/ProtoLettura.app --args --lungo --profilo ~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/profilo/profilo_volume_massimo.json --diario ~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/ScaboLetturaProto/risultati/T1_diario.txt`
-Si apre la finestra «ProtoLettura — flusso lungo» (il volume più grande del banco, con parole di riempimento). Con VO+freccia
-destra arriva al gruppo «Testo del documento»; se VoiceOver lo annuncia come gruppo, entra con VO+Maiuscole+freccia giù e
-conta mentalmente quanto ci mette a dire il primo elemento. Poi VO+freccia destra per tre elementi, VO+freccia sinistra per
-uno. Poi VO+Fn+freccia destra (VO+Fine): deve andare all'ultimo elemento del gruppo. Poi ⌘Q. Riferisci tre cose, a
-sensazione: l'ingresso nel gruppo è stato immediato, di qualche secondo, o lungo? ogni VO+freccia destra ha risposto subito?
-VO+Fine ha letto un elemento (il diario dirà quale)? Se l'ingresso o lo spostamento sono lenti, il disegno passa al ripiego
-dei figli finestrati (§ 2.3).
+- **T1 — VoiceOver davanti a un libro grande.** Come VoiceOver entra nel gruppo «Testo del documento» di un libro di decine di
+  migliaia di elementi, quanto ci mette a dire il primo, se ogni passo risponde subito e se l'ultimo elemento si raggiunge.
+  Decide se il gruppo unico regge o se servono i figli finestrati (§ 2.3).
+- **T2 — Il gancio del fuoco e le parole di VoiceOver.** Se l'arrivo del cursore porta davvero AXFocused all'elemento (il
+  diario delle richieste lo registra, nel laboratorio), che cosa VoiceOver aggiunge al testo dell'elemento e in che ordine dice
+  valore e descrizione. Decide la via delle note (§ 4.2) e la mappa di § 3.1.
+- **T3 — Rotori, azioni, menu.** Come VoiceOver presenta i rotori dei titoli per livello e delle risorse visive (VO+U), le
+  azioni dell'elemento (VO+⌘+Spazio) e il menu «Lettura» con le sue scorciatoie.
 
-**T2 — Il gancio del fuoco e che cosa dice VoiceOver (tre minuti).** Riga del Terminale:
-`open -n ~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/ScaboLetturaProto/build/ProtoLettura.app --args --capitolo --diario ~/Developer/scabopdf-mac-lab/lettura_mac/prototipi/ScaboLetturaProto/risultati/T2_diario.txt`
-Si apre «ProtoLettura — capitolo sintetico». Entra nel gruppo come in T1 e percorri con VO+freccia destra i primi dodici
-elementi, fermandoti un secondo su ciascuno; poi torna indietro di tre con VO+freccia sinistra; poi VO+Fn+freccia destra
-(VO+Fine) per l'ultimo; poi ⌘Q. Il diario registrerà da sé se a ogni arrivo del cursore è arrivato anche «AXFocused = vero»
-(il gancio) e quali altre richieste ha fatto VoiceOver. Riferisci due cose ascoltate: (1) il dodicesimo elemento (la
-tabella) dice «Tabella» e poi «pagina 5 del file originale», o nell'ordine inverso, oppure ne dice una soltanto? (2) VoiceOver
-aggiunge «testo» o altro dopo ogni elemento, e ha detto qualcosa entrando nel gruppo? Facoltativo, per chi vede: la finestra
-scorreva seguendo il cursore?
-
-**T3 — Rotori e azioni (tre minuti).** Stessa riga di T2 con `T3_diario.txt` al posto di `T2_diario.txt`. Nel gruppo premi
-VO+U: ascolta quali rotori compaiono (ci si aspetta Intestazioni, Intestazioni di livello 1, 2 e 3, Tabelle, Immagini; i
-nomi li dà VoiceOver). Scegli «Intestazioni» con le frecce destra/sinistra, poi freccia giù fino a «Sezione prima. I
-blocchi» e Invio: VoiceOver deve posarsi su quell'elemento. Poi vai con VO+freccia destra di due elementi (la nota «(2) …»)
-e premi VO+⌘+Spazio: nel menu delle azioni deve esserci «Vai al testo del richiamo» (oltre ad «Aggiungi segnalibro»); scegli
-«Vai al testo del richiamo» e riferisci se VoiceOver si è posato sul blocco che comincia con «E la sezione» (è il blocco del
-richiamo). Poi ⌘Q.
-
-Tre prove, nove minuti in tutto. T1 decide se il gruppo unico regge (§ 2.3) e conferma la lettura degli elementi fuori
-finestra (§ 2.4); T2 decide la via delle note (§ 4.2) e l'ordine di valore e descrizione (§ 3.1); T3 conferma il rotore e le
-azioni come li mostra VoiceOver (§ 5).
+Il libro di prova è un volume del banco, importato dal maintainer dalla copia del laboratorio, o il capitolo sintetico che
+l'app crea da sé con un argomento di lancio: mai testo dei volumi nel repo. Il diario delle richieste (indici e nomi delle
+richieste, nessun testo) lo scrive l'app nel proprio contenitore; Code lo copia nel laboratorio e lo legge dopo le prove.
 
 ## 11. Residui e cose non verificate
 
 - **Non verificato:** il tempo d'ingresso di VoiceOver in un gruppo di trentamila figli e la lettura degli elementi fuori
   finestra (T1, la prima prova; ripiego pronto in § 2.3); che VoiceOver imposti AXFocused sugli elementi virtuali (T2) e che
   il diario lo veda (dedotto dai due client misurati, § 3.3); l'ordine di pronuncia fra AXValue e AXDescription (T2); i nomi
-  che VoiceOver dà ai rotori di livello (T3); il giro di Tab dalla barra al testo (§ 5.3); il comportamento di macOS 15+ sui
-  gruppi di app senza profilo di provisioning (tappa D); come SwiftUI esponga AXFocused (§ 2.1, non serve al disegno).
-- **Dedotto, non misurato:** l'identità vista-del-Mac ↔ iPad sulle letture vere (per transitività, § 0 e § 3.4; prima misura
-  della tappa A); il controllo delle righe fuori schermo di `NSTableView` (§ 2.6); l'assenza di effetti collaterali del
+  che VoiceOver dà ai rotori di livello (T3); il giro di Tab dalla barra al testo (§ 5.3); come SwiftUI esponga AXFocused
+  (§ 2.1, non serve al disegno). (Il comportamento dei gruppi di app sotto macOS 15 e seguenti non serve più: l'app è una
+  sola, § 6.)
+- **Dedotto, non misurato** (al 2026-11-08, prima della tappa A): l'identità vista-del-Mac ↔ iPad sulle letture vere (per
+  transitività, § 0 e § 3.4; la misura è il primo lavoro della tappa A, e il suo esito sta nel referto del giro); il controllo delle righe fuori schermo di `NSTableView` (§ 2.6); l'assenza di effetti collaterali del
   gancio sul primo risponditore con VoiceOver acceso (§ 4.1).
 - **Non misurato in questo giro:** il costo del gancio con il suono vero (i prototipi non suonano); il ciclo del cambio di
-  granularità sulla vista (§ 6.4, selettore inerte nel prototipo); la vista con il PDF archiviato e l'estrazione
+  granularità sulla vista (sostituito, per la tappa A, dalla regola di § 6.7); la vista con il PDF archiviato e l'estrazione
   dell'immagine; la finestra modale degli strumenti; la ricerca.
 - **Limiti degli strumenti:** il runner dei test d'interfaccia conta al più mille figli e non trova oltre i mille con le
   query col pedice, ma trova qualunque elemento per identificatore con `firstMatch` (§ 2.2); non vede azioni né rotori (la
   descrizione completa resta quella in processo); non può scrivere nel laboratorio (i risultati passano dal log); le sue
   letture puntuali costano fra 0,2 e 1,1 secondi l'una (campioni piccoli). L'API C d'accessibilità da un processo fidato è
   una misura di laboratorio, non una rete di prodotto.
-- **Da decidere (referto, § 6):** le due domande di prodotto di § 6; la scorciatoia dei titoli sul Mac; il predefinito delle
-  note sul Mac alla tappa A.
+- **Da decidere:** il rapporto fra importazione e modelli (§ 6.6); se portare la granularità delle Impostazioni anche
+  sull'iPad (§ 6.7); la scorciatoia dei titoli sul Mac (⌥⌘↓ / ⌥⌘↑, § 5.2). Le due domande di prodotto della versione
+  precedente sono superate (§ 6); il predefinito delle note alla tappa A è deciso dal disegno (§ 4.2: note a voce, finché
+  T2 non dice altro).
 
 ## Appendice — le misure dei prototipi
 

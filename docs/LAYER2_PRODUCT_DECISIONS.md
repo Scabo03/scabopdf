@@ -1456,7 +1456,8 @@ ripiego disegnato sono i figli finestrati (un giro in più). Le due domande di p
 al maintainer — se l'app di lettura importi i PDF da sé o apra solo le letture dell'officina; se le due app condividano la
 libreria sul Mac e come, sotto sandbox — sono poste al § 6 di quel documento, con pro, contro e costi, e non sono decise.
 *Superate l'8 novembre:* le due domande nascevano dal fraintendimento qui sotto; la decisione 10 risponde alla prima (l'app
-importa da sé) e l'app unica alla seconda (una libreria sola). Le parti del disegno che ne dipendevano sono rifatte.
+importa da sé) e l'app unica alla seconda (una libreria sola). Le parti del disegno che ne dipendevano sono rifatte, con le
+stime nuove (`DISEGNO_LETTURA_MAC.md` § 9: la tappa A in un giro; la parità con l'iPad in 7–9, 8–10 con la distribuzione).
 
 **Tre decisioni del maintainer dell'8 novembre 2026**, registrate all'apertura del giro «app unica per Mac, tappa A»
 (2026-11-08):
