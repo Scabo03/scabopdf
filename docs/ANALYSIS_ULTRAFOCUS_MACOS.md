@@ -366,6 +366,11 @@ iCloud+ADP nel container Drive).
 
 ### 5. L'officina macOS (area 3)
 
+> *Nota (2026-11-08):* questa sezione non parla di due app sul Mac, ma descrive l'officina come utensile a sé, accanto
+> all'app di lettura dell'iPad. Dall'8 novembre sul Mac c'è **un'app sola, ScaboPDF per Mac**: l'app dell'iPad più il
+> pannello dei modelli, con l'officina fusa dentro come pannello e come motore della lettura migliore
+> (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisioni 8-10, con la nota sul fraintendimento delle «due app»).
+
 **Com'è fatta.** Non è un port dell'app di lettura: è un **utensile di
 rielaborazione** che riusa `ScaboCore` e aggiunge tre pezzi — (1) un **estrattore
 Mac** conforme a `PdfExtracting`, (2) il **modello locale** (scelto al gate,

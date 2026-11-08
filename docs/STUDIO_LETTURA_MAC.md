@@ -20,11 +20,22 @@
 > decisioni del maintainer del 2026-11-07 (modalità automazione una volta sola; stesso pacchetto `ScaboMac`) sono in
 > `LAYER2_PRODUCT_DECISIONS.md` § 12.16. Dove questo studio stima i costi (§ 7: 4–6 giri la lettura minima, 10–14 la
 > parità) prevale la stima del disegno (2–3 la minima; 11–12 la parità con l'iPad, 12–13 con la distribuzione).
+>
+> **Corretto l'8 novembre 2026: un fraintendimento.** Questo studio, come gli altri documenti da ottobre, dà per deciso che
+> sul Mac ci siano due app, l'officina e un'app di lettura (qui sotto la decisione 1, e nel corpo § 0 e § 6.2). Era
+> sbagliato: «app diverse» voleva dire i due prodotti per Apple, mobile e Mac, con record App Store distinti. Sul Mac c'è
+> **un'app sola, ScaboPDF per Mac**: l'app dell'iPad con importazione, libreria, Home e lettura, più il pannello dei
+> modelli; l'officina vi si fonde come pannello e come lettura migliore; l'app importa PDF e atti AKN da sé con la catena
+> condivisa (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisioni 8-10, e la nota sul fraintendimento con la sua origine). Ciò
+> che lo studio dice di VoiceOver, dei contenitori, dei rotori e delle note resta valido; le parti che dipendevano dalle
+> due app portano una riga «Superato». Le stime prevalenti sono quelle del disegno rifatto
+> (`docs/DISEGNO_LETTURA_MAC.md` § 9).
 
 Il 20 ottobre il maintainer ha deciso:
 
 1. **La lettura sul Mac è un'app nativa separata dall'officina, costruita a tappe; Catalyst resta solo uno strumento di
-   laboratorio.**
+   laboratorio.** *Riscritta l'8 novembre* (`LAYER2_PRODUCT_DECISIONS.md` § 12.16): la lettura è nativa e a tappe, dentro
+   l'app unica ScaboPDF per Mac; «separata dall'officina» era il fraintendimento.
 2. **I contenitori si tengono dove migliorano la funzionalità e l'efficienza dell'app**: navigarli è parte normale di
    VoiceOver sul Mac, anche nelle impostazioni di sistema, e non è un ostacolo in più; si evitano solo gli annidamenti che
    non servono a nulla.
@@ -69,6 +80,8 @@ un'eventuale app di lettura — e un record App Store nuovo per il Mac (decision
 studio, perché VoiceOver di macOS è un mondo diverso: tasto VO, interazione dentro e fuori dai gruppi, rotore, navigazione per
 testo, Commander con script, Attività, dizionario AppleScript, tastiera come strumento principale. L'utenza sono ciechi spesso
 poco pratici.
+
+> **Superato** (correzione dell'8 novembre 2026, in testa): non due app Mac separate; sul Mac c'è un'app sola, ScaboPDF per Mac, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro. Il record App Store nuovo per il Mac (decisione 3) resta: è il secondo prodotto.
 
 **Le sei domande** sono le sezioni da 1 a 6; la 7 raccoglie le fonti, la 8 i residui.
 
@@ -678,6 +691,9 @@ non come prodotto**; lo strato 1 del confronto automatico si costruisce subito, 
    prova n. 4 chiude la questione per entrambe.
 4. **Due app Mac è già deciso** (LAYER2 § 12.12): officina nativa più lettura. Una lettura nativa condivide con l'officina
    pacchetto, catena, annunciatore, stile e distribuzione; una Catalyst porterebbe sullo stesso Mac due app di due mondi.
+
+   > **Superato** (correzione dell'8 novembre 2026, in testa): due app Mac non erano decise; c'è un'app sola, e la lettura nativa nasce dentro di essa. Catalyst resta solo uno strumento di laboratorio (decisione 1).
+
 5. **Il costo nativo è quello già stimato in MAC_BASE, letto per tappe**: 4–6 giri per la lettura minima (la riga «lettura
    accessibile» di MAC_BASE § 2), 10–14 per la parità (12–16 meno lo split screen), +2–3 per la Forma C. Non è poco; è noto, e
    produce un'app utile dalla prima tappa **[LAB: MAC_BASE § 2 + DEDOTTO]**.

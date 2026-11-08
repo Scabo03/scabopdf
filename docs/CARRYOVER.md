@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.56 (8 novembre 2026, giro «app unica per Mac, tappa A», livello di verifica medio, nessuna build, **IN CORSO** sul ramo `feat/mac-app-unica-tappa-a`: registrate in LAYER2 § 12.16 le tre decisioni del maintainer dell'8 novembre — **sul Mac c'è un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro; «app diverse» vuol dire i due prodotti per Apple, mobile e Mac; l'app Mac importa PDF e atti AKN da sé con la catena condivisa — e corretto il fraintendimento delle «due app sul Mac» ovunque compariva, con la sua origine (§ 12.12, decisione 4 del 16 ottobre). Vedi lo STATO qui sotto.)
 > Versione: 2.55 (8 novembre 2026, giro «disegno della lettura per Mac», livello di verifica leggero, nessuna build, solo documenti, **CONCLUSO**: registrate le due decisioni del maintainer del 7 novembre in LAYER2 § 12.16 (modalità automazione attivata una volta sola; app di lettura nello stesso pacchetto `ScaboMac`); **il disegno dello scheletro dell'app di lettura** in `docs/DISEGNO_LETTURA_MAC.md` — otto domande con le prove, vista AppKit con un gruppo solo di elementi d'accessibilità virtuali, parlato tutto da ScaboCore `ReadingSpeech` e descrizione della vista identica al byte a quella del modulo su 30.407 elementi, gancio del fuoco per il segnale delle note, rotori e azioni del modulo duplicate nel menu «Lettura», pacchetto e piano a tappe (2–3 giri la lettura minima, 11–12 la parità con l'iPad, 12–13 con la distribuzione) — tre prototipi di laboratorio (13 prove in processo verdi, cinque misure da fuori nella modalità automazione più una con l'API C d'accessibilità), revisione indipendente con tredici rilievi corretti, due domande di prodotto poste al maintainer e tre prove d'orecchio che restano. Vedi lo STATO del 2026-11-08.)
 > Versione: 2.54 (7 novembre 2026, giro «fondamenta della lettura per Mac», livello di verifica medio, iOS 27, nessuna build, **CONCLUSO**: le decisioni del maintainer sulla lettura per Mac in LAYER2 § 12.16 e lo studio nel repo; la fonte unica del parlato in ScaboCore, usata dalla vista dell'iPad; la rete sul parlato e il confronto automatico fra la lettura dell'iPad e quella del Mac, identiche sui 52 volumi e sui tre documenti di studio. Vedi lo STATO qui sotto.) Versione precedente: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti, **CONCLUSO**: **prima parte con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); **seconda parte con la build 64** su TestFlight (sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; i tre documenti del giro diventano volumi stabili della rete dei documenti di studio). Vedi i due STATO qui sotto.)
 > Versione: 2.52 (6 novembre 2026, giro «cure mirate per lo studio», livello di verifica pieno, **CONCLUSO** con la **build 62** su TestFlight: due documenti di studio del maintainer curati con regole accese solo dalla loro impronta (registro `TargetedCures`, LAYER2 § 0-ter, `docs/CURE_MIRATE.md`), letture di tutti i 52 volumi del banco identiche al byte su iOS 26.5 e 27, offerta «Lettura migliore disponibile» solo ai due documenti; prova alla cieca su un volume ignoto, giudicato senza cure. Ambiente: Xcode 27.2. Vedi lo STATO del giro qui sotto.)
@@ -106,6 +107,23 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Giro «app unica per Mac, tappa A»: il fraintendimento delle due app corretto, il disegno rifatto, la prima versione di ScaboPDF per Mac (nessuna build) — 2026-11-08 — IN CORSO
+
+**Partenza:** `358617b` (main = origin, build 64 su TestFlight; la prossima build resta la 65, non usata). **Ramo:**
+`feat/mac-app-unica-tappa-a`, pushato a ogni voce conclusa. Livello di verifica medio. Referto:
+`~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_APP_UNICA_TAPPA_A.md`.
+
+- **Decisioni del maintainer dell'8 novembre** (LAYER2 § 12.16, 8-10): sul Mac c'è un'app sola, ScaboPDF per Mac, l'app
+  dell'iPad con importazione, libreria, Home e lettura, più il pannello dei modelli; l'officina vi si fonde come pannello e
+  come lettura migliore; «app diverse» significa due prodotti per Apple, mobile e Mac, con record App Store distinti; l'app
+  Mac importa PDF e atti AKN da sé con la stessa catena condivisa dell'iPad.
+- **Il fraintendimento corretto**: nato dalla decisione 4 del 16 ottobre (LAYER2 § 12.12, «due app separate … per non
+  mescolare lavoro e lettura»), passato nelle decisioni 1 e 7 di § 12.16 (riscritte, con la traccia di cosa dicevano), nello
+  studio (testa e due righe «Superato»), in MAC_BASE (testa e § 7), con una nota in ANALYSIS_ULTRAFOCUS_MACOS § 5, nel
+  disegno e in questo CARRYOVER (note negli STATO del 16 ottobre pomeriggio, del 7 e dell'8 novembre).
+
+---
+
 ## ▶ STATO — Giro «disegno della lettura per Mac»: lo scheletro dell'app di lettura, con le prove dei prototipi (solo documenti, nessuna build) — 2026-11-08
 
 **Partenza:** `cc905ed` (main = origin, build 64 su TestFlight; la prossima build resta la 65, non usata). Solo documenti su
@@ -117,6 +135,8 @@ verifica leggero. Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_DIS
   dal maintainer — attivata il 2026-11-08 con `automationmodetool enable-automationmode-without-authentication`, verificata con
   un test d'interfaccia sull'officina senza tasti sintetici — così la misura dei contenitori da fuori entra nel confronto
   automatico; l'app di lettura nasce nello stesso pacchetto `ScaboMac`, manifesto unico, nessuna duplicazione.
+  *[Corretto l'8 novembre: non un'app di lettura accanto all'officina, ma un'app sola, ScaboPDF per Mac, con l'officina
+  fusa dentro; LAYER2 § 12.16, decisioni 8-10 e nota sul fraintendimento.]*
 - **Il disegno** (`docs/DISEGNO_LETTURA_MAC.md`, documento di riferimento di lungo periodo): vista **AppKit** con la barra degli
   strumenti di sistema e **un gruppo solo «Testo del documento»** i cui figli sono elementi d'accessibilità virtuali
   (`NSAccessibilityElement`), uno per blocco di granularità, tutti in albero (il servizio d'accessibilità ne consegna 30.407
@@ -150,6 +170,8 @@ verifica leggero. Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_DIS
 - **Decisioni per il maintainer** (nel referto, § 6): le due domande di prodotto (importazione nell'app di lettura: inclinazione
   «solo letture dell'officina»; libreria condivisa: inclinazione «gruppo di app `<team>.scabopdf`, con l'apertura di un
   `.scabolettura` sempre possibile»), la scorciatoia dei titoli sul Mac, il predefinito delle note alla tappa A.
+  *[Le due domande di prodotto sono superate l'8 novembre: nascevano dal fraintendimento delle due app; l'app unica importa
+  da sé e ha una libreria sola (LAYER2 § 12.16, decisioni 8-10).]*
 - **Prove d'orecchio che restano** (DISEGNO § 10, otto minuti): T1 cosa dice VoiceOver di un elemento e dell'ultimo fuori
   finestra; T2 il gancio del fuoco (si legge dal diario); T3 rotori e azioni come li mostra VoiceOver.
 - **Regole fisse da questo giro**: la misura dei contenitori da fuori (XCUITest nella modalità automazione) entra nelle reti di
@@ -199,6 +221,7 @@ veloce e cancellato in locale e su origin. Livello di verifica medio, iOS 27 sol
 - **Prossima tappa**: lo scheletro dell'app di lettura del Mac (referto § 6: nello stesso pacchetto ScaboMac, gruppo del testo
   con elementi foglia, rotori e azioni dal modulo duplicati nei menu, annuncio a voce delle note; terza fonte del confronto
   descritta dentro il processo). Due decisioni al maintainer nel referto § 8.
+  *[Corretto l'8 novembre: la lettura non è un'app a parte, nasce dentro l'app unica ScaboPDF per Mac; LAYER2 § 12.16.]*
 
 ## ▶ STATO — Giro «rifiniture e cure per capacità», seconda parte: cure per capacità dai difetti del volume della prova alla cieca, offerta a tutti e soli i libri che cambiano, build 64 — 2026-11-07
 
@@ -708,7 +731,9 @@ volumi: NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAM
 (1) le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF, come già fanno il Mac, il runner e gli atti AKN:
 la lettura deve essere la stessa chiunque l'abbia preparata; (2) la ricucitura fra pagine sul Mac resta spenta finché il
 conteggio di questo giro non mostra casi che l'iPad non copre; (3) il record App Store del Mac sarà un record nuovo, da
-aprire solo quando il Mac andrà distribuito; (4) sul Mac due app separate, l'officina e un'eventuale app di lettura; la
+aprire solo quando il Mac andrà distribuito; (4) sul Mac due app separate, l'officina e un'eventuale app di lettura
+*[fraintendimento corretto l'8 novembre: sul Mac c'è un'app sola, ScaboPDF per Mac; «app diverse» voleva dire i due
+prodotti per Apple, mobile e Mac — LAYER2 § 12.12 e § 12.16]*; la
 vista di lettura per Mac sarà oggetto di uno studio dedicato su VoiceOver di macOS, con documentazione e prove (non è
 materia di questo giro). Le tre decisioni aperte del referto del giro Mac (§ 11) sono così chiuse.
 

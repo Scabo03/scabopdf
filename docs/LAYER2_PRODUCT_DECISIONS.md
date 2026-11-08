@@ -1231,6 +1231,11 @@ build 54).** Le tre decisioni qui sopra, rese concrete.
    di lettura per Mac sarà oggetto di uno studio dedicato e approfondito su VoiceOver di macOS, che è molto diverso da
    quello dei dispositivi mobili, con documentazione e prove; non è materia del giro che registra queste decisioni. (Lo
    studio è del 2026-10-20, `docs/STUDIO_LETTURA_MAC.md`; le decisioni che ne seguono sono in § 12.16.)
+   **Corretta l'8 novembre 2026: è un fraintendimento, e questa riga ne è l'origine.** Parlando di app diverse il
+   maintainer intendeva i due prodotti per Apple, l'app mobile e l'app Mac, con record App Store distinti (la decisione 3
+   qui sopra), non due app sullo stesso Mac. Sul Mac c'è **un'app sola, ScaboPDF per Mac**: l'app dell'iPad più il pannello
+   dei modelli, con l'officina fusa dentro (§ 12.16, decisioni 8-10 e la nota sul fraintendimento). Lo studio su VoiceOver
+   di macOS resta valido.
 
 **Esito del giro per le decisioni 1 e 2 (2026-10-16).** La decisione 1 è realizzata nella build 55 (§ 10.6). Per la
 decisione 2, il conteggio (`docs/CONTEGGIO_NOTE_SPEZZATE.md`, giudicato contro la pagina stampata su un campione di 202
@@ -1399,14 +1404,17 @@ Decisioni del maintainer per l'ultimo giro su titoli e testatine prima della fas
    documentare e non da inseguire con regole sul testo. (Esito del giro: vedi `TESTATINE_MISURA_STRUTTURA.md` § 6, la
    separazione delle righe fuse nell'estrattore lo tocca senza regole sul testo.)
 
-### 12.16 La lettura sul Mac: cinque decisioni del maintainer (2026-10-20)
+### 12.16 La lettura sul Mac: le decisioni del maintainer (dal 2026-10-20)
 
 Decisioni del maintainer del 20 ottobre 2026 sulla lettura per Mac, registrate all'apertura del giro «fondamenta della lettura
 per Mac» (2026-11-07). Lo studio su VoiceOver di macOS chiesto dalla decisione 4 del 2026-10-16 (§ 12.12) è in
-`docs/STUDIO_LETTURA_MAC.md`, che in testa riporta queste decisioni e indica le sue parti superate.
+`docs/STUDIO_LETTURA_MAC.md`, che in testa riporta queste decisioni e indica le sue parti superate. Le decisioni 1 e 7 sono
+riscritte l'8 novembre 2026 per correggere un fraintendimento (la nota dopo la decisione 10).
 
-1. La lettura sul Mac è **un'app nativa separata dall'officina, costruita a tappe**; Catalyst resta solo uno strumento di
-   laboratorio.
+1. La lettura sul Mac è **nativa e costruita a tappe**, dentro l'app unica ScaboPDF per Mac (decisione 8); Catalyst resta
+   solo uno strumento di laboratorio.
+   *Fino all'8 novembre diceva:* «La lettura sul Mac è un'app nativa separata dall'officina, costruita a tappe». La parte
+   «separata dall'officina» era il fraintendimento.
 2. I **contenitori si tengono dove migliorano la funzionalità e l'efficienza dell'app**: navigarli è parte normale di VoiceOver
    sul Mac, anche nelle impostazioni di sistema, e non è un ostacolo in più; si evitano solo gli annidamenti che non servono a
    nulla.
@@ -1431,8 +1439,11 @@ dell'iPad e la catena del Mac danno la stessa lettura, elemento per elemento, sa
    dell'app di lettura: così la misura dei contenitori — l'albero d'accessibilità visto da fuori con i test d'interfaccia — entra
    nel confronto automatico di ogni giro invece di costare tempo d'orecchio. Attivata il 2026-11-08 con
    `automationmodetool enable-automationmode-without-authentication`; Code non chiede né tocca mai la password.
-7. L'**app di lettura nasce nello stesso pacchetto `ScaboMac` dell'officina**, con un manifesto solo e senza duplicazioni di
-   codice; per gli utenti le due app restano separate (decisione 1).
+7. La **lettura nasce nello stesso pacchetto `ScaboMac` dell'officina**, con un manifesto solo e senza duplicazioni di
+   codice: non come una seconda app, ma dentro l'app unica ScaboPDF per Mac (decisione 8).
+   *Fino all'8 novembre diceva:* «L'app di lettura nasce nello stesso pacchetto `ScaboMac` dell'officina, con un manifesto
+   solo e senza duplicazioni di codice; per gli utenti le due app restano separate (decisione 1).» L'ultima frase era il
+   fraintendimento.
 
 **Il disegno (2026-11-08, nessuna build).** Le otto domande di disegno dello scheletro dell'app di lettura hanno risposta in
 `docs/DISEGNO_LETTURA_MAC.md`, con le prove dei prototipi di laboratorio: vista AppKit con un gruppo solo di elementi
@@ -1444,6 +1455,32 @@ Resta da sentire, prima della tappa A, come VoiceOver si comporti davanti a un g
 ripiego disegnato sono i figli finestrati (un giro in più). Le due domande di prodotto che spettano
 al maintainer — se l'app di lettura importi i PDF da sé o apra solo le letture dell'officina; se le due app condividano la
 libreria sul Mac e come, sotto sandbox — sono poste al § 6 di quel documento, con pro, contro e costi, e non sono decise.
+*Superate l'8 novembre:* le due domande nascevano dal fraintendimento qui sotto; la decisione 10 risponde alla prima (l'app
+importa da sé) e l'app unica alla seconda (una libreria sola). Le parti del disegno che ne dipendevano sono rifatte.
+
+**Tre decisioni del maintainer dell'8 novembre 2026**, registrate all'apertura del giro «app unica per Mac, tappa A»
+(2026-11-08):
+
+8. **Sul Mac c'è un'app sola, ScaboPDF per Mac**: l'app dell'iPad con importazione, libreria, Home e lettura, più il
+   pannello dei modelli; l'officina di oggi non è un'app a parte, ma si fonde in quest'app come pannello e come lettura
+   migliore.
+9. **«App diverse» significa due prodotti per Apple**, mobile e Mac, con record App Store distinti, non due app sullo stesso
+   Mac.
+10. **L'app Mac importa i PDF e gli atti AKN da sé**, con la stessa catena condivisa dell'iPad, così la lettura è identica per
+    costruzione.
+
+**Nota sul fraintendimento, perché nessuno ci ricada.** Dalla decisione 4 del 16 ottobre (§ 12.12), registrata come «Sul
+Mac, due app separate: l'officina e, se verrà, un'app di lettura, per non mescolare lavoro e lettura», i documenti hanno
+detto che sul Mac ci sarebbero state due app. Era sbagliato: parlando di app diverse, il maintainer intendeva i due prodotti
+per Apple, l'app mobile, senza pannello dei modelli, e l'app Mac, con il suo record App Store, che il pannello lo ha. Il
+fraintendimento è passato nella decisione 1 del 20 ottobre («separata dall'officina»), nella 7 del 7 novembre («per gli
+utenti le due app restano separate»), nello studio, in `docs/MAC_BASE.md`, nel disegno (un'app di lettura accanto
+all'officina, con due domande di prodotto sui libri) e nel CARRYOVER; dall'8 novembre ciascuno porta la correzione. La
+regola che ne resta: **sul Mac c'è un'app sola, ScaboPDF**, quasi identica a quella dell'iPad — Home, importazione,
+libreria, lettura — più la finestra dei modelli, che è il senso della versione Mac. Chi conosce una delle due app conosce
+l'altra: ciò che non è la finestra in più deve essere quasi identico, così che un utente poco pratico o ipovedente importi un
+PDF e lo legga sul Mac esattamente come sull'iPad. «App diverse», in questo progetto, vuol dire iPad e iPhone da una parte,
+Mac dall'altra.
 
 ---
 
