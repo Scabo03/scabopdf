@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.57 (9 novembre 2026, giro «prove della tappa A», livello di verifica leggero, nessuna build, **CONCLUSO**, ramo `feat/mac-tappa-a-prove` unito in main con un avanzamento rapido e cancellato: diagnosi e cura dei due difetti delle prove d'orecchio della tappa A — **T1 rossa**, «ScaboPDF non risponde» sul volume più grande: VoiceOver, a ogni ingresso e a ogni passo, interrogava tutti i 47.424 figli del gruppo (diari, registro di VoiceOver «occupato» da 5,9 a 57,6 s, client da fuori); cura: **figli finestrati** (DISEGNO § 2.3-2.4), preparazione della lettura e diario fuori dal filo principale; **T3**, i salti non spostavano il cursore: la vista non diceva quale elemento ha il fuoco; cura: `accessibilityFocusedUIElement` e un solo punto per i salti (§ 5.2), con un test da fuori che fallisce sull'app della tappa A; **T2 verde** dal diario; T1 e T3 da rifare con `prove_tappa_a/prove_orecchio/prova.sh`; l'iPad non cambia).
 > Versione: 2.56 (8 novembre 2026, giro «app unica per Mac, tappa A», livello di verifica medio, nessuna build, **CONCLUSO**, ramo `feat/mac-app-unica-tappa-a` unito in main con un avanzamento rapido e cancellato: registrate in LAYER2 § 12.16 le tre decisioni del maintainer dell'8 novembre — **sul Mac c'è un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro; «app diverse» vuol dire i due prodotti per Apple; l'app Mac importa PDF e atti AKN da sé con la catena condivisa — e corretto ovunque il fraintendimento delle «due app sul Mac», con la sua origine (§ 12.12, decisione 4 del 16 ottobre); disegno rifatto (`DISEGNO_LETTURA_MAC.md` § 6, § 8, § 9, § 10); costruita la **prima versione di ScaboPDF per Mac** (Home, importazione con la catena condivisa, «Libro già presente», lettura AppKit col parlato tutto da `ReadingSpeech`, menu «Lettura», finestra «Modelli e officina»), con la logica senza interfaccia dell'iPad spostata in ScaboChain; **vista del Mac identica alla vista dell'iPad su 55 libri su 55** (rete nuova `rete_vista_mac.sh`), quota dell'estrattore di macOS documentata (5 libri, 6 pagine); iPad identico (catena e runner al byte, rete sul parlato con la vista vera, cure mirate, suite su iPad e iPhone iOS 27); revisione indipendente con 22 rilievi, nessuno bloccante; tre prove d'orecchio da fare e tre decisioni per il maintainer. Vedi lo STATO qui sotto.)
 > Versione: 2.55 (8 novembre 2026, giro «disegno della lettura per Mac», livello di verifica leggero, nessuna build, solo documenti, **CONCLUSO**: registrate le due decisioni del maintainer del 7 novembre in LAYER2 § 12.16 (modalità automazione attivata una volta sola; app di lettura nello stesso pacchetto `ScaboMac`); **il disegno dello scheletro dell'app di lettura** in `docs/DISEGNO_LETTURA_MAC.md` — otto domande con le prove, vista AppKit con un gruppo solo di elementi d'accessibilità virtuali, parlato tutto da ScaboCore `ReadingSpeech` e descrizione della vista identica al byte a quella del modulo su 30.407 elementi, gancio del fuoco per il segnale delle note, rotori e azioni del modulo duplicate nel menu «Lettura», pacchetto e piano a tappe (2–3 giri la lettura minima, 11–12 la parità con l'iPad, 12–13 con la distribuzione) — tre prototipi di laboratorio (13 prove in processo verdi, cinque misure da fuori nella modalità automazione più una con l'API C d'accessibilità), revisione indipendente con tredici rilievi corretti, due domande di prodotto poste al maintainer e tre prove d'orecchio che restano. Vedi lo STATO del 2026-11-08. *[«App di lettura» corretto l'8 novembre: la lettura sta dentro l'app unica ScaboPDF per Mac; versione 2.56.]*)
 > Versione: 2.54 (7 novembre 2026, giro «fondamenta della lettura per Mac», livello di verifica medio, iOS 27, nessuna build, **CONCLUSO**: le decisioni del maintainer sulla lettura per Mac in LAYER2 § 12.16 e lo studio nel repo; la fonte unica del parlato in ScaboCore, usata dalla vista dell'iPad; la rete sul parlato e il confronto automatico fra la lettura dell'iPad e quella del Mac, identiche sui 52 volumi e sui tre documenti di studio. Vedi lo STATO qui sotto.) Versione precedente: 2.53 (6-7 novembre 2026, giro «rifiniture e cure per capacità», livello di verifica pieno, in due parti, **CONCLUSO**: **prima parte con la build 63** su TestFlight (le due cure mirate dei documenti di studio rifinite: punto dopo i richiami, numeri di pagina nelle note, citazioni, riquadri, bibliografie, capoversi, salto ampliato; ogni altro libro identico al byte); **seconda parte con la build 64** su TestFlight (sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; i tre documenti del giro diventano volumi stabili della rete dei documenti di studio). Vedi i due STATO qui sotto.)
@@ -111,6 +112,67 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - Le altre regole fisse restano dove sono: perimetro dei file (`~/.claude/CLAUDE.md`), nessun testo dei volumi in repo,
   commit, test o referti (controllo prima di ogni push), commit e push a fine voce (`CLAUDE.md`), caricamento su TestFlight
   solo se chiesto (`docs/RELEASE_TESTFLIGHT.md`), regole di prudenza permanenti del 2026-10-05 (STATO «Linea Mac aperta»).
+  Precisato il 2026-11-09: il controllo del testo dei volumi stampa i riscontri **sopra** il riassunto, e va letto per intero;
+  il push parte nello stesso comando solo se il riassunto dice zero (quel giorno un push è partito con una frase italiana
+  comune segnalata, ed è servito un push forzato protetto sul ramo del giro).
+
+---
+
+## ▶ STATO — Giro «prove della tappa A»: diagnosi e cura dei due difetti delle prove d'orecchio, app rifatta, T1 e T3 da rifare (nessuna build) — 2026-11-09 — CONCLUSO
+
+**Partenza:** `2fbc52f` (main = origin, build 64 su TestFlight; la prossima build resta la 65, non usata). **Ramo:**
+`feat/mac-tappa-a-prove`, pushato a ogni voce, unito in main con un avanzamento rapido a verifiche verdi e revisione chiusa,
+poi cancellato in locale e sul remoto. Livello di verifica leggero. Referto:
+`~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_PROVE_TAPPA_A.md`; laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/prove_tappa_a/`.
+
+- **Il resoconto del maintainer** (prove sull'app vera con VoiceOver, 9 novembre): T1 non ha funzionato («ScaboPDF non
+  risponde» fin da subito); T2 bene; T3 bene salvo i salti «Vai alla nota» e «Vai al testo del richiamo», che c'erano nel
+  menu delle azioni ma non portavano il cursore.
+- **T1, causa** (campo): non l'importazione — gira su una coda a parte e un client da fuori misura il polso del filo
+  principale a mediana 0,1 ms — ma VoiceOver: all'ingresso nel gruppo legge ruolo, cornice e sette attributi di ognuno dei
+  47.424 figli (426.818 richieste, ritmo calante dalla sua parte: l'app le serve in 5 s a ritmo costante), e a ogni passo
+  richiede i figli e la cornice di ognuno (diario T2); il registro di sistema lo dà «occupato» da 5,9 a 57,6 s, fino all'uscita.
+  **Cura** (`d43faad`, `d311f65`, `b633796`): figli finestrati (DISEGNO § 2.3-2.4: elemento 0, finestra di 401 attorno al fuoco, ultimo
+  elemento; ricentro a 50 dal bordo; voce del rotore fuori finestra fra i figli prima che VoiceOver ci si posi); preparazione
+  della lettura (modello del parlato, indice delle ancore) su un filo a parte; diario delle prove scritto su un filo a parte,
+  con la sentinella del filo principale e le fasi dell'apertura. Misure da fuori sul volume più grande: 402 figli; giro
+  d'apertura da 426.818 richieste in 5,0 s a 3.620 in 0,06 s; passo da 480 a 8 ms; percorso integrale 0 → 47.423 senza salti
+  né vicoli ciechi, VO+Fine e VO+Inizio giusti; fermo del filo principale all'apertura da 1,9 s a nessuno. Restano tre lavori
+  della libreria condivisa con l'iPad sul filo principale (attribuzione dedotta dal momento): registrazione dopo l'importazione
+  0,3 s, scrittura della cache alla prima riapertura di un volume enorme 0,3 s, riancoraggio della posizione dopo la
+  rielaborazione di un libro già letto 1,2 s; e un fermo di 0,26–0,45 s all'avvio dell'app.
+- **T3, causa** (fonte e campo): VoiceOver sul Mac, all'avviso del fuoco cambiato, chiede dall'alto della finestra l'elemento
+  col fuoco e si sposta solo se è cambiato (revisione di Chromium 2210763002); la vista non ridefiniva
+  `accessibilityFocusedUIElement` (AppKit `NSAccessibility.h`), e l'elemento col fuoco dell'app restava il gruppo. **Cura**
+  (`8e1b21c`): la vista dice l'elemento col fuoco; un solo punto per i salti, `spostaFuoco` (azioni, ⌘J, titoli, «Salta la
+  risorsa», frecce; domani ricerca e «Torna dove leggevi»). Test da fuori `FuocoDaFuoriTests` sull'app vera: verde, e sull'app
+  della tappa A fallisce col fuoco dell'app sul gruppo.
+- **T2** (campo, diario): 23 passi, 23 arrivi al gancio; dopo aver tolto «Annuncia le note a voce», le quattro note raggiunte
+  hanno dato il segnale all'arrivo, prima del testo. Proposta al maintainer: segnali predefiniti sul Mac come sull'iPad.
+- **Pulizia a sé** (`5f726d4`): `righeVisibili` trappolava su una vista senza finestra (rettangolo non finito), emerso dal test.
+- **Revisione indipendente** (sotto-agente nuovo, sola lettura): 11 rilievi, uno bloccante — la copia dell'app per le prove
+  d'orecchio era precedente all'ultima correzione: sostituita con l'app finale (eseguibile, impronta SHA-256 `4e7dfbe5783d335b…`)
+  e misure rifatte su quella —; corretti gli altri del ramo (`b633796`: righe in vista lontane dal fuoco fra i figli; apertura
+  asincrona con richieste superate, libro eliminato e primo piano; una conferma sola di VoiceOver dopo un salto; finestra
+  piccola per le prove; test da fuori più robusti e percorso finestrato da fuori; messaggio di `d43faad` riscritto senza
+  esagerazioni), misurato il libro già letto, dichiarato il rischio del rotore con novemila voci (VoiceOver legge subito tutte le
+  voci di VO+U: diario T3; l'app le serve in circa 1,3 s).
+- **Verifiche** (campo): iPad identico — nessuna riga sotto `app/ios`; letture della catena dell'iPad al codice del ramo sulle
+  catture di iOS 27 contro la build 64: 275/275 al byte (55 libri × 5 forme); `rete_parlato.sh`: 192/192 al byte (630.124
+  elementi), anche a VoiceOver acceso, prova al contrario trovata; reti delle cure mirate e delle annotazioni non necessarie (né
+  catena né ancore toccate). Mac — `rete_vista_mac.sh` al codice finale: vista identica all'iPad 55/55, app che importa da sé
+  50/55 con le 5 differenze dell'estrattore della tappa A; pacchetto ScaboMac: `ScaboMacLetturaTests` 33 (1 saltato col motivo),
+  `ScaboMacKitTests` 68 (3 saltati); test d'interfaccia 11, 6 passati e 5 saltati col motivo; i due test da fuori verdi
+  sull'app finale e rossi su quella della tappa A; misura da fuori del runner sul volume più grande: 402 figli, l'ultimo è
+  l'ultimo elemento, profondità 3. Tempi e memoria sul volume più grande prima → dopo: importazione 72,0 → 66–72 s, memoria
+  massima 742 → 741 MB; dalla cache 1,6 → 1,8 s, 251 → 253 MB.
+- **Decisioni per il maintainer** (referto, § 10): (1) i segnali delle note per impostazione predefinita sul Mac come
+  sull'iPad, note a voce come scelta: inclinazione sì, nella tappa B dopo T1 e T3 rifatte; (2) i tre lavori della libreria
+  condivisa sul filo principale (fino a 1,2 s): inclinazione toglierli insieme per iPad e Mac nel controllore condiviso
+  dell'importazione e dell'apertura (decisione 3 della tappa A), con la build dell'iPad.
+- **Prove d'orecchio da rifare**: T1 e T3, `~/Developer/scabopdf-mac-lab/lettura_mac/prove_tappa_a/prove_orecchio/prova.sh 1|3`,
+  istruzioni in DISEGNO § 10; diari, momenti di VoiceOver occupato ed eventuali rapporti di blocco in `prove_orecchio/diari/`.
+- **Dove riprendere**: leggere i diari di T1 e T3 rifatte; poi la tappa B (DISEGNO § 9) con le decisioni del referto.
 
 ---
 

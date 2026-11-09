@@ -31,6 +31,17 @@
 
 ## 0. In due parole
 
+> **Aggiornato il 9 novembre 2026, dopo le prove d'orecchio della tappa A** (giro «prove della tappa A», referto
+> `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_PROVE_TAPPA_A.md`). **T1 è stata rossa**: sul volume più grande VoiceOver ha
+> detto «ScaboPDF non risponde» per tutta la prova. La causa è provata (diari, registro di VoiceOver, client da fuori): non
+> l'importazione, ma VoiceOver che a ogni ingresso e a ogni passo interroga **tutti** i figli del gruppo (§ 2.3); il filo
+> principale aveva in più un fermo di 1,9 s all'apertura della finestra, ora tolto. Il ripiego disegnato è fatto: **figli
+> finestrati** (§ 2.3-2.4), con il percorso integrale misurato da fuori senza vicoli ciechi.
+> **T2 è stata verde**: il gancio del fuoco riceve un arrivo per ogni passo e i segnali partono all'arrivo (§ 4.3). **T3 è
+> stata verde salvo i salti**, che non spostavano il cursore: ora la vista dice quale elemento ha il fuoco, il modo che
+> VoiceOver del Mac onora (§ 5.2). T1 e T3 sono da rifare sull'app nuova (§ 10). Il resto di questa sezione descrive il
+> disegno com'era alla tappa A.
+
 La lettura sul Mac è una **finestra AppKit** con due contenitori, la barra degli strumenti di sistema e **un gruppo solo,
 «Testo del documento»**, i cui figli sono gli elementi della lettura: **oggetti d'accessibilità virtuali** (`NSAccessibilityElement`,
 nessuna vista dietro), uno per blocco di granularità, costruiti tutti e una volta sola quando il primo client li chiede, con
@@ -141,6 +152,9 @@ sono tre.
 
 ### 2.2 Il flusso continuo: un gruppo, tutti gli elementi
 
+> **Dal 9 novembre 2026** questo vale per i libri fino a 401 elementi; un libro più lungo espone i **figli finestrati** di
+> § 2.3-2.4 (la prova T1 ha fatto cadere il gruppo unico con tutti i figli). Il gruppo resta uno, e resta uno il flusso.
+
 Il gruppo «Testo del documento» (ruolo `group`, etichetta e identificatore nostri) restituisce come figli **tutti** gli
 elementi del libro, in ordine di lettura, sia da `accessibilityChildren` sia da `accessibilityChildrenInNavigationOrder`
 («l'array degli elementi figli in ordine per la navigazione lineare», macOS 10.13+, fonte: Apple,
@@ -205,7 +219,49 @@ espone come figli una finestra di qualche centinaio di elementi attorno al fuoco
 bordo e lo annuncia con `layoutChanged`, mentre i rotori e i salti continuano a lavorare sull'indice completo del modulo e
 portano il fuoco dove serve ricentrando la finestra. Costa un giro in più (nella tappa B del piano rifatto, § 9) e cambia solo § 2.2.
 
+**Esito di T1 (9 novembre 2026): rossa, e la causa è questa** (campo). Sul volume più grande, importato a 400 caratteri
+(47.424 elementi), VoiceOver ha detto «ScaboPDF non risponde» fin dall'apertura del libro, qualunque cosa il maintainer
+facesse. Il diario delle richieste mostra che, appena la finestra si apre, VoiceOver chiede i figli del gruppo, il ruolo di
+ognuno, di nuovo i figli, la cornice di ognuno e poi sette attributi di ognuno (ruolo, descrizione, ruolo, valore, cornice,
+valore, descrizione): 426.818 richieste, con il ritmo che cala da circa 7.000 a circa 500 elementi al secondo man mano che
+l'indice cresce, e l'ultimo elemento raggiunto a 56,5 secondi; il diario della prova T2 mostra che a **ogni passo** VoiceOver
+chiede di nuovo i figli e la cornice di **ognuno** (sul libro grande: 47.424 richieste per passo). Il registro di sistema di
+VoiceOver lo dà «occupato» senza interruzione da 5,9 a 57,6 secondi dopo l'apertura, fino all'uscita: è ciò che si sentiva.
+L'importazione non c'entrava: un client da fuori che rifà le stesse richieste nello stesso ordine, senza VoiceOver, misura il
+polso del filo principale ogni decimo di secondo con mediana 0,1 ms per tutta l'importazione, e l'app serve le 426.818
+richieste in 5,0 secondi a ritmo costante (il calo di ritmo sta dunque in VoiceOver, dedotto); un passo come quelli di
+VoiceOver costa 480 ms solo per servire le cornici. Il filo principale aveva però due fermi: 1,9 s all'apertura della finestra
+(modello del parlato e indice delle ancore costruiti lì) e, durante la prova, le pause del diario stesso, riscritto per intero
+sul filo principale ogni due secondi (fino a 0,47 s ciascuna; uno strumento delle prove, non l'app dell'utente). Il rischio
+previsto da questo paragrafo si è avverato, e **il ripiego è fatto** (§ 2.4).
+
 ### 2.4 Quando il flusso supera la finestra
+
+> **I figli finestrati (dal 9 novembre 2026, codice `ScaboMacLettura/Lettura/VistaLettura.swift`).** Un libro di più di 401
+> elementi espone come figli del gruppo, in ordine di lettura: il **primo** elemento del libro, una **finestra di 401**
+> attorno al fuoco e l'**ultimo** elemento del libro. Così VO+Inizio e VO+Fine portano al primo e all'ultimo elemento del
+> libro, non della finestra. La finestra si **ricentra quando il fuoco arriva a 50 elementi dal suo bordo** (il gancio del
+> fuoco, § 4, dice dove è il cursore): passo dopo passo i figli restano gli stessi per un centinaio e mezzo di passi, e il
+> seguente del cursore è sempre fra i figli; nessun avviso alla svolta, perché VoiceOver richiede i figli a ogni passo (diario
+> T2), e un `layoutChanged` gli farebbe ripetere l'elemento. Gli elementi restano **tutti costruiti, una volta**: i rotori e i
+> salti li raggiungono dovunque e la finestra si sposta con il fuoco; la voce di un rotore che VoiceOver dice mentre sta fuori
+> dalla finestra entra fra i figli coi suoi vicini (VoiceOver chiede i figli del gruppo prima di posarsi sul bersaglio, diario
+> T3) finché il fuoco non arriva; leggere i figli già esposti non li cambia mai (un client che li legge tutti, come VoiceOver
+> all'ingresso, li ritrova uguali). Se la vista è stata scorsa lontano dal fuoco (trackpad, barra, Pagina giù) e la riga del
+> fuoco non è in vista, anche le righe in vista sono figli. Un libro fino a 401 elementi espone tutti i figli, come alla
+> tappa A. Per le prove, l'argomento di lancio `--raggio-finestra <n>` restringe la finestra a 2n+1 elementi: con 4, il libro
+> sintetico di 24 elementi è finestrato e la svolta si sente in un minuto. **Misure da fuori sul volume più grande** (campo,
+> client con l'API C da un processo fidato, senza VoiceOver, app finale del giro): 402 figli, gli stessi a ogni passo; il giro
+> d'apertura che VoiceOver fa sul gruppo passa da 426.818 richieste in 5,0 s a 3.620 in 0,06 s; un passo come quelli di
+> VoiceOver da 480 a 8 ms; il percorso integrale col solo passo di navigazione (figli, seguente, fuoco) va dall'elemento 0 al
+> 47.423 in 47.423 passi, nessun salto, nessun vicolo cieco, al più 403 figli; VO+Fine arriva al 47.423 e da lì si torna indietro
+> di uno alla volta; VO+Inizio arriva allo 0 e da lì si va avanti di uno alla volta. Lo stesso percorso, da fuori sull'app vera
+> col libro sintetico e la finestra piccola, è un test del pacchetto (`FuocoDaFuoriTests`). **Dipende dal gancio**: se il
+> cursore di VoiceOver non desse il fuoco agli elementi (il seguimento del fuoco spento nelle preferenze di VoiceOver), la
+> finestra non si sposterebbe e, dopo al più quattrocento passi dall'apertura, il seguente dell'ultimo elemento della finestra
+> sarebbe l'ultimo elemento del libro: un salto; e un comando di VoiceOver che riporta il cursore al fuoco della tastiera
+> riporterebbe all'elemento d'apertura. Con le impostazioni predefinite il gancio arriva a ogni passo (diario T2, § 4.3); il
+> caso con il seguimento spento non è verificato e resta in § 11.
 
 Gli elementi fuori dalla finestra **esistono nell'albero** e hanno una cornice vera: nel capitolo sintetico l'ultimo
 elemento sta a 914 punti dall'alto con la finestra che finisce a 770, e il client esterno lo trova, ne legge testo e
@@ -405,6 +461,15 @@ Solo T2 (§ 10): dieci elementi col cursore di VoiceOver sul prototipo, poi si l
 arriva AXFocused, e se la riga del fuoco si muove. T2 conferma anche che il diario veda VoiceOver, oggi provato per il
 runner dei test e per un client con l'API C (§ 3.3) e dedotto per VoiceOver.
 
+**Esito di T2 (9 novembre 2026): verde** (campo, diario della prova e resoconto del maintainer, «è andata bene»). VoiceOver
+imposta AXFocused sugli elementi virtuali: 23 passi del cursore, 23 arrivi al gancio, uno per passo (ogni passo è una
+richiesta dei figli del gruppo seguita dall'arrivo del fuoco sull'elemento nuovo; nessun passo senza arrivo). Con «Annuncia le
+note a voce» tolta, tutte e quattro le note raggiunte hanno dato il segnale del loro regime al momento dell'arrivo, prima che
+VoiceOver chiedesse il testo dell'elemento (la richiesta del valore arriva 17–45 ms dopo il gancio sulle note, 4–9 ms sugli
+altri elementi: l'avvio del suono, sul filo principale, la ritarda di qualche decina di millesimi). Il diario vede dunque
+VoiceOver. La scelta di accendere i segnali per impostazione predefinita sul Mac, come sull'iPad, è una decisione del
+maintainer (referto del giro); fino ad allora le note restano a voce.
+
 ## 5. Domanda 4 — Rotori, azioni, tastiera
 
 ### 5.1 I rotori
@@ -449,6 +514,30 @@ esistono.
 | Leggi da qui | gesto VoiceOver | **nessun comando nostro**: VO+A legge dal cursore | decisione 5: niente comandi VoiceOver personalizzati |
 | Testo più grande / più piccolo | ⌘= / ⌘- | ⌘= / ⌘- | tappa dell'aspetto |
 | Chiudi finestra / Annulla | Esc | Esc nelle finestre modali | |
+
+**Come un salto sposta il cursore di VoiceOver (dal 9 novembre 2026).** Alla prova T3 le azioni «Vai alla nota» e «Vai al
+testo del richiamo» c'erano nel menu delle azioni, ma il cursore restava dov'era (resoconto del maintainer; diario: dopo
+l'azione VoiceOver chiede il ruolo del bersaglio e poi rilegge l'elemento di partenza). Spostare il fuoco dell'app e mandare
+l'avviso del fuoco cambiato col bersaglio non basta: VoiceOver sul Mac non si fida dell'avviso, chiede dall'alto della
+finestra quale elemento ha il fuoco e sposta il cursore solo se la risposta è cambiata (fonte: revisione di Chromium
+https://codereview.chromium.org/2210763002/, dove proprio questo è stato aggiunto alla vista di contenuto perché VoiceOver
+seguisse il fuoco). AppKit lo chiede alla vista primo risponditore con `accessibilityFocusedUIElement`, che va ridefinito per
+cercare il fuoco più a fondo («Override this method to do a deeper search … e.g. a NSMatrix would determine if one of its
+cells has the focus», fonte: AppKit, `NSAccessibility.h`); la vista non lo ridefiniva, e l'elemento col fuoco dell'app restava
+il gruppo (campo: misurato da fuori sull'app della tappa A). Ora la vista restituisce l'elemento col fuoco, e **tutti i salti
+passano da un punto solo**, `spostaFuoco`: le azioni, ⌘J, «Intestazione successiva» e «precedente», «Salta la risorsa», le
+frecce della tastiera (che prima spostavano il fuoco senza avviso) e domani i risultati della ricerca e «Torna dove leggevi»;
+la finestra dei figli si ricentra sul bersaglio prima dell'avviso. Se VoiceOver, posandosi sul bersaglio, gli ridà il fuoco
+entro due secondi, è la conferma dello stesso arrivo: un segnale e una posizione sola. I rotori li muove VoiceOver da sé (restituiscono
+l'elemento, VoiceOver ci si posa e gli dà il fuoco). L'altra via documentata, l'avviso `layoutChanged` con gli elementi
+cambiati (fonte: AppKit, `NSAccessibilityConstants.h`: «UI changes require the attention of assistive application»), non dice
+di spostare il cursore, e sul Mac fa ripetere a VoiceOver l'elemento che ha già il fuoco (fonte: osservazione di uno
+sviluppatore, non dello staff, nel forum degli sviluppatori Apple, https://developer.apple.com/forums/thread/790779; non
+verificato qui): senza la risposta giusta sul fuoco non sposterebbe nulla, con la risposta giusta farebbe dire due volte il
+bersaglio; non si usa. **Campo, da fuori** (test `FuocoDaFuoriTests`, l'app vera col libro sintetico, API C da un
+processo fidato): dopo «Vai alla nota», «Vai al testo del richiamo» e la voce «Nota e richiamo» del menu premuta come da VO+M,
+l'elemento col fuoco dell'app è il bersaglio e l'osservatore riceve l'avviso col bersaglio; sull'app della tappa A lo stesso
+test fallisce col fuoco dell'app sul gruppo. Che VoiceOver ora segua è da sentire: T3 rifatta (§ 10).
 
 Le voci del menu «Lettura» dell'app portano i **nomi dei comandi da tastiera dell'iPad** — «Nota e richiamo», «Intestazione
 successiva», «Intestazione precedente» (ScaboChain `ReadingCommandsWording`, usato anche dall'iPad) — e, per la risorsa, il
@@ -684,7 +773,9 @@ Restano le prove d'orecchio e tre decisioni per il maintainer (importazione e mo
 condivisi).
 
 **Tappa B — ciò che l'orecchio sposta, annotazioni, strumenti (1–2 giri).** Gli esiti di T1–T3 (i figli finestrati di
-§ 2.3 se T1 è rossa: un giro in più; i segnali delle note accesi se T2 è verde); segnalibri e tag (⌘B, la finestra dei
+§ 2.3 se T1 è rossa: un giro in più; i segnali delle note accesi se T2 è verde; *9 novembre 2026: T1 rossa, i figli
+finestrati e il salto che sposta il cursore fatti in un giro leggero, «prove della tappa A», con T1 e T3 da rifare; T2 verde,
+i segnali predefiniti attendono la decisione del maintainer*); segnalibri e tag (⌘B, la finestra dei
 segnalibri, i tag), «Strumenti elemento» (⌘E, Conferma/Annulla, Esc), sottolineature solo-vedenti, aspetto (carattere,
 ⌘= / ⌘-, temi); rinomina e referto di elaborazione. *Verifica:* media, con la rete sulle annotazioni.
 
@@ -709,6 +800,40 @@ anticipa ciò che il codice condiviso rende economico; restano intere le parti n
 Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 
 ## 10. Le prove d'orecchio
+
+> **Il 9 novembre 2026** il maintainer ha fatto le tre prove sull'app della tappa A: T1 rossa, T2 verde, T3 verde salvo i
+> salti (esiti in § 2.3, § 4.3, § 5.2). Dopo le cure del giro «prove della tappa A» si rifanno **solo T1 e T3**, sull'app
+> nuova, con lo script del giro: `~/Developer/scabopdf-mac-lab/lettura_mac/prove_tappa_a/prove_orecchio/prova.sh` seguito da
+> 1 o 3. Lo script apre la copia dell'app del giro con la libreria di prova (la libreria vera non si tocca), aspetta Comando+Q
+> (se l'app non si chiude, Control+C nel Terminale la chiude lo stesso) e mette nel laboratorio il diario (richieste, fermi
+> del filo principale, fasi dell'apertura: nessun testo), i momenti in cui VoiceOver si è detto occupato e, se il sistema ne
+> ha scritti, i rapporti di blocco di ScaboPDF.
+>
+> - **T1 rifatta — il libro grande (circa sei minuti).** `prova.sh 1`: importazione del volume più grande del banco con fasi e
+>   percentuali annunciate, poi il libro. (1) VoiceOver dovrebbe posarsi da sé sul primo elemento del testo e leggerlo entro un
+>   paio di secondi; se dice il gruppo «Testo del documento», VO+Maiuscole+Freccia giù. (2) VO+Freccia destra tre volte,
+>   VO+Freccia sinistra una: ogni passo risponde subito. (3) VO+Fn+Freccia destra (VO+Fine): l'ultimo elemento del libro; poi
+>   VO+Freccia sinistra due volte, un elemento alla volta. (4) VO+Fn+Freccia sinistra (VO+Inizio): il primo elemento del libro.
+>   (5) VO+U, il rotore delle intestazioni: novemila voci, e VoiceOver all'apertura del rotore le chiede e le legge tutte
+>   (diario T3), quindi può impiegare alcuni secondi e anche dire per poco «ScaboPDF non risponde» (rischio noto, § 11: è ciò
+>   che questo passo misura); Freccia giù tenuta premuta qualche secondo fino a un'intestazione lontana, Invio: VoiceOver si
+>   posa lì; poi VO+Freccia destra due volte: si prosegue da lì.
+>   (6) VO+A per una decina di secondi, Control per fermare. (7) Comando+Q. *Da riferire:* se e quando VoiceOver ha detto
+>   «ScaboPDF non risponde»; quanto è passato fra l'apertura e il primo elemento letto; passi pronti o no; dove sono arrivati
+>   VO+Fine e VO+Inizio; il rotore e i passi dopo; la lettura continua.
+> - **T3 rifatta — i salti e la svolta della finestra (circa cinque minuti).** `prova.sh 3`: il libro sintetico, note a voce,
+>   aperto con la finestra dei figli piccola (9 elementi sui 24 del libro, `--raggio-finestra 4`): così la svolta della finestra,
+>   che nel libro grande arriva dopo un'ora d'ascolto, qui si sente in un minuto. (1) VoiceOver dovrebbe
+>   essere sul titolo del primo capitolo; VO+Freccia destra: il capoverso col richiamo della nota 1. (2) VO+Comando+Spazio,
+>   «Vai alla nota 1», Invio: VoiceOver dice la nota; **controllo**: VO+Freccia sinistra deve ridire il capoverso col richiamo
+>   (se dice il titolo, il cursore non si era mosso); poi VO+Freccia destra per tornare sulla nota. (3) VO+Comando+Spazio, «Vai
+>   al testo del richiamo», Invio: VoiceOver dice il capoverso; **controllo**: VO+Freccia destra deve dire la nota (se dice il
+>   capoverso seguente, il cursore era rimasto sulla nota). (4) Sul capoverso col richiamo, Comando+J: la nota; Comando+J di
+>   nuovo: il capoverso; **controllo**: VO+Freccia destra dice la nota. (5) Opzione+Comando+Freccia giù: il titolo del secondo
+>   capitolo; **controllo**: VO+Freccia destra dice il capoverso che segue quel titolo. (6) VO+Fn+Freccia sinistra (VO+Inizio),
+>   poi VO+A: la lettura continua deve arrivare all'ultimo elemento del libro (circa un minuto e mezzo) senza fermarsi e senza
+>   saltare; Control per fermarla prima, se serve. (7) Comando+Q. *Da riferire:* dopo ogni salto, se VoiceOver ha detto la
+>   destinazione e se il controllo l'ha confermata; se la lettura continua è arrivata alla fine senza interruzioni né salti.
 
 > **Rifatto l'8 novembre 2026.** Le tre prove non si fanno più sul prototipo del laboratorio ma **sull'app vera**, alla fine
 > della tappa A: ciò che si sente è ciò che l'utente avrà. Restano tre, brevi, solo per ciò che la misura non decide.
@@ -746,6 +871,23 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 ## 11. Residui e cose non verificate
 
+- **Dopo le prove del 9 novembre 2026** (giro «prove della tappa A»). *Da sentire* (T1 e T3 rifatte, § 10): che con i figli
+  finestrati VoiceOver entri e si muova subito nel libro grande, VO+Fine e VO+Inizio compresi, e che dopo un salto il cursore
+  stia davvero sulla destinazione; con la finestra piccola della T3 rifatta, che la lettura continua (VO+A) attraversi la svolta
+  della finestra senza fermarsi (nel libro grande la svolta arriva dopo un'ora d'ascolto: il passo è misurato da fuori, § 2.4,
+  la lettura continua no). *Non verificato*: la finestra con il seguimento del fuoco spento nelle preferenze di VoiceOver
+  (§ 2.4: dopo al più quattrocento passi, un salto all'ultimo elemento). *Rischio misurato a metà*: all'apertura del rotore
+  (VO+U) VoiceOver chiede al delegato tutte le voci e di ognuna legge subito ruolo, valore e descrizione (diario T3); sul
+  volume più grande sono 9.453 intestazioni, che l'app serve in circa 1,3 s (campo, dentro il processo, compilazione di debug,
+  ricerca del titolo seguente lineare nel modulo) più il tempo di VoiceOver, non misurabile qui: la T1 rifatta lo dice.
+  *Misurato, resta* (campo, sentinella dell'app finale): la libreria condivisa con l'iPad lavora sul filo principale in tre
+  punti, che toccarli vorrebbe dire cambiare l'iPad — la registrazione dopo l'importazione (fermo di 0,3 s), la scrittura della
+  cache alla prima riapertura di un volume enorme (0,3 s) e, se il libro era già stato letto, il riancoraggio della posizione
+  dopo la rielaborazione (1,2 s, misurato col fuoco sull'ultimo elemento; la posizione ritrovata è giusta); l'attribuzione dei
+  fermi ai tre passi è dedotta dal momento in cui cadono. All'avvio dell'app, prima di ogni finestra, un fermo di 0,26–0,45 s.
+  La descrizione dalla vista percorre tutti gli elementi: la rete d'identità non vede la finestra, che è coperta dai test e
+  dal client da fuori. *Decisioni del maintainer* (referto del giro): i segnali delle note per impostazione predefinita sul Mac
+  (T2 verde, § 4.3); quando togliere dal filo principale, per iPad e Mac insieme, i tre lavori della libreria condivisa.
 - **Non verificato:** il tempo d'ingresso di VoiceOver in un gruppo di trentamila figli e la lettura degli elementi fuori
   finestra (T1, la prima prova; ripiego pronto in § 2.3); che VoiceOver imposti AXFocused sugli elementi virtuali (T2) e che
   il diario lo veda (dedotto dai due client misurati, § 3.3); l'ordine di pronuncia fra AXValue e AXDescription (T2); i nomi
