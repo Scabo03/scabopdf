@@ -135,6 +135,25 @@ final class FinestraEFuocoTests: XCTestCase {
         XCTAssertTrue(v.finestra.contains(3_000) && v.finestra.contains(2_800) && v.finestra.contains(3_200))
     }
 
+    /// Un client che legge il testo di tutti i figli esposti — VoiceOver all'ingresso, il runner dei test — non li cambia:
+    /// né gli elementi 0 e n−1 né i vicini dell'elemento in attenzione la spostano.
+    func test_leggereIFigliEsposti_nonLiCambia() {
+        let n = 3_000
+        let v = libroLungo(n)
+        v.spostaFuoco(a: 1_500)
+        let prima = esposti(v).map(\.indice)
+        for e in esposti(v) { _ = e.accessibilityValue() }
+        XCTAssertNil(v.attenzione)
+        XCTAssertEqual(esposti(v).map(\.indice), prima, "gli stessi figli dopo una lettura completa")
+        _ = v.elemento(2_500).accessibilityValue()   // la voce di un rotore, lontana
+        XCTAssertEqual(v.attenzione, 2_500)
+        let conVoce = esposti(v).map(\.indice)
+        XCTAssertEqual(conVoce.count, prima.count + 5)
+        for e in esposti(v) { _ = e.accessibilityValue() }
+        XCTAssertEqual(v.attenzione, 2_500, "leggere i vicini non sposta l'attenzione")
+        XCTAssertEqual(esposti(v).map(\.indice), conVoce)
+    }
+
     /// Dopo un salto per programma la vista dice come elemento col fuoco il bersaglio (VoiceOver lo chiede dall'alto della
     /// finestra e sposta il cursore solo se è cambiato), e il bersaglio è fra i figli.
     func test_salto_elementoColFuocoDellaVista_eDellaFinestra() {

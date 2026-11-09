@@ -163,10 +163,21 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         return finestra
     }
 
-    /// Un client ha chiesto il testo dell'elemento `i`: se sta fuori dalla finestra diventa l'elemento in attenzione.
+    /// Un client ha chiesto il testo dell'elemento `i`: se non è fra i figli esposti diventa l'elemento in attenzione. Un
+    /// elemento già esposto (la finestra, gli elementi 0 e n−1, i vicini dell'attenzione) non cambia nulla: un client
+    /// che legge tutti i figli — VoiceOver all'ingresso, il runner dei test — non deve cambiarli mentre li legge (misurato:
+    /// leggere l'ultimo elemento del libro li cambiava a ogni giro).
     func notaAttenzione(_ i: Int) {
-        guard finestrato, !descrizioneInCorso, !finestra.contains(i) else { return }
+        guard finestrato, !descrizioneInCorso, !esposto(i) else { return }
         attenzione = i
+    }
+
+    /// Vero se l'elemento `i` è fra i figli che il gruppo espone adesso.
+    public func esposto(_ i: Int) -> Bool {
+        guard finestrato else { return i >= 0 && i < conteggio }
+        if finestra.contains(i) || i == 0 || i == conteggio - 1 { return true }
+        if let a = attenzione, abs(i - a) <= 2 { return true }
+        return false
     }
 
     // MARK: Il parlato (tutto dal modulo)
