@@ -7,13 +7,16 @@
 //  titoli per livello, le tabelle e le immagini; il nome nostro per la ricerca), azioni per elemento, gancio del fuoco,
 //  scorrimento alla riga del fuoco. Disegna solo le righe visibili. Tutto ciò che si dice viene dal modulo `ReadingSpeech`.
 //
-//  Dal giro «prove della tappa A» (2026-11-09), la cura della prova d'orecchio T1:
+//  Dal giro «prove della tappa A» (2026-11-09), due cure dalle prove d'orecchio:
 //  - FIGLI FINESTRATI (DISEGNO § 2.3-2.4, il ripiego disegnato): un libro lungo espone come figli d'accessibilità solo una
 //    finestra di 401 elementi attorno al fuoco, più gli elementi 0 e n−1 (VO+Inizio, VO+Fine). Entrando nel gruppo
 //    VoiceOver sul Mac legge ruolo, cornice e testo di OGNI figlio, e a ogni passo chiede di nuovo i figli e la cornice di ciascuno (diari T1 e T2):
 //    sul volume più grande erano 426.818 richieste all'ingresso e 47.424 a ogni passo, e VoiceOver restava occupato per
 //    oltre un minuto («ScaboPDF non risponde»). Gli elementi restano costruiti tutti, una volta: rotori e salti portano il
 //    fuoco ovunque, e la finestra si ricentra dove il fuoco arriva.
+//  - L'ELEMENTO COL FUOCO detto dalla vista (`accessibilityFocusedUIElement`): VoiceOver, all'avviso del fuoco cambiato,
+//    chiede dall'alto della finestra quale elemento ha il fuoco e sposta il cursore solo se è cambiato; prima la risposta era
+//    il gruppo, sempre lo stesso, e i salti non spostavano il cursore (diario T3).
 //
 import AppKit
 import ScaboCore
@@ -93,6 +96,15 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     }
     public override func accessibilityCustomRotors() -> [NSAccessibilityCustomRotor] {
         diario.registra(-1, "gruppo:AXCustomRotors"); return rotori()
+    }
+
+    /// L'elemento col fuoco, cercato da qui in giù. AppKit lo chiede alla vista primo risponditore quando un client domanda
+    /// l'elemento col fuoco dell'app o della finestra («Override this method to do a deeper search … e.g. a NSMatrix would
+    /// determine if one of its cells has the focus», NSAccessibility.h); VoiceOver lo domanda a ogni avviso di fuoco cambiato
+    /// e sposta il cursore solo se la risposta è cambiata. Senza fuoco, la vista stessa.
+    public override var accessibilityFocusedUIElement: Any? {
+        if let f = fuoco, f >= 0, f < conteggio { return elemento(f) }
+        return super.accessibilityFocusedUIElement
     }
 
     /// Gli elementi: tutti, costruiti UNA volta alla prima richiesta (servono ai rotori, ai salti, alla descrizione).
@@ -210,10 +222,13 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         if !provaASecco, !descrizioneInCorso { quandoCambiaIlFuoco?(i) }
     }
 
-    /// Sposta il fuoco per programma (azioni, menu, apertura) e lo dice all'accessibilità, così il cursore di VoiceOver segue.
-    public func spostaFuoco(a i: Int) {
+    /// Sposta il fuoco per programma o da tastiera — azioni, menu, ⌘J, titoli, frecce; e i salti delle tappe dopo (risultati
+    /// della ricerca, «Torna dove leggevi»), che devono passare da qui — e lo dice all'accessibilità nel modo che VoiceOver del
+    /// Mac onora: il fuoco nuovo diventa l'elemento col fuoco della vista (`accessibilityFocusedUIElement`, che VoiceOver chiede
+    /// dall'alto della finestra), la finestra dei figli si ricentra su di lui, e l'avviso del fuoco cambiato parte dopo.
+    public func spostaFuoco(a i: Int, origine: OrigineFuoco = .programma) {
         guard i >= 0, i < conteggio else { return }
-        riceviFuoco(i, origine: .programma)
+        riceviFuoco(i, origine: origine)   // il fuoco, la finestra ricentrata, la riga in vista, i segnali
         NSAccessibility.post(element: elemento(i), notification: .focusedUIElementChanged)
     }
 
@@ -383,10 +398,11 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         }
     }
 
+    /// Frecce su e giù: il fuoco di un elemento, detto anche all'accessibilità (con VoiceOver acceso il cursore segue).
     public override func keyDown(with event: NSEvent) {
         switch event.keyCode {
-        case 125: riceviFuoco(min(conteggio - 1, (fuoco ?? -1) + 1), origine: .tastiera)   // freccia giù
-        case 126: riceviFuoco(max(0, (fuoco ?? 1) - 1), origine: .tastiera)                // freccia su
+        case 125: spostaFuoco(a: min(conteggio - 1, (fuoco ?? -1) + 1), origine: .tastiera)   // freccia giù
+        case 126: spostaFuoco(a: max(0, (fuoco ?? 1) - 1), origine: .tastiera)                // freccia su
         default: super.keyDown(with: event)
         }
     }

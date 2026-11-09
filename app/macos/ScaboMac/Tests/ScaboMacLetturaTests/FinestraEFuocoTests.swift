@@ -1,10 +1,11 @@
 //
 //  FinestraEFuocoTests.swift
-//  ScaboMacLetturaTests — la cura della prova T1 del giro «prove della tappa A» (2026-11-09), dentro il processo: i FIGLI FINESTRATI di un
+//  ScaboMacLetturaTests — le due cure del giro «prove della tappa A» (2026-11-09), dentro il processo: i FIGLI FINESTRATI di un
 //  libro lungo (DISEGNO_LETTURA_MAC § 2.3-2.4: il gruppo espone il primo elemento, una finestra attorno al fuoco e l'ultimo;
 //  il percorso passo per passo, fatto come lo fa VoiceOver — i figli del gruppo, il seguente dell'elemento corrente, il fuoco
-//  su di lui — arriva dall'inizio alla fine senza vicoli ciechi; VO+Fine e VO+Inizio; i rotori e i salti lontani) e il
-//  diario delle prove (fatti del processo, sentinella del filo principale). Contenuti sintetici: nessun testo dei volumi.
+//  su di lui — arriva dall'inizio alla fine senza vicoli ciechi; VO+Fine e VO+Inizio; i rotori e i salti lontani) e
+//  l'ELEMENTO COL FUOCO detto dalla vista dopo un salto, che è ciò che VoiceOver chiede per spostare il cursore. La prova da
+//  fuori, sull'app vera, è in `FuocoDaFuoriTests`. Contenuti sintetici: nessun testo dei volumi.
 //
 import AppKit
 import ScaboChain
@@ -132,6 +133,30 @@ final class FinestraEFuocoTests: XCTestCase {
         XCTAssertEqual(v.fuoco, 3_000)
         XCTAssertNil(v.attenzione)
         XCTAssertTrue(v.finestra.contains(3_000) && v.finestra.contains(2_800) && v.finestra.contains(3_200))
+    }
+
+    /// Dopo un salto per programma la vista dice come elemento col fuoco il bersaglio (VoiceOver lo chiede dall'alto della
+    /// finestra e sposta il cursore solo se è cambiato), e il bersaglio è fra i figli.
+    func test_salto_elementoColFuocoDellaVista_eDellaFinestra() {
+        let v = libroLungo(2_000)
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+        w.contentView = v
+        XCTAssertTrue(w.makeFirstResponder(v))
+        XCTAssertFalse(v.accessibilityFocusedUIElement is ElementoLettura, "senza fuoco: nessun elemento")
+        v.impostaFuocoIniziale(5)
+        XCTAssertEqual((v.accessibilityFocusedUIElement as? ElementoLettura)?.indice, 5)
+        XCTAssertTrue(v.titolo(avanti: true))
+        XCTAssertEqual((v.accessibilityFocusedUIElement as? ElementoLettura)?.indice, 50)
+        v.spostaFuoco(a: 1_700)
+        XCTAssertEqual((v.accessibilityFocusedUIElement as? ElementoLettura)?.indice, 1_700)
+        XCTAssertTrue(esposti(v).contains { $0.indice == 1_700 })
+        XCTAssertEqual((w.accessibilityFocusedUIElement as? ElementoLettura)?.indice, 1_700, "la finestra risponde con l'elemento")
+        // Le frecce della tastiera passano dallo stesso salto.
+        let giù = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: w.windowNumber,
+                                   context: nil, characters: "", charactersIgnoringModifiers: "", isARepeat: false, keyCode: 125)!
+        v.keyDown(with: giù)
+        XCTAssertEqual((v.accessibilityFocusedUIElement as? ElementoLettura)?.indice, 1_701)
+        XCTAssertEqual(v.segnaliEmessi.last?.origine, .tastiera)
     }
 
     /// Il diario: i fatti (fasi, fermi del filo principale) si annotano anche a diario sospeso e si scrivono in ordine di tempo
