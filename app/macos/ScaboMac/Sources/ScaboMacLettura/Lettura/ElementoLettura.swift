@@ -12,6 +12,8 @@
 //    AXFocused     = settabile: il GANCIO DEL FUOCO (§ 4): se VoiceOver lo imposta quando il cursore arriva qui, la vista
 //                    calcola i segnali del modulo (`focusSignals`) e porta la riga in vista
 //    azioni personalizzate = `actions(forIndex:bookmark:settings:)`
+//  Il genitore è sempre la vista; in un libro lungo la vista espone fra i figli solo una finestra attorno al fuoco (dal giro
+//  «prove della tappa A», 2026-11-09): un elemento fuori dalla finestra esiste comunque, e i rotori e i salti lo raggiungono.
 //
 import AppKit
 import ScaboCore
@@ -31,7 +33,11 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
     override public func isAccessibilityElement() -> Bool { true }
     override public func accessibilityRole() -> NSAccessibility.Role? { nota("AXRole"); return .staticText }
     override public func accessibilityIdentifier() -> String { "lettura.elemento.\(indice)" }
-    override public func accessibilityValue() -> Any? { nota("AXValue"); return vista.testoPronunciato(indice) }
+    override public func accessibilityValue() -> Any? {
+        nota("AXValue")
+        vista.notaAttenzione(indice)   // fuori dalla finestra: la voce di un rotore che VoiceOver sta per raggiungere
+        return vista.testoPronunciato(indice)
+    }
     override public func accessibilityLabel() -> String? { nota("AXDescription"); return vista.valore(indice) }
     override public func accessibilityParent() -> Any? { vista }
     override public func accessibilityWindow() -> Any? { vista.window }

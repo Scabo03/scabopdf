@@ -16,7 +16,8 @@
 //    --importa <percorso>     importa un file che sta già nel contenitore dell'app
 //    --descrivi-in <percorso> appena una lettura si apre, scrive lì la sua descrizione dalla vista (formato 2) e quella del
 //                             modulo accanto (`.modulo.jsonl`), per il confronto da fuori
-//    --diario <percorso>      registra le richieste d'accessibilità della lettura e le scrive lì all'uscita
+//    --diario <percorso>      registra le richieste d'accessibilità della lettura, i fermi del filo principale (sentinella
+//                             dall'avvio) e le fasi dell'apertura, e li scrive lì ogni due secondi (su un filo a parte) e all'uscita
 //    --segnali-acustici       accende i segnali delle note al gancio del fuoco (prove d'orecchio)
 //    --apri-primo             apre all'avvio il primo libro dell'elenco della Home (misure di tempi e memoria)
 //    -ScaboMacProvaPannello   la prova del laboratorio sul pannello (giro del 2026-10-16), poi l'app si chiude
@@ -84,6 +85,8 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     private var pronto = false
     private var timerDiario: Timer?
     private let argomenti = ProcessInfo.processInfo.arguments
+    /// Il diario delle prove (`--diario`): uno solo per l'app, aperto dall'avvio, dato a ogni finestra di lettura.
+    private var diarioApp: Diario?
 
     private func argomento(_ nome: String) -> String? {
         guard let i = argomenti.firstIndex(of: nome), i + 1 < argomenti.count else { return nil }
@@ -99,6 +102,18 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     }
 
     @MainActor private func avvia() {
+        if let path = argomento("--diario") {
+            // Il diario dall'avvio, con la sentinella del filo principale: così copre anche l'importazione e l'apertura. Si
+            // riscrive ogni due secondi su un filo a parte (resta anche se l'app si chiude di colpo).
+            let d = Diario()
+            d.attivo = true
+            d.avviaSentinella()
+            d.registraFatto(-3, "avvio")
+            diarioApp = d
+            timerDiario = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
+                d.scriviInSottofondo(su: URL(fileURLWithPath: path))
+            }
+        }
         pannello = Self.makeModel()
         officina = OfficinaViewModel(announcer: VoiceOverAnnouncer())
         let service: LibraryService
@@ -149,28 +164,43 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
 
     // MARK: Le finestre
 
+    /// Apre il libro in una finestra sua. La preparazione (modello del parlato e indice delle ancore, secondi sul volume più
+    /// grande) gira su un filo a parte; il filo principale resta libero e costruisce la finestra quando è pronta.
     @MainActor private func apriFinestraDiLettura(_ doc: ArchivedDocument, _ lettura: LibraryReading) {
+        let diario = diarioApp
+        diario?.registraFatto(-3, "apertura:preparazione:inizio")
+        let t0 = Date()
+        let app = RiferimentoApp(app: self)
+        DispatchQueue.global(qos: .userInitiated).async {
+            let preparazione = PreparazioneLettura(documento: doc, lettura: lettura)
+            let ms = Int(Date().timeIntervalSince(t0) * 1000)
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    diario?.registraFatto(-3, "apertura:preparazione:\(ms)ms")
+                    app.app?.mostraFinestraDiLettura(doc, lettura, preparazione)
+                }
+            }
+        }
+    }
+
+    /// Il riferimento debole all'app che attraversa il filo della preparazione (usato solo sul filo principale).
+    private struct RiferimentoApp: @unchecked Sendable { weak var app: ScaboMacApp? }
+
+    @MainActor private func mostraFinestraDiLettura(_ doc: ArchivedDocument, _ lettura: LibraryReading, _ preparazione: PreparazioneLettura) {
         if let aperta = letture.first(where: { $0.documentId == doc.id }) {
             aperta.chiusaPerSostituzione = true
             aperta.window?.close()
         }
-        let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria)
-        f.vista.diario.attivo = argomento("--diario") != nil
+        let t0 = Date()
+        let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria, preparazione: preparazione)
+        if let d = diarioApp { f.vista.diario = d }
         f.quandoSiChiude = { [weak self] chiusa in
             self?.letture.removeAll { $0 === chiusa }
-            if let path = self?.argomento("--diario") { try? chiusa.vista.diario.scrivi(su: URL(fileURLWithPath: path)) }
+            if let path = self?.argomento("--diario") { chiusa.vista.diario.scriviInSottofondo(su: URL(fileURLWithPath: path)) }
         }
         letture.append(f)
         f.mostra()
-        if let path = argomento("--diario"), timerDiario == nil {
-            // Il diario (indici e nomi delle richieste, nessun testo) si riscrive ogni due secondi: resta anche se l'app si chiude
-            // di colpo.
-            timerDiario = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    if let ultima = self?.letture.last { try? ultima.vista.diario.scrivi(su: URL(fileURLWithPath: path)) }
-                }
-            }
-        }
+        diarioApp?.registraFatto(-3, "apertura:finestra:\(Int(Date().timeIntervalSince(t0) * 1000))ms")
         if let path = argomento("--descrivi-in") {
             let libro = (doc.sourceFileName as NSString).deletingPathExtension
             let dallaVista = f.vista.descrizioneDallaVista(libro: libro, layout: .continuousReading)
@@ -195,7 +225,11 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
 
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated {
-            if let path = argomento("--diario"), let f = letture.last { try? f.vista.diario.scrivi(su: URL(fileURLWithPath: path)) }
+            if let path = argomento("--diario"), let d = diarioApp {
+                d.registraFatto(-3, "uscita")
+                d.aspettaScritture()
+                try? d.scrivi(su: URL(fileURLWithPath: path))
+            }
         }
     }
 

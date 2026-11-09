@@ -262,9 +262,13 @@ final class ScaboPDFUITests: XCTestCase {
         let gruppo = lettura.groups["Testo del documento"]
         XCTAssertTrue(gruppo.waitForExistence(timeout: 60))
         let tApertura = Date().timeIntervalSince(t0)
+        // Dal giro «prove della tappa A» (2026-11-09) un libro lungo espone come figli il primo elemento, una finestra attorno
+        // al fuoco (all'apertura: dall'inizio) e l'ultimo (DISEGNO § 2.3-2.4): il runner li conta tutti, e l'ultimo figlio è
+        // l'ultimo elemento del libro.
         let n = gruppo.staticTexts.count
-        // Un campione di elementi a qualunque indice, per identificatore (il runner vede al più mille figli per conteggio).
-        let indici = (env["SCABOMAC_INDICI"] ?? "0,1,2,10,100,999,1000,2000,5000,10000,20000,30000,30406")
+        let ultimoFiglio = n > 0 ? gruppo.staticTexts.element(boundBy: n - 1).identifier : ""
+        // Un campione di elementi della finestra, per identificatore.
+        let indici = (env["SCABOMAC_INDICI"] ?? "0,1,2,10,100,200,300,400")
             .split(separator: ",").compactMap { Int($0) }
         var campione: [[String: Any]] = []
         for i in indici {
@@ -274,6 +278,7 @@ final class ScaboPDFUITests: XCTestCase {
         }
         let via = percorso(in: app.debugDescription, finoA: "lettura.elemento.0")
         scrivi("misura_da_fuori", ["secondi_fino_alla_lettura": tApertura, "elementi_contati_dal_runner": n,
+                                   "ultimo_figlio": ultimoFiglio,
                                    "campione": campione, "percorso_finestra_primo_elemento": via,
                                    "profondita": max(0, via.count - 1)])
     }

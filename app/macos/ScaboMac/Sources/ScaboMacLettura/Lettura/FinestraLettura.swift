@@ -13,6 +13,22 @@ import AppKit
 import ScaboChain
 import ScaboCore
 
+/// Ciò che la finestra calcola sul libro prima di mostrarsi: il modello del parlato coi legami nota ↔ richiamo (con le opzioni
+/// delle cure mirate del libro, dalla sua impronta, come sull'iPad) e l'indice delle ancore per contenuto. È lavoro puro sui
+/// segmenti, senza finestre né libreria: l'app lo fa FUORI dal filo principale (dal giro «prove della tappa A», 2026-11-09),
+/// perché sul volume più grande dura secondi e in quel tempo l'app non risponderebbe a VoiceOver. L'indice si consegna a un
+/// filo solo: chi lo costruisce lo passa alla finestra e non lo tocca più.
+public struct PreparazioneLettura: @unchecked Sendable {
+    public let modello: ReadingSpeechModel
+    public let indice: ContentAnchorIndex
+
+    public init(documento: ArchivedDocument, lettura: LibraryReading) {
+        let segmenti = lettura.content.pages.flatMap { $0.segments }
+        modello = ReadingSpeechModel(segments: segmenti, noteJumpOptions: NoteJumpOptions.forFingerprint(documento.sourceSha256))
+        indice = ContentAnchorIndex(segments: segmenti)
+    }
+}
+
 @MainActor
 public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenuItemValidation {
     public let documentId: String
@@ -36,16 +52,15 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
                               elementToolsAvailable: false, visualExtractionAvailable: false)
     }
 
+    /// `preparazione`: il modello e l'indice già calcolati fuori dal filo principale (l'app); senza, si calcolano qui (i test).
     public init(documento doc: ArchivedDocument, lettura: LibraryReading, libreria: LibreriaMac,
-                voiceOver: Bool = NSWorkspace.shared.isVoiceOverEnabled) {
+                voiceOver: Bool = NSWorkspace.shared.isVoiceOverEnabled, preparazione: PreparazioneLettura? = nil) {
         self.documentId = doc.id
         self.libreria = libreria
         annuncioPosizione = doc.readingPositionIsApproximate == true
             ? LibraryWording.approximatePositionAnnouncement(isAkn: doc.sourceKind == "akn") : nil
-        let segmenti = lettura.content.pages.flatMap { $0.segments }
-        // I legami nota ↔ richiamo con le opzioni delle cure mirate del libro (dalla sua impronta), come sull'iPad.
-        vista = VistaLettura(modello: ReadingSpeechModel(segments: segmenti, noteJumpOptions: NoteJumpOptions.forFingerprint(doc.sourceSha256)),
-                             impostazioni: Self.impostazioni(prefs: libreria.prefs, voiceOver: voiceOver))
+        let pronta = preparazione ?? PreparazioneLettura(documento: doc, lettura: lettura)
+        vista = VistaLettura(modello: pronta.modello, impostazioni: Self.impostazioni(prefs: libreria.prefs, voiceOver: voiceOver))
         let w = NSWindow(contentRect: NSRect(x: 160, y: 120, width: 900, height: 680),
                          styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
         w.title = doc.title
@@ -61,9 +76,9 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
         vista.frame.size.width = scorrimento.contentSize.width
         vista.autoresizingMask = [.width]
 
-        // Le ancore per contenuto della posizione (come sull'iPad): l'indice si costruisce all'apertura; le annotazioni
-        // senza ancora la ricevono a contenuto fermo.
-        let indice = ContentAnchorIndex(segments: segmenti)
+        // Le ancore per contenuto della posizione (come sull'iPad): l'indice è della preparazione; le annotazioni senza ancora
+        // la ricevono a contenuto fermo.
+        let indice = pronta.indice
         ancore.index = indice
         libreria.service.mintMissingAnchors(documentId: doc.id, in: indice)
         let id = doc.id

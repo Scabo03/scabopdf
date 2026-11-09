@@ -7,6 +7,14 @@
 //  titoli per livello, le tabelle e le immagini; il nome nostro per la ricerca), azioni per elemento, gancio del fuoco,
 //  scorrimento alla riga del fuoco. Disegna solo le righe visibili. Tutto ciò che si dice viene dal modulo `ReadingSpeech`.
 //
+//  Dal giro «prove della tappa A» (2026-11-09), la cura della prova d'orecchio T1:
+//  - FIGLI FINESTRATI (DISEGNO § 2.3-2.4, il ripiego disegnato): un libro lungo espone come figli d'accessibilità solo una
+//    finestra di 401 elementi attorno al fuoco, più gli elementi 0 e n−1 (VO+Inizio, VO+Fine). Entrando nel gruppo
+//    VoiceOver sul Mac legge ruolo, cornice e testo di OGNI figlio, e a ogni passo chiede di nuovo i figli e la cornice di ciascuno (diari T1 e T2):
+//    sul volume più grande erano 426.818 richieste all'ingresso e 47.424 a ogni passo, e VoiceOver restava occupato per
+//    oltre un minuto («ScaboPDF non risponde»). Gli elementi restano costruiti tutti, una volta: rotori e salti portano il
+//    fuoco ovunque, e la finestra si ricentra dove il fuoco arriva.
+//
 import AppKit
 import ScaboCore
 
@@ -20,8 +28,9 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public let statoSegnalibri: ReadingBookmarkState = .unavailable
     public var ricercaAttiva: BookSearchResult? = nil
     public let altezzaRiga: CGFloat = 28
-    /// Il diario delle richieste d'accessibilità: spento, si accende solo per le prove (argomento `--diario`, i banchi).
-    public let diario: Diario = { let d = Diario(); d.attivo = false; return d }()
+    /// Il diario delle richieste d'accessibilità: spento, si accende solo per le prove (argomento `--diario`, i banchi; con
+    /// l'argomento l'app ne dà uno solo a tutte le finestre, aperto dall'avvio).
+    public var diario: Diario = { let d = Diario(); d.attivo = false; return d }()
 
     /// L'elemento che ha il fuoco (l'indice) e il ruolo di quello di prima (per il segnale della bibliografia).
     public private(set) var fuoco: Int? = nil
@@ -73,20 +82,20 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public override func isAccessibilityElement() -> Bool { true }
     public override func accessibilityRole() -> NSAccessibility.Role? { .group }
     public override func accessibilityLabel() -> String? { Parole.gruppoTesto }
-    public override func accessibilityChildren() -> [Any]? { diario.registra(-1, "gruppo:AXChildren"); return figli() }
+    public override func accessibilityChildren() -> [Any]? { diario.registra(-1, "gruppo:AXChildren"); return figliEsposti() }
     public override func accessibilityChildrenInNavigationOrder() -> [any NSAccessibilityElementProtocol]? {
-        diario.registra(-1, "gruppo:AXChildrenInNavigationOrder"); return figli()
+        diario.registra(-1, "gruppo:AXChildrenInNavigationOrder"); return figliEsposti()
     }
     public override func accessibilityVisibleChildren() -> [Any]? {
         diario.registra(-1, "gruppo:AXVisibleChildren")
         let righe = righeVisibili
-        return righe.isEmpty ? [] : Array(figli()[righe])
+        return righe.isEmpty ? [] : figliEsposti().filter { righe.contains($0.indice) }
     }
     public override func accessibilityCustomRotors() -> [NSAccessibilityCustomRotor] {
         diario.registra(-1, "gruppo:AXCustomRotors"); return rotori()
     }
 
-    /// I figli: tutti gli elementi, costruiti UNA volta alla prima richiesta.
+    /// Gli elementi: tutti, costruiti UNA volta alla prima richiesta (servono ai rotori, ai salti, alla descrizione).
     public func figli() -> [ElementoLettura] {
         if let e = elementi { return e }
         let e = (0..<conteggio).map { ElementoLettura(indice: $0, vista: self) }
@@ -94,6 +103,59 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         return e
     }
     public func elemento(_ i: Int) -> ElementoLettura { figli()[i] }
+
+    // MARK: I figli finestrati (DISEGNO § 2.3-2.4)
+
+    /// Gli elementi per parte attorno al fuoco che il gruppo espone, e quanto vicino al bordo il fuoco può arrivare prima che
+    /// la finestra si sposti. Un libro di al più `finestraMassima` elementi espone tutti i figli, come nella tappa A.
+    public static let raggioFinestra = 200
+    public static let margineFinestra = 50
+    public static var finestraMassima: Int { 2 * raggioFinestra + 1 }
+    /// Vero se il libro è più lungo della finestra: allora i figli esposti non sono tutti gli elementi.
+    public var finestrato: Bool { conteggio > Self.finestraMassima }
+    /// La finestra corrente (indici degli elementi), ricalcolata quando un client chiede i figli.
+    public private(set) var finestra: Range<Int> = 0..<0
+    /// L'ultimo elemento fuori dalla finestra di cui un client ha chiesto il testo: la voce di un rotore che VoiceOver dice e
+    /// sta per raggiungere (diario T3: VoiceOver chiede i figli del gruppo prima di posarsi sul bersaglio). I suoi vicini
+    /// entrano nei figli finché il fuoco non arriva da qualche parte.
+    public private(set) var attenzione: Int? = nil
+
+    /// I figli che il gruppo espone, in ordine di lettura: in un libro lungo il primo elemento del libro (VO+Inizio), la
+    /// finestra attorno al fuoco, i vicini dell'elemento in attenzione e l'ultimo elemento del libro (VO+Fine).
+    public func figliEsposti() -> [ElementoLettura] {
+        let tutti = figli()
+        guard finestrato else { return tutti }
+        let f = aggiornaFinestra()
+        var indici = IndexSet(integersIn: f)
+        indici.insert(0)
+        indici.insert(conteggio - 1)
+        if let a = attenzione, !f.contains(a) { indici.insert(integersIn: max(0, a - 2)..<min(conteggio, a + 3)) }
+        return indici.map { tutti[$0] }
+    }
+
+    /// La finestra attorno al fuoco (al primo elemento, senza fuoco). Resta ferma finché il fuoco sta ad almeno
+    /// `margineFinestra` elementi dai suoi bordi (o un bordo è quello del libro): così, passo dopo passo, i figli cambiano
+    /// una volta ogni centocinquanta passi e non a ogni passo.
+    @discardableResult
+    public func aggiornaFinestra() -> Range<Int> {
+        guard conteggio > 0 else { finestra = 0..<0; return finestra }
+        let centro = min(max(0, fuoco ?? 0), conteggio - 1)
+        let r = Self.raggioFinestra, m = Self.margineFinestra
+        let comodo = finestra.contains(centro)
+            && (finestra.lowerBound == 0 || centro >= finestra.lowerBound + m)
+            && (finestra.upperBound == conteggio || centro < finestra.upperBound - m)
+        if !comodo {
+            let alto = min(conteggio, max(0, centro - r) + 2 * r + 1)
+            finestra = max(0, alto - (2 * r + 1))..<alto
+        }
+        return finestra
+    }
+
+    /// Un client ha chiesto il testo dell'elemento `i`: se sta fuori dalla finestra diventa l'elemento in attenzione.
+    func notaAttenzione(_ i: Int) {
+        guard finestrato, !descrizioneInCorso, !finestra.contains(i) else { return }
+        attenzione = i
+    }
 
     // MARK: Il parlato (tutto dal modulo)
 
@@ -138,6 +200,8 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         let precedente = fuoco
         fuoco = i
         ruoloPrecedente = s.role
+        attenzione = nil
+        if finestrato { aggiornaFinestra() }
         scrollToVisible(rettangolo(i))
         diario.registra(i, "fuoco:\(origine.rawValue):\(segnali.map(\.rawValue).joined(separator: "+"))")
         if !segnali.isEmpty, !provaASecco, !descrizioneInCorso { suonatore?(segnali) }
@@ -159,12 +223,15 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         let k = min(max(0, i), conteggio - 1)
         fuoco = k
         ruoloPrecedente = nil
+        attenzione = nil
+        if finestrato { aggiornaFinestra() }
         scrollToVisible(rettangolo(k))
         needsDisplay = true
     }
 
     func azzeraStato() {
         fuoco = nil; ruoloPrecedente = nil; segnaliEmessi.removeAll(); annunci.removeAll(); ultimoBersaglioProva = nil
+        attenzione = nil
     }
 
     /// L'annuncio a voce (VoiceOver lo dice; l'elenco serve ai test).
