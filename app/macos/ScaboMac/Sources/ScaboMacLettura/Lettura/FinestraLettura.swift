@@ -104,26 +104,40 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
         vista.impostazioni = Self.impostazioni(prefs: libreria.prefs, voiceOver: voiceOver)
     }
 
-    /// Mostra la finestra e porta il cursore di VoiceOver sull'elemento della posizione di lettura.
-    public func mostra() {
+    /// Mostra la finestra e porta il cursore di VoiceOver sull'elemento della posizione di lettura. `inPrimoPiano` falso (un
+    /// libro chiesto prima di un altro, finito di preparare dopo): la finestra si apre dietro quella attiva, senza prenderle
+    /// il fuoco, e l'annuncio della posizione approssimata aspetta che diventi la finestra attiva.
+    public func mostra(inPrimoPiano: Bool = true) {
+        guard inPrimoPiano else {
+            window?.order(.below, relativeTo: NSApp.keyWindow?.windowNumber ?? 0)
+            annuncioInAttesa = annuncioPosizione
+            return
+        }
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
         if let f = vista.fuoco, f < vista.conteggio {
             NSAccessibility.post(element: vista.elemento(f), notification: .focusedUIElementChanged)
         }
-        // Come l'iPad: un secondo e mezzo dopo l'apertura, perché VoiceOver abbia già detto la finestra.
-        if let annuncio = annuncioPosizione {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-                guard let w = self?.window else { return }
-                NSAccessibility.post(element: w, notification: .announcementRequested,
-                                     userInfo: [.announcement: annuncio, .priority: NSAccessibilityPriorityLevel.high.rawValue])
-            }
+        annunciaPosizione(annuncioPosizione)
+    }
+
+    /// L'annuncio della posizione approssimata non ancora detto (finestra aperta dietro).
+    private var annuncioInAttesa: String?
+
+    /// Come l'iPad: un secondo e mezzo dopo l'apertura, perché VoiceOver abbia già detto la finestra.
+    private func annunciaPosizione(_ annuncio: String?) {
+        guard let annuncio else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            guard let w = self?.window else { return }
+            NSAccessibility.post(element: w, notification: .announcementRequested,
+                                 userInfo: [.announcement: annuncio, .priority: NSAccessibilityPriorityLevel.high.rawValue])
         }
     }
 
     /// La finestra in primo piano è il libro che si riapre all'avvio (con più libri aperti vale l'ultimo usato).
     public func windowDidBecomeKey(_ notification: Notification) {
         libreria.service.store.setLastOpenDocument(id: documentId)
+        if let a = annuncioInAttesa { annuncioInAttesa = nil; annunciaPosizione(a) }
     }
 
     public func windowWillClose(_ notification: Notification) {

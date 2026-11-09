@@ -54,6 +54,8 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public var suonatore: (([AudioSignal]) -> Void)?
 
     private var elementi: [ElementoLettura]? = nil
+    /// L'ultimo arrivo del fuoco (indice, origine, momento): riconosce la conferma di VoiceOver dopo un salto.
+    private var ultimoArrivo: (indice: Int, origine: OrigineFuoco, tempo: Date)? = nil
     private var rotoriCache: [NSAccessibilityCustomRotor] = []
     private var rotoreDi: [ObjectIdentifier: ReadingRotor] = [:]
     private var rotoriPerRicerca: Bool? = nil
@@ -119,9 +121,11 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     // MARK: I figli finestrati (DISEGNO § 2.3-2.4)
 
     /// Gli elementi per parte attorno al fuoco che il gruppo espone, e quanto vicino al bordo il fuoco può arrivare prima che
-    /// la finestra si sposti. Un libro di al più `finestraMassima` elementi espone tutti i figli, come nella tappa A.
-    public static let raggioFinestra = 200
-    public static let margineFinestra = 50
+    /// la finestra si sposti. Un libro di al più `finestraMassima` elementi espone tutti i figli, come nella tappa A. Si
+    /// cambiano solo per le prove (argomento di lancio `--raggio-finestra`, prima di aprire un libro): una finestra piccola fa
+    /// sentire la svolta della finestra in un minuto sul libro sintetico.
+    public nonisolated(unsafe) static var raggioFinestra = 200
+    public nonisolated(unsafe) static var margineFinestra = 50
     public static var finestraMassima: Int { 2 * raggioFinestra + 1 }
     /// Vero se il libro è più lungo della finestra: allora i figli esposti non sono tutti gli elementi.
     public var finestrato: Bool { conteggio > Self.finestraMassima }
@@ -133,7 +137,8 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public private(set) var attenzione: Int? = nil
 
     /// I figli che il gruppo espone, in ordine di lettura: in un libro lungo il primo elemento del libro (VO+Inizio), la
-    /// finestra attorno al fuoco, i vicini dell'elemento in attenzione e l'ultimo elemento del libro (VO+Fine).
+    /// finestra attorno al fuoco, le righe in vista se sono lontane dal fuoco (chi scorre col trackpad o la barra lontano dal
+    /// fuoco trova fra i figli ciò che vede), i vicini dell'elemento in attenzione e l'ultimo elemento del libro (VO+Fine).
     public func figliEsposti() -> [ElementoLettura] {
         let tutti = figli()
         guard finestrato else { return tutti }
@@ -141,8 +146,17 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         var indici = IndexSet(integersIn: f)
         indici.insert(0)
         indici.insert(conteggio - 1)
+        if let lontane = righeInVistaLontane { indici.insert(integersIn: lontane) }
         if let a = attenzione, !f.contains(a) { indici.insert(integersIn: max(0, a - 2)..<min(conteggio, a + 3)) }
         return indici.map { tutti[$0] }
+    }
+
+    /// Le righe in vista quando la riga del fuoco non è fra loro (la vista è stata scorsa lontano dal fuoco); altrimenti nessuna:
+    /// con VoiceOver la vista scorre da sé alla riga del fuoco, e le righe in vista stanno già nella finestra.
+    var righeInVistaLontane: Range<Int>? {
+        let r = righeVisibili
+        guard !r.isEmpty, let f = fuoco, !r.contains(f) else { return nil }
+        return r
     }
 
     /// La finestra attorno al fuoco (al primo elemento, senza fuoco). Resta ferma finché il fuoco sta ad almeno
@@ -175,7 +189,7 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     /// Vero se l'elemento `i` è fra i figli che il gruppo espone adesso.
     public func esposto(_ i: Int) -> Bool {
         guard finestrato else { return i >= 0 && i < conteggio }
-        if finestra.contains(i) || i == 0 || i == conteggio - 1 { return true }
+        if finestra.contains(i) || i == 0 || i == conteggio - 1 || righeInVistaLontane?.contains(i) == true { return true }
         if let a = attenzione, abs(i - a) <= 2 { return true }
         return false
     }
@@ -215,6 +229,15 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     /// in vista, il diario, la posizione di lettura.
     public func riceviFuoco(_ i: Int, origine: OrigineFuoco) {
         guard i >= 0, i < conteggio else { return }
+        // Dopo un salto per programma o da tastiera, VoiceOver che si posa sul bersaglio gli ridà il fuoco: è la conferma dello
+        // stesso arrivo, non un arrivo nuovo — niente secondo segnale né seconda posizione (rilievo della revisione del giro).
+        if origine == .accessibilita, fuoco == i, let u = ultimoArrivo, u.indice == i, u.origine != .accessibilita,
+           Date().timeIntervalSince(u.tempo) < 2 {
+            ultimoArrivo = (i, .accessibilita, Date())
+            diario.registra(i, "fuoco:accessibilita:conferma")
+            return
+        }
+        ultimoArrivo = (i, origine, Date())
         let s = segmento(i)
         let segnali = ReadingSpeech.focusSignals(for: s, previousFocusedRole: ruoloPrecedente,
                                                  noteSpokenLabels: impostazioni.noteSpokenLabels)
@@ -257,7 +280,7 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
 
     func azzeraStato() {
         fuoco = nil; ruoloPrecedente = nil; segnaliEmessi.removeAll(); annunci.removeAll(); ultimoBersaglioProva = nil
-        attenzione = nil
+        attenzione = nil; ultimoArrivo = nil
     }
 
     /// L'annuncio a voce (VoiceOver lo dice; l'elenco serve ai test).

@@ -20,6 +20,7 @@
 //                             dall'avvio) e le fasi dell'apertura, e li scrive lì ogni due secondi (su un filo a parte) e all'uscita
 //    --segnali-acustici       accende i segnali delle note al gancio del fuoco (prove d'orecchio)
 //    --apri-primo             apre all'avvio il primo libro dell'elenco della Home (misure di tempi e memoria)
+//    --raggio-finestra <n>    i figli finestrati con una finestra di 2n+1 elementi invece di 401 (prove d'orecchio e test da fuori)
 //    -ScaboMacProvaPannello   la prova del laboratorio sul pannello (giro del 2026-10-16), poi l'app si chiude
 //
 import AppKit
@@ -87,6 +88,9 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     private let argomenti = ProcessInfo.processInfo.arguments
     /// Il diario delle prove (`--diario`): uno solo per l'app, aperto dall'avvio, dato a ogni finestra di lettura.
     private var diarioApp: Diario?
+    /// L'ultima richiesta d'apertura per libro e in assoluto (la preparazione gira su un filo a parte).
+    private var richiesteDiApertura: [String: UUID] = [:]
+    private var ultimaRichiesta: UUID?
 
     private func argomento(_ nome: String) -> String? {
         guard let i = argomenti.firstIndex(of: nome), i + 1 < argomenti.count else { return nil }
@@ -102,6 +106,11 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     }
 
     @MainActor private func avvia() {
+        if let r = argomento("--raggio-finestra").flatMap(Int.init), r >= 1 {
+            // Solo per le prove: una finestra di figli piccola, per sentire la svolta della finestra sul libro sintetico.
+            VistaLettura.raggioFinestra = r
+            VistaLettura.margineFinestra = max(1, r / 4)
+        }
         if let path = argomento("--diario") {
             // Il diario dall'avvio, con la sentinella del filo principale: così copre anche l'importazione e l'apertura. Si
             // riscrive ogni due secondi su un filo a parte (resta anche se l'app si chiude di colpo).
@@ -167,6 +176,11 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     /// Apre il libro in una finestra sua. La preparazione (modello del parlato e indice delle ancore, secondi sul volume più
     /// grande) gira su un filo a parte; il filo principale resta libero e costruisce la finestra quando è pronta.
     @MainActor private func apriFinestraDiLettura(_ doc: ArchivedDocument, _ lettura: LibraryReading) {
+        // Ogni richiesta ha un segno: alla fine della preparazione si apre solo se è ancora l'ultima per quel libro, e va davanti
+        // solo se è l'ultima in assoluto (rilievo della revisione del giro: un libro chiesto due volte, due libri di fila).
+        let segno = UUID()
+        richiesteDiApertura[doc.id] = segno
+        ultimaRichiesta = segno
         let diario = diarioApp
         diario?.registraFatto(-3, "apertura:preparazione:inizio")
         let t0 = Date()
@@ -177,7 +191,7 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     diario?.registraFatto(-3, "apertura:preparazione:\(ms)ms")
-                    app.app?.mostraFinestraDiLettura(doc, lettura, preparazione)
+                    app.app?.mostraFinestraDiLettura(doc, lettura, preparazione, segno: segno)
                 }
             }
         }
@@ -186,7 +200,15 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     /// Il riferimento debole all'app che attraversa il filo della preparazione (usato solo sul filo principale).
     private struct RiferimentoApp: @unchecked Sendable { weak var app: ScaboMacApp? }
 
-    @MainActor private func mostraFinestraDiLettura(_ doc: ArchivedDocument, _ lettura: LibraryReading, _ preparazione: PreparazioneLettura) {
+    @MainActor private func mostraFinestraDiLettura(_ richiesto: ArchivedDocument, _ lettura: LibraryReading,
+                                                    _ preparazione: PreparazioneLettura, segno: UUID) {
+        // Una richiesta più recente per lo stesso libro prende il posto di questa; un libro eliminato intanto non si apre; il
+        // documento si rilegge dalla libreria, con la posizione di adesso.
+        guard richiesteDiApertura[richiesto.id] == segno else { diarioApp?.registraFatto(-3, "apertura:superata"); return }
+        richiesteDiApertura[richiesto.id] = nil
+        guard let doc = libreria.service.store.document(id: richiesto.id) else {
+            diarioApp?.registraFatto(-3, "apertura:libro-eliminato"); return
+        }
         if let aperta = letture.first(where: { $0.documentId == doc.id }) {
             aperta.chiusaPerSostituzione = true
             aperta.window?.close()
@@ -199,7 +221,8 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             if let path = self?.argomento("--diario") { chiusa.vista.diario.scriviInSottofondo(su: URL(fileURLWithPath: path)) }
         }
         letture.append(f)
-        f.mostra()
+        f.mostra(inPrimoPiano: segno == ultimaRichiesta)
+        diarioApp?.registraFatto(-3, "apertura:elementi:\(f.vista.conteggio)")
         diarioApp?.registraFatto(-3, "apertura:finestra:\(Int(Date().timeIntervalSince(t0) * 1000))ms")
         if let path = argomento("--descrivi-in") {
             let libro = (doc.sourceFileName as NSString).deletingPathExtension

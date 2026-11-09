@@ -103,8 +103,87 @@ final class FinestraEFuocoTests: XCTestCase {
             XCTAssertEqual(c.indice, atteso)
             c.setAccessibilityFocused(true)
         }
-        // VO+Inizio: il primo figlio è il primo elemento del libro.
-        XCTAssertEqual(esposti(v).first?.indice, 0)
+        // VO+Inizio: il primo figlio è il primo elemento del libro; posato lì, i passi avanti proseguono dall'inizio.
+        let primo = try! XCTUnwrap(esposti(v).first)
+        XCTAssertEqual(primo.indice, 0)
+        primo.setAccessibilityFocused(true)
+        c = primo
+        for atteso in [1, 2, 3] {
+            let figli = esposti(v)
+            let k = try! XCTUnwrap(figli.firstIndex { $0 === c })
+            c = figli[k + 1]
+            XCTAssertEqual(c.indice, atteso)
+            c.setAccessibilityFocused(true)
+        }
+    }
+
+    /// Chi scorre col trackpad o con la barra lontano dal fuoco trova fra i figli, e fra i figli visibili, le righe che vede;
+    /// la finestra resta quella del fuoco, così il cursore di VoiceOver prosegue di dov'era.
+    func test_scorrimentoLontanoDalFuoco_righeInVistaFraIFigli() throws {
+        let n = 3_000
+        let v = libroLungo(n)
+        let scorrimento = NSScrollView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        scorrimento.documentView = v
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+        w.contentView = scorrimento
+        v.frame.size.width = 600
+        v.spostaFuoco(a: 100)
+        v.scrollToVisible(v.rettangolo(2_000))   // la vista scorre lontano, il fuoco resta a 100
+        let righe = v.righeVisibili
+        XCTAssertTrue(righe.contains(2_000), "le righe in vista sono quelle scorse: \(righe)")
+        let figli = esposti(v).map(\.indice)
+        XCTAssertTrue(Set(righe).isSubset(of: Set(figli)), "le righe in vista sono figli")
+        XCTAssertTrue(figli.contains(100) && figli.contains(101), "la finestra del fuoco resta")
+        let visibili = (v.accessibilityVisibleChildren() ?? []).compactMap { ($0 as? ElementoLettura)?.indice }
+        XCTAssertEqual(visibili, Array(righe))
+        XCTAssertNil(v.attenzione)
+        for e in esposti(v) { _ = e.accessibilityValue() }
+        XCTAssertNil(v.attenzione, "leggere le righe in vista non accende l'attenzione")
+    }
+
+    /// Dopo un salto VoiceOver si posa sul bersaglio e gli ridà il fuoco: è la conferma dello stesso arrivo, e il segnale
+    /// della nota non suona due volte né la posizione si registra due volte.
+    func test_salto_poiConfermaDiVoiceOver_unSegnaleSolo() {
+        let segmenti = (0..<600).map { i -> ContentSegment in
+            ContentSegment(id: "s\(i)", role: i == 300 ? SemanticCategory.NOTE.rawValue : SemanticCategory.BODY.rawValue,
+                           text: i == 300 ? "1 Nota sintetica di prova." : "Capoverso di prova numero \(i).",
+                           lengthCategory: i == 300 ? "SHORT" : "", acousticIntro: i == 300 ? "Nota." : "")
+        }
+        let v = VistaLettura(segmenti: segmenti, impostazioni: ReadingSpeechSettings())
+        var suonati: [[AudioSignal]] = []
+        var posizioni: [Int] = []
+        v.suonatore = { suonati.append($0) }
+        v.quandoCambiaIlFuoco = { posizioni.append($0) }
+        let attesi = ReadingSpeech.focusSignals(for: v.segmento(300), previousFocusedRole: nil,
+                                                noteSpokenLabels: v.impostazioni.noteSpokenLabels)
+        XCTAssertFalse(attesi.isEmpty, "la nota sintetica ha il suo segnale")
+        v.spostaFuoco(a: 300)                       // il salto
+        v.elemento(300).setAccessibilityFocused(true)   // VoiceOver si posa e conferma
+        XCTAssertEqual(posizioni, [300])
+        XCTAssertEqual(suonati, [attesi], "un segnale solo per l'arrivo")
+        v.elemento(301).setAccessibilityFocused(true)   // un passo vero, dopo
+        v.elemento(300).setAccessibilityFocused(true)   // e il ritorno sulla nota: arrivo nuovo
+        XCTAssertEqual(posizioni, [300, 301, 300])
+    }
+
+    /// L'argomento di prova `--raggio-finestra`: una finestra piccola espone i figli finestrati anche sul libro sintetico.
+    func test_finestraPiccolaDelleProve() {
+        let r0 = VistaLettura.raggioFinestra, m0 = VistaLettura.margineFinestra
+        defer { VistaLettura.raggioFinestra = r0; VistaLettura.margineFinestra = m0 }
+        VistaLettura.raggioFinestra = 4
+        VistaLettura.margineFinestra = 1
+        let v = libroLungo(24)
+        XCTAssertTrue(v.finestrato)
+        XCTAssertEqual(esposti(v).map(\.indice), Array(0...8) + [23])
+        var c = esposti(v)[0]
+        c.setAccessibilityFocused(true)
+        while let k = esposti(v).firstIndex(where: { $0 === c }), k + 1 < esposti(v).count {
+            let s = esposti(v)[k + 1]
+            XCTAssertEqual(s.indice, c.indice + 1)
+            s.setAccessibilityFocused(true)
+            c = s
+        }
+        XCTAssertEqual(c.indice, 23)
     }
 
     /// Un rotore porta lontano: il delegato restituisce un elemento fuori dalla finestra; VoiceOver ne chiede il testo e poi
