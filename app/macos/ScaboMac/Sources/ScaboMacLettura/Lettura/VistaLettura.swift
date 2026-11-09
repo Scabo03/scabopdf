@@ -215,8 +215,10 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         return w.convertToScreen(convert(rettangolo(i), to: nil))
     }
     public var righeVisibili: Range<Int> {
-        let r = visibleRect
-        guard conteggio > 0, !r.isEmpty else { return 0..<0 }
+        // Il rettangolo visibile dentro i bordi della vista: fuori da una finestra AppKit può darne uno non finito (misurato:
+        // la conversione in intero fermava il processo).
+        let r = visibleRect.intersection(bounds)
+        guard conteggio > 0, !r.isNull, !r.isEmpty, r.minY.isFinite, r.maxY.isFinite else { return 0..<0 }
         let primo = max(0, Int(floor(r.minY / altezzaRiga)))
         let ultimo = min(conteggio, Int(ceil(r.maxY / altezzaRiga)) + 1)
         return primo < ultimo ? primo..<ultimo : 0..<0
