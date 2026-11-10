@@ -15,6 +15,13 @@
 #      generazione con le risorse e sulla stessa lettura senza risorse (lì le ancore delle risorse devono restare orfane).
 # Il runner è quello del banco (SCABO_RUNNER_SRC), compilato contro lo ScaboCore di questo repo (a HEAD).
 # Esce 1 se un volume è ROSSO. Uscite: $LAB/reti/annotazioni_<tag>_*.md, $LAB/logs/rete_annotazioni_<tag>.txt.
+#
+# Dal giro «prove rifatte e granularità» (2026-11-10): ogni passo è verde solo col codice 0 e le uscite attese, con lo schema
+# comune `generazioni/esiti_passi.sh`. Un volume senza la lettura A, un confronto senza la sua lettura B, un giudizio senza la
+# sua riga sono ROSSI (prima si saltavano in silenzio); con una generazione sola il confronto con l'altra è «non previsto», e
+# così la catena diversa con SCABO_ALTRA_CATENA=no. SCABO_ANNOT_BASE (predefinita `base`) sceglie la lettura A su cui si coniano
+# le annotazioni (`letture/<A>_<gen>`): con le letture della catena dell'iPad a granularità diverse (`g<N>_<foto>`) la rete
+# prova un cambio di granularità nei due versi. Prova al contrario incorporata: SCABO_RETE_GUASTO=ferma:<passo> o togli:<passo>.
 set -u
 TAG="${1:?uso: rete_annotazioni.sh <etichetta della fotografia già letta da rete_generazioni.sh>}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -25,9 +32,12 @@ PY="${SCABO_TOOLS_PY:-$HOME/Developer/scabopdf-tools-venv/bin/python}"
 LISTA="${SCABO_LISTA:-$SCRIPT_DIR/generazioni/lista_volumi.json}"
 RUNNER_SRC="${SCABO_RUNNER_SRC:-$CORPUS/ultrafocus_bench/runner}"
 ALTRA="${SCABO_ALTRA_CATENA:-b44}"
+ABASE="${SCABO_ANNOT_BASE:-base}"
 RVS=""; [ "${SCABO_ANNOT_RV:-0}" = 1 ] && RVS=".rv"
 read -r -a GENS <<< "${SCABO_GENS:-ios265 ios27}"
 JUDGE="$SCRIPT_DIR/generazioni/rete_annotazioni.py"
+# shellcheck source=generazioni/esiti_passi.sh
+source "$SCRIPT_DIR/generazioni/esiti_passi.sh"
 mkdir -p "$LAB/reti" "$LAB/logs" "$LAB/annotazioni/$TAG"
 LOG="$LAB/logs/rete_annotazioni_$TAG.txt"; : > "$LOG"
 say() { echo "$*" | tee -a "$LOG"; }
@@ -43,10 +53,11 @@ s = open(p).read()
 s = re.sub(r'\.package\(path:\s*"[^"]*ScaboCore"\)', '.package(path: "%s")' % core, s)
 open(p, "w").write(s)
 PYEOF
-( cd "$RUNNER_DIR" && swift build -c release > "$LAB/logs/${TAG}_annot_runner_build.log" 2>&1 ); rc=$?
-say "[1] runner compilato a HEAD $(cd "$REPO_ROOT" && git rev-parse --short HEAD): exit=$rc"
-[ "$rc" = 0 ] || exit 1
 R="$RUNNER_DIR/.build/release/ultrafocus-runner"
+( cd "$RUNNER_DIR" && esegui_passo "runner" swift build -c release > "$LAB/logs/${TAG}_annot_runner_build.log" 2>&1 ); rc=$?
+say "[1] runner compilato a HEAD $(cd "$REPO_ROOT" && git rev-parse --short HEAD): exit=$rc"
+chiudi_passo "runner" "$rc" "$R" || { esito_rete "rete_annotazioni" "$TAG"; exit 1; }
+N_ATTESI=$("$PY" -c "import json,sys; print(len(json.load(open(sys.argv[1]))))" "$LISTA")
 
 volumes() { "$PY" -c 'import json,sys,re; [print(re.sub(r"\.pdf$","",v if isinstance(v,str) else v["stem"])) for v in json.load(open(sys.argv[1]))]' "$LISTA"; }
 
@@ -57,23 +68,32 @@ for GEN in "${GENS[@]}"; do
   {
     echo "# Rete sulle annotazioni — fotografia $TAG, generazione $GEN"
     echo
-    echo "A = letture/base_$GEN (annotazioni sintetiche coniate qui). Confronti: catena attuale (\`$TAG\`), altra generazione (\`$OTHER\`), catena diversa (\`$ALTRA\`), prove al contrario (orfana/scambio/scorri)."
+    echo "A = letture/${ABASE}_$GEN (annotazioni sintetiche coniate qui). Confronti: catena attuale (\`$TAG\`), altra generazione (\`$OTHER\`), catena diversa (\`$ALTRA\`), prove al contrario (orfana/scambio/scorri)."
     echo
     echo "| volume | confronto | seg A/B | segnalibri ricollocati | orfani (evitabili) | SBAGLIATI | citazioni ok+incollate/orfane/SBAGLIATE | livelli | indice ms | verdetto |"
     echo "|---|---|---|---|---|---|---|---|---|---|"
   } > "$MD"
-  n=0; rosso=0
+  n=0; rosso=0; mancanti=0
+  [ -n "$OTHER" ] || non_previsto "altra generazione $GEN" "una generazione sola (SCABO_GENS)"
+  [ "$ALTRA" = no ] && non_previsto "catena diversa $GEN" "SCABO_ALTRA_CATENA=no"
   while IFS= read -r stem; do
-    A="$LAB/letture/base_$GEN/$stem.reading.json"; [ -f "$A" ] || continue
+    A="$LAB/letture/${ABASE}_$GEN/$stem.reading.json"
+    [ -f "$A" ] || { say "    MANCA la lettura A ${ABASE}_$GEN per $stem"; mancanti=$((mancanti+1)); continue; }
     base="$(basename "$stem")"; W="$OUT/$base"; mkdir -p "$W"
     n=$((n+1))
     "$R" anchors --reading "$A" --per-role 12 --quotes 40 --seed 7 --out "$W/anchors.json" >> "$LOG" 2>&1 || { say "    ERR anchors $GEN $stem"; RC=1; continue; }
     # confronti
-    for cmp in "catena:$LAB/letture/${TAG}_$GEN/$stem$RVS.reading.json" "altra_gen:$LAB/letture/${TAG}_$OTHER/$stem$RVS.reading.json" "catena_$ALTRA:$LAB/letture/${ALTRA}_$GEN/$stem.reading.json"; do
-      name="${cmp%%:*}"; B="${cmp#*:}"; [ -f "$B" ] || { say "    (manca $name per $stem)"; continue; }
-      "$R" reanchor --anchors "$W/anchors.json" --reading "$B" --out "$W/res_$name.json" >> "$LOG" 2>&1 || { say "    ERR reanchor $name $stem"; RC=1; continue; }
+    CONFRONTI=("catena:$LAB/letture/${TAG}_$GEN/$stem$RVS.reading.json")
+    [ -n "$OTHER" ] && CONFRONTI+=("altra_gen:$LAB/letture/${TAG}_$OTHER/$stem$RVS.reading.json")
+    [ "$ALTRA" != no ] && CONFRONTI+=("catena_$ALTRA:$LAB/letture/${ALTRA}_$GEN/$stem.reading.json")
+    for cmp in "${CONFRONTI[@]}"; do
+      name="${cmp%%:*}"; B="${cmp#*:}"
+      if [ "$RETE_GUASTO" = "togli:confronti $GEN" ] && [ "$n" = 1 ] && [ "$name" = catena ]; then B="$B.tolto"; say "    GUASTO DI PROVA: tolta la lettura B «${name}» di $stem"; fi
+      [ -f "$B" ] || { say "    MANCA la lettura B «${name}» per $stem: ROSSO"; rosso=$((rosso+1)); echo "| $(basename "$stem") | $name | — | — | — | — | — | — | — | MANCA B |" >> "$MD"; continue; }
+      rm -f "$W/row_$name.json"
+      esegui_passo "confronti $GEN" "$R" reanchor --anchors "$W/anchors.json" --reading "$B" --out "$W/res_$name.json" >> "$LOG" 2>&1 || { say "    ERR reanchor $name $stem"; rosso=$((rosso+1)); continue; }
       "$PY" "$JUDGE" giudica "$A" "$W/anchors.json" "$B" "$W/res_$name.json" "$base" --out "$W/row_$name.json" >> "$LOG" 2>&1 || { rosso=$((rosso+1)); RC=1; }
-      [ -f "$W/row_$name.json" ] || { say "    ERR giudizio $name $stem (riga mancante)"; echo "| $base | $name | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; continue; }
+      [ -f "$W/row_$name.json" ] || { say "    ERR giudizio $name $stem (riga mancante)"; rosso=$((rosso+1)); echo "| $base | $name | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; continue; }
       "$PY" - "$W/row_$name.json" "$name" >> "$MD" <<'PYEOF'
 import json,sys
 r=json.load(open(sys.argv[1])); name=sys.argv[2]
@@ -82,11 +102,17 @@ print(f"| {r['volume'][:30]} | {name} | {r['segmenti_A']}/{r['segmenti_B']} | {r
 PYEOF
     done
     # risorse visive: annotazioni coniate sulla lettura CON le risorse (anche sugli elementi «risorsa visiva»)
+    if [ -n "$RVS" ] && [ ! -f "$LAB/letture/${TAG}_$GEN/$stem.rv.reading.json" ]; then
+      say "    MANCA la lettura con le risorse di $stem (SCABO_ANNOT_RV=1): ROSSO"; rosso=$((rosso+1))
+    fi
     if [ -n "$RVS" ] && [ -f "$LAB/letture/${TAG}_$GEN/$stem.rv.reading.json" ]; then
       A2="$LAB/letture/${TAG}_$GEN/$stem.rv.reading.json"
       "$R" anchors --reading "$A2" --per-role 12 --quotes 40 --seed 7 --out "$W/anchors_rv.json" >> "$LOG" 2>&1 || { say "    ERR anchors rv $GEN $stem"; RC=1; }
-      for cmp in "rv_altra_gen:$LAB/letture/${TAG}_$OTHER/$stem.rv.reading.json" "rv_senza_risorse:$LAB/letture/${TAG}_$GEN/$stem.reading.json"; do
-        name="${cmp%%:*}"; B="${cmp#*:}"; [ -f "$B" ] && [ -f "$W/anchors_rv.json" ] || continue
+      CONFRONTI_RV=("rv_senza_risorse:$LAB/letture/${TAG}_$GEN/$stem.reading.json")
+      [ -n "$OTHER" ] && CONFRONTI_RV=("rv_altra_gen:$LAB/letture/${TAG}_$OTHER/$stem.rv.reading.json" "${CONFRONTI_RV[@]}")
+      for cmp in "${CONFRONTI_RV[@]}"; do
+        name="${cmp%%:*}"; B="${cmp#*:}"
+        [ -f "$B" ] && [ -f "$W/anchors_rv.json" ] || { say "    MANCA «${name}» per $stem: ROSSO"; rosso=$((rosso+1)); continue; }
         "$R" reanchor --anchors "$W/anchors_rv.json" --reading "$B" --out "$W/res_$name.json" >> "$LOG" 2>&1 || { say "    ERR reanchor $name $stem"; RC=1; continue; }
         "$PY" "$JUDGE" giudica "$A2" "$W/anchors_rv.json" "$B" "$W/res_$name.json" "$base" --out "$W/row_$name.json" >> "$LOG" 2>&1 || { rosso=$((rosso+1)); RC=1; }
         [ -f "$W/row_$name.json" ] || { say "    ERR giudizio $name $stem (riga mancante)"; echo "| $base | $name | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; continue; }
@@ -101,9 +127,10 @@ PYEOF
     # prove al contrario
     for modo in orfana scambio scorri; do
       "$PY" "$JUDGE" perturba "$A" "$W/anchors.json" "$modo" "$W/pert_$modo.reading.json" >> "$LOG" 2>&1 || { RC=1; continue; }
-      "$R" reanchor --anchors "$W/anchors.json" --reading "$W/pert_$modo.reading.json" --out "$W/res_pert_$modo.json" >> "$LOG" 2>&1 || { RC=1; continue; }
+      rm -f "$W/row_pert_$modo.json"
+      "$R" reanchor --anchors "$W/anchors.json" --reading "$W/pert_$modo.reading.json" --out "$W/res_pert_$modo.json" >> "$LOG" 2>&1 || { rosso=$((rosso+1)); continue; }
       "$PY" "$JUDGE" giudica "$A" "$W/anchors.json" "$W/pert_$modo.reading.json" "$W/res_pert_$modo.json" "$base" --atteso "$modo" --out "$W/row_pert_$modo.json" >> "$LOG" 2>&1 || { rosso=$((rosso+1)); RC=1; }
-      [ -f "$W/row_pert_$modo.json" ] || { say "    ERR giudizio controprova $modo $stem (riga mancante)"; echo "| $base | controprova_$modo | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; rm -f "$W/pert_$modo.reading.json"; continue; }
+      [ -f "$W/row_pert_$modo.json" ] || { say "    ERR giudizio controprova $modo $stem (riga mancante)"; rosso=$((rosso+1)); echo "| $base | controprova_$modo | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; rm -f "$W/pert_$modo.reading.json"; continue; }
       "$PY" - "$W/row_pert_$modo.json" "controprova_$modo" >> "$MD" <<'PYEOF'
 import json,sys
 r=json.load(open(sys.argv[1])); name=sys.argv[2]
@@ -133,13 +160,18 @@ print(f"\n**Orfani per ruolo (catena attuale)**: " + ", ".join(f"{k} {orf_role[k
 print(f"\n**Indice**: max {max(ms) if ms else 0} ms, mediana {sorted(ms)[len(ms)//2] if ms else 0} ms (costruzione dell'indice delle ancore sul volume).")
 print(f"\n**Verdetti**: {dict(tot)}")
 PYEOF
-  say "[2] $GEN: $n volumi, righe ROSSE $rosso → $MD"
-  [ "$rosso" = 0 ] || RC=1
+  say "[2] $GEN: $n volumi su $N_ATTESI (letture A mancanti $mancanti), righe ROSSE $rosso → $MD"
+  [ "$RETE_GUASTO" = "ferma:confronti $GEN" ] && rosso=$((rosso+1))
+  [ "$rosso" = 0 ] && rc=0 || rc=1
+  chiudi_passo_conteggio "confronti $GEN" "$rc" "$N_ATTESI" "$n"
 done
 
 # tabella dei volumi la cui sequenza dei nodi cambia (base → tag), per il referto di build
 SEQ="$LAB/reti/sequenza_nodi_${TAG}.txt"
-"$PY" "$SCRIPT_DIR/generazioni/sequenza_nodi.py" "$LAB/letture" "base" "$TAG" "$LISTA" "${GENS[@]}" > "$SEQ" 2>>"$LOG"; rc=$?
-say "[3] tabella sequenza dei nodi base→$TAG: exit=$rc → $SEQ"
-say "rete_annotazioni $TAG: exit=$RC"
-exit $RC
+# Un passo interno fallito (ancore non coniate, giudizio fallito, letture con le risorse) segnato in RC fa rossa la rete.
+[ "$RC" = 0 ] || _passo_rosso "passi interni" "almeno un conio o un giudizio è fallito (vedi $LOG)"
+esegui_passo "sequenza dei nodi" "$PY" "$SCRIPT_DIR/generazioni/sequenza_nodi.py" "$LAB/letture" "$ABASE" "$TAG" "$LISTA" "${GENS[@]}" > "$SEQ" 2>>"$LOG"; rc=$?
+say "[3] tabella sequenza dei nodi ${ABASE}→$TAG: exit=$rc → $SEQ"
+chiudi_passo "sequenza dei nodi" "$rc" "$SEQ"
+esito_rete "rete_annotazioni" "$TAG" | tee -a "$LOG"
+exit "${PIPESTATUS[0]}"
