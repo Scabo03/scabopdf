@@ -1,19 +1,16 @@
-Build 64 — alcuni libri si leggono meglio
+Build 65 — la granularità scelta conta davvero
 
 Che cosa cambia
-- In alcuni libri i titoli di capitolo che sparivano, perché la stessa frase è ripetuta in piccolo in testa alle pagine seguenti, ora si leggono e si trovano nella navigazione per intestazioni. Le righe ripetute in testa alle pagine continuano a non essere lette.
-- Nelle dispense scritte con Word i titoli in grassetto si riconoscono anche quando hanno la stessa grandezza del testo.
-- In alcuni libri i titoli di sezione, separati dal testo solo da uno spazio bianco, ora sono intestazioni e non restano incollati al capoverso che segue.
-- Le note raccolte alla fine di un capitolo hanno l'azione «Vai al testo del richiamo» dove il richiamo si trova con sicurezza; dove manca la sicurezza, l'azione resta assente. Anche molte altre note, in tanti libri, ora hanno l'azione: quelle il cui richiamo sta all'inizio di un capoverso lungo. Non serve rielaborare il libro per averla.
-- Alcune note stampate con i numeri in una colonna a parte si leggono intere e nel loro ordine.
-- Alcune carte geografiche e figure impaginate allo stesso modo su più pagine sono annunciate come «Risorsa visiva»: prima venivano scartate come se fossero un fregio ripetuto. Un logo o una filigrana ripetuti restano esclusi.
-- Con iOS 26.5 le parole spezzate in due da un trattino invisibile si leggono intere, come con iOS 27.
+- La granularità scelta in Impostazioni (Fine, 400 caratteri; Media, 600; Ampia, 900; Piena, 1200) ora cambia davvero la lunghezza dei blocchi di lettura. Prima la scelta si salvava, ma ogni libro si leggeva comunque a blocchi di circa 400 caratteri. Con una granularità più ampia un paragrafo lungo si legge in meno blocchi, più lunghi, e anche le note lunghe si leggono a pezzi più lunghi. Il testo resta lo stesso, parola per parola, e i titoli restano dove sono.
+- Un libro letto con un'altra granularità si rielabora una volta, alla prossima apertura, con la schermata «Elaborazione del documento», e riprende dal punto in cui eri. Dalla volta dopo si apre subito.
+- Segnalibri e sottolineature seguono il testo. Quando i blocchi si uniscono, un segnalibro che stava a metà di un blocco nuovo può finire nella lista dei segnalibri come «da ricollocare»: non si perde nulla, e di solito tornando alla granularità di prima torna al suo posto.
+- Se in passato avevi già scelto una granularità diversa da «Fine», ogni libro si rielabora una volta alla prima apertura dopo l'aggiornamento: succede una volta sola per libro.
+- I testi normativi tengono la loro divisione per articoli e commi, qualunque sia la scelta. I volumi molto grandi si leggono sempre a blocchi di 1200 caratteri, per stare nella memoria del dispositivo.
+- Aprire un libro è un po' più pronto: alcuni lavori che fermavano lo schermo per un attimo, alla fine dell'elaborazione e alla riapertura di un libro già letto, ora si fanno in sottofondo, mentre la schermata d'elaborazione resta su.
 
-Alla prossima apertura
-- Nella Home compare la riga «Lettura migliore disponibile» per i libri la cui lettura cambia. Per i libri già verificati che restano identici l'offerta non compare. Per un libro mai verificato l'offerta può comparire anche se la sua lettura poi resta uguale: in quel caso la rielaborazione non cambia nulla. Toccala due volte, scegli il libro e conferma la rielaborazione. Si fa solo se la confermi.
-- Segnalibri, sottolineature e punto di lettura vengono ritrovati nel testo nuovo. Quello che l'app non ritrova con sicurezza resta nella lista dei segnalibri come «da ricollocare». Non si cancella nulla, e finché non confermi puoi tornare alla lettura di prima.
-- I due documenti di studio rifiniti con la build 63 non cambiano e non ricevono l'offerta. Le letture preparate dal Mac non la ricevono: la lettura nuova arriverà dal Mac aggiornato.
+Che cosa non cambia
+- Con la granularità «Fine», quella di partenza, la lettura è identica a quella della build 64 e non compare nessuna offerta di rielaborazione.
 
 Due cose da provare
-- In un libro con le note alla fine del capitolo, usa l'azione «Vai al testo del richiamo» su qualche nota: dicci se arrivi al punto giusto.
-- In un libro con carte o figure, dicci se l'annuncio «Risorsa visiva» arriva al posto giusto e se ti serve.
+- Scegli «Ampia — 900 caratteri» in Impostazioni e apri un libro che conosci: dicci se i blocchi più lunghi ti sono comodi e se, dopo la rielaborazione, la lettura riparte dal punto giusto.
+- Metti un segnalibro, cambia granularità, poi torna a «Fine — 400 caratteri» e riapri lo stesso libro: dicci se segnalibri e punto di lettura sono tornati al loro posto.

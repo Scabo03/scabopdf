@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.58 (10 novembre 2026, giro «prove rifatte e granularità», livello di verifica pieno, **build 65**: letti i diari delle prove d'orecchio rifatte e curati i salti del Mac (Parte 1, ramo `feat/mac-prove-rifatte` unito in main e cancellato); la granularità delle Impostazioni vale anche sull'iPad con una regola sola, i tre lavori della libreria fuori dal filo principale, le reti che non dicono più verde senza aver controllato, l'elenco dei volumi fuori dal repo, l'andata e ritorno di granularità delle annotazioni curata (Parte 2, ramo `feat/ipad-granularita-reti`); STATO del 2026-11-10 sotto)
 > Versione: 2.57 (9 novembre 2026, giro «prove della tappa A», livello di verifica leggero, nessuna build, **CONCLUSO**, ramo `feat/mac-tappa-a-prove` unito in main con un avanzamento rapido e cancellato: diagnosi e cura dei due difetti delle prove d'orecchio della tappa A — **T1 rossa**, «ScaboPDF non risponde» sul volume più grande: VoiceOver, a ogni ingresso e a ogni passo, interrogava tutti i 47.424 figli del gruppo (diari, registro di VoiceOver «occupato» da 5,9 a 57,6 s, client da fuori); cura: **figli finestrati** (DISEGNO § 2.3-2.4), preparazione della lettura e diario fuori dal filo principale; **T3**, i salti non spostavano il cursore: la vista non diceva quale elemento ha il fuoco; cura: `accessibilityFocusedUIElement` e un solo punto per i salti (§ 5.2), con un test da fuori che fallisce sull'app della tappa A; **T2 verde** dal diario; T1 e T3 da rifare con `prove_tappa_a/prove_orecchio/prova.sh`; l'iPad non cambia).
 > Versione: 2.56 (8 novembre 2026, giro «app unica per Mac, tappa A», livello di verifica medio, nessuna build, **CONCLUSO**, ramo `feat/mac-app-unica-tappa-a` unito in main con un avanzamento rapido e cancellato: registrate in LAYER2 § 12.16 le tre decisioni del maintainer dell'8 novembre — **sul Mac c'è un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro; «app diverse» vuol dire i due prodotti per Apple; l'app Mac importa PDF e atti AKN da sé con la catena condivisa — e corretto ovunque il fraintendimento delle «due app sul Mac», con la sua origine (§ 12.12, decisione 4 del 16 ottobre); disegno rifatto (`DISEGNO_LETTURA_MAC.md` § 6, § 8, § 9, § 10); costruita la **prima versione di ScaboPDF per Mac** (Home, importazione con la catena condivisa, «Libro già presente», lettura AppKit col parlato tutto da `ReadingSpeech`, menu «Lettura», finestra «Modelli e officina»), con la logica senza interfaccia dell'iPad spostata in ScaboChain; **vista del Mac identica alla vista dell'iPad su 55 libri su 55** (rete nuova `rete_vista_mac.sh`), quota dell'estrattore di macOS documentata (5 libri, 6 pagine); iPad identico (catena e runner al byte, rete sul parlato con la vista vera, cure mirate, suite su iPad e iPhone iOS 27); revisione indipendente con 22 rilievi, nessuno bloccante; tre prove d'orecchio da fare e tre decisioni per il maintainer. Vedi lo STATO qui sotto.)
 > Versione: 2.55 (8 novembre 2026, giro «disegno della lettura per Mac», livello di verifica leggero, nessuna build, solo documenti, **CONCLUSO**: registrate le due decisioni del maintainer del 7 novembre in LAYER2 § 12.16 (modalità automazione attivata una volta sola; app di lettura nello stesso pacchetto `ScaboMac`); **il disegno dello scheletro dell'app di lettura** in `docs/DISEGNO_LETTURA_MAC.md` — otto domande con le prove, vista AppKit con un gruppo solo di elementi d'accessibilità virtuali, parlato tutto da ScaboCore `ReadingSpeech` e descrizione della vista identica al byte a quella del modulo su 30.407 elementi, gancio del fuoco per il segnale delle note, rotori e azioni del modulo duplicate nel menu «Lettura», pacchetto e piano a tappe (2–3 giri la lettura minima, 11–12 la parità con l'iPad, 12–13 con la distribuzione) — tre prototipi di laboratorio (13 prove in processo verdi, cinque misure da fuori nella modalità automazione più una con l'API C d'accessibilità), revisione indipendente con tredici rilievi corretti, due domande di prodotto poste al maintainer e tre prove d'orecchio che restano. Vedi lo STATO del 2026-11-08. *[«App di lettura» corretto l'8 novembre: la lettura sta dentro l'app unica ScaboPDF per Mac; versione 2.56.]*)
@@ -115,6 +116,85 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   Precisato il 2026-11-09: il controllo del testo dei volumi stampa i riscontri **sopra** il riassunto, e va letto per intero;
   il push parte nello stesso comando solo se il riassunto dice zero (quel giorno un push è partito con una frase italiana
   comune segnalata, ed è servito un push forzato protetto sul ramo del giro).
+- **Le reti non dicono verde senza aver controllato (dal 2026-11-10).** Le reti del repo (`rete_generazioni.sh`,
+  `rete_parlato.sh`, `rete_cure_mirate.sh`, `confronto_letture_ipad_mac.sh`, `rete_annotazioni.sh`) usano lo schema comune
+  `app/ios/scripts/generazioni/esiti_passi.sh`: un passo è verde solo se il comando esce con 0 e le sue uscite attese ci sono;
+  ogni altro esito lo fa rosso col suo nome; un passo escluso dalla configurazione è «non previsto», col motivo. Prova al
+  contrario incorporata, da usare quando si tocca una rete: `SCABO_RETE_GUASTO=ferma:<passo>` o `togli:<passo>` deve finire
+  rossa con quel nome (la rete controlla per nome il passo bersaglio: un guasto senza effetto o con un nome sbagliato è rosso).
+  Due cose imparate: la bash di macOS è la 3.2 (una variabile seguita da un carattere non ASCII va fra graffe); uno script bash
+  che sta girando non si modifica (bash lo legge per posizione).
+- **Il banco delle reti fuori dal repo (dal 2026-11-10).** Nel repo i 52 volumi sono solo etichette neutre e impronte
+  (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
+  (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
+  se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «prove rifatte e granularità»: i diari delle prove d'orecchio rifatte, la granularità anche sull'iPad, i lavori della libreria fuori dal filo principale, reti che non dicono verde senza aver controllato, build 65 — 2026-11-10 — CONCLUSO
+
+**Partenza:** `9ebd065` (main = origin, build 64 su TestFlight). **Rami:** Parte 1 `feat/mac-prove-rifatte` (livello leggero), unito
+in main con un avanzamento rapido a `8ced0c9` e cancellato; Parte 2 `feat/ipad-granularita-reti` (livello pieno), unito in main con un avanzamento rapido dopo il commit dei documenti che porta questa voce e cancellato in locale e sul remoto; la build 65 parte da lì (`docs/RELEASE_TESTFLIGHT.md`). Referto:
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVE_RIFATTE_GRANULARITA.md`; laboratori `~/Developer/scabopdf-mac-lab/lettura_mac/
+prove_rifatte/` (Parte 1) e `~/Developer/scabopdf-gen-lab/granularita/` (Parte 2).
+
+- **Parte 1 — i diari delle prove rifatte** (campo, diari del 10 novembre): VoiceOver mai occupato (registro di sistema senza
+  «busy»), nessun rapporto di blocco; T1: ingresso nel libro grande in 0,3 s, passi pronti, VO+Fine e VO+Inizio giusti, il rotore
+  di primo livello porta all'intestazione scelta. T3: sette salti arrivati all'app, quattro riusciti, tre falliti per un difetto
+  dell'app (lo stesso bersaglio del salto prima; il ritorno sulla partenza alla chiusura del menu), cinque combinazioni non arrivate.
+  **Cure** (`097c540`, `1d7d62b`): l'avviso del fuoco si ripete se nessun client si posa sul bersaglio; un bersaglio già dato «col
+  fuoco» riceve un oggetto nuovo prima dell'avviso; la via «tasto o voce» dei menu. Test da fuori `FuocoDaFuoriTests` 5/5 (le prove
+  nuove falliscono sull'app di prima). **Decisione 1 del giro precedente** (segnali delle note predefiniti sul Mac) NON applicata:
+  la condizione (salti che funzionano) non c'era; si applica dopo la prova 4 (DISEGNO § 10), registrato in LAYER2 § 12.16.
+- **2.1 — reti** (`104dc5e`, `eca780f`, `7d882ba`): lo schema comune dei passi (regola fissa sopra); riprodotto il rilievo R19 (la
+  rete delle generazioni chiudeva verde con la parità fallita); prove al contrario su tutte e cinque le reti (rosse col nome).
+- **2.2 — banco** (`c933718`): elenco dei 52 volumi fuori dal repo (regola fissa sopra).
+- **2.3 — granularità sull'iPad** (`655e449`, test `5be5df3`): una regola sola nel modulo condiviso (LAYER2 § 7.7, DISEGNO § 6.7).
+  Al predefinito letture identiche al byte alla build 64 (catena dell'iPad e runner, 260/260 forme per generazione, catture nuove
+  uguali per contenuto a quelle della build 64); a 600, 900 e 1.200 lettere e cifre, struttura e ricomposizione identiche su 52/52,
+  misura dei titoli identica; a 600 tre volumi con sei inizi di blocco dopo una sigla col punto (natura già presente a 400: residuo).
+  `GranularityUITests` verdi su iPad 26.5 e 27, rossi (come devono) sul codice di prima.
+- **2.4 — fermi** (`bc3e3c6`, `7abc295`): i tre lavori della libreria fuori dal filo principale, per iPad e Mac; iPad (banco
+  simulato) da 0,008 / 0,14 / 1,7 s a meno di un millesimo; Mac: il fermo del riancoraggio (1,29 s) non c'è più, i circa 0,28 s alla
+  fine dell'importazione e della riapertura sono l'animazione del foglio d'elaborazione (`NSWindow.endSheet`, 262–266 ms in
+  laboratorio), non la libreria: non toccato.
+- **Revisione indipendente** (sotto-agente nuovo): un bloccante e otto rilievi, tutti corretti (`a7bd6cd`, `73b7f25`, `889be37`,
+  `7d882ba`). **R5, bloccante**: un'andata e ritorno di granularità spostava in silenzio i segnalibri e la posizione che stavano in
+  coda a un blocco fuso (l'ancora riconiata sul blocco fuso, poi al ritorno sul primo pezzo): misurato sui 52 volumi, da 1.630 a 2.530
+  per giro col codice della build 64 (anche sul Mac, dalla tappa A); curato in ScaboCore (l'ancora d'origine resta ai livelli
+  «contenuto» e «testa e coda», la verifica d'apertura la riconosce): 0 su dodici giri. Gli altri: annuncio della posizione nella
+  metà della vista affiancata (R6), «Annulla» spento a esito consegnato (R7), il libro in rielaborazione non si riapre dalla cache sul
+  Mac (R8), l'offerta di rielaborazione con la schermata su fino al referto (R9), guasti di prova senza effetto o col nome sbagliato
+  ora rossi (R1), nessun file vecchio nei conteggi delle cure mirate (R2), runner controllato (R3), riga mancante rossa (R4).
+- **Verifiche** (campo, livello pieno, script corretti): catture nuove su iPad iOS 26.5 e 27, uguali per contenuto a quelle
+  della build 64; `rete_generazioni.sh` completa VERDE (identità al byte alla build 64 104/104 per generazione, parità 26.5 → 27,
+  controllo, oracolo, **risorse visive 110/110 al posto**); catena dell'iPad e runner al predefinito 260/260 per generazione;
+  giudice delle altre granularità verde a 900 e 1.200, rosso a 600 su 3 volumi (i tagli dopo una sigla: residuo); misura dei
+  titoli identica a ogni livello; rete sulle annotazioni a ogni livello VERDE da 400 verso 600, 900, 1.200 e da 900 e 1.200
+  verso 400, ROSSA da 600 verso 400 per una riga della prova al contrario «orfana» (il quasi gemello: residuo); andata e ritorno
+  0 spostamenti silenziosi su dodici giri (prima da 1.630 a 2.530); `rete_cure_mirate.sh` VERDE (11 passi); `rete_parlato.sh`
+  VERDE (192/192, 630.124 elementi); **parità iPad-Mac VERDE, 52 + 3 libri, 192/192 al byte**; `rete_vista_mac.sh` VERDE (55/55,
+  l'app che importa da sé 50/55 con le 5 differenze dell'estrattore); ScaboCore 1.091, ScaboChain 23, ScaboMac 112 (9 saltati);
+  prove da fuori 5/5, interfaccia del Mac 11 (6 passati, 5 saltati); `validate.sh` verde (1.135 test); suite dell'app, 278 test
+  per dispositivo (unità e interfaccia con gli audit di accessibilità), 0 falliti: iPhone 16 iOS 26.5 253 passati e 25 saltati,
+  iPad Pro iOS 26.5 255 e 23, iPhone 16 iOS 27 258 e 20, iPad Pro iOS 27 260 e 18 (tutti i 44 test d'interfaccia passati, compresi quelli con VoiceOver vero e la vista affiancata); i saltati sono per costruzione (banchi a
+  richiesta, servizio VoiceOver dei test solo da iOS 27, vista affiancata solo sull'iPad).
+- **Residui di riservatezza (aggiornati).** L'elenco dei nomi dei volumi è uscito dal repo; restano, accettati: i nomi nei commit
+  passati di main (la lista rimossa in `c933718` è nella storia, che non si riscrive); nomi di autori o di volumi in 148 file
+  tracciati di giri passati (55 fra documenti e `CLAUDE.md`, 32 sotto `app/`, 61 nella pipeline e nello schema), nessuno aggiunto
+  in questo giro; gli strumenti di laboratorio dei giri passati che leggono ancora la lista dal percorso del repo (da puntare al
+  laboratorio quando servono).
+- **Residui dichiarati**: il controllo per documento in barra (LAYER2 § 7.7); l'animazione del foglio d'elaborazione del Mac
+  (0,26 s); i tagli del riconoscimento delle frasi dopo una sigla col punto (a ogni granularità); i pezzi di mezzo di un blocco fuso
+  diventano «da ricollocare» (dichiarati, tornano al ritorno); nella prova al contrario «orfana» della rete sulle annotazioni con A a
+  600, un volume: un segnalibro e una citazione trovano per testa e coda un pezzo di nota quasi gemello quando il loro testo
+  sparisce (identico col runner della build 64: comportamento della risoluzione, non toccata).
+- **Decisioni per il maintainer** (referto § 9): (1) ritrovare dentro il blocco nuovo i segnalibri dei pezzi di mezzo, che a
+  un cambio di granularità diventano «da ricollocare» (dal 10 al 26 % dei campioni di corpo): inclinazione sì, in un giro
+  dedicato con la rete sulle annotazioni e l'andata e ritorno; (2) curare i tagli dei blocchi dopo una sigla col punto, che
+  cambia anche la lettura a 400: inclinazione sì, misurando prima e con l'offerta a tutti e soli i libri che cambiano; (3) il
+  controllo per documento in barra: inclinazione aspettare l'esito dei tester sulla granularità globale e la decisione 1.
+- **Dove riprendere**: la prova 4 sul Mac (DISEGNO § 10) e, con l'esito, la decisione 1; poi la tappa B (DISEGNO § 9).
 
 ---
 

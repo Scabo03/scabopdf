@@ -712,6 +712,20 @@ mostra. Portare la scelta anche sull'iPad è una decisione per il maintainer (re
 granularità della loro struttura (§ 7.7). Questa regola sostituisce, per la tappa A, il ciclo di ricostruzione nella
 finestra aperta descritto nella versione precedente.
 
+**Dal giro «prove rifatte e granularità» (2026-11-10, build 65) la scelta vale anche sull'iPad**, con la stessa regola, una
+sola nel modulo condiviso (ScaboChain `ReadingAssembly.processingGranularity`, `LibraryService.requiredCacheGranularity`): la
+scelta per i testi discorsivi, la struttura per i testi normativi in AKN, la granularità leggera per i volumi enormi; un libro
+letto a un'altra granularità si rielabora una volta alla prossima apertura, dalla sorgente in archivio; senza la sorgente si
+legge la cache com'è; una lettura arrivata dal Mac si adotta com'è. Misure (campo, catena dell'iPad sui 52 volumi del banco,
+iOS 26.5 e 27): al predefinito letture identiche al byte alla build 64 (260 forme su 260 per generazione, e così il runner);
+a 600, 900 e 1.200 lettere e cifre, struttura e ricomposizione identiche a 400 su tutti i volumi, i volumi enormi invariati;
+blocchi di corpo e pezzi di nota da circa 164.000 a 137.000, 113.000 e 100.000, lunghezza media da 389 a 466, 567 e 640
+caratteri; misura dei titoli identica a ogni livello. A 600, in tre volumi, sei blocchi in più cominciano dopo un taglio a
+una sigla col punto (o in una trascrizione epigrafica): la stessa natura delle eccezioni già presenti a 400, dal riconoscimento
+delle frasi condiviso (residuo dichiarato). Un'andata e ritorno di granularità spostava in silenzio i segnalibri che stavano in
+coda a un blocco fuso: curata in ScaboCore (l'ancora d'origine resta dentro un blocco fuso, revisione del giro, R5). Il
+controllo per documento in barra (§ 7.7) resta aperto.
+
 ## 7. Domanda 6 — Il resto del prodotto, a tappe
 
 | parte del prodotto | tappa | che cosa serve | costo stimato |
@@ -811,7 +825,8 @@ e le 5 differenze sono dell'estrattore di macOS (tre didascalie, una nota non se
 differenza fra iOS 26.5 e 27, molto più piccola); iPad identico; revisione indipendente con 22 rilievi, nessuno bloccante.
 Restano le prove d'orecchio e tre decisioni per il maintainer (importazione e modelli, § 6.6; la granularità sull'iPad,
 § 6.7; un controllore condiviso per la sequenza d'importazione e apertura di iPad e Mac, oggi scritta due volte con i passi
-condivisi).
+condivisi). *Il 10 novembre* (giro «prove rifatte e granularità», build 65): la granularità vale anche sull'iPad (§ 6.7); la
+riapertura dopo una rielaborazione è una sequenza sola della libreria condivisa; il controllore condiviso resta da decidere.
 
 **Tappa B — ciò che l'orecchio sposta, annotazioni, strumenti (1–2 giri).** Gli esiti di T1–T3 (i figli finestrati di
 § 2.3 se T1 è rossa: un giro in più; i segnali delle note accesi se T2 è verde; *9 novembre 2026: T1 rossa, i figli
@@ -939,7 +954,8 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
   bersaglio senza chiederne le azioni entro 0,35 s, la ripetizione gli darebbe un oggetto nuovo sotto il cursore (in tutti gli
   arrivi dei diari le azioni sono chieste entro 30 ms). *Decisione 1 del giro precedente* (segnali delle note predefiniti sul
   Mac): non applicata, perché la condizione posta (salti che funzionano) non c'era; dopo la prova 4. *I tre lavori della
-  libreria condivisa sul filo principale*: sono la voce 2.4 della seconda parte di questo giro, per iPad e Mac insieme (referto § 6).
+  libreria condivisa sul filo principale*: fatti nella seconda parte di questo giro, per iPad e Mac insieme (punto seguente;
+  referto § 6).
 - **Dopo le prove del 9 novembre 2026** (giro «prove della tappa A»). *Da sentire* (T1 e T3 rifatte, § 10): che con i figli
   finestrati VoiceOver entri e si muova subito nel libro grande, VO+Fine e VO+Inizio compresi, e che dopo un salto il cursore
   stia davvero sulla destinazione; con la finestra piccola della T3 rifatta, che la lettura continua (VO+A) attraversi la svolta
@@ -949,14 +965,19 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
   (VO+U) VoiceOver chiede al delegato tutte le voci e di ognuna legge subito ruolo, valore e descrizione (diario T3); sul
   volume più grande sono 9.453 intestazioni, che l'app serve in circa 1,3 s (campo, dentro il processo, compilazione di debug,
   ricerca del titolo seguente lineare nel modulo) più il tempo di VoiceOver, non misurabile qui: la T1 rifatta lo dice.
-  *Misurato, resta* (campo, sentinella dell'app finale): la libreria condivisa con l'iPad lavora sul filo principale in tre
-  punti, che toccarli vorrebbe dire cambiare l'iPad — la registrazione dopo l'importazione (fermo di 0,3 s), la scrittura della
-  cache alla prima riapertura di un volume enorme (0,3 s) e, se il libro era già stato letto, il riancoraggio della posizione
-  dopo la rielaborazione (1,2 s, misurato col fuoco sull'ultimo elemento; la posizione ritrovata è giusta); l'attribuzione dei
-  fermi ai tre passi è dedotta dal momento in cui cadono. All'avvio dell'app, prima di ogni finestra, un fermo di 0,26–0,45 s.
+  *Fatto nel giro «prove rifatte e granularità»* (2026-11-10, campo): i tre lavori della libreria condivisa che stavano sul
+  filo principale — la registrazione dopo l'importazione, la scrittura della cache, il riancoraggio di un libro già letto dopo
+  la rielaborazione — girano fuori, per iPad e Mac insieme (ScaboChain `registerImportedOffMain`, `completeReprocessedOpening`),
+  con lo stesso risultato. Misurati per parti sul volume più grande (iPad simulato iOS 27): 0,008 s, 0,14 s e 1,7 s; fuori
+  dal filo il fermo massimo resta sotto il millesimo di secondo. Sul Mac (sentinella dell'app, prima e dopo): il fermo del
+  riancoraggio, 1,29 s, non c'è più; alla fine dell'importazione e della riapertura resta un fermo di circa 0,28 s, che è
+  l'animazione di chiusura del foglio d'elaborazione (`NSWindow.endSheet` trattiene il filo principale 262–266 ms in una
+  prova di laboratorio, e così `beginSheet`), non la libreria: l'attribuzione dei 0,3 s alla registrazione e alla cache,
+  dedotta dal momento, era in buona parte sbagliata. Il foglio resta com'è. All'avvio dell'app, prima di ogni finestra, un
+  fermo di 0,26–0,45 s.
   La descrizione dalla vista percorre tutti gli elementi: la rete d'identità non vede la finestra, che è coperta dai test e
-  dal client da fuori. *Decisioni del maintainer* (referto del giro): i segnali delle note per impostazione predefinita sul Mac
-  (T2 verde, § 4.3); quando togliere dal filo principale, per iPad e Mac insieme, i tre lavori della libreria condivisa.
+  dal client da fuori. *Decisioni del maintainer*: i segnali delle note per impostazione predefinita sul Mac (T2 verde, § 4.3), da
+  applicare dopo la prova 4 (§ 10); i tre lavori della libreria condivisa, decisi e fatti il 10 novembre (sopra).
 - **Non verificato:** il tempo d'ingresso di VoiceOver in un gruppo di trentamila figli e la lettura degli elementi fuori
   finestra (T1, la prima prova; ripiego pronto in § 2.3); che VoiceOver imposti AXFocused sugli elementi virtuali (T2) e che
   il diario lo veda (dedotto dai due client misurati, § 3.3); l'ordine di pronuncia fra AXValue e AXDescription (T2); i nomi

@@ -510,6 +510,18 @@ Per ogni singolo documento, l'utente può **modificare la granularità al volo**
 
 I documenti normativi (codici, leggi, atti) **non usano questa modulazione**: la loro granularità è dettata dalla struttura nativa del documento (intestazioni di livello, articoli, commi, schede operative, eccetera). Lo swipe orizzontale aggancia direttamente queste unità senza accorpamento per caratteri. Il selettore di granularità in barra strumenti, su un documento normativo, è semplicemente disabilitato.
 
+**Stato (10 novembre 2026, build 65).** Il predefinito globale **si applica su iPad e Mac**, con una regola sola nel modulo
+condiviso (ScaboChain `ReadingAssembly.processingGranularity`; fino alla build 64 l'iPad salvava la scelta ma elaborava ogni
+libro a 400 caratteri): i testi discorsivi si elaborano alla granularità scelta, i testi normativi in AKN alla granularità
+della loro struttura, i volumi enormi alla granularità leggera di sempre. Un libro letto a un'altra granularità si rielabora
+**una volta, alla prossima apertura**, dalla sorgente in archivio e nella schermata d'elaborazione; la posizione e le
+annotazioni si ritrovano per ancora di contenuto (§ 12.14). Senza la sorgente in archivio si legge la cache com'è, e una
+lettura arrivata dal Mac si adotta così com'è (§ 12.12). Al predefinito non cambia nulla e nessuna rielaborazione è proposta.
+Le annotazioni seguono il testo (§ 12.14): quando i blocchi si fondono, un segnalibro resta ancorato al suo testo d'origine, così
+tornando alla granularità di prima ritrova il suo pezzo; uno che finisce a metà di un blocco nuovo diventa «da ricollocare», mai
+spostato in silenzio (misurato sui 52 volumi del banco, andata e ritorno a ogni livello: nessuno spostamento silenzioso).
+**Il controllo per documento in barra resta una voce aperta**: non esiste ancora, né sull'iPad né sul Mac.
+
 ### 7.8 Blocchi procedurali e schede operative dei codici annotati
 
 I codici annotati italiani (in particolare l'edizione Giuffrè dei Codici d'udienza) contengono, dopo molti articoli, un piccolo riquadro tipografico che riassume gli aspetti operativi dell'articolo: competenza, procedibilità, arresto, fermo, misure cautelari, eccetera. Sono informazioni di servizio sintetiche, organizzate in voci brevi (esempio: "competenza: tribunale monocratico. Procedibilità: a querela. Arresto: facoltativo in flagranza.").
@@ -1503,6 +1515,15 @@ diario, sono curate (`DISEGNO_LETTURA_MAC.md` § 5.2) e restano da sentire in un
 le note a voce» come scelta — si applica quando i diari confermano che i salti funzionano, e la prova 2 era già verde: la
 seconda condizione c'è, la prima no (tre salti su sette persi). Sul Mac le note restano quindi **annunciate a voce per
 impostazione predefinita**, finché la prova 4 non dirà che i salti arrivano tutti.
+
+**Due decisioni applicate (10 novembre 2026, stesso giro, build 65).** Il maintainer ha deciso nel brief del giro la seconda
+domanda della tappa A — la **granularità** scelta nelle Impostazioni vale anche sull'iPad, con la regola del Mac, ora una sola
+nel modulo condiviso (§ 7.7) — e la seconda decisione del giro del 9 novembre: i **tre lavori della libreria condivisa** che
+stavano sul filo principale — la registrazione dopo l'importazione, la scrittura della cache, il riancoraggio di un libro già
+letto dopo una rielaborazione — girano fuori, per iPad e Mac insieme, con lo stesso risultato. La riapertura dopo una
+rielaborazione è ora una sequenza sola della libreria condivisa, usata dai due; i controllori dell'interfaccia restano due. Le
+altre due domande della tappa A (il rapporto fra importazione e modelli; un controllore condiviso per importazione e apertura)
+restano aperte. Dettagli e misure: `DISEGNO_LETTURA_MAC.md` § 6.7 e § 11.
 
 ---
 
