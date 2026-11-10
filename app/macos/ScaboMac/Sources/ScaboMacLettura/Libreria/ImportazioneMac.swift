@@ -117,22 +117,26 @@ public final class ImportazioneMac {
         let processore: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         presentatore.elabora(fileURL: copia, nome: nome, granularita: granularita, dottrina: true, processore: processore) {
             [weak self] esito, saltate in
-            defer { try? FileManager.default.removeItem(at: copia); self?.occupato = false }
-            guard let self else { return }
-            switch esito {
-            case .success(let documento, let contenuto, let dottrina):
-                let r = self.service.registerImported(
-                    document: documento, content: contenuto, doctrineContent: dottrina, sourceName: nome, localCopy: copia,
-                    isAkn: isAkn, sha256: sha, visualResourcesSkipped: saltate, destination: nil, contentTarget: granularita)
+            guard let self else { try? FileManager.default.removeItem(at: copia); return }
+            guard case .success(let documento, let contenuto, let dottrina) = esito else {
+                try? FileManager.default.removeItem(at: copia)
+                self.occupato = false
+                if case .failure(let messaggio) = esito { self.presentatore?.mostraErrore(messaggio) }
+                return
+            }
+            // La registrazione coi passi pesanti fuori dal filo principale (giro «prove rifatte e granularità», 2026-11-10: sul
+            // volume più grande 0,3 s di fermo), lo stesso risultato; l'importazione resta «occupata» finché non è finita.
+            self.service.registerImportedOffMain(
+                document: documento, content: contenuto, doctrineContent: dottrina, sourceName: nome, localCopy: copia,
+                isAkn: isAkn, sha256: sha, visualResourcesSkipped: saltate, destination: nil, contentTarget: granularita) { [weak self] r in
+                try? FileManager.default.removeItem(at: copia)
+                guard let self else { return }
                 self.libreria.avvisa()
                 self.presentatore?.apriLettura(
                     documento: r.document,
                     lettura: LibraryReading(content: contenuto, pageMap: r.pageMap,
                                             doctrineContent: r.isLarge ? nil : dottrina, quickConsultTree: r.quickConsultTree))
-            case .cancelled:
-                break
-            case .failure(let messaggio):
-                self.presentatore?.mostraErrore(messaggio)
+                self.occupato = false
             }
         }
     }
@@ -193,20 +197,21 @@ public final class ImportazioneMac {
         presentatore.elabora(fileURL: service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind), nome: doc.title,
                              granularita: granularita, dottrina: !large, processore: processore) { [weak self] esito, saltate in
             guard let self else { return }
-            self.occupato = false
-            switch esito {
-            case .success(let documento, let contenuto, let dottrina):
-                let lettura = self.service.storeProcessedReading(
-                    documentId: id, document: documento, content: contenuto, doctrineContent: dottrina,
-                    large: large, target: granularita, visualResourcesSkipped: saltate)
-                self.service.store.recordOpened(id: id)
-                let aggiornato = self.service.reanchorAfterProcessing(documentId: id, content: contenuto) ?? doc
+            guard case .success(let documento, let contenuto, let dottrina) = esito else {
+                self.occupato = false
+                if case .failure(let messaggio) = esito { self.presentatore?.mostraErrore(messaggio) }
+                return
+            }
+            // La lettura in cache, l'apertura registrata e il riancoraggio, coi passi pesanti fuori dal filo principale
+            // (ScaboChain `completeReprocessedOpening`, la stessa sequenza dell'iPad: sul volume più grande già letto 1,2 s di
+            // fermo); il controllore resta «occupato» finché non è finita.
+            self.service.completeReprocessedOpening(
+                documentId: id, document: documento, content: contenuto, doctrineContent: dottrina,
+                large: large, target: granularita, visualResourcesSkipped: saltate) { [weak self] aggiornato, lettura in
+                guard let self else { return }
                 self.libreria.avvisa()
-                self.presentatore?.apriLettura(documento: aggiornato, lettura: lettura)
-            case .cancelled:
-                break
-            case .failure(let messaggio):
-                self.presentatore?.mostraErrore(messaggio)
+                self.presentatore?.apriLettura(documento: aggiornato ?? doc, lettura: lettura)
+                self.occupato = false
             }
         }
     }

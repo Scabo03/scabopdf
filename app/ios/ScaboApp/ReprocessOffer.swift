@@ -320,30 +320,30 @@ enum ReprocessOffer {
                 guard let presenter else { return }
                 switch outcome {
                 case .success(let document, let content, let doctrine):
-                    let pageMap = DocumentOpener.buildPageMap(document, content: content, doctrineContent: doctrine)
-                    let tree = large ? nil : DocumentOpener.quickConsultTreeIfAvailable(document)
-                    service.writeCache(content, pageMap: pageMap, doctrineContent: large ? nil : doctrine,
-                                       quickConsultTree: tree, contentTarget: target, forDocumentId: id)
-                    service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
-                                                  visualResourcesSkipped: visualSkipped)
-                    // 4. Riancoraggio sul testo nuovo (fuori dal thread principale: sui codici l'indice costa).
-                    let segments = content.pages.flatMap { $0.segments }
-                    let current = service.store.document(id: id) ?? doc
-                    DispatchQueue.global(qos: .userInitiated).async {
-                        let out = AnnotationReanchoring.reanchor(
-                            bookmarks: current.bookmarks ?? [], underlines: current.underlines ?? [],
-                            readingPosition: current.readingPosition, readingAnchor: current.readingAnchor,
-                            in: ContentAnchorIndex(segments: segments))
-                        DispatchQueue.main.async {
-                            service.store.applyAnnotationState(
-                                documentId: id, bookmarks: out.bookmarks, underlines: out.underlines,
-                                readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
-                                readingPositionIsApproximate: out.readingPositionIsApproximate ? true : nil)
-                            let result = ReprocessResultViewController(documentId: id, report: out.report,
-                                                                       positionApproximate: out.readingPositionIsApproximate) {
-                                onDone(out.report)
+                    // La cache e l'etichetta di generazione: la scrittura fuori dal filo principale (dal giro «prove rifatte e
+                    // granularità», 2026-11-10, ScaboChain `storeProcessedReadingOffMain`: lo stesso risultato di prima).
+                    service.storeProcessedReadingOffMain(
+                        documentId: id, document: document, content: content, doctrineContent: doctrine,
+                        large: large, target: target, visualResourcesSkipped: visualSkipped) { _ in
+                        // 4. Riancoraggio sul testo nuovo (fuori dal thread principale: sui codici l'indice costa).
+                        let segments = content.pages.flatMap { $0.segments }
+                        let current = service.store.document(id: id) ?? doc
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            let out = AnnotationReanchoring.reanchor(
+                                bookmarks: current.bookmarks ?? [], underlines: current.underlines ?? [],
+                                readingPosition: current.readingPosition, readingAnchor: current.readingAnchor,
+                                in: ContentAnchorIndex(segments: segments))
+                            DispatchQueue.main.async {
+                                service.store.applyAnnotationState(
+                                    documentId: id, bookmarks: out.bookmarks, underlines: out.underlines,
+                                    readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
+                                    readingPositionIsApproximate: out.readingPositionIsApproximate ? true : nil)
+                                let result = ReprocessResultViewController(documentId: id, report: out.report,
+                                                                           positionApproximate: out.readingPositionIsApproximate) {
+                                    onDone(out.report)
+                                }
+                                presenter.present(UINavigationController(rootViewController: result), animated: Motion.animated())
                             }
-                            presenter.present(UINavigationController(rootViewController: result), animated: Motion.animated())
                         }
                     }
                 case .cancelled:

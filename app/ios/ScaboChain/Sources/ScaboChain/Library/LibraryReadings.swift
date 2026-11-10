@@ -178,6 +178,117 @@ extension LibraryService {
         return store.document(id: documentId)
     }
 
+    // MARK: Fuori dal filo principale (giro «prove rifatte e granularità», 2026-11-10)
+    //
+    // I tre lavori della libreria che il giro «prove della tappa A» ha misurato sul filo principale, su iPad e Mac: la
+    // REGISTRAZIONE dopo un'importazione (circa 0,3 s sul volume più grande), la SCRITTURA DELLA CACHE alla prima riapertura
+    // (circa 0,3 s) e il RIANCORAGGIO di un libro già letto dopo una rielaborazione (circa 1,2 s). Qui i loro passi pesanti —
+    // copia nell'archivio, impronta, mappa delle pagine, albero della Consultazione Rapida, codifica e scrittura della cache,
+    // indice delle ancore e riancoraggio — girano su una coda a parte; le modifiche della libreria in memoria (che non è
+    // protetta fra fili) restano sul filo principale, nello STESSO ORDINE delle versioni sincrone qui sopra, che restano per i
+    // test e i banchi. Il risultato è lo stesso, al byte: stessa cache, stessi campi del libro, stesso ordine dei recenti.
+    // Chi chiama è sul filo principale; `completion` arriva sul filo principale.
+
+    /// La coda dei lavori pesanti: seriale, così i lavori di uno stesso libro non si accavallano.
+    public static let heavyWorkQueue = DispatchQueue(label: "com.scabo.scabopdf.libreria.lavori-pesanti", qos: .userInitiated)
+
+    /// `registerImported` con i passi pesanti fuori dal filo principale.
+    public func registerImportedOffMain(
+        document: ScabopdfDocument, content: PaginatedContent, doctrineContent: PaginatedContent?,
+        sourceName: String, localCopy: URL, isAkn: Bool, sha256: String?, visualResourcesSkipped: String?,
+        destination: ContainerRef?, contentTarget: Int = DEFAULT_GRANULARITY_TARGET,
+        completion: @escaping (RegisteredImport) -> Void
+    ) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        let sourceKind: String? = isAkn ? "akn" : nil
+        let title = (sourceName as NSString).deletingPathExtension
+        let sourcePageCount = isAkn ? 0 : document.metadata.pages_pdf
+        let doc = store.addDocument(
+            title: title.isEmpty ? sourceName : title, sourceFileName: sourceName, sourcePageCount: sourcePageCount,
+            warnings: document.warnings, sourceKind: sourceKind)
+        let large = sourcePageCount > ReadingAssembly.largeDocumentPageThreshold
+        Self.heavyWorkQueue.async {
+            var archived = false
+            do {
+                try self.storeSource(from: localCopy, forDocumentId: doc.id, kind: sourceKind)
+                archived = true
+            } catch {}
+            let fingerprint = archived ? (sha256 ?? DocumentIdentity.fingerprintOfArchivedSource(doc, service: self)) : nil
+            let pageMap = ReadingAssembly.buildPageMap(document, content: content, doctrineContent: doctrineContent)
+            let tree = large ? nil : ReadingAssembly.quickConsultTreeIfAvailable(document)
+            if !large {
+                self.writeCache(content, pageMap: pageMap, doctrineContent: doctrineContent, quickConsultTree: tree,
+                                contentTarget: contentTarget, forDocumentId: doc.id)
+            }
+            DispatchQueue.main.async {
+                if !archived { self.store.renameDocument(id: doc.id, to: doc.title) }   // come la versione sincrona
+                if let fingerprint { self.store.setSourceSha256(id: doc.id, fingerprint) }
+                self.store.recordProcessed(id: doc.id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                           visualResourcesSkipped: visualResourcesSkipped)
+                if let destination { self.store.addCollocation(documentId: doc.id, to: destination) }
+                self.store.recordOpened(id: doc.id)
+                completion(RegisteredImport(document: doc, pageMap: pageMap, quickConsultTree: tree, isLarge: large))
+            }
+        }
+    }
+
+    /// `storeProcessedReading` con la mappa, l'albero e la scrittura della cache fuori dal filo principale.
+    public func storeProcessedReadingOffMain(
+        documentId id: String, document: ScabopdfDocument, content: PaginatedContent, doctrineContent: PaginatedContent?,
+        large: Bool, target: Int, visualResourcesSkipped: String?, completion: @escaping (LibraryReading) -> Void
+    ) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        Self.heavyWorkQueue.async {
+            let pageMap = ReadingAssembly.buildPageMap(document, content: content, doctrineContent: doctrineContent)
+            let tree = large ? nil : ReadingAssembly.quickConsultTreeIfAvailable(document)
+            self.writeCache(content, pageMap: pageMap, doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree,
+                            contentTarget: target, forDocumentId: id)
+            DispatchQueue.main.async {
+                self.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
+                                           visualResourcesSkipped: visualResourcesSkipped)
+                completion(LibraryReading(content: content, pageMap: pageMap,
+                                          doctrineContent: large ? nil : doctrineContent, quickConsultTree: tree))
+            }
+        }
+    }
+
+    /// `reanchorAfterProcessing` con l'indice delle ancore e il riancoraggio fuori dal filo principale; lo stato delle
+    /// annotazioni si legge e si scrive sul filo principale.
+    public func reanchorAfterProcessingOffMain(documentId: String, content: PaginatedContent,
+                                               completion: @escaping (ArchivedDocument?) -> Void) {
+        dispatchPrecondition(condition: .onQueue(.main))
+        guard let doc = store.document(id: documentId) else { completion(nil); return }
+        let hasAnything = !(doc.bookmarks ?? []).isEmpty || !(doc.underlines ?? []).isEmpty || doc.readingPosition > 0
+        guard hasAnything else { completion(doc); return }
+        Self.heavyWorkQueue.async {
+            let out = AnnotationReanchoring.reanchor(
+                bookmarks: doc.bookmarks ?? [], underlines: doc.underlines ?? [], readingPosition: doc.readingPosition,
+                readingAnchor: doc.readingAnchor, in: ContentAnchorIndex(segments: content.pages.flatMap { $0.segments }))
+            DispatchQueue.main.async {
+                self.store.applyAnnotationState(
+                    documentId: documentId, bookmarks: out.bookmarks, underlines: out.underlines,
+                    readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
+                    readingPositionIsApproximate: out.readingPositionIsApproximate ? true : nil)
+                completion(self.store.document(id: documentId))
+            }
+        }
+    }
+
+    /// La riapertura di un libro dopo una rielaborazione riuscita, i tre passi dell'iPad e del Mac in fila — la lettura in
+    /// cache, l'apertura registrata, le annotazioni riancorate — con i lavori pesanti fuori dal filo principale.
+    /// `completion(libro aggiornato, lettura)` sul filo principale.
+    public func completeReprocessedOpening(
+        documentId id: String, document: ScabopdfDocument, content: PaginatedContent, doctrineContent: PaginatedContent?,
+        large: Bool, target: Int, visualResourcesSkipped: String?,
+        completion: @escaping (ArchivedDocument?, LibraryReading) -> Void
+    ) {
+        storeProcessedReadingOffMain(documentId: id, document: document, content: content, doctrineContent: doctrineContent,
+                                     large: large, target: target, visualResourcesSkipped: visualResourcesSkipped) { reading in
+            self.store.recordOpened(id: id)
+            self.reanchorAfterProcessingOffMain(documentId: id, content: content) { doc in completion(doc, reading) }
+        }
+    }
+
     /// Conia le ancore per contenuto MANCANTI delle annotazioni del documento, a contenuto fermo (il flusso appena
     /// presentato è quello su cui gli id correnti sono veri): la migrazione gratuita delle annotazioni create prima delle
     /// ancore (docs/ANCORE_ANNOTAZIONI.md). Prima la verifica (§ 12.14 «al suo posto, verificato»): se un'annotazione punta

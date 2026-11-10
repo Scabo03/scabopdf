@@ -224,6 +224,122 @@ final class LibraryReadingsTests: XCTestCase {
         XCTAssertTrue(ReadingSettingsWording.granularityWhenItApplies.contains("prossima apertura"))
     }
 
+    // MARK: Fuori dal filo principale (giro «prove rifatte e granularità», 2026-11-10)
+
+    /// Una seconda libreria, per confrontare la versione sincrona con quella fuori dal filo principale.
+    private func altraLibreria() -> (LibraryService, URL) {
+        let r = FileManager.default.temporaryDirectory.appendingPathComponent("libreria-prova-\(UUID().uuidString)", isDirectory: true)
+        return (LibraryService(rootDirectory: r, prefs: InMemoryKeyValueStore()), r)
+    }
+
+    /// Un contenuto sintetico grande: tanti capoversi con frasi neutre numerate (nessun testo dei volumi).
+    private func contenutoGrande(_ n: Int) -> PaginatedContent {
+        content((0..<n).map { "Capoverso di prova numero \($0), con qualche parola in più perché pesi come un blocco vero." })
+    }
+
+    private func attendi(_ descr: String, _ corpo: (@escaping () -> Void) -> Void) {
+        let e = expectation(description: descr)
+        corpo { e.fulfill() }
+        wait(for: [e], timeout: 30)
+    }
+
+    /// La registrazione fuori dal filo principale dà lo stesso risultato della sincrona: stessa cache (decodificata), stessi
+    /// campi del libro, stessa impronta, stessa collocazione, stessi recenti.
+    func test_registrazioneFuoriDalFiloPrincipale_stessoRisultatoDellaSincrona() throws {
+        let src = try sourceFile("registrazione fuori dal filo principale")
+        defer { try? FileManager.default.removeItem(at: src) }
+        let (altra, rAltra) = altraLibreria()
+        defer { try? FileManager.default.removeItem(at: rAltra) }
+        let c = contenutoGrande(500)
+        let a = service.registerImported(document: document(pages: 3), content: c, doctrineContent: nil, sourceName: "Libro.pdf",
+                                         localCopy: src, isAkn: false, sha256: nil, visualResourcesSkipped: nil,
+                                         destination: nil, contentTarget: 600)
+        var b: RegisteredImport?
+        attendi("registrazione") { fatto in
+            altra.registerImportedOffMain(document: document(pages: 3), content: c, doctrineContent: nil, sourceName: "Libro.pdf",
+                                          localCopy: src, isAkn: false, sha256: nil, visualResourcesSkipped: nil,
+                                          destination: nil, contentTarget: 600) { r in b = r; fatto() }
+        }
+        let rb = try XCTUnwrap(b)
+        XCTAssertEqual(a.pageMap, rb.pageMap); XCTAssertEqual(a.isLarge, rb.isLarge)
+        XCTAssertEqual(a.document.title, rb.document.title)
+        let ca = try XCTUnwrap(service.loadCache(forDocumentId: a.document.id)), cb = try XCTUnwrap(altra.loadCache(forDocumentId: rb.document.id))
+        XCTAssertEqual(ca.content, cb.content); XCTAssertEqual(ca.pageMap, cb.pageMap); XCTAssertEqual(ca.contentTarget, cb.contentTarget)
+        let da = try XCTUnwrap(service.store.document(id: a.document.id)), db = try XCTUnwrap(altra.store.document(id: rb.document.id))
+        XCTAssertEqual(da.sourceSha256, db.sourceSha256); XCTAssertNotNil(db.sourceSha256)
+        XCTAssertEqual(da.sourcePageCount, db.sourcePageCount); XCTAssertEqual(da.processedAppBuild, db.processedAppBuild)
+        XCTAssertEqual(da.processedSystemVersion, db.processedSystemVersion)
+        XCTAssertEqual(altra.store.recents().map(\.id), [rb.document.id])
+        XCTAssertTrue(altra.hasArchivedSource(forDocumentId: rb.document.id, kind: nil))
+    }
+
+    /// La riapertura dopo una rielaborazione fuori dal filo principale: la stessa cache e lo stesso riancoraggio della
+    /// sequenza sincrona (lettura in cache, apertura, riancoraggio), con un segnalibro e la posizione.
+    func test_riaperturaFuoriDalFiloPrincipale_stessaCacheEStessoRiancoraggio() throws {
+        let src = try sourceFile("riapertura fuori dal filo principale")
+        defer { try? FileManager.default.removeItem(at: src) }
+        let (altra, rAltra) = altraLibreria()
+        defer { try? FileManager.default.removeItem(at: rAltra) }
+        let vecchio = content(["Primo capoverso di prova.", "Secondo capoverso di prova.", "Terzo capoverso di prova."])
+        let nuovo = content(["Primo capoverso di prova. Secondo capoverso di prova.", "Terzo capoverso di prova."])
+        var ids: [String] = []
+        for lib in [service!, altra] {
+            let r = lib.registerImported(document: document(pages: 3), content: vecchio, doctrineContent: nil, sourceName: "R.pdf",
+                                         localCopy: src, isAkn: false, sha256: nil, visualResourcesSkipped: nil, destination: nil)
+            let idx = ContentAnchorIndex(segments: vecchio.pages.flatMap { $0.segments })
+            lib.store.updateReadingPosition(id: r.document.id, position: 2, anchor: idx.anchor(forIndex: 2))
+            ids.append(r.document.id)
+        }
+        let readingA = service.storeProcessedReading(documentId: ids[0], document: document(pages: 3), content: nuovo,
+                                                     doctrineContent: nil, large: false, target: 900, visualResourcesSkipped: nil)
+        service.store.recordOpened(id: ids[0])
+        let docA = try XCTUnwrap(service.reanchorAfterProcessing(documentId: ids[0], content: nuovo))
+        var docB: ArchivedDocument?; var readingB: LibraryReading?
+        attendi("riapertura") { fatto in
+            altra.completeReprocessedOpening(documentId: ids[1], document: document(pages: 3), content: nuovo, doctrineContent: nil,
+                                             large: false, target: 900, visualResourcesSkipped: nil) { d, r in
+                docB = d; readingB = r; fatto()
+            }
+        }
+        let db = try XCTUnwrap(docB), rb = try XCTUnwrap(readingB)
+        XCTAssertEqual(readingA.pageMap, rb.pageMap)
+        XCTAssertEqual(docA.readingPosition, db.readingPosition); XCTAssertEqual(db.readingPosition, 1, "il terzo capoverso ritrovato")
+        XCTAssertEqual(docA.readingPositionIsApproximate, db.readingPositionIsApproximate)
+        XCTAssertEqual(service.loadCache(forDocumentId: ids[0])?.contentTarget, altra.loadCache(forDocumentId: ids[1])?.contentTarget)
+        XCTAssertEqual(service.loadCache(forDocumentId: ids[0])?.content, altra.loadCache(forDocumentId: ids[1])?.content)
+        XCTAssertEqual(altra.store.recents().first?.id, ids[1])
+    }
+
+    /// Il filo principale non resta fermo: su un contenuto sintetico grande (40.000 blocchi) la chiamata ritorna subito e il
+    /// lavoro pesante (cache, riancoraggio) avviene altrove; la versione sincrona lo tiene fermo per tutto il lavoro.
+    func test_filoPrincipaleLibero_suUnContenutoGrande() throws {
+        let src = try sourceFile("contenuto grande")
+        defer { try? FileManager.default.removeItem(at: src) }
+        let c = contenutoGrande(40_000)
+        let reg = service.registerImported(document: document(pages: 3), content: content(["Uno."]), doctrineContent: nil,
+                                           sourceName: "G.pdf", localCopy: src, isAkn: false, sha256: nil,
+                                           visualResourcesSkipped: nil, destination: nil)
+        let idx = ContentAnchorIndex(segments: content(["Uno."]).pages.flatMap { $0.segments })
+        service.store.updateReadingPosition(id: reg.document.id, position: 0, anchor: idx.anchor(forIndex: 0))
+        service.store.addBookmark(documentId: reg.document.id, anchorSegmentId: "node_1", orderIndexHint: 0, name: "Prova",
+                                  preview: "Prova", originalPage: 1, tagIds: [])
+        var t0 = Date()
+        service.storeProcessedReading(documentId: reg.document.id, document: document(pages: 3), content: c, doctrineContent: nil,
+                                      large: false, target: 400, visualResourcesSkipped: nil)
+        _ = service.reanchorAfterProcessing(documentId: reg.document.id, content: c)
+        let sincrono = Date().timeIntervalSince(t0)
+        t0 = Date()
+        var chiamata: TimeInterval = 0
+        attendi("fuori dal filo principale") { fatto in
+            service.completeReprocessedOpening(documentId: reg.document.id, document: document(pages: 3), content: c,
+                                               doctrineContent: nil, large: false, target: 400, visualResourcesSkipped: nil) { _, _ in fatto() }
+            chiamata = Date().timeIntervalSince(t0)
+        }
+        print(String(format: "RISULTATO filo_principale {\"sincrono_s\":%.3f,\"chiamata_s\":%.4f}", sincrono, chiamata))
+        XCTAssertLessThan(chiamata, 0.05, "la chiamata ritorna subito: il lavoro è su un'altra coda")
+        XCTAssertGreaterThan(sincrono, chiamata * 5)
+    }
+
     func test_paroleDelLibroGiaPresente() {
         XCTAssertEqual(DuplicateImport.screenTitle, "Libro già presente")
         XCTAssertEqual(DuplicateImport.openExistingTitle, "Apri il libro che hai già")

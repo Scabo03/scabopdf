@@ -1612,3 +1612,116 @@ extension RealPdfBenchTests {
         return (ReadingDescription(header: header, elements: elements), walk)
     }
 }
+
+// MARK: - I fermi della libreria sul filo principale (giro «prove rifatte e granularità», 2026-11-10)
+
+/// I tre lavori della libreria condivisa che il giro «prove della tappa A» ha misurato sul filo principale (la registrazione
+/// dopo l'importazione, la scrittura della cache alla prima riapertura di un volume enorme, il riancoraggio di un libro già
+/// letto), sull'iPad simulato: la versione sincrona di prima contro quella fuori dal filo principale, sulla lettura vera del
+/// volume più grande (richiesta con i percorsi del laboratorio: `SCABO_FERMI_REQUEST`, o `TEST_RUNNER_SCABO_FERMI_REQUEST`
+/// da xcodebuild). Una sentinella su un filo a parte manda un blocco al filo principale ogni 10 ms e annota quanto aspetta:
+/// il fermo più lungo è la misura. Nessun testo: tempi. `XCTSkip` senza richiesta.
+extension RealPdfBenchTests {
+    private struct FermiRequest: Codable { let lettura: String; let documento: String; let pdf: String; let out: String }
+
+    /// La sentinella del filo principale: il fermo più lungo visto mentre è accesa.
+    private final class Sentinella: @unchecked Sendable {
+        private let lock = NSLock()
+        private var massimo: TimeInterval = 0
+        private var accesa = true
+        func avvia() {
+            Thread {
+                while self.isAccesa {
+                    let t0 = Date(); let s = DispatchSemaphore(value: 0)
+                    DispatchQueue.main.async { s.signal() }
+                    s.wait()
+                    let attesa = Date().timeIntervalSince(t0)
+                    self.lock.lock(); self.massimo = max(self.massimo, attesa); self.lock.unlock()
+                    Thread.sleep(forTimeInterval: 0.01)
+                }
+            }.start()
+        }
+        var isAccesa: Bool { lock.lock(); defer { lock.unlock() }; return accesa }
+        func ferma() -> TimeInterval { lock.lock(); accesa = false; let m = massimo; lock.unlock(); return m }
+    }
+
+    func test_libraryMainThreadStalls_fromRequest() throws {
+        let reqPath = ProcessInfo.processInfo.environment["SCABO_FERMI_REQUEST"] ?? "/tmp/scabo_fermi_request.json"
+        guard let data = FileManager.default.contents(atPath: reqPath),
+              let req = try? JSONDecoder().decode(FermiRequest.self, from: data) else {
+            throw XCTSkip("nessuna richiesta dei fermi della libreria in \(reqPath).")
+        }
+        let lettura = try JSONDecoder().decode(PackagedReading.self, from: Data(contentsOf: URL(fileURLWithPath: req.lettura)))
+        let documento = try JSONDecoder().decode(ScabopdfDocument.self, from: Data(contentsOf: URL(fileURLWithPath: req.documento)))
+        let pdf = URL(fileURLWithPath: req.pdf)
+        let sha = try DocumentFingerprint.sha256Hex(ofFileAt: pdf)
+        let segmenti = lettura.content.pages.flatMap { $0.segments }
+        let ultimo = segmenti.count - 1
+        var esiti: [String: Double] = ["elementi": Double(segmenti.count)]
+
+        func libreria() -> (LibraryService, URL) {
+            let r = FileManager.default.temporaryDirectory.appendingPathComponent("fermi-\(UUID().uuidString)", isDirectory: true)
+            return (LibraryService(rootDirectory: r, prefs: InMemoryKeyValueStore()), r)
+        }
+        func copia() throws -> URL {
+            let u = FileManager.default.temporaryDirectory.appendingPathComponent("fermi-\(UUID().uuidString).pdf")
+            try FileManager.default.copyItem(at: pdf, to: u); return u
+        }
+        func posizione(_ s: LibraryService, _ id: String) {
+            let idx = ContentAnchorIndex(segments: segmenti)
+            s.store.updateReadingPosition(id: id, position: ultimo, anchor: idx.anchor(forIndex: ultimo))
+        }
+
+        // PRIMA: le versioni sincrone, sul filo principale (il fermo è la durata della chiamata).
+        let (a, ra) = libreria(); defer { try? FileManager.default.removeItem(at: ra) }
+        let ca = try copia(); defer { try? FileManager.default.removeItem(at: ca) }
+        var t0 = Date()
+        let regA = a.registerImported(document: documento, content: lettura.content, doctrineContent: lettura.doctrineContent,
+                                      sourceName: "volume.pdf", localCopy: ca, isAkn: false, sha256: sha,
+                                      visualResourcesSkipped: nil, destination: nil)
+        esiti["prima_registrazione_s"] = Date().timeIntervalSince(t0)
+        posizione(a, regA.document.id)
+        t0 = Date()
+        a.storeProcessedReading(documentId: regA.document.id, document: documento, content: lettura.content,
+                                doctrineContent: nil, large: true, target: ReadingAssembly.largeDocumentGranularity,
+                                visualResourcesSkipped: nil)
+        esiti["prima_cache_s"] = Date().timeIntervalSince(t0)
+        t0 = Date()
+        _ = a.reanchorAfterProcessing(documentId: regA.document.id, content: lettura.content)
+        esiti["prima_riancoraggio_s"] = Date().timeIntervalSince(t0)
+
+        // DOPO: le versioni fuori dal filo principale; il fermo è quello che la sentinella vede.
+        let (b, rb) = libreria(); defer { try? FileManager.default.removeItem(at: rb) }
+        let cb = try copia(); defer { try? FileManager.default.removeItem(at: cb) }
+        func misura(_ nome: String, _ corpo: (@escaping () -> Void) -> Void) {
+            let s = Sentinella(); s.avvia()
+            let e = expectation(description: nome)
+            let t = Date()
+            corpo { e.fulfill() }
+            wait(for: [e], timeout: 300)
+            esiti["dopo_\(nome)_durata_s"] = Date().timeIntervalSince(t)
+            esiti["dopo_\(nome)_fermo_massimo_s"] = s.ferma()
+        }
+        var idB = ""
+        misura("registrazione") { fatto in
+            b.registerImportedOffMain(document: documento, content: lettura.content, doctrineContent: lettura.doctrineContent,
+                                      sourceName: "volume.pdf", localCopy: cb, isAkn: false, sha256: sha,
+                                      visualResourcesSkipped: nil, destination: nil) { r in idB = r.document.id; fatto() }
+        }
+        posizione(b, idB)
+        misura("cache") { fatto in
+            b.storeProcessedReadingOffMain(documentId: idB, document: documento, content: lettura.content, doctrineContent: nil,
+                                           large: true, target: ReadingAssembly.largeDocumentGranularity,
+                                           visualResourcesSkipped: nil) { _ in fatto() }
+        }
+        misura("riancoraggio") { fatto in
+            b.reanchorAfterProcessingOffMain(documentId: idB, content: lettura.content) { _ in fatto() }
+        }
+        // Lo stesso esito: la posizione ritrovata è la stessa, e la cache è la stessa.
+        XCTAssertEqual(a.store.document(id: regA.document.id)?.readingPosition, b.store.document(id: idB)?.readingPosition)
+        XCTAssertEqual(a.loadCache(forDocumentId: regA.document.id)?.content, b.loadCache(forDocumentId: idB)?.content)
+        let json = try JSONSerialization.data(withJSONObject: esiti, options: [.sortedKeys])
+        try json.write(to: URL(fileURLWithPath: req.out))
+        print("RISULTATO fermi_libreria \(String(decoding: json, as: UTF8.self))")
+    }
+}

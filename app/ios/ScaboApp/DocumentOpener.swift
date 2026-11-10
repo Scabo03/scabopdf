@@ -164,29 +164,29 @@ enum DocumentOpener {
             buildDoctrine: !large, processor: processor)
         processingVC.onOutcome = { [weak presenter, weak processingVC] outcome in
             let visualSkipped = processingVC?.visualResourcesMissingReason
+            if case .success(let document, let content, let doctrineContent) = outcome {
+                // Cache SEMPRE, ma per gli enormi è la versione LEGGERA (content a granularità grossa, niente albero né
+                // Dottrina, `contentTarget` marcato): la prossima apertura la riconosce e la usa senza rielaborare. Con
+                // l'etichetta di generazione. La cache mancava (o era di un'altra granularità): il contenuto è nuovo, le
+                // annotazioni si riancorano per contenuto (§ 12.14), mai per id. Dal giro «prove rifatte e granularità»
+                // (2026-11-10) i passi pesanti girano fuori dal filo principale (ScaboChain `completeReprocessedOpening`)
+                // mentre la schermata d'elaborazione resta su: niente fermo (sul volume più grande fino a 1,2 s), e la Home
+                // sotto non si tocca finché il lettore non è pronto.
+                service.completeReprocessedOpening(
+                    documentId: id, document: document, content: content, doctrineContent: doctrineContent,
+                    large: large, target: target, visualResourcesSkipped: visualSkipped) { updated, reading in
+                    presenter?.dismiss(animated: true) {
+                        guard let presenter else { return }
+                        presentReader(content: content, document: updated ?? doc, pageMap: reading.pageMap,
+                                      doctrineContent: reading.doctrineContent, quickConsultTree: reading.quickConsultTree,
+                                      focusAnchor: focusAnchor, librarySearch: librarySearch, from: presenter, onClosed: onClosed)
+                    }
+                }
+                return
+            }
             presenter?.dismiss(animated: true) {
                 guard let presenter else { return }
-                switch outcome {
-                case .success(let document, let content, let doctrineContent):
-                    // Cache SEMPRE, ma per gli enormi è la versione LEGGERA (content a granularità
-                    // grossa, niente albero né Dottrina, `contentTarget` marcato): la prossima
-                    // apertura la riconosce e la usa senza rielaborare. Con l'etichetta di generazione:
-                    // con quale lettore di sistema è stato elaborato (ScaboChain `LibraryReadings.swift`).
-                    let reading = service.storeProcessedReading(
-                        documentId: id, document: document, content: content, doctrineContent: doctrineContent,
-                        large: large, target: target, visualResourcesSkipped: visualSkipped)
-                    service.store.recordOpened(id: id)
-                    // La cache mancava (o era illeggibile): il contenuto è nuovo, gli id di prima non valgono.
-                    // Le annotazioni si riancorano per contenuto (§ 12.14): mai per id.
-                    let doc = reanchorAfterProcessing(documentId: id, content: content) ?? doc
-                    presentReader(content: content, document: doc, pageMap: reading.pageMap,
-                                  doctrineContent: reading.doctrineContent, quickConsultTree: reading.quickConsultTree,
-                                  focusAnchor: focusAnchor, librarySearch: librarySearch, from: presenter, onClosed: onClosed)
-                case .cancelled:
-                    break
-                case .failure(let message):
-                    presentError(message, from: presenter)
-                }
+                if case .failure(let message) = outcome { presentError(message, from: presenter) }
             }
         }
         presenter.present(processingVC, animated: Motion.animated())
@@ -329,19 +329,21 @@ enum DocumentOpener {
             granularityTarget: target, buildDoctrine: !large)
         processingVC.onOutcome = { [weak presenter, weak processingVC] outcome in
             let visualSkipped = processingVC?.visualResourcesMissingReason
-            presenter?.dismiss(animated: true) {
-                switch outcome {
-                case .success(let document, let content, let doctrineContent):
-                    let reading = service.storeProcessedReading(
-                        documentId: id, document: document, content: content, doctrineContent: doctrineContent,
-                        large: large, target: target, visualResourcesSkipped: visualSkipped)
-                    // Il contenuto è nuovo: annotazioni e posizione si riancorano per contenuto (§ 12.14), come all'apertura.
-                    let doc = reanchorAfterProcessing(documentId: id, content: content) ?? doc
-                    completion(makeEmbeddedReader(
-                        doc: doc, content: content, pageMap: reading.pageMap,
-                        doctrine: reading.doctrineContent, tree: reading.quickConsultTree, onPositionChanged: onPositionChanged))
-                case .cancelled, .failure:
-                    completion(nil)
+            guard case .success(let document, let content, let doctrineContent) = outcome else {
+                presenter?.dismiss(animated: true) { completion(nil) }
+                return
+            }
+            // I passi pesanti fuori dal filo principale, con la schermata d'elaborazione ancora su (come l'apertura): la cache,
+            // poi le annotazioni e la posizione riancorate per contenuto (§ 12.14).
+            service.storeProcessedReadingOffMain(
+                documentId: id, document: document, content: content, doctrineContent: doctrineContent,
+                large: large, target: target, visualResourcesSkipped: visualSkipped) { reading in
+                service.reanchorAfterProcessingOffMain(documentId: id, content: content) { updated in
+                    presenter?.dismiss(animated: true) {
+                        completion(makeEmbeddedReader(
+                            doc: updated ?? doc, content: content, pageMap: reading.pageMap,
+                            doctrine: reading.doctrineContent, tree: reading.quickConsultTree, onPositionChanged: onPositionChanged))
+                    }
                 }
             }
         }
@@ -560,17 +562,13 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
             fileURL: localCopy, sourceName: sourceName, granularityTarget: target, processor: processor)
         processingVC.onOutcome = { [weak self, weak presenter, weak processingVC] outcome in
             let visualSkipped = processingVC?.visualResourcesMissingReason
-            presenter?.dismiss(animated: true) {
-                guard let self, let presenter else {
-                    try? FileManager.default.removeItem(at: localCopy); self?.finish(); return
-                }
-                // La copia temporanea è la sorgente dell'archiviazione (§12.6): va rimossa DOPO che
-                // `handleOutcome` l'ha copiata in archivio, non prima (correzione del cleanup).
-                self.handleOutcome(
-                    outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256, presenter: presenter,
-                    visualSkipped: visualSkipped, contentTarget: target)
-                try? FileManager.default.removeItem(at: localCopy)
-            }
+            // La copia temporanea è la sorgente dell'archiviazione (§12.6): si rimuove DOPO che la registrazione l'ha copiata in
+            // archivio, non prima. Dal giro «prove rifatte e granularità» (2026-11-10) la registrazione fa i suoi passi pesanti
+            // fuori dal filo principale, con la schermata d'elaborazione ancora su (`handleOutcome`).
+            guard let self else { try? FileManager.default.removeItem(at: localCopy); return }
+            self.handleOutcome(
+                outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256, presenter: presenter,
+                visualSkipped: visualSkipped, contentTarget: target)
         }
         presenter.present(processingVC, animated: Motion.animated())
     }
@@ -581,30 +579,38 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         localCopy: URL,
         isAkn: Bool,
         sha256: String?,
-        presenter: UIViewController,
+        presenter: UIViewController?,
         visualSkipped: String? = nil,
         contentTarget: Int = DEFAULT_GRANULARITY_TARGET
     ) {
-        switch outcome {
-        case .success(let document, let content, let doctrineContent):
-            // La registrazione (libro, sorgente d'archivio, impronta, mappa delle pagine, cache, generazione, collocazione,
-            // apertura) è la logica condivisa con l'app Mac: ScaboChain `LibraryReadings.swift` (dal 2026-11-08), invariata.
-            let registered = LibraryService.shared.registerImported(
-                document: document, content: content, doctrineContent: doctrineContent,
-                sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256,
-                visualResourcesSkipped: visualSkipped, destination: destination, contentTarget: contentTarget)
-            onImported?()
-            // Apertura automatica del lettore sul documento appena importato (al primo elemento).
-            DocumentOpener.presentReaderAfterImport(
-                content: content, document: registered.document, pageMap: registered.pageMap,
-                doctrineContent: registered.isLarge ? nil : doctrineContent, quickConsultTree: registered.quickConsultTree,
-                from: presenter, onImported: onImported)
-        case .cancelled:
-            break
-        case .failure(let message):
-            DocumentOpener.presentError(message, from: presenter)
+        guard case .success(let document, let content, let doctrineContent) = outcome else {
+            presenter?.dismiss(animated: true) { [weak self, weak presenter] in
+                try? FileManager.default.removeItem(at: localCopy)
+                if case .failure(let message) = outcome, let presenter { DocumentOpener.presentError(message, from: presenter) }
+                self?.finish()
+            }
+            return
         }
-        finish()
+        // La registrazione (libro, sorgente d'archivio, impronta, mappa delle pagine, cache, generazione, collocazione,
+        // apertura) è la logica condivisa con l'app Mac: ScaboChain `LibraryReadings.swift`, con i passi pesanti fuori dal
+        // filo principale (dal 2026-11-10; stesso risultato della versione sincrona).
+        LibraryService.shared.registerImportedOffMain(
+            document: document, content: content, doctrineContent: doctrineContent,
+            sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256,
+            visualResourcesSkipped: visualSkipped, destination: destination, contentTarget: contentTarget) { [weak self, weak presenter] registered in
+            try? FileManager.default.removeItem(at: localCopy)
+            self?.onImported?()
+            presenter?.dismiss(animated: true) { [weak self, weak presenter] in
+                // Apertura automatica del lettore sul documento appena importato (al primo elemento).
+                if let presenter {
+                    DocumentOpener.presentReaderAfterImport(
+                        content: content, document: registered.document, pageMap: registered.pageMap,
+                        doctrineContent: registered.isLarge ? nil : doctrineContent, quickConsultTree: registered.quickConsultTree,
+                        from: presenter, onImported: self?.onImported)
+                }
+                self?.finish()
+            }
+        }
     }
 
 }
