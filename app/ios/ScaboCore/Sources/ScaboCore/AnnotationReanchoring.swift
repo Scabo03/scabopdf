@@ -161,16 +161,18 @@ public enum AnnotationReanchoring {
             readingAnchor: newReadingAnchor, readingPositionIsApproximate: approximate, report: report)
     }
 
-    /// L'ancora che un'annotazione ricollocata porta da qui in avanti. Di regola quella del segmento ritrovato. Ma se il suo
-    /// testo sta DENTRO un segmento più lungo (livello «contenuto»: due blocchi fusi da una granularità più grossa, le parti di
-    /// una nota tornate una nota sola), l'ancora resta quella d'origine: riconiata sul blocco fuso, al ritorno a una
-    /// granularità più fine il passo dei pezzi consecutivi la metterebbe sul PRIMO pezzo, con esito esatto, anche quando
-    /// l'annotazione stava su un altro — spostata in silenzio, contro LAYER2 § 12.14 (giro «prove rifatte e granularità»,
-    /// 2026-11-10, rilievo R5 della revisione indipendente). Conservata, al ritorno si ritrova esatta sul suo pezzo; la
+    /// L'ancora che un'annotazione ricollocata porta da qui in avanti. Di regola quella del segmento ritrovato. Ma se il segmento
+    /// ritrovato NON è lo stesso testo — il testo d'origine sta dentro un segmento più lungo (livello «contenuto»: due blocchi
+    /// fusi da una granularità più grossa, le parti di una nota tornate una nota sola), o ne condivide soltanto la testa e la
+    /// coda («testa e coda»: anche la fusione di due pezzi che cominciano con le stesse parole) — l'ancora resta quella
+    /// d'origine: riconiata sul blocco fuso, al ritorno a una granularità più fine il passo dei pezzi consecutivi la metterebbe
+    /// sul PRIMO pezzo, con esito esatto, anche quando l'annotazione stava su un altro — spostata in silenzio, contro LAYER2
+    /// § 12.14 (giro «prove rifatte e granularità», 2026-11-10, rilievo R5 della revisione indipendente; il caso «testa e coda»
+    /// trovato dall'andata e ritorno sui 52 volumi del banco). Conservata, al ritorno si ritrova esatta sul suo pezzo; la
     /// verifica a ogni apertura la riconosce al suo posto (`ContentAnchorIndex.anchor(_:isAtSegmentId:)`).
     static func keptOrMinted(_ anchor: ContentAnchor, resolution r: AnchorResolution, index: ContentAnchorIndex,
                              at i: Int) -> ContentAnchor {
-        if r.level == .contained { return anchor }
+        if ContentAnchorIndex.keepsOriginAnchor(r.level) { return anchor }
         return index.anchor(forIndex: i) ?? anchor
     }
 

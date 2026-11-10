@@ -117,6 +117,40 @@ final class GranularityRoundTripAnchorTests: XCTestCase {
         XCTAssertNil(back.bookmarks[0].isOrphan)
     }
 
+    /// Due pezzi consecutivi che COMINCIANO CON LE STESSE PAROLE (una frase d'apertura ripetuta, come capita nei testi normativi):
+    /// fusi, il pezzo in coda si ritrova al livello «testa e coda» (la testa del blocco fuso è uguale alla sua), non «contenuto».
+    /// Anche lì l'ancora d'origine resta: al ritorno il segnalibro torna sul suo pezzo (caso trovato dall'andata e ritorno sui 52
+    /// volumi del banco, un segnalibro a 600 e uno a 1.200).
+    func test_andataERitorno_duePezziConLaStessaApertura_tornaSulSuoPezzo() throws {
+        let apertura = "Quando la campana della torre suona tre volte il mugnaio chiude la chiusa e ferma la ruota del mulino"
+        let primo = [apertura + " per il primo motivo, che riguarda il grano del borgo e il ponte di pietra.",
+                     "La seconda frase del primo gruppo racconta la piena del fiume e la strada lungo la riva del lago.",
+                     "La terza frase del primo gruppo descrive i campi, le case e il campanile sulla collina del borgo."]
+        let secondo = [apertura + " per il secondo motivo, che riguarda la sera e i lumi accesi alle finestre."]
+        let raw = [seg("node_0", "Capitolo della chiusa", role: "HEADING_1"),
+                   seg("node_1", (primo + secondo).joined(separator: " "))]
+        let f400 = granularizeBody(raw, target: 400), f900 = granularizeBody(raw, target: 900)
+        XCTAssertEqual(body(f400).count, 2, "a 400 due pezzi, il secondo comincia come il primo")
+        XCTAssertEqual(body(f900).count, 1)
+        let p2 = body(f400)[1], b = body(f900)[0]
+        XCTAssertTrue(f400[p2].text.hasPrefix(apertura))
+        let start = try bookmark(on: p2, in: f400)
+        XCTAssertEqual(ContentAnchorIndex(segments: f900).resolve(try XCTUnwrap(start.anchor)).level, .headAndTail,
+                       "il pezzo in coda si ritrova per testa e coda, non come contenuto")
+        let at900 = reanchor([start], in: f900)
+        XCTAssertEqual(at900.bookmarks[0].anchorSegmentId, f900[b].id)
+        XCTAssertNil(at900.bookmarks[0].isOrphan)
+        XCTAssertTrue(inPlace(at900, in: f900))
+        let back = reanchor(at900.bookmarks, in: f400)
+        XCTAssertEqual(back.bookmarks[0].anchorSegmentId, f400[p2].id, "tornato sul suo pezzo, non sul primo che comincia uguale")
+        XCTAssertNil(back.bookmarks[0].isOrphan)
+        // La posizione di lettura, allo stesso modo.
+        let anchor = try XCTUnwrap(ContentAnchorIndex(segments: f400).anchor(forIndex: p2))
+        let pos900 = reanchor([], position: p2, anchor: anchor, in: f900)
+        XCTAssertTrue(inPlace(pos900, in: f900))
+        XCTAssertEqual(reanchor([], position: pos900.readingPosition, anchor: pos900.readingAnchor, in: f400).readingPosition, p2)
+    }
+
     func test_alContrario_ancoraConservata_suUnAltroSegmento_vaRiancorata() throws {
         let f400 = flow(400), f900 = flow(900)
         let at900 = reanchor([try bookmark(on: body(f400)[2], in: f400)], in: f900)
