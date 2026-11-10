@@ -153,10 +153,17 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
 
     // MARK: Il menu «Lettura» (gli stessi comandi delle azioni, DISEGNO § 5.2)
 
-    @objc public func saltaNotaRichiamo(_ sender: Any?) { vista.saltaNotaRichiamo() }
-    @objc public func titoloSuccessivo(_ sender: Any?) { vista.titolo(avanti: true) }
-    @objc public func titoloPrecedente(_ sender: Any?) { vista.titolo(avanti: false) }
-    @objc public func saltaRisorsa(_ sender: Any?) { vista.saltaRisorsa() }
+    @objc public func saltaNotaRichiamo(_ sender: Any?) { notaComando("nota-richiamo"); vista.saltaNotaRichiamo() }
+    @objc public func titoloSuccessivo(_ sender: Any?) { notaComando("titolo-successivo"); vista.titolo(avanti: true) }
+    @objc public func titoloPrecedente(_ sender: Any?) { notaComando("titolo-precedente"); vista.titolo(avanti: false) }
+    @objc public func saltaRisorsa(_ sender: Any?) { notaComando("salta-risorsa"); vista.saltaRisorsa() }
+
+    /// Il comando del menu «Lettura» nel diario delle prove: se è arrivato dalla scorciatoia (un tasto) o dalla voce del menu
+    /// (VO+M, un clic). Il diario della T3 rifatta non sapeva dire se ⌘J e ⌥⌘↓ fossero arrivati all'app (giro «prove rifatte»).
+    private func notaComando(_ nome: String) {
+        let via = NSApp.currentEvent?.type == .keyDown ? "tasto" : "voce"
+        vista.diario.registra(vista.fuoco ?? -1, "menu:\(nome):\(via)")
+    }
 
     public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(saltaRisorsa(_:)) { return vista.risorsaInLettura }

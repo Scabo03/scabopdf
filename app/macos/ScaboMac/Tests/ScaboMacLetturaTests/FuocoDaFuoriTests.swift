@@ -182,6 +182,71 @@ final class FuocoDaFuoriTests: XCTestCase {
         print("RISULTATO fuoco_da_fuori {\"richiamo\":\"\(idRichiamo)\",\"nota\":\"\(idNota)\"}")
     }
 
+    /// Un salto a cui il client NON si posa (giro «prove rifatte», 2026-11-10). Il diario della T3 rifatta: tre salti su sette,
+    /// tutti partiti dal menu delle azioni di VoiceOver, sono arrivati all'app ma il cursore è rimasto sulla partenza — subito
+    /// dopo l'azione VoiceOver ha riletto il valore della partenza e non ha chiesto le azioni del bersaglio, cosa che fa a ogni
+    /// arrivo. Qui il client fa lo stesso: esegue «Vai alla nota», rilegge la partenza e non tocca il bersaglio. L'app deve
+    /// RIPETERE l'avviso del fuoco col bersaglio (all'avviso ripetuto VoiceOver richiede l'elemento col fuoco e ci va). Sull'app
+    /// di prima della cura l'avviso arriva una volta sola: il test fallisce.
+    func test_salto_senzaArrivo_ripeteLAvviso_lettoDaFuori() async throws {
+        let (running, app, g) = try await lancia([])
+        defer { chiudi(running) }
+        let (raccolta, o) = try osservatore(running, app)
+        defer { CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode) }
+        let richiamo = try XCTUnwrap(elems(g, "AXChildren").first { azioni($0).contains { nome($0).hasPrefix("Vai alla nota") } })
+        let vaiAllaNota = try XCTUnwrap(azioni(richiamo).first { nome($0).hasPrefix("Vai alla nota") })
+        gira(0.5); raccolta.voci.removeAll()
+        XCTAssertEqual(AXUIElementPerformAction(richiamo, vaiAllaNota as CFString), .success)
+        _ = attr(richiamo, "AXValue")   // come VoiceOver alla chiusura del suo menu: rilegge la partenza
+        gira(1.8)
+        let idNota = fuocoDellApp(app)
+        XCTAssertTrue(idNota.hasPrefix("lettura.elemento.") && idNota != ident(richiamo), "il fuoco dell'app è il bersaglio: «\(idNota)»")
+        let avvisi = raccolta.voci.filter { $0 == ("AXFocusedUIElementChanged", idNota) }.count
+        XCTAssertGreaterThanOrEqual(avvisi, 2, "l'avviso col bersaglio si ripete se nessuno ci si posa: \(raccolta.voci)")
+        print("RISULTATO salto_senza_arrivo {\"avvisi_col_bersaglio\":\(avvisi)}")
+    }
+
+    /// Il salto a cui il client si posa subito (ne chiede le azioni, come VoiceOver all'arrivo): un avviso solo, nessuna
+    /// ripetizione, così VoiceOver non dice due volte il bersaglio. Verde anche sull'app di prima della cura.
+    func test_salto_conArrivo_unAvvisoSolo_lettoDaFuori() async throws {
+        let (running, app, g) = try await lancia([])
+        defer { chiudi(running) }
+        let (raccolta, o) = try osservatore(running, app)
+        defer { CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode) }
+        let richiamo = try XCTUnwrap(elems(g, "AXChildren").first { azioni($0).contains { nome($0).hasPrefix("Vai alla nota") } })
+        let vaiAllaNota = try XCTUnwrap(azioni(richiamo).first { nome($0).hasPrefix("Vai alla nota") })
+        gira(0.5); raccolta.voci.removeAll()
+        XCTAssertEqual(AXUIElementPerformAction(richiamo, vaiAllaNota as CFString), .success)
+        let bersaglio = try XCTUnwrap(attr(app, "AXFocusedUIElement")) as! AXUIElement
+        let idNota = ident(bersaglio)
+        XCTAssertFalse(azioni(bersaglio).isEmpty, "il client si posa: ne chiede le azioni")
+        gira(1.8)
+        let avvisi = raccolta.voci.filter { $0 == ("AXFocusedUIElementChanged", idNota) }.count
+        XCTAssertEqual(avvisi, 1, "un avviso solo: \(raccolta.voci)")
+    }
+
+    /// L'osservatore degli avvisi del fuoco dell'app, come VoiceOver (per i test dell'arrivo).
+    private func osservatore(_ running: NSRunningApplication, _ app: AXUIElement) throws -> (Raccolta, AXObserver) {
+        var obs: AXObserver?
+        let raccolta = Raccolta()
+        let cb: AXObserverCallback = { _, el, nome, ref in
+            let r = Unmanaged<Raccolta>.fromOpaque(ref!).takeUnretainedValue()
+            var v: CFTypeRef?
+            AXUIElementCopyAttributeValue(el, "AXIdentifier" as CFString, &v)
+            r.voci.append((nome as String, (v as? String) ?? ""))
+        }
+        XCTAssertEqual(AXObserverCreate(running.processIdentifier, cb, &obs), .success)
+        let o = try XCTUnwrap(obs)
+        XCTAssertEqual(AXObserverAddNotification(o, app, "AXFocusedUIElementChanged" as CFString,
+                                                 Unmanaged.passUnretained(raccolta).toOpaque()), .success)
+        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(o), .defaultMode)
+        return (raccolta, o)
+    }
+    private func fuocoDellApp(_ app: AXUIElement) -> String {
+        guard let f = attr(app, "AXFocusedUIElement") else { return "" }
+        return ident(f as! AXUIElement)
+    }
+
     /// I figli finestrati da fuori, con la finestra piccola delle prove: il percorso di VoiceOver, elemento per elemento,
     /// sull'intero libro sintetico senza salti né vicoli ciechi, VO+Fine con i passi indietro, VO+Inizio con i passi avanti.
     func test_figliFinestrati_percorsoIntegrale_lettoDaFuori() async throws {

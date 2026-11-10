@@ -55,6 +55,8 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
 
     override public func accessibilityCustomActions() -> [NSAccessibilityCustomAction]? {
         nota("AXCustomActions")
+        // VoiceOver chiede le azioni dell'elemento su cui si posa (diari T1 e T3): se era il bersaglio di un salto, è arrivato.
+        vista.notaArrivo(indice)
         return vista.azioniPersonalizzate(indice)
     }
 }

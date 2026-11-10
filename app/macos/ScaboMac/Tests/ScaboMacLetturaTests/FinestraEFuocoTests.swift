@@ -257,6 +257,104 @@ final class FinestraEFuocoTests: XCTestCase {
         XCTAssertEqual(v.segnaliEmessi.last?.origine, .tastiera)
     }
 
+    // MARK: L'arrivo di un salto (giro «prove rifatte», 2026-11-10: tre salti su sette, partiti dal menu delle azioni di
+    // VoiceOver, non hanno spostato il cursore; la cura ripete l'avviso finché un client non si posa sul bersaglio)
+
+    /// Fa girare il ciclo del filo principale per `secondi` (le ripetizioni dell'avviso sono blocchi in coda a tempo).
+    private func gira(_ secondi: TimeInterval) {
+        let fine = Date().addingTimeInterval(secondi)
+        while Date() < fine { RunLoop.current.run(until: Date().addingTimeInterval(0.01)) }
+    }
+
+    /// Ritardi brevi per i test, ripristinati alla fine.
+    private func conRitardiBrevi(_ corpo: () throws -> Void) rethrows {
+        let prima = VistaLettura.ritardiRipetizione
+        VistaLettura.ritardiRipetizione = [0.05, 0.12]
+        defer { VistaLettura.ritardiRipetizione = prima }
+        try corpo()
+    }
+
+    /// Nessun client si posa sul bersaglio (VoiceOver, chiudendo il suo menu delle azioni, rilegge la partenza): l'avviso del
+    /// fuoco si ripete due volte, e il diario lo registra; il fuoco resta il bersaglio.
+    func test_salto_senzaArrivo_ripeteLAvviso() {
+        conRitardiBrevi {
+            let v = libroLungo(30)
+            v.diario.attivo = true
+            XCTAssertTrue(v.esegui(.goToCall(target: 12), da: 11))   // un'azione personalizzata, come dal menu di VoiceOver
+            _ = v.elemento(11).accessibilityValue()   // la rilettura della partenza
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 2)
+            XCTAssertEqual(v.fuoco, 12)
+            XCTAssertEqual(v.diario.voci.filter { $0.richiesta == "fuoco:ripeti-avviso" }.map(\.indice), [12, 12])
+        }
+    }
+
+    /// Il client si posa sul bersaglio chiedendone le azioni (VoiceOver lo fa a ogni arrivo): nessuna ripetizione, nessun
+    /// bersaglio detto due volte.
+    func test_salto_conArrivo_nessunaRipetizione() {
+        conRitardiBrevi {
+            let v = libroLungo(30)
+            v.spostaFuoco(a: 12)
+            _ = v.elemento(12).accessibilityCustomActions()
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 0)
+        }
+    }
+
+    /// Il client dà il fuoco al bersaglio (la conferma di VoiceOver): nessuna ripetizione.
+    func test_salto_confermaColFuoco_nessunaRipetizione() {
+        conRitardiBrevi {
+            let v = libroLungo(30)
+            v.spostaFuoco(a: 12)
+            v.elemento(12).setAccessibilityFocused(true)
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 0)
+            XCTAssertEqual(v.segnaliEmessi.count, 1, "la conferma non è un arrivo nuovo")
+        }
+    }
+
+    /// Dopo il salto il fuoco va altrove (l'utente si è mosso): l'avviso del salto vecchio non si ripete.
+    func test_salto_poiFuocoAltrove_nessunaRipetizione() {
+        conRitardiBrevi {
+            let v = libroLungo(30)
+            v.spostaFuoco(a: 12)
+            v.elemento(14).setAccessibilityFocused(true)
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 0)
+            XCTAssertEqual(v.fuoco, 14)
+        }
+    }
+
+    /// Un salto nuovo prima delle ripetizioni del vecchio: si ripete solo l'avviso del nuovo; e la prova a secco della
+    /// descrizione non ripete mai nulla.
+    func test_salto_nuovoSalto_ripeteSoloIlNuovo_provaASeccoMai() {
+        conRitardiBrevi {
+            let v = libroLungo(30)
+            v.spostaFuoco(a: 12)
+            v.spostaFuoco(a: 20)
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 2)
+            v.provaASecco = true
+            v.spostaFuoco(a: 25)
+            v.provaASecco = false
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 2, "a secco nessuna ripetizione")
+        }
+    }
+
+    /// Il diario registra l'azione eseguita (col suo codice, senza testo) e l'annuncio senza bersaglio.
+    func test_diario_azioneEAnnuncio() {
+        let v = libroLungo(30)
+        v.diario.attivo = true
+        XCTAssertTrue(v.esegui(.goToCall(target: 3), da: 7))
+        v.impostaFuocoIniziale(4)
+        XCTAssertFalse(v.saltaNotaRichiamo())
+        let r = v.diario.voci.map(\.richiesta)
+        XCTAssertTrue(r.contains("azione:vai-al-richiamo"))
+        XCTAssertTrue(r.contains("annuncio"))
+        XCTAssertFalse(r.contains { $0.contains("Capoverso") }, "nessun testo nel diario")
+    }
+
     /// Il diario: i fatti (fasi, fermi del filo principale) si annotano anche a diario sospeso e si scrivono in ordine di tempo
     /// con le richieste; la sentinella annota un fermo vero del filo principale.
     func test_diario_fattiESentinella() throws {
