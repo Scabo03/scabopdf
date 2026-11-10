@@ -124,8 +124,8 @@ public final class ImportazioneMac {
                 if case .failure(let messaggio) = esito { self.presentatore?.mostraErrore(messaggio) }
                 return
             }
-            // La registrazione coi passi pesanti fuori dal filo principale (giro «prove rifatte e granularità», 2026-11-10: sul
-            // volume più grande 0,3 s di fermo), lo stesso risultato; l'importazione resta «occupata» finché non è finita.
+            // La registrazione coi passi pesanti fuori dal filo principale (giro «prove rifatte e granularità», 2026-11-10), lo
+            // stesso risultato; l'importazione resta «occupata» finché non è finita.
             self.service.registerImportedOffMain(
                 document: documento, content: contenuto, doctrineContent: dottrina, sourceName: nome, localCopy: copia,
                 isAkn: isAkn, sha256: sha, visualResourcesSkipped: saltate, destination: nil, contentTarget: granularita) { [weak self] r in

@@ -180,9 +180,12 @@ extension LibraryService {
 
     // MARK: Fuori dal filo principale (giro «prove rifatte e granularità», 2026-11-10)
     //
-    // I tre lavori della libreria che il giro «prove della tappa A» ha misurato sul filo principale, su iPad e Mac: la
-    // REGISTRAZIONE dopo un'importazione (circa 0,3 s sul volume più grande), la SCRITTURA DELLA CACHE alla prima riapertura
-    // (circa 0,3 s) e il RIANCORAGGIO di un libro già letto dopo una rielaborazione (circa 1,2 s). Qui i loro passi pesanti —
+    // I tre lavori della libreria che stavano sul filo principale, su iPad e Mac: la REGISTRAZIONE dopo un'importazione, la
+    // SCRITTURA DELLA CACHE alla prima riapertura e il RIANCORAGGIO di un libro già letto dopo una rielaborazione. Misurati
+    // per parti sul volume più grande del banco (iPad simulato iOS 27, la stessa libreria del Mac): 0,008 s, 0,14 s e 1,7 s.
+    // (I fermi di circa 0,3 s che il giro «prove della tappa A» vedeva sul Mac alla fine dell'importazione e della riapertura
+    // sono quasi tutti l'animazione di chiusura del foglio d'elaborazione: `NSWindow.endSheet` trattiene il filo principale
+    // circa 0,26 s, prova di laboratorio; non è un lavoro della libreria e qui non si tocca.) Qui i loro passi pesanti —
     // copia nell'archivio, impronta, mappa delle pagine, albero della Consultazione Rapida, codifica e scrittura della cache,
     // indice delle ancore e riancoraggio — girano su una coda a parte; le modifiche della libreria in memoria (che non è
     // protetta fra fili) restano sul filo principale, nello STESSO ORDINE delle versioni sincrone qui sopra, che restano per i
