@@ -44,6 +44,10 @@ read -r -a GENS <<< "${SCABO_GENS:-26.5:ios265 27.0:ios27}"
 OUT="$SM/rete_cure_mirate/$TAG"
 CATENA_SRC="$LAB/frazionamento/strumenti/costruisci_catena.sh"
 [ -d "$SM/corpus/studio" ] && [ -d "$RIF" ] && [ -x "$CATENA_SRC" ] || { echo "prerequisiti del laboratorio assenti"; exit 2; }
+# Un'etichetta nuova a ogni corsa, come la rete sul parlato e il confronto iPad-Mac: così nessun file di una corsa precedente
+# (letture, prove al contrario) entra nei conteggi e nei confronti (rilievo R2 della revisione del giro «prove rifatte e
+# granularità», 2026-11-10).
+[ -e "$OUT" ] && { echo "l'etichetta «${TAG}» è già usata ($OUT): scegline un'altra"; exit 2; }
 mkdir -p "$OUT"
 RC=0
 say() { printf '%s\n' "$*"; }
@@ -92,6 +96,7 @@ for g in "${GENS[@]}"; do
     [ "$pid" = generic ] || { say "[4] ROSSO $GEN $d passa dal ramo «${pid}», non dal generico"; r4=1; }
   done
   [ "$RETE_GUASTO" = "ferma:confronto $GEN" ] && { r3=97; say "    GUASTO DI PROVA: il passo «confronto ${GEN}» non si esegue"; }
+  [ "$RETE_GUASTO" = "ferma:ramo generico $GEN" ] && { r4=97; say "    GUASTO DI PROVA: il passo «ramo generico ${GEN}» non si esegue"; }
   chiudi_passo "confronto $GEN" "$r3"
   chiudi_passo "ramo generico $GEN" "$r4"
   say "[3-4] $GEN: confronto col riferimento ($n3 file) e ramo verificati"

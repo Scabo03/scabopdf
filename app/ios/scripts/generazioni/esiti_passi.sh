@@ -13,7 +13,12 @@
 # PROVA AL CONTRARIO, incorporata (così la si rifà in ogni giro): con la variabile SCABO_RETE_GUASTO
 #   ferma:<nome del passo>   il comando del passo non si esegue (un passo fermo);
 #   togli:<nome del passo>   un'uscita attesa del passo manca (la prima si cancella; per i conteggi se ne conta una in meno);
-# con l'uno e con l'altro guasto la rete deve finire ROSSA, con quel nome (confrontato per intero).
+# con l'uno e con l'altro guasto la rete deve finire ROSSA, con quel nome (confrontato per intero). Un passo che non ha uscite
+# attese da togliere, con `togli`, si chiude col codice 98 («uscita tolta»). Alla fine, con un guasto di prova, la rete guarda
+# il passo bersaglio per nome: se è rosso il guasto ha funzionato; se è verde il guasto non ha avuto effetto, e se nessun passo
+# con quel nome si è chiuso il nome è sbagliato (o il passo non si esegue in questa configurazione): negli ultimi due casi la
+# rete è rossa e lo dice (rilievo R1 della revisione del giro «prove rifatte e granularità»: prima un nome sbagliato, o `togli`
+# su un passo senza uscite, finivano verdi). Il controllo per nome vale anche per i passi eseguiti in una sottoshell.
 #
 # Uso negli script:
 #   source "$SCRIPT_DIR/generazioni/esiti_passi.sh"
@@ -45,9 +50,14 @@ _passo_rosso() {
 
 chiudi_passo() {
   local nome="$1" rc="$2"; shift 2
-  if [ "$RETE_GUASTO" = "togli:$nome" ] && [ $# -gt 0 ]; then
-    rm -f -- "$1"
-    echo "    GUASTO DI PROVA: tolta l'uscita «$(basename "$1")» del passo «${nome}»"
+  if [ "$RETE_GUASTO" = "togli:$nome" ]; then
+    if [ $# -gt 0 ]; then
+      rm -f -- "$1"
+      echo "    GUASTO DI PROVA: tolta l'uscita «$(basename "$1")» del passo «${nome}»"
+    else
+      rc=98
+      echo "    GUASTO DI PROVA: il passo «${nome}» non ha uscite da togliere: si chiude come se la sua uscita mancasse"
+    fi
   fi
   local mancanti="" u
   for u in "$@"; do [ -s "$u" ] || mancanti="$mancanti $(basename "$u")"; done
@@ -84,6 +94,15 @@ esito_rete() {
   echo "Passi verdi: ${#RETE_VERDI[@]}."
   if [ ${#RETE_NON_PREVISTI[@]} -gt 0 ]; then
     echo "Passi non previsti da questa configurazione:"; for x in "${RETE_NON_PREVISTI[@]}"; do echo "  - $x"; done
+  fi
+  if [ -n "$RETE_GUASTO" ]; then
+    local bersaglio="${RETE_GUASTO#*:}" stato="assente"
+    for x in ${RETE_VERDI[@]+"${RETE_VERDI[@]}"}; do [ "$x" = "$bersaglio" ] && stato="verde"; done
+    for x in ${RETE_ROSSI[@]+"${RETE_ROSSI[@]}"}; do [ "$x" = "$bersaglio" ] && stato="rosso"; done
+    case "$stato" in
+      verde) RETE_ROSSI+=("guasto di prova «${RETE_GUASTO}» — il passo «${bersaglio}» è finito verde: il guasto non ha avuto effetto") ;;
+      assente) RETE_ROSSI+=("guasto di prova «${RETE_GUASTO}» — nessun passo «${bersaglio}» si è chiuso (nome sbagliato o passo non eseguito)") ;;
+    esac
   fi
   if [ ${#RETE_ROSSI[@]} -gt 0 ]; then
     echo "PASSI ROSSI (${#RETE_ROSSI[@]}):"; for x in "${RETE_ROSSI[@]}"; do echo "  - $x"; done

@@ -49,16 +49,21 @@ RC=0
 
 # runner a HEAD
 RUNNER_DIR="$LAB/runner"; mkdir -p "$RUNNER_DIR"
-rsync -a --exclude .build "$RUNNER_SRC/" "$RUNNER_DIR/"
-"$PY" - "$RUNNER_DIR/Package.swift" "$REPO_ROOT/app/ios/ScaboCore" <<'PYEOF'
+# La copia dei sorgenti e il puntamento a QUESTO ScaboCore sono controllati: se falliscono il runner non è «a HEAD», e il passo
+# è rosso (rilievo R3 della revisione del giro «prove rifatte e granularità», 2026-11-10).
+PREP_RC=0
+rsync -a --exclude .build "$RUNNER_SRC/" "$RUNNER_DIR/" || PREP_RC=1
+"$PY" - "$RUNNER_DIR/Package.swift" "$REPO_ROOT/app/ios/ScaboCore" <<'PYEOF' || PREP_RC=1
 import re, sys
 p, core = sys.argv[1], sys.argv[2]
 s = open(p).read()
-s = re.sub(r'\.package\(path:\s*"[^"]*ScaboCore"\)', '.package(path: "%s")' % core, s)
+s, n = re.subn(r'\.package\(path:\s*"[^"]*ScaboCore"\)', '.package(path: "%s")' % core, s)
+if n != 1: sys.exit("Package.swift del runner: dipendenza da ScaboCore non puntata a questo repo (%d sostituzioni)" % n)
 open(p, "w").write(s)
 PYEOF
 R="$RUNNER_DIR/.build/release/ultrafocus-runner"
 ( cd "$RUNNER_DIR" && esegui_passo "runner" swift build -c release > "$LAB/logs/${TAG}_annot_runner_build.log" 2>&1 ); rc=$?
+[ "$PREP_RC" = 0 ] || { say "[1] preparazione del runner fallita (copia dei sorgenti o puntamento a ScaboCore)"; rc=2; }
 say "[1] runner compilato a HEAD $(cd "$REPO_ROOT" && git rev-parse --short HEAD): exit=$rc"
 chiudi_passo "runner" "$rc" "$R" || { esito_rete "rete_annotazioni" "$TAG"; exit 1; }
 N_ATTESI=$("$PY" -c "import json,sys; print(len(json.load(open(sys.argv[1]))))" "$LISTA")
@@ -117,9 +122,10 @@ PYEOF
       for cmp in "${CONFRONTI_RV[@]}"; do
         name="${cmp%%:*}"; B="${cmp#*:}"
         [ -f "$B" ] && [ -f "$W/anchors_rv.json" ] || { say "    MANCA «${name}» per $stem: ROSSO"; rosso=$((rosso+1)); continue; }
-        "$R" reanchor --anchors "$W/anchors_rv.json" --reading "$B" --out "$W/res_$name.json" >> "$LOG" 2>&1 || { say "    ERR reanchor $name $stem"; RC=1; continue; }
+        rm -f "$W/row_$name.json"   # la riga di una corsa precedente non vale (rilievo R4 della revisione, 2026-11-10)
+        "$R" reanchor --anchors "$W/anchors_rv.json" --reading "$B" --out "$W/res_$name.json" >> "$LOG" 2>&1 || { say "    ERR reanchor $name $stem"; rosso=$((rosso+1)); RC=1; continue; }
         "$PY" "$JUDGE" giudica "$A2" "$W/anchors_rv.json" "$B" "$W/res_$name.json" "$base" --out "$W/row_$name.json" >> "$LOG" 2>&1 || { rosso=$((rosso+1)); RC=1; }
-        [ -f "$W/row_$name.json" ] || { say "    ERR giudizio $name $stem (riga mancante)"; echo "| $base | $name | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; continue; }
+        [ -f "$W/row_$name.json" ] || { say "    ERR giudizio $name $stem (riga mancante)"; rosso=$((rosso+1)); echo "| $base | $name | — | — | — | — | — | — | — | ERRORE |" >> "$MD"; continue; }
         "$PY" - "$W/row_$name.json" "$name" >> "$MD" <<'PYEOF'
 import json,sys
 r=json.load(open(sys.argv[1])); name=sys.argv[2]

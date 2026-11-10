@@ -15,7 +15,7 @@
 #   3. confronta le letture con la LINEA DI BASE della stessa generazione (cartella `<lab>/letture/base_<gen>`
 #      se esiste) → `parita_<etichetta>_<gen>.md` privo di contenuto, e con le letture dell'ALTRA
 #      generazione → `parita_<etichetta>_265_27.md`;
-#   4. verifica che MAROTTA (volume di controllo) sia identico alla propria linea di base, per generazione;
+#   4. verifica che il VOLUME DI CONTROLLO del banco sia identico alla propria linea di base, per generazione;
 #   5. giudica i CONFINI DI PAROLA contro l'oracolo PyMuPDF (parole con lettere), per generazione;
 #   6. con `--risorse-visive` (giro 2026-10-12): cattura anche le REGIONI del modello d'impaginazione nello stesso
 #      passaggio (banco `test_visualRegionsDump_fromRequest`, la catena dell'app), produce una seconda lettura CON le
@@ -40,17 +40,19 @@
 #                  <lab>/estrazioni/<etichetta>_<gen>/ e <lab>/letture/<etichetta>_<gen>/
 #   --no-capture   riusa estrazioni già catturate con questa etichetta (solo letture e giudici)
 #   --all-pages    l'oracolo giudica anche le pagine identiche fra le due generazioni (lento)
-#   --controllo-diverso-atteso  il controllo (Marotta) PUÒ differire dalla base: la differenza è dichiarata e giudicata
+#   --controllo-diverso-atteso  il volume di controllo PUÒ differire dalla base: la differenza è dichiarata e giudicata
 #                  a parte (es. una cura che gli toglie un'intestazione vuota); il passo [4] la segnala senza fare rosso
 #   --base <e>     la linea di base delle parità e del controllo: <lab>/letture/<e>_<gen> (predefinita «base»)
-#   --senza-base   nessuna linea di base da confrontare (la prima fotografia): le parità e il controllo sono «non previsti»
+#   --senza-base   la linea di base può mancare (la prima fotografia): se manca, le parità e il controllo sono «non previsti»
+#                  invece di rossi; se c'è, si confrontano comunque
 #   --identiche-attese  un giro d'invarianza: ogni lettura (e, con --risorse-visive, ogni lettura con le risorse) deve essere
 #                  IDENTICA AL BYTE a quella della linea di base, altrimenti il passo «identità <gen>» è rosso
 #
 # Variabili d'ambiente (con default): SCABO_CORPUS (~/Developer/scabopdf-triple-take, i PDF: MAI nel repo),
 # SCABO_GEN_LAB (~/Developer/scabopdf-gen-lab, uscite e linee di base), SCABO_TOOLS_PY (python del venv
-# con PyMuPDF: ~/Developer/scabopdf-tools-venv/bin/python), SCABO_LISTA (una lista di percorsi del corpus già pronta; di
-# default i 52 del banco, che il repo conosce solo per etichette e impronte in scripts/generazioni/banco_volumi.json: la
+# con PyMuPDF: ~/Developer/scabopdf-tools-venv/bin/python), SCABO_LISTA (una lista di percorsi del corpus già pronta, che le
+# impronte del banco NON verificano: per le prove; di default i 52 del banco, che il repo conosce solo per etichette e
+# impronte in scripts/generazioni/banco_volumi.json: la
 # corrispondenza coi file sta nel laboratorio e la risolve `generazioni/banco.py`, che si ferma se manca), SCABO_CONTROLLO (di
 # default il volume di controllo del banco), SCABO_GENS (le due generazioni «runtime:sigla», default "26.5:ios265 27.0:ios27").
 # Codici d'uscita: 0 tutti i passi previsti verdi, 1 almeno un passo rosso (un comando fallito, un'uscita mancante, il controllo
@@ -160,17 +162,21 @@ fi
 # ── 2. runner a HEAD + letture ───────────────────────────────────────────────────────────────────
 [ -d "$RUNNER_SRC" ] || { echo "runner dell'officina assente: $RUNNER_SRC"; exit 2; }
 RUNNER_DIR="$LAB/runner"; mkdir -p "$RUNNER_DIR"
-rsync -a --exclude .build "$RUNNER_SRC/" "$RUNNER_DIR/"
-# il runner dipende da ScaboCore per percorso: lo si punta allo ScaboCore di QUESTO repo (a HEAD)
-"$PY" - "$RUNNER_DIR/Package.swift" "$REPO_ROOT/app/ios/ScaboCore" <<'PYEOF2'
+# il runner dipende da ScaboCore per percorso: lo si punta allo ScaboCore di QUESTO repo (a HEAD). Copia e puntamento sono
+# controllati: se falliscono il runner non è «a HEAD», e il passo è rosso (rilievo R3 della revisione, 2026-11-10).
+PREP_RC=0
+rsync -a --exclude .build "$RUNNER_SRC/" "$RUNNER_DIR/" || PREP_RC=1
+"$PY" - "$RUNNER_DIR/Package.swift" "$REPO_ROOT/app/ios/ScaboCore" <<'PYEOF2' || PREP_RC=1
 import re, sys
 p, core = sys.argv[1], sys.argv[2]
 s = open(p).read()
-s = re.sub(r'\.package\(path:\s*"[^"]*ScaboCore"\)', '.package(path: "%s")' % core, s)
+s, n = re.subn(r'\.package\(path:\s*"[^"]*ScaboCore"\)', '.package(path: "%s")' % core, s)
+if n != 1: sys.exit("Package.swift del runner: dipendenza da ScaboCore non puntata a questo repo (%d sostituzioni)" % n)
 open(p, "w").write(s)
 PYEOF2
 R="$RUNNER_DIR/.build/release/ultrafocus-runner"
 ( cd "$RUNNER_DIR" && esegui_passo "runner" swift build -c release > "$LAB/logs/${TAG}_runner_build.log" 2>&1 ); rc=$?
+[ "$PREP_RC" = 0 ] || { say "[2] preparazione del runner fallita (copia dei sorgenti o puntamento a ScaboCore)"; rc=2; }
 say "[2] runner compilato a HEAD $(cd "$REPO_ROOT" && git rev-parse --short HEAD): exit=$rc"
 chiudi_passo "runner" "$rc" "$R" || { esito_rete "rete_generazioni" "$TAG"; exit 1; }
 for g in "${GENS[@]}"; do
@@ -253,7 +259,7 @@ else
   non_previsto "parità 26.5→27" "una generazione sola (SCABO_GENS=${SCABO_GENS:-})"
 fi
 
-# ── 4. Marotta, il controllo, per generazione ──────────────────────────────────────────────────
+# ── 4. il volume di controllo, per generazione ─────────────────────────────────────────────────
 for g in "${GENS[@]}"; do
   GEN="${g##*:}"; BASE="$LAB/letture/${BASE_TAG}_$GEN/$CONTROLLO.reading.json"; CUR="$LAB/letture/${TAG}_$GEN/$CONTROLLO.reading.json"
   if [ "$BASE" = "$CUR" ]; then

@@ -26,11 +26,11 @@ questo giro; log `logs/prima_*.log`, exit 0).
 app/ios/scripts/rete_generazioni.sh <etichetta> [--no-capture] [--all-pages]
 ```
 
-Cattura le estrazioni dei 52 volumi (il banco: etichette neutre e impronte in `scripts/generazioni/banco_volumi.json`; la corrispondenza coi file solo nel laboratorio, risolta da `scripts/generazioni/banco.py` — dal 2026-11-10 nel repo non ci sono più i nomi dei volumi) con il banco dell'app
+Cattura le estrazioni dei 52 volumi (il banco: etichette neutre e impronte in `scripts/generazioni/banco_volumi.json`; la corrispondenza coi file solo nel laboratorio, risolta da `scripts/generazioni/banco.py` — dal 2026-11-10 la lista dei nomi dei volumi non è più nel repo; nomi di volumi restano nella storia e in documenti e commenti di giri passati, residuo di riservatezza dichiarato nel CARRYOVER) con il banco dell'app
 (`test_extractionDump_fromRequest`) su iPad Pro 11-inch (M5) iOS 26.5 e iOS 27.0 (**~5 minuti per generazione**), compila il
 runner dell'officina a HEAD (stessa catena ScaboCore dell'app), produce le letture, confronta ciascuna generazione con la
 **propria** linea di base (`<lab>/letture/base_<gen>`) e le due generazioni fra loro (`scripts/generazioni/parita_lettura.py`,
-privo di contenuto; il `_dettaglio.jsonl` CON TESTO resta nel laboratorio), verifica **Marotta identico per generazione**, e
+privo di contenuto; il `_dettaglio.jsonl` CON TESTO resta nel laboratorio), verifica il **volume di controllo identico per generazione**, e
 giudica i confini di parola contro l'oracolo PyMuPDF sulle parole con lettere (`scripts/generazioni/oracolo_parole.py`).
 Codici d'uscita per passo. Le linee di base di questo giro sono le letture del runner a HEAD `9d65fef` sulle estrazioni del giro
 Mac, riprodotte **104/104 identiche al byte** (`<lab>/letture/base_ios265|ios27`); da aggiornare quando una cura è accettata.

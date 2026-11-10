@@ -11,13 +11,16 @@ non dà mai verde su un banco che non ha potuto verificare.
 Uso:
   banco.py risolvi <uscita_lista.json>       la lista dei percorsi (la forma di sempre: ["originals/….pdf", …]) nell'ordine del
                                               banco, dopo aver verificato corrispondenza e impronte
-  banco.py controllo                          il percorso del volume di controllo, senza estensione (per SCABO_CONTROLLO)
+  banco.py controllo                          il percorso del volume di controllo, senza estensione (per SCABO_CONTROLLO), dopo
+                                              averne verificato l'impronta
   banco.py etichette <uscita.json>            {percorso: etichetta} (per gli strumenti che parlano per etichette)
   banco.py posti-a-percorsi <verità> <uscita> la verità del posto delle risorse visive (repo, per etichette) con i percorsi
   banco.py posti-a-etichette <verità> <uscita> l'inverso, per registrare una verità nuova nel repo senza nomi
 
 Variabili: SCABO_GEN_LAB (~/Developer/scabopdf-gen-lab), SCABO_CORPUS (~/Developer/scabopdf-triple-take),
 SCABO_BANCO_CORRISPONDENZA (il file della corrispondenza). Codici d'uscita: 0 fatto, 2 corrispondenza o corpus da sistemare.
+Una lista passata alle reti con SCABO_LISTA non passa da qui: le sue impronte non sono verificate (serve per le prove su una
+parte dei volumi).
 """
 import hashlib, json, os, sys
 
@@ -79,9 +82,16 @@ def main(argv):
         print(f"banco: {len(percorsi)} volumi verificati (corrispondenza e impronte) → {argv[2]}")
     elif cmd == "controllo" and len(argv) == 2:
         banco, corr = carica()
-        p = corr.get(banco["controllo"])
+        et = banco["controllo"]
+        p = corr.get(et)
         if not p:
-            ferma(f"il volume di controllo {banco['controllo']} non è nella corrispondenza ({CORR})")
+            ferma(f"il volume di controllo {et} non è nella corrispondenza ({CORR})")
+        impronte = {v["etichetta"]: v["impronta"] for v in banco["volumi"]}
+        f = os.path.join(CORPUS, p)
+        if not os.path.exists(f):
+            ferma(f"il volume di controllo {et} non è nel corpus")
+        if et in impronte and hashlib.sha256(open(f, "rb").read()).hexdigest() != impronte[et]:
+            ferma(f"l'impronta del volume di controllo {et} non è quella del banco")
         print(p[:-4] if p.endswith(".pdf") else p)
     elif cmd == "etichette" and len(argv) == 3:
         banco, corr = carica()
