@@ -1494,6 +1494,16 @@ rimasto identico. Restano tre prove d'orecchio sull'app vera e tre domande per i
 modelli, la granularità anche sull'iPad, un controllore condiviso per la sequenza d'importazione e apertura
 (`docs/DISEGNO_LETTURA_MAC.md` § 9-11). Dettagli: `docs/CARRYOVER.md`, STATO del 2026-11-08.
 
+**Le prove d'orecchio rifatte (10 novembre 2026, giro «prove rifatte e granularità»).** Sull'app curata dopo le prove del 9
+novembre il maintainer ha rifatto le prove 1 e 3. Il libro più grande ora si legge: VoiceOver non si è mai detto occupato, entra
+in un terzo di secondo, i passi rispondono subito, la fine e l'inizio del libro si raggiungono, il rotore porta all'intestazione
+scelta. Dei sette salti fra nota e richiamo arrivati all'app, quattro hanno portato il cursore e tre no; le due cause, lette nel
+diario, sono curate (`DISEGNO_LETTURA_MAC.md` § 5.2) e restano da sentire in una prova breve (§ 10 di quel documento, prova 4).
+**La decisione 1 del giro precedente** — i segnali delle note per impostazione predefinita sul Mac come sull'iPad, con «Annuncia
+le note a voce» come scelta — si applica quando i diari confermano che i salti funzionano, e la prova 2 era già verde: la
+seconda condizione c'è, la prima no (tre salti su sette persi). Sul Mac le note restano quindi **annunciate a voce per
+impostazione predefinita**, finché la prova 4 non dirà che i salti arrivano tutti.
+
 ---
 
 ## 13. Ricerca testuale
