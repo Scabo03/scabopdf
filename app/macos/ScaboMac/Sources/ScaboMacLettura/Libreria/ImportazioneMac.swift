@@ -40,6 +40,9 @@ public final class ImportazioneMac {
     public let libreria: LibreriaMac
     public weak var presentatore: PresentatoreImportazione?
     /// Vero dal file scelto alla fine dell'elaborazione: un secondo file in quell'istante non apre un secondo flusso.
+    /// Il libro che si sta rielaborando per aprirlo (`apri`), finché la riapertura non è finita: cache scritta, annotazioni
+    /// riancorate, finestra chiesta.
+    private var libroInLavorazione: String?
     public private(set) var occupato = false {
         didSet { if oldValue && !occupato { DispatchQueue.main.async { [weak self] in self?.prossimoInCoda() } } }
     }
@@ -160,6 +163,10 @@ public final class ImportazioneMac {
     /// d'archivio nella schermata d'elaborazione, con il riancoraggio delle annotazioni per contenuto.
     public func apri(_ id: String) {
         guard let presentatore else { return }
+        // Lo stesso libro mentre lo si rielabora (doppio clic o Invio dalla Home, che restano attivi): l'apertura in corso lo
+        // aprirà; aprirlo adesso dalla cache appena scritta vorrebbe dire leggerlo prima che le annotazioni siano riancorate
+        // (giro «prove rifatte e granularità», 2026-11-10, rilievo R8 della revisione indipendente).
+        if occupato, libroInLavorazione == id { return }
         guard let doc = service.store.document(id: id) else {
             presentatore.mostraErrore(LibraryWording.documentNoLongerAvailable)
             return
@@ -193,11 +200,13 @@ public final class ImportazioneMac {
         }
         guard !occupato else { aperturaInAttesa = id; return }
         occupato = true
+        libroInLavorazione = id
         let processore: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         presentatore.elabora(fileURL: service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind), nome: doc.title,
                              granularita: granularita, dottrina: !large, processore: processore) { [weak self] esito, saltate in
             guard let self else { return }
             guard case .success(let documento, let contenuto, let dottrina) = esito else {
+                self.libroInLavorazione = nil
                 self.occupato = false
                 if case .failure(let messaggio) = esito { self.presentatore?.mostraErrore(messaggio) }
                 return
@@ -211,6 +220,7 @@ public final class ImportazioneMac {
                 guard let self else { return }
                 self.libreria.avvisa()
                 self.presentatore?.apriLettura(documento: aggiornato ?? doc, lettura: lettura)
+                self.libroInLavorazione = nil
                 self.occupato = false
             }
         }

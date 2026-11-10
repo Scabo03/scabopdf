@@ -370,6 +370,16 @@ enum DocumentOpener {
             sourcePage: sourcePageProvider(pageMap),
             doctrineContent: doctrine, quickConsultTree: tree, embedded: true, anchorBox: anchors)
         reader.onAnchorIndexReady = { index in mintMissingAnchors(documentId: doc.id, in: index) }
+        // Posizione ritrovata solo per pagina dopo una rielaborazione (§ 12.14): lo si dice anche nella metà, come a schermo
+        // intero, col titolo del libro e in coda agli altri annunci (le due metà possono averne uno ciascuna). Prima la metà
+        // ripartiva in silenzio (giro «prove rifatte e granularità», 2026-11-10, rilievo R6 della revisione indipendente).
+        if doc.readingPositionIsApproximate == true {
+            let text = "\(doc.title). " + LibraryWording.approximatePositionAnnouncement(isAkn: doc.sourceKind == "akn")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                UIAccessibility.post(notification: .announcement, argument: NSAttributedString(
+                    string: text, attributes: [.accessibilitySpeechQueueAnnouncement: true]))
+            }
+        }
         service.store.recordOpened(id: doc.id)
         return reader
     }

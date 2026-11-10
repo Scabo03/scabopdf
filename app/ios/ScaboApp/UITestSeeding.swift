@@ -48,6 +48,12 @@ enum UITestSeeding {
 
     static func applyIfRequested() {
         let args = CommandLine.arguments
+        // Con qualunque seme, la granularità predefinita: un GranularityUITests interrotto a metà non la lascia cambiata ai test
+        // che seguono, che rielaborerebbero le loro cache a 400 (rilievo minore della revisione del giro «prove rifatte e
+        // granularità», 2026-11-10; prima solo il seme della tastiera la riportava).
+        if args.contains(where: { $0.hasPrefix("-uiTestSeed") }) {
+            setStoredGranularityLevel(LibraryService.shared.prefs, DEFAULT_GRANULARITY_LEVEL)
+        }
         if args.contains("-uiTestSeedMacReadingTwoCopies") { seedMacReading(.twoCopies); return }
         if args.contains("-uiTestSeedMacReadingMissingBook") { seedMacReading(.missingBook); return }
         if args.contains("-uiTestSeedMacReadingDamaged") { seedMacReading(.damaged); return }
@@ -116,8 +122,6 @@ enum UITestSeeding {
     private static func seedKeyboardBooks() {
         let service = LibraryService.shared
         setStoredReadingTextSizeOffset(service.prefs, 0)   // la dimensione del testo di partenza, ogni volta
-        // La granularità predefinita, ogni volta: un GranularityUITests interrotto non la lascia cambiata ai test che seguono.
-        setStoredGranularityLevel(service.prefs, DEFAULT_GRANULARITY_LEVEL)
         for d in service.store.allDocuments() {
             service.store.deleteDocumentFromArchive(id: d.id)
             service.deleteFiles(forDocumentId: d.id)

@@ -227,6 +227,10 @@ final class ProcessingViewController: UIViewController {
     private func finish(_ outcome: DocumentProcessor.Outcome) {
         guard !finished else { return }
         finished = true
+        // Consegnato l'esito non si annulla più: dopo un'elaborazione riuscita la schermata resta su finché i passi pesanti
+        // della libreria non sono finiti, e «Annulla» (con Esc, che lo segue) si spegne invece di restare attivo e ignorato
+        // (giro «prove rifatte e granularità», 2026-11-10, rilievo R7 della revisione indipendente).
+        cancelButton.isEnabled = false
         // Chiude il segnale "in corso" e suona l'esito: completamento o errore. Su
         // annullamento non si suona nulla (l'utente torna alla Home nuda in silenzio).
         signalPlayer.stop(.loading)

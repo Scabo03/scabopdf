@@ -251,14 +251,16 @@ final class LibraryReadingsTests: XCTestCase {
         let (altra, rAltra) = altraLibreria()
         defer { try? FileManager.default.removeItem(at: rAltra) }
         let c = contenutoGrande(500)
+        // La collocazione: un workspace in ciascuna libreria (gli id cambiano da una libreria all'altra, il posto no).
+        let wsA = service.store.createWorkspace(name: "Studio"), wsB = altra.store.createWorkspace(name: "Studio")
         let a = service.registerImported(document: document(pages: 3), content: c, doctrineContent: nil, sourceName: "Libro.pdf",
                                          localCopy: src, isAkn: false, sha256: nil, visualResourcesSkipped: nil,
-                                         destination: nil, contentTarget: 600)
+                                         destination: .workspace(wsA.id), contentTarget: 600)
         var b: RegisteredImport?
         attendi("registrazione") { fatto in
             altra.registerImportedOffMain(document: document(pages: 3), content: c, doctrineContent: nil, sourceName: "Libro.pdf",
                                           localCopy: src, isAkn: false, sha256: nil, visualResourcesSkipped: nil,
-                                          destination: nil, contentTarget: 600) { r in b = r; fatto() }
+                                          destination: .workspace(wsB.id), contentTarget: 600) { r in b = r; fatto() }
         }
         let rb = try XCTUnwrap(b)
         XCTAssertEqual(a.pageMap, rb.pageMap); XCTAssertEqual(a.isLarge, rb.isLarge)
@@ -271,6 +273,8 @@ final class LibraryReadingsTests: XCTestCase {
         XCTAssertEqual(da.processedSystemVersion, db.processedSystemVersion)
         XCTAssertEqual(altra.store.recents().map(\.id), [rb.document.id])
         XCTAssertTrue(altra.hasArchivedSource(forDocumentId: rb.document.id, kind: nil))
+        XCTAssertEqual(service.store.workspace(id: wsA.id)?.fileIds, [a.document.id])
+        XCTAssertEqual(altra.store.workspace(id: wsB.id)?.fileIds, [rb.document.id])
     }
 
     /// La riapertura dopo una rielaborazione fuori dal filo principale: la stessa cache e lo stesso riancoraggio della

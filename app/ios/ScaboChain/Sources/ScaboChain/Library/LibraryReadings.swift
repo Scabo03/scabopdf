@@ -112,7 +112,8 @@ extension LibraryService {
     /// (quella del file scelto, già calcolata prima di elaborare; se manca, quella della copia d'archivio; se l'archiviazione
     /// fallisce il libro resta senza impronta, perché non si propone mai di «aprire» un libro senza il suo file), la mappa delle
     /// pagine, la cache (non per i volumi enormi), l'etichetta di generazione, la collocazione facoltativa, l'apertura.
-    /// `contentTarget` è la granularità con cui `content` è stato costruito (l'iPad: sempre quella predefinita).
+    /// `contentTarget` è la granularità con cui `content` è stato costruito: dal 2026-11-10 quella scelta nelle Impostazioni,
+    /// sull'iPad come sul Mac (`processingGranularity`).
     public func registerImported(
         document: ScabopdfDocument, content: PaginatedContent, doctrineContent: PaginatedContent?,
         sourceName: String, localCopy: URL, isAkn: Bool, sha256: String?, visualResourcesSkipped: String?,

@@ -316,28 +316,31 @@ enum ReprocessOffer {
             granularityTarget: target, buildDoctrine: !large, processor: processor)
         vc.onOutcome = { [weak presenter] outcome in
             let visualSkipped = (processor as? DocumentProcessor)?.visualResourcesMissingReason
-            presenter?.dismiss(animated: true) {
-                guard let presenter else { return }
-                switch outcome {
-                case .success(let document, let content, let doctrine):
-                    // La cache e l'etichetta di generazione: la scrittura fuori dal filo principale (dal giro «prove rifatte e
-                    // granularità», 2026-11-10, ScaboChain `storeProcessedReadingOffMain`: lo stesso risultato di prima).
-                    service.storeProcessedReadingOffMain(
-                        documentId: id, document: document, content: content, doctrineContent: doctrine,
-                        large: large, target: target, visualResourcesSkipped: visualSkipped) { _ in
-                        // 4. Riancoraggio sul testo nuovo (fuori dal thread principale: sui codici l'indice costa).
-                        let segments = content.pages.flatMap { $0.segments }
-                        let current = service.store.document(id: id) ?? doc
-                        DispatchQueue.global(qos: .userInitiated).async {
-                            let out = AnnotationReanchoring.reanchor(
-                                bookmarks: current.bookmarks ?? [], underlines: current.underlines ?? [],
-                                readingPosition: current.readingPosition, readingAnchor: current.readingAnchor,
-                                in: ContentAnchorIndex(segments: segments))
-                            DispatchQueue.main.async {
-                                service.store.applyAnnotationState(
-                                    documentId: id, bookmarks: out.bookmarks, underlines: out.underlines,
-                                    readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
-                                    readingPositionIsApproximate: out.readingPositionIsApproximate ? true : nil)
+            switch outcome {
+            case .success(let document, let content, let doctrine):
+                // La cache e l'etichetta di generazione, poi il riancoraggio, fuori dal filo principale, CON LA SCHERMATA
+                // D'ELABORAZIONE ANCORA SU, come l'apertura: la Home sotto non si tocca e nessuno apre il libro a metà; poi la
+                // schermata si chiude e compare il referto (giro «prove rifatte e granularità», 2026-11-10: ScaboChain
+                // `storeProcessedReadingOffMain`, lo stesso risultato di prima; rilievo R9 della revisione indipendente: prima
+                // la schermata si chiudeva subito e la finestra senza schermata durava la scrittura della cache in più).
+                service.storeProcessedReadingOffMain(
+                    documentId: id, document: document, content: content, doctrineContent: doctrine,
+                    large: large, target: target, visualResourcesSkipped: visualSkipped) { _ in
+                    // 4. Riancoraggio sul testo nuovo (fuori dal thread principale: sui codici l'indice costa).
+                    let segments = content.pages.flatMap { $0.segments }
+                    let current = service.store.document(id: id) ?? doc
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        let out = AnnotationReanchoring.reanchor(
+                            bookmarks: current.bookmarks ?? [], underlines: current.underlines ?? [],
+                            readingPosition: current.readingPosition, readingAnchor: current.readingAnchor,
+                            in: ContentAnchorIndex(segments: segments))
+                        DispatchQueue.main.async {
+                            service.store.applyAnnotationState(
+                                documentId: id, bookmarks: out.bookmarks, underlines: out.underlines,
+                                readingPosition: out.readingPosition, readingAnchor: out.readingAnchor,
+                                readingPositionIsApproximate: out.readingPositionIsApproximate ? true : nil)
+                            presenter?.dismiss(animated: true) {
+                                guard let presenter else { return }
                                 let result = ReprocessResultViewController(documentId: id, report: out.report,
                                                                            positionApproximate: out.readingPositionIsApproximate) {
                                     onDone(out.report)
@@ -346,11 +349,17 @@ enum ReprocessOffer {
                             }
                         }
                     }
-                case .cancelled:
+                }
+            case .cancelled:
+                presenter?.dismiss(animated: true) {
+                    guard presenter != nil else { return }
                     if let snap = service.restorePreviousCache(forDocumentId: id) { service.store.restore(snap, documentId: id) }
                     UIAccessibility.post(notification: .announcement, argument: "Rielaborazione annullata. Il libro è rimasto com'era.")
                     onDone(nil)
-                case .failure(let message):
+                }
+            case .failure(let message):
+                presenter?.dismiss(animated: true) {
+                    guard let presenter else { return }
                     if let snap = service.restorePreviousCache(forDocumentId: id) { service.store.restore(snap, documentId: id) }
                     DocumentOpener.presentError(message + " Il libro è rimasto com'era.", from: presenter)
                     onDone(nil)
