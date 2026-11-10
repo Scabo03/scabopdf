@@ -134,7 +134,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 ## ▶ STATO — Giro «prove rifatte e granularità»: i diari delle prove d'orecchio rifatte, la granularità anche sull'iPad, i lavori della libreria fuori dal filo principale, reti che non dicono verde senza aver controllato, build 65 — 2026-11-10 — CONCLUSO
 
 **Partenza:** `9ebd065` (main = origin, build 64 su TestFlight). **Rami:** Parte 1 `feat/mac-prove-rifatte` (livello leggero), unito
-in main con un avanzamento rapido a `8ced0c9` e cancellato; Parte 2 `feat/ipad-granularita-reti` (livello pieno), unito in main con un avanzamento rapido dopo il commit dei documenti che porta questa voce e cancellato in locale e sul remoto; la build 65 parte da lì (`docs/RELEASE_TESTFLIGHT.md`). Referto:
+in main con un avanzamento rapido a `8ced0c9` e cancellato; Parte 2 `feat/ipad-granularita-reti` (livello pieno), unito in main con un avanzamento rapido dopo il commit dei documenti che porta questa voce e cancellato in locale e sul remoto; la build 65 parte da lì: caricata da main a `4c1b9a3` (Delivery UUID `c5e1046c-d809-4baa-9243-5ac27f2cfdfd`, VALID, «Cosa testare» impostato e riletto, identico al file; `docs/RELEASE_TESTFLIGHT.md`). Referto:
 `~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVE_RIFATTE_GRANULARITA.md`; laboratori `~/Developer/scabopdf-mac-lab/lettura_mac/
 prove_rifatte/` (Parte 1) e `~/Developer/scabopdf-gen-lab/granularita/` (Parte 2).
 

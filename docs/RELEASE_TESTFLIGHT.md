@@ -196,6 +196,24 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 65 — 2026-11-11, commit `4c1b9a3` (giro «prove rifatte e granularità», livello di verifica pieno: la granularità delle
+  Impostazioni vale anche sull'iPad, con una regola sola per iPad e Mac; i tre lavori della libreria fuori dal filo principale;
+  l'andata e ritorno di granularità delle annotazioni curata; reti che non dicono verde senza aver controllato; l'elenco dei
+  volumi fuori dal repo; `docs/CARRYOVER.md` STATO del 2026-11-10, LAYER2 § 7.7 e § 12.16, DISEGNO § 6.7 e § 11).** Xcode 27.2
+  (27B52). `fastlane beta` da main: «Latest upload … is build: 64», `CURRENT_PROJECT_VERSION` 65, EXPORT SUCCEEDED alle
+  00:30:42, altool «UPLOAD SUCCEEDED with no errors» alle 00:31:55, Delivery UUID `c5e1046c-d809-4baa-9243-5ac27f2cfdfd`; subito
+  dopo, per la quarta build di fila, l'errore del file di ripresa del caricatore, corsia uscita con exit 1 prima dell'elaborazione
+  e delle note. Nessun rilancio: verifica in sola lettura con la chiave API dopo circa quattro minuti (build 65 caricata alle
+  00:32:54 ora italiana, elaborazione VALID, «Cosa testare» vuoto), impostato il solo «Cosa testare» (it) col testo di
+  `app/ios/fastlane/COSA_TESTARE.txt` (script di laboratorio `studio_mirato/build62/asc_imposta_note.rb`) e riletto: 2 172
+  caratteri, identico al file. IPA 163 436 348 byte; nell'archivio `CFBundleVersion` 65 e nel binario la frase nuova delle
+  Impostazioni («La scelta vale per i libri che apri da adesso…»). I due `log stream` nati durante la corsa (00:30:28 e
+  00:30:53, padre launchd) fermati per PID; altri due, di prima della corsa (21:49 e 21:50 del 10 novembre, non nati da comandi
+  del giro), lasciati stare: dopo la corsa non c'erano più. Elenco delle cure dell'offerta (`ReprocessOffer.cures`) invariato:
+  nessuna voce per la build 65, al predefinito la lettura è identica alla build 64. Reti prima del caricamento, sul codice di
+  `4c1b9a3`: rete delle generazioni completa verde con identità al byte alla build 64, risorse visive 110/110 al posto, parità
+  iPad-Mac 52/52 + 3/3, cure mirate e parlato verdi, annotazioni a ogni livello (un residuo dichiarato, preesistente), suite
+  complete sui quattro simulatori verdi (278 test per dispositivo, 0 falliti; `validate.sh` 1 135 test). Prossimo numero: 66.
 - **Build 64 — 2026-11-07, commit `0b48f18` (giro «rifiniture e cure per capacità», seconda parte, livello di verifica
   pieno: sei cure per capacità del tronco dai difetti del volume della prova alla cieca, livello di cure 64, offerta
   «Lettura migliore disponibile» a tutti e soli i libri la cui lettura cambia; `docs/CARRYOVER.md` STATO del 2026-11-07,
