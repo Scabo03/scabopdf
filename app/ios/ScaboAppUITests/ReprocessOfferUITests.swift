@@ -189,3 +189,79 @@ final class ReprocessOfferUITests: XCTestCase {
         XCTAssertTrue(report.isEmpty, "Audit accessibilità FALLITO su «\(screen)» (\(report.count)):\n" + report.joined(separator: "\n"))
     }
 }
+
+// MARK: - La granularità delle Impostazioni (giro «prove rifatte e granularità», 2026-11-10)
+
+/// La granularità scelta nelle Impostazioni entra nell'elaborazione anche sull'iPad (LAYER2 § 7.7). Seme
+/// `-uiTestSeedKeyboardBooks`: due libri già elaborati a 400, con una cache dal testo suo (inventato) e in archivio il PDF
+/// sintetico, dal testo diverso. Così il contenuto dice da dove viene la lettura: il testo della cache seminata vuol dire
+/// «aperto dalla cache, nessuna rielaborazione»; il testo del PDF vuol dire «rielaborato dalla sorgente»; e la lunghezza del
+/// primo blocco dice a quale granularità. (La schermata d'elaborazione del PDF sintetico dura troppo poco perché XCTest, che
+/// dopo il tocco aspetta l'app ferma, la veda: campo, iPad iOS 27; non si usa.) Le Impostazioni tornano al predefinito.
+final class GranularityUITests: XCTestCase {
+
+    override func setUpWithError() throws { continueAfterFailure = false }
+
+    private func launch() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments += ["-uiTestSeedKeyboardBooks"]
+        app.launch()
+        XCTAssertTrue(app.waitForScreen("ScaboPDF", timeout: 30), "la Home compare")
+        return app
+    }
+
+    private func scegli(_ app: XCUIApplication, _ livello: String) {
+        XCTAssertTrue(app.tapTab("Impostazioni"), "scheda Impostazioni")
+        XCTAssertTrue(app.waitForScreen("Impostazioni"))
+        let riga = app.cells.staticTexts[livello].firstMatch
+        for _ in 0..<6 where !(riga.exists && riga.isHittable) { app.swipeUp() }
+        XCTAssertTrue(riga.waitForExistence(timeout: 10), "«\(livello)» fra le Impostazioni")
+        riga.tap()
+        XCTAssertTrue(app.tapTab("Home"), "scheda Home")
+    }
+
+    /// Apre il libro, aspetta che la lettura mostri `testo` (anche dopo un'elaborazione), restituisce l'etichetta del primo
+    /// elemento che lo contiene (il primo blocco di lettura) e torna alla Home.
+    private func apri(_ app: XCUIApplication, _ titolo: String, mostrando testo: String) -> String {
+        let libro = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", titolo)).firstMatch
+        XCTAssertTrue(libro.waitForExistence(timeout: 10), "«\(titolo)» fra i recenti")
+        libro.tap()
+        let lettura = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", testo)).firstMatch
+        let aperto = lettura.waitForExistence(timeout: 120)
+        if !aperto { print("GERARCHIA dopo l'apertura di «\(titolo)»:\n\(app.debugDescription)") }
+        XCTAssertTrue(aperto, "il libro è aperto e la lettura mostra «\(testo)»")
+        let blocco = lettura.label
+        sleep(1)   // il lettore diventa destinatario dei tasti quando è comparso
+        // Esc (Comando-punto, KeyboardUITests) chiude la lettura; un tasto innocuo prima, perché nel simulatore il primo tasto
+        // a volte non arriva, e un secondo Esc se la Home non torna.
+        app.typeKey(XCUIKeyboardKey.shift, modifierFlags: [])
+        app.typeKey(".", modifierFlags: .command)
+        if !libro.waitForExistence(timeout: 5) { app.typeKey(".", modifierFlags: .command) }
+        XCTAssertTrue(libro.waitForExistence(timeout: 15), "di nuovo sulla Home")
+        return blocco
+    }
+
+    /// Al predefinito si legge la cache seminata (a 400): nessuna rielaborazione.
+    func testDefaultGranularity_opensFromTheCache() throws {
+        let app = launch()
+        scegli(app, "Fine — 400 caratteri")
+        _ = apri(app, "Libro tastiera due", mostrando: "Capitolo primo del libro due")
+    }
+
+    /// A un'altra granularità il libro si rielabora dalla sorgente alla prossima apertura, coi blocchi di quella granularità,
+    /// e dalla volta dopo si riapre uguale; tornando al predefinito i blocchi tornano più corti.
+    func testOtherGranularity_reprocessesWithItsBlocks_andBack() throws {
+        let app = launch()
+        scegli(app, "Fine — 400 caratteri")
+        scegli(app, "Ampia — 900 caratteri")
+        let primo900 = apri(app, "Libro tastiera due", mostrando: "Il primo capitolo racconta")
+        let secondo900 = apri(app, "Libro tastiera due", mostrando: "Il primo capitolo racconta")
+        XCTAssertEqual(secondo900, primo900, "riaperto a 900: la stessa lettura")
+        scegli(app, "Fine — 400 caratteri")
+        let primo400 = apri(app, "Libro tastiera due", mostrando: "Il primo capitolo racconta")
+        let secondo400 = apri(app, "Libro tastiera due", mostrando: "Il primo capitolo racconta")
+        XCTAssertEqual(secondo400, primo400, "riaperto a 400: la stessa lettura")
+        XCTAssertLessThan(primo400.count, primo900.count, "a 400 il primo blocco è più corto che a 900")
+        print("GRANULARITA primo blocco: 900 → \(primo900.count) caratteri, 400 → \(primo400.count) caratteri")
+    }
+}

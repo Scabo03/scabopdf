@@ -111,16 +111,19 @@ enum UITestSeeding {
     }
 
     /// Due libri per i test di tastiera e dello split: titoli di due livelli, un richiamo («ponte 1») e la sua nota lunga
-    /// differita a fine sezione col richiamo alla memoria, così il salto fra nota e richiamo c'è. Testo inventato.
+    /// differita a fine sezione col richiamo alla memoria, così il salto fra nota e richiamo c'è. Testo inventato. In archivio
+    /// un PDF dal testo diverso, con un paragrafo lungo: se il libro si rielabora (GranularityUITests) la lettura lo dice.
     private static func seedKeyboardBooks() {
         let service = LibraryService.shared
         setStoredReadingTextSizeOffset(service.prefs, 0)   // la dimensione del testo di partenza, ogni volta
+        // La granularità predefinita, ogni volta: un GranularityUITests interrotto non la lascia cambiata ai test che seguono.
+        setStoredGranularityLevel(service.prefs, DEFAULT_GRANULARITY_LEVEL)
         for d in service.store.allDocuments() {
             service.store.deleteDocumentFromArchive(id: d.id)
             service.deleteFiles(forDocumentId: d.id)
         }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("libro-di-prova.pdf")
-        try? syntheticPdf().write(to: url)
+        try? syntheticPdfWithLongParagraph().write(to: url)
         // Il richiamo alla memoria è la coda della frase che richiama la nota; il paragrafo comincia con altre parole, così
         // anche nei primi caratteri di ciò che VoiceOver dice (il servizio dei test ne restituisce una sessantina) la nota,
         // che si legge a fine sezione preceduta dal richiamo alla memoria, si distingue dal testo che la richiama.
@@ -408,6 +411,32 @@ enum UITestSeeding {
                 (w as NSString).draw(at: CGPoint(x: 70 + (i % 2) * 150, y: 212 + (i / 2) * 40), withAttributes: [.font: font])
             }
             ("Il paragrafo che segue la tabella." as NSString).draw(at: CGPoint(x: 60, y: 360), withAttributes: [.font: font])
+        }
+    }
+
+    /// Un capitolo con un paragrafo lungo (dodici frasi, circa 1.100 caratteri): la granularità delle Impostazioni decide in
+    /// quanti blocchi si taglia (a 400 il primo blocco tiene tre o quattro frasi, a 900 quasi tutte). Testo inventato.
+    private static func syntheticPdfWithLongParagraph() -> Data {
+        let page = CGRect(x: 0, y: 0, width: 420, height: 595)
+        let sentences = [
+            "Il primo capitolo racconta della brezza che scende dalla collina verso il lago al tramonto.",
+            "Il secondo pensiero va al faro acceso sulla scogliera e al vento che piega gli ulivi.",
+            "Poi si parla del mulino sul fiume e delle chiuse aperte di notte per il grano.",
+            "La neve copre i tetti della valle e il silenzio scende sulle case fino al mattino.",
+            "Al disgelo i ruscelli tornano a correre e i pastori riportano le greggi ai pascoli alti.",
+            "Nei giorni di mercato la piazza si riempie di voci, di ceste di frutta e di carretti.",
+            "La sera i vecchi raccontano ai bambini le storie della piena che portò via il ponte.",
+            "Il ponte nuovo fu costruito in pietra, con tre archi larghi e un parapetto basso.",
+            "Da allora il fiume passa sotto i suoi archi senza fare danni, anche nelle annate peggiori.",
+            "Il capitolo si chiude con il suono delle campane che arriva dal paese oltre la collina.",
+            "Chi ascolta da lontano sa che è ora di tornare a casa prima che faccia buio.",
+            "E la strada lungo la riva, sotto la luna, porta tutti fino all'ultima casa del borgo.",
+        ]
+        return UIGraphicsPDFRenderer(bounds: page).pdfData { ctx in
+            ctx.beginPage()
+            ("Capitolo primo" as NSString).draw(at: CGPoint(x: 50, y: 50), withAttributes: [.font: UIFont.boldSystemFont(ofSize: 16)])
+            (sentences.joined(separator: " ") as NSString).draw(in: CGRect(x: 50, y: 90, width: 320, height: 460),
+                                                                 withAttributes: [.font: UIFont.systemFont(ofSize: 11)])
         }
     }
 
