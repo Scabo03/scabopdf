@@ -91,6 +91,9 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
         }
         vista.impostaFuocoIniziale(doc.readingPosition)
         w.makeFirstResponder(vista)
+        // La ripetizione dell'avviso di un salto parte solo con questa finestra in primo piano e l'app attiva (rilievo della
+        // revisione del giro «prove rifatte»: un avviso da una finestra lasciata riporterebbe lì il cursore).
+        vista.ripetizionePossibile = { [weak w] in w?.isKeyWindow == true && NSApp.isActive }
         osservatoreVoiceOver = NSWorkspace.shared.observe(\.isVoiceOverEnabled, options: [.new]) { [weak self] _, _ in
             Task { @MainActor in self?.aggiornaImpostazioni() }
         }
@@ -153,16 +156,27 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
 
     // MARK: Il menu «Lettura» (gli stessi comandi delle azioni, DISEGNO § 5.2)
 
-    @objc public func saltaNotaRichiamo(_ sender: Any?) { notaComando("nota-richiamo"); vista.saltaNotaRichiamo() }
-    @objc public func titoloSuccessivo(_ sender: Any?) { notaComando("titolo-successivo"); vista.titolo(avanti: true) }
-    @objc public func titoloPrecedente(_ sender: Any?) { notaComando("titolo-precedente"); vista.titolo(avanti: false) }
-    @objc public func saltaRisorsa(_ sender: Any?) { notaComando("salta-risorsa"); vista.saltaRisorsa() }
+    @objc public func saltaNotaRichiamo(_ sender: Any?) { notaComando("nota-richiamo", sender); vista.saltaNotaRichiamo() }
+    @objc public func titoloSuccessivo(_ sender: Any?) { notaComando("titolo-successivo", sender); vista.titolo(avanti: true) }
+    @objc public func titoloPrecedente(_ sender: Any?) { notaComando("titolo-precedente", sender); vista.titolo(avanti: false) }
+    @objc public func saltaRisorsa(_ sender: Any?) { notaComando("salta-risorsa", sender); vista.saltaRisorsa() }
 
     /// Il comando del menu «Lettura» nel diario delle prove: se è arrivato dalla scorciatoia (un tasto) o dalla voce del menu
     /// (VO+M, un clic). Il diario della T3 rifatta non sapeva dire se ⌘J e ⌥⌘↓ fossero arrivati all'app (giro «prove rifatte»).
-    private func notaComando(_ nome: String) {
-        let via = NSApp.currentEvent?.type == .keyDown ? "tasto" : "voce"
-        vista.diario.registra(vista.fuoco ?? -1, "menu:\(nome):\(via)")
+    private func notaComando(_ nome: String, _ sender: Any?) {
+        vista.diario.registra(vista.fuoco ?? -1, "menu:\(nome):\(Self.via(sender, evento: NSApp.currentEvent))")
+    }
+
+    /// «tasto» solo se l'evento in corso è la pressione della scorciatoia di quella voce (Comando e il suo carattere, appena
+    /// arrivata); altrimenti «voce» (VO+M, un clic, Invio nel menu, la voce premuta per l'accessibilità). Prima bastava un
+    /// evento di tasto qualunque: un Invio nel menu o l'ultimo tasto ricevuto passavano per scorciatoia (rilievo della
+    /// revisione del giro «prove rifatte»).
+    static func via(_ sender: Any?, evento: NSEvent?) -> String {
+        guard let voce = sender as? NSMenuItem, !voce.keyEquivalent.isEmpty, let e = evento, e.type == .keyDown,
+              e.modifierFlags.contains(.command),
+              ProcessInfo.processInfo.systemUptime - e.timestamp < 1,
+              (e.charactersIgnoringModifiers ?? "").lowercased() == voce.keyEquivalent.lowercased() else { return "voce" }
+        return "tasto"
     }
 
     public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {

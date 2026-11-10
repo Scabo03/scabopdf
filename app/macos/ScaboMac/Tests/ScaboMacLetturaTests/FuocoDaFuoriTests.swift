@@ -198,12 +198,41 @@ final class FuocoDaFuoriTests: XCTestCase {
         gira(0.5); raccolta.voci.removeAll()
         XCTAssertEqual(AXUIElementPerformAction(richiamo, vaiAllaNota as CFString), .success)
         _ = attr(richiamo, "AXValue")   // come VoiceOver alla chiusura del suo menu: rilegge la partenza
+        _ = azioni(richiamo)            // e posarsi sulla partenza non è l'arrivo al bersaglio
         gira(1.8)
         let idNota = fuocoDellApp(app)
         XCTAssertTrue(idNota.hasPrefix("lettura.elemento.") && idNota != ident(richiamo), "il fuoco dell'app è il bersaglio: «\(idNota)»")
         let avvisi = raccolta.voci.filter { $0 == ("AXFocusedUIElementChanged", idNota) }.count
         XCTAssertGreaterThanOrEqual(avvisi, 2, "l'avviso col bersaglio si ripete se nessuno ci si posa: \(raccolta.voci)")
         print("RISULTATO salto_senza_arrivo {\"avvisi_col_bersaglio\":\(avvisi)}")
+    }
+
+    /// Due salti di fila allo STESSO bersaglio, con un passo di VoiceOver in mezzo (diario della T3 rifatta: J1 e J2, J4 e J5,
+    /// e i secondi di ogni coppia persi). VoiceOver, all'avviso, chiede l'elemento col fuoco dell'app e si sposta solo se la
+    /// risposta è cambiata rispetto all'ultima che ha avuto: al secondo salto la risposta deve essere un elemento DIVERSO (lo
+    /// stesso indice, un oggetto nuovo), ed essere fra i figli. Sull'app di prima della cura è lo stesso: il test fallisce.
+    func test_salti_stessoBersaglio_rispostaCambiata_lettoDaFuori() async throws {
+        let (running, app, g) = try await lancia([])
+        defer { chiudi(running) }
+        let richiamo = try XCTUnwrap(elems(g, "AXChildren").first { azioni($0).contains { nome($0).hasPrefix("Vai alla nota") } })
+        func vaiAllaNota() throws -> String { try XCTUnwrap(azioni(richiamo).first { nome($0).hasPrefix("Vai alla nota") }) }
+        // J1: dal richiamo alla nota; il client chiede l'elemento col fuoco (come VoiceOver all'avviso) e ci si posa.
+        XCTAssertEqual(AXUIElementPerformAction(richiamo, try vaiAllaNota() as CFString), .success)
+        gira(0.1)   // VoiceOver chiede l'elemento col fuoco e ci si posa entro qualche decina di millesimi (diari)
+        let prima = try XCTUnwrap(attr(app, "AXFocusedUIElement")) as! AXUIElement
+        XCTAssertFalse(azioni(prima).isEmpty)
+        // Un passo indietro, come VO+Freccia sinistra: il client dà il fuoco al richiamo; l'app non avvisa nulla.
+        XCTAssertEqual(focalizza(richiamo), .success)
+        gira(0.3)
+        // J2: di nuovo «Vai alla nota» dallo stesso richiamo.
+        XCTAssertEqual(AXUIElementPerformAction(richiamo, try vaiAllaNota() as CFString), .success)
+        gira(0.1)
+        let dopo = try XCTUnwrap(attr(app, "AXFocusedUIElement")) as! AXUIElement
+        XCTAssertFalse(azioni(dopo).isEmpty, "il client si posa sul bersaglio")
+        XCTAssertEqual(ident(dopo), ident(prima), "lo stesso bersaglio; il vecchio elemento risponde ancora")
+        XCTAssertFalse(CFEqual(prima, dopo), "la risposta è un elemento diverso dall'ultima: VoiceOver la vede cambiata")
+        XCTAssertTrue(elems(g, "AXChildren").contains { CFEqual($0, dopo) }, "l'elemento nuovo è fra i figli del gruppo")
+        print("RISULTATO stesso_bersaglio {\"risposta_cambiata\":\(!CFEqual(prima, dopo))}")
     }
 
     /// Il salto a cui il client si posa subito (ne chiede le azioni, come VoiceOver all'arrivo): un avviso solo, nessuna

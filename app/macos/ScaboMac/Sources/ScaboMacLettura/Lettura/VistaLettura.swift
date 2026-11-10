@@ -19,13 +19,13 @@
 //    il gruppo, sempre lo stesso, e i salti non spostavano il cursore (diario T3).
 //
 //  Dal giro «prove rifatte» (2026-11-10), dal diario della T3 rifatta: sette salti arrivati all'app, quattro seguiti da
-//  VoiceOver e tre no, tutti e tre partiti dal MENU DELLE AZIONI (VO+Comando+Spazio, Invio). Dopo quei tre VoiceOver rilegge
-//  l'elemento di partenza e non si posa sul bersaglio: alla chiusura del suo menu riporta il cursore dov'era, e l'avviso del
-//  fuoco, mandato una volta sola mentre il menu si chiudeva, va perso (dedotto dall'ordine delle richieste; i salti partiti
-//  senza il menu sono arrivati tutti). Cura: se nessun client si posa sul bersaglio (ne chiede le azioni, come fa VoiceOver
-//  all'arrivo, o gli dà il fuoco), l'avviso si RIPETE a 0,35 e a 1 secondo; se è arrivato, niente (nessun bersaglio detto due
-//  volte). E il diario registra in più le azioni eseguite, i comandi del menu «Lettura» (da tasto o da voce), gli annunci, le
-//  ripetizioni dell'avviso e le domande dell'elemento col fuoco: la prossima prova d'orecchio si legge senza indovinare.
+//  VoiceOver e tre no. Due dei tre andavano allo STESSO bersaglio del salto prima, e VoiceOver si sposta solo se l'elemento
+//  col fuoco che l'app gli dice è cambiato rispetto all'ultimo avuto; il terzo, partito dal menu delle azioni, è stato
+//  riportato sulla partenza alla chiusura del menu (dedotto dall'ordine delle richieste). Cura (§ «L'arrivo di un salto»): un
+//  bersaglio già dato come «col fuoco» riceve un oggetto nuovo prima dell'avviso; se nessun client si posa sul bersaglio,
+//  l'avviso si ripete a 0,35 e a 1 secondo (solo per i salti, a finestra attiva). E il diario registra in più le azioni
+//  eseguite, i comandi del menu «Lettura» (da tasto o da voce), gli annunci, le ripetizioni, gli oggetti nuovi e le domande
+//  dell'elemento col fuoco: la prossima prova d'orecchio si legge senza indovinare.
 //
 import AppKit
 import ScaboCore
@@ -115,9 +115,17 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     /// e sposta il cursore solo se la risposta è cambiata. Senza fuoco, la vista stessa.
     public override var accessibilityFocusedUIElement: Any? {
         diario.registra(fuoco ?? -1, "vista:AXFocusedUIElement")
-        if let f = fuoco, f >= 0, f < conteggio { return elemento(f) }
+        if let f = fuoco, f >= 0, f < conteggio {
+            let e = elemento(f)
+            ultimaRispostaFuoco = e
+            return e
+        }
+        ultimaRispostaFuoco = nil
         return super.accessibilityFocusedUIElement
     }
+    /// L'ultimo elemento dato a un client come «elemento col fuoco»: VoiceOver confronta la risposta nuova con questa e si
+    /// sposta solo se è cambiata (dal giro «prove rifatte», § «L'arrivo di un salto»).
+    public private(set) weak var ultimaRispostaFuoco: ElementoLettura?
 
     /// Gli elementi: tutti, costruiti UNA volta alla prima richiesta (servono ai rotori, ai salti, alla descrizione).
     public func figli() -> [ElementoLettura] {
@@ -289,11 +297,22 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public func spostaFuoco(a i: Int, origine: OrigineFuoco = .programma) {
         guard i >= 0, i < conteggio else { return }
         riceviFuoco(i, origine: origine)   // il fuoco, la finestra ricentrata, la riga in vista, i segnali
+        rinnovaSeGiaDato(i)
         NSAccessibility.post(element: elemento(i), notification: .focusedUIElementChanged)
-        ripetiAvvisoSeNonArriva(i)
+        if origine == .programma { ripetiAvvisoSeNonArriva(i) }
     }
 
     // MARK: L'arrivo di un salto (giro «prove rifatte», 2026-11-10)
+    //
+    // Il diario della T3 rifatta: sette salti arrivati all'app, tre persi (il cursore di VoiceOver resta sulla partenza). Due
+    // (J2, J5) andavano allo STESSO bersaglio del salto prima: VoiceOver, all'avviso, chiede l'elemento col fuoco e si sposta
+    // solo se la risposta è cambiata rispetto all'ultima che ha avuto (§ 5.2) — e la risposta era lo stesso oggetto di prima,
+    // benché i passi avessero portato il cursore su un altro elemento. Il terzo (J7), partito dal menu delle azioni: VoiceOver
+    // ha letto il bersaglio e poi, chiudendo il menu, è tornato sulla partenza. Le due cure (dedotte dall'ordine delle
+    // richieste; da sentire nella prova d'orecchio 4): (1) quando il bersaglio è l'elemento già dato come «col fuoco», il
+    // bersaglio riceve un OGGETTO NUOVO prima dell'avviso, così la risposta cambia; (2) se nessun client si posa sul bersaglio
+    // (ne chiede le azioni, come VoiceOver a ogni arrivo, titoli compresi, o gli dà il fuoco), l'avviso si ripete a 0,35 e a
+    // 1 secondo, con la stessa regola dell'oggetto nuovo, solo a finestra attiva e solo per i salti (non per le frecce).
 
     /// Dopo quanto un salto a cui nessun client si è posato ripete l'avviso del fuoco. Il primo cade dopo la chiusura del menu
     /// delle azioni di VoiceOver (diario della T3 rifatta: VoiceOver rilegge la partenza entro 20 ms dall'azione); il secondo è
@@ -302,8 +321,15 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     /// Il salto che aspetta ancora che un client ci si posi: il bersaglio e il numero del salto (un salto nuovo annulla il vecchio).
     private var saltoInAttesa: (indice: Int, numero: Int)? = nil
     private var numeroSalto = 0
-    /// Quante volte l'avviso di un salto è stato ripetuto (i test e il diario).
+    /// Quante volte l'avviso di un salto è stato ripetuto e quante volte un bersaglio ha ricevuto un oggetto nuovo (i test e il
+    /// diario).
     public private(set) var ripetizioniAvviso = 0
+    public private(set) var oggettiRinnovati = 0
+    /// Gli oggetti sostituiti da un oggetto nuovo, tenuti vivi (gli ultimi 64).
+    private var sostituiti: [ElementoLettura] = []
+    /// Se la ripetizione può partire: solo con la finestra della vista in primo piano e l'app attiva (un avviso da una finestra
+    /// lasciata, per un'altra finestra o un'altra app, riporterebbe lì il cursore). I test lo sostituiscono.
+    public var ripetizionePossibile: () -> Bool = { true }
 
     /// Un client si è posato sull'elemento `i`: ne ha chiesto le azioni (VoiceOver lo fa a ogni arrivo, diari T1 e T3) o gli ha
     /// dato il fuoco. Se era il bersaglio del salto in attesa, il salto è arrivato e l'avviso non si ripete.
@@ -311,9 +337,23 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         if let s = saltoInAttesa, s.indice == i { saltoInAttesa = nil }
     }
 
+    /// Se l'elemento `i` è l'ultimo dato a un client come «elemento col fuoco», gli dà un oggetto nuovo (lo stesso indice, lo
+    /// stesso parlato): la prossima risposta all'«elemento col fuoco» sarà diversa dall'ultima, e VoiceOver si sposterà. Fra i
+    /// figli l'oggetto nuovo prende il posto del vecchio; il vecchio, se un client lo tiene ancora, risponde come prima.
+    private func rinnovaSeGiaDato(_ i: Int) {
+        guard let vecchio = ultimaRispostaFuoco, vecchio.indice == i, elementi != nil else { return }
+        // Il vecchio resta vivo (gli ultimi 64): un client che lo tiene, per esempio un cursore rimasto lì, lo legge ancora.
+        sostituiti.append(vecchio)
+        if sostituiti.count > 64 { sostituiti.removeFirst(sostituiti.count - 64) }
+        elementi?[i] = ElementoLettura(indice: i, vista: self)
+        ultimaRispostaFuoco = nil
+        oggettiRinnovati += 1
+        diario.registra(i, "fuoco:oggetto-nuovo")
+    }
+
     /// Ripete l'avviso del fuoco del salto a `i` ai ritardi di `ritardiRipetizione`, finché nessun client ci si posa, il fuoco
-    /// resta lì e non parte un altro salto. All'avviso ripetuto VoiceOver chiede di nuovo l'elemento col fuoco e, trovandolo
-    /// diverso dal suo cursore, ci va; se il cursore è già lì non cambia nulla, ma con l'arrivo registrato non si ripete affatto.
+    /// resta lì, non parte un altro salto e la finestra resta in primo piano. All'avviso ripetuto VoiceOver chiede di nuovo
+    /// l'elemento col fuoco: se gliel'abbiamo già dato, prima l'oggetto nuovo, perché la risposta sia cambiata.
     private func ripetiAvvisoSeNonArriva(_ i: Int) {
         guard !provaASecco, !descrizioneInCorso else { return }
         numeroSalto += 1
@@ -321,9 +361,11 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         saltoInAttesa = (i, n)
         for r in Self.ritardiRipetizione {
             DispatchQueue.main.asyncAfter(deadline: .now() + r) { [weak self] in
-                guard let self, let s = self.saltoInAttesa, s.numero == n, s.indice == i, self.fuoco == i else { return }
+                guard let self, let s = self.saltoInAttesa, s.numero == n, s.indice == i, self.fuoco == i,
+                      self.ripetizionePossibile() else { return }
                 self.ripetizioniAvviso += 1
                 self.diario.registra(i, "fuoco:ripeti-avviso")
+                self.rinnovaSeGiaDato(i)
                 NSAccessibility.post(element: self.elemento(i), notification: .focusedUIElementChanged)
             }
         }

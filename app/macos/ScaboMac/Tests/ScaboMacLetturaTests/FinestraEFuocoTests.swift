@@ -282,6 +282,7 @@ final class FinestraEFuocoTests: XCTestCase {
             v.diario.attivo = true
             XCTAssertTrue(v.esegui(.goToCall(target: 12), da: 11))   // un'azione personalizzata, come dal menu di VoiceOver
             _ = v.elemento(11).accessibilityValue()   // la rilettura della partenza
+            _ = v.elemento(11).accessibilityCustomActions()   // posarsi sulla partenza non è l'arrivo al bersaglio
             gira(0.3)
             XCTAssertEqual(v.ripetizioniAvviso, 2)
             XCTAssertEqual(v.fuoco, 12)
@@ -330,15 +331,64 @@ final class FinestraEFuocoTests: XCTestCase {
     func test_salto_nuovoSalto_ripeteSoloIlNuovo_provaASeccoMai() {
         conRitardiBrevi {
             let v = libroLungo(30)
+            v.diario.attivo = true
             v.spostaFuoco(a: 12)
             v.spostaFuoco(a: 20)
             gira(0.3)
             XCTAssertEqual(v.ripetizioniAvviso, 2)
+            XCTAssertEqual(v.diario.voci.filter { $0.richiesta == "fuoco:ripeti-avviso" }.map(\.indice), [20, 20])
             v.provaASecco = true
             v.spostaFuoco(a: 25)
             v.provaASecco = false
             gira(0.3)
             XCTAssertEqual(v.ripetizioniAvviso, 2, "a secco nessuna ripetizione")
+        }
+    }
+
+    /// Il salto allo STESSO bersaglio del salto prima (diario della T3 rifatta, J2 e J5): VoiceOver si sposta solo se l'elemento
+    /// col fuoco che la vista gli dice è cambiato rispetto all'ultimo avuto. Il bersaglio già dato riceve un oggetto nuovo, che
+    /// prende il suo posto fra i figli; un bersaglio mai dato tiene il suo.
+    func test_salto_stessoBersaglio_oggettoNuovo_eFraIFigli() {
+        let v = libroLungo(30)
+        v.spostaFuoco(a: 12)
+        let primo = v.accessibilityFocusedUIElement as? ElementoLettura
+        XCTAssertEqual(primo?.indice, 12)
+        v.elemento(13).setAccessibilityFocused(true)   // VoiceOver va avanti di un passo: la vista non gli dice nulla
+        v.spostaFuoco(a: 12)                            // e il salto torna sullo stesso bersaglio
+        let secondo = v.accessibilityFocusedUIElement as? ElementoLettura
+        XCTAssertEqual(secondo?.indice, 12)
+        XCTAssertFalse(primo === secondo, "la risposta è un oggetto diverso: VoiceOver la vede cambiata")
+        XCTAssertTrue(esposti(v).contains { $0 === secondo }, "l'oggetto nuovo è fra i figli")
+        XCTAssertFalse(esposti(v).contains { $0 === primo }, "il vecchio non c'è più")
+        XCTAssertEqual(primo?.accessibilityValue() as? String, secondo?.accessibilityValue() as? String, "lo stesso parlato")
+        XCTAssertEqual(v.oggettiRinnovati, 1)
+        // Un bersaglio che nessuno ha ancora chiesto tiene il suo oggetto.
+        let quinto = v.elemento(5)
+        v.spostaFuoco(a: 5)
+        XCTAssertTrue(v.elemento(5) === quinto)
+        XCTAssertEqual(v.oggettiRinnovati, 1)
+    }
+
+    /// La ripetizione dell'avviso: mai per le frecce della tastiera, mai a finestra non attiva; e prima di ripetere, se
+    /// l'elemento col fuoco era già stato dato, l'oggetto nuovo (il caso J7: VoiceOver aveva letto il bersaglio).
+    func test_ripetizione_soloPerISalti_aFinestraAttiva_conLOggettoNuovo() {
+        conRitardiBrevi {
+            let v = libroLungo(30)
+            v.spostaFuoco(a: 12, origine: .tastiera)
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 0, "le frecce non ripetono")
+            v.ripetizionePossibile = { false }
+            v.spostaFuoco(a: 20)
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 0, "finestra non attiva: nessuna ripetizione")
+            v.ripetizionePossibile = { true }
+            v.spostaFuoco(a: 7)
+            let detto = v.accessibilityFocusedUIElement as? ElementoLettura   // VoiceOver chiede e legge, poi torna indietro
+            gira(0.3)
+            XCTAssertEqual(v.ripetizioniAvviso, 2)
+            let dopo = v.accessibilityFocusedUIElement as? ElementoLettura
+            XCTAssertEqual(dopo?.indice, 7)
+            XCTAssertFalse(detto === dopo, "alla ripetizione la risposta è cambiata")
         }
     }
 
