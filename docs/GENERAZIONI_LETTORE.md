@@ -26,7 +26,7 @@ questo giro; log `logs/prima_*.log`, exit 0).
 app/ios/scripts/rete_generazioni.sh <etichetta> [--no-capture] [--all-pages]
 ```
 
-Cattura le estrazioni dei 52 volumi (`scripts/generazioni/lista_volumi.json`) con il banco dell'app
+Cattura le estrazioni dei 52 volumi (il banco: etichette neutre e impronte in `scripts/generazioni/banco_volumi.json`; la corrispondenza coi file solo nel laboratorio, risolta da `scripts/generazioni/banco.py` — dal 2026-11-10 nel repo non ci sono più i nomi dei volumi) con il banco dell'app
 (`test_extractionDump_fromRequest`) su iPad Pro 11-inch (M5) iOS 26.5 e iOS 27.0 (**~5 minuti per generazione**), compila il
 runner dell'officina a HEAD (stessa catena ScaboCore dell'app), produce le letture, confronta ciascuna generazione con la
 **propria** linea di base (`<lab>/letture/base_<gen>`) e le due generazioni fra loro (`scripts/generazioni/parita_lettura.py`,

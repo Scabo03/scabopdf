@@ -2,7 +2,7 @@
  "descrizione": "Verità registrata del POSTO delle risorse visive nel flusso della rete (runner, `<stem>.rv.reading.json`), per generazione del lettore di sistema. Nessun testo: identità (pagina 1-based, tipo, riquadro), impronte SHA-256 (16 cifre) delle 64 lettere normalizzate prima e dopo l'annuncio e attorno alla fine del salto, conteggi. Vedi rete_risorse_visive.py, punto 5.",
  "generazioni": {
   "ios27": {
-   "originals/Codice civile e procedura civile e leggi complementari_9788828854708_pdf.pdf": [
+   "v04": [
     {
      "pagina": 1103,
      "tipo": "table",
@@ -310,7 +310,7 @@
      "fine_dopo": "23b48bfb9a82c3e7"
     }
    ],
-   "originals/Codice penale e procedura penale e leggi complementari 2025.pdf": [
+   "v05": [
     {
      "pagina": 716,
      "tipo": "table",
@@ -1014,7 +1014,7 @@
      "fine_dopo": "7fb231f01c046ff1"
     }
    ],
-   "originals/Rivista DPC 2-2018.pdf": [
+   "v28": [
     {
      "pagina": 205,
      "tipo": "figure",
@@ -1466,7 +1466,7 @@
      "fine_dopo": "e3b0c44298fc1c14"
     }
    ],
-   "originals/Rivista DPC 4-2020.pdf": [
+   "v29": [
     {
      "pagina": 108,
      "tipo": "figure",
@@ -1648,7 +1648,7 @@
      "fine_dopo": "771598f47df501e4"
     }
    ],
-   "originals_new/Delitti in prima pagina_9788832854046(p)_pdf.pdf": [
+   "v34": [
     {
      "pagina": 34,
      "tipo": "figure",
@@ -1830,7 +1830,7 @@
      "fine_dopo": "bfaecbc29d12e7e0"
     }
    ],
-   "originals_new/Diritto penale. Appunti di parte generale_9791221100563_pdf.pdf": [
+   "v35": [
     {
      "pagina": 185,
      "tipo": "table",
@@ -1850,7 +1850,7 @@
      "fine_dopo": "db8e48cb9b4c9ab2"
     }
    ],
-   "originals_new/Manuale di Diritto Costituzionale.pdf": [
+   "v38": [
     {
      "pagina": 27,
      "tipo": "figure",
@@ -1998,7 +1998,7 @@
    ]
   },
   "ios265": {
-   "originals/Codice civile e procedura civile e leggi complementari_9788828854708_pdf.pdf": [
+   "v04": [
     {
      "pagina": 1103,
      "tipo": "table",
@@ -2306,7 +2306,7 @@
      "fine_dopo": "23b48bfb9a82c3e7"
     }
    ],
-   "originals/Codice penale e procedura penale e leggi complementari 2025.pdf": [
+   "v05": [
     {
      "pagina": 716,
      "tipo": "table",
@@ -3010,7 +3010,7 @@
      "fine_dopo": "7fb231f01c046ff1"
     }
    ],
-   "originals/Rivista DPC 2-2018.pdf": [
+   "v28": [
     {
      "pagina": 205,
      "tipo": "figure",
@@ -3462,7 +3462,7 @@
      "fine_dopo": "e3b0c44298fc1c14"
     }
    ],
-   "originals/Rivista DPC 4-2020.pdf": [
+   "v29": [
     {
      "pagina": 108,
      "tipo": "figure",
@@ -3644,7 +3644,7 @@
      "fine_dopo": "771598f47df501e4"
     }
    ],
-   "originals_new/Delitti in prima pagina_9788832854046(p)_pdf.pdf": [
+   "v34": [
     {
      "pagina": 34,
      "tipo": "figure",
@@ -3826,7 +3826,7 @@
      "fine_dopo": "bfaecbc29d12e7e0"
     }
    ],
-   "originals_new/Diritto penale. Appunti di parte generale_9791221100563_pdf.pdf": [
+   "v35": [
     {
      "pagina": 185,
      "tipo": "table",
@@ -3846,7 +3846,7 @@
      "fine_dopo": "db8e48cb9b4c9ab2"
     }
    ],
-   "originals_new/Manuale di Diritto Costituzionale.pdf": [
+   "v38": [
     {
      "pagina": 27,
      "tipo": "figure",

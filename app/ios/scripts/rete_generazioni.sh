@@ -49,9 +49,10 @@
 #
 # Variabili d'ambiente (con default): SCABO_CORPUS (~/Developer/scabopdf-triple-take, i PDF: MAI nel repo),
 # SCABO_GEN_LAB (~/Developer/scabopdf-gen-lab, uscite e linee di base), SCABO_TOOLS_PY (python del venv
-# con PyMuPDF: ~/Developer/scabopdf-tools-venv/bin/python), SCABO_LISTA (lista dei volumi, default la
-# lista dei 52 in scripts/generazioni/lista_volumi.json), SCABO_CONTROLLO (default originals/Marotta), SCABO_GENS (le due
-# generazioni «runtime:sigla», default "26.5:ios265 27.0:ios27").
+# con PyMuPDF: ~/Developer/scabopdf-tools-venv/bin/python), SCABO_LISTA (una lista di percorsi del corpus già pronta; di
+# default i 52 del banco, che il repo conosce solo per etichette e impronte in scripts/generazioni/banco_volumi.json: la
+# corrispondenza coi file sta nel laboratorio e la risolve `generazioni/banco.py`, che si ferma se manca), SCABO_CONTROLLO (di
+# default il volume di controllo del banco), SCABO_GENS (le due generazioni «runtime:sigla», default "26.5:ios265 27.0:ios27").
 # Codici d'uscita: 0 tutti i passi previsti verdi, 1 almeno un passo rosso (un comando fallito, un'uscita mancante, il controllo
 # cambiato, una linea di base assente senza --senza-base, una lettura diversa con --identiche-attese), 2 prerequisito mancante.
 # Ogni passo stampa il proprio codice d'uscita; il riassunto finale elenca passi verdi, rossi e non previsti.
@@ -77,8 +78,14 @@ PROJECT="$REPO_ROOT/app/ios/ScaboPDF.xcodeproj"
 CORPUS="${SCABO_CORPUS:-$HOME/Developer/scabopdf-triple-take}"
 LAB="${SCABO_GEN_LAB:-$HOME/Developer/scabopdf-gen-lab}"
 PY="${SCABO_TOOLS_PY:-$HOME/Developer/scabopdf-tools-venv/bin/python}"
-LISTA="${SCABO_LISTA:-$SCRIPT_DIR/generazioni/lista_volumi.json}"
-CONTROLLO="${SCABO_CONTROLLO:-originals/Marotta}"
+mkdir -p "$LAB/reti"
+# La lista dei volumi: dal banco (etichette e impronte nel repo, corrispondenza nel laboratorio, verificata), o SCABO_LISTA.
+if [ -n "${SCABO_LISTA:-}" ]; then LISTA="$SCABO_LISTA"; else
+  LISTA="$LAB/reti/lista_${TAG}.json"
+  "${SCABO_TOOLS_PY:-$HOME/Developer/scabopdf-tools-venv/bin/python}" -I "$SCRIPT_DIR/generazioni/banco.py" risolvi "$LISTA" || exit 2
+fi
+CONTROLLO="${SCABO_CONTROLLO:-$("${SCABO_TOOLS_PY:-$HOME/Developer/scabopdf-tools-venv/bin/python}" -I "$SCRIPT_DIR/generazioni/banco.py" controllo)}" || exit 2
+[ -n "$CONTROLLO" ] || exit 2
 RUNNER_SRC="${SCABO_RUNNER_SRC:-$CORPUS/ultrafocus_bench/runner}"
 DEVICE="iPad Pro 11-inch (M5)"
 read -r -a GENS <<< "${SCABO_GENS:-26.5:ios265 27.0:ios27}"
@@ -281,8 +288,13 @@ if [ "$RV" = 1 ]; then
   for g in "${GENS[@]}"; do
     GEN="${g##*:}"; GIUD=(); MD="$LAB/reti/risorse_visive_${TAG}_$GEN.md"
     [ -n "${SCABO_RV_GIUDICATE:-}" ] && GIUD=(--giudicate "${SCABO_RV_GIUDICATE//\{gen\}/$GEN}")
-    POSTI="${SCABO_RV_POSTI:-$SCRIPT_DIR/generazioni/verita_posti_risorse_visive.json}"
     rc_posti=0
+    if [ -n "${SCABO_RV_POSTI:-}" ]; then POSTI="$SCABO_RV_POSTI"
+    else
+      # La verità registrata nel repo parla per etichette del banco: per il giudice si traduce in percorsi, nel laboratorio.
+      POSTI="$LAB/reti/verita_posti_${TAG}.json"
+      "$PY" -I "$SCRIPT_DIR/generazioni/banco.py" posti-a-percorsi "$SCRIPT_DIR/generazioni/verita_posti_risorse_visive.json" "$POSTI" || rc_posti=2
+    fi
     if [ "$POSTI" != no ]; then
       [ -f "$POSTI" ] || { say "    verità del posto assente: $POSTI"; rc_posti=2; }
       GIUD+=(--posti "$POSTI" --gen "$GEN")

@@ -2,7 +2,7 @@
 #
 # confronto_letture_ipad_mac.sh — IL CONFRONTO AUTOMATICO fra la lettura dell'iPad e quella del Mac (giro «fondamenta della lettura
 # per Mac», 2026-11-07): è Code, non l'orecchio, a dire se le due letture sono la stessa. Sui libri del banco (i 52 di
-# `generazioni/lista_volumi.json`) e sui volumi stabili della rete dei documenti di studio, dalle stesse catture del simulatore:
+# `generazioni/banco_volumi.json`, risolti da `generazioni/banco.py`) e sui volumi stabili della rete dei documenti di studio, dalle stesse catture del simulatore:
 #   1. la CATENA DELL'IPAD (attrezzo del laboratorio `costruisci_catena.sh`, contro il codice di QUESTO repo) → le letture nella
 #      forma della cache;
 #   2. la VISTA VERA DELL'IPAD sul simulatore iPad Pro 11-inch (M5) con iOS 27, interrogata dentro il processo (banco
@@ -55,8 +55,10 @@ mkdir -p "$OUT/logs"
 RC=0
 say() { printf '%s\n' "$*"; }
 
-# Gli elenchi: i 52 del banco e i volumi stabili della rete dei documenti di studio (gli stessi di rete_cure_mirate.sh).
-"$PY" -I - "$SCRIPT_DIR/generazioni/lista_volumi.json" "$OUT" "$SOLO" "$CATTURE_STUDIO" <<'PYEOF' || exit 2
+# Gli elenchi: i 52 del banco (etichette e impronte nel repo, corrispondenza nel laboratorio, verificata da `banco.py`) e i
+# volumi stabili della rete dei documenti di studio (gli stessi di rete_cure_mirate.sh).
+"$PY" -I "$SCRIPT_DIR/generazioni/banco.py" risolvi "$OUT/lista_risolta.json" || exit 2
+"$PY" -I - "$OUT/lista_risolta.json" "$OUT" "$SOLO" "$CATTURE_STUDIO" <<'PYEOF' || exit 2
 import json, os, sys
 lista, out, solo, cs = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
 banco = [v for v in json.load(open(lista)) if not solo or v[:-4].endswith(solo)]

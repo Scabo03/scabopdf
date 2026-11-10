@@ -29,7 +29,11 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 CORPUS="${SCABO_CORPUS:-$HOME/Developer/scabopdf-triple-take}"
 LAB="${SCABO_GEN_LAB:-$HOME/Developer/scabopdf-gen-lab}"
 PY="${SCABO_TOOLS_PY:-$HOME/Developer/scabopdf-tools-venv/bin/python}"
-LISTA="${SCABO_LISTA:-$SCRIPT_DIR/generazioni/lista_volumi.json}"
+# La lista dei volumi: dal banco (etichette e impronte nel repo, corrispondenza nel laboratorio, verificata), o SCABO_LISTA.
+if [ -n "${SCABO_LISTA:-}" ]; then LISTA="$SCABO_LISTA"; else
+  LISTA="$LAB/annotazioni/lista_${TAG}.json"; mkdir -p "$LAB/annotazioni"
+  "$PY" -I "$SCRIPT_DIR/generazioni/banco.py" risolvi "$LISTA" || exit 2
+fi
 RUNNER_SRC="${SCABO_RUNNER_SRC:-$CORPUS/ultrafocus_bench/runner}"
 ALTRA="${SCABO_ALTRA_CATENA:-b44}"
 ABASE="${SCABO_ANNOT_BASE:-base}"

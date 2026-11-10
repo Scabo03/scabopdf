@@ -1,0 +1,214 @@
+{
+ "descrizione": "Il banco delle reti: 52 volumi, con etichette neutre e l'impronta SHA-256 del PDF. Nessun nome di file né di volume nel repo (giro «prove rifatte e granularità», 2026-11-10): la corrispondenza etichetta → file sta SOLO nel laboratorio, in ~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json, e le reti la leggono con banco.py (che verifica anche le impronte). L'ordine è quello di sempre: le uscite delle reti restano confrontabili.",
+ "controllo": "v23",
+ "volumi": [
+  {
+   "etichetta": "v01",
+   "impronta": "0f1a1e5612a3d8edb24c01ce31e09e83189101c7506fca65f63049399752a6e6"
+  },
+  {
+   "etichetta": "v02",
+   "impronta": "3efddd7cba24908275c9fc34cb7f1b007cc402f00a647fd4586bea609c54a416"
+  },
+  {
+   "etichetta": "v03",
+   "impronta": "d12bb6434c9f80f19ce8ceb7472c37e42082781d219fe7231c806f1623dcbf1d"
+  },
+  {
+   "etichetta": "v04",
+   "impronta": "4b7d4b26351642c9aa82289c17b58b1cee4af54f081f7353c411fdf7700aa842"
+  },
+  {
+   "etichetta": "v05",
+   "impronta": "ae5ab0bf66f345a26327767a6361964052af1d46083dbea4f27d3b6a19c23da9"
+  },
+  {
+   "etichetta": "v06",
+   "impronta": "483381f3abcee70da2c5ac1b4088ae756de47b959bfb73d504421778419a2543"
+  },
+  {
+   "etichetta": "v07",
+   "impronta": "a8d4fe01e9da7ce3f9d2f2551c4675a0fbef9041f6bb9d8907bb441d61e7fa5b"
+  },
+  {
+   "etichetta": "v08",
+   "impronta": "ed85e38364f4fb78f93731e09166cfb88673168fe6895c6ca9b3d3e5b5804d7e"
+  },
+  {
+   "etichetta": "v09",
+   "impronta": "ab52157fa922e610dece81d907535d903971850e0321edcdaa953cfb45fb8d30"
+  },
+  {
+   "etichetta": "v10",
+   "impronta": "2d82f9de4fe61c7bbf07a6db0446a4c356329502d36b5570d5563b6ee812b4ab"
+  },
+  {
+   "etichetta": "v11",
+   "impronta": "e0a05d7e91b783d2948d6d188f0de149ebc3f4a79627e5e3cbd493b9f5a0b14e"
+  },
+  {
+   "etichetta": "v12",
+   "impronta": "d1c76b81f8deb2a022f056d6953644fb8157ba57a725fca4c1111b7639ff24be"
+  },
+  {
+   "etichetta": "v13",
+   "impronta": "ecccbf4cc0cb5078350d87cef6df986bd81846ebe7da07a34536f890c0498bff"
+  },
+  {
+   "etichetta": "v14",
+   "impronta": "07d1c5efbac1550316f2ee77a2d67cd654c0e842cd05861935c05de14cc09d76"
+  },
+  {
+   "etichetta": "v15",
+   "impronta": "180f71dbfcfea0d3683350a939d34e8b1ded1f9b28fdcd40401d348fdac59a5f"
+  },
+  {
+   "etichetta": "v16",
+   "impronta": "9d49de89a20be4cc7af328a711ebf5fcc5e580fe700ca852dee7300239358c52"
+  },
+  {
+   "etichetta": "v17",
+   "impronta": "3ab65ca046b06e2316af364f47d6404735bfa049780e6e0a726a76b9c5f8ffac"
+  },
+  {
+   "etichetta": "v18",
+   "impronta": "d8ba8825c23869ed0ff58800ca331e0d4adbaef23fdc6abe8d0f883aa78c7c87"
+  },
+  {
+   "etichetta": "v19",
+   "impronta": "1d2f19fe609ae5a94b0703a3f53419344b53bc88ddbd776372734e4c3d42ac25"
+  },
+  {
+   "etichetta": "v20",
+   "impronta": "45fbdcce2468dc09526949f279221f75c37c1f26366de5a0f83dc7c814384f16"
+  },
+  {
+   "etichetta": "v21",
+   "impronta": "951a1d329378443b78aec4a2db13834ad1fc51dac4e96a3fe7b08ca9357bbef8"
+  },
+  {
+   "etichetta": "v22",
+   "impronta": "e9107b7cc7fc9483c86b0d36578664e3bda09973465adaf416303a6d50dbd914"
+  },
+  {
+   "etichetta": "v23",
+   "impronta": "5f24fa27a4bf84f474bf791335e61db99c91bbd6730d1e860199474236b1a6e3"
+  },
+  {
+   "etichetta": "v24",
+   "impronta": "f077dedd34727c3aa147e3113840c56701fa594ed5831f4344103ff9d1440c4e"
+  },
+  {
+   "etichetta": "v25",
+   "impronta": "c35a79271f2cadefaebdea928905ce5cad8c957483a5b02c73f7cf1f9596e875"
+  },
+  {
+   "etichetta": "v26",
+   "impronta": "67e5148ce0e09ad54587e32accc276b925eb06a97d137bfc2c852eb10d3cee9d"
+  },
+  {
+   "etichetta": "v27",
+   "impronta": "f222d2072083b80e4cee088e9b9acb55dadf0e97b317b58697509301a7574253"
+  },
+  {
+   "etichetta": "v28",
+   "impronta": "d301c63e306a83aff75713e20dac24eaed960b33c06d7d9698e097ed642cbe90"
+  },
+  {
+   "etichetta": "v29",
+   "impronta": "5ff19429c7e1e515b9250edbf83bc4ea07cc20a0c1f4dad045d0454e8d7d57b3"
+  },
+  {
+   "etichetta": "v30",
+   "impronta": "e33d7fc840fce15be4927d1dc1187d5c6c8665883b4d00e569b2786a31032f32"
+  },
+  {
+   "etichetta": "v31",
+   "impronta": "227675b049bc36db5435b8234182204ee05d796c57b6ea2a0e8a54ed73ccae59"
+  },
+  {
+   "etichetta": "v32",
+   "impronta": "33ae30235eab9f8ca98002e943a86f1a0b9096cf18896858281d0e01548257ee"
+  },
+  {
+   "etichetta": "v33",
+   "impronta": "5a866fbcf0a2507ddf205532a4fffb1b132d36b996cee57b99862c535167746c"
+  },
+  {
+   "etichetta": "v34",
+   "impronta": "4cb8a060505bef2fb8330ad529e4d72609e605c398d6d23b436d05b9733712e4"
+  },
+  {
+   "etichetta": "v35",
+   "impronta": "9b92f1b13c72a8c3cd2e0e84e7cea0557459154911041867dc8079d7ba399830"
+  },
+  {
+   "etichetta": "v36",
+   "impronta": "825a7420732740beaa17b42c38d91e4ce48882d8daade2f977542cd2fb507fd6"
+  },
+  {
+   "etichetta": "v37",
+   "impronta": "f3842fbd1973d73ae186d615cd87a9f5274649cee96a76939de5934268468b62"
+  },
+  {
+   "etichetta": "v38",
+   "impronta": "1be94719c862ffd342d6acc07d06c62dd2ca8b704e1f2b2592b8229fed8a5c27"
+  },
+  {
+   "etichetta": "v39",
+   "impronta": "b8c6b4b6e72afc50dd386f8f86cbecd7e81abd6654e5d740902ddc8d7001a110"
+  },
+  {
+   "etichetta": "v40",
+   "impronta": "7b8afc22711a943d18689a49a6ef7de9b3417883084f96f9772673bf0f6ca819"
+  },
+  {
+   "etichetta": "v41",
+   "impronta": "ecab1854283b7e61bc101a15339c417eb988551f70fdd039c130370d784e733a"
+  },
+  {
+   "etichetta": "v42",
+   "impronta": "31c79c8992534510c6eff13a351f700d6e669e2f506b8ecd411307d3decae8f4"
+  },
+  {
+   "etichetta": "v43",
+   "impronta": "5d58b1cb0900f2b6c345fa7ce2659405ff8af29307b620ff7643938a5c92c11f"
+  },
+  {
+   "etichetta": "v44",
+   "impronta": "02b77c581a2ff0ccfdd18af9c97f8012a4fc45eaedfab1020ca63cd7aa6c14dc"
+  },
+  {
+   "etichetta": "v45",
+   "impronta": "e1fd3849832bb2fd5e0879329057c7125371c7ffab734c0e3c7af4dc4c051f7f"
+  },
+  {
+   "etichetta": "v46",
+   "impronta": "469b548c642bb77a944b4af2994b0bf28f53a3b4e2a6bf6c3ffc721e7242a96a"
+  },
+  {
+   "etichetta": "v47",
+   "impronta": "a68a98581dca30f246824261c7d4dbc9f5031cdee69e2cf351eae05c01cb7bf8"
+  },
+  {
+   "etichetta": "v48",
+   "impronta": "f151e9af1b2e6fd1f1fde095f230527eb517b542827a53387f10acd278e4d0ff"
+  },
+  {
+   "etichetta": "v49",
+   "impronta": "0bdf49d845ae2bf6438d80c53ba5ce027fb6671213ece92922171a3e3588fd2d"
+  },
+  {
+   "etichetta": "v50",
+   "impronta": "e958e0daa55a90dd0a276cef4f00180918c8592046e63287c51beab210f82475"
+  },
+  {
+   "etichetta": "v51",
+   "impronta": "9b685b1052da2a795f9fc9d1174289c7e4c25955870d260a70a85bd0d826d802"
+  },
+  {
+   "etichetta": "v52",
+   "impronta": "c4b93886c2b04658bafb6d93e725334e667c16ba48031b1b82a5c18fd225fec1"
+  }
+ ]
+}

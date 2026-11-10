@@ -32,6 +32,9 @@ Scrive `<out>.md` (privo di contenuto: nessun testo dei volumi) e `<out>_da_giud
 pagina, tipo, riquadro). Uso:
   rete_risorse_visive.py <dir_letture> <lista.json> <out> [--giudicate <dir_letture_giudicate>] [--posti <verità.json> --gen <g>]
   rete_risorse_visive.py <dir_letture> <lista.json> --scrivi-posti <verità.json> --gen <g> --nota "<come è stata giudicata>"
+  (dal 2026-11-10 la verità del repo parla per ETICHETTE del banco: le reti la traducono in percorsi nel laboratorio con
+   `banco.py posti-a-percorsi`; una verità scritta qui con --scrivi-posti ha i percorsi, e prima di entrare nel repo si traduce
+   con `banco.py posti-a-etichette` — mai nomi di file nel repo)
 Codici d'uscita: 0 identità (e posto, con --posti) verde su tutti i volumi, 1 almeno un volume viola l'identità o il
 posto, o manca una lettura."""
 import datetime, hashlib, json, os, subprocess, sys, unicodedata
