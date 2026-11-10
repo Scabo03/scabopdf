@@ -309,6 +309,17 @@ public final class ContentAnchorIndex {
         return wholeDigests[i] == anchor.whole
     }
 
+    /// Vero se l'annotazione con questa ancora è al suo posto nel segmento `segmentId`: l'impronta intera è la sua, oppure è
+    /// un'ancora conservata dentro un blocco più lungo (`AnnotationReanchoring.keptOrMinted`, livello «contenuto») che il
+    /// riancoraggio ritroverebbe proprio in quel segmento. Il secondo controllo, più costoso, si fa solo quando il primo non
+    /// basta (giro «prove rifatte e granularità», 2026-11-10).
+    public func anchor(_ anchor: ContentAnchor, isAtSegmentId segmentId: String) -> Bool {
+        if self.anchor(anchor, matchesSegmentId: segmentId) { return true }
+        guard let i = indexById[segmentId] else { return false }
+        let r = resolve(anchor)
+        return r.level == .contained && r.index == i && r.confidence >= Self.relocationThreshold
+    }
+
     private lazy var indexById: [String: Int] = {
         var m: [String: Int] = [:]
         for (i, s) in segments.enumerated() where m[s.id] == nil { m[s.id] = i }

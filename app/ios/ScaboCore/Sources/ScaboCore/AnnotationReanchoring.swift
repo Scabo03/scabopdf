@@ -72,7 +72,7 @@ public enum AnnotationReanchoring {
                 b.anchorSegmentId = segments[i].id
                 b.orderIndexHint = i
                 b.originalPage = segments[i].sourcePage ?? b.originalPage
-                b.anchor = index.anchor(forIndex: i) ?? anchor
+                b.anchor = keptOrMinted(anchor, resolution: r, index: index, at: i)
                 b.isOrphan = nil
                 report.bookmarksRelocated += 1
                 report.details.append("bookmark \(b.id): \(r.level.rawValue) → \(segments[i].id) (\(r.reason))")
@@ -138,7 +138,7 @@ public enum AnnotationReanchoring {
             report.positionLevel = r.level
             if let i = r.index, r.confidence >= ContentAnchorIndex.relocationThreshold {
                 position = i
-                newReadingAnchor = index.anchor(forIndex: i) ?? anchor
+                newReadingAnchor = keptOrMinted(anchor, resolution: r, index: index, at: i)
             } else if let page = anchor.sourcePage, let i = segments.firstIndex(where: { $0.sourcePage == page }) {
                 position = i
                 approximate = true
@@ -161,6 +161,19 @@ public enum AnnotationReanchoring {
             readingAnchor: newReadingAnchor, readingPositionIsApproximate: approximate, report: report)
     }
 
+    /// L'ancora che un'annotazione ricollocata porta da qui in avanti. Di regola quella del segmento ritrovato. Ma se il suo
+    /// testo sta DENTRO un segmento più lungo (livello «contenuto»: due blocchi fusi da una granularità più grossa, le parti di
+    /// una nota tornate una nota sola), l'ancora resta quella d'origine: riconiata sul blocco fuso, al ritorno a una
+    /// granularità più fine il passo dei pezzi consecutivi la metterebbe sul PRIMO pezzo, con esito esatto, anche quando
+    /// l'annotazione stava su un altro — spostata in silenzio, contro LAYER2 § 12.14 (giro «prove rifatte e granularità»,
+    /// 2026-11-10, rilievo R5 della revisione indipendente). Conservata, al ritorno si ritrova esatta sul suo pezzo; la
+    /// verifica a ogni apertura la riconosce al suo posto (`ContentAnchorIndex.anchor(_:isAtSegmentId:)`).
+    static func keptOrMinted(_ anchor: ContentAnchor, resolution r: AnchorResolution, index: ContentAnchorIndex,
+                             at i: Int) -> ContentAnchor {
+        if r.level == .contained { return anchor }
+        return index.anchor(forIndex: i) ?? anchor
+    }
+
     /// VERIFICA a contenuto fermo (a ogni apertura): vero se almeno un'annotazione con ancora punta, per id,
     /// a un segmento che NON ha il contenuto della sua ancora — cioè non è al suo posto (rielaborazione
     /// interrotta fra la scrittura della cache e il riancoraggio, o id riusati). In quel caso il chiamante
@@ -170,7 +183,7 @@ public enum AnnotationReanchoring {
         in index: ContentAnchorIndex
     ) -> Bool {
         for b in bookmarks where b.isOrphan != true {
-            if let a = b.anchor, !index.anchor(a, matchesSegmentId: b.anchorSegmentId) { return true }
+            if let a = b.anchor, !index.anchor(a, isAtSegmentId: b.anchorSegmentId) { return true }
         }
         for u in underlines where u.isOrphan != true {
             for span in u.spans {
@@ -178,7 +191,7 @@ public enum AnnotationReanchoring {
             }
         }
         if let a = readingAnchor, index.segments.indices.contains(readingPosition),
-           !index.anchor(a, matchesSegmentId: index.segments[readingPosition].id) {
+           !index.anchor(a, isAtSegmentId: index.segments[readingPosition].id) {
             return true
         }
         return false
