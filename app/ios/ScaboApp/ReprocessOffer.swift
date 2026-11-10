@@ -306,7 +306,9 @@ enum ReprocessOffer {
         }
         // 3. Elaborazione nella schermata dedicata.
         let large = doc.sourcePageCount > DocumentOpener.LARGE_DOCUMENT_PAGE_THRESHOLD
-        let target = large ? DocumentOpener.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
+        // La granularità scelta nelle Impostazioni (dal 2026-11-10, regola condivisa col Mac), non sempre quella predefinita:
+        // altrimenti la prossima apertura rielaborerebbe di nuovo.
+        let target = service.processingGranularity(isAkn: doc.sourceKind == "akn", large: large)
         // Un testo normativo si rielabora con la sua catena (decisione 1 del maintainer, 2026-10-17), un PDF con quella dei PDF.
         let processor: DocumentProcessing = doc.sourceKind == "akn" ? AknDocumentProcessor() : DocumentProcessor()
         let vc = ProcessingViewController(

@@ -30,6 +30,17 @@ public enum ReadingAssembly {
     /// Vero se un volume di `pageCount` pagine si apre alleggerito.
     public static func isLarge(pageCount: Int) -> Bool { pageCount > largeDocumentPageThreshold }
 
+    /// La GRANULARITÀ con cui si elabora un libro (LAYER2 § 7.6-7.7, DISEGNO_LETTURA_MAC § 6.7), una regola sola per l'iPad e il
+    /// Mac (giro «prove rifatte e granularità», 2026-11-10: fino ad allora l'iPad salvava la scelta ma elaborava sempre a 400):
+    /// la granularità scelta nelle Impostazioni (`chosen`) per i testi discorsivi; per i testi normativi in AKN quella della
+    /// loro struttura, che è il valore predefinito (§ 7.7: i documenti normativi non usano questa modulazione); per i volumi
+    /// enormi la granularità leggera, la regola della memoria che resta.
+    public static func processingGranularity(chosen: Int, isAkn: Bool, large: Bool) -> Int {
+        if isAkn { return DEFAULT_GRANULARITY_TARGET }
+        if large { return largeDocumentGranularity }
+        return chosen
+    }
+
     /// Costruisce la mappa id-nodo → pagina del file originale (1-based) dall'albero del documento.
     /// `page_index` è 0-based (convenzione PyMuPDF); l'indicatore mostra la pagina 1-based.
     /// La mappa porta DUE strati, e l'ordine conta:

@@ -161,6 +161,69 @@ final class LibraryReadingsTests: XCTestCase {
                        ["Nota e richiamo", "Intestazione successiva", "Intestazione precedente"])
     }
 
+    // MARK: La granularità scelta nelle Impostazioni (giro «prove rifatte e granularità», 2026-11-10: una regola sola)
+
+    /// La regola: la scelta per i testi discorsivi, la struttura (il predefinito) per gli atti AKN, la leggera per gli enormi.
+    func test_granularitaDiElaborazione_regolaCondivisa() {
+        for livello in GranularityLevel.allCases {
+            XCTAssertEqual(ReadingAssembly.processingGranularity(chosen: livello.target, isAkn: false, large: false), livello.target)
+            XCTAssertEqual(ReadingAssembly.processingGranularity(chosen: livello.target, isAkn: true, large: false),
+                           DEFAULT_GRANULARITY_TARGET, "gli atti normativi seguono la loro struttura")
+            XCTAssertEqual(ReadingAssembly.processingGranularity(chosen: livello.target, isAkn: false, large: true),
+                           ReadingAssembly.largeDocumentGranularity, "i volumi enormi restano leggeri")
+            setStoredGranularityLevel(service.prefs, livello)
+            XCTAssertEqual(service.processingGranularity(isAkn: false, large: false), livello.target, "dalle Impostazioni")
+        }
+        XCTAssertEqual(ReadingAssembly.processingGranularity(chosen: 400, isAkn: false, large: false), 400, "il predefinito")
+    }
+
+    /// La granularità che la cache deve avere: quella scelta per un PDF; nessuna per un volume enorme e per una lettura
+    /// arrivata dal Mac (si adotta così com'è); la struttura per un atto AKN.
+    func test_granularitaRichiestaAllaCache() throws {
+        setStoredGranularityLevel(service.prefs, .coarse)
+        let src = try sourceFile("granularità richiesta")
+        defer { try? FileManager.default.removeItem(at: src) }
+        let pdf = service.registerImported(
+            document: document(pages: 3), content: content(["Uno."]), doctrineContent: nil, sourceName: "A.pdf", localCopy: src,
+            isAkn: false, sha256: nil, visualResourcesSkipped: nil, destination: nil, contentTarget: 900).document
+        XCTAssertEqual(service.requiredCacheGranularity(for: pdf), GranularityLevel.coarse.target)
+        let enorme = service.registerImported(
+            document: document(pages: ReadingAssembly.largeDocumentPageThreshold + 1), content: content(["Uno."]),
+            doctrineContent: nil, sourceName: "B.pdf", localCopy: src, isAkn: false, sha256: nil,
+            visualResourcesSkipped: nil, destination: nil).document
+        XCTAssertNil(service.requiredCacheGranularity(for: enorme))
+        let akn = service.registerImported(
+            document: document(pages: 0), content: content(["Art. 1."]), doctrineContent: nil, sourceName: "C.xml",
+            localCopy: src, isAkn: true, sha256: nil, visualResourcesSkipped: nil, destination: nil).document
+        XCTAssertEqual(service.requiredCacheGranularity(for: akn), DEFAULT_GRANULARITY_TARGET)
+        service.store.recordReceivedReading(id: pdf.id, systemVersion: "27.0", cureLevel: 64, at: Date())
+        XCTAssertNil(service.requiredCacheGranularity(for: try XCTUnwrap(service.store.document(id: pdf.id))),
+                     "una lettura arrivata dal Mac non si rielabora mai da sé")
+    }
+
+    /// Un libro letto a 400 non si apre dalla cache se la scelta è 900 (si rielabora una volta); letto a 900, sì; al
+    /// predefinito una cache vecchia senza granularità marcata vale 400 e si apre: nessuna rielaborazione proposta.
+    func test_cacheAUnAltraGranularita_siRielaboraUnaVolta() throws {
+        let src = try sourceFile("cambio di granularità")
+        defer { try? FileManager.default.removeItem(at: src) }
+        let doc = service.registerImported(
+            document: document(pages: 3), content: content(["Uno.", "Due."]), doctrineContent: nil, sourceName: "D.pdf",
+            localCopy: src, isAkn: false, sha256: nil, visualResourcesSkipped: nil, destination: nil).document
+        XCTAssertNotNil(service.openableCachedReading(for: doc, requiredTarget: service.requiredCacheGranularity(for: doc)),
+                        "al predefinito la cache si apre")
+        setStoredGranularityLevel(service.prefs, .coarse)
+        XCTAssertNil(service.openableCachedReading(for: doc, requiredTarget: service.requiredCacheGranularity(for: doc)),
+                     "a un'altra granularità la cache non basta: si rielabora")
+        XCTAssertNotNil(service.openableCachedReading(for: doc, requiredTarget: nil), "ma si legge com'è se manca la sorgente")
+        service.storeProcessedReading(documentId: doc.id, document: document(pages: 3), content: content(["Uno. Due."]),
+                                      doctrineContent: nil, large: false, target: 900, visualResourcesSkipped: nil)
+        XCTAssertNotNil(service.openableCachedReading(for: doc, requiredTarget: service.requiredCacheGranularity(for: doc)),
+                        "rielaborato una volta, dalla volta dopo si apre dalla cache")
+        setStoredGranularityLevel(service.prefs, .fine)
+        XCTAssertNil(service.openableCachedReading(for: doc, requiredTarget: service.requiredCacheGranularity(for: doc)))
+        XCTAssertTrue(ReadingSettingsWording.granularityWhenItApplies.contains("prossima apertura"))
+    }
+
     func test_paroleDelLibroGiaPresente() {
         XCTAssertEqual(DuplicateImport.screenTitle, "Libro già presente")
         XCTAssertEqual(DuplicateImport.openExistingTitle, "Apri il libro che hai già")

@@ -42,9 +42,8 @@ public enum Parole {
     // Le Impostazioni
     public static let impostazioni = "Impostazioni"
     public static let impostazioniConPuntini = "Impostazioni…"
-    /// Sul Mac la granularità si applica (sull'iPad la scelta si salva ma la lettura non la usa: DISEGNO § 6.7).
-    public static let granularitaQuandoVale = "La scelta vale per i libri che apri da adesso: un libro letto con un'altra "
-        + "granularità si prepara di nuovo alla sua prossima apertura."
+    /// La granularità si applica sul Mac e, dal 2026-11-10, anche sull'iPad (DISEGNO § 6.7): la frase è una sola.
+    public static let granularitaQuandoVale = ReadingSettingsWording.granularityWhenItApplies   // la stessa frase dell'iPad
     public static let noteAVoceSpiegazione = "VoiceOver dice «Nota» prima del testo di ogni nota. Sul Mac è acceso finché "
         + "i segnali acustici delle note non saranno provati all'orecchio."
 

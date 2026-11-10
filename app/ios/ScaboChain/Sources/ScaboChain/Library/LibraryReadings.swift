@@ -54,10 +54,27 @@ extension LibraryService {
         doc.sourcePageCount > ReadingAssembly.largeDocumentPageThreshold
     }
 
+    /// La granularità con cui si elabora questo libro adesso: la regola condivisa (`ReadingAssembly.processingGranularity`)
+    /// con la scelta delle Impostazioni (giro «prove rifatte e granularità», 2026-11-10; iPad e Mac la usano entrambi).
+    /// All'importazione le pagine non si conoscono ancora: `large` falso (un volume enorme non va in cache all'importazione e
+    /// alla prima apertura si prepara leggero, `registerImported`).
+    public func processingGranularity(isAkn: Bool, large: Bool) -> Int {
+        ReadingAssembly.processingGranularity(chosen: getStoredGranularityLevel(prefs).target, isAkn: isAkn, large: large)
+    }
+
+    /// La granularità che la cache di un libro deve avere per aprirsi senza rielaborare: quella con cui si elaborerebbe adesso.
+    /// `nil` = va bene qualunque: un volume enorme ha la sua regola (solo la versione leggera), e una lettura ARRIVATA DAL MAC
+    /// si adotta così com'è e non si rielabora mai da sé (§ 12.12, decisione 3: la lettura migliore dei modelli andrebbe persa).
+    /// Un libro letto a un'altra granularità si rielabora una volta, alla prossima apertura (LAYER2 § 7.7).
+    public func requiredCacheGranularity(for doc: ArchivedDocument) -> Int? {
+        if isLarge(doc) || doc.readingOrigin == ReadingOrigin.mac { return nil }
+        return processingGranularity(isAkn: doc.sourceKind == "akn", large: false)
+    }
+
     /// La cache del libro, se si può usare per aprirlo. Per un volume enorme solo la versione LEGGERA (granularità grossa
     /// marcata): una cache pesante di build precedenti si rielabora. Per gli altri libri qualunque cache leggibile;
-    /// `requiredTarget` (l'app Mac, che applica la granularità delle Impostazioni) vuole in più che la cache sia stata
-    /// costruita a quella granularità. L'iPad non lo passa: la sua regola resta quella di prima.
+    /// `requiredTarget` vuole in più che la cache sia stata costruita a quella granularità (dal 2026-11-10 lo passano sia
+    /// l'iPad sia il Mac, con `requiredCacheGranularity`; senza, qualunque granularità: la riapertura all'avvio).
     public func openableCachedReading(for doc: ArchivedDocument, requiredTarget: Int? = nil) -> LibraryReading? {
         let large = isLarge(doc)
         guard let cached = loadCache(forDocumentId: doc.id) else { return nil }

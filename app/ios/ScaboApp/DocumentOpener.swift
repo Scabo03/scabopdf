@@ -122,7 +122,10 @@ enum DocumentOpener {
         // cache SOLO se è già la versione LEGGERA (granularità grossa, `contentTarget` marcato):
         // una cache pesante a granularità fine (scritta da build precedenti) viene ignorata qui e
         // rielaborata leggera sotto (il suo decode è transitorio e rilasciato subito).
-        if let cached = service.openableCachedReading(for: doc) {
+        // Dal giro «prove rifatte e granularità» (2026-11-10) la cache deve anche essere della granularità scelta nelle
+        // Impostazioni (LAYER2 § 7.7, la regola condivisa col Mac `requiredCacheGranularity`): un libro letto a un'altra
+        // granularità si rielabora qui, una volta, con la schermata d'elaborazione, e le annotazioni si riancorano per contenuto.
+        if let cached = service.openableCachedReading(for: doc, requiredTarget: service.requiredCacheGranularity(for: doc)) {
             service.store.recordOpened(id: id)
             presentReader(content: cached.content, document: doc, pageMap: cached.pageMap,
                           doctrineContent: cached.doctrineContent,
@@ -138,14 +141,22 @@ enum DocumentOpener {
             mintMissingAnchors(documentId: id, in: ContentAnchorIndex(segments: stale.content.pages.flatMap { $0.segments }))
         }
 
-        // Percorso di rielaborazione: serve la sorgente d'archivio (PDF o XML AKN).
+        // Percorso di rielaborazione: serve la sorgente d'archivio (PDF o XML AKN). Senza la sorgente non si rielabora: una
+        // lettura in cache a un'altra granularità si apre com'è (la regola del Mac), invece di dire che il libro non si apre.
         guard service.hasArchivedSource(forDocumentId: id, kind: doc.sourceKind) else {
-            presentError(LibraryWording.sourceMissing, from: presenter)
+            if let existing = service.openableCachedReading(for: doc, requiredTarget: nil) {
+                service.store.recordOpened(id: id)
+                presentReader(content: existing.content, document: doc, pageMap: existing.pageMap,
+                              doctrineContent: existing.doctrineContent, quickConsultTree: existing.quickConsultTree,
+                              focusAnchor: focusAnchor, librarySearch: librarySearch, from: presenter, onClosed: onClosed)
+            } else {
+                presentError(LibraryWording.sourceMissing, from: presenter)
+            }
             return
         }
 
         let isAkn = doc.sourceKind == "akn"
-        let target = large ? Self.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
+        let target = service.processingGranularity(isAkn: isAkn, large: large)
         let sourceURL = service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind)
         let processor: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
         let processingVC = ProcessingViewController(
@@ -289,16 +300,30 @@ enum DocumentOpener {
         guard let doc = service.store.document(id: id) else { completion(nil); return }
         let large = doc.sourcePageCount > Self.LARGE_DOCUMENT_PAGE_THRESHOLD
 
-        if let cached = service.openableCachedReading(for: doc) {
+        // La stessa regola dell'apertura (dal 2026-11-10): la cache della granularità scelta, altrimenti la rielaborazione,
+        // con le ancore coniate prima sul contenuto vecchio e il riancoraggio dopo; senza PDF, la cache com'è.
+        if let cached = service.openableCachedReading(for: doc, requiredTarget: service.requiredCacheGranularity(for: doc)) {
             completion(makeEmbeddedReader(
                 doc: doc, content: cached.content, pageMap: cached.pageMap,
                 doctrine: cached.doctrineContent,
                 tree: cached.quickConsultTree, onPositionChanged: onPositionChanged))
             return
         }
+        if let stale = service.loadCache(forDocumentId: id) {
+            mintMissingAnchors(documentId: id, in: ContentAnchorIndex(segments: stale.content.pages.flatMap { $0.segments }))
+        }
 
-        guard service.hasArchivedPDF(forDocumentId: id) else { completion(nil); return }
-        let target = large ? Self.LARGE_DOCUMENT_GRANULARITY : DEFAULT_GRANULARITY_TARGET
+        guard service.hasArchivedPDF(forDocumentId: id) else {
+            if let existing = service.openableCachedReading(for: doc, requiredTarget: nil) {
+                completion(makeEmbeddedReader(
+                    doc: doc, content: existing.content, pageMap: existing.pageMap, doctrine: existing.doctrineContent,
+                    tree: existing.quickConsultTree, onPositionChanged: onPositionChanged))
+            } else {
+                completion(nil)
+            }
+            return
+        }
+        let target = service.processingGranularity(isAkn: false, large: large)
         let processingVC = ProcessingViewController(
             fileURL: service.archivedPDFURL(forDocumentId: id), sourceName: doc.title,
             granularityTarget: target, buildDoctrine: !large)
@@ -310,6 +335,8 @@ enum DocumentOpener {
                     let reading = service.storeProcessedReading(
                         documentId: id, document: document, content: content, doctrineContent: doctrineContent,
                         large: large, target: target, visualResourcesSkipped: visualSkipped)
+                    // Il contenuto è nuovo: annotazioni e posizione si riancorano per contenuto (§ 12.14), come all'apertura.
+                    let doc = reanchorAfterProcessing(documentId: id, content: content) ?? doc
                     completion(makeEmbeddedReader(
                         doc: doc, content: content, pageMap: reading.pageMap,
                         doctrine: reading.doctrineContent, tree: reading.quickConsultTree, onPositionChanged: onPositionChanged))
@@ -526,8 +553,11 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
     /// L'elaborazione nella schermata dedicata (§ 12.9), poi la registrazione (`handleOutcome`).
     private func process(localCopy: URL, sourceName: String, isAkn: Bool, sha256: String?, presenter: UIViewController) {
         let processor: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
+        // La granularità scelta nelle Impostazioni (dal 2026-11-10, la regola condivisa col Mac); prima dell'elaborazione le
+        // pagine non si conoscono: un volume enorme non va in cache qui e alla prima apertura si prepara leggero.
+        let target = LibraryService.shared.processingGranularity(isAkn: isAkn, large: false)
         let processingVC = ProcessingViewController(
-            fileURL: localCopy, sourceName: sourceName, processor: processor)
+            fileURL: localCopy, sourceName: sourceName, granularityTarget: target, processor: processor)
         processingVC.onOutcome = { [weak self, weak presenter, weak processingVC] outcome in
             let visualSkipped = processingVC?.visualResourcesMissingReason
             presenter?.dismiss(animated: true) {
@@ -538,7 +568,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
                 // `handleOutcome` l'ha copiata in archivio, non prima (correzione del cleanup).
                 self.handleOutcome(
                     outcome, sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256, presenter: presenter,
-                    visualSkipped: visualSkipped)
+                    visualSkipped: visualSkipped, contentTarget: target)
                 try? FileManager.default.removeItem(at: localCopy)
             }
         }
@@ -552,7 +582,8 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
         isAkn: Bool,
         sha256: String?,
         presenter: UIViewController,
-        visualSkipped: String? = nil
+        visualSkipped: String? = nil,
+        contentTarget: Int = DEFAULT_GRANULARITY_TARGET
     ) {
         switch outcome {
         case .success(let document, let content, let doctrineContent):
@@ -561,7 +592,7 @@ private final class ImportController: NSObject, UIDocumentPickerDelegate {
             let registered = LibraryService.shared.registerImported(
                 document: document, content: content, doctrineContent: doctrineContent,
                 sourceName: sourceName, localCopy: localCopy, isAkn: isAkn, sha256: sha256,
-                visualResourcesSkipped: visualSkipped, destination: destination)
+                visualResourcesSkipped: visualSkipped, destination: destination, contentTarget: contentTarget)
             onImported?()
             // Apertura automatica del lettore sul documento appena importato (al primo elemento).
             DocumentOpener.presentReaderAfterImport(

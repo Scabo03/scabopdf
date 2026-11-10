@@ -2,8 +2,8 @@
 //  LibreriaMac.swift
 //  ScaboMacLettura — la libreria dell'app Mac (giro «app unica per Mac, tappa A», 2026-11-08): la STESSA libreria dell'iPad,
 //  `LibraryService` di ScaboChain, nella stessa forma (`Application Support/ScaboPDF/` dentro il contenitore della sandbox:
-//  `library.json`, `Archive/`, `Cache/` nel formato 6). Qui solo ciò che è del Mac: le preferenze che il Mac applica in modo
-//  suo (la granularità delle Impostazioni, che sull'iPad si salva ma la lettura non usa; le note annunciate a voce accese per
+//  `library.json`, `Archive/`, `Cache/` nel formato 6). Qui solo ciò che è del Mac: le preferenze come il Mac le legge (la
+//  granularità delle Impostazioni, con la regola condivisa con l'iPad dal 2026-11-10; le note annunciate a voce accese per
 //  impostazione predefinita, DISEGNO_LETTURA_MAC § 4.2) e l'elenco dei libri della Home.
 //
 import Foundation
@@ -26,13 +26,11 @@ public enum PreferenzeLettura {
         prefs.getItem(chiaveSegnali) == "1" || ProcessInfo.processInfo.arguments.contains("--segnali-acustici")
     }
 
-    /// La granularità con cui il Mac elabora un libro: quella delle Impostazioni per i PDF; per gli atti AKN quella
-    /// predefinita (i testi normativi seguono la loro struttura, § 7.7); per i volumi enormi (`large`, dalla regola condivisa
-    /// `LibraryService.isLarge`) la granularità leggera dell'iPad.
+    /// La granularità con cui il Mac elabora un libro: la regola condivisa con l'iPad (ScaboChain
+    /// `ReadingAssembly.processingGranularity`, dal giro «prove rifatte e granularità», 2026-11-10): quella delle Impostazioni
+    /// per i PDF; per gli atti AKN quella predefinita (§ 7.7); per i volumi enormi la granularità leggera.
     public static func granularita(_ prefs: KeyValueStore, isAkn: Bool, large: Bool) -> Int {
-        if isAkn { return DEFAULT_GRANULARITY_TARGET }
-        if large { return ReadingAssembly.largeDocumentGranularity }
-        return getStoredGranularityLevel(prefs).target
+        ReadingAssembly.processingGranularity(chosen: getStoredGranularityLevel(prefs).target, isAkn: isAkn, large: large)
     }
 }
 

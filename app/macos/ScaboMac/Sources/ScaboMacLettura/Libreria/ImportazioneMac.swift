@@ -10,8 +10,8 @@
 //    apertura: la cache se si può usare (`openableCachedReading`), altrimenti la rielaborazione dalla sorgente d'archivio
 //    (`storeProcessedReading`, poi il riancoraggio per contenuto).
 //
-//  Una differenza dichiarata dall'iPad, una sola: la granularità delle Impostazioni si applica (DISEGNO_LETTURA_MAC § 6.7;
-//  sull'iPad si salva ma la lettura non la usa). Al valore predefinito le due app fanno la stessa cosa.
+//  La granularità delle Impostazioni si applica (DISEGNO_LETTURA_MAC § 6.7) con la regola condivisa con l'iPad: fino al
+//  2026-11-10 era la sola differenza dichiarata dall'iPad, che salvava la scelta senza usarla; da quel giro la usano tutte e due.
 //
 //  L'interfaccia (schermate, pannelli, finestre) la fa un PRESENTATORE: quello dell'app è AppKit; i test ne usano uno che
 //  sceglie da sé, così la stessa logica si prova senza finestre.
@@ -163,7 +163,9 @@ public final class ImportazioneMac {
         let isAkn = doc.sourceKind == "akn"
         let large = service.isLarge(doc)
         let granularita = PreferenzeLettura.granularita(libreria.prefs, isAkn: isAkn, large: large)
-        if let pronta = service.openableCachedReading(for: doc, requiredTarget: large ? nil : granularita) {
+        // La granularità che la cache deve avere: la regola condivisa con l'iPad (nessuna per i volumi enormi e per le letture
+        // arrivate dal Mac, che si adottano così come sono).
+        if let pronta = service.openableCachedReading(for: doc, requiredTarget: service.requiredCacheGranularity(for: doc)) {
             service.store.recordOpened(id: id)
             libreria.avvisa()
             presentatore.apriLettura(documento: service.store.document(id: id) ?? doc, lettura: pronta)

@@ -118,7 +118,8 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
                 + "iOS. L'app non può rilevarli né controllarli, ma garantisce che nulla dipenda dal solo colore. "
                 + "Tocca qui per aprire le impostazioni di iOS."
         case .granularity:
-            return ReadingSettingsWording.granularityFooter
+            // Dal 2026-11-10 la scelta entra nell'elaborazione anche sull'iPad: la frase del Mac dice quando vale.
+            return ReadingSettingsWording.granularityFooter + " " + ReadingSettingsWording.granularityWhenItApplies
         case .pages:
             return "Quando attivo, gli indicatori di pagina mostrano anche la pagina del PDF di origine."
         }

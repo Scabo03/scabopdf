@@ -15,6 +15,10 @@ public enum ReadingSettingsWording {
     public static let granularityTitle = "Granularità di lettura predefinita"
     public static let granularityFooter = "Quanto testo raggruppare in ogni elemento dei testi discorsivi (manuali, saggi). "
         + "I testi normativi seguono la loro struttura nativa."
+    /// Quando vale la scelta (dal Mac, giro «app unica per Mac, tappa A»; anche sull'iPad dal giro «prove rifatte e
+    /// granularità», 2026-11-10, quando la scelta è entrata nell'elaborazione).
+    public static let granularityWhenItApplies = "La scelta vale per i libri che apri da adesso: un libro letto con un'altra "
+        + "granularità si prepara di nuovo alla sua prossima apertura."
     /// I quattro livelli, nell'ordine, con le loro parole.
     public static let granularityLevels: [(GranularityLevel, String)] = [
         (.fine, "Fine — 400 caratteri"),
