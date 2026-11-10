@@ -85,7 +85,7 @@ for g in "${GENS[@]}"; do
   for d in "${TUTTI[@]}"; do
     for ext in lettura.json doc.json placed.json reading.json rv.reading.json; do
       n3=$((n3 + 1))
-      if [ "$RETE_GUASTO" = "togli:confronto $GEN" ] && [ "$n3" = 1 ]; then rm -f "$L/studio/$d.$ext"; say "    GUASTO DI PROVA: tolta l'uscita «$d.$ext» del passo «confronto ${GEN}»"; fi
+      if [ "$RETE_GUASTO" = "togli:confronto $GEN" ] && [ "$n3" = 1 ]; then rm -f "$L/studio/$d.$ext"; say "    GUASTO DI PROVA: tolta l'uscita «${d}.${ext}» del passo «confronto ${GEN}»"; fi
       cmp -s "$L/studio/$d.$ext" "$RIF/dopo_$GEN/$d.$ext" || { say "[3] ROSSO $GEN $d.$ext diverso dal riferimento curato (o mancante)"; r3=1; }
     done
     pid="$("$PY" -c "import json; print(json.load(open('$L/studio/$d.doc.json'))['profile'].get('profile_id'))" 2>/dev/null)"
