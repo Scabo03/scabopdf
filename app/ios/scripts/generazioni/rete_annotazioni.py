@@ -16,7 +16,7 @@ parole), o quando sta a più di 2 pagine di distanza dalle pagine che il segment
 «risorsa visiva» (giro 2026-10-12: l'annuncio della risorsa ripete la didascalia, le lettere coinciderebbero). «Orfana evitabile» = il testo originale esiste in B, uguale e
 unico, ma l'ancora non l'ha ritrovato (misura di richiamo, informativa). Nessun testo dei volumi nell'uscita.
 """
-import json, sys, re
+import bisect, json, sys, re
 
 EDGE = 32
 VR = "VISUAL_RESOURCE"
@@ -88,6 +88,33 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
     A, S, B, R = load(a_path), load(anchors_path), load(b_path), load(results_path)
     sa, sb = A["segments"], B["segments"]
     nsb = [ns(s["text"]) for s in sb]
+    # Stesso testo nei due flussi (un cambio di granularità della stessa catena): il giudizio si fa per POSIZIONE NEL FLUSSO,
+    # esatta (revisione indipendente del giro «prova 4, segnalibri e sigle», R5). Il segmento giusto di B è quello dove il passo
+    # di A comincia; se comincia DENTRO un segmento di B e continua oltre (a cavallo), quello che ne contiene la parte maggiore,
+    # a parità il primo. Negli altri confronti (altra generazione, prove al contrario) restano finestra comune e pagina.
+    nsa = [ns(s["text"]) for s in sa]
+    flusso_uguale = atteso is None and "".join(nsa) == "".join(nsb)
+    fa, fb = [], []
+    o = 0
+    for t in nsa: fa.append(o); o += len(t)
+    o = 0
+    for t in nsb: fb.append(o); o += len(t)
+
+    def giusto(i):
+        a0, a1 = fa[i], fa[i] + len(nsa[i])
+        if a1 == a0: return None
+        j = bisect.bisect_right(fb, a0) - 1
+        while j >= 0 and not nsb[j]: j -= 1
+        if j < 0 or fb[j] + len(nsb[j]) <= a0: return None
+        if fb[j] == a0: return j
+        best, best_share = j, -1
+        k = j
+        while k < len(fb) and fb[k] < a1:
+            if nsb[k]:
+                share = min(a1, fb[k] + len(nsb[k])) - max(a0, fb[k])
+                if share > best_share: best, best_share = k, share
+            k += 1
+        return best
     # indice esatto di B per le «orfane evitabili»
     exact_b = {}
     for i, k in enumerate(nsb):
@@ -159,6 +186,11 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
                 continue
         if crosses(sa[b["index"]], sb[bi]):
             wrong.append((b["id"], role, f"ricollocata a {bi}: attraversa il confine testo / risorsa visiva"))
+            continue
+        if flusso_uguale and nsa[b["index"]]:
+            g = giusto(b["index"])
+            if g is not None and bi != g:
+                wrong.append((b["id"], role, f"ricollocata a {bi} ({r['level']}): il passo sta in {g} (posizione nel flusso)"))
             continue
         # La distanza si misura dalle pagine che il segmento ritrovato COPRE — dalla sua prima pagina a quella dove comincia il
         # segmento seguente —, non dalla sola prima: un blocco ampio di una granularità larga (documenti con poco testo per

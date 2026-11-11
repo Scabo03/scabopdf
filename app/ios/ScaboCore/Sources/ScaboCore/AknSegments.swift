@@ -113,7 +113,7 @@ func noteTokenIsAbbreviation(_ token: ArraySlice<Character>) -> Bool {
 }
 
 /// Vero se il token (come in `noteTokenIsAbbreviation`) è un'abbreviazione delle citazioni (`CITATION_ABBREVIATIONS`,
-/// Granularity.swift): un pezzo di nota non si taglia subito dopo («d.lg. | 27 gennaio»). Il confine di frase la guarda a parte,
+/// Granularity.swift): un pezzo di nota non si taglia subito dopo («d.lg. | 30 febbraio», data inventata). Il confine di frase la guarda a parte,
 /// con la sua eccezione per la voce numerata (`citationAbbreviationContinues`).
 func noteTokenIsCitationAbbreviation(_ token: ArraySlice<Character>) -> Bool {
     var t = Array(token)

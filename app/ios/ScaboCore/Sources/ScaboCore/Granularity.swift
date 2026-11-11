@@ -976,7 +976,12 @@ func isSentenceStart(_ c: Character) -> Bool {
 //      ZORBELLINI, …», nomi inventati) è il nome di un autore in una citazione: il punto non chiude la frase;
 //   3. le abbreviazioni delle citazioni di atti e bibliografiche di `CITATION_ABBREVIATIONS`, fuori dalla lista generale, dopo
 //      cui non si è mai misurato un attacco di frase; salvo quando il testo riprende con una voce numerata fra parentesi e una
-//      maiuscola («(2) V. …»: la nota seguente di un codice annotato), che resta un confine.
+//      maiuscola («(2) V. …»: la nota seguente di un codice annotato), che resta un confine. Il CRITERIO d'ammissione (revisione
+//      indipendente del giro, R7): forme generali della citazione di atti, disposizioni e bibliografia, quelle dei repertori di
+//      stile giuridico, con zero attacchi di frase tipici dopo il punto sul banco, qualunque sia il numero di volumi che le usa (che
+//      «disp. prel.» o «disp. coord.» compaiano in due volumi del banco è un caso del banco, non un tratto di quei libri); mai un
+//      nome proprio (le abbreviazioni dei giuristi romani, pur senza attacchi di frase sul banco, sono parole di un genere di
+//      libro). «fr.» è la forma generale del frammento citato, non un nome.
 // Scartate dalla misura: le sigle dei codici e delle autorità che chiudono spesso la frase («t.u.f.», «c.p.a.», «p.a.», «a.C.»:
 // dopo di loro un attacco di frase vero in un caso su tre o quattro), le cifre dopo le iniziali (un rimando di nota seguito dal
 // numero di un paragrafo), i nomi abbreviati dei giuristi romani (parole di un solo genere di libro). La lista
