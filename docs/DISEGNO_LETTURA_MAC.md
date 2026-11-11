@@ -31,6 +31,12 @@
 
 ## 0. In due parole
 
+> **Corretto l'11 novembre 2026 sera** (giro «comandi da tastiera e VoiceOver sul Mac»). Il principio è lo scorrimento per
+> elementi senza dirottamento del fuoco; **la lettura continua non è un requisito né un criterio d'accettazione**
+> (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisione 11). Dove questo documento la chiede — la condizione della decisione 1
+> (§ 4.3), la prova 5 (§ 10), i residui (§ 11) — la richiesta cade; «Leggi da qui» come VO+A era sbagliato ed è tolto da § 5.2
+> (VO+A legge il contenuto dell'elemento sotto il cursore di VoiceOver: è il comportamento normale).
+>
 > **Aggiornato l'11 novembre 2026, dopo la prova 4** (giro «prova 4, segnalibri e sigle», referto
 > `~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVA4_SEGNALIBRI_SIGLE.md`). **I salti arrivati all'app arrivano tutti**
 > (campo, diario): sei salti fra nota e richiamo, sei volte il cursore di VoiceOver sul bersaglio, nessuno perso; tre sono
@@ -505,6 +511,9 @@ maintainer (referto del giro); fino ad allora le note restano a voce.
 novembre: che i salti funzionino **e** che la lettura continua attraversi la svolta della finestra senza salti (il 10 novembre
 bastavano i salti). La prima parte è confermata dal diario (i sei salti arrivati all'app, § 5.2), la seconda no (§ 10): sul Mac le
 note restano annunciate a voce per impostazione predefinita fino alla prova 5.
+*Corretto l'11 novembre sera:* la seconda parte della condizione cade (la lettura continua non è un requisito, LAYER2 § 12.16,
+decisione 11) e la prima è confermata; accendere i segnali resta una scelta del maintainer. Finché non la fa, le note restano a
+voce.
 
 ## 5. Domanda 4 — Rotori, azioni, tastiera
 
@@ -547,9 +556,13 @@ esistono.
 | Risultato successivo / precedente | ⌘G / ⇧⌘G | ⌘G / ⇧⌘G | |
 | Strumenti elemento | ⌘E | ⌘E | finestra modale con Conferma/Annulla, Esc = Annulla (tappa B) |
 | Estrai come immagine, Salta la risorsa | azioni | voci senza scorciatoia | attive sull'elemento in lettura |
-| Leggi da qui | gesto VoiceOver | **nessun comando nostro**: VO+A legge dal cursore | decisione 5: niente comandi VoiceOver personalizzati |
 | Testo più grande / più piccolo | ⌘= / ⌘- | ⌘= / ⌘- | tappa dell'aspetto |
 | Chiudi finestra / Annulla | Esc | Esc nelle finestre modali | |
+
+*Tolta l'11 novembre 2026 sera* la riga «Leggi da qui → VO+A legge dal cursore»: era sbagliata. Sul Mac VO+A legge il contenuto
+dell'elemento sotto il cursore di VoiceOver (campo: configurazione predefinita di VoiceOver di macOS 27.0.1, VO+A =
+`Global.content`, «read contents of voiceover cursor»; resoconto del maintainer con l'aiuto tastiera), ed è il comportamento
+normale; la lettura continua non è un requisito (LAYER2 § 12.16, decisione 11).
 
 **Come un salto sposta il cursore di VoiceOver (dal 9 novembre 2026).** Alla prova T3 le azioni «Vai alla nota» e «Vai al
 testo del richiamo» c'erano nel menu delle azioni, ma il cursore restava dov'era (resoconto del maintainer; diario: dopo
@@ -894,6 +907,12 @@ Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 
 ## 10. Le prove d'orecchio
 
+> **La prova 5 è superata (11 novembre 2026 sera).** Faceva sentire la lettura continua oltre la svolta della finestra, che non è
+> un requisito (LAYER2 § 12.16, decisione 11); ⌘J e ⌥⌘↓ con VoiceOver acceso passano alla prova 6, insieme ai comandi standard di
+> VoiceOver, con le sue istruzioni qui sotto quando il giro «comandi da tastiera e VoiceOver sul Mac» le scrive. Il maintainer
+> l'aveva avviata la sera dell'11 novembre (diario `T5_20261111_213834`): come nella prova 4, nessun comando del menu «Lettura»
+> è arrivato all'app.
+>
 > **L'11 novembre 2026** il maintainer ha fatto la prova 4 («ora mi pare che i salti funzionino bene»). Diario (campo): i sei
 > salti arrivati all'app sono arrivati tutti (§ 5.2). Il passo 6 non ha dato la misura che cercava: arrivati al titolo del secondo
 > capitolo per la via dei titoli di VoiceOver (⌥⌘↓ non è arrivato all'app, o non è stato premuto), il comando della lettura
@@ -1025,7 +1044,9 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
   nessun avviso dell'app può evitare finché VoiceOver non chiede nulla; se la prova 5 lo mostra, la cura tocca la forma della
   finestra (dove sta l'ultimo elemento del libro fra i figli, o quanti figli), da decidere col diario di quella prova.
   *Decisione 1* (segnali delle note predefiniti sul Mac): non applicata; la condizione del brief dell'11 novembre chiede anche la
-  lettura continua oltre la svolta, che manca.
+  lettura continua oltre la svolta, che manca. *Corretto l'11 novembre sera:* la lettura continua non è un requisito (LAYER2
+  § 12.16, decisione 11): la sua parte della condizione cade, e il rischio dichiarato qui sopra non è più un criterio
+  d'accettazione; VO+A legge l'elemento sotto il cursore, ed è normale (resoconto del maintainer).
 - **Dopo le prove rifatte del 10 novembre 2026** (giro «prove rifatte e granularità»). *Da sentire* (prova 4, § 10): che dopo la
   cura di § 5.2 il cursore arrivi su ogni salto, anche dal menu delle azioni e anche allo stesso bersaglio di prima; che la lettura
   continua (VO+A) passi la svolta della finestra — nella T3 rifatta non è stata fatta e nella T1 il diario non mostra il

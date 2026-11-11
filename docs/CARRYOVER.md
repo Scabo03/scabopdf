@@ -150,6 +150,10 @@ prova4/` (Parte 1) e `~/Developer/scabopdf-gen-lab/segnalibri_sigle/` (Parte 2).
   **Decisione 1 non applicata** (segnali delle note predefiniti sul Mac): la condizione precisata nel brief di questo giro chiede
   i salti **e** la lettura continua oltre la svolta, e la seconda parte manca; prova 5 in DISEGNO § 10, registrato in LAYER2 §
   12.16. Nessuna riga di codice dell'app cambiata nella Parte 1 (un test d'interfaccia del Mac in più).
+  *Corretto l'11 novembre sera* (giro «comandi da tastiera e VoiceOver sul Mac», decisione del maintainer in LAYER2 § 12.16,
+  decisione 11): il principio è lo scorrimento per elementi senza dirottamento del fuoco, e **la lettura continua non è un
+  requisito né un criterio d'accettazione**; la sua parte della condizione cade (i salti, la parte che resta, sono confermati), la
+  prova 5 è superata, e VO+A che legge solo l'elemento sotto il cursore è il comportamento normale di VoiceOver.
   Verifiche (livello leggero, campo): rete sul parlato VERDE (192/192, 630.124 elementi); catena dell'iPad del codice della build 65
   sulle catture iOS 27, 260 forme su 260 identiche al byte alle letture del giro precedente; `rete_vista_mac.sh` VERDE (55/55; l'app
   che importa da sé 50/55, le 5 differenze note dell'estrattore); ScaboMac 112 test (4 saltati per costruzione), FuocoDaFuoriTests

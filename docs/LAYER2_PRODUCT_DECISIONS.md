@@ -1569,6 +1569,25 @@ esatti (`docs/ANCORE_ANNOTAZIONI.md` § 2-bis). La vista dell'iPad e la catena d
 elemento, sui 52 volumi del banco e sui tre documenti di studio. Una lettura preparata dal Mac riceve la cura dal Mac, con una
 lettura nuova, come le cure 56-64.
 
+**Una decisione del maintainer dell'11 novembre 2026**, registrata all'apertura del giro «comandi da tastiera e VoiceOver sul
+Mac» (2026-11-11 sera):
+
+11. **Il principio della lettura sul Mac è lo scorrimento per elementi senza dirottamento del fuoco.** ScaboPDF esiste perché
+    nelle app PDF tradizionali, scorrendo fra gli elementi con VoiceOver, il fuoco viene dirottato; il cuore del prodotto è lo
+    scorrimento elemento per elemento senza dirottamento: lo swipe integrale sull'iPad (§ 2.2), VO+Freccia sul Mac. **La
+    lettura continua non è un requisito del prodotto e non è un criterio d'accettazione** di nessuna tappa (in linea con § 7.1,
+    dove la lettura continua automatica è già uno strumento secondario). Che VO+A legga solo l'elemento sotto il cursore di
+    VoiceOver è il comportamento normale di VoiceOver sul Mac e va bene così: il maintainer lo ha accertato con l'aiuto tastiera
+    di VoiceOver (VO+K), che gli ha anche confermato VO+Comando+H «intestazione successiva» e VO+Comando+J «controllo
+    successivo» come comandi di VoiceOver.
+
+*Conseguenze, registrate lo stesso giorno.* (a) La condizione della decisione 1 (i segnali delle note predefiniti sul Mac), come
+l'aveva precisata il brief del giro «prova 4», chiedeva i salti **e** la lettura continua oltre la svolta della finestra: la
+seconda parte cade; la prima è confermata dal diario della prova 4 (sei salti arrivati all'app, sei riusciti). Accendere i
+segnali resta una scelta del maintainer, nelle decisioni del referto del giro. (b) La prova 5, che faceva sentire la lettura
+continua, è superata. (c) Il disegno diceva che sul Mac «Leggi da qui» è VO+A: era sbagliato, ed è tolto
+(`DISEGNO_LETTURA_MAC.md` § 5.2).
+
 ---
 
 ## 13. Ricerca testuale
