@@ -189,7 +189,10 @@ final class MiddlePieceAnchorTests: XCTestCase {
         let there = reanchor([try bookmark(on: 3, in: a)], in: b)
         XCTAssertNil(there.bookmarks[0].isOrphan)
         XCTAssertEqual(there.bookmarks[0].anchorSegmentId, "q")
-        XCTAssertEqual(reanchor(there.bookmarks, in: a).bookmarks[0].anchorSegmentId, "p3")
+        XCTAssertEqual(there.bookmarks[0].originalPage, 12, "la pagina del passo, non quella d'inizio del blocco (R6)")
+        let back = reanchor(there.bookmarks, in: a)
+        XCTAssertEqual(back.bookmarks[0].anchorSegmentId, "p3")
+        XCTAssertEqual(back.bookmarks[0].originalPage, 12)
     }
 
     func test_bloccoLontanoDallaPagina_nonSiCerca() throws {
@@ -282,6 +285,41 @@ final class MiddlePieceAnchorTests: XCTestCase {
         let offset = WordTokenizer.wordCount(s[0] + " " + s[1])
         XCTAssertEqual(reanchor([], [u2], in: b2).underlines[0].spans.map { [$0.segmentId, "\($0.startWord)", "\($0.endWord)"] },
                        [["q", "\(offset + 3)", "\(offset + 6)"]])
+    }
+
+    func test_gemelliEsattiAllaNascita_nonSiRicollocanoDentroUnBlocco() throws {
+        // R1 della revisione indipendente: due blocchi identici nella finestra quando l'ancora nasce (gemelli esatti). Nella
+        // lettura nuova il gemello segnalibrato sta in un blocco che aggiunge poche lettere a un testo che non chiude la frase
+        // (niente riscontro «dentro»), l'altro dentro un blocco ampio. Senza la guardia il segnalibro andrebbe sul gemello:
+        // resta da ricollocare.
+        let gemello = "Il pedaggio del ponte si paga al casello della torre secondo la tariffa che il consiglio del borgo fissa"
+        let a = [seg("x1", s[0]), seg("g1", gemello), seg("x2", s[1]), seg("g2", gemello), seg("x3", s[2])]
+        let anchor = try XCTUnwrap(ContentAnchorIndex(segments: a).anchor(forIndex: 3))
+        XCTAssertEqual(anchor.windowCount, 2)
+        let b = [seg("y1", s[0] + " " + gemello + " " + s[1]), seg("y2", gemello + " ogni anno."), seg("y3", s[2])]
+        let r = ContentAnchorIndex(segments: b).resolve(anchor)
+        XCTAssertEqual(r.level, .orphan, "gemelli esatti alla nascita: non si sa quale dei due")
+        XCTAssertEqual(reanchor([try bookmark(on: 3, in: a)], in: b).bookmarks[0].isOrphan, true)
+    }
+
+    func test_fusioneDalMac_pezzoDiMezzoEBloccoRestanoDue_pezzoInizialeEBloccoSonoUnoSolo() throws {
+        // L'iPad a 400 ha un segnalibro sul pezzo di mezzo a2; il pacchetto del Mac, a una granularità più ampia, uno sul blocco m
+        // che lo contiene. Adottata la lettura del Mac i due stanno sullo stesso blocco ma marcano passi diversi: restano due
+        // (revisione indipendente del giro, R2). Un segnalibro sul pezzo iniziale a1 e quello sul blocco che comincia con lui
+        // marcano lo stesso punto: uno solo.
+        let coarse = [seg("t", "Capitolo della mappa", role: "HEADING_2"), seg("m", s.joined(separator: " "))]
+        let mac = Bookmark(id: "mac", anchorSegmentId: "m", orderIndexHint: 1, preview: "", originalPage: 7, createdAt: Date(),
+                           anchor: try XCTUnwrap(ContentAnchorIndex(segments: coarse).anchor(forIndex: 1)))
+        let index = ContentAnchorIndex(segments: coarse)
+        let middle = AnnotationMerge.merge(localBookmarks: [try bookmark(on: 2, in: fineFlow)], localUnderlines: [], readingPosition: 0,
+                                           readingAnchor: nil, incomingBookmarks: [mac], incomingUnderlines: [], in: index)
+        XCTAssertEqual(middle.bookmarks.count, 2, "due passi diversi sullo stesso blocco: nessuno si perde")
+        XCTAssertTrue(middle.bookmarks.allSatisfy { $0.anchorSegmentId == "m" && $0.isOrphan != true })
+        XCTAssertEqual(middle.report.bookmarksMerged, 0)
+        let head = AnnotationMerge.merge(localBookmarks: [try bookmark(on: 1, in: fineFlow)], localUnderlines: [], readingPosition: 0,
+                                         readingAnchor: nil, incomingBookmarks: [mac], incomingUnderlines: [], in: index)
+        XCTAssertEqual(head.bookmarks.count, 1, "lo stesso punto: un doppione")
+        XCTAssertEqual(head.report.bookmarksMerged, 1)
     }
 
     func test_spanSeparatiSoloDaUnaLineetta_tornanoUnoSolo() throws {

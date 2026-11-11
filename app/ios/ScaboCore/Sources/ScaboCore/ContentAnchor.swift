@@ -343,8 +343,25 @@ public final class ContentAnchorIndex {
     public func anchor(_ anchor: ContentAnchor, isAtSegmentId segmentId: String) -> Bool {
         if self.anchor(anchor, matchesSegmentId: segmentId) { return true }
         guard let i = indexById[segmentId] else { return false }
+        // Via breve (revisione indipendente del giro «prova 4, segnalibri e sigle», R3): un'ancora d'origine conservata il cui
+        // testo sta INTERO nel segmento puntato, a un inizio di parola, o che ne possiede testa e coda, è al suo posto senza
+        // rifare la risoluzione completa, che la verifica d'apertura faceva per ogni ancora conservata sul filo principale (200
+        // segnalibri spostati di granularità: 1,9 s a ogni apertura). La risoluzione resta per gli altri casi (a cavallo).
+        if containsWhole(anchor, in: i) { return true }
+        if anchor.length > TextFingerprint.edgeLength, byHead[anchor.head]?.contains(i) == true,
+           byTail[anchor.tail]?.contains(i) == true { return true }
         let r = resolve(anchor)
         return Self.keepsOriginAnchor(r.level) && r.index == i && r.confidence >= Self.relocationThreshold
+    }
+
+    /// Vero se il testo normalizzato dell'ancora sta INTERO nel segmento `i`, cominciando a un inizio di parola.
+    private func containsWhole(_ anchor: ContentAnchor, in i: Int) -> Bool {
+        let n = normalized[i].count, L = anchor.length
+        guard L > 0, L < n else { return false }
+        let chars = Array(normalized[i]), ws = wordStarts(i)
+        let starts = L >= TextFingerprint.edgeLength ? (ws.heads[Self.shortKey(anchor.head)] ?? []) : ws.starts
+        for p in starts where p + L <= n && TextFingerprint.digest(chars[p..<(p + L)]) == anchor.whole { return true }
+        return false
     }
 
     private lazy var indexById: [String: Int] = {
@@ -732,7 +749,9 @@ public final class ContentAnchorIndex {
 
     /// Il passo 3-ter della risoluzione (vedi `resolve`): `nil` se non si applica o non trova nulla.
     private func interiorResolution(_ anchor: ContentAnchor) -> AnchorResolution? {
-        guard anchor.length > 0, anchor.containedElsewhere != true, anchor.interiorElsewhere != true,
+        // Mai per un testo che alla nascita dell'ancora aveva GEMELLI esatti nella finestra (`windowCount`): dentro un blocco
+        // nuovo non si saprebbe di quale dei gemelli è il testo (revisione indipendente del giro, R1).
+        guard anchor.length > 0, anchor.windowCount <= 1, anchor.containedElsewhere != true, anchor.interiorElsewhere != true,
               let family = Self.textFamily(anchor.role) else { return nil }
         let found = familyInteriorCandidates(anchor, family: family)
         guard !found.isEmpty else { return nil }
@@ -803,11 +822,13 @@ public final class ContentAnchorIndex {
     }
 
     /// Vero se il testo del segmento `index` sta già, intero, dentro un altro segmento più lungo della sua famiglia nella
-    /// finestra di pagine (per `ContentAnchor.interiorElsewhere`, al conio).
+    /// finestra di pagine (per `ContentAnchor.interiorElsewhere`, al conio). La finestra è quella della ricerca del passo 3-ter
+    /// (le pagine che i segmenti COPRONO, compreso quello cominciato prima): un gemello in un blocco che comincia prima della
+    /// finestra va visto qui, o la ricerca lo troverebbe poi (revisione indipendente del giro, R1).
     private func familyContainsElsewhere(_ index: Int) -> Bool {
         guard let family = Self.textFamily(segments[index].role) else { return false }
         let n = normalized[index]
-        for j in windowIndices(pageOf[index]) where j != index && normalized[j].count > n.count
+        for j in spanWindowIndices(pageOf[index], window: Self.partialMatchPageWindow) where j != index && normalized[j].count > n.count
             && Self.textFamily(segments[j].role) == family && normalized[j].contains(n) {
             return true
         }

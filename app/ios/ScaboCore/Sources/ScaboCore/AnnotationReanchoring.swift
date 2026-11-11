@@ -71,7 +71,11 @@ public enum AnnotationReanchoring {
             if let i = r.index, r.confidence >= ContentAnchorIndex.relocationThreshold {
                 b.anchorSegmentId = segments[i].id
                 b.orderIndexHint = i
-                b.originalPage = segments[i].sourcePage ?? b.originalPage
+                // Con l'ancora d'origine conservata (il passo dentro un blocco più ampio, o a cavallo) la pagina resta quella del
+                // passo, non la prima pagina del blocco che lo contiene, che può stare anche pagine prima: la si sente
+                // nell'etichetta del segnalibro e guida il salto se diventa orfano (revisione indipendente del giro, R6).
+                b.originalPage = (ContentAnchorIndex.keepsOriginAnchor(r.level) ? anchor.sourcePage : nil)
+                    ?? segments[i].sourcePage ?? b.originalPage
                 b.anchor = keptOrMinted(anchor, resolution: r, index: index, at: i)
                 b.isOrphan = nil
                 report.bookmarksRelocated += 1

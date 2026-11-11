@@ -75,8 +75,9 @@ public enum AnnotationMerge {
 
         // ── Segnalibri ────────────────────────────────────────────────────────────────────────────────────────────
         var bookmarks = local.bookmarks
+        let start = passageStart(in: index)
         for b in incoming.bookmarks {
-            if let i = bookmarks.firstIndex(where: { $0.id == b.id }) ?? sameBookmark(b, in: bookmarks) {
+            if let i = bookmarks.firstIndex(where: { $0.id == b.id }) ?? sameBookmark(b, in: bookmarks, start: start) {
                 var keep = bookmarks[i]
                 for t in b.tagIds where !keep.tagIds.contains(t) { keep.tagIds.append(t) }
                 if isBlank(keep.name), !isBlank(b.name) { keep.name = b.name }
@@ -137,12 +138,32 @@ public enum AnnotationMerge {
 
     static func isBlank(_ s: String?) -> Bool { (s ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-    /// Lo stesso elemento (entrambi al loro posto) e nomi che non si contraddicono.
-    static func sameBookmark(_ b: Bookmark, in list: [Bookmark]) -> Int? {
+    /// Dove comincia, nella lettura `index`, il passo che un segnalibro marca: il segmento (o il primo della catena, a cavallo) e
+    /// la posizione nel suo testo normalizzato (0 se è il segmento intero o la sua testa).
+    static func passageStart(in index: ContentAnchorIndex) -> (Bookmark) -> String {
+        var cache: [String: String] = [:]
+        return { b in
+            if let k = cache[b.id] { return k }
+            var k = "\(b.anchorSegmentId):0"
+            if let a = b.anchor {
+                let r = index.resolve(a)
+                if let i = r.index { k = "\(index.segments[r.regionChain?.first ?? i].id):\(r.regionStart ?? 0)" }
+            }
+            cache[b.id] = k
+            return k
+        }
+    }
+
+    /// Lo stesso elemento (entrambi al loro posto), lo stesso passo e nomi che non si contraddicono. Lo stesso passo: comincia
+    /// nello stesso punto (`passageStart`). Dalla cura dei pezzi di mezzo (giro «prova 4, segnalibri e sigle», revisione
+    /// indipendente, R2) un segnalibro su un pezzo di mezzo a una granularità e uno sul blocco che lo contiene a un'altra stanno
+    /// sullo stesso blocco ma marcano passi diversi: sono due segnalibri, non un doppione; un pezzo iniziale e il blocco che
+    /// comincia con lui marcano lo stesso punto: uno solo.
+    static func sameBookmark(_ b: Bookmark, in list: [Bookmark], start: (Bookmark) -> String) -> Int? {
         guard b.isOrphan != true else { return nil }
         let name = (b.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         return list.firstIndex { x in
-            guard x.isOrphan != true, x.anchorSegmentId == b.anchorSegmentId else { return false }
+            guard x.isOrphan != true, x.anchorSegmentId == b.anchorSegmentId, start(x) == start(b) else { return false }
             let xn = (x.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             return xn.isEmpty || name.isEmpty || xn == name
         }
