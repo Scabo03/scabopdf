@@ -131,6 +131,29 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
+## ▶ STATO — Giro «prova 4, segnalibri e sigle»: il diario della prova 4 sul Mac, i segnalibri dei pezzi di mezzo, i blocchi spezzati dopo una sigla, build 66 — 2026-11-11 — IN CORSO
+
+**Partenza:** `9d56cb1` (main = origin, build 65 su TestFlight, VALID). **Rami:** Parte 1 `feat/mac-prova4-segnali` (livello
+leggero), Parte 2 `feat/ipad-segnalibri-sigle` (livello pieno) da main dopo la fusione della Parte 1. Referto:
+`~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVA4_SEGNALIBRI_SIGLE.md`; laboratori `~/Developer/scabopdf-mac-lab/lettura_mac/
+prova4/` (Parte 1) e `~/Developer/scabopdf-gen-lab/segnalibri_sigle/` (Parte 2).
+
+- **Parte 1 — la prova 4** (campo, diario dell'11 novembre): sei salti fra nota e richiamo arrivati all'app, **sei riusciti**,
+  nessuno perso (tre alla prima ripetizione dell'avviso, uno allo stesso bersaglio del salto prima con l'oggetto nuovo); due
+  combinazioni non arrivate, riprovate con esito; nessun comando del menu «Lettura» arrivato (⌘J e ⌥⌘↓ con VoiceOver: non
+  verificati, seconda prova di fila; senza VoiceOver arrivano, con un tasto vero di XCTest: test d'interfaccia nuovo
+  `test_tastiera_notaERichiamo` per ⌘J, accanto a quello di ⌥⌘↓). La lettura continua dal titolo del secondo capitolo ha riportato il cursore sul primo
+  elemento del libro (VO+A senza interazione legge dall'alto, fonte la guida di VoiceOver) e poi non l'ha più spostato: la svolta
+  della finestra non è stata raggiunta, e che cosa venga dopo il titolo del terzo capitolo il diario non lo dice. **Decisione 1
+  non applicata** (segnali delle note predefiniti sul Mac): manca la lettura continua oltre la svolta; prova 5 in DISEGNO § 10,
+  registrato in LAYER2 § 12.16. Nessuna riga di codice dell'app cambiata nella Parte 1 (un test d'interfaccia del Mac in più).
+  Verifiche (livello leggero, campo): rete sul parlato VERDE (192/192, 630.124 elementi); catena dell'iPad del codice della build 65
+  sulle catture iOS 27, 260 forme su 260 identiche al byte alle letture del giro precedente; `rete_vista_mac.sh` VERDE (55/55; l'app
+  che importa da sé 50/55, le 5 differenze note dell'estrattore); ScaboMac 112 test (4 saltati per costruzione), FuocoDaFuoriTests
+  5/5; interfaccia del Mac 12 (7 passati, 5 saltati).
+
+---
+
 ## ▶ STATO — Giro «prove rifatte e granularità»: i diari delle prove d'orecchio rifatte, la granularità anche sull'iPad, i lavori della libreria fuori dal filo principale, reti che non dicono verde senza aver controllato, build 65 — 2026-11-10 — CONCLUSO
 
 **Partenza:** `9ebd065` (main = origin, build 64 su TestFlight). **Rami:** Parte 1 `feat/mac-prove-rifatte` (livello leggero), unito

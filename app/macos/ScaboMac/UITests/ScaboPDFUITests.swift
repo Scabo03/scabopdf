@@ -247,6 +247,35 @@ final class ScaboPDFUITests: XCTestCase {
         XCTAssertTrue(valore.hasPrefix("Intestazione di livello"), "il fuoco è sul titolo successivo: «\(valore.prefix(40))»")
     }
 
+    /// ⌘J con un tasto vero (giro «prova 4, segnalibri e sigle», 2026-11-11): nel diario delle prove 3 rifatta e 4 nessun ⌘J è
+    /// arrivato all'app con VoiceOver acceso. Senza VoiceOver la scorciatoia deve arrivare: dal capoverso col richiamo alla nota e
+    /// ritorno, come la voce «Nota e richiamo» del menu. Se questo test passa, la via dei tasti dell'app funziona.
+    func test_tastiera_notaERichiamo() throws {
+        let app = app(["--libreria-di-prova", "--libro-di-prova"])
+        app.launch()
+        defer { app.terminate() }
+        let lettura = app.windows["lettura.finestra"]
+        XCTAssertTrue(lettura.waitForExistence(timeout: 60))
+        let gruppo = lettura.groups["Testo del documento"]
+        XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
+        func colFuoco() -> String {
+            let e = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+            return e.waitForExistence(timeout: 5) ? (e.value as? String ?? "") : ""
+        }
+        // Dal titolo del primo capitolo al capoverso col richiamo della nota 1, poi ⌘J: la nota; ⌘J di nuovo: il capoverso.
+        lettura.typeKey(.downArrow, modifierFlags: [])
+        let capoverso = colFuoco()
+        lettura.typeKey("j", modifierFlags: [.command])
+        let nota = colFuoco()
+        lettura.typeKey("j", modifierFlags: [.command])
+        let ritorno = colFuoco()
+        scrivi("tastiera_nota", ["capoverso": String(capoverso.prefix(12)), "nota": String(nota.prefix(12)),
+                                 "ritorno": String(ritorno.prefix(12))])
+        XCTAssertFalse(capoverso.isEmpty || capoverso.hasPrefix("Nota"), "dopo Freccia giù il fuoco è sul capoverso")
+        XCTAssertTrue(nota.hasPrefix("Nota"), "⌘J porta alla nota: «\(nota.prefix(20))»")
+        XCTAssertEqual(ritorno, capoverso, "⌘J di nuovo riporta al capoverso col richiamo")
+    }
+
     /// La misura da fuori su un volume vero (a richiesta: SCABOMAC_LIBRO e SCABOMAC_DESCRIZIONE, percorsi nel contenitore).
     func test_misuraDaFuori_volumeVero() throws {
         let env = ProcessInfo.processInfo.environment
