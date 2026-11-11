@@ -12,6 +12,7 @@
 //    AXFocused     = settabile: il GANCIO DEL FUOCO (§ 4): se VoiceOver lo imposta quando il cursore arriva qui, la vista
 //                    calcola i segnali del modulo (`focusSignals`) e porta la riga in vista
 //    azioni personalizzate = `actions(forIndex:bookmark:settings:)`
+//    AXLinkedUIElements = i bersagli dei salti nota ↔ richiamo del modulo (`noteJumpActions`), per VO+J (dal 2026-11-11)
 //  Il genitore è sempre la vista; in un libro lungo la vista espone fra i figli solo una finestra attorno al fuoco (dal giro
 //  «prove della tappa A», 2026-11-09): un elemento fuori dalla finestra esiste comunque, e i rotori e i salti lo raggiungono.
 //
@@ -58,5 +59,15 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
         // VoiceOver chiede le azioni dell'elemento su cui si posa (diari T1 e T3): se era il bersaglio di un salto, è arrivato.
         vista.notaArrivo(indice)
         return vista.azioniPersonalizzate(indice)
+    }
+
+    /// GLI ELEMENTI COLLEGATI (dal giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11): la nota è collegata al testo
+    /// del suo richiamo, il testo che richiama note alle sue note, nell'ordine dei salti del modulo (il primo è il bersaglio di
+    /// ⌘J). È l'attributo che VoiceOver usa per il suo comando «vai all'elemento collegato», VO+J (DISEGNO § 5.4): così il salto
+    /// fra nota e richiamo c'è anche con un comando di VoiceOver, che l'utente conosce già. Senza legame, nessun collegamento.
+    override public func accessibilityLinkedUIElements() -> [Any]? {
+        nota("AXLinkedUIElements")
+        let collegati = vista.collegati(indice)
+        return collegati.isEmpty ? nil : collegati
     }
 }

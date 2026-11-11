@@ -328,4 +328,71 @@ final class FuocoDaFuoriTests: XCTestCase {
         }
         print("RISULTATO finestrati_da_fuori {\"passi\":\(passi),\"ultimo\":\(ultimoIndice)}")
     }
+
+    // MARK: I comandi standard di VoiceOver (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11, DISEGNO § 5.4)
+
+    /// VO+J, «vai all'elemento collegato» (guida di VoiceOver per macOS, comandi di navigazione; configurazione predefinita di
+    /// VoiceOver: `Global.navigateLink`), da fuori come lo fa VoiceOver: l'elemento sotto il cursore dà i suoi elementi collegati
+    /// (`AXLinkedUIElements`) e il primo riceve il fuoco, come dopo ogni spostamento del cursore; l'elemento col fuoco dell'app
+    /// diventa lui. Nel libro sintetico: il capoverso col richiamo della nota 1 (elemento 1) e la nota (elemento 2), andata e
+    /// ritorno; il titolo non ha collegamenti. Con VoiceOver acceso, è il salto fra nota e richiamo con un comando di VoiceOver.
+    /// Sull'app di prima del giro fallisce: nessun elemento ha collegamenti (`SCABOMAC_APP` = la copia di prima).
+    func test_voJ_elementiCollegati_notaERichiamo_lettoDaFuori() async throws {
+        let (running, app, g) = try await lancia(["--raggio-finestra", "4"])
+        defer { chiudi(running) }
+        func figlio(_ i: Int) -> AXUIElement? { elems(g, "AXChildren").first { indice($0) == i } }
+        func fuocoDellApp() -> Int? { attr(app, "AXFocusedUIElement").flatMap { indice($0 as! AXUIElement) } }
+        let titolo = try XCTUnwrap(figlio(0)), richiamo = try XCTUnwrap(figlio(1))
+        XCTAssertTrue(elems(titolo, "AXLinkedUIElements").isEmpty, "il titolo non ha collegamenti")
+        let daRichiamo = elems(richiamo, "AXLinkedUIElements")
+        XCTAssertEqual(daRichiamo.compactMap(indice), [2], "il capoverso è collegato alla sua nota")
+        XCTAssertEqual(focalizza(richiamo), .success); gira(0.3)
+        XCTAssertEqual(fuocoDellApp(), 1)
+        // VO+J: il cursore va al primo elemento collegato e gli dà il fuoco.
+        let nota = try XCTUnwrap(daRichiamo.first)
+        XCTAssertEqual(focalizza(nota), .success); gira(0.3)
+        XCTAssertEqual(fuocoDellApp(), 2, "VO+J dal richiamo: il fuoco dell'app è la nota")
+        let daNota = elems(nota, "AXLinkedUIElements")
+        XCTAssertEqual(daNota.compactMap(indice), [1], "la nota è collegata al testo del suo richiamo")
+        XCTAssertEqual(focalizza(try XCTUnwrap(daNota.first)), .success); gira(0.3)
+        XCTAssertEqual(fuocoDellApp(), 1, "VO+J dalla nota: si torna al richiamo")
+        print("RISULTATO voj_da_fuori {\"richiamo\":1,\"nota\":2}")
+    }
+
+    /// I comandi dei titoli di VoiceOver (VO+Comando+H e VO+Comando+Maiuscole+H, la Navigazione rapida con H e con le cifre)
+    /// cercano nel contenitore il rotore del tipo che corrisponde alla chiave («This allows assistive technologies to assign
+    /// keyboard commands and gestures for these common search types», AppKit, `NSAccessibilityCustomRotor.h`; in VoiceOver
+    /// `hasCustomRotorMatchingSearchKey:`). Da fuori, la stessa ricerca per chiave sul gruppo trova TUTTI i titoli del libro, anche
+    /// quelli fuori dalla finestra dei figli (sei titoli, finestra di nove elementi), avanti e indietro, e per livello; il
+    /// titolo lontano, ricevuto il fuoco, entra fra i figli. Passa anche sull'app di prima: è la guardia di ciò che c'era già.
+    func test_comandiDeiTitoli_ricercaPerChiave_tuttiITitoli_lettoDaFuori() async throws {
+        let (running, app, g) = try await lancia(["--raggio-finestra", "4"])
+        defer { chiudi(running) }
+        func figlio(_ i: Int) -> AXUIElement? { elems(g, "AXChildren").first { indice($0) == i } }
+        func cerca(_ chiave: String, da: AXUIElement, avanti: Bool) -> [Int] {
+            let p: [String: Any] = ["AXSearchKey": [chiave], "AXStartElement": da,
+                                    "AXDirection": avanti ? "AXDirectionNext" : "AXDirectionPrevious", "AXResultsLimit": 30]
+            var v: CFTypeRef?
+            guard AXUIElementCopyParameterizedAttributeValue(g, "AXResultsForSearchPredicate" as CFString, p as CFDictionary, &v) == .success,
+                  let r = v as? [[String: Any]] else { return [] }
+            return r.compactMap { ($0["AXSearchResultElement"]).flatMap { indice($0 as! AXUIElement) } }
+        }
+        let esposti = Set(elems(g, "AXChildren").compactMap(indice))
+        XCTAssertFalse(esposti.contains(16), "il titolo 16 è fuori dalla finestra dei figli")
+        let primo = try XCTUnwrap(figlio(1)), ultimo = try XCTUnwrap(figlio(23))
+        XCTAssertEqual(cerca("AXHeadingSearchKey", da: primo, avanti: true), [4, 8, 12, 16, 20])
+        XCTAssertEqual(cerca("AXHeadingLevel1SearchKey", da: primo, avanti: true), [4, 8, 12, 16, 20])
+        XCTAssertEqual(cerca("AXHeadingSearchKey", da: ultimo, avanti: false), [20, 16, 12, 8, 4, 0])
+        // Il cursore va sul titolo lontano e gli dà il fuoco: l'app lo dice col fuoco e lo espone fra i figli.
+        let p: [String: Any] = ["AXSearchKey": ["AXHeadingSearchKey"], "AXStartElement": ultimo, "AXDirection": "AXDirectionPrevious",
+                                "AXResultsLimit": 3]
+        var v: CFTypeRef?
+        XCTAssertEqual(AXUIElementCopyParameterizedAttributeValue(g, "AXResultsForSearchPredicate" as CFString, p as CFDictionary, &v), .success)
+        let lontano = try XCTUnwrap(((v as? [[String: Any]])?.last?["AXSearchResultElement"])) as! AXUIElement
+        XCTAssertEqual(indice(lontano), 12)
+        XCTAssertEqual(focalizza(lontano), .success); gira(0.3)
+        XCTAssertEqual(attr(app, "AXFocusedUIElement").flatMap { indice($0 as! AXUIElement) }, 12)
+        XCTAssertTrue(Set(elems(g, "AXChildren").compactMap(indice)).contains(12), "il titolo raggiunto è fra i figli")
+        print("RISULTATO titoli_da_fuori {\"avanti\":5,\"indietro\":6}")
+    }
 }

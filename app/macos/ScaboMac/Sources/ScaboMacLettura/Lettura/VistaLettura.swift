@@ -511,6 +511,25 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         return NSAccessibilityCustomRotor.ItemResult(targetElement: elemento(t))
     }
 
+    // MARK: Gli elementi collegati (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11)
+    //
+    // «Vai all'elemento collegato», VO+J, è il comando di VoiceOver per saltare fra elementi legati (guida di VoiceOver per
+    // macOS, comandi di navigazione; configurazione predefinita di VoiceOver: VO+J = `Global.navigateLink`): qui la nota e il
+    // suo richiamo, coi bersagli dei salti del modulo (DISEGNO § 5.4). I comandi dei titoli di VoiceOver (VO+Comando+H, la
+    // Navigazione rapida con H e con le cifre) trovano i rotori di tipo intestazione del gruppo: AppKit inoltra la ricerca
+    // per chiave al rotore del tipo corrispondente, e il rotore cerca nel modulo, su tutto il libro (misurato da fuori). La
+    // ricerca generica di AppKit (`AXUIElementsForSearchPredicate`, macOS 26) guarda invece i soli figli esposti e il ruolo:
+    // non passa dalla vista e non si può ridefinire con l'interfaccia pubblica (misurato da fuori, DISEGNO § 5.4).
+
+    /// Gli indici collegati all'elemento `i`: i bersagli dei salti nota ↔ richiamo del modulo, nell'ordine delle azioni (sulla
+    /// nota il testo del richiamo; sul testo che richiama, le sue note). Il primo è il bersaglio di ⌘J.
+    public func indiciCollegati(_ i: Int) -> [Int] {
+        guard i >= 0, i < conteggio else { return [] }
+        var visti = Set<Int>()
+        return modello.noteJumpActions(forIndex: i).compactMap(\.target).filter { $0 >= 0 && $0 < conteggio && visti.insert($0).inserted }
+    }
+    public func collegati(_ i: Int) -> [ElementoLettura] { indiciCollegati(i).map { elemento($0) } }
+
     // MARK: Disegno (solo le righe visibili) e tastiera
 
     public override func draw(_ dirtyRect: NSRect) {
