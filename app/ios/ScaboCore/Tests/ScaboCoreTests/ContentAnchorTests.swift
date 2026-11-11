@@ -119,10 +119,12 @@ final class ContentAnchorTests: XCTestCase {
         let oldLong = ContentAnchorIndex(segments: base)
         let aLong = try XCTUnwrap(oldLong.anchor(forIndex: 7))
         let words = long.split(separator: " ")
-        // Il seguito NON ricompone il vecchio testo (è cambiato): vale solo la testa, verificata sulla scala.
+        // Il seguito NON ricompone il vecchio testo (è cambiato: una parola diversa subito dopo il taglio): vale solo la testa,
+        // verificata sulla scala.
+        let cambiato = ["nuvoloso"] + words.dropFirst(33)
         new = base
         new[7] = seg("node_7", words.prefix(32).joined(separator: " "), page: 2)   // ≥ 128 lettere, pezzo iniziale
-        new.append(seg("node_8", words.dropFirst(32).joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
+        new.append(seg("node_8", cambiato.joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
         let r = ContentAnchorIndex(segments: new).resolve(aLong)
         XCTAssertEqual(r.level, .headOnly)
         XCTAssertEqual(r.index, 7)
@@ -130,8 +132,19 @@ final class ContentAnchorTests: XCTestCase {
         // Un pezzo iniziale sotto le 128 lettere, con un seguito che non ricompone il testo: troppo poco, orfana.
         var tiny = base
         tiny[7] = seg("node_7", words.prefix(12).joined(separator: " "), page: 2)
-        tiny.append(seg("node_8", words.dropFirst(12).joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
+        tiny.append(seg("node_8", (["nuvoloso"] + words.dropFirst(13)).joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
         XCTAssertEqual(ContentAnchorIndex(segments: tiny).resolve(aLong).level, .orphan)
+        // Se il seguito RICOMPONE il vecchio testo e poi aggiunge altro, il vecchio testo sta intero A CAVALLO dei due pezzi:
+        // si ritrova come contenuto sul primo, dove comincia (giro «prova 4, segnalibri e sigle»), anche col primo pezzo corto.
+        for k in [32, 12] {
+            var straddle = base
+            straddle[7] = seg("node_7", words.prefix(k).joined(separator: " "), page: 2)
+            straddle.append(seg("node_8", words.dropFirst(k).joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
+            let rc = ContentAnchorIndex(segments: straddle).resolve(aLong)
+            XCTAssertEqual(rc.level, .contained)
+            XCTAssertEqual(rc.index, 7)
+            XCTAssertEqual(rc.regionChain, [7, 8])
+        }
         // Se invece i pezzi ricompongono ESATTAMENTE il vecchio testo, anche con un primo pezzo corto, il riscontro è
         // pieno (giro «costruzione della linea Mac»): è lo stesso testo, diviso (SplitChainAnchorTests).
         var exactSplit = base
@@ -178,21 +191,45 @@ final class ContentAnchorTests: XCTestCase {
     }
 
     func test_resolve_contained_requiresARealAddition_notJustAFolio() throws {
-        // Il titolo del paragrafo più il folio (la testatina corrente) non è una fusione del titolo.
-        let old = ContentAnchorIndex(segments: flow())
-        let a = try XCTUnwrap(old.anchor(forIndex: 5))
-        var new = flow(); new[5] = seg("node_5", flow()[5].text + " 341", page: 2)
-        let r = ContentAnchorIndex(segments: new).resolve(a)
-        XCTAssertEqual(r.level, .orphan)
+        // Il titolo del paragrafo più il folio (la testatina corrente) non è una fusione del titolo: anche quando il titolo è letto
+        // come corpo, non finisce col punto, e con poche lettere in più vale solo un testo fatto di frasi intere.
+        let titolo = "La terza parte del racconto del mulino e del fiume in piena e delle chiuse aperte di notte"
+        var oldFlow = flow(); oldFlow[5] = seg("node_5", titolo, page: 2)
+        let a = try XCTUnwrap(ContentAnchorIndex(segments: oldFlow).anchor(forIndex: 5))
+        var new = flow(); new[5] = seg("node_5", titolo + " 341", page: 2)
+        XCTAssertEqual(ContentAnchorIndex(segments: new).resolve(a).level, .orphan)
+        // Un blocco di frasi intere con una frase breve in più (una granularità più ampia): si ritrova.
+        let b = try XCTUnwrap(ContentAnchorIndex(segments: flow()).anchor(forIndex: 5))
+        var merged = flow(); merged[5] = seg("node_5", flow()[5].text + " Poi piove.", page: 2)
+        let r = ContentAnchorIndex(segments: merged).resolve(b)
+        XCTAssertEqual(r.level, .contained)
+        XCTAssertEqual(r.index, 5)
     }
 
-    func test_resolve_containedInTheMiddle_isOrphan_notAMerge() throws {
-        // Un titolo citato DENTRO un sommario non è una fusione: solo le estremità contano.
+    func test_resolve_containedInTheMiddle_titleIsOrphan_notAMerge() throws {
+        // Un titolo citato DENTRO un sommario non è una fusione: per i titoli solo le estremità contano.
+        let titolo = "Il viaggio del carro di fieno attraverso la valle dei mulini fino alla piazza del mercato vecchio"
+        var old = flow(); old.insert(seg("node_t", titolo, role: "HEADING_3", page: 2), at: 5)
+        let a = try XCTUnwrap(ContentAnchorIndex(segments: old).anchor(forIndex: 5))
+        var new = flow()
+        new.insert(seg("node_x", "Sommario del capitolo: " + titolo + ". E poi il resto del sommario con gli altri paragrafi.",
+                       role: "CHAPTER_SUMMARY", page: 2), at: 5)
+        XCTAssertEqual(ContentAnchorIndex(segments: new).resolve(a).level, .orphan)
+    }
+
+    func test_resolve_bodyInTheMiddleOfALongerBodyBlock_isContained() throws {
+        // Il corpo: il vecchio blocco, intero, nel mezzo di un blocco più lungo (una granularità più ampia lo ha fuso coi vicini;
+        // giro «prova 4, segnalibri e sigle»). Si ritrova lì, come contenuto, col punto dove comincia.
         let old = ContentAnchorIndex(segments: flow())
         let a = try XCTUnwrap(old.anchor(forIndex: 5))
         var new = flow(); new.remove(at: 5)
-        new.insert(seg("node_x", "Sommario del capitolo: " + flow()[5].text + " E poi il resto del sommario con gli altri paragrafi.", page: 2), at: 5)
-        XCTAssertEqual(ContentAnchorIndex(segments: new).resolve(a).level, .orphan)
+        let prima = "La frase che precede racconta la fiera d'autunno e i carri colorati dei mercanti lungo la strada. "
+        let dopo = " La frase che segue descrive il ritorno a casa dei pastori con le greggi prima che cali la sera."
+        new.insert(seg("node_x", prima + flow()[5].text + dopo, page: 2), at: 5)
+        let r = ContentAnchorIndex(segments: new).resolve(a)
+        XCTAssertEqual(r.level, .contained)
+        XCTAssertEqual(r.index, 5)
+        XCTAssertEqual(r.regionStart, TextFingerprint.normalize(prima).count)
     }
 
     func test_resolve_headOnly_refusesWhenTheHeadIsRepeatedInTheWindow() throws {
@@ -263,9 +300,10 @@ final class ContentAnchorTests: XCTestCase {
 
     func test_anchorWithoutTheNewFields_decodes_andEncodesWithoutThem() throws {
         let a = try XCTUnwrap(ContentAnchorIndex(segments: flow()).anchor(forIndex: 1))
-        XCTAssertNil(a.containedElsewhere); XCTAssertNil(a.familyTwins)
+        XCTAssertNil(a.containedElsewhere); XCTAssertNil(a.familyTwins); XCTAssertNil(a.interiorElsewhere)
         let json = String(decoding: try JSONEncoder().encode(a), as: UTF8.self)
-        XCTAssertFalse(json.contains("containedElsewhere") || json.contains("familyTwins"), "ancore senza doppioni: JSON di prima")
+        XCTAssertFalse(json.contains("containedElsewhere") || json.contains("familyTwins") || json.contains("interiorElsewhere"),
+                       "ancore senza doppioni: JSON di prima")
         XCTAssertEqual(try JSONDecoder().decode(ContentAnchor.self, from: Data(json.utf8)), a)
     }
 

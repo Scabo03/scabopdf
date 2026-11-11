@@ -8,8 +8,9 @@
 //  sta in coda a B, va su B; tornando a 400 deve tornare su P3. Prima della cura l'ancora veniva riconiata su B, e al ritorno il
 //  passo dei pezzi consecutivi la metteva sul primo pezzo, P1, con esito esatto: spostato in silenzio, contro LAYER2 § 12.14.
 //  Ora, quando il testo d'origine sta dentro un blocco più lungo (livello «contenuto»), l'ancora resta quella d'origine, e la
-//  verifica a ogni apertura la riconosce al suo posto (nessun riancoraggio a ogni apertura). Il pezzo di mezzo, P2, a 900 non
-//  si ritrova a un'estremità di B e resta orfano, cioè «da ricollocare»: dichiarato, mai spostato. Testi SINTETICI e neutri.
+//  verifica a ogni apertura la riconosce al suo posto (nessun riancoraggio a ogni apertura). Il pezzo di mezzo, P2, fino alla
+//  build 65 restava «da ricollocare» (dichiarato, mai spostato); dal giro «prova 4, segnalibri e sigle» (2026-11-11) si ritrova
+//  dentro B, con l'ancora d'origine, e torna su P2. Testi SINTETICI e neutri.
 //
 
 import XCTest
@@ -83,14 +84,25 @@ final class GranularityRoundTripAnchorTests: XCTestCase {
         XCTAssertEqual(reanchor(at900.bookmarks, in: f400).bookmarks[0].anchorSegmentId, f400[p1].id)
     }
 
-    func test_pezzoDiMezzo_a900ResaDaRicollocare_eAlRitornoSiRitrova() throws {
+    func test_pezzoDiMezzo_a900NelBloccoCheLoContiene_eAlRitornoSulSuoPezzo() throws {
         let f400 = flow(400), f900 = flow(900)
-        let p2 = body(f400)[1]
-        let at900 = reanchor([try bookmark(on: p2, in: f400)], in: f900)
-        XCTAssertEqual(at900.bookmarks[0].isOrphan, true, "dichiarato da ricollocare, mai spostato")
+        let p2 = body(f400)[1], b = body(f900)[0]
+        let start = try bookmark(on: p2, in: f400)
+        let at900 = reanchor([start], in: f900)
+        XCTAssertNil(at900.bookmarks[0].isOrphan, "il suo testo sta tutto nel blocco nuovo: ritrovato, non da ricollocare")
+        XCTAssertEqual(at900.bookmarks[0].anchorSegmentId, f900[b].id)
+        XCTAssertEqual(at900.bookmarks[0].anchor, start.anchor, "l'ancora d'origine resta")
+        XCTAssertTrue(inPlace(at900, in: f900), "a contenuto fermo è al suo posto: nessun riancoraggio a ogni apertura")
         let back = reanchor(at900.bookmarks, in: f400)
-        XCTAssertEqual(back.bookmarks[0].anchorSegmentId, f400[p2].id)
+        XCTAssertEqual(back.bookmarks[0].anchorSegmentId, f400[p2].id, "tornato esattamente sul suo pezzo")
         XCTAssertNil(back.bookmarks[0].isOrphan)
+        XCTAssertTrue(inPlace(back, in: f400))
+        // La posizione di lettura, allo stesso modo.
+        let anchor = try XCTUnwrap(ContentAnchorIndex(segments: f400).anchor(forIndex: p2))
+        let pos900 = reanchor([], position: p2, anchor: anchor, in: f900)
+        XCTAssertEqual(pos900.readingPosition, b)
+        XCTAssertFalse(pos900.readingPositionIsApproximate)
+        XCTAssertEqual(reanchor([], position: pos900.readingPosition, anchor: pos900.readingAnchor, in: f400).readingPosition, p2)
     }
 
     func test_andataERitorno_posizioneSullUltimoPezzo_tornaSulSuoPezzo() throws {
@@ -118,9 +130,10 @@ final class GranularityRoundTripAnchorTests: XCTestCase {
     }
 
     /// Due pezzi consecutivi che COMINCIANO CON LE STESSE PAROLE (una frase d'apertura ripetuta, come capita nei testi normativi):
-    /// fusi, il pezzo in coda si ritrova al livello «testa e coda» (la testa del blocco fuso è uguale alla sua), non «contenuto».
-    /// Anche lì l'ancora d'origine resta: al ritorno il segnalibro torna sul suo pezzo (caso trovato dall'andata e ritorno sui 52
-    /// volumi del banco, un segnalibro a 600 e uno a 1.200).
+    /// fusi, il pezzo in coda si ritrova «contenuto», INTERO in coda al blocco fuso e col suo tratto (fino alla build 65 «testa e
+    /// coda», perché la testa del blocco fuso è uguale alla sua: giro «prova 4, segnalibri e sigle», 2026-11-11, il tratto serve
+    /// alle citazioni delle sottolineature). L'ancora d'origine resta: al ritorno il segnalibro torna sul suo pezzo (caso trovato
+    /// dall'andata e ritorno sui 52 volumi del banco, un segnalibro a 600 e uno a 1.200).
     func test_andataERitorno_duePezziConLaStessaApertura_tornaSulSuoPezzo() throws {
         let apertura = "Quando la campana della torre suona tre volte il mugnaio chiude la chiusa e ferma la ruota del mulino"
         let primo = [apertura + " per il primo motivo, che riguarda il grano del borgo e il ponte di pietra.",
@@ -135,8 +148,9 @@ final class GranularityRoundTripAnchorTests: XCTestCase {
         let p2 = body(f400)[1], b = body(f900)[0]
         XCTAssertTrue(f400[p2].text.hasPrefix(apertura))
         let start = try bookmark(on: p2, in: f400)
-        XCTAssertEqual(ContentAnchorIndex(segments: f900).resolve(try XCTUnwrap(start.anchor)).level, .headAndTail,
-                       "il pezzo in coda si ritrova per testa e coda, non come contenuto")
+        let resolved = ContentAnchorIndex(segments: f900).resolve(try XCTUnwrap(start.anchor))
+        XCTAssertEqual(resolved.level, .contained, "il pezzo in coda si ritrova intero, col suo tratto, non per testa e coda")
+        XCTAssertEqual(resolved.regionStart, TextFingerprint.normalize(f900[b].text).count - TextFingerprint.normalize(f400[p2].text).count)
         let at900 = reanchor([start], in: f900)
         XCTAssertEqual(at900.bookmarks[0].anchorSegmentId, f900[b].id)
         XCTAssertNil(at900.bookmarks[0].isOrphan)

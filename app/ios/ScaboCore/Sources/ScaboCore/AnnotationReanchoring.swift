@@ -101,8 +101,12 @@ public enum AnnotationReanchoring {
                     failed = "citazione non ritrovata o ambigua"; break
                 }
                 for r in rs {
-                    // Span contigui nello stesso segmento (le parti di una nota tornate una nota sola) diventano uno.
-                    if let last = spans.last, last.segmentId == segments[r.segmentIndex].id, last.endWord + 1 >= r.startWord,
+                    // Span contigui nello stesso segmento (le parti di una nota tornate una nota sola) diventano uno; contigui anche
+                    // se fra loro ci sono solo parole senza lettere né cifre (una lineetta, una virgoletta sola), che la citazione
+                    // non conta (giro «prova 4, segnalibri e sigle», 2026-11-11).
+                    if let last = spans.last, last.segmentId == segments[r.segmentIndex].id,
+                       last.endWord + 1 >= r.startWord
+                        || onlyLetterlessWords(segments[r.segmentIndex].text, from: last.endWord + 1, to: r.startWord),
                        r.startWord >= last.startWord {
                         let merged = UnderlineSpan(segmentId: last.segmentId, startWord: last.startWord,
                                                    endWord: max(last.endWord, r.endWord), anchor: nil)
@@ -174,6 +178,14 @@ public enum AnnotationReanchoring {
                              at i: Int) -> ContentAnchor {
         if ContentAnchorIndex.keepsOriginAnchor(r.level) { return anchor }
         return index.anchor(forIndex: i) ?? anchor
+    }
+
+    /// Vero se le parole `from..<to` di `text` (indici `WordTokenizer`) non hanno né lettere né cifre (e ce n'è almeno una).
+    static func onlyLetterlessWords(_ text: String, from: Int, to: Int) -> Bool {
+        guard from < to else { return false }
+        let words = WordTokenizer.words(text)
+        guard to <= words.count else { return false }
+        return words[from..<to].allSatisfy { !$0.contains(where: { $0.isLetter || $0.isNumber }) }
     }
 
     /// VERIFICA a contenuto fermo (a ogni apertura): vero se almeno un'annotazione con ancora punta, per id,

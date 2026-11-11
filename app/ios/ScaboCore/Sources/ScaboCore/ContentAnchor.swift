@@ -30,6 +30,12 @@
 //    ripete il titolo del paragrafo più il folio non è una fusione del titolo. Sotto le 64 lettere vale
 //    solo l'impronta intera: la rete sulle annotazioni (prova «orfana») ha mostrato che con finestre di
 //    32 lettere i titoli brevi e le note formulari si «ritrovavano» nei loro simili vicini;
+//  - il CORPO e i pezzi della stessa nota fanno eccezione alla regola delle estremità (giro «prova 4, segnalibri e
+//    sigle», 2026-11-11): quando la granularità si allarga, un blocco finisce NEL MEZZO di uno più ampio (il pezzo di
+//    mezzo), e quando sposta i confini finisce A CAVALLO di due. Lì vale l'impronta INTERA del vecchio testo, in una sola
+//    posizione nella finestra, a confini di parola, e solo se alla nascita dell'ancora quel testo non stava già dentro un
+//    altro segmento della sua famiglia (`interiorElsewhere`); con meno di 64 lettere in più, solo se è fatto di frasi
+//    intere del nuovo (la testatina = titolo più folio resta esclusa). I titoli restano alla regola delle estremità;
 //  - la posizione (pagina del file originale, indice di lettura, rango fra i segmenti identici
 //    nella finestra di pagine) è SUGGERIMENTO e disambiguatore, mai prova: due «(Omissis).» a
 //    poche pagine si distinguono per rango solo se la finestra ne ha ancora lo stesso numero; se
@@ -149,12 +155,18 @@ public struct ContentAnchor: Codable, Equatable, Sendable {
     /// DeJure è anche la prima frase del suo corpo): rango e conteggio sono presi nella famiglia dell'ancora, che si
     /// ritrova solo nella sua famiglia. `nil` nelle ancore coniate prima del 2026-10-08: comportamento invariato.
     public var familyTwins: Bool?
+    /// Il testo stava già, intero, DENTRO un altro segmento della stessa famiglia (corpo, o nota) nella finestra quando l'ancora
+    /// è stata coniata: allora il riscontro «dentro un blocco nuovo» e «a cavallo di due blocchi» non vale per questa ancora,
+    /// perché quel testo non è unico e un riscontro lì potrebbe essere l'altro (giro «prova 4, segnalibri e sigle»,
+    /// 2026-11-11). `nil` nelle ancore coniate prima: si ritrovano per contenuto con la sola condizione dell'unicità.
+    public var interiorElsewhere: Bool?
 
     public static let currentVersion = 1
 
     public init(version: Int = ContentAnchor.currentVersion, role: String, sourcePage: Int?, length: Int,
                 whole: String, head: String, tail: String, prefixLadder: [String] = [], windowRank: Int, windowCount: Int,
-                orderIndexHint: Int, containedElsewhere: Bool? = nil, familyTwins: Bool? = nil) {
+                orderIndexHint: Int, containedElsewhere: Bool? = nil, familyTwins: Bool? = nil,
+                interiorElsewhere: Bool? = nil) {
         self.version = version
         self.role = role
         self.sourcePage = sourcePage
@@ -168,6 +180,7 @@ public struct ContentAnchor: Codable, Equatable, Sendable {
         self.orderIndexHint = orderIndexHint
         self.containedElsewhere = containedElsewhere
         self.familyTwins = familyTwins
+        self.interiorElsewhere = interiorElsewhere
     }
 }
 
@@ -218,6 +231,10 @@ public struct AnchorResolution: Equatable, Sendable {
     /// posizione, nel testo normalizzato del segmento nuovo, dove il vecchio testo comincia. Le citazioni si cercano
     /// solo in quel tratto, con i suoi bordi (giro «costruzione della linea Mac», 2026-10-16). `nil` altrimenti.
     public var regionStart: Int? = nil
+    /// Quando il vecchio testo sta A CAVALLO di più segmenti consecutivi (giro «prova 4, segnalibri e sigle», 2026-11-11): i
+    /// segmenti che lo coprono, dal primo (quello ritrovato, dove il testo comincia, a `regionStart`) all'ultimo. Le citazioni
+    /// si cercano nel loro testo unito, solo nel tratto del vecchio testo. `nil` altrimenti.
+    public var regionChain: [Int]? = nil
 
     public var confidence: Double { level.confidence }
     public var isRelocated: Bool { index != nil }
@@ -352,11 +369,15 @@ public final class ContentAnchorIndex {
             && !containers(length: length, head: headDigests[index], tail: tailDigests[index], page: page, visualWorld: world).isEmpty
         let n = normalized[index]
         let ladder = Self.ladderLengths.filter { $0 <= length }.map { TextFingerprint.digest(n.prefix($0)) }
+        // Il testo sta già, intero, dentro un altro segmento della sua famiglia nella finestra: per questa ancora niente
+        // riscontro «dentro» né «a cavallo» (vedi `ContentAnchor.interiorElsewhere`).
+        let interiorElsewhere = length > 0 && familyContainsElsewhere(index)
         return ContentAnchor(
             role: segments[index].role, sourcePage: page, length: length,
             whole: wholeDigests[index], head: headDigests[index], tail: tailDigests[index], prefixLadder: ladder,
             windowRank: rank, windowCount: max(1, twins.count), orderIndexHint: index,
-            containedElsewhere: containedElsewhere ? true : nil, familyTwins: familyTwins ? true : nil)
+            containedElsewhere: containedElsewhere ? true : nil, familyTwins: familyTwins ? true : nil,
+            interiorElsewhere: interiorElsewhere ? true : nil)
     }
 
     /// Il «mondo» di un ruolo per le ancore: l'elemento «risorsa visiva» (additivo, con l'annuncio e la didascalia) da
@@ -429,8 +450,10 @@ public final class ContentAnchorIndex {
         if !chainStarts.isEmpty {
             return pick(chainStarts, anchor: anchor, level: .exact, pageWindow: Self.pageWindow(forLength: anchor.length))
         }
-        // Un testo corto senza riscontro esatto non ha testa/coda distinte: orfano.
+        // Un testo corto senza riscontro esatto non ha testa/coda distinte: solo il passo 3-ter (il testo intero dentro un blocco
+        // del corpo, unico e a confini di parola), poi orfano.
         guard anchor.length > TextFingerprint.edgeLength else {
+            if let r = interiorResolution(anchor) { return r }
             return .orphan("testo corto non ritrovato")
         }
         // 2. Testa e coda alle estremità dello stesso segmento (interno diverso).
@@ -438,6 +461,21 @@ public final class ContentAnchorIndex {
         let tails = Set((byTail[anchor.tail] ?? []).filter(sameWorld))
         let both = heads.intersection(tails)
         if !both.isEmpty {
+            // Salvo che lo stesso segmento contenga il vecchio testo INTERO a un'estremità (impronta intera verificata): allora
+            // è una fusione il cui inizio ripete quello del vecchio testo (un titolo ripetuto in una bibliografia), non un
+            // interno ritoccato, e vale il passo 3 col suo tratto: la citazione di una sottolineatura si cerca solo lì (giro
+            // «prova 4, segnalibri e sigle», 2026-11-11: misurato nell'andata e ritorno di granularità, la citazione finiva
+            // in silenzio sulla ripetizione all'inizio del blocco).
+            if anchor.containedElsewhere != true {
+                let whole = containingCandidates(anchor).filter { c in
+                    both.contains(c.index)
+                        && TextFingerprint.digest(Array(normalized[c.index])[c.start..<(c.start + anchor.length)]) == anchor.whole
+                }
+                if !whole.isEmpty {
+                    return withRegion(pick(whole.map { $0.index }, anchor: anchor, level: .contained,
+                                           pageWindow: Self.partialMatchPageWindow), whole)
+                }
+            }
             return pick(Array(both).sorted(), anchor: anchor, level: .headAndTail,
                         pageWindow: Self.partialMatchPageWindow)
         }
@@ -465,6 +503,18 @@ public final class ContentAnchorIndex {
                                        pageWindow: Self.partialMatchPageWindow), inside)
             }
         }
+        // 3-ter. Il vecchio testo, INTERO, dentro un segmento della sua famiglia — il corpo — in un punto qualunque e non solo
+        //    a un'estremità (con meno di 64 lettere aggiunte, solo se è fatto di frasi intere del nuovo); oppure A CAVALLO di due o
+        //    più segmenti
+        //    consecutivi della sua famiglia — il corpo, o i pezzi della stessa nota —, cominciando dentro il primo (giro «prova
+        //    4, segnalibri e sigle», 2026-11-11, decisione 1 del giro precedente): è il pezzo di mezzo di un blocco fuso da una
+        //    granularità più ampia, o un blocco i cui confini una granularità diversa ha spostato. L'impronta INTERA del tratto è
+        //    verificata (non solo testa e coda), il tratto comincia a un inizio di parola, e c'è UNA sola posizione in un solo
+        //    segmento della finestra di pagine; mai se il testo stava già dentro un altro segmento della sua famiglia (o a
+        //    un'estremità di un altro segmento) quando l'ancora è nata. L'ancora va sul segmento dove il vecchio testo comincia
+        //    e conserva l'ancora d'origine (livello «contenuto», `keepsOriginAnchor`): tornando alla granularità di prima ritrova
+        //    il suo pezzo.
+        if let r = interiorResolution(anchor) { return r }
         // 4. Sola testa all'inizio di un segmento PIÙ CORTO del vecchio (spezzatura: il segnalibro marca
         //    l'inizio e il nuovo segmento è un pezzo del vecchio), verificato sulla scala dei prefissi.
         //    Solo se la testa è UNICA nella finestra di pagine: un passo ripetuto quasi alla lettera a poche pagine
@@ -503,6 +553,11 @@ public final class ContentAnchorIndex {
         if let chain = splitChain(from: idx, for: quote.segment) {
             return locate(quote, inChain: chain, level: seg.level)
         }
+        // Il vecchio testo sta a cavallo di più segmenti consecutivi: la citazione si cerca nel loro testo unito, solo nel
+        // tratto del vecchio testo e con i suoi bordi (giro «prova 4, segnalibri e sigle», 2026-11-11).
+        if let start = seg.regionStart, let chain = seg.regionChain {
+            return locate(quote, inChain: chain, level: seg.level, region: start..<(start + quote.segment.length))
+        }
         // Il vecchio testo sta dentro un segmento più lungo: la citazione si cerca solo nel suo tratto, con i bordi del
         // tratto (una citazione che stava sul bordo del vecchio segmento non deve finire sul bordo del nuovo).
         if let start = seg.regionStart {
@@ -513,7 +568,11 @@ public final class ContentAnchorIndex {
             return [QuoteResolution(segmentIndex: idx, startWord: r.0, endWord: r.1, level: seg.level)]
         }
         // Spezzatura: la citazione può stare nel segmento seguente o precedente della stessa pagina (dello stesso mondo:
-        // un elemento «risorsa visiva» frapposto si scavalca, non si guarda).
+        // un elemento «risorsa visiva» frapposto si scavalca, non si guarda). Solo se il segmento è stato ritrovato come PEZZO
+        // INIZIALE del vecchio e la citazione in lui NON C'È: se c'è più volte con lo stesso contesto è ambigua lì, e cercarla nei
+        // vicini la porterebbe sul suo gemello (giro «prova 4, segnalibri e sigle», 2026-11-11: misurato nell'andata e ritorno di
+        // granularità, una citazione ripetuta due volte nel suo blocco finiva in silenzio sulla terza occorrenza, nel blocco vicino).
+        guard seg.level == .headOnly, locateHitCount(quote, in: idx) == 0 else { return nil }
         let world = Self.isVisualWorld(segments[idx].role)
         func neighbour(_ step: Int) -> Int? {
             var j = idx + step
@@ -642,6 +701,180 @@ public final class ContentAnchorIndex {
         return out
     }
 
+    /// Il passo 3-ter della risoluzione (vedi `resolve`): `nil` se non si applica o non trova nulla.
+    private func interiorResolution(_ anchor: ContentAnchor) -> AnchorResolution? {
+        guard anchor.length > 0, anchor.containedElsewhere != true, anchor.interiorElsewhere != true,
+              let family = Self.textFamily(anchor.role) else { return nil }
+        let found = familyInteriorCandidates(anchor, family: family)
+        guard !found.isEmpty else { return nil }
+        // la finestra di pagine l'ha già applicata la ricerca, sulle pagine che ogni segmento copre
+        var r = pick(found.map { $0.index }, anchor: anchor, level: .contained, pageWindow: nil)
+        if let i = r.index, let hit = found.first(where: { $0.index == i }) {
+            r.regionStart = hit.start
+            r.regionChain = hit.chain.count > 1 ? hit.chain : nil
+        }
+        return r
+    }
+
+    /// La famiglia di testo di un ruolo per i riscontri «dentro» e «a cavallo» (passo 3-ter): il corpo che la granularità
+    /// raggruppa (`GRANULARIZABLE_ROLES`) e le note coi loro pezzi; ogni altro ruolo (titoli, articoli, risorse) no.
+    static func textFamily(_ role: String) -> Int? {
+        if GRANULARIZABLE_ROLES.contains(role) { return 0 }
+        if isNoteFamily(role) { return 1 }
+        return nil
+    }
+
+    /// Gli indici dei segmenti le cui PAGINE COPERTE — dalla pagina dove cominciano a quella dove comincia il segmento seguente
+    /// che ne ha una — toccano la finestra di `window` pagine attorno a `page` (tutti, se la pagina è ignota). Un blocco largo,
+    /// in un libro con poche righe per pagina, comincia anche tre o quattro pagine prima del pezzo che contiene (misurato nel giro
+    /// «prova 4, segnalibri e sigle»): conta dove finisce, non solo dove comincia.
+    private func spanWindowIndices(_ page: Int?, window: Int) -> [Int] {
+        guard let page else { return Array(segments.indices) }
+        let lo = page - window, hi = page + window
+        var out: [Int] = []
+        for p in lo...hi { out += segmentsByPage[p] ?? [] }
+        // i segmenti cominciati prima della finestra che la raggiungono: il primo prima di lei, e i suoi vicini senza pagina
+        if let first = out.min() {
+            var j = first - 1
+            while j >= 0 {
+                if let q = pageOf[j] {
+                    if q < lo { out.append(j); break }
+                } else { out.append(j) }
+                j -= 1
+            }
+        } else if let j = (0..<segments.count).last(where: { (pageOf[$0] ?? Int.max) < lo }) {
+            out.append(j)
+        }
+        return Array(Set(out)).sorted()
+    }
+
+    /// Gli indici dei segmenti della finestra di pagine attorno a `page` (tutti, se la pagina è ignota).
+    private func windowIndices(_ page: Int?) -> [Int] {
+        guard let page else { return Array(segments.indices) }
+        return (page - Self.partialMatchPageWindow...page + Self.partialMatchPageWindow).flatMap { segmentsByPage[$0] ?? [] }.sorted()
+    }
+
+    /// Vero se il testo del segmento `index` sta già, intero, dentro un altro segmento più lungo della sua famiglia nella
+    /// finestra di pagine (per `ContentAnchor.interiorElsewhere`, al conio).
+    private func familyContainsElsewhere(_ index: Int) -> Bool {
+        guard let family = Self.textFamily(segments[index].role) else { return false }
+        let n = normalized[index]
+        for j in windowIndices(pageOf[index]) where j != index && normalized[j].count > n.count
+            && Self.textFamily(segments[j].role) == family && normalized[j].contains(n) {
+            return true
+        }
+        return false
+    }
+
+    /// Per i segmenti di una famiglia di testo: gli inizi di parola nel testo normalizzato e, per ciascuno, i primi 8 byte
+    /// dell'impronta delle `edgeLength` lettere che cominciano lì (se ci stanno). Calcolati alla prima richiesta e tenuti.
+    private var wordStartsCache: [Int: (starts: [Int], heads: [UInt64: [Int]])] = [:]
+    private func wordStarts(_ i: Int) -> (starts: [Int], heads: [UInt64: [Int]]) {
+        if let c = wordStartsCache[i] { return c }
+        let (chars, words) = TextFingerprint.normalizeWithWordMap(segments[i].text)
+        let edge = TextFingerprint.edgeLength
+        var starts: [Int] = [], heads: [UInt64: [Int]] = [:]
+        for p in chars.indices where p == 0 || words[p - 1] != words[p] {
+            starts.append(p)
+            if p + edge <= chars.count { heads[Self.shortKey(TextFingerprint.digest(chars[p..<(p + edge)])), default: []].append(p) }
+        }
+        wordStartsCache[i] = (starts, heads)
+        return (starts, heads)
+    }
+    /// Vero se le lettere `start..<start+length` del testo normalizzato del segmento `i` sono FRASI INTERE del suo testo: la
+    /// parola dove cominciano è la prima del segmento o segue una parola che chiude una frase, e l'ultima chiude una frase
+    /// (punto, punto esclamativo o interrogativo, anche seguiti da virgolette o parentesi chiuse).
+    private func wholeSentences(in i: Int, start: Int, length: Int) -> Bool {
+        let (_, wordOf) = TextFingerprint.normalizeWithWordMap(segments[i].text)
+        guard start >= 0, start + length <= wordOf.count, length > 0 else { return false }
+        let words = WordTokenizer.words(segments[i].text)
+        func closesSentence(_ w: String) -> Bool {
+            var t = Substring(w)
+            while let last = t.last, CLOSING_CHARS.contains(last) { t = t.dropLast() }
+            guard let last = t.last else { return false }
+            return last == "." || last == "!" || last == "?"
+        }
+        let first = wordOf[start], last = wordOf[start + length - 1]
+        guard first < words.count, last < words.count else { return false }
+        let opens = first == 0 || closesSentence(words[first - 1])
+        return opens && closesSentence(words[last])
+    }
+
+    /// I primi 8 byte di un'impronta (esadecimale) come intero: chiave compatta delle tabelle di testa.
+    static func shortKey(_ hex: String) -> UInt64 { UInt64(hex.prefix(16), radix: 16) ?? 0 }
+
+    /// I segmenti che seguono `i` nella sua famiglia, nel flusso, finché il loro testo normalizzato arriva a `count` lettere:
+    /// del corpo, solo corpo; di una nota, solo i pezzi della stessa nota. Gli elementi dell'altro mondo (risorse visive) e
+    /// quelli senza lettere si scavalcano. `nil` se la famiglia finisce prima.
+    private func followingChain(after i: Int, family: Int, count: Int) -> [Int]? {
+        var chain: [Int] = [], total = 0, j = i + 1
+        while total < count, segments.indices.contains(j) {
+            let role = segments[j].role
+            if Self.isVisualWorld(role) || normalized[j].isEmpty { j += 1; continue }
+            guard Self.textFamily(role) == family, family == 0 || role == Self.noteContinuationRole else { return nil }
+            chain.append(j); total += normalized[j].count; j += 1
+        }
+        return total >= count ? chain : nil
+    }
+
+    /// I riscontri del passo 3-ter: dove il testo dell'ancora comincia, a un inizio di parola, dentro un segmento più lungo
+    /// della sua famiglia (solo corpo) o a cavallo di quel segmento e dei seguenti della famiglia (corpo, o pezzi della stessa
+    /// nota), con l'impronta INTERA del tratto uguale. Il pezzo di nota dentro una nota resta al passo 3-bis.
+    private func familyInteriorCandidates(_ anchor: ContentAnchor, family: Int) -> [(index: Int, start: Int, chain: [Int])] {
+        let edge = TextFingerprint.edgeLength, L = anchor.length
+        let short = L <= edge
+        let headKey = Self.shortKey(anchor.head)
+        var out: [(index: Int, start: Int, chain: [Int])] = []
+        for i in spanWindowIndices(anchor.sourcePage, window: Self.pageWindow(forLength: L))
+            where Self.textFamily(segments[i].role) == family && !normalized[i].isEmpty {
+            let n = normalized[i].count
+            // Un testo corto si cerca solo DENTRO un segmento più lungo della sua famiglia (non a cavallo: un blocco corto è una
+            // frase sola); un pezzo lungo di nota dentro una nota resta al passo 3-bis.
+            if short && n <= L { continue }
+            let ws = wordStarts(i)
+            // Le posizioni dove il vecchio testo può cominciare: per un testo lungo dalla tabella delle teste (testa tutta nel
+            // segmento) e, verso la fine del segmento, quelle la cui testa continua nei seguenti; per un testo corto, ogni
+            // inizio di parola da cui ci sta.
+            var positions: [Int]
+            if short {
+                positions = ws.starts.filter { $0 + L <= n }
+            } else {
+                positions = (ws.heads[headKey] ?? []) + ws.starts.filter { $0 + edge > n }
+            }
+            guard !positions.isEmpty else { continue }
+            let chars = Array(normalized[i])
+            let wordEnds = Set(ws.starts.dropFirst().map { $0 }).union([n])   // un tratto finisce dove comincia una parola
+            for p in positions {
+                if p + L <= n {
+                    // DENTRO (il corpo, o un pezzo corto di nota), finendo a un confine di parola. Con meno di
+                    // `containedMinExtraLength` lettere in più vale solo nel corpo e solo se il vecchio testo è fatto di FRASI
+                    // INTERE dentro il nuovo (comincia dopo una fine di frase e finisce con una): un raggruppamento del corpo, non un
+                    // testo più un folio (la testatina = titolo + folio, falsificata dalla prova al contrario della rete: un titolo
+                    // non finisce col punto).
+                    guard family == 0 || short, n > L, wordEnds.contains(p + L) else { continue }
+                    if n - L < Self.containedMinExtraLength {
+                        guard family == 0, wholeSentences(in: i, start: p, length: L) else { continue }
+                    }
+                    if TextFingerprint.digest(chars[p..<(p + L)]) == anchor.whole { out.append((i, p, [i])) }
+                } else {
+                    // A CAVALLO: il resto del vecchio testo nei segmenti seguenti della famiglia.
+                    guard let next = followingChain(after: i, family: family, count: p + L - n) else { continue }
+                    var text = Array(chars[p...])
+                    for j in next { text += Array(normalized[j]) }
+                    guard text.count >= L, TextFingerprint.digest(text[0..<edge]) == anchor.head,
+                          TextFingerprint.digest(text[0..<L]) == anchor.whole else { continue }
+                    // la catena fino al segmento dove il vecchio testo finisce, e lì un confine di parola
+                    var covered = n - p, chain = [i]
+                    for j in next where covered < L { chain.append(j); covered += normalized[j].count }
+                    let last = chain[chain.count - 1], end = normalized[last].count - (covered - L)
+                    guard end == normalized[last].count || wordStarts(last).starts.contains(end) else { continue }
+                    out.append((i, p, chain))
+                }
+            }
+        }
+        return out
+    }
+
     /// I pezzi CONSECUTIVI che, a partire da `start`, ricompongono ESATTAMENTE il testo dell'ancora: almeno due, dello
     /// stesso mondo (gli elementi dell'altro mondo frapposti, le risorse visive, si scavalcano), con la somma delle
     /// lunghezze normalizzate uguale a quella dell'ancora e l'impronta del testo ricomposto uguale alla sua impronta
@@ -714,7 +947,8 @@ public final class ContentAnchorIndex {
     /// Cerca la citazione nel testo RICOMPOSTO dei pezzi `chain` (vedi `splitChain`) con le regole di `locate(_:in:)`:
     /// confini di parola (il confine fra due pezzi è un confine di parola), più posizioni → decide il contesto, ancora
     /// più d'una → `nil`. Torna uno span per pezzo toccato.
-    private func locate(_ quote: QuoteAnchor, inChain chain: [Int], level: AnchorMatchLevel) -> [QuoteResolution]? {
+    private func locate(_ quote: QuoteAnchor, inChain chain: [Int], level: AnchorMatchLevel,
+                        region: Range<Int>? = nil) -> [QuoteResolution]? {
         var chars: [Character] = []
         var piece: [Int] = []      // posizione nella catena del pezzo di ogni carattere
         var word: [Int] = []       // parola (indice WordTokenizer) nel suo pezzo
@@ -725,20 +959,22 @@ public final class ContentAnchorIndex {
             piece += Array(repeating: k, count: c.count)
         }
         let L = quote.quoteLength
-        guard L > 0, chars.count >= L else { return nil }
+        // Con `region`, solo nel tratto del vecchio testo, i cui bordi valgono come bordi (parole e contesto).
+        let lo = max(0, region?.lowerBound ?? 0), hi = min(chars.count, region?.upperBound ?? chars.count)
+        guard L > 0, hi - lo >= L else { return nil }
         func sameWord(_ a: Int, _ b: Int) -> Bool { piece[a] == piece[b] && word[a] == word[b] }
         var hits: [Int] = []
-        for p in 0...(chars.count - L) {
-            let startsWord = p == 0 || !sameWord(p - 1, p)
-            let endsWord = p + L == chars.count || !sameWord(p + L - 1, p + L)
+        for p in lo...(hi - L) {
+            let startsWord = p == lo || !sameWord(p - 1, p)
+            let endsWord = p + L == hi || !sameWord(p + L - 1, p + L)
             guard startsWord, endsWord else { continue }
             if TextFingerprint.digest(chars[p..<(p + L)]) == quote.quote { hits.append(p) }
         }
         if hits.count > 1 {
             let ctx = TextFingerprint.contextLength
             hits = hits.filter { p in
-                let before = chars[max(0, p - ctx)..<p]
-                let after = chars[(p + L)..<min(chars.count, p + L + ctx)]
+                let before = chars[max(lo, p - ctx)..<p]
+                let after = chars[(p + L)..<min(hi, p + L + ctx)]
                 let pre = before.isEmpty ? nil : TextFingerprint.digest(before)
                 let suf = after.isEmpty ? nil : TextFingerprint.digest(after)
                 return pre == quote.prefix && suf == quote.suffix
@@ -763,6 +999,21 @@ public final class ContentAnchorIndex {
         let k = Self.ladderLengths.lastIndex { $0 <= n } ?? 0
         guard anchor.prefixLadder.indices.contains(k) else { return false }
         return TextFingerprint.digest(text.prefix(Self.ladderLengths[k])) == anchor.prefixLadder[k]
+    }
+
+    /// Quante posizioni del segmento `index` hanno l'impronta della citazione, a confini di parola e prima di guardare il contesto:
+    /// zero vuol dire che la citazione lì non c'è (per il ripiego dei vicini, che vale solo allora).
+    private func locateHitCount(_ quote: QuoteAnchor, in index: Int) -> Int {
+        let (chars, words) = TextFingerprint.normalizeWithWordMap(segments[index].text)
+        let L = quote.quoteLength
+        guard L > 0, chars.count >= L else { return 0 }
+        var n = 0
+        for p in 0...(chars.count - L) {
+            let startsWord = p == 0 || words[p - 1] != words[p]
+            let endsWord = p + L == chars.count || words[p + L - 1] != words[p + L]
+            if startsWord, endsWord, TextFingerprint.digest(chars[p..<(p + L)]) == quote.quote { n += 1 }
+        }
+        return n
     }
 
     /// Cerca la citazione nel segmento `index`: tutte le posizioni la cui finestra ha l'impronta della
