@@ -35,7 +35,8 @@
 //    mezzo), e quando sposta i confini finisce A CAVALLO di due. Lì vale l'impronta INTERA del vecchio testo, in una sola
 //    posizione nella finestra, a confini di parola, e solo se alla nascita dell'ancora quel testo non stava già dentro un
 //    altro segmento della sua famiglia (`interiorElsewhere`); con meno di 64 lettere in più, solo se è fatto di frasi
-//    intere del nuovo (la testatina = titolo più folio resta esclusa). I titoli restano alla regola delle estremità;
+//    intere del nuovo (la testatina = titolo più folio resta esclusa); a cavallo, se comincia dentro un pezzo, il segnalibro va
+//    nel pezzo che porta la parte maggiore del vecchio testo. I titoli restano alla regola delle estremità;
 //  - la posizione (pagina del file originale, indice di lettura, rango fra i segmenti identici
 //    nella finestra di pagine) è SUGGERIMENTO e disambiguatore, mai prova: due «(Omissis).» a
 //    poche pagine si distinguono per rango solo se la finestra ne ha ancora lo stesso numero; se
@@ -521,7 +522,7 @@ public final class ContentAnchorIndex {
         //    verificata (non solo testa e coda), il tratto comincia a un inizio di parola, e c'è UNA sola posizione in un solo
         //    segmento della finestra di pagine; mai se il testo stava già dentro un altro segmento della sua famiglia (o a
         //    un'estremità di un altro segmento) quando l'ancora è nata. L'ancora va sul segmento dove il vecchio testo comincia
-        //    e conserva l'ancora d'origine (livello «contenuto», `keepsOriginAnchor`): tornando alla granularità di prima ritrova
+        //    (a cavallo, se comincia dentro un pezzo: sul pezzo che ne porta la parte maggiore) e conserva l'ancora d'origine (livello «contenuto», `keepsOriginAnchor`): tornando alla granularità di prima ritrova
         //    il suo pezzo.
         if let r = interiorResolution(anchor) { return r }
         // 4. Sola testa all'inizio di un segmento PIÙ CORTO del vecchio (spezzatura: il segnalibro marca
@@ -737,11 +738,30 @@ public final class ContentAnchorIndex {
         guard !found.isEmpty else { return nil }
         // la finestra di pagine l'ha già applicata la ricerca, sulle pagine che ogni segmento copre
         var r = pick(found.map { $0.index }, anchor: anchor, level: .contained, pageWindow: nil)
-        if let i = r.index, let hit = found.first(where: { $0.index == i }) {
-            r.regionStart = hit.start
-            r.regionChain = hit.chain.count > 1 ? hit.chain : nil
+        guard let i = r.index, let hit = found.first(where: { $0.index == i }) else { return r }
+        r.regionStart = hit.start
+        guard hit.chain.count > 1 else { return r }
+        // A CAVALLO: segnalibro e posizione vanno nel pezzo che porta la PARTE MAGGIORE del vecchio testo (a parità il primo),
+        // non per forza in quello dove comincia: un vecchio blocco che comincia con l'ultima parola di un blocco nuovo e continua
+        // nel seguente porterebbe chi ascolta all'inizio del blocco di prima, lontano dal suo passo (rete sulle annotazioni, giro
+        // «prova 4, segnalibri e sigle», 2026-11-11). Solo se il vecchio testo comincia DENTRO il primo pezzo: se comincia al suo
+        // inizio, il primo pezzo è l'inizio del passo e il segnalibro resta lì. Le citazioni si cercano comunque in tutta la
+        // catena (`regionChain`).
+        guard hit.start > 0 else {
+            r.regionChain = hit.chain
+            return r
         }
-        return r
+        var remaining = anchor.length, best = 0, bestShare = -1
+        for (k, j) in hit.chain.enumerated() {
+            let share = min(k == 0 ? normalized[j].count - hit.start : normalized[j].count, remaining)
+            if share > bestShare { best = k; bestShare = share }
+            remaining -= share
+        }
+        var out = AnchorResolution(index: hit.chain[best], level: r.level,
+                                   reason: best == 0 ? r.reason : r.reason + "; a cavallo, nel pezzo con la parte maggiore")
+        out.regionStart = hit.start
+        out.regionChain = hit.chain
+        return out
     }
 
     /// La famiglia di testo di un ruolo per i riscontri «dentro» e «a cavallo» (passo 3-ter): il corpo che la granularità

@@ -135,7 +135,8 @@ final class ContentAnchorTests: XCTestCase {
         tiny.append(seg("node_8", (["nuvoloso"] + words.dropFirst(13)).joined(separator: " ") + " E un'aggiunta che il vecchio non aveva.", page: 2))
         XCTAssertEqual(ContentAnchorIndex(segments: tiny).resolve(aLong).level, .orphan)
         // Se il seguito RICOMPONE il vecchio testo e poi aggiunge altro, il vecchio testo sta intero A CAVALLO dei due pezzi:
-        // si ritrova come contenuto sul primo, dove comincia (giro «prova 4, segnalibri e sigle»), anche col primo pezzo corto.
+        // si ritrova come contenuto, con la catena dal primo (giro «prova 4, segnalibri e sigle»), anche col primo pezzo corto; e
+        // poiché comincia all'INIZIO del primo pezzo, il segnalibro resta lì (la parte maggiore conta solo se comincia dentro).
         for k in [32, 12] {
             var straddle = base
             straddle[7] = seg("node_7", words.prefix(k).joined(separator: " "), page: 2)

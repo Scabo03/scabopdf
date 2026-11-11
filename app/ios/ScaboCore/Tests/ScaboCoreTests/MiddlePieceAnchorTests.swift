@@ -57,20 +57,61 @@ final class MiddlePieceAnchorTests: XCTestCase {
          seg("b1", s[0] + " " + s[1] + " " + s[2]), seg("b2", s[3] + " " + s[4] + " " + s[5])]
     }
 
-    func test_pezzoACavallo_vaNelBloccoDoveComincia_conLaCatena_eTorna() throws {
+    func test_pezzoACavallo_vaNelBloccoConLaParteMaggiore_conLaCatena_eTorna() throws {
+        // a2 = s2 + s3: in B s2 (90 lettere) chiude b1 e s3 (93 lettere) apre b2. Il segnalibro va nel blocco che porta la parte
+        // maggiore del vecchio testo, b2; la catena per le citazioni comincia in b1.
         let a = fineFlow, b = shiftedFlow
         let start = try bookmark(on: 2, in: a)
         let r = ContentAnchorIndex(segments: b).resolve(try XCTUnwrap(start.anchor))
         XCTAssertEqual(r.level, .contained)
-        XCTAssertEqual(r.index, 1, "il testo comincia nel primo dei due blocchi")
+        XCTAssertEqual(r.index, 2, "la parte maggiore del vecchio testo sta nel secondo dei due blocchi")
         XCTAssertEqual(r.regionChain, [1, 2])
         let there = reanchor([start], in: b)
         XCTAssertNil(there.bookmarks[0].isOrphan)
-        XCTAssertEqual(there.bookmarks[0].anchorSegmentId, "b1")
+        XCTAssertEqual(there.bookmarks[0].anchorSegmentId, "b2")
         XCTAssertTrue(inPlace(there, in: b))
         let back = reanchor(there.bookmarks, in: a)
         XCTAssertEqual(back.bookmarks[0].anchorSegmentId, "a2", "tornato esattamente sul suo pezzo")
         XCTAssertTrue(inPlace(back, in: a))
+    }
+
+    func test_pezzoACavalloCheCominciaAllInizioDelBlocco_restaNelPrimo() throws {
+        // Il vecchio blocco comincia all'INIZIO di un blocco nuovo e continua nel seguente (il seguito, nel nuovo, ha anche altro
+        // testo): il primo blocco è l'inizio del passo e il segnalibro resta lì, anche se la parte maggiore sta nel seguente.
+        let a = [seg("t", "Capitolo della mappa", role: "HEADING_2"),
+                 seg("x1", s[0]), seg("x2", s[1] + " " + s[2] + " " + s[3]), seg("x3", s[4])]
+        let b = [seg("t", "Capitolo della mappa", role: "HEADING_2"),
+                 seg("y1", s[0]), seg("y2", s[1]), seg("y3", s[2] + " " + s[3] + " " + s[4])]
+        let start = try bookmark(on: 2, in: a)
+        let r = ContentAnchorIndex(segments: b).resolve(try XCTUnwrap(start.anchor))
+        XCTAssertNotNil(r.index)
+        XCTAssertEqual(r.index, 2, "il passo comincia all'inizio di y2")
+        let there = reanchor([start], in: b)
+        XCTAssertEqual(there.bookmarks[0].anchorSegmentId, "y2")
+        XCTAssertEqual(reanchor(there.bookmarks, in: a).bookmarks[0].anchorSegmentId, "x2")
+    }
+
+    func test_pezzoACavalloConUnaParolaSolaNelPrimoBlocco_vaNelSeguente() throws {
+        // Il caso della rete sulle annotazioni: il vecchio blocco comincia con una frase brevissima che, nella granularità nuova,
+        // chiude il blocco di prima; il resto apre il blocco seguente. Il segnalibro e la posizione vanno nel seguente (lì c'è il
+        // passo), non all'inizio del blocco di prima; al ritorno, sul loro pezzo.
+        let a = [seg("t", "Capitolo della mappa", role: "HEADING_2"),
+                 seg("x1", s[0] + " " + s[1]), seg("x2", "Breve. " + s[2] + " " + s[3]), seg("x3", s[4])]
+        let b = [seg("t", "Capitolo della mappa", role: "HEADING_2"),
+                 seg("y1", s[0] + " " + s[1] + " Breve."), seg("y2", s[2] + " " + s[3] + " " + s[4])]
+        let start = try bookmark(on: 2, in: a)
+        let r = ContentAnchorIndex(segments: b).resolve(try XCTUnwrap(start.anchor))
+        XCTAssertEqual(r.level, .contained)
+        XCTAssertEqual(r.index, 2)
+        XCTAssertEqual(r.regionChain, [1, 2])
+        let there = reanchor([start], in: b)
+        XCTAssertEqual(there.bookmarks[0].anchorSegmentId, "y2")
+        XCTAssertTrue(inPlace(there, in: b))
+        let anchor = try XCTUnwrap(start.anchor)
+        let pos = reanchor([], position: 2, anchor: anchor, in: b)
+        XCTAssertEqual(pos.readingPosition, 2)
+        XCTAssertFalse(pos.readingPositionIsApproximate)
+        XCTAssertEqual(reanchor(there.bookmarks, in: a).bookmarks[0].anchorSegmentId, "x2")
     }
 
     func test_citazioneNelPezzoACavallo_siRitrovaNellaParteSeguente_eTorna() throws {
