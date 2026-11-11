@@ -196,6 +196,23 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
 
+- **Build 66 — 2026-11-11, commit `814b562` (giro «prova 4, segnalibri e sigle», livello di verifica pieno nella seconda parte: i
+  segnalibri, le posizioni e le sottolineature dei pezzi di mezzo si ritrovano al cambio di granularità e tornano esatti; le frasi
+  non si spezzano più dopo le abbreviazioni delle citazioni, le iniziali dei nomi e davanti a parentesi e citazioni che continuano,
+  livello di cure 66 offerto a tutti e soli i libri che cambiano, testi normativi compresi; `docs/CARRYOVER.md` STATO del
+  2026-11-11, LAYER2 § 7.6 e § 12.16, ANCORE_ANNOTAZIONI § 2-bis, CURE_MIRATE § 4.1, DISEGNO § 6.7).** Xcode 27.2 (27B52).
+  `fastlane beta` da main: «Latest upload … is build: 65», `CURRENT_PROJECT_VERSION` 66, EXPORT SUCCEEDED alle 21:08:43, altool
+  «UPLOAD SUCCEEDED with no errors» alle 21:10:04, Delivery UUID `3068168b-31bb-464d-a69a-e0371a710bc6`; subito dopo, per la quinta
+  build di fila, l'errore del file di ripresa del caricatore, corsia uscita con exit 1 prima dell'elaborazione e delle note. Nessun
+  rilancio: verifica in sola lettura con la chiave API (build 66 caricata alle 21:11 ora italiana, elaborazione VALID, «Cosa
+  testare» vuoto), impostato il solo «Cosa testare» (it) col testo di `app/ios/fastlane/COSA_TESTARE.txt` (script di laboratorio
+  `studio_mirato/build62/asc_imposta_note.rb`) e riletto: 2 013 caratteri, identico al file. I due `log stream` nati durante la
+  corsa (21:08:29 e 21:08:54, padre launchd) fermati per PID; altri due, di prima della corsa (18:49 e 18:50, non nati da comandi
+  del giro), lasciati stare: dopo la corsa non c'erano più. Elenco delle cure dell'offerta (`ReprocessOffer.cures`): la voce 66, e
+  per i testi normativi `aknCures` 66. Reti prima del caricamento, sul codice finale: rete delle generazioni verde (risorse visive
+  110/110 al posto), parità iPad-Mac 52/52 + 3/3, parlato e cure mirate verdi, annotazioni a ogni livello verdi (un residuo
+  dichiarato, preesistente), andata e ritorno di granularità 0 spostamenti sbagliati o silenziosi, suite complete sui quattro
+  simulatori verdi (278 test per dispositivo, 0 falliti), ScaboMac 112 test verdi. Prossimo numero: 67.
 - **Build 65 — 2026-11-11, commit `4c1b9a3` (giro «prove rifatte e granularità», livello di verifica pieno: la granularità delle
   Impostazioni vale anche sull'iPad, con una regola sola per iPad e Mac; i tre lavori della libreria fuori dal filo principale;
   l'andata e ritorno di granularità delle annotazioni curata; reti che non dicono verde senza aver controllato; l'elenco dei

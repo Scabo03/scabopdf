@@ -10,6 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.59 (11 novembre 2026, giro «prova 4, segnalibri e sigle», **CONCLUSO** con la **build 66** su TestFlight (VALID, note per i tester impostate): letto il diario della prova 4 sul Mac (salti 6/6, decisione 1 non applicata in attesa della prova 5; Parte 1, ramo `feat/mac-prova4-segnali` unito e cancellato); i segnalibri dei pezzi di mezzo si ritrovano al cambio di granularità (passo 3-ter delle ancore, 0 spostamenti sbagliati o silenziosi) e le frasi non si spezzano più dopo le sigle (cura 66, offerta a tutti e soli i libri che cambiano; Parte 2, ramo `feat/ipad-segnalibri-sigle` unito e cancellato))
 > Versione: 2.58 (10 novembre 2026, giro «prove rifatte e granularità», livello di verifica pieno, **build 65**: letti i diari delle prove d'orecchio rifatte e curati i salti del Mac (Parte 1, ramo `feat/mac-prove-rifatte` unito in main e cancellato); la granularità delle Impostazioni vale anche sull'iPad con una regola sola, i tre lavori della libreria fuori dal filo principale, le reti che non dicono più verde senza aver controllato, l'elenco dei volumi fuori dal repo, l'andata e ritorno di granularità delle annotazioni curata (Parte 2, ramo `feat/ipad-granularita-reti`); STATO del 2026-11-10 sotto)
 > Versione: 2.57 (9 novembre 2026, giro «prove della tappa A», livello di verifica leggero, nessuna build, **CONCLUSO**, ramo `feat/mac-tappa-a-prove` unito in main con un avanzamento rapido e cancellato: diagnosi e cura dei due difetti delle prove d'orecchio della tappa A — **T1 rossa**, «ScaboPDF non risponde» sul volume più grande: VoiceOver, a ogni ingresso e a ogni passo, interrogava tutti i 47.424 figli del gruppo (diari, registro di VoiceOver «occupato» da 5,9 a 57,6 s, client da fuori); cura: **figli finestrati** (DISEGNO § 2.3-2.4), preparazione della lettura e diario fuori dal filo principale; **T3**, i salti non spostavano il cursore: la vista non diceva quale elemento ha il fuoco; cura: `accessibilityFocusedUIElement` e un solo punto per i salti (§ 5.2), con un test da fuori che fallisce sull'app della tappa A; **T2 verde** dal diario; T1 e T3 da rifare con `prove_tappa_a/prove_orecchio/prova.sh`; l'iPad non cambia).
 > Versione: 2.56 (8 novembre 2026, giro «app unica per Mac, tappa A», livello di verifica medio, nessuna build, **CONCLUSO**, ramo `feat/mac-app-unica-tappa-a` unito in main con un avanzamento rapido e cancellato: registrate in LAYER2 § 12.16 le tre decisioni del maintainer dell'8 novembre — **sul Mac c'è un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro; «app diverse» vuol dire i due prodotti per Apple; l'app Mac importa PDF e atti AKN da sé con la catena condivisa — e corretto ovunque il fraintendimento delle «due app sul Mac», con la sua origine (§ 12.12, decisione 4 del 16 ottobre); disegno rifatto (`DISEGNO_LETTURA_MAC.md` § 6, § 8, § 9, § 10); costruita la **prima versione di ScaboPDF per Mac** (Home, importazione con la catena condivisa, «Libro già presente», lettura AppKit col parlato tutto da `ReadingSpeech`, menu «Lettura», finestra «Modelli e officina»), con la logica senza interfaccia dell'iPad spostata in ScaboChain; **vista del Mac identica alla vista dell'iPad su 55 libri su 55** (rete nuova `rete_vista_mac.sh`), quota dell'estrattore di macOS documentata (5 libri, 6 pagine); iPad identico (catena e runner al byte, rete sul parlato con la vista vera, cure mirate, suite su iPad e iPhone iOS 27); revisione indipendente con 22 rilievi, nessuno bloccante; tre prove d'orecchio da fare e tre decisioni per il maintainer. Vedi lo STATO qui sotto.)
@@ -131,7 +132,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Giro «prova 4, segnalibri e sigle»: il diario della prova 4 sul Mac, i segnalibri dei pezzi di mezzo, i blocchi spezzati dopo una sigla, build 66 — 2026-11-11 — IN CORSO
+## ▶ STATO — Giro «prova 4, segnalibri e sigle»: il diario della prova 4 sul Mac, i segnalibri dei pezzi di mezzo, i blocchi spezzati dopo una sigla, build 66 — 2026-11-11 — CONCLUSO
 
 **Partenza:** `9d56cb1` (main = origin, build 65 su TestFlight, VALID). **Rami:** Parte 1 `feat/mac-prova4-segnali` (livello
 leggero), Parte 2 `feat/ipad-segnalibri-sigle` (livello pieno) da main dopo la fusione della Parte 1. Referto:
@@ -193,6 +194,15 @@ prova4/` (Parte 1) e `~/Developer/scabopdf-gen-lab/segnalibri_sigle/` (Parte 2).
   dell'app sul codice finale, 278 test per dispositivo, 0 falliti (iPhone 16 iOS 26.5 253 passati e 25 saltati, iPad Pro iOS 26.5
   255 e 23, iPad Pro iOS 27 260 e 18, iPhone 16 iOS 27 258 e 20; una prima corsa dell'iPhone iOS 27 era caduta su due test della
   ricerca nella libreria per i libri lasciati sul simulatore da un test d'interfaccia della mattina: rifatta da stato pulito).
+- **Build 66** su TestFlight da `main` a `814b562`: UPLOAD SUCCEEDED (Delivery UUID `3068168b…`), poi il solito errore del file di
+  ripresa del caricatore (quinta build di fila), nessun rilancio; VALID, «Cosa testare» impostato e riletto, identico al file
+  (`docs/RELEASE_TESTFLIGHT.md`). Copia dell'app delle prove d'orecchio aggiornata alla build finale del Mac (`7233a8a6…`).
+- **Residui dichiarati**: l'offerta della cura 66 è «tutti e soli» per libro e non per livello (decisione 2 del referto); il quasi
+  gemello per testa e coda nella prova al contrario «orfana» con A sulla segmentazione della build 65 a 600 (preesistente, cura
+  proposta: un segno al conio); due test della ricerca nella libreria dipendono dai libri lasciati dai test d'interfaccia; due difetti
+  di lettura preesistenti visti giudicando (l'ordine dei blocchi di una pagina di premessa in un volume; il numero del comma «– 1.»
+  che resta con la frase di prima nei codici annotati), da misurare. Decisioni per il maintainer: § 7 del referto
+  `~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVA4_SEGNALIBRI_SIGLE.md`.
 
 ---
 
