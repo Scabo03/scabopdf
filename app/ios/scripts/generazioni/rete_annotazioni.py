@@ -12,7 +12,7 @@ Uso:
 
 Il giudizio NON ripete il meccanismo dell'ancora: dice che una ricollocazione è SBAGLIATA quando il passo ritrovato
 non condivide con l'originale nemmeno una finestra di 32 lettere normalizzate (oppure la citazione non ha le stesse
-parole), o quando sta a più di 2 pagine di distanza, o quando ATTRAVERSA il confine fra testo del libro ed elemento
+parole), o quando sta a più di 2 pagine di distanza dalle pagine che il segmento ritrovato copre, o quando ATTRAVERSA il confine fra testo del libro ed elemento
 «risorsa visiva» (giro 2026-10-12: l'annuncio della risorsa ripete la didascalia, le lettere coinciderebbero). «Orfana evitabile» = il testo originale esiste in B, uguale e
 unico, ma l'ancora non l'ha ritrovato (misura di richiamo, informativa). Nessun testo dei volumi nell'uscita.
 """
@@ -160,9 +160,16 @@ def giudica(a_path, anchors_path, b_path, results_path, label, atteso=None, out_
         if crosses(sa[b["index"]], sb[bi]):
             wrong.append((b["id"], role, f"ricollocata a {bi}: attraversa il confine testo / risorsa visiva"))
             continue
-        far = a_page is not None and b_page is not None and abs(a_page - b_page) > 2
-        if not shares_window(a_text, b_text) or far:
-            wrong.append((b["id"], role, f"ricollocata a {bi} ({r['level']}): nessuna finestra comune" + (" e pagina lontana" if far else "")))
+        # La distanza si misura dalle pagine che il segmento ritrovato COPRE — dalla sua prima pagina a quella dove comincia il
+        # segmento seguente —, non dalla sola prima: un blocco ampio di una granularità larga (documenti con poco testo per
+        # pagina) comincia anche qualche pagina prima del passo che contiene (giro «prova 4, segnalibri e sigle», 2026-11-11).
+        # Un gemello lontano resta lontano: il suo segmento non copre la pagina d'origine.
+        b_last = next((sb[k].get("page") for k in range(bi + 1, len(sb)) if sb[k].get("page") is not None), b_page)
+        far = a_page is not None and b_page is not None and (a_page < b_page - 2 or a_page > max(b_page, b_last) + 2)
+        no_window = not shares_window(a_text, b_text)
+        if no_window or far:
+            why = " e ".join(x for x, c in (("nessuna finestra comune", no_window), ("pagina lontana", far)) if c)
+            wrong.append((b["id"], role, f"ricollocata a {bi} ({r['level']}): {why}"))
 
     q_wrong, q_orph, q_ok, q_glued, q_prudent = [], 0, 0, 0, 0
     for q, r in zip(S["quotes"], R["quotes"]):
