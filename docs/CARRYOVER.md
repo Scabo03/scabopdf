@@ -140,13 +140,15 @@ prova4/` (Parte 1) e `~/Developer/scabopdf-gen-lab/segnalibri_sigle/` (Parte 2).
 
 - **Parte 1 — la prova 4** (campo, diario dell'11 novembre): sei salti fra nota e richiamo arrivati all'app, **sei riusciti**,
   nessuno perso (tre alla prima ripetizione dell'avviso, uno allo stesso bersaglio del salto prima con l'oggetto nuovo); due
-  combinazioni non arrivate, riprovate con esito; nessun comando del menu «Lettura» arrivato (⌘J e ⌥⌘↓ con VoiceOver: non
-  verificati, seconda prova di fila; senza VoiceOver arrivano, con un tasto vero di XCTest: test d'interfaccia nuovo
-  `test_tastiera_notaERichiamo` per ⌘J, accanto a quello di ⌥⌘↓). La lettura continua dal titolo del secondo capitolo ha riportato il cursore sul primo
-  elemento del libro (VO+A senza interazione legge dall'alto, fonte la guida di VoiceOver) e poi non l'ha più spostato: la svolta
-  della finestra non è stata raggiunta, e che cosa venga dopo il titolo del terzo capitolo il diario non lo dice. **Decisione 1
-  non applicata** (segnali delle note predefiniti sul Mac): manca la lettura continua oltre la svolta; prova 5 in DISEGNO § 10,
-  registrato in LAYER2 § 12.16. Nessuna riga di codice dell'app cambiata nella Parte 1 (un test d'interfaccia del Mac in più).
+  tentativi non arrivati all'app, riprovati con esito; nessun comando del menu «Lettura» arrivato (⌘J e ⌥⌘↓ con VoiceOver: non
+  arrivati o non premuti, seconda prova di fila; senza VoiceOver arrivano, con un tasto vero di XCTest: test d'interfaccia nuovo
+  `test_tastiera_notaERichiamo` per ⌘J, accanto a quello di ⌥⌘↓). Al comando della lettura continua, dal titolo del secondo
+  capitolo, il cursore di VoiceOver si è riportato sul primo elemento del libro e non si è più spostato (campo; VO+A letto
+  dall'alto, come dice la guida quando non si interagisce col documento: dedotto); dalla durata del parlato la lettura non poteva
+  arrivare alla svolta della finestra (dedotto), e che cosa venga dopo il titolo del terzo capitolo il diario non lo dice.
+  **Decisione 1 non applicata** (segnali delle note predefiniti sul Mac): la condizione precisata nel brief di questo giro chiede
+  i salti **e** la lettura continua oltre la svolta, e la seconda parte manca; prova 5 in DISEGNO § 10, registrato in LAYER2 §
+  12.16. Nessuna riga di codice dell'app cambiata nella Parte 1 (un test d'interfaccia del Mac in più).
   Verifiche (livello leggero, campo): rete sul parlato VERDE (192/192, 630.124 elementi); catena dell'iPad del codice della build 65
   sulle catture iOS 27, 260 forme su 260 identiche al byte alle letture del giro precedente; `rete_vista_mac.sh` VERDE (55/55; l'app
   che importa da sé 50/55, le 5 differenze note dell'estrattore); ScaboMac 112 test (4 saltati per costruzione), FuocoDaFuoriTests

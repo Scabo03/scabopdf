@@ -32,14 +32,16 @@
 ## 0. In due parole
 
 > **Aggiornato l'11 novembre 2026, dopo la prova 4** (giro «prova 4, segnalibri e sigle», referto
-> `~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVA4_SEGNALIBRI_SIGLE.md`). **I salti arrivano tutti** (campo, diario): sei
-> salti fra nota e richiamo arrivati all'app, sei volte il cursore di VoiceOver sul bersaglio, nessuno perso; tre sono arrivati
-> alla prima ripetizione dell'avviso e uno, allo stesso bersaglio del salto prima, con l'oggetto nuovo (§ 5.2). **La lettura
-> continua oltre la svolta della finestra resta da sentire**: al comando della lettura continua, dal titolo del secondo
-> capitolo, VoiceOver si è riportato sul primo elemento del libro — come la guida di VoiceOver dice di VO+A quando non si
-> interagisce col documento — e per i 44 secondi seguenti non ha più spostato il cursore né chiesto nulla oltre la finestra
-> (§ 10). ⌘J e ⌥⌘↓ non sono arrivati all'app con VoiceOver acceso, per la seconda prova di fila (nessun comando del menu nel
-> diario). Perciò i segnali delle note **non** diventano ancora il predefinito sul Mac (§ 4.3); manca la prova 5, breve (§ 10).
+> `~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVA4_SEGNALIBRI_SIGLE.md`). **I salti arrivati all'app arrivano tutti**
+> (campo, diario): sei salti fra nota e richiamo, sei volte il cursore di VoiceOver sul bersaglio, nessuno perso; tre sono
+> arrivati alla prima ripetizione dell'avviso e uno, allo stesso bersaglio del salto prima, con l'oggetto nuovo (§ 5.2); due
+> tentativi non sono arrivati all'app e, riprovati, sono riusciti. **La lettura continua oltre la svolta della finestra resta da
+> sentire**: al comando della lettura continua, dal titolo del secondo capitolo, il cursore di VoiceOver si è riportato sul primo
+> elemento del libro e per i 44 secondi seguenti non si è più spostato, senza richieste oltre la finestra (campo); che fosse
+> VO+A letto dall'alto, come dice la guida quando non si interagisce col documento, è dedotto (§ 10). ⌘J e ⌥⌘↓ non sono arrivati
+> all'app con VoiceOver acceso, o non sono stati premuti, per la seconda prova di fila (nessun comando del menu nel diario).
+> Perciò i segnali delle note **non** diventano ancora il predefinito sul Mac: la condizione del brief dell'11 novembre (i salti
+> **e** la lettura continua oltre la svolta) è mostrata a metà (§ 4.3); manca la prova 5, breve (§ 10).
 >
 > **Aggiornato il 10 novembre 2026, dopo le prove d'orecchio T1 e T3 rifatte** (giro «prove rifatte e granularità», referto
 > `~/Developer/scabopdf-gen-lab/referto/REFERTO_PROVE_RIFATTE_GRANULARITA.md`). **T1 rifatta è verde** (diario e registro di
@@ -499,9 +501,10 @@ altri elementi: l'avvio del suono, sul filo principale, la ritarda di qualche de
 VoiceOver. La scelta di accendere i segnali per impostazione predefinita sul Mac, come sull'iPad, è una decisione del
 maintainer (referto del giro); fino ad allora le note restano a voce.
 
-**Dopo la prova 4 (11 novembre 2026).** La decisione c'è (LAYER2 § 12.16), con due condizioni: che i salti funzionino e che
-la lettura continua attraversi la svolta della finestra senza salti. La prima è confermata dal diario (sei salti su sei, § 5.2),
-la seconda no (§ 10): sul Mac le note restano annunciate a voce per impostazione predefinita fino alla prova 5.
+**Dopo la prova 4 (11 novembre 2026).** La decisione c'è (LAYER2 § 12.16), con la condizione precisata nel brief dell'11
+novembre: che i salti funzionino **e** che la lettura continua attraversi la svolta della finestra senza salti (il 10 novembre
+bastavano i salti). La prima parte è confermata dal diario (i sei salti arrivati all'app, § 5.2), la seconda no (§ 10): sul Mac le
+note restano annunciate a voce per impostazione predefinita fino alla prova 5.
 
 ## 5. Domanda 4 — Rotori, azioni, tastiera
 
@@ -601,7 +604,7 @@ alla seconda; uno andava allo **stesso bersaglio del salto prima** (il caso pers
 l'oggetto nuovo ed è arrivato in tre centesimi di secondo; gli altri due subito. Due combinazioni non sono arrivate (VoiceOver
 rilegge l'elemento e ne chiede le azioni, nessuna azione arriva): riaperto il menu, il salto è arrivato tutte e due le volte.
 Nessun comando del menu «Lettura» nel diario: ⌘J e ⌥⌘↓, con VoiceOver acceso, non sono arrivati all'app (o non sono stati
-premuti); senza VoiceOver la loro via è provata da fuori con un tasto vero di XCTest (test d'interfaccia: ⌥⌘↓ al titolo seguente, e dall'11 novembre ⌘J dal capoverso alla nota e ritorno): il difetto, se c'è, non è nella via dei tasti dell'app. Da sentire nella prova 5.
+premuti); senza VoiceOver la loro via è provata da fuori con un tasto vero di XCTest (test d'interfaccia: ⌥⌘↓ al titolo seguente, e dall'11 novembre ⌘J dal capoverso alla nota e ritorno): che il difetto, se c'è, non stia nella via dei tasti dell'app è dedotto, perché il test la prova a VoiceOver spento. Da sentire nella prova 5.
 
 Le voci del menu «Lettura» dell'app portano i **nomi dei comandi da tastiera dell'iPad** — «Nota e richiamo», «Intestazione
 successiva», «Intestazione precedente» (ScaboChain `ReadingCommandsWording`, usato anche dall'iPad) — e, per la risorsa, il
@@ -880,32 +883,40 @@ Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 
 ## 10. Le prove d'orecchio
 
-> **L'11 novembre 2026** il maintainer ha fatto la prova 4 («ora mi pare che i salti funzionino bene»). Diario (campo): i salti
-> arrivano tutti (§ 5.2). Il passo 6 non ha dato la misura che cercava: arrivati al titolo del secondo capitolo per la via dei
-> titoli di VoiceOver (⌥⌘↓ non è arrivato all'app), il comando della lettura continua ha riportato il cursore di VoiceOver sul
-> primo elemento del libro (un «rientro» nel gruppo, l'unico in tre diari in cui VoiceOver non si posa dove l'app gli dice che è
-> il fuoco); da lì, per 44 secondi fino a Comando+Q, il cursore non si è più mosso e VoiceOver non ha chiesto niente oltre la
-> finestra. La guida dice che VO+A legge **dall'alto** quando non si interagisce col documento e **dal cursore in giù** quando
-> prima si interagisce (fonte: https://support.apple.com/en-au/guide/voiceover/vo2706/10/mac/27). **Che cosa sia venuto dopo il
-> titolo del terzo capitolo il diario non lo mostra**: la lettura continua non ci è arrivata (svolte attraversate: 0; elementi
-> oltre la finestra chiesti: 0). Se VoiceOver, leggendo, dica gli elementi seguenti dalla sua copia dei figli senza spostare il
-> cursore (allora dopo l'ultimo della finestra direbbe l'ultimo del libro, un salto), o se non vada oltre il primo, lo dice solo
-> l'orecchio (non verificato). Lettura del diario: `~/Developer/scabopdf-mac-lab/lettura_mac/prova4/lettura_diario/`.
+> **L'11 novembre 2026** il maintainer ha fatto la prova 4 («ora mi pare che i salti funzionino bene»). Diario (campo): i sei
+> salti arrivati all'app sono arrivati tutti (§ 5.2). Il passo 6 non ha dato la misura che cercava: arrivati al titolo del secondo
+> capitolo per la via dei titoli di VoiceOver (⌥⌘↓ non è arrivato all'app, o non è stato premuto), il comando della lettura
+> continua (VO+A, dedotto dal passo della prova) ha riportato il cursore di VoiceOver sul primo elemento del libro, in due raffiche
+> a 131,1 e 134,7 s: un «rientro» nel gruppo in cui VoiceOver non si posa dove l'app gli dice che è il fuoco, l'unico nel diario
+> della prova 4 (i diari di prima non registrano che cosa l'app rispondeva). Da lì, per 44 secondi fino a Comando+Q, il cursore
+> non si è più mosso e VoiceOver non ha chiesto niente oltre la finestra (campo). La guida dice che VO+A legge **dall'alto**
+> quando non si interagisce col documento e **dal cursore in giù** quando prima si interagisce (fonte:
+> https://support.apple.com/en-au/guide/voiceover/vo2706/10/mac/27); che il maintainer non stesse interagendo è dedotto, e anzi
+> si muoveva dentro il gruppo. **Che cosa sia venuto dopo il titolo del terzo capitolo il diario non lo mostra**: il cursore non
+> ci è arrivato (campo), e la voce nemmeno (dedotto dal registro di VoiceOver: dopo il comando ha parlato circa 18 secondi, poi
+> circa 7; dal primo elemento a dopo il titolo del terzo capitolo ci sono circa 270 parole, oltre un minuto alle velocità comuni).
+> *Non verificato:* dopo il secondo rientro ci sono circa 14 secondi di parlato mentre il primo elemento ha 12 parole, e la cornice
+> dell'elemento 1 è chiesta proprio alla fine del parlato: è compatibile con VoiceOver che legge il seguente dalla sua copia dei
+> figli senza spostare il cursore — il rischio di § 11, perché dopo l'ultimo della finestra direbbe l'ultimo del libro. Lo dice
+> solo l'orecchio. Lettura del diario: `~/Developer/scabopdf-mac-lab/lettura_mac/prova4/lettura_diario/`.
 >
-> - **Prova 5 — la lettura continua e i due comandi del menu (circa quattro minuti).** `prova.sh 5` (lo stesso script; il
->   libro sintetico, note a voce, finestra dei figli piccola; la copia dell'app è quella dell'ultimo giro, impronta in referto).
->   (1) VoiceOver sul titolo del primo capitolo; VO+Freccia destra: il capoverso col richiamo della nota 1. (2) Comando+J: la
->   nota; **controllo** VO+Freccia sinistra: il capoverso. Comando+J di nuovo: il capoverso; **controllo** VO+Freccia destra: la
->   nota; poi VO+Freccia sinistra per tornare sul capoverso. (3) Opzione+Comando+Freccia giù: il titolo del secondo capitolo;
->   **controllo** VO+Freccia destra: il capoverso che comincia «In questa pagina si parla»; poi VO+Freccia sinistra per tornare
->   sul titolo. (4) Sul titolo del secondo capitolo, VO+A e, senza toccare nulla, circa un minuto; Control per fermare.
->   *Ascoltare:* se comincia dal titolo del secondo capitolo o dal primo; che cosa viene dopo il titolo del terzo capitolo
->   (deve essere il capoverso che comincia «In questa pagina si parla»; un salto sarebbe, per esempio, il capoverso che comincia
->   «Il secondo capoverso», l'ultimo del libro); se si ferma da sola, e dove. (5) VO+Maiuscole+Freccia su: VoiceOver dice il
->   gruppo «Testo del documento»; VO+Maiuscole+Freccia giù: si entra nel testo (dove?); VO+A e circa un minuto; Control. Stesse
->   domande. (6) Comando+Q. *Da riferire:* dopo Comando+J e Opzione+Comando+Freccia giù, che cosa VoiceOver ha detto e se il
->   controllo l'ha confermato; per le due letture continue, da dove sono partite, dove si sono fermate e che cosa è venuto
->   dopo il titolo del terzo capitolo.
+> - **Prova 5 — la lettura continua e i due comandi del menu (circa cinque minuti).** `prova.sh 5` (lo stesso script; il
+>   libro sintetico, note a voce, finestra dei figli piccola; la copia dell'app è quella del giro «prova 4, segnalibri e sigle»,
+>   con l'impronta nel suo referto). (1) VoiceOver sul titolo del primo capitolo; VO+Freccia destra: il capoverso col richiamo
+>   della nota 1. (2) Comando+J: la nota; **controllo** VO+Freccia sinistra: il capoverso; poi VO+Freccia destra per tornare sulla
+>   nota. Comando+J di nuovo: il capoverso; **controllo** VO+Freccia destra: la nota; poi VO+Freccia sinistra per tornare sul
+>   capoverso. (3) Opzione+Comando+Freccia giù: il titolo del secondo capitolo; **controllo** VO+Freccia destra: il capoverso che
+>   comincia «In questa pagina si parla»; poi VO+Freccia sinistra per tornare sul titolo. (4) Sul titolo del secondo capitolo,
+>   VO+A e, senza toccare nulla, lasciar andare finché si è sentito che cosa viene dopo il titolo del terzo capitolo (se la
+>   lettura riparte dal primo capitolo, ci vuole più di un minuto); Control per fermare. *Ascoltare:* se comincia dal titolo del
+>   secondo capitolo o dal primo; che cosa viene subito dopo il primo elemento letto; che cosa viene dopo il titolo del terzo
+>   capitolo (deve essere il capoverso che comincia «In questa pagina si parla»; un salto sarebbe, per esempio, il capoverso che
+>   comincia «Il secondo capoverso», l'ultimo del libro); se si ferma da sola, e dove. (5) VO+Maiuscole+Freccia su: VoiceOver dice
+>   il gruppo «Testo del documento»; VO+Maiuscole+Freccia giù: si entra nel testo (dove?); VO+Freccia destra fino al titolo del
+>   secondo capitolo; VO+A, e come al passo 4; Control. Stesse domande. (6) Comando+Q. *Da riferire:* dopo Comando+J e
+>   Opzione+Comando+Freccia giù, che cosa VoiceOver ha detto e se il controllo l'ha confermato; per le due letture continue, da
+>   dove sono partite, che cosa è venuto dopo il primo elemento, dove si sono fermate e che cosa è venuto dopo il titolo del terzo
+>   capitolo.
 >
 > **Il 10 novembre 2026** il maintainer ha rifatto T1 e T3 sull'app curata: T1 verde, T3 con tre salti su sette persi (esiti e
 > cure in § 2.4 e § 5.2). Resta una prova sola, **breve**, sull'app di questo giro (eseguibile `ScaboMac` con impronta SHA-256 in
@@ -995,14 +1006,15 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 ## 11. Residui e cose non verificate
 
 - **Dopo la prova 4 dell'11 novembre 2026** (giro «prova 4, segnalibri e sigle»). *Fatto all'orecchio e nel diario:* i salti
-  fra nota e richiamo, dal menu delle azioni e senza, anche allo stesso bersaglio del salto prima (sei su sei, § 5.2); i passi dei
-  titoli di primo livello del rotore attraverso tre svolte della finestra (campo). *Da sentire* (prova 5, § 10): la lettura
+  fra nota e richiamo, dal menu delle azioni e senza, anche allo stesso bersaglio del salto prima (i sei arrivati all'app, § 5.2).
+  *Visto nel diario* (campo): i passi dei titoli di primo livello del rotore attraverso tre svolte della finestra. *Da sentire* (prova 5, § 10): la lettura
   continua con VO+A dal cursore oltre la svolta della finestra; ⌘J e ⌥⌘↓ con VoiceOver acceso. *Rischio dichiarato, non
   verificato:* se durante VO+A VoiceOver legge dalla sua copia dei figli senza dare il fuoco agli elementi, la finestra non si
   sposta e dopo il suo ultimo elemento verrebbe l'ultimo del libro (esposto per VO+Fine): un salto nella lettura continua, che
   nessun avviso dell'app può evitare finché VoiceOver non chiede nulla; se la prova 5 lo mostra, la cura tocca la forma della
   finestra (dove sta l'ultimo elemento del libro fra i figli, o quanti figli), da decidere col diario di quella prova.
-  *Decisione 1* (segnali delle note predefiniti sul Mac): non applicata, manca la lettura continua oltre la svolta.
+  *Decisione 1* (segnali delle note predefiniti sul Mac): non applicata; la condizione del brief dell'11 novembre chiede anche la
+  lettura continua oltre la svolta, che manca.
 - **Dopo le prove rifatte del 10 novembre 2026** (giro «prove rifatte e granularità»). *Da sentire* (prova 4, § 10): che dopo la
   cura di § 5.2 il cursore arrivi su ogni salto, anche dal menu delle azioni e anche allo stesso bersaglio di prima; che la lettura
   continua (VO+A) passi la svolta della finestra — nella T3 rifatta non è stata fatta e nella T1 il diario non mostra il

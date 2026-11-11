@@ -248,8 +248,10 @@ final class ScaboPDFUITests: XCTestCase {
     }
 
     /// ⌘J con un tasto vero (giro «prova 4, segnalibri e sigle», 2026-11-11): nel diario delle prove 3 rifatta e 4 nessun ⌘J è
-    /// arrivato all'app con VoiceOver acceso. Senza VoiceOver la scorciatoia deve arrivare: dal capoverso col richiamo alla nota e
-    /// ritorno, come la voce «Nota e richiamo» del menu. Se questo test passa, la via dei tasti dell'app funziona.
+    /// arrivato all'app con VoiceOver acceso. Senza VoiceOver la scorciatoia deve arrivare: dal capoverso col richiamo della nota 1
+    /// alla sua nota e ritorno, come la voce «Nota e richiamo» del menu. Gli elementi si riconoscono dall'identificatore (titolo
+    /// 0, capoverso col richiamo 1, nota 2 nel libro sintetico), non dalle parole: così il test non dipende dall'annuncio delle
+    /// note a voce. Se passa, la via dei tasti dell'app funziona a VoiceOver spento.
     func test_tastiera_notaERichiamo() throws {
         let app = app(["--libreria-di-prova", "--libro-di-prova"])
         app.launch()
@@ -260,7 +262,7 @@ final class ScaboPDFUITests: XCTestCase {
         XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
         func colFuoco() -> String {
             let e = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
-            return e.waitForExistence(timeout: 5) ? (e.value as? String ?? "") : ""
+            return e.waitForExistence(timeout: 5) ? e.identifier : ""
         }
         // Dal titolo del primo capitolo al capoverso col richiamo della nota 1, poi ⌘J: la nota; ⌘J di nuovo: il capoverso.
         lettura.typeKey(.downArrow, modifierFlags: [])
@@ -269,11 +271,10 @@ final class ScaboPDFUITests: XCTestCase {
         let nota = colFuoco()
         lettura.typeKey("j", modifierFlags: [.command])
         let ritorno = colFuoco()
-        scrivi("tastiera_nota", ["capoverso": String(capoverso.prefix(12)), "nota": String(nota.prefix(12)),
-                                 "ritorno": String(ritorno.prefix(12))])
-        XCTAssertFalse(capoverso.isEmpty || capoverso.hasPrefix("Nota"), "dopo Freccia giù il fuoco è sul capoverso")
-        XCTAssertTrue(nota.hasPrefix("Nota"), "⌘J porta alla nota: «\(nota.prefix(20))»")
-        XCTAssertEqual(ritorno, capoverso, "⌘J di nuovo riporta al capoverso col richiamo")
+        scrivi("tastiera_nota", ["capoverso": capoverso, "nota": nota, "ritorno": ritorno])
+        XCTAssertEqual(capoverso, "lettura.elemento.1", "dopo Freccia giù il fuoco è sul capoverso col richiamo")
+        XCTAssertEqual(nota, "lettura.elemento.2", "⌘J porta alla nota di quel richiamo")
+        XCTAssertEqual(ritorno, "lettura.elemento.1", "⌘J di nuovo riporta al capoverso col richiamo")
     }
 
     /// La misura da fuori su un volume vero (a richiesta: SCABOMAC_LIBRO e SCABOMAC_DESCRIZIONE, percorsi nel contenitore).

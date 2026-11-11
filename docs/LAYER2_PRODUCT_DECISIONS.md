@@ -1525,15 +1525,19 @@ rielaborazione è ora una sequenza sola della libreria condivisa, usata dai due;
 altre due domande della tappa A (il rapporto fra importazione e modelli; un controllore condiviso per importazione e apertura)
 restano aperte. Dettagli e misure: `DISEGNO_LETTURA_MAC.md` § 6.7 e § 11.
 
-**La prova 4 (11 novembre 2026, giro «prova 4, segnalibri e sigle»).** Il maintainer l'ha fatta sull'app curata il 10 novembre:
-«ora mi pare che i salti funzionino bene», e il diario lo conferma — sei salti fra nota e richiamo arrivati all'app, sei volte
-il cursore di VoiceOver sul bersaglio, nessuno perso, anche quello allo stesso bersaglio del salto prima. **La decisione 1 resta
-non applicata**, perché la sua seconda condizione non è ancora mostrata: al comando della lettura continua VoiceOver si è
-riportato sul primo elemento del libro (la guida dice che VO+A legge dall'alto se non si interagisce col documento) e poi non
-ha più spostato il cursore, così la lettura non è arrivata alla svolta della finestra; e ⌘J e ⌥⌘↓ non sono arrivati all'app con
-VoiceOver acceso. Sul Mac le note restano **annunciate a voce per impostazione predefinita**; i segnali diventano il predefinito,
-con «Annuncia le note a voce» come scelta, quando la prova 5 (`DISEGNO_LETTURA_MAC.md` § 10) farà sentire la lettura continua
-oltre la svolta senza salti.
+**La prova 4 (11 novembre 2026, giro «prova 4, segnalibri e sigle»).** Il maintainer l'ha fatta l'11 novembre sull'app curata il
+giorno prima: «ora mi pare che i salti funzionino bene», e il diario lo conferma per i salti arrivati all'app — sei, e sei volte il
+cursore di VoiceOver sul bersaglio, nessuno perso, anche quello allo stesso bersaglio del salto prima (due tentativi non sono
+arrivati all'app e, riprovati, sono riusciti). **La condizione della decisione 1, precisata nel brief di questo giro:** i segnali
+delle note diventano il predefinito sul Mac se il diario conferma che i salti funzionano **e** che la lettura continua attraversa
+la svolta della finestra senza salti (la seconda parte è un'aggiunta del brief dell'11 novembre; il 10 novembre la decisione
+chiedeva i soli salti, con la prova 2 già verde). **Non applicata**: la prima parte c'è, la seconda il diario non la mostra. Al
+comando della lettura continua il cursore di VoiceOver si è riportato sul primo elemento del libro e poi non si è più spostato
+(campo; che il comando fosse VO+A e che VoiceOver leggesse dall'alto, come la guida dice di VO+A quando non si interagisce col
+documento, è dedotto), e dalla durata del parlato la lettura non poteva arrivare alla svolta (dedotto). Sul Mac le note restano
+**annunciate a voce per impostazione predefinita** fino alla prova 5 (`DISEGNO_LETTURA_MAC.md` § 10), che fa sentire la lettura
+continua oltre la svolta. Da sentire nella stessa prova, ma non condizione della decisione: ⌘J e ⌥⌘↓ con VoiceOver acceso, che
+non sono arrivati all'app (o non sono stati premuti).
 
 ---
 
