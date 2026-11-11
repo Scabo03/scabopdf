@@ -829,9 +829,11 @@ public func sentenceBoundaryOffsets(_ text: String) -> [Int] {
             if afterClosings < count, chars[afterClosings].isWhitespace {
                 var nextStart = afterClosings
                 while nextStart < count, chars[nextStart].isWhitespace { nextStart += 1 }
-                if nextStart < count, isSentenceStart(chars[nextStart]) {
+                if nextStart < count, startsSentence(chars, nextStart, after: i) {
                     let isBoundary = (ch == ".")
-                        ? !isAbbreviationBefore(chars, periodIndex: i) && !targetedSplitDateAt(chars, i, nextStart) : true
+                        ? !isAbbreviationBefore(chars, periodIndex: i) && !targetedSplitDateAt(chars, i, nextStart)
+                            && !citationAbbreviationContinues(chars, i, nextStart) && !initialsBeforeAuthorSurname(chars, i, nextStart)
+                        : true
                     if isBoundary {
                         bounds.append(afterClosings)
                         i = nextStart
@@ -924,9 +926,11 @@ public func splitIntoSentences(_ text: String) -> [String] {
             if afterClosings < count, chars[afterClosings].isWhitespace {
                 var nextStart = afterClosings
                 while nextStart < count, chars[nextStart].isWhitespace { nextStart += 1 }
-                if nextStart < count, isSentenceStart(chars[nextStart]) {
+                if nextStart < count, startsSentence(chars, nextStart, after: i) {
                     let isBoundary = (ch == ".")
-                        ? !isAbbreviationBefore(chars, periodIndex: i) && !targetedSplitDateAt(chars, i, nextStart) : true
+                        ? !isAbbreviationBefore(chars, periodIndex: i) && !targetedSplitDateAt(chars, i, nextStart)
+                            && !citationAbbreviationContinues(chars, i, nextStart) && !initialsBeforeAuthorSurname(chars, i, nextStart)
+                        : true
                     if isBoundary {
                         let sentence = String(chars[start..<afterClosings])
                             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -953,6 +957,175 @@ public func splitIntoSentences(_ text: String) -> [String] {
 /// contro i falsi confini, es. continuazioni di abbreviazione).
 func isSentenceStart(_ c: Character) -> Bool {
     c.isUppercase || c.isNumber || OPENING_CHARS.contains(c)
+}
+
+// ── Le sigle col punto (giro «prova 4, segnalibri e sigle», 2026-11-11; LAYER2 § 7.6) ──────────────────────────────────────
+//
+// Il riconoscimento delle frasi tagliava dopo forme che non chiudono la frase: blocchi del corpo e pezzi di nota cominciavano a
+// metà di una frase (le citazioni di sentenze e di norme, le iniziali dei nomi). Misurato sui 52 volumi del banco e sui tre
+// documenti di studio, alle due generazioni (laboratorio `segnalibri_sigle/misure/`), tre FORME, ciascuna giustificata dai
+// conteggi di ciò che segue il punto (attacchi di frase tipici contro continuazioni) e nessuna presa dalle parole di un libro:
+//   1. dopo un terminatore, una PARENTESI d'apertura seguita da una minuscola non apre una frase («(art. 5).», «(v. Cass. …),»,
+//      «(estensione …).», «(che …)»: riferimenti, fonti, esempi), salvo la lettera o il richiamo d'elenco fra parentesi («(a)»,
+//      «(iv)», «(1a)»), che apre una voce, e salvo la parentesi che, chiusa, è seguita da una maiuscola o da una cifra: lì può
+//      essere l'etichetta della frase che segue (riga a sé sulla pagina) o la fonte di quella prima, e resta un inizio; VIRGOLETTE
+//      seguite da una minuscola continuano la frase solo dopo il punto di una sigla, di un numero o dei puntini («il P.M.
+//      «può…»», «1. «le sentenze…»»): dopo una parola piena o dopo «?» e «!» spesso aprono una frase vera (un termine citato
+//      che le fa da soggetto), e restano un inizio;
+//   2. una sigla di INIZIALI («Q.Z.», «A.W.B.») seguita da un cognome in MAIUSCOLO e da una virgola («ZORBELLINI, …», «DE
+//      ZORBELLINI, …», nomi inventati) è il nome di un autore in una citazione: il punto non chiude la frase;
+//   3. le abbreviazioni delle citazioni di atti e bibliografiche di `CITATION_ABBREVIATIONS`, fuori dalla lista generale, dopo
+//      cui non si è mai misurato un attacco di frase; salvo quando il testo riprende con una voce numerata fra parentesi e una
+//      maiuscola («(2) V. …»: la nota seguente di un codice annotato), che resta un confine.
+// Scartate dalla misura: le sigle dei codici e delle autorità che chiudono spesso la frase («t.u.f.», «c.p.a.», «p.a.», «a.C.»:
+// dopo di loro un attacco di frase vero in un caso su tre o quattro), le cifre dopo le iniziali (un rimando di nota seguito dal
+// numero di un paragrafo), i nomi abbreviati dei giuristi romani (parole di un solo genere di libro). La lista
+// `SENTENCE_ABBREVIATIONS` resta com'era: la usano anche i titoli, che non cambiano.
+
+/// Abbreviazioni delle citazioni (forma minuscola, punti interni conservati, senza il punto finale) dopo cui il punto non chiude
+/// la frase, fuori da `SENTENCE_ABBREVIATIONS` perché valgono solo per il riconoscimento delle frasi (corpo e note), non per i
+/// titoli. Fra parentesi: confini misurati dopo la forma alla build 65 (banco e documenti di studio, iOS 27), quanti seguiti da un
+/// attacco di frase tipico. Tutte zero.
+let CITATION_ABBREVIATIONS: Set<String> = [
+    // atti
+    "lgs",          // «d. lgs.» col numero o la data (426, 0)
+    "d.lg",         // «d.lg.» (88, 0)
+    "d.lgs.lt",     // del luogotenente (50, 0)
+    "d.p.c.m",      // (39, 0)
+    "r.d.lgs",      // (6, 0)
+    "c.p.s", "dlgscps", // del Capo provvisorio, anche attaccata al «d.lgs.» (5 e 9, 0); la seconda in sole lettere, come «ccdd»
+    // disposizioni e codici
+    "trans",        // «disp. trans.» (98, 0)
+    "prel",         // «disp. prel.» (47, 0)
+    "coord",        // «disp. coord.», testo coordinato (98, 0)
+    "nav",          // «cod. nav.», «c. nav.» (13, 0)
+    "provv",        // provvedimento (7, 0)
+    "delib",        // delibera (5, 0)
+    "dec",          // decisione («Dec. quadro») (9, 0)
+    "mod",          // modificato, modulo (11, 0)
+    "leg",          // «med. leg.», «d. leg.» (9, 0)
+    // bibliografia
+    "enc",          // «Enc. giur.», «Enc. dir.» (31, 0)
+    "comm",         // commentario, «Giur. comm.» (9, 0)
+    "fasc",         // fascicolo (6, 0)
+    "coll",         // collana, collezione (17, 0)
+    "sentt",        // sentenze (15, 0)
+    "num",          // numero (6, 0)
+    "vv",           // versi (11, 0)
+    "fr",           // frammento (19, 0)
+    "eds",          // «(eds.)» (14, 0)
+    "al",           // «et al.» (10, 0)
+    "id",           // «Id.» (8, 0)
+    "aa",           // «AA. VV.» (8, 0)
+    "vs",           // versus (24, 0)
+    "cc.dd", "ccdd", // cosiddetti, plurale di «c.d.» (4, 0)
+]
+
+/// Un inizio di frase ad alta confidenza in `at` (dopo gli spazi che seguono il terminatore in `terminator`): `isSentenceStart`,
+/// ma con la forma 1 della testata. Una parentesi d'apertura seguita da una minuscola non apre una frase, salvo la voce
+/// d'elenco fra parentesi (da una a quattro minuscole o cifre e la chiusa: «(a)», «(iv)», «(1a)»); virgolette seguite da una
+/// minuscola non aprono una frase solo dopo il punto di una sigla, di un numero o dei puntini.
+func startsSentence(_ chars: [Character], _ at: Int, after terminator: Int) -> Bool {
+    let c = chars[at]
+    guard isSentenceStart(c) else { return false }
+    guard OPENING_CHARS.contains(c) else { return true }
+    var k = at
+    while k < chars.count, OPENING_CHARS.contains(chars[k]) || chars[k].isWhitespace { k += 1 }
+    guard k < chars.count, chars[k].isLetter, chars[k].isLowercase else { return true }
+    if c == "(" || c == "[" {
+        var e = k
+        while e < chars.count, e - k < 5, (chars[e].isLetter && chars[e].isLowercase) || (chars[e].isASCII && chars[e].isNumber) {
+            e += 1
+        }
+        if e - k <= 4, e < chars.count, chars[e] == ")" || chars[e] == "]" { return true }
+        // chiusa e seguita da una maiuscola o da una cifra (o non chiusa entro 300 caratteri): ambiguo, resta un inizio
+        guard let close = matchingClose(chars, from: at, limit: 300) else { return true }
+        var j = close + 1
+        while j < chars.count, chars[j].isWhitespace { j += 1 }
+        return j >= chars.count || chars[j].isUppercase || chars[j].isNumber
+    }
+    return !(chars[terminator] == "." && periodClosesSiglaNumberOrDots(chars, terminator))
+}
+
+/// La parentesi (tonda o quadra) che chiude quella aperta in `from`, entro `limit` caratteri; `nil` se non c'è.
+func matchingClose(_ chars: [Character], from: Int, limit: Int) -> Int? {
+    let open = chars[from], close: Character = open == "[" ? "]" : ")"
+    var depth = 0, k = from
+    while k < chars.count, k - from <= limit {
+        if chars[k] == open { depth += 1 } else if chars[k] == close { depth -= 1; if depth == 0 { return k } }
+        k += 1
+    }
+    return nil
+}
+
+/// Vero se il punto in `periodIndex` chiude una sigla (lettere separate da punti, un'iniziale), un numero o dei puntini: non
+/// una parola piena e non una chiusura di virgolette o di parentesi.
+func periodClosesSiglaNumberOrDots(_ chars: [Character], _ periodIndex: Int) -> Bool {
+    guard periodIndex > 0 else { return false }
+    let before = chars[periodIndex - 1]
+    if before == "." { return true }                       // puntini
+    if before.isNumber { return true }                     // «1.», «3.»
+    guard before.isLetter else { return false }            // chiusura di virgolette o parentesi, altro
+    let t = dottedToken(chars, periodIndex)
+    return t.letters.count == 1 || t.dotted.contains(".")  // un'iniziale, una sigla puntata
+}
+
+/// Il token (corsa massima di lettere e punti) che finisce al punto `periodIndex`, in minuscolo, col punto finale tolto, e le
+/// sue sole lettere.
+private func dottedToken(_ chars: [Character], _ periodIndex: Int) -> (dotted: String, letters: String, raw: ArraySlice<Character>) {
+    var begin = periodIndex - 1
+    while begin >= 0, chars[begin].isLetter || chars[begin] == "." { begin -= 1 }
+    let raw = chars[(begin + 1)...periodIndex]
+    let letters = String(raw.filter { $0.isLetter }).lowercased()
+    var dotted = String(raw).lowercased()
+    if dotted.hasSuffix(".") { dotted.removeLast() }
+    return (dotted, letters, raw)
+}
+
+/// Vero se il punto in `periodIndex` chiude un'abbreviazione di `CITATION_ABBREVIATIONS` (forma 3 della testata) e il testo non
+/// riprende con una voce numerata fra parentesi seguita da una maiuscola.
+func citationAbbreviationContinues(_ chars: [Character], _ periodIndex: Int, _ nextStart: Int) -> Bool {
+    let t = dottedToken(chars, periodIndex)
+    guard !t.letters.isEmpty, CITATION_ABBREVIATIONS.contains(t.dotted) || CITATION_ABBREVIATIONS.contains(t.letters) else { return false }
+    // «(2) V. …»: una voce numerata comincia qui.
+    var k = nextStart
+    if k < chars.count, chars[k] == "(" {
+        k += 1
+        let d0 = k
+        while k < chars.count, chars[k].isASCII, chars[k].isNumber { k += 1 }
+        if k > d0, k - d0 <= 3, k < chars.count, chars[k] == ")" {
+            k += 1
+            if k < chars.count, chars[k].isWhitespace {
+                while k < chars.count, chars[k].isWhitespace { k += 1 }
+                if k < chars.count, chars[k].isUppercase { return false }
+            }
+        }
+    }
+    return true
+}
+
+/// Vero se il punto in `periodIndex` chiude una sigla di INIZIALI (due o più maiuscole, ciascuna col suo punto) e il testo
+/// riprende con un cognome in maiuscolo — una o più parole di sole maiuscole, al più 40 caratteri — subito seguito da una
+/// virgola (forma 2 della testata): il nome di un autore in una citazione.
+func initialsBeforeAuthorSurname(_ chars: [Character], _ periodIndex: Int, _ nextStart: Int) -> Bool {
+    let t = dottedToken(chars, periodIndex)
+    guard t.letters.count >= 2, isInitialsSigla(Array(t.raw)) else { return false }
+    var k = nextStart, longest = 0, run = 0
+    while k < chars.count, k - nextStart <= 40 {
+        let c = chars[k]
+        if c.isLetter {
+            guard c.isUppercase else { return false }
+            run += 1; longest = max(longest, run)
+        } else if c == "'" || c == "\u{2019}" || c == " " || c == "-" {
+            run = 0
+        } else if c == "," {
+            return longest >= 2 && chars[k - 1] != " "
+        } else {
+            return false
+        }
+        k += 1
+    }
+    return false
 }
 
 /// Vero se il punto in `periodIndex` segue un'abbreviazione nota o una singola

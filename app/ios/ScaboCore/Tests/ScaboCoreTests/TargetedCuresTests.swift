@@ -398,7 +398,9 @@ final class TargetedCuresTests: XCTestCase {
     func test_citationAbbreviationsAndSplitDates_onlyInsideTheTargetedScope() {
         let text = "Vale il D. lgs. 123/2099 per la prova. Cfr. la pronuncia inventata del 7.3. 2041, n. 4321. Fine."
         let plain = splitIntoSentences(text)
-        XCTAssertEqual(plain.count, 5, "il difetto: la citazione e la data si spezzano")
+        // Il difetto: la data si spezza. La citazione «d. lgs.» non più: dal giro «prova 4, segnalibri e sigle» «lgs.» è fra le
+        // abbreviazioni delle citazioni di ogni documento (`CITATION_ABBREVIATIONS`).
+        XCTAssertEqual(plain.count, 4, "il difetto: la data si spezza")
         let cured = TargetedSentenceRules.with([.citationAbbreviations]) { splitIntoSentences(text) }
         XCTAssertEqual(cured, ["Vale il D. lgs. 123/2099 per la prova.",
                                "Cfr. la pronuncia inventata del 7.3. 2041, n. 4321.", "Fine."])

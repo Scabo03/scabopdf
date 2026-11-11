@@ -112,6 +112,22 @@ func noteTokenIsAbbreviation(_ token: ArraySlice<Character>) -> Bool {
     return !extra.isEmpty && (extra.contains(dotted) || extra.contains(plain))
 }
 
+/// Vero se il token (come in `noteTokenIsAbbreviation`) è un'abbreviazione delle citazioni (`CITATION_ABBREVIATIONS`,
+/// Granularity.swift): un pezzo di nota non si taglia subito dopo («d.lg. | 27 gennaio»). Il confine di frase la guarda a parte,
+/// con la sua eccezione per la voce numerata (`citationAbbreviationContinues`).
+func noteTokenIsCitationAbbreviation(_ token: ArraySlice<Character>) -> Bool {
+    var t = Array(token)
+    while let last = t.last, CLOSING_CHARS.contains(last) { t.removeLast() }
+    while let first = t.first, OPENING_CHARS.contains(first) { t.removeFirst() }
+    guard t.last == ".", t.contains(where: { $0.isLetter }) else { return false }
+    // la corsa di lettere e punti che finisce al punto, come nel riconoscimento delle frasi
+    var b = t.count - 2
+    while b >= 0, t[b].isLetter || t[b] == "." { b -= 1 }
+    let run = t[(b + 1)...]
+    let dotted = String(run.dropLast()).lowercased(), plain = String(run.filter { $0.isLetter }).lowercased()
+    return CITATION_ABBREVIATIONS.contains(dotted) || CITATION_ABBREVIATIONS.contains(plain)
+}
+
 /// Sigla di iniziali multiple: due o più lettere MAIUSCOLE singole, ciascuna seguita dal punto («X.Y.», «X.Y.Z.»).
 func isInitialsSigla(_ t: [Character]) -> Bool {
     guard t.count >= 4, t.count % 2 == 0 else { return false }
@@ -144,14 +160,14 @@ func noteSentenceRanges(_ chars: [Character]) -> [Range<Int>] {
             if after < count, chars[after].isWhitespace {
                 var next = after
                 while next < count, chars[next].isWhitespace { next += 1 }
-                if next < count, isSentenceStart(chars[next]) {
+                if next < count, startsSentence(chars, next, after: i) {
                     var isBoundary = true
                     if ch == "." {
                         // il token è la corsa massima di lettere e punti che termina al punto, come nel corpo
                         var begin = i - 1
                         while begin >= 0, chars[begin].isLetter || chars[begin] == "." { begin -= 1 }
                         isBoundary = !noteTokenIsAbbreviation(chars[(begin + 1)...i])
-                            && !targetedSplitDateAt(chars, i, next)
+                            && !targetedSplitDateAt(chars, i, next) && !citationAbbreviationContinues(chars, i, next)
                     }
                     if isBoundary {
                         push(start, after)
@@ -207,7 +223,7 @@ private func cutLongRange(_ chars: [Character], _ range: Range<Int>, target: Int
             var tokenStart = k - 1
             while tokenStart > start, !chars[tokenStart - 1].isWhitespace { tokenStart -= 1 }
             let length = k - start
-            if !noteTokenIsAbbreviation(chars[tokenStart..<k]) {
+            if !noteTokenIsAbbreviation(chars[tokenStart..<k]) && !noteTokenIsCitationAbbreviation(chars[tokenStart..<k]) {
                 let last = chars[k - 1]
                 var grade = (last == ";" || last == ":") ? 1 : (last == "," ? 2 : 3)
                 // i due punti dell'etichetta che, dentro una parentesi, introduce un elenco

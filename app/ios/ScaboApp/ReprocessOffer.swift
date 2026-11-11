@@ -35,7 +35,8 @@ enum ReprocessOffer {
     /// catena condivisa (`TargetedCures`): solo i libri la cui impronta è nel registro le ricevono.
     /// Dalla cura 64 (giro «rifiniture e cure per capacità», 2026-11-07) una cura della catena va a TUTTI E SOLI i libri la
     /// cui lettura cambia, per quanto si sa senza rielaborarli: i libri misurati al banco che la cura lascia identici
-    /// (`ProcessingChain.booksUnchangedByCure`) non la ricevono; ogni altro libro sì.
+    /// (`ProcessingChain.booksUnchangedByCure`) non la ricevono; ogni altro libro sì. Dalla cura 66 (giro «prova 4, segnalibri e
+    /// sigle», 2026-11-11) anche i testi normativi seguono questa regola (`ProcessingChain.aknActsUnchangedByCure`).
     static var policy: ReprocessingPolicy {
         let latest = visualResourcesAvailable ? ProcessingChain.cureLevel : 50
         return ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: latest,
@@ -43,7 +44,9 @@ enum ReprocessOffer {
                                   latestCureBuildForAknActs: latestCureForAknActs,
                                   targetedCureBuilds: TargetedCures.cureBuildByFingerprint,
                                   cureBuilds: cures.map { $0.build },
-                                  unchangedByCure: ProcessingChain.booksUnchangedByCure)
+                                  unchangedByCure: ProcessingChain.booksUnchangedByCure,
+                                  aknCureBuilds: aknCures.map { $0.build },
+                                  unchangedAknActsByCure: ProcessingChain.aknActsUnchangedByCure)
     }
 
     /// L'ultima cura da offrire a un testo normativo già importato (decisione 1 del maintainer, 2026-10-17): la più recente
@@ -109,12 +112,17 @@ enum ReprocessOffer {
             + "in una colonna a parte si leggono intere e nel loro ordine; alcune carte e figure impaginate allo stesso modo "
             + "su più pagine sono annunciate come risorse visive; con iOS 26.5 alcune parole spezzate in due da un trattino "
             + "invisibile si leggono intere"),
+        (66, "il testo non si interrompe più dopo le abbreviazioni delle citazioni, come «disp. trans.» o «et al.», né dopo le "
+            + "iniziali di un nome seguite dal cognome, né davanti a una parentesi o a una citazione che continuano la frase; "
+            + "alcune note brevi si leggono alla fine vera della frase"),
     ]
 
     /// Le cure che cambiano la lettura dei testi normativi, in parole semplici (la parte che li riguarda).
     static let aknCures: [(build: Int, text: String)] = [
         (56, "le note lunghe sono divise in pezzi più naturali, di solito a fine frase"),
         (57, "nelle note lunghe che elencano leggi o articoli, l'etichetta dell'elenco non resta più da sola alla fine di un pezzo"),
+        (66, "nelle note lunghe i pezzi non si interrompono più dopo l'abbreviazione di una citazione, né fra il numero di un "
+            + "comma e la sua indicazione fra parentesi, come «(abrogato)»"),
     ]
 
     private static var service: LibraryService { .shared }
@@ -160,7 +168,10 @@ enum ReprocessOffer {
         let since = doc.processedAppBuild.flatMap { Int($0) } ?? 0
         // Un testo normativo riceve solo le cure della sua catena, dette per lui.
         if doc.sourceKind == "akn" {
-            let list = aknCures.filter { $0.build > since && $0.build <= (latestCureForAknActs ?? 0) }.map { $0.text }
+            // Una cura misurata come cura che lascia identico questo atto non si promette (cura 66 in poi).
+            let list = aknCures.filter {
+                $0.build > since && $0.build <= (latestCureForAknActs ?? 0) && !policy.aknCureLeavesUnchanged($0.build, doc)
+            }.map { $0.text }
             guard !list.isEmpty else { return "" }
             // «di questo tipo» vale per ogni elenco: le note lunghe (56), le note lunghe con un elenco di leggi (57).
             return "Da quando questo testo normativo è stato importato, l'app ha imparato a leggere meglio i testi normativi: "

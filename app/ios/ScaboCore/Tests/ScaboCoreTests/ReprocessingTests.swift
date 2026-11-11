@@ -281,6 +281,42 @@ final class ReprocessingTests: XCTestCase {
                                                     currentSystemVersion: "iPadOS 27.0.1"), "nessuna cura in sospeso")
     }
 
+    /// Giro «prova 4, segnalibri e sigle» (2026-11-11): dalla cura 66 anche ai testi normativi l'offerta arriva a TUTTI E SOLI
+    /// quelli la cui lettura cambia. Un atto misurato che la cura lascia identico non la riceve (senza generazione: la sua
+    /// lettura non dipende dal lettore di sistema); uno sconosciuto, uno senza impronta, uno a cui manca anche una cura più
+    /// vecchia sì.
+    func test_akn_cure66_offeredToAllAndOnlyTheActsItChanges() {
+        let same = String(repeating: "a", count: 64), changed = String(repeating: "d", count: 64)
+        let p = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 66, latestCureBuildForAknActs: 66,
+                                   aknCureBuilds: [56, 57, 66], unchangedAknActsByCure: [66: [same]])
+        func act(_ sha: String?, _ build: String?, system: String = "iPadOS 27.0.1") -> ArchivedDocument {
+            ArchivedDocument(id: "a", title: "t", sourceFileName: "t.xml", importedAt: Date(), sourcePageCount: 0,
+                             sourceKind: "akn", processedSystemVersion: system, processedAppBuild: build, sourceSha256: sha)
+        }
+        func reason(_ d: ArchivedDocument, now: String = "iPadOS 27.0.1") -> ReprocessingReason? {
+            p.reason(for: d, currentSystemVersion: now, currentAppBuild: "66")
+        }
+        XCTAssertNil(reason(act(same, "57")), "misurato identico: nessuna offerta")
+        XCTAssertNil(reason(act(same, "57"), now: "iPadOS 26.5"), "su ogni generazione")
+        XCTAssertNil(reason(act(same, "64", system: "iPadOS 26.5")), "un aggiornamento del sistema non conta per gli atti")
+        XCTAssertEqual(reason(act(changed, "57")), .cure)
+        XCTAssertEqual(reason(act(String(repeating: "e", count: 64), "57")), .cure, "sconosciuto: senza rielaborare non si sa")
+        XCTAssertEqual(reason(act(nil, "57")), .cure)
+        XCTAssertEqual(reason(act(same, "56")), .cure, "gli manca anche la 57, non misurata per lui")
+        XCTAssertEqual(reason(act(same, nil)), .cure)
+        XCTAssertNil(reason(act(changed, "66")), "elaborato con la 66")
+        XCTAssertTrue(p.aknCureLeavesUnchanged(66, act(same, "57")))
+        XCTAssertFalse(p.aknCureLeavesUnchanged(57, act(same, "56")))
+        XCTAssertFalse(p.pendingAknCuresLeaveUnchanged(act(same, "66"), since: 66), "nessuna cura in sospeso")
+        // Senza le misure (o senza l'elenco delle cure degli atti) la regola resta quella di prima: si offre.
+        let before = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 66, latestCureBuildForAknActs: 66)
+        XCTAssertEqual(before.reason(for: act(same, "57"), currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "66"), .cure)
+        // Le misure dei testi normativi non valgono per i PDF con la stessa impronta, né viceversa.
+        let pdf = ArchivedDocument(id: "p", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
+                                   processedSystemVersion: "iPadOS 27.0.1", processedAppBuild: "64", sourceSha256: same)
+        XCTAssertEqual(p.reason(for: pdf, currentSystemVersion: "iPadOS 27.0.1", currentAppBuild: "66"), .cure)
+    }
+
     func test_capabilityCure_withoutMeasurements_behavesAsBefore() {
         let before = ReprocessingPolicy(validatedSystemMajors: [26, 27], latestCureBuild: 64)
         XCTAssertEqual(before.reason(for: measuredDoc(sha: String(repeating: "b", count: 64), build: "63"),

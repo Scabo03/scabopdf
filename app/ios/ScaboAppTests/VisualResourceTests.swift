@@ -373,16 +373,20 @@ final class VisualResourceTests: XCTestCase {
                                                   currentAppBuild: String(b + 1)))
     }
 
-    /// Cura per capacità della build 64 (giro «rifiniture e cure per capacità», 2026-11-07): l'offerta va a tutti e soli i
-    /// libri la cui lettura cambia, per quanto si sa senza rielaborarli. Un libro misurato al banco che la cura lascia
-    /// identico non la riceve; un libro sconosciuto sì, con la frase della cura; le letture del Mac la ricevono dal Mac.
+    /// Cure misurate della build 64 (giro «rifiniture e cure per capacità», 2026-11-07) e della build 66 (giro «prova 4,
+    /// segnalibri e sigle», 2026-11-11): l'offerta va a tutti e soli i libri la cui lettura cambia, per quanto si sa senza
+    /// rielaborarli. Un libro misurato al banco che le cure lasciano identico non la riceve; un libro che solo una delle due
+    /// cambia la riceve con la frase di quella sola; un libro sconosciuto sì, con le frasi; le letture del Mac la ricevono dal Mac.
     func test_offer_capabilityCure_reachesAllAndOnlyTheBooksItChanges() {
         guard ReprocessOffer.visualResourcesAvailable else { return }
-        XCTAssertEqual(ProcessingChain.cureLevel, 64)
-        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.contains(64))
+        XCTAssertEqual(ProcessingChain.cureLevel, 66)
+        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.isSuperset(of: [64, 66]))
         guard let major = ReprocessingPolicy.major(of: SystemGeneration.current),
-              let unchanged = ProcessingChain.booksUnchangedByCure[64]?[major]?.sorted().first else {
-            return XCTFail("nessuna misura della cura 64 per questa generazione")
+              let by64 = ProcessingChain.booksUnchangedByCure[64]?[major],
+              let by66 = ProcessingChain.booksUnchangedByCure[66]?[major],
+              let unchanged = by64.intersection(by66).sorted().first,
+              let only64 = by64.subtracting(by66).sorted().first else {
+            return XCTFail("nessuna misura delle cure 64 e 66 per questa generazione")
         }
         func pdf(_ sha: String?, build: String, origin: String? = nil) -> ArchivedDocument {
             ArchivedDocument(id: "c", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
@@ -390,20 +394,30 @@ final class VisualResourceTests: XCTestCase {
                              readingOrigin: origin)
         }
         func reason(_ d: ArchivedDocument) -> ReprocessingReason? {
-            ReprocessOffer.policy.reason(for: d, currentSystemVersion: SystemGeneration.current, currentAppBuild: "64")
+            ReprocessOffer.policy.reason(for: d, currentSystemVersion: SystemGeneration.current, currentAppBuild: "66")
         }
-        XCTAssertNil(reason(pdf(unchanged, build: "63")), "misurato identico: nessuna offerta")
+        XCTAssertNil(reason(pdf(unchanged, build: "63")), "misurato identico per la 64 e la 66: nessuna offerta")
         XCTAssertNil(reason(pdf(unchanged, build: "58")))
+        XCTAssertNil(reason(pdf(unchanged, build: "64")))
         let unknown = pdf(String(repeating: "f", count: 64), build: "63")
         XCTAssertEqual(reason(unknown), .cure, "sconosciuto: l'offerta c'è")
         let cure64 = ReprocessOffer.cures.first { $0.build == 64 }?.text ?? ""
-        XCTAssertFalse(cure64.isEmpty)
-        XCTAssertTrue(ReprocessOffer.whatChanges(unknown, reason: .cure).contains(cure64))
-        // Gli manca una cura più vecchia: l'offerta c'è, e la frase non promette la 64 che non lo cambia.
+        let cure66 = ReprocessOffer.cures.first { $0.build == 66 }?.text ?? ""
+        XCTAssertFalse(cure64.isEmpty || cure66.isEmpty)
+        let unknownText = ReprocessOffer.whatChanges(unknown, reason: .cure)
+        XCTAssertTrue(unknownText.contains(cure64) && unknownText.contains(cure66), unknownText)
+        // Identico per la 64 ma cambiato dalla 66: l'offerta c'è, con la sola frase della 66.
+        let changedBy66 = pdf(only64, build: "63")
+        XCTAssertEqual(reason(changedBy66), .cure)
+        let text66 = ReprocessOffer.whatChanges(changedBy66, reason: .cure)
+        XCTAssertTrue(text66.contains(cure66) && !text66.contains(cure64), text66)
+        XCTAssertEqual(reason(pdf(only64, build: "64")), .cure)
+        // Gli manca una cura più vecchia: l'offerta c'è, e la frase non promette la 64 e la 66 che non lo cambiano.
         let older = pdf(unchanged, build: "57")
         XCTAssertEqual(reason(older), .cure)
-        XCTAssertFalse(ReprocessOffer.whatChanges(older, reason: .cure).contains(cure64))
-        // Lettura arrivata dal Mac: la cura 64 arriva dal Mac con una lettura nuova.
+        let olderText = ReprocessOffer.whatChanges(older, reason: .cure)
+        XCTAssertFalse(olderText.contains(cure64) || olderText.contains(cure66), olderText)
+        // Lettura arrivata dal Mac: le cure 64 e 66 arrivano dal Mac con una lettura nuova.
         XCTAssertNil(reason(pdf(String(repeating: "f", count: 64), build: "58", origin: ReadingOrigin.mac)))
     }
 
@@ -422,9 +436,10 @@ final class VisualResourceTests: XCTestCase {
         let text = ReprocessOffer.whatChanges(old, reason: .cure)
         XCTAssertTrue(text.contains("testo normativo") && text.contains("pezzi"), text)
         XCTAssertFalse(text.contains("pagina") || text.contains("lettore di sistema"), text)
-        // importato con la 56 (i pezzi nuovi già fatti): riceve la cura 57 della sua catena, detta da sola
+        // importato con la 56 (i pezzi nuovi già fatti): riceve le cure 57 e 66 della sua catena, dette per lui
         let mid = akn("56")
-        XCTAssertEqual(ReprocessOffer.latestCureForAknActs, 57)
+        XCTAssertEqual(ReprocessOffer.latestCureForAknActs, 66)
+        XCTAssertEqual(Set(ReprocessOffer.aknCures.map { $0.build }), ProcessingChain.curesForAknActs)
         XCTAssertEqual(ReprocessOffer.policy.reason(for: mid, currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"), .cure)
         let midText = ReprocessOffer.whatChanges(mid, reason: .cure)
         XCTAssertTrue(midText.contains("elenco") && midText.contains("non ha note di questo tipo"), midText)
@@ -443,6 +458,19 @@ final class VisualResourceTests: XCTestCase {
         XCTAssertNil(ReprocessOffer.policy.reason(for: current, currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"),
                      "con i pezzi nuovi già fatti, nessuna offerta")
         XCTAssertEqual(ReprocessOffer.whatChanges(current, reason: .cure), "")
+        // Cura 66 (giro «prova 4, segnalibri e sigle»): un atto misurato che la cura lascia identico non la riceve; se gli
+        // manca una cura più vecchia, la frase non promette la 66.
+        guard let same = ProcessingChain.aknActsUnchangedByCure[66]?.sorted().first else { return XCTFail("misure della cura 66") }
+        func measured(_ build: String) -> ArchivedDocument {
+            ArchivedDocument(id: "m", title: "t", sourceFileName: "t.xml", importedAt: Date(), sourcePageCount: 0, sourceKind: "akn",
+                             processedSystemVersion: SystemGeneration.current, processedAppBuild: build, sourceSha256: same)
+        }
+        XCTAssertNil(ReprocessOffer.policy.reason(for: measured("57"), currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"))
+        let aknCure66 = ReprocessOffer.aknCures.first { $0.build == 66 }?.text ?? "—"
+        XCTAssertEqual(ReprocessOffer.policy.reason(for: measured("56"), currentSystemVersion: SystemGeneration.current, currentAppBuild: "999"), .cure)
+        let measuredText = ReprocessOffer.whatChanges(measured("56"), reason: .cure)
+        XCTAssertTrue(measuredText.contains("elenco") && !measuredText.contains(aknCure66), measuredText)
+        XCTAssertTrue(ReprocessOffer.whatChanges(mid, reason: .cure).contains(aknCure66))
     }
 }
 

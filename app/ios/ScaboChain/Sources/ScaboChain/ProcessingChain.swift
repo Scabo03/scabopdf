@@ -175,7 +175,13 @@ public enum ProcessingChain {
     /// trattino morbido riunite con iOS 26.5. Si offre a TUTTI E SOLI i libri la cui lettura cambia, per quanto si sa
     /// senza rielaborarli (`booksUnchangedByCure`, CureInvariance.swift). Come la 56-58: dal Mac per le sue letture. Non
     /// tocca i testi normativi.
-    public static let cureLevel = 64
+    /// 66: le frasi non si spezzano più dopo le abbreviazioni delle citazioni, dopo le iniziali di un nome seguite dal cognome
+    /// e davanti a una parentesi o a una citazione che continua la frase (giro «prova 4, segnalibri e sigle», 2026-11-11,
+    /// voce 2.2): cambiano i confini dei blocchi, i pezzi delle note lunghe e la collocazione di alcune note brevi nel flusso,
+    /// mai il testo. Si offre a TUTTI E SOLI i libri la cui lettura cambia (`booksUnchangedByCure`); come la 56-64: dal Mac
+    /// per le sue letture. Tocca anche i testi normativi (i pezzi delle note lunghe): `curesForAknActs`, con gli atti
+    /// misurati identici (`aknActsUnchangedByCure`).
+    public static let cureLevel = 66
 
     /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
     /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata
@@ -191,17 +197,20 @@ public enum ProcessingChain {
     /// si rifanno dal Mac aggiornato. 57: la cura delle note di quel giro, con la stessa regola. 58: la ricucitura vicino
     /// alle glosse a margine (giro «chiusura del capitolo note», 2026-10-18), con la stessa regola. 64: le cure per
     /// capacità del giro «rifiniture e cure per capacità» (2026-11-07), con la stessa regola (la catena del Mac le contiene
-    /// dalla sua versione con questo livello di cure).
-    public static let curesFromTheMacOnly: Set<Int> = [56, 57, 58, 64]
+    /// dalla sua versione con questo livello di cure). 66: le frasi dopo le sigle (giro «prova 4, segnalibri e sigle»,
+    /// 2026-11-11), con la stessa regola.
+    public static let curesFromTheMacOnly: Set<Int> = [56, 57, 58, 64, 66]
 
     /// Le cure che cambiano anche la lettura dei TESTI NORMATIVI (AKN): solo queste si offrono a un testo normativo già
     /// importato (decisione 1 del maintainer, 2026-10-17). La catena AKN non passa dall'estrazione dei PDF; la tocca solo
     /// ciò che è condiviso con le note dei PDF.
     /// 56: i pezzi delle note lunghe chiusi a fine frase (lo spezzatore è uno, `notePieces`).
     /// 57: nelle note-elenco l'etichetta fra parentesi resta col primo elemento del suo elenco (stesso spezzatore).
-    /// La 58 (ricucitura vicino alle glosse a margine) non li tocca e resta fuori: un testo normativo elaborato con la 57
-    /// non riceve offerte nuove.
-    public static let curesForAknActs: Set<Int> = [56, 57]
+    /// La 58 (ricucitura vicino alle glosse a margine) e la 64 non li toccano e restano fuori.
+    /// 66: i pezzi delle note lunghe non si spezzano più dopo un'abbreviazione di una citazione né fra il numero di un comma
+    /// e la sua indicazione fra parentesi (giro «prova 4, segnalibri e sigle», 2026-11-11: 2 atti su 14 misurati cambiano).
+    /// Va a tutti e soli gli atti la cui lettura cambia: gli atti misurati identici non la ricevono (`aknActsUnchangedByCure`).
+    public static let curesForAknActs: Set<Int> = [56, 57, 66]
 
     /// Elabora il PDF `fileURL` (una copia locale) sul thread chiamante. `onProgress` è chiamato sul thread chiamante;
     /// `isCancelled` è consultato alle tappe naturali (per pagina e ai confini di fase). `onVisualDetection` riceve

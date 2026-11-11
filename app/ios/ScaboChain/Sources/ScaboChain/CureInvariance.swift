@@ -24,8 +24,21 @@ extension ProcessingChain {
     /// documenti di studio delle cure mirate; cambiano tre volumi (un titolo recuperato da una testatina, note con i numeri
     /// in colonna rimesse in ordine) e, con iOS 26.5, un quarto volume (parole col trattino morbido riunite), oltre al
     /// volume della prova alla cieca.
+    /// 66 (giro «prova 4, segnalibri e sigle», 2026-11-11, frasi dopo le sigle): 13 volumi del banco su 52 identici, gli stessi
+    /// con iOS 26.5 e con iOS 27, più uno dei documenti di studio; misurati sulle cinque forme della lettura a TUTTE e quattro
+    /// le granularità (la cura sposta confini di blocco e pezzi di nota, che dipendono dal livello scelto).
     public static let booksUnchangedByCure: [Int: [Int: Set<String>]] = [
         64: [26: unchangedByCure64Common, 27: unchangedByCure64Common.union(unchangedByCure64OnlyOn27)],
+        66: [26: unchangedByCure66, 27: unchangedByCure66],
+    ]
+
+    /// Cura → impronte (SHA-256 del file XML archiviato) dei TESTI NORMATIVI misurati che la cura lascia identici: la loro
+    /// lettura non dipende dal lettore di sistema, quindi un elenco solo per ogni generazione. Come per i PDF, un atto
+    /// misurato identico non riceve l'offerta per quella cura; un atto sconosciuto sì.
+    /// 66: 12 atti su 14 dei campioni pubblici di Normattiva del repo (cambiano i due con note lunghe che citano decreti e
+    /// commi abrogati), misurati ai quattro livelli.
+    public static let aknActsUnchangedByCure: [Int: Set<String>] = [
+        66: aknActsUnchangedByCure66,
     ]
 }
 
@@ -86,4 +99,38 @@ private let unchangedByCure64Common: Set<String> = [
 /// Cura 64: identici solo su iOS 27 (1 impronta: con iOS 26.5 la cura riunisce le parole col trattino morbido).
 private let unchangedByCure64OnlyOn27: Set<String> = [
     "d301c63e306a83aff75713e20dac24eaed960b33c06d7d9698e097ed642cbe90",
+]
+
+/// Cura 66: identici su iOS 26.5 e su iOS 27 (14 impronte: 13 volumi del banco e un documento di studio).
+private let unchangedByCure66: Set<String> = [
+    "180f71dbfcfea0d3683350a939d34e8b1ded1f9b28fdcd40401d348fdac59a5f",
+    "2d82f9de4fe61c7bbf07a6db0446a4c356329502d36b5570d5563b6ee812b4ab",
+    "3efddd7cba24908275c9fc34cb7f1b007cc402f00a647fd4586bea609c54a416",
+    "469b548c642bb77a944b4af2994b0bf28f53a3b4e2a6bf6c3ffc721e7242a96a",
+    "4cb8a060505bef2fb8330ad529e4d72609e605c398d6d23b436d05b9733712e4",
+    "5a866fbcf0a2507ddf205532a4fffb1b132d36b996cee57b99862c535167746c",
+    "951a1d329378443b78aec4a2db13834ad1fc51dac4e96a3fe7b08ca9357bbef8",
+    "a68a98581dca30f246824261c7d4dbc9f5031cdee69e2cf351eae05c01cb7bf8",
+    "a8d4fe01e9da7ce3f9d2f2551c4675a0fbef9041f6bb9d8907bb441d61e7fa5b",
+    "d0272b2123af0ae040045ef2942c9d8414c2a779a3457a0f3087f62de8bca815",
+    "d12bb6434c9f80f19ce8ceb7472c37e42082781d219fe7231c806f1623dcbf1d",
+    "d1c76b81f8deb2a022f056d6953644fb8157ba57a725fca4c1111b7639ff24be",
+    "e9107b7cc7fc9483c86b0d36578664e3bda09973465adaf416303a6d50dbd914",
+    "e958e0daa55a90dd0a276cef4f00180918c8592046e63287c51beab210f82475",
+]
+
+/// Cura 66: testi normativi identici (12 impronte dei campioni pubblici di Normattiva).
+private let aknActsUnchangedByCure66: Set<String> = [
+    "1568eb0d9306ba8fde971e09106a6900001d89314e15bc4933609f14cd29abb2",
+    "3250d70dcdb2043bf479aecf38ee584e6211d33504ffd883956c9f2f9157924a",
+    "5a1b8cfc26b9408d32c332b54efc25c7fea85a0a3af43ca8a7460e4ab7e9536e",
+    "7574cd763a984ead3ccbc5d2fcf969f65c88edb44460aea53f2107721e54669c",
+    "9411a5202126703fe307f7ea3ac7f00fcddcabcb8db16024a89325c57ff9477b",
+    "9a98959ea9c5cf3b766347141e9c7d3a4223e4008b9b6411387aeffff15f9810",
+    "b05f0baf49c4b4e76b9da215f18a07c9fd91aae0f1d5b25e4096634208c67a4d",
+    "c47ab40c396376a2f7061c772dc109a14fc971d5b3c779c3e3f4cc6adbe656bc",
+    "d33282e4cc5b3c48cd0c214703d3d92c2229abfc37d2684672028743b33d3487",
+    "de5665ff7a3aab7e9be905ed663c1a65253626ed7b49f582c806aa473e9bc8a4",
+    "e0c77491a2f058c9d2fb05b8e1942e7b3537f06a8b323e3bd9773563b1c0a629",
+    "f9fba645d0c704397ca2b67081e927a00cb504b55fae5f205588c90a3c27d24a",
 ]

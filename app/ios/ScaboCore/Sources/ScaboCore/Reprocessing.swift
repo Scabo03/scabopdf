@@ -16,7 +16,9 @@
 //  lascia identica al byte sulla generazione corrente (`unchangedByCure`), non la riceve; un libro sconosciuto sì.
 //  I testi normativi (AKN) non dipendono dal lettore PDF: ricevono l'offerta solo per una cura della LORO catena
 //  (`latestCureBuildForAknActs`, giro «pulizia e rifinitura finale del capitolo note», 2026-10-17, decisione 1 del
-//  maintainer: i pezzi nuovi delle note), mai per un aggiornamento del sistema. I libri EPUB non la ricevono.
+//  maintainer: i pezzi nuovi delle note), mai per un aggiornamento del sistema; dalla cura 66 (giro «prova 4, segnalibri e
+//  sigle», 2026-11-11) con la stessa regola «tutti e soli»: un atto misurato che la cura lascia identico non la riceve
+//  (`unchangedAknActsByCure`, senza generazione). I libri EPUB non la ricevono.
 //
 
 import Foundation
@@ -62,10 +64,16 @@ public struct ReprocessingPolicy: Sendable {
     /// riceve l'offerta per la cura; un libro sconosciuto (impronta non misurata) la riceve, perché la sua lettura può
     /// cambiare e senza rielaborarlo non si sa.
     public let unchangedByCure: [Int: [Int: Set<String>]]
+    /// Le build delle cure dei TESTI NORMATIVI (quelle che cambiano anche la loro lettura), in ordine.
+    public let aknCureBuilds: [Int]
+    /// Gli atti normativi che una cura NON cambia, misurati (cura 66 in poi): cura → impronte dei file XML la cui lettura resta
+    /// identica al byte con la cura. La lettura di un atto non dipende dal lettore di sistema: nessuna generazione.
+    public let unchangedAknActsByCure: [Int: Set<String>]
 
     public init(validatedSystemMajors: Set<Int>, latestCureBuild: Int, latestCureBuildForMacReadings: Int? = nil,
                 latestCureBuildForAknActs: Int? = nil, targetedCureBuilds: [String: Int] = [:],
-                cureBuilds: [Int] = [], unchangedByCure: [Int: [Int: Set<String>]] = [:]) {
+                cureBuilds: [Int] = [], unchangedByCure: [Int: [Int: Set<String>]] = [:],
+                aknCureBuilds: [Int] = [], unchangedAknActsByCure: [Int: Set<String>] = [:]) {
         self.validatedSystemMajors = validatedSystemMajors
         self.latestCureBuild = latestCureBuild
         self.latestCureBuildForMacReadings = latestCureBuildForMacReadings ?? latestCureBuild
@@ -73,6 +81,23 @@ public struct ReprocessingPolicy: Sendable {
         self.targetedCureBuilds = targetedCureBuilds
         self.cureBuilds = cureBuilds
         self.unchangedByCure = unchangedByCure
+        self.aknCureBuilds = aknCureBuilds
+        self.unchangedAknActsByCure = unchangedAknActsByCure
+    }
+
+    /// Vero se la cura `cure` è stata misurata come cura che lascia identica la lettura di questo testo normativo.
+    public func aknCureLeavesUnchanged(_ cure: Int, _ doc: ArchivedDocument) -> Bool {
+        guard let sha = doc.sourceSha256 else { return false }
+        return unchangedAknActsByCure[cure]?.contains(sha) ?? false
+    }
+
+    /// Vero se TUTTE le cure dei testi normativi mancanti all'atto (dopo la build che l'ha elaborato, fino all'ultima) lo
+    /// lasciano com'è, misurato. Falso se manca anche una sola cura non misurata per lui, o se l'elenco delle cure non c'è.
+    public func pendingAknCuresLeaveUnchanged(_ doc: ArchivedDocument, since: Int?) -> Bool {
+        guard let latest = latestCureBuildForAknActs else { return false }
+        let pending = aknCureBuilds.filter { $0 > (since ?? 0) && $0 <= latest }
+        guard !pending.isEmpty else { return false }
+        return pending.allSatisfy { aknCureLeavesUnchanged($0, doc) }
     }
 
     /// Vero se la cura `cure` è stata misurata come cura che lascia identica la lettura di questo libro sulla generazione
@@ -122,7 +147,9 @@ public struct ReprocessingPolicy: Sendable {
             guard let latest = latestCureBuildForAknActs else { return nil }
             let build = doc.processedAppBuild.flatMap { Int($0) }
             let sameBuild = currentAppBuild != nil && doc.processedAppBuild == currentAppBuild
-            return !sameBuild && (build ?? 0) < latest ? .cure : nil
+            guard !sameBuild, (build ?? 0) < latest else { return nil }
+            // Tutti e soli (cura 66 in poi): le cure che gli mancano lo lasciano com'è, misurato? Allora niente offerta.
+            return pendingAknCuresLeaveUnchanged(doc, since: build) ? nil : .cure
         }
         guard (doc.sourceKind ?? "pdf") == "pdf" else { return nil }
         guard currentGenerationIsValidated(currentSystemVersion: currentSystemVersion) else { return nil }
