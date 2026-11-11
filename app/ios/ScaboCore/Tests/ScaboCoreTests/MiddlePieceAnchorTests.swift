@@ -214,6 +214,35 @@ final class MiddlePieceAnchorTests: XCTestCase {
         XCTAssertEqual(back.underlines[0].spans.map { [$0.segmentId, "\($0.startWord)", "\($0.endWord)"] }, [["p2", "0", "3"]])
     }
 
+    func test_testoRipetutoNelBloccoFuso_laCitazioneNonVaSulGemello() throws {
+        // A: [c1: frase, gemello, frase] [c2: il gemello da solo]; B: un blocco solo, c1 + c2. Il pezzo c2 sta intero in coda al
+        // blocco, ma lo stesso testo compare anche nel mezzo: il blocco è giusto (segnalibro e posizione vanno lì), il tratto no,
+        // e una sottolineatura con le stesse parole nei due gemelli resta da ricollocare, mai sul gemello.
+        let gemello = "Il pedaggio del ponte si paga al casello della torre secondo la tariffa che il consiglio del borgo fissa ogni anno."
+        let a = [seg("c1", s[0] + " " + gemello + " " + s[1]), seg("c2", gemello)]
+        let b = [seg("q", s[0] + " " + gemello + " " + s[1] + " " + gemello)]
+        let there = reanchor([try bookmark(on: 1, in: a)], in: b)
+        XCTAssertEqual(there.bookmarks[0].anchorSegmentId, "q")
+        XCTAssertNil(there.bookmarks[0].isOrphan)
+        let q = try XCTUnwrap(ContentAnchorIndex(segments: a).quoteAnchor(forIndex: 1, startWord: 3, endWord: 6))
+        let r = ContentAnchorIndex(segments: b).resolve(q.segment)
+        XCTAssertEqual(r.level, .contained)
+        XCTAssertEqual(r.ambiguousRegionStarts?.count, 2, "il vecchio testo compare due volte nel blocco")
+        let u = Underline(id: "u", spans: [UnderlineSpan(segmentId: "c2", startWord: 3, endWord: 6, anchor: q)], preview: "",
+                          createdAt: Date())
+        XCTAssertEqual(reanchor([], [u], in: b).underlines[0].isOrphan, true, "tratto ambiguo: dichiarata, mai sul gemello")
+        // Il controllo: senza la ripetizione il tratto è uno e la citazione va al suo posto, in coda.
+        let a2 = [seg("c1", s[0] + " " + s[1]), seg("c2", gemello)]
+        let b2 = [seg("q", s[0] + " " + s[1] + " " + gemello)]
+        let q2 = try XCTUnwrap(ContentAnchorIndex(segments: a2).quoteAnchor(forIndex: 1, startWord: 3, endWord: 6))
+        XCTAssertNil(ContentAnchorIndex(segments: b2).resolve(q2.segment).ambiguousRegionStarts)
+        let u2 = Underline(id: "u", spans: [UnderlineSpan(segmentId: "c2", startWord: 3, endWord: 6, anchor: q2)], preview: "",
+                           createdAt: Date())
+        let offset = WordTokenizer.wordCount(s[0] + " " + s[1])
+        XCTAssertEqual(reanchor([], [u2], in: b2).underlines[0].spans.map { [$0.segmentId, "\($0.startWord)", "\($0.endWord)"] },
+                       [["q", "\(offset + 3)", "\(offset + 6)"]])
+    }
+
     func test_spanSeparatiSoloDaUnaLineetta_tornanoUnoSolo() throws {
         // A: un blocco «… alfa beta — gamma delta …»; B: due blocchi, il secondo comincia con la lineetta. La sottolineatura su
         // «beta — gamma delta» in B sono due span; tornando ad A torna uno span solo, con la lineetta dentro.

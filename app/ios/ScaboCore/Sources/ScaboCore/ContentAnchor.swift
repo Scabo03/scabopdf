@@ -235,6 +235,11 @@ public struct AnchorResolution: Equatable, Sendable {
     /// segmenti che lo coprono, dal primo (quello ritrovato, dove il testo comincia, a `regionStart`) all'ultimo. Le citazioni
     /// si cercano nel loro testo unito, solo nel tratto del vecchio testo. `nil` altrimenti.
     public var regionChain: [Int]? = nil
+    /// Quando il vecchio testo compare PIÙ VOLTE nel segmento ritrovato (un testo ripetuto alla lettera, come una clausola che
+    /// due commi ripetono): tutte le posizioni dove comincia, `regionStart` compreso. Il segmento resta quello (segnalibro e
+    /// posizione vanno lì), ma il tratto è ambiguo e una citazione non si colloca (giro «prova 4, segnalibri e sigle»,
+    /// 2026-11-11: misurato nell'andata e ritorno di granularità, la citazione finiva in silenzio sul gemello). `nil` altrimenti.
+    public var ambiguousRegionStarts: [Int]? = nil
 
     public var confidence: Double { level.confidence }
     public var isRelocated: Bool { index != nil }
@@ -467,9 +472,12 @@ public final class ContentAnchorIndex {
             // «prova 4, segnalibri e sigle», 2026-11-11: misurato nell'andata e ritorno di granularità, la citazione finiva
             // in silenzio sulla ripetizione all'inizio del blocco).
             if anchor.containedElsewhere != true {
-                let whole = containingCandidates(anchor).filter { c in
-                    both.contains(c.index)
-                        && TextFingerprint.digest(Array(normalized[c.index])[c.start..<(c.start + anchor.length)]) == anchor.whole
+                let whole = containingCandidates(anchor).compactMap { c -> (index: Int, start: Int, starts: [Int])? in
+                    guard both.contains(c.index) else { return nil }
+                    let chars = Array(normalized[c.index])
+                    let verified = c.starts.filter { TextFingerprint.digest(chars[$0..<($0 + anchor.length)]) == anchor.whole }
+                    guard let first = verified.first else { return nil }
+                    return (c.index, verified.contains(c.start) ? c.start : first, verified)
                 }
                 if !whole.isEmpty {
                     return withRegion(pick(whole.map { $0.index }, anchor: anchor, level: .contained,
@@ -499,8 +507,9 @@ public final class ContentAnchorIndex {
            anchor.length > TextFingerprint.edgeLength {
             let inside = noteInteriorCandidates(anchor)
             if !inside.isEmpty {
+                // più posizioni nella stessa nota sono più candidati: `pick` li dichiara ambigui
                 return withRegion(pick(inside.map { $0.index }, anchor: anchor, level: .contained,
-                                       pageWindow: Self.partialMatchPageWindow), inside)
+                                       pageWindow: Self.partialMatchPageWindow), inside.map { ($0.index, $0.start, [$0.start]) })
             }
         }
         // 3-ter. Il vecchio testo, INTERO, dentro un segmento della sua famiglia — il corpo — in un punto qualunque e non solo
@@ -559,8 +568,10 @@ public final class ContentAnchorIndex {
             return locate(quote, inChain: chain, level: seg.level, region: start..<(start + quote.segment.length))
         }
         // Il vecchio testo sta dentro un segmento più lungo: la citazione si cerca solo nel suo tratto, con i bordi del
-        // tratto (una citazione che stava sul bordo del vecchio segmento non deve finire sul bordo del nuovo).
+        // tratto (una citazione che stava sul bordo del vecchio segmento non deve finire sul bordo del nuovo). Se il vecchio
+        // testo compare più volte nel segmento, il tratto è ambiguo: la citazione non si colloca.
         if let start = seg.regionStart {
+            guard seg.ambiguousRegionStarts == nil else { return nil }
             guard let r = locate(quote, in: idx, region: start..<(start + quote.segment.length)) else { return nil }
             return [QuoteResolution(segmentIndex: idx, startWord: r.0, endWord: r.1, level: seg.level)]
         }
@@ -617,17 +628,33 @@ public final class ContentAnchorIndex {
     /// alla distanza `length - edgeLength`, con il vecchio testo all'inizio o alla fine del nuovo (una
     /// fusione incolla due segmenti, non ne inserisce uno nel mezzo di un altro). Si cercano solo nei
     /// segmenti più lunghi del vecchio, nella finestra di pagine (se nota).
-    private func containingCandidates(_ anchor: ContentAnchor) -> [(index: Int, start: Int)] {
+    private func containingCandidates(_ anchor: ContentAnchor) -> [(index: Int, start: Int, starts: [Int])] {
         containerPositions(length: anchor.length, head: anchor.head, tail: anchor.tail, page: anchor.sourcePage,
                            visualWorld: Self.isVisualWorld(anchor.role))
     }
 
-    /// La risoluzione con la posizione del vecchio testo nel segmento scelto (vedi `AnchorResolution.regionStart`).
-    private func withRegion(_ r: AnchorResolution, _ candidates: [(index: Int, start: Int)]) -> AnchorResolution {
-        guard let i = r.index else { return r }
+    /// La risoluzione con la posizione del vecchio testo nel segmento scelto (vedi `AnchorResolution.regionStart`) e, se il
+    /// vecchio testo vi compare più volte, tutte le sue posizioni (`ambiguousRegionStarts`).
+    private func withRegion(_ r: AnchorResolution, _ candidates: [(index: Int, start: Int, starts: [Int])]) -> AnchorResolution {
+        guard let i = r.index, let c = candidates.first(where: { $0.index == i }) else { return r }
         var out = r
-        out.regionStart = candidates.first { $0.index == i }?.start
+        out.regionStart = c.start
+        if c.starts.count > 1 { out.ambiguousRegionStarts = c.starts }
         return out
+    }
+
+    /// Le posizioni, nel testo normalizzato del segmento `i`, dove comincia un testo di lunghezza `length` con queste impronte di
+    /// testa e coda: a ogni inizio di parola, oltre a `known` (la posizione già trovata a un'estremità). Ordinate.
+    private func occurrences(length: Int, head: String, tail: String, in i: Int, known: Int) -> [Int] {
+        let edge = TextFingerprint.edgeLength
+        let chars = Array(normalized[i])
+        var out: Set<Int> = [known]
+        for q in wordStarts(i).heads[Self.shortKey(head)] ?? [] where q != known && q + length <= chars.count
+            && TextFingerprint.digest(chars[q..<(q + edge)]) == head
+            && TextFingerprint.digest(chars[(q + length - edge)..<(q + length)]) == tail {
+            out.insert(q)
+        }
+        return out.sorted()
     }
 
     /// I segmenti che contengono a un'estremità il testo di lunghezza `length` con impronte di testa e coda date
@@ -636,11 +663,12 @@ public final class ContentAnchorIndex {
         containerPositions(length: length, head: head, tail: tail, page: sourcePage, visualWorld: visualWorld).map { $0.index }
     }
 
-    /// Come `containers`, con la posizione (0 o in coda) dove il vecchio testo comincia nel segmento.
+    /// Come `containers`, con la posizione (0 o in coda) dove il vecchio testo comincia nel segmento e TUTTE le posizioni dove
+    /// vi compare (`starts`, con la prima: più d'una se il testo è ripetuto nel segmento).
     private func containerPositions(length: Int, head: String, tail: String, page sourcePage: Int?,
-                                    visualWorld: Bool) -> [(index: Int, start: Int)] {
+                                    visualWorld: Bool) -> [(index: Int, start: Int, starts: [Int])] {
         let edge = TextFingerprint.edgeLength
-        var out: [(index: Int, start: Int)] = []
+        var out: [(index: Int, start: Int, starts: [Int])] = []
         let range: [Int]
         if let page = sourcePage {
             range = segments.indices.filter { i in
@@ -656,7 +684,7 @@ public final class ContentAnchorIndex {
             let last = chars.count - length
             for p in [0, last] where TextFingerprint.digest(chars[p..<(p + edge)]) == head
                 && TextFingerprint.digest(chars[(p + length - edge)..<(p + length)]) == tail {
-                out.append((i, p))
+                out.append((i, p, occurrences(length: length, head: head, tail: tail, in: i, known: p)))
                 break
             }
         }
