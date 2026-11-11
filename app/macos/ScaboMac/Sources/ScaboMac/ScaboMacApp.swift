@@ -176,11 +176,16 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     /// Solo col diario delle prove (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11): i tasti che arrivano all'app,
     /// prima dei menu (codice, modificatori, finestra in primo piano, app attiva: mai caratteri; `Diario.descriviTasto`), la
     /// finestra che diventa quella in primo piano e l'app che diventa attiva o no. Nei diari delle prove 4 e 5 ⌘J e ⌥⌘↓ non
-    /// hanno lasciato traccia: così la prossima prova dice se il tasto è arrivato all'app e se il comando è partito.
+    /// hanno lasciato traccia: così la prossima prova dice se il tasto è arrivato all'app e se il comando è partito. Anche i
+    /// modificatori tenuti, quando cambiano (`Diario.descriviModificatori`): dicono se con la scorciatoia erano tenuti Control e
+    /// Opzione, il tasto di VoiceOver.
     @MainActor private func registraTastiEFinestre(nel d: Diario) {
-        osservatoriDiario.append(NSEvent.addLocalMonitorForEvents(matching: .keyDown) { e in
-            if let r = Diario.descriviTasto(codice: e.keyCode, modificatori: e.modifierFlags,
-                                            finestra: NSApp.keyWindow?.accessibilityIdentifier(), appAttiva: NSApp.isActive) {
+        osservatoriDiario.append(NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { e in
+            let finestra = NSApp.keyWindow?.accessibilityIdentifier()
+            if e.type == .flagsChanged {
+                d.registraFatto(-4, Diario.descriviModificatori(e.modifierFlags, finestra: finestra, appAttiva: NSApp.isActive))
+            } else if let r = Diario.descriviTasto(codice: e.keyCode, modificatori: e.modifierFlags, finestra: finestra,
+                                                   appAttiva: NSApp.isActive) {
                 d.registraFatto(-4, r)
             }
             return e

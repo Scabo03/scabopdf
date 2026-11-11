@@ -34,7 +34,7 @@ final class ComandiVoiceOverTests: XCTestCase {
         return VistaLettura(segmenti: segmenti, impostazioni: ReadingSpeechSettings())
     }
 
-    func test_elementiCollegati_sonoIBersagliDeiSalti_ilPrimoEQuelloDiComandoJ() {
+    func test_elementiCollegati_sonoIBersagliDeiSalti_ilPrimoEQuelloDiComandoJ() throws {
         let v = libroConNote(60)   // 600 elementi: finestrato
         XCTAssertTrue(v.finestrato)
         var legati = 0
@@ -51,11 +51,71 @@ final class ComandiVoiceOverTests: XCTestCase {
         // Il bersaglio lontano, fuori dalla finestra dei figli, è lo stesso oggetto che la vista espone quando ci arriva.
         let lontano = 550 + 1
         XCTAssertFalse(v.esposto(lontano))
-        let nota = try! XCTUnwrap(v.elemento(lontano).accessibilityLinkedUIElements()?.first as? ElementoLettura)
+        let nota = try XCTUnwrap(v.elemento(lontano).accessibilityLinkedUIElements()?.first as? ElementoLettura)
         XCTAssertTrue(nota === v.elemento(lontano + 1))
         nota.setAccessibilityFocused(true)   // come VoiceOver dopo il salto
         XCTAssertEqual(v.fuoco, lontano + 1)
         XCTAssertTrue(v.esposto(lontano + 1), "arrivato il fuoco, la finestra si sposta sul bersaglio")
         XCTAssertEqual((v.accessibilityFocusedUIElement as? ElementoLettura)?.indice, lontano + 1)
+    }
+
+    /// Un capoverso che richiama due note (rilievo R6 della revisione del giro): è collegato a tutte e due, nell'ordine; la prima è
+    /// il bersaglio di ⌘J; ogni nota è collegata al capoverso.
+    func test_elementiCollegati_dueNoteNelloStessoCapoverso() {
+        let segmenti = [
+            ContentSegment(id: "t", role: SemanticCategory.HEADING_2.rawValue, text: "Sezione di prova", lengthCategory: "", acousticIntro: ""),
+            ContentSegment(id: "c", role: SemanticCategory.BODY.rawValue,
+                           text: "Capoverso di prova che richiama una prima cosa 1 e poi una seconda cosa 2 nella stessa frase.", lengthCategory: "", acousticIntro: ""),
+            ContentSegment(id: "n1", role: SemanticCategory.NOTE.rawValue, text: "1 Prima nota di prova.", lengthCategory: "SHORT", acousticIntro: "Nota."),
+            ContentSegment(id: "n2", role: SemanticCategory.NOTE.rawValue, text: "2 Seconda nota di prova.", lengthCategory: "SHORT", acousticIntro: "Nota."),
+            ContentSegment(id: "b", role: SemanticCategory.BODY.rawValue, text: "Un altro capoverso di prova.", lengthCategory: "", acousticIntro: ""),
+        ]
+        let v = VistaLettura(segmenti: segmenti, impostazioni: ReadingSpeechSettings())
+        XCTAssertEqual(v.modello.noteJumpActions(forIndex: 1).compactMap(\.target), [2, 3], "precondizione: il modulo lega le due note")
+        XCTAssertEqual((v.elemento(1).accessibilityLinkedUIElements() ?? []).compactMap { ($0 as? ElementoLettura)?.indice }, [2, 3])
+        XCTAssertEqual(v.indiciCollegati(1).first, v.modello.noteCallJumpTarget(from: 1))
+        XCTAssertEqual(v.indiciCollegati(2), [1])
+        XCTAssertEqual(v.indiciCollegati(3), [1])
+        XCTAssertTrue(v.indiciCollegati(4).isEmpty)
+    }
+
+    /// Una nota differita letta lontano dal suo richiamo, fuori dalla finestra dei figli (rilievo R6): il richiamo è collegato alla
+    /// nota e la nota al richiamo; dato il fuoco al collegato lontano, come fa VoiceOver dopo VO+J, la finestra si sposta su di lui
+    /// e la vista lo dice elemento col fuoco.
+    func test_elementiCollegati_notaDifferitaLontana_fuoriDallaFinestra() throws {
+        let frase = "Questa frase di prova richiama la nota numero undici"
+        var segmenti = [
+            ContentSegment(id: "t", role: SemanticCategory.HEADING_2.rawValue, text: "Sezione lunga di prova", lengthCategory: "", acousticIntro: ""),
+            ContentSegment(id: "c", role: SemanticCategory.BODY.rawValue, text: "\(frase) 11 alla fine.", lengthCategory: "", acousticIntro: ""),
+        ]
+        for k in 0..<450 {
+            segmenti.append(ContentSegment(id: "b\(k)", role: SemanticCategory.BODY.rawValue, text: "Capoverso di riempimento numero \(k).",
+                                           lengthCategory: "", acousticIntro: ""))
+        }
+        segmenti.append(ContentSegment(id: "n", role: SemanticCategory.NOTE.rawValue, text: "11 Nota differita di prova, letta a fine sezione.",
+                                       lengthCategory: "LONG", acousticIntro: "Nota lunga.", memoryRefresh: frase))
+        let nota = segmenti.count - 1
+        // Dopo la nota un'altra sezione: la nota non è l'ultimo elemento del libro, che i figli espongono sempre (VO+Fine).
+        segmenti.append(ContentSegment(id: "t2", role: SemanticCategory.HEADING_2.rawValue, text: "Sezione seguente di prova", lengthCategory: "", acousticIntro: ""))
+        for k in 0..<100 {
+            segmenti.append(ContentSegment(id: "d\(k)", role: SemanticCategory.BODY.rawValue, text: "Capoverso seguente numero \(k).",
+                                           lengthCategory: "", acousticIntro: ""))
+        }
+        let v = VistaLettura(segmenti: segmenti, impostazioni: ReadingSpeechSettings())
+        XCTAssertTrue(v.finestrato)
+        XCTAssertEqual(v.modello.noteCallJumpTarget(from: 1), nota, "precondizione: il modulo lega la nota differita al richiamo")
+        v.impostaFuocoIniziale(1)
+        _ = v.figliEsposti()
+        XCTAssertFalse(v.esposto(nota), "la nota sta fuori dalla finestra dei figli")
+        let collegata = try XCTUnwrap(v.elemento(1).accessibilityLinkedUIElements()?.first as? ElementoLettura)
+        XCTAssertEqual(collegata.indice, nota)
+        XCTAssertEqual(v.indiciCollegati(nota), [1])
+        collegata.setAccessibilityFocused(true)   // come VoiceOver dopo VO+J
+        XCTAssertEqual(v.fuoco, nota)
+        XCTAssertTrue(v.esposto(nota), "arrivato il fuoco, la nota è fra i figli")
+        XCTAssertEqual((v.accessibilityFocusedUIElement as? ElementoLettura)?.indice, nota)
+        let ritorno = try XCTUnwrap(v.elemento(nota).accessibilityLinkedUIElements()?.first as? ElementoLettura)
+        ritorno.setAccessibilityFocused(true)
+        XCTAssertEqual(v.fuoco, 1, "e VO+J dalla nota riporta al richiamo")
     }
 }
