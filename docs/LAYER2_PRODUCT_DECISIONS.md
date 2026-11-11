@@ -500,6 +500,29 @@ L'app assembla automaticamente porzioni di testo intorno al target scelto, rispe
 
 Le note, i blocchi procedurali (categoria normativa), le schede operative (vedi sezione 7.7) sono **già unità a sé per la loro natura** e non rientrano nel raggruppamento per caratteri. Quel raggruppamento si applica al corpo del testo principale, alle frasi e ai paragrafi del flusso ordinario.
 
+**Che cosa chiude una frase (giro «prova 4, segnalibri e sigle», 2026-11-11, build 66).** Il secondo vincolo regge solo se
+l'app riconosce bene dove una frase finisce. Fino alla build 65 il riconoscimento delle frasi trattava come fine di frase
+anche il punto di un'abbreviazione delle citazioni («disp. trans.», «d. lgs.», «et al.»), quello delle iniziali di un nome
+seguite dal cognome, e il punto seguito da una parentesi o da una citazione che continuano la frase: un blocco o un pezzo di
+nota cominciava a metà di una citazione, e una nota breve si leggeva prima della fine vera della sua frase. Dalla build 66 il
+riconoscimento, uno solo per l'iPad, il Mac e i testi normativi, non taglia più in tre forme, scelte sui conteggi del banco (52
+volumi e tre documenti di studio, con le due generazioni del lettore di sistema) e nessuna presa dalle parole di un libro:
+1. dopo un punto, una parentesi aperta seguita da una minuscola non comincia una frase (un riferimento, una fonte, un esempio),
+   salvo la lettera o il numero di una voce d'elenco fra parentesi e salvo la parentesi che, chiusa, è seguita da una
+   maiuscola o da una cifra: lì può essere l'etichetta della frase dopo, e resta un inizio. Le virgolette seguite da una
+   minuscola continuano la frase solo dopo il punto di una sigla, di un numero o dei puntini;
+2. le iniziali di un nome seguite da un cognome in maiuscolo e da una virgola sono il nome di un autore citato;
+3. le abbreviazioni delle citazioni di atti e di bibliografia dopo le quali il banco non mostra mai l'inizio di una frase.
+Restano confini, perché il banco mostra che lì la frase spesso finisce davvero, le sigle dei codici e delle autorità («t.u.f.»,
+«c.p.a.», «p.a.»), «a.C.» e le cifre dopo le iniziali. Nel dubbio il confine resta. Il testo non cambia mai: cambiano dove
+cominciano i blocchi, i pezzi delle note lunghe e la collocazione di alcune note brevi (alla fine vera della frase).
+Misurato contro la build 65 a ogni granularità: nessuna regressione, ogni caso incerto giudicato contro la pagina. La cura si
+offre con «Lettura migliore disponibile» ai soli libri la cui lettura cambia (§ 12.13; i libri misurati che restano identici non
+la ricevono); le annotazioni seguono il testo (§ 12.14). Allo stesso giro, al cambio di granularità, un segnalibro, una posizione
+o una sottolineatura su un pezzo di mezzo di un blocco si ritrovano nel blocco che lo contiene e tornano esatti al livello di
+prima; quando il punto non è certo restano «da ricollocare», mai spostati in silenzio (per esempio una sottolineatura su un testo
+che compare due volte nel blocco nuovo; `docs/ANCORE_ANNOTAZIONI.md` § 2-bis).
+
 ### 7.7 Gestione della granularità: predefinito globale e ricordo per documento
 
 La granularità di lettura per i testi discorsivi è gestita su due livelli.
@@ -1538,6 +1561,13 @@ documento, è dedotto), e dalla durata del parlato la lettura non poteva arrivar
 **annunciate a voce per impostazione predefinita** fino alla prova 5 (`DISEGNO_LETTURA_MAC.md` § 10), che fa sentire la lettura
 continua oltre la svolta. Da sentire nella stessa prova, ma non condizione della decisione: ⌘J e ⌥⌘↓ con VoiceOver acceso, che
 non sono arrivati all'app (o non sono stati premuti).
+
+**Frasi e segnalibri (stesso giro, seconda parte, build 66).** Le due cure della seconda parte stanno nel modulo condiviso e valgono
+per costruzione sull'iPad e sul Mac: il riconoscimento delle frasi dopo le sigle col punto (§ 7.6) e i segnalibri, le posizioni e
+le sottolineature sui pezzi di mezzo dei blocchi, che al cambio di granularità si ritrovano nel blocco che li contiene e tornano
+esatti (`docs/ANCORE_ANNOTAZIONI.md` § 2-bis). La vista dell'iPad e la catena del Mac danno ancora la stessa lettura, elemento per
+elemento, sui 52 volumi del banco e sui tre documenti di studio. Una lettura preparata dal Mac riceve la cura dal Mac, con una
+lettura nuova, come le cure 56-64.
 
 ---
 

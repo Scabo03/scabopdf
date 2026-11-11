@@ -153,6 +153,46 @@ prova4/` (Parte 1) e `~/Developer/scabopdf-gen-lab/segnalibri_sigle/` (Parte 2).
   sulle catture iOS 27, 260 forme su 260 identiche al byte alle letture del giro precedente; `rete_vista_mac.sh` VERDE (55/55; l'app
   che importa da sé 50/55, le 5 differenze note dell'estrattore); ScaboMac 112 test (4 saltati per costruzione), FuocoDaFuoriTests
   5/5; interfaccia del Mac 12 (7 passati, 5 saltati).
+- **Parte 2 — 2.1, i segnalibri dei pezzi di mezzo** (ScaboCore `ContentAnchor.swift`, un codice per iPad e Mac;
+  `docs/ANCORE_ANNOTAZIONI.md` § 2-bis): passo 3-ter della risoluzione per il corpo e i pezzi della stessa nota — il vecchio testo
+  intero dentro un blocco nuovo o a cavallo di blocchi consecutivi, impronta intera, posizione unica nelle pagine coperte, confini
+  di parola, frasi intere sotto le 64 lettere in più, mai con `interiorElsewhere` (campo additivo dell'ancora); ancora d'origine
+  conservata. Quattro correzioni dalle reti, ognuna col suo test: testa e coda che cede al contenuto (titolo ripetuto in una
+  bibliografia), il testo ripetuto due volte nel blocco nuovo (tratto ambiguo `ambiguousRegionStarts`: citazione da ricollocare,
+  mai sul gemello), a cavallo il pezzo con la parte maggiore (se il testo comincia dentro un pezzo), e il giudice della rete sulle
+  annotazioni che misura la pagina da quelle che il blocco copre (`rete_annotazioni.py`). Andata e ritorno sui 52 volumi, sei
+  giri, due generazioni: da ricollocare build 65 → cura 1.181→28, 952→6, 2.040→20, 787→6, 3.175→14, 639→4 (iOS 27); **0
+  segnalibri, posizioni e sottolineature nel posto sbagliato o spostati in silenzio**, anche con le ancore delle build di prima e
+  sulle letture con la cura (la build 65 col giudice definitivo: fino a 3 sottolineature sbagliate e 4 cambiate in silenzio per
+  giro). Rete sulle annotazioni a ogni livello, due versi, due generazioni, tre prove al contrario: VERDE 14/14 (260 righe su 260).
+  Il passaggio dell'offerta (letture della build 65 → della cura allo stesso livello): 100 % dei segnalibri ricollocati, 0 sbagliati;
+  una riga rossa a 600 nella sola prova al contrario «orfana» di un volume di rivista, il quasi gemello per testa e coda già
+  dichiarato alla build 65 (cura proposta: un segno al conio). Rete standard con la catena b44: VERDE 312/312.
+- **Revisione indipendente della Parte 2** (sotto-agente nuovo, lista del brief): nessun bloccante; corretti R1 (gemelli esatti alla
+  nascita: niente 3-ter, `interiorElsewhere` sulle pagine coperte; test con controprova), R2 (fusione dal Mac: due segnalibri
+  sullo stesso blocco sono un doppione solo se il passo comincia nello stesso punto), R3 (verifica d'apertura con la via breve:
+  0,020 s per 256 segnalibri, prima ~1,9 s per 200), R4 (reti aggiunte), R5 (giudice per posizione nel flusso a testo identico),
+  R6 (pagina del passo per le ancore conservate), R7 (criterio delle sigle scritto), R8 (9 rinfreschi delle note differite e 14
+  note spostate giudicati uno per uno), R10-R13 (documenti, un esempio di data, messaggi dei commit, suite rifatta da pulito);
+  dichiarato R9 (l'offerta è «tutti e soli» per libro, non per livello).
+- **Parte 2 — 2.2, le sigle col punto** (ScaboCore `Granularity.swift`, `AknSegments.swift`; LAYER2 § 7.6): tre forme misurate
+  (parentesi o citazione che continuano la frase, iniziali + cognome in maiuscolo + virgola, abbreviazioni delle citazioni
+  `CITATION_ABBREVIATIONS`), nessuna parola presa da un libro; scartate le sigle dei codici e delle autorità, le cifre dopo le
+  iniziali, i giuristi romani. Rete delle differenze sui 52 volumi, 4 livelli, 2 generazioni: testo identico, 0 rossi, 1.579-1.580
+  confini tolti per livello, 43 giudicati a mano contro la pagina (30 miglioramenti, 13 neutralità, 0 regressioni), 14 note brevi
+  lette in un altro punto (13 miglioramenti, 1 neutralità); il volume di controllo cambia solo per cause giudicate (32: 22 miglioramenti, 10
+  neutralità sui numeri di riga dell'epigrafe greca). **Cura 66**: identici al byte 13 volumi e un documento di studio (stessi su
+  26.5 e 27, `booksUnchangedByCure[66]`); 39 volumi, un documento di studio e il volume alla cieca cambiano; testi normativi 2 su 14
+  cambiano, e per loro l'offerta «tutti e soli» è nuova (`aknActsUnchangedByCure`, `ReprocessingPolicy.aknCureBuilds`); dal Mac per
+  le sue letture. La regola mirata delle abbreviazioni dei documenti di studio **resta** (misurato: senza, la loro lettura cambia).
+- **Reti della Parte 2** (campo, codice del ramo): rete delle generazioni VERDE (17 passi, catture nuove, risorse visive 110/110 al
+  posto, oracolo invariato); parlato VERDE 192/192 (630.124 elementi); cure mirate VERDE dopo l'aggiornamento giudicato del
+  riferimento di studio B (`dopo_65_<gen>` conservato); parità iPad-Mac VERDE 52 + 3 libri, 192/192 al byte (628.256 elementi);
+  misura dei titoli identica a ogni livello e alla build 65; l'app Mac che importa da sé = catena dell'iPad con la cura su 50/55
+  libri (le 5 differenze note dell'estrattore di macOS, gli stessi volumi di prima); ScaboCore 1.122 test, ScaboChain 23; suite
+  dell'app sul codice finale, 278 test per dispositivo, 0 falliti (iPhone 16 iOS 26.5 253 passati e 25 saltati, iPad Pro iOS 26.5
+  255 e 23, iPad Pro iOS 27 260 e 18, iPhone 16 iOS 27 258 e 20; una prima corsa dell'iPhone iOS 27 era caduta su due test della
+  ricerca nella libreria per i libri lasciati sul simulatore da un test d'interfaccia della mattina: rifatta da stato pulito).
 
 ---
 

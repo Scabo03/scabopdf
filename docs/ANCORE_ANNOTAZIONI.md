@@ -39,7 +39,7 @@ suggerimento) adattato a due vincoli nostri: nessun testo nell'ancora, tolleranz
 
 **Scala di confidenza, tarata sul danno** (ricollocare con sicurezza nel posto sbagliato è peggio di un'orfana):
 `exact` 1,0 (impronta intera) · `contained` 0,95 (il vecchio testo sta **a un'estremità** di un segmento nuovo più lungo
-di almeno 64 lettere: fusione) · `headAndTail` 0,9 (stessa testa e stessa coda, interno diverso: ordine delle righe) ·
+di almeno 64 lettere: fusione; per il corpo e i pezzi della stessa nota anche **dentro** o **a cavallo**, § 2-bis) · `headAndTail` 0,9 (stessa testa e stessa coda, interno diverso: ordine delle righe) ·
 `headOnly` 0,8 (il nuovo segmento è un **pezzo iniziale** del vecchio, ≥ 128 lettere, verificato sulla scala di prefissi:
 spezzatura). Soglia 0,8. Quando la pagina d'origine è nota (sempre, per i PDF: il corpus non ha segmenti senza pagina),
 **ogni** riscontro, anche esatto, vale solo entro ±2 pagine (±1 sotto le 64 lettere) e mai su un candidato senza pagina;
@@ -87,6 +87,49 @@ ricerca sfocata): più robusta, ma porta testo dei volumi, vietato per ciò che 
 ricucitura fra pagine. (d) Riancoraggio per somiglianza con punteggio continuo: senza testo non si calcola; e un punteggio
 continuo invita a ricollocare «quasi» sicuro — il contrario della taratura sul danno.
 
+## 2-bis. Pezzi di mezzo e blocchi a cavallo (giro «prova 4, segnalibri e sigle», 2026-11-11)
+
+**Il problema.** Dalla build 65 la granularità scelta conta davvero (LAYER2 § 7.7), e cambiandola i blocchi del corpo si
+fondono o si spostano: un segnalibro su un **pezzo di mezzo** di un blocco più ampio (né all'inizio né alla fine) o su un blocco
+che la granularità nuova mette **a cavallo** di due restava «da ricollocare» (residuo dichiarato della build 65: dal 10 al 26 %
+dei segnalibri di corpo campionati, tornavano al ritorno). La regola delle estremità (una fusione incolla, non inserisce nel
+mezzo) è giusta per i titoli, non per il corpo, che la granularità raggruppa proprio così.
+
+**La regola (passo 3-ter della risoluzione, `ContentAnchor.swift`).** Solo per la famiglia del corpo (i ruoli che la granularità
+raggruppa) e per i pezzi della stessa nota:
+- il vecchio testo INTERO dentro un segmento nuovo, in un punto qualunque: impronta intera verificata (non solo testa e coda),
+  inizio e fine a confini di parola, **una sola** posizione in un solo segmento della finestra di pagine (quelle che il
+  segmento copre); con meno di 64 lettere in più, solo se il vecchio testo è fatto di frasi intere del nuovo (la testatina =
+  titolo + folio resta orfana: la prova al contrario l'aveva mostrato per le estremità);
+- oppure a cavallo di segmenti consecutivi della famiglia, cominciando dentro il primo (`regionChain`): segnalibro e posizione
+  vanno nel pezzo che porta la PARTE MAGGIORE del vecchio testo (a parità il primo) — un vecchio blocco che comincia con l'ultima
+  parola di un blocco nuovo non porta chi ascolta all'inizio del blocco di prima —, le citazioni si cercano in tutta la catena;
+- mai se, quando l'ancora è nata, il testo stava già dentro un altro segmento della sua famiglia (campo additivo
+  `interiorElsewhere`, coniato da ora; le ancore di prima, senza il campo, si ritrovano con la sola condizione dell'unicità);
+- l'ancora d'origine resta (livello «contenuto»): tornando alla granularità di prima si ritrova il suo pezzo, esatto.
+
+**Tre rifiniture trovate dalla misura.** (a) Il passo «testa e coda» cede al «contenuto» quando lo stesso segmento contiene il
+vecchio testo intero a un'estremità: un pezzo in coda che ripete l'inizio del blocco (un titolo ripetuto in una bibliografia)
+non è un interno ritoccato, e la citazione si cerca nel suo tratto. (b) Se il vecchio testo compare **più volte** nel segmento
+ritrovato (una clausola ripetuta alla lettera in due commi), il tratto è ambiguo (`ambiguousRegionStarts`) e una citazione resta
+da ricollocare: prima finiva in silenzio sul gemello. Il segnalibro e la posizione vanno sul segmento solo se il vecchio testo vi sta
+a un'estremità (passo 3: il segmento è unico); dentro o a cavallo (passo 3-ter) vale la posizione unica, e restano da ricollocare.
+Il passo 3-ter non si applica mai a un testo che alla nascita dell'ancora aveva gemelli esatti nella finestra (`windowCount`), e
+`interiorElsewhere` si conia sulle pagine che i segmenti coprono, come la ricerca (revisione indipendente, R1). Fondendo le
+annotazioni di un pacchetto del Mac, due segnalibri sullo stesso blocco sono un doppione solo se il loro passo comincia nello
+stesso punto (R2). La verifica d'apertura riconosce senza rifare la risoluzione un'ancora conservata che sta intera nel segmento
+puntato (R3: 0,02 s per 256 segnalibri, prima circa 1,9 s per 200). Un segnalibro con l'ancora conservata tiene la pagina del suo
+passo, non quella d'inizio del blocco (R6). (c) Le
+citazioni si cercano solo nel tratto del vecchio testo, anche a cavallo; il ripiego sui blocchi vicini vale solo per un pezzo
+iniziale in cui la citazione non c'è, mai per una citazione ambigua; due span della stessa citazione separati solo da parole
+senza lettere (una lineetta) tornano uno.
+
+**Il giudice della rete, adattato** (§ 4). Una ricollocazione dentro un blocco ampio può stare qualche pagina dopo l'inizio del
+blocco (nei documenti con poco testo per pagina, un blocco da 1.200 caratteri copre anche cinque pagine): il giudice misura ora
+la distanza dalle pagine che il segmento ritrovato copre, non dalla sola prima; la finestra comune di 32 lettere resta richiesta,
+e un gemello lontano resta lontano. E quando i due flussi hanno lo stesso testo (un cambio di granularità) giudica per posizione
+nel flusso, esatta (revisione indipendente, R5; § 4).
+
 ## 3. Nell'app
 
 Conio all'apertura (indice in coda), a ogni segnalibro, sottolineatura e salvataggio di posizione (anche nelle metà dello
@@ -107,7 +150,10 @@ seguire il testo), segmento inserito in testa (tutti scalano di uno, nessuno si 
 (`generazioni/rete_annotazioni.py`): una ricollocazione è **sbagliata** se il passo ritrovato non condivide con l'originale
 una finestra di 32 lettere o sta a più di 2 pagine, o, nelle prove, se l'esito non è quello atteso. Criterio: **zero
 sbagliate**; le orfane si contano. Emette anche la tabella dei volumi la cui sequenza dei nodi cambia (`sequenza_nodi.py`),
-da allegare al referto di ogni build.
+da allegare al referto di ogni build. Dal giro «prova 4, segnalibri e sigle» (2026-11-11): quando i due flussi hanno lo stesso
+testo (un cambio di granularità della stessa catena) il giudizio dei segnalibri si fa per POSIZIONE NEL FLUSSO, esatta (il segmento
+dove il passo comincia; a cavallo, se comincia dentro un segmento, quello con la parte maggiore); negli altri confronti la distanza
+di più di 2 pagine si misura dalle pagine che il segmento ritrovato copre, non dalla sola prima.
 
 **Esito sulla catena finale (fotografia `ancore`)** (1, `reti/annotazioni_ancore_ios27.md` e `_ios265.md`): 312 righe su 312
 verdi per generazione. iOS 27: catena attuale 2.771/2.846 segnalibri ricollocati, 75 orfani, **0 sbagliati**, citazioni
@@ -161,6 +207,16 @@ generazioni; blocchi persi rispetto alla base 2 → **0**; misura invariata (719
   mentre un altro compare nella stessa finestra (il conteggio torna e il rango può indicare l'altro); una chiusura dell'app
   fra la scrittura della cache e il riancoraggio quando le annotazioni non avevano ancora l'ancora e mancava la cache.
 - Riancoraggio sul thread principale quando l'apertura di un volume enorme rielabora (una volta): ~1,4 s sul Mac.
+- Le ancore coniate prima della build 66 non hanno `interiorElsewhere`: dentro e a cavallo si ritrovano con la sola condizione
+  dell'unicità (misurato nell'andata e ritorno con le ancore spogliate del campo: 0 sbagliati e 0 silenziosi su ogni giro).
+- Rischio teorico preesistente, non osservato e non peggiorato: al passo 3 (estremità) un testo con gemelli esatti alla nascita
+  si ricolloca ancora a un'estremità di un segmento più lungo; la guardia `windowCount` vale per il 3-ter.
+- Quasi gemelli per testa e coda (residuo della build 65, non cambiato): nella prova al contrario «orfana» della rete, con A sulla
+  segmentazione della build 65 a 600, in un volume di rivista un pezzo di nota col testo sostituito trova per testa e coda un pezzo
+  quasi gemello tre segmenti prima. Il passaggio vero (build 65 → cura allo stesso livello) è verde su quel volume. Cura proposta:
+  un segno al conio («quasi gemello per testa e coda nella finestra») che escluda il passo «testa e coda» per quell'ancora.
+- L'offerta della cura 66 è misurata per libro sulle quattro granularità insieme, non per livello: un libro identico solo al suo
+  livello riceve l'offerta, e accettandola ottiene la stessa lettura (giro «prova 4, segnalibri e sigle», § 7 del referto).
 
 ### 7.1 Testo del titolo ripetuto nel corpo (osservato e curato, 2026-10-08)
 

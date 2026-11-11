@@ -138,6 +138,12 @@ Regole della build 63 (giro «rifiniture e cure per capacità»):
   «d.P.R.», …). Vale anche sulla lettura di prima, finché il libro non è rielaborato: aggiunge solo legami.
 - L'interpunzione staccata si riattacca anche quando la «riga» staccata porta, dopo il punto, il resto della stessa riga
   fisica; «all.» (allegato) è fra le abbreviazioni delle citazioni.
+- **Dopo la cura per capacità della build 66** (giro «prova 4, segnalibri e sigle», 2026-11-11: le frasi dopo le sigle in ogni
+  documento, LAYER2 § 7.6) la regola delle abbreviazioni delle citazioni e delle date spezzate **resta**: misurato, una catena
+  con la cura 66 e senza la regola dà una lettura diversa dei due documenti (studio A a 400, 600 e 1.200, studio B a 400, con
+  iOS 26.5 e 27), con i tagli di nuovo dopo «lg.», «c.cons.», «c.n.», «Abs.», «all.» e dentro le date «giorno.mese.» seguite
+  dall'anno. Sono forme che la misura sul banco non giustifica per ogni libro. «lgs.», «nav.» e «C.P.S.» sono ora anche nella
+  lista generale: la sovrapposizione è innocua e la lista della regola resta quella della build 63.
 
 ## 5. Le reti di una cura mirata (obbligatorie)
 

@@ -1,16 +1,15 @@
-Build 65 — la granularità scelta conta davvero
+Build 66 — blocchi interi dopo le citazioni, segnalibri al loro posto
 
 Che cosa cambia
-- La granularità scelta in Impostazioni (Fine, 400 caratteri; Media, 600; Ampia, 900; Piena, 1200) ora cambia davvero la lunghezza dei blocchi di lettura. Prima la scelta si salvava, ma ogni libro si leggeva comunque a blocchi di circa 400 caratteri. Con una granularità più ampia un paragrafo lungo si legge in meno blocchi, più lunghi, e anche le note lunghe si leggono a pezzi più lunghi. Il testo resta lo stesso, parola per parola, e i titoli restano dove sono.
-- Un libro letto con un'altra granularità si rielabora una volta, alla prossima apertura, con la schermata «Elaborazione del documento», e riprende dal punto in cui eri. Dalla volta dopo si apre subito.
-- Segnalibri e sottolineature seguono il testo. Quando i blocchi si uniscono, un segnalibro che stava a metà di un blocco nuovo può finire nella lista dei segnalibri come «da ricollocare»: non si perde nulla, e di solito tornando alla granularità di prima torna al suo posto.
-- Se in passato avevi già scelto una granularità diversa da «Fine», ogni libro si rielabora una volta alla prima apertura dopo l'aggiornamento: succede una volta sola per libro.
-- I testi normativi tengono la loro divisione per articoli e commi, qualunque sia la scelta. I volumi molto grandi si leggono sempre a blocchi di 1200 caratteri, per stare nella memoria del dispositivo.
-- Aprire un libro è un po' più pronto: alcuni lavori che fermavano lo schermo per un attimo, alla fine dell'elaborazione e alla riapertura di un libro già letto, ora si fanno in sottofondo, mentre la schermata d'elaborazione resta su.
+- I blocchi di lettura non si interrompono più dopo le abbreviazioni delle citazioni, come «disp. trans.», «d. lgs.» o «et al.», né dopo le iniziali di un nome seguite dal cognome. Prima un blocco poteva cominciare a metà di una citazione, o subito dopo le iniziali di un autore. Lo stesso vale quando, dopo un punto, la frase continua con una parentesi o con una citazione.
+- Anche le note lunghe si dividono in pezzi più naturali, e alcune note brevi si leggono alla fine vera della loro frase invece che a metà.
+- Il testo resta identico, parola per parola: cambia solo dove comincia ogni blocco. I titoli non cambiano.
+- Per i libri che cambiano, l'app propone di rielaborarli con «Lettura migliore disponibile» nella Home. È una proposta: si può accettare o no, e si può sempre tornare alla lettura precedente. I libri che restano identici non ricevono la proposta.
+- Segnalibri, sottolineature e punto di lettura restano al loro posto quando un blocco ne contiene più d'uno. Cambiando granularità, un segnalibro che stava a metà di un blocco più grande ora si ritrova in quel blocco, e tornando alla granularità di prima torna esattamente dov'era. Se l'app non è sicura del punto, per esempio per una sottolineatura su una frase che compare due volte nello stesso blocco, lo dice con «da ricollocare»: non sposta mai nulla in silenzio.
 
 Che cosa non cambia
-- Con la granularità «Fine», quella di partenza, la lettura è identica a quella della build 64 e non compare nessuna offerta di rielaborazione.
+- I testi normativi tengono la loro divisione per articoli e commi; in quelli con note lunghe che citano decreti cambia solo la divisione delle note in pezzi, e anche a loro l'app lo propone.
 
 Due cose da provare
-- Scegli «Ampia — 900 caratteri» in Impostazioni e apri un libro che conosci: dicci se i blocchi più lunghi ti sono comodi e se, dopo la rielaborazione, la lettura riparte dal punto giusto.
-- Metti un segnalibro, cambia granularità, poi torna a «Fine — 400 caratteri» e riapri lo stesso libro: dicci se segnalibri e punto di lettura sono tornati al loro posto.
+- Apri un libro con molte citazioni di leggi o di autori e accetta la proposta di rielaborazione, se compare: dicci se i blocchi cominciano dove ti aspetti.
+- Metti un segnalibro a metà di un capitolo, scegli «Piena — 1200 caratteri» in Impostazioni e riapri il libro, poi torna a «Fine — 400 caratteri»: dicci se il segnalibro è sempre al suo posto.

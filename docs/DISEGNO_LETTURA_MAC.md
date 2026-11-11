@@ -752,6 +752,17 @@ delle frasi condiviso (residuo dichiarato). Un'andata e ritorno di granularità 
 coda a un blocco fuso: curata in ScaboCore (l'ancora d'origine resta dentro un blocco fuso, revisione del giro, R5). Il
 controllo per documento in barra (§ 7.7) resta aperto.
 
+**Dal giro «prova 4, segnalibri e sigle» (2026-11-11, build 66) i due residui di questo paragrafo sono curati nel modulo
+condiviso, per iPad e Mac insieme.** Il riconoscimento delle frasi non taglia più dopo le abbreviazioni delle citazioni, dopo le
+iniziali di un nome seguite dal cognome e davanti a una parentesi o a una citazione che continuano la frase (LAYER2 § 7.6: tre
+forme misurate sul banco, nessuna parola presa da un libro; la trascrizione epigrafica in greco codificato resta com'era,
+illeggibile prima e dopo); il testo non cambia, cambiano i confini dei blocchi e i pezzi delle note, a ogni livello. E un
+segnalibro, una posizione o una sottolineatura su un pezzo di mezzo di un blocco fuso, o su un blocco che la granularità nuova
+mette a cavallo di due, si ritrovano nel blocco che li contiene (a cavallo: in quello con la parte maggiore del passo) e tornano
+esatti al livello di prima; quando il punto non è certo restano «da ricollocare» (`docs/ANCORE_ANNOTAZIONI.md` § 2-bis). Le letture
+del Mac ricevono la cura dal Mac, con una lettura nuova (`curesFromTheMacOnly`); la parità della vista dell'iPad con la catena
+del Mac resta al byte sui 52 volumi e sui tre documenti di studio.
+
 ## 7. Domanda 6 — Il resto del prodotto, a tappe
 
 | parte del prodotto | tappa | che cosa serve | costo stimato |
