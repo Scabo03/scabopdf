@@ -412,6 +412,41 @@ final class LetturaMacTests: XCTestCase {
         XCTAssertEqual(v.fuoco, richiamo)
     }
 
+    /// Le scorciatoie del menu «Lettura» nello stato di VoiceOver acceso (giro «comandi da tastiera e VoiceOver sul Mac»,
+    /// 2026-11-11): la voce non ha bersaglio fisso e va al controllore della finestra in primo piano qualunque sia il primo
+    /// risponditore (la vista, la vista a scorrimento, la finestra: VoiceOver sposta il fuoco della tastiera col suo cursore), è
+    /// sempre attiva, e agisce sull'elemento dove il cursore di VoiceOver è arrivato (VoiceOver gli dà il fuoco a ogni passo,
+    /// diario T2). Smentisce l'ipotesi «con VoiceOver la vista non è il primo risponditore e la validazione spegne i comandi».
+    func test_menuLettura_qualunquePrimoRisponditore_agisceSullElementoDelCursore() async throws {
+        await aspetta { importazione.importa(pdf) }
+        let (doc, lettura) = try XCTUnwrap(presentatore.aperte.first)
+        let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria, voiceOver: true)
+        let v = f.vista, w = try XCTUnwrap(f.window)
+        let barra = MenuPrincipale.barra(comandi: ComandiFinti())
+        let menu = try XCTUnwrap(barra.items.first { $0.submenu?.title == Parole.menuLettura }?.submenu)
+        let conScorciatoia = menu.items.filter { !$0.isSeparatorItem && !$0.keyEquivalent.isEmpty }
+        XCTAssertEqual(conScorciatoia.count, 3, "⌘J, ⌥⌘↓, ⌥⌘↑")
+        for primo in [v as NSResponder, f.scorrimento as NSResponder, nil] {
+            w.makeFirstResponder(primo)
+            var catena: [NSResponder] = []
+            var r: NSResponder? = w.firstResponder
+            while let x = r { catena.append(x); r = x.nextResponder }
+            XCTAssertTrue(catena.contains(w), "la finestra è nella catena d'azione")
+            XCTAssertTrue(w.delegate === f, "dopo la finestra, il suo delegato: il controllore che esegue i comandi")
+            for voce in conScorciatoia { XCTAssertNil(voce.target); XCTAssertTrue(f.validateMenuItem(voce), "\(voce.title) attiva") }
+        }
+        // Il cursore di VoiceOver arriva sul capoverso che richiama una nota e gli dà il fuoco: ⌘J va alla sua nota.
+        let richiamo = try XCTUnwrap((0..<v.conteggio).first { v.segmento($0).role != "NOTE" && !v.indiciCollegati($0).isEmpty })
+        v.elemento(richiamo).setAccessibilityFocused(true)
+        f.saltaNotaRichiamo(nil)
+        XCTAssertEqual(v.fuoco, v.indiciCollegati(richiamo).first)
+        // Sul primo titolo: ⌥⌘↓ va al titolo seguente di quello dove sta il cursore.
+        let titolo = try XCTUnwrap(v.modello.nextHeadingIndex(from: -1, level: nil, forward: true))
+        v.elemento(titolo).setAccessibilityFocused(true)
+        f.titoloSuccessivo(nil)
+        XCTAssertEqual(v.fuoco, v.modello.nextHeadingIndex(from: titolo, level: nil, forward: true))
+    }
+
     func test_menu_vociEScorciatoie_senzaTastoVO() {
         let barra = MenuPrincipale.barra(comandi: ComandiFinti())
         let titoli = barra.items.compactMap { $0.submenu?.title }

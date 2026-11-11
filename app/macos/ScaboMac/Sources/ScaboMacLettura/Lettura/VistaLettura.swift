@@ -557,8 +557,13 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         }
     }
 
-    /// Frecce su e giù: il fuoco di un elemento, detto anche all'accessibilità (con VoiceOver acceso il cursore segue).
+    /// Frecce su e giù da sole: il fuoco di un elemento, detto anche all'accessibilità (con VoiceOver acceso il cursore segue).
+    /// Con Comando, Opzione o Control la freccia non è un passo: ⌥⌘↓ e ⌥⌘↑ sono i titoli del menu «Lettura», e se per qualche
+    /// ragione il menu non la prende (una finestra modale, il menu chiuso) non deve diventare in silenzio un passo di un
+    /// elemento (rilievo del giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11: prima ogni freccia era un passo).
     public override func keyDown(with event: NSEvent) {
+        let modificatori = event.modifierFlags.intersection([.command, .option, .control])
+        guard modificatori.isEmpty else { super.keyDown(with: event); return }
         switch event.keyCode {
         case 125: spostaFuoco(a: min(conteggio - 1, (fuoco ?? -1) + 1), origine: .tastiera)   // freccia giù
         case 126: spostaFuoco(a: max(0, (fuoco ?? 1) - 1), origine: .tastiera)                // freccia su

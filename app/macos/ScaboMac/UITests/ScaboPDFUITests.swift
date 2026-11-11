@@ -277,6 +277,39 @@ final class ScaboPDFUITests: XCTestCase {
         XCTAssertEqual(ritorno, "lettura.elemento.1", "⌘J di nuovo riporta al capoverso col richiamo")
     }
 
+    /// I titoli avanti e indietro con i tasti veri, e il diario dei tasti (giro «comandi da tastiera e VoiceOver sul Mac»,
+    /// 2026-11-11): ⌥⌘↓ due volte e ⌥⌘↑ una, dal titolo del primo capitolo: titoli 4, 8 e di nuovo 4 del libro sintetico (per
+    /// identificatore). Con SCABOMAC_DIARIO (un percorso nel contenitore dell'app, dato dal laboratorio) l'app tiene il diario
+    /// delle prove: il laboratorio controlla poi che i tasti vi siano arrivati coi loro comandi, la stessa traccia che leggerà
+    /// nella prova d'orecchio 6, con VoiceOver acceso.
+    func test_tastiera_titoliAvantiEIndietro_eDiarioDeiTasti() throws {
+        var argomenti = ["--libreria-di-prova", "--libro-di-prova"]
+        let diario = ProcessInfo.processInfo.environment["SCABOMAC_DIARIO"]
+        if let d = diario { argomenti += ["--diario", d] }
+        let app = app(argomenti)
+        app.launch()
+        defer { app.terminate() }
+        let lettura = app.windows["lettura.finestra"]
+        XCTAssertTrue(lettura.waitForExistence(timeout: 60))
+        let gruppo = lettura.groups["Testo del documento"]
+        XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
+        func colFuoco() -> String {
+            let e = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+            return e.waitForExistence(timeout: 5) ? e.identifier : ""
+        }
+        lettura.typeKey(.downArrow, modifierFlags: [.command, .option])
+        let primo = colFuoco()
+        lettura.typeKey(.downArrow, modifierFlags: [.command, .option])
+        let secondo = colFuoco()
+        lettura.typeKey(.upArrow, modifierFlags: [.command, .option])
+        let indietro = colFuoco()
+        scrivi("tastiera_titoli", ["primo": primo, "secondo": secondo, "indietro": indietro, "diario": diario == nil ? "no" : "sì"])
+        XCTAssertEqual(primo, "lettura.elemento.4", "⌥⌘↓: il titolo del secondo capitolo")
+        XCTAssertEqual(secondo, "lettura.elemento.8", "⌥⌘↓ di nuovo: il titolo del terzo")
+        XCTAssertEqual(indietro, "lettura.elemento.4", "⌥⌘↑: di nuovo il titolo del secondo")
+        if diario != nil { Thread.sleep(forTimeInterval: 2.5) }   // il diario si scrive ogni due secondi
+    }
+
     /// La misura da fuori su un volume vero (a richiesta: SCABOMAC_LIBRO e SCABOMAC_DESCRIZIONE, percorsi nel contenitore).
     func test_misuraDaFuori_volumeVero() throws {
         let env = ProcessInfo.processInfo.environment

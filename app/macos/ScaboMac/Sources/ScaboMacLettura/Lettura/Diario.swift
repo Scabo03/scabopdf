@@ -11,6 +11,7 @@
 //  diario, sul filo principale, lo fermava fino a un terzo di secondo: misurato col client da fuori). Nessun testo: indici,
 //  nomi delle richieste, millisecondi.
 //
+import AppKit
 import Foundation
 
 public final class Diario: @unchecked Sendable {
@@ -91,9 +92,28 @@ public final class Diario: @unchecked Sendable {
         t.start()
     }
 
+    /// Un tasto arrivato all'app, per il diario delle prove (indice −4; dal giro «comandi da tastiera e VoiceOver sul Mac»,
+    /// 2026-11-11: nei diari delle prove 4 e 5 ⌘J e ⌥⌘↓ non hanno lasciato traccia, e il diario non sapeva dire se fossero
+    /// arrivati all'app). Solo codici: il codice del tasto, i modificatori, la finestra in primo piano (il suo identificatore) e
+    /// se l'app era attiva. Mai i caratteri, e nessuna lettera o cifra premuta senza Comando, Opzione o Control (sarebbe
+    /// testo digitato): per quelle `nil`.
+    public static func descriviTasto(codice: UInt16, modificatori: NSEvent.ModifierFlags, finestra: String?, appAttiva: Bool) -> String? {
+        let m = modificatori.intersection([.command, .option, .control, .shift, .function])
+        let speciale: Set<UInt16> = [36, 48, 51, 53, 76, 115, 116, 117, 119, 121, 123, 124, 125, 126]   // Invio, Tab, Cancella, Esc, frecce, Inizio…
+        let funzione = (96...122).contains(Int(codice))   // i tasti funzione (F1…F12) e la loro zona
+        guard !m.intersection([.command, .option, .control]).isEmpty || speciale.contains(codice) || funzione else { return nil }
+        var segni = ""
+        if m.contains(.control) { segni += "ctrl" }
+        if m.contains(.option) { segni += "opz" }
+        if m.contains(.shift) { segni += "maiusc" }
+        if m.contains(.command) { segni += "cmd" }
+        if m.contains(.function) { segni += "fn" }
+        return "tasto:\(codice):\(segni.isEmpty ? "-" : segni):finestra=\(finestra ?? "nessuna"):app-attiva=\(appAttiva ? "sì" : "no")"
+    }
+
     /// Una riga per voce, richieste e fatti insieme in ordine di tempo: tempo, indice, richiesta.
     private static func testo(_ voci: [Voce], _ fatti: [Voce]) -> String {
-        var s = "# diario delle richieste d'accessibilità — tempo(s)\tindice\trichiesta (indice -2: fermi del filo principale; -3: fasi dell'apertura)\n"
+        var s = "# diario delle richieste d'accessibilità — tempo(s)\tindice\trichiesta (indice -2: fermi del filo principale; -3: fasi dell'apertura; -4: tasti e finestre, solo codici)\n"
         s.reserveCapacity((voci.count + fatti.count) * 24)
         var j = 0
         for v in voci {

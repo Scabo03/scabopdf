@@ -18,6 +18,7 @@
 //                             modulo accanto (`.modulo.jsonl`), per il confronto da fuori
 //    --diario <percorso>      registra le richieste d'accessibilità della lettura, i fermi del filo principale (sentinella
 //                             dall'avvio) e le fasi dell'apertura, e li scrive lì ogni due secondi (su un filo a parte) e all'uscita
+//                             (dal 2026-11-11 anche i tasti arrivati all'app, solo codici, e la finestra in primo piano)
 //    --segnali-acustici       accende i segnali delle note al gancio del fuoco (prove d'orecchio)
 //    --apri-primo             apre all'avvio il primo libro dell'elenco della Home (misure di tempi e memoria)
 //    --raggio-finestra <n>    i figli finestrati con una finestra di 2n+1 elementi invece di 401 (prove d'orecchio e test da fuori)
@@ -122,6 +123,7 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             timerDiario = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
                 d.scriviInSottofondo(su: URL(fileURLWithPath: path))
             }
+            registraTastiEFinestre(nel: d)
         }
         pannello = Self.makeModel()
         officina = OfficinaViewModel(announcer: VoiceOverAnnouncer())
@@ -170,6 +172,32 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             importazione.riapriAllAvvio(ultimo)
         }
     }
+
+    /// Solo col diario delle prove (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11): i tasti che arrivano all'app,
+    /// prima dei menu (codice, modificatori, finestra in primo piano, app attiva: mai caratteri; `Diario.descriviTasto`), la
+    /// finestra che diventa quella in primo piano e l'app che diventa attiva o no. Nei diari delle prove 4 e 5 ⌘J e ⌥⌘↓ non
+    /// hanno lasciato traccia: così la prossima prova dice se il tasto è arrivato all'app e se il comando è partito.
+    @MainActor private func registraTastiEFinestre(nel d: Diario) {
+        osservatoriDiario.append(NSEvent.addLocalMonitorForEvents(matching: .keyDown) { e in
+            if let r = Diario.descriviTasto(codice: e.keyCode, modificatori: e.modifierFlags,
+                                            finestra: NSApp.keyWindow?.accessibilityIdentifier(), appAttiva: NSApp.isActive) {
+                d.registraFatto(-4, r)
+            }
+            return e
+        } as Any)
+        let centro = NotificationCenter.default
+        osservatoriDiario.append(centro.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { n in
+            let id = (n.object as? NSWindow)?.accessibilityIdentifier() ?? ""
+            d.registraFatto(-4, "finestra-in-primo-piano:\(id.isEmpty ? "altra" : id)")
+        })
+        osservatoriDiario.append(centro.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+            d.registraFatto(-4, "app:attiva")
+        })
+        osservatoriDiario.append(centro.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { _ in
+            d.registraFatto(-4, "app:non-attiva")
+        })
+    }
+    private var osservatoriDiario: [Any] = []
 
     // MARK: Le finestre
 
