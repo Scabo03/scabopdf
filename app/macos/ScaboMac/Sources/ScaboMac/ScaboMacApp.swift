@@ -139,7 +139,8 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         diagnostica.visteAperte = { [weak self] in self?.letture.map(\.vista) ?? [] }
         if let path = argomento("--diario") {
             diagnostica.accendi(su: URL(fileURLWithPath: path), motivo: "argomento")
-        } else if PreferenzeDiagnostica.diarioAcceso(service.prefs) {
+        } else if PreferenzeDiagnostica.diarioAcceso(service.prefs), PreferenzeDiagnostica.mostrata(service.prefs) {
+            // Solo se anche la diagnostica si vede: un diario acceso non resta mai nascosto.
             diagnostica.accendi(motivo: "avvio")
         }
         MenuPrincipale.voceDiagnostica(in: NSApp.mainMenu)?.isHidden = !PreferenzeDiagnostica.mostrata(service.prefs)
@@ -327,14 +328,20 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
                 impostazioni = FinestraImpostazioni(prefs: libreria.prefs)
                 // Le note a voce valgono subito anche nei libri aperti.
                 impostazioni?.quandoCambianoLeNote = { [weak self] in self?.letture.forEach { $0.aggiornaImpostazioni() } }
-                // «Mostra il menu Diagnostica»: la voce del menu «Finestra» compare o sparisce; nascondendola, il diario si spegne
-                // e il pannello si chiude (nessuno strumento resta acceso senza che si veda).
+                // La scelta della diagnostica: la voce del menu «Finestra» compare o sparisce; nascondendola, il diario si spegne,
+                // i titoli tornano alla variante predefinita e il pannello si chiude (nessuno strumento resta acceso, e nessuna
+                // scelta resta attiva, senza che si veda).
                 impostazioni?.quandoCambiaLaDiagnostica = { [weak self] si in
                     guard let self else { return }
                     MenuPrincipale.voceDiagnostica(in: NSApp.mainMenu)?.isHidden = !si
                     if !si {
                         self.diagnostica.spegni()
                         PreferenzeDiagnostica.impostaDiario(self.libreria.prefs, false)
+                        PreferenzeDiagnostica.impostaVariante(self.libreria.prefs, VarianteTitoli.predefinita)
+                        if VarianteTitoli.attiva != VarianteTitoli.predefinita {
+                            VarianteTitoli.attiva = VarianteTitoli.predefinita
+                            self.letture.forEach { $0.vista.titoliCambiati() }
+                        }
                         self.finestraDiagnostica?.close()
                     }
                 }
@@ -371,16 +378,17 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     }
 
     /// LA PROVA GUIDATA (pannello «Diagnostica»): il libro sintetico che l'app scrive da sé (`LibroSintetico`, nessun testo dei
-    /// volumi), importato col percorso vero in una libreria A PARTE, svuotata a ogni prova (`Application Support/ScaboPDF-prove`,
-    /// la stessa dell'argomento `--libreria-di-prova`: la libreria vera non si tocca), con le impostazioni di partenza e, se
-    /// chiesto, la finestra dei figli piccola, di tre elementi. Se il diario è spento, si accende (e resta acceso).
+    /// volumi), importato col percorso vero in una libreria A PARTE, svuotata a ogni prova (`Application
+    /// Support/ScaboPDF-prova-guidata`, diversa da quella dell'argomento `--libreria-di-prova`: la libreria vera e quella dei test
+    /// non si toccano), con le impostazioni di partenza e, se chiesto, la finestra dei figli piccola, di tre elementi. Se il diario
+    /// è spento, si accende (e resta acceso).
     @MainActor private func apriLibroDiProva(finestraPiccola: Bool) {
         if !diagnostica.acceso {
             diagnostica.accendi(motivo: "prova-guidata")
             PreferenzeDiagnostica.impostaDiario(libreria.prefs, true)
         }
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let radice = support.appendingPathComponent("ScaboPDF-prove", isDirectory: true)
+        let radice = support.appendingPathComponent("ScaboPDF-prova-guidata", isDirectory: true)
         letture.filter { $0.documentId == prova?.libreria.libri().first?.id }.forEach { $0.window?.close() }
         try? FileManager.default.removeItem(at: radice)
         let lib = LibreriaMac(service: LibraryService(rootDirectory: radice, prefs: InMemoryKeyValueStore()))

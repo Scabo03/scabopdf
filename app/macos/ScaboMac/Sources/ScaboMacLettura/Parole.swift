@@ -52,7 +52,7 @@ public enum Parole {
     public static let diagnostica = "Diagnostica"
     public static let diagnosticaConPuntini = "Diagnostica…"
     public static let impostazioniSviluppo = "Per chi sviluppa ScaboPDF"
-    public static let impostazioniMostraDiagnostica = "Mostra il menu Diagnostica"
+    public static let impostazioniMostraDiagnostica = "Mostra la diagnostica nel menu Finestra"
     public static let impostazioniMostraDiagnosticaSpiegazione = "Aggiunge al menu Finestra la voce «Diagnostica», con il diario "
         + "per le prove e la scelta di come si presentano i titoli. Se non ti serve, lascia spento."
     public static let diagnosticaSpiegazione = "Strumenti per chi sviluppa ScaboPDF. Nulla di quello che c'è qui cambia la lettura, "

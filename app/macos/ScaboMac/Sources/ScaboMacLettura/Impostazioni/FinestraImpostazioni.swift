@@ -20,7 +20,7 @@ public final class FinestraImpostazioni: NSWindowController {
     let diagnostica = NSButton(checkboxWithTitle: Parole.impostazioniMostraDiagnostica, target: nil, action: nil)
     /// Chiamata quando cambia «Annuncia le note a voce»: chi tiene le finestre di lettura le aggiorna subito.
     public var quandoCambianoLeNote: (() -> Void)?
-    /// Chiamata quando cambia «Mostra il menu Diagnostica»: l'app mostra o nasconde la voce del menu «Finestra».
+    /// Chiamata quando cambia «Mostra la diagnostica nel menu Finestra»: l'app mostra o nasconde la voce del menu «Finestra».
     public var quandoCambiaLaDiagnostica: ((Bool) -> Void)?
 
     public init(prefs: KeyValueStore) {

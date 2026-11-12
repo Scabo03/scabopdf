@@ -181,6 +181,8 @@ public final class Diagnostica {
         scriviAdesso()
         guard let sorgente = fileDaEsportare else { throw CocoaError(.fileNoSuchFile) }
         let fm = FileManager.default
+        // Lo stesso file scelto come destinazione: nulla da fare (cancellarlo prima di copiarlo perderebbe il diario).
+        if sorgente.resolvingSymlinksInPath().standardizedFileURL == destinazione.resolvingSymlinksInPath().standardizedFileURL { return }
         if fm.fileExists(atPath: destinazione.path) { try fm.removeItem(at: destinazione) }
         try fm.copyItem(at: sorgente, to: destinazione)
     }

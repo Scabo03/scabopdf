@@ -9,6 +9,9 @@
 //  avanzamento annunciato, controllo delle impronte, «Verifica» sulla pagina di prova, rimozione con le cache. Usa gli
 //  stessi oggetti del pannello (PanelViewModel, RealModelService); scrive un referto PRIVO DI TESTO nel contenitore
 //  (`Application Support/ScaboPDF per Mac/prova_pannello.json`) e chiude l'app.
+//  Dal 12 novembre 2026 l'app di sviluppo ha lo stesso identificativo, quindi lo stesso contenitore, dell'app di TestFlight del
+//  maintainer (LAYER2 § 12.16, decisione 15): se la voce c'è già quando la prova parte, è un modello scaricato davvero, e la prova
+//  NON lo toglie (lo dice il referto, `giaPresente`).
 //
 
 import AppKit
@@ -36,6 +39,8 @@ public enum ProvaPannello {
         var cacheMotorePrimaDellaRimozione: [String: Int64] = [:]
         var cacheMotoreDopoLaRimozione: [String: Int64] = [:]
         var fine: Date?
+        /// La voce c'era già alla partenza: un modello vero, che la prova non toglie.
+        var giaPresente = false
     }
 
     /// Le cartelle di cache del motore che esistono, con i byte che contengono (nomi abbreviati, nessun testo).
@@ -57,6 +62,8 @@ public enum ProvaPannello {
         let service = RealModelService(catalog: catalog)
         let model = PanelViewModel(service: service, announcer: annunci, prefs: InMemoryKeyValueStore())
         var r = Referto(inizio: Date(), voce: id, statoIniziale: model.state(of: id).inParole)
+        let giaPresente = model.state(of: id) == .scaricato
+        r.giaPresente = giaPresente
         let refertoURL = service.store.root.deletingLastPathComponent().appendingPathComponent("prova_pannello.json")
         func scrivi() {
             r.annunci = annunci.testi
@@ -93,10 +100,12 @@ public enum ProvaPannello {
                 r.esitoVerifica = model.esitiVerifica[id] ?? ""
                 r.cacheMotorePrimaDellaRimozione = cacheMotore(service.store)
                 scrivi()
-                // 3. Rimozione, come dal pannello (richiesta e conferma).
-                model.chiediRimozione(id)
-                model.confermaRimozione()
-                try? await Task.sleep(nanoseconds: 500_000_000)
+                // 3. Rimozione, come dal pannello (richiesta e conferma): solo se la voce l'ha scaricata la prova.
+                if !giaPresente {
+                    model.chiediRimozione(id)
+                    model.confermaRimozione()
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                }
             }
             r.statoDopoRimozione = model.state(of: id).inParole
             r.cartellaModelliDopoRimozione = FileManager.default.fileExists(atPath: service.store.root.path)

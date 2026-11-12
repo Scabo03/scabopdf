@@ -63,7 +63,9 @@ public extension VistaLettura {
             let valore: String?
             if intestazione {
                 detto = VarianteTitoli.stileWebKit ? (e.accessibilityTitle() ?? "") : (e.accessibilityLabel() ?? "")
-                valore = VarianteTitoli.stileWebKit ? nil : (e.accessibilityValue() as? String).flatMap { $0.isEmpty ? nil : $0 }
+                // A, B, C: il valore secondario nel valore; D: nel valore c'è il livello, il valore secondario nella descrizione.
+                valore = VarianteTitoli.stileWebKit ? e.accessibilityLabel().flatMap { $0.isEmpty ? nil : $0 }
+                    : (e.accessibilityValue() as? String).flatMap { $0.isEmpty ? nil : $0 }
             } else {
                 detto = (e.accessibilityValue() as? String) ?? ""
                 valore = e.accessibilityLabel().flatMap { $0.isEmpty ? nil : $0 }

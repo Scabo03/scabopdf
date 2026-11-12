@@ -89,6 +89,9 @@ public final class FinestraDiagnostica: NSWindowController {
         pila.edgeInsets = NSEdgeInsets(top: 18, left: 20, bottom: 18, right: 20)
         w.contentView = pila
         aggiorna()
+        // La finestra prende l'altezza del suo contenuto: nulla resta tagliato dal bordo (le istruzioni sono lunghe).
+        pila.layoutSubtreeIfNeeded()
+        w.setContentSize(NSSize(width: max(600, pila.fittingSize.width), height: pila.fittingSize.height))
         diagnostica.quandoCambia.append { [weak self] in self?.aggiorna() }
     }
 
