@@ -1619,6 +1619,22 @@ VO+J dice «vai all'elemento collegato».
 14. **Agli utenti di VoiceOver si indicano VO+J e VO+Comando+H**; ⌘J e ⌥⌘↓ / ⌥⌘↑ restano per chi usa la tastiera senza
     VoiceOver.
 
+**Esito del giro «titoli con il comando di VoiceOver sul Mac» (12 novembre 2026, nessuna build).** Nella prova 6, a sei delle
+sette pressioni chieste, VoiceOver ha chiesto i rotori dei titoli senza mai interrogarli, e nessun titolo è venuto. Da fuori quella
+traccia si riproduce rivolgendo la ricerca dei titoli all'**elemento sotto il cursore**, mentre i rotori stavano solo sul loro
+contenitore (il giro precedente aveva provato la ricerca sul contenitore, dove funziona): è una delle due spiegazioni compatibili col
+diario, l'altra è che VoiceOver legga i rotori e decida da sé di non cercare. Ora ogni elemento offre gli stessi rotori del
+contenitore: da fuori, le ricerche fatte come quelle della traccia arrivano al rotore dei titoli, che cerca su tutto il libro, e
+trovano tutti i titoli avanti e indietro, anche fuori dagli elementi esposti (sulla versione di prima nessuno). Il ruolo
+d'intestazione che la decisione 12 consente non è stato dato: la qualifica del titolo resta detta dall'app, una volta sola, e il
+parlato del Mac resta identico a quello dell'iPad, senza eccezioni nel confronto; se la prova 7 (`DISEGNO_LETTURA_MAC.md` § 10)
+dirà che non basta, il ruolo è il passo seguente. VO+Comando+M (stesso livello) resta senza risultato. Nel menu delle azioni la voce
+che VoiceOver aggiunge per l'elemento collegato resta accanto a quella dell'app: non c'è un modo documentato di toglierla tenendo VO+J
+(decisione per il maintainer nel referto). La decisione 13 è applicata: sul Mac le note hanno il segnale per impostazione
+predefinita, e chi aveva già scelto «Annuncia le note a voce» la ritrova com'era; il segnale della bibliografia, che il modulo dà
+anche con le note a voce come sull'iPad, ora suona anche sul Mac (non ancora sentito), e le frecce senza VoiceOver suonano i segnali
+come voleva il disegno del Mac. L'iPad non è cambiato.
+
 ---
 
 ## 13. Ricerca testuale

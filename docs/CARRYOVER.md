@@ -10,6 +10,12 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.61 (12 novembre 2026, giro «titoli con il comando di VoiceOver sul Mac», livello di verifica leggero, nessuna build:
+> registrate le decisioni 12-14 del maintainer (LAYER2 § 12.16); letto il diario della prova 6; **VO+Comando+H** curato nella via che
+> riproduce la traccia di VoiceOver (la ricerca rivolta all'elemento sotto il cursore: i rotori anche su ogni elemento), provato da
+> fuori, da sentire nella prova 7;
+> la voce doppia nel menu delle azioni lasciata (decisione per il maintainer); **i segnali delle note predefiniti sul Mac**, la scelta
+> fatta resta; iPad identico. Vedi lo STATO qui sotto.)
 > Versione: 2.60 (11-12 novembre 2026, giro «comandi da tastiera e VoiceOver sul Mac», livello di verifica leggero, nessuna build:
 > registrata la decisione 11 del maintainer (LAYER2 § 12.16: il principio è lo scorrimento per elementi senza dirottamento del fuoco,
 > la lettura continua non è un requisito; prova 5 superata); il **censimento dei comandi standard di VoiceOver del Mac**
@@ -135,6 +141,56 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «titoli con il comando di VoiceOver sul Mac»: il diario della prova 6, VO+Comando+H su tutti i titoli, la voce doppia nel menu delle azioni, i segnali delle note predefiniti (nessuna build) — 2026-11-12
+
+**Partenza:** `4bc0ebd` (main = origin, build 66 su TestFlight; prossimo numero 67, non usato). **Ramo:** `feat/mac-titoli-voiceover`
+(livello leggero, solo l'app Mac; l'iPad non cambia). Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_TITOLI_VOICEOVER.md`;
+laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_voiceover/` (lettura del diario, esperimenti, misure, test, reti, revisione).
+
+- **Decisioni 12-14 del maintainer** (12 novembre, registrate all'apertura in LAYER2 § 12.16): VO+Comando+H e VO+Comando+Maiuscole+H su
+  tutti i titoli, anche lontani, col ruolo d'intestazione se serve (qualifica una volta sola, parità nella sostanza, confronto adattato in
+  modo dichiarato e stretto); i segnali delle note predefiniti sul Mac; VO+J e VO+Comando+H da indicare con VoiceOver, ⌘J e ⌥⌘↓/↑ per la
+  tastiera senza VoiceOver.
+- **Parte 1 — il diario della prova 6** (campo, `titoli_voiceover/LETTURA_DIARIO_T6.md`): sei tracce di VO+Comando+H su sette
+  pressioni chieste, tutte uguali — il ruolo dell'elemento sotto il cursore due volte, i rotori del gruppo due volte, nessuna ricerca
+  nel rotore, nessun titolo; due tracce senza rotori (forse il quinto VO+Comando+H e il VO+Comando+M, dedotto); ⌘J arrivato due volte col solo Comando (dal titolo l'annuncio, dal capoverso il salto,
+  confermato); ⌥⌘↑/↓ mai arrivati; cinque richieste degli elementi collegati (quattro sul titolo, una sulla nota, mai sul capoverso);
+  un'azione «Vai alla nota» eseguita da VoiceOver dal capoverso; il rotore percorso, Invio sul quarto capitolo; l'aiuto tastiera non
+  lascia traccia (VoiceOver prende i tasti).
+- **Parte 2 — VO+Comando+H** (DISEGNO § 5.4): la traccia della prova 6 si riproduce da fuori rivolgendo la ricerca per chiave
+  (`AXResultsForSearchPredicate`) **all'elemento sotto il cursore**, due volte: AppKit guarda i rotori del gruppo e risponde «nessun
+  valore»; sul gruppo la stessa ricerca arriva al rotore (la prova del giro prima, che era la via sbagliata). Due letture dei rotori del
+  gruppo darebbero la stessa traccia: il diario non distingue (campo), e quella seconda via la cura non la copre. **Cura:** gli stessi
+  rotori anche su ogni elemento. Da fuori, le ricerche fatte come la traccia, dall'elemento sotto il cursore, trovano tutti i titoli
+  avanti e indietro, nove su dieci fuori dai figli esposti quando li si cerca (test nuovo, fallisce sull'app di partenza). Ruolo
+  d'intestazione non dato: qualifica e parlato invariati, nessuna eccezione nel confronto; se la prova 7 dice che non basta, è il passo
+  seguente (decisione 12). Rischio misurato: una ricerca senza elemento di partenza farebbe partire il rotore dall'inizio del libro
+  (il diario della prova 7 lo dice). VO+Comando+M resta senza risultato. Da sentire nella prova 7.
+- **Parte 3 — l'azione doppia**: VoiceOver aggiunge la sua voce sugli elementi con elementi collegati (resoconto; una fonte secondaria,
+  AppleVis); nessun modo documentato di toglierla tenendo VO+J; la posizione la decide VoiceOver. Lasciata, decisione per il maintainer.
+- **Parte 4 — i segnali delle note** (DISEGNO § 4.3): predefiniti sul Mac (la chiave dell'iPad, assente = spenta); la scelta fatta resta;
+  segnali sempre collegati al gancio (tolto `--segnali-acustici`); spiegazione delle Impostazioni riscritta. Dichiarato: il segnale
+  della bibliografia ora suona anche sul Mac (come sull'iPad, mai sentito qui) e le frecce senza VoiceOver suonano i segnali (§ 4.1 e).
+- **Verifiche** (campo): iPad identico — nessun file sotto `app/ios` cambiato, quindi niente letture della catena; rete sul parlato
+  VERDE (192/192 al byte, 630.124 elementi, prova al contrario trovata); ScaboMac 123 test, 0 falliti, 4 saltati per costruzione;
+  FuocoDaFuoriTests 8/8; interfaccia del Mac 13 (8 passati, 5 saltati, 0 falliti); `rete_vista_mac.sh` VERDE, una volta sola sul codice finale: la vista
+  del Mac sulle letture dell'iPad identica alla vista dell'iPad su 55 libri su 55 (note a voce accese e spente), **nessuna eccezione**
+  (il parlato non cambia); la quota dell'estrattore 19/55 con le stesse 36 righe di differenze del giro prima (R14, invariato).
+- **Revisione indipendente** (sotto-agente nuovo, solo diff e risultati, `titoli_voiceover/revisione/REVISIONE.md`): 12 rilievi, uno
+  bloccante per la sola prova 7 (la copia dell'app accanto allo script era quella della prova 6: aggiornata), tutti corretti o
+  dichiarati — documenti che dicevano più del provato (la «via vera», «da fuori VO+Comando+H trova»), la seconda via che la cura non
+  copre, il rischio della ricerca senza elemento di partenza, sei pressioni su sette, la tabella dei comandi riallineata, il test dei
+  titoli lontani rafforzato (finestra di tre elementi, nove titoli su dieci fuori dai figli quando li si cerca; sull'app di partenza
+  fallisce), la prova 7 corretta (VO+J, la nota che contiene già la parola «Nota», i titoli davvero lontani), i test della Parte 4 più
+  severi, commenti superati, fonti con indirizzo e data.
+- **Prova d'orecchio 7** in DISEGNO § 10 (`prova.sh 7`, circa sei minuti, app `9a81af9b…`, finestra dei figli di tre elementi): i
+  titoli con VO+Comando+H avanti e indietro, tutti lontani, e la qualifica detta una volta sola; VO+Comando+M; il segnale della nota
+  come predefinito; VO+J; il menu delle azioni con l'ordine delle due voci; il rotore senza liste doppie.
+- **Decisioni per il maintainer** (§ 10 del referto): tenere nel menu delle azioni la voce dell'app accanto a quella di VoiceOver
+  (inclinazione sì); VO+Comando+M col ruolo d'intestazione (inclinazione no per ora, da rivedere dopo la prova 7).
 
 ---
 
