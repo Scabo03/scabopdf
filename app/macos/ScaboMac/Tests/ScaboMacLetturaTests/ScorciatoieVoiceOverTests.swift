@@ -72,6 +72,32 @@ final class ScorciatoieVoiceOverTests: XCTestCase {
         XCTAssertEqual(v.fuoco, partenza - 1, "con le sole maiuscole è ancora un passo, come prima")
     }
 
+    /// ⌃⌘↓ e ⌃⌘↑ (giro «titoli di VoiceOver: le varianti», 2026-11-12): le scorciatoie alternative dei titoli le prende la vista
+    /// di lettura prima del menu; ⌥⌘↓ resta del menu (la vista non la prende), e le altre combinazioni con le frecce non fanno nulla.
+    func test_scorciatoieAlternativeDeiTitoli_controlComando() throws {
+        let v = VistaLettura(segmenti: (0..<12).map { i in
+            ContentSegment(id: "s\(i)", role: i % 4 == 0 ? SemanticCategory.HEADING_1.rawValue : SemanticCategory.BODY.rawValue,
+                           text: "Elemento di prova \(i).", lengthCategory: "", acousticIntro: "")
+        }, impostazioni: ReadingSpeechSettings())
+        func evento(_ codice: UInt16, _ m: NSEvent.ModifierFlags) throws -> NSEvent {
+            let c = String(UnicodeScalar(codice == 125 ? NSDownArrowFunctionKey : NSUpArrowFunctionKey)!)
+            return try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: m.union([.numericPad, .function]),
+                                                  timestamp: 0, windowNumber: 0, context: nil, characters: c,
+                                                  charactersIgnoringModifiers: c, isARepeat: false, keyCode: codice))
+        }
+        v.impostaFuocoIniziale(0)
+        XCTAssertTrue(v.performKeyEquivalent(with: try evento(125, [.command, .control])))
+        XCTAssertEqual(v.fuoco, 4, "⌃⌘↓: il titolo seguente")
+        XCTAssertTrue(v.performKeyEquivalent(with: try evento(125, [.command, .control])))
+        XCTAssertEqual(v.fuoco, 8)
+        XCTAssertTrue(v.performKeyEquivalent(with: try evento(126, [.command, .control])))
+        XCTAssertEqual(v.fuoco, 4, "⌃⌘↑: il titolo precedente")
+        for m: NSEvent.ModifierFlags in [[.command, .option], [.command], [.control], [.command, .control, .shift], [.control, .option, .command]] {
+            XCTAssertFalse(v.performKeyEquivalent(with: try evento(125, m)), "con i modificatori \(m.rawValue) la vista non la prende")
+            XCTAssertEqual(v.fuoco, 4)
+        }
+    }
+
     /// Il diario dei tasti delle prove: codici, modificatori, finestra e app; mai il testo digitato. Un tasto di carattere conta
     /// solo con Comando o Control: con la sola Opzione sul Mac scrive un segno (rilievo R11 della revisione del giro).
     func test_diarioDeiTasti_soloCodici_maiTestoDigitato() {

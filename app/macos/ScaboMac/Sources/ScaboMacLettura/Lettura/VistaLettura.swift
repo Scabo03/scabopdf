@@ -560,6 +560,26 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         }
     }
 
+    /// LE SCORCIATOIE ALTERNATIVE DEI TITOLI, ⌃⌘↓ e ⌃⌘↑ (dal giro «titoli di VoiceOver: le varianti», 2026-11-12, DISEGNO § 5.5).
+    /// Con VoiceOver acceso ⌥⌘↓ e ⌥⌘↑ non sono mai arrivate all'app nelle prove 6 e 7 (diario: nessuna freccia), mentre ⌘J e ⌘Q
+    /// sì; il sistema non le usa (scorciatoie registrate su questo Mac) e l'app le riceve coi tasti veri dei test: chi le prende
+    /// sta prima dell'app, VoiceOver per esclusione (dedotto). ⌃⌘↓ e ⌃⌘↑ non hanno Opzione, non sono comandi di VoiceOver senza il
+    /// tasto VO (Control più Opzione) né scorciatoie del sistema o dell'app. Non sono voci del menu «Lettura»: una voce alternativa
+    /// lì compare da fuori come una voce in più (test d'interfaccia: «Intestazione successiva» due volte), e chi usa VoiceOver la
+    /// sentirebbe doppia; la finestra di lettura le prende prima del menu, qualunque sia il primo risponditore (AppKit offre i tasti
+    /// con Comando alla finestra in primo piano, vista per vista, prima della barra dei menu). ⌥⌘↓ e ⌥⌘↑ restano (decisione 14);
+    /// se tenere anche queste lo decide il maintainer dopo la prova 8.
+    public override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let m = event.modifierFlags.intersection([.command, .option, .control, .shift])
+        guard event.type == .keyDown, m == [.command, .control], event.keyCode == 125 || event.keyCode == 126 else {
+            return super.performKeyEquivalent(with: event)
+        }
+        let avanti = event.keyCode == 125
+        diario.registra(fuoco ?? -1, "tasto-alternativo:\(avanti ? "titolo-successivo" : "titolo-precedente")")
+        titolo(avanti: avanti)
+        return true
+    }
+
     /// Frecce su e giù da sole: il fuoco di un elemento, detto anche all'accessibilità (con VoiceOver acceso il cursore segue).
     /// Con Comando, Opzione o Control la freccia non è un passo: ⌥⌘↓ e ⌥⌘↑ sono i titoli del menu «Lettura», e se per qualche
     /// ragione il menu non la prende (una finestra modale, il menu chiuso) non deve diventare in silenzio un passo di un
