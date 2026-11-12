@@ -208,7 +208,7 @@ Riferimenti: `LAYER2_PRODUCT_DECISIONS.md` § 12.12, `ULTRAFOCUS_INBOX.md` § G,
   non riprende da dove si era fermato (si riparte da capo); i test d'interfaccia del Mac aspettano la modalità automazione;
   due rilievi d'accessibilità PREESISTENTI dell'iPad da indagare (Dynamic Type nelle schermate dentro la scheda, «testo
   potenzialmente inaccessibile» sulle schermate di testo condivise); il record App Store del Mac resta una decisione del
-  maintainer; il Mac fraziona le note lunghe, l'app per iPad (quando elabora da sé un PDF) no (le annotazioni reggono il
+  maintainer *[decisa il 12 novembre 2026: lo stesso record dell'iPad, LAYER2 § 12.16 decisione 15]*; il Mac fraziona le note lunghe, l'app per iPad (quando elabora da sé un PDF) no (le annotazioni reggono il
   passaggio in entrambe le direzioni; restano da ricollocare, al ritorno, i pezzi di nota sotto le 64 lettere); cancellare
   l'app Mac lascia il suo contenitore (i pesi si tolgono prima con «Rimuovi dal Mac»).
 

@@ -515,7 +515,8 @@ revisione chiusa, poi cancellato in locale e sul remoto. Livello di verifica med
 - **Decisioni del maintainer dell'8 novembre** (LAYER2 § 12.16, 8-10): sul Mac c'è un'app sola, ScaboPDF per Mac, l'app
   dell'iPad con importazione, libreria, Home e lettura, più il pannello dei modelli; l'officina vi si fonde come pannello e
   come lettura migliore; «app diverse» significa due prodotti per Apple, mobile e Mac, con record App Store distinti; l'app
-  Mac importa PDF e atti AKN da sé con la stessa catena condivisa dell'iPad.
+  Mac importa PDF e atti AKN da sé con la stessa catena condivisa dell'iPad. *[Corretto il 12 novembre 2026: lo stesso record
+  App Store dell'iPad, come acquisto universale, LAYER2 § 12.16 decisione 15.]*
 - **Il fraintendimento corretto**: nato dalla decisione 4 del 16 ottobre (LAYER2 § 12.12, «due app separate … per non
   mescolare lavoro e lettura»), passato nelle decisioni 1 e 7 di § 12.16 (riscritte, con la traccia di cosa dicevano), nello
   studio (testa e due righe «Superato»), in MAC_BASE (testa e § 7), con una nota in ANALYSIS_ULTRAFOCUS_MACOS § 5, nel
@@ -1187,7 +1188,8 @@ volumi: NON diffondere): `~/Developer/scabopdf-gen-lab/referto/REFERTO_FRAZIONAM
 (1) le note lunghe si frazionano anche quando l'iPad elabora da sé un PDF, come già fanno il Mac, il runner e gli atti AKN:
 la lettura deve essere la stessa chiunque l'abbia preparata; (2) la ricucitura fra pagine sul Mac resta spenta finché il
 conteggio di questo giro non mostra casi che l'iPad non copre; (3) il record App Store del Mac sarà un record nuovo, da
-aprire solo quando il Mac andrà distribuito; (4) sul Mac due app separate, l'officina e un'eventuale app di lettura
+aprire solo quando il Mac andrà distribuito *[corretto il 12 novembre 2026: lo stesso record dell'iPad, LAYER2 § 12.16
+decisione 15]*; (4) sul Mac due app separate, l'officina e un'eventuale app di lettura
 *[fraintendimento corretto l'8 novembre: sul Mac c'è un'app sola, ScaboPDF per Mac; «app diverse» voleva dire i due
 prodotti per Apple, mobile e Mac — LAYER2 § 12.12 e § 12.16]*; la
 vista di lettura per Mac sarà oggetto di uno studio dedicato su VoiceOver di macOS, con documentazione e prove (non è
@@ -1353,7 +1355,7 @@ indagare (Dynamic Type nelle schermate dentro la scheda; «testo potenzialmente 
 condivise); al ritorno da una lettura frazionata restano da ricollocare i pezzi di nota sotto le 64 lettere; cancellare l'app
 Mac lascia il suo contenitore; il riassunto di `validate.sh` conta solo l'ultima riga dell'app. **Decisioni aperte per il
 maintainer** (referto § 11): note lunghe frazionate anche sull'iPad?; riaccendere o no la ricucitura sul Mac; record App Store
-del Mac.
+del Mac *[deciso il 12 novembre 2026: lo stesso record dell'iPad, LAYER2 § 12.16 decisione 15]*.
 
 ## ▶ STATO — Giro «risorse visive»: il modulo d'impaginazione nell'app, tabelle e figure annunciate ed estraibili → build 53 — 2026-10-12
 
@@ -1747,8 +1749,8 @@ SIMULATO e dichiarato). **Catalyst compila** senza errori (build nel laboratorio
 lettura cambiano fra iOS 26.5 e iOS 27 (7 % delle pagine, 71 % dei volumi, 2,3 % dei segmenti; pagine difficili sovra-rappresentate); Mac e
 telefono della stessa generazione coincidono. **Incidente** 2026-10-05: blocco comportamentale di macOS durante le prove di codice di terzi,
 accertato falso allarme; regola permanente: nessun binario scaricato si esegue senza fonte ufficiale + impronta pubblicata (o compilazione dal
-tag) e firma dove esiste. **Decisioni al maintainer**: riferimento delle reti (26.5/27), forma della lettura su Mac, record App Store, opzione di
-facilitazione A/B/C. Referto completo nel laboratorio: `~/Developer/scabopdf-mac-lab/referto/REFERTO_GIRO_MAC.md`.
+tag) e firma dove esiste. **Decisioni al maintainer**: riferimento delle reti (26.5/27), forma della lettura su Mac, record App Store *[deciso il
+12 novembre 2026: lo stesso record dell'iPad, LAYER2 § 12.16 decisione 15]*, opzione di facilitazione A/B/C. Referto completo nel laboratorio: `~/Developer/scabopdf-mac-lab/referto/REFERTO_GIRO_MAC.md`.
 
 ---
 

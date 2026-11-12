@@ -644,7 +644,8 @@ di curare; il legame si calcola nella vista e una cura varrebbe subito, senza ri
 > *Nota d'integrazione (2026-10-16):* voce storica del primo giro Mac. Le decisioni pendenti qui elencate sono state prese
 > dopo: reti a doppio riferimento (2026-10-06), identità da contenuto (build 52), frutto via AirDrop o cavo come documento
 > completo (§ 12.12, 2026-10-11: le istruzioni per-file della Parte IV sono superate), motore di struttura Heron in Core ML
-> (§ E e § F). Restano aperte la forma della lettura su Mac e il record App Store. Lo stato corrente è nella voce § G.
+> (§ E e § F). Restano aperte la forma della lettura su Mac e il record App Store *[deciso il 12 novembre 2026: lo
+> stesso record dell'iPad, LAYER2 § 12.16 decisione 15]*. Lo stato corrente è nella voce § G.
 
 Giro «linea Mac» (ramo `feat/mac-base`, non fuso): scheletro `app/macos/ScaboMac` (pannello degli strumenti simulato, catalogo versionato,
 sandbox), `docs/MAC_BASE.md`, `docs/MAC_FACILITAZIONE_MODELLI.md`, Parte VIII dell'analisi. **Reperto di prima grandezza**: l'estrazione PDFKit
@@ -652,7 +653,7 @@ cambia fra iOS 26.5 e iOS 27 sul 7 % delle pagine (spazi fra parole, ordine), co
 sul 71 % dei volumi (2,3 % dei segmenti, 56 titoli in più — uno su Marotta, volume di controllo —, articoli e note toccati); Mac e telefono della stessa generazione coincidono. Le
 istruzioni per-file (Parte IV) vanno quindi ancorate con un'impronta per pagina e un'identità da contenuto (oggi l'id è un UUID casuale).
 **Decisioni pendenti**: riferimento delle reti (26.5 / 27 / entrambi); forma della lettura su Mac (Catalyst, build nel laboratorio da provare a
-orecchio, o nativa); record App Store (stesso o separato: irreversibile); opzione A/B/C della facilitazione (`MAC_FACILITAZIONE_MODELLI.md` § 5).
+orecchio, o nativa); record App Store (stesso o separato: irreversibile; *deciso il 12 novembre 2026: lo stesso, LAYER2 § 12.16 decisione 15*); opzione A/B/C della facilitazione (`MAC_FACILITAZIONE_MODELLI.md` § 5).
 **Prove rinviate** a un giro dedicato con la regola nuova sui binari: MLX-Swift in sandbox, conversione del layout docling, ambiente uv.
 **Debito nuovo**: `AudioSignals.swift` usa `AVAudioSession` (non disponibile su macOS nativo; lo è in Catalyst). Strato: STRUTTURALE (infrastruttura).
 
@@ -805,7 +806,7 @@ più l'innesto dei verdetti del modello d'impaginazione col fusore portato in Sw
 - **D.8 (linea Mac):** a parità di ingressi il Mac dà le letture dell'iPad 52/52 su entrambe le generazioni; dal vivo,
   rispetto a iOS 27, una pagina di flusso diversa (Mac migliore) e 3 annunci di risorse visive diversi, giudicati. Il
   pannello dei modelli è vero (GLM-OCR scaricato, verificato, rimosso; servizio XPC unico con la rete). Restano aperti:
-  il record App Store del Mac (decisione del maintainer), GLM-OCR dentro la catena (prototipo dichiarato), la vista di
+  il record App Store del Mac (decisione del maintainer; *decisa il 12 novembre 2026: lo stesso record dell'iPad*), GLM-OCR dentro la catena (prototipo dichiarato), la vista di
   lettura sul Mac (e quindi le annotazioni del Mac).
 - **Test d'interfaccia del Mac:** scritti e compilati (`app/macos/ScaboMac/UITests`), da lanciare con la modalità
   automazione di macOS (password dell'amministratore, non chiesta in questo giro).

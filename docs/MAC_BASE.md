@@ -8,20 +8,23 @@
 > (build 52, `ArchivedDocument.sourceSha256`). Il riferimento delle reti del § 7 è **deciso**: doppio, iOS 27 principale e
 > iOS 26.5 secondario (2026-10-06). Il riconoscimento della struttura è **deciso**: Heron di docling in Core ML, incorporato
 > (`app/ios/ScaboPageStructure`, giri del 2026-10-12). La forma della lettura su Mac è **decisa** il 2026-10-20 (§ 7,
-> `LAYER2_PRODUCT_DECISIONS.md` § 12.16); resta aperto il record App Store. Lo stato corrente della linea Mac è nella sezione STATO del 2026-10-16 di `CARRYOVER.md`.
+> `LAYER2_PRODUCT_DECISIONS.md` § 12.16); resta aperto il record App Store (deciso il 12 novembre 2026: lo stesso record
+> dell'iPad, acquisto universale, § 12.16 decisione 15). Lo stato corrente della linea Mac è nella sezione STATO del 2026-10-16 di `CARRYOVER.md`.
 > **Il disegno dell'app di lettura** (2026-11-08) è in `docs/DISEGNO_LETTURA_MAC.md`: vista AppKit con elementi virtuali,
 > parlato dal modulo condiviso, pacchetto `ScaboMac` con i due bersagli `ScaboLetturaKit` e `ScaboLettura`, variante di
 > `scripts/build_app.sh`, piano a tappe; le due domande di prodotto sui libri (importazione, libreria condivisa sotto sandbox)
 > sono poste lì, § 6, e spettano al maintainer come quelle del § 7 qui sotto.
 > **Corretto l'8 novembre 2026: un fraintendimento.** Da ottobre i documenti, e questo, davano per deciso che sul Mac ci
 > fossero due app, l'officina e un'app di lettura. Era sbagliato: «app diverse» voleva dire i due prodotti per Apple, mobile
-> e Mac, con record App Store distinti. Sul Mac c'è **un'app sola, ScaboPDF per Mac** (identificativo
-> `com.scabo.scabopdf.mac`, lo stesso dell'officina): l'app dell'iPad con importazione, libreria, Home e lettura, più il
+> e Mac (qui c'era «con record App Store distinti»: dal 12 novembre 2026 il record è lo stesso dell'iPad, § 12.16 decisione
+> 15). Sul Mac c'è **un'app sola, ScaboPDF per Mac** (identificativo `com.scabo.scabopdf.mac`, lo stesso dell'officina; dal
+> 12 novembre `com.scabo.scabopdf`, quello dell'iPad): l'app dell'iPad con importazione, libreria, Home e lettura, più il
 > pannello dei modelli; l'officina vi si fonde come pannello e come lettura migliore; l'app importa PDF e atti AKN da sé
 > con la catena condivisa (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisioni 8-10 e la nota sul fraintendimento). Le due
 > domande di prodotto sui libri del disegno sono superate; il disegno rifatto è in `docs/DISEGNO_LETTURA_MAC.md` § 6, § 8 e
 > § 9. Il «record App Store» del § 7 qui sotto è quindi deciso: un record nuovo per il Mac (§ 12.12, decisione 3 del
-> 2026-10-16), da aprire quando si distribuisce.
+> 2026-10-16), da aprire quando si distribuisce. *Corretto il 12 novembre 2026:* il Mac va nello stesso record dell'iPad,
+> come acquisto universale (§ 12.16, decisione 15).
 > **La prima versione dell'app unica (tappa A, giro dell'8 novembre 2026)**: `scripts/build_app.sh` assembla
 > `build/ScaboPDF.app` (non più `ScaboMac.app`), con il bersaglio nuovo `ScaboMacLettura` (Home, importazione con la catena
 > condivisa, libreria nella forma dell'iPad, Impostazioni di lettura, lettura AppKit) e l'officina nella finestra «Modelli e
@@ -245,5 +248,5 @@ Vedi il referto del giro per i numeri finali. Impronte prima/dopo dei file di pr
 
 - **Riferimento delle reti**: restare su iOS 26.5, passare a iOS 27, o tenere due fotografie. Blocca ogni giudizio futuro sulla lettura.
 - **Forma della lettura su Mac**: Catalyst (prova a orecchio sulla build nel laboratorio) o nativa. → **Decisa il 2026-10-20**: lettura nativa, a tappe, Catalyst solo strumento di laboratorio (`LAYER2_PRODUCT_DECISIONS.md` § 12.16; studio in `docs/STUDIO_LETTURA_MAC.md`). *Corretta l'8 novembre 2026:* la decisione diceva «app nativa separata dall'officina»; era un fraintendimento, la lettura nasce dentro l'app unica ScaboPDF per Mac (§ 12.16, decisioni 8-10).
-- **Record App Store**: aggiungere macOS al record di ScaboPDF (irreversibile dopo l'approvazione) o record separato. → **Deciso il 2026-10-16**: record nuovo per il Mac, da aprire quando si distribuisce (`LAYER2_PRODUCT_DECISIONS.md` § 12.12, decisione 3; § 12.16, decisione 9: mobile e Mac sono i due prodotti).
+- **Record App Store**: aggiungere macOS al record di ScaboPDF (irreversibile dopo l'approvazione) o record separato. → **Deciso il 2026-10-16**: record nuovo per il Mac, da aprire quando si distribuisce (`LAYER2_PRODUCT_DECISIONS.md` § 12.12, decisione 3; § 12.16, decisione 9: mobile e Mac sono i due prodotti). *Corretto il 12 novembre 2026:* macOS si aggiunge al record di ScaboPDF, come acquisto universale (§ 12.16, decisione 15); la piattaforma è aggiunta quel giorno con l'API.
 - **Identità da contenuto**: aggiungere l'impronta SHA-256 ad `ArchivedDocument` (additivo; un giro piccolo).

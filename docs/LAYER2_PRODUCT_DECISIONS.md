@@ -1262,13 +1262,15 @@ build 54).** Le tre decisioni qui sopra, rese concrete.
 2. **La ricucitura fra pagine sul Mac resta spenta** finché il conteggio delle note spezzate fra pagine che l'iPad lascia
    aperte (giro del 2026-10-16, `docs/CONTEGGIO_NOTE_SPEZZATE.md`) non mostra casi che l'iPad non copre.
 3. **Il record App Store del Mac** sarà un record nuovo, da aprire solo quando il Mac andrà distribuito.
+   **Corretta il 12 novembre 2026** (§ 12.16, decisione 15): il Mac va nello stesso record dell'iPad, come acquisto
+   universale, con lo stesso identificativo e build separate; la riga qui sopra è ciò che diceva prima.
 4. **Sul Mac, due app separate:** l'officina e, se verrà, un'app di lettura, per non mescolare lavoro e lettura. La vista
    di lettura per Mac sarà oggetto di uno studio dedicato e approfondito su VoiceOver di macOS, che è molto diverso da
    quello dei dispositivi mobili, con documentazione e prove; non è materia del giro che registra queste decisioni. (Lo
    studio è del 2026-10-20, `docs/STUDIO_LETTURA_MAC.md`; le decisioni che ne seguono sono in § 12.16.)
    **Corretta l'8 novembre 2026: è un fraintendimento, e questa riga ne è l'origine.** Parlando di app diverse il
    maintainer intendeva i due prodotti per Apple, l'app mobile e l'app Mac, con record App Store distinti (la decisione 3
-   qui sopra), non due app sullo stesso Mac. Sul Mac c'è **un'app sola, ScaboPDF per Mac**: l'app dell'iPad più il pannello
+   qui sopra; dal 12 novembre 2026 lo stesso record, § 12.16 decisione 15), non due app sullo stesso Mac. Sul Mac c'è **un'app sola, ScaboPDF per Mac**: l'app dell'iPad più il pannello
    dei modelli, con l'officina fusa dentro (§ 12.16, decisioni 8-10 e la nota sul fraintendimento). Lo studio su VoiceOver
    di macOS resta valido.
 
@@ -1500,15 +1502,18 @@ stime nuove (`DISEGNO_LETTURA_MAC.md` § 9: la tappa A in un giro; la parità co
 8. **Sul Mac c'è un'app sola, ScaboPDF per Mac**: l'app dell'iPad con importazione, libreria, Home e lettura, più il
    pannello dei modelli; l'officina di oggi non è un'app a parte, ma si fonde in quest'app come pannello e come lettura
    migliore.
-9. **«App diverse» significa due prodotti per Apple**, mobile e Mac, con record App Store distinti, non due app sullo stesso
-   Mac.
+9. **«App diverse» significa due prodotti per Apple**, mobile e Mac, con build separate, non due app sullo stesso Mac; dal 12
+   novembre 2026 i due prodotti stanno nello stesso record App Store, come acquisto universale (decisione 15).
+   *Fino al 12 novembre diceva:* «… mobile e Mac, con record App Store distinti, non due app sullo stesso Mac». La parte «con
+   record App Store distinti» è superata dalla decisione 15.
 10. **L'app Mac importa i PDF e gli atti AKN da sé**, con la stessa catena condivisa dell'iPad, così la lettura è identica per
     costruzione.
 
 **Nota sul fraintendimento, perché nessuno ci ricada.** Dalla decisione 4 del 16 ottobre (§ 12.12), registrata come «Sul
 Mac, due app separate: l'officina e, se verrà, un'app di lettura, per non mescolare lavoro e lettura», i documenti hanno
 detto che sul Mac ci sarebbero state due app. Era sbagliato: parlando di app diverse, il maintainer intendeva i due prodotti
-per Apple, l'app mobile, senza pannello dei modelli, e l'app Mac, con il suo record App Store, che il pannello lo ha. Il
+per Apple, l'app mobile, senza pannello dei modelli, e l'app Mac, che il pannello lo ha (fino al 12 novembre qui si leggeva
+anche «con il suo record App Store»: dal 12 novembre il record è lo stesso, decisione 15). Il
 fraintendimento è passato nella decisione 1 del 20 ottobre («separata dall'officina»), nella 7 del 7 novembre («per gli
 utenti le due app restano separate»), nello studio, in `docs/MAC_BASE.md`, nel disegno (un'app di lettura accanto
 all'officina, con due domande di prodotto sui libri) e nel CARRYOVER; dall'8 novembre ciascuno porta la correzione. La
@@ -1634,6 +1639,18 @@ che VoiceOver aggiunge per l'elemento collegato resta accanto a quella dell'app:
 predefinita, e chi aveva già scelto «Annuncia le note a voce» la ritrova com'era; il segnale della bibliografia, che il modulo dà
 anche con le note a voce come sull'iPad, ora suona anche sul Mac (non ancora sentito), e le frecce senza VoiceOver suonano i segnali
 come voleva il disegno del Mac. L'iPad non è cambiato.
+
+**Tre decisioni del maintainer del 12 novembre 2026 (sera)**, registrate all'apertura del giro «ScaboPDF per Mac su
+TestFlight» (2026-11-12):
+
+15. **ScaboPDF per Mac va su TestFlight adesso, nello stesso record App Store dell'iPad, come acquisto universale**: lo
+    stesso identificativo dell'app dell'iPad (`com.scabo.scabopdf`), lo stesso nome, una scheda sola nello store, build
+    separate per l'iPad e per il Mac. Corregge quanto scritto finora sul record App Store distinto per il Mac: la decisione 3
+    del 16 ottobre (§ 12.12), la decisione 9 qui sopra e gli altri documenti, ciascuno con la traccia di ciò che diceva.
+16. **La strada è quella dello store**: sandbox, rete solo nel servizio di scaricamento, catalogo chiuso di modelli. Gli
+    strumenti in Python fuori dallo store, come Surya o Marker, sono fuori da questo prodotto e si valuteranno a parte, se mai.
+17. **Le prove d'orecchio con lo script del laboratorio sono sostituite da un pannello di diagnostica dentro l'app**: il
+    maintainer usa l'app vera, sulla sua libreria vera, e Code legge il diario che l'app tiene sul Mac.
 
 ---
 

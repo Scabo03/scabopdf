@@ -23,7 +23,8 @@
 >
 > **Corretto l'8 novembre 2026: un fraintendimento.** Questo studio, come gli altri documenti da ottobre, dà per deciso che
 > sul Mac ci siano due app, l'officina e un'app di lettura (qui sotto la decisione 1, e nel corpo § 0 e § 6.2). Era
-> sbagliato: «app diverse» voleva dire i due prodotti per Apple, mobile e Mac, con record App Store distinti. Sul Mac c'è
+> sbagliato: «app diverse» voleva dire i due prodotti per Apple, mobile e Mac, con record App Store distinti (dal 12 novembre
+> 2026 lo stesso record, LAYER2 § 12.16 decisione 15). Sul Mac c'è
 > **un'app sola, ScaboPDF per Mac**: l'app dell'iPad con importazione, libreria, Home e lettura, più il pannello dei
 > modelli; l'officina vi si fonde come pannello e come lettura migliore; l'app importa PDF e atti AKN da sé con la catena
 > condivisa (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisioni 8-10, e la nota sul fraintendimento con la sua origine). Ciò
@@ -81,7 +82,7 @@ studio, perché VoiceOver di macOS è un mondo diverso: tasto VO, interazione de
 testo, Commander con script, Attività, dizionario AppleScript, tastiera come strumento principale. L'utenza sono ciechi spesso
 poco pratici.
 
-> **Superato** (correzione dell'8 novembre 2026, in testa): non due app Mac separate; sul Mac c'è un'app sola, ScaboPDF per Mac, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro. Il record App Store nuovo per il Mac (decisione 3) resta: è il secondo prodotto.
+> **Superato** (correzione dell'8 novembre 2026, in testa): non due app Mac separate; sul Mac c'è un'app sola, ScaboPDF per Mac, l'app dell'iPad più il pannello dei modelli, con l'officina fusa dentro. Il record App Store nuovo per il Mac (decisione 3) resta: è il secondo prodotto. *Corretto il 12 novembre 2026:* il Mac va nello stesso record dell'iPad, come acquisto universale (LAYER2 § 12.16, decisione 15).
 
 **Le sei domande** sono le sezioni da 1 a 6; la 7 raccoglie le fonti, la 8 i residui.
 

@@ -143,7 +143,8 @@ punto di partenza (4); niente comandi o script personalizzati di VoiceOver (5); 
 maintainer, così la misura dei contenitori entra nel confronto automatico (6, attivata il 2026-11-08); la lettura nasce nello
 stesso pacchetto `ScaboMac`, manifesto unico, nessuna duplicazione (7, riscritta l'8 novembre: diceva «per gli utenti le due app
 restano separate»); **sul Mac un'app sola, ScaboPDF per Mac**, l'app dell'iPad più il pannello dei modelli, con l'officina fusa
-dentro (8); «app diverse» sono i due prodotti per Apple, mobile e Mac (9); l'app Mac importa PDF e atti AKN da sé con la catena
+dentro (8); «app diverse» sono i due prodotti per Apple, mobile e Mac (9; dal 12 novembre 2026 nello stesso record App Store,
+decisione 15); l'app Mac importa PDF e atti AKN da sé con la catena
 condivisa, così la lettura è identica per costruzione (10).
 
 **I prototipi del giro** (laboratorio `prototipi/ScaboLetturaProto`, pacchetto SwiftPM che dipende da ScaboCore per percorso
@@ -1059,7 +1060,7 @@ del Mac resta al byte sui 52 volumi e sui tre documenti di studio.
 | Dottrina Inline (LAYER2 § 10) | **E** | il layout è già nel modulo (`doctrineInline`); un interruttore di layout | ½ giro |
 | Vista affiancata (split, LAYER2 § 11): due viste nella stessa finestra, ⌥⌘← / ⌥⌘→ | **E** | due gruppi del testo affiancati, uno per metà, con posizione per metà | 1 giro |
 | Risorse visive: «Estrai come immagine» dal PDF archiviato (§ 6.4), «Salta la risorsa» (già nel modulo, c'è dalla tappa A) | **E** | PDFKit per il ritaglio; pannello di salvataggio | ½ giro |
-| Distribuzione: scheda App Store nuova, firma di distribuzione, notarizzazione | **F** | aperta solo quando si distribuisce (LAYER2 § 12.12) | 1 giro |
+| Distribuzione: la piattaforma macOS nel record App Store dell'iPad (fino al 12 novembre 2026 qui c'era «scheda App Store nuova»; LAYER2 § 12.16, decisione 15), firma di distribuzione, TestFlight | **F** | dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12, § 8.5) | 1 giro |
 
 ## 8. Domanda 7 — Pacchetto e distribuzione
 
@@ -1115,11 +1116,14 @@ dell'importazione (un PDF sintetico che l'app di prova crea da sé con un argome
 dell'apertura, della lettura e del menu, con l'audit d'accessibilità del sistema. Il tetto di mille figli del runner
 (§ 2.2) si accetta per il conteggio e si supera per il campione con le query per identificatore e `firstMatch`.
 
-### 8.5 La scheda App Store
+### 8.5 Il record App Store
 
-L'app Mac è il secondo prodotto per Apple (decisione 9): una scheda App Store nuova, distinta da quella dell'app mobile, da
-aprire solo quando si distribuisce (LAYER2 § 12.12, decisione 3 del 2026-10-16; tappa F). Fino ad allora l'app corre dal
-`build/` del maintainer, firmata «Apple Development».
+**Dal 12 novembre 2026 il Mac sta nello stesso record App Store dell'iPad, come acquisto universale** (LAYER2 § 12.16,
+decisione 15): lo stesso identificativo dell'app dell'iPad, `com.scabo.scabopdf`, lo stesso nome, una scheda sola nello store,
+build separate per l'iPad e per il Mac.
+*Fino al 12 novembre diceva:* «L'app Mac è il secondo prodotto per Apple (decisione 9): una scheda App Store nuova, distinta
+da quella dell'app mobile, da aprire solo quando si distribuisce (LAYER2 § 12.12, decisione 3 del 2026-10-16; tappa F). Fino ad
+allora l'app corre dal `build/` del maintainer, firmata «Apple Development».»
 
 ## 9. Domanda 8 — Il piano a tappe
 
@@ -1166,8 +1170,9 @@ modelli con l'offerta dell'iPad, se il maintainer sceglie la via (A) di § 6.6; 
 **Tappa E — layout e viste (2–3 giri).** Consultazione Rapida, Dottrina Inline (i riferimenti dell'iPad ci sono già:
 `--flussi lc,di`), vista affiancata, estrazione delle risorse visive. *Verifica:* media.
 
-**Tappa F — distribuzione (un giro).** La scheda App Store del Mac, la firma di distribuzione, la notarizzazione o TestFlight
-per Mac, quando il maintainer lo decide.
+**Tappa F — distribuzione (un giro).** La piattaforma macOS nel record App Store dell'iPad, la firma di distribuzione e
+TestFlight per Mac (fino al 12 novembre 2026: «la scheda App Store del Mac, … la notarizzazione o TestFlight per Mac, quando il
+maintainer lo decide»; decisa il 12 novembre, LAYER2 § 12.16 decisione 15, e fatta nel giro di quel giorno, § 8.5).
 
 **Totale (dedotto, non misurato): la tappa A in un giro; la parità con l'iPad, tappe A–E, in sette-nove giri (la somma
 delle stime delle cinque tappe); otto-dieci con la distribuzione.** Rispetto alla stima di ieri (11–12 e 12–13) si toglie il lavoro delle due app e si
