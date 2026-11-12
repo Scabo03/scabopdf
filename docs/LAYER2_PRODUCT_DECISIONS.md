@@ -1601,6 +1601,24 @@ sistema; nelle prove 4 e 5 con VoiceOver acceso non sono arrivate all'app (dedot
 tenuto con la scorciatoia, che la trasforma in un comando di VoiceOver), e dentro l'app valgono dovunque sia il cursore e
 sull'elemento dove sta (§ 5.5 dello stesso documento). Che VoiceOver usi davvero questi attributi lo dice la prova d'orecchio 6.
 
+**Tre decisioni del maintainer del 12 novembre 2026**, prese dopo la prova 6 e registrate all'apertura del giro «titoli con il
+comando di VoiceOver sul Mac» (2026-11-12). Il resoconto della prova: VO+Comando+H non trova le intestazioni; VO+Comando+M non
+funziona, come previsto; ⌘J, la scorciatoia dell'app senza il tasto VO, funziona; nel menu delle azioni sul capoverso col richiamo
+ci sono due azioni che fanno la stessa cosa, quella dell'app e una che VoiceOver aggiunge da sé per andare all'elemento collegato;
+con l'aiuto tastiera di VoiceOver ⌘J (col Comando di sinistra e con quello di destra), ⌥⌘↓ e VO+Comando+H non hanno descrizione,
+VO+J dice «vai all'elemento collegato».
+
+12. **VO+Comando+H e VO+Comando+Maiuscole+H**, i comandi standard di VoiceOver per il titolo successivo e precedente, **devono
+    funzionare in ScaboPDF per Mac su tutti i titoli del libro, anche lontani dal cursore.** Se per farlo serve dare ai titoli il
+    ruolo d'intestazione, si fa: sul Mac la qualifica del titolo può essere detta da VoiceOver a modo suo invece che dall'etichetta
+    dell'app, purché non sia detta due volte. La parità con l'iPad sta nella sostanza — stesso contenuto, stesso livello, stessi
+    elementi e stesso ordine — non nell'identità di ogni parola della qualifica. Il confronto automatico con l'iPad si adatta a
+    questa regola in modo dichiarato e stretto, solo per la qualifica dei titoli.
+13. **Sul Mac i segnali delle note diventano l'impostazione predefinita**, come sull'iPad, con «Annuncia le note a voce» come
+    scelta (è la decisione 1 del giro «prove della tappa A», ora applicata).
+14. **Agli utenti di VoiceOver si indicano VO+J e VO+Comando+H**; ⌘J e ⌥⌘↓ / ⌥⌘↑ restano per chi usa la tastiera senza
+    VoiceOver.
+
 ---
 
 ## 13. Ricerca testuale
