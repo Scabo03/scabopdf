@@ -103,13 +103,27 @@ public final class Diario: @unchecked Sendable {
         let speciale: Set<UInt16> = [36, 48, 51, 53, 76, 115, 116, 117, 119, 121, 123, 124, 125, 126]   // Invio, Tab, Cancella, Esc, frecce, Inizio…
         let funzione = (96...122).contains(Int(codice))   // i tasti funzione (F1…F12) e la loro zona
         guard modificatori.contains(.command) || modificatori.contains(.control) || speciale.contains(codice) || funzione else { return nil }
-        return "tasto:\(codice):\(segni(modificatori)):finestra=\(finestra ?? "nessuna"):app-attiva=\(appAttiva ? "sì" : "no")"
+        return "tasto:\(codice):\(segni(modificatori)):lati=\(lati(modificatori)):finestra=\(finestra ?? "nessuna"):app-attiva=\(appAttiva ? "sì" : "no")"
     }
 
     /// I modificatori tenuti, quando cambiano (dal rilievo R2 della revisione del giro): dicono se, premendo una scorciatoia,
     /// erano tenuti anche Control e Opzione, il tasto di VoiceOver. Solo quali modificatori, nessun tasto.
     public static func descriviModificatori(_ modificatori: NSEvent.ModifierFlags, finestra: String?, appAttiva: Bool) -> String {
-        "modificatori:\(segni(modificatori)):finestra=\(finestra ?? "nessuna"):app-attiva=\(appAttiva ? "sì" : "no")"
+        "modificatori:\(segni(modificatori)):lati=\(lati(modificatori)):finestra=\(finestra ?? "nessuna"):app-attiva=\(appAttiva ? "sì" : "no")"
+    }
+
+    /// Da che lato della tastiera sono i modificatori tenuti (dal giro «titoli di VoiceOver: le varianti», 2026-11-12): ⌥⌘↓ non
+    /// è mai arrivato all'app nelle prove 6 e 7 con VoiceOver acceso, mentre ⌘J sì; VoiceOver ha funzioni legate ai tasti di
+    /// destra (il comandante della tastiera con l'Opzione destra, la ricerca veloce col Comando destro: configurazione
+    /// predefinita, DISEGNO § 5.5), e chi preme Opzione+Comando+Freccia con una mano sola usa i tasti di destra. Il lato lo danno
+    /// i bit dei singoli tasti dell'evento (gli stessi di `NX_DEVICELCMDKEYMASK` e dei suoi fratelli, IOKit `IOLLEvent.h`): «sx»
+    /// sinistra, «dx» destra, «-» se l'evento non li porta (i tasti sintetici dei test). Solo quali tasti, nessun carattere.
+    static func lati(_ modificatori: NSEvent.ModifierFlags) -> String {
+        let r = modificatori.rawValue
+        let tasti: [(UInt, String)] = [(0x0001, "ctrl-sx"), (0x2000, "ctrl-dx"), (0x0020, "opz-sx"), (0x0040, "opz-dx"),
+                                        (0x0002, "maiusc-sx"), (0x0004, "maiusc-dx"), (0x0008, "cmd-sx"), (0x0010, "cmd-dx")]
+        let tenuti = tasti.filter { r & $0.0 != 0 }.map(\.1)
+        return tenuti.isEmpty ? "-" : tenuti.joined(separator: "+")
     }
 
     private static func segni(_ modificatori: NSEvent.ModifierFlags) -> String {

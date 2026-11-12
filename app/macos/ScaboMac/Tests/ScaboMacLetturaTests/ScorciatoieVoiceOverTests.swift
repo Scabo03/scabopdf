@@ -76,11 +76,11 @@ final class ScorciatoieVoiceOverTests: XCTestCase {
     /// solo con Comando o Control: con la sola Opzione sul Mac scrive un segno (rilievo R11 della revisione del giro).
     func test_diarioDeiTasti_soloCodici_maiTestoDigitato() {
         XCTAssertEqual(Diario.descriviTasto(codice: 38, modificatori: [.command], finestra: "lettura.finestra", appAttiva: true),
-                       "tasto:38:cmd:finestra=lettura.finestra:app-attiva=sì")
+                       "tasto:38:cmd:lati=-:finestra=lettura.finestra:app-attiva=sì")
         XCTAssertEqual(Diario.descriviTasto(codice: 125, modificatori: [.command, .option, .numericPad, .function], finestra: nil, appAttiva: false),
-                       "tasto:125:opzcmdfn:finestra=nessuna:app-attiva=no")
+                       "tasto:125:opzcmdfn:lati=-:finestra=nessuna:app-attiva=no")
         XCTAssertEqual(Diario.descriviTasto(codice: 38, modificatori: [.control, .option, .command], finestra: nil, appAttiva: true),
-                       "tasto:38:ctrlopzcmd:finestra=nessuna:app-attiva=sì", "col tasto VO tenuto, se il tasto arriva")
+                       "tasto:38:ctrlopzcmd:lati=-:finestra=nessuna:app-attiva=sì", "col tasto VO tenuto, se il tasto arriva")
         XCTAssertNil(Diario.descriviTasto(codice: 38, modificatori: [], finestra: "lettura.finestra", appAttiva: true), "una lettera da sola: no")
         XCTAssertNil(Diario.descriviTasto(codice: 38, modificatori: [.shift], finestra: "lettura.finestra", appAttiva: true), "maiuscola: no")
         XCTAssertNil(Diario.descriviTasto(codice: 38, modificatori: [.option], finestra: "lettura.finestra", appAttiva: true), "Opzione e lettera: no")
@@ -88,7 +88,13 @@ final class ScorciatoieVoiceOverTests: XCTestCase {
         XCTAssertNotNil(Diario.descriviTasto(codice: 125, modificatori: [.option], finestra: nil, appAttiva: true), "Opzione e freccia: sì")
         XCTAssertNotNil(Diario.descriviTasto(codice: 53, modificatori: [], finestra: nil, appAttiva: true), "Esc sì")
         XCTAssertEqual(Diario.descriviModificatori([.control, .option, .command], finestra: "lettura.finestra", appAttiva: true),
-                       "modificatori:ctrlopzcmd:finestra=lettura.finestra:app-attiva=sì")
-        XCTAssertEqual(Diario.descriviModificatori([], finestra: nil, appAttiva: false), "modificatori:-:finestra=nessuna:app-attiva=no")
+                       "modificatori:ctrlopzcmd:lati=-:finestra=lettura.finestra:app-attiva=sì")
+        XCTAssertEqual(Diario.descriviModificatori([], finestra: nil, appAttiva: false), "modificatori:-:lati=-:finestra=nessuna:app-attiva=no")
+        // Il lato dei modificatori dai bit dei singoli tasti (IOLLEvent.h): Opzione e Comando di destra, Control di sinistra.
+        let destra = NSEvent.ModifierFlags(rawValue: NSEvent.ModifierFlags([.option, .command]).rawValue | 0x40 | 0x10)
+        XCTAssertEqual(Diario.descriviModificatori(destra, finestra: nil, appAttiva: true), "modificatori:opzcmd:lati=opz-dx+cmd-dx:finestra=nessuna:app-attiva=sì")
+        let sinistra = NSEvent.ModifierFlags(rawValue: NSEvent.ModifierFlags([.control, .command]).rawValue | 0x01 | 0x08)
+        XCTAssertEqual(Diario.descriviTasto(codice: 125, modificatori: sinistra, finestra: nil, appAttiva: true), "tasto:125:ctrlcmd:lati=ctrl-sx+cmd-sx:finestra=nessuna:app-attiva=sì")
+        XCTAssertEqual(Diario.lati(NSEvent.ModifierFlags(rawValue: 0x2000 | 0x20 | 0x04)), "ctrl-dx+opz-sx+maiusc-dx")
     }
 }

@@ -310,6 +310,36 @@ final class ScaboPDFUITests: XCTestCase {
         if diario != nil { Thread.sleep(forTimeInterval: 2.5) }   // il diario si scrive ogni due secondi
     }
 
+    /// Le scorciatoie alternative dei titoli, ⌃⌘↓ e ⌃⌘↑ (giro «titoli di VoiceOver: le varianti», 2026-11-12, DISEGNO § 5.5),
+    /// con tasti veri: le voci alternative del menu «Lettura» fanno lo stesso comando di ⌥⌘↓ e ⌥⌘↑.
+    func test_tastiera_titoliConControlComando_alternativa() throws {
+        var argomenti = ["--libreria-di-prova", "--libro-di-prova"]
+        let diario = ProcessInfo.processInfo.environment["SCABOMAC_DIARIO"]
+        if let d = diario { argomenti += ["--diario", d] }
+        let app = app(argomenti)
+        app.launch()
+        defer { app.terminate() }
+        let lettura = app.windows["lettura.finestra"]
+        XCTAssertTrue(lettura.waitForExistence(timeout: 60))
+        let gruppo = lettura.groups["Testo del documento"]
+        XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
+        func colFuoco() -> String {
+            let e = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+            return e.waitForExistence(timeout: 5) ? e.identifier : ""
+        }
+        lettura.typeKey(.downArrow, modifierFlags: [.command, .control])
+        let primo = colFuoco()
+        lettura.typeKey(.downArrow, modifierFlags: [.command, .control])
+        let secondo = colFuoco()
+        lettura.typeKey(.upArrow, modifierFlags: [.command, .control])
+        let indietro = colFuoco()
+        scrivi("tastiera_titoli_alternativa", ["primo": primo, "secondo": secondo, "indietro": indietro])
+        XCTAssertEqual(primo, "lettura.elemento.4", "⌃⌘↓: il titolo del secondo capitolo")
+        XCTAssertEqual(secondo, "lettura.elemento.8", "⌃⌘↓ di nuovo: il titolo del terzo")
+        XCTAssertEqual(indietro, "lettura.elemento.4", "⌃⌘↑: di nuovo il titolo del secondo")
+        if diario != nil { Thread.sleep(forTimeInterval: 2.5) }   // il diario si scrive ogni due secondi
+    }
+
     /// La misura da fuori su un volume vero (a richiesta: SCABOMAC_LIBRO e SCABOMAC_DESCRIZIONE, percorsi nel contenitore).
     func test_misuraDaFuori_volumeVero() throws {
         let env = ProcessInfo.processInfo.environment

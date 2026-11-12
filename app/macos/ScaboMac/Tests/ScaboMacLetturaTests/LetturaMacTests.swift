@@ -464,7 +464,7 @@ final class LetturaMacTests: XCTestCase {
         let barra = MenuPrincipale.barra(comandi: ComandiFinti())
         let menu = try XCTUnwrap(barra.items.first { $0.submenu?.title == Parole.menuLettura }?.submenu)
         let conScorciatoia = menu.items.filter { !$0.isSeparatorItem && !$0.keyEquivalent.isEmpty }
-        XCTAssertEqual(conScorciatoia.count, 3, "⌘J, ⌥⌘↓, ⌥⌘↑")
+        XCTAssertEqual(conScorciatoia.count, 5, "⌘J, ⌥⌘↓ e la sua alternativa ⌃⌘↓, ⌥⌘↑ e ⌃⌘↑")
         for primo in [v as NSResponder, f.scorrimento as NSResponder, nil] {
             w.makeFirstResponder(primo)
             var catena: [NSResponder] = []
@@ -491,8 +491,18 @@ final class LetturaMacTests: XCTestCase {
         let titoli = barra.items.compactMap { $0.submenu?.title }
         XCTAssertEqual(titoli, [Parole.nomeApp, Parole.menuArchivio, Parole.menuLibro, Parole.menuLettura, Parole.menuFinestra])
         let lettura = try! XCTUnwrap(barra.items.first { $0.submenu?.title == Parole.menuLettura }?.submenu)
-        let voci = lettura.items.filter { !$0.isSeparatorItem }
+        let voci = lettura.items.filter { !$0.isSeparatorItem && !$0.isAlternate }
         XCTAssertEqual(voci.map(\.title), MenuPrincipale.vociLettura.map(\.titolo))
+        // Le alternative dei titoli (⌃⌘↓, ⌃⌘↑): subito dopo la loro voce, stesso titolo, stesso comando, stesso tasto, solo
+        // Comando e Control; nel menu non si leggono due volte (compaiono al posto della voce solo tenendo Control).
+        let alternative = lettura.items.filter(\.isAlternate)
+        XCTAssertEqual(alternative.map(\.title), [ReadingCommandsWording.nextHeading, ReadingCommandsWording.previousHeading])
+        for a in alternative {
+            let k = lettura.index(of: a)
+            let principale = lettura.items[k - 1]
+            XCTAssertEqual(a.action, principale.action); XCTAssertEqual(a.keyEquivalent, principale.keyEquivalent)
+            XCTAssertEqual(a.keyEquivalentModifierMask, [.command, .control]); XCTAssertEqual(principale.keyEquivalentModifierMask, [.command, .option])
+        }
         XCTAssertEqual(voci.first?.keyEquivalent, "j")
         // I nomi dei comandi dell'iPad e dell'azione del modulo: le stesse parole sui due prodotti.
         XCTAssertEqual(voci.map(\.title), [ReadingCommandsWording.noteJump, ReadingCommandsWording.nextHeading,
