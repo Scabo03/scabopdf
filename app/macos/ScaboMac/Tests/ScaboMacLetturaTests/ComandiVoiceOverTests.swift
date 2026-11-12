@@ -118,4 +118,34 @@ final class ComandiVoiceOverTests: XCTestCase {
         ritorno.setAccessibilityFocused(true)
         XCTAssertEqual(v.fuoco, 1, "e VO+J dalla nota riporta al richiamo")
     }
+
+    /// I rotori anche sull'elemento (giro «titoli con il comando di VoiceOver sul Mac», 2026-11-12): ogni elemento dà gli STESSI
+    /// oggetti rotore del gruppo, nello stesso ordine, e il delegato della vista risponde a ciascuno da qualunque elemento, anche
+    /// lontano, fuori dalla finestra dei figli: il titolo seguente e il precedente vengono dal modulo, su tutto il libro.
+    func test_rotoriAncheSullElemento_stessiOggettiDelGruppo_titoliSuTuttoIlLibro() throws {
+        let v = libroConNote(60)   // 600 elementi: finestrato; un titolo ogni dieci
+        XCTAssertTrue(v.finestrato)
+        v.impostaFuocoIniziale(0)
+        _ = v.figliEsposti()
+        let delGruppo = v.accessibilityCustomRotors()
+        XCTAssertFalse(delGruppo.isEmpty)
+        for i in [0, 1, 300, 599] {
+            let dellElemento = v.elemento(i).accessibilityCustomRotors()
+            XCTAssertEqual(dellElemento.count, delGruppo.count, "elemento \(i)")
+            XCTAssertTrue(zip(dellElemento, delGruppo).allSatisfy { $0 === $1 }, "gli stessi oggetti del gruppo (elemento \(i))")
+        }
+        let titoli = try XCTUnwrap(delGruppo.first { v.rotoreDelModulo($0) == .headings })
+        func cerca(da i: Int, avanti: Bool) -> Int? {
+            let p = NSAccessibilityCustomRotor.SearchParameters()
+            p.currentItem = NSAccessibilityCustomRotor.ItemResult(targetElement: v.elemento(i))
+            p.searchDirection = avanti ? .next : .previous
+            return (v.rotor(titoli, resultFor: p)?.targetElement as? ElementoLettura)?.indice
+        }
+        XCTAssertFalse(v.esposto(500), "il titolo 500 è lontano dalla finestra")
+        XCTAssertEqual(cerca(da: 1, avanti: true), 10)
+        XCTAssertEqual(cerca(da: 495, avanti: true), 500)
+        XCTAssertEqual(cerca(da: 505, avanti: false), 500)
+        XCTAssertNil(cerca(da: 590, avanti: true), "dopo l'ultimo titolo nessun titolo")
+        XCTAssertNil(cerca(da: 0, avanti: false), "prima del primo titolo nessun titolo")
+    }
 }

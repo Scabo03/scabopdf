@@ -395,4 +395,60 @@ final class FuocoDaFuoriTests: XCTestCase {
         XCTAssertTrue(Set(elems(g, "AXChildren").compactMap(indice)).contains(12), "il titolo raggiunto è fra i figli")
         print("RISULTATO titoli_da_fuori {\"avanti\":5,\"indietro\":6}")
     }
+
+    /// VO+Comando+H e VO+Comando+Maiuscole+H COME NELLA PROVA 6 (giro «titoli con il comando di VoiceOver sul Mac», 2026-11-12,
+    /// DISEGNO § 5.4). Nella prova, a ogni VO+Comando+H VoiceOver ha chiesto il ruolo dell'elemento sotto il cursore, due volte i
+    /// rotori del gruppo e nient'altro: nessuna ricerca nel rotore, nessun titolo trovato. Da fuori quella traccia la danno le
+    /// ricerche per chiave rivolte all'ELEMENTO sotto il cursore (due, come lì), non al gruppo: qui si fanno così, dall'elemento
+    /// su cui il cursore si trova ogni volta, e il titolo trovato riceve il fuoco come dopo ogni spostamento del cursore. Libro
+    /// sintetico, finestra dei figli di nove elementi: dal titolo del primo capitolo, cinque volte avanti fino al sesto (12, 16 e
+    /// 20 sono fuori dalla finestra quando si parte), poi indietro fino al primo, e oltre gli estremi nessun titolo. Sull'app di
+    /// prima della cura (`SCABOMAC_APP` = la copia di prima) fallisce: AppKit risponde «nessun valore» all'elemento.
+    func test_comandiDeiTitoli_ricercaSullElementoSottoIlCursore_comeLaProva6() async throws {
+        let (running, app, g) = try await lancia(["--raggio-finestra", "4"])
+        defer { chiudi(running) }
+        func fuocoDellApp() -> Int? { attr(app, "AXFocusedUIElement").flatMap { indice($0 as! AXUIElement) } }
+        /// Una pressione di VO+Comando+H (o con Maiuscole): due ricerche per chiave all'elemento sotto il cursore, come nel diario.
+        func premi(_ cursore: AXUIElement, avanti: Bool) -> AXUIElement? {
+            let p: [String: Any] = ["AXSearchKey": ["AXHeadingSearchKey"], "AXStartElement": cursore,
+                                    "AXDirection": avanti ? "AXDirectionNext" : "AXDirectionPrevious", "AXResultsLimit": 1]
+            var trovato: AXUIElement? = nil
+            for _ in 0..<2 {
+                var v: CFTypeRef?
+                guard AXUIElementCopyParameterizedAttributeValue(cursore, "AXResultsForSearchPredicate" as CFString,
+                                                                 p as CFDictionary, &v) == .success,
+                      let r = v as? [[String: Any]], let e = r.first?["AXSearchResultElement"] else { return nil }
+                trovato = (e as! AXUIElement)
+            }
+            return trovato
+        }
+        let esposti = Set(elems(g, "AXChildren").compactMap(indice))
+        XCTAssertFalse(esposti.contains(12) || esposti.contains(16) || esposti.contains(20), "12, 16 e 20 fuori dalla finestra")
+        var cursore = try XCTUnwrap(elems(g, "AXChildren").first { indice($0) == 0 })
+        XCTAssertEqual(focalizza(cursore), .success); gira(0.3)
+        var avanti: [Int] = []
+        for _ in 0..<5 {
+            guard let t = premi(cursore, avanti: true) else { break }
+            avanti.append(indice(t) ?? -1)
+            XCTAssertEqual(focalizza(t), .success); gira(0.3)
+            XCTAssertEqual(fuocoDellApp(), indice(t), "il titolo trovato ha il fuoco dell'app")
+            cursore = t
+        }
+        XCTAssertEqual(avanti, [4, 8, 12, 16, 20], "VO+Comando+H cinque volte: i titoli dal secondo al sesto capitolo")
+        XCTAssertNil(premi(cursore, avanti: true), "dopo l'ultimo titolo nessun titolo seguente")
+        var indietro: [Int] = []
+        for _ in 0..<5 {
+            guard let t = premi(cursore, avanti: false) else { break }
+            indietro.append(indice(t) ?? -1)
+            XCTAssertEqual(focalizza(t), .success); gira(0.3)
+            cursore = t
+        }
+        XCTAssertEqual(indietro, [16, 12, 8, 4, 0], "VO+Comando+Maiuscole+H: indietro fino al primo titolo")
+        XCTAssertNil(premi(cursore, avanti: false), "prima del primo titolo nessun titolo precedente")
+        // Da un elemento che non è un titolo (il capoverso del primo capitolo), il titolo seguente è quello del secondo capitolo.
+        let capoverso = try XCTUnwrap(elems(g, "AXChildren").first { indice($0) == 1 })
+        XCTAssertEqual(focalizza(capoverso), .success); gira(0.3)
+        XCTAssertEqual(premi(capoverso, avanti: true).flatMap(indice), 4)
+        print("RISULTATO titoli_come_prova6 {\"avanti\":\(avanti.count),\"indietro\":\(indietro.count)}")
+    }
 }
