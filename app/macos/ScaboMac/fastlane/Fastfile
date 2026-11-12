@@ -1,0 +1,102 @@
+# La CORSIA DI CARICAMENTO DEL MAC (giro «ScaboPDF per Mac su TestFlight», 2026-11-12): ScaboPDF per Mac su TestFlight, nello
+# STESSO record App Store dell'iPad (LAYER2 § 12.16, decisione 15), accanto alla corsia dell'iPad (`app/ios/fastlane/Fastfile`),
+# con le stesse chiavi e la stessa procedura (docs/RELEASE_TESTFLIGHT.md, «La corsia del Mac»). Si lancia da app/macos/ScaboMac:
+#   fastlane mac note_tester     controlla e stampa le note per i tester (fastlane/COSA_TESTARE.txt), senza caricare nulla
+#   fastlane mac setup_signing   installa profilo Mac App Store e certificato del pacchetto (match, in sola lettura)
+#   fastlane mac valida          prepara il pacchetto firmato e lo fa controllare ad App Store Connect, senza caricarlo
+#   fastlane mac beta            prepara il pacchetto firmato e lo carica su TestFlight, con le note
+# I segreti si leggono dall'ambiente per NOME (il file dei segreti, fuori dal repo): questo file non ne contiene.
+default_platform(:mac)
+
+APP_ID  = "com.scabo.scabopdf"   # lo stesso identificativo dell'app dell'iPad
+TEAM_ID = "D2KQYQ8YU8"
+SCABOMAC_DIR = File.expand_path("..", __dir__)
+USCITA = File.join(SCABOMAC_DIR, "build", "distribuzione")
+
+# La chiave API di App Store Connect (non un ID Apple), dal percorso del .p8. Poi la variabile del percorso si toglie
+# dall'ambiente: sigh e pilot la leggerebbero come `api_key_path`, in conflitto con `api_key` (misurato il 12 novembre 2026).
+def asc_api_key
+  $scabo_p8 ||= ENV["APP_STORE_CONNECT_API_KEY_PATH"]   # per altool, che vuole il percorso
+  key = app_store_connect_api_key(key_id: ENV["APP_STORE_CONNECT_API_KEY_ID"],
+                                  issuer_id: ENV["APP_STORE_CONNECT_API_KEY_ISSUER_ID"],
+                                  key_filepath: $scabo_p8, in_house: false)
+  ENV.delete("APP_STORE_CONNECT_API_KEY_PATH")
+  key
+end
+
+def match_readonly?
+  ENV.fetch("MATCH_READONLY", "true") != "false"
+end
+
+# Il profilo «match AppStore com.scabo.scabopdf macos» (col certificato Apple Distribution già nel deposito) e il certificato
+# «3rd Party Mac Developer Installer» per il pacchetto d'installazione, come TIPO AGGIUNTIVO: con
+# `type: "mac_installer_distribution"` da solo, match 2.236.1 chiede al portale un altro Apple Distribution (respinto).
+def install_signing(api_key)
+  match(type: "appstore", platform: "macos", app_identifier: APP_ID, team_id: TEAM_ID, api_key: api_key,
+        git_url: ENV["MATCH_GIT_URL"], readonly: match_readonly?, additional_cert_types: ["mac_installer_distribution"],
+        verbose: true)
+  profilo = ENV["sigh_#{APP_ID}_appstore_macos_profile-path"]
+  UI.user_error!("manca il profilo Mac App Store dopo match") unless profilo && File.exist?(profilo)
+  profilo
+end
+
+def testflight_notes!
+  path = File.expand_path("COSA_TESTARE.txt", __dir__)
+  UI.user_error!("Mancano le note per i tester del Mac: scrivi fastlane/COSA_TESTARE.txt (italiano piano).") unless File.exist?(path)
+  notes = File.read(path).strip
+  UI.user_error!("fastlane/COSA_TESTARE.txt è vuoto: le note per i tester sono obbligatorie.") if notes.empty?
+  UI.user_error!("fastlane/COSA_TESTARE.txt supera i 4000 caratteri ammessi da TestFlight.") if notes.length > 4000
+  UI.message("Note per i tester del Mac (#{notes.length} caratteri):\n#{notes}")
+  notes
+end
+
+# Il numero della build del Mac: la serie del Mac, distinta da quella dell'iPad (App Store Connect Help, universal purchase:
+# «may each have different version numbers and build strings»). SCABOMAC_BUILD_NUMBER lo forza; altrimenti l'ultima build del
+# Mac su TestFlight più uno.
+def mac_build_number(api_key)
+  return ENV["SCABOMAC_BUILD_NUMBER"] if ENV["SCABOMAC_BUILD_NUMBER"] && !ENV["SCABOMAC_BUILD_NUMBER"].empty?
+  (latest_testflight_build_number(api_key: api_key, app_identifier: APP_ID, platform: "osx", initial_build_number: 0) + 1).to_s
+end
+
+def prepara_pacchetto(profilo, build_number)
+  script = File.join(SCABOMAC_DIR, "scripts", "build_app.sh")
+  sh("SCABOMAC_DISTRIBUZIONE=1 SCABOMAC_BUILD=#{build_number.shellescape} SCABOMAC_PROFILO=#{profilo.shellescape} " \
+     "#{script.shellescape} #{USCITA.shellescape}")
+  pkg = File.join(USCITA, "ScaboPDF.pkg")
+  UI.user_error!("il pacchetto non c'è: #{pkg}") unless File.exist?(pkg)
+  pkg
+end
+
+platform :mac do
+  desc "Controlla e stampa le note per i tester del Mac senza caricare nulla."
+  lane :note_tester do
+    testflight_notes!
+  end
+
+  desc "Installa (o, con MATCH_READONLY=false, crea) il profilo Mac App Store e il certificato del pacchetto, via match."
+  lane :setup_signing do
+    install_signing(asc_api_key)
+  end
+
+  desc "Prepara il pacchetto firmato e lo fa controllare ad App Store Connect (altool --validate-app), senza caricarlo."
+  lane :valida do
+    api_key = asc_api_key
+    profilo = install_signing(api_key)
+    pkg = prepara_pacchetto(profilo, mac_build_number(api_key))
+    sh("xcrun altool --validate-app #{pkg.shellescape} --api-key #{ENV['APP_STORE_CONNECT_API_KEY_ID'].shellescape} " \
+       "--api-issuer #{ENV['APP_STORE_CONNECT_API_KEY_ISSUER_ID'].shellescape} " \
+       "--p8-file-path #{$scabo_p8.shellescape} --output-format normal")
+  end
+
+  desc "ScaboPDF per Mac su TestFlight: note, firma (match in sola lettura), pacchetto, caricamento; attende l'elaborazione."
+  lane :beta do
+    changelog = testflight_notes!
+    api_key = asc_api_key
+    profilo = install_signing(api_key)
+    build_number = mac_build_number(api_key)
+    pkg = prepara_pacchetto(profilo, build_number)
+    upload_to_testflight(api_key: api_key, app_identifier: APP_ID, app_platform: "osx", pkg: pkg, changelog: changelog,
+                         skip_waiting_for_build_processing: false, wait_processing_interval: 60,
+                         distribute_external: false, notify_external_testers: false)
+  end
+end

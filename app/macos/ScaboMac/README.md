@@ -8,8 +8,9 @@ d'impaginazione e la esporta in un pacchetto `.scabolettura` che l'iPad riceve (
 scheletro nel giro «linea Mac» del 2026-10-05/06 e costruita il 2026-10-16, non è più un'app a parte (fino all'8 novembre
 i documenti dicevano «due app sul Mac»: era un fraintendimento, LAYER2 § 12.16). La prima tappa dell'app unica è del giro
 dell'8 novembre (`docs/DISEGNO_LETTURA_MAC.md` § 9, tappa A). È un pacchetto SwiftPM **fratello** dell'app iOS: dipende da
-`ScaboCore`, `ScaboChain` e `ScaboPageStructure` (`../../ios/`) e non tocca `ScaboPDF.xcodeproj`. Non è distribuita: si
-firma in locale.
+`ScaboCore`, `ScaboChain` e `ScaboPageStructure` (`../../ios/`) e non tocca `ScaboPDF.xcodeproj`. Per lo sviluppo si firma in
+locale; dal 12 novembre 2026 va su TestFlight, nello stesso record dell'app dell'iPad, con la corsia del Mac (`fastlane/`,
+`docs/RELEASE_TESTFLIGHT.md`, «La corsia del Mac»).
 
 ## Come si compila, si prova e si apre
 
@@ -29,7 +30,9 @@ firma in locale.
   altrimenti ad hoc). Poi `open <cartella>/ScaboPDF.app`.
 - Nell'app: la Home con l'elenco dei libri; «Importa un documento…» (Cmd+O), il trascinamento nella finestra o «Apri con»;
   Invio o Cmd+Freccia giù apre il libro; menu «Lettura» (Cmd+J nota e richiamo, Opzione+Cmd+Freccia giù e su per le
-  intestazioni); Cmd+, le Impostazioni di lettura (granularità, note a voce). Menu «Finestra» → «Modelli e officina»
+  intestazioni); Cmd+, le Impostazioni di lettura (granularità, note a voce) e, in fondo, «Mostra la diagnostica nel menu
+  Finestra», che fa comparire nel menu «Finestra» la voce «Diagnostica…»: il pannello col diario (spento di serie, solo codici e
+  numeri, nel contenitore), la variante dei titoli (A, B, C, D; predefinita la C) e le prove guidate col libro di prova. Menu «Finestra» → «Modelli e officina»
   (Cmd+Shift+M): un selettore «Modelli» / «Officina»; nell'officina «Prepara la lettura di un PDF…» (Cmd+Shift+O), poi
   «Invia all'iPad con AirDrop…» o «Salva il file per il cavo…».
 - Rete d'identità con l'iPad: `app/ios/scripts/rete_vista_mac.sh <etichetta> [--solo STEM] [--misure STEM]` (la vista del
@@ -140,4 +143,7 @@ Store distinti, mobile e Mac (LAYER2 § 12.12 e § 12.16, decisione 9): aggiunge
 sarebbe stato irreversibile dopo la prima approvazione.» Con l'identificativo è cambiato il contenitore della sandbox
 (`~/Library/Containers/com.scabo.scabopdf/`): in quello vecchio c'era solo materiale delle prove, nessun libro né
 annotazione, e nulla è stato portato. Oggi: app con sandbox e `files.user-selected.read-write`, SENZA rete; servizio di
-scaricamento con sandbox e `network.client`. La distribuzione su TestFlight per Mac è in `docs/RELEASE_TESTFLIGHT.md`.
+scaricamento con sandbox e `network.client`. La distribuzione su TestFlight per Mac è in `docs/RELEASE_TESTFLIGHT.md`; lo script
+`scripts/build_app.sh` ha il modo di distribuzione (`SCABOMAC_DISTRIBUZIONE=1`: firma Apple Distribution, profilo Mac App Store
+incorporato, pacchetto d'installazione). **La build di sviluppo e quella di TestFlight hanno lo stesso contenitore**: la build di
+sviluppo si apre solo con `--libreria-di-prova` (la regola è in `docs/RELEASE_TESTFLIGHT.md`).

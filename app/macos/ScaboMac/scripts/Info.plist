@@ -14,8 +14,13 @@
 	<key>CFBundleName</key><string>ScaboPDF</string>
 	<key>CFBundleDisplayName</key><string>ScaboPDF</string>
 	<key>CFBundlePackageType</key><string>APPL</string>
-	<key>CFBundleShortVersionString</key><string>0.1</string>
+	<!-- La versione del Mac nel record App Store: 1.0, come la versione macOS aggiunta al record il 12 novembre 2026 (e come
+	     l'iPad). La build la scrive scripts/build_app.sh (in distribuzione: SCABOMAC_BUILD, una per caricamento; il Mac ha la
+	     sua serie di build, distinta da quella dell'iPad: «may each have different version numbers and build strings», App
+	     Store Connect Help, universal purchase). Qui il valore delle build di sviluppo. -->
+	<key>CFBundleShortVersionString</key><string>1.0</string>
 	<key>CFBundleVersion</key><string>1</string>
+	<key>CFBundleIconFile</key><string>AppIcon</string>
 	<key>LSMinimumSystemVersion</key><string>14.0</string>
 	<key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
 	<key>NSHighResolutionCapable</key><true/>

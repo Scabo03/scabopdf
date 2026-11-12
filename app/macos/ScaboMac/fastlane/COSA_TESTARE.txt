@@ -1,0 +1,25 @@
+Prima versione di ScaboPDF per Mac. È la stessa app dell'iPad, con build sue per il Mac. La libreria del Mac è sua: i libri dell'iPad non arrivano da soli.
+
+Che cosa c'è
+- La Home con la libreria.
+- L'importazione di PDF e di atti di Normattiva in formato XML: Comando O, cioè «Importa un documento…» nel menu Archivio, oppure trascinando il file nella finestra. La preparazione è la stessa dell'iPad, e così la lettura.
+- La lettura: VO Freccia destra e VO Freccia sinistra passano da un elemento all'altro; poi i titoli, le note col loro segnale e i salti dalla nota al suo richiamo.
+- La finestra «Modelli e officina», dal menu Finestra o con Comando Maiuscole M: il pannello dei modelli e l'officina.
+
+Che cosa manca ancora
+La ricerca nel libro e nella libreria, i segnalibri, la Consultazione Rapida e la Dottrina Inline.
+
+Con VoiceOver
+- VO J salta fra una nota e il suo richiamo, in un verso e nell'altro.
+- VO Comando H porta al titolo seguente, VO Comando Maiuscole H al titolo precedente. Anche il rotore, VO U, ha le liste dei titoli. Nei codici ogni articolo è un titolo di livello 5. Se i titoli non si trovano, ditelo: su questo i comandi di VoiceOver sono ancora da sentire.
+Senza VoiceOver: Comando J per la nota e il richiamo, Opzione Comando Freccia giù e Freccia su per i titoli.
+
+La diagnostica, per le prove
+1. Comando virgola apre le Impostazioni. In fondo, sotto «Per chi sviluppa ScaboPDF», c'è «Mostra la diagnostica nel menu Finestra»: va accesa.
+2. Nel menu Finestra compare «Diagnostica…»: aprirla.
+3. Nel pannello, «Tieni il diario» accende il diario. Il diario annota solo codici e numeri, mai il testo dei libri, e resta su questo Mac, nella cartella dell'app. «Mostra la cartella del diario nel Finder» e «Esporta il diario…» lo ritrovano.
+4. In «I titoli» si sceglie come i titoli si presentano a VoiceOver: quattro scelte, dalla A alla D. Di partenza c'è la C. La scelta vale subito, anche nel libro aperto.
+5. «Apri il libro di prova» apre un libro scritto dall'app stessa, in una libreria a parte: la libreria vera non cambia.
+
+Da provare per primo
+Importare un PDF, aprirlo e scorrere qualche elemento; VO Comando H e VO Comando Maiuscole H sui titoli; VO J da un capoverso col richiamo alla sua nota, e ritorno. Con il diario acceso, quello che succede resta annotato: «Esporta il diario…» lo salva in un file, da mandare a chi sviluppa ScaboPDF.

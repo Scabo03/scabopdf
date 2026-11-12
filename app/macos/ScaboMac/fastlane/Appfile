@@ -1,0 +1,2 @@
+app_identifier("com.scabo.scabopdf")   # lo stesso dell'iPad: il Mac sta nello stesso record (LAYER2 § 12.16, decisione 15)
+team_id("D2KQYQ8YU8")

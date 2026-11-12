@@ -2,3 +2,5 @@
 build/
 .swiftpm/
 Vendor/
+fastlane/report.xml
+fastlane/.env*

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Il manifesto della privacy di ScaboPDF per Mac (giro «ScaboPDF per Mac su TestFlight», 2026-11-12). L'app non traccia, non
+     raccoglie dati e non ha la rete (la rete l'ha solo il servizio di scaricamento dei modelli, verso l'indirizzo ufficiale scritto
+     nel catalogo, senza dati dell'utente). Le interfacce «con motivo dichiarato» che il codice usa, coi motivi di Apple:
+     - le preferenze (UserDefaults, ScaboCore `UserDefaultsKeyValueStore`): CA92.1, informazioni dell'app stessa;
+     - lo spazio libero sul disco (pannello dei modelli, prima di uno scaricamento): 85F4.1, mostrarlo a chi usa l'app, ed
+       E174.1, controllare che ci sia spazio prima di scrivere;
+     - il tempo dall'avvio del sistema (ProcessInfo.systemUptime: tempi dell'elaborazione, il comando arrivato da tastiera):
+       35F9.1, misurare il tempo fra due eventi dentro l'app;
+     - le date e le dimensioni dei file (la cache della libreria, i pesi dei modelli, nel contenitore): C617.1. -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key><false/>
+	<key>NSPrivacyTrackingDomains</key><array/>
+	<key>NSPrivacyCollectedDataTypes</key><array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key><string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key><array><string>CA92.1</string></array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key><string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key><array><string>85F4.1</string><string>E174.1</string></array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key><string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key><array><string>35F9.1</string></array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key><string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key><array><string>C617.1</string></array>
+		</dict>
+	</array>
+</dict>
+</plist>
