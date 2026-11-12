@@ -185,11 +185,19 @@ final class LetturaMacTests: XCTestCase {
         let v = f.vista
         let nota = try XCTUnwrap((0..<v.conteggio).first { v.segmento($0).role == "NOTE" })
         XCTAssertFalse(v.impostazioni.noteSpokenLabels, "senza scelta i segnali delle note, come sull'iPad")
-        XCTAssertNotNil(v.suonatore, "la finestra suona i segnali")
+        XCTAssertNotNil(v.suonatore, "la finestra collega sempre i segnali (prima solo con l'interruttore di prova)")
         XCTAssertEqual(v.testoPronunciato(nota),
                        ReadingSpeech.intendedAccessibilityLabel(for: v.segmento(nota), restoreNoteIntro: false))
+        // Il cursore arriva sulla nota: il suonatore della finestra riceve il segnale del suo regime.
+        let segnaleNota = try XCTUnwrap(ReadingSpeech.noteSignal(for: v.segmento(nota)), "precondizione: una nota col regime")
+        var suonati: [[AudioSignal]] = []
+        let suonatoreDellaFinestra = v.suonatore
+        v.suonatore = { suonati.append($0); suonatoreDellaFinestra?($0) }
+        v.elemento(nota).setAccessibilityFocused(true)
+        XCTAssertEqual(suonati.last?.first, segnaleNota, "sulla nota il suo segnale")
         let conSegnale = v.testoPronunciato(nota)
         let impostazioni = FinestraImpostazioni(prefs: libreria.prefs)
+        XCTAssertNil(libreria.prefs.getItem(PreferenceKeys.noteSpokenLabels), "aprire le Impostazioni non scrive la scelta")
         XCTAssertEqual(impostazioni.note.state, .off, "la casella spenta")
         impostazioni.quandoCambianoLeNote = { f.aggiornaImpostazioni(voiceOver: false) }
         impostazioni.note.state = .on
@@ -389,6 +397,16 @@ final class LetturaMacTests: XCTestCase {
         let delModulo = v.descrizioneDelModulo(libro: "prova", layout: .continuousReading)
         XCTAssertTrue(ReadingDescriptionComparison.compare(delModulo, dallaVista).identical)
         XCTAssertEqual(try dallaVista.encoded(), try delModulo.encoded(), "stessi byte")
+        // E con «Annuncia le note a voce» accesa (prima del 12 novembre era il predefinito): la vista resta uguale al modulo.
+        PreferenzeLettura.impostaNoteAVoce(libreria.prefs, true)
+        f.aggiornaImpostazioni(voiceOver: false)
+        XCTAssertTrue(v.impostazioni.noteSpokenLabels)
+        let dallaVistaVoce = v.descrizioneDallaVista(libro: "prova", layout: .continuousReading)
+        let delModuloVoce = v.descrizioneDelModulo(libro: "prova", layout: .continuousReading)
+        XCTAssertEqual(try dallaVistaVoce.encoded(), try delModuloVoce.encoded(), "stessi byte anche con le note a voce")
+        XCTAssertNotEqual(try dallaVistaVoce.encoded(), try dallaVista.encoded(), "le due impostazioni sono due letture diverse")
+        PreferenzeLettura.impostaNoteAVoce(libreria.prefs, false)
+        f.aggiornaImpostazioni(voiceOver: false)
         // Nessuna azione delle tappe successive.
         let nomi = Set(dallaVista.elements.flatMap(\.actions))
         XCTAssertTrue(nomi.isDisjoint(with: ["Strumenti elemento", "Aggiungi segnalibro", "Estrai come immagine"]), "\(nomi)")

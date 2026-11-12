@@ -3,7 +3,8 @@
 //  ScaboMacLettura — i segnali acustici sul Mac (giro «app unica per Mac, tappa A», 2026-11-08): gli STESSI file dell'iPad
 //  (`app/ios/ScaboApp/Audio/*.mp3`, l'identità di ciascuno è ScaboCore `AudioSignal`), copiati nel bundle dell'app da
 //  `scripts/build_app.sh` in `Contents/Resources/Audio/`, mai duplicati nel repo. Il gancio del fuoco della lettura li chiede
-//  (`VistaLettura.suonatore`) solo se i segnali sono accesi; la schermata d'elaborazione suona «in corso», «fatto» ed
+//  (`VistaLettura.suonatore`, dal 12 novembre 2026 sempre collegato, come sull'iPad): il segnale della nota se le note non sono
+//  annunciate a voce, la bibliografia all'ingresso del suo blocco; la schermata d'elaborazione suona «in corso», «fatto» ed
 //  «errore» come l'iPad. Senza i file (per esempio nei test) tace.
 //
 import AppKit

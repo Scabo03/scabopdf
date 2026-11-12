@@ -359,12 +359,11 @@ final class FuocoDaFuoriTests: XCTestCase {
         print("RISULTATO voj_da_fuori {\"richiamo\":1,\"nota\":2}")
     }
 
-    /// I comandi dei titoli di VoiceOver (VO+Comando+H e VO+Comando+Maiuscole+H, la Navigazione rapida con H e con le cifre)
-    /// cercano nel contenitore il rotore del tipo che corrisponde alla chiave («This allows assistive technologies to assign
-    /// keyboard commands and gestures for these common search types», AppKit, `NSAccessibilityCustomRotor.h`; in VoiceOver
-    /// `hasCustomRotorMatchingSearchKey:`). Da fuori, la stessa ricerca per chiave sul gruppo trova TUTTI i titoli del libro, anche
-    /// quelli fuori dalla finestra dei figli (sei titoli, finestra di nove elementi), avanti e indietro, e per livello; il
-    /// titolo lontano, ricevuto il fuoco, entra fra i figli. Passa anche sull'app di prima: è la guardia di ciò che c'era già.
+    /// La ricerca per chiave rivolta al GRUPPO (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11): trova TUTTI i titoli
+    /// del libro, anche quelli fuori dalla finestra dei figli (sei titoli, finestra di nove elementi), avanti e indietro, e per
+    /// livello; il titolo lontano, ricevuto il fuoco, entra fra i figli. Passa anche sull'app di prima: è la guardia di ciò che
+    /// c'era già. Non è però la via di VoiceOver: nella prova 6 la ricerca andava all'elemento sotto il cursore (test seguente,
+    /// giro del 12 novembre 2026).
     func test_comandiDeiTitoli_ricercaPerChiave_tuttiITitoli_lettoDaFuori() async throws {
         let (running, app, g) = try await lancia(["--raggio-finestra", "4"])
         defer { chiudi(running) }
@@ -401,11 +400,13 @@ final class FuocoDaFuoriTests: XCTestCase {
     /// rotori del gruppo e nient'altro: nessuna ricerca nel rotore, nessun titolo trovato. Da fuori quella traccia la danno le
     /// ricerche per chiave rivolte all'ELEMENTO sotto il cursore (due, come lì), non al gruppo: qui si fanno così, dall'elemento
     /// su cui il cursore si trova ogni volta, e il titolo trovato riceve il fuoco come dopo ogni spostamento del cursore. Libro
-    /// sintetico, finestra dei figli di nove elementi: dal titolo del primo capitolo, cinque volte avanti fino al sesto (12, 16 e
-    /// 20 sono fuori dalla finestra quando si parte), poi indietro fino al primo, e oltre gli estremi nessun titolo. Sull'app di
-    /// prima della cura (`SCABOMAC_APP` = la copia di prima) fallisce: AppKit risponde «nessun valore» all'elemento.
+    /// sintetico con la finestra dei figli più piccola (tre elementi, più i due estremi del libro), così che OGNI titolo
+    /// cercato stia fuori dai figli esposti nel momento della ricerca (lo si controlla prima di ogni pressione: il titolo
+    /// lontano): dal titolo del primo capitolo cinque volte avanti fino al sesto, poi indietro fino al primo, e oltre gli estremi
+    /// nessun titolo. Sull'app di prima della cura (`SCABOMAC_APP` = la copia di prima) fallisce: AppKit risponde «nessun valore»
+    /// all'elemento.
     func test_comandiDeiTitoli_ricercaSullElementoSottoIlCursore_comeLaProva6() async throws {
-        let (running, app, g) = try await lancia(["--raggio-finestra", "4"])
+        let (running, app, g) = try await lancia(["--raggio-finestra", "1"])
         defer { chiudi(running) }
         func fuocoDellApp() -> Int? { attr(app, "AXFocusedUIElement").flatMap { indice($0 as! AXUIElement) } }
         /// Una pressione di VO+Comando+H (o con Maiuscole): due ricerche per chiave all'elemento sotto il cursore, come nel diario.
@@ -422,12 +423,14 @@ final class FuocoDaFuoriTests: XCTestCase {
             }
             return trovato
         }
-        let esposti = Set(elems(g, "AXChildren").compactMap(indice))
-        XCTAssertFalse(esposti.contains(12) || esposti.contains(16) || esposti.contains(20), "12, 16 e 20 fuori dalla finestra")
+        func esposti() -> Set<Int> { Set(elems(g, "AXChildren").compactMap(indice)) }
+        var lontani = 0
         var cursore = try XCTUnwrap(elems(g, "AXChildren").first { indice($0) == 0 })
         XCTAssertEqual(focalizza(cursore), .success); gira(0.3)
         var avanti: [Int] = []
-        for _ in 0..<5 {
+        for atteso in [4, 8, 12, 16, 20] {
+            XCTAssertFalse(esposti().contains(atteso), "il titolo \(atteso) è fuori dai figli esposti quando lo si cerca")
+            if !esposti().contains(atteso) { lontani += 1 }
             guard let t = premi(cursore, avanti: true) else { break }
             avanti.append(indice(t) ?? -1)
             XCTAssertEqual(focalizza(t), .success); gira(0.3)
@@ -437,7 +440,11 @@ final class FuocoDaFuoriTests: XCTestCase {
         XCTAssertEqual(avanti, [4, 8, 12, 16, 20], "VO+Comando+H cinque volte: i titoli dal secondo al sesto capitolo")
         XCTAssertNil(premi(cursore, avanti: true), "dopo l'ultimo titolo nessun titolo seguente")
         var indietro: [Int] = []
-        for _ in 0..<5 {
+        for atteso in [16, 12, 8, 4, 0] {
+            if atteso != 0 {   // il primo elemento del libro è sempre esposto (VO+Inizio)
+                XCTAssertFalse(esposti().contains(atteso), "il titolo \(atteso) è fuori dai figli esposti quando lo si cerca")
+                if !esposti().contains(atteso) { lontani += 1 }
+            }
             guard let t = premi(cursore, avanti: false) else { break }
             indietro.append(indice(t) ?? -1)
             XCTAssertEqual(focalizza(t), .success); gira(0.3)
@@ -449,6 +456,7 @@ final class FuocoDaFuoriTests: XCTestCase {
         let capoverso = try XCTUnwrap(elems(g, "AXChildren").first { indice($0) == 1 })
         XCTAssertEqual(focalizza(capoverso), .success); gira(0.3)
         XCTAssertEqual(premi(capoverso, avanti: true).flatMap(indice), 4)
-        print("RISULTATO titoli_come_prova6 {\"avanti\":\(avanti.count),\"indietro\":\(indietro.count)}")
+        XCTAssertEqual(lontani, 9, "nove titoli su dieci cercati da fuori dai figli esposti (il primo del libro è sempre esposto)")
+        print("RISULTATO titoli_come_prova6 {\"avanti\":\(avanti.count),\"indietro\":\(indietro.count),\"lontani\":\(lontani)}")
     }
 }

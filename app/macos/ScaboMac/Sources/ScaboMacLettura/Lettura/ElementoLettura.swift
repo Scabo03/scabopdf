@@ -62,12 +62,13 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
     }
 
     /// I ROTORI ANCHE SULL'ELEMENTO (giro «titoli con il comando di VoiceOver sul Mac», 2026-11-12, DISEGNO § 5.4): gli stessi
-    /// rotori del gruppo, gli stessi oggetti, col delegato della vista che cerca nel modulo su tutto il libro. Nella prova 6, a
-    /// ogni VO+Comando+H VoiceOver ha chiesto due volte i rotori del gruppo e non ha mai interrogato il rotore (diario); da fuori
-    /// la stessa traccia la danno, una per una, le ricerche per chiave (`AXResultsForSearchPredicate`) rivolte all'elemento sotto
-    /// il cursore, a cui AppKit risponde «nessun valore» perché i rotori stanno sul genitore (sul gruppo la stessa ricerca arriva
-    /// al rotore). Con i rotori anche qui, la ricerca rivolta all'elemento arriva al rotore del tipo che corrisponde alla chiave:
-    /// titoli, livelli, tabelle, immagini, risultati della ricerca, anche fuori dalla finestra dei figli.
+    /// rotori del gruppo, gli stessi oggetti, col delegato della vista che cerca nel modulo su tutto il libro. Nella prova 6, in
+    /// sei delle sette pressioni di VO+Comando+H chieste, VoiceOver ha chiesto due volte i rotori del gruppo e non ha mai
+    /// interrogato il rotore (diario); da fuori la stessa traccia la danno due ricerche per chiave (`AXResultsForSearchPredicate`)
+    /// rivolte all'elemento sotto il cursore, a cui AppKit risponde «nessun valore» perché i rotori stanno sul genitore (sul
+    /// gruppo la stessa ricerca arriva al rotore); è una delle due vie compatibili col diario (DISEGNO § 5.4). Con i rotori anche
+    /// qui, la ricerca rivolta all'elemento arriva al rotore del tipo che corrisponde alla chiave: titoli, livelli, tabelle,
+    /// immagini, risultati della ricerca, anche fuori dalla finestra dei figli.
     override public func accessibilityCustomRotors() -> [NSAccessibilityCustomRotor] {
         nota("AXCustomRotors")
         return vista.rotori()

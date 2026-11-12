@@ -4,7 +4,8 @@
 //  prototipo del giro «disegno della lettura per Mac», `docs/DISEGNO_LETTURA_MAC.md` § 2-5). UNA NSView, il gruppo «Testo del
 //  documento», dentro una NSScrollView; i suoi figli d'accessibilità sono gli elementi virtuali, uno per blocco di granularità,
 //  creati tutti alla prima richiesta (oggetti leggeri) e interrogati pigramente. Rotori sul gruppo (tipi di sistema per i
-//  titoli per livello, le tabelle e le immagini; il nome nostro per la ricerca), azioni per elemento, gancio del fuoco,
+//  titoli per livello, le tabelle e le immagini; il nome nostro per la ricerca) e, gli stessi, su ogni elemento (dal 12 novembre
+//  2026, DISEGNO § 5.4), azioni per elemento, gancio del fuoco,
 //  scorrimento alla riga del fuoco. Disegna solo le righe visibili. Tutto ciò che si dice viene dal modulo `ReadingSpeech`.
 //
 //  Dal giro «prove della tappa A» (2026-11-09), due cure dalle prove d'orecchio:
@@ -59,7 +60,7 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
 
     /// Il fuoco è arrivato su un elemento (la posizione di lettura: la registra chi ha aperto il libro).
     public var quandoCambiaIlFuoco: ((Int) -> Void)?
-    /// Chi suona i segnali, se acceso (il gancio è pronto; i suoni si accendono solo dopo la prova d'orecchio T2).
+    /// Chi suona i segnali: la finestra di lettura lo collega sempre (dal 12 novembre 2026, come sull'iPad); i test lo sostituiscono.
     public var suonatore: (([AudioSignal]) -> Void)?
 
     private var elementi: [ElementoLettura]? = nil
@@ -516,10 +517,12 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     // «Vai all'elemento collegato», VO+J, è il comando di VoiceOver per saltare fra elementi legati (guida di VoiceOver per
     // macOS, comandi di navigazione; configurazione predefinita di VoiceOver: VO+J = `Global.navigateLink`): qui la nota e il
     // suo richiamo, coi bersagli dei salti del modulo (DISEGNO § 5.4). I comandi dei titoli di VoiceOver (VO+Comando+H, la
-    // Navigazione rapida con H e con le cifre) trovano i rotori di tipo intestazione del gruppo: AppKit inoltra la ricerca
-    // per chiave al rotore del tipo corrispondente, e il rotore cerca nel modulo, su tutto il libro (misurato da fuori). La
-    // ricerca generica di AppKit (`AXUIElementsForSearchPredicate`, macOS 26) guarda invece i soli figli esposti e il ruolo:
-    // non passa dalla vista e non si può ridefinire con l'interfaccia pubblica (misurato da fuori, DISEGNO § 5.4).
+    // Navigazione rapida con H e con le cifre): AppKit inoltra la ricerca per chiave al rotore del tipo corrispondente solo se
+    // il rotore sta sull'elemento a cui la ricerca è rivolta, e nella prova 6 VoiceOver la rivolgeva, per quanto il diario
+    // mostra, all'elemento sotto il cursore (DISEGNO § 5.4, giro del 12 novembre 2026): per questo ogni elemento dà anche
+    // lui questi rotori (`ElementoLettura.accessibilityCustomRotors`), che cercano nel modulo su tutto il libro. La ricerca
+    // generica di AppKit (`AXUIElementsForSearchPredicate`, macOS 26) guarda invece i soli figli esposti e il ruolo: non passa
+    // dalla vista e non si può ridefinire con l'interfaccia pubblica (misurato da fuori, DISEGNO § 5.4).
 
     /// Gli indici collegati all'elemento `i`: i bersagli dei salti nota ↔ richiamo del modulo, nell'ordine delle azioni (sulla
     /// nota il testo del richiamo; sul testo che richiama, le sue note). Il primo è il bersaglio di ⌘J.
