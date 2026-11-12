@@ -3,7 +3,8 @@
 //  ScaboMacKit
 //
 //  DOVE STANNO I PESI dei modelli scaricati (giro «costruzione della linea Mac», 2026-10-16): nel contenitore dell'app
-//  (`~/Library/Containers/com.scabo.scabopdf.mac/Data/Library/Application Support/ScaboPDF per Mac/Modelli/<voce>`),
+//  (`~/Library/Containers/com.scabo.scabopdf/Data/Library/Application Support/ScaboPDF per Mac/Modelli/<voce>`; fino al
+//  12 novembre 2026 il contenitore era `com.scabo.scabopdf.mac`, l'identificativo di prima),
 //  MAI dentro il pacchetto dell'app (uno dei tre difetti di OCR Lab: scriveva le impostazioni nel pacchetto e ne rompeva
 //  la firma). Un file si scrive prima come `.parziale`; diventa definitivo solo dopo il controllo di dimensione e impronta;
 //  il segno `verificato.json` dice che la voce è completa. La rimozione toglie TUTTO della voce: cartella, parziali, e le
@@ -35,7 +36,7 @@ public struct ModelStore: Sendable {
         var roots = [caches.appendingPathComponent("com.apple.metal", isDirectory: true),
                      caches.appendingPathComponent("ScaboPDF per Mac", isDirectory: true)]
         if let dc = darwinUserCacheDir() {
-            let id = Bundle.main.bundleIdentifier ?? "com.scabo.scabopdf.mac"
+            let id = Bundle.main.bundleIdentifier ?? "com.scabo.scabopdf"
             // SOLO la sottocartella col nome dell'app: mai una cache condivisa con altri programmi.
             let base = dc.appendingPathComponent(id, isDirectory: true)
             roots.append(base.appendingPathComponent("com.apple.metal", isDirectory: true))

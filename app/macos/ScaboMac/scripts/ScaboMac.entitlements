@@ -5,7 +5,7 @@
 	<!-- L'app: sandbox attiva e SOLO la lettura/scrittura dei file che l'utente sceglie (il PDF da elaborare, il
 	     pacchetto da salvare per il cavo). NIENTE rete (giro «costruzione della linea Mac», 2026-10-16): i modelli girano
 	     dentro l'app senza poter parlare con l'esterno. Lo scaricamento dei pesi passa dal servizio XPC
-	     com.scabo.scabopdf.mac.scaricatore, l'unico pezzo con com.apple.security.network.client
+	     com.scabo.scabopdf.scaricatore, l'unico pezzo con com.apple.security.network.client
 	     (scripts/ScaboMacScaricatore.entitlements). -->
 	<key>com.apple.security.app-sandbox</key><true/>
 	<key>com.apple.security.files.user-selected.read-write</key><true/>

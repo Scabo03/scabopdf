@@ -3,7 +3,7 @@
 //  ScaboMacScaricatore
 //
 //  IL SERVIZIO DI SCARICAMENTO dell'app Mac (giro «costruzione della linea Mac», 2026-10-16). È un servizio XPC dentro
-//  il pacchetto dell'app (`Contents/XPCServices/com.scabo.scabopdf.mac.scaricatore.xpc`, assemblato da
+//  il pacchetto dell'app (`Contents/XPCServices/com.scabo.scabopdf.scaricatore.xpc`, assemblato da
 //  `scripts/build_app.sh`), con sandbox e il SOLO permesso `network.client`: l'app non ha la rete, questo servizio sì e
 //  serve soltanto a scaricare i pesi dei modelli dall'indirizzo ufficiale scritto nel catalogo. Non scrive file suoi:
 //  riceve dall'app il descrittore del file di destinazione (nel contenitore dell'app) e vi scrive i byte; sessione

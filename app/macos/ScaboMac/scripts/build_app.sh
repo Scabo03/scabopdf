@@ -13,7 +13,7 @@
 #   Contents/MacOS/ScaboMac                      l'app: sandbox, file scelti dall'utente, NESSUNA rete
 #   Contents/Frameworks/llama.framework          llama.cpp b11429 (release ufficiale, impronta verificata da
 #                                                scripts/prepara_llama.sh): il motore di GLM-OCR dentro l'app
-#   Contents/XPCServices/com.scabo.scabopdf.mac.scaricatore.xpc
+#   Contents/XPCServices/com.scabo.scabopdf.scaricatore.xpc
 #                                                il servizio di scaricamento: sandbox e SOLO la rete in uscita
 #   Contents/Resources/*.bundle                  risorse dei moduli (catalogo, pagina di prova, modello Heron)
 #   Contents/Resources/Audio/*.mp3               i segnali acustici dell'iPad (app/ios/ScaboApp/Audio), copiati qui: un solo
@@ -35,7 +35,7 @@ BIN=".build/arm64-apple-macosx/release"
 [ -x "$BIN/ScaboMac" ] || BIN=".build/release"
 
 APP="$OUT/ScaboPDF.app"
-XPC="$APP/Contents/XPCServices/com.scabo.scabopdf.mac.scaricatore.xpc"
+XPC="$APP/Contents/XPCServices/com.scabo.scabopdf.scaricatore.xpc"
 echo "[2/5] assemblaggio di $APP"
 rm -rf "${APP:?}"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks" "$XPC/Contents/MacOS"

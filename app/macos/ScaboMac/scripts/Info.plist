@@ -4,10 +4,13 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key><string>it</string>
 	<key>CFBundleExecutable</key><string>ScaboMac</string>
-	<key>CFBundleIdentifier</key><string>com.scabo.scabopdf.mac</string>
+	<!-- Lo STESSO identificativo dell'app dell'iPad (LAYER2 § 12.16, decisione 15, 12 novembre 2026): il Mac sta nello stesso
+	     record App Store, come acquisto universale, con build sue. Fino al 12 novembre era com.scabo.scabopdf.mac (l'officina di
+	     prima): il contenitore della sandbox è cambiato con l'identificativo, e in quello vecchio non c'era la libreria vera (solo
+	     materiale delle prove: nessun passaggio da fare, giro «ScaboPDF per Mac su TestFlight»). -->
+	<key>CFBundleIdentifier</key><string>com.scabo.scabopdf</string>
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
-	<!-- L'app unica del Mac (LAYER2 § 12.16, decisioni 8-10): il nome del prodotto è ScaboPDF; l'identificativo resta quello
-	     dell'officina di prima, così il contenitore (modelli scaricati, preferenze) non cambia. -->
+	<!-- L'app unica del Mac (LAYER2 § 12.16, decisioni 8-10): il nome del prodotto è ScaboPDF, come sull'iPad. -->
 	<key>CFBundleName</key><string>ScaboPDF</string>
 	<key>CFBundleDisplayName</key><string>ScaboPDF</string>
 	<key>CFBundlePackageType</key><string>APPL</string>

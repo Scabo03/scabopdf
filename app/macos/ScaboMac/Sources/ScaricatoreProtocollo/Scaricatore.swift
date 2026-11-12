@@ -15,9 +15,10 @@
 
 import Foundation
 
-/// Il nome del servizio (identificativo del pacchetto XPC dentro `Contents/XPCServices`).
+/// Il nome del servizio (identificativo del pacchetto XPC dentro `Contents/XPCServices`): un figlio dell'identificativo
+/// dell'app, che dal 12 novembre 2026 è quello dell'iPad (LAYER2 § 12.16, decisione 15; prima `com.scabo.scabopdf.mac.scaricatore`).
 public enum ServizioScaricamento {
-    public static let nome = "com.scabo.scabopdf.mac.scaricatore"
+    public static let nome = "com.scabo.scabopdf.scaricatore"
 }
 
 /// Ciò che il servizio offre all'app.

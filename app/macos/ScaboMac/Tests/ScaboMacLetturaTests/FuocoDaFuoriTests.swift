@@ -75,8 +75,8 @@ final class FuocoDaFuoriTests: XCTestCase {
         }
         // L'app di un test precedente può essere ancora in chiusura: si aspetta qualche secondo prima di dire che ce n'è un'altra.
         let limite = Date().addingTimeInterval(8)
-        while !NSRunningApplication.runningApplications(withBundleIdentifier: "com.scabo.scabopdf.mac").isEmpty, Date() < limite { gira(0.1) }
-        guard NSRunningApplication.runningApplications(withBundleIdentifier: "com.scabo.scabopdf.mac").isEmpty else {
+        while !NSRunningApplication.runningApplications(withBundleIdentifier: "com.scabo.scabopdf").isEmpty, Date() < limite { gira(0.1) }
+        guard NSRunningApplication.runningApplications(withBundleIdentifier: "com.scabo.scabopdf").isEmpty else {
             throw XCTSkip("un'altra ScaboPDF è aperta")
         }
         return url

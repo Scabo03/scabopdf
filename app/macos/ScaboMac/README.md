@@ -132,10 +132,12 @@ Apple; macOS 14 copre chi non aggiorna spesso (tre versioni maggiori indietro ri
 
 ## Identificativo e distribuzione
 
-Bundle `com.scabo.scabopdf.mac`: coerente con l'app iOS (`com.scabo.scabopdf`) ma distinto. Il maintainer ha deciso
-due prodotti per Apple con record App Store distinti, mobile e Mac (LAYER2 § 12.12 e § 12.16, decisione 9): aggiungere la
-piattaforma macOS allo STESSO record sarebbe stato irreversibile dopo la prima approvazione. Oggi: firma locale; app con
-sandbox e `files.user-selected.read-write`, SENZA rete; servizio di scaricamento `com.scabo.scabopdf.mac.scaricatore`
-con sandbox e `network.client`. Per distribuire servirà, a seconda del canale: App Store/TestFlight → record app (nuovo
-o piattaforma aggiunta), profili per l'app e per il servizio; Developer ID → certificato Developer ID, hardened
-runtime (già attivo), notarizzazione.
+Dal 12 novembre 2026 l'app ha **lo stesso identificativo dell'app dell'iPad, `com.scabo.scabopdf`** (LAYER2 § 12.16,
+decisione 15): il Mac sta nello stesso record App Store, come acquisto universale, con build sue; il servizio di
+scaricamento è il figlio `com.scabo.scabopdf.scaricatore`. *Fino al 12 novembre diceva:* «Bundle `com.scabo.scabopdf.mac`:
+coerente con l'app iOS (`com.scabo.scabopdf`) ma distinto. Il maintainer ha deciso due prodotti per Apple con record App
+Store distinti, mobile e Mac (LAYER2 § 12.12 e § 12.16, decisione 9): aggiungere la piattaforma macOS allo STESSO record
+sarebbe stato irreversibile dopo la prima approvazione.» Con l'identificativo è cambiato il contenitore della sandbox
+(`~/Library/Containers/com.scabo.scabopdf/`): in quello vecchio c'era solo materiale delle prove, nessun libro né
+annotazione, e nulla è stato portato. Oggi: app con sandbox e `files.user-selected.read-write`, SENZA rete; servizio di
+scaricamento con sandbox e `network.client`. La distribuzione su TestFlight per Mac è in `docs/RELEASE_TESTFLIGHT.md`.

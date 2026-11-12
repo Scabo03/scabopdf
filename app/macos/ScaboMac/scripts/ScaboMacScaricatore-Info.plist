@@ -4,7 +4,7 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key><string>it</string>
 	<key>CFBundleExecutable</key><string>ScaboMacScaricatore</string>
-	<key>CFBundleIdentifier</key><string>com.scabo.scabopdf.mac.scaricatore</string>
+	<key>CFBundleIdentifier</key><string>com.scabo.scabopdf.scaricatore</string>
 	<key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
 	<key>CFBundleName</key><string>ScaboMacScaricatore</string>
 	<key>CFBundleDisplayName</key><string>Scaricamento dei modelli di ScaboPDF</string>
