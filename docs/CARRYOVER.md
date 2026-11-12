@@ -10,6 +10,14 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.62 (12 novembre 2026, giro «titoli di VoiceOver: le varianti», livello di verifica leggero, nessuna build: letto il
+> diario della prova 7 — **il rotore trova il titolo, VoiceOver ne chiede il ruolo e lo scarta** (testo statico; dedotto),
+> VO+Comando+M passa dalla ricerca generica sui figli esposti, VO+Comando+Maiuscole+H non chiede nulla —; **quattro varianti** dei
+> titoli (A ruolo d'intestazione come SwiftUI, B più tutti i titoli fra i figli, C più la nostra risposta alla ricerca generica,
+> D ruolo come WebKit), copie firmate nel laboratorio, misurate da fuori, **fuori da main** fino alla conferma dell'orecchio
+> (prova 8); ⌥⌘↓ e ⌥⌘↑ con VoiceOver acceso: mai arrivate all'app, esclusi per misura app, sistema e altre app, VoiceOver per
+> esclusione; nel codice ⌃⌘↓ e ⌃⌘↑ come scorciatoie alternative della vista e il lato dei modificatori nel diario; iPad identico.
+> Vedi lo STATO qui sotto.)
 > Versione: 2.61 (12 novembre 2026, giro «titoli con il comando di VoiceOver sul Mac», livello di verifica leggero, nessuna build:
 > registrate le decisioni 12-14 del maintainer (LAYER2 § 12.16); letto il diario della prova 6; **VO+Comando+H** curato nella via che
 > riproduce la traccia di VoiceOver (la ricerca rivolta all'elemento sotto il cursore: i rotori anche su ogni elemento), provato da
@@ -141,6 +149,35 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «titoli di VoiceOver: le varianti»: il diario della prova 7, quattro varianti dei titoli da sentire, ⌥⌘↓ con VoiceOver acceso (nessuna build) — 2026-11-12
+
+**Partenza:** `e4ff1db` (main = origin, build 66 su TestFlight; prossimo numero 67, non usato). **Ramo:** `feat/mac-titoli-varianti`
+(livello leggero, solo l'app Mac; l'iPad non cambia). Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_TITOLI_VARIANTI.md`;
+laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_varianti/` (lettura del diario, sonde, varianti e loro toppa, misure, reti,
+revisione, prova 8).
+
+- **Parte 1 — il diario della prova 7** (campo, `titoli_varianti/LETTURA_DIARIO_T7.md`): otto VO+Comando+H passano dal rotore
+  dell'elemento sotto il cursore, con l'indice del cursore; il rotore dà il titolo seguente, lontano; VoiceOver ne chiede **solo il
+  ruolo** e non si sposta (col rotore aperto, Invio porta invece su un testo statico): manca il ruolo d'intestazione (dedotto). Tre
+  ricerche generiche in avanti sui figli esposti, vuote (VO+Comando+M, dedotto dalla forma, ridata da fuori); per VO+Comando+Maiuscole+H
+  nessuna traccia. Delle due strade del giro prima, VoiceOver prende la prima, che la cura copre: la ricerca arriva.
+- **Parte 2 — le varianti** (DISEGNO § 5.4; copie firmate accanto allo script, `prova.sh A|B|C|D`; il codice di main non cambia finché
+  l'orecchio non ne conferma una): A ruolo d'intestazione come SwiftUI (testo nella descrizione, livello in `AXHeadingLevel`, qualifica
+  tolta dall'etichetta); B A più tutti i titoli fra i figli; C A più la risposta nostra alla ricerca generica su tutto il libro (AppKit la
+  chiama sull'elemento e sul gruppo); D ruolo d'intestazione come WebKit (testo nel titolo, livello nel valore). Da fuori: titoli lontani
+  trovati dal rotore in tutte; dalla ricerca generica solo in B e C; il gruppo risponde col primo titolo del libro in A, B, D (rischio per
+  VO+Comando+M); percorso integrale senza salti in tutte. Costo sul volume più grande: B 9.724 figli, 0,99 s al giro d'apertura e 101 ms
+  a passo dalla parte dell'app (A, C, D come oggi: 0,06 s e 6 ms); la parte di VoiceOver stimata (dedotto). Confronto con l'iPad: eccezione
+  dichiarata necessaria, misurata su un documento di studio (97 elementi su 2.523, tutti e soli i titoli, solo ruolo, testo e valore).
+- **Parte 3 — ⌥⌘↓ e ⌥⌘↑** (DISEGNO § 5.5): mai arrivate all'app con VoiceOver acceso; esclusi per misura l'app (tasti veri di XCTest), il
+  sistema (scorciatoie registrate) e altre app (prese degli eventi); resta VoiceOver, per esclusione, non provato. Fatto: ⌃⌘↓ e ⌃⌘↑ come
+  scorciatoie alternative della vista di lettura (non voci del menu: da fuori sarebbero voci in più), il lato dei modificatori nel diario.
+- **Prova d'orecchio 8** in DISEGNO § 10 (circa otto minuti): le quattro varianti con VO+Comando+H, Maiuscole+H e M; alla fine ⌥⌘↓ e ⌥⌘↑
+  coi tasti di sinistra, ⌥⌘↓ con quelli di destra, ⌃⌘↓. **Dopo la prova nulla entra in main senza un giro successivo.**
+- *(Verifiche, revisione, arrivo: da completare a fine giro.)*
 
 ---
 

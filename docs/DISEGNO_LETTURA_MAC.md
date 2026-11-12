@@ -678,9 +678,9 @@ processo di laboratorio, solo nomi: `hasCustomRotorMatchingSearchKey:`, `linkedU
 | inizio / fine del testo | VO+Inizio / Fine (VO+Fn+Freccia sinistra / destra) | gli estremi del libro, sempre fra i figli | sì | sì | campo (T1 rifatta) |
 | inizio / fine di ciò che si vede | VO+Maiuscole+Inizio / Fine | i figli visibili | sì | sì | dedotto |
 | leggere l'elemento | VO+A | il testo dell'elemento | sì | sì (legge solo l'elemento: normale, decisione 11) | campo (configurazione: `Global.content`; resoconto del maintainer) |
-| **titolo seguente / precedente** | **VO+Comando+H / VO+Comando+Maiuscole+H**; tasto singolo H (VO+Q) | un rotore di tipo intestazione per la ricerca per chiave (`AXHeadingSearchKey`; fonte: i tipi di rotore servono perché «assistive technologies [can] assign keyboard commands and gestures for these common search types», `NSAccessibilityCustomRotor.h`); campo: AppKit la inoltra al rotore solo se il rotore sta sull'elemento a cui la ricerca è rivolta; il rotore cerca nel modulo su **tutto il libro** | no (prova 6: sei tracce coi rotori su sette pressioni chieste, nessun titolo; prima di questo giro era scritto «sì», dedotto dalla ricerca sul gruppo) | sì da fuori dal 12 novembre (gli stessi rotori anche su ogni elemento); da sentire | campo (diario della prova 6; traccia riprodotta da fuori rivolgendo la ricerca all'elemento: una delle due vie compatibili); campo da fuori dopo la cura (dall'elemento sotto il cursore tutti i titoli, avanti e indietro, ognuno fuori dai figli esposti quando lo si cerca); **da sentire** (prova 7) |
+| **titolo seguente / precedente** | **VO+Comando+H / VO+Comando+Maiuscole+H**; tasto singolo H (VO+Q) | un rotore di tipo intestazione per la ricerca per chiave (`AXHeadingSearchKey`; fonte: i tipi di rotore servono perché «assistive technologies [can] assign keyboard commands and gestures for these common search types», `NSAccessibilityCustomRotor.h`); campo: AppKit la inoltra al rotore solo se il rotore sta sull'elemento a cui la ricerca è rivolta; il rotore cerca nel modulo su **tutto il libro** | no (prova 6: sei tracce coi rotori su sette pressioni chieste, nessun titolo; prima di questo giro era scritto «sì», dedotto dalla ricerca sul gruppo) | sì da fuori dal 12 novembre (gli stessi rotori anche su ogni elemento); da sentire | campo (diario della prova 6; traccia riprodotta da fuori rivolgendo la ricerca all'elemento: una delle due vie compatibili); campo da fuori dopo la cura (dall'elemento sotto il cursore tutti i titoli, avanti e indietro, ognuno fuori dai figli esposti quando lo si cerca); **prova 7: no** (il rotore trova il titolo, VoiceOver ne chiede il ruolo e scarta il testo statico; diario); varianti col ruolo d'intestazione **da sentire** (prova 8, sotto) |
 | titolo di un livello | tasti singoli 1–6 (VO+Q) | i rotori di livello, solo per i livelli presenti | no, dedotto (la stessa via dei titoli: misurato solo sul gruppo, che la prova 6 ha smentito per VO+Comando+H) | sì, dedotto (i rotori di livello stanno anche sull'elemento; il test nuovo usa la chiave dei titoli) | campo da fuori sul gruppo (livello 1); da sentire |
-| titolo dello stesso livello | VO+Comando+M / +Maiuscole | nessun tipo di rotore corrisponde a «stesso livello»; la ricerca generica di AppKit cerca il ruolo intestazione fra i figli esposti, e i nostri elementi sono testo statico (anche col ruolo d'intestazione vedrebbe solo i figli esposti, circa 400 attorno al cursore) | no | **no** (residuo dichiarato: col ruolo d'intestazione funzionerebbe al più fra i figli esposti; il ruolo non è dato, § 3.1) | campo (resoconto della prova 6: non funziona); dedotto (due tracce senza rotori nel diario, a 17,97 e 26,05 s: una sola è attribuibile a VO+Comando+M, l'altra forse è il quinto VO+Comando+H); campo da fuori (la ricerca generica risponde vuoto) |
+| titolo dello stesso livello | VO+Comando+M / +Maiuscole | nessun tipo di rotore corrisponde a «stesso livello»; la ricerca generica di AppKit cerca il ruolo intestazione fra i figli esposti, e i nostri elementi sono testo statico (anche col ruolo d'intestazione vedrebbe solo i figli esposti, circa 400 attorno al cursore) | no | **no** (residuo dichiarato: col ruolo d'intestazione funzionerebbe al più fra i figli esposti; il ruolo non è dato, § 3.1); prova 7: tre ricerche generiche sui figli esposti, vuote; varianti B e C da sentire (prova 8) | campo (resoconto della prova 6: non funziona); dedotto (due tracce senza rotori nel diario, a 17,97 e 26,05 s: una sola è attribuibile a VO+Comando+M, l'altra forse è il quinto VO+Comando+H); campo da fuori (la ricerca generica risponde vuoto) |
 | il rotore | VO+U; VO+Comando+Freccia sinistra / destra (lista), VO+Comando+Freccia su / giù (voce) | i rotori personalizzati del gruppo: titoli, livelli, tabelle, immagini, ricerca; dal 12 novembre gli stessi oggetti anche su ogni elemento | sì | sì, da sentire: le liste potrebbero comparire due volte (rischio dichiarato) | campo (T1 rifatta, prova 4, prova 6); dopo la cura da sentire (prova 7) |
 | tabella / immagine seguente | VO+Comando+T / G (+Maiuscole) | i rotori di tabelle e immagini, se il libro ne ha | no, dedotto (la stessa via dei titoli) | sì, dedotto (i rotori anche sull'elemento) | dedotto (non misurato su un libro con tabelle) |
 | **vai all'elemento collegato** | **VO+J** | gli elementi collegati (`AXLinkedUIElements`): la nota e il suo richiamo | **no** | **sì** | campo da fuori (andata e ritorno; sull'app di prima il test fallisce); campo nella prova 6: VoiceOver chiede gli elementi collegati dell'elemento sotto il cursore (cinque volte; dalla nota legge subito il capoverso collegato) e l'aiuto tastiera dice di VO+J «vai all'elemento collegato»; dove il cursore sia arrivato il diario non lo decide; **da sentire** (prova 7) |
@@ -754,6 +754,41 @@ una ricerca rivolta all'elemento lascia la richiesta dei rotori sull'elemento e 
 verificato: se il rotore di VoiceOver (VO+U) raccoglie i rotori dell'elemento e del gruppo, le liste potrebbero comparire due volte
 (sono gli stessi oggetti); la prova 7 lo chiede. VO+Comando+M resta senza risultato (tabella).
 
+**Dopo la prova 7 (12 novembre 2026): il ruolo che manca, e le varianti della prova 8** (giro «titoli di VoiceOver: le varianti»;
+campo: diario della prova 7, sonde e misure da fuori del laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_varianti/`;
+fonte: `NSAccessibilityConstants.h` dell'SDK di macOS 27.2). Resoconto: VO+Comando+H e VO+Comando+Maiuscole+H dicono ancora che non
+trovano intestazioni, VO+Comando+M non dà niente. **Il diario** (campo): otto VO+Comando+H passano tutti dal rotore — VoiceOver legge
+i rotori dell'elemento sotto il cursore e del gruppo, interroga il rotore dei titoli in avanti con l'indice del cursore (mai −1) e il
+rotore gli dà il titolo seguente, fuori dai figli esposti; di quel titolo VoiceOver chiede **solo il ruolo**, poi rilegge l'elemento
+sotto il cursore e non si sposta. Col rotore aperto (VO+U), Invio porta invece il cursore su un elemento con lo stesso ruolo di testo
+statico. Dunque la prima delle due strade del giro prima è quella di VoiceOver, la cura dei rotori sull'elemento ha fatto arrivare la
+ricerca, e VoiceOver scarta un risultato che non è un'intestazione (dedotto: chiede il ruolo e nient'altro). Tre altre tracce, senza
+rotori, sono ricerche generiche (`AXUIElementsForSearchPredicate`) in avanti sui figli esposti, due rivolte all'elemento e una al
+contenitore — la forma l'ha ridata da fuori la stessa ricerca sull'app di partenza —: VO+Comando+M (dedotto). VO+Comando+Maiuscole+H
+non lascia traccia: nessuna ricerca all'indietro, né nel rotore né sui figli; da fuori una ricerca generica all'indietro rivolta al
+gruppo, alla finestra o all'app non fa arrivare nulla all'app (campo). **I due motori di Apple** (campo, sonde da fuori su questo
+macOS): SwiftUI espone un titolo con `.isHeader` come ruolo `AXHeading`, testo nella descrizione, nessun valore e `AXHeadingLevel`
+(attributo pubblico dal macOS 26); WebKit come `AXHeading` col testo nel titolo, il livello nel valore e un testo statico figlio, e la
+sua area web risponde da sé alla ricerca generica. **Le varianti** (copie firmate nel laboratorio, accanto allo script delle prove;
+il codice di main non cambia finché l'orecchio non ne conferma una): A, il ruolo d'intestazione come SwiftUI, con la qualifica del
+modulo tolta dall'etichetta (la dice VoiceOver); B, A più tutti i titoli del libro sempre fra i figli del gruppo; C, A più la risposta
+nostra alla ricerca generica su tutto il libro, come WebKit (AppKit la chiama sull'elemento e sul gruppo, campo; l'elemento di partenza
+non arriva nella richiesta, e si usa l'elemento a cui è rivolta o il fuoco); D, il ruolo d'intestazione come WebKit. Da fuori (campo,
+libro sintetico, finestra dei figli di tre elementi): in tutte la ricerca dal rotore rivolta all'elemento trova i titoli 4, 8, 12, 16,
+20 e indietro, ognuno col ruolo d'intestazione e fuori dai figli quando lo si cerca; la ricerca generica rivolta all'elemento trova il
+titolo seguente lontano solo in B e C, quella rivolta al gruppo risponde col primo titolo del libro in A, B e D (AppKit non tiene conto
+della partenza: rischio per VO+Comando+M, da sentire) e col titolo giusto in C; il percorso integrale passo per passo, VO+Fine e
+VO+Inizio senza salti né vicoli ciechi in tutte e quattro. **Costo sul volume più grande** (campo, client da fuori, sola parte
+dell'app): A, C e D hanno i figli di oggi (402; giro d'apertura 3.620 richieste in 0,06 s, passo 6 ms); B ne ha 9.724 (giro d'apertura
+87.518 richieste in 0,99 s, passo mediano 101 ms su 400 passi senza vicoli ciechi). La parte di VoiceOver si stima dai diari (dedotto):
+con VoiceOver vero le cornici di 402 figli costano 2–4 ms a passo, quindi circa 50–100 ms per 9.724; il giro d'apertura, che nella prima
+T1 scorreva circa 7.000 figli al secondo nelle prime decine di migliaia, circa 1–3 s. Nessuna variante rompe lo scorrimento per
+elementi né il rotore, che è lo stesso; B va sentita anche sul volume più grande prima di adottarla, e la sua forma leggera (i soli
+titoli più vicini di ogni livello fra i figli, una dozzina in più) darebbe le stesse ricerche sul libro della prova. **Il confronto con
+l'iPad** richiede in tutte l'eccezione dichiarata della decisione 12: misurato sulla variante A su uno dei tre documenti di studio,
+97 elementi diversi su 2.523, cioè tutti e soli i suoi 97 titoli, nei soli campi ruolo, testo detto e valore detto (il testo del titolo
+passa nella descrizione, senza la qualifica). Da sentire nella prova 8 (§ 10).
+
 ### 5.5 Le scorciatoie dell'app con VoiceOver acceso (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11)
 
 **Il resoconto** (maintainer, prove 4 e 5): con VoiceOver acceso Comando+J non ha fatto il salto e VoiceOver ha detto informazioni su
@@ -825,6 +860,27 @@ destra e ⌥⌘↓ non hanno descrizione — non sono comandi di VoiceOver, come
 all'elemento collegato»; VO+Comando+H non ha avuto descrizione (l'11 novembre lo stesso aiuto aveva detto «intestazione
 successiva», decisione 11: non verificato perché). **Decisione 14** (LAYER2 § 12.16): agli utenti di VoiceOver si indicano VO+J e
 VO+Comando+H; ⌘J e ⌥⌘↓ / ⌥⌘↑ restano per chi usa la tastiera senza VoiceOver. Nessuna scorciatoia cambia.
+
+**Dopo la prova 7 (12 novembre 2026): ⌥⌘↓ e ⌥⌘↑ con VoiceOver acceso** (giro «titoli di VoiceOver: le varianti»; campo: diari
+delle prove 6 e 7, misure del laboratorio `titoli_varianti/misure/`). Nella prova 7 Opzione+Comando arriva all'app una volta sola, come
+modificatori (60 ms), senza freccia e senza che VoiceOver chieda nulla all'elemento (prima delle frecce senza modificatori, che arrivano,
+VoiceOver chiede due volte il ruolo dell'elemento sotto il cursore); nella prova 6 nessuna freccia con Opzione+Comando e nessun
+modificatore nella fase delle scorciatoie. **Escluso, per misura:** l'app (con tasti veri di XCTest ⌥⌘↓, ⌥⌘↓, ⌥⌘↑ arrivano e portano ai
+titoli 4, 8, 4: il menu non chiede modificatori in più e il primo risponditore non conta, § sopra); il sistema (le 234 scorciatoie
+registrate per l'utente di questo Mac, lette con `CopySymbolicHotKeys`, non hanno Opzione+Comando con le frecce); altre app (le prese
+degli eventi attive, `CGGetEventTapList`, senza VoiceOver: filtrano i tasti solo Siri e i servizi di sistema). **Resta VoiceOver**, per
+esclusione (dedotto, non provato): l'aiuto tastiera non descrive ⌥⌘↓ (resoconto della prova 6), quindi non è un suo comando; la
+Navigazione rapida era spenta (le frecce senza modificatori arrivavano); nella configurazione predefinita VoiceOver lega il comandante
+della tastiera all'Opzione destra e la ricerca veloce al Comando destro, e chi preme Opzione+Comando+Freccia con una mano usa i tasti di
+destra (dedotto: nei diari non si vedeva il lato). **Fatto:** il diario delle prove registra ora il lato dei modificatori (sinistra o
+destra, dai bit dei singoli tasti dell'evento, `IOLLEvent.h`); e c'è una **combinazione alternativa**, ⌃⌘↓ e ⌃⌘↑, senza Opzione, che
+non è un comando di VoiceOver senza il tasto VO né una scorciatoia del sistema o dell'app: la prende la vista di lettura prima del menu
+(`performKeyEquivalent`), qualunque sia il primo risponditore; non è una voce del menu, perché una voce alternativa lì compare da fuori
+come una voce in più (il test d'interfaccia l'ha vista due volte) e chi usa VoiceOver la sentirebbe doppia. Convenzione del Mac (fonte:
+guida di Anteprima di Apple, tabella dei comandi da tastiera della versione per macOS 10.13,
+https://support.apple.com/en-au/guide/preview/preview-keyboard-shortcuts-cpprvw0003/10.0/mac/10.13, dal riassunto di una ricerca del
+12 novembre 2026, pagina non aperta): Opzione+Freccia giù e su passano alla pagina seguente e precedente; ⌥⌘↓ e ⌥⌘↑ restano (decisione 14). Da provare nella prova 8: ⌥⌘↓ coi
+tasti di sinistra, e ⌃⌘↓.
 
 ## 6. Domanda 5 — Da dove vengono i libri
 
@@ -1101,6 +1157,34 @@ Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 
 ## 10. Le prove d'orecchio
 
+> **Prova 8 — i titoli nelle quattro varianti e le scorciatoie dei titoli (circa otto minuti; giro «titoli di VoiceOver: le
+> varianti», 2026-11-12).** Quattro copie dell'app, ognuna con un modo diverso di presentare i titoli a VoiceOver (§ 5.4), con lo stesso
+> script: al posto del numero si scrive la **lettera** della variante. Ogni variante apre il libro sintetico delle prove con la libreria
+> di prova (la libreria vera non si tocca) e la finestra dei figli di tre elementi, così ogni titolo da trovare è lontano; il diario
+> registra da sé che cosa VoiceOver chiede (solo codici). Il libro ha sei capitoli, ognuno comincia col suo titolo. VoiceOver acceso,
+> Terminale aperto (Comando+Spazio, «Terminale», Invio).
+> **Per ogni lettera, nell'ordine A, B, C, D** (circa un minuto e mezzo ciascuna):
+> (1) Nel Terminale `~/Developer/scabopdf-mac-lab/lettura_mac/prove_tappa_a/prove_orecchio/prova.sh A` (poi B, poi C, poi D) e Invio.
+> VoiceOver va sul titolo del primo capitolo; se dice il gruppo «Testo del documento», VO+Maiuscole+Freccia giù.
+> (2) VO+Comando+H tre volte, ascoltando dopo ognuna: ci si aspettano i titoli dei capitoli 2, 3 e 4. Su uno dei
+> titoli, ascoltare come si dice: la parola «intestazione» e il livello devono sentirsi una volta sola.
+> (3) VO+Comando+Maiuscole+H due volte: ci si aspetta il terzo e poi il secondo capitolo.
+> (4) VO+Comando+M una volta: ci si aspetta il terzo capitolo (il titolo seguente dello stesso livello); se va al primo capitolo, dirlo.
+> (5) Comando+Q; il Terminale dice «Fatto».
+> **Alla fine** (circa un minuto), sulla variante preferita, di nuovo con lo script e la sua lettera, dal titolo del primo capitolo:
+> Opzione+Comando+Freccia giù con Opzione e Comando **di sinistra** (a sinistra della barra spaziatrice) e la freccia con l'altra mano;
+> Opzione+Comando+Freccia su, allo stesso modo; Opzione+Comando+Freccia giù con Opzione e Comando **di destra**; Control+Comando+Freccia
+> giù, con Control e Comando di sinistra. Ascoltare ogni volta che cosa succede (un titolo, un suono, nulla). Comando+Q.
+> *Da riferire:* per ogni lettera, se con VO+Comando+H, con VO+Comando+Maiuscole+H e con VO+Comando+M i titoli sono stati trovati e dove
+> si è arrivati, e come suonava un titolo (qualifica detta una volta sola o ripetuta; in testa al titolo oppure in coda); alla fine, che cosa hanno fatto
+> le quattro scorciatoie. Il diario dice il resto (la via di ogni ricerca, i tasti arrivati all'app e da che lato).
+>
+> **La prova 7 (12 novembre 2026)**, fatta dal maintainer: il segnale delle note e i salti con VO+J sono a posto; VO+Comando+H e
+> VO+Comando+Maiuscole+H dicono ancora che non trovano intestazioni; VO+Comando+M non dà niente. Il diario (letto in
+> `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_varianti/LETTURA_DIARIO_T7.md`): otto VO+Comando+H passano dal rotore, che trova il
+> titolo seguente, e VoiceOver lo scarta dopo averne chiesto il ruolo; tre ricerche generiche in avanti sui figli esposti (VO+Comando+M,
+> dedotto); nessuna traccia per VO+Comando+Maiuscole+H; Opzione+Comando una volta, senza freccia arrivata (§ 5.4, § 5.5).
+>
 > **Prova 7 — i titoli con VO+Comando+H, VO+J, il menu delle azioni, il segnale delle note (circa sei minuti; giro «titoli con il
 > comando di VoiceOver sul Mac», 2026-11-12).** Sull'app di questo giro (eseguibile con l'impronta nel referto), con lo stesso
 > script: nel Terminale `~/Developer/scabopdf-mac-lab/lettura_mac/prove_tappa_a/prove_orecchio/prova.sh 7` e Invio. Il libro
@@ -1303,6 +1387,18 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 ## 11. Residui e cose non verificate
 
+- **Dopo il giro «titoli di VoiceOver: le varianti» (12 novembre 2026).** *Fatto:* letto il diario della prova 7 (il rotore trova il
+  titolo, VoiceOver lo scarta perché non è un'intestazione, dedotto; VO+Comando+M per la ricerca generica sui figli esposti; nessuna
+  traccia per VO+Comando+Maiuscole+H); quattro varianti dei titoli nel laboratorio, misurate da fuori (§ 5.4), **fuori da main**; nel
+  codice di main ⌃⌘↓ e ⌃⌘↑ come scorciatoie alternative dei titoli e il lato dei modificatori nel diario (§ 5.5). *Da sentire* (prova 8,
+  § 10): quale variante trova i titoli con VO+Comando+H, con Maiuscole e con M, e come li dice; se ⌥⌘↓ arriva coi tasti di sinistra; se
+  arriva ⌃⌘↓. *Rischi dichiarati:* in A, B e D la ricerca generica rivolta al gruppo risponde col primo titolo del libro (VO+Comando+M
+  potrebbe riportare all'inizio); B costa sul volume più grande circa un secondo dell'app al giro d'apertura e un decimo di secondo a
+  passo, più la parte di VoiceOver, stimata 1–3 s all'ingresso (dedotto); nelle varianti l'articolo dei codici diventa un'intestazione di
+  livello 5 e la parola «Articolo» del modulo sparisce con la qualifica (non sentito: decisione per il maintainer). *Dopo la prova:* la variante confermata entra nell'app
+  in un giro suo, con l'eccezione stretta del confronto (tutti e soli i titoli: ruolo, testo detto, valore detto; misurato su un
+  documento) e la descrizione dalla vista adattata a dove sta il testo del titolo. *Non provato:* che cosa prenda ⌥⌘↓ con VoiceOver
+  acceso (escluso per misura l'app, il sistema e le altre app; VoiceOver per esclusione).
 - **Dopo il giro «titoli con il comando di VoiceOver sul Mac» (12 novembre 2026).** *Fatto e misurato da fuori:* la ricerca dei
   titoli rivolta all'elemento sotto il cursore — una delle due vie compatibili con la traccia di VO+Comando+H nel diario della prova 6
   — arriva al rotore e trova tutti i titoli, avanti e indietro, anche fuori dai figli esposti (§ 5.4); i segnali delle note per
