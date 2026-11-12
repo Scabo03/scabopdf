@@ -144,10 +144,11 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Giro «titoli con il comando di VoiceOver sul Mac»: il diario della prova 6, VO+Comando+H su tutti i titoli, la voce doppia nel menu delle azioni, i segnali delle note predefiniti (nessuna build) — 2026-11-12
+## ▶ STATO — Giro «titoli con il comando di VoiceOver sul Mac»: il diario della prova 6, VO+Comando+H su tutti i titoli, la voce doppia nel menu delle azioni, i segnali delle note predefiniti (nessuna build) — 2026-11-12 — CONCLUSO
 
 **Partenza:** `4bc0ebd` (main = origin, build 66 su TestFlight; prossimo numero 67, non usato). **Ramo:** `feat/mac-titoli-voiceover`
-(livello leggero, solo l'app Mac; l'iPad non cambia). Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_TITOLI_VOICEOVER.md`;
+(livello leggero, solo l'app Mac; l'iPad non cambia), unito in main con un avanzamento rapido a `ff73b14` e cancellato, locale e
+remoto. Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_TITOLI_VOICEOVER.md`;
 laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_voiceover/` (lettura del diario, esperimenti, misure, test, reti, revisione).
 
 - **Decisioni 12-14 del maintainer** (12 novembre, registrate all'apertura in LAYER2 § 12.16): VO+Comando+H e VO+Comando+Maiuscole+H su
