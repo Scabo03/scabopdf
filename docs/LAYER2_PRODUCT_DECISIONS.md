@@ -1588,6 +1588,19 @@ segnali resta una scelta del maintainer, nelle decisioni del referto del giro. (
 continua, è superata. (c) Il disegno diceva che sul Mac «Leggi da qui» è VO+A: era sbagliato, ed è tolto
 (`DISEGNO_LETTURA_MAC.md` § 5.2).
 
+**Esito del giro «comandi da tastiera e VoiceOver sul Mac» (11-12 novembre 2026, nessuna build).** Sul Mac l'app accoglie i comandi
+standard di VoiceOver che l'utente esperto prova per abitudine, senza parole nuove e senza toccare le decisioni di questo paragrafo:
+**VO+J**, il comando di VoiceOver per andare all'elemento collegato, salta ora fra la nota e il suo richiamo (gli stessi legami dei
+salti del modulo, per costruzione uguali all'iPad; provato da fuori, da sentire); **VO+Comando+H** e la Navigazione rapida trovano i
+titoli dal rotore delle intestazioni, su tutto il libro (provato da fuori il passaggio dal rotore; che VoiceOver lo scelga è
+dedotto, da sentire); restano il rotore, il menu delle azioni, l'ingresso nel testo e i salti agli estremi del libro. Il censimento, con ciò che
+c'era prima e ciò che c'è ora e le prove di ciascuno, è in `DISEGNO_LETTURA_MAC.md` § 5.4; resta senza risultato
+il titolo dello stesso livello (VO+Comando+M), che vorrebbe un ruolo d'intestazione e cambierebbe ciò che VoiceOver dice. Le
+scorciatoie dell'app (⌘J, ⌥⌘↓, ⌥⌘↑) restano un'aggiunta per chi usa la tastiera: non coprono alcun comando di VoiceOver né del
+sistema; nelle prove 4 e 5 con VoiceOver acceso non sono arrivate all'app (dedotto dai diari: il quadro più coerente è il tasto VO
+tenuto con la scorciatoia, che la trasforma in un comando di VoiceOver), e dentro l'app valgono dovunque sia il cursore e
+sull'elemento dove sta (§ 5.5 dello stesso documento). Che VoiceOver usi davvero questi attributi lo dice la prova d'orecchio 6.
+
 ---
 
 ## 13. Ricerca testuale

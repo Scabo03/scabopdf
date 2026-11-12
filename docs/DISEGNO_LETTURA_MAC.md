@@ -31,6 +31,15 @@
 
 ## 0. In due parole
 
+> **Aggiornato il 12 novembre 2026, giro «comandi da tastiera e VoiceOver sul Mac»** (referto
+> `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_COMANDI_VOICEOVER.md`). Il **censimento dei comandi standard di VoiceOver del
+> Mac** è in § 5.4, con ciò che l'app accoglieva prima e accoglie ora: **VO+J** salta fra nota e richiamo (gli elementi collegati,
+> nuovi: provato da fuori, da sentire); **VO+Comando+H** trova i titoli dal rotore delle intestazioni su tutto il libro, anche fuori
+> dalla finestra dei figli (provato da fuori il passaggio dal rotore; che VoiceOver lo scelga è dedotto); VO+Comando+M, il titolo
+> dello stesso livello, resta senza risultato (residuo). Le **scorciatoie dell'app** (§ 5.5): con VoiceOver acceso ⌘J e ⌥⌘↓ non sono
+> arrivati all'app nelle prove 4 e 5; dentro l'app valgono con qualunque primo risponditore e agiscono sull'elemento del cursore;
+> nessuna copre un comando di VoiceOver; il diario delle prove registra ora i tasti, per la prova 6 (§ 10).
+>
 > **Corretto l'11 novembre 2026 sera** (giro «comandi da tastiera e VoiceOver sul Mac»). Il principio è lo scorrimento per
 > elementi senza dirottamento del fuoco; **la lettura continua non è un requisito né un criterio d'accettazione**
 > (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisione 11). Dove questo documento la chiede — la condizione della decisione 1
@@ -630,7 +639,138 @@ nota al richiamo e viceversa, i titoli avanti e indietro, il segnalibro si aggiu
 
 La vista è primo risponditore e riceve le frecce: su e giù spostano il fuoco di un elemento (campo). Il giro di tasti di
 AppKit porta dalla barra degli strumenti al testo con Tab (accesso completo da tastiera di sistema; **non verificato**: i
-test non usano tasti sintetici). Lo stesso gancio del fuoco suona i segnali anche qui.
+test non usano tasti sintetici). Lo stesso gancio del fuoco suona i segnali anche qui. *Dall'11 novembre 2026:* le frecce sono
+un passo solo da sole; con Comando, Opzione o Control no (§ 5.5).
+
+### 5.4 I comandi standard di VoiceOver del Mac: il censimento (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11)
+
+Il principio è lo scorrimento per elementi senza dirottamento del fuoco (LAYER2 § 12.16, decisione 11): l'utente esperto prova
+per abitudine i comandi di VoiceOver che conosce, e l'app deve accogliere quelli che nella lettura hanno senso, senza vicoli
+ciechi. **Fonti.** La guida di VoiceOver per macOS (consultata l'11 novembre 2026; il selettore della guida mostra macOS 27
+Golden Gate, il file braille delle pagine è ancora intitolato a Tahoe): comandi generali
+(https://support.apple.com/guide/voiceover/general-commands-cpvokys01/mac), di navigazione (…/navigation-commands-cpvokys04/mac),
+di ricerca (…/search-commands-cpvokys08/mac), Navigazione rapida (…/quick-nav-vo27943/mac), rotore
+(…/voiceover-rotor-mchlp2719/mac), scelta degli elementi (…/item-chooser-vo2724/mac). **Campo:** la configurazione predefinita di
+VoiceOver di questo Mac (macOS 27.0.1, file di sistema `ScreenReader.framework/…/ScreenReaderConfiguration.archived-scrconfig`,
+decodificata in laboratorio: 342 legami tasto → comando, `~/Developer/scabopdf-mac-lab/lettura_mac/comandi_voiceover/fonti/`), le
+intestazioni dell'SDK di macOS 27.2 (`NSAccessibilityConstants.h`, `NSAccessibilityCustomRotor.h`, `NSAccessibilityProtocols.h`) e le
+prove da fuori sull'app vera, con un client d'accessibilità fidato che fa le richieste di VoiceOver (`FuocoDaFuoriTests` e la sonda
+del laboratorio). **Dedotto:** ciò che VoiceOver fa dentro di sé, letto dai nomi dei metodi del suo framework (caricato in un
+processo di laboratorio, solo nomi: `hasCustomRotorMatchingSearchKey:`, `linkedUIElementsAllowFallback:`,
+`resultsWithSearchKeys:containerElement:…`). VO è Control+Opzione o Blocco maiuscole.
+
+| comando di VoiceOver | tasti | che cosa serve dall'app | prima del giro | dopo | prova |
+|---|---|---|---|---|---|
+| elemento seguente / precedente | VO+Freccia destra / sinistra | i figli del gruppo in ordine, finestrati con gli estremi del libro (§ 2.4) | sì | sì | campo (diari T1–T5; percorso integrale da fuori) |
+| entrare / uscire dal testo | VO+Maiuscole+Freccia giù / su | il gruppo «Testo del documento» | sì | sì | campo |
+| inizio / fine del testo | VO+Inizio / Fine (VO+Fn+Freccia sinistra / destra) | gli estremi del libro, sempre fra i figli | sì | sì | campo (T1 rifatta) |
+| inizio / fine di ciò che si vede | VO+Maiuscole+Inizio / Fine | i figli visibili | sì | sì | dedotto |
+| leggere l'elemento | VO+A | il testo dell'elemento | sì | sì (legge solo l'elemento: normale, decisione 11) | campo (configurazione: `Global.content`; resoconto del maintainer) |
+| **titolo seguente / precedente** | **VO+Comando+H / VO+Comando+Maiuscole+H**; tasto singolo H (VO+Q) | un rotore di tipo intestazione sul contenitore: AppKit inoltra la ricerca per chiave (`AXHeadingSearchKey`) al rotore del tipo corrispondente («This allows assistive technologies to assign keyboard commands and gestures for these common search types», `NSAccessibilityCustomRotor.h`), e il rotore cerca nel modulo su **tutto il libro** | sì (dalla tappa A) | sì, invariato | campo da fuori: da un elemento in vista trova tutti i titoli, anche fuori dalla finestra dei figli; VoiceOver che sceglie il rotore: dedotto; **da sentire** (prova 6) |
+| titolo di un livello | tasti singoli 1–6 (VO+Q) | i rotori di livello, solo per i livelli presenti | sì | sì | campo da fuori (livello 1); da sentire |
+| titolo dello stesso livello | VO+Comando+M / +Maiuscole | nessun tipo di rotore corrisponde a «stesso livello»; la ricerca generica di AppKit cerca il ruolo intestazione fra i figli esposti, e i nostri elementi sono testo statico (anche col ruolo d'intestazione vedrebbe solo i figli esposti, circa 400 attorno al cursore) | no | **no** (residuo, decisione 2 del referto) | campo da fuori (la ricerca generica risponde vuoto; la ricerca per chiave «stesso livello» sul gruppo: nessun valore); da sentire |
+| il rotore | VO+U; VO+Comando+Freccia sinistra / destra (lista), VO+Comando+Freccia su / giù (voce) | i rotori personalizzati del gruppo: titoli, livelli, tabelle, immagini, ricerca | sì | sì | campo (T1 rifatta, prova 4) |
+| tabella / immagine seguente | VO+Comando+T / G (+Maiuscole) | i rotori di tabelle e immagini, se il libro ne ha | sì | sì | dedotto (stesso meccanismo dei titoli; non misurato su un libro con tabelle in questo giro) |
+| **vai all'elemento collegato** | **VO+J** | gli elementi collegati (`AXLinkedUIElements`): la nota e il suo richiamo | **no** | **sì** | campo da fuori (andata e ritorno; sull'app di prima il test fallisce); il comando: guida e configurazione; il legame comando ↔ attributo: una fonte secondaria (bug Mozilla 1625953, al condizionale: «This would allow users to press Ctrl+Option+j to jump between linked UI elements») più un dedotto (i nomi dei metodi di VoiceOver); **da sentire** (prova 6) |
+| menu delle azioni | VO+Comando+Barra spaziatrice | le azioni personalizzate del modulo | sì | sì | campo (T3, prova 4) |
+| azione predefinita | VO+Barra spaziatrice | nessuna sul testo, come sull'iPad: VoiceOver fa un clic, che non fa nulla | — | — | dedotto |
+| scelta degli elementi | VO+I | gli elementi a portata: in un libro lungo i figli esposti (circa 400 attorno al cursore) | parziale | parziale (residuo) | dedotto |
+| ricerca di VoiceOver | VO+F, VO+G, VO+Maiuscole+G | il testo degli elementi; nella configurazione predefinita VoiceOver cerca fra gli elementi visibili (`SCRSearchVisibleElementsOnly`) | parziale | parziale (la ricerca nel libro dell'app, ⌘F, è della tappa C) | dedotto |
+| controllo, link, lista, grassetto… seguente | VO+Comando+J, L, X, B… | nel testo della lettura non ce ne sono: VoiceOver cerca altrove (da fuori, la ricerca dei controlli trova i tre pulsanti della finestra) | — | — | campo da fuori |
+| descrivere l'elemento | VO+F3, VO+F4 | ruolo, valore, elemento col fuoco | sì | sì | dedotto |
+| leggere dentro l'elemento | VO+W, VO+C, VO+S, VO+P, VO+L e i loro passi (VO+Maiuscole o VO+Comando con Pagina giù e su, le frecce interagendo) | gli attributi del testo per intervallo (`NSAccessibilityNavigableStaticText`): gli elementi non li hanno, e la lettura per frasi e righe è esclusa dalla decisione 3 di LAYER2 § 12.16 | no | no, per decisione | da sentire che cosa VoiceOver faccia sul testo statico (lo studio, § 4.1, contava su parola e carattere) |
+| barra dei menu, menu contestuale | VO+M (menu «Lettura»), VO+Maiuscole+M | la barra dei menu dell'app; nessun menu contestuale sugli elementi | sì | sì | campo (la voce del menu premuta come da VO+M, `FuocoDaFuoriTests`) |
+| cursore e fuoco della tastiera | VO+Maiuscole+F3 (seguimento sospeso), VO+Maiuscole+F4 (cursore al fuoco), VO+Comando+F4 (fuoco al cursore) | l'elemento col fuoco detto dalla vista (`accessibilityFocusedUIElement`) e il gancio del fuoco | sì | sì | dedotto |
+| leggere dall'inizio al cursore, la finestra, una pagina | VO+B, VO+Maiuscole+W, VO+Pagina giù / su | i figli esposti e l'area a scorrimento: in un libro lungo VoiceOver legge la sua copia dei figli (il primo elemento, poi la finestra) | parziale | parziale (non è un requisito, decisione 11) | dedotto |
+| comandante del trackpad | gesti sul trackpad | gli stessi elementi, rotori e azioni dei comandi da tastiera | sì | sì | dedotto |
+
+**Il salto nativo fra elementi collegati** (campo da fuori, da sentire). Ogni elemento dà ora i suoi elementi collegati: la nota il
+testo del suo richiamo, il testo che richiama le sue note, nell'ordine dei salti del modulo (`noteJumpActions`: il primo è il
+bersaglio di ⌘J). Nessuna logica nuova, nessuna parola nuova: i legami sono quelli del modulo; anche un bersaglio fuori dalla
+finestra dei figli è lo stesso oggetto che la vista espone quando il fuoco ci arriva. Il test da fuori fa ciò che fa VoiceOver per
+VO+J (legge gli elementi collegati dell'elemento sotto il cursore e dà il fuoco al primo): dal capoverso col richiamo alla nota e
+ritorno, e l'elemento col fuoco dell'app è il bersaglio; sull'app di prima del giro lo stesso test fallisce; dentro il processo,
+anche con due note nello stesso capoverso e con una nota differita lontana, fuori dalla finestra dei figli. Che VoiceOver usi proprio
+questo attributo per VO+J poggia su **una fonte secondaria più un dedotto**: la guida e la configurazione nominano il comando, il W3C
+Core-AAM 1.2 lega aria-flowto e aria-controls ad `AXLinkedUIElements` senza parlare di VoiceOver, e il legame esplicito sta in un
+commento del bug Mozilla 1625953, al condizionale, e nei nomi dei metodi di VoiceOver (`linkedUIElementsAllowFallback:`). La prova
+di campo è la prova 6, il cui diario registra le richieste degli elementi collegati. Una segnalazione di utenti del 2024 dice VO+J
+poco affidabile in molte app di sistema da Sonoma (AppleVis, non verificato): se la prova 6 lo confermasse, restano le azioni
+dell'elemento e ⌘J. **Rischio dichiarato** (AppleVis, 2021, non verificato): su un elemento con un elemento collegato VoiceOver
+aggiungerebbe da sé al menu delle azioni una voce «Jump to…» (in italiano forse «Vai a…»): sono parole di VoiceOver, che le reti
+sul parlato non vedono perché descrivono solo ciò che dice l'app; lo chiede la prova 6. Le azioni restano accanto, come prima.
+
+**I titoli fuori dalla finestra** (campo da fuori). Il rotore delle intestazioni cerca nel modulo, non fra i figli: da fuori la ricerca
+per chiave «intestazione» sul gruppo, partendo dal secondo elemento del libro sintetico con la finestra di nove figli, trova i
+titoli 4, 8, 12, 16, 20 (12, 16 e 20 non esposti), all'indietro dall'ultimo 20, 16, 12, 8, 4, 0, e il titolo lontano, ricevuto il
+fuoco, entra fra i figli (test `test_comandiDeiTitoli_ricercaPerChiave_tuttiITitoli_lettoDaFuori`, verde prima e dopo: guardia).
+La stessa ricerca per chiave chiesta alla finestra, all'app o all'elemento risponde «nessun valore» (−25212, campo): funziona se
+VoiceOver interroga il gruppo, il contenitore dell'elemento sotto il cursore, come fa col rotore nei diari (dedotto).
+La ricerca generica per predicato di macOS 26 (`AXUIElementsForSearchPredicate`) invece non passa dalla vista: AppKit la serve da sé
+percorrendo i figli esposti e chiedendo il ruolo (diario), e la via informale per ridefinirla non viene chiamata (provato e tolto:
+nessun metodo pubblico la copre). Se VoiceOver usasse quella via per VO+Comando+H, i titoli non si troverebbero affatto (i nostri
+elementi sono testo statico): lo dice la prova 6, perché col rotore il diario registra «rotore:titoli».
+
+### 5.5 Le scorciatoie dell'app con VoiceOver acceso (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11)
+
+**Il resoconto** (maintainer, prove 4 e 5): con VoiceOver acceso Comando+J non ha fatto il salto e VoiceOver ha detto informazioni su
+dove ci si trova e su ciò che c'è; Opzione+Comando+Freccia giù e su non hanno fatto nulla, col «bonk». **La causa, provata a metà.**
+Nei diari T4 e T5 nessun comando del menu e nessun passo della vista, che allora ne faceva uno con ogni freccia caduta fino a lei, con
+o senza modificatori (campo): i tasti non sono arrivati all'app (dedotto da quel campo). Che la finestra di lettura fosse in primo
+piano con l'app attiva vale solo per ⌘J della prova 4 (dedotto: le ripetizioni dell'avviso dei salti, che partono solo così,
+finiscono a 84,1 s, e ⌘J cade fra 84,3 e 95,2 s; ⌥⌘↓ viene dopo). Nei due diari c'è però la riga «uscita», che l'app scrive solo
+quando si chiude per un comando (non quando lo script la ferma): ⌘Q, o Esci dal menu, è arrivato all'app con VoiceOver acceso
+(campo), quindi sul Mac del maintainer una scorciatoia con Comando premuta senza il tasto VO passa (dedotto). Nella configurazione predefinita di VoiceOver né
+⌘J né ⌥⌘↓ sono comandi (campo); lo diventano col tasto VO tenuto o bloccato (VO+; blocca i tasti VO): VO+⌘+J è «controllo
+successivo», VO+⌘+↓ «elemento successivo nel rotore» (campo, configurazione). Nella prova 5, dopo i passi del primo punto, il
+diario mostra fra 16,5 e 18,5 secondi cinque raffiche in cui VoiceOver percorre i figli in vista chiedendone il ruolo, senza spostare
+il cursore e senza che arrivi all'app un comando, e altre tre a 230,7–231,1 s (campo): è ciò che fa una ricerca di VoiceOver
+(dedotto); quale tasto le abbia avviate il diario non lo dice. Nella prova 4, aperto il rotore delle intestazioni di primo livello,
+cinque passi «titolo precedente» del rotore arrivano all'app fra 125,2 e 129,6 s: è ciò che fa VO+⌘+↑ (dedotto). **Il quadro più
+coerente** (dedotto, da confermare): premendo le scorciatoie il maintainer teneva anche Control e Opzione, il tasto VO, come in
+ogni comando di VoiceOver; ⌘J diventava VO+⌘+J (la ricerca del controllo seguente: le raffiche), ⌥⌘↑ VO+⌘+↑ (i passi del rotore),
+⌥⌘↓ dall'ultimo elemento VO+⌘+↓ senza voci seguenti (il «bonk»); ⌘Q, premuto senza, passava. Che cosa abbia preso i
+tasti sul Mac del maintainer — il blocco dei tasti VO, il tasto VO tenuto per abitudine, un comandante della tastiera, la ricerca
+veloce col Comando destro — lo dice la prova 6 con l'aiuto tastiera (VO+K) e col diario dei tasti e dei modificatori tenuti
+(sotto). **Le ipotesi del brief.**
+(a) «Con VoiceOver la vista non è il primo risponditore e la validazione spegne i comandi»: smentita. Le voci del menu «Lettura» non
+hanno bersaglio fisso, vanno al controllore della finestra in primo piano qualunque sia il primo risponditore (la vista, la vista
+a scorrimento, la finestra), e la validazione le tiene sempre attive (salvo «Salta la risorsa» fuori da una risorsa): test
+`test_menuLettura_qualunquePrimoRisponditore_agisceSullElementoDelCursore`. (b) «⌘J preso da VoiceOver, dal sistema o da un altro
+comando del menu»: nessun altro comando dell'app usa ⌘J, il sistema non lo usa (pagina Apple delle scorciatoie: ⌘J è «Show View
+Options» del Finder; HIG: «Scroll to a selection», che la lettura non ha), VoiceOver lo prende solo col tasto VO (sopra). (c) «I
+test passavano perché premevano il tasto in uno stato diverso»: vero per costruzione (nei test non c'è VoiceOver).
+
+**La cura.** (1) Con VoiceOver acceso il salto fra nota e richiamo ha ora un comando di VoiceOver, VO+J, che VoiceOver gestisce da sé e
+non dipende dal passaggio dei tasti verso l'app; i titoli hanno VO+Comando+H (§ 5.4). (2) Le scorciatoie dell'app restano, per chi
+usa la tastiera: funzionano ogni volta che la finestra di lettura è in primo piano, dovunque sia il cursore di VoiceOver, e agiscono
+sull'elemento dove il cursore è arrivato (VoiceOver gli dà il fuoco a ogni passo: diario T2; test sopra). (3) Le frecce con
+Comando, Opzione o Control non sono più un passo di un elemento (prima ⌥⌘↓ caduto alla vista, per esempio sotto una finestra
+modale, spostava il fuoco di uno in silenzio): test `test_frecceConModificatori_nonSonoUnPasso`, che senza la cura fallisce. (4) Il
+diario delle prove (solo con `--diario`) registra ogni tasto arrivato all'app, prima dei menu — codice, modificatori, finestra in
+primo piano, app attiva; mai caratteri, mai lettere o cifre premute senza Comando, Opzione o Control — e la finestra che passa in
+primo piano: con un tasto vero di XCTest il diario mostra ⌥⌘↓, ⌥⌘↓, ⌥⌘↑ coi loro comandi e i titoli 4, 8, 4
+(`test_tastiera_titoliAvantiEIndietro_eDiarioDeiTasti`). Così la prova 6 dice se ⌘J arriva all'app con VoiceOver acceso.
+
+**Le scorciatoie dell'app contro i comandi di VoiceOver e del sistema** (campo: configurazione di VoiceOver; fonti: pagina Apple
+delle scorciatoie del Mac, https://support.apple.com/en-us/102650, e HIG «Keyboards», consultate l'11 novembre 2026).
+
+| scorciatoia | comando dell'app | VoiceOver, configurazione predefinita | col tasto VO tenuto o bloccato | sistema e HIG | esito |
+|---|---|---|---|---|---|
+| ⌘J | Nota e richiamo | nessun comando | VO+⌘+J «controllo successivo» | HIG «Scroll to a selection», Finder «Show View Options»: la lettura non ha selezione, il riuso è quello che l'HIG ammette; è anche la scorciatoia dell'iPad | libera |
+| ⌥⌘↓ / ⌥⌘↑ | Intestazione successiva / precedente | nessun comando | VO+⌘+↓ / ↑ «elemento seguente / precedente nel rotore» | nessuna | libera |
+| ↓ / ↑ (vista) | elemento seguente / precedente | con la Navigazione rapida a frecce accesa le prende VoiceOver: ← e → sono i suoi passi, ↑ e ↓ scorrono la categoria del suo rotore (una modalità che l'utente sceglie) | — | standard | libera |
+| ⌘0 | Home | nessun comando | VO+⌘+0 «descrivi il punto caldo 0» | non standard | libera |
+| ⇧⌘M | Modelli e officina | nessun comando | VO+⌘+⇧+M «titolo precedente dello stesso livello» | non standard | libera |
+| ⌘M, ⌘W, ⌘Q, ⌘,, ⌘O, ⌘↓, ⌘⌫ | Riduci, Chiudi finestra, Esci, Impostazioni, Importa, Apri, Elimina | nessun comando | VO+⌘ più lo stesso tasto: altri comandi di VoiceOver (ricerche, rotore, grafici audio) | i loro significati standard (⌘↓ e ⌘⌫ come nel Finder) | standard |
+| Invio (Home), Esc (finestre modali) | Apri il libro; Annulla | Esc chiude i menu di VoiceOver solo quando sono aperti | — | standard | standard |
+
+Nessuna scorciatoia dell'app copre un comando standard di VoiceOver: nessuna usa Control+Opzione (test
+`test_menu_vociEScorciatoie_senzaTastoVO`) e nessuna coincide con un comando di VoiceOver senza il tasto VO. Col tasto VO tenuto
+o bloccato ogni combinazione con Comando diventa un comando di VoiceOver: è il funzionamento di VoiceOver, che l'app non combatte.
+Le modalità che l'utente accende da sé — il comandante della tastiera (spento di partenza, Opzione destra), la ricerca veloce
+(Comando destro più una lettera), la Navigazione rapida — possono prendere altri tasti: non verificato sul Mac del maintainer, ne dice
+la prova 6. Nessuna alternativa da proporre.
 
 ## 6. Domanda 5 — Da dove vengono i libri
 
@@ -907,9 +1047,42 @@ Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 
 ## 10. Le prove d'orecchio
 
+> **Prova 6 — i comandi di VoiceOver nel libro e le scorciatoie dell'app (circa sette minuti; giro «comandi da tastiera e
+> VoiceOver sul Mac»).** Sull'app di questo giro (eseguibile con l'impronta nel referto), con lo stesso script: nel Terminale
+> `~/Developer/scabopdf-mac-lab/lettura_mac/prove_tappa_a/prove_orecchio/prova.sh 6` e Invio. Il libro sintetico delle prove, note a
+> voce, finestra dei figli piccola (nove elementi, più i due estremi del libro). Ogni capitolo ha quattro elementi: il titolo,
+> il capoverso che comincia «In questa pagina si parla» col richiamo della nota, la nota («Nota numero …»), il resto della pagina. Il
+> diario registra da sé che cosa VoiceOver chiede, i comandi arrivati all'app, i tasti arrivati all'app e i modificatori tenuti (solo
+> codici). Se VoiceOver dice il gruppo «Testo del documento», VO+Maiuscole+Freccia giù per entrare.
+> (1) **Titoli con il comando di VoiceOver.** VoiceOver è sul titolo del primo capitolo. VO+Comando+H cinque volte, ascoltando
+> ogni volta: devono venire i titoli dal secondo al sesto capitolo, in ordine. Poi VO+Comando+Maiuscole+H due volte: il quinto e il
+> quarto (tornando indietro il quarto sta fuori dalla finestra dei figli: è il titolo lontano). Poi VO+Comando+M una volta (titolo
+> seguente dello stesso livello): ascoltare che cosa succede; ci si aspetta che non trovi nulla.
+> (2) **Nota e richiamo con VoiceOver.** Se VO+Comando+M ha portato al quinto capitolo, VO+Comando+Maiuscole+H per tornare al
+> quarto. Dal titolo del quarto capitolo, VO+Freccia destra: il capoverso col richiamo. VO+J: VoiceOver deve andare sulla nota;
+> **controllo** VO+Freccia sinistra: il capoverso. Poi VO+Freccia destra per tornare sulla nota, e VO+J: di nuovo il capoverso;
+> **controllo** VO+Freccia destra: la nota.
+> (3) **Rotore e azioni.** VO+U: ascoltare i nomi delle liste (Freccia destra e sinistra); nella lista delle intestazioni Freccia
+> giù fino al sesto capitolo, Invio: VoiceOver va lì. VO+Freccia destra sul capoverso col richiamo, poi VO+Comando+Barra
+> spaziatrice: ascoltare tutte le azioni del menu, una per una: oltre a «Vai alla nota 6», dire se VoiceOver ne aggiunge una sua,
+> per esempio «Vai a…» o «Salta all'elemento collegato»; Esc.
+> (4) **Le scorciatoie dell'app, senza il tasto di VoiceOver.** Sullo stesso capoverso, con il Comando di **sinistra** e senza tenere
+> Control né Opzione: Comando+J; ci si aspetta la nota, **controllo** VO+Freccia sinistra: il capoverso. Poi Comando+J di nuovo dal
+> capoverso: ancora la nota, **controllo** VO+Freccia sinistra. Poi Opzione+Comando+Freccia su, due volte: il titolo del sesto e poi
+> del quinto capitolo; poi Opzione+Comando+Freccia giù una volta: di nuovo il sesto. Ascoltare che cosa succede ogni volta.
+> (5) **L'aiuto tastiera.** VO+K: VoiceOver dice che l'aiuto tastiera è attivo. Premere una alla volta, ascoltando che cosa dice di
+> ognuna: Comando+J col Comando sinistro; Comando+J col Comando destro; Opzione+Comando+Freccia giù; VO+J; VO+Comando+H. Esc
+> per uscire dall'aiuto.
+> (6) Comando+Q.
+> *Da riferire:* (1) se i cinque VO+Comando+H hanno detto i titoli dal secondo al sesto e i due indietro il quinto e il quarto, e
+> che cosa ha fatto VO+Comando+M; (2) dove sono arrivati i due VO+J e che cosa hanno detto i controlli; (3) i nomi delle liste del
+> rotore, se Invio ha portato al sesto capitolo, quali azioni c'erano nel menu e se ce n'era una di VoiceOver; (4) per Comando+J e
+> per Opzione+Comando+Freccia su e giù, che cosa è successo (il salto, il «bonk», delle informazioni) e che cosa hanno detto i
+> controlli; (5) che cosa ha detto l'aiuto tastiera di ognuna delle cinque combinazioni.
+>
 > **La prova 5 è superata (11 novembre 2026 sera).** Faceva sentire la lettura continua oltre la svolta della finestra, che non è
 > un requisito (LAYER2 § 12.16, decisione 11); ⌘J e ⌥⌘↓ con VoiceOver acceso passano alla prova 6, insieme ai comandi standard di
-> VoiceOver, con le sue istruzioni qui sotto quando il giro «comandi da tastiera e VoiceOver sul Mac» le scrive. Il maintainer
+> VoiceOver, con le istruzioni qui sopra. Il maintainer
 > l'aveva avviata la sera dell'11 novembre (diario `T5_20261111_213834`): come nella prova 4, nessun comando del menu «Lettura»
 > è arrivato all'app.
 >
@@ -1035,6 +1208,21 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 ## 11. Residui e cose non verificate
 
+- **Dopo il giro «comandi da tastiera e VoiceOver sul Mac» (11-12 novembre 2026).** *Fatto e misurato da fuori:* VO+J fra nota e
+  richiamo (elementi collegati, § 5.4); i comandi dei titoli di VoiceOver che passano dal rotore trovano tutti i titoli, anche fuori
+  dalla finestra; le scorciatoie del menu valgono con qualunque primo risponditore e sull'elemento del cursore; le frecce con un
+  modificatore non sono un passo; il diario registra i tasti arrivati all'app (§ 5.5). *Da sentire* (prova 6, § 10): che VoiceOver
+  usi il rotore per VO+Comando+H e gli elementi collegati per VO+J; che cosa abbia preso ⌘J e ⌥⌘↓ sul Mac del maintainer (aiuto
+  tastiera e diario dei tasti). *Residui dichiarati:* VO+Comando+M (titolo dello stesso livello) non trova nulla: servirebbe il ruolo
+  intestazione, che cambia ciò che VoiceOver dice (decisione 2 del referto); la scelta degli elementi (VO+I) in un libro lungo elenca i
+  figli esposti, circa quattrocento attorno al cursore, e la ricerca di VoiceOver (VO+F) di partenza cerca fra gli elementi in vista
+  (dedotto dalla configurazione): per tutto il libro restano il rotore e, alla tappa C, la ricerca dell'app; con il seguimento del
+  fuoco spento nelle preferenze di VoiceOver le scorciatoie agiscono sull'ultimo elemento che ha avuto il fuoco, non sul cursore (non
+  verificato, come la finestra dei figli in § 2.4); l'affidabilità di VO+J nelle app di sistema da Sonoma è messa in dubbio da utenti
+  (AppleVis, 2024, non verificato), e una voce «Vai a…» che VoiceOver aggiungerebbe da sé al menu delle azioni non la vede nessuna
+  rete (la chiede la prova 6); la quota dell'estrattore della rete della vista del Mac confronta con viste dell'iPad congelate prima
+  della cura 66, e su 36 libri non vede più differenze nuove: da ricatturare nel primo giro che tocca la catena. *Decisione 1*
+  (segnali delle note predefiniti sul Mac): la condizione c'è (decisione 11), la scelta è del maintainer.
 - **Dopo la prova 4 dell'11 novembre 2026** (giro «prova 4, segnalibri e sigle»). *Fatto all'orecchio e nel diario:* i salti
   fra nota e richiamo, dal menu delle azioni e senza, anche allo stesso bersaglio del salto prima (i sei arrivati all'app, § 5.2).
   *Visto nel diario* (campo): i passi dei titoli di primo livello del rotore attraverso tre svolte della finestra. *Da sentire* (prova 5, § 10): la lettura
@@ -1050,7 +1238,8 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 - **Dopo le prove rifatte del 10 novembre 2026** (giro «prove rifatte e granularità»). *Da sentire* (prova 4, § 10): che dopo la
   cura di § 5.2 il cursore arrivi su ogni salto, anche dal menu delle azioni e anche allo stesso bersaglio di prima; che la lettura
   continua (VO+A) passi la svolta della finestra — nella T3 rifatta non è stata fatta e nella T1 il diario non mostra il
-  passaggio a un elemento seguente (un elemento lungo, dieci secondi d'ascolto). *Non verificato*: il rotore di tutte le
+  passaggio a un elemento seguente (un elemento lungo, dieci secondi d'ascolto) — *superato l'11 novembre: la lettura continua non è
+  un requisito, decisione 11*. *Non verificato*: il rotore di tutte le
   intestazioni del volume più grande (9.453 voci; nella T1 rifatta VoiceOver ha aperto quello di primo livello, 105 voci in un
   decimo di secondo; dalla parte dell'app 1,3 s in debug, giro precedente); ⌘J e ⌥⌘↓ con VoiceOver acceso (nessuna traccia nel
   diario della T3 rifatta; ora il diario registra i comandi del menu). *Rischio dichiarato della cura*: se VoiceOver si posasse sul
@@ -1063,7 +1252,7 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
   finestrati VoiceOver entri e si muova subito nel libro grande, VO+Fine e VO+Inizio compresi, e che dopo un salto il cursore
   stia davvero sulla destinazione; con la finestra piccola della T3 rifatta, che la lettura continua (VO+A) attraversi la svolta
   della finestra senza fermarsi (nel libro grande la svolta arriva dopo un'ora d'ascolto: il passo è misurato da fuori, § 2.4,
-  la lettura continua no). *Non verificato*: la finestra con il seguimento del fuoco spento nelle preferenze di VoiceOver
+  la lettura continua no; *superato l'11 novembre, decisione 11*). *Non verificato*: la finestra con il seguimento del fuoco spento nelle preferenze di VoiceOver
   (§ 2.4: dopo al più quattrocento passi, un salto all'ultimo elemento). *Rischio misurato a metà*: all'apertura del rotore
   (VO+U) VoiceOver chiede al delegato tutte le voci e di ognuna legge subito ruolo, valore e descrizione (diario T3); sul
   volume più grande sono 9.453 intestazioni, che l'app serve in circa 1,3 s (campo, dentro il processo, compilazione di debug,

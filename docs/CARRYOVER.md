@@ -10,6 +10,12 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.60 (11-12 novembre 2026, giro «comandi da tastiera e VoiceOver sul Mac», livello di verifica leggero, nessuna build:
+> registrata la decisione 11 del maintainer (LAYER2 § 12.16: il principio è lo scorrimento per elementi senza dirottamento del fuoco,
+> la lettura continua non è un requisito; prova 5 superata); il **censimento dei comandi standard di VoiceOver del Mac**
+> (DISEGNO_LETTURA_MAC § 5.4); **VO+J** fra nota e richiamo con gli elementi collegati; i comandi dei titoli di VoiceOver trovano tutti
+> i titoli dal rotore; le scorciatoie dell'app con VoiceOver acceso (§ 5.5: i tasti non arrivavano all'app; dentro l'app valgono
+> dovunque sia il cursore; frecce coi modificatori curate; diario dei tasti per la prova 6); iPad identico. Vedi lo STATO qui sotto.)
 > Versione: 2.59 (11 novembre 2026, giro «prova 4, segnalibri e sigle», **CONCLUSO** con la **build 66** su TestFlight (VALID, note per i tester impostate): letto il diario della prova 4 sul Mac (salti 6/6, decisione 1 non applicata in attesa della prova 5; Parte 1, ramo `feat/mac-prova4-segnali` unito e cancellato); i segnalibri dei pezzi di mezzo si ritrovano al cambio di granularità (passo 3-ter delle ancore, 0 spostamenti sbagliati o silenziosi) e le frasi non si spezzano più dopo le sigle (cura 66, offerta a tutti e soli i libri che cambiano; Parte 2, ramo `feat/ipad-segnalibri-sigle` unito e cancellato))
 > Versione: 2.58 (10 novembre 2026, giro «prove rifatte e granularità», livello di verifica pieno, **build 65**: letti i diari delle prove d'orecchio rifatte e curati i salti del Mac (Parte 1, ramo `feat/mac-prove-rifatte` unito in main e cancellato); la granularità delle Impostazioni vale anche sull'iPad con una regola sola, i tre lavori della libreria fuori dal filo principale, le reti che non dicono più verde senza aver controllato, l'elenco dei volumi fuori dal repo, l'andata e ritorno di granularità delle annotazioni curata (Parte 2, ramo `feat/ipad-granularita-reti`); STATO del 2026-11-10 sotto)
 > Versione: 2.57 (9 novembre 2026, giro «prove della tappa A», livello di verifica leggero, nessuna build, **CONCLUSO**, ramo `feat/mac-tappa-a-prove` unito in main con un avanzamento rapido e cancellato: diagnosi e cura dei due difetti delle prove d'orecchio della tappa A — **T1 rossa**, «ScaboPDF non risponde» sul volume più grande: VoiceOver, a ogni ingresso e a ogni passo, interrogava tutti i 47.424 figli del gruppo (diari, registro di VoiceOver «occupato» da 5,9 a 57,6 s, client da fuori); cura: **figli finestrati** (DISEGNO § 2.3-2.4), preparazione della lettura e diario fuori dal filo principale; **T3**, i salti non spostavano il cursore: la vista non diceva quale elemento ha il fuoco; cura: `accessibilityFocusedUIElement` e un solo punto per i salti (§ 5.2), con un test da fuori che fallisce sull'app della tappa A; **T2 verde** dal diario; T1 e T3 da rifare con `prove_tappa_a/prove_orecchio/prova.sh`; l'iPad non cambia).
@@ -129,6 +135,59 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «comandi da tastiera e VoiceOver sul Mac»: i comandi standard di VoiceOver nella lettura, VO+J fra nota e richiamo, le scorciatoie con VoiceOver acceso (nessuna build) — 2026-11-11/12 — CONCLUSO
+
+**Partenza:** `33d205c` (main = origin, build 66 su TestFlight, VALID). **Ramo:** `feat/mac-comandi-voiceover` (livello leggero,
+solo l'app Mac; l'iPad non cambia), unito in main con un avanzamento rapido e cancellato, locale e remoto. Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_COMANDI_VOICEOVER.md`; laboratorio
+`~/Developer/scabopdf-mac-lab/lettura_mac/comandi_voiceover/` (fonti, sonde, misure, reti, revisione, prova 6).
+
+- **Decisione 11 del maintainer** (11 novembre, registrata all'apertura in LAYER2 § 12.16): il cuore del prodotto è lo scorrimento per
+  elementi senza dirottamento del fuoco (swipe integrale sull'iPad, VO+Freccia sul Mac); **la lettura continua non è un requisito né un
+  criterio d'accettazione**; VO+A che legge solo l'elemento sotto il cursore è normale. Corretti il DISEGNO (§ 0, 4.3, 5.2 — tolta la
+  riga sbagliata «Leggi da qui → VO+A» —, 10, 11) e lo STATO della prova 4. La condizione della decisione 1 (segnali delle note
+  predefiniti sul Mac) si riduce ai salti, confermati: applicarla è una scelta del maintainer. La prova 5 è superata.
+- **Parte 1 — i comandi standard di VoiceOver** (DISEGNO § 5.4, con la tabella): fonti la guida di VoiceOver per macOS, l'SDK di
+  macOS 27.2 e la configurazione predefinita di VoiceOver di questo Mac decodificata in laboratorio (342 legami tasto → comando).
+  **VO+J** («vai all'elemento collegato», `Global.navigateLink`) salta ora fra nota e richiamo: ogni elemento dà i suoi elementi
+  collegati (`AXLinkedUIElements`) coi bersagli dei salti del modulo, nessuna logica né parola nuova; provato da fuori (sull'app di
+  prima il test fallisce), da sentire. **VO+Comando+H** e la Navigazione rapida trovano i titoli dal rotore delle intestazioni: AppKit
+  inoltra la ricerca per chiave al rotore del tipo corrispondente, che cerca nel modulo su tutto il libro, anche fuori dalla finestra
+  dei figli (campo da fuori; che VoiceOver scelga il rotore è dedotto). Resta senza risultato VO+Comando+M (stesso livello: vorrebbe
+  il ruolo d'intestazione); la ricerca generica di AppKit per predicato guarda i soli figli esposti e non si ridefinisce con
+  l'interfaccia pubblica (provato e tolto).
+- **Parte 2 — le scorciatoie con VoiceOver acceso** (DISEGNO § 5.5): nelle prove 4 e 5 ⌘J e ⌥⌘↓ non sono arrivati all'app
+  (dedotto dai diari: né il comando né il passo che la vista allora faceva con ogni freccia; ⌘Q invece è arrivato, la riga «uscita»);
+  nella configurazione predefinita di VoiceOver non sono comandi, lo diventano col tasto VO tenuto o bloccato (VO+⌘+J «controllo
+  successivo», VO+⌘+↑/↓ «elemento precedente/successivo nel rotore»): il quadro più coerente (dedotto) è il tasto VO tenuto con la
+  scorciatoia, da confermare con la prova 6 (aiuto tastiera, diario dei tasti e dei modificatori). Smentita l'ipotesi del primo risponditore: il menu va al controllore
+  della finestra con qualunque primo risponditore e agisce sull'elemento del cursore (test). Curato: le frecce con Comando, Opzione o
+  Control non sono più un passo di un elemento. Il diario delle prove registra i tasti arrivati all'app (solo codici) e la finestra in
+  primo piano, e i modificatori tenuti. Nessuna scorciatoia dell'app copre un comando di VoiceOver o del sistema (tabella in § 5.5):
+  nessuna alternativa.
+- **Verifiche** (livello leggero, campo): iPad identico — nessun file sotto `app/ios` cambiato, rete sul parlato VERDE (192/192,
+  630.124 elementi), catena dell'iPad del ramo contro quella della build 66 sulle catture iOS 27, 260 forme su 260 identiche al byte;
+  ScaboMac 120 test sul codice finale (4 saltati per costruzione, prima 112), FuocoDaFuoriTests 7/7, interfaccia del Mac 13 (8 passati, 5 saltati per
+  costruzione); `rete_vista_mac.sh` VERDE: la vista del Mac sulle letture dell'iPad identica alla vista dell'iPad su 55 libri su 55;
+  l'app che importa da sé 19/55 contro le viste congelate prima della cura 66, le stesse 36 differenze, riga per riga, dell'ultima
+  rete della build 66 (cura 66 più le cinque note dell'estrattore); quelle viste congelate vanno ricatturate nel primo giro che
+  tocca la catena (rilievo R14 della revisione).
+- **Revisione indipendente** (sotto-agente nuovo, lista del brief, `comandi_voiceover/revisione/REVISIONE.md`): 14 rilievi, uno
+  bloccante per la sola prova 6 (la copia dell'app accanto allo script era quella del giro prima: aggiornata, `b2a970ba…`), tutti
+  corretti o dichiarati: etichette della causa e delle fonti di VO+J più caute, il quadro del tasto VO tenuto (la riga «uscita» dei
+  diari dice che ⌘Q passava), il rischio di una voce «Vai a…» di VoiceOver nel menu delle azioni, il censimento completato (lettura
+  dentro l'elemento esclusa per decisione, menu, cursore e fuoco, trackpad), il diario che non registra il testo digitato con la sola
+  Opzione e registra i modificatori tenuti, test più severi (frecce una per una nella vista a scorrimento, controprova 10 su 10; due
+  note nello stesso capoverso; nota differita lontana), il diario dei tasti verificato da uno strumento del laboratorio (9 eventi su
+  9), la prova 6 con esiti attesi e controlli; residuo R14: le viste congelate della rete della vista da ricatturare.
+- **Prova d'orecchio 6** in DISEGNO § 10 (`prova.sh 6`, circa sette minuti, app `b2a970ba…`): i titoli con VO+Comando+H anche
+  lontani, VO+J fra nota e richiamo, il rotore e le azioni (con l'eventuale voce di VoiceOver), le scorciatoie dell'app senza il tasto
+  VO, l'aiuto tastiera (VO+K) su ⌘J col Comando sinistro e con quello destro, su ⌥⌘↓, VO+J e VO+Comando+H.
+- **Decisioni per il maintainer** (§ 9 del referto): accendere sul Mac i segnali delle note per impostazione predefinita (inclinazione
+  sì); il ruolo d'intestazione per VO+Comando+M (inclinazione no); con VoiceOver indicare VO+J e VO+Comando+H come comandi e tenere
+  ⌘J e ⌥⌘↓/↑ per la tastiera senza VoiceOver (inclinazione sì).
 
 ---
 

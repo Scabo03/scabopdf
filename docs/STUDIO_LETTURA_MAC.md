@@ -548,6 +548,11 @@ Contenuti personalizzati (VO+Comando+barra) per pagina originale, livello, regim
 **Swipe integrale.** Rispettato per costruzione (§ 1.2). VoiceOver legge anche *dentro* un elemento di testo statico, interagendo
 (parola, carattere); un segmento lungo non è una scatola chiusa. «Leggi da qui in poi» è VO+A dopo l'interazione.
 
+> **Superato** (11 novembre 2026, LAYER2 § 12.16, decisione 11): la lettura continua non è un requisito, e sul Mac VO+A legge il
+> contenuto dell'elemento sotto il cursore (configurazione predefinita di VoiceOver di macOS 27.0.1: `Global.content`). La lettura
+> dentro l'elemento per parole e caratteri chiede attributi di testo che gli elementi della lettura non hanno (`DISEGNO_LETTURA_MAC.md`
+> § 5.4); la lettura per frasi e righe è esclusa dalla decisione 3.
+
 **Note e salto nota↔richiamo.** Identici all'iPad: la nota è un elemento (o più, se frazionata); il salto è azione + ⌘J.
 **Regimi acustici**: come detto sopra, aggancio al fuoco [IPOTESI] con intro parlata di riserva.
 
