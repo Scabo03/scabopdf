@@ -57,6 +57,71 @@ solo `CURRENT_PROJECT_VERSION` e `DEVELOPMENT_TEAM`. Prima stavano negli argomen
 il bundle di risorse del pacchetto `ScaboPageStructure` (il modello Core ML): un bundle di risorse non accetta profili e
 l'archiviazione si fermava con «does not support provisioning profiles» (commit `dc2305f`).
 
+## La corsia del Mac — ScaboPDF per Mac su TestFlight (dal 2026-11-12)
+
+ScaboPDF per Mac sta **nello stesso record App Store dell'iPad**, come acquisto universale (`LAYER2_PRODUCT_DECISIONS.md` § 12.16,
+decisione 15): stesso identificativo `com.scabo.scabopdf`, stesso nome, build separate. La corsia è accanto a quella dell'iPad
+ma nel pacchetto del Mac, così nessun file dell'iPad cambia: `app/macos/ScaboMac/fastlane/Fastfile`, con le stesse chiavi e la
+stessa procedura.
+
+```sh
+cd app/macos/ScaboMac
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"
+set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a
+unset SCABO_BUILD_NUMBER SCABOMAC_BUILD_NUMBER   # la build del Mac: l'ultima del Mac su TestFlight più uno
+fastlane mac note_tester    # le note del Mac, senza caricare (fastlane/COSA_TESTARE.txt del pacchetto Mac)
+fastlane mac valida         # il pacchetto firmato, controllato da App Store Connect, senza caricarlo
+fastlane mac beta           # il pacchetto firmato, caricato su TestFlight, con le note
+```
+
+- **Che cosa fa `beta`:** legge le note (obbligatorie, ≤ 4.000 caratteri, come per l'iPad); installa con `match` in sola
+  lettura il profilo **«match AppStore com.scabo.scabopdf macos»** (tipo Mac App Store, col certificato Apple Distribution del
+  profilo dell'iPad, che scade il 2027-05-30) e il certificato **«3rd Party Mac Developer Installer»** del pacchetto
+  d'installazione; calcola la build; lancia `scripts/build_app.sh` in modalità distribuzione (`SCABOMAC_DISTRIBUZIONE=1`:
+  firma «Apple Distribution» scelta dall'impronta del certificato del profilo — i certificati omonimi sono tre —, profilo
+  incorporato in `Contents/embedded.provisionprofile`, nella firma dell'app l'identificativo dell'app e della squadra, che
+  TestFlight vuole per il Mac; il servizio di scaricamento senza profilo né identificativo nella firma, perché ha solo permessi
+  che non ne chiedono; poi `ScaboPDF.pkg` firmato col certificato del pacchetto); carica con `upload_to_testflight(pkg:,
+  app_platform: "osx")` e aspetta l'elaborazione per scrivere «Cosa testare».
+- **La piattaforma macOS nel record** è stata aggiunta il 2026-11-12 con l'API di App Store Connect (`POST /v1/appStoreVersions`,
+  piattaforma `MAC_OS`, versione 1.0: «Add a new App Store version or platform to an app»); nessun passo sul sito. Dopo il primo
+  caricamento di una build del Mac la piattaforma non si toglie più (App Store Connect Help, «Add platforms»).
+- **Numero di versione e di build:** versione 1.0, come la versione macOS del record. La build del Mac ha la sua serie, distinta
+  da quella dell'iPad (App Store Connect Help sull'acquisto universale: le app degli altri sistemi «may each have different
+  version numbers and build strings than the iOS app»): la corsia usa l'ultima build del Mac su TestFlight più uno
+  (`latest_testflight_build_number(platform: "osx")`), o `SCABOMAC_BUILD_NUMBER` se è dato.
+- **La firma, creata una volta il 2026-11-12** (match in scrittura, script di laboratorio): il profilo del Mac e il certificato
+  del pacchetto stanno ora nel deposito dei certificati, accanto a quelli dell'iPad. **Gotcha:** con `type:
+  "mac_installer_distribution"` da solo match 2.236.1 chiede al portale un altro Apple Distribution (ce ne sono già tre: Apple
+  risponde 409 «You already have a current Distribution certificate…»); il certificato del pacchetto va chiesto come
+  `additional_cert_types: ["mac_installer_distribution"]` del profilo Mac App Store. E la variabile del percorso della chiave
+  `APP_STORE_CONNECT_API_KEY_PATH` va tolta dall'ambiente dopo aver letto la chiave: sigh la legge come `api_key_path`, in
+  conflitto con `api_key`.
+- **Il portachiavi:** la prima firma del pacchetto con la chiave nuova apre la finestra del portachiavi di «productbuild»: il
+  maintainer scrive la password di accesso e sceglie «Consenti sempre»; da lì le firme non la chiedono più.
+- **Dopo il caricamento** vale la lezione della build 55: con «UPLOAD SUCCEEDED» ed errori di App Store Connect non si rilancia;
+  si controlla la build con l'API in sola lettura e si completa il passo mancante. E si fermano per PID i `log stream` orfani
+  nati durante la corsa (`pgrep -fl "^/usr/bin/log stream"` prima e dopo).
+- **I tester:** il gruppo interno «ScaboPDF Sperimentazione» riceve ogni build, comprese quelle del Mac. Sul Mac la build
+  si installa dall'app TestFlight del Mac, con lo stesso ID Apple del tester.
+- **Un contenitore solo per due build — regola del laboratorio (dal 2026-11-12).** La build di sviluppo (`build/ScaboPDF.app`,
+  firma di sviluppo: test, reti, misure) e quella di TestFlight hanno lo stesso identificativo, quindi lo stesso contenitore della
+  sandbox sul Mac del maintainer: preferenze, libreria vera, modelli scaricati e diari sono in comune. Per questo: (1) le build di
+  sviluppo si aprono SOLO con `--libreria-di-prova` (libreria e preferenze a parte, diario nella cartella della libreria di prova),
+  mai sulla libreria vera; (2) la prova di laboratorio del pannello dei modelli (`-ScaboMacProvaPannello`) non toglie più un modello
+  che trova già scaricato, e comunque non si lancia senza chiedere dopo l'installazione da TestFlight; (3) i test che lanciano l'app
+  (da fuori e d'interfaccia) usano già `--libreria-di-prova`. Separare i due contenitori vorrebbe un identificativo di sviluppo
+  distinto: allora la build dei test non sarebbe più la stessa app di TestFlight (decisione per il maintainer nel referto del giro).
+
+**Il diario della diagnostica, dove lo legge Code nei giri futuri.** Il pannello «Diagnostica» dell'app Mac (Impostazioni →
+«Mostra la diagnostica nel menu Finestra», poi menu Finestra → «Diagnostica…») tiene, se il maintainer lo accende, un diario di soli codici e
+numeri in `~/Library/Containers/com.scabo.scabopdf/Data/Library/Application Support/ScaboPDF per Mac/Diagnostica/`, un file per
+accensione, `diario_<aaaammgg>_<hhmmss>.txt`, scritto in coda ogni due secondi; si tengono gli ultimi venti. Mai in rete: l'app
+non ha il permesso di rete. Code lo legge da lì senza chiedere, ma **solo quel percorso preciso, un file del diario alla volta**:
+mai elencare né cercare nel contenitore, che contiene collegamenti verso cartelle personali protette. In alternativa il maintainer
+usa «Esporta il diario…» e lo salva nella cartella Download, che è libera.
+
 ## Note per i tester («Cosa testare») — obbligatorie da build 47 (decisione permanente del maintainer, 2026-10-07)
 
 Ogni build caricata su TestFlight porta le note per i tester nel campo «Cosa testare», in italiano piano. La lane `beta`

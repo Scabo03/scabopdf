@@ -361,7 +361,7 @@ del prototipo, provata da dentro e da fuori):
 |---|---|---|
 | `intendedAccessibilityLabel` (testo pronunciato con la qualifica di titolo) | **AXValue** (`accessibilityValue`) | il «testo» di un testo statico |
 | `value(forIndex:)` (posizione nella ricerca, pagina della risorsa) | **AXDescription** (`accessibilityLabel`), solo se c'è | ordine di lettura di VoiceOver: da sentire (T1) |
-| `role` → testo statico, nessun tratto di intestazione | AXRole `staticText` | il livello lo dicono il parlato e i rotori |
+| `role` → testo statico, nessun tratto di intestazione; **dal 12 novembre 2026 (sera) i titoli hanno il ruolo d'intestazione** (`VarianteTitoli`, tutte e quattro le varianti) | AXRole `staticText`; per i titoli `AXHeading` | il livello lo dicono i rotori e, per i titoli, `AXHeadingLevel` (A, B, C) o il valore (D); fino al 12 novembre: «il livello lo dicono il parlato e i rotori» |
 | `focusSignals` | gancio **AXFocused** settabile | § 4 |
 | `actions(forIndex:bookmark:settings:)` | `accessibilityCustomActions` (nome → gestore) | i bersagli li esegue la vista |
 | `installedRotors` / `rotors(ofElementAt:)` | `accessibilityCustomRotors` sul gruppo, tipi di sistema + nome nostro; dal 12 novembre 2026 **gli stessi oggetti anche su ogni elemento** | § 5, § 5.4: la ricerca dei titoli rivolta all'elemento sotto il cursore (una delle due vie compatibili con la prova 6) |
@@ -371,6 +371,10 @@ del prototipo, provata da dentro e da fuori):
 la decisione 12 del maintainer (LAYER2 § 12.16) consente il ruolo d'intestazione se serve a VO+Comando+H, con la qualifica detta
 una volta sola e il confronto con l'iPad adattato solo per quella; la traccia di VoiceOver nella prova 6 passa dai rotori (§ 5.4) e
 la cura non ha avuto bisogno del ruolo (che basti lo dice la prova 7). Nessuna eccezione nel confronto.
+*Superato la sera del 12 novembre 2026* (giro «ScaboPDF per Mac su TestFlight», LAYER2 § 12.16 decisione 18): la prova 7 ha detto che
+non basta, e i titoli hanno ora il ruolo d'intestazione in tutte le varianti (predefinita la C), con la qualifica detta da VoiceOver,
+una volta sola; il confronto con l'iPad ha l'eccezione dichiarata dei titoli (`EccezioneTitoli`: solo gli elementi che il modulo dice
+titoli, solo ruolo e testo detto, tutti e soli i titoli).
 
 Sul Mac il testo di un testo statico è il suo AXValue, e l'AXDescription è un'informazione aggiuntiva: la scelta rispetta
 la natura degli attributi invece di forzare il nome iPad (`accessibilityLabel`) sul Mac. Che cosa VoiceOver pronunci quando
@@ -679,9 +683,9 @@ processo di laboratorio, solo nomi: `hasCustomRotorMatchingSearchKey:`, `linkedU
 | inizio / fine del testo | VO+Inizio / Fine (VO+Fn+Freccia sinistra / destra) | gli estremi del libro, sempre fra i figli | sì | sì | campo (T1 rifatta) |
 | inizio / fine di ciò che si vede | VO+Maiuscole+Inizio / Fine | i figli visibili | sì | sì | dedotto |
 | leggere l'elemento | VO+A | il testo dell'elemento | sì | sì (legge solo l'elemento: normale, decisione 11) | campo (configurazione: `Global.content`; resoconto del maintainer) |
-| **titolo seguente / precedente** | **VO+Comando+H / VO+Comando+Maiuscole+H**; tasto singolo H (VO+Q) | un rotore di tipo intestazione per la ricerca per chiave (`AXHeadingSearchKey`; fonte: i tipi di rotore servono perché «assistive technologies [can] assign keyboard commands and gestures for these common search types», `NSAccessibilityCustomRotor.h`); campo: AppKit la inoltra al rotore solo se il rotore sta sull'elemento a cui la ricerca è rivolta; il rotore cerca nel modulo su **tutto il libro** | no (prova 6: sei tracce coi rotori su sette pressioni chieste, nessun titolo; prima di questo giro era scritto «sì», dedotto dalla ricerca sul gruppo) | sì da fuori dal 12 novembre (gli stessi rotori anche su ogni elemento); da sentire | campo (diario della prova 6; traccia riprodotta da fuori rivolgendo la ricerca all'elemento: una delle due vie compatibili); campo da fuori dopo la cura (dall'elemento sotto il cursore tutti i titoli, avanti e indietro, ognuno fuori dai figli esposti quando lo si cerca); **prova 7: no** (il rotore trova il titolo, VoiceOver ne chiede il ruolo e non si sposta: diario; che scarti il testo statico è dedotto); varianti col ruolo d'intestazione **da sentire** (prova 8, sotto) |
+| **titolo seguente / precedente** | **VO+Comando+H / VO+Comando+Maiuscole+H**; tasto singolo H (VO+Q) | un rotore di tipo intestazione per la ricerca per chiave (`AXHeadingSearchKey`; fonte: i tipi di rotore servono perché «assistive technologies [can] assign keyboard commands and gestures for these common search types», `NSAccessibilityCustomRotor.h`); campo: AppKit la inoltra al rotore solo se il rotore sta sull'elemento a cui la ricerca è rivolta; il rotore cerca nel modulo su **tutto il libro** | no (prova 6: sei tracce coi rotori su sette pressioni chieste, nessun titolo; prima di questo giro era scritto «sì», dedotto dalla ricerca sul gruppo) | sì da fuori dal 12 novembre (gli stessi rotori anche su ogni elemento); da sentire | campo (diario della prova 6; traccia riprodotta da fuori rivolgendo la ricerca all'elemento: una delle due vie compatibili); campo da fuori dopo la cura (dall'elemento sotto il cursore tutti i titoli, avanti e indietro, ognuno fuori dai figli esposti quando lo si cerca); **prova 7: no** (il rotore trova il titolo, VoiceOver ne chiede il ruolo e non si sposta: diario; che scarti il testo statico è dedotto); varianti col ruolo d'intestazione **da sentire** (prova 8, sotto); *dalla sera del 12 novembre 2026* in main, dietro la scelta del pannello «Diagnostica», predefinita la C: da sentire con l'app di TestFlight |
 | titolo di un livello | tasti singoli 1–6 (VO+Q) | i rotori di livello, solo per i livelli presenti | no, dedotto (la stessa via dei titoli: misurato solo sul gruppo, che la prova 6 ha smentito per VO+Comando+H) | sì, dedotto (i rotori di livello stanno anche sull'elemento; il test nuovo usa la chiave dei titoli) | campo da fuori sul gruppo (livello 1); da sentire |
-| titolo dello stesso livello | VO+Comando+M / +Maiuscole | nessun tipo di rotore corrisponde a «stesso livello»; la ricerca generica di AppKit cerca il ruolo intestazione fra i figli esposti, e i nostri elementi sono testo statico (anche col ruolo d'intestazione vedrebbe solo i figli esposti, circa 400 attorno al cursore) | no | **no** (residuo dichiarato: col ruolo d'intestazione funzionerebbe al più fra i figli esposti; il ruolo non è dato, § 3.1); prova 7: tre ricerche generiche sui figli esposti, vuote; varianti B e C da sentire (prova 8) | campo (resoconto della prova 6: non funziona); dedotto (due tracce senza rotori nel diario, a 17,97 e 26,05 s: una sola è attribuibile a VO+Comando+M, l'altra forse è il quinto VO+Comando+H); campo da fuori (la ricerca generica risponde vuoto) |
+| titolo dello stesso livello | VO+Comando+M / +Maiuscole | nessun tipo di rotore corrisponde a «stesso livello»; la ricerca generica di AppKit cerca il ruolo intestazione fra i figli esposti, e i nostri elementi sono testo statico (anche col ruolo d'intestazione vedrebbe solo i figli esposti, circa 400 attorno al cursore) | no | **no** (residuo dichiarato: col ruolo d'intestazione funzionerebbe al più fra i figli esposti; il ruolo non è dato, § 3.1; *dalla sera del 12 novembre 2026 è dato, in tutte le varianti, § 3.1*); prova 7: tre ricerche generiche sui figli esposti, vuote; varianti B e C da sentire (prova 8, ora col pannello «Diagnostica», § 10) | campo (resoconto della prova 6: non funziona); dedotto (due tracce senza rotori nel diario, a 17,97 e 26,05 s: una sola è attribuibile a VO+Comando+M, l'altra forse è il quinto VO+Comando+H); campo da fuori (la ricerca generica risponde vuoto) |
 | il rotore | VO+U; VO+Comando+Freccia sinistra / destra (lista), VO+Comando+Freccia su / giù (voce) | i rotori personalizzati del gruppo: titoli, livelli, tabelle, immagini, ricerca; dal 12 novembre gli stessi oggetti anche su ogni elemento | sì | sì, da sentire: le liste potrebbero comparire due volte (rischio dichiarato) | campo (T1 rifatta, prova 4, prova 6); dopo la cura da sentire (prova 7) |
 | tabella / immagine seguente | VO+Comando+T / G (+Maiuscole) | i rotori di tabelle e immagini, se il libro ne ha | no, dedotto (la stessa via dei titoli) | sì, dedotto (i rotori anche sull'elemento) | dedotto (non misurato su un libro con tabelle) |
 | **vai all'elemento collegato** | **VO+J** | gli elementi collegati (`AXLinkedUIElements`): la nota e il suo richiamo | **no** | **sì** | campo da fuori (andata e ritorno; sull'app di prima il test fallisce); campo nella prova 6: VoiceOver chiede gli elementi collegati dell'elemento sotto il cursore (cinque volte; dalla nota legge subito il capoverso collegato) e l'aiuto tastiera dice di VO+J «vai all'elemento collegato»; dove il cursore sia arrivato il diario non lo decide; **da sentire** (prova 7) |
@@ -773,7 +777,8 @@ non fa arrivare nulla all'app (campo). **I due motori di Apple** (campo, sonde d
 nell'elenco dei suoi attributi); WebKit come `AXHeading` col testo nel titolo, il livello nel valore e un testo statico figlio, e la sua
 area web elenca fra i suoi attributi la ricerca generica (che risponda non è verificato: le ricerche della sonda erano rivolte all'app e
 alla finestra, che rispondono −25213). **Le varianti** (copie firmate nel laboratorio, accanto allo script delle prove; il codice di
-main non cambia finché l'orecchio non ne conferma una): A, il ruolo d'intestazione come SwiftUI, con la qualifica del modulo tolta
+main non cambia finché l'orecchio non ne conferma una; *superato la sera del 12 novembre 2026*: le quattro varianti sono in main,
+dietro la scelta del pannello «Diagnostica», predefinita la C, LAYER2 § 12.16 decisione 18; le copie del laboratorio sono tolte): A, il ruolo d'intestazione come SwiftUI, con la qualifica del modulo tolta
 dall'etichetta (la dice VoiceOver) e il livello anche nell'elenco degli attributi; B, A più tutti i titoli del libro sempre fra i figli
 del gruppo; C, A più la risposta nostra alla ricerca generica su tutto il libro, come WebKit (AppKit la chiama sull'elemento e sul gruppo,
 campo; l'elemento di partenza non arriva nella richiesta, e si usa l'elemento a cui è rivolta o il fuoco; le ricerche con chiavi che non
@@ -1071,9 +1076,13 @@ del Mac resta al byte sui 52 volumi e sui tre documenti di studio.
 
 ### 8.1 Un'app sola nel pacchetto `ScaboMac`
 
-L'app si chiama **ScaboPDF** («ScaboPDF per Mac» quando serve distinguerla dall'app mobile) e tiene l'identificativo di oggi,
-`com.scabo.scabopdf.mac`: lo stesso contenitore, quindi i modelli già scaricati e le preferenze restano dove sono. Un
-manifesto solo (decisione 7), con questi bersagli:
+L'app si chiama **ScaboPDF** («ScaboPDF per Mac» quando serve distinguerla dall'app mobile) e **dal 12 novembre 2026 ha
+l'identificativo dell'app dell'iPad, `com.scabo.scabopdf`** (LAYER2 § 12.16, decisione 15; il servizio di scaricamento è il
+figlio `com.scabo.scabopdf.scaricatore`). *Fino al 12 novembre diceva:* «tiene l'identificativo di oggi, `com.scabo.scabopdf.mac`:
+lo stesso contenitore, quindi i modelli già scaricati e le preferenze restano dove sono». Con l'identificativo è cambiato il
+contenitore della sandbox (`~/Library/Containers/com.scabo.scabopdf/`); in quello vecchio non c'erano libri, annotazioni né
+modelli, solo materiale delle prove, e nulla è stato portato (giro «ScaboPDF per Mac su TestFlight»). Un manifesto solo
+(decisione 7), con questi bersagli:
 
 - `ScaboMacKit` (c'è): l'officina — catalogo e servizio dei modelli, pannello, la catena del Mac con l'innesto, il pacchetto
   `.scabolettura`, la descrizione per il confronto, l'annunciatore. Diventa il **pannello e il motore della lettura
@@ -1100,10 +1109,23 @@ dall'app dell'iPad al momento dell'assemblaggio (nessuna copia nel repo). Firma 
 Development» se c'è, altrimenti ad hoc, con hardened runtime, e verifica come oggi: sandbox sì, rete no per l'app; sandbox
 sì, rete solo in uscita per il servizio.
 
+**Dal 12 novembre 2026 lo script ha due modi** (giro «ScaboPDF per Mac su TestFlight»). Il modo di sempre, di sviluppo, per
+questo Mac, i test e le reti; e la **distribuzione** (`SCABOMAC_DISTRIBUZIONE=1`, lo lancia la corsia del Mac,
+`docs/RELEASE_TESTFLIGHT.md`): firma «Apple Distribution» col certificato del profilo «Mac App Store», profilo incorporato,
+l'identificativo dell'app e della squadra nella firma dell'app, nessun identificativo né profilo per il servizio di scaricamento
+(i suoi permessi non ne chiedono), e il pacchetto d'installazione `ScaboPDF.pkg` firmato «3rd Party Mac Developer Installer», che
+è ciò che si carica. In entrambi i modi lo script aggiunge l'icona, fatta al momento dall'immagine dell'icona dell'iPad (nessuna
+copia nel repo), il manifesto della privacy (`scripts/PrivacyInfo.xcprivacy`: nessun tracciamento, nessun dato raccolto, le
+interfacce con motivo dichiarato che il codice usa), la versione e la build (versione 1.0; la build in distribuzione è quella
+della corsia, una serie del Mac distinta da quella dell'iPad) e gli strumenti di compilazione nell'`Info.plist`, come li scrive
+Xcode.
+
 ### 8.3 Sandbox, diritti, tipi di file
 
 Gli stessi diritti di oggi: `com.apple.security.app-sandbox` e `com.apple.security.files.user-selected.read-write`, nessuna
-rete nell'app (la rete resta nel solo servizio di scaricamento). Nessun gruppo di app, nessun segnalibro con ambito di
+rete nell'app (la rete resta nel solo servizio di scaricamento; LAYER2 § 12.16, decisione 16: la strada dello store, catalogo
+chiuso di modelli). In distribuzione, nella firma dell'app, in più, solo l'identificativo dell'app e della squadra, gli stessi del
+profilo. Nessun gruppo di app, nessun segnalibro con ambito di
 sicurezza: la libreria è dell'app. Tipi di documento dichiarati, per «Apri con» e il trascinamento: PDF (`com.adobe.pdf`),
 XML (`public.xml`, per gli atti AKN; un XML che non è un atto si rifiuta con la spiegazione in prosa dell'iPad) e il
 `.scabolettura` (`com.scabo.scabopdf.lettura`, esportato come oggi; si apre dalla tappa D).
@@ -1115,6 +1137,9 @@ sintetici: i test di oggi dell'officina e del pannello, aggiornati alla finestra
 dell'importazione (un PDF sintetico che l'app di prova crea da sé con un argomento di lancio: mai testo dei volumi),
 dell'apertura, della lettura e del menu, con l'audit d'accessibilità del sistema. Il tetto di mille figli del runner
 (§ 2.2) si accetta per il conteggio e si supera per il campione con le query per identificatore e `firstMatch`.
+Dal 12 novembre 2026 i titoli hanno il ruolo d'intestazione e non sono più fra i testi statici: i test li cercano per
+identificatore. Un test nuovo prova il pannello «Diagnostica»: nascosto nel menu «Finestra» finché le Impostazioni non lo
+mostrano, poi le quattro varianti dei titoli (la C di partenza), il diario, l'audit di sistema sul pannello ed Esc che chiude.
 
 ### 8.5 Il record App Store
 
@@ -1181,6 +1206,16 @@ Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 
 ## 10. Le prove d'orecchio
 
+> **Dal 12 novembre 2026 (sera) le prove d'orecchio con lo script del laboratorio sono sostituite dal pannello «Diagnostica»
+> dentro l'app** (LAYER2 § 12.16, decisione 17; giro «ScaboPDF per Mac su TestFlight»). Il maintainer usa l'app vera, installata
+> da TestFlight, sulla sua libreria vera; quando serve una prova, accende il diario nel pannello e Code lo legge nel contenitore
+> dell'app (`docs/RELEASE_TESTFLIGHT.md`, «La corsia del Mac»). Per una prova controllata, il pannello apre il libro di prova
+> che l'app scrive da sé, in una libreria a parte, con la finestra dei figli piccola se la si sceglie, e ne dà le istruzioni.
+> La variante dei titoli si sceglie nel pannello (predefinita la C). **Con lo script la prova 8 non c'è stata**: le sue
+> domande restano, e si fanno con l'app di TestFlight, variante per variante dal pannello, sul libro di prova (le istruzioni
+> sono nel pannello) o su un libro vero. Lo script `prova.sh` e le copie firmate accanto a lui sono tolti dal laboratorio; i
+> diari delle prove 1–7 restano. Le istruzioni delle prove qui sotto restano come storia.
+>
 > **Prova 8 — i titoli nelle quattro varianti e le scorciatoie dei titoli (circa otto minuti; giro «titoli di VoiceOver: le
 > varianti», 2026-11-12).** Quattro copie dell'app, ognuna con un modo diverso di presentare i titoli a VoiceOver (§ 5.4), con lo stesso
 > script: al posto del numero si scrive la **lettera** della variante. Ogni variante apre il libro sintetico delle prove con la libreria
@@ -1418,7 +1453,8 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 - **Dopo il giro «titoli di VoiceOver: le varianti» (12 novembre 2026).** *Fatto:* letto il diario della prova 7 (il rotore trova il
   titolo, VoiceOver lo scarta perché non è un'intestazione, dedotto; VO+Comando+M per la ricerca generica sui figli esposti; nessuna
-  traccia per VO+Comando+Maiuscole+H); quattro varianti dei titoli nel laboratorio, misurate da fuori (§ 5.4), **fuori da main**; nel
+  traccia per VO+Comando+Maiuscole+H); quattro varianti dei titoli nel laboratorio, misurate da fuori (§ 5.4), **fuori da main** (*superato la sera stessa*: in main dietro
+  la scelta del pannello, predefinita la C, giro «ScaboPDF per Mac su TestFlight»); nel
   codice di main ⌃⌘↓ e ⌃⌘↑ come scorciatoie alternative dei titoli e il lato dei modificatori nel diario (§ 5.5). *Da sentire* (prova 8,
   § 10): quale variante trova i titoli con VO+Comando+H, con Maiuscole (anche un titolo mai visitato) e con M, e come li dice; se ⌥⌘↓
   arriva coi tasti di sinistra, lasciando prima tutti i tasti; se arriva ⌃⌘↓. *Rischi dichiarati:* in A, B e D la ricerca generica rivolta al gruppo, alla finestra o all'app riparte dall'inizio del
@@ -1426,7 +1462,8 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
   decimo di secondo a passo, più la parte di VoiceOver, stimata circa 4–7 s all'ingresso (dedotto); in C restano da riprendere, se la si
   sceglie, alcuni casi della sua risposta (rilievo R12 della revisione del giro); nelle varianti l'articolo dei codici diventa un'intestazione di
   livello 5 e la parola «Articolo» del modulo sparisce con la qualifica (non sentito: decisione per il maintainer). *Dopo la prova:* la variante confermata entra nell'app
-  in un giro suo, con l'eccezione stretta del confronto (i soli titoli: ruolo, testo detto, valore detto; su un documento 97 elementi
+  in un giro suo (*superato la sera stessa*: tutte e quattro in main prima della prova, la C predefinita; la prova 8 si fa col
+  pannello, § 10), con l'eccezione stretta del confronto (i soli titoli: ruolo, testo detto, valore detto; su un documento 97 elementi
   diversi, quanti i suoi titoli) e la descrizione dalla vista adattata a dove sta il testo del titolo. *Non provato:* che cosa prenda ⌥⌘↓ con VoiceOver
   acceso: escluso per misura l'app e il sistema; nella prova 6 VoiceOver ha fatto ricerche al posto delle frecce, col tasto VO tenuto o
   con un tasto di destra (§ 5.5).

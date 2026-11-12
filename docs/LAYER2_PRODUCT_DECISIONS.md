@@ -1633,7 +1633,8 @@ contenitore: da fuori, le ricerche fatte come quelle della traccia arrivano al r
 trovano tutti i titoli avanti e indietro, anche fuori dagli elementi esposti (sulla versione di prima nessuno). Il ruolo
 d'intestazione che la decisione 12 consente non è stato dato: la qualifica del titolo resta detta dall'app, una volta sola, e il
 parlato del Mac resta identico a quello dell'iPad, senza eccezioni nel confronto; se la prova 7 (`DISEGNO_LETTURA_MAC.md` § 10)
-dirà che non basta, il ruolo è il passo seguente. VO+Comando+M (stesso livello) resta senza risultato. Nel menu delle azioni la voce
+dirà che non basta, il ruolo è il passo seguente (*superato la sera stessa*, decisione 18: i titoli hanno il ruolo d'intestazione, e il
+confronto ha l'eccezione dichiarata dei titoli). VO+Comando+M (stesso livello) resta senza risultato. Nel menu delle azioni la voce
 che VoiceOver aggiunge per l'elemento collegato resta accanto a quella dell'app: non c'è un modo documentato di toglierla tenendo VO+J
 (decisione per il maintainer nel referto). La decisione 13 è applicata: sul Mac le note hanno il segnale per impostazione
 predefinita, e chi aveva già scelto «Annuncia le note a voce» la ritrova com'era; il segnale della bibliografia, che il modulo dà
@@ -1651,6 +1652,14 @@ TestFlight» (2026-11-12):
     strumenti in Python fuori dallo store, come Surya o Marker, sono fuori da questo prodotto e si valuteranno a parte, se mai.
 17. **Le prove d'orecchio con lo script del laboratorio sono sostituite da un pannello di diagnostica dentro l'app**: il
     maintainer usa l'app vera, sulla sua libreria vera, e Code legge il diario che l'app tiene sul Mac.
+18. **Nel pannello si sceglie la variante dei titoli, fra le quattro del giro «titoli di VoiceOver: le varianti», applicata subito;
+    la predefinita è la C**, che nelle misure da fuori è l'unica a rispondere dal punto del cursore anche quando la ricerca arriva
+    dal gruppo; le altre restano selezionabili, e il codice delle quattro varianti entra in main dietro questa scelta, ciascuna
+    dichiarata. Da qui i titoli del Mac hanno il ruolo d'intestazione e la qualifica la dice VoiceOver (decisione 12); il confronto
+    con l'iPad, con la diagnostica spenta, resta identico salvo l'eccezione dichiarata dei titoli, che vale per la variante attiva.
+    *Effetto da decidere:* in tutte le varianti l'articolo dei codici diventa un'intestazione di livello 5, e la parola «Articolo»
+    del modulo esce con la qualifica (referto del giro delle varianti, § 9; decisione per il maintainer nel referto del giro
+    «ScaboPDF per Mac su TestFlight»).
 
 ---
 
