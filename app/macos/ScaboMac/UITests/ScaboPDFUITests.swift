@@ -45,7 +45,7 @@ final class ScaboPDFUITests: XCTestCase {
                 print("RISULTATO audit_\(nome)_tagliato {\"descrizione\": \"\(issue.compactDescription)\", \"cornice\": \"\(el.frame)\"}")
                 return true
             }
-            print("RISULTATO audit_\(nome) {\"tipo\": \"\(issue.auditType.rawValue)\", \"descrizione\": \"\(issue.compactDescription)\", \"elemento\": \"\(e.map { "\($0.elementType.rawValue) id=\($0.identifier) label=\($0.label.prefix(40))" } ?? "-")\"}")
+            print("RISULTATO audit_\(nome) {\"tipo\": \"\(issue.auditType.rawValue)\", \"descrizione\": \"\(issue.compactDescription)\", \"elemento\": \"\(e.map { "\($0.elementType.rawValue) id=\($0.identifier) label=\($0.label.prefix(40)) valore=\(String(describing: $0.value ?? "").prefix(40)) cornice=\($0.frame)" } ?? "-")\"}")
             return false
         }
         try rimisuraInVista(app, nome, tagliati, descrizioniTagliate)
@@ -391,7 +391,13 @@ final class ScaboPDFUITests: XCTestCase {
         let app = app(["--libreria-di-prova"])
         app.launch()
         defer { app.terminate() }
-        XCTAssertTrue(app.windows["home.finestra"].waitForExistence(timeout: 30))
+        let home = app.windows["home.finestra"]
+        XCTAssertTrue(home.waitForExistence(timeout: 30))
+        // La Home si chiude prima: una finestra dietro, inattiva, ha i testi attenuati e l'audit del contrasto la boccerebbe
+        // (misurato: il titolo «ScaboPDF» della Home; lo stesso accorgimento del test del pannello dei modelli).
+        home.typeKey("w", modifierFlags: [.command])
+        let chiusa = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: home)
+        wait(for: [chiusa], timeout: 10)
         let finestra = app.menuBars.menuBarItems["Finestra"]
         finestra.click()
         XCTAssertFalse(finestra.menuItems["Diagnostica…"].exists, "nascosta agli utenti comuni")

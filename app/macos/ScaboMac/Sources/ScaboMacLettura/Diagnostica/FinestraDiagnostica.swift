@@ -9,6 +9,12 @@
 import AppKit
 import ScaboCore
 
+/// La finestra del pannello: Esc la chiude, come «Chiudi» (Esc arriva alla finestra per la catena dei risponditori, non al suo
+/// controllore: misurato col test d'interfaccia).
+final class FinestraConEsc: NSWindow {
+    override func cancelOperation(_ sender: Any?) { performClose(sender) }
+}
+
 @MainActor
 public final class FinestraDiagnostica: NSWindowController {
     private let diagnostica: Diagnostica
@@ -29,8 +35,8 @@ public final class FinestraDiagnostica: NSWindowController {
 
     public init(diagnostica: Diagnostica, info: [String: Any]? = Bundle.main.infoDictionary) {
         self.diagnostica = diagnostica
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 640), styleMask: [.titled, .closable],
-                         backing: .buffered, defer: false)
+        let w = FinestraConEsc(contentRect: NSRect(x: 0, y: 0, width: 600, height: 640), styleMask: [.titled, .closable],
+                               backing: .buffered, defer: false)
         w.title = Parole.diagnostica
         w.setAccessibilityIdentifier("diagnostica.finestra")
         w.isReleasedWhenClosed = false
@@ -149,6 +155,4 @@ public final class FinestraDiagnostica: NSWindowController {
                              userInfo: [.announcement: testo, .priority: NSAccessibilityPriorityLevel.high.rawValue])
     }
 
-    /// Esc chiude il pannello, come «Chiudi».
-    public override func cancelOperation(_ sender: Any?) { window?.performClose(sender) }
 }
