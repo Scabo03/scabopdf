@@ -32,14 +32,59 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
     @inline(__always) private func nota(_ richiesta: String) { vista.diario.registra(indice, richiesta) }
 
     override public func isAccessibilityElement() -> Bool { true }
-    override public func accessibilityRole() -> NSAccessibility.Role? { nota("AXRole"); return .staticText }
+    /// Il livello se l'elemento è un titolo e la variante attiva gli dà il ruolo d'intestazione (`VarianteTitoli`: in tutte e
+    /// quattro le varianti; dal giro «ScaboPDF per Mac su TestFlight», 2026-11-12, prima il titolo era testo statico).
+    private var livelloTitolo: Int? { VarianteTitoli.ruoloIntestazione ? vista.livelloTitolo(indice) : nil }
+    override public func accessibilityRole() -> NSAccessibility.Role? {
+        nota("AXRole")
+        return livelloTitolo != nil ? NSAccessibility.Role(rawValue: "AXHeading") : .staticText
+    }
+    override public func accessibilityTitle() -> String? {
+        guard livelloTitolo != nil, VarianteTitoli.stileWebKit else { return nil }
+        nota("AXTitle"); vista.notaAttenzione(indice)
+        return vista.testoSenzaQualifica(indice)
+    }
+    /// Il livello del titolo nell'attributo di macOS 26 (`NSAccessibilityHeadingLevelAttribute`, 1-based), come SwiftUI.
+    override public func accessibilityAttributeValue(_ attribute: NSAccessibility.Attribute) -> Any? {
+        if attribute.rawValue == "AXHeadingLevel", let n = livelloTitolo, !VarianteTitoli.stileWebKit {
+            nota("AXHeadingLevel"); return NSNumber(value: n)
+        }
+        return super.accessibilityAttributeValue(attribute)
+    }
+    /// Il livello anche nell'elenco degli attributi (rilievo R6 della revisione: un client che guarda prima l'elenco lo trova).
+    override public func accessibilityAttributeNames() -> [NSAccessibility.Attribute] {
+        let n = super.accessibilityAttributeNames()
+        return livelloTitolo != nil && !VarianteTitoli.stileWebKit ? n + [NSAccessibility.Attribute(rawValue: "AXHeadingLevel")] : n
+    }
+    override public func accessibilityParameterizedAttributeNames() -> [NSAccessibility.ParameterizedAttribute] {
+        let n = super.accessibilityParameterizedAttributeNames()
+        return VarianteTitoli.ricercaGenerica ? n + [NSAccessibility.ParameterizedAttribute(rawValue: "AXUIElementsForSearchPredicate")] : n
+    }
+    override public func accessibilityAttributeValue(_ attribute: NSAccessibility.ParameterizedAttribute, forParameter parameter: Any?) -> Any? {
+        if VarianteTitoli.ricercaGenerica, attribute.rawValue == "AXUIElementsForSearchPredicate" {
+            nota("ricerca-generica")
+            if let r = vista.ricercaGenerica(parameter, da: indice) { return r }
+        }
+        return super.accessibilityAttributeValue(attribute, forParameter: parameter)
+    }
     override public func accessibilityIdentifier() -> String { "lettura.elemento.\(indice)" }
     override public func accessibilityValue() -> Any? {
         nota("AXValue")
         vista.notaAttenzione(indice)   // fuori dalla finestra: la voce di un rotore che VoiceOver sta per raggiungere
+        if let n = livelloTitolo {
+            // WebKit: il livello nel valore; SwiftUI: nessun valore (qui il valore secondario, se c'è).
+            return VarianteTitoli.stileWebKit ? NSNumber(value: n) : vista.valore(indice)
+        }
         return vista.testoPronunciato(indice)
     }
-    override public func accessibilityLabel() -> String? { nota("AXDescription"); return vista.valore(indice) }
+    override public func accessibilityLabel() -> String? {
+        nota("AXDescription")
+        if livelloTitolo != nil, !VarianteTitoli.stileWebKit {
+            vista.notaAttenzione(indice)   // il testo del titolo sta qui: VoiceOver lo legge prima di posarsi
+            return vista.testoSenzaQualifica(indice)
+        }
+        return vista.valore(indice)
+    }
     override public func accessibilityParent() -> Any? { vista }
     override public func accessibilityWindow() -> Any? { vista.window }
     override public func accessibilityTopLevelUIElement() -> Any? { vista.window }

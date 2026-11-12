@@ -164,12 +164,18 @@ final class ScaboPDFUITests: XCTestCase {
         XCTAssertTrue(lettura.waitForExistence(timeout: 60), "dopo l'importazione si apre la lettura, come sull'iPad")
         let gruppo = lettura.groups["Testo del documento"]
         XCTAssertTrue(gruppo.waitForExistence(timeout: 10), "il gruppo «Testo del documento»")
-        let testi = gruppo.staticTexts
+        // Gli elementi del testo per identificatore: dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) i titoli hanno il ruolo
+        // d'intestazione (variante C, predefinita) e non sono più fra i testi statici; il testo del titolo è nella descrizione,
+        // senza la qualifica del modulo, che dice VoiceOver.
+        let testi = gruppo.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "lettura.elemento."))
         let n = testi.count
         XCTAssertGreaterThanOrEqual(n, 10)
-        let primo = testi.element(boundBy: 0)
-        let valorePrimo = primo.value as? String ?? ""
-        XCTAssertTrue(valorePrimo.hasPrefix("Intestazione di livello"), valorePrimo)
+        let primo = gruppo.descendants(matching: .any).matching(identifier: "lettura.elemento.0").firstMatch
+        XCTAssertTrue(primo.waitForExistence(timeout: 5))
+        let valorePrimo = primo.label
+        XCTAssertFalse(valorePrimo.isEmpty, "il titolo ha il suo testo")
+        XCTAssertFalse(valorePrimo.hasPrefix("Intestazione di livello"), "la qualifica la dice VoiceOver, una volta sola: \(valorePrimo)")
+        XCTAssertGreaterThanOrEqual(gruppo.staticTexts.count, 10, "i capoversi e le note restano testi statici")
         // Il libro è entrato nella libreria: la Home lo elenca.
         let home = app.windows["home.finestra"]
         XCTAssertTrue(home.exists)
@@ -240,11 +246,11 @@ final class ScaboPDFUITests: XCTestCase {
         // Freccia giù sposta il fuoco di un elemento; ⌥⌘↓ va al titolo successivo (il menu «Lettura»).
         lettura.typeKey(.downArrow, modifierFlags: [])
         lettura.typeKey(.downArrow, modifierFlags: [.command, .option])
-        let col = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
-        var valore = ""
-        if col.waitForExistence(timeout: 5) { valore = col.value as? String ?? "" }
-        scrivi("tastiera", ["elemento_col_fuoco": String(valore.prefix(40))])
-        XCTAssertTrue(valore.hasPrefix("Intestazione di livello"), "il fuoco è sul titolo successivo: «\(valore.prefix(40))»")
+        let col = gruppo.descendants(matching: .any).matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+        var identificatore = ""
+        if col.waitForExistence(timeout: 5) { identificatore = col.identifier }
+        scrivi("tastiera", ["elemento_col_fuoco": identificatore])
+        XCTAssertEqual(identificatore, "lettura.elemento.4", "il fuoco è sul titolo successivo, quello del secondo capitolo")
     }
 
     /// ⌘J con un tasto vero (giro «prova 4, segnalibri e sigle», 2026-11-11): nel diario delle prove 3 rifatta e 4 nessun ⌘J è
@@ -261,7 +267,7 @@ final class ScaboPDFUITests: XCTestCase {
         let gruppo = lettura.groups["Testo del documento"]
         XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
         func colFuoco() -> String {
-            let e = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+            let e = gruppo.descendants(matching: .any).matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
             return e.waitForExistence(timeout: 5) ? e.identifier : ""
         }
         // Dal titolo del primo capitolo al capoverso col richiamo della nota 1, poi ⌘J: la nota; ⌘J di nuovo: il capoverso.
@@ -294,7 +300,7 @@ final class ScaboPDFUITests: XCTestCase {
         let gruppo = lettura.groups["Testo del documento"]
         XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
         func colFuoco() -> String {
-            let e = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+            let e = gruppo.descendants(matching: .any).matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
             return e.waitForExistence(timeout: 5) ? e.identifier : ""
         }
         lettura.typeKey(.downArrow, modifierFlags: [.command, .option])
@@ -324,7 +330,7 @@ final class ScaboPDFUITests: XCTestCase {
         let gruppo = lettura.groups["Testo del documento"]
         XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
         func colFuoco() -> String {
-            let e = gruppo.staticTexts.matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
+            let e = gruppo.descendants(matching: .any).matching(NSPredicate(format: "hasKeyboardFocus == true")).firstMatch
             return e.waitForExistence(timeout: 5) ? e.identifier : ""
         }
         lettura.typeKey(.downArrow, modifierFlags: [.command, .control])
@@ -358,8 +364,9 @@ final class ScaboPDFUITests: XCTestCase {
         // Dal giro «prove della tappa A» (2026-11-09) un libro lungo espone come figli il primo elemento, una finestra attorno
         // al fuoco (all'apertura: dall'inizio) e l'ultimo (DISEGNO § 2.3-2.4): il runner li conta tutti, e l'ultimo figlio è
         // l'ultimo elemento del libro.
-        let n = gruppo.staticTexts.count
-        let ultimoFiglio = n > 0 ? gruppo.staticTexts.element(boundBy: n - 1).identifier : ""
+        let figli = gruppo.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "lettura.elemento."))
+        let n = figli.count
+        let ultimoFiglio = n > 0 ? figli.element(boundBy: n - 1).identifier : ""
         // Un campione di elementi della finestra, per identificatore.
         let indici = (env["SCABOMAC_INDICI"] ?? "0,1,2,10,100,200,300,400")
             .split(separator: ",").compactMap { Int($0) }
@@ -374,5 +381,54 @@ final class ScaboPDFUITests: XCTestCase {
                                    "ultimo_figlio": ultimoFiglio,
                                    "campione": campione, "percorso_finestra_primo_elemento": via,
                                    "profondita": max(0, via.count - 1)])
+    }
+
+    /// IL PANNELLO «DIAGNOSTICA» (giro «ScaboPDF per Mac su TestFlight», 2026-11-12; LAYER2 § 12.16, decisione 17): nascosto agli
+    /// utenti comuni — nel menu «Finestra» la voce non c'è — finché la scelta delle Impostazioni non lo mostra; poi dal menu; la
+    /// variante dei titoli (la C di partenza) e il diario si scelgono; l'audit d'accessibilità del sistema sul pannello; Esc chiude.
+    /// Sulla libreria di prova: le scelte non restano e il diario va nella cartella della libreria di prova.
+    func test_diagnostica_nascostaPoiDalMenu_varianteEDiario_audit() throws {
+        let app = app(["--libreria-di-prova"])
+        app.launch()
+        defer { app.terminate() }
+        XCTAssertTrue(app.windows["home.finestra"].waitForExistence(timeout: 30))
+        let finestra = app.menuBars.menuBarItems["Finestra"]
+        finestra.click()
+        XCTAssertFalse(finestra.menuItems["Diagnostica…"].exists, "nascosta agli utenti comuni")
+        app.typeKey(.escape, modifierFlags: [])
+        app.typeKey(",", modifierFlags: [.command])
+        let impostazioni = app.windows["impostazioni.finestra"]
+        XCTAssertTrue(impostazioni.waitForExistence(timeout: 10))
+        let scelta = impostazioni.checkBoxes["impostazioni.diagnostica"]
+        XCTAssertTrue(scelta.waitForExistence(timeout: 5))
+        XCTAssertEqual(scelta.value as? Int, 0, "spenta di partenza")
+        scelta.click()
+        XCTAssertEqual(scelta.value as? Int, 1)
+        impostazioni.typeKey("w", modifierFlags: [.command])
+        finestra.click()
+        let voce = finestra.menuItems["Diagnostica…"]
+        XCTAssertTrue(voce.waitForExistence(timeout: 5), "mostrata dalle Impostazioni")
+        voce.click()
+        let pannello = app.windows["diagnostica.finestra"]
+        XCTAssertTrue(pannello.waitForExistence(timeout: 10))
+        let c = pannello.radioButtons["diagnostica.variante.C"], d = pannello.radioButtons["diagnostica.variante.D"]
+        XCTAssertTrue(c.exists && d.exists && pannello.radioButtons["diagnostica.variante.A"].exists
+                      && pannello.radioButtons["diagnostica.variante.B"].exists, "le quattro varianti")
+        XCTAssertEqual(c.value as? Int, 1, "la C è la predefinita")
+        XCTAssertTrue(pannello.staticTexts["diagnostica.versione"].exists, "la versione e la build in chiaro")
+        try audit(app, "diagnostica")
+        d.click()
+        XCTAssertEqual(d.value as? Int, 1)
+        c.click()
+        XCTAssertEqual(c.value as? Int, 1)
+        let diario = pannello.checkBoxes["diagnostica.diario"]
+        XCTAssertEqual(diario.value as? Int, 0, "il diario è spento di serie")
+        diario.click()
+        XCTAssertEqual(diario.value as? Int, 1)
+        diario.click()
+        XCTAssertEqual(diario.value as? Int, 0)
+        pannello.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(pannello.waitForNonExistence(timeout: 5), "Esc chiude il pannello")
+        scrivi("diagnostica", ["varianti": 4, "predefinita": "C"])
     }
 }

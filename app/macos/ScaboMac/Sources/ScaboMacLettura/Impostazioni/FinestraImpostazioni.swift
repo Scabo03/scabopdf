@@ -5,6 +5,8 @@
 //  `ReadingSettingsWording`). Sul Mac la granularità si applica (DISEGNO_LETTURA_MAC § 6.7): vale dai libri aperti dopo la
 //  scelta. Le note a voce valgono subito, anche nei libri già aperti (sul Mac le Impostazioni si aprono mentre si legge). Le
 //  scelte si salvano subito, sulle stesse chiavi dell'iPad.
+//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12), in fondo, «Per chi sviluppa ScaboPDF»: la scelta che mostra il menu
+//  «Diagnostica» (spenta se nessuno l'ha accesa; su una chiave del Mac, `PreferenzeDiagnostica`).
 //
 import AppKit
 import ScaboChain
@@ -15,8 +17,11 @@ public final class FinestraImpostazioni: NSWindowController {
     private let prefs: KeyValueStore
     private var livelli: [NSButton] = []
     let note = NSButton(checkboxWithTitle: ReadingSettingsWording.noteSpokenSwitch, target: nil, action: nil)
+    let diagnostica = NSButton(checkboxWithTitle: Parole.impostazioniMostraDiagnostica, target: nil, action: nil)
     /// Chiamata quando cambia «Annuncia le note a voce»: chi tiene le finestre di lettura le aggiorna subito.
     public var quandoCambianoLeNote: (() -> Void)?
+    /// Chiamata quando cambia «Mostra il menu Diagnostica»: l'app mostra o nasconde la voce del menu «Finestra».
+    public var quandoCambiaLaDiagnostica: ((Bool) -> Void)?
 
     public init(prefs: KeyValueStore) {
         self.prefs = prefs
@@ -50,11 +55,22 @@ public final class FinestraImpostazioni: NSWindowController {
         let spiegazioneNote = NSTextField(wrappingLabelWithString: Parole.noteAVoceSpiegazione)
         spiegazioneNote.preferredMaxLayoutWidth = 470
         viste += [note, spiegazioneNote]
+        let titoloSviluppo = NSTextField(labelWithString: Parole.impostazioniSviluppo)
+        titoloSviluppo.font = .boldSystemFont(ofSize: 13)
+        titoloSviluppo.setAccessibilityRole(.staticText)
+        diagnostica.target = self
+        diagnostica.action = #selector(cambiaDiagnostica(_:))
+        diagnostica.state = PreferenzeDiagnostica.mostrata(prefs) ? .on : .off
+        diagnostica.setAccessibilityIdentifier("impostazioni.diagnostica")
+        let spiegazioneDiagnostica = NSTextField(wrappingLabelWithString: Parole.impostazioniMostraDiagnosticaSpiegazione)
+        spiegazioneDiagnostica.preferredMaxLayoutWidth = 470
+        viste += [titoloSviluppo, diagnostica, spiegazioneDiagnostica]
         let pila = NSStackView(views: viste)
         pila.orientation = .vertical
         pila.alignment = .leading
         pila.spacing = 8
         pila.setCustomSpacing(16, after: spiegazione)
+        pila.setCustomSpacing(16, after: spiegazioneNote)
         pila.edgeInsets = NSEdgeInsets(top: 18, left: 20, bottom: 18, right: 20)
         w.contentView = pila
     }
@@ -70,5 +86,10 @@ public final class FinestraImpostazioni: NSWindowController {
     @objc func cambiaNote(_ sender: NSButton) {
         PreferenzeLettura.impostaNoteAVoce(prefs, sender.state == .on)
         quandoCambianoLeNote?()
+    }
+
+    @objc func cambiaDiagnostica(_ sender: NSButton) {
+        PreferenzeDiagnostica.impostaMostrata(prefs, sender.state == .on)
+        quandoCambiaLaDiagnostica?(sender.state == .on)
     }
 }

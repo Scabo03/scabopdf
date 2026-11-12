@@ -109,6 +109,19 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public override func accessibilityCustomRotors() -> [NSAccessibilityCustomRotor] {
         diario.registra(-1, "gruppo:AXCustomRotors"); return rotori()
     }
+    // Variante C (`VarianteTitoli`): la stessa risposta alla ricerca generica anche sul gruppo (AppKit la chiama sull'elemento e
+    // sul gruppo, misurato da fuori nel giro delle varianti).
+    public override func accessibilityParameterizedAttributeNames() -> [NSAccessibility.ParameterizedAttribute] {
+        let n = super.accessibilityParameterizedAttributeNames()
+        return VarianteTitoli.ricercaGenerica ? n + [NSAccessibility.ParameterizedAttribute(rawValue: "AXUIElementsForSearchPredicate")] : n
+    }
+    public override func accessibilityAttributeValue(_ attribute: NSAccessibility.ParameterizedAttribute, forParameter parameter: Any?) -> Any? {
+        if VarianteTitoli.ricercaGenerica, attribute.rawValue == "AXUIElementsForSearchPredicate" {
+            diario.registra(-1, "gruppo:ricerca-generica")
+            if let r = ricercaGenerica(parameter, da: fuoco ?? -1) { return r }
+        }
+        return super.accessibilityAttributeValue(attribute, forParameter: parameter)
+    }
 
     /// L'elemento col fuoco, cercato da qui in giù. AppKit lo chiede alla vista primo risponditore quando un client domanda
     /// l'elemento col fuoco dell'app o della finestra («Override this method to do a deeper search … e.g. a NSMatrix would
@@ -146,8 +159,13 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public nonisolated(unsafe) static var raggioFinestra = 200
     public nonisolated(unsafe) static var margineFinestra = 50
     public static var finestraMassima: Int { 2 * raggioFinestra + 1 }
+    /// Il raggio e il margine di QUESTA vista: li prende dai valori sopra quando nasce, e si cambiano solo per una vista (dal giro
+    /// «ScaboPDF per Mac su TestFlight», 2026-11-12: la prova guidata del pannello «Diagnostica» apre il libro di prova con la
+    /// finestra piccola senza toccare le finestre dei libri veri aperti accanto). Con i valori di partenza nulla cambia.
+    public var raggio: Int = VistaLettura.raggioFinestra
+    public var margine: Int = VistaLettura.margineFinestra
     /// Vero se il libro è più lungo della finestra: allora i figli esposti non sono tutti gli elementi.
-    public var finestrato: Bool { conteggio > Self.finestraMassima }
+    public var finestrato: Bool { conteggio > 2 * raggio + 1 }
     /// La finestra corrente (indici degli elementi), ricalcolata quando un client chiede i figli.
     public private(set) var finestra: Range<Int> = 0..<0
     /// L'ultimo elemento fuori dalla finestra di cui un client ha chiesto il testo: la voce di un rotore che VoiceOver dice e
@@ -167,6 +185,7 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         indici.insert(conteggio - 1)
         if let lontane = righeInVistaLontane { indici.insert(integersIn: lontane) }
         if let a = attenzione, !f.contains(a) { indici.insert(integersIn: max(0, a - 2)..<min(conteggio, a + 3)) }
+        if VarianteTitoli.titoliSempreEsposti { indici.formUnion(indiciTitoli) }   // variante B: tutti i titoli fra i figli
         return indici.map { tutti[$0] }
     }
 
@@ -185,7 +204,7 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public func aggiornaFinestra() -> Range<Int> {
         guard conteggio > 0 else { finestra = 0..<0; return finestra }
         let centro = min(max(0, fuoco ?? 0), conteggio - 1)
-        let r = Self.raggioFinestra, m = Self.margineFinestra
+        let r = raggio, m = margine
         let comodo = finestra.contains(centro)
             && (finestra.lowerBound == 0 || centro >= finestra.lowerBound + m)
             && (finestra.upperBound == conteggio || centro < finestra.upperBound - m)
@@ -205,9 +224,31 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         attenzione = i
     }
 
+    /// Variante B (`VarianteTitoli`): gli indici di tutti i titoli del libro, calcolati una volta.
+    private lazy var indiciTitoli: IndexSet = IndexSet(modello.headingIndex.map(\.index))
+
+    /// Cambia il raggio della finestra dei figli di QUESTA vista e la ricalcola (la prova guidata della diagnostica: il libro di
+    /// prova con la finestra piccola). Il margine segue la regola dell'argomento di prova `--raggio-finestra`.
+    public func impostaFinestra(raggio r: Int) {
+        raggio = max(1, r)
+        margine = max(1, raggio / 4)
+        finestra = 0..<0
+        attenzione = nil
+        if finestrato { aggiornaFinestra() }
+    }
+
+    /// La variante dei titoli è cambiata (`VarianteTitoli.attiva`): ruolo e testo dei titoli cambiano a ogni richiesta da sé; qui
+    /// si ridisegna (si vede ciò che si sente) e si avvisa l'accessibilità che i figli possono essere cambiati (la variante B
+    /// espone tutti i titoli).
+    public func titoliCambiati() {
+        needsDisplay = true
+        NSAccessibility.post(element: self, notification: .layoutChanged)
+    }
+
     /// Vero se l'elemento `i` è fra i figli che il gruppo espone adesso.
     public func esposto(_ i: Int) -> Bool {
         guard finestrato else { return i >= 0 && i < conteggio }
+        if VarianteTitoli.titoliSempreEsposti, indiciTitoli.contains(i) { return true }
         if finestra.contains(i) || i == 0 || i == conteggio - 1 || righeInVistaLontane?.contains(i) == true { return true }
         if let a = attenzione, abs(i - a) <= 2 { return true }
         return false
@@ -220,6 +261,46 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         ReadingSpeech.intendedAccessibilityLabel(for: segmento(i), restoreNoteIntro: impostazioni.noteSpokenLabels)
     }
     public func valore(_ i: Int) -> String? { modello.value(forIndex: i, search: ricercaAttiva) }
+    /// Per le varianti dei titoli (`VarianteTitoli`): il livello del titolo (1…4, 5 l'articolo) dal modulo, e il testo detto senza la qualifica
+    /// del modulo («Intestazione di livello N.», «Articolo.»): col ruolo d'intestazione la qualifica la dice VoiceOver.
+    public func livelloTitolo(_ i: Int) -> Int? { ReadingSpeech.headingLevel(for: segmento(i).role) }
+    public func testoSenzaQualifica(_ i: Int) -> String {
+        let t = testoPronunciato(i), q = ReadingSpeech.headingQualifier(for: segmento(i).role)
+        guard !q.isEmpty, t.hasPrefix(q + " ") else { return t }
+        return String(t.dropFirst(q.count + 1))
+    }
+    /// Variante C (`VarianteTitoli`): la risposta alla ricerca generica (AXUIElementsForSearchPredicate) sui titoli di tutto il
+    /// libro, dal modulo.
+    /// Chiavi dei titoli (qualsiasi livello, un livello, lo stesso livello dell'elemento di partenza); direzione; limite.
+    /// `nil` se la ricerca non chiede titoli: allora risponde AppKit, come prima (le altre ricerche di VoiceOver non cambiano).
+    public func ricercaGenerica(_ parametro: Any?, da chi: Int) -> [ElementoLettura]? {
+        guard let p = parametro as? [String: Any] else { return nil }
+        let chiavi: [String] = (p["AXSearchKey"] as? [String]) ?? ((p["AXSearchKey"] as? String).map { [$0] } ?? [])
+        let avanti = (p["AXDirection"] as? String) != "AXDirectionPrevious"
+        let limite = max(1, (p["AXResultsLimit"] as? Int) ?? 1)
+        // L'elemento di partenza: se arriva come nostro oggetto, quello; altrimenti l'elemento a cui la ricerca è rivolta (il
+        // cursore di VoiceOver), o il fuoco per il gruppo (misurato: arriva come altro tipo, annotato nel diario).
+        let s = p["AXStartElement"]
+        if !(s is ElementoLettura) { diario.registra(-1, "ricerca-generica:partenza-tipo:\(s.map { String(describing: type(of: $0)) } ?? "nessuna")") }
+        let partenza = (s as? ElementoLettura)?.indice ?? (chi >= 0 ? chi : (avanti ? -1 : conteggio))
+        var livello: Int?? = nil   // nil: nessuna chiave dei titoli; .some(nil): qualsiasi livello
+        var altre = false          // una chiave che non è dei titoli: risponde AppKit, per tutta la richiesta (rilievo R12)
+        for c in chiavi {
+            if c == "AXHeadingSearchKey" { livello = .some(nil) }
+            else if c == "AXHeadingSameLevelSearchKey" { livello = .some(livelloTitolo(max(0, min(conteggio - 1, partenza)))) }
+            else if c.hasPrefix("AXHeadingLevel"), c.hasSuffix("SearchKey"), let n = Int(c.dropFirst(14).dropLast(9)) { livello = .some(n) }
+            else { altre = true }
+        }
+        diario.registra(partenza, "ricerca-generica:\(chiavi.joined(separator: "+")):\(avanti ? "avanti" : "indietro")")
+        guard let lv = livello, !altre else { return nil }
+        // Una passata sola sull'indice dei titoli del modulo (niente costo quadratico con un limite alto), col filtro di testo se
+        // c'è (come il rotore), e al più 200 risultati.
+        let testo = (p["AXSearchText"] as? String) ?? ""
+        let candidati = modello.headingIndex.filter { (lv == nil || $0.level == lv) && (avanti ? $0.index > partenza : $0.index < partenza) }
+        let ordinati = avanti ? candidati : candidati.reversed()
+        let filtrati = testo.isEmpty ? ordinati : ordinati.filter { testoSenzaQualifica($0.index).localizedCaseInsensitiveContains(testo) }
+        return filtrati.prefix(min(limite, 200)).map { elemento($0.index) }
+    }
     public func azioni(_ i: Int) -> [ReadingAction] {
         modello.actions(forIndex: i, bookmark: statoSegnalibri, settings: impostazioni)
     }
@@ -554,7 +635,9 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
             }
             // Si vede ciò che si sente (il testo pronunciato, qualifica del titolo compresa): la stessa resa per chi guarda e per
             // chi ascolta, e l'audit di sistema del contrasto ritrova nell'immagine il testo dell'elemento (misurato l'8 novembre).
-            let t = String(testoPronunciato(i).prefix(160))
+            // Col ruolo d'intestazione (tutte le varianti dei titoli) la qualifica la dice VoiceOver: si disegna il titolo senza.
+            let parlato = VarianteTitoli.ruoloIntestazione && livelloTitolo(i) != nil ? testoSenzaQualifica(i) : testoPronunciato(i)
+            let t = String(parlato.prefix(160))
             (t as NSString).draw(in: riga.insetBy(dx: 6, dy: 4),
                                  withAttributes: ReadingSpeech.isHeadingRole(segmento(i).role) ? titolo : normale)
         }

@@ -15,6 +15,10 @@
 //       Mac, registrazione, cache), riaperto come l'app lo riapre (per i volumi enormi: rielaborato a 1.200), descritto dalla
 //       vista e confrontato con lo stesso riferimento; e la lettura del Mac contro quella congelata dell'iPad, segmento per
 //       segmento (quanti, dove: è la quota dell'ESTRATTORE).
+//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12): i titoli del Mac hanno il ruolo d'intestazione (`VarianteTitoli`, la
+//  variante attiva, predefinita la C) e ogni confronto della vista passa dall'ECCEZIONE DICHIARATA dei titoli (`EccezioneTitoli`,
+//  LAYER2 § 12.16 decisione 12): solo gli elementi che il modulo dice titoli, solo ruolo e testo detto, tutti e soli i titoli. Il
+//  numero degli elementi riportati è nell'esito (`eccezioneTitoli`); se non torna, il confronto è «diverso».
 //  Richiesta: {"libri": <libri.json della rete sul parlato>, "riferimento": <dir>, "riferimentoVO": <dir>, "corpus": {"originals":
 //  <dir>, ...}, "uscite": <dir>, "solo": <fine del nome, facoltativo>, "misure": <stem del volume da misurare, facoltativo>}.
 //
@@ -57,9 +61,12 @@ final class BancoIdentitaTests: XCTestCase {
         return out
     }
 
-    static func riassunto(_ r: ReadingComparisonResult) -> [String: Any] {
-        var out: [String: Any] = ["identiche": r.identical, "divergenze": r.totalDivergences,
+    static func riassunto(_ r: ReadingComparisonResult, eccezione: EccezioneTitoli.Esito? = nil) -> [String: Any] {
+        var out: [String: Any] = ["identiche": r.identical && (eccezione?.tuttiESoliITitoli ?? true), "divergenze": r.totalDivergences,
                                   "elementiA": r.elementsA, "elementiB": r.elementsB]
+        if let e = eccezione {
+            out["eccezioneTitoli"] = ["riportati": e.riportati, "titoliDelModulo": e.titoliDelModulo, "variante": VarianteTitoli.lettera]
+        }
         out["perTipo"] = Dictionary(uniqueKeysWithValues: r.counts.map { ($0.key.rawValue, $0.value) })
         if let f = r.first { out["prima"] = ["tipo": f.kind.rawValue, "campo": f.field, "indiceA": f.indexA as Any, "indiceB": f.indexB as Any] }
         return out
@@ -95,13 +102,15 @@ final class BancoIdentitaTests: XCTestCase {
             func riferimento(_ base: String, _ n: Int) throws -> ReadingDescription {
                 try ReadingDescription.decode(Data(contentsOf: URL(fileURLWithPath: "\(base)/\(b.libro).lc.n\(n).jsonl")))
             }
-            func descrivi(_ lettura: LibraryReading, _ doc: ArchivedDocument, libreria: LibreriaMac, n: Int, vo: Bool) -> (ReadingDescription, ReadingDescription) {
+            func descrivi(_ lettura: LibraryReading, _ doc: ArchivedDocument, libreria: LibreriaMac, n: Int,
+                          vo: Bool) -> (ReadingDescription, ReadingDescription, EccezioneTitoli.Esito) {
                 PreferenzeLettura.impostaNoteAVoce(libreria.prefs, n == 1)
                 let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria, voiceOver: vo)
-                let v = f.vista.descrizioneDallaVista(libro: b.libro, layout: .continuousReading)
+                let (v, eccezione) = EccezioneTitoli.applica(f.vista.descrizioneDallaVista(libro: b.libro, layout: .continuousReading),
+                                                             segmenti: f.vista.modello.segments)
                 let m = f.vista.descrizioneDelModulo(libro: b.libro, layout: .continuousReading)
                 f.close()
-                return (v, m)
+                return (v, m, eccezione)
             }
 
             // ── (V) la vista del Mac sulla lettura congelata dell'iPad ─────────────────────────────────────────────
@@ -115,13 +124,13 @@ final class BancoIdentitaTests: XCTestCase {
             var vista: [String: Any] = [:]
             for n in [0, 1] {
                 let rif = Self.filtra(try riferimento(req.riferimento, n))
-                let (v, m) = descrivi(letturaIPad, finto, libreria: libV, n: n, vo: false)
-                vista["n\(n)"] = Self.riassunto(ReadingDescriptionComparison.compare(rif, v))
+                let (v, m, ecc) = descrivi(letturaIPad, finto, libreria: libV, n: n, vo: false)
+                vista["n\(n)"] = Self.riassunto(ReadingDescriptionComparison.compare(rif, v), eccezione: ecc)
                 vista["n\(n)_moduloMac_rifFiltrato"] = ReadingDescriptionComparison.compare(rif, m).identical
-                vista["n\(n)_vistaUgualeModulo_byte"] = (try? v.encoded()) == (try? m.encoded())
+                vista["n\(n)_vistaUgualeModulo_byte"] = (try? v.encoded()) == (try? m.encoded()) && ecc.tuttiESoliITitoli
                 let rifVO = Self.filtra(try riferimento(req.riferimentoVO, n))
-                let (vvo, _) = descrivi(letturaIPad, finto, libreria: libV, n: n, vo: true)
-                vista["n\(n)_vo"] = Self.riassunto(ReadingDescriptionComparison.compare(rifVO, vvo))
+                let (vvo, _, eccvo) = descrivi(letturaIPad, finto, libreria: libV, n: n, vo: true)
+                vista["n\(n)_vo"] = Self.riassunto(ReadingDescriptionComparison.compare(rifVO, vvo), eccezione: eccvo)
             }
             esito["vista"] = vista
             try? FileManager.default.removeItem(at: radiceV)
@@ -165,8 +174,8 @@ final class BancoIdentitaTests: XCTestCase {
             var app: [String: Any] = [:]
             for n in [0, 1] {
                 let rif = Self.filtra(try riferimento(req.riferimento, n))
-                let (v, _) = descrivi(letturaMac, docMac, libreria: libA, n: n, vo: false)
-                app["n\(n)"] = Self.riassunto(ReadingDescriptionComparison.compare(rif, v))
+                let (v, _, ecc) = descrivi(letturaMac, docMac, libreria: libA, n: n, vo: false)
+                app["n\(n)"] = Self.riassunto(ReadingDescriptionComparison.compare(rif, v), eccezione: ecc)
             }
             // La lettura del Mac contro quella congelata dell'iPad, segmento per segmento.
             let sMac = letturaMac.content.pages.flatMap { $0.segments }, sIPad = congelata.content.pages.flatMap { $0.segments }

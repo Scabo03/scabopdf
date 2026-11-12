@@ -11,6 +11,11 @@
 //  diario, sul filo principale, lo fermava fino a un terzo di secondo: misurato col client da fuori). Nessun testo: indici,
 //  nomi delle richieste, millisecondi.
 //
+//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) il diario è anche quello della DIAGNOSTICA dell'app (`Diagnostica`):
+//  spento di serie, acceso dal maintainer nel pannello, scritto IN CODA in un file del contenitore dell'app ogni due secondi
+//  (`accodaInSottofondo`: solo le righe nuove, così una sessione lunga non riscrive megabyte a ogni giro). Indice −5: i fatti
+//  della diagnostica (acceso, spento, la variante dei titoli, le prove guidate).
+//
 import AppKit
 import Foundation
 
@@ -26,6 +31,9 @@ public final class Diario: @unchecked Sendable {
     private var _fatti: [Voce] = []
     private var _attivo = true
     private var sentinellaAccesa = false
+    /// Le righe non ancora scritte nel file del diario dell'app, in ordine d'arrivo (solo se `trattieniPerIlFile`).
+    private var _daScrivere: [Voce] = []
+    private var _trattieni = false
     private let codaScrittura = DispatchQueue(label: "scabopdf.mac.diario", qos: .utility)
     /// Spento: non registra nulla. Sospeso: non registra le richieste mentre la vista si descrive da sé (altrimenti il diario
     /// conterrebbe le domande del processo e non quelle del client); i fatti si annotano comunque.
@@ -41,6 +49,12 @@ public final class Diario: @unchecked Sendable {
 
     public init() {}
 
+    /// Vero per il diario della diagnostica: ogni riga si tiene anche per la scrittura in coda nel file.
+    public var trattieniPerIlFile: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return _trattieni }
+        set { lock.lock(); _trattieni = newValue; lock.unlock() }
+    }
+
     public var voci: [Voce] { lock.lock(); defer { lock.unlock() }; return _voci }
     public var fatti: [Voce] { lock.lock(); defer { lock.unlock() }; return _fatti }
 
@@ -48,16 +62,53 @@ public final class Diario: @unchecked Sendable {
         guard !sospeso else { return }
         lock.lock(); defer { lock.unlock() }
         guard _attivo else { return }
-        _voci.append(Voce(tempo: Date().timeIntervalSince(partenza), indice: indice, richiesta: richiesta))
+        let v = Voce(tempo: Date().timeIntervalSince(partenza), indice: indice, richiesta: richiesta)
+        _voci.append(v)
         if _voci.count > 400_000 { _voci.removeFirst(200_000) }
+        if _trattieni { trattieni(v) }
     }
 
     /// Un fatto del processo (indice negativo): una fase dell'apertura, un fermo del filo principale.
     public func registraFatto(_ indice: Int, _ fatto: String) {
         lock.lock(); defer { lock.unlock() }
         guard _attivo else { return }
-        _fatti.append(Voce(tempo: Date().timeIntervalSince(partenza), indice: indice, richiesta: fatto))
+        let v = Voce(tempo: Date().timeIntervalSince(partenza), indice: indice, richiesta: fatto)
+        _fatti.append(v)
         if _fatti.count > 20_000 { _fatti.removeFirst(10_000) }
+        if _trattieni { trattieni(v) }
+    }
+
+    /// Sotto il lucchetto: tiene la riga per il file; se il file non si scrive da molto (un milione di righe), si tengono le
+    /// ultime, e la riga di testa del blocco dice quante se ne sono perse.
+    private func trattieni(_ v: Voce) {
+        _daScrivere.append(v)
+        if _daScrivere.count > 1_000_000 {
+            _daScrivere.removeFirst(500_000)
+            _daScrivere.insert(Voce(tempo: v.tempo, indice: -5, richiesta: "diario:righe-perse:500000"), at: 0)
+        }
+    }
+
+    /// La riga di testa di un file del diario: che cosa sono le colonne e gli indici negativi.
+    public static let testata = "# diario di ScaboPDF per Mac, solo codici e numeri — tempo(s)\tindice\trichiesta (indice -2: fermi del filo principale; -3: fasi dell'apertura; -4: tasti e finestre; -5: la diagnostica)\n"
+
+    /// Scrive IN CODA nel file, su un filo a parte, le righe arrivate dall'ultima volta (il diario della diagnostica). Se il file
+    /// non c'è, lo crea con la riga di testa e con `preambolo` (righe che cominciano con «#»: versione, sistema, variante).
+    public func accodaInSottofondo(su url: URL, preambolo: String = "") {
+        lock.lock(); let nuove = _daScrivere; _daScrivere.removeAll(); lock.unlock()
+        codaScrittura.async {
+            let fm = FileManager.default
+            if !fm.fileExists(atPath: url.path) {
+                try? fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? (Self.testata + preambolo).write(to: url, atomically: true, encoding: .utf8)
+            }
+            guard !nuove.isEmpty, let h = try? FileHandle(forWritingTo: url) else { return }
+            defer { try? h.close() }
+            var s = ""
+            s.reserveCapacity(nuove.count * 24)
+            for v in nuove { s += Self.riga(v) }
+            _ = try? h.seekToEnd()
+            try? h.write(contentsOf: Data(s.utf8))
+        }
     }
 
     public func azzera() { lock.lock(); _voci.removeAll(); _fatti.removeAll(); lock.unlock() }

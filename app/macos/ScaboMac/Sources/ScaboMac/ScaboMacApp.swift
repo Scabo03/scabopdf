@@ -3,7 +3,8 @@
 //  ScaboMac — il punto d'ingresso di ScaboPDF per Mac, l'APP UNICA del Mac (giro «app unica per Mac, tappa A», 2026-11-08;
 //  LAYER2 § 12.16, decisioni 8-10). È l'app dell'iPad — Home, importazione, libreria, lettura — più la finestra in più dei
 //  modelli, dove l'officina di prima vive intatta: il pannello dei modelli e la preparazione della lettura migliore con
-//  l'esportazione del pacchetto per l'iPad.
+//  l'esportazione del pacchetto per l'iPad. Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) anche il pannello
+//  «Diagnostica» (nascosto; lo mostra una scelta delle Impostazioni): il diario, la variante dei titoli, le prove guidate.
 //
 //  Il ciclo di vita è AppKit (delegato e menu in codice): la lettura è AppKit puro (DISEGNO_LETTURA_MAC § 2), le viste
 //  dell'officina restano SwiftUI e si ospitano in una finestra. Finestre: la Home (principale), una finestra di lettura per
@@ -16,9 +17,11 @@
 //    --importa <percorso>     importa un file che sta già nel contenitore dell'app
 //    --descrivi-in <percorso> appena una lettura si apre, scrive lì la sua descrizione dalla vista (formato 2) e quella del
 //                             modulo accanto (`.modulo.jsonl`), per il confronto da fuori
-//    --diario <percorso>      registra le richieste d'accessibilità della lettura, i fermi del filo principale (sentinella
-//                             dall'avvio) e le fasi dell'apertura, e li scrive lì ogni due secondi (su un filo a parte) e all'uscita
-//                             (dal 2026-11-11 anche i tasti arrivati all'app, solo codici, e la finestra in primo piano)
+//    --diario <percorso>      il diario della diagnostica (`Diagnostica`) in quel file invece che nella sua cartella, riscritto
+//                             intero ogni due secondi (su un filo a parte) e all'uscita: le richieste d'accessibilità della
+//                             lettura, i fermi del filo principale (sentinella dall'avvio), le fasi dell'apertura, i tasti arrivati
+//                             all'app e la finestra in primo piano, solo codici (i test e il laboratorio)
+//    --variante-titoli <A|B|C|D>  la variante dei titoli per questo lancio, senza salvarla (i test da fuori)
 //    --apri-primo             apre all'avvio il primo libro dell'elenco della Home (misure di tempi e memoria)
 //    --raggio-finestra <n>    i figli finestrati con una finestra di 2n+1 elementi invece di 401 (prove d'orecchio e test da fuori)
 //    -ScaboMacProvaPannello   la prova del laboratorio sul pannello (giro del 2026-10-16), poi l'app si chiude
@@ -84,10 +87,13 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     private var officina: OfficinaViewModel!
     private var fileInArrivo: [URL] = []
     private var pronto = false
-    private var timerDiario: Timer?
     private let argomenti = ProcessInfo.processInfo.arguments
-    /// Il diario delle prove (`--diario`): uno solo per l'app, aperto dall'avvio, dato a ogni finestra di lettura.
-    private var diarioApp: Diario?
+    /// La diagnostica dell'app: il diario (uno solo per l'app, dall'avvio se acceso, dato a ogni finestra di lettura), la
+    /// variante dei titoli, il pannello.
+    private var diagnostica: Diagnostica!
+    private var finestraDiagnostica: FinestraDiagnostica?
+    /// La libreria a parte della prova guidata (la libreria vera non si tocca), tenuta viva finché serve.
+    private var prova: (libreria: LibreriaMac, importazione: ImportazioneMac, presentatore: PresentatoreAppKit)?
     /// L'ultima richiesta d'apertura per libro e in assoluto (la preparazione gira su un filo a parte).
     private var richiesteDiApertura: [String: UUID] = [:]
     private var ultimaRichiesta: UUID?
@@ -111,30 +117,34 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             VistaLettura.raggioFinestra = r
             VistaLettura.margineFinestra = max(1, r / 4)
         }
-        if let path = argomento("--diario") {
-            // Il diario dall'avvio, con la sentinella del filo principale: così copre anche l'importazione e l'apertura. Si
-            // riscrive ogni due secondi su un filo a parte (resta anche se l'app si chiude di colpo).
-            let d = Diario()
-            d.attivo = true
-            d.avviaSentinella()
-            d.registraFatto(-3, "avvio")
-            diarioApp = d
-            timerDiario = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in
-                d.scriviInSottofondo(su: URL(fileURLWithPath: path))
-            }
-            registraTastiEFinestre(nel: d)
-        }
-        pannello = Self.makeModel()
-        officina = OfficinaViewModel(announcer: VoiceOverAnnouncer())
         let service: LibraryService
+        var radiceProve: URL?
         if argomenti.contains("--libreria-di-prova") || argomenti.contains("--libreria-di-prova-continua") {
             let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
             let radice = support.appendingPathComponent("ScaboPDF-prove", isDirectory: true)
             if argomenti.contains("--libreria-di-prova") { try? FileManager.default.removeItem(at: radice) }
             service = LibraryService(rootDirectory: radice, prefs: InMemoryKeyValueStore())
+            radiceProve = radice
         } else {
             service = LibraryService.shared
         }
+        // La variante dei titoli: quella scelta nel pannello (la C se nessuno ha scelto), o quella dell'argomento di prova.
+        VarianteTitoli.attiva = argomento("--variante-titoli").flatMap { VarianteTitoli.Lettera(rawValue: $0.uppercased()) }
+            ?? PreferenzeDiagnostica.variante(service.prefs)
+        // Il diario dall'avvio, se il maintainer l'ha lasciato acceso (o col file dell'argomento di prova), con la sentinella del
+        // filo principale: così copre anche l'importazione e l'apertura. Si scrive ogni due secondi su un filo a parte.
+        // Con la libreria di prova anche il diario sta nella sua cartella (i test non scrivono fra i diari veri).
+        diagnostica = Diagnostica(prefs: service.prefs,
+                                  cartella: radiceProve?.appendingPathComponent("Diagnostica", isDirectory: true) ?? Diagnostica.cartellaStandard())
+        diagnostica.visteAperte = { [weak self] in self?.letture.map(\.vista) ?? [] }
+        if let path = argomento("--diario") {
+            diagnostica.accendi(su: URL(fileURLWithPath: path), motivo: "argomento")
+        } else if PreferenzeDiagnostica.diarioAcceso(service.prefs) {
+            diagnostica.accendi(motivo: "avvio")
+        }
+        MenuPrincipale.voceDiagnostica(in: NSApp.mainMenu)?.isHidden = !PreferenzeDiagnostica.mostrata(service.prefs)
+        pannello = Self.makeModel()
+        officina = OfficinaViewModel(announcer: VoiceOverAnnouncer())
         libreria = LibreriaMac(service: service)
         // Un libro eliminato chiude la sua finestra di lettura, se è aperta.
         libreria.quandoElimina.append { [weak self] id in
@@ -172,48 +182,22 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         }
     }
 
-    /// Solo col diario delle prove (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11): i tasti che arrivano all'app,
-    /// prima dei menu (codice, modificatori, finestra in primo piano, app attiva: mai caratteri; `Diario.descriviTasto`), la
-    /// finestra che diventa quella in primo piano e l'app che diventa attiva o no. Nei diari delle prove 4 e 5 ⌘J e ⌥⌘↓ non
-    /// hanno lasciato traccia: così la prossima prova dice se il tasto è arrivato all'app e se il comando è partito. Anche i
-    /// modificatori tenuti, quando cambiano (`Diario.descriviModificatori`): dicono se con la scorciatoia erano tenuti Control e
-    /// Opzione, il tasto di VoiceOver.
-    @MainActor private func registraTastiEFinestre(nel d: Diario) {
-        osservatoriDiario.append(NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { e in
-            let finestra = NSApp.keyWindow?.accessibilityIdentifier()
-            if e.type == .flagsChanged {
-                d.registraFatto(-4, Diario.descriviModificatori(e.modifierFlags, finestra: finestra, appAttiva: NSApp.isActive))
-            } else if let r = Diario.descriviTasto(codice: e.keyCode, modificatori: e.modifierFlags, finestra: finestra,
-                                                   appAttiva: NSApp.isActive) {
-                d.registraFatto(-4, r)
-            }
-            return e
-        } as Any)
-        let centro = NotificationCenter.default
-        osservatoriDiario.append(centro.addObserver(forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main) { n in
-            let id = (n.object as? NSWindow)?.accessibilityIdentifier() ?? ""
-            d.registraFatto(-4, "finestra-in-primo-piano:\(id.isEmpty ? "altra" : id)")
-        })
-        osservatoriDiario.append(centro.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
-            d.registraFatto(-4, "app:attiva")
-        })
-        osservatoriDiario.append(centro.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { _ in
-            d.registraFatto(-4, "app:non-attiva")
-        })
-    }
-    private var osservatoriDiario: [Any] = []
+    // I tasti e le finestre nel diario: `Diagnostica` (dal giro «ScaboPDF per Mac su TestFlight», 2026-11-12).
 
     // MARK: Le finestre
 
     /// Apre il libro in una finestra sua. La preparazione (modello del parlato e indice delle ancore, secondi sul volume più
     /// grande) gira su un filo a parte; il filo principale resta libero e costruisce la finestra quando è pronta.
-    @MainActor private func apriFinestraDiLettura(_ doc: ArchivedDocument, _ lettura: LibraryReading) {
+    /// `libreria`: quella del libro (la libreria a parte della prova guidata; di solito quella dell'app). `raggio`: la finestra
+    /// dei figli di questa lettura (la prova guidata con la finestra piccola), altrimenti quella di sempre.
+    @MainActor private func apriFinestraDiLettura(_ doc: ArchivedDocument, _ lettura: LibraryReading,
+                                                  libreria lib: LibreriaMac? = nil, raggio: Int? = nil) {
         // Ogni richiesta ha un segno: alla fine della preparazione si apre solo se è ancora l'ultima per quel libro, e va davanti
         // solo se è l'ultima in assoluto (rilievo della revisione del giro: un libro chiesto due volte, due libri di fila).
         let segno = UUID()
         richiesteDiApertura[doc.id] = segno
         ultimaRichiesta = segno
-        let diario = diarioApp
+        let diario = diagnostica.diario
         diario?.registraFatto(-3, "apertura:preparazione:inizio")
         let t0 = Date()
         let app = RiferimentoApp(app: self)
@@ -223,7 +207,7 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             DispatchQueue.main.async {
                 MainActor.assumeIsolated {
                     diario?.registraFatto(-3, "apertura:preparazione:\(ms)ms")
-                    app.app?.mostraFinestraDiLettura(doc, lettura, preparazione, segno: segno)
+                    app.app?.mostraFinestraDiLettura(doc, lettura, preparazione, segno: segno, libreria: lib, raggio: raggio)
                 }
             }
         }
@@ -233,13 +217,15 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     private struct RiferimentoApp: @unchecked Sendable { weak var app: ScaboMacApp? }
 
     @MainActor private func mostraFinestraDiLettura(_ richiesto: ArchivedDocument, _ lettura: LibraryReading,
-                                                    _ preparazione: PreparazioneLettura, segno: UUID) {
+                                                    _ preparazione: PreparazioneLettura, segno: UUID,
+                                                    libreria lib: LibreriaMac? = nil, raggio: Int? = nil) {
+        let libreria: LibreriaMac = lib ?? self.libreria
         // Una richiesta più recente per lo stesso libro prende il posto di questa; un libro eliminato intanto non si apre; il
         // documento si rilegge dalla libreria, con la posizione di adesso.
-        guard richiesteDiApertura[richiesto.id] == segno else { diarioApp?.registraFatto(-3, "apertura:superata"); return }
+        guard richiesteDiApertura[richiesto.id] == segno else { diagnostica.diario?.registraFatto(-3, "apertura:superata"); return }
         richiesteDiApertura[richiesto.id] = nil
         guard let doc = libreria.service.store.document(id: richiesto.id) else {
-            diarioApp?.registraFatto(-3, "apertura:libro-eliminato"); return
+            diagnostica.diario?.registraFatto(-3, "apertura:libro-eliminato"); return
         }
         if let aperta = letture.first(where: { $0.documentId == doc.id }) {
             aperta.chiusaPerSostituzione = true
@@ -247,15 +233,16 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         }
         let t0 = Date()
         let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria, preparazione: preparazione)
-        if let d = diarioApp { f.vista.diario = d }
+        if let r = raggio { f.vista.impostaFinestra(raggio: r) }
+        diagnostica.collega(f.vista)
         f.quandoSiChiude = { [weak self] chiusa in
             self?.letture.removeAll { $0 === chiusa }
-            if let path = self?.argomento("--diario") { chiusa.vista.diario.scriviInSottofondo(su: URL(fileURLWithPath: path)) }
+            self?.diagnostica.scriviInSottofondo()
         }
         letture.append(f)
         f.mostra(inPrimoPiano: segno == ultimaRichiesta)
-        diarioApp?.registraFatto(-3, "apertura:elementi:\(f.vista.conteggio)")
-        diarioApp?.registraFatto(-3, "apertura:finestra:\(Int(Date().timeIntervalSince(t0) * 1000))ms")
+        diagnostica.diario?.registraFatto(-3, "apertura:elementi:\(f.vista.conteggio)")
+        diagnostica.diario?.registraFatto(-3, "apertura:finestra:\(Int(Date().timeIntervalSince(t0) * 1000))ms")
         if let path = argomento("--descrivi-in") {
             let libro = (doc.sourceFileName as NSString).deletingPathExtension
             let dallaVista = f.vista.descrizioneDallaVista(libro: libro, layout: .continuousReading)
@@ -280,11 +267,9 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
 
     func applicationWillTerminate(_ notification: Notification) {
         MainActor.assumeIsolated {
-            if let path = argomento("--diario"), let d = diarioApp {
-                d.registraFatto(-3, "uscita")
-                d.aspettaScritture()
-                try? d.scrivi(su: URL(fileURLWithPath: path))
-            }
+            guard let d = diagnostica?.diario else { return }
+            d.registraFatto(-3, "uscita")
+            diagnostica.scriviAdesso()
         }
     }
 
@@ -342,11 +327,74 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
                 impostazioni = FinestraImpostazioni(prefs: libreria.prefs)
                 // Le note a voce valgono subito anche nei libri aperti.
                 impostazioni?.quandoCambianoLeNote = { [weak self] in self?.letture.forEach { $0.aggiornaImpostazioni() } }
+                // «Mostra il menu Diagnostica»: la voce del menu «Finestra» compare o sparisce; nascondendola, il diario si spegne
+                // e il pannello si chiude (nessuno strumento resta acceso senza che si veda).
+                impostazioni?.quandoCambiaLaDiagnostica = { [weak self] si in
+                    guard let self else { return }
+                    MenuPrincipale.voceDiagnostica(in: NSApp.mainMenu)?.isHidden = !si
+                    if !si {
+                        self.diagnostica.spegni()
+                        PreferenzeDiagnostica.impostaDiario(self.libreria.prefs, false)
+                        self.finestraDiagnostica?.close()
+                    }
+                }
             }
             impostazioni?.window?.center()
             impostazioni?.showWindow(nil)
             impostazioni?.window?.makeKeyAndOrderFront(nil)
         }
+    }
+
+    @objc func mostraDiagnostica(_ sender: Any?) {
+        MainActor.assumeIsolated {
+            if finestraDiagnostica == nil {
+                let f = FinestraDiagnostica(diagnostica: diagnostica)
+                f.quandoCambiaIlDiario = { [weak self] si in
+                    guard let self else { return }
+                    PreferenzeDiagnostica.impostaDiario(self.libreria.prefs, si)
+                }
+                f.quandoCambiaLaVariante = { [weak self] l in
+                    guard let self else { return }
+                    PreferenzeDiagnostica.impostaVariante(self.libreria.prefs, l)
+                    VarianteTitoli.attiva = l
+                    self.letture.forEach { $0.vista.titoliCambiati() }
+                    self.diagnostica.annota("variante-titoli:\(l.rawValue)")
+                }
+                f.quandoApreIlLibroDiProva = { [weak self] piccola in self?.apriLibroDiProva(finestraPiccola: piccola) }
+                finestraDiagnostica = f
+            }
+            finestraDiagnostica?.aggiorna()
+            finestraDiagnostica?.window?.center()
+            finestraDiagnostica?.showWindow(nil)
+            finestraDiagnostica?.window?.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    /// LA PROVA GUIDATA (pannello «Diagnostica»): il libro sintetico che l'app scrive da sé (`LibroSintetico`, nessun testo dei
+    /// volumi), importato col percorso vero in una libreria A PARTE, svuotata a ogni prova (`Application Support/ScaboPDF-prove`,
+    /// la stessa dell'argomento `--libreria-di-prova`: la libreria vera non si tocca), con le impostazioni di partenza e, se
+    /// chiesto, la finestra dei figli piccola, di tre elementi. Se il diario è spento, si accende (e resta acceso).
+    @MainActor private func apriLibroDiProva(finestraPiccola: Bool) {
+        if !diagnostica.acceso {
+            diagnostica.accendi(motivo: "prova-guidata")
+            PreferenzeDiagnostica.impostaDiario(libreria.prefs, true)
+        }
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let radice = support.appendingPathComponent("ScaboPDF-prove", isDirectory: true)
+        letture.filter { $0.documentId == prova?.libreria.libri().first?.id }.forEach { $0.window?.close() }
+        try? FileManager.default.removeItem(at: radice)
+        let lib = LibreriaMac(service: LibraryService(rootDirectory: radice, prefs: InMemoryKeyValueStore()))
+        let imp = ImportazioneMac(libreria: lib)
+        let raggio: Int? = finestraPiccola ? 1 : nil
+        let pres = PresentatoreAppKit(finestra: finestraDiagnostica?.window ?? home.window) { [weak self] doc, lettura in
+            self?.apriFinestraDiLettura(doc, lettura, libreria: lib, raggio: raggio)
+        }
+        imp.presentatore = pres
+        prova = (lib, imp, pres)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("Libro di prova.pdf")
+        guard FileManager.default.fileExists(atPath: url.path) || (try? LibroSintetico.scrivi(in: url)) != nil else { return }
+        diagnostica.annota("prova-guidata:libro-di-prova:finestra-\(finestraPiccola ? "piccola" : "normale")")
+        imp.importa(url)
     }
 
     // MARK: Il pannello dei modelli (invariato dall'officina)

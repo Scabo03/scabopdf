@@ -393,16 +393,25 @@ final class LetturaMacTests: XCTestCase {
         // Dal 12 novembre 2026 (decisione 13) i segnali delle note per impostazione predefinita, come sull'iPad (DISEGNO § 4.2).
         XCTAssertFalse(v.impostazioni.noteSpokenLabels)
         XCTAssertFalse(v.impostazioni.elementToolsAvailable)
-        let dallaVista = v.descrizioneDallaVista(libro: "prova", layout: .continuousReading)
+        // Dal 12 novembre 2026 (giro «ScaboPDF per Mac su TestFlight») i titoli hanno il ruolo d'intestazione (`VarianteTitoli`,
+        // predefinita la C): la vista è uguale al modulo con l'eccezione dichiarata dei titoli, e solo con quella.
+        XCTAssertEqual(VarianteTitoli.attiva, .C)
+        let grezza = v.descrizioneDallaVista(libro: "prova", layout: .continuousReading)
+        let (dallaVista, eccezione) = EccezioneTitoli.applica(grezza, segmenti: v.modello.segments)
         let delModulo = v.descrizioneDelModulo(libro: "prova", layout: .continuousReading)
+        XCTAssertTrue(eccezione.tuttiESoliITitoli, "\(eccezione)")
+        XCTAssertEqual(eccezione.riportati, 6, "i sei titoli del libro sintetico")
+        XCTAssertFalse(ReadingDescriptionComparison.compare(delModulo, grezza).identical, "senza l'eccezione i titoli differiscono")
         XCTAssertTrue(ReadingDescriptionComparison.compare(delModulo, dallaVista).identical)
-        XCTAssertEqual(try dallaVista.encoded(), try delModulo.encoded(), "stessi byte")
+        XCTAssertEqual(try dallaVista.encoded(), try delModulo.encoded(), "stessi byte con l'eccezione dei titoli")
         // E con «Annuncia le note a voce» accesa (prima del 12 novembre era il predefinito): la vista resta uguale al modulo.
         PreferenzeLettura.impostaNoteAVoce(libreria.prefs, true)
         f.aggiornaImpostazioni(voiceOver: false)
         XCTAssertTrue(v.impostazioni.noteSpokenLabels)
-        let dallaVistaVoce = v.descrizioneDallaVista(libro: "prova", layout: .continuousReading)
+        let (dallaVistaVoce, eccezioneVoce) = EccezioneTitoli.applica(v.descrizioneDallaVista(libro: "prova", layout: .continuousReading),
+                                                                     segmenti: v.modello.segments)
         let delModuloVoce = v.descrizioneDelModulo(libro: "prova", layout: .continuousReading)
+        XCTAssertTrue(eccezioneVoce.tuttiESoliITitoli)
         XCTAssertEqual(try dallaVistaVoce.encoded(), try delModuloVoce.encoded(), "stessi byte anche con le note a voce")
         XCTAssertNotEqual(try dallaVistaVoce.encoded(), try dallaVista.encoded(), "le due impostazioni sono due letture diverse")
         PreferenzeLettura.impostaNoteAVoce(libreria.prefs, false)
@@ -518,4 +527,5 @@ final class ComandiFinti: NSObject, ComandiApp {
     func mostraHome(_ sender: Any?) {}
     func mostraModelliEOfficina(_ sender: Any?) {}
     func mostraImpostazioni(_ sender: Any?) {}
+    func mostraDiagnostica(_ sender: Any?) {}
 }

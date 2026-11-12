@@ -14,6 +14,9 @@ import AppKit
     func mostraHome(_ sender: Any?)
     func mostraModelliEOfficina(_ sender: Any?)
     func mostraImpostazioni(_ sender: Any?)
+    /// Il pannello «Diagnostica» (giro «ScaboPDF per Mac su TestFlight», 2026-11-12): la voce si vede solo se le Impostazioni lo
+    /// chiedono (`PreferenzeDiagnostica.mostrata`).
+    func mostraDiagnostica(_ sender: Any?)
 }
 
 public enum MenuPrincipale {
@@ -48,8 +51,20 @@ public enum MenuPrincipale {
              selettore: #selector(FinestraHome.eliminaLibroSelezionato(_:))),
     ]
 
-    /// La barra dei menu completa.
-    public static func barra(comandi: ComandiApp) -> NSMenu {
+    /// L'etichetta della voce «Diagnostica…» nel menu «Finestra»: l'app la mostra o la nasconde (`voceDiagnostica`). Nascosta,
+    /// la voce non c'è per VoiceOver né per i test da fuori.
+    public static let identificatoreDiagnostica = NSUserInterfaceItemIdentifier("menu.diagnostica")
+
+    /// La voce «Diagnostica…» della barra (nel menu «Finestra»), se c'è.
+    public static func voceDiagnostica(in barra: NSMenu?) -> NSMenuItem? {
+        for v in barra?.items ?? [] {
+            if let x = v.submenu?.items.first(where: { $0.identifier == identificatoreDiagnostica }) { return x }
+        }
+        return nil
+    }
+
+    /// La barra dei menu completa. `diagnostica`: se la voce «Diagnostica…» si vede.
+    public static func barra(comandi: ComandiApp, diagnostica: Bool = false) -> NSMenu {
         let barra = NSMenu()
         func menu(_ titolo: String, _ riempi: (NSMenu) -> Void) {
             let voce = NSMenuItem(); barra.addItem(voce)
@@ -87,6 +102,11 @@ public enum MenuPrincipale {
                              selettore: #selector(ComandiApp.mostraHome(_:))), verso: comandi)
             aggiungi(m, Voce(titolo: Parole.modelliEOfficina, tasto: "m", modificatori: [.command, .shift],
                              selettore: #selector(ComandiApp.mostraModelliEOfficina(_:))), verso: comandi)
+            let d = NSMenuItem(title: Parole.diagnosticaConPuntini, action: #selector(ComandiApp.mostraDiagnostica(_:)), keyEquivalent: "")
+            d.target = comandi
+            d.identifier = identificatoreDiagnostica
+            d.isHidden = !diagnostica
+            m.addItem(d)
             m.addItem(.separator())
             m.addItem(withTitle: Parole.riduci, action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
             NSApp?.windowsMenu = m

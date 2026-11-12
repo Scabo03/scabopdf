@@ -5,6 +5,9 @@
 //  per la via di VoiceOver (AXFocused) in lettura lineare in avanti — e produce una `ReadingDescription` (formato 2) da
 //  confrontare con il modulo (`describe`) e con la vista dell'iPad. È la fonte del confronto automatico dentro il processo.
 //  Il diario resta sospeso: le domande del processo non si confondono con quelle di un client.
+//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) i titoli hanno il ruolo d'intestazione (`VarianteTitoli`): il loro testo
+//  detto si legge dove VoiceOver lo legge — la descrizione (varianti A, B, C) o il titolo (D) — e il valore è quello secondario
+//  (nella D il valore è il livello, che sta già in `headingLevel`). Per il confronto con l'iPad: `EccezioneTitoli`.
 //
 import AppKit
 import ScaboCore
@@ -53,13 +56,24 @@ public extension VistaLettura {
             }
             let codiciRotori = rotoriDi[i] ?? []
             let livello = codiciRotori.compactMap { c -> Int? in c.hasPrefix("titoli-") ? Int(c.dropFirst(7)) : nil }.first
-            let ruolo = e.accessibilityRole() == .staticText ? ReadingElementRole.staticText.rawValue : (e.accessibilityRole()?.rawValue ?? "?")
+            let ruoloAX = e.accessibilityRole()
+            let ruolo = ruoloAX == .staticText ? ReadingElementRole.staticText.rawValue : (ruoloAX?.rawValue ?? "?")
+            let intestazione = ruoloAX?.rawValue == EccezioneTitoli.ruoloIntestazione
+            let detto: String
+            let valore: String?
+            if intestazione {
+                detto = VarianteTitoli.stileWebKit ? (e.accessibilityTitle() ?? "") : (e.accessibilityLabel() ?? "")
+                valore = VarianteTitoli.stileWebKit ? nil : (e.accessibilityValue() as? String).flatMap { $0.isEmpty ? nil : $0 }
+            } else {
+                detto = (e.accessibilityValue() as? String) ?? ""
+                valore = e.accessibilityLabel().flatMap { $0.isEmpty ? nil : $0 }
+            }
             let contenitore = (e.accessibilityParent() as? NSView)?.accessibilityLabel() == Parole.gruppoTesto
                 ? ReadingContainer.text.rawValue : "?"
             elementi.append(ReadingElementDescription(
                 index: i, segmentId: segmento(i).id,
-                spokenText: (e.accessibilityValue() as? String) ?? "",
-                value: e.accessibilityLabel().flatMap { $0.isEmpty ? nil : $0 },
+                spokenText: detto,
+                value: valore,
                 role: ruolo, headingLevel: livello,
                 signal: ReadingElementDescription.signalCode(segnali),
                 rotors: codiciRotori, actions: azioni.map(\.name), actionTargets: bersagli,
