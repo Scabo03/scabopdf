@@ -1451,6 +1451,20 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 ## 11. Residui e cose non verificate
 
+- **Dopo il giro «ScaboPDF per Mac su TestFlight» (12 novembre 2026, sera).** *Fatto:* l'identificativo dell'iPad
+  (`com.scabo.scabopdf`, servizio `com.scabo.scabopdf.scaricatore`), la piattaforma macOS nel record dell'iPad (con l'API), il pannello
+  «Diagnostica» con il diario, le quattro varianti dei titoli in main (predefinita la C) e le prove guidate; il modo di distribuzione
+  dello script e la corsia del Mac (§ 8, `docs/RELEASE_TESTFLIGHT.md`); il confronto con l'iPad identico su 55 libri su 55 con
+  l'eccezione dichiarata dei soli titoli. *Da sentire*, con l'app di TestFlight e il pannello al posto della prova 8 (§ 10): i titoli
+  con la C con VO+Comando+H, Maiuscole+H (anche verso un titolo mai visitato) e M; il cambio di variante a libro aperto (VoiceOver
+  potrebbe tenere gli attributi degli elementi già visti); l'articolo dei codici come intestazione di livello 5 senza la parola
+  «Articolo» (decisione per il maintainer); ⌥⌘↓ coi tasti di sinistra e ⌃⌘↓. *Rischi dichiarati, non verificati:* su macOS 14 e 15
+  VoiceOver potrebbe non dire il livello dei titoli, ora che l'app non lo dice più (`AXHeadingLevel` è pubblico dal macOS 26; da
+  sentire su un Mac con quei sistemi prima di uscire dal solo maintainer); la build di sviluppo e quella di TestFlight hanno lo stesso
+  contenitore (regola del laboratorio in `docs/RELEASE_TESTFLIGHT.md`); l'icona è l'immagine quadrata dell'iPad, che sul Mac appare
+  quadrata (solo aspetto); la finestra del portachiavi a ogni firma del pacchetto finché la chiave non autorizza `productbuild` per
+  sempre. *Tolto dal laboratorio:* lo script delle prove d'orecchio e le copie firmate dell'app e delle varianti (i diari restano).
+
 - **Dopo il giro «titoli di VoiceOver: le varianti» (12 novembre 2026).** *Fatto:* letto il diario della prova 7 (il rotore trova il
   titolo, VoiceOver lo scarta perché non è un'intestazione, dedotto; VO+Comando+M per la ricerca generica sui figli esposti; nessuna
   traccia per VO+Comando+Maiuscole+H); quattro varianti dei titoli nel laboratorio, misurate da fuori (§ 5.4), **fuori da main** (*superato la sera stessa*: in main dietro
