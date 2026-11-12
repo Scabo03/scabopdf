@@ -561,9 +561,9 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     }
 
     /// LE SCORCIATOIE ALTERNATIVE DEI TITOLI, ⌃⌘↓ e ⌃⌘↑ (dal giro «titoli di VoiceOver: le varianti», 2026-11-12, DISEGNO § 5.5).
-    /// Con VoiceOver acceso ⌥⌘↓ e ⌥⌘↑ non sono mai arrivate all'app nelle prove 6 e 7 (diario: nessuna freccia), mentre ⌘J e ⌘Q
-    /// sì; il sistema non le usa (scorciatoie registrate su questo Mac) e l'app le riceve coi tasti veri dei test: chi le prende
-    /// sta prima dell'app, VoiceOver per esclusione (dedotto). ⌃⌘↓ e ⌃⌘↑ non hanno Opzione, non sono comandi di VoiceOver senza il
+    /// Con VoiceOver acceso ⌥⌘↓ e ⌥⌘↑ non sono arrivate all'app nella prova 6 (diario: nessuna freccia, e ricerche di VoiceOver al
+    /// loro posto), mentre ⌘J e ⌘Q sì; il sistema non le usa (scorciatoie registrate su questo Mac) e l'app le riceve coi tasti veri
+    /// dei test: le prende VoiceOver (dedotto; forse col tasto VO tenuto). ⌃⌘↓ e ⌃⌘↑ non hanno Opzione, non sono comandi di VoiceOver senza il
     /// tasto VO (Control più Opzione) né scorciatoie del sistema o dell'app. Non sono voci del menu «Lettura»: una voce alternativa
     /// lì compare da fuori come una voce in più (test d'interfaccia: «Intestazione successiva» due volte), e chi usa VoiceOver la
     /// sentirebbe doppia; la finestra di lettura le prende prima del menu, qualunque sia il primo risponditore (AppKit offre i tasti

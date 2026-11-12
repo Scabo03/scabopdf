@@ -72,8 +72,9 @@ final class ScorciatoieVoiceOverTests: XCTestCase {
         XCTAssertEqual(v.fuoco, partenza - 1, "con le sole maiuscole è ancora un passo, come prima")
     }
 
-    /// ⌃⌘↓ e ⌃⌘↑ (giro «titoli di VoiceOver: le varianti», 2026-11-12): le scorciatoie alternative dei titoli le prende la vista
-    /// di lettura prima del menu; ⌥⌘↓ resta del menu (la vista non la prende), e le altre combinazioni con le frecce non fanno nulla.
+    /// ⌃⌘↓ e ⌃⌘↑ (giro «titoli di VoiceOver: le varianti», 2026-11-12): il filtro dei modificatori della vista di lettura — prende
+    /// solo Control+Comando con le frecce; ⌥⌘↓ resta del menu (la vista non la prende), e le altre combinazioni non fanno nulla.
+    /// Che la finestra la giri alla vista qualunque sia il primo risponditore lo prova il test seguente.
     func test_scorciatoieAlternativeDeiTitoli_controlComando() throws {
         let v = VistaLettura(segmenti: (0..<12).map { i in
             ContentSegment(id: "s\(i)", role: i % 4 == 0 ? SemanticCategory.HEADING_1.rawValue : SemanticCategory.BODY.rawValue,
@@ -95,6 +96,31 @@ final class ScorciatoieVoiceOverTests: XCTestCase {
         for m: NSEvent.ModifierFlags in [[.command, .option], [.command], [.control], [.command, .control, .shift], [.control, .option, .command]] {
             XCTAssertFalse(v.performKeyEquivalent(with: try evento(125, m)), "con i modificatori \(m.rawValue) la vista non la prende")
             XCTAssertEqual(v.fuoco, 4)
+        }
+    }
+
+    /// La FINESTRA gira ⌃⌘↓ e ⌃⌘↑ alla vista di lettura qualunque sia il primo risponditore (rilievo R7 della revisione del giro):
+    /// la vista, la vista a scorrimento, nessuno; è la via di AppKit per i tasti con Comando, prima della barra dei menu.
+    func test_scorciatoieAlternative_qualunquePrimoRisponditore() throws {
+        let v = VistaLettura(segmenti: (0..<12).map { i in
+            ContentSegment(id: "s\(i)", role: i % 4 == 0 ? SemanticCategory.HEADING_1.rawValue : SemanticCategory.BODY.rawValue,
+                           text: "Elemento di prova \(i).", lengthCategory: "", acousticIntro: "")
+        }, impostazioni: ReadingSpeechSettings())
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 600, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
+        w.isReleasedWhenClosed = false
+        let scorrimento = NSScrollView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+        scorrimento.documentView = v
+        w.contentView = scorrimento
+        let giu = String(UnicodeScalar(NSDownArrowFunctionKey)!)
+        let e = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [.command, .control, .numericPad, .function],
+                                               timestamp: 0, windowNumber: w.windowNumber, context: nil, characters: giu,
+                                               charactersIgnoringModifiers: giu, isARepeat: false, keyCode: 125))
+        // Il libro del test ha tre titoli (0, 4, 8): da ogni primo risponditore, dal primo titolo al secondo.
+        for primo in [v as NSResponder, scorrimento as NSResponder, nil] {
+            w.makeFirstResponder(primo)
+            v.impostaFuocoIniziale(0)
+            XCTAssertTrue(w.performKeyEquivalent(with: e), "la finestra trova chi prende ⌃⌘↓ (primo risponditore \(String(describing: primo)))")
+            XCTAssertEqual(v.fuoco, 4, "⌃⌘↓ col primo risponditore \(String(describing: primo)): il titolo seguente")
         }
     }
 

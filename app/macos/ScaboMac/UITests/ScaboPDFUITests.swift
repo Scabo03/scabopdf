@@ -311,7 +311,7 @@ final class ScaboPDFUITests: XCTestCase {
     }
 
     /// Le scorciatoie alternative dei titoli, ⌃⌘↓ e ⌃⌘↑ (giro «titoli di VoiceOver: le varianti», 2026-11-12, DISEGNO § 5.5),
-    /// con tasti veri: le voci alternative del menu «Lettura» fanno lo stesso comando di ⌥⌘↓ e ⌥⌘↑.
+    /// con tasti veri: la vista di lettura le prende (non sono voci del menu) e fa lo stesso comando di ⌥⌘↓ e ⌥⌘↑.
     func test_tastiera_titoliConControlComando_alternativa() throws {
         var argomenti = ["--libreria-di-prova", "--libro-di-prova"]
         let diario = ProcessInfo.processInfo.environment["SCABOMAC_DIARIO"]

@@ -112,10 +112,10 @@ public final class Diario: @unchecked Sendable {
         "modificatori:\(segni(modificatori)):lati=\(lati(modificatori)):finestra=\(finestra ?? "nessuna"):app-attiva=\(appAttiva ? "sì" : "no")"
     }
 
-    /// Da che lato della tastiera sono i modificatori tenuti (dal giro «titoli di VoiceOver: le varianti», 2026-11-12): ⌥⌘↓ non
-    /// è mai arrivato all'app nelle prove 6 e 7 con VoiceOver acceso, mentre ⌘J sì; VoiceOver ha funzioni legate ai tasti di
-    /// destra (il comandante della tastiera con l'Opzione destra, la ricerca veloce col Comando destro: configurazione
-    /// predefinita, DISEGNO § 5.5), e chi preme Opzione+Comando+Freccia con una mano sola usa i tasti di destra. Il lato lo danno
+    /// Da che lato della tastiera sono i modificatori tenuti (dal giro «titoli di VoiceOver: le varianti», 2026-11-12): nella prova 6
+    /// ⌥⌘↓ e ⌥⌘↑ con VoiceOver acceso non sono arrivati all'app, mentre ⌘J sì (DISEGNO § 5.5). Due ipotesi, da distinguere nella
+    /// prova 8: il tasto VO tenuto con la scorciatoia, o un tasto di destra preso da una funzione di VoiceOver legata all'Opzione
+    /// destra o al Comando destro (il comandante della tastiera, spento di partenza; la ricerca veloce). Il lato lo danno
     /// i bit dei singoli tasti dell'evento (gli stessi di `NX_DEVICELCMDKEYMASK` e dei suoi fratelli, IOKit `IOLLEvent.h`): «sx»
     /// sinistra, «dx» destra, «-» se l'evento non li porta (i tasti sintetici dei test). Solo quali tasti, nessun carattere.
     static func lati(_ modificatori: NSEvent.ModifierFlags) -> String {
