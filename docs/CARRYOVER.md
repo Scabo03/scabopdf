@@ -15,8 +15,9 @@
 > VO+Comando+M passa dalla ricerca generica sui figli esposti, VO+Comando+Maiuscole+H non chiede nulla —; **quattro varianti** dei
 > titoli (A ruolo d'intestazione come SwiftUI, B più tutti i titoli fra i figli, C più la nostra risposta alla ricerca generica,
 > D ruolo come WebKit), copie firmate nel laboratorio, misurate da fuori, **fuori da main** fino alla conferma dell'orecchio
-> (prova 8); ⌥⌘↓ e ⌥⌘↑ con VoiceOver acceso: mai arrivate all'app, esclusi per misura app, sistema e altre app, VoiceOver per
-> esclusione; nel codice ⌃⌘↓ e ⌃⌘↑ come scorciatoie alternative della vista e il lato dei modificatori nel diario; iPad identico.
+> (prova 8); ⌥⌘↓ e ⌥⌘↑ con VoiceOver acceso: nella prova 6 al loro posto ricerche di VoiceOver (tasto VO tenuto o un tasto di
+> destra, non provato), esclusi per misura l'app e il sistema; nel codice ⌃⌘↓ e ⌃⌘↑ come scorciatoie alternative della vista e il
+> lato dei modificatori nel diario; iPad identico.
 > Vedi lo STATO qui sotto.)
 > Versione: 2.61 (12 novembre 2026, giro «titoli con il comando di VoiceOver sul Mac», livello di verifica leggero, nessuna build:
 > registrate le decisioni 12-14 del maintainer (LAYER2 § 12.16); letto il diario della prova 6; **VO+Comando+H** curato nella via che
@@ -152,10 +153,11 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Giro «titoli di VoiceOver: le varianti»: il diario della prova 7, quattro varianti dei titoli da sentire, ⌥⌘↓ con VoiceOver acceso (nessuna build) — 2026-11-12
+## ▶ STATO — Giro «titoli di VoiceOver: le varianti»: il diario della prova 7, quattro varianti dei titoli da sentire, ⌥⌘↓ con VoiceOver acceso (nessuna build) — 2026-11-12 — CONCLUSO
 
 **Partenza:** `e4ff1db` (main = origin, build 66 su TestFlight; prossimo numero 67, non usato). **Ramo:** `feat/mac-titoli-varianti`
-(livello leggero, solo l'app Mac; l'iPad non cambia). Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_TITOLI_VARIANTI.md`;
+(livello leggero, solo l'app Mac; l'iPad non cambia), unito in main con un avanzamento rapido (main = il commit di questo STATO) e
+cancellato, locale e remoto; le varianti restano nel laboratorio, fuori da main. Referto: `~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_TITOLI_VARIANTI.md`;
 laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_varianti/` (lettura del diario, sonde, varianti e loro toppa, misure, reti,
 revisione, prova 8).
 
@@ -170,14 +172,29 @@ revisione, prova 8).
   chiama sull'elemento e sul gruppo); D ruolo d'intestazione come WebKit (testo nel titolo, livello nel valore). Da fuori: titoli lontani
   trovati dal rotore in tutte; dalla ricerca generica solo in B e C; il gruppo risponde col primo titolo del libro in A, B, D (rischio per
   VO+Comando+M); percorso integrale senza salti in tutte. Costo sul volume più grande: B 9.724 figli, 0,99 s al giro d'apertura e 101 ms
-  a passo dalla parte dell'app (A, C, D come oggi: 0,06 s e 6 ms); la parte di VoiceOver stimata (dedotto). Confronto con l'iPad: eccezione
-  dichiarata necessaria, misurata su un documento di studio (97 elementi su 2.523, tutti e soli i titoli, solo ruolo, testo e valore).
-- **Parte 3 — ⌥⌘↓ e ⌥⌘↑** (DISEGNO § 5.5): mai arrivate all'app con VoiceOver acceso; esclusi per misura l'app (tasti veri di XCTest), il
-  sistema (scorciatoie registrate) e altre app (prese degli eventi); resta VoiceOver, per esclusione, non provato. Fatto: ⌃⌘↓ e ⌃⌘↑ come
+  a passo dalla parte dell'app (A e C misurate come oggi, 0,05–0,06 s e 6 ms; D per costruzione; la risposta di C 0,01–0,02 s); la parte di
+  VoiceOver all'ingresso di B stimata circa 4–7 s (dedotto). Confronto con l'iPad: eccezione
+  dichiarata necessaria, misurata su un documento di studio (97 elementi diversi su 2.523, quanti i suoi titoli; solo ruolo, testo e valore).
+- **Parte 3 — ⌥⌘↓ e ⌥⌘↑** (DISEGNO § 5.5): la prova 7 non le chiedeva; nella prova 6, al loro posto, cinque raffiche di ricerca di
+  VoiceOver e nessun modificatore arrivato all'app (campo): VoiceOver le ha prese, col tasto VO tenuto o con un tasto di destra (due
+  ipotesi alla pari, non provate); esclusi per misura l'app (tasti veri di XCTest) e il sistema (scorciatoie registrate). Fatto: ⌃⌘↓ e ⌃⌘↑ come
   scorciatoie alternative della vista di lettura (non voci del menu: da fuori sarebbero voci in più), il lato dei modificatori nel diario.
-- **Prova d'orecchio 8** in DISEGNO § 10 (circa otto minuti): le quattro varianti con VO+Comando+H, Maiuscole+H e M; alla fine ⌥⌘↓ e ⌥⌘↑
-  coi tasti di sinistra, ⌥⌘↓ con quelli di destra, ⌃⌘↓. **Dopo la prova nulla entra in main senza un giro successivo.**
-- *(Verifiche, revisione, arrivo: da completare a fine giro.)*
+- **Prova d'orecchio 8** in DISEGNO § 10 (circa otto minuti): le quattro varianti con VO+Comando+H, Maiuscole+H (anche dopo VO+Fine, verso
+  un titolo mai visitato) e M; in fondo alla D ⌥⌘↓ e ⌥⌘↑ coi tasti di sinistra, lasciando prima tutti i tasti, ⌥⌘↓ con quelli di destra,
+  ⌃⌘↓. **Dopo la prova nulla entra in main senza un giro successivo.**
+- **Verifiche** (campo): iPad identico — nessun file sotto `app/ios`, quindi niente letture della catena; rete sul parlato VERDE (192/192
+  al byte, 630.124 elementi, prova al contrario trovata), girata a `0a410d6` (dopo, solo la vista del Mac, commenti e test); sul codice
+  finale `bc3e3ca` ScaboMac 125 test, 0 falliti, 4 saltati per costruzione, FuocoDaFuoriTests 8/8, interfaccia del Mac 14 (9 passati,
+  5 saltati, 0 falliti); `rete_vista_mac.sh` VERDE, una volta sola, a `86338b2`: la vista del Mac sulle letture dell'iPad identica alla
+  vista dell'iPad su 55 libri su 55, nessuna eccezione, l'estrattore 19/55 con le stesse 36 righe del giro prima; testo dei volumi 0.
+- **Revisione indipendente** (sotto-agente nuovo, solo diff e risultati, `titoli_varianti/revisione/REVISIONE.md`): 12 rilievi, uno
+  bloccante per l'arrivo in main (la suite completa non era girata sul codice finale: rifatta), tutti corretti o dichiarati — la prova 7
+  non chiedeva ⌥⌘↓; il dato della prova 6 (raffiche di ricerca di VoiceOver al posto delle frecce) e le due ipotesi alla pari; i costi di
+  C misurati e di D dedotti, l'ingresso di B stimato 4–7 s; nella prova 8 Maiuscole+H verso un titolo mai visitato e le scorciatoie in
+  fondo alla D; il livello anche nell'elenco degli attributi; il test della finestra con ogni primo risponditore; il confine di ⌃⌘↓ con
+  Control+Freccia del sistema; etichette più caute; copie ricostruite dalla toppa finale; i casi di C da riprendere se la si sceglie.
+- **Decisioni per il maintainer** (§ 9 del referto): l'articolo dei codici come intestazione di livello 5 senza la parola «Articolo»
+  (inclinazione sì, da sentire su un codice); ⌃⌘↓ e ⌃⌘↑ da tenere solo se ⌥⌘↓ non arriva nemmeno coi tasti di sinistra (inclinazione).
 
 ---
 
