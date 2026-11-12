@@ -19,7 +19,6 @@
 //    --diario <percorso>      registra le richieste d'accessibilità della lettura, i fermi del filo principale (sentinella
 //                             dall'avvio) e le fasi dell'apertura, e li scrive lì ogni due secondi (su un filo a parte) e all'uscita
 //                             (dal 2026-11-11 anche i tasti arrivati all'app, solo codici, e la finestra in primo piano)
-//    --segnali-acustici       accende i segnali delle note al gancio del fuoco (prove d'orecchio)
 //    --apri-primo             apre all'avvio il primo libro dell'elenco della Home (misure di tempi e memoria)
 //    --raggio-finestra <n>    i figli finestrati con una finestra di 2n+1 elementi invece di 401 (prove d'orecchio e test da fuori)
 //    -ScaboMacProvaPannello   la prova del laboratorio sul pannello (giro del 2026-10-16), poi l'app si chiude

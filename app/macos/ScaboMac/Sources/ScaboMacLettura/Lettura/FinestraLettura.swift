@@ -86,9 +86,9 @@ public final class FinestraLettura: NSWindowController, NSWindowDelegate, NSMenu
             guard let self else { return }
             self.libreria.service.store.updateReadingPosition(id: id, position: i, anchor: self.ancore.anchor(forIndex: i))
         }
-        if PreferenzeLettura.segnaliAcustici(libreria.prefs) {
-            vista.suonatore = { segnali in SegnaliMac.shared.suona(segnali) }
-        }
+        // I segnali acustici al gancio del fuoco, sempre, come sull'iPad (dal 12 novembre 2026, decisione 13): con «Annuncia le
+        // note a voce» il modulo non chiede il segnale della nota (resta quello della bibliografia, come sull'iPad).
+        vista.suonatore = { segnali in SegnaliMac.shared.suona(segnali) }
         vista.impostaFuocoIniziale(doc.readingPosition)
         w.makeFirstResponder(vista)
         // La ripetizione dell'avviso di un salto parte solo con questa finestra in primo piano e l'app attiva (rilievo della

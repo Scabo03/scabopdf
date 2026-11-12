@@ -3,8 +3,8 @@
 //  ScaboMacLettura — la libreria dell'app Mac (giro «app unica per Mac, tappa A», 2026-11-08): la STESSA libreria dell'iPad,
 //  `LibraryService` di ScaboChain, nella stessa forma (`Application Support/ScaboPDF/` dentro il contenitore della sandbox:
 //  `library.json`, `Archive/`, `Cache/` nel formato 6). Qui solo ciò che è del Mac: le preferenze come il Mac le legge (la
-//  granularità delle Impostazioni, con la regola condivisa con l'iPad dal 2026-11-10; le note annunciate a voce accese per
-//  impostazione predefinita, DISEGNO_LETTURA_MAC § 4.2) e l'elenco dei libri della Home.
+//  granularità delle Impostazioni, con la regola condivisa con l'iPad dal 2026-11-10; le note annunciate a voce, spente per
+//  impostazione predefinita come sull'iPad dal 12 novembre 2026, DISEGNO_LETTURA_MAC § 4.2) e l'elenco dei libri della Home.
 //
 import Foundation
 import ScaboChain
@@ -12,19 +12,11 @@ import ScaboCore
 
 /// Le preferenze di lettura del Mac, sulle stesse chiavi dell'iPad (ScaboCore `PreferenceKeys`).
 public enum PreferenzeLettura {
-    /// Note annunciate a voce: sul Mac acceso se l'utente non ha scelto (sull'iPad spento): il gancio del fuoco per i segnali
-    /// è pronto, ma i segnali si accendono solo dopo la prova d'orecchio T2.
-    public static func noteAVoce(_ prefs: KeyValueStore) -> Bool {
-        prefs.getItem(PreferenceKeys.noteSpokenLabels) == nil ? true : getStoredNoteSpokenLabels(prefs)
-    }
+    /// Note annunciate a voce: dal 12 novembre 2026 (LAYER2 § 12.16, decisione 13) spente se l'utente non ha scelto, come
+    /// sull'iPad: sulle note suona il segnale del loro regime. La scelta già fatta resta: la chiave è quella dell'iPad, e c'è solo
+    /// se l'utente ha toccato «Annuncia le note a voce» nelle Impostazioni (fino all'11 novembre, senza scelta, era accesa).
+    public static func noteAVoce(_ prefs: KeyValueStore) -> Bool { getStoredNoteSpokenLabels(prefs) }
     public static func impostaNoteAVoce(_ prefs: KeyValueStore, _ acceso: Bool) { setStoredNoteSpokenLabels(prefs, acceso) }
-
-    /// I segnali acustici al gancio del fuoco: spenti finché la prova d'orecchio T2 non dice che VoiceOver dà il fuoco agli
-    /// elementi. Si accendono con l'argomento di lancio `--segnali-acustici` (prove d'orecchio) o con questa chiave.
-    public static let chiaveSegnali = "@scabopdf/mac/reading/earconsOnFocus"
-    public static func segnaliAcustici(_ prefs: KeyValueStore) -> Bool {
-        prefs.getItem(chiaveSegnali) == "1" || ProcessInfo.processInfo.arguments.contains("--segnali-acustici")
-    }
 
     /// La granularità con cui il Mac elabora un libro: la regola condivisa con l'iPad (ScaboChain
     /// `ReadingAssembly.processingGranularity`, dal giro «prove rifatte e granularità», 2026-11-10): quella delle Impostazioni

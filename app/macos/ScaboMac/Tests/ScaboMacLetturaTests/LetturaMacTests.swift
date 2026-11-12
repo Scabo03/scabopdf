@@ -174,25 +174,46 @@ final class LetturaMacTests: XCTestCase {
         XCTAssertEqual(libreria.libri().count, 1)
     }
 
-    /// «Annuncia le note a voce» cambiato nelle Impostazioni vale subito nella finestra di lettura aperta.
+    /// «Annuncia le note a voce» cambiato nelle Impostazioni vale subito nella finestra di lettura aperta. Dal 12 novembre 2026
+    /// (LAYER2 § 12.16, decisione 13) senza una scelta le note hanno il segnale, come sull'iPad: la casella è spenta, la parola
+    /// d'apertura della nota non c'è e la finestra suona i segnali; accesa, la parola torna.
     func test_impostazioni_noteAVoce_valgonoSubitoNellaFinestraAperta() async throws {
         await aspetta { importazione.importa(pdf) }
         let (doc, lettura) = try XCTUnwrap(presentatore.aperte.first)
+        XCTAssertNil(libreria.prefs.getItem(PreferenceKeys.noteSpokenLabels), "precondizione: nessuna scelta fatta")
         let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria, voiceOver: false)
         let v = f.vista
         let nota = try XCTUnwrap((0..<v.conteggio).first { v.segmento($0).role == "NOTE" })
-        XCTAssertTrue(v.impostazioni.noteSpokenLabels, "note a voce accese per impostazione predefinita sul Mac")
-        let conIntro = v.testoPronunciato(nota)
-        let impostazioni = FinestraImpostazioni(prefs: libreria.prefs)
-        impostazioni.quandoCambianoLeNote = { f.aggiornaImpostazioni(voiceOver: false) }
-        impostazioni.note.state = .off
-        impostazioni.cambiaNote(impostazioni.note)
-        XCTAssertFalse(PreferenzeLettura.noteAVoce(libreria.prefs))
-        XCTAssertFalse(v.impostazioni.noteSpokenLabels)
+        XCTAssertFalse(v.impostazioni.noteSpokenLabels, "senza scelta i segnali delle note, come sull'iPad")
+        XCTAssertNotNil(v.suonatore, "la finestra suona i segnali")
         XCTAssertEqual(v.testoPronunciato(nota),
                        ReadingSpeech.intendedAccessibilityLabel(for: v.segmento(nota), restoreNoteIntro: false))
-        XCTAssertNotEqual(v.testoPronunciato(nota), conIntro, "senza la parola d'apertura della nota")
+        let conSegnale = v.testoPronunciato(nota)
+        let impostazioni = FinestraImpostazioni(prefs: libreria.prefs)
+        XCTAssertEqual(impostazioni.note.state, .off, "la casella spenta")
+        impostazioni.quandoCambianoLeNote = { f.aggiornaImpostazioni(voiceOver: false) }
+        impostazioni.note.state = .on
+        impostazioni.cambiaNote(impostazioni.note)
+        XCTAssertTrue(PreferenzeLettura.noteAVoce(libreria.prefs))
+        XCTAssertTrue(v.impostazioni.noteSpokenLabels)
+        XCTAssertEqual(v.testoPronunciato(nota),
+                       ReadingSpeech.intendedAccessibilityLabel(for: v.segmento(nota), restoreNoteIntro: true))
+        XCTAssertNotEqual(v.testoPronunciato(nota), conSegnale, "con la parola d'apertura della nota")
         f.close()
+    }
+
+    /// Chi aveva già scelto non se la vede cambiare (decisione 13): la scelta sta nella chiave dell'iPad e resta com'è, accesa o
+    /// spenta; solo l'assenza di una scelta vale ora «spenta».
+    func test_noteAVoce_predefinitoSpento_laSceltaFattaResta() {
+        let prefs = libreria.prefs
+        XCTAssertNil(prefs.getItem(PreferenceKeys.noteSpokenLabels), "precondizione: nessuna scelta fatta")
+        XCTAssertFalse(PreferenzeLettura.noteAVoce(prefs), "nessuna scelta: spenta, come sull'iPad")
+        PreferenzeLettura.impostaNoteAVoce(prefs, true)
+        XCTAssertEqual(prefs.getItem(PreferenceKeys.noteSpokenLabels), "1")
+        XCTAssertTrue(PreferenzeLettura.noteAVoce(prefs), "accesa da chi l'aveva scelta: resta accesa")
+        PreferenzeLettura.impostaNoteAVoce(prefs, false)
+        XCTAssertFalse(PreferenzeLettura.noteAVoce(prefs), "spenta da chi l'aveva scelta: resta spenta")
+        XCTAssertEqual(PreferenzeLettura.noteAVoce(prefs), getStoredNoteSpokenLabels(prefs), "la stessa lettura dell'iPad")
     }
 
     /// Il trascinamento nella Home: accetta solo PDF e atti, e li passa tutti (la coda li importa uno dopo l'altro).
@@ -361,8 +382,8 @@ final class LetturaMacTests: XCTestCase {
         let (doc, lettura) = try XCTUnwrap(presentatore.aperte.first)
         let f = FinestraLettura(documento: doc, lettura: lettura, libreria: libreria, voiceOver: false)
         let v = f.vista
-        // Note a voce accese per impostazione predefinita sul Mac (DISEGNO § 4.2).
-        XCTAssertTrue(v.impostazioni.noteSpokenLabels)
+        // Dal 12 novembre 2026 (decisione 13) i segnali delle note per impostazione predefinita, come sull'iPad (DISEGNO § 4.2).
+        XCTAssertFalse(v.impostazioni.noteSpokenLabels)
         XCTAssertFalse(v.impostazioni.elementToolsAvailable)
         let dallaVista = v.descrizioneDallaVista(libro: "prova", layout: .continuousReading)
         let delModulo = v.descrizioneDelModulo(libro: "prova", layout: .continuousReading)
