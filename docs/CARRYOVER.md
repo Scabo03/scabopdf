@@ -14,7 +14,7 @@
 > build, **CONCLUSO**: curato **N16** alla radice (il pacchetto del Mac porta l'identità del commit da cui è costruito, il riuso si
 > rifiuta se lo HEAD è cambiato, prove con riproduzione di N16 e prova al contrario); **l'istruzione per il portachiavi** pronta per
 > il maintainer (comando unico, la password la chiede lui); la **regola fissa di ogni caricamento**, controllata dalle corsie prima
-> dell'invio; `docs/RELEASE_TESTFLIGHT.md` riordinato in parte comune, iPad e Mac; memoria di Code riordinata (60 → 13 note).
+> dell'invio; `docs/RELEASE_TESTFLIGHT.md` riordinato in parte comune, iPad e Mac; memoria di Code riordinata (59 note → 13, più l'indice).
 > Codice delle due app non toccato. Vedi lo STATO qui sotto.)
 > Versione: 2.63 (12-14 novembre 2026, giro «ScaboPDF per Mac su TestFlight», livello di verifica leggero, **CONCLUSO** con la
 > **build 1 del Mac** su TestFlight (versione 1.0, VALID, in prova per il gruppo interno, note per i tester impostate; la build 66
@@ -213,7 +213,7 @@ contenitore non toccati (il maintainer la stava usando). Referto: `~/Developer/s
   portachiavi, tester, lezione della build 55 e errore del file di ripresa, `log stream`, interrogare App Store Connect, note per i
   tester, certificato); parti iPad e Mac parallele (corsia, numero di build, controlli prima e dopo, errori noti, storia). Storia
   spostata senza riscriverla; aggiunto un riassunto delle build 38-45, che non avevano una voce.
-- **Memoria di Code** (fuori dal repo): 60 note → 13 (le regole fisse in una nota sola, `regole-fisse`; TestFlight in una;
+- **Memoria di Code** (fuori dal repo): 59 note → 13 (più l'indice) (le regole fisse in una nota sola, `regole-fisse`; TestFlight in una;
   undici note per argomento al posto delle note dei giri); contraddizioni col repo corrette in memoria; copia di prima in
   `~/Developer/scabopdf-gen-lab/referto/memoria_prima_2026-11-14/`.
 - **Revisione indipendente** (sotto-agente nuovo, solo diff e memoria, lista del maintainer): nessun rilievo bloccante; corretti
