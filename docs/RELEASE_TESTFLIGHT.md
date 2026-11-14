@@ -101,15 +101,43 @@ finché la chiave non autorizza `productbuild` per sempre: sotto). Così è stat
   `additional_cert_types: ["mac_installer_distribution"]` del profilo Mac App Store. E la variabile del percorso della chiave
   `APP_STORE_CONNECT_API_KEY_PATH` va tolta dall'ambiente dopo aver letto la chiave: sigh la legge come `api_key_path`, in
   conflitto con `api_key`.
-- **Il portachiavi:** ogni firma del pacchetto con la chiave del certificato del pacchetto apre la finestra del portachiavi di
-  «productbuild», e il maintainer scrive la password di accesso (campo, 12-13 novembre 2026: cinque firme, cinque finestre). «Consenti
-  sempre» non è rimasto: `match`, importando la chiave, non ha potuto pre-autorizzare gli strumenti di firma di Apple senza la password
-  del portachiavi («Could not configure imported keychain item… to prevent UI permission popup»). Per toglierla una volta per tutte,
-  il maintainer, da sé: Accesso Portachiavi → la chiave privata «3rd Party Mac Developer Installer» → Ottieni informazioni →
-  Controllo d'accesso → consentire `productbuild` (o tutte le app); oppure `security set-key-partition-list -S apple-tool:,apple: -s`
-  scritto da lui, con la sua password (passi non provati in questo giro). Finché non è fatto: `valida` (una firma, una finestra),
-  poi `beta` col riuso (nessuna firma).
-  *[Fino al 13 novembre questa voce diceva «sceglie Consenti sempre; da lì le firme non la chiedono più»: smentito sul campo.]*
+- **Il portachiavi: una finestra a ogni firma, e l'autorizzazione degli strumenti di Apple (dal 2026-11-14).** Ogni firma del pacchetto con
+  la chiave del certificato del pacchetto apre la finestra del portachiavi di «productbuild», e il maintainer scrive la password di
+  accesso (campo, 12-13 novembre 2026: cinque firme, cinque finestre; «Consenti sempre» non è rimasto). *Perché* (fonte: codice di
+  match 2.236.1, `fastlane_core/keychain_importer.rb`): importando la chiave, match la dà già a `codesign`, `security`,
+  `productbuild` e `productsign` (`security import -T …`), poi imposta la **lista di partizione** della chiave con
+  `security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k <password>`; senza la password del portachiavi questo
+  secondo passo è fallito («Could not configure imported keychain item… to prevent UI permission popup»). La lista di partizione
+  è il controllo in più che limita l'uso della chiave secondo la firma del programma; per cambiarla serve la password del
+  portachiavi, e perché `codesign` usi la chiave vi deve stare `apple:` (fonte: `man security`, `set-key-partition-list`, sul Mac;
+  Apple DTS nel forum degli sviluppatori, «Resolving errSecInternalComponent errors during code signing», thread 712005, che
+  imposta la lista con un'etichetta e senza la password nel comando).
+  **L'istruzione per il maintainer, da fare da sé una volta sola**, nel Terminale (app Terminale; con VoiceOver: incolla la riga e
+  premi Invio):
+
+  ```sh
+  security set-key-partition-list -S apple-tool:,apple:,codesign: -s -l "Imported Private Key" ~/Library/Keychains/login.keychain-db >/dev/null && echo FATTO
+  ```
+
+  Il comando chiede la password di accesso del Mac (quella del portachiavi «login») da sé: la si scrive alla richiesta, il Terminale
+  non mostra né legge nulla mentre si scrive, poi Invio; alla fine VoiceOver legge «FATTO». Se invece della richiesta nel Terminale
+  compare una finestra di sistema, è la stessa password (non verificato quale delle due compare: Code non l'ha eseguito). La
+  password non sta mai nel comando; l'uscita normale va scartata (`>/dev/null`), come fa match, perché elenca gli attributi delle
+  chiavi. **Che cosa autorizza:** gli strumenti firmati da Apple (`codesign`, `productbuild`, `productsign`, `xcodebuild`) a firmare
+  senza chiedere con le quattro chiavi private dette «Imported Private Key» del portachiavi «login», che sono esattamente le tre di
+  «Apple Distribution» e quella del «3rd Party Mac Developer Installer» (campo, 14 novembre: chiavi pubbliche dei certificati
+  confrontate con le chiavi, in sola lettura); è ciò che match avrebbe fatto con la password, ristretto a quelle quattro. **Che cosa
+  no:** nessun programma di terzi, nessun'altra chiave (la chiave «Apple Development» e le altre restano com'erano), nessuna password
+  né elemento del portachiavi di iCloud, nessuna esportazione delle chiavi, nessun cambio di password. Il prezzo: un programma che
+  gira col tuo utente può far firmare `codesign` con quelle chiavi senza che compaia la finestra. Se in futuro si importa un'altra
+  chiave con match, avrà la stessa etichetta: il comando si ripete. L'alternativa in Accesso Portachiavi (la chiave del certificato
+  del pacchetto, Ottieni informazioni, Controllo d'accesso) è sconsigliata con VoiceOver: le quattro chiavi si chiamano tutte «Imported
+  Private Key», e quella giusta si raggiunge solo aprendo il certificato in «I miei certificati»; e non è accertato che basti senza la lista di partizione.
+  Finché non è fatto: `valida` (una firma, una finestra), poi `beta` col riuso (nessuna firma). Dopo: la prima `valida` dice se le
+  finestre sono sparite.
+  *[Fino al 13 novembre questa voce diceva «sceglie Consenti sempre; da lì le firme non la chiedono più»: smentito sul campo. Fino al
+  14 novembre proponeva il comando `security set-key-partition-list -S apple-tool:,apple: -s` per tutte le chiavi di firma: ristretto
+  alle quattro chiavi della corsia e allineato alla lista che usa match.]*
 - **Il riuso del pacchetto e la sua identità (dal 2026-11-14, cura di N16).** Ogni costruzione del pacchetto (`valida`, o `beta`
   quando lo rifà) scrive accanto a lui `build/distribuzione/ScaboPDF.pkg.identita.json`: il commit (HEAD) e lo stato pulito
   dell'albero di lavoro all'inizio della costruzione e di nuovo alla fine (dopo l'ultima firma, cioè dopo le eventuali finestre del
