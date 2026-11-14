@@ -155,6 +155,55 @@ class TestIdentitaPacchetto < Minitest::Test
     assert_rifiuto("non si legge") { verifica }
   end
 
+  # --- la carta d'identità del pacchetto (regola fissa di ogni caricamento): un pacchetto d'installazione vero, NON firmato ---
+
+  def pacchetto_vero(id: "com.scabo.scabopdf", build: "2")
+    app = File.join(@dir, "Finta.app")
+    FileUtils.rm_rf(app)
+    FileUtils.mkdir_p(File.join(app, "Contents", "MacOS"))
+    FileUtils.cp("/usr/bin/true", File.join(app, "Contents", "MacOS", "Finta"))
+    File.write(File.join(app, "Contents", "Info.plist"), <<~PLIST)
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0"><dict>
+      <key>CFBundleIdentifier</key><string>#{id}</string><key>CFBundleShortVersionString</key><string>1.0</string>
+      <key>CFBundleVersion</key><string>#{build}</string><key>CFBundleExecutable</key><string>Finta</string>
+      <key>CFBundlePackageType</key><string>APPL</string>
+      </dict></plist>
+    PLIST
+    _o, e, st = Open3.capture3("productbuild", "--component", app, "/Applications", @pkg)
+    raise "productbuild: #{e}" unless st.success?
+  end
+
+  def carta(build: "2")
+    dati = verifica(build: build)
+    IdentitaPacchetto.carta_pacchetto!(@pkg, app_id: "com.scabo.scabopdf", build_number: build, dati: dati)
+  end
+
+  def test_carta_del_pacchetto_giusto
+    head = git("rev-parse", "HEAD")
+    IdentitaPacchetto.costruisci(@pkg, repo: @repo, build_number: "2") { pacchetto_vero }
+    riga = carta.first
+    assert_includes riga, "Caricamento per Mac"
+    assert_includes riga, "com.scabo.scabopdf, versione 1.0, build 2"
+    assert_includes riga, head
+  end
+
+  def test_carta_rifiuta_un_altra_build_dentro_il_pacchetto
+    IdentitaPacchetto.costruisci(@pkg, repo: @repo, build_number: "2") { pacchetto_vero(build: "5") }
+    assert_rifiuto("l'app è della build \"5\", non della 2") { carta }
+  end
+
+  def test_carta_rifiuta_un_altra_app
+    IdentitaPacchetto.costruisci(@pkg, repo: @repo, build_number: "2") { pacchetto_vero(id: "com.esempio.altra") }
+    assert_rifiuto("non c'è l'app com.scabo.scabopdf") { carta }
+  end
+
+  def test_carta_rifiuta_cio_che_non_e_un_pacchetto
+    costruisci
+    assert_rifiuto("non si legge come pacchetto") { carta }
+  end
+
   def test_costruzione_interrotta_non_lascia_un_identita_vecchia
     costruisci
     assert File.exist?(IdentitaPacchetto.percorso(@pkg))

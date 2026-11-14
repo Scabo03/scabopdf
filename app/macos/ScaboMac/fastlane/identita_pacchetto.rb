@@ -19,6 +19,7 @@ require "digest"
 require "json"
 require "open3"
 require "time"
+require "tmpdir"
 
 module IdentitaPacchetto
   # Il rifiuto, con il messaggio da mostrare: il Fastfile lo trasforma in `UI.user_error!`.
@@ -97,5 +98,27 @@ module IdentitaPacchetto
                      "(#{dati['commit'][0, 12]}): rifai `fastlane mac valida` sul codice attuale"
     end
     dati
+  end
+
+  # La carta d'identità del pacchetto che parte (regola fissa di ogni caricamento, docs/RELEASE_TESTFLIGHT.md): piattaforma,
+  # identificativo, versione e build letti dal file Distribution DENTRO il pacchetto (un archivio xar, senza estrarre l'app),
+  # più il commit d'origine dall'identità già verificata (`dati`). Restituisce le righe da stampare.
+  def carta_pacchetto!(pkg, app_id:, build_number:, dati:)
+    testo = Dir.mktmpdir("carta_pacchetto") do |d|
+      _uscita, errore, stato = Open3.capture3("xar", "-xf", pkg, "-C", d, "Distribution")
+      unless stato.success? && File.exist?(File.join(d, "Distribution"))
+        raise Rifiuto, "il pacchetto non si legge come pacchetto d'installazione del Mac (xar #{stato.exitstatus}): #{errore.strip}"
+      end
+      File.read(File.join(d, "Distribution"))
+    end
+    raise Rifiuto, "il pacchetto non è un pacchetto d'installazione del Mac (manca installer-gui-script)" unless testo.include?("<installer-gui-script")
+    bundle = testo[/<bundle\s[^>]*\bid="#{Regexp.escape(app_id)}"[^>]*>/]
+    raise Rifiuto, "nel pacchetto non c'è l'app #{app_id}" unless bundle
+    versione = bundle[/CFBundleShortVersionString="([^"]*)"/, 1].to_s
+    build = bundle[/CFBundleVersion="([^"]*)"/, 1].to_s
+    raise Rifiuto, "nel pacchetto manca la versione dell'app" if versione.empty?
+    raise Rifiuto, "nel pacchetto l'app è della build #{build.inspect}, non della #{build_number}" unless build == build_number.to_s
+    ["Caricamento per Mac (pacchetto d'installazione macOS): #{app_id}, versione #{versione}, build #{build}, " \
+     "commit d'origine #{dati['commit']} (albero pulito)"]
   end
 end

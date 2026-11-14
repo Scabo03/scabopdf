@@ -94,6 +94,15 @@ rescue IdentitaPacchetto::Rifiuto => e
   UI.user_error!(e.message)
 end
 
+# Prima dell'invio, sempre (pacchetto riusato o appena fatto): l'identità del pacchetto contro lo HEAD attuale e la sua carta
+# d'identità (piattaforma, identificativo, versione, build, commit d'origine). Regola fissa di ogni caricamento, dal 2026-11-14.
+def carta_mac!(pkg, build_number)
+  dati = IdentitaPacchetto.verifica!(pkg, repo: REPO, build_number: build_number)
+  IdentitaPacchetto.carta_pacchetto!(pkg, app_id: APP_ID, build_number: build_number, dati: dati).each { |riga| UI.important(riga) }
+rescue IdentitaPacchetto::Rifiuto => e
+  UI.user_error!("caricamento fermato prima dell'invio: #{e.message}")
+end
+
 platform :mac do
   desc "Controlla e stampa le note per i tester del Mac senza caricare nulla."
   lane :note_tester do
@@ -123,7 +132,9 @@ platform :mac do
     api_key = asc_api_key
     profilo = install_signing(api_key)
     build_number = mac_build_number(api_key)
+    UI.important("Caricamento per Mac: build #{build_number} della serie del Mac")
     pkg = pacchetto_pronto(build_number) || prepara_pacchetto(profilo, build_number)
+    carta_mac!(pkg, build_number)
     upload_to_testflight(api_key: api_key, app_identifier: APP_ID, app_platform: "osx", pkg: pkg, changelog: changelog,
                          skip_waiting_for_build_processing: false, wait_processing_interval: 60,
                          distribute_external: false, notify_external_testers: false)
