@@ -204,6 +204,34 @@ class TestIdentitaPacchetto < Minitest::Test
     assert_rifiuto("non si legge come pacchetto") { carta }
   end
 
+  # --- il segno di controllo (altool riuscito) e la partenza pulita di `beta` ---
+
+  def test_riuso_senza_segno_di_controllo_e_rifiutato
+    costruisci
+    errore = assert_raises(IdentitaPacchetto::Rifiuto) do
+      IdentitaPacchetto.verifica!(@pkg, repo: @repo, build_number: "2", richiedi_validato: true)
+    end
+    assert_includes errore.message, "non risulta controllato"
+  end
+
+  def test_riuso_col_segno_di_controllo_passa
+    costruisci
+    IdentitaPacchetto.segna_validato!(@pkg)
+    dati = IdentitaPacchetto.verifica!(@pkg, repo: @repo, build_number: "2", richiedi_validato: true)
+    assert_equal true, dati["validato"]
+  end
+
+  def test_segno_di_controllo_rifiutato_se_il_pacchetto_e_cambiato
+    costruisci
+    File.write(@pkg, "un altro pacchetto\n")
+    assert_rifiuto("è cambiato prima del segno") { IdentitaPacchetto.segna_validato!(@pkg) }
+  end
+
+  def test_partenza_di_beta_con_albero_non_pulito_e_rifiutata
+    File.write(File.join(@repo, "codice.swift"), "let a = 7\n")
+    assert_rifiuto("non è pulito") { IdentitaPacchetto.partenza_pulita!(@repo) }
+  end
+
   def test_costruzione_interrotta_non_lascia_un_identita_vecchia
     costruisci
     assert File.exist?(IdentitaPacchetto.percorso(@pkg))

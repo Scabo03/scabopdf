@@ -64,7 +64,7 @@ module IdentitaPacchetto
   end
 
   # Il controllo prima del riuso: restituisce l'identità se il pacchetto si può riusare, altrimenti solleva `Rifiuto`.
-  def verifica!(pkg, repo:, build_number:)
+  def verifica!(pkg, repo:, build_number:, richiedi_validato: false)
     nome = File.basename(percorso(pkg))
     raise Rifiuto, "non c'è un pacchetto pronto da riusare (#{pkg}): prima `fastlane mac valida`" unless File.exist?(pkg)
     unless File.exist?(percorso(pkg))
@@ -92,12 +92,39 @@ module IdentitaPacchetto
       raise Rifiuto, "durante la costruzione del pacchetto lo HEAD è cambiato (da #{dati['commit'][0, 12]} a " \
                      "#{dati['commit_alla_fine'][0, 12]}): rifai `fastlane mac valida` senza committare mentre lavora"
     end
+    if richiedi_validato && dati["validato"] != true
+      raise Rifiuto, "il pacchetto non risulta controllato da App Store Connect (`altool --validate-app` non riuscito o non " \
+                     "eseguito su questo pacchetto): rifai `fastlane mac valida`"
+    end
     attuale = stato(repo)[:commit]
     unless attuale == dati["commit"]
       raise Rifiuto, "lo HEAD attuale (#{attuale[0, 12]}) è diverso da quello da cui è stato costruito il pacchetto " \
                      "(#{dati['commit'][0, 12]}): rifai `fastlane mac valida` sul codice attuale"
     end
     dati
+  end
+
+  # Dopo `altool --validate-app` riuscito (il Fastfile lo chiama solo allora): l'identità registra che QUESTO pacchetto
+  # (stessa impronta) è stato controllato da App Store Connect. Il riuso lo richiede.
+  def segna_validato!(pkg)
+    dati = JSON.parse(File.read(percorso(pkg)))
+    unless dati["sha256_pacchetto"] == Digest::SHA256.file(pkg).hexdigest
+      raise Rifiuto, "il pacchetto è cambiato prima del segno di controllo: rifai `fastlane mac valida`"
+    end
+    dati["validato"] = true
+    dati["validato_il"] = Time.now.utc.iso8601
+    File.write(percorso(pkg), "#{JSON.pretty_generate(dati)}\n")
+    dati
+  end
+
+  # All'inizio di `beta`: un albero non pulito si rifiuta subito, prima di costruire e firmare.
+  def partenza_pulita!(repo)
+    inizio = stato(repo)
+    unless inizio[:pulito]
+      raise Rifiuto, "l'albero di lavoro non è pulito: il pacchetto non corrisponderebbe a un commit. Committa (note per i tester " \
+                     "comprese) o togli le modifiche, poi rilancia"
+    end
+    inizio
   end
 
   # La carta d'identità del pacchetto che parte (regola fissa di ogni caricamento, docs/RELEASE_TESTFLIGHT.md): piattaforma,

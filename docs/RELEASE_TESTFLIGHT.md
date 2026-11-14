@@ -107,12 +107,13 @@ chiede o lo conferma, ogni volta (`CLAUDE.md`, «Commit & push workflow»).
   non mostra né legge nulla mentre si scrive, poi Invio; alla fine VoiceOver legge «FATTO». Se invece della richiesta nel Terminale
   compare una finestra di sistema, è la stessa password (non verificato quale delle due compare: Code non l'ha eseguito). La
   password non sta mai nel comando; l'uscita normale va scartata (`>/dev/null`), come fa match, perché elenca gli attributi delle
-  chiavi. **Che cosa autorizza:** gli strumenti firmati da Apple (`codesign`, `productbuild`, `productsign`, `xcodebuild`) a firmare
-  senza chiedere con le quattro chiavi private dette «Imported Private Key» del portachiavi «login», che sono esattamente le tre di
+  chiavi. **Che cosa autorizza:** i programmi di Apple già nella lista d'accesso delle chiavi (`codesign`, `productbuild`, `productsign`
+  e `security`, che match vi ha messo all'importazione; `xcodebuild` firma passando da `codesign`) a usarle senza chiedere, con le quattro chiavi private dette «Imported Private Key» del portachiavi «login», che sono esattamente le tre di
   «Apple Distribution» e quella del «3rd Party Mac Developer Installer» (campo, 14 novembre: chiavi pubbliche dei certificati
   confrontate con le chiavi, in sola lettura); è ciò che match avrebbe fatto con la password, ristretto a quelle quattro. **Che cosa
   no:** nessun programma di terzi, nessun'altra chiave (la chiave «Apple Development» e le altre restano com'erano), nessuna password
-  né elemento del portachiavi di iCloud, nessuna esportazione delle chiavi, nessun cambio di password. Il prezzo: un programma che
+  né elemento del portachiavi di iCloud, nessun cambio di password; il comando non esporta nulla (non è verificato che, dopo,
+  un'esportazione con `security export` chieda ancora conferma). Il prezzo: un programma che
   gira col tuo utente può far firmare `codesign` con quelle chiavi senza che compaia la finestra. Se in futuro si importa un'altra
   chiave con match, avrà la stessa etichetta: il comando si ripete. L'alternativa in Accesso Portachiavi (la chiave del certificato
   del pacchetto, Ottieni informazioni, Controllo d'accesso) è sconsigliata con VoiceOver: le quattro chiavi si chiamano tutte «Imported
@@ -190,7 +191,7 @@ presente il gotcha di match della parte Mac.
 
 ## La corsia dell'iPad: `fastlane beta`, da `app/ios`
 
-La corsia fa tutto in una corsa: note per i tester (prima di tutto, si ferma se mancano), commit di partenza con albero pulito,
+La corsia fa tutto in una corsa: commit di partenza con albero pulito (prima di tutto), note per i tester (si ferma se mancano),
 firma via match in sola lettura, numero di build, archivio ed esportazione via `gym` dal solo `ScaboPDF.xcodeproj`, carta
 d'identità dell'archivio, caricamento con altool e la chiave API, attesa dell'elaborazione per scrivere «Cosa testare».
 Prova storica: `app/ios/fastlane/report.xml` del 13 giugno registra il primo giro completo; il 2026-06-22 la stessa corsia ha
@@ -747,13 +748,16 @@ caricata col riuso (sotto, «Storia delle build del Mac»).
   quando lo rifà) scrive accanto a lui `build/distribuzione/ScaboPDF.pkg.identita.json`: il commit (HEAD) e lo stato pulito
   dell'albero di lavoro all'inizio della costruzione e di nuovo alla fine (dopo l'ultima firma, cioè dopo le eventuali finestre del
   portachiavi), il numero della build e l'impronta SHA-256 del pacchetto (`app/macos/ScaboMac/fastlane/identita_pacchetto.rb`).
-  `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` riusa il pacchetto solo se l'identità c'è, impronta e build corrispondono,
+  `valida`, solo dopo «VERIFY SUCCEEDED» di altool, segna nell'identità il pacchetto come controllato (`validato`).
+  `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` riusa il pacchetto solo se l'identità c'è, impronta e build corrispondono, il
+  pacchetto è segnato come controllato,
   l'albero era pulito per tutta la costruzione, lo HEAD non è cambiato durante la costruzione ed è uguale allo HEAD attuale;
   altrimenti si ferma col motivo («il pacchetto pronto non si riusa: …») e si rifà `valida`. In pratica: le note per i tester si
   scrivono e si committano **prima** di `valida` (anche un commit di soli documenti dopo `valida` fa rifiutare il riuso), e mentre
   `valida` lavora non si committa e non si lasciano modifiche nell'albero. Prove senza firmare né caricare:
-  `ruby app/macos/ScaboMac/fastlane/prove/test_identita_pacchetto.rb` (19 prove, comprese la riproduzione di N16, la prova al
-  contrario e la carta d'identità del pacchetto). *[Fino al 14 novembre il controllo confrontava l'ora dell'ultimo commit nei percorsi dell'app con l'ora del pacchetto,
+  `ruby app/macos/ScaboMac/fastlane/prove/test_identita_pacchetto.rb` (23 prove, comprese la riproduzione di N16, la prova al
+  contrario, il segno di controllo e la carta d'identità del pacchetto). `beta` rifiuta subito, alla partenza, un albero di
+  lavoro non pulito (prima di costruire e firmare). *[Fino al 14 novembre il controllo confrontava l'ora dell'ultimo commit nei percorsi dell'app con l'ora del pacchetto,
   che `productbuild` scrive solo dopo la risposta alla finestra del portachiavi: un commit fatto in quell'attesa sfuggiva (N16, per
   la build 1 14 ore di attesa). La regola provvisoria «nessun commit nel codice dell'app fra `valida` e `beta`» è tolta: il controllo
   ora la fa da sé, più stretta (qualunque commit).]*

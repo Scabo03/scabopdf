@@ -70,8 +70,8 @@ end
 def pacchetto_pronto(build_number)
   return nil unless ENV["SCABOMAC_RIUSA_PACCHETTO"] == "1"
   pkg = File.join(USCITA, "ScaboPDF.pkg")
-  dati = IdentitaPacchetto.verifica!(pkg, repo: REPO, build_number: build_number)
-  UI.message("Riuso il pacchetto già preparato e controllato: build #{dati['build']}, commit #{dati['commit'][0, 12]} " \
+  dati = IdentitaPacchetto.verifica!(pkg, repo: REPO, build_number: build_number, richiedi_validato: true)
+  UI.message("Riuso il pacchetto già preparato e controllato da App Store Connect: build #{dati['build']}, commit #{dati['commit'][0, 12]} " \
              "(lo HEAD attuale), albero di lavoro pulito durante tutta la costruzione")
   pkg
 rescue IdentitaPacchetto::Rifiuto => e
@@ -84,7 +84,7 @@ def prepara_pacchetto(profilo, build_number)
   pkg = File.join(USCITA, "ScaboPDF.pkg")
   IdentitaPacchetto.costruisci(pkg, repo: REPO, build_number: build_number) do |inizio|
     unless inizio[:pulito]
-      UI.important("l'albero di lavoro non è pulito: il pacchetto si potrà controllare, ma non riusare per il caricamento")
+      UI.important("l'albero di lavoro non è pulito: il pacchetto si potrà controllare, ma non caricare")
     end
     sh("SCABOMAC_DISTRIBUZIONE=1 SCABOMAC_BUILD=#{build_number.shellescape} SCABOMAC_PROFILO=#{profilo.shellescape} " \
        "#{script.shellescape} #{USCITA.shellescape}")
@@ -124,10 +124,21 @@ platform :mac do
     sh("xcrun altool --validate-app #{pkg.shellescape} --api-key #{ENV['APP_STORE_CONNECT_API_KEY_ID'].shellescape} " \
        "--api-issuer #{ENV['APP_STORE_CONNECT_API_KEY_ISSUER_ID'].shellescape} " \
        "--p8-file-path #{$scabo_p8.shellescape} --output-format normal", print_command: false)
+    # Solo se altool è riuscito (`sh` si ferma altrimenti): l'identità segna questo pacchetto come controllato.
+    begin
+      IdentitaPacchetto.segna_validato!(pkg)
+    rescue IdentitaPacchetto::Rifiuto => e
+      UI.user_error!(e.message)
+    end
   end
 
   desc "ScaboPDF per Mac su TestFlight: note, firma (match in sola lettura), pacchetto, caricamento; attende l'elaborazione."
   lane :beta do
+    begin
+      IdentitaPacchetto.partenza_pulita!(REPO) # subito: prima di costruire, firmare e aspettare il portachiavi
+    rescue IdentitaPacchetto::Rifiuto => e
+      UI.user_error!("caricamento fermato alla partenza: #{e.message}")
+    end
     changelog = testflight_notes!
     api_key = asc_api_key
     profilo = install_signing(api_key)
