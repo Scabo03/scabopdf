@@ -1,21 +1,59 @@
-# Pubblicazione TestFlight — pipeline accertata ed ESEGUITA
+# Pubblicazione su TestFlight — iPad e Mac
 
-Metodo reale **verificato eseguendolo il 2026-06-22** (build 6 caricata con successo).
+ScaboPDF ha **due piattaforme nello stesso record App Store** (`com.scabo.scabopdf`, acquisto universale): l'app dell'iPad
+(e dell'iPhone) e ScaboPDF per Mac. Ciascuna ha la sua corsia `fastlane`, la sua serie di numeri di build e il suo file di note
+per i tester; chiavi, record, gruppo dei tester e lezioni sui caricamenti sono in comune. Il documento ha tre parti: **la parte
+comune** (da leggere sempre), **la parte iPad**, **la parte Mac**. Il caricamento su TestFlight si fa solo quando il maintainer lo
+chiede o lo conferma, ogni volta (`CLAUDE.md`, «Commit & push workflow»).
 
-> Correzione: una versione precedente di questa nota ipotizzava "Xcode GUI Archive→Distribute".
-> **Era sbagliata.** Il metodo reale è **`fastlane beta`** — ricostruito dalle prove e poi
-> eseguito davvero. Niente click in Xcode.
+**Stato delle build** (da aggiornare a ogni caricamento, insieme alla riga di stato del CARRYOVER):
+**iPad** — ultima build **66** (2026-11-11, commit `814b562`), prossima **67**. **Mac** — ultima build **1** (2026-11-13, commit
+`193cb29`), prossima **2**.
 
-## Il metodo reale: `fastlane beta` (riga di comando, zero passi manuali)
+> Storia del metodo: una versione molto vecchia di questa nota ipotizzava «Xcode GUI Archive→Distribute»; era sbagliata. Il
+> metodo reale, verificato eseguendolo il 2026-06-22 (build 6 dell'iPad), è la corsia `fastlane` dalla riga di comando: firma via
+> **match**, costruzione, caricamento con la **chiave API di App Store Connect**; nessun login con ID Apple, nessun clic in Xcode.
+> Il 2026-11-14 il documento è stato riordinato in parte comune, iPad e Mac (giro «corsie e memoria»): i contenuti sono gli stessi
+> di prima, spostati, salvo dove una riga *[fra parentesi quadre]* dice che cosa è cambiato.
 
-Prova storica: `app/ios/fastlane/report.xml` del 13 giu registra il run completo delle 6 step
-(match → latest_testflight_build_number → build_app → upload_to_testflight). Il 2026-06-22 la
-stessa lane ha caricato la **build 6**: `UPLOAD SUCCEEDED with no errors`.
+---
 
-La lane fa tutto: firma via **match**, archive+export via **gym**, upload via **altool** con la
-**chiave API App Store Connect**. Nessun login Apple ID interattivo, nessun Xcode aperto.
+# Parte comune
 
-## Cosa è già presente sulla macchina (riusare, non ricreare)
+## Il record unico
+
+- **Un'app sola per App Store Connect:** identificativo `com.scabo.scabopdf`, squadra `D2KQYQ8YU8`, versione 1.0 su entrambe le
+  piattaforme, acquisto universale (`LAYER2_PRODUCT_DECISIONS.md` § 12.16, decisione 15). Piattaforme del record: **IOS** e
+  **MAC_OS**; la piattaforma macOS è stata aggiunta il 2026-11-12 con l'API (parte Mac, «Errori noti e lezioni») e, dopo il primo
+  caricamento di una build del Mac, non si toglie più.
+- **Due serie di numeri di build, distinte** (App Store Connect Help, acquisto universale: le app degli altri sistemi «may each
+  have different version numbers and build strings than the iOS app»). La corsia dell'iPad conta solo le build iOS
+  (`latest_testflight_build_number` senza piattaforma; campo, 2026-11-13, dopo la build 1 del Mac: «Latest upload for version 1.0
+  on ios platform is build: 66»); quella del Mac chiede la sua serie con `platform: "osx"`. Lo stesso numero può quindi esistere
+  sulle due piattaforme (c'è una build «1» anche dell'iPad): **ogni interrogazione di App Store Connect va filtrata per
+  piattaforma.**
+
+## La regola fissa di ogni caricamento (dal 2026-11-14)
+
+1. **Si dichiara la piattaforma all'inizio.** Una corsa carica una piattaforma sola; il caricamento, il suo diario e il messaggio
+   del giro cominciano con «Caricamento per iPad, build N» oppure «Caricamento per Mac, build N». Le corsie lo stampano da sé.
+2. **Prima dell'invio si verifica l'archivio:** piattaforma, identificativo, versione, numero di build e commit d'origine. Lo fanno
+   le corsie, fra la costruzione e il caricamento, e si fermano col motivo («caricamento fermato prima dell'invio: …») se qualcosa
+   non torna. iPad: `app/ios/fastlane/carta_archivio.rb` (albero di lavoro pulito alla partenza, Info.plist dentro l'IPA, HEAD
+   invariato). Mac: `app/macos/ScaboMac/fastlane/identita_pacchetto.rb` (identità del pacchetto contro lo HEAD attuale, file
+   Distribution dentro il pacchetto). Prove senza costruire né caricare: `ruby app/ios/fastlane/prove/test_carta_archivio.rb` e
+   `ruby app/macos/ScaboMac/fastlane/prove/test_identita_pacchetto.rb`. Conseguenza: **le note per i tester si committano prima di
+   lanciare la corsia**, e durante la corsa non si committa.
+3. **Dopo l'invio si verifica con l'API** (sola lettura, filtrata per piattaforma) che la build sia comparsa **sulla piattaforma
+   giusta** e che **l'ultima build dell'altra piattaforma non sia cambiata**. Strumento: lo script di laboratorio
+   `~/Developer/scabopdf-mac-lab/lettura_mac/mac_testflight/strumenti/asc_build_mac.rb <numero_mac> <COSA_TESTARE.txt del Mac>
+   <numero_ipad>` (senza `imposta` non scrive nulla; mostra per ciascuna piattaforma numero, versione, elaborazione, stato dei
+   tester e «Cosa testare»), lanciato come sotto («Interrogare App Store Connect»). Il conteggio dopo il caricamento si scrive
+   nel diario del giro: ultima dell'iPad, ultima del Mac.
+4. **Riga di stato:** a ogni caricamento si aggiornano lo «Stato delle build» qui sopra e la riga di stato del CARRYOVER, sempre con
+   l'ultima build e la prossima **per ciascuna piattaforma**.
+
+## Strumenti, segreti e chiavi sulla macchina (riusare, non ricreare)
 
 - **fastlane**: gem **2.236.1**, eseguibile in `/opt/homebrew/lib/ruby/gems/4.0.0/bin/fastlane`
   (NON nel PATH di default → vedi sotto). `bundle` è in `/opt/homebrew/bin`.
@@ -35,72 +73,18 @@ La lane fa tutto: firma via **match**, archive+export via **gym**, upload via **
   non rigenera.
 - **Certificato**: `Apple Distribution: Luca Scabini (D2KQYQ8YU8)`, **valido fino al 2027-05-30**.
 - **App**: bundle `com.scabo.scabopdf`, team `D2KQYQ8YU8`, marketing version `1.0`.
+- **Profili e certificati nel deposito di match:** iPad, profilo `match AppStore com.scabo.scabopdf`; Mac, profilo
+  `match AppStore com.scabo.scabopdf macos` (tipo Mac App Store, stesso certificato Apple Distribution) e certificato
+  «3rd Party Mac Developer Installer» per il pacchetto d'installazione. Nel portachiavi «login» i certificati con lo stesso nome
+  «Apple Distribution: Luca Scabini» sono **tre**: si sceglie per impronta (lo script del Mac la prende dal certificato del
+  profilo).
+- **Ambiente comune a ogni comando delle corsie:** `export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`; la cartella
+  dei programmi delle gemme nel `PATH` (`/opt/homebrew/lib/ruby/gems/4.0.0/bin`: rende risolvibili `fastlane` e `xcpretty`);
+  `set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a`; poi `unset` dei numeri di build forzati
+  (`SCABO_BUILD_NUMBER` per l'iPad, `SCABOMAC_BUILD_NUMBER` per il Mac): Ruby tratta anche la stringa vuota come un valore.
 
-## Il comando esatto (eseguito e verificato)
+## Il portachiavi: le chiavi di firma e le finestre a ogni firma
 
-```sh
-cd app/ios
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"   # rende fastlane E xcpretty risolvibili
-set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a
-unset SCABO_BUILD_NUMBER    # IMPORTANTE: il valore nell'env è statico/vecchio; la lane,
-                            # senza questa var, calcola "ultimo su TestFlight + 1"
-fastlane beta
-```
-
-Esito atteso: `... upload_to_testflight ...` → `UPLOAD SUCCEEDED` → `fastlane.tools finished
-successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di processing Apple.
-
-**Firma (dalla build 53).** Identità «Apple Distribution» e profilo `match AppStore com.scabo.scabopdf` stanno nel progetto,
-sul solo bersaglio ScaboApp in Release e per i build su dispositivo (`[sdk=iphoneos*]`), con firma manuale; la lane passa
-solo `CURRENT_PROJECT_VERSION` e `DEVELOPMENT_TEAM`. Prima stavano negli argomenti globali di xcodebuild, che toccano anche
-il bundle di risorse del pacchetto `ScaboPageStructure` (il modello Core ML): un bundle di risorse non accetta profili e
-l'archiviazione si fermava con «does not support provisioning profiles» (commit `dc2305f`).
-
-## La corsia del Mac — ScaboPDF per Mac su TestFlight (dal 2026-11-12)
-
-ScaboPDF per Mac sta **nello stesso record App Store dell'iPad**, come acquisto universale (`LAYER2_PRODUCT_DECISIONS.md` § 12.16,
-decisione 15): stesso identificativo `com.scabo.scabopdf`, stesso nome, build separate. La corsia è accanto a quella dell'iPad
-ma nel pacchetto del Mac, così nessun file dell'iPad cambia: `app/macos/ScaboMac/fastlane/Fastfile`, con le stesse chiavi e la
-stessa procedura.
-
-```sh
-cd app/macos/ScaboMac
-export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
-export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"
-set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a
-unset SCABO_BUILD_NUMBER SCABOMAC_BUILD_NUMBER   # la build del Mac: l'ultima del Mac su TestFlight più uno
-fastlane mac note_tester    # le note del Mac, senza caricare (fastlane/COSA_TESTARE.txt del pacchetto Mac)
-fastlane mac valida         # il pacchetto firmato, controllato da App Store Connect, senza caricarlo
-SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta   # carica il pacchetto controllato, senza rifirmarlo, se è dello HEAD attuale
-```
-
-Senza `SCABOMAC_RIUSA_PACCHETTO=1`, `fastlane mac beta` rifà e rifirma il pacchetto da sé (una finestra del portachiavi in più,
-finché la chiave non autorizza `productbuild` per sempre: sotto). Così è stata caricata la build 1 del Mac (sotto, «Build del Mac»).
-
-- **Che cosa fa `beta`:** legge le note (obbligatorie, ≤ 4.000 caratteri, come per l'iPad); installa con `match` in sola
-  lettura il profilo **«match AppStore com.scabo.scabopdf macos»** (tipo Mac App Store, col certificato Apple Distribution del
-  profilo dell'iPad, che scade il 2027-05-30) e il certificato **«3rd Party Mac Developer Installer»** del pacchetto
-  d'installazione; calcola la build; lancia `scripts/build_app.sh` in modalità distribuzione (`SCABOMAC_DISTRIBUZIONE=1`:
-  firma «Apple Distribution» scelta dall'impronta del certificato del profilo — i certificati omonimi sono tre —, profilo
-  incorporato in `Contents/embedded.provisionprofile`, nella firma dell'app l'identificativo dell'app e della squadra, che
-  TestFlight vuole per il Mac; il servizio di scaricamento senza profilo né identificativo nella firma, perché ha solo permessi
-  che non ne chiedono; poi `ScaboPDF.pkg` firmato col certificato del pacchetto); carica con `upload_to_testflight(pkg:,
-  app_platform: "osx")` e aspetta l'elaborazione per scrivere «Cosa testare».
-- **La piattaforma macOS nel record** è stata aggiunta il 2026-11-12 con l'API di App Store Connect (`POST /v1/appStoreVersions`,
-  piattaforma `MAC_OS`, versione 1.0: «Add a new App Store version or platform to an app»); nessun passo sul sito. Dopo il primo
-  caricamento di una build del Mac la piattaforma non si toglie più (App Store Connect Help, «Add platforms»).
-- **Numero di versione e di build:** versione 1.0, come la versione macOS del record. La build del Mac ha la sua serie, distinta
-  da quella dell'iPad (App Store Connect Help sull'acquisto universale: le app degli altri sistemi «may each have different
-  version numbers and build strings than the iOS app»): la corsia usa l'ultima build del Mac su TestFlight più uno
-  (`latest_testflight_build_number(platform: "osx")`), o `SCABOMAC_BUILD_NUMBER` se è dato.
-- **La firma, creata una volta il 2026-11-12** (match in scrittura, script di laboratorio): il profilo del Mac e il certificato
-  del pacchetto stanno ora nel deposito dei certificati, accanto a quelli dell'iPad. **Gotcha:** con `type:
-  "mac_installer_distribution"` da solo match 2.236.1 chiede al portale un altro Apple Distribution (ce ne sono già tre: Apple
-  risponde 409 «You already have a current Distribution certificate…»); il certificato del pacchetto va chiesto come
-  `additional_cert_types: ["mac_installer_distribution"]` del profilo Mac App Store. E la variabile del percorso della chiave
-  `APP_STORE_CONNECT_API_KEY_PATH` va tolta dall'ambiente dopo aver letto la chiave: sigh la legge come `api_key_path`, in
-  conflitto con `api_key`.
 - **Il portachiavi: una finestra a ogni firma, e l'autorizzazione degli strumenti di Apple (dal 2026-11-14).** Ogni firma del pacchetto con
   la chiave del certificato del pacchetto apre la finestra del portachiavi di «productbuild», e il maintainer scrive la password di
   accesso (campo, 12-13 novembre 2026: cinque firme, cinque finestre; «Consenti sempre» non è rimasto). *Perché* (fonte: codice di
@@ -138,65 +122,42 @@ finché la chiave non autorizza `productbuild` per sempre: sotto). Così è stat
   *[Fino al 13 novembre questa voce diceva «sceglie Consenti sempre; da lì le firme non la chiedono più»: smentito sul campo. Fino al
   14 novembre proponeva il comando `security set-key-partition-list -S apple-tool:,apple: -s` per tutte le chiavi di firma: ristretto
   alle quattro chiavi della corsia e allineato alla lista che usa match.]*
-- **Il riuso del pacchetto e la sua identità (dal 2026-11-14, cura di N16).** Ogni costruzione del pacchetto (`valida`, o `beta`
-  quando lo rifà) scrive accanto a lui `build/distribuzione/ScaboPDF.pkg.identita.json`: il commit (HEAD) e lo stato pulito
-  dell'albero di lavoro all'inizio della costruzione e di nuovo alla fine (dopo l'ultima firma, cioè dopo le eventuali finestre del
-  portachiavi), il numero della build e l'impronta SHA-256 del pacchetto (`app/macos/ScaboMac/fastlane/identita_pacchetto.rb`).
-  `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` riusa il pacchetto solo se l'identità c'è, impronta e build corrispondono,
-  l'albero era pulito per tutta la costruzione, lo HEAD non è cambiato durante la costruzione ed è uguale allo HEAD attuale;
-  altrimenti si ferma col motivo («il pacchetto pronto non si riusa: …») e si rifà `valida`. In pratica: le note per i tester si
-  scrivono e si committano **prima** di `valida` (anche un commit di soli documenti dopo `valida` fa rifiutare il riuso), e mentre
-  `valida` lavora non si committa e non si lasciano modifiche nell'albero. Prove senza firmare né caricare:
-  `ruby app/macos/ScaboMac/fastlane/prove/test_identita_pacchetto.rb` (15 prove, comprese la riproduzione di N16 e la prova al
-  contrario). *[Fino al 14 novembre il controllo confrontava l'ora dell'ultimo commit nei percorsi dell'app con l'ora del pacchetto,
-  che `productbuild` scrive solo dopo la risposta alla finestra del portachiavi: un commit fatto in quell'attesa sfuggiva (N16, per
-  la build 1 14 ore di attesa). La regola provvisoria «nessun commit nel codice dell'app fra `valida` e `beta`» è tolta: il controllo
-  ora la fa da sé, più stretta (qualunque commit).]*
-- **Dopo il caricamento** vale la lezione della build 55: con «UPLOAD SUCCEEDED» ed errori di App Store Connect non si rilancia;
-  si controlla la build con l'API in sola lettura e si completa il passo mancante. E si fermano per PID i `log stream` orfani
-  nati durante la corsa (`pgrep -fl "^/usr/bin/log stream"` prima e dopo).
-- **I tester:** il gruppo interno «ScaboPDF Sperimentazione» riceve ogni build, comprese quelle del Mac. Sul Mac la build
-  si installa dall'app TestFlight del Mac, con lo stesso ID Apple del tester.
-- **Un contenitore solo per due build — regola del laboratorio (dal 2026-11-12).** La build di sviluppo (`build/ScaboPDF.app`,
-  firma di sviluppo: test, reti, misure) e quella di TestFlight hanno lo stesso identificativo, quindi lo stesso contenitore della
-  sandbox sul Mac del maintainer: preferenze, libreria vera, modelli scaricati e diari sono in comune. Per questo: (1) le build di
-  sviluppo si aprono SOLO con `--libreria-di-prova` (libreria e preferenze a parte, diario nella cartella della libreria di prova),
-  mai sulla libreria vera; (2) la prova di laboratorio del pannello dei modelli (`-ScaboMacProvaPannello`) non toglie più un modello
-  che trova già scaricato, e comunque non si lancia senza chiedere dopo l'installazione da TestFlight; (3) i test che lanciano l'app
-  (da fuori e d'interfaccia) usano già `--libreria-di-prova`. Separare i due contenitori vorrebbe un identificativo di sviluppo
-  distinto: allora la build dei test non sarebbe più la stessa app di TestFlight (decisione per il maintainer nel referto del giro).
 
-**Il diario della diagnostica, dove lo legge Code nei giri futuri.** Il pannello «Diagnostica» dell'app Mac (Impostazioni →
-«Mostra la diagnostica nel menu Finestra», poi menu Finestra → «Diagnostica…») tiene, se il maintainer lo accende, un diario di soli codici e
-numeri in `~/Library/Containers/com.scabo.scabopdf/Data/Library/Application Support/ScaboPDF per Mac/Diagnostica/`, un file per
-accensione, `diario_<aaaammgg>_<hhmmss>.txt`, scritto in coda ogni due secondi; si tengono gli ultimi venti. Mai in rete: l'app
-non ha il permesso di rete. Code lo legge da lì senza chiedere, ma **solo quella cartella**: elencarla per trovare il diario più
-recente va bene, perché contiene solo i diari; mai elencare né cercare altrove nel contenitore, né con ricerche che lo attraversano,
-perché contiene collegamenti verso cartelle personali protette. *[Fino al 14 novembre: «solo quel percorso preciso, un file del
-diario alla volta»; precisato perché senza elencare la cartella non si sa il nome del diario più recente.]* In alternativa il maintainer
-usa «Esporta il diario…» e lo salva nella cartella Download, che è libera.
+## Il gruppo dei tester
 
-**Build del Mac** (serie propria, distinta da quella dell'iPad; prossimo numero del Mac: 2).
+Il gruppo interno **«ScaboPDF Sperimentazione»** riceve ogni build, dell'iPad e del Mac. Sull'iPad la build si installa dall'app
+TestFlight; sul Mac dall'app TestFlight del Mac, con lo stesso ID Apple del tester. Se l'iPad chiede la «Modalità sviluppo», è una
+build installata da Xcode rimasta sul dispositivo (firma di sviluppo, stesso identificativo), non la build di TestFlight: si toglie
+l'app e la si installa da TestFlight (2026-07-09). Un tester vede le build solo se l'ID Apple con cui è collegato è quello iscritto
+nel gruppo.
 
-- **Build 1 del Mac (versione 1.0) — 2026-11-13, commit `193cb29` del ramo `feat/mac-testflight`, poi in main** (giro «ScaboPDF per
-  Mac su TestFlight», livello di verifica leggero: l'identificativo dell'iPad, la piattaforma macOS nel record dell'iPad, il pannello
-  «Diagnostica» col diario, le quattro varianti dei titoli con la C predefinita, il modo di distribuzione e la corsia del Mac;
-  `docs/CARRYOVER.md` STATO del 2026-11-12/14, LAYER2 § 12.16 decisioni 15-18, DISEGNO § 8, § 10 e § 11). Xcode 27.2 (27B52).
-  Pacchetto assemblato e firmato il 12 novembre alle 20:55 (finestra del portachiavi risposta il 13 alle 11:20), 169 612 324 byte,
-  SHA-256 che comincia con `868ffbe4e2644e20`; `fastlane mac valida` exit 0, poi «VERIFY SUCCEEDED with no errors» alle 11:24 sullo
-  stesso pacchetto. `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` da main: build calcolata dal record («Using initial build number
-  of 0»), pacchetto riusato («nessun cambiamento del codice da allora»), altool «UPLOAD SUCCEEDED with no errors» alle 11:31:41,
-  Delivery UUID `d2f721ab-de78-45a0-a418-f8e60d6b5812`; subito dopo l'errore del file di ripresa del caricatore, come per le ultime
-  cinque build dell'iPad, corsia uscita con exit 1 prima dell'elaborazione e delle note. Nessun rilancio: verifica in sola lettura con
-  la chiave API filtrata per piattaforma (build 1 MAC_OS 1.0 caricata alle 11:32:55 ora italiana, VALID alle 11:34:36, tester interni
-  IN_BETA_TESTING), impostato il solo «Cosa testare» (it) col testo di `app/macos/ScaboMac/fastlane/COSA_TESTARE.txt` e riletto: 2 384
-  caratteri, identico al file. La build 66 dell'iPad intatta (VALID, IN_BETA_TESTING, note di 2 013 caratteri); conteggio dopo:
-  ultima dell'iPad 66, ultima del Mac 1. Il `log stream` nato durante la corsa fermato per PID, quello della validazione delle 11:23
-  uscito da solo; dopo, nessuno. Simboli (dSYM, stesso UUID del binario) in `app/macos/ScaboMac/build/distribuzione/simboli_1.0_1`
-  (ignorata da git) e nel laboratorio (`~/Developer/scabopdf-mac-lab/lettura_mac/mac_testflight/simboli/`). Verifiche sul codice del
-  pacchetto: rete sul parlato verde (192/192), vista del Mac identica alla vista dell'iPad su 55 libri su 55 con la sola eccezione
-  dichiarata dei titoli, ScaboMac 136 test (0 falliti, 4 saltati), interfaccia del Mac 15 (0 falliti, 5 saltati). Riverificata in
-  sola lettura il 14 novembre: VALID, note identiche.
+## Dopo il caricamento: la lezione della build 55 e l'errore del file di ripresa
+
+- **Con «UPLOAD SUCCEEDED» e un Delivery UUID, la build di solito c'è, anche se la corsia esce con un errore.** Non si rilancia
+  alla cieca (rilanciare darebbe un numero nuovo, o un rifiuto per numero già usato): si controlla con l'API in sola lettura e si
+  completa il solo passo mancante (di solito «Cosa testare»). Origine: build 55 (tre errori 500 di App Store Connect) e build 36.
+- **Dalla build 62 (Xcode 27.2) è il comportamento atteso:** subito dopo «UPLOAD SUCCEEDED» il caricatore dà «Failed to create
+  URL for 'CDUploaderStateInfoResumeFilePath'. The file doesn't exist» e la corsia esce con exit 1 prima dell'elaborazione e delle
+  note (build 62-66 dell'iPad, build 1 del Mac). Passo normale: aspettare qualche minuto, verificare la build (VALID), impostare
+  il solo «Cosa testare» (it) col testo del file delle note, rileggerlo identico. Script di laboratorio: iPad
+  `~/Developer/scabopdf-gen-lab/studio_mirato/build62/asc_imposta_note.rb <numero> <COSA_TESTARE.txt>`; Mac `asc_build_mac.rb …
+  imposta` (sopra). *[Gli script dell'iPad cercano la build per numero senza piattaforma: finché i numeri dell'iPad (67 e oltre) non
+  coincidono con quelli del Mac non sbagliano, ma la verifica della regola fissa usa `asc_build_mac.rb`, che filtra.]*
+- **Un accordo mancante blocca tutto** («A required agreement is missing or has expired», build 45): lo accetta il titolare
+  dell'account sul sito; poi si rilancia la corsia.
+
+## I `log stream` orfani
+
+Durante esportazione e caricamento nascono processi `/usr/bin/log stream … subsystem == "com.apple.network"` (padre launchd, su
+«Xcode» e su «altool») che restano vivi. Prima e dopo ogni corsa: `pgrep -fl "^/usr/bin/log stream"`; si fermano **per PID** solo
+quelli nati durante la corsa; quelli di prima, non nati da comandi del giro, si lasciano stare.
+
+## Interrogare App Store Connect
+
+Con gli script di laboratorio in Spaceship, la gemma di fastlane e l'ambiente dei segreti caricato:
+`GEM_HOME=/opt/homebrew/lib/ruby/gems/4.0.0 /opt/homebrew/opt/ruby/bin/ruby -e 'gem "fastlane"' -e 'load ARGV.shift' <script.rb>
+<argomenti>` (il `ruby` semplice non trova la gemma). Non `fastlane run <azione>`: legge il file della chiave come JSON e fallisce.
+Il segnale affidabile del numero è `latest_testflight_build_number` (con la piattaforma), non gli elenchi paginati delle build.
 
 ## Note per i tester («Cosa testare») — obbligatorie da build 47 (decisione permanente del maintainer, 2026-10-07)
 
@@ -210,16 +171,86 @@ delle note: che cosa è cambiato; su quali libri si sente; che i libri già aper
 reimportati; che reimportare crea una copia nuova senza le annotazioni della vecchia (finché `docs/RIELABORAZIONE_PROGETTO.md`
 § 2 non è costruito).
 
-## Numero di build
+Il file è uno per piattaforma: iPad `app/ios/fastlane/COSA_TESTARE.txt`, Mac `app/macos/ScaboMac/fastlane/COSA_TESTARE.txt`;
+la prova senza caricare è `fastlane note_tester` (iPad) o `fastlane mac note_tester` (Mac). Si scrive e si committa prima di
+lanciare la corsia (regola fissa, punto 2).
+
+## Il certificato in scadenza
+
+Nessuno, di norma: l'autenticazione è la **chiave API** (non Apple ID), già su disco. Serve solo
+che cert (in scadenza 2027) e repo `scabopdf-certs` restino accessibili. Se il certificato scadrà,
+rigenerare con `MATCH_READONLY=false fastlane beta` (richiede accesso in scrittura al repo certs).
+Vale per entrambe le piattaforme: il certificato Apple Distribution è lo stesso nei due profili (scade il 2027-05-30); il
+certificato del pacchetto del Mac si rigenera con la corsia del Mac (`MATCH_READONLY=false fastlane mac setup_signing`), tenendo
+presente il gotcha di match della parte Mac.
+
+---
+
+# Parte iPad
+
+## La corsia dell'iPad: `fastlane beta`, da `app/ios`
+
+La corsia fa tutto in una corsa: note per i tester (prima di tutto, si ferma se mancano), commit di partenza con albero pulito,
+firma via match in sola lettura, numero di build, archivio ed esportazione via `gym` dal solo `ScaboPDF.xcodeproj`, carta
+d'identità dell'archivio, caricamento con altool e la chiave API, attesa dell'elaborazione per scrivere «Cosa testare».
+Prova storica: `app/ios/fastlane/report.xml` del 13 giugno registra il primo giro completo; il 2026-06-22 la stessa corsia ha
+caricato la build 6 («UPLOAD SUCCEEDED with no errors»).
+
+```sh
+cd app/ios
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"   # rende fastlane E xcpretty risolvibili
+set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a
+unset SCABO_BUILD_NUMBER    # IMPORTANTE: il valore nell'env è statico/vecchio; la lane,
+                            # senza questa var, calcola "ultimo su TestFlight + 1"
+fastlane beta
+```
+
+Esito atteso: `... upload_to_testflight ...` → `UPLOAD SUCCEEDED` → `fastlane.tools finished
+successfully 🎉`. La build appare su App Store Connect dopo qualche minuto di processing Apple.
+
+**Firma (dalla build 53).** Identità «Apple Distribution» e profilo `match AppStore com.scabo.scabopdf` stanno nel progetto,
+sul solo bersaglio ScaboApp in Release e per i build su dispositivo (`[sdk=iphoneos*]`), con firma manuale; la lane passa
+solo `CURRENT_PROJECT_VERSION` e `DEVELOPMENT_TEAM`. Prima stavano negli argomenti globali di xcodebuild, che toccano anche
+il bundle di risorse del pacchetto `ScaboPageStructure` (il modello Core ML): un bundle di risorse non accetta profili e
+l'archiviazione si fermava con «does not support provisioning profiles» (commit `dc2305f`).
+
+## Numero di build dell'iPad (prossima: 67)
 
 - La lane usa `ENV["SCABO_BUILD_NUMBER"]` **se presente** (anche stringa vuota = valore!), altrimenti
   `latest_testflight_build_number + 1`. Per questo si fa `unset SCABO_BUILD_NUMBER` (auto-calcolo).
 - Con le build del Mac nello stesso record la corsia dell'iPad conta ancora solo le sue: `latest_testflight_build_number` senza
   piattaforma vale per iOS (campo, 2026-11-13, dopo la build 1 del Mac: «Latest upload for version 1.0 on ios platform is build:
-  66»). La corsia del Mac chiede la sua serie con `platform: "osx"` (sopra, «La corsia del Mac»).
+  66»). La corsia del Mac chiede la sua serie con `platform: "osx"` (parte Mac).
 - La lane passa `CURRENT_PROJECT_VERSION=<n>` come `xcarg`, quindi **sovrascrive** il valore nel
   `project.pbxproj`. Il valore committato (allineato a 7 il 2026-06-22, commit `a6760dd`) è solo
   cosmetico/coerenza.
+
+## Controlli prima e dopo il caricamento (iPad)
+
+- **Prima:** note committate (`fastlane note_tester`, exit 0), albero pulito, `pgrep` dei `log stream`. La corsia stessa rifiuta
+  un albero non pulito e, prima dell'invio, stampa la carta d'identità dell'archivio (piattaforma iphoneos, identificativo,
+  versione, build, commit d'origine).
+- **Dopo:** regola fissa, punto 3 (build dell'iPad comparsa e VALID, ultima del Mac invariata); «Cosa testare» identico al file;
+  `log stream` nati durante la corsa fermati per PID. Per cercare un testo nel binario dell'app si usa `strings -a` prima di
+  cercare: `grep -F` diretto sul binario Mach-O non trova nulla (build 64).
+
+## Errori noti e lezioni (iPad)
+
+- `sh: xcpretty: command not found` e build fallita per `pipefail`: `xcpretty` non è nel `PATH` (sopra, ambiente comune); se manca,
+  `gem install xcpretty`.
+- `SCABO_BUILD_NUMBER` nel file dei segreti è statico e vecchio: senza `unset` la corsia lo userebbe al posto di «ultima + 1».
+- L'errore del file di ripresa, se compare già a `latest_testflight_build_number`, ferma la corsia prima dell'archivio; con
+  `SCABO_BUILD_NUMBER` impostato si può almeno verificare l'archivio (build 62).
+- L'assenza di un commit «chore(release): build number N» non vuol dire «non caricata»: la corsia passa il numero come `xcarg` al
+  momento del caricamento (build 9-11). Fa fede la storia qui sotto.
+
+## Storia delle build dell'iPad
+
+Le voci sono quelle di prima del riordino, nello stesso testo: prima le build 2-37 in ordine crescente, poi la nota sullo stato
+dei rami del 2026-07-09, poi le build dalla 66 alla 46 in ordine decrescente. Le build 38-45 non avevano una voce qui: la riga
+seguente le riassume dalla memoria di lavoro di quei giri *[aggiunta il 2026-11-14]*.
+
 - Storia: build 2–5 il 2026-06-13; build 6 il 2026-06-22; **build 7 il 2026-06-22** (tre fix del
   primo collaudo d'orecchio); **build 8 il 2026-06-23** (memory refresh note differite §7.4/7.5 +
   strato segnali acustici earcon); **build 9 il 2026-06-24** (plugin Raffaello Cortina: sotto-titoli
@@ -339,6 +370,17 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   prossimo run produrrà 30» — era **stale/errata già alla scrittura** (i commit `3f436fc`/`7d2583f`/
   `de3c172`/`5ee3d2b` erano già in `main`, come dichiarava correttamente `CARRYOVER.md` nello stesso
   commit `f2cda73`).
+
+- **Build 38-45 (2026-07-10 → 2026-10-05)** *[riassunto aggiunto il 2026-11-14]*: 38 (2026-07-10, `fb6cbad`) dimensione del testo
+  dal vivo; 39 (2026-07-11, `102083f`/`4779d10`/`eea425c`, Delivery UUID `a793088d-ef51-49cb-9dd1-d9c46dd26d4e`) accessibilità
+  visiva, caricata da un ramo di funzione; 40 (2026-07-13, `84f7348`/`58fe491`, Delivery UUID
+  `534d09a3-aeea-4058-8eed-47a707675827`) comandi da tastiera, alternative ai gesti, lingua dichiarata, ramo sopra quello della 39;
+  41 (2026-07-14, `7b56960`, Delivery UUID `acb7a1df-1ce2-486e-a9e1-d2ac6b3bacfc`) fusione dei titoli spezzati; 43 (2026-07-18,
+  `f021f41`/`4588170`, Delivery UUID `2dc424a8-8cb2-413c-9904-697355b15e1d`) contatore delle pagine e titoli a rientro sporgente,
+  formato della cache 5; 44 (2026-08-12, `68fde13`, Delivery UUID `c707a335-45e7-47ca-afbe-a1e7219d3d21`) codici a due colonne e
+  falsi «Nota.»; 45 (2026-10-05, `8e47592`) titoli numerati, salto fra nota e testo, abbreviazioni, formato della cache 6,
+  caricata al secondo tentativo dopo l'accordo accettato. I rami delle 39-41 sono stati poi fusi in main (CARRYOVER). Nessuna
+  voce registrata per la 42.
 
 - **Build 66 — 2026-11-11, commit `814b562` (giro «prova 4, segnalibri e sigle», livello di verifica pieno nella seconda parte: i
   segnalibri, le posizioni e le sottolineature dei pezzi di mezzo si ritrovano al cambio di granularità e tornano esatti; le frasi
@@ -666,13 +708,139 @@ reimportati; che reimportare crea una copia nuova senza le annotazioni della vec
   si rielabora); per sentire la cura su un libro, reimportarlo. Il referto di elaborazione mostra ora con quale versione di
   sistema e build dell'app il libro è stato letto.
 
-## Unico punto eventualmente manuale
+---
 
-Nessuno, di norma: l'autenticazione è la **chiave API** (non Apple ID), già su disco. Serve solo
-che cert (in scadenza 2027) e repo `scabopdf-certs` restino accessibili. Se il certificato scadrà,
-rigenerare con `MATCH_READONLY=false fastlane beta` (richiede accesso in scrittura al repo certs).
+# Parte Mac
+
+## La corsia del Mac: `fastlane mac`, da `app/macos/ScaboMac` (dal 2026-11-12)
+
+ScaboPDF per Mac sta **nello stesso record App Store dell'iPad**, come acquisto universale (`LAYER2_PRODUCT_DECISIONS.md` § 12.16,
+decisione 15): stesso identificativo `com.scabo.scabopdf`, stesso nome, build separate. La corsia è accanto a quella dell'iPad
+ma nel pacchetto del Mac, così nessun file dell'iPad cambia: `app/macos/ScaboMac/fastlane/Fastfile`, con le stesse chiavi e la
+stessa procedura.
+
+```sh
+cd app/macos/ScaboMac
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+export PATH="/opt/homebrew/lib/ruby/gems/4.0.0/bin:$PATH"
+set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a
+unset SCABO_BUILD_NUMBER SCABOMAC_BUILD_NUMBER   # la build del Mac: l'ultima del Mac su TestFlight più uno
+fastlane mac note_tester    # le note del Mac, senza caricare (fastlane/COSA_TESTARE.txt del pacchetto Mac)
+fastlane mac valida         # il pacchetto firmato, controllato da App Store Connect, senza caricarlo
+SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta   # carica il pacchetto controllato, senza rifirmarlo, se è dello HEAD attuale
+```
+
+Senza `SCABOMAC_RIUSA_PACCHETTO=1`, `fastlane mac beta` rifà e rifirma il pacchetto da sé (una finestra del portachiavi in più,
+finché gli strumenti di Apple non sono autorizzati sulla chiave: parte comune, «Il portachiavi»). La build 1 del Mac è stata
+caricata col riuso (sotto, «Storia delle build del Mac»).
+
+- **Che cosa fa `beta`:** legge le note (obbligatorie, ≤ 4.000 caratteri, come per l'iPad); installa con `match` in sola
+  lettura il profilo **«match AppStore com.scabo.scabopdf macos»** (tipo Mac App Store, col certificato Apple Distribution del
+  profilo dell'iPad, che scade il 2027-05-30) e il certificato **«3rd Party Mac Developer Installer»** del pacchetto
+  d'installazione; calcola la build; lancia `scripts/build_app.sh` in modalità distribuzione (`SCABOMAC_DISTRIBUZIONE=1`:
+  firma «Apple Distribution» scelta dall'impronta del certificato del profilo — i certificati omonimi sono tre —, profilo
+  incorporato in `Contents/embedded.provisionprofile`, nella firma dell'app l'identificativo dell'app e della squadra, che
+  TestFlight vuole per il Mac; il servizio di scaricamento senza profilo né identificativo nella firma, perché ha solo permessi
+  che non ne chiedono; poi `ScaboPDF.pkg` firmato col certificato del pacchetto); prima dell'invio verifica l'identità del pacchetto e ne stampa la
+  carta d'identità (regola fissa, punto 2); carica con `upload_to_testflight(pkg:, app_platform: "osx")` e aspetta l'elaborazione per scrivere «Cosa testare».
+- **Il riuso del pacchetto e la sua identità (dal 2026-11-14, cura di N16).** Ogni costruzione del pacchetto (`valida`, o `beta`
+  quando lo rifà) scrive accanto a lui `build/distribuzione/ScaboPDF.pkg.identita.json`: il commit (HEAD) e lo stato pulito
+  dell'albero di lavoro all'inizio della costruzione e di nuovo alla fine (dopo l'ultima firma, cioè dopo le eventuali finestre del
+  portachiavi), il numero della build e l'impronta SHA-256 del pacchetto (`app/macos/ScaboMac/fastlane/identita_pacchetto.rb`).
+  `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` riusa il pacchetto solo se l'identità c'è, impronta e build corrispondono,
+  l'albero era pulito per tutta la costruzione, lo HEAD non è cambiato durante la costruzione ed è uguale allo HEAD attuale;
+  altrimenti si ferma col motivo («il pacchetto pronto non si riusa: …») e si rifà `valida`. In pratica: le note per i tester si
+  scrivono e si committano **prima** di `valida` (anche un commit di soli documenti dopo `valida` fa rifiutare il riuso), e mentre
+  `valida` lavora non si committa e non si lasciano modifiche nell'albero. Prove senza firmare né caricare:
+  `ruby app/macos/ScaboMac/fastlane/prove/test_identita_pacchetto.rb` (19 prove, comprese la riproduzione di N16, la prova al
+  contrario e la carta d'identità del pacchetto). *[Fino al 14 novembre il controllo confrontava l'ora dell'ultimo commit nei percorsi dell'app con l'ora del pacchetto,
+  che `productbuild` scrive solo dopo la risposta alla finestra del portachiavi: un commit fatto in quell'attesa sfuggiva (N16, per
+  la build 1 14 ore di attesa). La regola provvisoria «nessun commit nel codice dell'app fra `valida` e `beta`» è tolta: il controllo
+  ora la fa da sé, più stretta (qualunque commit).]*
+
+## Numero di build del Mac (prossima: 2)
+
+- **Numero di versione e di build:** versione 1.0, come la versione macOS del record. La build del Mac ha la sua serie, distinta
+  da quella dell'iPad (App Store Connect Help sull'acquisto universale: le app degli altri sistemi «may each have different
+  version numbers and build strings than the iOS app»): la corsia usa l'ultima build del Mac su TestFlight più uno
+  (`latest_testflight_build_number(platform: "osx")`), o `SCABOMAC_BUILD_NUMBER` se è dato.
+
+## Controlli prima e dopo il caricamento (Mac)
+
+- **Prima:** note committate (`fastlane mac note_tester`, exit 0), albero pulito; `fastlane mac valida` («VERIFY SUCCEEDED with no
+  errors»); niente commit fra `valida` e `beta` (altrimenti il riuso si rifiuta da sé e si rifà `valida`). Prima dell'invio la
+  corsia verifica sempre l'identità del pacchetto e stampa la sua carta d'identità (pacchetto d'installazione macOS,
+  identificativo, versione, build, commit d'origine).
+- **Dopo:** regola fissa, punto 3 (`asc_build_mac.rb`: build del Mac MAC_OS comparsa e VALID, ultima dell'iPad invariata);
+  «Cosa testare» identico al file; `log stream` fermati per PID; i simboli (dSYM) accanto al pacchetto, in
+  `build/distribuzione/simboli_<versione>_<build>` (ignorata da git), copiati nel laboratorio.
+
+## Errori noti e lezioni (Mac)
+
+- **La piattaforma macOS nel record** è stata aggiunta il 2026-11-12 con l'API di App Store Connect (`POST /v1/appStoreVersions`,
+  piattaforma `MAC_OS`, versione 1.0: «Add a new App Store version or platform to an app»); nessun passo sul sito. Dopo il primo
+  caricamento di una build del Mac la piattaforma non si toglie più (App Store Connect Help, «Add platforms»).
+- **La firma, creata una volta il 2026-11-12** (match in scrittura, script di laboratorio): il profilo del Mac e il certificato
+  del pacchetto stanno ora nel deposito dei certificati, accanto a quelli dell'iPad. **Gotcha:** con `type:
+  "mac_installer_distribution"` da solo match 2.236.1 chiede al portale un altro Apple Distribution (ce ne sono già tre: Apple
+  risponde 409 «You already have a current Distribution certificate…»); il certificato del pacchetto va chiesto come
+  `additional_cert_types: ["mac_installer_distribution"]` del profilo Mac App Store. E la variabile del percorso della chiave
+  `APP_STORE_CONNECT_API_KEY_PATH` va tolta dall'ambiente dopo aver letto la chiave: sigh la legge come `api_key_path`, in
+  conflitto con `api_key`.
+- **Mentre la finestra del portachiavi è aperta** le app lanciate non diventano attive: i test che lanciano l'app (da fuori e
+  d'interfaccia) vanno rossi per l'ambiente, non per il codice (giro del 2026-11-12). Con la lista di partizione impostata (parte
+  comune) la finestra non dovrebbe più comparire (non verificato).
+- **Il caricatore** dà lo stesso errore del file di ripresa dell'iPad (build 1): parte comune, «Dopo il caricamento».
+
+## Un contenitore per due build: sviluppo e TestFlight
+
+- **Un contenitore solo per due build — regola del laboratorio (dal 2026-11-12).** La build di sviluppo (`build/ScaboPDF.app`,
+  firma di sviluppo: test, reti, misure) e quella di TestFlight hanno lo stesso identificativo, quindi lo stesso contenitore della
+  sandbox sul Mac del maintainer: preferenze, libreria vera, modelli scaricati e diari sono in comune. Per questo: (1) le build di
+  sviluppo si aprono SOLO con `--libreria-di-prova` (libreria e preferenze a parte, diario nella cartella della libreria di prova),
+  mai sulla libreria vera; (2) la prova di laboratorio del pannello dei modelli (`-ScaboMacProvaPannello`) non toglie più un modello
+  che trova già scaricato, e comunque non si lancia senza chiedere dopo l'installazione da TestFlight; (3) i test che lanciano l'app
+  (da fuori e d'interfaccia) usano già `--libreria-di-prova`. Separare i due contenitori vorrebbe un identificativo di sviluppo
+  distinto: allora la build dei test non sarebbe più la stessa app di TestFlight (decisione per il maintainer nel referto del giro).
+
+## Il diario della diagnostica
+
+**Il diario della diagnostica, dove lo legge Code nei giri futuri.** Il pannello «Diagnostica» dell'app Mac (Impostazioni →
+«Mostra la diagnostica nel menu Finestra», poi menu Finestra → «Diagnostica…») tiene, se il maintainer lo accende, un diario di soli codici e
+numeri in `~/Library/Containers/com.scabo.scabopdf/Data/Library/Application Support/ScaboPDF per Mac/Diagnostica/`, un file per
+accensione, `diario_<aaaammgg>_<hhmmss>.txt`, scritto in coda ogni due secondi; si tengono gli ultimi venti. Mai in rete: l'app
+non ha il permesso di rete. Code lo legge da lì senza chiedere, ma **solo quella cartella**: elencarla per trovare il diario più
+recente va bene, perché contiene solo i diari; mai elencare né cercare altrove nel contenitore, né con ricerche che lo attraversano,
+perché contiene collegamenti verso cartelle personali protette. *[Fino al 14 novembre: «solo quel percorso preciso, un file del
+diario alla volta»; precisato perché senza elencare la cartella non si sa il nome del diario più recente.]* In alternativa il maintainer
+usa «Esporta il diario…» e lo salva nella cartella Download, che è libera.
+
+## Storia delle build del Mac
+
+- **Build 1 del Mac (versione 1.0) — 2026-11-13, commit `193cb29` del ramo `feat/mac-testflight`, poi in main** (giro «ScaboPDF per
+  Mac su TestFlight», livello di verifica leggero: l'identificativo dell'iPad, la piattaforma macOS nel record dell'iPad, il pannello
+  «Diagnostica» col diario, le quattro varianti dei titoli con la C predefinita, il modo di distribuzione e la corsia del Mac;
+  `docs/CARRYOVER.md` STATO del 2026-11-12/14, LAYER2 § 12.16 decisioni 15-18, DISEGNO § 8, § 10 e § 11). Xcode 27.2 (27B52).
+  Pacchetto assemblato e firmato il 12 novembre alle 20:55 (finestra del portachiavi risposta il 13 alle 11:20), 169 612 324 byte,
+  SHA-256 che comincia con `868ffbe4e2644e20`; `fastlane mac valida` exit 0, poi «VERIFY SUCCEEDED with no errors» alle 11:24 sullo
+  stesso pacchetto. `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` da main: build calcolata dal record («Using initial build number
+  of 0»), pacchetto riusato («nessun cambiamento del codice da allora»), altool «UPLOAD SUCCEEDED with no errors» alle 11:31:41,
+  Delivery UUID `d2f721ab-de78-45a0-a418-f8e60d6b5812`; subito dopo l'errore del file di ripresa del caricatore, come per le ultime
+  cinque build dell'iPad, corsia uscita con exit 1 prima dell'elaborazione e delle note. Nessun rilancio: verifica in sola lettura con
+  la chiave API filtrata per piattaforma (build 1 MAC_OS 1.0 caricata alle 11:32:55 ora italiana, VALID alle 11:34:36, tester interni
+  IN_BETA_TESTING), impostato il solo «Cosa testare» (it) col testo di `app/macos/ScaboMac/fastlane/COSA_TESTARE.txt` e riletto: 2 384
+  caratteri, identico al file. La build 66 dell'iPad intatta (VALID, IN_BETA_TESTING, note di 2 013 caratteri); conteggio dopo:
+  ultima dell'iPad 66, ultima del Mac 1. Il `log stream` nato durante la corsa fermato per PID, quello della validazione delle 11:23
+  uscito da solo; dopo, nessuno. Simboli (dSYM, stesso UUID del binario) in `app/macos/ScaboMac/build/distribuzione/simboli_1.0_1`
+  (ignorata da git) e nel laboratorio (`~/Developer/scabopdf-mac-lab/lettura_mac/mac_testflight/simboli/`). Verifiche sul codice del
+  pacchetto: rete sul parlato verde (192/192), vista del Mac identica alla vista dell'iPad su 55 libri su 55 con la sola eccezione
+  dichiarata dei titoli, ScaboMac 136 test (0 falliti, 4 saltati), interfaccia del Mac 15 (0 falliti, 5 saltati). Riverificata in
+  sola lettura il 14 novembre: VALID, note identiche.
+
+---
 
 ## In una riga
 
-`cd app/ios` → esporta `DEVELOPER_DIR`+`PATH`(gem bin) → `source scabo_deploy.env` → `unset
-SCABO_BUILD_NUMBER` → `fastlane beta`. Tutto già configurato; niente Xcode, niente Apple ID.
+**iPad:** ambiente comune → `cd app/ios` → note committate → `fastlane beta` → regola fissa, punto 3.
+**Mac:** ambiente comune → `cd app/macos/ScaboMac` → note committate → `fastlane mac valida` → `SCABOMAC_RIUSA_PACCHETTO=1
+fastlane mac beta` → regola fissa, punto 3. Tutto già configurato; niente Xcode aperto, niente ID Apple.
