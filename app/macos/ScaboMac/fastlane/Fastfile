@@ -5,14 +5,17 @@
 #   fastlane mac setup_signing   installa profilo Mac App Store e certificato del pacchetto (match, in sola lettura)
 #   fastlane mac valida          prepara il pacchetto firmato e lo fa controllare ad App Store Connect, senza caricarlo
 #   fastlane mac beta            prepara il pacchetto firmato e lo carica su TestFlight, con le note
-#                                (SCABOMAC_RIUSA_PACCHETTO=1: carica il pacchetto già preparato da `valida`, se è della stessa build)
+#                                (SCABOMAC_RIUSA_PACCHETTO=1: carica il pacchetto già preparato da `valida`, se la sua identità
+#                                corrisponde allo HEAD attuale: fastlane/identita_pacchetto.rb)
 # I segreti si leggono dall'ambiente per NOME (il file dei segreti, fuori dal repo): questo file non ne contiene.
+require File.join(__dir__, "identita_pacchetto.rb")
 default_platform(:mac)
 
 APP_ID  = "com.scabo.scabopdf"   # lo stesso identificativo dell'app dell'iPad
 TEAM_ID = "D2KQYQ8YU8"
 SCABOMAC_DIR = File.expand_path("..", __dir__)
 USCITA = File.join(SCABOMAC_DIR, "build", "distribuzione")
+REPO = File.expand_path("../../..", SCABOMAC_DIR)
 
 # La chiave API di App Store Connect (non un ID Apple), dal percorso del .p8. Poi la variabile del percorso si toglie
 # dall'ambiente: sigh e pilot la leggerebbero come `api_key_path`, in conflitto con `api_key` (misurato il 12 novembre 2026).
@@ -60,36 +63,35 @@ def mac_build_number(api_key)
 end
 
 # Il pacchetto già preparato (da `valida`) si riusa con SCABOMAC_RIUSA_PACCHETTO=1: così la firma col certificato del
-# pacchetto, che apre la finestra del portachiavi finché non si sceglie «Consenti sempre», si fa una volta sola fra validazione e
-# caricamento. Si riusa SOLO se è della stessa build e se, da quando è stato fatto, il codice che entra nell'app non è cambiato:
-# nessun commit dopo di lui e nessuna modifica non committata nei percorsi che l'assemblaggio legge (rilievo N13 della revisione).
-PERCORSI_DELL_APP = %w[app/macos/ScaboMac/Sources app/macos/ScaboMac/scripts app/macos/ScaboMac/Package.swift
-                       app/ios/ScaboCore app/ios/ScaboChain app/ios/ScaboPageStructure app/ios/ScaboApp/Audio
-                       app/ios/ScaboApp/Assets.xcassets/AppIcon.appiconset].freeze
+# pacchetto si fa una volta sola fra validazione e caricamento. Si riusa SOLO se la sua identità (fastlane/identita_pacchetto.rb:
+# commit e albero pulito a inizio e a fine costruzione, build, impronta del pacchetto) corrisponde allo HEAD attuale.
+# Fino a 61c6b93 il controllo confrontava l'ora dei commit nei percorsi dell'app con l'ora del pacchetto, scritto solo dopo la
+# finestra del portachiavi: un commit fatto durante l'attesa sfuggiva (rilievo N16, curato nel giro «corsie e memoria»).
 def pacchetto_pronto(build_number)
-  pkg = File.join(USCITA, "ScaboPDF.pkg")
-  app = File.join(USCITA, "ScaboPDF.app", "Contents", "Info.plist")
   return nil unless ENV["SCABOMAC_RIUSA_PACCHETTO"] == "1"
-  UI.user_error!("non c'è un pacchetto pronto da riusare: prima `fastlane mac valida`") unless File.exist?(pkg) && File.exist?(app)
-  build = sh("/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' #{app.shellescape}", log: false).strip
-  UI.user_error!("il pacchetto pronto è della build #{build}, non della #{build_number}") unless build == build_number.to_s
-  repo = File.expand_path("../../..", SCABOMAC_DIR)
-  percorsi = PERCORSI_DELL_APP.map(&:shellescape).join(" ")
-  sporchi = sh("git -C #{repo.shellescape} status --porcelain -- #{percorsi}", log: false).strip
-  UI.user_error!("modifiche non committate nel codice dell'app: il pacchetto pronto non vale") unless sporchi.empty?
-  ultimo = sh("git -C #{repo.shellescape} log -1 --format=%ct -- #{percorsi}", log: false).strip.to_i
-  UI.user_error!("il codice dell'app è cambiato dopo il pacchetto pronto") if ultimo > File.mtime(pkg).to_i
-  UI.message("Riuso il pacchetto già preparato e controllato: build #{build}, nessun cambiamento del codice da allora")
+  pkg = File.join(USCITA, "ScaboPDF.pkg")
+  dati = IdentitaPacchetto.verifica!(pkg, repo: REPO, build_number: build_number)
+  UI.message("Riuso il pacchetto già preparato e controllato: build #{dati['build']}, commit #{dati['commit'][0, 12]} " \
+             "(lo HEAD attuale), albero di lavoro pulito durante tutta la costruzione")
   pkg
+rescue IdentitaPacchetto::Rifiuto => e
+  UI.user_error!("il pacchetto pronto non si riusa: #{e.message}")
 end
 
+# Costruisce il pacchetto firmato e gli scrive accanto la sua identità (il commit da cui è fatto).
 def prepara_pacchetto(profilo, build_number)
   script = File.join(SCABOMAC_DIR, "scripts", "build_app.sh")
-  sh("SCABOMAC_DISTRIBUZIONE=1 SCABOMAC_BUILD=#{build_number.shellescape} SCABOMAC_PROFILO=#{profilo.shellescape} " \
-     "#{script.shellescape} #{USCITA.shellescape}")
   pkg = File.join(USCITA, "ScaboPDF.pkg")
-  UI.user_error!("il pacchetto non c'è: #{pkg}") unless File.exist?(pkg)
+  IdentitaPacchetto.costruisci(pkg, repo: REPO, build_number: build_number) do |inizio|
+    unless inizio[:pulito]
+      UI.important("l'albero di lavoro non è pulito: il pacchetto si potrà controllare, ma non riusare per il caricamento")
+    end
+    sh("SCABOMAC_DISTRIBUZIONE=1 SCABOMAC_BUILD=#{build_number.shellescape} SCABOMAC_PROFILO=#{profilo.shellescape} " \
+       "#{script.shellescape} #{USCITA.shellescape}")
+  end
   pkg
+rescue IdentitaPacchetto::Rifiuto => e
+  UI.user_error!(e.message)
 end
 
 platform :mac do

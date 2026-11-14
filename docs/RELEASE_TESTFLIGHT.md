@@ -72,7 +72,7 @@ set -a; . /Users/lucascabini/Developer/private_keys/scabo_deploy.env; set +a
 unset SCABO_BUILD_NUMBER SCABOMAC_BUILD_NUMBER   # la build del Mac: l'ultima del Mac su TestFlight più uno
 fastlane mac note_tester    # le note del Mac, senza caricare (fastlane/COSA_TESTARE.txt del pacchetto Mac)
 fastlane mac valida         # il pacchetto firmato, controllato da App Store Connect, senza caricarlo
-SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta   # carica il pacchetto appena controllato, senza firmarlo di nuovo, con le note
+SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta   # carica il pacchetto controllato, senza rifirmarlo, se è dello HEAD attuale
 ```
 
 Senza `SCABOMAC_RIUSA_PACCHETTO=1`, `fastlane mac beta` rifà e rifirma il pacchetto da sé (una finestra del portachiavi in più,
@@ -110,12 +110,20 @@ finché la chiave non autorizza `productbuild` per sempre: sotto). Così è stat
   scritto da lui, con la sua password (passi non provati in questo giro). Finché non è fatto: `valida` (una firma, una finestra),
   poi `beta` col riuso (nessuna firma).
   *[Fino al 13 novembre questa voce diceva «sceglie Consenti sempre; da lì le firme non la chiedono più»: smentito sul campo.]*
-- **Il riuso del pacchetto — limite noto (N16, 2026-11-14, non corretto):** la corsia riusa il pacchetto solo se è della stessa
-  build e se nessun commit nei percorsi dell'app è più recente del **pacchetto**; ma il pacchetto lo scrive `productbuild` solo dopo
-  la risposta alla finestra del portachiavi (per la build 1, 14 ore dopo l'assemblaggio dell'app). Un commit nel codice dell'app
-  fatto durante quell'attesa non sarebbe visto. **Regola:** nessun commit nel codice dell'app fra `valida` e `beta`. Cura per un giro
-  futuro: lo script di assemblaggio scrive accanto al pacchetto il commit e lo stato pulito del momento in cui legge il codice, e la
-  corsia confronta quelli.
+- **Il riuso del pacchetto e la sua identità (dal 2026-11-14, cura di N16).** Ogni costruzione del pacchetto (`valida`, o `beta`
+  quando lo rifà) scrive accanto a lui `build/distribuzione/ScaboPDF.pkg.identita.json`: il commit (HEAD) e lo stato pulito
+  dell'albero di lavoro all'inizio della costruzione e di nuovo alla fine (dopo l'ultima firma, cioè dopo le eventuali finestre del
+  portachiavi), il numero della build e l'impronta SHA-256 del pacchetto (`app/macos/ScaboMac/fastlane/identita_pacchetto.rb`).
+  `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` riusa il pacchetto solo se l'identità c'è, impronta e build corrispondono,
+  l'albero era pulito per tutta la costruzione, lo HEAD non è cambiato durante la costruzione ed è uguale allo HEAD attuale;
+  altrimenti si ferma col motivo («il pacchetto pronto non si riusa: …») e si rifà `valida`. In pratica: le note per i tester si
+  scrivono e si committano **prima** di `valida` (anche un commit di soli documenti dopo `valida` fa rifiutare il riuso), e mentre
+  `valida` lavora non si committa e non si lasciano modifiche nell'albero. Prove senza firmare né caricare:
+  `ruby app/macos/ScaboMac/fastlane/prove/test_identita_pacchetto.rb` (15 prove, comprese la riproduzione di N16 e la prova al
+  contrario). *[Fino al 14 novembre il controllo confrontava l'ora dell'ultimo commit nei percorsi dell'app con l'ora del pacchetto,
+  che `productbuild` scrive solo dopo la risposta alla finestra del portachiavi: un commit fatto in quell'attesa sfuggiva (N16, per
+  la build 1 14 ore di attesa). La regola provvisoria «nessun commit nel codice dell'app fra `valida` e `beta`» è tolta: il controllo
+  ora la fa da sé, più stretta (qualunque commit).]*
 - **Dopo il caricamento** vale la lezione della build 55: con «UPLOAD SUCCEEDED» ed errori di App Store Connect non si rilancia;
   si controlla la build con l'API in sola lettura e si completa il passo mancante. E si fermano per PID i `log stream` orfani
   nati durante la corsa (`pgrep -fl "^/usr/bin/log stream"` prima e dopo).
