@@ -10,6 +10,14 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.63 (12-14 novembre 2026, giro «ScaboPDF per Mac su TestFlight», livello di verifica leggero, **CONCLUSO** con la
+> **build 1 del Mac** su TestFlight (versione 1.0, VALID, in prova per il gruppo interno, note per i tester impostate; la build 66
+> dell'iPad intatta): registrate le decisioni 15-18 del maintainer (LAYER2 § 12.16: il Mac nello stesso record dell'iPad, come
+> acquisto universale; la strada dello store; il pannello «Diagnostica» al posto degli script delle prove d'orecchio; le quattro
+> varianti dei titoli in main, predefinita la C); l'app Mac prende l'identificativo dell'iPad (`com.scabo.scabopdf`); la piattaforma
+> macOS aggiunta al record con l'API, profilo Mac App Store e certificato del pacchetto creati con `match`; il pannello «Diagnostica»
+> col diario; il modo di distribuzione dello script e la corsia `fastlane mac`; vista del Mac identica alla vista dell'iPad su 55 libri
+> su 55 con la sola eccezione dichiarata dei titoli; iPad identico. Vedi lo STATO qui sotto.)
 > Versione: 2.62 (12 novembre 2026, giro «titoli di VoiceOver: le varianti», livello di verifica leggero, nessuna build: letto il
 > diario della prova 7 — **il rotore trova il titolo, VoiceOver ne chiede il ruolo e lo scarta** (testo statico; dedotto),
 > VO+Comando+M passa dalla ricerca generica sui figli esposti, VO+Comando+Maiuscole+H non chiede nulla —; **quattro varianti** dei
@@ -146,10 +154,91 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   rossa con quel nome (la rete controlla per nome il passo bersaglio: un guasto senza effetto o con un nome sbagliato è rosso).
   Due cose imparate: la bash di macOS è la 3.2 (una variabile seguita da un carattere non ASCII va fra graffe); uno script bash
   che sta girando non si modifica (bash lo legge per posizione).
+- **ScaboPDF per Mac: un contenitore per due build, e il diario della diagnostica (dal 2026-11-12).** La build di sviluppo che
+  Code compila (test, reti, misure) e quella che il maintainer installa da TestFlight hanno lo stesso identificativo
+  (`com.scabo.scabopdf`), quindi lo stesso contenitore della sandbox sul Mac del maintainer, con la sua libreria vera, le preferenze, i
+  modelli scaricati e i diari. Le build di sviluppo si aprono **solo** con `--libreria-di-prova` (come già fanno i test e le reti),
+  mai sulla libreria vera; la prova di laboratorio del pannello dei modelli non si lancia senza chiedere. Il diario del pannello
+  «Diagnostica», quando il maintainer lo accende, sta in
+  `~/Library/Containers/com.scabo.scabopdf/Data/Library/Application Support/ScaboPDF per Mac/Diagnostica/diario_<aaaammgg>_<hhmmss>.txt`
+  (un file per accensione, gli ultimi venti). Code lo legge da lì senza chiedere, ma solo quella cartella: elencarla per trovare il
+  diario più recente va bene, perché contiene solo i diari; mai elencare né cercare altrove nel contenitore, né con ricerche che lo
+  attraversano, perché contiene collegamenti verso cartelle personali protette. In alternativa il maintainer usa «Esporta il diario…»
+  e lo salva nella cartella Download. Dettagli in `docs/RELEASE_TESTFLIGHT.md`, «La corsia del Mac».
 - **Il banco delle reti fuori dal repo (dal 2026-11-10).** Nel repo i 52 volumi sono solo etichette neutre e impronte
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «ScaboPDF per Mac su TestFlight»: l'identificativo dell'iPad, la piattaforma macOS nel record, il pannello «Diagnostica», pronto per lo store, build 1 del Mac — 2026-11-12/14 — CONCLUSO
+
+**Partenza:** `55b7e8d` (main = origin, build 66 dell'iPad su TestFlight; prossimo numero dell'iPad 67, non usato). **Ramo:**
+`feat/mac-testflight` (livello leggero, solo l'app Mac; l'iPad non cambia: nessun file sotto `app/ios`), unito in main con un
+avanzamento rapido (main = il commit di questo STATO) e cancellato, locale e remoto. Referto:
+`~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_MAC_TESTFLIGHT.md`; laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/mac_testflight/`
+(firma, risposte di App Store Connect, test, reti, revisione, pulizia, simboli della build 1, controlli prima dei push, strumenti).
+
+- **Decisioni del maintainer** (12 novembre sera, LAYER2 § 12.16, decisioni 15-18): il Mac nello stesso record App Store dell'iPad,
+  come acquisto universale (il «record distinto» corretto ovunque, con la traccia); la strada dello store; il pannello «Diagnostica»
+  al posto degli script delle prove d'orecchio; le quattro varianti dei titoli in main dietro la scelta del pannello, predefinita la C.
+- **Parte 1 — l'identificativo** (campo): l'app Mac è `com.scabo.scabopdf`, il servizio di scaricamento
+  `com.scabo.scabopdf.scaricatore`. Nel contenitore vecchio (`com.scabo.scabopdf.mac`) solo materiale delle prove, nessun libro né
+  annotazione: nessun passaggio da fare (tolto con la pulizia). Nessun canale che metta insieme le preferenze di iPad e Mac (nessun
+  iCloud, gruppo di app o portachiavi condiviso). Il contenitore è ora in comune fra la build di sviluppo e quella di TestFlight:
+  regola fissa sopra.
+- **Parte 2 — il pannello «Diagnostica»** (`Sources/ScaboMacLettura/Diagnostica/`, `Lettura/VarianteTitoli.swift`,
+  `Lettura/EccezioneTitoli.swift`): nascosto, lo mostra la casella «Mostra la diagnostica nel menu Finestra» delle Impostazioni; la
+  versione e la build in chiaro; il diario (solo codici e numeri, scritto in coda, al più 64 MB per file, gli ultimi venti, mai in
+  rete); le quattro varianti dei titoli A-D (predefinita la C, scelta anche a libro aperto); la prova guidata in una libreria a parte
+  (`ScaboPDF-prova-guidata`). Con la diagnostica spenta nessuna sonda e risposte a VoiceOver identiche (test). Esc chiude il pannello
+  (la finestra stessa prende Esc, misurato col test d'interfaccia). 11 test nuovi (`DiagnosticaTests`); `BancoIdentitaTests` applica
+  l'eccezione dichiarata dei titoli.
+- **Parte 3 — pronto per lo store** (`scripts/build_app.sh` con `SCABOMAC_DISTRIBUZIONE=1`, `scripts/PrivacyInfo.xcprivacy`,
+  `app/macos/ScaboMac/fastlane/`): firma Apple Distribution scelta dall'impronta del certificato del profilo Mac App Store, profilo
+  incorporato, identificativo dell'app e della squadra nella firma, servizio di scaricamento senza profilo, pacchetto firmato col
+  certificato «3rd Party Mac Developer Installer», dSYM accanto al pacchetto; icona dall'immagine 1024 dell'iPad; manifesto della
+  privacy; versione 1.0 e build della serie del Mac. Corsia `fastlane mac note_tester | setup_signing | valida | beta`, con
+  `SCABOMAC_RIUSA_PACCHETTO=1` per caricare il pacchetto appena controllato senza firmarlo di nuovo. Record: piattaforma macOS aggiunta
+  con l'API (`POST /v1/appStoreVersions`, MAC_OS 1.0; dopo il primo caricamento non si toglie più); profilo e certificato del Mac
+  creati con `match` in scrittura (il certificato come tipo aggiuntivo del profilo: chiesto da solo, Apple rispondeva 409) e messi nel
+  deposito dei certificati.
+- **Parte 4 — il caricamento** (campo; `docs/RELEASE_TESTFLIGHT.md`, «Build del Mac»): `fastlane mac valida` → «VERIFY SUCCEEDED
+  with no errors»; `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` da main il 13 novembre: «UPLOAD SUCCEEDED with no errors» alle
+  11:31:41, Delivery UUID `d2f721ab-de78-45a0-a418-f8e60d6b5812`, poi l'errore del file di ripresa del caricatore ed exit 1. Nessun
+  rilancio: **build 1 del Mac VALID**, «Cosa testare» impostato a parte e riletto (2.384 caratteri, identico al file); la build 66
+  dell'iPad intatta; prossimo numero dell'iPad 67, del Mac 2; nessun `log stream` rimasto. Riverificata in sola lettura il 14 novembre.
+- **Verifiche** (campo): rete sul parlato VERDE (192/192 al byte, 630.124 elementi, prova al contrario trovata; ScaboCore non è
+  cambiato nel giro); `rete_vista_mac.sh` VERDE, una volta sola, a `3a53ece` (dopo, nel codice dell'app, solo Esc del pannello, fuori
+  dalla vista di lettura): vista del Mac sulle letture dell'iPad identica alla vista dell'iPad su 55 libri su 55, con l'eccezione
+  dichiarata dei titoli (22.672 elementi-titolo), l'estrattore identico libro per libro al giro prima; sul codice del pacchetto
+  (`193cb29`) ScaboMac 136 test (0 falliti, 4 saltati per costruzione), FuocoDaFuoriTests 8/8 compresi, interfaccia del Mac 15 (10
+  passati, 5 saltati, 0 falliti); testo dei volumi e segreti a zero a ogni push.
+- **Revisione indipendente** (sotto-agente nuovo, solo diff e risultati, `mac_testflight/revisione/REVISIONE.md`, due passate):
+  nessun rilievo bloccante; R1 (documenti che dicevano ancora «titoli testo statico, varianti fuori da main»), R2 (la C predefinita e
+  l'articolo dei codici da registrare: decisione 18), R3 (il contenitore in comune) e le note N1-N15 corrette o dichiarate, salvo N7
+  (i livelli dei titoli su macOS 14 e 15, rischio dichiarato). Alla chiusura trovato **N16**, non corretto e senza effetto in questo
+  giro: il riuso del pacchetto confronta i commit con l'ora del pacchetto, che `productbuild` scrive dopo la finestra del portachiavi
+  (regola e cura in RELEASE_TESTFLIGHT).
+- **Permessi e portachiavi** (referto § 8-bis e § 11): le uniche richieste del giro sono state le finestre del portachiavi di
+  «productbuild», una per firma del pacchetto (17:33, 20:39, 20:40, 20:41, 20:55); «Consenti sempre» non è rimasto, perché `match`
+  non ha potuto pre-autorizzare la chiave senza la password del portachiavi; l'ultima, risposta il 13 novembre alle 11:20, ha tenuto
+  ferma la firma per 14 ore. Per toglierla una volta per tutte: Accesso Portachiavi, la chiave privata «3rd Party Mac Developer
+  Installer», Controllo d'accesso, consentire `productbuild` (passi non provati). Nessuna regola «ask» scattata, nessun accordo nuovo
+  di App Store Connect.
+- **Pulizia del laboratorio** (`mac_testflight/pulizia/`): 43 voci, 9.739 MB tolti (copie firmate dei giri passati, varianti,
+  cartelle di compilazione, `dd_macui`, il contenitore vecchio di 2,4 GB); tenuti diari, misure, referti e la toppa delle varianti; i
+  simboli della build 1 copiati nel laboratorio (`mac_testflight/simboli/`). Nel repo resta `app/macos/ScaboMac/build/distribuzione`
+  (pacchetto caricato e simboli, ignorata da git).
+- **Decisioni per il maintainer** (referto § 12): l'articolo dei codici come titolo di livello 5 senza la parola «Articolo»
+  (inclinazione: tenerlo, se all'orecchio su un codice va bene); il contenitore in comune fra build di sviluppo e di TestFlight
+  (inclinazione: tenerlo, con la regola).
+- **Residui** (referto § 13, DISEGNO § 11): da sentire col pannello, al posto della prova 8 (titoli con la C, cambio di variante a
+  libro aperto, l'articolo dei codici, ⌥⌘↓ coi tasti di sinistra e ⌃⌘↓); N7; l'icona quadrata; la finestra del portachiavi a ogni
+  firma; N16.
+- **Prossimo passo** (dedotto): il maintainer installa la build 1 dall'app TestFlight del Mac (referto § 10, istruzioni per
+  VoiceOver), accende la diagnostica e il diario e prova i titoli; il giro seguente legge il diario dalla cartella della regola fissa.
 
 ---
 
