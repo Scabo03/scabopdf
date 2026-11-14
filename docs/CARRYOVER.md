@@ -10,6 +10,12 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.64 (14 novembre 2026, giro «corsie e memoria», livello di verifica leggero, solo strumenti e documenti, nessuna
+> build, **CONCLUSO**: curato **N16** alla radice (il pacchetto del Mac porta l'identità del commit da cui è costruito, il riuso si
+> rifiuta se lo HEAD è cambiato, prove con riproduzione di N16 e prova al contrario); **l'istruzione per il portachiavi** pronta per
+> il maintainer (comando unico, la password la chiede lui); la **regola fissa di ogni caricamento**, controllata dalle corsie prima
+> dell'invio; `docs/RELEASE_TESTFLIGHT.md` riordinato in parte comune, iPad e Mac; memoria di Code riordinata (60 → 13 note).
+> Codice delle due app non toccato. Vedi lo STATO qui sotto.)
 > Versione: 2.63 (12-14 novembre 2026, giro «ScaboPDF per Mac su TestFlight», livello di verifica leggero, **CONCLUSO** con la
 > **build 1 del Mac** su TestFlight (versione 1.0, VALID, in prova per il gruppo interno, note per i tester impostate; la build 66
 > dell'iPad intatta): registrate le decisioni 15-18 del maintainer (LAYER2 § 12.16: il Mac nello stesso record dell'iPad, come
@@ -164,11 +170,57 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (un file per accensione, gli ultimi venti). Code lo legge da lì senza chiedere, ma solo quella cartella: elencarla per trovare il
   diario più recente va bene, perché contiene solo i diari; mai elencare né cercare altrove nel contenitore, né con ricerche che lo
   attraversano, perché contiene collegamenti verso cartelle personali protette. In alternativa il maintainer usa «Esporta il diario…»
-  e lo salva nella cartella Download. Dettagli in `docs/RELEASE_TESTFLIGHT.md`, «La corsia del Mac».
+  e lo salva nella cartella Download. Dettagli in `docs/RELEASE_TESTFLIGHT.md`, parte Mac.
+- **Due piattaforme nello stesso record: la regola fissa di ogni caricamento (dal 2026-11-14).** iPad e Mac hanno corsie, serie di
+  build e note per i tester distinte (`docs/RELEASE_TESTFLIGHT.md`, parte comune, parte iPad, parte Mac). Ogni caricamento dichiara
+  la piattaforma all'inizio; prima dell'invio le corsie verificano sull'archivio piattaforma, identificativo, versione, numero di
+  build e commit d'origine (albero pulito: le note per i tester si committano prima di lanciare la corsia); dopo l'invio si
+  verifica con l'API, filtrata per piattaforma, che la build sia comparsa sulla piattaforma giusta e che l'ultima build dell'altra
+  non sia cambiata. **La riga di stato di ogni STATO riporta sempre l'ultima build e la prossima per ciascuna piattaforma.**
 - **Il banco delle reti fuori dal repo (dal 2026-11-10).** Nel repo i 52 volumi sono solo etichette neutre e impronte
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «corsie e memoria»: N16 curato alla radice, l'istruzione per il portachiavi, la regola fissa dei caricamenti, RELEASE_TESTFLIGHT in due parti, memoria riordinata (nessuna build) — 2026-11-14 — CONCLUSO
+
+**Build:** iPad ultima **66**, prossima **67**; Mac ultima **1**, prossima **2** (nessun caricamento nel giro). **Partenza:**
+`61c6b93` (main = origin). **Ramo:** `chore/corsie-memoria`, unito in main con un avanzamento rapido alla chiusura (main = il commit di questo STATO), poi
+cancellato, locale e remoto.
+Livello leggero, solo strumenti e documenti: il diff tocca solo `app/ios/fastlane/`, `app/macos/ScaboMac/fastlane/` e `docs/`
+(campo: `git diff --name-only`), nessun file delle due app; nessuna build, nessuna firma, nessun simulatore, l'app e il suo
+contenitore non toccati (il maintainer la stava usando). Referto: `~/Developer/scabopdf-gen-lab/referto/REFERTO_CORSIE_MEMORIA.md`.
+
+- **N16** (campo): ogni costruzione del pacchetto del Mac scrive `ScaboPDF.pkg.identita.json` (commit e albero pulito a inizio e a
+  fine costruzione, build, impronta SHA-256); il riuso si rifiuta se lo HEAD attuale è diverso, se l'albero non era pulito, se lo
+  HEAD è cambiato durante la costruzione o se il pacchetto non è quello descritto (`fastlane/identita_pacchetto.rb`). `valida` segna il pacchetto come controllato solo dopo «VERIFY SUCCEEDED» e il riuso lo richiede; `beta` rifiuta
+  subito un albero non pulito. Prove senza firmare (`fastlane/prove/test_identita_pacchetto.rb`, 23, verdi): un commit dopo la costruzione fa rifiutare, lo stesso commit
+  ricostruito fa passare, il commit durante l'attesa del portachiavi è preso (il vecchio controllo delle ore, ricopiato nella
+  prova, non lo vedeva); prova al contrario: tolti in una copia i due controlli, 3 e 2 prove rosse. La corsia dell'iPad non ha
+  riuso. Tolta da RELEASE_TESTFLIGHT la regola provvisoria «nessun commit fra `valida` e `beta`», con la traccia.
+- **Portachiavi** (fonte: `man security`; Apple DTS, forum, thread 712005; codice di match 2.236.1): le finestre vengono dalla lista
+  di partizione della chiave, che match non ha potuto impostare senza password. Istruzione per il maintainer, una volta sola, in
+  RELEASE_TESTFLIGHT (parte comune) e nel referto: `security set-key-partition-list -S apple-tool:,apple:,codesign: -s -l
+  "Imported Private Key" ~/Library/Keychains/login.keychain-db >/dev/null && echo FATTO`, la password la chiede il comando; le
+  quattro chiavi con quell'etichetta sono esattamente le tre Apple Distribution e quella del pacchetto (campo, sola lettura). Non
+  eseguita né provata con una firma.
+- **Regola fissa dei caricamenti** (sopra, «Regole fisse»): controllata dalle corsie prima dell'invio (`app/ios/fastlane/carta_archivio.rb`,
+  11 prove con IPA finte; carta del pacchetto del Mac dal file Distribution, 4 prove con pacchetti veri non firmati); prove al
+  contrario rosse; i due Fastfile letti da `fastlane lanes` (exit 0). Novità per la corsia dell'iPad: rifiuta un albero non pulito.
+- **RELEASE_TESTFLIGHT** riordinato: stato delle build in testa; parte comune (record unico, regola fissa, strumenti e chiavi,
+  portachiavi, tester, lezione della build 55 e errore del file di ripresa, `log stream`, interrogare App Store Connect, note per i
+  tester, certificato); parti iPad e Mac parallele (corsia, numero di build, controlli prima e dopo, errori noti, storia). Storia
+  spostata senza riscriverla; aggiunto un riassunto delle build 38-45, che non avevano una voce.
+- **Memoria di Code** (fuori dal repo): 60 note → 13 (le regole fisse in una nota sola, `regole-fisse`; TestFlight in una;
+  undici note per argomento al posto delle note dei giri); contraddizioni col repo corrette in memoria; copia di prima in
+  `~/Developer/scabopdf-gen-lab/referto/memoria_prima_2026-11-14/`.
+- **Revisione indipendente** (sotto-agente nuovo, solo diff e memoria, lista del maintainer): nessun rilievo bloccante; corretti
+  i cinque «da correggere» (albero pulito all'inizio di `beta` del Mac, segno «validato» nell'identità, elenco di che cosa
+  autorizza il portachiavi, questa riga del ramo, una frase della memoria); note dichiarate nel referto (§ 7).
+- **Prossimo passo** (dedotto): il maintainer esegue, se vuole, l'istruzione del portachiavi; il prossimo caricamento del Mac dirà se
+  le finestre sono sparite.
 
 ---
 
