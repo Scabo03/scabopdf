@@ -1,5 +1,16 @@
 # La facilitazione dei modelli per un cieco poco pratico — mappa delle vie, schede, ruoli, inclinazione
 
+> **Nota d'integrazione (2026-11-18, giro «modelli e scansioni»; LAYER2 § 12.16, decisioni 20, 21 e 22).** I modelli sono ora
+> dentro la lettura del Mac. **Scansioni:** una pagina senza testo la legge la lettura del testo di Apple o GLM lettura pagine
+> (la voce `glm-ocr`, ora **definitiva** nel catalogo), scelti nella schermata dell'elaborazione; ordine e titoli dal modello
+> d'impaginazione Heron sull'immagine della pagina; il testo di GLM passa da una guardia sulle righe di Apple (corregge solo
+> ciò che Apple ha visto). Sul banco delle scansioni (238 pagine, campo): lettere sbagliate 0,45 per cento con Apple e 0,21 con
+> GLM, parole in più 5,7 e 4,3 per mille (per lo più lettere storpiate), circa 0,3 e 11 secondi a pagina. **Lettura migliore:** si prepara su un libro della
+> libreria e arriva da sola nell'offerta «Lettura migliore disponibile» (via A di `DISEGNO_LETTURA_MAC.md` § 6.6). Le voci
+> provvisorie del catalogo (Surya, docling, Granite Docling, Qwen, Phi) restano provvisorie, anche per i tester esterni, fino
+> alla pubblicazione (decisione 22). Il § 3 qui sotto («Vision per le scansioni») è superato due volte: dal giro OCR Lab e da
+> questo, dove i due lettori convivono, con GLM come predefinito quando è installato.
+
 > **Nota d'integrazione (2026-10-16, giro «costruzione della linea Mac»).** Documento del primo giro Mac, fuso in `main`
 > con lo scheletro. Decisioni successive che prevalgono: la **strada A** (app compatibile con lo store, un solo motore
 > llama.cpp più Core ML e gli strumenti Apple, catalogo chiuso di modelli a licenza pulita, niente Python nel prodotto) è
