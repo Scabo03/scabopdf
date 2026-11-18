@@ -3,8 +3,9 @@
 //  ScaboMacLettura — il PANNELLO «Diagnostica» (giro «ScaboPDF per Mac su TestFlight», 2026-11-12; LAYER2 § 12.16, decisione
 //  17): una finestra AppKit come le Impostazioni, pensata per VoiceOver — ogni controllo con la sua etichetta, le spiegazioni
 //  come testo statico subito dopo il loro controllo, nell'ordine di lettura. Dall'alto: la versione e
-//  la build in chiaro; il diario (acceso o spento, dove si scrive, la cartella nel Finder, l'esportazione in un file); la variante
-//  dei titoli, applicata subito; le prove guidate col libro sintetico che l'app scrive da sé, in una libreria a parte. Esc chiude.
+//  la build in chiaro; il diario (acceso o spento, dove si scrive, la cartella nel Finder, l'esportazione in un file); le prove
+//  guidate col libro sintetico che l'app scrive da sé, in una libreria a parte. Esc chiude. La scelta fra le quattro varianti dei
+//  titoli, che stava fra il diario e le prove, è stata tolta col giro «titoli definitivi» (2026-11-18): resta la C, per tutti.
 //
 import AppKit
 import ScaboCore
@@ -22,12 +23,9 @@ public final class FinestraDiagnostica: NSWindowController {
     let statoDiario = NSTextField(wrappingLabelWithString: "")
     let mostraCartella = NSButton(title: Parole.diagnosticaMostraCartella, target: nil, action: nil)
     let esporta = NSButton(title: Parole.diagnosticaEsporta, target: nil, action: nil)
-    private(set) var varianti: [NSButton] = []
     let finestraPiccola = NSButton(checkboxWithTitle: Parole.diagnosticaFinestraPiccola, target: nil, action: nil)
     let apriLibro = NSButton(title: Parole.diagnosticaApriLibroDiProva, target: nil, action: nil)
 
-    /// Chiamata quando il maintainer sceglie una variante dei titoli (l'app la salva e la applica alle letture aperte).
-    public var quandoCambiaLaVariante: ((VarianteTitoli.Lettera) -> Void)?
     /// Chiamata quando il maintainer apre il libro di prova (`true`: con la finestra dei figli piccola).
     public var quandoApreIlLibroDiProva: ((Bool) -> Void)?
     /// Chiamata quando il diario si accende o si spegne dal pannello (l'app salva la scelta).
@@ -71,15 +69,7 @@ public final class FinestraDiagnostica: NSWindowController {
 
         var viste: [NSView] = [testo(Parole.diagnosticaSpiegazione), versione,
                                titolo(Parole.diagnosticaDiarioTitolo), interruttoreDiario,
-                               testo(Parole.diagnosticaDiarioSpiegazione), statoDiario, mostraCartella, esporta,
-                               titolo(Parole.diagnosticaTitoliTitolo), testo(Parole.diagnosticaTitoliSpiegazione)]
-        for l in VarianteTitoli.Lettera.allCases {
-            let b = NSButton(radioButtonWithTitle: VarianteTitoli.nome(l), target: self, action: #selector(sceltaVariante(_:)))
-            b.identifier = NSUserInterfaceItemIdentifier(l.rawValue)
-            b.setAccessibilityIdentifier("diagnostica.variante.\(l.rawValue)")
-            varianti.append(b)
-            viste.append(b)
-        }
+                               testo(Parole.diagnosticaDiarioSpiegazione), statoDiario, mostraCartella, esporta]
         finestraPiccola.setAccessibilityIdentifier("diagnostica.finestraPiccola")
         finestraPiccola.state = .on
         apriLibro.target = self
@@ -91,7 +81,7 @@ public final class FinestraDiagnostica: NSWindowController {
         pila.orientation = .vertical
         pila.alignment = .leading
         pila.spacing = 8
-        for dopo in [versione, esporta, varianti.last!] { pila.setCustomSpacing(18, after: dopo) }
+        for dopo in [versione, esporta] { pila.setCustomSpacing(18, after: dopo) }
         pila.edgeInsets = NSEdgeInsets(top: 18, left: 20, bottom: 18, right: 20)
         w.contentView = pila
         aggiorna()
@@ -103,7 +93,7 @@ public final class FinestraDiagnostica: NSWindowController {
 
     required init?(coder: NSCoder) { fatalError("non si usa") }
 
-    /// Rilegge lo stato: il diario (acceso, il suo file) e la variante attiva.
+    /// Rilegge lo stato: il diario (acceso, il suo file).
     public func aggiorna() {
         interruttoreDiario.state = diagnostica.acceso ? .on : .off
         if diagnostica.acceso, let f = diagnostica.file {
@@ -111,18 +101,11 @@ public final class FinestraDiagnostica: NSWindowController {
         } else {
             statoDiario.stringValue = Parole.diagnosticaDiarioSpento
         }
-        for b in varianti { b.state = b.identifier?.rawValue == VarianteTitoli.lettera ? .on : .off }
     }
 
     @objc func cambiaDiario(_ sender: NSButton) {
         if sender.state == .on { diagnostica.accendi() } else { diagnostica.spegni() }
         quandoCambiaIlDiario?(sender.state == .on)
-        aggiorna()
-    }
-
-    @objc func sceltaVariante(_ sender: NSButton) {
-        guard let raw = sender.identifier?.rawValue, let l = VarianteTitoli.Lettera(rawValue: raw) else { return }
-        quandoCambiaLaVariante?(l)
         aggiorna()
     }
 

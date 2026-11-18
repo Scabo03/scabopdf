@@ -4,7 +4,7 @@
 //  2026-11-12; LAYER2 § 12.16, decisione 12: «il confronto automatico con l'iPad si adatta a questa regola in modo dichiarato e
 //  stretto, solo per la qualifica dei titoli»).
 //
-//  Sul Mac i titoli hanno il ruolo d'intestazione (`VarianteTitoli`, tutte e quattro le varianti) e la qualifica del modulo
+//  Sul Mac i titoli hanno il ruolo d'intestazione (`ElementoLettura`, «I TITOLI») e la qualifica del modulo
 //  («Intestazione di livello N.», «Articolo.») la dice VoiceOver: nella descrizione dalla vista un titolo ha quindi ruolo
 //  `AXHeading` e il testo senza la qualifica, dove l'iPad ha testo statico e il testo con la qualifica. L'eccezione riporta alla
 //  forma dell'iPad SOLO quei due campi e SOLO sugli elementi che il modulo dice titoli, ricostruendo esattamente la frase del

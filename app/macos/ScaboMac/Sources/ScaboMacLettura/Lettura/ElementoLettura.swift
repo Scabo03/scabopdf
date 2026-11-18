@@ -6,9 +6,10 @@
 //  ha parole proprie.
 //
 //  Mappa degli attributi sul Mac (§ 3.1 del disegno; l'ordine di pronuncia lo dice la prova d'orecchio T2):
-//    AXRole        = testo statico (il livello del titolo lo dicono il parlato «Intestazione di livello N.» e i rotori)
-//    AXValue       = il testo pronunciato (`intendedAccessibilityLabel`)
-//    AXDescription = il valore secondario (`value(forIndex:)`: la pagina della risorsa visiva), se c'è
+//    AXRole        = testo statico; i titoli intestazione (`AXHeading`, il livello in `AXHeadingLevel`: sotto, «I TITOLI»)
+//    AXValue       = il testo pronunciato (`intendedAccessibilityLabel`); per i titoli il valore secondario, se c'è
+//    AXDescription = il valore secondario (`value(forIndex:)`: la pagina della risorsa visiva), se c'è; per i titoli il testo
+//                    senza la qualifica del modulo
 //    AXFocused     = settabile: il GANCIO DEL FUOCO (§ 4): se VoiceOver lo imposta quando il cursore arriva qui, la vista
 //                    calcola i segnali del modulo (`focusSignals`) e porta la riga in vista
 //    azioni personalizzate = `actions(forIndex:bookmark:settings:)`
@@ -32,21 +33,21 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
     @inline(__always) private func nota(_ richiesta: String) { vista.diario.registra(indice, richiesta) }
 
     override public func isAccessibilityElement() -> Bool { true }
-    /// Il livello se l'elemento è un titolo e la variante attiva gli dà il ruolo d'intestazione (`VarianteTitoli`: in tutte e
-    /// quattro le varianti; dal giro «ScaboPDF per Mac su TestFlight», 2026-11-12, prima il titolo era testo statico).
-    private var livelloTitolo: Int? { VarianteTitoli.ruoloIntestazione ? vista.livelloTitolo(indice) : nil }
+    /// I TITOLI (dal giro «titoli definitivi», 2026-11-18; prima, dal 12 novembre, la variante C fra le quattro del pannello
+    /// «Diagnostica», DISEGNO § 5.4): il ruolo d'intestazione come in SwiftUI, il testo senza la qualifica del modulo nella
+    /// descrizione (la qualifica la dice VoiceOver: decisione 12 di LAYER2 § 12.16, eccezione dichiarata `EccezioneTitoli`),
+    /// nessun valore oltre al valore secondario, il livello in `AXHeadingLevel` (1…4, 5 l'articolo dei codici); e la risposta
+    /// nostra alla ricerca generica (`AXUIElementsForSearchPredicate`) sui titoli di tutto il libro, dal punto del cursore.
+    /// Il diario della prova sull'app di TestFlight: VO+Comando+H e VO+Comando+M arrivano come ricerca generica rivolta
+    /// all'elemento sotto il cursore, e la risposta del modulo trova il titolo seguente, anche lontano.
+    private var livelloTitolo: Int? { vista.livelloTitolo(indice) }
     override public func accessibilityRole() -> NSAccessibility.Role? {
         nota("AXRole")
         return livelloTitolo != nil ? NSAccessibility.Role(rawValue: "AXHeading") : .staticText
     }
-    override public func accessibilityTitle() -> String? {
-        guard livelloTitolo != nil, VarianteTitoli.stileWebKit else { return nil }
-        nota("AXTitle"); vista.notaAttenzione(indice)
-        return vista.testoSenzaQualifica(indice)
-    }
     /// Il livello del titolo nell'attributo di macOS 26 (`NSAccessibilityHeadingLevelAttribute`, 1-based), come SwiftUI.
     override public func accessibilityAttributeValue(_ attribute: NSAccessibility.Attribute) -> Any? {
-        if attribute.rawValue == "AXHeadingLevel", let n = livelloTitolo, !VarianteTitoli.stileWebKit {
+        if attribute.rawValue == "AXHeadingLevel", let n = livelloTitolo {
             nota("AXHeadingLevel"); return NSNumber(value: n)
         }
         return super.accessibilityAttributeValue(attribute)
@@ -54,14 +55,13 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
     /// Il livello anche nell'elenco degli attributi (rilievo R6 della revisione: un client che guarda prima l'elenco lo trova).
     override public func accessibilityAttributeNames() -> [NSAccessibility.Attribute] {
         let n = super.accessibilityAttributeNames()
-        return livelloTitolo != nil && !VarianteTitoli.stileWebKit ? n + [NSAccessibility.Attribute(rawValue: "AXHeadingLevel")] : n
+        return livelloTitolo != nil ? n + [NSAccessibility.Attribute(rawValue: "AXHeadingLevel")] : n
     }
     override public func accessibilityParameterizedAttributeNames() -> [NSAccessibility.ParameterizedAttribute] {
-        let n = super.accessibilityParameterizedAttributeNames()
-        return VarianteTitoli.ricercaGenerica ? n + [NSAccessibility.ParameterizedAttribute(rawValue: "AXUIElementsForSearchPredicate")] : n
+        super.accessibilityParameterizedAttributeNames() + [NSAccessibility.ParameterizedAttribute(rawValue: "AXUIElementsForSearchPredicate")]
     }
     override public func accessibilityAttributeValue(_ attribute: NSAccessibility.ParameterizedAttribute, forParameter parameter: Any?) -> Any? {
-        if VarianteTitoli.ricercaGenerica, attribute.rawValue == "AXUIElementsForSearchPredicate" {
+        if attribute.rawValue == "AXUIElementsForSearchPredicate" {
             nota("ricerca-generica")
             if let r = vista.ricercaGenerica(parameter, da: indice) { return r }
         }
@@ -71,15 +71,12 @@ public final class ElementoLettura: NSAccessibilityElement, NSAccessibilityEleme
     override public func accessibilityValue() -> Any? {
         nota("AXValue")
         vista.notaAttenzione(indice)   // fuori dalla finestra: la voce di un rotore che VoiceOver sta per raggiungere
-        if let n = livelloTitolo {
-            // WebKit: il livello nel valore; SwiftUI: nessun valore (qui il valore secondario, se c'è).
-            return VarianteTitoli.stileWebKit ? NSNumber(value: n) : vista.valore(indice)
-        }
+        if livelloTitolo != nil { return vista.valore(indice) }   // come SwiftUI: nessun valore (qui il valore secondario, se c'è)
         return vista.testoPronunciato(indice)
     }
     override public func accessibilityLabel() -> String? {
         nota("AXDescription")
-        if livelloTitolo != nil, !VarianteTitoli.stileWebKit {
+        if livelloTitolo != nil {
             vista.notaAttenzione(indice)   // il testo del titolo sta qui: VoiceOver lo legge prima di posarsi
             return vista.testoSenzaQualifica(indice)
         }

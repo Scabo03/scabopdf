@@ -8,9 +8,9 @@
 //  Qui: le preferenze della diagnostica (chiavi del Mac), il DIARIO DELL'APP — spento di serie; acceso, annota solo codici e
 //  numeri (le richieste d'accessibilità della lettura, il fuoco, i comandi, i tasti con i modificatori e il loro lato, i tempi, i
 //  fermi del filo principale: `Diario`), mai testo dei libri, in un file nel contenitore dell'app sul Mac
-//  (`Application Support/ScaboPDF per Mac/Diagnostica/`), mai in rete: l'app non ha il permesso di rete — e la variante dei
-//  titoli (`VarianteTitoli`). Con il diario spento nessuna sonda è attiva: nessun ascolto dei tasti, nessuna sentinella, nessuna
-//  scrittura, e la lettura risponde a VoiceOver come senza diagnostica (lo prova `DiagnosticaTests`).
+//  (`Application Support/ScaboPDF per Mac/Diagnostica/`), mai in rete: l'app non ha il permesso di rete. (Fino al giro «titoli
+//  definitivi», 2026-11-18, qui c'era anche la variante dei titoli: tolta, resta una forma sola.) Con il diario spento nessuna
+//  sonda è attiva: nessun ascolto dei tasti, nessuna sentinella, nessuna scrittura, e la lettura risponde a VoiceOver come senza diagnostica (lo prova `DiagnosticaTests`).
 //
 import AppKit
 import ScaboCore
@@ -19,7 +19,6 @@ import ScaboCore
 public enum PreferenzeDiagnostica {
     public static let chiaveMostrata = "@scabopdf/mac/diagnostica/mostrata"
     public static let chiaveDiario = "@scabopdf/mac/diagnostica/diario"
-    public static let chiaveVariante = "@scabopdf/mac/diagnostica/varianteTitoli"
 
     /// Il menu «Diagnostica» si vede (spento se l'utente non ha scelto).
     public static func mostrata(_ p: KeyValueStore) -> Bool { p.getItem(chiaveMostrata) == "1" }
@@ -27,11 +26,6 @@ public enum PreferenzeDiagnostica {
     /// Il diario è acceso (spento se il maintainer non l'ha acceso).
     public static func diarioAcceso(_ p: KeyValueStore) -> Bool { p.getItem(chiaveDiario) == "1" }
     public static func impostaDiario(_ p: KeyValueStore, _ si: Bool) { p.setItem(chiaveDiario, si ? "1" : "0") }
-    /// La variante dei titoli: la C, se manca la scelta o la chiave è guasta.
-    public static func variante(_ p: KeyValueStore) -> VarianteTitoli.Lettera {
-        p.getItem(chiaveVariante).flatMap(VarianteTitoli.Lettera.init(rawValue:)) ?? VarianteTitoli.predefinita
-    }
-    public static func impostaVariante(_ p: KeyValueStore, _ l: VarianteTitoli.Lettera) { p.setItem(chiaveVariante, l.rawValue) }
 }
 
 @MainActor
@@ -110,7 +104,6 @@ public final class Diagnostica {
         file = url
         d.registraFatto(-3, "avvio")
         d.registraFatto(-5, "diagnostica:diario:\(motivo)")
-        d.registraFatto(-5, "diagnostica:variante-titoli:\(VarianteTitoli.lettera)")
         for v in visteAperte() { v.diario = d }
         ascoltaTastiEFinestre(d)
         let fuoriFile = fileDaFuori, pre = preambolo
@@ -144,7 +137,7 @@ public final class Diagnostica {
         if let d = diario { vista.diario = d }
     }
 
-    /// Un fatto della diagnostica nel diario, se è acceso (la variante scelta, una prova guidata): solo codici.
+    /// Un fatto della diagnostica nel diario, se è acceso (una prova guidata): solo codici.
     public func annota(_ fatto: String) { diario?.registraFatto(-5, "diagnostica:\(fatto)") }
 
     /// La scrittura adesso, sul filo che chiama (all'uscita dell'app, allo spegnimento).

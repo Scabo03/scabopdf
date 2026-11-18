@@ -4,7 +4,8 @@
 //  LAYER2 § 12.16, decisioni 8-10). È l'app dell'iPad — Home, importazione, libreria, lettura — più la finestra in più dei
 //  modelli, dove l'officina di prima vive intatta: il pannello dei modelli e la preparazione della lettura migliore con
 //  l'esportazione del pacchetto per l'iPad. Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) anche il pannello
-//  «Diagnostica» (nascosto; lo mostra una scelta delle Impostazioni): il diario, la variante dei titoli, le prove guidate.
+//  «Diagnostica» (nascosto; lo mostra una scelta delle Impostazioni): il diario e le prove guidate (la scelta della variante dei titoli,
+//  che c'era fino al giro «titoli definitivi» del 2026-11-18, è tolta).
 //
 //  Il ciclo di vita è AppKit (delegato e menu in codice): la lettura è AppKit puro (DISEGNO_LETTURA_MAC § 2), le viste
 //  dell'officina restano SwiftUI e si ospitano in una finestra. Finestre: la Home (principale), una finestra di lettura per
@@ -21,7 +22,6 @@
 //                             intero ogni due secondi (su un filo a parte) e all'uscita: le richieste d'accessibilità della
 //                             lettura, i fermi del filo principale (sentinella dall'avvio), le fasi dell'apertura, i tasti arrivati
 //                             all'app e la finestra in primo piano, solo codici (i test e il laboratorio)
-//    --variante-titoli <A|B|C|D>  la variante dei titoli per questo lancio, senza salvarla (i test da fuori)
 //    --apri-primo             apre all'avvio il primo libro dell'elenco della Home (misure di tempi e memoria)
 //    --raggio-finestra <n>    i figli finestrati con una finestra di 2n+1 elementi invece di 401 (prove d'orecchio e test da fuori)
 //    -ScaboMacProvaPannello   la prova del laboratorio sul pannello (giro del 2026-10-16), poi l'app si chiude
@@ -88,8 +88,8 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     private var fileInArrivo: [URL] = []
     private var pronto = false
     private let argomenti = ProcessInfo.processInfo.arguments
-    /// La diagnostica dell'app: il diario (uno solo per l'app, dall'avvio se acceso, dato a ogni finestra di lettura), la
-    /// variante dei titoli, il pannello.
+    /// La diagnostica dell'app: il diario (uno solo per l'app, dall'avvio se acceso, dato a ogni finestra di lettura) e il
+    /// pannello.
     private var diagnostica: Diagnostica!
     private var finestraDiagnostica: FinestraDiagnostica?
     /// La libreria a parte della prova guidata (la libreria vera non si tocca), tenuta viva finché serve.
@@ -128,9 +128,6 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         } else {
             service = LibraryService.shared
         }
-        // La variante dei titoli: quella scelta nel pannello (la C se nessuno ha scelto), o quella dell'argomento di prova.
-        VarianteTitoli.attiva = argomento("--variante-titoli").flatMap { VarianteTitoli.Lettera(rawValue: $0.uppercased()) }
-            ?? PreferenzeDiagnostica.variante(service.prefs)
         // Il diario dall'avvio, se il maintainer l'ha lasciato acceso (o col file dell'argomento di prova), con la sentinella del
         // filo principale: così copre anche l'importazione e l'apertura. Si scrive ogni due secondi su un filo a parte.
         // Con la libreria di prova anche il diario sta nella sua cartella (i test non scrivono fra i diari veri).
@@ -328,20 +325,14 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
                 impostazioni = FinestraImpostazioni(prefs: libreria.prefs)
                 // Le note a voce valgono subito anche nei libri aperti.
                 impostazioni?.quandoCambianoLeNote = { [weak self] in self?.letture.forEach { $0.aggiornaImpostazioni() } }
-                // La scelta della diagnostica: la voce del menu «Finestra» compare o sparisce; nascondendola, il diario si spegne,
-                // i titoli tornano alla variante predefinita e il pannello si chiude (nessuno strumento resta acceso, e nessuna
-                // scelta resta attiva, senza che si veda).
+                // La scelta della diagnostica: la voce del menu «Finestra» compare o sparisce; nascondendola, il diario si spegne
+                // e il pannello si chiude (nessuno strumento resta acceso senza che si veda).
                 impostazioni?.quandoCambiaLaDiagnostica = { [weak self] si in
                     guard let self else { return }
                     MenuPrincipale.voceDiagnostica(in: NSApp.mainMenu)?.isHidden = !si
                     if !si {
                         self.diagnostica.spegni()
                         PreferenzeDiagnostica.impostaDiario(self.libreria.prefs, false)
-                        PreferenzeDiagnostica.impostaVariante(self.libreria.prefs, VarianteTitoli.predefinita)
-                        if VarianteTitoli.attiva != VarianteTitoli.predefinita {
-                            VarianteTitoli.attiva = VarianteTitoli.predefinita
-                            self.letture.forEach { $0.vista.titoliCambiati() }
-                        }
                         self.finestraDiagnostica?.close()
                     }
                 }
@@ -359,13 +350,6 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
                 f.quandoCambiaIlDiario = { [weak self] si in
                     guard let self else { return }
                     PreferenzeDiagnostica.impostaDiario(self.libreria.prefs, si)
-                }
-                f.quandoCambiaLaVariante = { [weak self] l in
-                    guard let self else { return }
-                    PreferenzeDiagnostica.impostaVariante(self.libreria.prefs, l)
-                    VarianteTitoli.attiva = l
-                    self.letture.forEach { $0.vista.titoliCambiati() }
-                    self.diagnostica.annota("variante-titoli:\(l.rawValue)")
                 }
                 f.quandoApreIlLibroDiProva = { [weak self] piccola in self?.apriLibroDiProva(finestraPiccola: piccola) }
                 finestraDiagnostica = f

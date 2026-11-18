@@ -109,14 +109,13 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
     public override func accessibilityCustomRotors() -> [NSAccessibilityCustomRotor] {
         diario.registra(-1, "gruppo:AXCustomRotors"); return rotori()
     }
-    // Variante C (`VarianteTitoli`): la stessa risposta alla ricerca generica anche sul gruppo (AppKit la chiama sull'elemento e
+    // I titoli (`ElementoLettura`): la stessa risposta alla ricerca generica anche sul gruppo (AppKit la chiama sull'elemento e
     // sul gruppo, misurato da fuori nel giro delle varianti).
     public override func accessibilityParameterizedAttributeNames() -> [NSAccessibility.ParameterizedAttribute] {
-        let n = super.accessibilityParameterizedAttributeNames()
-        return VarianteTitoli.ricercaGenerica ? n + [NSAccessibility.ParameterizedAttribute(rawValue: "AXUIElementsForSearchPredicate")] : n
+        super.accessibilityParameterizedAttributeNames() + [NSAccessibility.ParameterizedAttribute(rawValue: "AXUIElementsForSearchPredicate")]
     }
     public override func accessibilityAttributeValue(_ attribute: NSAccessibility.ParameterizedAttribute, forParameter parameter: Any?) -> Any? {
-        if VarianteTitoli.ricercaGenerica, attribute.rawValue == "AXUIElementsForSearchPredicate" {
+        if attribute.rawValue == "AXUIElementsForSearchPredicate" {
             diario.registra(-1, "gruppo:ricerca-generica")
             if let r = ricercaGenerica(parameter, da: fuoco ?? -1) { return r }
         }
@@ -185,7 +184,6 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         indici.insert(conteggio - 1)
         if let lontane = righeInVistaLontane { indici.insert(integersIn: lontane) }
         if let a = attenzione, !f.contains(a) { indici.insert(integersIn: max(0, a - 2)..<min(conteggio, a + 3)) }
-        if VarianteTitoli.titoliSempreEsposti { indici.formUnion(indiciTitoli) }   // variante B: tutti i titoli fra i figli
         return indici.map { tutti[$0] }
     }
 
@@ -224,9 +222,6 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         attenzione = i
     }
 
-    /// Variante B (`VarianteTitoli`): gli indici di tutti i titoli del libro, calcolati una volta.
-    private lazy var indiciTitoli: IndexSet = IndexSet(modello.headingIndex.map(\.index))
-
     /// Cambia il raggio della finestra dei figli di QUESTA vista e la ricalcola (la prova guidata della diagnostica: il libro di
     /// prova con la finestra piccola). Il margine segue la regola dell'argomento di prova `--raggio-finestra`.
     public func impostaFinestra(raggio r: Int) {
@@ -237,18 +232,9 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         if finestrato { aggiornaFinestra() }
     }
 
-    /// La variante dei titoli è cambiata (`VarianteTitoli.attiva`): ruolo e testo dei titoli cambiano a ogni richiesta da sé; qui
-    /// si ridisegna (si vede ciò che si sente) e si avvisa l'accessibilità che i figli possono essere cambiati (la variante B
-    /// espone tutti i titoli).
-    public func titoliCambiati() {
-        needsDisplay = true
-        NSAccessibility.post(element: self, notification: .layoutChanged)
-    }
-
     /// Vero se l'elemento `i` è fra i figli che il gruppo espone adesso.
     public func esposto(_ i: Int) -> Bool {
         guard finestrato else { return i >= 0 && i < conteggio }
-        if VarianteTitoli.titoliSempreEsposti, indiciTitoli.contains(i) { return true }
         if finestra.contains(i) || i == 0 || i == conteggio - 1 || righeInVistaLontane?.contains(i) == true { return true }
         if let a = attenzione, abs(i - a) <= 2 { return true }
         return false
@@ -261,7 +247,7 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         ReadingSpeech.intendedAccessibilityLabel(for: segmento(i), restoreNoteIntro: impostazioni.noteSpokenLabels)
     }
     public func valore(_ i: Int) -> String? { modello.value(forIndex: i, search: ricercaAttiva) }
-    /// Per le varianti dei titoli (`VarianteTitoli`): il livello del titolo (1…4, 5 l'articolo) dal modulo, e il testo detto senza la qualifica
+    /// Per i titoli (`ElementoLettura`, ruolo d'intestazione): il livello del titolo (1…4, 5 l'articolo) dal modulo, e il testo detto senza la qualifica
     /// del modulo («Intestazione di livello N.», «Articolo.»): col ruolo d'intestazione la qualifica la dice VoiceOver.
     public func livelloTitolo(_ i: Int) -> Int? { ReadingSpeech.headingLevel(for: segmento(i).role) }
     public func testoSenzaQualifica(_ i: Int) -> String {
@@ -269,8 +255,8 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
         guard !q.isEmpty, t.hasPrefix(q + " ") else { return t }
         return String(t.dropFirst(q.count + 1))
     }
-    /// Variante C (`VarianteTitoli`): la risposta alla ricerca generica (AXUIElementsForSearchPredicate) sui titoli di tutto il
-    /// libro, dal modulo.
+    /// La risposta alla ricerca generica (AXUIElementsForSearchPredicate) sui titoli di tutto il libro, dal modulo (la variante C
+    /// del giro delle varianti, definitiva dal giro «titoli definitivi», 2026-11-18: VO+Comando+H e VO+Comando+M passano da qui).
     /// Chiavi dei titoli (qualsiasi livello, un livello, lo stesso livello dell'elemento di partenza); direzione; limite.
     /// `nil` se la ricerca non chiede titoli: allora risponde AppKit, come prima (le altre ricerche di VoiceOver non cambiano).
     public func ricercaGenerica(_ parametro: Any?, da chi: Int) -> [ElementoLettura]? {
@@ -635,8 +621,8 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
             }
             // Si vede ciò che si sente (il testo pronunciato, qualifica del titolo compresa): la stessa resa per chi guarda e per
             // chi ascolta, e l'audit di sistema del contrasto ritrova nell'immagine il testo dell'elemento (misurato l'8 novembre).
-            // Col ruolo d'intestazione (tutte le varianti dei titoli) la qualifica la dice VoiceOver: si disegna il titolo senza.
-            let parlato = VarianteTitoli.ruoloIntestazione && livelloTitolo(i) != nil ? testoSenzaQualifica(i) : testoPronunciato(i)
+            // Col ruolo d'intestazione la qualifica la dice VoiceOver: si disegna il titolo senza.
+            let parlato = livelloTitolo(i) != nil ? testoSenzaQualifica(i) : testoPronunciato(i)
             let t = String(parlato.prefix(160))
             (t as NSString).draw(in: riga.insetBy(dx: 6, dy: 4),
                                  withAttributes: ReadingSpeech.isHeadingRole(segmento(i).role) ? titolo : normale)

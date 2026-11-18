@@ -14,7 +14,7 @@
 //  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) il diario è anche quello della DIAGNOSTICA dell'app (`Diagnostica`):
 //  spento di serie, acceso dal maintainer nel pannello, scritto IN CODA in un file del contenitore dell'app ogni due secondi
 //  (`accodaInSottofondo`: solo le righe nuove, così una sessione lunga non riscrive megabyte a ogni giro). Indice −5: i fatti
-//  della diagnostica (acceso, spento, la variante dei titoli, le prove guidate).
+//  della diagnostica (acceso, spento, le prove guidate).
 //
 import AppKit
 import Foundation

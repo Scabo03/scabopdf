@@ -165,7 +165,7 @@ final class ScaboPDFUITests: XCTestCase {
         let gruppo = lettura.groups["Testo del documento"]
         XCTAssertTrue(gruppo.waitForExistence(timeout: 10), "il gruppo «Testo del documento»")
         // Gli elementi del testo per identificatore: dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) i titoli hanno il ruolo
-        // d'intestazione (variante C, predefinita) e non sono più fra i testi statici; il testo del titolo è nella descrizione,
+        // d'intestazione (una forma sola dal 18 novembre 2026, la variante C di allora) e non sono più fra i testi statici; il testo del titolo è nella descrizione,
         // senza la qualifica del modulo, che dice VoiceOver.
         let testi = gruppo.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "lettura.elemento."))
         let n = testi.count
@@ -384,10 +384,10 @@ final class ScaboPDFUITests: XCTestCase {
     }
 
     /// IL PANNELLO «DIAGNOSTICA» (giro «ScaboPDF per Mac su TestFlight», 2026-11-12; LAYER2 § 12.16, decisione 17): nascosto agli
-    /// utenti comuni — nel menu «Finestra» la voce non c'è — finché la scelta delle Impostazioni non lo mostra; poi dal menu; la
-    /// variante dei titoli (la C di partenza) e il diario si scelgono; l'audit d'accessibilità del sistema sul pannello; Esc chiude.
+    /// utenti comuni — nel menu «Finestra» la voce non c'è — finché la scelta delle Impostazioni non lo mostra; poi dal menu; il
+    /// diario si sceglie, e la scelta fra le varianti dei titoli non c'è più (giro «titoli definitivi», 2026-11-18); l'audit d'accessibilità del sistema sul pannello; Esc chiude.
     /// Sulla libreria di prova: le scelte non restano e il diario va nella cartella della libreria di prova.
-    func test_diagnostica_nascostaPoiDalMenu_varianteEDiario_audit() throws {
+    func test_diagnostica_nascostaPoiDalMenu_diarioSenzaVarianti_audit() throws {
         let app = app(["--libreria-di-prova"])
         app.launch()
         defer { app.terminate() }
@@ -417,16 +417,9 @@ final class ScaboPDFUITests: XCTestCase {
         voce.click()
         let pannello = app.windows["diagnostica.finestra"]
         XCTAssertTrue(pannello.waitForExistence(timeout: 10))
-        let c = pannello.radioButtons["diagnostica.variante.C"], d = pannello.radioButtons["diagnostica.variante.D"]
-        XCTAssertTrue(c.exists && d.exists && pannello.radioButtons["diagnostica.variante.A"].exists
-                      && pannello.radioButtons["diagnostica.variante.B"].exists, "le quattro varianti")
-        XCTAssertEqual(c.value as? Int, 1, "la C è la predefinita")
+        XCTAssertEqual(pannello.radioButtons.count, 0, "nessuna scelta fra le varianti dei titoli")
         XCTAssertTrue(pannello.staticTexts["diagnostica.versione"].exists, "la versione e la build in chiaro")
         try audit(app, "diagnostica")
-        d.click()
-        XCTAssertEqual(d.value as? Int, 1)
-        c.click()
-        XCTAssertEqual(c.value as? Int, 1)
         let diario = pannello.checkBoxes["diagnostica.diario"]
         XCTAssertEqual(diario.value as? Int, 0, "il diario è spento di serie")
         diario.click()
@@ -435,6 +428,6 @@ final class ScaboPDFUITests: XCTestCase {
         XCTAssertEqual(diario.value as? Int, 0)
         pannello.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(pannello.waitForNonExistence(timeout: 5), "Esc chiude il pannello")
-        scrivi("diagnostica", ["varianti": 4, "predefinita": "C"])
+        scrivi("diagnostica", ["varianti": 0])
     }
 }

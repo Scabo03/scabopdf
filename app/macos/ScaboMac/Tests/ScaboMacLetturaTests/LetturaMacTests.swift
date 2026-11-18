@@ -393,9 +393,8 @@ final class LetturaMacTests: XCTestCase {
         // Dal 12 novembre 2026 (decisione 13) i segnali delle note per impostazione predefinita, come sull'iPad (DISEGNO § 4.2).
         XCTAssertFalse(v.impostazioni.noteSpokenLabels)
         XCTAssertFalse(v.impostazioni.elementToolsAvailable)
-        // Dal 12 novembre 2026 (giro «ScaboPDF per Mac su TestFlight») i titoli hanno il ruolo d'intestazione (`VarianteTitoli`,
-        // predefinita la C): la vista è uguale al modulo con l'eccezione dichiarata dei titoli, e solo con quella.
-        XCTAssertEqual(VarianteTitoli.attiva, .C)
+        // Dal 12 novembre 2026 (giro «ScaboPDF per Mac su TestFlight») i titoli hanno il ruolo d'intestazione (`ElementoLettura`;
+        // una forma sola dal 18 novembre): la vista è uguale al modulo con l'eccezione dichiarata dei titoli, e solo con quella.
         let grezza = v.descrizioneDallaVista(libro: "prova", layout: .continuousReading)
         let (dallaVista, eccezione) = EccezioneTitoli.applica(grezza, segmenti: v.modello.segments)
         let delModulo = v.descrizioneDelModulo(libro: "prova", layout: .continuousReading)

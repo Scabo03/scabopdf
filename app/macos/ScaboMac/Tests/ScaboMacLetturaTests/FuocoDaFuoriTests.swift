@@ -459,4 +459,64 @@ final class FuocoDaFuoriTests: XCTestCase {
         XCTAssertEqual(lontani, 9, "nove titoli su dieci cercati da fuori dai figli esposti (il primo del libro è sempre esposto)")
         print("RISULTATO titoli_come_prova6 {\"avanti\":\(avanti.count),\"indietro\":\(indietro.count),\"lontani\":\(lontani)}")
     }
+
+    /// VO+Comando+H, VO+Comando+Maiuscole+H e VO+Comando+M COME NEL DIARIO DELLA PROVA SULL'APP DI TESTFLIGHT (giro «titoli
+    /// definitivi», 2026-11-18). Col ruolo d'intestazione VoiceOver non passa più dal rotore: nel diario ogni VO+Comando+H e ogni
+    /// VO+Comando+M è una ricerca generica (`AXUIElementsForSearchPredicate`) rivolta all'ELEMENTO sotto il cursore, SENZA
+    /// l'elemento di partenza, con la chiave dei titoli o dello stesso livello; la risposta è la nostra, dal modulo. Il diario ha
+    /// solo ricerche in avanti: qui anche all'indietro, da fuori, con la finestra dei figli di tre elementi, così che ogni titolo
+    /// cercato stia fuori dai figli esposti; oltre gli estremi nessun titolo.
+    func test_titoli_ricercaGenerica_sullElementoSottoIlCursore_comeLaProvaTestFlight() async throws {
+        let (running, app, g) = try await lancia(["--raggio-finestra", "1"])
+        defer { chiudi(running) }
+        func fuocoDellApp() -> Int? { attr(app, "AXFocusedUIElement").flatMap { indice($0 as! AXUIElement) } }
+        func premi(_ cursore: AXUIElement, _ chiave: String, avanti: Bool) -> AXUIElement? {
+            let p: [String: Any] = ["AXSearchKey": chiave, "AXDirection": avanti ? "AXDirectionNext" : "AXDirectionPrevious",
+                                    "AXResultsLimit": 1]
+            var v: CFTypeRef?
+            guard AXUIElementCopyParameterizedAttributeValue(cursore, "AXUIElementsForSearchPredicate" as CFString,
+                                                             p as CFDictionary, &v) == .success,
+                  let r = v as? [Any] else { return nil }
+            // Come lo strumento del laboratorio: un elemento, o un dizionario col risultato (un cast a un tipo CF riesce sempre).
+            return r.lazy.compactMap { x -> AXUIElement? in
+                if CFGetTypeID(x as CFTypeRef) == AXUIElementGetTypeID() { return (x as! AXUIElement) }
+                if let d = x as? [String: Any], let e = d["AXSearchResultElement"] { return (e as! AXUIElement) }
+                return nil
+            }.first
+        }
+        func esposti() -> Set<Int> { Set(elems(g, "AXChildren").compactMap(indice)) }
+        var cursore = try XCTUnwrap(elems(g, "AXChildren").first { indice($0) == 0 })
+        XCTAssertEqual(focalizza(cursore), .success); gira(0.3)
+        var avanti: [Int] = [], indietro: [Int] = [], lontani = 0
+        for atteso in [4, 8, 12, 16, 20] {
+            if !esposti().contains(atteso) { lontani += 1 }
+            guard let t = premi(cursore, "AXHeadingSearchKey", avanti: true) else { break }
+            avanti.append(indice(t) ?? -1)
+            XCTAssertEqual(focalizza(t), .success); gira(0.3)
+            XCTAssertEqual(fuocoDellApp(), indice(t))
+            cursore = t
+        }
+        XCTAssertEqual(avanti, [4, 8, 12, 16, 20], "VO+Comando+H cinque volte")
+        XCTAssertNil(premi(cursore, "AXHeadingSearchKey", avanti: true), "dopo l'ultimo titolo nessun titolo")
+        for atteso in [16, 12, 8, 4, 0] {
+            if !esposti().contains(atteso) { lontani += 1 }
+            guard let t = premi(cursore, "AXHeadingSearchKey", avanti: false) else { break }
+            indietro.append(indice(t) ?? -1)
+            XCTAssertEqual(focalizza(t), .success); gira(0.3)
+            XCTAssertEqual(fuocoDellApp(), indice(t))
+            cursore = t
+        }
+        XCTAssertEqual(indietro, [16, 12, 8, 4, 0], "VO+Comando+Maiuscole+H cinque volte, dal cursore")
+        XCTAssertNil(premi(cursore, "AXHeadingSearchKey", avanti: false), "prima del primo titolo nessun titolo")
+        // VO+Comando+M e con Maiuscole: lo stesso livello (nel libro di prova tutti i titoli sono capitoli, di livello 1).
+        let medio = try XCTUnwrap(premi(cursore, "AXHeadingSameLevelSearchKey", avanti: true))
+        XCTAssertEqual(indice(medio), 4)
+        XCTAssertEqual(focalizza(medio), .success); gira(0.3)
+        XCTAssertEqual(premi(medio, "AXHeadingSameLevelSearchKey", avanti: false).flatMap(indice), 0)
+        // Da un capoverso, all'indietro: il titolo del suo capitolo, non l'inizio del libro.
+        let capoverso = try XCTUnwrap(elems(g, "AXChildren").first { indice($0) == 5 })
+        XCTAssertEqual(premi(capoverso, "AXHeadingSearchKey", avanti: false).flatMap(indice), 4)
+        XCTAssertGreaterThanOrEqual(lontani, 8, "i titoli cercati stanno fuori dai figli esposti")
+        print("RISULTATO titoli_come_prova_testflight {\"avanti\":\(avanti.count),\"indietro\":\(indietro.count),\"lontani\":\(lontani)}")
+    }
 }

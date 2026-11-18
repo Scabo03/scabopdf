@@ -54,9 +54,8 @@ public enum Parole {
     public static let impostazioniSviluppo = "Per chi sviluppa ScaboPDF"
     public static let impostazioniMostraDiagnostica = "Mostra la diagnostica nel menu Finestra"
     public static let impostazioniMostraDiagnosticaSpiegazione = "Aggiunge al menu Finestra la voce «Diagnostica», con il diario "
-        + "per le prove e la scelta di come si presentano i titoli. Se non ti serve, lascia spento."
-    public static let diagnosticaSpiegazione = "Strumenti per chi sviluppa ScaboPDF. Nulla di quello che c'è qui cambia la lettura, "
-        + "tranne la scelta dei titoli."
+        + "per le prove e le prove guidate. Se non ti serve, lascia spento."
+    public static let diagnosticaSpiegazione = "Strumenti per chi sviluppa ScaboPDF. Nulla di quello che c'è qui cambia la lettura."
     public static func diagnosticaVersione(_ versione: String, _ build: String) -> String {
         "ScaboPDF per Mac, versione \(versione), build \(build)"
     }
@@ -74,9 +73,6 @@ public enum Parole {
     public static let diagnosticaEsportaNessuno = "Non c'è ancora nessun diario da esportare: prima accendilo."
     public static let diagnosticaEsportaFatto = "Diario esportato."
     public static let diagnosticaEsportaProblema = "Il diario non si è potuto esportare in quel posto. Prova a sceglierne un altro."
-    public static let diagnosticaTitoliTitolo = "I titoli"
-    public static let diagnosticaTitoliSpiegazione = "Come i titoli si presentano a VoiceOver. La scelta vale subito, anche nei "
-        + "libri aperti."
     public static let diagnosticaProveTitolo = "Prove guidate"
     public static let diagnosticaProveSpiegazione = "Apre un libro di prova che l'app scrive da sé, in una libreria a parte: la tua "
         + "libreria non cambia. Se il diario è spento, si accende."
@@ -106,9 +102,8 @@ public enum Parole {
          impostazioniMostraDiagnosticaSpiegazione, diagnosticaSpiegazione, diagnosticaVersione("1.0", "1"), diagnosticaDiarioTitolo,
          diagnosticaDiarioInterruttore, diagnosticaDiarioSpiegazione, diagnosticaDiarioSpento,
          diagnosticaDiarioAcceso("diario_20261112_120000.txt"), diagnosticaMostraCartella, diagnosticaEsporta,
-         diagnosticaEsportaNessuno, diagnosticaEsportaFatto, diagnosticaEsportaProblema, diagnosticaTitoliTitolo,
-         diagnosticaTitoliSpiegazione, diagnosticaProveTitolo, diagnosticaProveSpiegazione, diagnosticaFinestraPiccola,
+         diagnosticaEsportaNessuno, diagnosticaEsportaFatto, diagnosticaEsportaProblema,
+         diagnosticaProveTitolo, diagnosticaProveSpiegazione, diagnosticaFinestraPiccola,
          diagnosticaApriLibroDiProva, diagnosticaIstruzioni, diagnosticaChiudi]
-            + VarianteTitoli.Lettera.allCases.map(VarianteTitoli.nome)
     }
 }

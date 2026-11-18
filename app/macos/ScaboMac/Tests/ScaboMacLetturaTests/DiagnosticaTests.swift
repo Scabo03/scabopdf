@@ -3,7 +3,7 @@
 //  ScaboMacLetturaTests — il pannello «Diagnostica», il diario e le varianti dei titoli (giro «ScaboPDF per Mac su TestFlight»,
 //  2026-11-12; LAYER2 § 12.16, decisione 17). Che cosa provano: con la diagnostica spenta nessuna sonda è attiva e la lettura
 //  risponde a VoiceOver come sempre; accesa, la lettura risponde LO STESSO (il diario ascolta e basta); il diario sta nella sua
-//  cartella e contiene solo codici e numeri, mai il testo del libro; spento, non scrive più; la variante dei titoli vale subito;
+//  cartella e contiene solo codici e numeri, mai il testo del libro; spento, non scrive più; i titoli hanno una forma sola;
 //  la voce del menu è nascosta di serie; l'eccezione del confronto tocca solo i titoli e solo due campi. Libro sintetico: nessun
 //  testo dei volumi.
 //
@@ -23,7 +23,6 @@ final class DiagnosticaTests: XCTestCase {
     private var pdf: URL!
 
     override func setUp() async throws {
-        VarianteTitoli.attiva = VarianteTitoli.predefinita
         let base = FileManager.default.temporaryDirectory
         radice = base.appendingPathComponent("diagnostica-libreria-\(UUID().uuidString)", isDirectory: true)
         cartella = base.appendingPathComponent("diagnostica-cartella-\(UUID().uuidString)", isDirectory: true)
@@ -35,7 +34,6 @@ final class DiagnosticaTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        VarianteTitoli.attiva = VarianteTitoli.predefinita
         for u in [radice, cartella, pdf] { if let u { try? FileManager.default.removeItem(at: u) } }
     }
 
@@ -70,17 +68,12 @@ final class DiagnosticaTests: XCTestCase {
 
     // MARK: Le preferenze
 
-    func test_preferenze_predefinite_nascostaSpentoVarianteC() {
+    func test_preferenze_predefinite_nascostaSpento() {
         let p = InMemoryKeyValueStore()
         XCTAssertFalse(PreferenzeDiagnostica.mostrata(p))
         XCTAssertFalse(PreferenzeDiagnostica.diarioAcceso(p))
-        XCTAssertEqual(PreferenzeDiagnostica.variante(p), .C)
-        p.setItem(PreferenzeDiagnostica.chiaveVariante, "Z")
-        XCTAssertEqual(PreferenzeDiagnostica.variante(p), .C, "una chiave guasta torna alla predefinita")
         PreferenzeDiagnostica.impostaMostrata(p, true); PreferenzeDiagnostica.impostaDiario(p, true)
-        PreferenzeDiagnostica.impostaVariante(p, .B)
         XCTAssertTrue(PreferenzeDiagnostica.mostrata(p)); XCTAssertTrue(PreferenzeDiagnostica.diarioAcceso(p))
-        XCTAssertEqual(PreferenzeDiagnostica.variante(p), .B)
         XCTAssertTrue(Diagnostica.cartellaStandard().path.hasSuffix("Application Support/ScaboPDF per Mac/Diagnostica"),
                       "il diario sta nel contenitore dell'app, nella cartella dei dati dell'app")
     }
@@ -141,7 +134,8 @@ final class DiagnosticaTests: XCTestCase {
         for r in corpo {
             XCTAssertNotNil(forma.firstMatch(in: r, range: NSRange(r.startIndex..., in: r)), "riga fuori forma: \(r)")
         }
-        XCTAssertTrue(testo.contains("diagnostica:diario:acceso") && testo.contains("diagnostica:variante-titoli:C"))
+        XCTAssertTrue(testo.contains("diagnostica:diario:acceso"))
+        XCTAssertFalse(testo.contains("variante-titoli"), "nessuna variante dei titoli: la forma è una sola")
         XCTAssertTrue(testo.contains("fuoco:") && testo.contains("AXRole"))
         // Nessuna parola del libro: le parole lunghe del testo dei segmenti non compaiono nel diario.
         let parole = Set(v.modello.segments.flatMap { $0.text.split(whereSeparator: { !$0.isLetter }).map(String.init) }
@@ -182,35 +176,77 @@ final class DiagnosticaTests: XCTestCase {
         XCTAssertEqual(d.fileDelDiario().first?.lastPathComponent, d.file?.lastPathComponent, "il più recente è quello appena scritto")
     }
 
-    // MARK: La variante dei titoli vale subito
+    // MARK: I titoli, una forma sola (giro «titoli definitivi», 2026-11-18: la variante C del giro delle varianti)
 
-    func test_varianteTitoli_valeSubito_ancheNelLibroAperto() async throws {
+    /// L'intestazione come SwiftUI: ruolo `AXHeading`, il testo senza la qualifica nella descrizione, nessun titolo, il livello in
+    /// `AXHeadingLevel` (anche nell'elenco degli attributi); un capoverso resta testo statico col testo pronunciato nel valore.
+    /// Con la finestra piccola i titoli lontani NON sono fra i figli (la variante B, che li esponeva tutti, è tolta).
+    func test_titoli_intestazioneComeSwiftUI_unaFormaSola() async throws {
         let f = try await apri()
         let v = f.vista
         let titolo = try XCTUnwrap(v.modello.nextHeadingIndex(from: -1, level: nil, forward: true))
         let e = v.elemento(titolo)
         let senza = v.testoSenzaQualifica(titolo)
         XCTAssertNotEqual(senza, v.testoPronunciato(titolo), "la qualifica del modulo esce dal testo")
-        // C (predefinita): intestazione, testo nella descrizione, nessun titolo, livello nell'attributo.
         XCTAssertEqual(e.accessibilityRole()?.rawValue, "AXHeading")
         XCTAssertEqual(e.accessibilityLabel(), senza)
         XCTAssertNil(e.accessibilityTitle())
         XCTAssertEqual((e.accessibilityAttributeValue(NSAccessibility.Attribute(rawValue: "AXHeadingLevel")) as? NSNumber)?.intValue, 1)
-        // D: il testo nel titolo, il livello nel valore.
-        VarianteTitoli.attiva = .D
-        v.titoliCambiati()
-        XCTAssertEqual(e.accessibilityTitle(), senza)
-        XCTAssertEqual((e.accessibilityValue() as? NSNumber)?.intValue, 1)
-        // Un capoverso non cambia in nessuna variante.
+        XCTAssertTrue(e.accessibilityAttributeNames().map(\.rawValue).contains("AXHeadingLevel"))
+        XCTAssertFalse(e.accessibilityValue() is NSNumber, "il livello non sta nel valore")
         let capoverso = try XCTUnwrap((0..<v.conteggio).first { v.livelloTitolo($0) == nil })
         XCTAssertEqual(v.elemento(capoverso).accessibilityRole(), .staticText)
         XCTAssertEqual(v.elemento(capoverso).accessibilityValue() as? String, v.testoPronunciato(capoverso))
-        // B: con la finestra piccola, tutti i titoli fra i figli esposti.
-        VarianteTitoli.attiva = .B
+        XCTAssertFalse(v.elemento(capoverso).accessibilityAttributeNames().map(\.rawValue).contains("AXHeadingLevel"))
         v.impostaFinestra(raggio: 1)
         let esposti = Set((v.accessibilityChildren() ?? []).compactMap { ($0 as? ElementoLettura)?.indice })
-        XCTAssertTrue(Set(v.modello.headingIndex.map(\.index)).isSubset(of: esposti))
-        VarianteTitoli.attiva = .C
+        let titoli = v.modello.headingIndex.map(\.index)
+        XCTAssertGreaterThanOrEqual(titoli.count, 6)
+        XCTAssertFalse(Set(titoli).isSubset(of: esposti), "i titoli lontani non sono fra i figli esposti")
+        f.close()
+    }
+
+    /// VO+Comando+H, VO+Comando+Maiuscole+H e VO+Comando+M COME NEL DIARIO DELLA PROVA SULL'APP DI TESTFLIGHT (2026-11-18): una
+    /// ricerca generica (`AXUIElementsForSearchPredicate`) rivolta all'elemento sotto il cursore, SENZA l'elemento di partenza,
+    /// col limite uno. La risposta parte dal cursore, avanti e indietro, anche verso titoli fuori dai figli esposti; oltre gli
+    /// estremi nulla; lo stesso livello per VO+Comando+M; la stessa ricerca rivolta al gruppo parte dal fuoco; una chiave che non
+    /// è dei titoli la lascia ad AppKit.
+    func test_titoli_ricercaGenerica_dalCursore_avantiEIndietro_comeNelDiario() async throws {
+        let f = try await apri()
+        let v = f.vista
+        v.impostaFinestra(raggio: 1)
+        let titoli = v.modello.headingIndex.map(\.index)
+        let attr = NSAccessibility.ParameterizedAttribute(rawValue: "AXUIElementsForSearchPredicate")
+        func cerca(da i: Int, _ chiave: String, avanti: Bool, sulGruppo: Bool = false) -> [Int]? {
+            let p: [String: Any] = ["AXSearchKey": chiave, "AXDirection": avanti ? "AXDirectionNext" : "AXDirectionPrevious",
+                                    "AXResultsLimit": 1]
+            let r = sulGruppo ? v.accessibilityAttributeValue(attr, forParameter: p)
+                              : v.elemento(i).accessibilityAttributeValue(attr, forParameter: p)
+            return (r as? [ElementoLettura])?.map(\.indice)
+        }
+        XCTAssertTrue(v.elemento(0).accessibilityParameterizedAttributeNames().contains(attr))
+        XCTAssertTrue(v.accessibilityParameterizedAttributeNames().contains(attr))
+        // Avanti, dal primo titolo fino all'ultimo, poi nulla.
+        var cursore = titoli[0], avanti: [Int] = []
+        while let t = cerca(da: cursore, "AXHeadingSearchKey", avanti: true)?.first { avanti.append(t); cursore = t }
+        XCTAssertEqual(avanti, Array(titoli.dropFirst()))
+        // Indietro, dall'ultimo titolo fino al primo, poi nulla.
+        var indietro: [Int] = []
+        while let t = cerca(da: cursore, "AXHeadingSearchKey", avanti: false)?.first { indietro.append(t); cursore = t }
+        XCTAssertEqual(indietro, Array(titoli.dropLast().reversed()))
+        // Dal mezzo di un capoverso: il titolo seguente e il precedente, non l'inizio del libro.
+        let mezzo = titoli[2] + 1
+        XCTAssertEqual(cerca(da: mezzo, "AXHeadingSearchKey", avanti: true), [titoli[3]])
+        XCTAssertEqual(cerca(da: mezzo, "AXHeadingSearchKey", avanti: false), [titoli[2]])
+        // Lo stesso livello (VO+Comando+M): nel libro di prova tutti i titoli sono di livello 1.
+        XCTAssertEqual(cerca(da: titoli[1], "AXHeadingSameLevelSearchKey", avanti: true), [titoli[2]])
+        XCTAssertEqual(cerca(da: titoli[1], "AXHeadingSameLevelSearchKey", avanti: false), [titoli[0]])
+        // Rivolta al gruppo: dal fuoco.
+        v.riceviFuoco(titoli[3], origine: .programma)
+        XCTAssertEqual(cerca(da: -1, "AXHeadingSearchKey", avanti: true, sulGruppo: true), [titoli[4]])
+        XCTAssertEqual(cerca(da: -1, "AXHeadingSearchKey", avanti: false, sulGruppo: true), [titoli[2]])
+        // Un'altra chiave (VO+Comando+J, i controlli): la risposta non è nostra.
+        XCTAssertNil(v.ricercaGenerica(["AXSearchKey": "AXControlSearchKey"], da: titoli[0]))
         f.close()
     }
 
@@ -255,18 +291,16 @@ final class DiagnosticaTests: XCTestCase {
 
     // MARK: Il pannello
 
-    func test_pannello_versioneInChiaro_diario_varianti_prova() {
+    func test_pannello_versioneInChiaro_diario_prova_nessunaVariante() {
         let d = Diagnostica(prefs: InMemoryKeyValueStore(), cartella: cartella)
         let w = FinestraDiagnostica(diagnostica: d, info: ["CFBundleShortVersionString": "1.0", "CFBundleVersion": "7"])
         let testi = (w.window?.contentView?.subviews ?? []).compactMap { ($0 as? NSTextField)?.stringValue }
         XCTAssertTrue(testi.contains("ScaboPDF per Mac, versione 1.0, build 7"), "\(testi)")
         XCTAssertEqual(w.interruttoreDiario.state, .off)
         XCTAssertEqual(w.statoDiario.stringValue, Parole.diagnosticaDiarioSpento)
-        XCTAssertEqual(w.varianti.filter { $0.state == .on }.map { $0.identifier?.rawValue }, ["C"])
-        var scelte: [VarianteTitoli.Lettera] = []
-        w.quandoCambiaLaVariante = { scelte.append($0) }
-        w.varianti.first { $0.identifier?.rawValue == "D" }?.performClick(nil)
-        XCTAssertEqual(scelte, [.D])
+        let identificatori = (w.window?.contentView?.subviews ?? []).map { $0.accessibilityIdentifier() }
+        XCTAssertFalse(identificatori.contains { $0.hasPrefix("diagnostica.variante") }, "la scelta dei titoli è tolta")
+        XCTAssertFalse(testi.contains("I titoli"), "nemmeno il suo titolo")
         var diario: [Bool] = []
         w.quandoCambiaIlDiario = { diario.append($0) }
         w.interruttoreDiario.performClick(nil)
@@ -278,7 +312,7 @@ final class DiagnosticaTests: XCTestCase {
         w.apriLibro.performClick(nil)
         XCTAssertEqual(prove, [true], "di partenza con la finestra piccola")
         // Ogni controllo ha il suo nome per VoiceOver e il suo identificatore.
-        for b in [w.interruttoreDiario, w.mostraCartella, w.esporta, w.finestraPiccola, w.apriLibro] + w.varianti {
+        for b in [w.interruttoreDiario, w.mostraCartella, w.esporta, w.finestraPiccola, w.apriLibro] {
             XCTAssertFalse(b.title.isEmpty)
             XCTAssertFalse(b.accessibilityIdentifier().isEmpty)
         }

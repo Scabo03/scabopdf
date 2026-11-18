@@ -15,8 +15,8 @@
 //       Mac, registrazione, cache), riaperto come l'app lo riapre (per i volumi enormi: rielaborato a 1.200), descritto dalla
 //       vista e confrontato con lo stesso riferimento; e la lettura del Mac contro quella congelata dell'iPad, segmento per
 //       segmento (quanti, dove: è la quota dell'ESTRATTORE).
-//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12): i titoli del Mac hanno il ruolo d'intestazione (`VarianteTitoli`, la
-//  variante attiva, predefinita la C) e ogni confronto della vista passa dall'ECCEZIONE DICHIARATA dei titoli (`EccezioneTitoli`,
+//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12): i titoli del Mac hanno il ruolo d'intestazione (`ElementoLettura`, una
+//  forma sola dal giro «titoli definitivi» del 2026-11-18) e ogni confronto della vista passa dall'ECCEZIONE DICHIARATA dei titoli (`EccezioneTitoli`,
 //  LAYER2 § 12.16 decisione 12): solo gli elementi che il modulo dice titoli, solo ruolo e testo detto, tutti e soli i titoli. Il
 //  numero degli elementi riportati è nell'esito (`eccezioneTitoli`); se non torna, il confronto è «diverso».
 //  Richiesta: {"libri": <libri.json della rete sul parlato>, "riferimento": <dir>, "riferimentoVO": <dir>, "corpus": {"originals":
@@ -65,7 +65,7 @@ final class BancoIdentitaTests: XCTestCase {
         var out: [String: Any] = ["identiche": r.identical && (eccezione?.tuttiESoliITitoli ?? true), "divergenze": r.totalDivergences,
                                   "elementiA": r.elementsA, "elementiB": r.elementsB]
         if let e = eccezione {
-            out["eccezioneTitoli"] = ["riportati": e.riportati, "titoliDelModulo": e.titoliDelModulo, "variante": VarianteTitoli.lettera]
+            out["eccezioneTitoli"] = ["riportati": e.riportati, "titoliDelModulo": e.titoliDelModulo]
         }
         out["perTipo"] = Dictionary(uniqueKeysWithValues: r.counts.map { ($0.key.rawValue, $0.value) })
         if let f = r.first { out["prima"] = ["tipo": f.kind.rawValue, "campo": f.field, "indiceA": f.indexA as Any, "indiceB": f.indexB as Any] }

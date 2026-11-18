@@ -5,9 +5,9 @@
 //  per la via di VoiceOver (AXFocused) in lettura lineare in avanti — e produce una `ReadingDescription` (formato 2) da
 //  confrontare con il modulo (`describe`) e con la vista dell'iPad. È la fonte del confronto automatico dentro il processo.
 //  Il diario resta sospeso: le domande del processo non si confondono con quelle di un client.
-//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) i titoli hanno il ruolo d'intestazione (`VarianteTitoli`): il loro testo
-//  detto si legge dove VoiceOver lo legge — la descrizione (varianti A, B, C) o il titolo (D) — e il valore è quello secondario
-//  (nella D il valore è il livello, che sta già in `headingLevel`). Per il confronto con l'iPad: `EccezioneTitoli`.
+//  Dal giro «ScaboPDF per Mac su TestFlight» (2026-11-12) i titoli hanno il ruolo d'intestazione (`ElementoLettura`, «I TITOLI»;
+//  una forma sola dal giro «titoli definitivi», 2026-11-18): il loro testo detto si legge dove VoiceOver lo legge, la descrizione,
+//  e il valore è quello secondario. Per il confronto con l'iPad: `EccezioneTitoli`.
 //
 import AppKit
 import ScaboCore
@@ -62,10 +62,8 @@ public extension VistaLettura {
             let detto: String
             let valore: String?
             if intestazione {
-                detto = VarianteTitoli.stileWebKit ? (e.accessibilityTitle() ?? "") : (e.accessibilityLabel() ?? "")
-                // A, B, C: il valore secondario nel valore; D: nel valore c'è il livello, il valore secondario nella descrizione.
-                valore = VarianteTitoli.stileWebKit ? e.accessibilityLabel().flatMap { $0.isEmpty ? nil : $0 }
-                    : (e.accessibilityValue() as? String).flatMap { $0.isEmpty ? nil : $0 }
+                detto = e.accessibilityLabel() ?? ""
+                valore = (e.accessibilityValue() as? String).flatMap { $0.isEmpty ? nil : $0 }
             } else {
                 detto = (e.accessibilityValue() as? String) ?? ""
                 valore = e.accessibilityLabel().flatMap { $0.isEmpty ? nil : $0 }
