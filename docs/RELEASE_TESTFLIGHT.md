@@ -762,7 +762,7 @@ caricata col riuso (sotto, «Storia delle build del Mac»).
   la build 1 14 ore di attesa). La regola provvisoria «nessun commit nel codice dell'app fra `valida` e `beta`» è tolta: il controllo
   ora la fa da sé, più stretta (qualunque commit).]*
 
-## Numero di build del Mac (prossima: 2)
+## Numero di build del Mac (prossima: 3)
 
 - **Numero di versione e di build:** versione 1.0, come la versione macOS del record. La build del Mac ha la sua serie, distinta
   da quella dell'iPad (App Store Connect Help sull'acquisto universale: le app degli altri sistemi «may each have different
@@ -794,7 +794,15 @@ caricata col riuso (sotto, «Storia delle build del Mac»).
 - **Mentre la finestra del portachiavi è aperta** le app lanciate non diventano attive: i test che lanciano l'app (da fuori e
   d'interfaccia) vanno rossi per l'ambiente, non per il codice (giro del 2026-11-12). Con la lista di partizione impostata (parte
   comune) la finestra non dovrebbe più comparire (non verificato).
-- **Il caricatore** dà lo stesso errore del file di ripresa dell'iPad (build 1): parte comune, «Dopo il caricamento».
+- **Il caricatore** dà lo stesso errore del file di ripresa dell'iPad (build 1 e build 2): parte comune, «Dopo il caricamento».
+- **La prova esterna (dal 2026-11-18, build 2).** Il gruppo esterno «ScaboPDF Prova esterna» (senza tester) si crea con la chiamata
+  diretta `POST v1/betaGroups` (nome, `isInternalGroup: false`, `publicLinkEnabled: false`, relazione con l'app): `create_beta_group`
+  di fastlane 2.236.1 manda sempre `publicLinkLimit`, che App Store Connect rifiuta a link spento («Public link limit cannot be
+  changed when public link is disabled»). Poi `patch_beta_app_review_detail` (account di prova non obbligatorio, note per la revisione
+  in italiano e in inglese), la descrizione della beta (it), `add_beta_groups_to_build` e, come passo a sé,
+  `post_beta_app_review_submissions`; lo stato si legge con `v1/betaAppReviewSubmissions?filter[build]=` (il prefisso `v1/` serve).
+  Script del laboratorio: `~/Developer/scabopdf-mac-lab/modelli_app/strumenti/asc_prova_esterna.rb <build> [imposta|invia]` (senza
+  secondo argomento: sola lettura; non stampa mai i dati di contatto).
 
 ## Un contenitore per due build: sviluppo e TestFlight
 
@@ -820,6 +828,30 @@ diario alla volta»; precisato perché senza elencare la cartella non si sa il n
 usa «Esporta il diario…» e lo salva nella cartella Download, che è libera.
 
 ## Storia delle build del Mac
+
+- **Build 2 del Mac (versione 1.0) — 2026-11-18, commit `d4d4d60` di main** (giro «modelli e scansioni», livello pieno per la catena
+  condivisa e leggero per l'app Mac: le scansioni lette sul Mac, la lettura migliore che arriva da sola, le scelte nella schermata
+  dell'elaborazione, il catalogo misurato, i titoli definitivi; LAYER2 § 12.16 decisioni 19-22; `docs/CARRYOVER.md` STATO del
+  2026-11-18). **Portachiavi: nessuna domanda** (firma dell'app con «Apple Distribution» in meno di un secondo, 23:27:24-25, pacchetto
+  firmato alle 23:27:26: la lista di partizione del 14 novembre regge). `fastlane mac valida` exit 0, «VERIFY SUCCEEDED with no
+  errors» alle 23:28:45. `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` da main: build 2 calcolata dal record («Latest upload … on
+  osx platform is build: 1»), pacchetto riusato (commit `d4d4d607421b`, lo HEAD, albero pulito), altool «UPLOAD SUCCEEDED with no
+  errors» alle 23:31:57, Delivery UUID `f68088c3-7820-43ef-81e8-1f9458bb8caa`; subito dopo l'errore del file di ripresa, corsia uscita
+  con exit 1 prima dell'elaborazione e delle note. Nessun rilancio: verifica con la chiave API filtrata per piattaforma (build 2
+  MAC_OS 1.0 caricata alle 23:32:49, VALID alle 23:34, tester interni IN_BETA_TESTING), impostato il solo «Cosa testare» (it) dal
+  file `app/macos/ScaboMac/fastlane/COSA_TESTARE.txt` e riletto: 3.424 caratteri, identico al file. Pacchetto di 169.784.231 byte,
+  SHA-256 che comincia con `9991152ec63b562a`. La build 66 dell'iPad intatta (VALID, IN_BETA_TESTING, note di 2.013 caratteri);
+  conteggio dopo: ultima dell'iPad 66, ultima del Mac 2. **Prova esterna:** creato il gruppo esterno «ScaboPDF Prova esterna» (id
+  `8718ee35-5a32-4bac-8f36-aa10e7465513`, senza tester); revisione beta: account di prova non più obbligatorio, nome e password
+  cancellati (autorizzato dal maintainer il 18 novembre), contatto e email per i commenti lasciati com'erano, note per la revisione in
+  italiano e in inglese (847 caratteri); descrizione della beta (it, 309 caratteri); build 2 aggiunta al gruppo e mandata alla
+  revisione beta di Apple: **WAITING_FOR_REVIEW** alle 23:39 del 18 novembre. Il `log stream` nato durante il caricamento fermato per
+  PID, quello della convalida uscito da solo; dopo, nessuno. Simboli in `app/macos/ScaboMac/build/distribuzione/simboli_1.0_2`
+  (ignorata da git) e nel laboratorio (`~/Developer/scabopdf-mac-lab/lettura_mac/mac_testflight/simboli/`). Verifiche sul codice del
+  pacchetto: rete sul parlato verde (192/192), vista del Mac identica alla vista dell'iPad su 55 libri su 55 con la sola eccezione
+  dichiarata dei titoli (esiti uguali al giro precedente), ScaboMac 166 test (0 falliti, 14 saltati), FuocoDaFuori 9 su 9,
+  interfaccia del Mac 18 (0 falliti, 3 saltati: i due percorsi solo tastiera, con la navigazione da tastiera del sistema spenta, e lo
+  scaricamento a richiesta).
 
 - **Build 1 del Mac (versione 1.0) — 2026-11-13, commit `193cb29` del ramo `feat/mac-testflight`, poi in main** (giro «ScaboPDF per
   Mac su TestFlight», livello di verifica leggero: l'identificativo dell'iPad, la piattaforma macOS nel record dell'iPad, il pannello

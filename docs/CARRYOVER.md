@@ -10,6 +10,11 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.66 (18-19 novembre 2026, giro «modelli e scansioni», livello pieno per la catena condivisa e leggero per l'app Mac,
+> **CONCLUSO** con la **build 2 del Mac** su TestFlight (VALID, note impostate) e mandata alla **revisione beta di Apple** per il gruppo esterno «ScaboPDF Prova esterna»: sul Mac le **scansioni si leggono** (lettura del testo di Apple con l'impaginazione, GLM lettura pagine con la
+> guardia sulle righe di Apple, scelta nella schermata dell'elaborazione; LAYER2 § 12.16 decisione 21), la **lettura migliore arriva da
+> sola** nell'offerta (decisione 20), il catalogo è misurato (GLM definitiva; voci provvisorie tutte presenti, decisione 22). L'iPad
+> non cambia. Vedi lo STATO qui sotto.)
 > Versione: 2.65 (18 novembre 2026, giro «titoli definitivi», livello di verifica leggero, solo l'app Mac e documenti, nessuna
 > build, **CONCLUSO**: letto il diario della prova dei titoli fatta dal maintainer sull'app di TestFlight; la **variante C
 > definitiva**, tolte A, B e D dal codice e dal pannello «Diagnostica» (LAYER2 § 12.16 decisione 19); due regole di prudenza solo per
@@ -185,6 +190,41 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «modelli e scansioni»: le scansioni lette sul Mac, la lettura migliore che arriva da sola, il catalogo misurato, la build 2 del Mac e la prova esterna — 2026-11-18 — CONCLUSO
+
+**Build:** iPad ultima **66**, prossima **67**; Mac ultima **2**, prossima **3**. **Partenza:** `86a9e64` (main =
+origin). **Ramo:** `feat/mac-modelli-scansioni`, unito in main con un avanzamento rapido (main = `d4d4d60` per la build, poi il commit di questo STATO), poi cancellato, locale e remoto. Livello: pieno per la catena condivisa, leggero per l'app Mac; nessun
+file sotto `app/ios` (campo: `git diff --name-only 86a9e64.. -- app/ios`, 0 file), quindi le letture della catena dell'iPad non si
+rifanno: basta la rete del parlato (verde, 192 su 192 al byte, VoiceOver spento e acceso). Il contenitore in comune: letti solo la
+cartella del diario e i tre file precisi della voce GLM; GLM lettura pagine scaricato lì con la build di sviluppo, col consenso
+del maintainer, e lasciato. Referto: `~/Developer/scabopdf-mac-lab/modelli_app/REFERTO_MODELLI_BUILD2.md`; banco delle scansioni
+`~/Developer/scabopdf-mac-lab/scansioni_costruite/` (resta).
+
+- **Decisioni registrate:** LAYER2 § 12.16, 20 (8 novembre, mai scritta: all'importazione la lettura dell'iPad, i modelli offrono la
+  loro come «Lettura migliore disponibile», che arriva da sola), 21 (sul Mac le scansioni si leggono, lettore scelto nella schermata),
+  22 (le voci provvisorie restano fino alla pubblicazione).
+- **Parte 1 — scansioni.** Banco di sei campioni (v26, v04 a due colonne, v03, documento di studio di storia, v28 con tabelle, v01
+  intero), 119 pagine in due versioni (pulita 300, degradata 200). Vie: Apple + impaginazione (Heron sull'immagine) e GLM lettura
+  pagine con la guardia stretta sulle righe di Apple. Misure (campo): lettere sbagliate 0,45 % e 0,21 %, cifre 1,8-2,1 % e
+  0,6-0,9 %, parole in più 5,7 e 4,3 per mille (inesplicabili circa 2 e 1,3), 0,30 e 10,9 s a pagina, 0,84 e 2,7 GB. Corpo dalla
+  larghezza per carattere (l'altezza dava centinaia di titoli falsi). Regola unica di quando si legge (un quinto delle pagine senza
+  testo o 10 di seguito): i 55 PDF con testo del banco restano identici all'iPad (28 hanno copertine o pagine bianche). Sull'app vera:
+  articolo di 19 pagine scansionato 18 s con Apple e 217 s con GLM, zero prese di rete. Limiti dichiarati: codici a due colonne
+  (glosse a margine fuori dalla lettura, −19,8 % di parole), tabelle lette come testo, richiami in apice di Apple 4 su 50.
+- **Parte 2 — lettura migliore.** Dal menu del libro o dall'officina; arriva da sola con annuncio, «Apri ora» e segno nella riga, solo
+  se cambia la lettura; due gesti, lettura di prima conservata, riancoraggio per contenuto, ritorno. Verifica sul banco: cambiano esattamente 5 volumi su 52 (v04, v05, v12, v16, v30: l'innesto sugli indici analitici), 47 identici, quindi l'offerta arriva su quei cinque e su nessun altro.
+- **Parte 3 — schermata.** «È una scansione» con la scelta del lettore (predefinito: il migliore installato), «Apri il pannello dei
+  modelli…» se manca GLM, l'altro lettore proposto se il primo non parte; «Prepara una lettura migliore» coi modelli per ruolo.
+- **Parte 4 — catalogo.** Aggiornate solo le schede misurate; GLM lettura pagine definitiva; voci provvisorie tutte presenti.
+- **Verifiche:** swift test 166 (0 falliti, 14 saltati: FuocoDaFuori a parte e prove a richiesta); FuocoDaFuoriTests 9 su 9; interfaccia 18 (0 falliti; dei 15 di prima 13 passati e 2 saltati perché la navigazione da tastiera del sistema è spenta; nella build 1 i saltati erano 5); rete del parlato verde; vista del Mac verde, 55 libri su 55 con la sola eccezione dichiarata dei titoli, esiti identici al giro precedente (729 s);
+  zero byte in uscita durante l'elaborazione (lsof e nettop sul processo dell'app).
+- **Revisione indipendente:** un sotto-agente nuovo sul diff e sui numeri; 10 rilievi, i più gravi corretti in `c331a20` (finestra di lettura chiusa prima di cambiare lettura, origine «lettura del Mac» contro la granularità, lettore sempre per le scansioni, PDF brevi, GLM in fila con ripiego, guardia sui segni e sull'ordine), il resto dichiarato nel referto § 7.
+- **Build 2 del Mac e prova esterna:** portachiavi senza domande (firma in meno di un secondo); `valida` «VERIFY SUCCEEDED»; caricata da main (commit `d4d4d60`), «UPLOAD SUCCEEDED», poi l'errore noto del file di ripresa, nessun rilancio; build 2 MAC_OS VALID, «Cosa testare» impostato e identico al file (3.424 caratteri); la 66 dell'iPad intatta. Gruppo esterno «ScaboPDF Prova esterna» creato senza tester (chiamata diretta: `create_beta_group` di fastlane manda il limite del link pubblico); account di prova non più obbligatorio, nome e password cancellati; note per la revisione e descrizione della beta scritte; build 2 nel gruppo e mandata alla revisione: WAITING_FOR_REVIEW alle 23:39 (`docs/RELEASE_TESTFLIGHT.md`, storia delle build del Mac).
+- **Decisioni per il maintainer:** il predefinito qualità o tempo; le scansioni anche sull'iPad con Apple; i due limiti della catena
+  sulle scansioni (referto § 12).
 
 ---
 
