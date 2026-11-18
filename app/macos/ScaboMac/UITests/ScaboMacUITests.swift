@@ -159,7 +159,10 @@ final class ScaboMacUITests: XCTestCase {
         let app = lanciaConModelli()
         defer { app.terminate() }
         let scarica = app.buttons["azione.scarica.glm-ocr"]
-        XCTAssertTrue(scarica.waitForExistence(timeout: 5), "GLM-OCR non scaricato: c'è «Scarica»")
+        if !scarica.waitForExistence(timeout: 5), app.buttons["azione.rimuovi.glm-ocr"].exists {
+            throw XCTSkip("GLM lettura pagine è già installato nel contenitore in comune: il percorso «Scarica» non si prova")
+        }
+        XCTAssertTrue(scarica.exists, "GLM-OCR non scaricato: c'è «Scarica»")
         for _ in 0..<60 where !haFuoco(scarica) { app.typeKey(.tab, modifierFlags: []) }
         XCTAssertTrue(haFuoco(scarica), "«Scarica» si raggiunge con Tab")
         app.typeKey(" ", modifierFlags: [])
@@ -173,6 +176,23 @@ final class ScaboMacUITests: XCTestCase {
         XCTAssertFalse(domanda.waitForExistence(timeout: 1), "la domanda si chiude")
         XCTAssertFalse(app.buttons["azione.annulla.glm-ocr"].exists, "nessuno scaricamento è partito")
         XCTAssertTrue(app.buttons["azione.scarica.glm-ocr"].exists)
+    }
+
+    /// SCARICA GLM lettura pagine nel contenitore in comune (giro «modelli e scansioni», 2026-11-18): solo a richiesta
+    /// (`SCABOMAC_SCARICA_GLM=1`), col consenso del maintainer; circa 1,4 GB dall'indirizzo ufficiale del catalogo, impronta
+    /// controllata dall'app. Alla fine la voce è installata («Rimuovi» c'è, e non si preme): resta nel contenitore.
+    func test_pannello_scaricaGlm_aRichiesta() throws {
+        guard ProcessInfo.processInfo.environment["SCABOMAC_SCARICA_GLM"] == "1" else { throw XCTSkip("a richiesta: SCABOMAC_SCARICA_GLM=1") }
+        let app = lanciaConModelli()
+        defer { app.terminate() }
+        if app.buttons["azione.rimuovi.glm-ocr"].waitForExistence(timeout: 5) { return }   // già installato
+        let scarica = app.buttons["azione.scarica.glm-ocr"]
+        XCTAssertTrue(scarica.waitForExistence(timeout: 5))
+        scarica.click()
+        let si = app.buttons["conferma.scarica.glm-ocr"]
+        XCTAssertTrue(si.waitForExistence(timeout: 5), "la domanda, con dimensione e fonte")
+        si.click()
+        XCTAssertTrue(app.buttons["azione.rimuovi.glm-ocr"].waitForExistence(timeout: 2400), "scaricato e verificato dall'app")
     }
 
     func test_heron_giaIncluso_senzaAzioni() {

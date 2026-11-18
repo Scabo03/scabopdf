@@ -53,6 +53,11 @@ final class ScansioniDiProva: FornitoreScansioni {
                                     idLettore: e.lettore, pagineLette: 1, pagine: 1)
     }
     func apriPannelloModelli() { pannelloAperto += 1 }
+    /// La regola di prova: scansione se almeno metà delle pagine è senza testo (quella vera sta col lettore, in ScaboMacKit).
+    func scansione(_ url: URL) -> (senzaTesto: Int, totale: Int)? {
+        let r = RilevaScansione.pagineSenzaTesto(url)
+        return r.totale > 0 && r.senzaTesto * 2 >= r.totale ? r : nil
+    }
 }
 
 @MainActor

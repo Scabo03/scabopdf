@@ -108,6 +108,21 @@ final class ScaboPDFUITests: XCTestCase {
         print("ALBERO modelli INIZIO\n\(app.windows["modelli.finestra"].debugDescription)\nALBERO FINE")
     }
 
+    /// Importa un file come farebbe l'utente: ⌘O, poi «Vai alla cartella» (⌘⇧G) col percorso, poi Invio. L'app nella sandbox legge
+    /// solo i file scelti così (o quelli nel suo contenitore, che le prove non toccano).
+    private func importaDalPannello(_ app: XCUIApplication, _ file: String) {
+        XCTAssertTrue(app.windows["home.finestra"].waitForExistence(timeout: 30))
+        app.typeKey("o", modifierFlags: .command)
+        let pannello = app.sheets.firstMatch
+        XCTAssertTrue(pannello.waitForExistence(timeout: 20), "il pannello d'apertura")
+        app.typeKey("g", modifierFlags: [.command, .shift])
+        let campo = pannello.textFields.firstMatch
+        XCTAssertTrue(campo.waitForExistence(timeout: 10))
+        campo.typeText(file + "\r")
+        sleep(1)
+        app.typeKey(.return, modifierFlags: [])
+    }
+
     private func scrivi(_ nome: String, _ dati: [String: Any]) {
         let d = (try? JSONSerialization.data(withJSONObject: dati, options: [.sortedKeys])) ?? Data()
         print("RISULTATO \(nome) \(String(data: d, encoding: .utf8) ?? "{}")")
@@ -347,15 +362,65 @@ final class ScaboPDFUITests: XCTestCase {
     }
 
     /// La misura da fuori su un volume vero (a richiesta: SCABOMAC_LIBRO e SCABOMAC_DESCRIZIONE, percorsi nel contenitore).
+    /// LA SCANSIONE NELL'APP VERA (giro «modelli e scansioni», 2026-11-18; LAYER2 § 12.16, decisione 21), sulla libreria di
+    /// prova. La scansione sintetica (`--scansione-di-prova`) o, con `SCABOMAC_SCANSIONE`, un file vero scelto dal pannello
+    /// d'apertura come farebbe l'utente. La schermata dice che è una scansione, mostra i lettori col predefinito già scelto e
+    /// «Avvia»; l'audit di sistema; il lettore di `SCABOMAC_LETTORE` (predefinito: quello della schermata); la lettura si apre e
+    /// la riga della libreria dice da dove viene il testo. I tempi vanno nel registro (RISULTATO).
+    func test_scansione_schermataDelLettore_audit_letturaERiga() throws {
+        let env = ProcessInfo.processInfo.environment
+        let file = env["SCABOMAC_SCANSIONE"]
+        let app = app(file == nil ? ["--libreria-di-prova", "--scansione-di-prova"] : ["--libreria-di-prova"])
+        app.launch()
+        defer { app.terminate() }
+        if let file { importaDalPannello(app, file) }
+        let foglio = app.descendants(matching: .any)["scansione.finestra"]
+        XCTAssertTrue(foglio.waitForExistence(timeout: 60), "la schermata della scansione")
+        XCTAssertTrue(app.staticTexts["È una scansione"].exists)
+        XCTAssertTrue((app.staticTexts["scansione.spiegazione"].value as? String ?? "").contains("è una scansione"))
+        let apple = app.radioButtons["scansione.lettore.apple"]
+        XCTAssertTrue(apple.exists)
+        let glm = app.radioButtons["scansione.lettore.glm"]
+        XCTAssertTrue(glm.exists)
+        let avvia = app.buttons["scansione.avvia"]
+        XCTAssertTrue(avvia.isEnabled)
+        try audit(app, "scansione", conFoglio: true)
+        let scelto = env["SCABOMAC_LETTORE"] ?? ""
+        if scelto == "glm" {
+            XCTAssertTrue(glm.isEnabled, "GLM lettura pagine installato nel contenitore")
+            glm.click()
+        } else if scelto == "apple" {
+            apple.click()
+        }
+        let selezionato = (glm.value as? Int) == 1 ? "glm" : "apple"
+        let t0 = Date()
+        avvia.click()
+        let lettura = app.windows["lettura.finestra"]
+        XCTAssertTrue(lettura.waitForExistence(timeout: 1800), "la scansione si legge e si apre")
+        let secondi = Date().timeIntervalSince(t0)
+        app.typeKey("0", modifierFlags: .command)   // la Home
+        let riga = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "home.libro.")).firstMatch
+        XCTAssertTrue(riga.waitForExistence(timeout: 20))
+        let valore = riga.value as? String ?? ""
+        XCTAssertTrue(valore.contains("da una scansione"), "la riga dice da dove viene il testo: \(valore)")
+        scrivi("scansione_app_vera", ["lettore": selezionato, "secondi_avvia_lettura": secondi, "file": file == nil ? "sintetica" : "vero",
+                                      "riga_dice_scansione": valore.contains("da una scansione")])
+    }
+
     func test_misuraDaFuori_volumeVero() throws {
         let env = ProcessInfo.processInfo.environment
         guard let libro = env["SCABOMAC_LIBRO"], let descr = env["SCABOMAC_DESCRIZIONE"] else {
             throw XCTSkip("a richiesta: SCABOMAC_LIBRO e SCABOMAC_DESCRIZIONE")
         }
         let t0 = Date()
-        let app = app(["--libreria-di-prova", "--importa", libro, "--descrivi-in", descr])
+        // Un file fuori dal contenitore dell'app si sceglie dal pannello d'apertura (la sandbox non lo lascerebbe leggere con
+        // `--importa`, giro «modelli e scansioni», 2026-11-18); dentro il contenitore resta `--importa`.
+        let nelContenitore = libro.contains("/Library/Containers/com.scabo.scabopdf/")
+        let app = app(nelContenitore ? ["--libreria-di-prova", "--importa", libro, "--descrivi-in", descr]
+                                     : ["--libreria-di-prova", "--descrivi-in", descr])
         app.launch()
         defer { app.terminate() }
+        if !nelContenitore { importaDalPannello(app, libro) }
         let lettura = app.windows["lettura.finestra"]
         XCTAssertTrue(lettura.waitForExistence(timeout: 900), "il volume si importa e si apre")
         let gruppo = lettura.groups["Testo del documento"]
