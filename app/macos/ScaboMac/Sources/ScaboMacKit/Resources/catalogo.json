@@ -1,12 +1,12 @@
 {
   "schemaVersione": 1,
-  "aggiornatoIl": "2026-10-16",
+  "aggiornatoIl": "2026-11-18",
   "voci": [
     {
       "id": "apple-vision-testo",
       "nome": "Lettura del testo di Apple",
       "ruolo": "lettore_scansioni",
-      "descrizione": "Legge le lettere da una pagina scansionata con lo strumento già presente in macOS. Niente da scaricare. Dà solo il testo, non la struttura della pagina.",
+      "descrizione": "Legge le lettere da una pagina scansionata con lo strumento già presente in macOS. Niente da scaricare. Sul Mac è uno dei due lettori delle scansioni: legge le pagine senza testo dei libri che importi, e il modello d'impaginazione dà l'ordine e i titoli.",
       "dimensioneByte": 0,
       "licenza": "Incluso in macOS, senza costi aggiuntivi.",
       "motore": "sistema_apple",
@@ -19,7 +19,7 @@
       "funzionaSenzaInternet": true,
       "validazione": {
         "validato": {
-          "numeri": "sul Mac di sviluppo riconosce 33 lingue, italiano compreso; la qualità sulle pagine dei volumi non è stata misurata."
+          "numeri": "misure del 18 novembre 2026 su 119 pagine scansionate, nitide e rovinate: 0,45 lettere sbagliate su cento, circa 2 cifre su cento, 8 parole inventate su mille; meno di mezzo secondo a pagina, memoria al più 0,9 gigabyte. Riconosce 33 lingue, italiano compreso."
         }
       },
       "provenienza": {
@@ -85,7 +85,7 @@
       "id": "glm-ocr",
       "nome": "GLM lettura pagine",
       "ruolo": "lettore_scansioni",
-      "descrizione": "Lettore di pagine pensato per i documenti: legge il testo di una pagina anche quando il PDF non ne ha o lo ha guasto. Gira dentro l'app, senza programmi separati e senza internet; si scarica una volta dall'indirizzo ufficiale e l'app ne controlla l'impronta. Dentro l'elaborazione dei libri è ancora un prototipo.",
+      "descrizione": "Lettore di pagine pensato per i documenti: legge il testo di una pagina anche quando il PDF non ne ha. Gira dentro l'app, senza programmi separati e senza internet; si scarica una volta dall'indirizzo ufficiale e l'app ne controlla l'impronta. Sul Mac legge le scansioni dei libri che importi, se è installato: ogni sua parola passa dal controllo della lettura di Apple, che non lascia entrare testo dove sulla pagina non ha visto nulla.",
       "dimensioneByte": 1434837056,
       "licenza": "MIT: libero anche per uso commerciale.",
       "motore": "nativo_nell_app",
@@ -98,7 +98,7 @@
       "funzionaSenzaInternet": true,
       "validazione": {
         "validato": {
-          "numeri": "banco del laboratorio di lettura delle scansioni (22 pagine): sulle pagine di cui il PDF contiene già il testo, concorda con quel testo nel 96,4 per cento delle parole, circa 8 secondi a pagina; il tasto «Verifica che funzioni» lo prova su questo Mac con una pagina di prova inclusa."
+          "numeri": "misure del 18 novembre 2026 su 119 pagine scansionate, nitide e rovinate, sempre col controllo della lettura di Apple: 0,21 lettere sbagliate su cento, meno di una cifra su cento, 5 parole inventate su mille; circa 11 secondi a pagina; il tasto «Verifica che funzioni» lo prova su questo Mac con una pagina di prova inclusa."
         }
       },
       "provenienza": {
@@ -106,7 +106,7 @@
         "versione": "revisione 65a42de1 del 10 marzo 2026",
         "editore": "ggml-org (conversione dei pesi ufficiali di Zhipu AI)"
       },
-      "provvisoria": true,
+      "provvisoria": false,
       "scaricamento": {
         "repository": "ggml-org/GLM-OCR-GGUF",
         "revisione": "65a42de1148dbed2297e922b5dbc7d9b70c36578",
@@ -186,7 +186,7 @@
       "id": "docling-layout-heron",
       "nome": "Struttura di pagina di docling (Heron)",
       "ruolo": "ricostruttore_struttura_ordine",
-      "descrizione": "La parte di docling che riconosce le zone della pagina (titoli, note, tabelle, figure), convertita per girare dentro l'app. È già inclusa: niente da scaricare. L'app la usa per riconoscere tabelle e figure e, sul Mac, per l'indice analitico.",
+      "descrizione": "La parte di docling che riconosce le zone della pagina (titoli, note, tabelle, figure), convertita per girare dentro l'app. È già inclusa: niente da scaricare. L'app la usa per riconoscere tabelle e figure e, sul Mac, per l'indice analitico e per l'ordine di lettura e i titoli delle pagine scansionate.",
       "dimensioneByte": 171000000,
       "licenza": "Apache 2.0: libero anche per uso commerciale.",
       "motore": "incluso_nell_app",
@@ -199,7 +199,7 @@
       "funzionaSenzaInternet": true,
       "validazione": {
         "validato": {
-          "numeri": "giro «struttura nativa»: identica a docling sul banco (35 pagine su 35 nello stesso ordine), 44 millisecondi a pagina; sul Mac verdetti identici a quelli del laboratorio su 131 pagine del giro del 16 ottobre 2026."
+          "numeri": "giro «struttura nativa»: identica a docling sul banco (35 pagine su 35 nello stesso ordine), 44 millisecondi a pagina; sul Mac verdetti identici a quelli del laboratorio su 131 pagine del giro del 16 ottobre 2026; sulle scansioni del banco del 18 novembre 2026 dà l'ordine delle zone e i titoli: 25 titoli in più invece di 35 senza di lei, circa 4 centesimi di secondo a pagina."
         }
       },
       "provenienza": {

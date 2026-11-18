@@ -1,25 +1,17 @@
-Prima versione di ScaboPDF per Mac. È la stessa app dell'iPad, con build sue per il Mac. La libreria del Mac è sua: i libri dell'iPad non arrivano da soli.
+Seconda versione di ScaboPDF per Mac. È la stessa app dell'iPad, con build sue per il Mac. La libreria del Mac è sua: i libri dell'iPad non arrivano da soli.
 
-Che cosa c'è
-- La Home con la libreria.
-- L'importazione di PDF e di atti di Normattiva in formato XML: Comando O, cioè «Importa un documento…» nel menu Archivio, oppure trascinando il file nella finestra. La preparazione è la stessa dell'iPad, e così la lettura.
-- La lettura: VO Freccia destra e VO Freccia sinistra passano da un elemento all'altro; poi i titoli, le note col loro segnale e i salti dalla nota al suo richiamo.
-- La finestra «Modelli e officina», dal menu Finestra o con Comando Maiuscole M: il pannello dei modelli e l'officina.
+Che cosa c'è di nuovo
+- Le scansioni si leggono. Un PDF fatto di sole immagini, senza testo, non viene più rifiutato. La schermata dell'elaborazione dice che è una scansione e chiede con che cosa leggerla: la lettura del testo di Apple, già nel Mac e veloce, meno di un secondo a pagina, oppure GLM lettura pagine, da scaricare una volta dal pannello dei modelli, più preciso ma più lento, circa undici secondi a pagina. È già scelto il lettore migliore che il Mac ha; il pulsante «Avvia» comincia. Se GLM lettura pagine non c'è, la schermata lo dice e ha un pulsante che apre il pannello dei modelli. Se non riesce a partire, per esempio per la memoria, l'importazione non si chiude: lo dice e propone la lettura di Apple. Poi il libro si prepara come ogni altro. Nella riga della libreria si sente che il testo viene da una scansione, e con che cosa è stato letto. Tutto resta sul Mac: niente va in rete.
+- La lettura migliore arriva da sola. Nel menu di un libro, cioè il clic destro o il tasto Menu sulla riga, c'è «Prepara una lettura migliore…»: mostra i modelli che si usano, già scelti, e il pulsante «Prepara». Si può continuare a usare l'app. Quando la lettura è pronta, VoiceOver lo annuncia, in cima alla Home compare il pulsante «Apri ora» e la riga del libro dice «lettura migliore disponibile». Se la lettura nuova sarebbe uguale a quella di adesso, l'app lo dice e non propone nulla. Per usarla servono due passi: «Usa la lettura migliore…» e poi la conferma. La lettura di prima resta finché non si sceglie «Tieni la nuova lettura»; con «Torna alla lettura precedente» si torna indietro. Le annotazioni del libro, se ci sono, si ritrovano nella lettura nuova; quelle che l'app non ritrova con sicurezza restano «da ricollocare», mai spostate in silenzio.
+- Nel menu del libro c'è anche «Informazioni sul libro…»: le pagine, da dove viene il testo, se c'è una lettura migliore in attesa.
+- I titoli hanno ora la loro forma definitiva: VO Comando H porta al titolo seguente, VO Comando Maiuscole H al precedente, VO Comando M al titolo seguente dello stesso livello, sempre partendo dal punto in cui si è. La scelta fra le quattro forme non c'è più.
 
 Che cosa manca ancora
-La ricerca nel libro e nella libreria, i segnalibri, la Consultazione Rapida e la Dottrina Inline.
+La ricerca nel libro e nella libreria, i segnalibri, la Consultazione Rapida e la Dottrina Inline. Sulle scansioni: le tabelle si leggono come testo, riga per riga; i richiami di nota si agganciano alle loro note solo in parte, e le note non agganciate restano lette dove sono sulla pagina.
 
-Con VoiceOver
-- VO J salta fra una nota e il suo richiamo, in un verso e nell'altro.
-- VO Comando H porta al titolo seguente, VO Comando Maiuscole H al titolo precedente. Anche il rotore, VO U, ha le liste dei titoli. Nei codici ogni articolo è un titolo di livello 5. Se i titoli non si trovano, ditelo: su questo i comandi di VoiceOver sono ancora da sentire.
-Senza VoiceOver: Comando J per la nota e il richiamo, Opzione Comando Freccia giù e Freccia su per i titoli.
+Da provare per primo
+Importare una scansione, cioè un PDF senza testo: ascoltare la schermata, avviare con la scelta già fatta, poi leggere qualche pagina. Su un libro della libreria: «Prepara una lettura migliore…», aspettare l'annuncio, «Apri ora», e ascoltare cosa cambia.
 
 La diagnostica, per le prove
 1. Comando virgola apre le Impostazioni. In fondo, sotto «Per chi sviluppa ScaboPDF», c'è «Mostra la diagnostica nel menu Finestra»: va accesa.
-2. Nel menu Finestra compare «Diagnostica…»: aprirla.
-3. Nel pannello, «Tieni il diario» accende il diario. Il diario annota solo codici e numeri, mai il testo dei libri, e resta su questo Mac, nella cartella dell'app. «Mostra la cartella del diario nel Finder» e «Esporta il diario…» lo ritrovano.
-4. In «I titoli» si sceglie come i titoli si presentano a VoiceOver: quattro scelte, dalla A alla D. Di partenza c'è la C. La scelta vale subito, anche nel libro aperto.
-5. «Apri il libro di prova» apre un libro scritto dall'app stessa, in una libreria a parte: la libreria vera non cambia.
-
-Da provare per primo
-Importare un PDF, aprirlo e scorrere qualche elemento; VO Comando H e VO Comando Maiuscole H sui titoli; VO J da un capoverso col richiamo alla sua nota, e ritorno. Con il diario acceso, quello che succede resta annotato: «Esporta il diario…» lo salva in un file, da mandare a chi sviluppa ScaboPDF.
+2. Nel menu Finestra compare «Diagnostica…». Lì «Tieni il diario» accende il diario: annota solo codici e numeri, mai il testo dei libri, e resta su questo Mac. «Esporta il diario…» lo salva in un file, da mandare a chi sviluppa ScaboPDF.

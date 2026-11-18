@@ -1014,7 +1014,21 @@ Segnalibri, tag e sottolineature usano gli stessi modelli dell'iPad (ScaboCore: 
 libreria dell'app e arrivano con la tappa B. La posizione di lettura (LAYER2 § 2.5) c'è dalla tappa A: si registra con
 l'ancora per contenuto dell'elemento in lettura, come sull'iPad, e il libro si riapre lì.
 
-### 6.6 Importazione e modelli: la lettura migliore (domanda per il maintainer)
+### 6.6 Importazione e modelli: la lettura migliore (decisa: via A)
+
+**Decisa l'8 novembre 2026, costruita il 18 novembre (LAYER2 § 12.16, decisioni 20 e 21; giro «modelli e scansioni»).**
+All'importazione il Mac dà la lettura dell'iPad; la lettura migliore dei modelli si prepara su un libro della libreria, dal
+menu del libro («Prepara una lettura migliore…», con i modelli per ruolo e il predefinito già scelto) oppure dall'officina
+su un PDF che è già in libreria (stessa impronta), e quando è pronta **arriva da sola** nell'offerta «Lettura migliore
+disponibile» di quel libro: un annuncio di VoiceOver, «Apri ora» sopra l'elenco della Home, il segno «lettura migliore
+disponibile» nella riga del libro. *Come l'offerta sa se la lettura cambierebbe:* la lettura pronta si confronta, blocco per
+blocco, con quella in uso (la cache del libro); se coincide non c'è offerta, e l'annuncio dice che il libro resta com'è
+(niente arriva in silenzio). La prova economica proposta qui sotto (le pagine d'indice che la politica sceglie) non serve:
+la preparazione si fa solo su richiesta, e il confronto è esatto. Accettare vuole due gesti, la conferma ha «Annulla» come
+preferito, la lettura di prima resta finché non si conferma, le annotazioni si riancorano per contenuto e si può tornare
+indietro, con le funzioni condivise della libreria. Per le **scansioni** (decisione 21) la schermata dell'importazione dice
+che è una scansione e fa scegliere il lettore; la lettura che ne esce è quella della catena condivisa, dalle righe lette.
+Il testo della domanda resta qui sotto, com'era.
 
 Che cosa fa l'app quando importa un libro e sul Mac ci sono i modelli? Oggi la preparazione dell'officina dà una lettura
 diversa da quella dell'iPad su una parte dei libri: l'innesto dei verdetti del modello d'impaginazione (Heron, incorporato

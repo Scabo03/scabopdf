@@ -1405,6 +1405,13 @@ libro com'è. Limite dichiarato: sui libri fuori dal banco l'offerta può arriva
 frase lo dice: «Se questo libro non è fra quelli, la nuova lettura resta uguale»); toglierlo richiederebbe di rielaborare
 in silenzio ogni libro per confrontare, una scelta di prodotto lasciata al maintainer.
 
+**Sul Mac, la lettura migliore dei modelli (2026-11-18, § 12.16 decisione 20):** la stessa offerta, con le stesse regole e
+le stesse funzioni condivise della libreria (lettura di prima conservata, due gesti, riancoraggio per contenuto, ritorno),
+per la lettura che i modelli preparano su un libro della libreria. Lì il limite qui sopra non c'è: la lettura migliore si
+prepara su richiesta (menu del libro o officina) e si confronta, blocco per blocco, con quella in uso; se coincide non c'è
+offerta e l'annuncio lo dice. Quando è pronta arriva da sola: annuncio di VoiceOver, «Apri ora» nella Home, segno nella riga
+del libro (`DISEGNO_LETTURA_MAC.md` § 6.6). L'offerta di rielaborazione per le cure, sull'iPad, non cambia.
+
 ### 12.14 Un'annotazione non si sposta mai in silenzio (principio, 2026-10-07)
 
 Segnalibri, sottolineature e posizione di lettura sono ancorati al **contenuto** (impronte del testo normalizzato, mai il
