@@ -7,7 +7,7 @@ Che cosa c'è di nuovo
 - I titoli hanno ora la loro forma definitiva: VO Comando H porta al titolo seguente, VO Comando Maiuscole H al precedente, VO Comando M al titolo seguente dello stesso livello, sempre partendo dal punto in cui si è. La scelta fra le quattro forme non c'è più.
 
 Che cosa manca ancora
-La ricerca nel libro e nella libreria, i segnalibri, la Consultazione Rapida e la Dottrina Inline. Sulle scansioni: le tabelle si leggono come testo, riga per riga; i richiami di nota si agganciano alle loro note solo in parte, e le note non agganciate restano lette dove sono sulla pagina.
+La ricerca nel libro e nella libreria, i segnalibri, la Consultazione Rapida e la Dottrina Inline. Sulle scansioni: le tabelle si leggono come testo, riga per riga; i titoli si riconoscono solo in parte; i richiami di nota si agganciano alle loro note solo in parte, e le note non agganciate restano lette dove sono sulla pagina; nei codici a due colonne una parte del testo può mancare.
 
 Da provare per primo
 Importare una scansione, cioè un PDF senza testo: ascoltare la schermata, avviare con la scelta già fatta, poi leggere qualche pagina. Su un libro della libreria: «Prepara una lettura migliore…», aspettare l'annuncio, «Apri ora», e ascoltare cosa cambia.

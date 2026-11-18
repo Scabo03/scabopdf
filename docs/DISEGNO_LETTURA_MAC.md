@@ -1500,6 +1500,19 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 ## 11. Residui e cose non verificate
 
+- **Dopo il giro «modelli e scansioni» (18 novembre 2026).** *Fatto:* le scansioni lette sul Mac (decisione 21: lettura del testo di
+  Apple con l'impaginazione, GLM lettura pagine con la guardia stretta sulle righe di Apple, regola unica di quando si legge), la
+  lettura migliore che arriva da sola (§ 6.6, decisione 20), la schermata dell'elaborazione con la scelta del lettore e i modelli per
+  ruolo, il catalogo misurato (GLM definitiva, voci provvisorie tutte presenti: decisione 22). Misure del banco delle scansioni e
+  dell'app vera nel referto del giro. *Residui misurati:* sui codici a due colonne scansionati il tronco generico mette circa un quinto
+  del testo fra le glosse a margine, fuori dalla lettura; le tabelle delle scansioni si leggono come testo (nessuna risorsa visiva
+  sulle pagine di sola immagine); i richiami in apice la lettura di Apple li legge 4 su 50 e le note restano lette dove sono; i
+  titoli delle scansioni si ritrovano allo stesso livello solo 2-3 su 41; arrivo, confronto e uso della lettura migliore leggono le
+  cache sul filo principale; la prima riapertura di un volume enorme letto da GLM lo rilegge tutto. *Non verificato:* scansioni vere
+  (il banco è fatto di scansioni costruite dai PDF con testo); memoria insufficiente e modello non caricato provocati sull'app vera
+  (provati coi test d'unità); la memoria grafica di GLM. *Da sentire:* la schermata «È una scansione», «Apri ora» e i fogli
+  dell'offerta con VoiceOver vero.
+
 - **Dopo il giro «titoli definitivi» (18 novembre 2026).** *Fatto:* letto il diario della prova del maintainer sull'app di
   TestFlight (§ 5.4: C 23/23 e 39/39 dal cursore, D con VO+Comando+M uguale a VO+Comando+H, A non provata); la C definitiva, A, B e D
   tolte dal codice e dal pannello «Diagnostica» (LAYER2 § 12.16 decisione 19); un test da fuori della ricerca come la fa VoiceOver,
