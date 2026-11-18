@@ -10,6 +10,10 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.65 (18 novembre 2026, giro «titoli definitivi», livello di verifica leggero, solo l'app Mac e documenti, nessuna
+> build, **CONCLUSO**: letto il diario della prova dei titoli fatta dal maintainer sull'app di TestFlight; la **variante C
+> definitiva**, tolte A, B e D dal codice e dal pannello «Diagnostica» (LAYER2 § 12.16 decisione 19); due regole di prudenza solo per
+> questo progetto nel `CLAUDE.md` del repo e nella memoria. L'iPad non cambia. Vedi lo STATO qui sotto.)
 > Versione: 2.64 (14 novembre 2026, giro «corsie e memoria», livello di verifica leggero, solo strumenti e documenti, nessuna
 > build, **CONCLUSO**: curato **N16** alla radice (il pacchetto del Mac porta l'identità del commit da cui è costruito, il riuso si
 > rifiuta se lo HEAD è cambiato, prove con riproduzione di N16 e prova al contrario); **l'istruzione per il portachiavi** pronta per
@@ -181,6 +185,37 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «titoli definitivi»: il diario della prova sull'app di TestFlight, la C definitiva, due regole di prudenza nel CLAUDE.md del repo (nessuna build) — 2026-11-18 — CONCLUSO
+
+**Build:** iPad ultima **66**, prossima **67**; Mac ultima **1**, prossima **2** (nessun caricamento nel giro). **Partenza:**
+`84ac622` (main = origin). **Ramo:** `feat/mac-titoli-definitivi`, unito in main con un avanzamento rapido alla chiusura (main = il
+commit di questo STATO), poi cancellato, locale e remoto. Livello leggero, solo l'app Mac e documenti: nessun file sotto `app/ios`
+(campo: `git diff --name-only 84ac622.. -- app/ios`, 0 file), quindi le letture della catena dell'iPad non si rifanno. Il
+contenitore dell'app: letta solo la cartella del diario; l'app di TestFlight non aperta né chiusa. Referto:
+`~/Developer/scabopdf-mac-lab/lettura_mac/REFERTO_TITOLI_DEFINITIVI.md`; laboratorio `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_definitivi/`.
+
+- **Parte 1 — il diario** (campo; un file, 544 s, versione 1.0 build 1; lo stesso libro nelle tre varianti provate; DISEGNO § 5.4):
+  col ruolo d'intestazione VoiceOver non interroga più il rotore: VO+Comando+H e VO+Comando+M arrivano come ricerca generica rivolta
+  all'elemento sotto il cursore. **C**: 24 VO+Comando+H, 24 al titolo seguente; 39 VO+Comando+M, 39 al seguente dello stesso livello,
+  anche lontano (fino a 257 elementi, oltre i figli esposti); sempre dal cursore, nessuna ripartenza dall'inizio; nessuna ricerca
+  all'indietro nel diario. **B**: 20 salti, tutti su un titolo (10 allo stesso livello, 10 adiacenti), ingresso nel libro 0,55 s su
+  708 figli, nessun fermo. **D**: 70 spostamenti, tutti al titolo adiacente di qualunque livello, nessuno allo stesso livello:
+  VO+Comando+M fa la stessa cosa di VO+Comando+H (dedotto: nella D il livello non sta nell'attributo che AppKit chiede), non lo
+  scambio. **A**: mai scelta col diario acceso.
+- **Parte 2 — la C definitiva** (LAYER2 § 12.16 decisione 19): tolti `VarianteTitoli`, la scelta nel pannello (che resta per il diario
+  e la prova guidata), `--variante-titoli`, la preferenza, la riga del diario, i titoli sempre esposti della B, la forma WebKit della D.
+  Test nuovi: la forma sola e la ricerca dal cursore dentro il processo; da fuori la ricerca come la fa VoiceOver nel diario, avanti e
+  indietro (5 e 5, 9 titoli su 10 fuori dai figli esposti). L'indietro con la C resta da sentire.
+- **Parte 3 — due regole solo per questo progetto** (`CLAUDE.md` del repo, «Regole di prudenza di questo progetto», e la nota
+  `regole-fisse` della memoria): i nomi delle cartelle protette mai nei comandi, nemmeno nei controlli d'assenza, sotto-agenti compresi;
+  la prudenza generale (niente sudo, nessun dialogo di sistema chiuso, codici d'uscita, cancellazioni protette, etichette di prova).
+  `~/.claude/CLAUDE.md` non toccato.
+- **Verifiche** (campo): VERIFICHE_DA_SCRIVERE
+- **Prossimo passo** (dedotto): VO+Comando+Maiuscole+H con la C e l'articolo dei codici, da sentire con la build 2 del Mac quando il
+  maintainer vorrà caricarla.
 
 ---
 

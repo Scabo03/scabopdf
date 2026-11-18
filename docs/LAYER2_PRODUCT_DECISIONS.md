@@ -1660,6 +1660,23 @@ TestFlight» (2026-11-12):
     *Effetto da decidere:* in tutte le varianti l'articolo dei codici diventa un'intestazione di livello 5, e la parola «Articolo»
     del modulo esce con la qualifica (referto del giro delle varianti, § 9; decisione per il maintainer nel referto del giro
     «ScaboPDF per Mac su TestFlight»).
+    *Superata il 18 novembre 2026* dalla decisione 19: la scelta non c'è più, resta la C per tutti.
+
+**Una decisione del 18 novembre 2026**, registrata nel giro «titoli definitivi» dopo la prova del maintainer sull'app di
+TestFlight (build 1 del Mac), col diario acceso:
+
+19. **I titoli del Mac hanno una forma sola, quella della variante C: la scelta fra le quattro varianti è tolta dal codice e dal
+    pannello «Diagnostica»**, che resta per il diario e la prova guidata. Il titolo è un'intestazione come nelle app del Mac (ruolo
+    d'intestazione, testo senza la qualifica, livello nell'attributo del livello), e l'app risponde da sé, dal punto del cursore e su
+    tutto il libro, alla ricerca dei titoli con cui VoiceOver serve VO+Comando+H, VO+Comando+Maiuscole+H e VO+Comando+M. *Perché*: nel
+    diario della prova, con la C, ogni VO+Comando+H (24) è andato al titolo seguente, senza saltarne nessuno, e ogni VO+Comando+M (39)
+    al titolo seguente dello stesso livello, anche lontano, partendo sempre dal punto del cursore e mai dall'inizio del libro; la B ha
+    funzionato anche lei, ma con tutti i titoli del libro fra gli elementi esposti, il che costa all'ingresso sui libri grandi; con la
+    D ogni spostamento fra titoli (70) è andato al titolo adiacente di qualunque livello, nessuno allo stesso livello: VO+Comando+M faceva, si deduce,
+    la stessa cosa di VO+Comando+H, come il maintainer sospettava; la A non compare nel diario. La ricerca all'indietro con la C non
+    compare nel diario (non è stata provata con la C): è provata da fuori sul libro di prova e resta da sentire. Il confronto con l'iPad
+    resta identico salvo l'eccezione dichiarata dei titoli (decisione 12). L'iPad non cambia. Dettagli: `DISEGNO_LETTURA_MAC.md` § 5.4
+    e § 11; referto del giro nel laboratorio.
 
 ---
 

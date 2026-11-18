@@ -683,9 +683,9 @@ processo di laboratorio, solo nomi: `hasCustomRotorMatchingSearchKey:`, `linkedU
 | inizio / fine del testo | VO+Inizio / Fine (VO+Fn+Freccia sinistra / destra) | gli estremi del libro, sempre fra i figli | sì | sì | campo (T1 rifatta) |
 | inizio / fine di ciò che si vede | VO+Maiuscole+Inizio / Fine | i figli visibili | sì | sì | dedotto |
 | leggere l'elemento | VO+A | il testo dell'elemento | sì | sì (legge solo l'elemento: normale, decisione 11) | campo (configurazione: `Global.content`; resoconto del maintainer) |
-| **titolo seguente / precedente** | **VO+Comando+H / VO+Comando+Maiuscole+H**; tasto singolo H (VO+Q) | un rotore di tipo intestazione per la ricerca per chiave (`AXHeadingSearchKey`; fonte: i tipi di rotore servono perché «assistive technologies [can] assign keyboard commands and gestures for these common search types», `NSAccessibilityCustomRotor.h`); campo: AppKit la inoltra al rotore solo se il rotore sta sull'elemento a cui la ricerca è rivolta; il rotore cerca nel modulo su **tutto il libro** | no (prova 6: sei tracce coi rotori su sette pressioni chieste, nessun titolo; prima di questo giro era scritto «sì», dedotto dalla ricerca sul gruppo) | sì da fuori dal 12 novembre (gli stessi rotori anche su ogni elemento); da sentire | campo (diario della prova 6; traccia riprodotta da fuori rivolgendo la ricerca all'elemento: una delle due vie compatibili); campo da fuori dopo la cura (dall'elemento sotto il cursore tutti i titoli, avanti e indietro, ognuno fuori dai figli esposti quando lo si cerca); **prova 7: no** (il rotore trova il titolo, VoiceOver ne chiede il ruolo e non si sposta: diario; che scarti il testo statico è dedotto); varianti col ruolo d'intestazione **da sentire** (prova 8, sotto); *dalla sera del 12 novembre 2026* in main, dietro la scelta del pannello «Diagnostica», predefinita la C: da sentire con l'app di TestFlight |
+| **titolo seguente / precedente** | **VO+Comando+H / VO+Comando+Maiuscole+H**; tasto singolo H (VO+Q) | un rotore di tipo intestazione per la ricerca per chiave (`AXHeadingSearchKey`; fonte: i tipi di rotore servono perché «assistive technologies [can] assign keyboard commands and gestures for these common search types», `NSAccessibilityCustomRotor.h`); campo: AppKit la inoltra al rotore solo se il rotore sta sull'elemento a cui la ricerca è rivolta; il rotore cerca nel modulo su **tutto il libro** | no (prova 6: sei tracce coi rotori su sette pressioni chieste, nessun titolo; prima di questo giro era scritto «sì», dedotto dalla ricerca sul gruppo) | sì da fuori dal 12 novembre (gli stessi rotori anche su ogni elemento); da sentire | campo (diario della prova 6; traccia riprodotta da fuori rivolgendo la ricerca all'elemento: una delle due vie compatibili); campo da fuori dopo la cura (dall'elemento sotto il cursore tutti i titoli, avanti e indietro, ognuno fuori dai figli esposti quando lo si cerca); **prova 7: no** (il rotore trova il titolo, VoiceOver ne chiede il ruolo e non si sposta: diario; che scarti il testo statico è dedotto); varianti col ruolo d'intestazione **da sentire** (prova 8, sotto); *dalla sera del 12 novembre 2026* in main, dietro la scelta del pannello «Diagnostica», predefinita la C: da sentire con l'app di TestFlight; **prova sull'app di TestFlight (18 novembre 2026): sì con la C**, 24 su 24 al titolo seguente, dal cursore (diario; l'indietro non compare nel diario, provato da fuori), sotto; la C definitiva |
 | titolo di un livello | tasti singoli 1–6 (VO+Q) | i rotori di livello, solo per i livelli presenti | no, dedotto (la stessa via dei titoli: misurato solo sul gruppo, che la prova 6 ha smentito per VO+Comando+H) | sì, dedotto (i rotori di livello stanno anche sull'elemento; il test nuovo usa la chiave dei titoli) | campo da fuori sul gruppo (livello 1); da sentire |
-| titolo dello stesso livello | VO+Comando+M / +Maiuscole | nessun tipo di rotore corrisponde a «stesso livello»; la ricerca generica di AppKit cerca il ruolo intestazione fra i figli esposti, e i nostri elementi sono testo statico (anche col ruolo d'intestazione vedrebbe solo i figli esposti, circa 400 attorno al cursore) | no | **no** (residuo dichiarato: col ruolo d'intestazione funzionerebbe al più fra i figli esposti; il ruolo non è dato, § 3.1; *dalla sera del 12 novembre 2026 è dato, in tutte le varianti, § 3.1*); prova 7: tre ricerche generiche sui figli esposti, vuote; varianti B e C da sentire (prova 8, ora col pannello «Diagnostica», § 10) | campo (resoconto della prova 6: non funziona); dedotto (due tracce senza rotori nel diario, a 17,97 e 26,05 s: una sola è attribuibile a VO+Comando+M, l'altra forse è il quinto VO+Comando+H); campo da fuori (la ricerca generica risponde vuoto) |
+| titolo dello stesso livello | VO+Comando+M / +Maiuscole | nessun tipo di rotore corrisponde a «stesso livello»; la ricerca generica di AppKit cerca il ruolo intestazione fra i figli esposti, e i nostri elementi sono testo statico (anche col ruolo d'intestazione vedrebbe solo i figli esposti, circa 400 attorno al cursore) | no | **no** (residuo dichiarato: col ruolo d'intestazione funzionerebbe al più fra i figli esposti; il ruolo non è dato, § 3.1; *dalla sera del 12 novembre 2026 è dato, in tutte le varianti, § 3.1*); prova 7: tre ricerche generiche sui figli esposti, vuote; varianti B e C da sentire (prova 8, ora col pannello «Diagnostica», § 10); **prova sull'app di TestFlight (18 novembre 2026): sì con la C** (39 su 39 al seguente dello stesso livello, anche lontano, dal cursore) e con la B; con la D come VO+Comando+H (dedotto), sotto | campo (resoconto della prova 6: non funziona); dedotto (due tracce senza rotori nel diario, a 17,97 e 26,05 s: una sola è attribuibile a VO+Comando+M, l'altra forse è il quinto VO+Comando+H); campo da fuori (la ricerca generica risponde vuoto) |
 | il rotore | VO+U; VO+Comando+Freccia sinistra / destra (lista), VO+Comando+Freccia su / giù (voce) | i rotori personalizzati del gruppo: titoli, livelli, tabelle, immagini, ricerca; dal 12 novembre gli stessi oggetti anche su ogni elemento | sì | sì, da sentire: le liste potrebbero comparire due volte (rischio dichiarato) | campo (T1 rifatta, prova 4, prova 6); dopo la cura da sentire (prova 7) |
 | tabella / immagine seguente | VO+Comando+T / G (+Maiuscole) | i rotori di tabelle e immagini, se il libro ne ha | no, dedotto (la stessa via dei titoli) | sì, dedotto (i rotori anche sull'elemento) | dedotto (non misurato su un libro con tabelle) |
 | **vai all'elemento collegato** | **VO+J** | gli elementi collegati (`AXLinkedUIElements`): la nota e il suo richiamo | **no** | **sì** | campo da fuori (andata e ritorno; sull'app di prima il test fallisce); campo nella prova 6: VoiceOver chiede gli elementi collegati dell'elemento sotto il cursore (cinque volte; dalla nota legge subito il capoverso collegato) e l'aiuto tastiera dice di VO+J «vai all'elemento collegato»; dove il cursore sia arrivato il diario non lo decide; **da sentire** (prova 7) |
@@ -801,6 +801,39 @@ più) darebbe le stesse ricerche sul libro della prova. **Il confronto con l'iPa
 decisione 12: misurato sulla variante A su uno dei tre documenti di studio, 97 elementi diversi su 2.523, tanti quanti i suoi titoli (97;
 per costruzione la variante cambia solo gli elementi che sono titoli, e l'elenco degli indici l'esito non lo dà), nei soli campi ruolo,
 testo detto e valore detto (il testo del titolo passa nella descrizione, senza la qualifica). Da sentire nella prova 8 (§ 10).
+
+**Dopo la prova sull'app di TestFlight (18 novembre 2026): la C definitiva** (giro «titoli definitivi»; campo: il diario della
+prova del maintainer sulla build 1 del Mac, letto dalla cartella della regola fissa, conteggi nel laboratorio
+`~/Developer/scabopdf-mac-lab/lettura_mac/titoli_definitivi/`; LAYER2 § 12.16 decisione 19). Resoconto: B, C e D trovano i titoli con
+VO+Comando+H; sulla D il sospetto che VO+Comando+H e VO+Comando+M si scambino o facciano la stessa cosa; della A nessun esito
+positivo. **Il diario** (un file, 544 s, lo stesso libro nelle tre varianti, 4.250 elementi, circa 347 titoli; nessun testo):
+- *La via, cambiata* (campo): col ruolo d'intestazione VoiceOver non interroga più il rotore (nessuna riga `rotore:` in tutto il
+  diario); VO+Comando+H e VO+Comando+M arrivano come **ricerca generica** (`AXUIElementsForSearchPredicate`) rivolta
+  **all'elemento sotto il cursore**, senza l'elemento di partenza, con la chiave dei titoli o dello stesso livello. È la strada a cui
+  risponde la C; nella A, nella B e nella D risponde AppKit coi figli esposti.
+- *C* (0–248 s, campo): 24 ricerche dei titoli in avanti, 24 al titolo seguente, nessun titolo saltato, sempre dal cursore; 39 ricerche
+  dello stesso livello in avanti, 39 su un titolo, con salti fino a 18 titoli di altri livelli e fino a 257 elementi, oltre i figli
+  esposti; nessuna ripartenza dall'inizio del libro; 11 ricerche dei controlli (VO+Comando+J, dedotto) senza spostamento, come deve.
+  **Nessuna ricerca all'indietro** nel diario con la C: VO+Comando+Maiuscole+H non è stato provato con la C, o non è arrivato
+  (dedotto: con la B e la D è arrivato). Provato da fuori sul libro di prova (`FuocoDaFuoriTests`, la ricerca rivolta all'elemento
+  sotto il cursore senza elemento di partenza, come nel diario: 5 avanti, 5 indietro, 9 titoli su 10 fuori dai figli esposti); da
+  sentire.
+- *B* (249–431 s, campo): 20 salti fra titoli, tutti su un titolo, nessuna ripartenza; 10 allo stesso livello (AppKit chiede il livello
+  di ogni titolo sulla strada) avanti e indietro, 10 al titolo adiacente (il diario non distingue se da VO+Comando+H o dallo stesso
+  livello fra titoli vicini). L'ingresso nel libro: dalla finestra alla fine del primo giro di VoiceOver sui 708 figli (402 più i
+  titoli lontani) 0,55 s, il giro stesso 0,54 s, nessun fermo del filo principale (la C sullo stesso libro: il giro sui 402 figli
+  0,24 s); il libro non è il più grande del banco.
+- *D* (431–544 s, campo e dedotto): 70 spostamenti fra titoli, tutti al titolo **adiacente di qualunque livello** (68 indietro, 2
+  avanti), anche dove lo stesso livello avrebbe saltato titoli (per esempio fra due titoli di un livello, passando per uno di un altro);
+  **nessuno allo stesso livello**. Il diario non dice quale tasto è stato premuto, ma con la B e la C lo stesso livello c'è: nella D il
+  livello sta nel valore e non nell'attributo del livello, che AppKit chiede per lo stesso livello (lo si vede nella B), quindi
+  VO+Comando+M fa **la stessa cosa** di VO+Comando+H (dedotto), non lo scambio. Il sospetto del maintainer è confermato nella forma
+  «la stessa cosa».
+- *A* (campo): mai scelta col diario acceso; nessun dato.
+**Scelta**: la C, l'unica che risponde da sé dal cursore su tutto il libro senza esporre tutti i titoli. Tolte A, B e D dal codice e
+dalla scelta del pannello, che resta per il diario e la prova guidata; il diario non annota più la variante. Il confronto con l'iPad
+resta identico salvo l'eccezione dichiarata dei titoli. Cross-process i risultati arrivano al client come dizionari col risultato
+(campo, test da fuori). Restano da sentire VO+Comando+Maiuscole+H con la C e l'articolo dei codici (§ 11).
 
 ### 5.5 Le scorciatoie dell'app con VoiceOver acceso (giro «comandi da tastiera e VoiceOver sul Mac», 2026-11-11)
 
@@ -1211,7 +1244,8 @@ Consultazione Rapida in AppKit, i suoni da certificare all'orecchio).
 > da TestFlight, sulla sua libreria vera; quando serve una prova, accende il diario nel pannello e Code lo legge nel contenitore
 > dell'app (`docs/RELEASE_TESTFLIGHT.md`, «La corsia del Mac»). Per una prova controllata, il pannello apre il libro di prova
 > che l'app scrive da sé, in una libreria a parte, con la finestra dei figli piccola se la si sceglie, e ne dà le istruzioni.
-> La variante dei titoli si sceglie nel pannello (predefinita la C). **Con lo script la prova 8 non c'è stata**: le sue
+> La variante dei titoli si sceglieva nel pannello (predefinita la C; *dal 18 novembre 2026 la scelta è tolta e resta la C*,
+> LAYER2 § 12.16 decisione 19, § 5.4). **Con lo script la prova 8 non c'è stata**: le sue
 > domande restano, e si fanno con l'app di TestFlight, variante per variante dal pannello, sul libro di prova (le istruzioni
 > sono nel pannello) o su un libro vero. Lo script `prova.sh` e le copie firmate accanto a lui sono tolti dal laboratorio; i
 > diari delle prove 1–7 restano. Le istruzioni delle prove qui sotto restano come storia.
@@ -1450,6 +1484,14 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
   (§ 5.2).
 
 ## 11. Residui e cose non verificate
+
+- **Dopo il giro «titoli definitivi» (18 novembre 2026).** *Fatto:* letto il diario della prova del maintainer sull'app di
+  TestFlight (§ 5.4: C 24/24 e 39/39 dal cursore, D con VO+Comando+M uguale a VO+Comando+H, A non provata); la C definitiva, A, B e D
+  tolte dal codice e dal pannello «Diagnostica» (LAYER2 § 12.16 decisione 19); un test da fuori della ricerca come la fa VoiceOver,
+  avanti e indietro. *Da sentire:* VO+Comando+Maiuscole+H con la C (il diario non lo mostra); l'articolo dei codici come
+  intestazione di livello 5 senza la parola «Articolo» (decisione per il maintainer, ancora aperta); ⌥⌘↓ coi tasti di sinistra e
+  ⌃⌘↓ (nel diario due Opzione+Comando senza freccia arrivata, nessuna prova chiesta). *Restano* i rischi dichiarati del giro prima
+  (macOS 14 e 15, icona quadrata, portachiavi); il rischio di «A, B e D ripartono dall'inizio» non c'è più.
 
 - **Dopo il giro «ScaboPDF per Mac su TestFlight» (12 novembre 2026, sera).** *Fatto:* l'identificativo dell'iPad
   (`com.scabo.scabopdf`, servizio `com.scabo.scabopdf.scaricatore`), la piattaforma macOS nel record dell'iPad (con l'API), il pannello
