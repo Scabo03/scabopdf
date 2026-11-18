@@ -35,6 +35,27 @@ These rules are absolute. They override any other behavior, default, or conventi
 
 **Routine micro-decisions only.** You may decide autonomously only on truly trivial things: variable names within a function, formatting, import order, and similar. Anything that touches API design, schema, dependencies, or architecture: ask in prose.
 
+## Regole di prudenza di questo progetto (dal 2026-11-18)
+
+Valgono per ogni sessione e per ogni sotto-agente: chi lancia un sotto-agente gliele scrive nelle istruzioni, insieme all'elenco
+delle cartelle personali protette che sta nelle istruzioni generali dell'utente.
+
+**I nomi delle cartelle protette non si scrivono nei comandi.** Le cartelle personali protette (elencate nelle istruzioni generali
+dell'utente, non qui) non si nominano in nessun comando: né nei percorsi, né nei modelli di ricerca, né nei controlli fatti
+proprio per verificare che un documento non le contenga, e nemmeno per cercarle nelle note. Per verificare che un documento non
+contenga quei percorsi si usano schemi che non li scrivono per intero (per esempio un frammento del nome con una classe di
+caratteri al posto di una lettera); per cercare nelle note si usano parole neutre. Le regole di permesso confrontano il testo dei
+comandi (un nome protetto dentro un modello di ricerca fa scattare la richiesta; su più righe può sfuggirle).
+
+**Prudenza generale.**
+- Niente `sudo`.
+- Nessun dialogo di sistema chiuso da Claude Code, e nessuna richiesta di password risposta da Claude Code: li gestisce l'utente.
+- I codici d'uscita dei comandi si riportano sempre, anche quando sono zero.
+- Le cancellazioni si fanno solo con percorsi letterali o con variabili protette nella forma `"${VAR:?}"`, mai con glob né con
+  variabili non protette; prima di cancellare o sovrascrivere si guarda il bersaglio.
+- Ogni affermazione di un referto o di un messaggio finale porta la sua etichetta di prova: **campo** (misurato in questa
+  sessione), **fonte** (un documento, con indirizzo e data), **dedotto**, **non verificato**.
+
 ## Project conventions
 
 **Test fixtures.** `pipeline/tests/fixtures/private/` is **gitignored** and hosts the copyright-protected PDFs each developer keeps locally; see `pipeline/tests/fixtures/README.md` for the full private/public convention. Integration tests that depend on a private fixture MUST use `pytest.skip(...)` with an explicit message pointing to the README when the file is missing, never `assert` or raise. This keeps the suite green on a fresh clone without local fixtures.
