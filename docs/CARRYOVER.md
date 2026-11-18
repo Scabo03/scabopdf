@@ -219,6 +219,9 @@ del maintainer, e lasciato. Referto: `~/Developer/scabopdf-mac-lab/modelli_app/R
 - **Parte 3 — schermata.** «È una scansione» con la scelta del lettore (predefinito: il migliore installato), «Apri il pannello dei
   modelli…» se manca GLM, l'altro lettore proposto se il primo non parte; «Prepara una lettura migliore» coi modelli per ruolo.
 - **Parte 4 — catalogo.** Aggiornate solo le schede misurate; GLM lettura pagine definitiva; voci provvisorie tutte presenti.
+- **Parte 6 — misura dei verdetti di Heron sui PDF con testo** (solo laboratorio, nulla applicato): sui 6 estratti del banco (119
+  pagine) la catena legge già come nota 110 note su 110 ritrovate e come titolo 20 titoli; con la guardia cambierebbero 2 titoli e
+  nessuna nota; didascalie senza testo da confrontare. Non vale un innesto nuovo finché un banco più largo non dica altro.
 - **Verifiche:** swift test 166 (0 falliti, 14 saltati: FuocoDaFuori a parte e prove a richiesta); FuocoDaFuoriTests 9 su 9; interfaccia 18 (0 falliti; dei 15 di prima 13 passati e 2 saltati perché la navigazione da tastiera del sistema è spenta; nella build 1 i saltati erano 5); rete del parlato verde; vista del Mac verde, 55 libri su 55 con la sola eccezione dichiarata dei titoli, esiti identici al giro precedente (729 s);
   zero byte in uscita durante l'elaborazione (lsof e nettop sul processo dell'app).
 - **Revisione indipendente:** un sotto-agente nuovo sul diff e sui numeri; 10 rilievi, i più gravi corretti in `c331a20` (finestra di lettura chiusa prima di cambiare lettura, origine «lettura del Mac» contro la granularità, lettore sempre per le scansioni, PDF brevi, GLM in fila con ripiego, guardia sui segni e sull'ordine), il resto dichiarato nel referto § 7.
