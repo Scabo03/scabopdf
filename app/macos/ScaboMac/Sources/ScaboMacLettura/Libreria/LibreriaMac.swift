@@ -34,6 +34,9 @@ public final class LibreriaMac {
     public var quandoCambia: [() -> Void] = []
     /// Avvisa, prima di toglierlo, che un libro sta per essere eliminato (chi tiene la sua finestra di lettura la chiude).
     public var quandoElimina: [(String) -> Void] = []
+    /// Avvisa, prima di cambiarla, che la lettura di un libro sta per cambiare (lettura migliore usata, ritorno a quella di prima):
+    /// chi tiene la sua finestra di lettura la chiude, così la posizione salvata è della lettura giusta.
+    public var quandoCambiaLettura: [(String) -> Void] = []
 
     /// Da dove viene il testo dei libri letti da scansioni (giro «modelli e scansioni», 2026-11-18).
     public let provenienze: ProvenienzeScansioni
@@ -53,7 +56,7 @@ public final class LibreriaMac {
     public func rigaDelLibro(_ d: ArchivedDocument) -> String {
         var parti = [LibraryFormatting.fileAccessibility(d)]
         if let p = provenienze.provenienza(d.id) { parti.append(ParoleScansioni.riga(p)) }
-        if offerte.inAttesa(d.id) != nil { parti.append(ParoleLetturaMigliore.segnoRiga) }
+        if offerte.libri.contains(d.id) { parti.append(ParoleLetturaMigliore.segnoRiga) }
         else if inPreparazione.contains(d.id) { parti.append(ParoleLetturaMigliore.segnoPreparazione) }
         return parti.joined(separator: ", ")
     }

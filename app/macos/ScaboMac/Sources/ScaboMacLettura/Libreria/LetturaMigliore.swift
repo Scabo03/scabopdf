@@ -28,9 +28,11 @@ public struct LetturaMiglioreInAttesa: Codable {
     /// Ciò che l'officina ha fatto in più, in righe brevi e senza testo del libro.
     public var righe: [String]
     public var lettura: PackagedReading
+    /// Se la lettura è stata preparata con un lettore delle scansioni: da dove viene il testo (va nella riga quando si usa).
+    public var provenienza: ProvenienzaScansione?
 
-    public init(creata: Date, righe: [String], lettura: PackagedReading) {
-        self.creata = creata; self.righe = righe; self.lettura = lettura
+    public init(creata: Date, righe: [String], lettura: PackagedReading, provenienza: ProvenienzaScansione? = nil) {
+        self.creata = creata; self.righe = righe; self.lettura = lettura; self.provenienza = provenienza
     }
 }
 
@@ -93,7 +95,7 @@ public protocol FornitoreLetturaMigliore: AnyObject {
     /// Prepara la lettura migliore fuori dal filo principale; `completion` arriva sul filo principale con la lettura e le righe
     /// dell'officina, o con un errore in prosa.
     func prepara(pdf: URL, scelte: [String: String], granularita: Int,
-                 completion: @escaping (Result<(lettura: PackagedReading, righe: [String]), Error>) -> Void)
+                 completion: @escaping (Result<(lettura: PackagedReading, righe: [String], provenienza: ProvenienzaScansione?), Error>) -> Void)
 }
 
 /// Le parole della lettura migliore sul Mac (quelle dell'iPad, § 12.13).
@@ -115,6 +117,9 @@ public enum ParoleLetturaMigliore {
     public static func nienteDaCambiare(_ titolo: String) -> String {
         "La lettura migliore di «\(titolo)» sarebbe uguale a quella di adesso: il libro resta com'è."
     }
+    public static func nienteDiNuovo(_ titolo: String) -> String {
+        "Per «\(titolo)» i modelli non hanno trovato nulla da fare in più: il libro resta com'è."
+    }
     public static func nonRiuscita(_ titolo: String, _ motivo: String) -> String {
         "La lettura migliore di «\(titolo)» non si è potuta preparare. \(motivo)"
     }
@@ -125,7 +130,7 @@ public enum ParoleLetturaMigliore {
         var t = "Cosa arriva. È pronta la lettura migliore di «\(titolo)», preparata il \(f.string(from: data)) qui sul Mac con l'aiuto "
             + "dei modelli."
         if !righe.isEmpty { t += " In questo libro: " + righe.joined(separator: "; ") + "." }
-        t += " Il resto del testo è quello che l'app ricava dallo stesso PDF."
+        t += " Il testo viene dallo stesso file del libro."
         return t
     }
     public static func annotazioni(segnalibri: Int, sottolineature: Int) -> String {
@@ -267,7 +272,7 @@ public final class OffertaMac {
             guard let self else { return }
             self.libreria.inPreparazione.remove(d.id)
             switch esito {
-            case .success(let pronta): self.arriva(pronta.lettura, righe: pronta.righe, per: d.id)
+            case .success(let pronta): self.arriva(pronta.lettura, righe: pronta.righe, per: d.id, provenienza: pronta.provenienza)
             case .failure(let e): self.annuncia(ParoleLetturaMigliore.nonRiuscita(d.title, e.localizedDescription)); self.libreria.avvisa()
             }
         }
@@ -278,14 +283,19 @@ public final class OffertaMac {
     /// Una lettura migliore è pronta per il libro `id` (dal menu del libro o dall'officina). Se cambia la lettura, entra
     /// nell'offerta: annuncio, «Apri ora», segno nella riga. Se non cambia nulla, lo dice e non offre niente.
     @discardableResult
-    public func arriva(_ lettura: PackagedReading, righe: [String], per id: String, il data: Date = Date()) -> Bool {
+    public func arriva(_ lettura: PackagedReading, righe: [String], per id: String, il data: Date = Date(),
+                       provenienza: ProvenienzaScansione? = nil) -> Bool {
         guard let d = service.store.document(id: id) else { return false }
-        guard cambierebbe(lettura, id: id, righe: righe) else {
-            annuncia(ParoleLetturaMigliore.nienteDaCambiare(d.title))
+        let attuale = service.loadCache(forDocumentId: id)
+        guard cambierebbe(lettura, attuale: attuale, righe: righe) else {
+            // Uguale a quella in uso: un'offerta vecchia per questo libro non vale più.
+            libreria.offerte.togli(id)
+            annuncia(attuale == nil ? ParoleLetturaMigliore.nienteDiNuovo(d.title) : ParoleLetturaMigliore.nienteDaCambiare(d.title))
             libreria.avvisa()
             return false
         }
-        guard libreria.offerte.salva(LetturaMiglioreInAttesa(creata: data, righe: righe, lettura: lettura), per: id) else { return false }
+        guard libreria.offerte.salva(LetturaMiglioreInAttesa(creata: data, righe: righe, lettura: lettura, provenienza: provenienza),
+                                     per: id) else { return false }
         libreria.avvisa()
         quandoArriva?(id)
         annuncia(ParoleLetturaMigliore.arrivata(d.title))
@@ -295,7 +305,14 @@ public final class OffertaMac {
     /// Vero se i blocchi della lettura pronta (quelli che VoiceOver legge) non coincidono coi blocchi della cache del libro.
     /// Senza cache da confrontare (volume enorme) decide ciò che l'officina ha fatto in più.
     public func cambierebbe(_ lettura: PackagedReading, id: String, righe: [String]) -> Bool {
-        guard let attuale = service.loadCache(forDocumentId: id) else { return !righe.isEmpty }
+        cambierebbe(lettura, attuale: service.loadCache(forDocumentId: id), righe: righe)
+    }
+
+    func cambierebbe(_ lettura: PackagedReading,
+                     attuale: (content: PaginatedContent, pageMap: [String: Int], doctrineContent: PaginatedContent?,
+                               quickConsultTree: [QuickConsultNode]?, contentTarget: Int?)?,
+                     righe: [String]) -> Bool {
+        guard let attuale else { return !righe.isEmpty }
         return attuale.content.pages.flatMap { $0.segments } != lettura.content.pages.flatMap { $0.segments }
             || attuale.doctrineContent?.pages.flatMap { $0.segments } != lettura.doctrineContent?.pages.flatMap { $0.segments }
     }
@@ -365,6 +382,9 @@ public final class OffertaMac {
         if let cached = service.loadCache(forDocumentId: id) {
             service.mintMissingAnchors(documentId: id, in: ContentAnchorIndex(segments: cached.content.pages.flatMap { $0.segments }))
         }
+        // Una finestra di lettura aperta su questo libro si chiude prima (salva la sua posizione sulla lettura di adesso): così
+        // la posizione si riancora insieme alle annotazioni, sulla lettura nuova (§ 12.14).
+        for f in libreria.quandoCambiaLettura { f(id) }
         let hadPrevious = service.hasPreviousReading(forDocumentId: id)
         guard let snapshot = service.store.readingSnapshot(documentId: id),
               (try? service.stashPreviousReading(snapshot, forDocumentId: id)) != nil else { return nil }
@@ -374,8 +394,11 @@ public final class OffertaMac {
             if !hadPrevious { service.discardPreviousReading(forDocumentId: id) }
             return nil
         }
-        service.store.recordProcessed(id: id, systemVersion: SystemGeneration.current, appBuild: SystemGeneration.appBuild,
-                                      visualResourcesSkipped: nil)
+        // L'origine «lettura del Mac», come una lettura arrivata dal Mac sull'iPad (§ 12.12, decisione 3): un cambio di
+        // granularità non la fa rielaborare in silenzio con la catena senza modelli (`requiredCacheGranularity`).
+        service.store.recordReceivedReading(id: id, systemVersion: SystemGeneration.current, cureLevel: ProcessingChain.cureLevel,
+                                            at: Date(), visualResourcesSkipped: nil)
+        if let p = l.provenienza { libreria.provenienze.registra(p, per: id) }
         let corrente = service.store.document(id: id) ?? prima
         let rapporto = AnnotationReanchoring.reanchor(
             bookmarks: corrente.bookmarks ?? [], underlines: corrente.underlines ?? [], readingPosition: corrente.readingPosition,
@@ -421,6 +444,7 @@ public final class OffertaMac {
 
     /// Torna alla lettura di prima: le annotazioni fatte dopo non si perdono (§ 12.14).
     public func torna(_ id: String) {
+        for f in libreria.quandoCambiaLettura { f(id) }
         guard let snapshot = service.restorePreviousCache(forDocumentId: id) else { return }
         let restored = service.loadCache(forDocumentId: id).map { ContentAnchorIndex(segments: $0.content.pages.flatMap { $0.segments }) }
         let r = service.store.restore(snapshot, documentId: id, restoredContent: restored)
@@ -437,7 +461,7 @@ public final class OffertaMac {
         let a = NSAlert()
         a.messageText = d.title
         a.informativeText = ParoleLetturaMigliore.informazioni(
-            d, provenienza: libreria.provenienze.provenienza(d.id), offerta: libreria.offerte.inAttesa(d.id) != nil,
+            d, provenienza: libreria.provenienze.provenienza(d.id), offerta: libreria.offerte.libri.contains(d.id),
             precedente: service.hasPreviousReading(forDocumentId: d.id))
         a.addButton(withTitle: LibraryWording.errorDismiss)
         a.window.setAccessibilityIdentifier("informazioni.finestra")

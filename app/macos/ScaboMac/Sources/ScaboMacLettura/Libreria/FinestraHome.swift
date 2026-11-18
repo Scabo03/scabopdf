@@ -186,6 +186,8 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
         let scelto = tabella.selectedRow >= 0 && tabella.selectedRow < libri.count ? libri[tabella.selectedRow].id : nil
         libri = libreria.libri()
         tabella.reloadData()
+        // «Apri ora» vale finché il libro c'è e la sua offerta è in attesa.
+        if let id = libroArrivato, !libreria.offerte.libri.contains(id) || !libri.contains(where: { $0.id == id }) { mostraArrivo(nil) }
         vuota.isHidden = !libri.isEmpty
         if let scelto, let k = libri.firstIndex(where: { $0.id == scelto }) {
             tabella.selectRowIndexes([k], byExtendingSelection: false)
@@ -303,7 +305,7 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
             let s = libreria.service
             switch menuItem.action {
             case #selector(informazioniLibro(_:)): return true
-            case #selector(offertaLibro(_:)): return libreria.offerte.inAttesa(d.id) != nil
+            case #selector(offertaLibro(_:)): return libreria.offerte.libri.contains(d.id)
             case #selector(preparaLetturaMigliore(_:)):
                 return d.sourceKind != "akn" && s.hasArchivedPDF(forDocumentId: d.id) && !libreria.inPreparazione.contains(d.id)
             case #selector(tieniNuovaLettura(_:)), #selector(tornaLetturaPrecedente(_:)): return s.hasPreviousReading(forDocumentId: d.id)

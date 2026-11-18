@@ -64,6 +64,8 @@ public final class ImportazioneMac {
     }
     /// I file arrivati insieme («Apri con» di più file, trascinamento): si importano uno alla volta.
     private var coda: [URL] = []
+    /// Il lettore accettato per riaprire una scansione il cui lettore non era partito.
+    private var lettoreForzato: [String: String] = [:]
     /// Un libro da rielaborare chiesto mentre un'altra elaborazione era in corso: si apre appena quella finisce, invece di
     /// non fare nulla in silenzio (rilievo della revisione del giro della tappa A).
     private var aperturaInAttesa: String?
@@ -251,7 +253,8 @@ public final class ImportazioneMac {
         // Un libro letto da una scansione si rielabora con lo stesso lettore (o con quello di Apple, se l'altro non c'è più).
         var estrattore: ProgressReportingPdfExtractor?
         if !isAkn, let p = libreria.provenienze.provenienza(id), let scansioni {
-            let scelto = scansioni.lettori.first { $0.id == p.idLettore && $0.installato } ?? scansioni.lettori.first { $0.installato }
+            let voluto = lettoreForzato.removeValue(forKey: id) ?? p.idLettore
+            let scelto = scansioni.lettori.first { $0.id == voluto && $0.installato } ?? scansioni.lettori.first { $0.installato }
             estrattore = scelto.map { scansioni.estrattore(lettore: $0.id) }
         }
         let processore: DocumentProcessing = isAkn ? AknDocumentProcessor()
@@ -263,9 +266,22 @@ public final class ImportazioneMac {
             guard case .success(let documento, let contenuto, let dottrina) = esito else {
                 self.libroInLavorazione = nil
                 self.occupato = false
+                // Una scansione il cui lettore non parte: come all'importazione, il motivo e la proposta dell'altro lettore.
+                if case .failure = esito, let estrattore, let scansioni = self.scansioni,
+                   let problema = scansioni.problema(di: estrattore), let altroId = problema.altroLettore,
+                   let altro = scansioni.lettori.first(where: { $0.id == altroId && $0.installato }) {
+                    self.presentatore?.proponiAltroLettore(messaggio: problema.messaggio, altro: altro) { [weak self] si in
+                        guard let self, si else { return }
+                        self.lettoreForzato[id] = altroId
+                        self.apri(id)
+                    }
+                    return
+                }
                 if case .failure(let messaggio) = esito { self.presentatore?.mostraErrore(messaggio) }
                 return
             }
+            // Riletta da una scansione: la riga dice con che cosa (anche se il lettore è cambiato).
+            if let estrattore, let p = self.scansioni?.provenienza(di: estrattore) { self.libreria.provenienze.registra(p, per: id) }
             // La lettura in cache, l'apertura registrata e il riancoraggio, coi passi pesanti fuori dal filo principale
             // (ScaboChain `completeReprocessedOpening`, la stessa sequenza dell'iPad: sul volume più grande già letto 1,2 s di
             // fermo); il controllore resta «occupato» finché non è finita.

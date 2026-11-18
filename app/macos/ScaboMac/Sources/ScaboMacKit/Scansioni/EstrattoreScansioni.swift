@@ -81,12 +81,16 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
     }
 
     /// QUANDO SI LEGGE (regola unica, la usano l'importazione, la lettura migliore e l'officina). Un PDF ha scansioni da leggere
-    /// se almeno un quinto delle pagine è senza testo, o se ce ne sono almeno 10 di seguito. Al banco (campo, 2026-11-18) i 55 PDF
+    /// se è quasi tutto senza testo (80 per cento), o se almeno un quinto delle pagine (e almeno 3) è senza testo, o se ce ne
+    /// sono almeno 10 di seguito. Al banco (campo, 2026-11-18) i 55 PDF
     /// con testo (52 volumi e 3 documenti di studio) hanno al più il 5,7 per cento di pagine senza testo e al più 8 di seguito:
     /// copertine, pagine bianche, figure; su di loro la regola non scatta, e l'importazione resta quella dell'iPad, al byte.
     public static func serveLettura(senzaTesto: [Int], totale: Int) -> Bool {
         guard totale > 0, !senzaTesto.isEmpty else { return false }
-        if Double(senzaTesto.count) >= 0.2 * Double(totale) { return true }
+        // Un PDF breve con una figura a tutta pagina non è una scansione: un quinto vale solo con almeno 3 pagine senza testo;
+        // un PDF quasi tutto senza testo (80 per cento) lo è sempre, anche di una pagina (rilievo della revisione del giro).
+        if scansioneIntera(senzaTesto: senzaTesto.count, totale: totale) { return true }
+        if senzaTesto.count >= 3, Double(senzaTesto.count) >= 0.2 * Double(totale) { return true }
         var serie = 0, massima = 0, prec = -2
         for i in senzaTesto.sorted() { serie = i == prec + 1 ? serie + 1 : 1; massima = max(massima, serie); prec = i }
         return massima >= 10
@@ -122,9 +126,20 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
     /// Solo prove: la memoria disponibile simulata (byte).
     nonisolated(unsafe) public static var memoriaSimulata: UInt64?
 
+    /// GLM lettura pagine una pagina alla volta in tutta l'app (importazione, lettura migliore e officina possono partire
+    /// insieme; il motore ha uno stato globale e la memoria basta per una lettura sola).
+    static let filaGlm = NSLock()
+
+    /// Vero dopo che GLM non si è caricato a libro iniziato: le pagine che restano le legge Apple, invece di ricominciare.
+    private var glmFermo = false
+    /// Vero dopo la prima pagina letta in questa estrazione.
+    private var primaPaginaLetta = false
+
     public func extract(fromUri uri: String, onPageExtracted: (Int, Int) -> Void, isCancelled: () -> Bool) throws -> PdfExtraction? {
         problema = nil
         rapporto = nil
+        glmFermo = false
+        primaPaginaLetta = false
         let t0 = Date()
         guard var ex = try PdfKitExtractor().extract(fromUri: uri, onPageExtracted: { _, _ in }, isCancelled: isCancelled) else {
             return nil
@@ -180,6 +195,7 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
                 }
             }
             if primaPagina == nil { primaPagina = Date().timeIntervalSince(tp) }
+            primaPaginaLetta = true
             fatte += 1
             onPageExtracted(fatte, totale)
         }
@@ -207,14 +223,19 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         let secondiImpaginazione = Date().timeIntervalSince(th)
         var letta = PaginaLetta(pagina: indice, larghezza: W, altezza: H, righe: righe, testoGlm: nil,
                                 secondiApple: secondiApple, secondiGlm: 0, secondiImpaginazione: secondiImpaginazione, guardia: nil)
-        if lettore == .glm, let pesiGlm {
+        if lettore == .glm, let pesiGlm, !glmFermo {
             let fileGlm = cacheGlm?.appendingPathComponent("p\(indice).json")
             let salvata = fileGlm.flatMap { try? JSONDecoder().decode(PaginaLetta.self, from: Data(contentsOf: $0)) }
             var testo = salvata?.testoGlm
             letta.secondiGlm = salvata?.secondiGlm ?? 0
-            if testo == nil {
+            // La memoria si guarda a ogni pagina: se a libro iniziato non basta più, questa pagina la legge Apple.
+            let pocaMemoria = cacheGlm == nil && (Self.memoriaSimulata ?? Self.memoriaDisponibile()).map { $0 < UInt64(Self.memoriaGlmGB) << 30 } == true
+            if testo == nil, pocaMemoria, primaPaginaLetta { soloApple += 1 }
+            if testo == nil, !(pocaMemoria && primaPaginaLetta) {
                 guard let png = LetturaScansioni.png(img) else { return letta }
                 do {
+                    Self.filaGlm.lock()
+                    defer { Self.filaGlm.unlock() }
                     let l = try GlmOcr.leggi(png: png, pesi: pesiGlm.pesi, proiettore: pesiGlm.proiettore, annullata: isCancelled)
                     testo = l.testo
                     letta.secondiGlm = l.secondiCaricamento + l.secondiLettura
@@ -226,8 +247,10 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
                 } catch GlmOcr.Problema.annullata {
                     throw GlmOcr.Problema.annullata
                 } catch GlmOcr.Problema.pesiNonCaricati, GlmOcr.Problema.proiettoreNonCaricato, GlmOcr.Problema.contestoNonCreato {
-                    problema = .modelloNonCaricato
-                    throw Problema.modelloNonCaricato
+                    // Alla prima pagina: l'importazione lo dice e propone Apple. A libro iniziato: Apple per le pagine che restano.
+                    guard primaPaginaLetta else { problema = .modelloNonCaricato; throw Problema.modelloNonCaricato }
+                    glmFermo = true
+                    soloApple += 1
                 } catch {
                     soloApple += 1   // questa pagina tiene la lettura di Apple
                 }

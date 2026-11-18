@@ -155,6 +155,11 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         libreria.quandoElimina.append { [weak self] id in
             self?.letture.filter { $0.documentId == id }.forEach { $0.window?.close() }
         }
+        // Quando la lettura di un libro cambia (lettura migliore usata, ritorno a quella di prima) la sua finestra si chiude prima:
+        // salva la posizione sulla lettura di adesso, che poi si riancora; si riapre dalla Home con la lettura nuova.
+        libreria.quandoCambiaLettura.append { [weak self] id in
+            self?.letture.filter { $0.documentId == id }.forEach { $0.window?.close() }
+        }
         importazione = ImportazioneMac(libreria: libreria)
         home = FinestraHome(libreria: libreria, importazione: importazione, comandi: self)
         presentatore = PresentatoreAppKit(finestra: home.window) { [weak self] doc, lettura in

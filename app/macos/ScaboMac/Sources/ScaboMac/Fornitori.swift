@@ -12,11 +12,11 @@ import ScaboMacKit
 import ScaboMacLettura
 
 /// Le parole dei lettori nella schermata della scansione, con i numeri del banco delle scansioni (238 pagine, referto del giro
-/// «modelli e scansioni», § 2 e § 9): la lettura di Apple circa 0,3 secondi a pagina; GLM lettura pagine circa 11, con meno della
-/// metà delle lettere sbagliate (0,21 contro 0,45 per cento), un terzo delle cifre sbagliate e meno parole inventate.
+/// «modelli e scansioni», § 2 e § 9): la lettura di Apple circa 0,3 secondi a pagina; GLM lettura pagine circa 11, con circa la
+/// metà delle lettere sbagliate (0,21-0,26 contro 0,45 per cento), un terzo delle cifre sbagliate e meno parole inventate.
 enum MisureLettori {
     static let descrizioneApple = "veloce, meno di un secondo a pagina; già nel sistema"
-    static let descrizioneGlm = "più preciso, sbaglia meno della metà delle lettere; circa undici secondi a pagina; chiede circa 8 gigabyte di memoria libera"
+    static let descrizioneGlm = "più preciso, sbaglia circa la metà delle lettere; circa undici secondi a pagina; chiede circa 8 gigabyte di memoria libera"
     /// Il lettore preimpostato: il migliore per qualità secondo il banco, se è installato (altrimenti la lettura di Apple).
     static let predefinito = LettoreScansioni.glm
 }
@@ -95,13 +95,17 @@ final class FornitoreLetturaMiglioreApp: FornitoreLetturaMigliore {
     }
 
     func prepara(pdf: URL, scelte: [String: String], granularita: Int,
-                 completion: @escaping (Result<(lettura: PackagedReading, righe: [String]), Error>) -> Void) {
-        let estrattore: ProgressReportingPdfExtractor = scelte[Self.ruoloScansioni].map { scansioni.estrattore(lettore: $0) } ?? PdfKitExtractor()
+                 completion: @escaping (Result<(lettura: PackagedReading, righe: [String], provenienza: ProvenienzaScansione?), Error>) -> Void) {
+        // Un libro con scansioni si prepara sempre con un lettore: quello scelto, se no il predefinito (anche quando la lettura
+        // arriva dall'officina e si rifà per la granularità del libro).
+        let lettore = scelte[Self.ruoloScansioni] ?? (scansioni.scansione(pdf) != nil ? scansioni.predefinito : nil)
+        let estrattore: ProgressReportingPdfExtractor = lettore.map { scansioni.estrattore(lettore: $0) } ?? PdfKitExtractor()
+        let scansioni = self.scansioni
         DispatchQueue.global(qos: .utility).async {
             let out = MacProcessor.process(pdfURL: pdf, policy: .giro, granularityTarget: granularita, extractor: estrattore)
             DispatchQueue.main.async {
                 switch out {
-                case .ready(let r): completion(.success((r.reading, Self.righe(r.report))))
+                case .ready(let r): completion(.success((r.reading, Self.righe(r.report), scansioni.provenienza(di: estrattore))))
                 case .cancelled: completion(.failure(Errore("La preparazione è stata annullata.")))
                 case .failure(let m): completion(.failure(Errore(m)))
                 }

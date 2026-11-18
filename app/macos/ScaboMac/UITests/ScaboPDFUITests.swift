@@ -407,6 +407,41 @@ final class ScaboPDFUITests: XCTestCase {
                                       "riga_dice_scansione": valore.contains("da una scansione")])
     }
 
+    /// LA LETTURA MIGLIORE DAL MENU DEL LIBRO (giro «modelli e scansioni», 2026-11-18; LAYER2 § 12.16, decisione 20): il foglio
+    /// «Prepara una lettura migliore» coi modelli per ruolo e il predefinito già scelto, l'audit; «Prepara» lavora in sottofondo
+    /// (la riga lo dice); alla fine o arriva l'offerta (segno nella riga e «Apri ora») o la riga resta senza segno: niente arriva in
+    /// silenzio e nulla si offre se la lettura non cambia. «Informazioni sul libro…» dice da dove viene il testo.
+    func test_letturaMigliore_dalMenuDelLibro_modelliPerRuolo_eArrivo() throws {
+        let app = app(["--libreria-di-prova", "--libro-di-prova"])
+        app.launch()
+        defer { app.terminate() }
+        XCTAssertTrue(app.windows["lettura.finestra"].waitForExistence(timeout: 60), "il libro di prova si apre")
+        app.typeKey("0", modifierFlags: .command)
+        let riga = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "home.libro.")).firstMatch
+        XCTAssertTrue(riga.waitForExistence(timeout: 20))
+        riga.rightClick()
+        let prepara = app.menuItems["Prepara una lettura migliore…"]
+        XCTAssertTrue(prepara.waitForExistence(timeout: 5))
+        prepara.click()
+        let foglio = app.descendants(matching: .any)["prepara.finestra"]
+        XCTAssertTrue(foglio.waitForExistence(timeout: 10), "il foglio coi modelli per ruolo")
+        XCTAssertTrue(app.staticTexts["Struttura della pagina"].exists)
+        XCTAssertTrue(app.popUpButtons["Struttura della pagina"].exists, "la scelta del ruolo, già fatta")
+        try audit(app, "prepara", conFoglio: true)
+        app.buttons["Prepara"].click()
+        let finita = NSPredicate(format: "NOT (value CONTAINS %@)", "in preparazione")
+        expectation(for: finita, evaluatedWith: riga)
+        waitForExpectations(timeout: 300)
+        let valore = riga.value as? String ?? ""
+        let arrivata = valore.contains("lettura migliore disponibile")
+        XCTAssertEqual(arrivata, app.buttons["home.apriOra"].exists, "segno nella riga e «Apri ora» insieme, o nessuno dei due")
+        riga.rightClick()
+        app.menuItems["Informazioni sul libro…"].click()
+        XCTAssertTrue(app.descendants(matching: .any)["informazioni.finestra"].waitForExistence(timeout: 10))
+        app.typeKey(.return, modifierFlags: [])
+        scrivi("lettura_migliore_libro_di_prova", ["offerta_arrivata": arrivata])
+    }
+
     func test_misuraDaFuori_volumeVero() throws {
         let env = ProcessInfo.processInfo.environment
         guard let libro = env["SCABOMAC_LIBRO"], let descr = env["SCABOMAC_DESCRIZIONE"] else {

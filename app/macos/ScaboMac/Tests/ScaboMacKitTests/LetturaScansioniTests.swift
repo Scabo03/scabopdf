@@ -41,6 +41,21 @@ final class LetturaScansioniTests: XCTestCase {
         XCTAssertEqual(g.righe.map(\.testo), ["prima riga", "seconda riga"])
     }
 
+    func test_guardia_pezziDiSoliSegni_restaQuelloDiApple() {
+        let g = LetturaScansioni.guardia(righe: [riga("prima * dopo")], testoGlm: "prima $^{*}$ dopo")
+        XCTAssertEqual(g.righe.first?.testo, "prima * dopo", "due pezzi vuoti dopo la normalizzazione non sono «uguali»")
+    }
+
+    func test_ordine_delleRegioni_soloSeContengonoLeRighe() {
+        let a = riga("prima", x: 200, y: 700, w: 100), b = riga("seconda", x: 20, y: 680, w: 100)
+        let regioni: [(tipo: String, bbox: BBox)] = [("text", BBox(x: 190, y: 690, width: 150, height: 30)),
+                                                    ("text", BBox(x: 10, y: 670, width: 150, height: 30))]
+        XCTAssertEqual(LetturaScansioni.ordina([b, a], regioni: regioni).map(\.testo), ["prima", "seconda"], "l'ordine del modello")
+        let lontane: [(tipo: String, bbox: BBox)] = [("text", BBox(x: 500, y: 100, width: 10, height: 10))]
+        XCTAssertEqual(LetturaScansioni.ordina([b, a], regioni: lontane).map(\.testo), ["prima", "seconda"],
+                       "regioni che non contengono le righe: l'ordine dall'alto di Apple")
+    }
+
     func test_guardia_formattazioneDiGlmTolta() {
         XCTAssertEqual(LetturaScansioni.paroleGlm("## Titolo\n| a | b |\n**forte**"), ["Titolo", "a", "b", "forte"])
     }
@@ -230,5 +245,9 @@ final class RegolaScansioniBancoTests: XCTestCase {
         XCTAssertFalse(EstrattoreScansioni.serveLettura(senzaTesto: [0, 30, 31, 32, 33, 34, 35, 36, 37], totale: 384), "8 di seguito")
         XCTAssertTrue(EstrattoreScansioni.scansioneIntera(senzaTesto: 18, totale: 20))
         XCTAssertFalse(EstrattoreScansioni.scansioneIntera(senzaTesto: 12, totale: 400))
+        XCTAssertFalse(EstrattoreScansioni.serveLettura(senzaTesto: [2], totale: 4), "una dispensa breve con una figura a tutta pagina")
+        XCTAssertFalse(EstrattoreScansioni.serveLettura(senzaTesto: [1, 7], totale: 10), "due pagine su dieci")
+        XCTAssertTrue(EstrattoreScansioni.serveLettura(senzaTesto: [0], totale: 1), "una pagina scansionata sola")
+        XCTAssertTrue(EstrattoreScansioni.serveLettura(senzaTesto: [3, 4, 5], totale: 15), "tre pagine su quindici")
     }
 }

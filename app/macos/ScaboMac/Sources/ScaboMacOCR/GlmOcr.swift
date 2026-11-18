@@ -8,8 +8,9 @@
 //  processo separato, niente rete. Le impostazioni sono quelle del banco del laboratorio OCR (richiesta «Text
 //  Recognition:», immagine prima del testo, generazione deterministica, penalità di ripetizione 1,05).
 //
-//  Stato: il tasto «Verifica» del pannello lo usa sulla pagina di prova inclusa; dentro la catena di elaborazione del
-//  Mac è un PROTOTIPO dichiarato (non entra nelle letture di questo giro).
+//  Stato: il tasto «Verifica» del pannello lo usa sulla pagina di prova inclusa; dal giro «modelli e scansioni» (2026-11-18)
+//  legge le scansioni dentro l'elaborazione del Mac (ScaboMacKit `EstrattoreScansioni`), attraverso la guardia sulle righe
+//  della lettura di Apple, una pagina alla volta in tutta l'app.
 //
 
 import Foundation

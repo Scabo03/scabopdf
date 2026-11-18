@@ -15,9 +15,10 @@
 //    v2  GLM-OCR + Apple + impaginazione — il testo di GLM-OCR sulla geometria delle righe di Apple, attraverso la GUARDIA:
 //        una parola di GLM entra solo se corregge una parola che Apple ha visto nello stesso punto; ciò che GLM aggiunge
 //        dove Apple non ha visto nulla non entra (le parole inventate pesano più di tutte).
-//  Ogni verdetto di un modello passa da una guardia deterministica: il tipo «titolo» del modello d'impaginazione diventa
-//  grassetto solo su righe brevi e isolate; un numero attaccato a una parola diventa richiamo di nota solo se una nota con
-//  quel numero comincia sulla stessa pagina.
+//  Ogni verdetto di un modello passa da una guardia deterministica: l'ordine delle regioni del modello d'impaginazione vale
+//  solo se le regioni contengono almeno l'80 per cento delle righe; il tipo «titolo» diventa grassetto solo su righe brevi e
+//  isolate; un numero attaccato a una parola diventa richiamo di nota solo se una nota con quel numero comincia sulla stessa
+//  pagina.
 //
 //  La dimensione del carattere viene dall'altezza delle righe, raggruppata in poche misure per tutto il documento (la catena
 //  ragiona per gruppi di dimensioni: rumore di mezzo punto la confonderebbe).
@@ -242,6 +243,13 @@ public enum LetturaScansioni {
     /// regioni nell'ordine del modello, le righe di una regione dall'alto in basso e da sinistra a destra.
     public static func ordina(_ righe: [RigaLetta], regioni: [(tipo: String, bbox: BBox)]) -> [RigaLetta] {
         guard !regioni.isEmpty else { return ordinaDallAlto(righe) }
+        // Guardia dell'ordine: l'ordine delle regioni vale solo se le regioni contengono il centro di almeno l'80 per cento delle
+        // righe; se no (pagina rovinata, regioni mancate) resta l'ordine dei paragrafi di Apple.
+        let dentro = righe.filter { r in
+            let cx = r.bbox.x + r.bbox.width / 2, cy = r.bbox.y + r.bbox.height / 2
+            return regioni.contains { cx >= $0.bbox.x && cx <= $0.bbox.x + $0.bbox.width && cy >= $0.bbox.y && cy <= $0.bbox.y + $0.bbox.height }
+        }.count
+        guard Double(dentro) >= 0.8 * Double(max(1, righe.count)) else { return ordinaDallAlto(righe) }
         let assegnate = righe.map { r -> RigaLetta in
             let cx = r.bbox.x + r.bbox.width / 2, cy = r.bbox.y + r.bbox.height / 2
             let k = regioni.indices.first { i in
@@ -331,7 +339,11 @@ public enum LetturaScansioni {
             if i < nv.count, tolte.contains(i) { corsaV.append(i); i += 1; continue }
             if j < ng.count, messe.contains(j) { corsaG.append(j); j += 1; continue }
             chiudiCorsa()
-            if i < nv.count, j < ng.count { scelte[i] = glm[j]; conti["uguali", default: 0] += 1; ultimaV = i }
+            if i < nv.count, j < ng.count {
+                // Due pezzi fatti di soli segni (normalizzati, vuoti) non sono «uguali»: resta quello di Apple.
+                if !nv[i].isEmpty { scelte[i] = glm[j] }
+                conti["uguali", default: 0] += 1; ultimaV = i
+            }
             i += 1; j += 1
         }
         chiudiCorsa()
