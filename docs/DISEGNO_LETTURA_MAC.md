@@ -806,7 +806,7 @@ testo detto e valore detto (il testo del titolo passa nella descrizione, senza l
 prova del maintainer sulla build 1 del Mac, letto dalla cartella della regola fissa, conteggi nel laboratorio
 `~/Developer/scabopdf-mac-lab/lettura_mac/titoli_definitivi/`; LAYER2 § 12.16 decisione 19). Resoconto: B, C e D trovano i titoli con
 VO+Comando+H; sulla D il sospetto che VO+Comando+H e VO+Comando+M si scambino o facciano la stessa cosa; della A nessun esito
-positivo. **Il diario** (un file, 544 s, lo stesso libro nelle tre varianti, 4.250 elementi, circa 347 titoli; nessun testo):
+positivo. **Il diario** (un file, 544 s, lo stesso libro nelle tre varianti, 4.250 elementi, circa 346 titoli — dedotto: un documento di studio del banco ha 4.250 elementi e 346 titoli; nessun testo):
 - *La via, cambiata* (campo): col ruolo d'intestazione VoiceOver non interroga più il rotore (nessuna riga `rotore:` in tutto il
   diario); VO+Comando+H e VO+Comando+M arrivano come **ricerca generica** (`AXUIElementsForSearchPredicate`) rivolta
   **all'elemento sotto il cursore**, senza l'elemento di partenza, con la chiave dei titoli o dello stesso livello. È la strada a cui

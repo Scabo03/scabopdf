@@ -213,7 +213,20 @@ contenitore dell'app: letta solo la cartella del diario; l'app di TestFlight non
   `regole-fisse` della memoria): i nomi delle cartelle protette mai nei comandi, nemmeno nei controlli d'assenza, sotto-agenti compresi;
   la prudenza generale (niente sudo, nessun dialogo di sistema chiuso, codici d'uscita, cancellazioni protette, etichette di prova).
   `~/.claude/CLAUDE.md` non toccato.
-- **Verifiche** (campo): VERIFICHE_DA_SCRIVERE
+- **Verifiche** (campo): iPad identico — nessun file sotto `app/ios`, quindi niente letture della catena né suite dell'iPad; rete
+  sul parlato VERDE (192/192 al byte, 630.124 elementi, prova al contrario trovata); `rete_vista_mac.sh` VERDE, una volta sola, sul
+  codice finale (`fd434e5`, lo stesso codice di `eedf86b`): 55/55 libri identici con l'eccezione dichiarata dei titoli, l'estrattore
+  19/55 con le stesse 36 righe del giro prima (tolta la chiave della variante); sul codice finale ScaboMac 138 test (70 + 68), 0
+  falliti, 4 saltati per costruzione, FuocoDaFuoriTests 9/9 (+1, la ricerca come nel diario); interfaccia del Mac 15 (10 passati, 5
+  saltati, 0 falliti); testo dei volumi e segreti a zero a ogni push (una mia frase comune segnalata due volte nel `CLAUDE.md`,
+  riformulata e commit riscritti prima del primo push).
+- **Revisione indipendente** (sotto-agente nuovo, solo diff e risultati, laboratorio `titoli_definitivi/revisione/REVISIONE.md`):
+  corretti il conteggio (23 VO+Comando+H con la C, non 24), tre testi con le varianti rimaste (README del pacchetto, DISEGNO § 8.4, un
+  commento dei test) e i segnaposto di questo STATO; **bloccante rispetto al brief**: l'indietro con la C non è nel diario. Tenuta la
+  C definitiva, dichiarato: decisione 1 per il maintainer (sotto).
+- **Decisioni per il maintainer** (referto § 8): (1) la C definitiva senza l'indietro nel diario — inclinazione: tenerla e, alla build
+  2, due minuti con VO+Fine e VO+Comando+Maiuscole+H sul libro di prova; se non va, `git revert` del commit `eedf86b`; (2) l'articolo
+  dei codici come intestazione di livello 5 senza «Articolo» — inclinazione: tenerlo, da sentire su un codice.
 - **Prossimo passo** (dedotto): VO+Comando+Maiuscole+H con la C e l'articolo dei codici, da sentire con la build 2 del Mac quando il
   maintainer vorrà caricarla.
 
