@@ -1678,6 +1678,20 @@ TestFlight (build 1 del Mac), col diario acceso:
     resta identico salvo l'eccezione dichiarata dei titoli (decisione 12). L'iPad non cambia. Dettagli: `DISEGNO_LETTURA_MAC.md` § 5.4
     e § 11; referto del giro nel laboratorio.
 
+**Tre decisioni del maintainer**, registrate all'apertura del giro «modelli e scansioni» (2026-11-18); la prima è dell'8 novembre
+2026 e non era mai stata scritta qui:
+
+20. **All'importazione il Mac dà la lettura identica a quella dell'iPad; i modelli offrono la loro come «Lettura migliore
+    disponibile»**, con lo stesso meccanismo e le stesse parole dell'iPad (§ 12.13): è la via (A) di `DISEGNO_LETTURA_MAC.md`
+    § 6.6. La condizione del maintainer: quando il pannello o l'officina preparano una lettura migliore per un libro della
+    libreria, questa arriva da sola nell'offerta di quel libro, con l'annuncio, un pulsante per aprirla e un segno nella riga del
+    libro nella libreria. *Decisa l'8 novembre 2026, registrata il 18 novembre.*
+21. **Sul Mac una scansione senza testo non è più rifiutata**: la legge il lettore delle scansioni installato, scelto nella
+    schermata dell'elaborazione. L'iPad per ora resta com'è, con il suo controllo e le sue parole. *18 novembre 2026.*
+22. **Le voci provvisorie del catalogo dei modelli restano provvisorie, anche nelle build di TestFlight per i tester esterni,
+    fino alla pubblicazione vera sull'App Store**: Surya, docling, Granite Docling, Qwen e Phi. Non si scaricano e non si
+    eseguono; non si tolgono e non si nascondono. La decisione 16 resta valida per il prodotto pubblicato. *18 novembre 2026.*
+
 ---
 
 ## 13. Ricerca testuale
