@@ -29,7 +29,7 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         public var errorDescription: String? {
             switch self {
             case .memoriaInsufficiente(let gb):
-                return "Per leggere le scansioni con GLM lettura pagine servono circa \(EstrattoreScansioni.memoriaGlmGB) GB di memoria libera, "
+                return "Per leggere le scansioni con GLM lettura pagine servono circa \(EstrattoreScansioni.memoriaGlmGB) gigabyte di memoria libera, "
                     + "e adesso il Mac ne ha circa \(gb). Puoi chiudere altre app e riprovare, oppure leggere le scansioni con la "
                     + "lettura del testo di Apple, che chiede molta meno memoria."
             case .modelloNonInstallato:
@@ -80,6 +80,28 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         self.pesiGlm = pesiGlm
     }
 
+    /// QUANDO SI LEGGE (regola unica, la usano l'importazione, la lettura migliore e l'officina). Un PDF ha scansioni da leggere
+    /// se almeno un quinto delle pagine è senza testo, o se ce ne sono almeno 10 di seguito. Al banco (campo, 2026-11-18) i 55 PDF
+    /// con testo (52 volumi e 3 documenti di studio) hanno al più il 5,7 per cento di pagine senza testo e al più 8 di seguito:
+    /// copertine, pagine bianche, figure; su di loro la regola non scatta, e l'importazione resta quella dell'iPad, al byte.
+    public static func serveLettura(senzaTesto: [Int], totale: Int) -> Bool {
+        guard totale > 0, !senzaTesto.isEmpty else { return false }
+        if Double(senzaTesto.count) >= 0.2 * Double(totale) { return true }
+        var serie = 0, massima = 0, prec = -2
+        for i in senzaTesto.sorted() { serie = i == prec + 1 ? serie + 1 : 1; massima = max(massima, serie); prec = i }
+        return massima >= 10
+    }
+
+    /// Un PDF tutto (o quasi tutto: 80 per cento) scansionato si legge per intero; in un PDF misto una pagina letta entra solo
+    /// se è una pagina di testo (almeno 10 righe e 300 caratteri), non una copertina o una figura (guardia sulla lettura).
+    public static func scansioneIntera(senzaTesto: Int, totale: Int) -> Bool {
+        totale > 0 && Double(senzaTesto) >= 0.8 * Double(totale)
+    }
+
+    static func paginaDiTesto(_ righe: [RigaLetta]) -> Bool {
+        righe.count >= 10 && righe.reduce(0) { $0 + $1.testo.count } >= 300
+    }
+
     /// Una pagina è «senza testo» se l'estrazione di PDFKit non vi trova nemmeno un carattere visibile.
     public static func senzaTesto(_ p: PdfPageExtraction) -> Bool {
         !p.lines.contains { l in l.spans.contains { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
@@ -114,11 +136,14 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         var conti: [String: Int] = [:]
         var soloApple = 0
         var primaPagina: Double?
+        var lette: [PaginaLetta] = []
         defer {
-            rapporto = Rapporto(lettore: lettore, via: via, pagine: totale, pagineLette: vuote.count, pagineSoloApple: soloApple,
+            rapporto = Rapporto(lettore: lettore, via: via, pagine: totale, pagineLette: lette.count, pagineSoloApple: soloApple,
                                 secondi: Date().timeIntervalSince(t0), secondiPrimaPagina: primaPagina, guardia: conti)
         }
-        guard !vuote.isEmpty else { return ex }
+        // Un PDF con testo (anche con copertine, pagine bianche o figure) resta quello dell'iPad, al byte.
+        guard Self.serveLettura(senzaTesto: vuote, totale: totale) else { onPageExtracted(totale, totale); return ex }
+        let intera = Self.scansioneIntera(senzaTesto: vuote.count, totale: totale)
         if lettore == .glm {
             guard let pesiGlm, FileManager.default.fileExists(atPath: pesiGlm.pesi.path),
                   FileManager.default.fileExists(atPath: pesiGlm.proiettore.path) else {
@@ -133,7 +158,6 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         let url = uri.hasPrefix("file:") ? (URL(string: uri) ?? URL(fileURLWithPath: uri)) : URL(fileURLWithPath: uri)
         guard let doc = PDFDocument(url: url) else { problema = .pdfNonLeggibile; throw Problema.pdfNonLeggibile }
         let heron: HeronLayoutModel? = via == .v1 ? nil : (try? HeronLayoutModel.bundled())
-        var lette: [PaginaLetta] = []
         for indice in vuote {
             if isCancelled() { return nil }
             let tp = Date()
@@ -148,8 +172,12 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
                 throw errore
             }
             if let letta {
-                lette.append(letta)
-                for (k, v) in letta.guardia ?? [:] { conti[k, default: 0] += v }
+                if intera || Self.paginaDiTesto(letta.righe) {
+                    lette.append(letta)
+                    for (k, v) in letta.guardia ?? [:] { conti[k, default: 0] += v }
+                } else {
+                    conti["pagine_non_di_testo", default: 0] += 1   // copertina o figura in un PDF misto: resta com'è
+                }
             }
             if primaPagina == nil { primaPagina = Date().timeIntervalSince(tp) }
             fatte += 1

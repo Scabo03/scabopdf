@@ -291,12 +291,22 @@ public enum LetturaScansioni {
             }
         }
         var scelte = parole.map { $0.testo }
-        var conti = ["uguali": 0, "corrette": 0, "tenute_apple": 0, "scartate_glm": 0]
+        var conti = ["uguali": 0, "corrette": 0, "tenute_apple": 0, "scartate_glm": 0, "apici_glm": 0]
         var i = 0, j = 0
+        var ultimaV = -1
         var corsaV: [Int] = [], corsaG: [Int] = []
         func chiudiCorsa() {
-            defer { corsaV.removeAll(); corsaG.removeAll() }
-            if corsaV.isEmpty { conti["scartate_glm", default: 0] += corsaG.count; return }
+            defer { if let u = corsaV.last { ultimaV = u }; corsaV.removeAll(); corsaG.removeAll() }
+            if corsaV.isEmpty {
+                // Ciò che GLM aggiunge non entra; solo un apice di richiamo («$^{12}$») si attacca alla parola precedente di
+                // Apple: diventa richiamo più avanti solo se sulla pagina comincia una nota con quel numero (`spans`).
+                for g in corsaG {
+                    if ultimaV >= 0, Self.apice(in: glm[g]) != nil, glm[g].hasPrefix("$") || glm[g].hasPrefix("^") {
+                        scelte[ultimaV] += glm[g]; conti["apici_glm", default: 0] += 1
+                    } else { conti["scartate_glm", default: 0] += 1 }
+                }
+                return
+            }
             if corsaG.isEmpty { conti["tenute_apple", default: 0] += corsaV.count; return }
             if corsaV.count == corsaG.count {
                 for (v, g) in zip(corsaV, corsaG) {
@@ -321,7 +331,7 @@ public enum LetturaScansioni {
             if i < nv.count, tolte.contains(i) { corsaV.append(i); i += 1; continue }
             if j < ng.count, messe.contains(j) { corsaG.append(j); j += 1; continue }
             chiudiCorsa()
-            if i < nv.count, j < ng.count { scelte[i] = glm[j]; conti["uguali", default: 0] += 1 }
+            if i < nv.count, j < ng.count { scelte[i] = glm[j]; conti["uguali", default: 0] += 1; ultimaV = i }
             i += 1; j += 1
         }
         chiudiCorsa()
@@ -343,6 +353,21 @@ public enum LetturaScansioni {
             while let l = s.last, "*|".contains(l) { s.removeLast() }
             return s
         }.filter { !$0.isEmpty && $0 != "---" }
+    }
+
+    /// Il numero di un apice di richiamo come lo scrive GLM lettura pagine («$^{12}$», «^{12}», «^12»), se il pezzo ne ha uno.
+    static func apice(in pezzo: String) -> (prima: String, numero: String, dopo: String)? {
+        guard let r = pezzo.range(of: #"\$?\^\{?([0-9]{1,3})\}?\$?"#, options: .regularExpression) else { return nil }
+        let numero = pezzo[r].filter(\.isNumber)
+        return (String(pezzo[..<r.lowerBound]), String(numero), String(pezzo[r.upperBound...]))
+    }
+
+    /// Un apice all'inizio della riga è il numero della nota che comincia lì («$^{12}$ Testo» → «12 Testo»).
+    static func numeroDiNotaInTesta(_ t: String) -> String {
+        guard t.hasPrefix("$^") || t.hasPrefix("^"),
+              let r = t.range(of: #"^\$?\^\{?([0-9]{1,3})\}?\$?"#, options: .regularExpression) else { return t }
+        let resto = t[r.upperBound...]
+        return String(t[r].filter(\.isNumber)) + (resto.hasPrefix(" ") ? "" : " ") + resto
     }
 
     /// Minuscole, senza accenti, solo lettere e cifre.
@@ -383,7 +408,9 @@ public enum LetturaScansioni {
         let stime = lette.map { stimeDiPagina($0.righe) }
         let quantizza = picchi(zip(lette, stime).flatMap { p, st in zip(p.righe, st).map { ($0.1, Double($0.0.testo.count)) } })
         var uscita: [Int: PdfPageExtraction] = [:]
-        for (p, st) in zip(lette, stime) {
+        for (pagina, st) in zip(lette, stime) {
+            var p = pagina
+            for k in p.righe.indices { p.righe[k].testo = numeroDiNotaInTesta(p.righe[k].testo) }
             let corpi = st.map(quantizza)
             let corpoTesto = corpoPrevalente(zip(p.righe, corpi).flatMap { r, c in Array(repeating: c, count: max(1, r.testo.count / 10)) })
             let note = numeriDiNota(p.righe, corpi: corpi, corpoTesto: corpoTesto)
@@ -407,7 +434,7 @@ public enum LetturaScansioni {
         return zip(righe, proprie).map { r, e in
             guard r.testo.count >= caratteriMinimi, let v = perRegione[r.regione], v.count >= 2 else { return e }
             let o = v.sorted()
-            return o[o.count / 2]
+            return (o[(o.count - 1) / 2] + o[o.count / 2]) / 2
         }
     }
 
@@ -474,10 +501,29 @@ public enum LetturaScansioni {
         func span(_ t: String, _ b: BBox, _ c: Double) -> PdfSpan {
             PdfSpan(text: t, fontSize: c, bold: grassetto, italic: false, color: "#000000", bbox: b)
         }
+        // Gli apici di GLM: richiamo solo con la nota sulla pagina; altrimenti resta la cifra, attaccata (per esempio «m2»).
+        let parole = r.testo.split(separator: " ").map(String.init)
+        if parole.contains(where: { apice(in: $0) != nil }) {
+            var pezzi: [(String, Bool)] = []
+            var corrente = ""
+            for (k, p) in parole.enumerated() {
+                let sep = k == 0 || corrente.isEmpty && pezzi.isEmpty ? "" : " "
+                if let a = apice(in: p), note.contains(String(Int(a.numero) ?? -1)) {
+                    pezzi.append((corrente + sep + a.prima, false)); pezzi.append((a.numero, true)); corrente = a.dopo
+                } else if let a = apice(in: p) {
+                    corrente += sep + a.prima + a.numero + a.dopo
+                } else {
+                    corrente += sep + p
+                }
+            }
+            if !corrente.isEmpty { pezzi.append((corrente, false)) }
+            pezzi = pezzi.filter { !$0.0.isEmpty }
+            if pezzi.contains(where: { $0.1 }) { return riquadri(pezzi, r, corpo, span) }
+            return [span(pezzi.map(\.0).joined(), r.bbox, corpo)]
+        }
         guard !note.isEmpty else { return [span(r.testo, r.bbox, corpo)] }
         var pezzi: [(String, Bool)] = []
         var corrente = ""
-        let parole = r.testo.split(separator: " ").map(String.init)
         for (k, p) in parole.enumerated() {
             let sep = k == 0 ? "" : " "
             let cifre = String(p.reversed().prefix { $0.isNumber }.reversed())
@@ -489,7 +535,7 @@ public enum LetturaScansioni {
                 pezzi.append((corrente + sep + base, false)); pezzi.append((cifre, true)); corrente = ""
             } else if k > 0, base.isEmpty, (1...3).contains(cifre.count), note.contains(numero),
                       let prima = parole[k - 1].last, prima.isLetter || ".,;:»)".contains(prima),
-                      !primaDiNumero.contains(normalizza(parole[k - 1])) {
+                      !primaDiNumero.contains(normalizza(String(parole[k - 1].split(whereSeparator: { "'’".contains($0) }).last ?? ""))) {
                 // Numero staccato dopo una parola che non lo regge («parola 12»): richiamo solo con la nota sulla pagina.
                 if !corrente.isEmpty { pezzi.append((corrente, false)) }
                 pezzi.append((cifre, true)); corrente = ""
@@ -499,7 +545,12 @@ public enum LetturaScansioni {
         }
         if !corrente.isEmpty { pezzi.append((corrente, false)) }
         guard pezzi.contains(where: { $0.1 }) else { return [span(r.testo, r.bbox, corpo)] }
-        // Riquadri in proporzione ai caratteri (la lettura dà la riga intera).
+        return riquadri(pezzi, r, corpo, span)
+    }
+
+    /// I riquadri dei pezzi in proporzione ai caratteri (la lettura dà la riga intera); il richiamo più piccolo e più in alto.
+    static func riquadri(_ pezzi: [(String, Bool)], _ r: RigaLetta, _ corpo: Double,
+                         _ span: (String, BBox, Double) -> PdfSpan) -> [PdfSpan] {
         let totale = Double(max(1, pezzi.reduce(0) { $0 + $1.0.count }))
         var x = r.bbox.x
         return pezzi.map { t, richiamo in

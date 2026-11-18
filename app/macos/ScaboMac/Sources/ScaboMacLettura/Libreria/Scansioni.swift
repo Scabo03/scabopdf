@@ -11,6 +11,7 @@
 
 import CoreGraphics
 import Foundation
+import PDFKit
 import ScaboChain
 import ScaboCore
 
@@ -57,6 +58,9 @@ public protocol FornitoreScansioni: AnyObject {
     func provenienza(di estrattore: ProgressReportingPdfExtractor) -> ProvenienzaScansione?
     /// Apre il pannello dei modelli (per scaricare GLM-OCR).
     func apriPannelloModelli()
+    /// Se il PDF ha scansioni da leggere (la regola sta col lettore): quante pagine senza testo su quante; nil = un PDF con testo,
+    /// che si importa come sull'iPad, senza domande.
+    func scansione(_ url: URL) -> (senzaTesto: Int, totale: Int)?
 }
 
 /// Il riconoscimento rapido di una scansione, prima di elaborare: le pagine senza alcun carattere nelle risorse (nessun
@@ -64,15 +68,40 @@ public protocol FornitoreScansioni: AnyObject {
 public enum RilevaScansione {
 
     public static func pagineSenzaTesto(_ url: URL) -> (senzaTesto: Int, totale: Int) {
-        guard let doc = CGPDFDocument(url as CFURL) else { return (0, 0) }
+        let r = indiciSenzaTesto(url)
+        return (r.indici.count, r.totale)
+    }
+
+    /// Le pagine senza testo (0-based) e il numero delle pagine.
+    public static func indiciSenzaTesto(_ url: URL) -> (indici: [Int], totale: Int) {
+        guard let doc = CGPDFDocument(url as CFURL) else { return ([], 0) }
         let n = doc.numberOfPages
-        var senza = 0
+        var sospette: [Int] = []
         for i in 1...max(n, 1) where n > 0 {
             guard let page = doc.page(at: i), let dict = page.dictionary else { continue }
-            var risorse: CGPDFDictionaryRef?
-            if !CGPDFDictionaryGetDictionary(dict, "Resources", &risorse) || !haCaratteri(risorse, profondita: 0) { senza += 1 }
+            if !haCaratteri(risorse(di: dict), profondita: 0) { sospette.append(i - 1) }
+        }
+        guard !sospette.isEmpty else { return ([], n) }
+        // Le pagine sospette si confermano col testo di PDFKit (una pagina senza font nelle risorse ma col testo, per esempio
+        // in una forma che il controllo rapido non vede, non è una scansione): niente domanda su un PDF con testo.
+        guard let pdf = PDFDocument(url: url) else { return (sospette, n) }
+        let senza = sospette.filter { k in
+            (pdf.page(at: k)?.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
         return (senza, n)
+    }
+
+    /// Le risorse della pagina, anche ereditate dai nodi dell'albero delle pagine (`/Parent`), come vuole il formato PDF.
+    static func risorse(di pagina: CGPDFDictionaryRef) -> CGPDFDictionaryRef? {
+        var nodo: CGPDFDictionaryRef? = pagina
+        for _ in 0..<32 {
+            guard let d = nodo else { return nil }
+            var r: CGPDFDictionaryRef?
+            if CGPDFDictionaryGetDictionary(d, "Resources", &r) { return r }
+            var genitore: CGPDFDictionaryRef?
+            nodo = CGPDFDictionaryGetDictionary(d, "Parent", &genitore) ? genitore : nil
+        }
+        return nil
     }
 
     /// Vero se le risorse hanno almeno un font, direttamente o in un modulo (`Form`) annidato fino a tre livelli.

@@ -131,18 +131,15 @@ public final class ImportazioneMac {
     private func elabora(copia: URL, nome: String, isAkn: Bool, sha: String?) {
         guard let presentatore else { try? FileManager.default.removeItem(at: copia); occupato = false; return }
         // UNA SCANSIONE (§ 12.16, decisione 21): prima di elaborare, la scelta del lettore. I PDF con testo: nessuna domanda.
-        if !isAkn, let scansioni {
-            let (senza, totale) = RilevaScansione.pagineSenzaTesto(copia)
-            if senza > 0 {
-                presentatore.scegliLettoreScansioni(
-                    nome: nome, senzaTesto: senza, totale: totale, lettori: scansioni.lettori, predefinito: scansioni.predefinito,
-                    apriPannello: { [weak scansioni] in scansioni?.apriPannelloModelli() }
-                ) { [weak self] scelta in
-                    guard let self, let scelta else { try? FileManager.default.removeItem(at: copia); self?.occupato = false; return }
-                    self.elabora(copia: copia, nome: nome, isAkn: false, sha: sha, lettore: scelta)
-                }
-                return
+        if !isAkn, let scansioni, let (senza, totale) = scansioni.scansione(copia) {
+            presentatore.scegliLettoreScansioni(
+                nome: nome, senzaTesto: senza, totale: totale, lettori: scansioni.lettori, predefinito: scansioni.predefinito,
+                apriPannello: { [weak scansioni] in scansioni?.apriPannelloModelli() }
+            ) { [weak self] scelta in
+                guard let self, let scelta else { try? FileManager.default.removeItem(at: copia); self?.occupato = false; return }
+                self.elabora(copia: copia, nome: nome, isAkn: false, sha: sha, lettore: scelta)
             }
+            return
         }
         elabora(copia: copia, nome: nome, isAkn: isAkn, sha: sha, lettore: nil)
     }

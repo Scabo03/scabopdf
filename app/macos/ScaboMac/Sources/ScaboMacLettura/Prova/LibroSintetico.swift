@@ -82,4 +82,32 @@ public enum LibroSintetico {
         CTFrameDraw(frame, ctx)
         return rett.minY
     }
+
+    /// La SCANSIONE del libro sintetico (giro «modelli e scansioni», 2026-11-18): le stesse pagine come immagini a 200 punti per
+    /// pollice, senza livello di testo, in `url`. Per provare la lettura delle scansioni nell'app vera (`--scansione-di-prova`).
+    @discardableResult
+    public static func scriviScansione(in url: URL) throws -> URL {
+        let testo = url.deletingLastPathComponent().appendingPathComponent(".testo-\(UUID().uuidString).pdf")
+        try scrivi(in: testo)
+        defer { try? FileManager.default.removeItem(at: testo) }
+        guard let sorgente = CGPDFDocument(testo as CFURL) else { throw NSError(domain: "LibroSintetico", code: 2) }
+        var box = CGRect(x: 0, y: 0, width: 595, height: 842)
+        guard let ctx = CGContext(url as CFURL, mediaBox: &box, nil) else { throw NSError(domain: "LibroSintetico", code: 3) }
+        let scala: CGFloat = 200.0 / 72.0
+        for i in 1...max(1, sorgente.numberOfPages) {
+            guard let pagina = sorgente.page(at: i),
+                  let bmp = CGContext(data: nil, width: Int(595 * scala), height: Int(842 * scala), bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue) else { continue }
+            bmp.setFillColor(gray: 1, alpha: 1)
+            bmp.fill(CGRect(x: 0, y: 0, width: 595 * scala, height: 842 * scala))
+            bmp.scaleBy(x: scala, y: scala)
+            bmp.drawPDFPage(pagina)
+            guard let img = bmp.makeImage() else { continue }
+            ctx.beginPDFPage(nil)
+            ctx.draw(img, in: box)
+            ctx.endPDFPage()
+        }
+        ctx.closePDF()
+        return url
+    }
 }

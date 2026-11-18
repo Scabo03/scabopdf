@@ -15,6 +15,7 @@
 //    --libreria-di-prova      una libreria a parte, svuotata all'avvio (i test non toccano la libreria vera)
 //    --libreria-di-prova-continua  la stessa libreria a parte, senza svuotarla (prove su due lanci)
 //    --libro-di-prova         scrive il PDF sintetico (ScaboMacLettura `LibroSintetico`) e lo importa col percorso vero
+//    --scansione-di-prova     scrive la scansione del libro sintetico (solo immagini) e la importa: la schermata della scansione
 //    --importa <percorso>     importa un file che sta già nel contenitore dell'app
 //    --descrivi-in <percorso> appena una lettura si apre, scrive lì la sua descrizione dalla vista (formato 2) e quella del
 //                             modulo accanto (`.modulo.jsonl`), per il confronto da fuori
@@ -172,8 +173,7 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         offerta.finestra = home.window
         home.offerta = offerta
         officina.estrattorePer = { [weak fornitoreScansioni] url in
-            RilevaScansione.pagineSenzaTesto(url).senzaTesto > 0
-                ? fornitoreScansioni.map { $0.estrattore(lettore: $0.predefinito) } : nil
+            fornitoreScansioni.flatMap { f in f.scansione(url) != nil ? f.estrattore(lettore: f.predefinito) : nil }
         }
         officinaPronta = officina.$pronta.compactMap { $0 }.receive(on: DispatchQueue.main).sink { [weak self] r in
             MainActor.assumeIsolated { self?.letturaDallOfficina(r) }
@@ -190,6 +190,10 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             // «Libro già presente» si prova anche da fuori.
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("Libro di prova.pdf")
             if FileManager.default.fileExists(atPath: url.path) || (try? LibroSintetico.scrivi(in: url)) != nil { fileInArrivo.append(url) }
+        }
+        if argomenti.contains("--scansione-di-prova") {
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("Scansione di prova.pdf")
+            if FileManager.default.fileExists(atPath: url.path) || (try? LibroSintetico.scriviScansione(in: url)) != nil { fileInArrivo.append(url) }
         }
         if let p = argomento("--importa") { fileInArrivo.append(URL(fileURLWithPath: p)) }
         if !fileInArrivo.isEmpty {

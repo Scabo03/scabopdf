@@ -11,12 +11,14 @@ import ScaboCore
 import ScaboMacKit
 import ScaboMacLettura
 
-/// Le parole dei lettori nella schermata della scansione, con i numeri del banco (referto del giro, § 2 e § 9).
+/// Le parole dei lettori nella schermata della scansione, con i numeri del banco delle scansioni (238 pagine, referto del giro
+/// «modelli e scansioni», § 2 e § 9): la lettura di Apple circa 0,3 secondi a pagina; GLM lettura pagine circa 11, con meno della
+/// metà delle lettere sbagliate (0,21 contro 0,45 per cento), un terzo delle cifre sbagliate e meno parole inventate.
 enum MisureLettori {
-    static let descrizioneApple = "veloce, circa un secondo a pagina; già nel sistema"
-    static let descrizioneGlm = "più preciso sulle lettere, circa dieci secondi a pagina; chiede circa 8 GB di memoria libera"
-    /// Il lettore preimpostato, scelto con le misure del banco.
-    static let predefinito = LettoreScansioni.apple
+    static let descrizioneApple = "veloce, meno di un secondo a pagina; già nel sistema"
+    static let descrizioneGlm = "più preciso, sbaglia meno della metà delle lettere; circa undici secondi a pagina; chiede circa 8 gigabyte di memoria libera"
+    /// Il lettore preimpostato: il migliore per qualità secondo il banco, se è installato (altrimenti la lettura di Apple).
+    static let predefinito = LettoreScansioni.glm
 }
 
 @MainActor
@@ -63,6 +65,11 @@ final class FornitoreScansioniApp: FornitoreScansioni {
     }
 
     func apriPannelloModelli() { comandi?.mostraModelliEOfficina(nil) }
+
+    func scansione(_ url: URL) -> (senzaTesto: Int, totale: Int)? {
+        let r = RilevaScansione.indiciSenzaTesto(url)
+        return EstrattoreScansioni.serveLettura(senzaTesto: r.indici, totale: r.totale) ? (r.indici.count, r.totale) : nil
+    }
 }
 
 @MainActor
@@ -77,7 +84,7 @@ final class FornitoreLetturaMiglioreApp: FornitoreLetturaMigliore {
         var r = [RuoloModello(ruolo: Self.ruoloStruttura, scelte: [("docling-layout-heron", "Struttura di pagina di docling (Heron)")],
                               predefinito: "docling-layout-heron",
                               nota: "Inclusa nell'app: riconosce le zone della pagina, come l'indice analitico, le tabelle e le figure.")]
-        if RilevaScansione.pagineSenzaTesto(pdf).senzaTesto > 0 {
+        if scansioni.scansione(pdf) != nil {
             let installati = scansioni.lettori.filter(\.installato)
             let mancante = scansioni.lettori.first { !$0.installato }
             r.append(RuoloModello(ruolo: Self.ruoloScansioni, scelte: installati.map { ($0.id, $0.nome.prefix(1).uppercased() + $0.nome.dropFirst()) },
