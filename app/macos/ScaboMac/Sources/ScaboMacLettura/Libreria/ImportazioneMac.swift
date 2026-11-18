@@ -28,17 +28,33 @@ public enum SceltaDoppione: Equatable { case apriQuelloCheHai, importaComeCopia,
 public protocol PresentatoreImportazione: AnyObject {
     /// La schermata d'elaborazione bloccante (§ 12.9): avvia `processore` e chiama `esito` una volta sola, con il motivo per
     /// cui il riconoscimento di tabelle e figure è saltato, se è da riprovare.
-    func elabora(fileURL: URL, nome: String, granularita: Int, dottrina: Bool, processore: DocumentProcessing,
+    /// `scansione`: il testo lo legge un lettore delle scansioni (la fase d'estrazione si chiama «Lettura delle scansioni»).
+    func elabora(fileURL: URL, nome: String, granularita: Int, dottrina: Bool, processore: DocumentProcessing, scansione: Bool,
                  esito: @escaping (DocumentProcessor.Outcome, _ risorseVisiveSaltate: String?) -> Void)
+    /// LA SCELTA DEL LETTORE per una scansione (§ 12.16, decisione 21): la schermata dice che è una scansione, mostra i lettori
+    /// col predefinito già scelto e un pulsante per avviare. `scelta(nil)` = annullato.
+    func scegliLettoreScansioni(nome: String, senzaTesto: Int, totale: Int, lettori: [LettoreDisponibile], predefinito: String,
+                                apriPannello: @escaping () -> Void, scelta: @escaping (String?) -> Void)
+    /// Il lettore scelto non è partito (non installato, non caricato, memoria): il motivo in prosa e la proposta dell'altro
+    /// lettore. `risposta(true)` = leggi con l'altro; l'importazione non si chiude da sé.
+    func proponiAltroLettore(messaggio: String, altro: LettoreDisponibile, risposta: @escaping (Bool) -> Void)
     func chiediLibroGiaPresente(esistente: ArchivedDocument, copie: Int, scelta: @escaping (SceltaDoppione) -> Void)
     func mostraErrore(_ messaggio: String)
     func apriLettura(documento: ArchivedDocument, lettura: LibraryReading)
+}
+
+public extension PresentatoreImportazione {
+    func scegliLettoreScansioni(nome: String, senzaTesto: Int, totale: Int, lettori: [LettoreDisponibile], predefinito: String,
+                                apriPannello: @escaping () -> Void, scelta: @escaping (String?) -> Void) { scelta(predefinito) }
+    func proponiAltroLettore(messaggio: String, altro: LettoreDisponibile, risposta: @escaping (Bool) -> Void) { risposta(false) }
 }
 
 @MainActor
 public final class ImportazioneMac {
     public let libreria: LibreriaMac
     public weak var presentatore: PresentatoreImportazione?
+    /// Il lettore delle scansioni (lo dà l'app); senza, una scansione segue la strada dell'iPad (il suo controllo e le sue parole).
+    public weak var scansioni: FornitoreScansioni?
     /// Vero dal file scelto alla fine dell'elaborazione: un secondo file in quell'istante non apre un secondo flusso.
     /// Il libro che si sta rielaborando per aprirlo (`apri`), finché la riapertura non è finita: cache scritta, annotazioni
     /// riancorate, finestra chiesta.
@@ -114,19 +130,52 @@ public final class ImportazioneMac {
 
     private func elabora(copia: URL, nome: String, isAkn: Bool, sha: String?) {
         guard let presentatore else { try? FileManager.default.removeItem(at: copia); occupato = false; return }
+        // UNA SCANSIONE (§ 12.16, decisione 21): prima di elaborare, la scelta del lettore. I PDF con testo: nessuna domanda.
+        if !isAkn, let scansioni {
+            let (senza, totale) = RilevaScansione.pagineSenzaTesto(copia)
+            if senza > 0 {
+                presentatore.scegliLettoreScansioni(
+                    nome: nome, senzaTesto: senza, totale: totale, lettori: scansioni.lettori, predefinito: scansioni.predefinito,
+                    apriPannello: { [weak scansioni] in scansioni?.apriPannelloModelli() }
+                ) { [weak self] scelta in
+                    guard let self, let scelta else { try? FileManager.default.removeItem(at: copia); self?.occupato = false; return }
+                    self.elabora(copia: copia, nome: nome, isAkn: false, sha: sha, lettore: scelta)
+                }
+                return
+            }
+        }
+        elabora(copia: copia, nome: nome, isAkn: isAkn, sha: sha, lettore: nil)
+    }
+
+    private func elabora(copia: URL, nome: String, isAkn: Bool, sha: String?, lettore: String?) {
+        guard let presentatore else { try? FileManager.default.removeItem(at: copia); occupato = false; return }
         // Prima dell'elaborazione le pagine non si conoscono: la granularità delle Impostazioni (un volume enorme non va in
         // cache all'importazione, e alla prima apertura si prepara leggero: la regola dell'iPad, in `registerImported`).
         let granularita = PreferenzeLettura.granularita(libreria.prefs, isAkn: isAkn, large: false)
-        let processore: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
-        presentatore.elabora(fileURL: copia, nome: nome, granularita: granularita, dottrina: true, processore: processore) {
+        let estrattore = lettore.flatMap { scansioni?.estrattore(lettore: $0) }
+        let processore: DocumentProcessing = isAkn ? AknDocumentProcessor()
+            : (estrattore.map { DocumentProcessor(extractor: $0) } ?? DocumentProcessor())
+        presentatore.elabora(fileURL: copia, nome: nome, granularita: granularita, dottrina: true, processore: processore,
+                             scansione: estrattore != nil) {
             [weak self] esito, saltate in
             guard let self else { try? FileManager.default.removeItem(at: copia); return }
             guard case .success(let documento, let contenuto, let dottrina) = esito else {
+                // Il lettore non è partito: l'importazione non si chiude, dice perché e propone l'altro lettore.
+                if case .failure = esito, let estrattore, let scansioni = self.scansioni,
+                   let problema = scansioni.problema(di: estrattore), let altroId = problema.altroLettore,
+                   let altro = scansioni.lettori.first(where: { $0.id == altroId && $0.installato }) {
+                    self.presentatore?.proponiAltroLettore(messaggio: problema.messaggio, altro: altro) { [weak self] si in
+                        guard let self, si else { try? FileManager.default.removeItem(at: copia); self?.occupato = false; return }
+                        self.elabora(copia: copia, nome: nome, isAkn: false, sha: sha, lettore: altroId)
+                    }
+                    return
+                }
                 try? FileManager.default.removeItem(at: copia)
                 self.occupato = false
                 if case .failure(let messaggio) = esito { self.presentatore?.mostraErrore(messaggio) }
                 return
             }
+            let provenienza = estrattore.flatMap { self.scansioni?.provenienza(di: $0) }
             // La registrazione coi passi pesanti fuori dal filo principale (giro «prove rifatte e granularità», 2026-11-10), lo
             // stesso risultato; l'importazione resta «occupata» finché non è finita.
             self.service.registerImportedOffMain(
@@ -134,6 +183,7 @@ public final class ImportazioneMac {
                 isAkn: isAkn, sha256: sha, visualResourcesSkipped: saltate, destination: nil, contentTarget: granularita) { [weak self] r in
                 try? FileManager.default.removeItem(at: copia)
                 guard let self else { return }
+                if let provenienza, provenienza.pagineLette > 0 { self.libreria.provenienze.registra(provenienza, per: r.document.id) }
                 self.libreria.avvisa()
                 self.presentatore?.apriLettura(
                     documento: r.document,
@@ -201,9 +251,17 @@ public final class ImportazioneMac {
         guard !occupato else { aperturaInAttesa = id; return }
         occupato = true
         libroInLavorazione = id
-        let processore: DocumentProcessing = isAkn ? AknDocumentProcessor() : DocumentProcessor()
+        // Un libro letto da una scansione si rielabora con lo stesso lettore (o con quello di Apple, se l'altro non c'è più).
+        var estrattore: ProgressReportingPdfExtractor?
+        if !isAkn, let p = libreria.provenienze.provenienza(id), let scansioni {
+            let scelto = scansioni.lettori.first { $0.id == p.idLettore && $0.installato } ?? scansioni.lettori.first { $0.installato }
+            estrattore = scelto.map { scansioni.estrattore(lettore: $0.id) }
+        }
+        let processore: DocumentProcessing = isAkn ? AknDocumentProcessor()
+            : (estrattore.map { DocumentProcessor(extractor: $0) } ?? DocumentProcessor())
         presentatore.elabora(fileURL: service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind), nome: doc.title,
-                             granularita: granularita, dottrina: !large, processore: processore) { [weak self] esito, saltate in
+                             granularita: granularita, dottrina: !large, processore: processore,
+                             scansione: estrattore != nil) { [weak self] esito, saltate in
             guard let self else { return }
             guard case .success(let documento, let contenuto, let dottrina) = esito else {
                 self.libroInLavorazione = nil

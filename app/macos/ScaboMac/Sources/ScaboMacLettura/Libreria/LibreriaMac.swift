@@ -35,8 +35,27 @@ public final class LibreriaMac {
     /// Avvisa, prima di toglierlo, che un libro sta per essere eliminato (chi tiene la sua finestra di lettura la chiude).
     public var quandoElimina: [(String) -> Void] = []
 
+    /// Da dove viene il testo dei libri letti da scansioni (giro «modelli e scansioni», 2026-11-18).
+    public let provenienze: ProvenienzeScansioni
+    /// Le letture migliori pronte e in attesa della scelta (LAYER2 § 12.16, decisione 20).
+    public let offerte: OfferteMigliori
+    /// I libri per cui una lettura migliore si sta preparando.
+    public internal(set) var inPreparazione: Set<String> = []
+
     public init(service: LibraryService) {
         self.service = service
+        provenienze = ProvenienzeScansioni(service: service)
+        offerte = OfferteMigliori(service: service)
+    }
+
+    /// Ciò che la riga del libro dice: le parole della riga dell'iPad, più la provenienza della scansione e il segno
+    /// dell'offerta (o della preparazione in corso).
+    public func rigaDelLibro(_ d: ArchivedDocument) -> String {
+        var parti = [LibraryFormatting.fileAccessibility(d)]
+        if let p = provenienze.provenienza(d.id) { parti.append(ParoleScansioni.riga(p)) }
+        if offerte.inAttesa(d.id) != nil { parti.append(ParoleLetturaMigliore.segnoRiga) }
+        else if inPreparazione.contains(d.id) { parti.append(ParoleLetturaMigliore.segnoPreparazione) }
+        return parti.joined(separator: ", ")
     }
 
     /// I libri dal più recentemente aperto (poi dal più recentemente importato): l'elenco della Home nella tappa A.
@@ -52,6 +71,8 @@ public final class LibreriaMac {
         for f in quandoElimina { f(id) }
         service.store.deleteDocumentFromArchive(id: id)
         service.deleteFiles(forDocumentId: id)
+        provenienze.togli(id)
+        offerte.togli(id)
         avvisa()
     }
 

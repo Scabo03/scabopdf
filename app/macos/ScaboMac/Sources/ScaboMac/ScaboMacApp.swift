@@ -27,6 +27,7 @@
 //    -ScaboMacProvaPannello   la prova del laboratorio sul pannello (giro del 2026-10-16), poi l'app si chiude
 //
 import AppKit
+import Combine
 import ScaboChain
 import ScaboCore
 import ScaboMacKit
@@ -85,6 +86,11 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
     private var impostazioni: FinestraImpostazioni?
     private var pannello: PanelViewModel!
     private var officina: OfficinaViewModel!
+    /// La lettura delle scansioni e la lettura migliore (giro «modelli e scansioni», 2026-11-18): tenuti vivi qui.
+    private var fornitoreScansioni: FornitoreScansioniApp!
+    private var fornitoreMigliore: FornitoreLetturaMiglioreApp!
+    private var offerta: OffertaMac!
+    private var officinaPronta: AnyCancellable?
     private var fileInArrivo: [URL] = []
     private var pronto = false
     private let argomenti = ProcessInfo.processInfo.arguments
@@ -154,6 +160,24 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
             self?.apriFinestraDiLettura(doc, lettura)
         }
         importazione.presentatore = presentatore
+        // Le scansioni nell'importazione (decisione 21) e la lettura migliore che arriva da sola (decisione 20).
+        let catalogo = (try? CatalogLoader.loadBundled())
+            ?? ModelCatalog(schemaVersione: ModelCatalog.schemaVersioneCorrente, aggiornatoIl: "", voci: [])
+        fornitoreScansioni = FornitoreScansioniApp(catalogo: catalogo)
+        fornitoreScansioni.comandi = self
+        importazione.scansioni = fornitoreScansioni
+        fornitoreMigliore = FornitoreLetturaMiglioreApp(scansioni: fornitoreScansioni)
+        offerta = OffertaMac(libreria: libreria)
+        offerta.fornitore = fornitoreMigliore
+        offerta.finestra = home.window
+        home.offerta = offerta
+        officina.estrattorePer = { [weak fornitoreScansioni] url in
+            RilevaScansione.pagineSenzaTesto(url).senzaTesto > 0
+                ? fornitoreScansioni.map { $0.estrattore(lettore: $0.predefinito) } : nil
+        }
+        officinaPronta = officina.$pronta.compactMap { $0 }.receive(on: DispatchQueue.main).sink { [weak self] r in
+            MainActor.assumeIsolated { self?.letturaDallOfficina(r) }
+        }
         home.showWindow(nil)
         home.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -295,6 +319,19 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         MainActor.assumeIsolated {
             home.showWindow(nil)
             home.window?.makeKeyAndOrderFront(nil)
+        }
+    }
+
+    /// L'officina ha preparato la lettura di un PDF che è già in libreria (stessa impronta): arriva da sola nell'offerta di quel
+    /// libro (decisione 20). Se la granularità non è quella del libro, la lettura si prepara di nuovo per il libro.
+    @MainActor private func letturaDallOfficina(_ r: MacReadingReady) {
+        guard let d = libreria.libri().first(where: { $0.sourceSha256 == r.sha256 }) else { return }
+        let granularita = libreria.service.requiredCacheGranularity(for: d)
+            ?? PreferenzeLettura.granularita(libreria.prefs, isAkn: false, large: libreria.service.isLarge(d))
+        if r.reading.contentTarget == granularita {
+            offerta.arriva(r.reading, righe: FornitoreLetturaMiglioreApp.righe(r.report), per: d.id)
+        } else {
+            offerta.prepara(d, scelte: [:])
         }
     }
 

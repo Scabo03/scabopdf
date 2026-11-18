@@ -25,9 +25,17 @@ final class PresentatoreDiProva: PresentatoreImportazione {
     var trattieni = false
     private var trattenuta: (() -> Void)?
 
-    func elabora(fileURL: URL, nome: String, granularita: Int, dottrina: Bool, processore: DocumentProcessing,
+    /// Le scansioni (giro «modelli e scansioni», 2026-11-18): le domande ricevute e le risposte da dare.
+    var sceltePerScansioni: [(senzaTesto: Int, totale: Int, predefinito: String)] = []
+    var sceltaLettore: String??
+    var altriProposti: [String] = []
+    var accettaAltro = true
+    var elaborazioniDiScansioni = 0
+
+    func elabora(fileURL: URL, nome: String, granularita: Int, dottrina: Bool, processore: DocumentProcessing, scansione: Bool,
                  esito: @escaping (DocumentProcessor.Outcome, String?) -> Void) {
         elaborazioni.append((nome, granularita))
+        if scansione { elaborazioniDiScansioni += 1 }
         let esegui = { [weak self] in
             processore.process(fileURL: fileURL, sourceName: nome, granularityTarget: granularita, buildDoctrine: dottrina,
                                onProgress: { p in if self?.fasi.last != p.phaseLabel { self?.fasi.append(p.phaseLabel) } },
@@ -36,6 +44,17 @@ final class PresentatoreDiProva: PresentatoreImportazione {
         if trattieni { trattenuta = esegui } else { esegui() }
     }
     func rilascia() { let t = trattenuta; trattenuta = nil; t?() }
+    func scegliLettoreScansioni(nome: String, senzaTesto: Int, totale: Int, lettori: [LettoreDisponibile], predefinito: String,
+                                apriPannello: @escaping () -> Void, scelta: @escaping (String?) -> Void) {
+        sceltePerScansioni.append((senzaTesto, totale, predefinito))
+        scelta(sceltaLettore ?? predefinito)
+        if case .some(.none) = sceltaLettore { quandoApre?() }
+    }
+    func proponiAltroLettore(messaggio: String, altro: LettoreDisponibile, risposta: @escaping (Bool) -> Void) {
+        altriProposti.append(altro.id)
+        risposta(accettaAltro)
+        if !accettaAltro { quandoApre?() }
+    }
     func chiediLibroGiaPresente(esistente: ArchivedDocument, copie: Int, scelta: @escaping (SceltaDoppione) -> Void) {
         doppioniChiesti += 1
         scelta(sceltaDoppione)

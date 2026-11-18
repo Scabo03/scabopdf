@@ -16,6 +16,8 @@ import ScaboCore
 /// La riga di un libro: un elemento solo per VoiceOver, che dice ciò che dice la riga dell'iPad.
 final class CellaLibro: NSTableCellView {
     var documento: ArchivedDocument? { didSet { aggiorna() } }
+    /// Il testo della riga (le parole della riga dell'iPad, più provenienza della scansione e segno dell'offerta).
+    var riga: String = "" { didSet { aggiorna() } }
     private let testo = NSTextField(labelWithString: "")
 
     override init(frame: NSRect) {
@@ -36,14 +38,14 @@ final class CellaLibro: NSTableCellView {
     required init?(coder: NSCoder) { fatalError("non si usa") }
 
     private func aggiorna() {
-        guard let d = documento else { testo.stringValue = ""; return }
+        guard documento != nil else { testo.stringValue = ""; return }
         // Si vede ciò che VoiceOver dice della riga (le parole della riga dell'iPad): una resa sola per chi guarda e chi ascolta.
-        testo.stringValue = LibraryFormatting.fileAccessibility(d)
+        testo.stringValue = riga
     }
 
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .staticText }
-    override func accessibilityValue() -> Any? { documento.map(LibraryFormatting.fileAccessibility) }
+    override func accessibilityValue() -> Any? { documento == nil ? nil : riga }
     override func accessibilityIdentifier() -> String { "home.libro.\(documento?.id ?? "")" }
 }
 
@@ -103,6 +105,24 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
     private let scorrimento = NSScrollView()
     private let vuota = NSTextField(wrappingLabelWithString: Parole.libreriaVuota)
     private var libri: [ArchivedDocument] = []
+    /// L'offerta della lettura migliore (la dà l'app); nil = le voci del menu del libro non compaiono.
+    public var offerta: OffertaMac? {
+        didSet {
+            tabella.menu = menuDelLibro()
+            offerta?.quandoArriva = { [weak self] id in self?.mostraArrivo(id) }
+        }
+    }
+    /// L'avviso «È pronta una lettura migliore…» con «Apri ora», sopra l'elenco (non ruba il fuoco).
+    private let avviso = NSTextField(wrappingLabelWithString: "")
+    private let apriOra = NSButton(title: ParoleLetturaMigliore.apriOra, target: nil, action: nil)
+    private lazy var rigaAvviso: NSStackView = {
+        let r = NSStackView(views: [avviso, apriOra])
+        r.orientation = .horizontal
+        r.spacing = 12
+        r.isHidden = true
+        return r
+    }()
+    private var libroArrivato: String?
     static let importa = NSToolbarItem.Identifier("home.importa")
     static let modelli = NSToolbarItem.Identifier("home.modelli")
 
@@ -139,7 +159,12 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
         vuota.setAccessibilityIdentifier("home.vuota")
         vuota.textColor = .textColor
         vuota.font = .systemFont(ofSize: 15, weight: .medium)
-        let pila = PilaConArrivo(views: [vuota, scorrimento])
+        avviso.setAccessibilityIdentifier("home.avviso")
+        avviso.font = .systemFont(ofSize: 15, weight: .medium)
+        apriOra.target = self
+        apriOra.action = #selector(apriOraPremuto)
+        apriOra.setAccessibilityIdentifier("home.apriOra")
+        let pila = PilaConArrivo(views: [rigaAvviso, vuota, scorrimento])
         pila.quandoArrivano = { [weak importazione] urls in importazione?.importa(urls) }
         pila.registerForDraggedTypes([.fileURL])
         pila.orientation = .vertical
@@ -181,6 +206,7 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
             let c = CellaLibro(frame: .zero); c.identifier = id; return c
         }()
         cella.documento = libri[row]
+        cella.riga = libreria.rigaDelLibro(libri[row])
         return cella
     }
 
@@ -207,8 +233,37 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
     private func menuDelLibro() -> NSMenu {
         let m = NSMenu()
         m.addItem(withTitle: Parole.apri, action: #selector(apriLibroSelezionato(_:)), keyEquivalent: "").target = self
+        if offerta != nil {
+            m.addItem(withTitle: ParoleLetturaMigliore.voceMenuInformazioni, action: #selector(informazioniLibro(_:)), keyEquivalent: "").target = self
+            m.addItem(withTitle: ParoleLetturaMigliore.voceMenuOfferta, action: #selector(offertaLibro(_:)), keyEquivalent: "").target = self
+            m.addItem(withTitle: ParoleLetturaMigliore.voceMenuPrepara, action: #selector(preparaLetturaMigliore(_:)), keyEquivalent: "").target = self
+            m.addItem(withTitle: ParoleLetturaMigliore.voceMenuTieni, action: #selector(tieniNuovaLettura(_:)), keyEquivalent: "").target = self
+            m.addItem(withTitle: ParoleLetturaMigliore.voceMenuTorna, action: #selector(tornaLetturaPrecedente(_:)), keyEquivalent: "").target = self
+        }
         m.addItem(withTitle: Parole.eliminaConPuntini, action: #selector(eliminaLibroSelezionato(_:)), keyEquivalent: "").target = self
         return m
+    }
+
+    // MARK: La lettura migliore (LAYER2 § 12.16, decisione 20)
+
+    @objc public func informazioniLibro(_ sender: Any?) { if let d = libroScelto { offerta?.informazioni(d) } }
+    @objc public func offertaLibro(_ sender: Any?) { if let d = libroScelto { offerta?.apriOfferta(d.id) } }
+    @objc public func preparaLetturaMigliore(_ sender: Any?) { if let d = libroScelto { offerta?.chiediPreparazione(d) } }
+    @objc public func tieniNuovaLettura(_ sender: Any?) { if let d = libroScelto { offerta?.chiediTieni(d.id) } }
+    @objc public func tornaLetturaPrecedente(_ sender: Any?) { if let d = libroScelto { offerta?.torna(d.id) } }
+
+    /// Una lettura migliore è arrivata (id) o l'avviso si toglie (nil).
+    func mostraArrivo(_ id: String?) {
+        libroArrivato = id
+        guard let id, let d = libreria.service.store.document(id: id) else { rigaAvviso.isHidden = true; return }
+        avviso.stringValue = ParoleLetturaMigliore.arrivata(d.title)
+        apriOra.setAccessibilityLabel("\(ParoleLetturaMigliore.apriOra): \(ParoleLetturaMigliore.titoloOfferta(d.title))")
+        rigaAvviso.isHidden = false
+    }
+
+    @objc private func apriOraPremuto() {
+        guard let id = libroArrivato else { return }
+        offerta?.apriOfferta(id)
     }
 
     private var libroScelto: ArchivedDocument? {
@@ -243,6 +298,20 @@ public final class FinestraHome: NSWindowController, NSTableViewDataSource, NSTa
     public func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem.action == #selector(apriLibroSelezionato(_:)) || menuItem.action == #selector(eliminaLibroSelezionato(_:)) {
             return libroScelto != nil && !importazione.occupato
+        }
+        if let d = libroScelto {
+            let s = libreria.service
+            switch menuItem.action {
+            case #selector(informazioniLibro(_:)): return true
+            case #selector(offertaLibro(_:)): return libreria.offerte.inAttesa(d.id) != nil
+            case #selector(preparaLetturaMigliore(_:)):
+                return d.sourceKind != "akn" && s.hasArchivedPDF(forDocumentId: d.id) && !libreria.inPreparazione.contains(d.id)
+            case #selector(tieniNuovaLettura(_:)), #selector(tornaLetturaPrecedente(_:)): return s.hasPreviousReading(forDocumentId: d.id)
+            default: break
+            }
+        } else if [#selector(informazioniLibro(_:)), #selector(offertaLibro(_:)), #selector(preparaLetturaMigliore(_:)),
+                   #selector(tieniNuovaLettura(_:)), #selector(tornaLetturaPrecedente(_:))].contains(menuItem.action) {
+            return false
         }
         return true
     }

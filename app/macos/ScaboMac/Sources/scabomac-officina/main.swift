@@ -12,6 +12,7 @@
 //        (id dei nodi o pagine e righe), mai il testo.
 //    scabomac-officina catena --lista LISTA.json --corpus DIR --out DIR [--politica giro|spenta|banco] [--granularita N]
 //                             [--estrazioni DIR] [--regioni DIR] [--solo STEM] [--salva-catture DIR] [--lettura]
+//                             [--scansioni apple|glm [--via v1|v5|v2] [--pesi-glm DIR] [--banco-pagine DIR] [--cache-glm DIR]]
 //        La catena DEL MAC (quella dell'app: MacProcessor) sui volumi della lista: dal vivo (estrazione PDFKit di macOS,
 //        modello d'impaginazione sul Mac) oppure, con `--estrazioni`/`--regioni`, dalle catture di un simulatore (stesso
 //        formato del banco). Scrive per volume `<stem>.rv.reading.json` (lettura completa, risorse visive comprese) e
@@ -209,6 +210,19 @@ case "catena":
             }
             candidates = c
         }
+        // Banco delle scansioni (giro «modelli e scansioni», 2026-11-18): le pagine senza testo le legge il lettore scelto.
+        var scansioni: EstrattoreScansioni? = nil
+        if let l = arg("scansioni").flatMap(LettoreScansioni.init(rawValue:)) {
+            let pesi = arg("pesi-glm").map { d -> (pesi: URL, proiettore: URL) in
+                (URL(fileURLWithPath: d).appendingPathComponent("GLM-OCR-Q8_0.gguf"),
+                 URL(fileURLWithPath: d).appendingPathComponent("mmproj-GLM-OCR-Q8_0.gguf"))
+            }
+            let e = EstrattoreScansioni(lettore: l, via: arg("via").flatMap(ViaScansioni.init(rawValue:)), pesiGlm: pesi)
+            e.cartellaBanco = arg("banco-pagine").map { URL(fileURLWithPath: $0).appendingPathComponent(stem) }
+            e.cacheGlm = arg("cache-glm").map { URL(fileURLWithPath: $0).appendingPathComponent(stem) }
+            scansioni = e
+            extractor = e
+        }
         let t0 = Date()
         let recorder = RecordingExtractor(extractor)
         var detected: [VisualRegionCandidate]? = nil
@@ -226,6 +240,12 @@ case "catena":
             if let e = recorder.recorded { try? JSONEncoder().encode(e).write(to: URL(fileURLWithPath: base.path + ".extraction.json")) }
             if let c = detected ?? candidates { try? sorted.encode(c).write(to: URL(fileURLWithPath: base.path + ".regions.json")) }
             recorder.recorded = nil
+        }
+        if let scansioni {
+            let base = URL(fileURLWithPath: outDir).appendingPathComponent(stem)
+            try? FileManager.default.createDirectory(at: base.deletingLastPathComponent(), withIntermediateDirectories: true)
+            if let rap = scansioni.rapporto { try? encoder.encode(rap).write(to: URL(fileURLWithPath: base.path + ".scansioni.json")) }
+            if let p = scansioni.problema { say("\(stem): lettura delle scansioni non partita: \(p.localizedDescription)") }
         }
         guard case .ready(let r) = outcome else { say("\(stem): FALLITA"); rc = 1; continue }
         let base = URL(fileURLWithPath: outDir).appendingPathComponent(stem)

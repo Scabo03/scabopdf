@@ -52,6 +52,9 @@ public final class OfficinaViewModel: ObservableObject {
     public var inElaborazione: Bool { if case .inElaborazione = stato { return true } else { return false } }
 
     /// Elabora il PDF in sottofondo; l'avanzamento torna sul main.
+    /// L'estrattore per il PDF scelto (lo dà l'app: per una scansione, il lettore delle scansioni); nil = quello di PDFKit.
+    public var estrattorePer: ((URL) -> ProgressReportingPdfExtractor?)?
+
     public func elabora(_ url: URL) {
         guard !inElaborazione else { return }
         cancelled = false
@@ -64,11 +67,12 @@ public final class OfficinaViewModel: ObservableObject {
         stato = .inElaborazione(fase: Testi.faseApertura, percento: 0)
         announcer.announce(Testi.annuncioElaborazioneAvviata(url.deletingPathExtension().lastPathComponent), priority: .normale)
         let policy = self.policy
+        let estrattore = estrattorePer?(url) ?? PdfKitExtractor()
         let flag = CancelBox()
         self.box = flag
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let out = MacProcessor.process(
-                pdfURL: url, policy: policy,
+                pdfURL: url, policy: policy, extractor: estrattore,
                 onProgress: { p in
                     let fase = Testi.fase(p.phase)
                     let percento = Int((p.fraction * 100).rounded(.down))
