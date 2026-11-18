@@ -32,7 +32,7 @@ locale; dal 12 novembre 2026 va su TestFlight, nello stesso record dell'app dell
   Invio o Cmd+Freccia giù apre il libro; menu «Lettura» (Cmd+J nota e richiamo, Opzione+Cmd+Freccia giù e su per le
   intestazioni); Cmd+, le Impostazioni di lettura (granularità, note a voce) e, in fondo, «Mostra la diagnostica nel menu
   Finestra», che fa comparire nel menu «Finestra» la voce «Diagnostica…»: il pannello col diario (spento di serie, solo codici e
-  numeri, nel contenitore), la variante dei titoli (A, B, C, D; predefinita la C) e le prove guidate col libro di prova. Menu «Finestra» → «Modelli e officina»
+  numeri, nel contenitore), e le prove guidate (dal 18 novembre 2026 i titoli hanno una forma sola, la C: la scelta delle varianti è tolta) col libro di prova. Menu «Finestra» → «Modelli e officina»
   (Cmd+Shift+M): un selettore «Modelli» / «Officina»; nell'officina «Prepara la lettura di un PDF…» (Cmd+Shift+O), poi
   «Invia all'iPad con AirDrop…» o «Salva il file per il cavo…».
 - Rete d'identità con l'iPad: `app/ios/scripts/rete_vista_mac.sh <etichetta> [--solo STEM] [--misure STEM]` (la vista del

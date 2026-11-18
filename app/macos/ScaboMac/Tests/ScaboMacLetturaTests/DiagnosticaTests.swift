@@ -1,6 +1,6 @@
 //
 //  DiagnosticaTests.swift
-//  ScaboMacLetturaTests — il pannello «Diagnostica», il diario e le varianti dei titoli (giro «ScaboPDF per Mac su TestFlight»,
+//  ScaboMacLetturaTests — il pannello «Diagnostica», il diario e i titoli in una forma sola (giro «ScaboPDF per Mac su TestFlight»,
 //  2026-11-12; LAYER2 § 12.16, decisione 17). Che cosa provano: con la diagnostica spenta nessuna sonda è attiva e la lettura
 //  risponde a VoiceOver come sempre; accesa, la lettura risponde LO STESSO (il diario ascolta e basta); il diario sta nella sua
 //  cartella e contiene solo codici e numeri, mai il testo del libro; spento, non scrive più; i titoli hanno una forma sola;

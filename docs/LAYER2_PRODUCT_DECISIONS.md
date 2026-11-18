@@ -1669,7 +1669,7 @@ TestFlight (build 1 del Mac), col diario acceso:
     pannello «Diagnostica»**, che resta per il diario e la prova guidata. Il titolo è un'intestazione come nelle app del Mac (ruolo
     d'intestazione, testo senza la qualifica, livello nell'attributo del livello), e l'app risponde da sé, dal punto del cursore e su
     tutto il libro, alla ricerca dei titoli con cui VoiceOver serve VO+Comando+H, VO+Comando+Maiuscole+H e VO+Comando+M. *Perché*: nel
-    diario della prova, con la C, ogni VO+Comando+H (24) è andato al titolo seguente, senza saltarne nessuno, e ogni VO+Comando+M (39)
+    diario della prova, con la C, ogni VO+Comando+H (23) è andato al titolo seguente, senza saltarne nessuno, e ogni VO+Comando+M (39)
     al titolo seguente dello stesso livello, anche lontano, partendo sempre dal punto del cursore e mai dall'inizio del libro; la B ha
     funzionato anche lei, ma con tutti i titoli del libro fra gli elementi esposti, il che costa all'ingresso sui libri grandi; con la
     D ogni spostamento fra titoli (70) è andato al titolo adiacente di qualunque livello, nessuno allo stesso livello: VO+Comando+M faceva, si deduce,

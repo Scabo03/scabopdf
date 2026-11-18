@@ -199,7 +199,7 @@ contenitore dell'app: letta solo la cartella del diario; l'app di TestFlight non
 
 - **Parte 1 — il diario** (campo; un file, 544 s, versione 1.0 build 1; lo stesso libro nelle tre varianti provate; DISEGNO § 5.4):
   col ruolo d'intestazione VoiceOver non interroga più il rotore: VO+Comando+H e VO+Comando+M arrivano come ricerca generica rivolta
-  all'elemento sotto il cursore. **C**: 24 VO+Comando+H, 24 al titolo seguente; 39 VO+Comando+M, 39 al seguente dello stesso livello,
+  all'elemento sotto il cursore. **C**: 23 VO+Comando+H, 23 al titolo seguente; 39 VO+Comando+M, 39 al seguente dello stesso livello,
   anche lontano (fino a 257 elementi, oltre i figli esposti); sempre dal cursore, nessuna ripartenza dall'inizio; nessuna ricerca
   all'indietro nel diario. **B**: 20 salti, tutti su un titolo (10 allo stesso livello, 10 adiacenti), ingresso nel libro 0,55 s su
   708 figli, nessun fermo. **D**: 70 spostamenti, tutti al titolo adiacente di qualunque livello, nessuno allo stesso livello:
