@@ -10,6 +10,10 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.67 (19 novembre 2026, giro «banco OCR, giro 1 di 2», livello leggero per il repo (solo documenti) e pieno per le misure,
+> **CONCLUSO (giro 1)**: banco comune di 185 pagine in tre forme, 72 corse di nove motori in locale con la rete esterna negata (zero
+> byte in uscita), misure, controllo semantico sulle tre coppie del fulcro e report parziale `docs/BANCO_OCR.md`, per lo speciale
+> radiofonico sugli OCR; nessuna build, codice delle app non toccato. Vedi lo STATO qui sotto.)
 > Versione: 2.66 (18-19 novembre 2026, giro «modelli e scansioni», livello pieno per la catena condivisa e leggero per l'app Mac,
 > **CONCLUSO** con la **build 2 del Mac** su TestFlight (VALID, note impostate) e mandata alla **revisione beta di Apple** per il gruppo esterno «ScaboPDF Prova esterna»: sul Mac le **scansioni si leggono** (lettura del testo di Apple con l'impaginazione, GLM lettura pagine con la
 > guardia sulle righe di Apple, scelta nella schermata dell'elaborazione; LAYER2 § 12.16 decisione 21), la **lettura migliore arriva da
@@ -190,6 +194,45 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «banco OCR, giro 1 di 2»: metodo, check-up, banco comune, corse, misure, controllo semantico sulle coppie del fulcro e report ridotto, per lo speciale radiofonico sugli OCR (nessuna build, solo documenti) — 2026-11-19 — CONCLUSO (giro 1)
+
+**Build:** iPad ultima **66**, prossima **67**; Mac ultima **2** (in revisione beta per il gruppo esterno), prossima **3**: nessuna
+usata. **Partenza:** `738342d` (main = origin). **Ramo:** `chore/banco-ocr-giro1` → ⟨destino⟩. Livello: leggero per il repo (solo
+documenti: `git diff --name-only 738342d.. -- app pipeline` = 0 file), pieno per le misure. Nessuna app aperta, nulla letto dal
+contenitore `com.scabo.scabopdf`: i modelli dell'app girano dalle copie del laboratorio. Laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`
+(resta tutto per il giro 2); referto `REFERTO_BANCO_OCR_1.md` lì; report parziale `docs/BANCO_OCR.md`.
+
+- **Parte 0 — metodo** committato prima di ogni corsa (`e547665`, 00:26); le correzioni nel § 10 del report, con ora e motivo (verità
+  di titoli e note delle pagine singole dal volume intero; lettere e cifre separate nelle parole; decodifica di GLM a piena precisione
+  con la finestra di 64 token come llama.cpp; verità del testo di v11 esclusa per tutti; API di Apple usata dall'app; misura
+  diagnostica del lettore di Apple).
+- **Parte 1 — check-up:** versioni nuove misurate in ambienti nuovi (docling 2.150.1, surya-ocr 0.24.0 con Surya 2.5, Marker 2.2.0, GLM-OCR
+  ufficiale con transformers 5.23, llama.cpp v1.0.0 compilato dal tag); pesi verificati per sha256; rete esterna negata a tutti, unico
+  tentativo d'uscita il font di Marker (bloccato); licenze: Surya 2.5 e quindi Marker hanno pesi OpenRAIL-M modificata, fuori dallo store.
+- **Parte 2 — banco:** 52 documenti, 185 pagine in tre forme (PDF col testo, scansione pulita, degradata), manifesto `0e7feec2…`
+  congelato alle 00:45 e invariato a fine giro.
+- **Parte 3-4 — corse e misure:** 72 corse, 3 ore e 48 minuti di coda, una sola uscita diversa da 0 (GLM a piena precisione con la
+  decodifica sbagliata, interrotto e rifatto); zero byte verso l'esterno in tutte. Lettere sbagliate sulle scansioni: Surya 2.5 0,06 %,
+  GLM 0,09-0,10 (compresso nell'app e a piena precisione uguali), docling 0,12-0,17, app con GLM 0,20-0,24, app con Apple 0,37-0,38,
+  righe di Apple 0,71-0,73, Granite 0,85-1,44. Ripetibilità fra due corse: identiche al carattere salvo docling, che dipende dal contesto
+  (documento intero contro pagina da sola) ma è deterministico. Nessuna misura di tempo col Mac occupato.
+- **Parte 5 — controllo semantico** sulle tre coppie del fulcro (18 pagine) e prova alla cieca sulla coppia 1 (6 su 6 d'accordo).
+- **Parte 6 — esiti:** H1 regge (Heron nell'app riconosce la struttura come docling); H2 regge in parte (docling il migliore fra le
+  catene, Granite Docling meglio ancora nell'ordine; Surya cede sulle pagine dense, in parte per convenzione); H3 regge (GLM più preciso
+  del lettore di Apple, anche sulle cifre); H4 regge in parte (Apple lascia spezzate le sillabate e perde l'inizio delle righe di nota;
+  le tabelle la richiesta che l'app usa le vede, è la catena che non le annuncia).
+- **Scoperte:** sul macOS di oggi l'app legge le scansioni con `RecognizeDocumentsRequest` e le opzioni predefinite; la richiesta
+  classica, già nel codice come ripiego, sbaglia un quarto di lettere in meno sulla stessa immagine e in meno tempo (§ 16.5 del report);
+  il costo di restare nativi oggi sta nella catena delle scansioni, non nei modelli (GLM compresso = GLM a piena precisione, Heron =
+  docling).
+- **Verifiche:** ⟨…⟩. **Revisione indipendente:** ⟨…⟩.
+- **Da dove riprendere (giro 2):** `docs/BANCO_OCR.md` § 16.7-16.8; nessuna corsa da rifare. Restano: rendimento per situazione e
+  incroci, combinazioni di modelli, qualità e costo, controllo semantico completo sul campione di 37 pagine, classifica, frasi per la
+  radio, modelli nuovi (per primi docling-layout-egret e Xiaomi-OCR-0), materiale pubblico.
+- **Decisioni per il maintainer:** ⟨…⟩
 
 ---
 
