@@ -503,7 +503,20 @@ il testo con lo stesso lettore di Apple dell'app, eppure sbaglia meno lettere (0
 immagine resa alla sua scala; app: italiano e inglese, lato lungo di 2000 pixel) e da ciò che la catena dell'app fa dopo; quale delle due
 pesi di più non è stato misurato (ipotesi per il giro 2).
 
-(Coppie 2 e 3: in corso.)
+**Coppia 2 — GLM-OCR a piena precisione contro GLM-OCR nell'app (lettura del testo).** *Quanto costa restare nativi:* nel modello, niente.
+Sulle 139 pagine contigue, scansione degradata, GLM a piena precisione (transformers, bf16, con la decodifica dell'app) e GLM compresso
+dell'app (Q8_0, llama.cpp, prima della guardia) sbagliano lo stesso: lettere 0,078 contro 0,080 per cento, cifre 0,42 contro 0,40, parole
+perse 0,40 contro 0,35, parole plausibili 28 contro 27 (campo; la tabella T4 dà le 185 pagine con gli intervalli). Il costo sta dopo il
+modello: la lettura finale dell'app perde più parole (5,1 per cento sulle stesse pagine) e sbaglia più lettere (0,26), per due cause viste
+nel controllo semantico: la catena sulle scansioni dei codici a due colonne mette fuori lettura parti della colonna stretta (17 per cento
+di parole perse sul codice, 2,3 sugli altri campioni, come il modello puro), e la guardia tiene le righe di Apple dove GLM non ha nulla (le
+glosse tornano, ma fuse nelle righe del corpo). *Quanto si guadagna:* il modello compresso pesa 1,43 GB contro 2,65 GB di pesi più un
+ambiente Python di 1 GB; gira dentro l'app, senza Python e senza rete; nell'app impiega 11,1 secondi a pagina (mediana, modello ricaricato
+a ogni pagina, prima della guardia) contro circa 15 secondi della piena precisione con la stessa decodifica sul Mac (MPS; dato della corsa
+di qualità); impronta di memoria di picco circa 2 GB per il processo dell'app contro 5,5 GB per quello Python. (Tempi a priorità normale:
+§ 14, tabella T7 e seconde corse.)
+
+(Coppia 3: in corso.)
 <!-- R163:fine -->
 
 ### 16.4 Prime risposte alle domande di ricerca ed esito delle ipotesi
@@ -532,8 +545,21 @@ pesi di più non è stato misurato (ipotesi per il giro 2).
   corso la corsa rifatta); nell'app sulle scansioni **nessuna tabella è annunciata** (0 su 19), mentre il modello d'impaginazione le trova
   sull'immagine (19 su 19).
 
-**Domande di ricerca** (prime risposte; si completano a fine giro):
-(in corso)
+**Domande di ricerca** (prime risposte):
+
+1. **Quanto costa restare nativi e compatibili con lo store?** Nei modelli quasi niente: GLM compresso dentro l'app legge come GLM a
+   piena precisione in Python (§ 16.3, coppia 2), Heron in Core ML riconosce le regioni come docling (coppia 1). Il costo vero oggi sta
+   nella catena dell'app sulle scansioni, non nei modelli: colonne strette dei codici fuori lettura, glosse fuse nelle righe del corpo,
+   tabelle non annunciate, titoli a tutta larghezza fuori ordine sopra due colonne. Si guadagna in semplicità (niente Python, niente
+   rete, un solo scaricamento verificato), in memoria (circa 2 GB contro 4-5,5 GB dei processi Python) e, per la struttura, in tempo
+   (0,05 secondi a pagina contro 0,3-0,4 di docling sulle scansioni).
+2. **Quale modello per quale compito, e dove cede?** (si completa coi numeri di Surya e Granite)
+3. **Che cosa arriva all'orecchio di chi usa VoiceOver?** Sulle scansioni pulite, con GLM nell'app: dei titoli raggiungibili con VO
+   Comando H circa uno su quattro è un titolo vero (31 veri e 99 falsi su 185 pagine), le note trovate sono 186 su 267 e 35 hanno il salto
+   al loro richiamo; restano nel flusso 62 righe di testatina o piè su 333; le parole plausibili inventate sono 167 su circa 62.000, e la
+   verifica a mano dice che quasi nessuna è un'invenzione scorrevole (§ 15.4). Sul PDF col testo l'app dà la lettura di riferimento.
+4. **Quanto costano i modelli in tempo, memoria e carico?** (tabella T7; si completa con le seconde corse a priorità normale)
+5. **Quanto cambiano i risultati fra versioni e fra due corse?** (tabella T5 e § 16.5; si completa con le seconde corse)
 <!-- R164:fine -->
 
 ### 16.5 Versioni: dove una versione nuova cambia i risultati
@@ -577,6 +603,12 @@ pesi di più non è stato misurato (ipotesi per il giro 2).
   incollato alla parola) può contare come errore di cifre ciò che è solo un richiamo non letto: corretto, la quota di cifre sbagliate di
   Apple sul banco delle scansioni scende da 1,78 a 0,82 per cento (§ 10).
 - **Conti dei documenti.** Il banco delle scansioni costruite ha 139 pagine, non 119 come scritto nei documenti del giro precedente.
+
+### 16.7 Stato del giro 1 e da dove riprendere
+
+<!-- R167:inizio -->
+(alla fine del giro)
+<!-- R167:fine -->
 
 ### 16.8 Che cosa resta per il giro 2 (punto da cui riprendere)
 
