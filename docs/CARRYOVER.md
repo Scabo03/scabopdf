@@ -10,6 +10,10 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.68 (19 novembre 2026, giro «banco OCR, giro 2 di 2», livello leggero per l'app Mac (solo punti d'osservazione e varianti
+> spenti di serie, con le reti) e pieno per le misure, **CONCLUSO**: cascata delle perdite della via delle scansioni, modelli nuovi,
+> combinazioni, scansioni vere pubbliche, controllo semantico e report completo `docs/BANCO_OCR.md` § 17-24 con le frasi per la radio;
+> nessuna build; nessun file sotto `app/ios` cambiato. Vedi lo STATO qui sotto.)
 > Versione: 2.67 (19 novembre 2026, giro «banco OCR, giro 1 di 2», livello leggero per il repo (solo documenti) e pieno per le misure,
 > **CONCLUSO (giro 1)**: banco comune di 185 pagine in tre forme, 72 corse di nove motori in locale con la rete esterna negata (zero
 > byte in uscita), misure, controllo semantico sulle tre coppie del fulcro e report parziale `docs/BANCO_OCR.md`, per lo speciale
@@ -194,6 +198,56 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «banco OCR, giro 2 di 2»: cascata delle perdite della via delle scansioni, varianti spente nell'app Mac, modelli nuovi, combinazioni, scansioni vere della Banca d'Italia, controllo semantico e report completo, per lo speciale radiofonico sugli OCR (nessuna build) — 2026-11-19 — CONCLUSO
+
+**Build:** iPad ultima **66**, prossima **67**; Mac ultima **2** (in revisione beta per il gruppo esterno), prossima **3**: nessuna
+usata. **Partenza:** `db614e8` (main = origin), 10:32. **Ramo:** `chore/banco-ocr-giro2`, unito in main con un avanzamento rapido, poi cancellato, locale e
+remoto. Livello: leggero per
+l'app Mac (solo punti d'osservazione e varianti spenti di serie, raggiungibili solo da `scabomac-officina`, con le reti), pieno per le
+misure. Nessun file sotto `app/ios` cambiato; nessuna app aperta; nulla letto dal contenitore `com.scabo.scabopdf`. Laboratorio
+`~/Developer/scabopdf-mac-lab/banco_ocr/` (resta tutto); referto `REFERTO_BANCO_OCR_2.md` lì; report `docs/BANCO_OCR.md` § 17-24.
+
+- **Parte 0 — metodo** nel § 17 prima di ogni corsa (`1280884`, 10:44); correzioni nel § 10 con ora e motivo (tipi letti dal codice e
+  attribuzione in avanti; apostrofi unificati nel metro; pagine rade fuori dal metro per pagina).
+- **Parte 2 — cascata** (§ 18): il lettore perde poco (Apple 2,7 per cento, GLM 1,1), la catena il resto (lettura 5,6 e 5,2); la perdita
+  più grande sono le righe classificate glosse e non lette (4,1 punti), per il 93 per cento dal codice a due colonne (regola
+  `isLateralGloss` del tronco comune, sotto `app/ios`: decisione). Tabelle viste 17-19 su 19, annunciate 0. Varianti (spente): D tabelle
+  annunciate 17-18 senza costi; B GLM senza guardia stretta (invenzioni ÷7, testatine −8 punti); A richiesta classica (lettere −50 per
+  cento, richiami ×6, testatine +5).
+- **Parte 1 — modelli nuovi** (§ 19): egret-large il migliore nella struttura e in Core ML uguale a PyTorch; Xiaomi-OCR-0 (Apache-2.0)
+  legge come Surya nelle lettere, anche compresso Q8 nel motore dell'app (uscite identiche alla piena precisione su 147 pagine su 185, 6,1
+  secondi a pagina); PP-DocLayoutV3 il primo che riconosce le glosse a margine (11 su 11); MiniCPM-OCR Q8 salta blocchi interi (parole
+  perse 5,6 per cento); Falcon-OCR e Unlimited-OCR-2
+  non eseguibili sul Mac, dots.ocr solo sulle scansioni vere, DeepSeek-OCR-2 e Qianfan-OCR elencati.
+- **Parte 3 — combinazioni** (§ 20): GLM dell'app sulle regioni di Heron dell'app perde 1,08 parole su cento invece di 5,18, titoli 47
+  invece di 31, tabelle e didascalie tutte; fattibile nello store.
+- **Parte 4 — scansioni vere** (§ 21): 19 pagine pubbliche della Banca d'Italia, verità di 6 pagine verificata alla cieca (zero
+  discrepanze); scoperta: la via delle scansioni del Mac taglia il terzo alto delle pagine con `/Rotate` (11 su 19; zero nel banco
+  costruito); raddrizzate prima, la via di Apple passa da 12,9 a 4,3 per cento di parole perse e quella di GLM da 12,5 a 3,8; i lettori del
+  banco leggono bene le pagine vere (Surya e dots.ocr nessuna parola persa, tutte le domande e le opzioni, griglie 40 su 40), le vie
+  dell'app rimescolano le griglie.
+- **Parte 5 — controllo semantico** (§ 22): prova alla cieca su 25 + 6 fascicoli; accordo 12 su 25 e 2 su 6 pieno; riletti i disaccordi,
+  accolto il revisore (giudica ciò che si sente: segni, doppioni, apici in notazione matematica); tassonomia contata su tutte le
+  configurazioni sulle 37 pagine.
+- **Parte 6 — report** (§ 23): per situazione, incroci, qualità e costo, classifica, residui del giro 1 (verità a pagina singola, ordine
+  con gli intervalli per tutte le coppie), risposte e ipotesi, 40 frasi per la radio in sei temi.
+- **Verifiche** (§ 24): identità al byte della via delle scansioni col giro 1 con tutto spento; reti verdi (parlato; vista del Mac 55/55,
+  le 36 differenze dell'estrattore identiche al byte alla corsa prima del giro); 173 test d'unità del Mac, zero falliti; zero byte
+  verso l'esterno in tutte le corse; controlli del testo e dei segreti a zero. **Revisione indipendente:** sotto-agente nuovo, 0 gravi, 8 medi, 14 minori, tutti
+  affrontati (corretti, o dichiarati nel § 10; uno lasciato come residuo dell'officina).
+- **In coda per una finestra a Mac libero:** `strumenti/giro2/misura_energia_notte.sh` (energia della via GLM dell'app dal vivo; tempi
+  ed energia di Xiaomi, MiniCPM ed egret in Core ML a priorità normale).
+- **Da dove riprendere:** `docs/BANCO_OCR.md` § 24 e referto § 11: finestra notturna (`misura_energia_notte.sh`); Unlimited-OCR-2 sul
+  Mac (copia del codice senza CUDA); dots.ocr sul banco intero (circa cinque ore); DeepSeek-OCR-2 e Qianfan-OCR; controllo semantico a mano su
+  tutti i modelli e le 37 pagine (non fatto: prova alla cieca su 31 fascicoli e tassonomia contata su tutti); nessuna corsa da rifare.
+- **Decisioni per il maintainer** (referto § 13): (1) correggere la resa delle pagine ruotate nella via delle scansioni del Mac, e provare
+  l'iPad sulle stesse pagine (inclinazione: sì, subito, giro breve con le reti); (2) un giro sulla catena delle scansioni: tabelle annunciate
+  (variante D), glosse fittizie dei codici (`isLateralGloss`, tronco comune), poi il collante regioni di Heron + testo del lettore
+  (inclinazione: sì, prima D e le glosse); (3) egret-large al posto di Heron (inclinazione: sì, con le reti della struttura) e Xiaomi-OCR-0
+  da provare nel motore dell'app con un filtro della notazione matematica.
 
 ---
 
