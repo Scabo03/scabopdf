@@ -522,7 +522,11 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
   circa 11-15 a piena precisione. Memoria: l'app con GLM usa fino a 4,4 GB di memoria grafica di sistema e circa 2 GB d'impronta del
   processo; GLM a piena precisione 5,3-5,5 GB d'impronta; docling 4,1-4,4 GB; Marker 1,9-2,6 GB tutto sul processore (3-4 nuclei); Apple
   e Heron sotto 1 GB. Tabella T7.
-(Granite Docling e struttura dei documenti di Apple: in corso.)
+- **Granite Docling 258M**, il più piccolo dei modelli che leggono e impaginano insieme (3,3-3,4 secondi a pagina, meno di 1 GB):
+  l'ordine di lettura migliore del banco e i titoli con meno falsi, ma le lettere peggiori fra i modelli (0,85 per cento sulla pulita,
+  1,44 sulla degradata) e una pagina al tetto dei 3.000 token sulla degradata. È il solo lettore che la degradazione del banco peggiora
+  molto; Surya non ne risente affatto.
+(Struttura dei documenti di Apple: in corso, corsa rifatta.)
 <!-- R161:fine -->
 
 ### 16.2 Rendimento per compito (campo)
@@ -551,7 +555,9 @@ Numeri sulla scansione pulita salvo dove detto; tabelle T1-T3 per tutte le forme
   app 58-75 sulle scansioni (pagine singole: la catena non vede la ricorrenza); il libro letto dall'iPad 39.
 - **Glosse a margine**: nessun modello le etichetta come glosse (0 su 11 sulle pagine con verità per blocchi); l'app sul PDF col testo le
   lascia fuori dalla lettura (ammesso dal metro) e sulle scansioni le fonde nelle righe del corpo.
-(Granite Docling e struttura dei documenti di Apple: in corso.)
+- **Granite Docling**: titoli 52 su 80 con 56-66 in più (il rapporto migliore), note 138-171, tabelle 16-19 (con 5-10 in più),
+  didascalie 0, richiami in apice 133-178, ordine sulle 34 pagine 0,98-0,99 (sulle dense 0,98), lettere 0,85-1,44 per cento.
+(Struttura dei documenti di Apple: in corso, corsa rifatta.)
 <!-- R162:fine -->
 
 ### 16.3 Il banco contro l'app, coppia per coppia (campo; tabella T4)
@@ -610,9 +616,10 @@ di tutto questo.
   per Heron, [0; 25,9]). Sulle scansioni (Heron sull'immagine, nella via dell'app): pulita alla pari (titoli 22 contro 23, note 42 contro
   41, ordine 0,950 contro 0,959); degradata un po' sotto (titoli 20 contro 22, note 37 contro 39, figure 0 su 4 contro 4, ordine 0,927
   contro 0,981). Il dato di fase 20 si riproduce identico per Heron (22, 41, 0,968).
-- **H2 — docling è il migliore nell'ordine di lettura; Surya perde sulle pagine dense: REGGE, con una precisazione.** Sulle 34 pagine con
-  verità per blocchi l'ordine medio (tau) di docling è 0,96-0,98 nelle tre forme, di Heron nell'app 0,93-0,97, di Surya 2.5 0,94 (pulita),
-  di Marker 0,94-0,95. Sulle 10 pagine dense (oltre 3.500 caratteri): docling 0,97-0,98 (una pagina sotto 0,9), Surya 0,79 sulla pulita
+- **H2 — docling è il migliore nell'ordine di lettura; Surya perde sulle pagine dense: REGGE IN PARTE.** Sulle 34 pagine con verità
+  per blocchi l'ordine medio (tau) di docling è 0,96-0,98 nelle tre forme, di Heron nell'app 0,93-0,97, di Surya 2.5 0,94-0,95, di
+  Marker 0,94-0,95; **fa meglio di docling Granite Docling** (0,99 sulla pulita, 0,98 sulla degradata), il modello unico della stessa
+  famiglia di IBM: docling resta il migliore fra le catene a più modelli, non in assoluto. Sulle 10 pagine dense (oltre 3.500 caratteri): docling 0,97-0,98 e Granite 0,98 (una pagina sotto 0,9), Surya 0,79 sulla pulita
   e 0,83 sulla degradata (sei sotto 0,9), Marker 0,81-0,82 (sette sotto 0,9), la via dell'app 0,74 con entrambi i lettori (sei sotto 0,9). Le pagine dove Surya cede sono quasi tutte quelle dell'enciclopedia scansionata a due colonne, come nella
   fase 20 con Surya 2: la versione nuova non cambia questo comportamento. La precisazione, dal controllo semantico: Surya e Marker leggono
   tutto il corpo delle due colonne e poi le note, la verità colonna per colonna con le note; una parte dell'inversione è questa
