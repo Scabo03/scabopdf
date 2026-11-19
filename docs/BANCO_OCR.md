@@ -1321,3 +1321,203 @@ Unica novità: le build numerate di llama.cpp vanno avanti (b12532 del 2026-11-1
 Licenze di docling-layout-egret medium, large e xlarge (revisioni `77ede7cc`, `fff417c7`, `23857d16`, 2026-07-31): Apache-2.0 (tag della
 scheda; il file di licenza si verifica all'installazione).
 <!-- METODO2:fine -->
+
+<!-- G2:inizio -->
+
+## 18. Giro 2, Parte 2 — Dove la catena delle scansioni dell'app perde le parole (campo)
+
+<!-- PARTE2:inizio -->
+**Come si è misurato.** Punti d'osservazione e varianti sperimentali nel solo codice del Mac (`89924eb`, `9b588fd`), spenti di serie e
+raggiungibili solo da `scabomac-officina` (§ 17.1): l'estrattore scrive i passi P1-P3 per pagina, la riga di comando il documento grezzo
+(P5) e quello con le note (P6), l'estrazione (P4) e la lettura (P7). **Prova d'identità** (campo): con le varianti spente e l'osservazione
+accesa, la via delle scansioni rifatta dà letture identiche al byte a quelle del giro 1 su 4 × 260 file (due scansioni, due lettori) e righe
+delle pagine lette identiche su 4 × 185; la verità rifatta con la riga di comando nuova è identica al byte (208 file); con l'officina finale
+del ramo (`9b588fd`) lo stesso controllo dà ancora 4 × 260 letture e 4 × 185 pagine identiche (§ 24). La cascata usa l'apostrofo unificato (§ 10): con la verità e il metro della T1 il primo passo
+coincide con le righe grezze della T1 e l'ultimo con la lettura dell'app.
+
+**La risposta in una riga.** Il lettore perde poco; la catena perde soprattutto in un punto: **le righe che classifica come glosse a margine
+e poi non legge**. Sulla via di Apple il lettore perde il 2,7 per cento delle parole, la classificazione ne recupera 1,3 punti (ricompone le
+parole sillabate a fine riga), i tipi che la catena non legge ne tolgono 4,1 e la lettura finale perde il 5,6; sulla via di GLM il lettore
+perde l'1,1, la guardia porta al 2,3 (le parole che GLM legge e Apple no restano fuori), la classificazione recupera 1,3 punti, i tipi non
+letti tolgono 4,2 e la lettura finale perde il 5,2 (tabelle T8-T10).
+
+### Tabella T8 — La cascata delle parole lungo la via delle scansioni dell'app (179 pagine; parole perse %, metro della T1 con l'apostrofo unificato, § 10)
+
+| via, forma | P1 lettore | P2 guardia | P3 Heron | P4 corpo | P5 classificazione | P6 note | P6r tipi letti | P7 lettura finale | perse in più dopo il lettore (punti) |
+|---|---|---|---|---|---|---|---|---|---|
+| Apple + Heron (via di oggi), pulita | 2,69 | — | 2,69 | 2,69 | 1,44 | 1,44 | 5,58 | 5,58 | 2,88 |
+| Apple + Heron (via di oggi), degradata | 2,64 | — | 2,64 | 2,64 | 1,32 | 1,32 | 4,71 | 4,71 | 2,07 |
+| GLM + guardia + Heron (via di oggi), pulita | 1,08 | 2,30 | — | 2,30 | 1,02 | 1,02 | 5,19 | 5,18 | 4,10 |
+| GLM + guardia + Heron (via di oggi), degradata | 1,01 | 2,28 | — | 2,28 | 0,93 | 0,93 | 4,35 | 4,35 | 3,34 |
+
+Attribuzione esatta (ogni parola della verità al passo in cui si perde, in avanti, con i recuperi; % delle parole vere; § 17.1):
+
+| via, forma | parole vere | non lette dal lettore | tolte dalla guardia | Heron o variante | costruzione del corpo | classificazione: perse / recuperate | fuori dalla lettura per tipo (di cui glosse) | impaginazione | perse in tutto |
+|---|---|---|---|---|---|---|---|---|---|
+| Apple + Heron, pulita | 58486 | 2,13 | n.a. | 0,00 | 0,00 | 0,16 / 2,00 | 4,14 (4,13) | 0,01 | 6,44 |
+| Apple + Heron, degradata | 58486 | 2,08 | n.a. | 0,00 | 0,00 | 0,13 / 1,98 | 3,44 (3,43) | 0,01 | 5,65 |
+| GLM + guardia + Heron, pulita | 58486 | 0,48 | 0,82 | — | 0,00 | 0,12 / 1,97 | 4,21 (4,20) | 0,01 | 5,64 |
+| GLM + guardia + Heron, degradata | 58486 | 0,47 | 0,84 | — | 0,01 | 0,10 / 1,96 | 3,49 (3,48) | 0,01 | 4,91 |
+
+### Tabella T9 — Titoli, note, tabelle e didascalie passo per passo (185 pagine; verità della T3)
+
+| via, forma | titoli: P3 Heron / P4 grassetto / P5 classificazione / P7 lettura (su 80; in più alla lettura) | note trovate: P3 / P5 / P6 / P7 (su 267) | note agganciate al richiamo, P7 | tabelle: P1 Apple / P3 Heron / P7 annunciate (su 19) | didascalie: P3 / P5 / P7 (su 5) |
+|---|---|---|---|---|---|
+| Apple + Heron, pulita | 49 / 44 / 31 / 31 (101) | 200 / 158 / 186 / 186 | 35 | 18 / 19 / 0 | 5 / 0 / 0 |
+| Apple + Heron, degradata | 47 / 43 / 31 / 31 (91) | 194 / 132 / 193 / 199 | 23 | 17 / 19 / 0 | 5 / 0 / 0 |
+| GLM + guardia + Heron, pulita | 49 / 45 / 31 / 31 (99) | 200 / 153 / 186 / 186 | 35 | 18 / 19 / 0 | 5 / 0 / 0 |
+| GLM + guardia + Heron, degradata | 47 / 43 / 31 / 31 (94) | 194 / 119 / 193 / 199 | 25 | 17 / 19 / 0 | 5 / 0 / 0 |
+
+### Tabella T10 — Dove si perdono le parole, per situazione di pagina (attribuzione esatta pagina per pagina, % delle parole vere; caselle con meno di 20 pagine indicative)
+
+| situazione | pagine | via | non lette dal lettore | tolte dalla guardia | fuori dalla lettura per tipo | note spostate di pagina (non perse) | altro | perse in tutto |
+|---|---|---|---|---|---|---|---|---|
+| tutte | 139 | Apple | 4,20 | n.a. | 3,58 | 1,72 | 0,42 | 8,20 |
+| maiuscoletto (indicativa) | 14 | Apple | 2,93 | n.a. | 18,35 | 0,00 | 0,42 | 21,70 |
+| testatina_maiuscoletto (indicativa) | 14 | Apple | 2,73 | n.a. | 16,39 | 10,86 | 0,57 | 19,70 |
+| due_colonne | 20 | Apple | 2,84 | n.a. | 15,70 | 7,51 | 0,60 | 19,14 |
+| codici | 24 | Apple | 2,82 | n.a. | 13,36 | 6,39 | 0,65 | 16,84 |
+| elenchi (indicativa) | 12 | Apple | 1,75 | n.a. | 10,75 | 0,00 | 0,56 | 13,06 |
+| titoli_piu_livelli | 29 | Apple | 4,97 | n.a. | 9,61 | 0,04 | 0,70 | 15,28 |
+| pagina_densa | 47 | Apple | 4,69 | n.a. | 6,69 | 3,23 | 0,47 | 11,85 |
+| margini_stretti | 74 | Apple | 3,97 | n.a. | 5,26 | 2,51 | 0,36 | 9,58 |
+| titoli | 88 | Apple | 4,90 | n.a. | 5,03 | 0,02 | 0,59 | 10,52 |
+| testatine_e_pie | 91 | Apple | 3,55 | n.a. | 4,37 | 2,10 | 0,34 | 8,27 |
+| corsivi | 102 | Apple | 3,58 | n.a. | 4,15 | 1,99 | 0,34 | 8,07 |
+| richiami_in_apice | 50 | Apple | 4,81 | n.a. | 3,97 | 0,02 | 0,43 | 9,22 |
+| note_dense (indicativa) | 17 | Apple | 4,55 | n.a. | 3,27 | 0,00 | 0,22 | 8,04 |
+| glosse_a_margine | 26 | Apple | 2,18 | n.a. | 1,88 | 0,00 | 0,07 | 4,12 |
+| note_presenti | 60 | Apple | 4,29 | n.a. | 1,80 | 0,02 | 0,36 | 6,45 |
+| sommari_e_indici (indicativa) | 3 | Apple | 2,14 | n.a. | 0,09 | 0,00 | 0,00 | 2,23 |
+| figure_e_didascalie (indicativa) | 6 | Apple | 2,58 | n.a. | 0,00 | 0,00 | 0,00 | 2,58 |
+| tabelle (indicativa) | 2 | Apple | 2,13 | n.a. | 0,00 | 0,00 | 0,00 | 2,13 |
+| tutte | 139 | GLM | 2,63 | 0,85 | 3,64 | 1,71 | 0,35 | 7,48 |
+| maiuscoletto (indicativa) | 14 | GLM | 1,92 | 0,91 | 18,43 | 0,00 | 0,38 | 21,65 |
+| testatina_maiuscoletto (indicativa) | 14 | GLM | 1,67 | 0,84 | 16,68 | 10,84 | 0,53 | 19,72 |
+| due_colonne | 20 | GLM | 1,81 | 0,86 | 15,81 | 7,49 | 0,55 | 19,03 |
+| codici | 24 | GLM | 1,65 | 0,86 | 13,59 | 6,38 | 0,61 | 16,72 |
+| elenchi (indicativa) | 12 | GLM | 0,57 | 0,86 | 10,93 | 0,00 | 0,50 | 12,86 |
+| titoli_piu_livelli | 29 | GLM | 2,72 | 1,24 | 9,80 | 0,02 | 0,50 | 14,25 |
+| pagina_densa | 47 | GLM | 2,49 | 1,28 | 6,73 | 3,21 | 0,38 | 10,89 |
+| margini_stretti | 74 | GLM | 2,00 | 1,08 | 5,30 | 2,51 | 0,26 | 8,64 |
+| titoli | 88 | GLM | 3,30 | 0,91 | 5,12 | 0,01 | 0,49 | 9,82 |
+| testatine_e_pie | 91 | GLM | 1,79 | 0,95 | 4,44 | 2,09 | 0,27 | 7,45 |
+| corsivi | 102 | GLM | 1,85 | 0,95 | 4,22 | 1,98 | 0,27 | 7,28 |
+| richiami_in_apice | 50 | GLM | 2,46 | 1,26 | 4,08 | 0,01 | 0,36 | 8,16 |
+| note_dense (indicativa) | 17 | GLM | 2,85 | 1,24 | 3,31 | 0,00 | 0,26 | 7,65 |
+| sommari_e_indici (indicativa) | 3 | GLM | 0,17 | 0,86 | 1,88 | 0,00 | 0,00 | 2,91 |
+| glosse_a_margine | 26 | GLM | 0,96 | 0,70 | 1,86 | 0,00 | 0,15 | 3,67 |
+| note_presenti | 60 | GLM | 2,14 | 1,20 | 1,83 | 0,01 | 0,27 | 5,44 |
+| figure_e_didascalie (indicativa) | 6 | GLM | 1,49 | 0,61 | 0,00 | 0,00 | 0,00 | 2,10 |
+| tabelle (indicativa) | 2 | GLM | 0,09 | 0,94 | 0,00 | 0,00 | 0,00 | 1,02 |
+
+Nota: attribuzione pagina per pagina, approssimata dove la verità colloca le note su un'altra pagina (colonna «note spostate di pagina») e dove un capoverso attraversa più pagine: per questo le pagine rade sono escluse (§ 10, 12:15) e «tutte» qui vale più della perdita per documento della T8.
+
+### Tabella T11 — Le varianti della via delle scansioni contro la via di oggi (stesse pagine; valore della variante, poi differenza; * = intervallo al 95 % che esclude lo zero)
+
+| variante, via, forma | lettere % | cifre % | perse % | plausibili ‰ | titoli trovati % | titoli in più per documento | note agganciate % | tabelle annunciate % | testatine nel flusso % | richiami letti % | ordine 2 colonne % | tau (34 pagine) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| A richiesta classica di Apple, Apple, pulita | 0,10 (-0,11*) | 0,45 (-0,28*) | 5,70 (-0,74) | 1,71 (-0,96*) | 38,75 (+0,00) | 1,79 (-0,15) | 18,35 (+5,24) | 0,00 (+0,00) | 24,32 (+5,41*) | 24,17 (+19,91*) | 88,46 (+1,61) | 0,864 (-0,016) |
+| A richiesta classica di Apple, Apple, degradata | 0,14 (-0,09*) | 0,62 (-0,04) | 5,19 (-0,48) | 1,93 (-0,63*) | 38,75 (+0,00) | 2,25 (+0,50) | 10,86 (+2,25) | 0,00 (+0,00) | 24,32 (+2,10) | 16,59 (+9,48*) | 85,59 (+1,48) | 0,869 (+0,028) |
+| F sillabate ricomposte, Apple, pulita | 0,20 (-0,01) | 0,73 (+0,00) | 6,34 (-0,10) | 2,68 (+0,02) | 38,75 (+0,00) | 2,35 (+0,40*) | 10,49 (-2,62) | 0,00 (+0,00) | 19,82 (+0,90) | 4,27 (+0,00) | 88,79 (+1,94*) | 0,887 (+0,003) |
+| F sillabate ricomposte, Apple, degradata | 0,23 (-0,01) | 0,67 (+0,01) | 5,78 (+0,11) | 2,56 (+0,00) | 37,50 (-1,25) | 2,65 (+0,90*) | 6,74 (-1,87) | 0,00 (+0,00) | 23,12 (+0,90) | 7,11 (+0,00) | 84,32 (+0,21) | 0,848 (+0,007) |
+| E porta dei codici aperta, Apple, pulita | 0,21 (+0,00) | 0,73 (+0,00) | 6,46 (+0,02) | 2,67 (+0,00) | 42,50 (+3,75) | 1,83 (-0,12*) | 13,11 (+0,00) | 0,00 (+0,00) | 19,52 (+0,60) | 4,27 (+0,00) | 87,98 (+1,13) | 0,907 (+0,023) |
+| E porta dei codici aperta, Apple, degradata | 0,23 (-0,00) | 0,63 (-0,02) | 5,69 (+0,03*) | 2,56 (+0,00) | 41,25 (+2,50) | 1,69 (-0,06) | 8,61 (+0,00) | 0,00 (+0,00) | 21,92 (-0,30) | 7,11 (+0,00) | 84,58 (+0,47) | 0,850 (+0,009) |
+| D tabelle di Heron passate come tabelle, Apple, pulita | 0,21 (+0,00) | 0,73 (+0,00) | 6,44 (+0,00) | 2,67 (+0,00) | 38,75 (+0,00) | 1,94 (+0,00) | 13,11 (+0,00) | 94,74 (+94,74*) | 18,92 (+0,00) | 4,27 (+0,00) | 86,85 (+0,00) | 0,872 (+0,000) |
+| D tabelle di Heron passate come tabelle, Apple, degradata | 0,23 (+0,00) | 0,66 (+0,00) | 5,67 (+0,00) | 2,56 (+0,00) | 38,75 (+0,00) | 1,75 (+0,00) | 8,61 (+0,00) | 89,47 (+89,47*) | 22,22 (+0,00) | 7,11 (+0,00) | 84,11 (+0,00) | 0,825 (+0,000) |
+| D' tabelle di Apple passate come tabelle, Apple, pulita | 0,21 (+0,00) | 0,73 (+0,00) | 6,44 (+0,00) | 2,67 (+0,00) | 38,75 (+0,00) | 1,94 (+0,00) | 13,11 (+0,00) | 89,47 (+89,47*) | 18,92 (+0,00) | 4,27 (+0,00) | 86,85 (+0,00) | 0,880 (+0,000) |
+| D' tabelle di Apple passate come tabelle, Apple, degradata | 0,23 (+0,00) | 0,66 (+0,00) | 5,67 (+0,00) | 2,56 (+0,00) | 38,75 (+0,00) | 1,75 (+0,00) | 8,61 (+0,00) | 84,21 (+84,21*) | 22,22 (+0,00) | 7,11 (+0,00) | 84,11 (+0,00) | 0,836 (+0,000) |
+| Z combinazione (A + D + E; per GLM anche B), Apple, pulita | 0,10 (-0,11*) | 0,45 (-0,28*) | 5,71 (-0,73) | 1,71 (-0,96*) | 42,50 (+3,75) | 1,67 (-0,27) | 18,35 (+5,24) | 84,21 (+84,21*) | 24,32 (+5,41*) | 24,17 (+19,91*) | 88,46 (+1,61) | 0,875 (+0,007) |
+| Z combinazione (A + D + E; per GLM anche B), Apple, degradata | 0,14 (-0,09*) | 0,57 (-0,08) | 5,21 (-0,45) | 1,93 (-0,63*) | 42,50 (+3,75) | 2,17 (+0,42) | 10,86 (+2,25) | 94,74 (+94,74*) | 24,32 (+2,10) | 16,59 (+9,48*) | 85,59 (+1,48) | 0,872 (+0,047) |
+| egret-medium al posto di Heron, Apple, pulita | 0,21 (+0,00) | 0,73 (+0,00) | 6,44 (+0,00) | 2,67 (+0,00) | 38,75 (+0,00) | 1,54 (-0,40) | 12,73 (-0,37) | 0,00 (+0,00) | 19,22 (+0,30) | 4,27 (+0,00) | 84,04 (-2,82*) | 0,891 (+0,007) |
+| egret-medium al posto di Heron, Apple, degradata | 0,23 (+0,00) | 0,66 (+0,00) | 5,64 (-0,03) | 2,58 (+0,02) | 38,75 (+0,00) | 1,71 (-0,04) | 8,99 (+0,37) | 0,00 (+0,00) | 22,52 (+0,30) | 7,58 (+0,47) | 85,51 (+1,40) | 0,825 (-0,016) |
+| egret-large al posto di Heron, Apple, pulita | 0,21 (-0,00) | 0,73 (+0,00) | 6,48 (+0,04) | 2,67 (+0,00) | 40,00 (+1,25) | 1,87 (-0,08) | 10,11 (-3,00) | 0,00 (+0,00) | 19,22 (+0,30) | 4,27 (+0,00) | 86,79 (-0,06) | 0,888 (+0,004) |
+| egret-large al posto di Heron, Apple, degradata | 0,23 (+0,00) | 0,69 (+0,04) | 5,55 (-0,12) | 2,56 (+0,00) | 40,00 (+1,25) | 1,77 (+0,02) | 9,74 (+1,12) | 0,00 (+0,00) | 22,52 (+0,30) | 7,11 (+0,00) | 84,58 (+0,47) | 0,837 (-0,004) |
+| egret-xlarge al posto di Heron, Apple, pulita | 0,21 (+0,00) | 0,73 (+0,00) | 6,49 (+0,05) | 2,67 (+0,00) | 41,25 (+2,50) | 1,15 (-0,79) | 10,86 (-2,25) | 0,00 (+0,00) | 19,22 (+0,30) | 4,27 (+0,00) | 83,96 (-2,89) | 0,891 (+0,007) |
+| egret-xlarge al posto di Heron, Apple, degradata | 0,23 (+0,00) | 0,67 (+0,01) | 5,67 (+0,00) | 2,58 (+0,02) | 40,00 (+1,25) | 1,81 (+0,06) | 10,11 (+1,50) | 0,00 (+0,00) | 22,52 (+0,30) | 7,58 (+0,47) | 85,51 (+1,40) | 0,824 (-0,017) |
+| A richiesta classica di Apple, GLM, pulita | 0,10 (-0,02) | 0,22 (-0,08) | 5,43 (-0,59) | 1,40 (-0,55*) | 38,75 (+0,00) | 1,77 (-0,13) | 29,59 (+16,48) | 0,00 (+0,00) | 24,62 (+4,80*) | 55,92 (+2,84) | 88,89 (+2,03) | 0,851 (-0,006) |
+| A richiesta classica di Apple, GLM, degradata | 0,12 (-0,03) | 0,27 (-0,07) | 4,91 (-0,38) | 1,54 (-0,38) | 38,75 (+0,00) | 2,21 (+0,40) | 25,47 (+16,10*) | 0,00 (+0,00) | 24,02 (+0,60) | 60,19 (+1,90) | 86,02 (+0,91) | 0,851 (+0,026) |
+| B GLM senza guardia stretta, GLM, pulita | 0,09 (-0,03*) | 0,22 (-0,08) | 6,16 (+0,14) | 0,27 (-1,68*) | 35,00 (-3,75) | 2,10 (+0,19) | 24,34 (+11,24) | 0,00 (+0,00) | 12,01 (-7,81*) | 55,45 (+2,37) | 88,31 (+1,46) | 0,929 (+0,062*) |
+| B GLM senza guardia stretta, GLM, degradata | 0,10 (-0,06*) | 0,30 (-0,04) | 5,82 (+0,52) | 0,29 (-1,62*) | 35,00 (-3,75) | 2,52 (+0,71) | 20,22 (+10,86) | 0,00 (+0,00) | 12,31 (-11,11*) | 63,51 (+5,21*) | 89,22 (+4,12*) | 0,910 (+0,085*) |
+| C guardia larga, GLM, pulita | 0,11 (-0,01) | 0,33 (+0,02) | 5,94 (-0,08) | 1,68 (-0,27*) | 38,75 (+0,00) | 2,21 (+0,31) | 13,11 (+0,00) | 0,00 (+0,00) | 20,42 (+0,60) | 54,98 (+1,90) | 88,74 (+1,89) | 0,873 (+0,011) |
+| C guardia larga, GLM, degradata | 0,16 (+0,00) | 0,39 (+0,05) | 5,33 (+0,03) | 1,66 (-0,26*) | 38,75 (+0,00) | 2,25 (+0,44*) | 6,74 (-2,62) | 0,00 (+0,00) | 23,42 (+0,00) | 60,19 (+1,90*) | 85,04 (-0,06) | 0,835 (+0,010*) |
+| E porta dei codici aperta, GLM, pulita | 0,12 (+0,00) | 0,30 (+0,00) | 6,04 (+0,02) | 1,95 (+0,00) | 42,50 (+3,75) | 1,81 (-0,10*) | 13,11 (+0,00) | 0,00 (+0,00) | 20,12 (+0,30) | 53,08 (+0,00) | 87,98 (+1,13) | 0,884 (+0,022) |
+| E porta dei codici aperta, GLM, degradata | 0,15 (-0,00) | 0,32 (-0,02) | 5,32 (+0,02*) | 1,92 (+0,00) | 41,25 (+2,50) | 1,75 (-0,06) | 9,36 (+0,00) | 0,00 (+0,00) | 23,12 (-0,30) | 58,29 (+0,00) | 85,53 (+0,43) | 0,834 (+0,009) |
+| D tabelle di Heron passate come tabelle, GLM, pulita | 0,12 (+0,00) | 0,30 (+0,00) | 6,02 (+0,00) | 1,95 (+0,00) | 38,75 (+0,00) | 1,90 (+0,00) | 13,11 (+0,00) | 89,47 (+89,47*) | 19,82 (+0,00) | 53,08 (+0,00) | 86,85 (+0,00) | 0,848 (+0,000) |
+| D tabelle di Heron passate come tabelle, GLM, degradata | 0,15 (+0,00) | 0,34 (+0,00) | 5,30 (+0,00) | 1,92 (+0,00) | 38,75 (+0,00) | 1,81 (+0,00) | 9,36 (+0,00) | 89,47 (+89,47*) | 23,42 (+0,00) | 58,29 (+0,00) | 85,11 (+0,00) | 0,807 (+0,000) |
+| Z combinazione (A + D + E; per GLM anche B), GLM, pulita | 0,09 (-0,02) | 0,22 (-0,08) | 5,89 (-0,13) | 0,27 (-1,68*) | 37,50 (-1,25) | 1,92 (+0,02) | 25,09 (+11,98) | 89,47 (+89,47*) | 11,71 (-8,11*) | 54,50 (+1,42) | 87,55 (+0,70) | 0,905 (+0,046*) |
+| Z combinazione (A + D + E; per GLM anche B), GLM, degradata | 0,10 (-0,06*) | 0,28 (-0,06) | 5,36 (+0,06) | 0,29 (-1,62*) | 37,50 (-1,25) | 2,04 (+0,23) | 27,34 (+17,98) | 84,21 (+84,21*) | 12,31 (-11,11*) | 61,61 (+3,32) | 88,94 (+3,83*) | 0,908 (+0,095*) |
+| egret-medium al posto di Heron, GLM, pulita | 0,12 (+0,01*) | 0,32 (+0,01) | 6,03 (+0,01) | 1,98 (+0,03) | 38,75 (+0,00) | 1,50 (-0,40) | 11,98 (-1,12) | 0,00 (+0,00) | 19,82 (+0,00) | 53,08 (+0,00) | 84,04 (-2,82*) | 0,871 (+0,009) |
+| egret-medium al posto di Heron, GLM, degradata | 0,15 (-0,00) | 0,41 (+0,07) | 5,29 (-0,01) | 1,92 (+0,00) | 38,75 (+0,00) | 1,73 (-0,08) | 9,74 (+0,37) | 0,00 (+0,00) | 23,42 (+0,00) | 58,29 (+0,00) | 86,38 (+1,28) | 0,810 (-0,014) |
+
+**Dove finiscono le parole perse** (campo, attribuzione esatta parola per parola):
+- **Glosse fittizie dei codici.** L'attribuzione esatta manda fuori dalla lettura, in nodi «glossa», 2.416 parole vere sulla scansione pulita
+  con Apple (4,13 per cento, T8). Delle parole che finiscono in nodi «glossa» (2.679, contando anche quelle che il lettore aveva già perso o
+  storpiato) il 93 per cento viene dal campione del codice a due colonne (2.493) e quasi tutto il resto da altre pagine di codici (v04, v05).
+  Nella pagina sono **le note in corpo minore e in corsivo dentro una delle due colonne** (corpo vero 6,5 punti, stimato 6), non testo a
+  margine: la catena sulla scansione calcola una sola colonna del corpo per la pagina, giudica quelle righe «di corpo da nota fuori dalla
+  colonna» e le fa glosse laterali (regola `isLateralGloss` del tronco comune, ScaboCore), che la lettura non legge. Aprire la porta dei rami
+  dei codici sulla scansione (variante E) non cambia nulla qui: i 46 nodi restano glosse, perché la regola sta nel tronco comune a tutti i
+  rami. Sulle pagine a due colonne e dei   codici le parole fuori dalla lettura sono il 13-16 per cento (T10).
+- **Glosse vere dei manuali non riconosciute.** Sulle pagine con glosse a margine vere (v26, v30) la scansione non le riconosce (10 parole in
+  nodi «glossa» contro 291 della stessa catena sulla forma col testo): finiscono nel corpo, fuse nelle righe vicine (§ 15.2).
+- **Titoli.** Dei 80 titoli veri, le regioni di Heron ne riconoscono 49 come titoli, l'estrazione ne porta 44-45 in grassetto, la
+  classificazione ne tiene 31 (T9). Dei 45 titoli in grassetto la classificazione ne rende titoli 20; gli altri 25 restano corpo (11), finiscono
+  dentro un capoverso (12) o in una nota (2), benché 22 su 25 abbiano un corpo stimato più grande del testo della pagina (da 1,1 a 2,2 volte).
+- **Note.** Le regioni di Heron trovano 194-200 delle 267 note; la classificazione ne riconosce 119-158, l'aggancio le riporta a 186-199 e ne
+  lega al richiamo 23-35 (T9).
+- **Tabelle e didascalie.** La richiesta dei documenti di Apple riconosce 17-18 tabelle su 19, Heron 19 su 19; la lettura ne annuncia 0. Le
+  didascalie: Heron 5 su 5, la lettura 0.
+- **La guardia di GLM** toglie lo 0,8 per cento delle parole vere (attribuzione esatta): le parole che GLM legge dove Apple non vede nulla.
+- **Per situazione** (T10): le pagine rade sono escluse, perché il metro per pagina non regge dove un capoverso attraversa più pagine (§ 10, 12:15).
+
+### 18.2 Le varianti: che cosa danno e che cosa costano (campo, T11)
+
+Confronti appaiati con la via di oggi sulle stesse pagine, intervallo al 95 % per ricampionamento delle pagine (10.000, seme fisso); «*»
+quando l'intervallo esclude lo zero. Nessuna variante è stata accesa nell'app: sono proposte di decisione, coi numeri.
+
+- **A — la richiesta classica del testo di Apple al posto della struttura dei documenti** (via di Apple, pulita): lettere sbagliate 0,10
+  contro 0,21 per cento*, cifre 0,45 contro 0,73*, parole plausibili inventate 1,71 contro 2,67 per mille*, **richiami in apice letti 24 contro
+  4 per cento***; parole perse e titoli pari. Costo: **più testatine e piè nel flusso** (24,3 contro 18,9 per cento*), perché le righe della
+  richiesta classica arrivano alla catena senza i paragrafi che la struttura dei documenti dà. Sulla degradata lo stesso verso (lettere −0,09*,
+  richiami +9,5 punti*). Nella via di GLM la richiesta classica dà le righe su cui GLM si appoggia: note agganciate al richiamo 29,6 contro
+  13,1 per cento sulla pulita (non distinguibile) e 25,5 contro 9,4 sulla degradata*, testatine nel flusso +4,8 punti*.
+- **B — il testo di GLM senza la guardia stretta, sulle righe di Apple** (via di GLM): parole plausibili inventate **0,27 contro 1,95 per
+  mille***, lettere 0,09 contro 0,12*, **testatine nel flusso 12,0 contro 19,8 per cento***, ordine sulle 34 pagine 0,929 contro 0,868*;
+  parole perse pari (6,16 contro 6,02). Costo: titoli trovati 35,0 contro 38,75 per cento (non distinguibile). Sulla degradata in più
+  richiami letti +5,2 punti* e ordine delle due colonne +4,1*. Rischio da tenere presente (dedotto dal codice della variante): toglie le
+  etichette HTML del testo di GLM ma non altri segni di notazione; il controllo semantico ha visto GLM scrivere segni di dollaro attorno ai
+  rinvii (§ 22), e senza guardia arriverebbero all'orecchio.
+- **C — guardia larga** (entrano anche le parole di GLM in mezzo a una riga di Apple): solo le plausibili inventate scendono (1,68 contro 1,95
+  per mille*); il resto pari. Guadagno piccolo.
+- **D — le tabelle viste passate come tabelle**: con le regioni di Heron la lettura annuncia **18 tabelle su 19 sulla pulita (94,7 per
+  cento*) e 17 sulla degradata**, con quelle della struttura dei documenti di Apple 17 e 16 (D'); contro 0 di oggi. Nessun'altra misura
+  cambia (testo identico): nessun costo misurato su queste misure.
+- **E — la porta dei rami dei codici aperta sulle scansioni dei codici**: titoli 42,5 contro 38,75 per cento (non distinguibile), titoli in
+  più per documento −0,12*, ordine +0,02 (non distinguibile); le glosse fittizie restano (la regola è nel tronco comune). Guadagno piccolo.
+- **F — sillabate ricomposte prima della catena** (via di Apple): parole perse pari (la catena le ricompone già, T8); titoli in più per
+  documento +0,40* (peggio), ordine delle due colonne +1,9 punti*. Nessun guadagno netto.
+- **egret al posto di Heron dentro la via delle scansioni**: nessuna differenza distinguibile nel testo; egret-large titoli +1,25 punti (non
+  distinguibile), egret-medium ordine delle due colonne −2,8*. Dentro questa catena il modello d'impaginazione migliore non si vede, perché
+  la catena tiene poco delle regioni (P3 → P5 nella T9); fuori dalla catena sì (§ 19, § 20).
+- **Z — la combinazione A + D + E** (per GLM anche B): somma i guadagni senza cancellarne nessuno; via di GLM, pulita: plausibili 0,27 contro
+  1,95 per mille*, tabelle 17 su 19*, testatine −8,1 punti*, ordine +0,046*; via di Apple: lettere −0,11*, cifre −0,28*, tabelle 16 su
+  19*, richiami +19,9 punti*, con il costo delle testatine (+5,4*).
+
+**Proposte di decisione** (il maintainer sceglie; nessuna variante è accesa): (1) **D** per prima: le tabelle annunciate passano da 0 a 17-18
+su 19 senza costi misurati; (2) **B** per la via di GLM, con un filtro dei segni di notazione prima di accenderla; (3) **A** per la via di
+Apple, dopo aver capito da dove vengono le testatine in più. La perdita più grande, le glosse fittizie dei codici (4,1 punti), **non ha una
+variante dentro il perimetro**: la regola sta nel tronco comune sotto `app/ios` (ScaboCore), che questo giro non tocca; è la decisione
+del referto. Il guadagno più grande è fuori da queste varianti: tenere le regioni di Heron e il testo di GLM insieme (§ 20).
+
+**Lo scarto fra la richiesta classica di Apple e docling sul codice a due colonne (residuo del giro 1, § 16.5): spiegato** (campo, controllo
+semantico parola per parola sul campione del codice, 12.101 parole vere). Le coppie «vera → letta» con errori di lettere della richiesta classica
+erano per lo più **accoppiamenti sbagliati**, non letture sbagliate: due cause, entrambe estranee al lettore. (1) **L'apostrofo**: la verità
+scrive quello tipografico, i lettori quello diritto, e il metro li separava (§ 10); con l'apostrofo unificato gli errori di lettere della
+richiesta classica scendono da 929 a 640. (2) **Le sillabate a fine riga**: le righe di Apple le lasciano spezzate, mentre docling, quando
+compone il testo, le ricompone; le metà restano senza compagna e l'accoppiamento per somiglianza le appaia a parole diverse. Con le due
+correzioni insieme, sul codice: **richiesta classica 41 lettere sbagliate e 81 parole perse, docling 59 e 141, richiesta dei documenti
+dell'app 45 e 93**. Il lettore di Apple, letto come lo legge docling, legge il codice come docling o meglio; docling usa la stessa richiesta
+classica, col solo italiano, su ritagli resi da pdfium a 3 pixel per punto (codice di docling 2.150.1, `ocr_mac_model.py`).
+<!-- PARTE2:fine -->
+<!-- G2:fine -->
