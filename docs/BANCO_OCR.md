@@ -526,7 +526,10 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
   l'ordine di lettura migliore del banco e i titoli con meno falsi, ma le lettere peggiori fra i modelli (0,85 per cento sulla pulita,
   1,44 sulla degradata) e una pagina al tetto dei 3.000 token sulla degradata. È il solo lettore che la degradazione del banco peggiora
   molto; Surya non ne risente affatto.
-(Struttura dei documenti di Apple: in corso, corsa rifatta.)
+- **Struttura dei documenti di Apple** (la stessa richiesta con cui l'app legge le scansioni, § 10; corsa rifatta, copertura 1,00 nelle
+  tre forme): 0,2 secondi a pagina, meno di 0,4 GB; legge il testo come le righe di Apple dell'app (lettere 0,73-0,77 per cento),
+  riconosce le tabelle (17-18 su 19) e tiene un buon ordine (0,97 sulle 34 pagine), ma non conosce titoli né note e lascia nel flusso
+  testatine e piè (163-195 righe su 333).
 <!-- R161:fine -->
 
 ### 16.2 Rendimento per compito (campo)
@@ -557,7 +560,8 @@ Numeri sulla scansione pulita salvo dove detto; tabelle T1-T3 per tutte le forme
   lascia fuori dalla lettura (ammesso dal metro) e sulle scansioni le fonde nelle righe del corpo.
 - **Granite Docling**: titoli 52 su 80 con 56-66 in più (il rapporto migliore), note 138-171, tabelle 16-19 (con 5-10 in più),
   didascalie 0, richiami in apice 133-178, ordine sulle 34 pagine 0,98-0,99 (sulle dense 0,98), lettere 0,85-1,44 per cento.
-(Struttura dei documenti di Apple: in corso, corsa rifatta.)
+- **Struttura dei documenti di Apple**: tabelle 17-18 su 19, didascalie 0, titoli e note nessuno (non ha questi tipi: solo paragrafi,
+  tabelle ed elenchi), richiami in apice 10-15 su 211, ordine 0,97, sulle due colonne 228-231 su 253-257 in ordine.
 <!-- R162:fine -->
 
 ### 16.3 Il banco contro l'app, coppia per coppia (campo; tabella T4)
@@ -634,9 +638,10 @@ di tutto questo.
   riga non si perdono molto più delle interne (12,5 contro 10,3 per cento, pulita); ciò che succede davvero è che **le parole sillabate a
   fine riga restano spezzate** (93,6 per cento delle parole sillabate nelle note non ricomposte, 75 nel corpo) e che **l'inizio delle righe
   di nota si perde spesso** (34 per cento, in buona parte i numeri delle note in apice); GLM grezzo ricompone le sillabate (10,8 per cento
-  non ricomposte). Tabelle: la richiesta che l'app usa per leggere (la struttura dei documenti di Apple, § 10) riconosce anche le tabelle, ma
-  la catena ne prende solo righe e paragrafi (quante ne vede Apple: corsa rifatta in coda); nell'app sulle scansioni **nessuna tabella è
-  annunciata** (0 su 19), mentre il modello d'impaginazione le trova sull'immagine (19 su 19).
+  non ricomposte). Tabelle: **la richiesta che l'app usa per leggere le vede**: la struttura dei documenti di Apple ne riconosce 17-18 su 19
+  (corsa rifatta, § 10); ma la catena dell'app ne prende solo righe e paragrafi, e sulle scansioni **nessuna tabella è annunciata** (0 su
+  19), mentre anche il modello d'impaginazione le trova sull'immagine (19 su 19). Non è il lettore a non vedere le tabelle: è la catena
+  a non usarle.
 
 **Domande di ricerca** (prime risposte):
 
