@@ -328,6 +328,11 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   appaiava parole diverse e contava errori di lettere fittizi. Correzione: i due apostrofi sono uguali nel confronto (`APOSTROFO=unifica`
   in `numeri.py`; `APOSTROFO=separa` riproduce il giro 1 al decimale). Si ricalcolano con l'apostrofo unificato tutte le misure del testo,
   del giro 1 e del giro 2, per tutti i modelli; i numeri del giro 1 restano come continuità. Il controllo semantico è nel § 18.
+- **Pagine rade nel metro per pagina (12:15, giro 2).** Le tabelle per situazione di pagina usano il metro per pagina della T4 (parole della
+  pagina, con le non accoppiate rimesse in gioco contro le pagine vicine). Sulle 58 pagine rade (quasi tutte della dispensa a corpo grande) la
+  verità attribuisce ogni capoverso alla pagina in cui comincia, e un capoverso attraversa tre o quattro pagine: il metro conta come perse, per
+  tutti i lettori, parole che i lettori hanno letto (campo: su una pagina guardata, le 8 parole «perse» da tutti stanno sulla pagina dopo). Le
+  pagine rade restano nelle misure per documento (T1, T12), dove il problema non c'è, ed escono dalle conclusioni per situazione.
 
 ## 11. Parte 1 — Il check-up degli strumenti (campo, 2026-11-19)
 
