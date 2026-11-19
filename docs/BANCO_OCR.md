@@ -261,6 +261,12 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   staccato, prendeva errori di cifre su quella parola. Ora una parola con lettere e cifre attaccate si divide in lettere e cifre, nella
   verità e nei candidati allo stesso modo; la misura vecchia resta come controllo di continuità col giro precedente, e la riproduce al
   decimale.
+- **Verità del testo sbagliata su un volume (02:05).** v11 (6 pagine del gruppo B) è una scansione con il livello di testo di un vecchio
+  OCR dell'editore: la lettura dell'iPad ne eredita gli errori. Su una pagina, delle 25 differenze guardate fra la verità e GLM circa 18
+  erano errori della verità (cifre e lettere scambiate, segni spuri), 4 di GLM, 3 di stile (maiuscolo e maiuscoletto). Correggere la verità
+  a mano su 6 pagine non stava nel tempo: il volume è **escluso dalla misura del testo per tutti i modelli** (resta nella struttura, che
+  ha la verità per blocchi). È l'unico caso di verità sbagliata trovato per il testo in questo giro; per la struttura, uno (la pagina letta
+  da sola, sopra).
 - Strumento corretto (01:58): su 5 pagine con un indice o un sommario stampato docling mette il testo dentro la tabella dell'indice, che il
   programma di corsa non salvava; quelle pagine si rifanno nelle tre forme col testo delle celle (le uscite di prima restano nel laboratorio).
 - Per la ripetibilità delle forme dell'app con GLM i 139 campioni contigui riusano il testo di GLM salvato dal giro precedente (stessi
@@ -484,7 +490,20 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
 ### 16.3 Il banco contro l'app, coppia per coppia (campo; tabella T4)
 
 <!-- R163:inizio -->
-(in corso)
+**Coppia 1 — docling al banco contro Heron nell'app (struttura).** *Quanto costa restare nativi:* sulla forma col testo quasi nulla: stessi
+blocchi trovati per corpo, titoli, note, didascalie, tabelle e figure, ordine 0,968 contro 0,978 (34 pagine); il costo è nell'ordine su
+alcune pagine particolari (apertura di rivista su fascia scura, elenco numerato) dove il porto Swift, fermo alla versione vecchia del
+predittore, inverte capoversi. Sulle scansioni la via dell'app (Heron sull'immagine, ordine sulle sole rilevazioni) è alla pari sulla
+pulita e un po' sotto sulla degradata (figure 0 su 4 contro 4, ordine 0,927 contro 0,981), e sbaglia l'ordine dei titoli a tutta larghezza
+sopra due colonne. *Quanto si guadagna:* 0,04-0,05 secondi a pagina contro 0,06-0,4 (con la lettura di Apple dentro docling sulle
+scansioni, più 23 secondi di avvio alla prima pagina), circa 0,4 GB di memoria contro 2-4,4 GB (impronta di picco del processo Python),
+164 MB di pesi dentro l'app contro un ambiente Python di 1,2 GB più 0,4 GB di modelli, nessuna installazione. Sulle scansioni docling legge
+il testo con lo stesso lettore di Apple dell'app, eppure sbaglia meno lettere (0,15 contro 0,33 per cento, differenza appaiata −0,18
+[−0,27; −0,11]) e perde meno parole (3,7 contro 6,9 per cento): la differenza viene da come il lettore è chiamato (docling: solo italiano,
+immagine resa alla sua scala; app: italiano e inglese, lato lungo di 2000 pixel) e da ciò che la catena dell'app fa dopo; quale delle due
+pesi di più non è stato misurato (ipotesi per il giro 2).
+
+(Coppie 2 e 3: in corso.)
 <!-- R163:fine -->
 
 ### 16.4 Prime risposte alle domande di ricerca ed esito delle ipotesi
@@ -520,7 +539,17 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
 ### 16.5 Versioni: dove una versione nuova cambia i risultati
 
 <!-- R165:inizio -->
-(in corso)
+- **docling 2.150.1 contro 2.103.0** (campo, 34 pagine con verità per blocchi, PDF col testo): titoli 23 contro 23, note 41 contro 43, piè
+  25 contro 21, corpo 126 contro 124, ordine 0,978 contro 0,993. La versione nuova cambia poco: due note in meno, quattro piè in più,
+  ordine leggermente peggiore; il predittore dell'ordine è stato riscritto (§ 11.1). Il porto Swift dell'app viene dalla versione vecchia
+  e sta in mezzo (0,968).
+- **GLM-OCR**: i pesi ufficiali non cambiano da maggio (stesso sha256); la conversione GGUF dell'app (marzo) viene dagli stessi pesi; a
+  settembre sono cambiati solo configurazione e tokenizzatore per transformers 5 (fonte: API di Hugging Face, 2026-11-19). A piena
+  precisione, con la stessa decodifica dell'app, il testo è lo stesso della forma compressa salvo lo stile dell'apostrofo (§ 15.2).
+- **La decodifica conta più della precisione** (campo): la stessa penalità di ripetizione, applicata a tutto il contesto invece che agli
+  ultimi 64 token, ha fatto incollare le parole a GLM a piena precisione su una pagina densa (§ 10).
+- (in corso: Surya 2 contro Surya 2.5, GLM Q8 con llama.cpp b11429 dell'app contro v1.0.0, decodifica ufficiale di GLM, Marker
+  «accurate».)
 <!-- R165:fine -->
 
 ### 16.6 Esperienze operative del giro (campo)
