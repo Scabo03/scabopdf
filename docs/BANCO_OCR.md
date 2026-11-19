@@ -510,16 +510,17 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
 
 <!-- R161:inizio -->
 - **Qualità.** Fra i lettori di scansioni, sul testo, Surya 2.5 è il più preciso e il più completo, GLM (in entrambe le forme) subito dopo,
-  poi Marker e docling (che legge col lettore di Apple), poi le letture dell'app e, in fondo, le righe grezze di Apple. Nella struttura,
-  docling e Heron (lo stesso modello) si equivalgono, Surya trova più titoli ma meno note come note, Marker sta in mezzo; la lettura
+  poi Marker e docling (che legge col lettore di Apple), poi le letture dell'app e, in fondo, le righe grezze di Apple e Granite
+  Docling. Nella struttura, docling e Heron (lo stesso modello) si equivalgono, Surya trova più titoli ma meno note come note, Marker
+  sta in mezzo, Granite tiene l'ordine migliore; la lettura
   dell'app sulle scansioni è la più debole nella struttura (titoli, tabelle, ordine sulle due colonne), sul PDF col testo è la lettura di
   riferimento. Tabelle T1, T2, T3.
 - **Robustezza.** Pagine in errore: Marker 19 (un documento non convertito, nelle tre forme), tutti gli altri 0 (docling 0 dopo la
   correzione dello strumento, § 10); uscite vuote: solo dove la pagina è vuota o dove il modello ha fallito; GLM a piena precisione: 0
-  pagine al tetto dei 3.000 token con la decodifica corretta. Ripetibilità fra due corse: tabella T5.
+  pagine al tetto dei 3.000 token con la decodifica corretta, Granite una sulla degradata. Ripetibilità fra due corse: tabella T5.
 - **Costi.** I più veloci: Heron nell'app 0,04 secondi a pagina, struttura di Apple 0,2, lettura dell'app con Apple 0,3 (Apple 0,2 più
-  Heron 0,05), Marker 0,2-0,3, docling 0,25-0,33 sulle scansioni; poi Surya 3,8-5 (con 8 richieste in parallelo), GLM 9,5-11 nell'app e
-  circa 11-15 a piena precisione. Memoria: l'app con GLM usa fino a 4,4 GB di memoria grafica di sistema e circa 2 GB d'impronta del
+  Heron 0,05), Marker 0,2, docling 0,25-0,33 sulle scansioni; poi Granite 3,3-3,4, Surya 3,7-3,8 (corsa intera divisa per le pagine,
+  con 8 richieste in parallelo), GLM 9,5 nell'app e circa 11 a piena precisione. Memoria: l'app con GLM usa fino a 4,4 GB di memoria grafica di sistema e circa 2 GB d'impronta del
   processo; GLM a piena precisione 5,3-5,5 GB d'impronta; docling 4,1-4,4 GB; Marker 1,9-2,6 GB tutto sul processore (3-4 nuclei); Apple
   e Heron sotto 1 GB. Tabella T7.
 - **Granite Docling 258M**, il più piccolo dei modelli che leggono e impaginano insieme (3,3-3,4 secondi a pagina, meno di 1 GB):
@@ -535,27 +536,31 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
 ### 16.2 Rendimento per compito (campo)
 
 <!-- R162:inizio -->
-Numeri sulla scansione pulita salvo dove detto; tabelle T1-T3 per tutte le forme.
+Numeri delle due scansioni (un intervallo è pulita-degradata), salvo dove detto; tabelle T1-T3 per tutte le forme.
 - **Lettura del testo** (lettere sbagliate, 179 pagine): Surya 2.5 0,06 per cento (identico sulla degradata: la degradazione del banco non
-  lo tocca); GLM 0,09 nelle due forme del modello; Marker 0,11;
-  docling (lettore di Apple) 0,11; lettura dell'app con GLM 0,20, con Apple 0,37; righe grezze di Apple 0,73. Parole perse: Surya 0,3,
-  GLM 1,1, docling 2,3 (1,5 sulla degradata), app 5,2-5,6 (codice a due colonne), Marker 11,9 (2,7 sulle pagine dove ha un'uscita).
-- **Cifre**: GLM 0,36-0,45 per cento, Surya 0,40, app con GLM 0,49, app con Apple 0,83, docling 0,84, Apple grezzo 1,05, Marker 1,9
-  (numeri di nota in notazione matematica).
-- **Titoli e livelli**: sulle 34 pagine con verità per blocchi Surya 30 su 47, Marker 26-27, docling 21-23, Heron 22, app sulle scansioni
-  14-15 (misura per allineamento di parole, meno favorevole); contro i titoli del libro letto dall'iPad (185 pagine) docling sul PDF 53
-  su 80, Surya 51, Heron sull'immagine 47-49, docling sulle scansioni 44-48, Marker 35-36, app 31; tutti con molti titoli in più (60-115).
+  lo tocca); GLM 0,09-0,10 nelle due forme del modello; Marker 0,11-0,15; docling (lettore di Apple) 0,12-0,17; lettura dell'app con
+  GLM 0,20-0,24, con Apple 0,37-0,38; righe grezze di Apple 0,71-0,73; Granite 0,85-1,44. Parole perse: Surya 0,3, GLM 1,0-1,1, docling
+  1,2-1,9, righe di Apple 2,6-2,7, Granite 3,3-4,9, app 4,4-5,6 (codice a due colonne), Marker 11,9 (2,7-2,8 sulle pagine dove ha
+  un'uscita).
+- **Cifre**: GLM 0,35-0,45 per cento, Surya 0,40-0,43, app con GLM 0,49-0,60, Granite 0,62-1,09, app con Apple 0,83-0,91, docling
+  0,84-1,25, Apple grezzo 1,03-1,05, Marker 1,9 (numeri di nota in notazione matematica).
+- **Titoli e livelli**: sulle 34 pagine con verità per blocchi Surya 29-30 su 47, Marker 25-27, Granite 24, docling 22-23, Heron 20-22,
+  app sulle scansioni 14-15 (misura per allineamento di parole, meno favorevole); contro i titoli del libro letto dall'iPad (185 pagine)
+  Surya 51-58 su 80, docling sul PDF 53, Granite 52, Heron sull'immagine 47-49, docling sulle scansioni 44-48, Marker 35-36, app 31;
+  tutti con molti titoli in più (56-115).
   I livelli: l'app li dà coerenti fra capitolo, sezione e paragrafo; docling su un indice mette tutto al livello 1 (§ 15.1).
-- **Note e richiami**: note trovate come note 180-200 su 267 per tutti i modelli a regioni e per l'app; agganciate al richiamo (dove l'app
-  fa il salto) 35 l'app, 11-25 gli altri; richiami in apice letti: Surya 196 su 211, GLM 119-145, app con GLM 112-123, Marker 83-92,
-  docling 38-51 sulle scansioni (188 sul PDF col testo), Apple 9-16.
+- **Note e richiami**: note trovate come note 180-200 su 267 per i modelli a regioni e per l'app (Granite 138-171); agganciate al
+  richiamo (dove l'app fa il salto) 23-35 l'app, 5-25 gli altri; richiami in apice letti: Surya 195-196 su 211, Granite 133-178, GLM
+  119-145, app con GLM 112-123, Marker 83-92, docling 38-51 sulle scansioni (188 sul PDF col testo), Apple 9-16.
 - **Tabelle**: 19 su 19 per docling, Marker, Surya, GLM (in HTML) e Heron sull'immagine; l'app sulle scansioni non ne annuncia nessuna.
   **Didascalie**: 5 su 5 per docling, Heron e Surya; 0 per Marker (le chiama testo), l'app e GLM.
-- **Ordine** (tau sulle 34 pagine; due colonne a parte): docling 0,96-0,98, Heron 0,93-0,97, Marker 0,94-0,95, Surya 0,94; sulle due
-  colonne (in ordine sui ritrovati) GLM 234-236 su 260, Surya 232 su 256, Marker 231 su 258, Heron 221-228 su 252-255, docling 202-211
-  su 229-235, app 179-200 su 210-234.
-- **Testatine e piè** rimasti nel flusso (righe su 333): docling 39-42, Marker 40-43, Heron 41-49, Surya 46, GLM 55-56 (legge tutto),
-  app 58-75 sulle scansioni (pagine singole: la catena non vede la ricorrenza); il libro letto dall'iPad 39.
+- **Ordine** (tau sulle 34 pagine; due colonne a parte): Granite 0,98-0,99, docling 0,96-0,98, struttura di Apple 0,97, Heron 0,93-0,97,
+  Marker 0,94-0,95, Surya 0,94-0,95, app sulle scansioni 0,82-0,88; sulle due colonne (in ordine sui ritrovati) GLM 234-236 su 260,
+  Surya 232 su 256-257, Marker 231 su 258-259, struttura di Apple 228-231 su 253-257, Granite 220-224 su 247-252, Heron 221-228 su
+  252-255, docling 202-211 su 229-235, app 179-200 su 210-234.
+- **Testatine e piè** rimasti nel flusso (righe su 333): docling 39-42, Marker 40-43, Heron 41-49, Surya 46, Granite 46-54, GLM 55-56
+  (legge tutto), app 58-75 sulle scansioni (pagine singole: la catena non vede la ricorrenza), struttura di Apple 163-195; il libro letto
+  dall'iPad 39.
 - **Glosse a margine**: nessun modello le etichetta come glosse (0 su 11 sulle pagine con verità per blocchi); l'app sul PDF col testo le
   lascia fuori dalla lettura (ammesso dal metro) e sulle scansioni le fonde nelle righe del corpo.
 - **Granite Docling**: titoli 52 su 80 con 56-66 in più (il rapporto migliore), note 138-171, tabelle 16-19 (con 5-10 in più),
@@ -600,7 +605,9 @@ titoli su 47 (il massimo) ma solo 21 note su 76 come note. **Marker** (modo «au
 per cento) ma sbaglia molte cifre (1,9 per cento, per la notazione matematica dei numeri di nota) e si ferma su un documento. **La coppia
 dell'app** legge le lettere a metà strada (0,20 per cento) e perde più parole (5,2 per cento, quasi tutte sul codice a due colonne), non
 annuncia le tabelle sulle scansioni, legge i richiami in apice 112 volte su 211. *Quanto costa restare nativi:* contro Surya, molto nella
-struttura delle scansioni e poco nel testo (lettere 0,20 contro 0,06 per cento); contro Marker, la differenza appaiata sulle lettere non è
+struttura delle scansioni e meno nel testo: appaiati a pagina (179 pagine) lettere 0,07 contro 0,13 per cento (differenza −0,05
+[−0,09; −0,02]; −0,10 [−0,15; −0,06] sulla degradata), parole perse 1,3 contro 6,0 (−4,7 [−7,4; −2,4]), cifre non distinguibili;
+contro Marker, la differenza appaiata sulle lettere non è
 distinguibile da zero, Marker sbaglia più cifre (1,74 contro 0,33 per cento; differenza +1,42 [0,85; 1,99]) e l'app perde più parole
 (6,7 contro 2,7 per cento, sulle 160 pagine dove Marker ha un'uscita). *Quanto si guadagna:* Surya non entra in un'app
 dello store (pesi con licenza OpenRAIL modificata: limiti commerciali, clausola di concorrenza, condivisione allo stesso modo anche delle
@@ -651,11 +658,22 @@ di tutto questo.
    tabelle non annunciate, titoli a tutta larghezza fuori ordine sopra due colonne. Si guadagna in semplicità (niente Python, niente
    rete, un solo scaricamento verificato), in memoria (circa 2 GB contro 4-5,5 GB dei processi Python) e, per la struttura, in tempo
    (0,05 secondi a pagina contro 0,3-0,4 di docling sulle scansioni).
-2. **Quale modello per quale compito, e dove cede?** (si completa coi numeri di Surya e Granite)
+2. **Quale modello per quale compito, e dove cede?** *Testo delle scansioni:* il più preciso è Surya 2.5 (lettere sbagliate 0,06 per
+   cento, parole perse 0,3, richiami in apice 196 su 211, uguale sulla degradata), ma i suoi pesi non entrano in un'app dello store; fra
+   i compatibili, GLM-OCR (0,09-0,10 per cento, perse 1,0-1,1), uguale nelle due forme. Cedono le righe di Apple (0,73 per cento,
+   richiami in apice 9-16 su 211, sillabate non ricomposte), Granite Docling (0,85-1,44, il solo che la degradazione peggiora molto),
+   Marker sulle cifre (1,9 per cento) e su un documento che non converte. *Struttura sul PDF col testo:* docling e Heron nell'app (lo
+   stesso modello) si equivalgono. *Struttura sulle scansioni:* Surya trova più titoli (30 su 47) ma chiama nota meno note; Heron
+   sull'immagine e docling si equivalgono sulla pulita; Granite ha l'ordine migliore e i titoli più puliti ma nessuna didascalia; le
+   tabelle le trovano tutti, la struttura di Apple compresa, salvo la catena dell'app. *Pagine dense:* docling e Granite tengono
+   l'ordine (0,98); Surya e Marker cedono (0,79-0,83, in parte per convenzione: corpo prima, note dopo), la via dell'app di più (0,74).
+   *Glosse a margine:* nessun modello le riconosce come tali. *Dove cede l'app sulle scansioni:* colonne strette dei codici fuori dalla
+   lettura, parole di fine riga staccate come note sulle enciclopedie a due colonne, tabelle non annunciate, glosse fuse nel corpo.
 3. **Che cosa arriva all'orecchio di chi usa VoiceOver?** Sulle scansioni pulite, con GLM nell'app: dei titoli raggiungibili con VO
    Comando H circa uno su quattro è un titolo vero (31 veri e 99 falsi su 185 pagine), le note trovate sono 186 su 267 e 35 hanno il salto
-   al loro richiamo; restano nel flusso 62 righe di testatina o piè su 333; le parole plausibili inventate sono 167 su circa 62.000, e la
-   verifica a mano dice che quasi nessuna è un'invenzione scorrevole (§ 15.4). Sul PDF col testo l'app dà la lettura di riferimento.
+   al loro richiamo; restano nel flusso 62 righe di testatina o piè su 333; le parole plausibili inventate sono 121 su circa 58.500
+   (77 fuori dalle pagine con figure, tabelle o didascalie), e la verifica a mano dice che quasi nessuna è un'invenzione scorrevole
+   (§ 15.4). Sul PDF col testo l'app dà la lettura di riferimento.
 4. **Quanto costano i modelli in tempo, memoria e carico?** (tabella T7; si completa con le seconde corse a priorità normale)
 5. **Quanto cambiano i risultati fra versioni e fra due corse?** (tabella T5 e § 16.5; si completa con le seconde corse)
 <!-- R164:fine -->
@@ -687,7 +705,12 @@ di tutto questo.
 - **Fuori linea.** docling chiede la tabella delle celle (TableFormer) a una revisione etichettata (`v2.3.0`) diversa da quella principale:
   con la rete chiusa si ferma finché quella revisione non è nella cache. Marker all'avvio scarica un font dal sito dell'editore: con la
   rete chiusa si ferma con un errore di connessione; serve il font in locale. Surya 0.24 lancia da sé llama-server con 8 richieste in
-  parallelo e un contesto di 98.304 token, e alla fine lo uccide dopo 10 secondi di attesa.
+  parallelo e un contesto di 98.304 token, e alla fine lo uccide dopo 10 secondi di attesa; lo lancia con il registro a verbosità piena,
+  nella cache dell'utente: 467 MB e 4,2 milioni di righe per due pagine (campo). Con `--log-verbosity 1` passato da una variabile
+  d'ambiente il registro resta a zero byte (l'effetto sul tempo non è misurato).
+- **Che cosa usa davvero l'app.** Il nome del lettore non basta: sul macOS di oggi la «lettura del testo di Apple» dell'app è la
+  richiesta della struttura dei documenti, con le opzioni predefinite (inglese e riconoscimento automatico della lingua), e non la
+  richiesta classica del testo che usa docling (§ 10). L'ha detto il codice, non la documentazione del progetto.
 - **Rete.** Zero byte verso l'esterno durante l'elaborazione per tutti i motori, sotto il recinto che nega la rete; l'unico tentativo di
   uscita visto è il font di Marker (bloccato).
 - **Robustezza.** Marker 2.2.0 si ferma con un errore interno su un documento (il libro breve di 19 pagine, nelle tre forme): 19 pagine
