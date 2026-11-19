@@ -2593,3 +2593,55 @@ dedotto dal codice) e a Heron nell'app sui PDF col testo, misurato nel livello A
 
 **Prima e dopo sulle pagine ruotate costruite e sulle scansioni vere**: § 26.1, quando le corse sono finite.
 <!-- G3P1:fine -->
+
+## 27. Giro globale, Parte 2 — Il materiale, in tre livelli (campo)
+
+<!-- G3P2:inizio -->
+**Livello A — il corpus intero.** 55 documenti (52 volumi e 3 documenti di studio), **23.566 pagine**; 217 senza testo, 1.144 con meno di 200
+caratteri, nessuna ruotata; 3.007 col riquadro di ritaglio spostato (§ 26). Le caratteristiche di ogni pagina vengono dalla stessa funzione del
+giro 1, verificata al byte: ricalcolate sulle pagine dei volumi d'origine, le 185 pagine del banco danno caratteristiche identiche (185 su 185). Un
+solo volume ha il livello di testo da OCR (immagine a tutta pagina sotto il testo), v11, già escluso dal testo nel giro 1. **Verità**: la lettura
+dell'iPad dei 55 libri interi, fatta dalla catena dell'app (416 secondi per tutto il corpus). **Affidabilità per volume** (`misure/affidabilita_A.json`
+nel laboratorio): 27 volumi hanno segnalibri nel PDF (2.124 in tutto, 1.056 ritrovati fra i titoli della lettura); in 9 la lettura dell'iPad ne
+ritrova almeno l'80 per cento (per esempio 44 su 47, 105 su 113, 118 su 121, 86 su 88), in 8 meno di un terzo (segnalibri che non sono titoli
+stampati, come un segnalibro per articolo nei codici, o titoli che la lettura non riconosce: con questa verità non si distingue); 15 volumi hanno
+pagine di sommario o d'indice, e l'indice stampato dà quote alte dove è un sommario dei capitoli (161 su 166, 69 su 85) e basse dove le pagine
+d'indice sono indici analitici (le voci non sono titoli). Dove manca una verità indipendente l'accordo si dice «non validato».
+
+**Livello B — il campione largo.** 478 pagine: le 185 del banco del giro 1 e **293 pagine nuove** da 52 documenti (manifesto `e08a5589…`, scelta
+`50273006…`, congelati alle 16:25, prima di ogni corsa sulle pagine nuove): strato generale 255 (5 pagine per documento nell'ordine
+dell'impronta), più 38 per riempire le situazioni scarse (tabelle 16, sommari e indici 15, figure e didascalie 7). Ogni situazione del § 4.2 ha ora
+almeno 24 pagine (tabelle 29, sommari e indici 24, figure e didascalie 24, maiuscoletto 51, testatina in maiuscoletto 50, elenchi 36, note dense
+51, due colonne 32, glosse 61), da più volumi; fa eccezione la forma: le pagine **dense a due colonne il corpus le ha in due soli volumi** (i
+codici), 28 pagine in tutto. Tre forme per pagina con la ricetta e il seme del giro 1; zero caratteri di testo nelle scansioni. **72 pagine
+ruotate**: 24 pagine, una per documento, a 90, 180 e 270 gradi, con l'immagine salvata ruotata e la rotazione dichiarata; MuPDF le mostra
+identiche alla scansione pulita (differenza zero). Sottoinsieme di GLM a piena precisione: 60 pagine nuove. **Composizione**: a peso di pagina il
+corpus è fatto per il 22,9 per cento dai due codici e per il 16,4 da pagine a due colonne; il banco del giro 1 ne aveva il 14,1 e il 10,8, le pagine
+nuove (scelte per documento) il 4,8 e il 4,1. Per questo la Parte 5 dà anche una stima pesata sulle pagine del corpus.
+
+**Livello C — le scansioni vere.** 75 pagine: le 19 del giro 2 e **56 pagine nuove da 19 documenti** pubblicati apertamente sul sito ufficiale della
+Banca d'Italia (test a risposta multipla, tracce e testi delle prove dei concorsi del 2014, 2015, 2018, 2019, 2022, 2024 e 2025; fonte: pagine dei
+bandi, https://www.bancaditalia.it/chi-siamo/lavorare-bi/informazioni-concorsi/, consultate e scaricate il 2026-11-19 fra le 16:31 e le 16:33;
+cinque consultazioni per il materiale pubblico); 21 file scaricati, 2 esclusi perché hanno un livello di testo (OCR). Manifesto `28ffa58d…`,
+fissato prima di ogni corsa; regola: 3 pagine per documento nell'ordine dell'impronta più ogni pagina a 90 o 180 gradi. Rotazioni delle pagine
+nuove: 35 a 0 gradi, 18 a 270, 2 a 90, 1 a 180 (con quelle del giro 2, 32 pagine ruotate su 75). Produttori dichiarati: tre modelli di
+scanner (6 file), due programmi di Adobe (2), nessuno (11). **Verità** su 14 pagine: le 6 del giro 2 e 8 nuove (2 per documento da 4 documenti, con le rotazioni 270, 90, 180 e 0;
+campione fissato prima delle corse), trascritte da Code a forte ingrandimento con l'aiuto della bozza della lettura di Apple; **verificate alla
+cieca** da un sotto-agente nuovo: 1.736 parole, zero discrepanze; segnalate tre incoerenze di somma nei prospetti originali, trascritti come
+stampati.
+
+**Estensione del livello B (indicazione del maintainer a giro avviato, 17:41).** Scelta alle 17:46, prima di ogni sua corsa e senza toccare il
+campione congelato (`bancoE/SCELTA_EST.json` `45b7cb8f…`, regola in `strumenti/scegli_estensione_b.py` `7795d724…`): solo caratteristiche delle
+pagine e la verità di riferimento, che dice soltanto se la pagina ha parole lette dall'iPad (senza, una pagina non entra nelle misure del
+testo). **Strato 1**, 24 pagine: le tre situazioni che nel livello B avevano meno di 20 pagine misurate (tabelle 17, sommari e indici 18,
+figure e didascalie 13), portate a 24 col giro a turno fra i volumi nell'ordine dell'impronta, come il livello B; nessun volume mancava nel
+livello B (55 su 55). **Strato 2**, 168 pagine: ripartite fra 45 documenti in proporzione alle loro pagine nell'universo (v04 21, v05 20, v30 12,
+v06 11…), per stringere le stime pesate sul corpus, dove le 293 pagine erano 5 per documento qualunque fosse la grandezza; dentro ogni
+documento l'ordine dell'impronta, con l'elenco intrecciato perché ogni prefisso resti circa proporzionale. **192 pagine in 8 blocchi di 24**,
+costruite alle 17:47 con la ricetta e il seme del giro 1 (`bancoE/MANIFESTO_EST.json` `386a9507…`), verità alle 17:49 (lettura dell'iPad di
+ogni pagina col testo, 8 secondi). Le corse fanno i blocchi in ordine, ciascuno con tutte le vie del fulcro (GLM nell'app, Xiaomi-OCR-0 Q8,
+Surya, la lettura di Apple con le due richieste, la via dell'app corretta con Apple; pulita e degradata); l'estensione riportata è il prefisso
+di blocchi completati; nessun blocco parte dopo le 6:15, per lasciare le ultime tre ore prima del tetto al controllo semantico, alla
+revisione e al report; gli altri modelli solo dopo dots e se resta tempo.
+<!-- G3P2:fine -->
+
