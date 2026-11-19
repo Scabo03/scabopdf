@@ -200,7 +200,8 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 ## ▶ STATO — Giro «banco OCR, giro 1 di 2»: metodo, check-up, banco comune, corse, misure, controllo semantico sulle coppie del fulcro e report ridotto, per lo speciale radiofonico sugli OCR (nessuna build, solo documenti) — 2026-11-19 — CONCLUSO (giro 1)
 
 **Build:** iPad ultima **66**, prossima **67**; Mac ultima **2** (in revisione beta per il gruppo esterno), prossima **3**: nessuna
-usata. **Partenza:** `738342d` (main = origin). **Ramo:** `chore/banco-ocr-giro1` → ⟨destino⟩. Livello: leggero per il repo (solo
+usata. **Partenza:** `738342d` (main = origin). **Ramo:** `chore/banco-ocr-giro1`, unito in main con un avanzamento rapido, poi
+cancellato, locale e remoto. Livello: leggero per il repo (solo
 documenti: `git diff --name-only 738342d.. -- app pipeline` = 0 file), pieno per le misure. Nessuna app aperta, nulla letto dal
 contenitore `com.scabo.scabopdf`: i modelli dell'app girano dalle copie del laboratorio. Laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`
 (resta tutto per il giro 2); referto `REFERTO_BANCO_OCR_1.md` lì; report parziale `docs/BANCO_OCR.md`.
@@ -213,12 +214,13 @@ contenitore `com.scabo.scabopdf`: i modelli dell'app girano dalle copie del labo
   ufficiale con transformers 5.23, llama.cpp v1.0.0 compilato dal tag); pesi verificati per sha256; rete esterna negata a tutti, unico
   tentativo d'uscita il font di Marker (bloccato); licenze: Surya 2.5 e quindi Marker hanno pesi OpenRAIL-M modificata, fuori dallo store.
 - **Parte 2 — banco:** 52 documenti, 185 pagine in tre forme (PDF col testo, scansione pulita, degradata), manifesto `0e7feec2…`
-  congelato alle 00:45 e invariato a fine giro.
+  congelato alle 00:46 e invariato a fine giro.
 - **Parte 3-4 — corse e misure:** 72 corse, 3 ore e 48 minuti di coda, una sola uscita diversa da 0 (GLM a piena precisione con la
   decodifica sbagliata, interrotto e rifatto); zero byte verso l'esterno in tutte. Lettere sbagliate sulle scansioni: Surya 2.5 0,06 %,
   GLM 0,09-0,10 (compresso nell'app e a piena precisione uguali), docling 0,12-0,17, app con GLM 0,20-0,24, app con Apple 0,37-0,38,
   righe di Apple 0,71-0,73, Granite 0,85-1,44. Ripetibilità fra due corse: identiche al carattere salvo docling, che dipende dal contesto
-  (documento intero contro pagina da sola) ma è deterministico. Nessuna misura di tempo col Mac occupato.
+  (documento intero contro pagina da sola) ma è deterministico. Misure di tempo di riferimento (T5) a priorità normale e a Mac libero;
+  durante alcune corse di qualità della T7 girava altro lavoro del laboratorio: dichiarato, con la quota per corsa.
 - **Parte 5 — controllo semantico** sulle tre coppie del fulcro (18 pagine) e prova alla cieca sulla coppia 1 (6 su 6 d'accordo).
 - **Parte 6 — esiti:** H1 regge (Heron nell'app riconosce la struttura come docling); H2 regge in parte (docling il migliore fra le
   catene, Granite Docling meglio ancora nell'ordine; Surya cede sulle pagine dense, in parte per convenzione); H3 regge (GLM più preciso
@@ -228,11 +230,20 @@ contenitore `com.scabo.scabopdf`: i modelli dell'app girano dalle copie del labo
   classica, già nel codice come ripiego, sbaglia un quarto di lettere in meno sulla stessa immagine e in meno tempo (§ 16.5 del report);
   il costo di restare nativi oggi sta nella catena delle scansioni, non nei modelli (GLM compresso = GLM a piena precisione, Heron =
   docling).
-- **Verifiche:** ⟨…⟩. **Revisione indipendente:** ⟨…⟩.
+- **Verifiche:** diff di `app` e `pipeline` vuoto; manifesto invariato; numeri ricalcolati da capo con la stessa impronta
+  (`numeri.json` `1cd122f8…`); controlli del testo dei volumi e dei segreti a zero su tutti i commit del ramo. **Revisione
+  indipendente:** un sotto-agente nuovo con le sole istruzioni: tabelle rigenerate identiche al byte, 19 rilievi (nessuno grave, 7 medi,
+  12 minori), tutti affrontati: corretti nel report e negli strumenti (il più sostanziale: lo strumento dei tempi contava come motore
+  anche il lavoro in parallelo; ora conta solo i processi della corsa e la T7 dice per quale parte del tempo c'era altro lavoro), quelli
+  che chiederebbero corse nuove dichiarati nel § 10 e rinviati al giro 2.
 - **Da dove riprendere (giro 2):** `docs/BANCO_OCR.md` § 16.7-16.8; nessuna corsa da rifare. Restano: rendimento per situazione e
   incroci, combinazioni di modelli, qualità e costo, controllo semantico completo sul campione di 37 pagine, classifica, frasi per la
   radio, modelli nuovi (per primi docling-layout-egret e Xiaomi-OCR-0), materiale pubblico.
-- **Decisioni per il maintainer:** ⟨…⟩
+- **Decisioni per il maintainer** (referto § 10): (1) passare il testo delle scansioni lette con Apple alla richiesta classica, già nel
+  codice come ripiego (inclinazione: sì, in un giro dedicato con le reti, dopo aver capito nel giro 2 lo scarto con docling sul codice a
+  due colonne); (2) un giro dedicato alla catena delle scansioni: tabelle annunciate, colonne strette dei codici, parole di fine riga
+  (inclinazione: sì, dopo il giro 2, prima le tabelle); (3) tenere GLM-OCR Q8 nell'app, Surya e Marker solo al banco, e provare nel giro 2
+  docling-layout-egret e Xiaomi-OCR-0 (inclinazione: sì).
 
 ---
 
