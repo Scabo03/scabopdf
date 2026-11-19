@@ -463,6 +463,15 @@ Surya 2.5 sulle stesse pagine (pulita), più una pagina densa d'enciclopedia sca
   tabelle e le didascalie come didascalie, i titoli trovati; testatine e piè etichettati (quindi si possono togliere dal flusso). È la lettura più pulita delle
   tre sulle pagine guardate.
 - **Glosse**: chiamate corpo, ma messe ciascuna subito prima del suo capoverso (Marker e l'app le spostano o le fondono).
+- **Codice a due colonne**: nessuna parola persa, articoli e commi nell'ordine giusto, note dopo il loro articolo (l'app su questa pagina
+  perde la colonna stretta); ma i numeri romani dei commi in maiuscoletto diventano lettere (quattro su nove illeggibili all'orecchio, gli
+  altri resi in minuscolo) e una lettera dell'elenco è letta male.
+- **Apertura di capitolo**: titolo di capitolo giusto; il titolo di sezione spezzato in due, la prima metà come testo; il titolo di
+  paragrafo numerato non annunciato; la nota lunga in un blocco solo.
+- **Un limite della verità, trovato qui** (campo): su questa pagina la nota vera è più lunga di 70 parole su 409 rispetto a quella di
+  Surya e di Marker, che si fermano nello stesso punto; lo strato di testo della pagina dice che quelle parole sono il seguito della nota
+  sulla pagina dopo, che la verità costruita sul volume (§ 10) porta con sé. Non è un errore dei modelli; sulle note che continuano a
+  pagina nuova la verità è un po' più lunga del dovuto, per tutti allo stesso modo.
 - **Ordine sulle pagine dense a due colonne**: Surya e Marker leggono prima tutto il corpo delle due colonne e poi tutte le note; docling
   e la verità leggono colonna per colonna, note comprese. Per l'orecchio la scelta di Surya non spezza il corpo, ma la metrica la conta
   come inversione: metà della «perdita d'ordine» di Surya sulle pagine dense viene da questa convenzione (vedi H2).
@@ -507,7 +516,8 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
 
 <!-- R162:inizio -->
 Numeri sulla scansione pulita salvo dove detto; tabelle T1-T3 per tutte le forme.
-- **Lettura del testo** (lettere sbagliate, 179 pagine): Surya 2.5 0,06 per cento; GLM 0,09 nelle due forme del modello; Marker 0,11;
+- **Lettura del testo** (lettere sbagliate, 179 pagine): Surya 2.5 0,06 per cento (identico sulla degradata: la degradazione del banco non
+  lo tocca); GLM 0,09 nelle due forme del modello; Marker 0,11;
   docling (lettore di Apple) 0,11; lettura dell'app con GLM 0,20, con Apple 0,37; righe grezze di Apple 0,73. Parole perse: Surya 0,3,
   GLM 1,1, docling 2,3 (1,5 sulla degradata), app 5,2-5,6 (codice a due colonne), Marker 11,9 (2,7 sulle pagine dove ha un'uscita).
 - **Cifre**: GLM 0,36-0,45 per cento, Surya 0,40, app con GLM 0,49, app con Apple 0,83, docling 0,84, Apple grezzo 1,05, Marker 1,9
@@ -589,8 +599,8 @@ di tutto questo.
   contro 0,981). Il dato di fase 20 si riproduce identico per Heron (22, 41, 0,968).
 - **H2 — docling è il migliore nell'ordine di lettura; Surya perde sulle pagine dense: REGGE, con una precisazione.** Sulle 34 pagine con
   verità per blocchi l'ordine medio (tau) di docling è 0,96-0,98 nelle tre forme, di Heron nell'app 0,93-0,97, di Surya 2.5 0,94 (pulita),
-  di Marker 0,94-0,95. Sulle 10 pagine dense (oltre 3.500 caratteri): docling 0,977 (una pagina sotto 0,9), Surya 0,788 (sei sotto 0,9),
-  Marker 0,81 (sette sotto 0,9). Le pagine dove Surya cede sono quasi tutte quelle dell'enciclopedia scansionata a due colonne, come nella
+  di Marker 0,94-0,95. Sulle 10 pagine dense (oltre 3.500 caratteri): docling 0,97-0,98 (una pagina sotto 0,9), Surya 0,79 sulla pulita
+  e 0,83 sulla degradata (sei sotto 0,9), Marker 0,81-0,82 (sette sotto 0,9), la via dell'app 0,74 con entrambi i lettori (sei sotto 0,9). Le pagine dove Surya cede sono quasi tutte quelle dell'enciclopedia scansionata a due colonne, come nella
   fase 20 con Surya 2: la versione nuova non cambia questo comportamento. La precisazione, dal controllo semantico: Surya e Marker leggono
   tutto il corpo delle due colonne e poi le note, la verità colonna per colonna con le note; una parte dell'inversione è questa
   convenzione, non un corpo spezzato. Le parole, sulle pagine dense, Surya le legge benissimo (perse 0,9 per cento, lettere 0,10).
