@@ -6,7 +6,7 @@
 > **campo** (misurato in questo giro), **fonte** (documento o scheda, con indirizzo e data), **dedotto**, **non verificato**.
 >
 > Stato: **REPORT PARZIALE, giro 1 di 2 (concluso il 2026-11-19).** Il metodo (§ 0-10) è stato scritto e committato prima di
-> qualunque corsa (commit `e547665`, ore 00:26); da lì metodo, misure e campione non si sono cambiati per adattarli ai risultati, e
+> qualunque corsa (commit `e547665`, ore 00:25); da lì metodo, misure e campione non si sono cambiati per adattarli ai risultati, e
 > ogni correzione è dichiarata nel § 10 col motivo e l'ora, rifacendo la misura su tutti i modelli. Fatti in questo giro: check-up
 > degli strumenti (§ 11), banco comune congelato (§ 12), 72 corse (§ 13), misure (§ 14), controllo semantico sulle tre coppie del
 > fulcro (§ 15), report ridotto (§ 16). Restano per il giro 2 le parti elencate nel § 16.8; da dove riprendere nel § 16.7.
@@ -228,7 +228,9 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   20 + 19). Il numero 119 del referto del giro precedente, della nota d'integrazione di `MAC_FACILITAZIONE_MODELLI.md` e delle schede
   del catalogo dell'app è un errore di somma (il campione della dispensa ha 40 pagine, non 20); 238 «pagine scansionate» sono in realtà
   278. Il banco comune comprende tutte le 139. Nessuna misura cambia per questo; cambia la frase del metodo.
-- Scelte minori (registrate prima delle corse): i modelli che leggono solo immagini (GLM-OCR, Surya, Granite Docling, struttura dei
+- Scelte minori (scritte nel commit `d59f174` delle 01:02, dopo l'avvio della coda alle 00:53 e dopo le prime corse di docling e della
+  struttura di Apple, che già le seguivano nei loro programmi di corsa; per docling non è più controllabile, perché il programma è stato
+  corretto alle 01:58 e le uscite non registrano le opzioni): i modelli che leggono solo immagini (GLM-OCR, Surya, Granite Docling, struttura dei
   documenti di Apple sulle scansioni) non girano sulla forma col testo come lettori: per loro quella forma è «non applicabile» (non
   leggono il livello di testo; la resa senza perdita della pagina coincide in pratica con la scansione pulita), salvo la struttura di
   Apple, che gira anche sulla resa della forma col testo; docling sulle scansioni usa il suo motore di lettura per macOS (ocrmac, cioè
@@ -247,16 +249,17 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
 - Strumento corretto, non metodo: la struttura dei documenti di Apple ha restituito per circa un quarto d'ora testo parziale (circa il
   40 % delle righe) dallo stesso eseguibile, poi completo (campo, pagina libera, prove ripetute); la causa non è il colore né la
   risoluzione dell'immagine (provati); l'ipotesi è uno stato della cache dei modelli compilati per il motore neurale, che macOS tiene
-  per eseguibile (non verificato). La corsa delle 185 pagine fatta in quel quarto d'ora si rifà, con un controllo di copertura riga
-  per riga contro la lettura del testo di Apple.
-- **Decodifica di GLM-OCR a piena precisione (correzione dichiarata alle 01:45).** La prima corsa usava in transformers la penalità di
+  per eseguibile (non verificato). La corsa delle 185 pagine fatta in quel quarto d'ora si rifà, con un controllo di copertura pagina
+  per pagina (numero di parole) contro le righe di Apple della stessa immagine.
+- **Decodifica di GLM-OCR a piena precisione (correzione dichiarata alle 01:43, commit `52842af`, 44 secondi dopo l'avvio della corsa
+  sulla degradata, che usava già lo strumento corretto alle 01:42).** La prima corsa usava in transformers la penalità di
   ripetizione 1,05 «come l'app»; ma transformers la applica a tutti i token già presenti, prompt compreso, mentre l'app (llama.cpp) la
   applica solo agli ultimi 64 token generati. Il controllo semantico l'ha scoperto su una pagina densa del codice: parole incollate senza
   spazi per mezza pagina e qualche carattere cinese al posto di una lettera, dove la forma compressa dell'app è pulita. Corsa fermata;
   rifatta con la decodifica equivalente a quella dell'app (stessa penalità sugli ultimi 64 token generati, greedy) su entrambe le
   scansioni; la decodifica ufficiale della scheda (greedy, nessuna penalità) gira sul sottoinsieme fisso. Le uscite difettose restano nel
   laboratorio come prova della trappola.
-- **Parole: lettere e cifre separate (correzione dichiarata alle 01:30).** Nella lettura di riferimento il numero del richiamo in apice
+- **Parole: lettere e cifre separate (correzione decisa alle 01:30, scritta nel commit `52842af` delle 01:43, prima del ricalcolo).** Nella lettura di riferimento il numero del richiamo in apice
   resta attaccato alla parola che lo precede (53 parole nei 139 campioni, con il 2,5 % delle cifre): chi non legge il richiamo, o lo legge
   staccato, prendeva errori di cifre su quella parola. Ora una parola con lettere e cifre attaccate si divide in lettere e cifre, nella
   verità e nei candidati allo stesso modo; la misura vecchia resta come controllo di continuità col giro precedente, e la riproduce al
@@ -280,12 +283,34 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   scala di grigi col lato lungo di 2000 pixel; `VNRecognizeTextRequest` (accurato, italiano e inglese, correzione) resta solo come
   ripiego per i sistemi precedenti. docling legge invece con `VNRecognizeTextRequest` tramite ocrmac, a 3 pixel per punto. Le misure
   dell'app non cambiano (vengono dalla catena vera); cambia il nome dell'API. Siccome sulla scansione pulita docling con lo stesso
-  motore sbaglia lo 0,11 per cento delle lettere e le righe di Apple dell'app lo 0,73, si aggiunge una **misura diagnostica**, fuori dalle
+  motore sbaglia lo 0,12 per cento delle lettere e le righe di Apple dell'app lo 0,73 (per documento), si aggiunge una **misura diagnostica**, fuori dalle
   tabelle principali e dalle ipotesi: uno strumento del laboratorio (`visiontesto`) legge le 185 pagine delle due scansioni con
   l'immagine identica a quella dell'app in quattro varianti (la richiesta dei documenti con le opzioni predefinite, che deve riprodurre
   l'app e su una pagina di prova la riproduce parola per parola; la stessa con italiano e inglese e senza riconoscimento automatico;
   `VNRecognizeTextRequest` come nel ripiego dell'app; lo stesso a 3 pixel per punto come docling), con lo stesso metro di tutti. Serve
   a separare l'effetto dell'API, delle opzioni e della risoluzione, per la domanda 1 e per le decisioni del maintainer.
+- **Varianti diagnostiche 5 e 6 (04:35 e 04:41, dopo aver visto le prime quattro).** Per spiegare lo scarto rimasto con docling si sono
+  aggiunte la richiesta classica col solo italiano (righe identiche alla variante con italiano e inglese su 370 pagine su 370) e la
+  stessa a 3 pixel per punto con l'immagine a colori: sei varianti, dodici corse. Lo strumento è stato ricompilato per ciascuna; le uscite
+  registrano le opzioni usate.
+- **Dopo la revisione indipendente (05:45-05:55).** (a) *Lavoro in parallelo durante alcune corse di qualità*: in 21 corse a priorità
+  bassa girava per qualche secondo altro lavoro del laboratorio (le analisi, e durante la via GLM dell'app la lettura dei volumi interi);
+  pesa nella via GLM dell'app sulla degradata (76 per cento del tempo della corsa), in Marker sul PDF col testo (78), nella struttura di
+  Apple sul PDF col testo (30), in Surya sulla pulita (28), nella via GLM sulla pulita (21), in Marker sulla pulita (12), altrove sotto il
+  5. Nessuna delle seconde corse a priorità normale né delle corse diagnostiche ne ha avuto. Lo strumento dei tempi contava come «motore»
+  ogni processo con certe parole nel comando, comprese quelle analisi: ora conta solo i processi della corsa (il comando porta la sua
+  cartella d'uscita, oppure è llama-server), e la T7 e la tabella delle corse dicono per quale parte del tempo c'era altro lavoro; per le
+  righe dove è alta tempi, potenza, energia e memoria grafica di sistema sono indicativi. Le misure di tempo di riferimento restano quelle
+  a priorità normale della T5. (b) *Verità del testo vuota su 35 delle 179 pagine*: la lettura dell'iPad non ha parole su 26 pagine quasi
+  vuote della dispensa, sulle tre pagine d'indice del gruppo C (C_v30_p28, C_v30_p29, C_v30_p32), su A_libro_breve#0 e su A_c5_tabelle#12
+  (il 3,8 per cento dei caratteri dello strato di testo delle 179 pagine): lì nessun modello è misurato per il testo, e la situazione
+  «sommari e indici» perde metà della sua verità del testo. (c) *I numeri con la verità a pagina singola*, promessi sopra, non sono stati
+  calcolati: restano per il giro 2 (§ 16.8). (d) *Le due letture dei volumi interi* che danno la verità di titoli e note delle 46 pagine
+  singole (`uscite/volumi_ipad`, 01:15-01:18, e `uscite/volumi_mac`, 01:20-01:24) sono state fatte fuori dalla coda, senza sonda: che
+  girassero nel recinto senza rete non è verificato; sono la catena dell'app, la stessa della verità. (e) *Strumenti riscritti durante le
+  corse* (`corsa_glm_hf.py` alle 01:42, `corsa_docling.py` alle 01:58, `visiontesto` alle 04:35 e 04:40): il laboratorio non è sotto
+  controllo di versione, e per docling e per le prime varianti diagnostiche le uscite non conservano l'impronta dello strumento; nel giro
+  2 ogni corsa la scriverà nel suo registro.
 
 ## 11. Parte 1 — Il check-up degli strumenti (campo, 2026-11-19)
 
@@ -365,7 +390,7 @@ entro le cinque ore, quindi il banco tiene tutte le 185 pagine. Calcolo effettiv
 
 ## 12. Parte 2 — Il banco comune (campo)
 
-Congelato il 2026-11-19 alle 00:45, prima di qualunque corsa sulle pagine del banco: `banco/MANIFESTO.json` del laboratorio,
+Congelato il 2026-11-19 alle 00:46 (ora del file), prima di qualunque corsa sulle pagine del banco: `banco/MANIFESTO.json` del laboratorio,
 **sha256 `0e7feec28a4458b4a89e0e9b423963b686631a060f8fc147e8351296100d1f82`**. 52 documenti, **185 pagine**, ognuna in tre forme:
 
 | gruppo | documenti | pagine | da dove | verità di struttura |
@@ -411,87 +436,94 @@ forma); **non misurato** = poteva, ma non è stato misurato in questo giro (col 
 | Granite Docling (llama.cpp v1.0.0) | fatto | fatto | n.a. (solo immagini) | fatto | fatto | fatto |
 | docling 2.150.1 (lettore di Apple per le scansioni; 5 pagine rifatte dopo la correzione dello strumento, § 10) | fatto | fatto | fatto | fatto | fatto | fatto; 2.103.0 come riferimento solo sulla forma col testo (l'ambiente di Triple Take non ha il lettore di Apple per le scansioni, e non si modifica) |
 | Struttura dei documenti di Apple | fatto (corsa rifatta, § 10) | fatto | fatto (resa del PDF) | fatto | fatto | fatto |
-| Lettore di Apple sull'immagine dell'app, quattro varianti (misura diagnostica aggiunta, § 10; fuori dalle tabelle principali) | fatto | fatto | n.a. | n.a. | n.a. | non serve |
+| Lettore di Apple sull'immagine dell'app, sei varianti (misura diagnostica aggiunta, § 10; fuori dalle tabelle principali) | fatto | fatto | n.a. | n.a. | n.a. | non serve |
+| Controllo di determinismo di docling (due corse sui documenti interi, PDF col testo) | n.a. | n.a. | fatto | n.a. | n.a. | — |
 
-| corsa | inizio | fine | secondi | uscita | priorità (nice) | carico all'avvio | byte esterni in / out | impronta di picco (GB) | RSS di picco dei processi del motore (GB) | scheda grafica, mediana % | nota |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| verita__ipad_738342d | 00:53:38 | 00:53:46 | 5 | 0 | 10 | 1,52 | 0 / 0 | 0,49 | 0,43 | 27 |  |
-| app_mac__738342d | 00:53:47 | 00:53:54 | 4 | 0 | 10 | 1,44 | 0 / 0 | 0,49 | 0,18 | 0 |  |
-| heron_app__738342d | 00:53:55 | 00:54:17 | 19 | 0 | 10 | 1,61 | 0 / 0 | 0,00 | 0,37 | 77 |  |
-| docling__2.150.1/testo | 00:54:18 | 00:55:11 | 50 | 0 | 10 | 2,65 | 0 / 0 | 4,44 | 2,62 | 0 |  |
-| docling__2.150.1/pulita_300 | 00:55:12 | 00:56:25 | 70 | 0 | 10 | 2,26 | 0 / 0 | 4,28 | 2,09 | 2 |  |
-| docling__2.150.1/degradata_200 | 00:56:26 | 00:57:59 | 90 | 0 | 10 | 2,30 | 0 / 0 | 4,11 | 2,01 | 0 |  |
-| apple_doc__macos27.0.1/testo | 00:58:00 | 00:59:28 | 85 | 0 | 10 | 2,13 | 0 / 0 | 0,32 | 0,38 | 0 | testo parziale per circa un quarto d'ora (§ 10): sostituita da apple_doc_bis |
-| apple_doc__macos27.0.1/pulita_300 | 00:59:29 | 01:00:11 | 39 | 0 | 10 | 2,09 | 0 / 0 | 0,31 | 0,59 | 0 | testo parziale per circa un quarto d'ora (§ 10): sostituita da apple_doc_bis |
-| apple_doc__macos27.0.1/degradata_200 | 01:00:12 | 01:00:55 | 40 | 0 | 10 | 1,94 | 0 / 0 | 0,26 | 0,41 | 0 | testo parziale per circa un quarto d'ora (§ 10): sostituita da apple_doc_bis |
-| app_apple_v5__738342d/pulita_300 | 01:00:56 | 01:02:01 | 62 | 0 | 10 | 1,58 | 0 / 0 | 0,71 | 0,76 | 77 |  |
-| app_apple_v5__738342d/degradata_200 | 01:02:02 | 01:03:04 | 59 | 0 | 10 | 1,45 | 0 / 0 | 0,66 | 0,76 | 77 |  |
-| marker__2.2.0/testo | 01:03:05 | 01:03:37 | 29 | 0 | 10 | 2,47 | 0 / 0 | 1,87 | 2,26 | 0 |  |
-| marker__2.2.0/pulita_300 | 01:03:38 | 01:04:23 | 42 | 0 | 10 | 3,29 | 0 / 0 | 2,42 | 2,35 | 0 |  |
-| marker__2.2.0/degradata_200 | 01:04:24 | 01:05:08 | 41 | 0 | 10 | 4,00 | 0 / 0 | 2,57 | 2,44 | 0 |  |
-| app_glm_v2__738342d/pulita_300 | 01:05:09 | 01:14:21 | 549 | 0 | 10 | 3,37 | 0 / 0 | 1,98 | 3,11 | 98 |  |
-| app_glm_v2__738342d/degradata_200 | 01:14:22 | 01:23:47 | 562 | 0 | 10 | 1,37 | 0 / 0 | 1,96 | 4,19 | 98 |  |
-| glm_hf__2e85a628/pulita_300 | 01:23:48 | 01:42:36 | 1125 | 143 | 10 | 3,15 | 0 / 0 | — | — | — | interrotta a mano: penalità di ripetizione su tutto il contesto (§ 10); uscite tenute a parte, rifatta nella seconda coda |
-| glm_hf__2e85a628/degradata_200 | 01:42:37 | 02:17:28 | 2088 | 0 | 10 | 1,41 | 0 / 0 | 5,34 | 1,45 | 82 |  |
-| surya__0.24.0/pulita_300 | 02:17:29 | 02:29:07 | 695 | 0 | 10 | 1,22 | 0 / 0 | 3,16 | 9,98 | 92 |  |
-| surya__0.24.0/degradata_200 | 02:29:08 | 02:40:39 | 687 | 0 | 10 | 2,13 | 0 / 0 | 3,29 | 12,56 | 92 |  |
-| granite__llama1.0.0/pulita_300 | 02:40:40 | 02:51:41 | 657 | 0 | 10 | 1,64 | 0 / 0 | 0,65 | 9,43 | 63 |  |
-| granite__llama1.0.0/degradata_200 | 02:51:42 | 03:03:24 | 699 | 0 | 10 | 3,54 | 0 / 0 | 0,52 | 9,42 | 63 |  |
-| apple_doc_bis__macos27.0.1/testo | 03:03:34 | 03:04:42 | 65 | 0 | 10 | 3,38 | 0 / 0 | 0,33 | 0,46 | 0 |  |
-| apple_doc_bis__macos27.0.1/pulita_300 | 03:04:43 | 03:05:29 | 43 | 0 | 10 | 3,11 | 0 / 0 | 0,29 | 0,71 | 0 |  |
-| apple_doc_bis__macos27.0.1/degradata_200 | 03:05:31 | 03:06:17 | 44 | 0 | 10 | 2,42 | 0 / 0 | 0,27 | 0,65 | 0 |  |
-| docling_fix__2.150.1/testo | 03:06:18 | 03:06:40 | 19 | 0 | 10 | 2,48 | 0 / 0 | 3,72 | 2,66 | 0 | 5 pagine con indice o sommario rifatte dopo la correzione dello strumento (§ 10) |
-| docling_fix__2.150.1/pulita_300 | 03:06:41 | 03:06:53 | 8 | 0 | 10 | 2,32 | 0 / 0 | 2,39 | 1,29 | 0 | 5 pagine con indice o sommario rifatte dopo la correzione dello strumento (§ 10) |
-| docling_fix__2.150.1/degradata_200 | 03:06:54 | 03:07:06 | 8 | 0 | 10 | 2,19 | 0 / 0 | 2,39 | 1,28 | 3 | 5 pagine con indice o sommario rifatte dopo la correzione dello strumento (§ 10) |
-| glm_hf__2e85a628/pulita_300 | 03:07:07 | 03:42:01 | 2091 | 0 | 10 | 2,15 | 0 / 0 | 5,46 | 1,58 | 82 |  |
-| rip2/app_apple_v5/pulita_300 | 03:42:02 | 03:42:11 | 6 | 0 | 0 | 0,66 | 0 / 0 | 0,49 | 0,46 | 71 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/app_apple_v5/degradata_200 | 03:42:12 | 03:42:20 | 5 | 0 | 0 | 1,00 | 0 / 0 | 0,51 | 0,49 | 75 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/app_glm_v2/pulita_300 | 03:42:21 | 03:44:24 | 120 | 0 | 0 | 1,08 | 0 / 0 | 1,90 | 2,72 | 98 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/app_glm_v2/degradata_200 | 03:44:26 | 03:46:29 | 119 | 0 | 0 | 0,92 | 0 / 0 | 1,90 | 2,72 | 98 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/glm_hf/pulita_300 | 03:46:30 | 03:48:56 | 143 | 0 | 0 | 0,89 | 0 / 0 | 4,85 | 0,98 | 83 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/glm_hf/degradata_200 | 03:48:57 | 03:51:24 | 144 | 0 | 0 | 0,75 | 0 / 0 | 4,86 | 0,98 | 83 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/surya/pulita_300 | 03:51:25 | 03:52:30 | 62 | 0 | 0 | 1,17 | 0 / 0 | 0,48 | 4,70 | 88 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/surya/degradata_200 | 03:52:31 | 03:53:46 | 72 | 0 | 0 | 1,81 | 0 / 0 | 0,61 | 4,97 | 90 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/granite/pulita_300 | 03:53:47 | 03:54:39 | 49 | 0 | 0 | 1,91 | 0 / 0 | 0,18 | 1,93 | 60 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/granite/degradata_200 | 03:54:40 | 03:55:34 | 51 | 0 | 0 | 2,30 | 0 / 0 | 0,18 | 1,95 | 70 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/docling/testo | 03:55:35 | 03:55:43 | 5 | 0 | 0 | 2,76 | 0 / 0 | 2,13 | 1,02 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/docling/pulita_300 | 03:55:44 | 03:55:55 | 8 | 0 | 0 | 2,86 | 0 / 0 | 2,41 | 1,29 | 40 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/docling/degradata_200 | 03:55:56 | 03:56:08 | 9 | 0 | 0 | 2,65 | 0 / 0 | 2,38 | 1,27 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/marker/testo | 03:56:09 | 03:56:18 | 6 | 0 | 0 | 2,42 | 0 / 0 | 1,06 | 1,17 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/marker/pulita_300 | 03:56:19 | 03:56:28 | 5 | 0 | 0 | 2,12 | 0 / 0 | 1,30 | 1,42 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/marker/degradata_200 | 03:56:29 | 03:56:37 | 5 | 0 | 0 | 2,17 | 0 / 0 | 1,43 | 1,54 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/apple_doc/testo | 03:56:38 | 03:56:44 | 3 | 0 | 0 | 2,31 | 0 / 0 | 0,28 | 0,20 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/apple_doc/pulita_300 | 03:56:45 | 03:56:51 | 3 | 0 | 0 | 2,04 | 0 / 0 | 0,21 | 0,30 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/apple_doc/degradata_200 | 03:56:52 | 03:56:58 | 3 | 0 | 0 | 1,95 | 0 / 0 | 0,21 | 0,28 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
-| rip2/heron | 03:56:59 | 03:57:06 | 4 | 0 | 0 | 1,81 | 0 / 0 | 0,00 | 0,34 | 38 | seconda corsa del sottoinsieme fisso, priorità normale |
-| ver/glm_hf_decodifica_ufficiale/pulita_300 | 03:57:07 | 03:59:04 | 114 | 0 | 10 | 1,82 | 0 / 0 | 4,85 | 0,97 | 100 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/glm_hf_decodifica_ufficiale/degradata_200 | 03:59:05 | 04:01:13 | 125 | 0 | 10 | 1,50 | 0 / 0 | 4,86 | 0,98 | 100 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/docling_2.103.0/testo | 04:01:14 | 04:01:25 | 8 | 0 | 10 | 1,57 | 0 / 0 | 2,01 | 0,92 | 0 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/glm_q8_llama1.0.0/pulita_300 | 04:01:26 | 04:03:43 | 134 | 0 | 10 | 1,44 | 0 / 0 | 0,20 | 5,89 | 99 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/glm_q8_llama1.0.0/degradata_200 | 04:03:44 | 04:05:57 | 130 | 0 | 10 | 1,43 | 0 / 0 | 0,14 | 5,89 | 99 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/marker_2.2.0_accurate/pulita_300 | 04:05:58 | 04:08:20 | 139 | 0 | 10 | 1,61 | 0 / 0 | 0,63 | 5,30 | 89 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/marker_2.2.0_accurate/degradata_200 | 04:08:21 | 04:10:39 | 135 | 0 | 10 | 2,50 | 0 / 0 | 0,61 | 5,30 | 93 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/surya_0.20.0/pulita_300 | 04:10:40 | 04:20:37 | 594 | 0 | 10 | 2,50 | 0 / 0 | 1,14 | 8,04 | 70 | versione o decodifica di riferimento, sottoinsieme fisso |
-| ver/surya_0.20.0/degradata_200 | 04:20:38 | 04:27:33 | 412 | 0 | 10 | 1,22 | 0 / 0 | 1,04 | 7,01 | 70 | versione o decodifica di riferimento, sottoinsieme fisso |
-| diag/apple_predefinito/pulita_300 | 04:28:02 | 04:29:13 | 68 | 0 | 10 | 1,18 | 0 / 0 | 0,30 | — | 0 |  |
-| diag/apple_predefinito/degradata_200 | 04:29:14 | 04:30:01 | 43 | 0 | 10 | 2,07 | 0 / 0 | 0,31 | — | 0 |  |
-| diag/apple_italiano/pulita_300 | 04:30:02 | 04:30:42 | 37 | 0 | 10 | 1,99 | 0 / 0 | 0,28 | — | 0 |  |
-| diag/apple_italiano/degradata_200 | 04:30:43 | 04:31:22 | 36 | 0 | 10 | 2,54 | 0 / 0 | 0,39 | — | 0 |  |
-| diag/apple_classico/pulita_300 | 04:31:23 | 04:31:53 | 27 | 0 | 10 | 2,01 | 0 / 0 | 1,30 | — | 0 |  |
-| diag/apple_classico/degradata_200 | 04:31:54 | 04:32:23 | 26 | 0 | 10 | 1,72 | 0 / 0 | 1,31 | — | 0 |  |
-| diag/apple_classico216/pulita_300 | 04:32:24 | 04:32:54 | 27 | 0 | 10 | 1,61 | 0 / 0 | 1,20 | — | 0 |  |
-| diag/apple_classico216/degradata_200 | 04:32:55 | 04:33:24 | 26 | 0 | 10 | 1,85 | 0 / 0 | 1,19 | — | 0 |  |
-| ctrl/docling_doc_intero_1/testo | 04:33:27 | 04:34:02 | 32 | 0 | 10 | 2,04 | 0 / 0 | 3,72 | 1,75 | 0 |  |
-| ctrl/docling_doc_intero_2/testo | 04:34:03 | 04:34:36 | 30 | 0 | 10 | 2,36 | 0 / 0 | 3,72 | 1,77 | 0 |  |
-| diag/apple_classico_it/pulita_300 | 04:35:58 | 04:36:29 | 28 | 0 | 10 | 1,33 | 0 / 0 | 1,30 | 0,00 | 0 |  |
-| diag/apple_classico_it/degradata_200 | 04:36:30 | 04:36:59 | 25 | 0 | 10 | 1,96 | 0 / 0 | 1,31 | 0,00 | 0 |  |
-| diag/apple_classico216rgb/pulita_300 | 04:41:00 | 04:41:32 | 29 | 0 | 10 | 1,38 | 0 / 0 | 2,99 | 0,00 | 0 |  |
-| diag/apple_classico216rgb/degradata_200 | 04:41:33 | 04:42:02 | 26 | 0 | 10 | 1,31 | 0 / 0 | 2,97 | 0,00 | 0 |  |
+| corsa | inizio | fine | secondi | uscita | priorità (nice) | carico all'avvio | byte esterni in / out | impronta di picco (GB) | RSS di picco dei processi del motore (GB) | scheda grafica, mediana % | altro lavoro del laboratorio in parallelo (secondi con almeno il 20 % di processore) | nota |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| verita__ipad_738342d | 00:53:38 | 00:53:46 | 5 | 0 | 10 | 1,52 | 0 / 0 | 0,49 | 0,42 | 27 | 0 |  |
+| app_mac__738342d | 00:53:47 | 00:53:54 | 4 | 0 | 10 | 1,44 | 0 / 0 | 0,49 | 0,18 | 0 | 0 |  |
+| heron_app__738342d | 00:53:55 | 00:54:17 | 19 | 0 | 10 | 1,61 | 0 / 0 | 0,00 | 0,37 | 77 | 0 |  |
+| docling__2.150.1/testo | 00:54:18 | 00:55:11 | 50 | 0 | 10 | 2,65 | 0 / 0 | 4,44 | 2,61 | 0 | 0 |  |
+| docling__2.150.1/pulita_300 | 00:55:12 | 00:56:25 | 70 | 0 | 10 | 2,26 | 0 / 0 | 4,28 | 2,09 | 2 | 0 |  |
+| docling__2.150.1/degradata_200 | 00:56:26 | 00:57:59 | 90 | 0 | 10 | 2,30 | 0 / 0 | 4,11 | 2,01 | 0 | 0 |  |
+| apple_doc__macos27.0.1/testo | 00:58:00 | 00:59:28 | 85 | 0 | 10 | 2,13 | 0 / 0 | 0,32 | 0,38 | 0 | 0 | testo parziale per circa un quarto d'ora (§ 10): sostituita da apple_doc_bis |
+| apple_doc__macos27.0.1/pulita_300 | 00:59:29 | 01:00:11 | 39 | 0 | 10 | 2,09 | 0 / 0 | 0,31 | 0,42 | 0 | 3 | testo parziale per circa un quarto d'ora (§ 10): sostituita da apple_doc_bis |
+| apple_doc__macos27.0.1/degradata_200 | 01:00:12 | 01:00:55 | 40 | 0 | 10 | 1,94 | 0 / 0 | 0,26 | 0,41 | 0 | 0 | testo parziale per circa un quarto d'ora (§ 10): sostituita da apple_doc_bis |
+| app_apple_v5__738342d/pulita_300 | 01:00:56 | 01:02:01 | 62 | 0 | 10 | 1,58 | 0 / 0 | 0,71 | 0,75 | 77 | 1 |  |
+| app_apple_v5__738342d/degradata_200 | 01:02:02 | 01:03:04 | 59 | 0 | 10 | 1,45 | 0 / 0 | 0,66 | 0,76 | 77 | 1 |  |
+| marker__2.2.0/testo | 01:03:05 | 01:03:37 | 29 | 0 | 10 | 2,47 | 0 / 0 | 1,87 | 2,07 | 0 | 22 |  |
+| marker__2.2.0/pulita_300 | 01:03:38 | 01:04:23 | 42 | 0 | 10 | 3,29 | 0 / 0 | 2,42 | 2,35 | 0 | 5 |  |
+| marker__2.2.0/degradata_200 | 01:04:24 | 01:05:08 | 41 | 0 | 10 | 4,00 | 0 / 0 | 2,57 | 2,43 | 0 | 0 |  |
+| app_glm_v2__738342d/pulita_300 | 01:05:09 | 01:14:21 | 549 | 0 | 10 | 3,37 | 0 / 0 | 1,98 | 2,94 | 98 | 114 |  |
+| app_glm_v2__738342d/degradata_200 | 01:14:22 | 01:23:47 | 562 | 0 | 10 | 1,37 | 0 / 0 | 1,96 | 2,89 | 98 | 427 |  |
+| glm_hf__2e85a628/pulita_300 | 01:23:48 | 01:42:36 | 1125 | 143 | 10 | 3,15 | 0 / 0 | — | — | — | — | interrotta a mano: penalità di ripetizione su tutto il contesto (§ 10); uscite tenute a parte, rifatta nella seconda coda |
+| glm_hf__2e85a628/degradata_200 | 01:42:37 | 02:17:28 | 2088 | 0 | 10 | 1,41 | 0 / 0 | 5,34 | 1,44 | 82 | 81 |  |
+| surya__0.24.0/pulita_300 | 02:17:29 | 02:29:07 | 695 | 0 | 10 | 1,22 | 0 / 0 | 3,16 | 9,98 | 92 | 192 |  |
+| surya__0.24.0/degradata_200 | 02:29:08 | 02:40:39 | 687 | 0 | 10 | 2,13 | 0 / 0 | 3,29 | 12,56 | 92 | 17 |  |
+| granite__llama1.0.0/pulita_300 | 02:40:40 | 02:51:41 | 657 | 0 | 10 | 1,64 | 0 / 0 | 0,65 | 9,43 | 63 | 23 |  |
+| granite__llama1.0.0/degradata_200 | 02:51:42 | 03:03:24 | 699 | 0 | 10 | 3,54 | 0 / 0 | 0,52 | 9,42 | 63 | 8 |  |
+| apple_doc_bis__macos27.0.1/testo | 03:03:34 | 03:04:42 | 65 | 0 | 10 | 3,38 | 0 / 0 | 0,33 | 0,46 | 0 | 19 |  |
+| apple_doc_bis__macos27.0.1/pulita_300 | 03:04:43 | 03:05:29 | 43 | 0 | 10 | 3,11 | 0 / 0 | 0,29 | 0,71 | 0 | 0 |  |
+| apple_doc_bis__macos27.0.1/degradata_200 | 03:05:31 | 03:06:17 | 44 | 0 | 10 | 2,42 | 0 / 0 | 0,27 | 0,65 | 0 | 0 |  |
+| docling_fix__2.150.1/testo | 03:06:18 | 03:06:40 | 19 | 0 | 10 | 2,48 | 0 / 0 | 3,72 | — | 0 | 16 | 5 pagine con indice o sommario rifatte dopo la correzione dello strumento (§ 10) |
+| docling_fix__2.150.1/pulita_300 | 03:06:41 | 03:06:53 | 8 | 0 | 10 | 2,32 | 0 / 0 | 2,39 | — | 0 | 7 | 5 pagine con indice o sommario rifatte dopo la correzione dello strumento (§ 10) |
+| docling_fix__2.150.1/degradata_200 | 03:06:54 | 03:07:06 | 8 | 0 | 10 | 2,19 | 0 / 0 | 2,39 | — | 3 | 7 | 5 pagine con indice o sommario rifatte dopo la correzione dello strumento (§ 10) |
+| glm_hf__2e85a628/pulita_300 | 03:07:07 | 03:42:01 | 2091 | 0 | 10 | 2,15 | 0 / 0 | 5,46 | 1,58 | 82 | 53 |  |
+| rip2/app_apple_v5/pulita_300 | 03:42:02 | 03:42:11 | 6 | 0 | 0 | 0,66 | 0 / 0 | 0,49 | 0,46 | 71 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/app_apple_v5/degradata_200 | 03:42:12 | 03:42:20 | 5 | 0 | 0 | 1,00 | 0 / 0 | 0,51 | 0,49 | 75 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/app_glm_v2/pulita_300 | 03:42:21 | 03:44:24 | 120 | 0 | 0 | 1,08 | 0 / 0 | 1,90 | 2,72 | 98 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/app_glm_v2/degradata_200 | 03:44:26 | 03:46:29 | 119 | 0 | 0 | 0,92 | 0 / 0 | 1,90 | 2,71 | 98 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/glm_hf/pulita_300 | 03:46:30 | 03:48:56 | 143 | 0 | 0 | 0,89 | 0 / 0 | 4,85 | 0,97 | 83 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/glm_hf/degradata_200 | 03:48:57 | 03:51:24 | 144 | 0 | 0 | 0,75 | 0 / 0 | 4,86 | 0,97 | 83 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/surya/pulita_300 | 03:51:25 | 03:52:30 | 62 | 0 | 0 | 1,17 | 0 / 0 | 0,48 | 4,69 | 88 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/surya/degradata_200 | 03:52:31 | 03:53:46 | 72 | 0 | 0 | 1,81 | 0 / 0 | 0,61 | 4,96 | 90 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/granite/pulita_300 | 03:53:47 | 03:54:39 | 49 | 0 | 0 | 1,91 | 0 / 0 | 0,18 | 1,92 | 60 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/granite/degradata_200 | 03:54:40 | 03:55:34 | 51 | 0 | 0 | 2,30 | 0 / 0 | 0,18 | 1,95 | 70 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/docling/testo | 03:55:35 | 03:55:43 | 5 | 0 | 0 | 2,76 | 0 / 0 | 2,13 | 1,01 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/docling/pulita_300 | 03:55:44 | 03:55:55 | 8 | 0 | 0 | 2,86 | 0 / 0 | 2,41 | 1,29 | 40 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/docling/degradata_200 | 03:55:56 | 03:56:08 | 9 | 0 | 0 | 2,65 | 0 / 0 | 2,38 | 1,26 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/marker/testo | 03:56:09 | 03:56:18 | 6 | 0 | 0 | 2,42 | 0 / 0 | 1,06 | 1,17 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/marker/pulita_300 | 03:56:19 | 03:56:28 | 5 | 0 | 0 | 2,12 | 0 / 0 | 1,30 | 1,42 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/marker/degradata_200 | 03:56:29 | 03:56:37 | 5 | 0 | 0 | 2,17 | 0 / 0 | 1,43 | 1,54 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/apple_doc/testo | 03:56:38 | 03:56:44 | 3 | 0 | 0 | 2,31 | 0 / 0 | 0,28 | 0,20 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/apple_doc/pulita_300 | 03:56:45 | 03:56:51 | 3 | 0 | 0 | 2,04 | 0 / 0 | 0,21 | 0,30 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/apple_doc/degradata_200 | 03:56:52 | 03:56:58 | 3 | 0 | 0 | 1,95 | 0 / 0 | 0,21 | 0,28 | 0 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| rip2/heron | 03:56:59 | 03:57:06 | 4 | 0 | 0 | 1,81 | 0 / 0 | 0,00 | 0,34 | 38 | 0 | seconda corsa del sottoinsieme fisso, priorità normale |
+| ver/glm_hf_decodifica_ufficiale/pulita_300 | 03:57:07 | 03:59:04 | 114 | 0 | 10 | 1,82 | 0 / 0 | 4,85 | 0,96 | 100 | 0 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/glm_hf_decodifica_ufficiale/degradata_200 | 03:59:05 | 04:01:13 | 125 | 0 | 10 | 1,50 | 0 / 0 | 4,86 | 0,97 | 100 | 10 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/docling_2.103.0/testo | 04:01:14 | 04:01:25 | 8 | 0 | 10 | 1,57 | 0 / 0 | 2,01 | 0,92 | 0 | 0 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/glm_q8_llama1.0.0/pulita_300 | 04:01:26 | 04:03:43 | 134 | 0 | 10 | 1,44 | 0 / 0 | 0,20 | 5,89 | 99 | 0 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/glm_q8_llama1.0.0/degradata_200 | 04:03:44 | 04:05:57 | 130 | 0 | 10 | 1,43 | 0 / 0 | 0,14 | 5,88 | 99 | 0 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/marker_2.2.0_accurate/pulita_300 | 04:05:58 | 04:08:20 | 139 | 0 | 10 | 1,61 | 0 / 0 | 0,63 | 5,30 | 89 | 2 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/marker_2.2.0_accurate/degradata_200 | 04:08:21 | 04:10:39 | 135 | 0 | 10 | 2,50 | 0 / 0 | 0,61 | 5,30 | 93 | 0 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/surya_0.20.0/pulita_300 | 04:10:40 | 04:20:37 | 594 | 0 | 10 | 2,50 | 0 / 0 | 1,14 | 8,04 | 70 | 0 | versione o decodifica di riferimento, sottoinsieme fisso |
+| ver/surya_0.20.0/degradata_200 | 04:20:38 | 04:27:33 | 412 | 0 | 10 | 1,22 | 0 / 0 | 1,04 | 7,00 | 70 | 3 | versione o decodifica di riferimento, sottoinsieme fisso |
+| diag/apple_predefinito/pulita_300 | 04:28:02 | 04:29:13 | 68 | 0 | 10 | 1,18 | 0 / 0 | 0,30 | 0,44 | 0 | 0 |  |
+| diag/apple_predefinito/degradata_200 | 04:29:14 | 04:30:01 | 43 | 0 | 10 | 2,07 | 0 / 0 | 0,31 | 0,41 | 0 | 0 |  |
+| diag/apple_italiano/pulita_300 | 04:30:02 | 04:30:42 | 37 | 0 | 10 | 1,99 | 0 / 0 | 0,28 | 0,36 | 0 | 0 |  |
+| diag/apple_italiano/degradata_200 | 04:30:43 | 04:31:22 | 36 | 0 | 10 | 2,54 | 0 / 0 | 0,39 | 0,36 | 0 | 0 |  |
+| diag/apple_classico/pulita_300 | 04:31:23 | 04:31:53 | 27 | 0 | 10 | 2,01 | 0 / 0 | 1,30 | 1,32 | 0 | 0 |  |
+| diag/apple_classico/degradata_200 | 04:31:54 | 04:32:23 | 26 | 0 | 10 | 1,72 | 0 / 0 | 1,31 | 1,34 | 0 | 0 |  |
+| diag/apple_classico216/pulita_300 | 04:32:24 | 04:32:54 | 27 | 0 | 10 | 1,61 | 0 / 0 | 1,20 | 1,28 | 0 | 0 |  |
+| diag/apple_classico216/degradata_200 | 04:32:55 | 04:33:24 | 26 | 0 | 10 | 1,85 | 0 / 0 | 1,19 | 1,21 | 0 | 0 |  |
+| ctrl/docling_doc_intero_1/testo | 04:33:27 | 04:34:02 | 32 | 0 | 10 | 2,04 | 0 / 0 | 3,72 | 1,75 | 0 | 0 |  |
+| ctrl/docling_doc_intero_2/testo | 04:34:03 | 04:34:36 | 30 | 0 | 10 | 2,36 | 0 / 0 | 3,72 | 1,76 | 0 | 0 |  |
+| diag/apple_classico_it/pulita_300 | 04:35:58 | 04:36:29 | 28 | 0 | 10 | 1,33 | 0 / 0 | 1,30 | 1,35 | 0 | 0 |  |
+| diag/apple_classico_it/degradata_200 | 04:36:30 | 04:36:59 | 25 | 0 | 10 | 1,96 | 0 / 0 | 1,31 | 1,33 | 0 | 0 |  |
+| diag/apple_classico216rgb/pulita_300 | 04:41:00 | 04:41:32 | 29 | 0 | 10 | 1,38 | 0 / 0 | 2,99 | 3,38 | 0 | 0 |  |
+| diag/apple_classico216rgb/degradata_200 | 04:41:33 | 04:42:02 | 26 | 0 | 10 | 1,31 | 0 / 0 | 2,97 | 3,20 | 0 | 0 |  |
 
 72 corse, byte esterni totali in 0 / out 0, uscite diverse da 0: 1
 <!-- CORSE:fine -->
 
 ## 14. Parte 4 — Le misure
+
+Due avvertenze per leggere le tabelle. **Due metri del testo**: la T1 conta le parole per documento (l'insieme di parole del documento
+intero), la T4 e i §§ 16.4-16.5 per pagina, appaiate; per le righe grezze di Apple, per esempio, le lettere sbagliate sono 0,73 per cento
+nel primo e 0,45 nel secondo. **Caselle indicative** (meno di 20 pagine, § 6.6): nella T2 i tipi rari (glosse 11 blocchi su 3 pagine,
+voci d'indice su 2, figure su 3, tutte di v34, sommari su 2, tabelle e didascalie su 2); nella T3 le tabelle (6 pagine) e le didascalie (3);
+tutta la T5 e i confronti di versione del § 16.5 (12 pagine, circa 4.800 parole); le 10 pagine dense di H2 (tre volumi, 6 pagine di v11).
 
 <!-- TABELLE:inizio -->
 ### Tabella T1 — Lettura del testo: 179 pagine (le 185 meno le 6 di v11, verità non affidabile), insieme di parole per documento (§ 6.1; plausibili «senza figure» = senza le pagine con figure, tabelle o didascalie, § 15.4)
@@ -636,7 +668,7 @@ Continuità col giro del 2026-11-18 (stessi 139 campioni, parole di `confronta.p
 | app_apple_righe, pulita_300 | 12/12 | 12 | 12 | 1,0000 | 0,26 / 0,35 | 5,6, 03:42:02, 0,66 (nice 0) |
 | app_apple_righe, degradata_200 | 12/12 | 12 | 12 | 1,0000 | 0,29 / 0,34 | 5,3, 03:42:12, 1,00 (nice 0) |
 
-Note: le 12 pagine sono la prima di 12 campioni contigui, quindi per la via GLM dell'app la prima corsa usa il testo e i tempi di GLM salvati dal giro precedente (§ 10): i suoi secondi a pagina non sono una misura di stanotte, la seconda corsa sì. Per docling le differenze fra le due corse vengono dalla pagina letta da sola contro il documento intero: due corse di docling sugli stessi documenti interi coincidono al carattere (§ 16.5). Surya e Marker non danno i tempi per pagina: conta la durata della corsa. Il carico a un minuto all'avvio porta ancora il motore precedente della coda; nessun altro lavoro pesante girava (15 nuclei).
+Note: le 12 pagine sono la prima e quella di mezzo dei 6 campioni contigui, quindi per la via GLM dell'app la prima corsa usa il testo e i tempi di GLM salvati dal giro precedente (§ 10): i suoi secondi a pagina non sono una misura di stanotte, la seconda corsa sì. Per docling le differenze fra le due corse vengono dalla pagina letta da sola contro il documento intero: due corse di docling sugli stessi documenti interi coincidono al carattere (§ 16.5). Surya e Marker non danno i tempi per pagina: conta la durata della corsa. Il carico a un minuto all'avvio porta ancora il motore precedente della coda; nessun altro lavoro pesante girava (15 nuclei).
 
 ### Tabella T6 — Ipotesi H4: parole perse per zona e posizione nella riga (%, arrotondate all'intero; i decimali nel § 16.4)
 
@@ -657,30 +689,30 @@ Note: le 12 pagine sono la prima di 12 campioni contigui, quindi per la via GLM 
 
 ### Tabella T7 — Costi: tempo, memoria, carico (corse di qualità sul banco intero, priorità bassa, carico all'avvio nel § 13; le misure di tempo a priorità normale, sul sottoinsieme, sono nella T5)
 
-| modello, forma | secondi a pagina (mediana; quartili) | pagine al minuto (corsa intera) | impronta di picco del processo (GB) | RSS di picco dei processi del motore (GB) | memoria grafica in uso, picco di sistema (GB) | processore, mediana % (100 = un nucleo) | scheda grafica, mediana % | potenza di sistema, mediana (W; solo corse di almeno 5 minuti) | energia sopra il riposo (J a pagina; riposo 4,3 W; idem) | peso su disco |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Heron nell'app (PDF col testo), testo | 0,04 (0,03–0,16) | 598,4 | 0,00 | 0,37 | 1,21 | 34 | 77 | non misurato | non misurato | 164 MB (Core ML fp32, incluso nell'app) |
-| App: Apple + Heron (scansione), pulita | 0,28 (0,20–0,36) | 178,6 | 0,71 | 0,76 | 1,23 | 84 | 77 | non misurato | non misurato | 0 (sistema) + Heron 164 MB incluso nell'app |
-| App: Apple + Heron (scansione), degradata | 0,27 (0,19–0,34) | 188,4 | 0,66 | 0,76 | 1,21 | 86 | 77 | non misurato | non misurato | 0 (sistema) + Heron 164 MB incluso nell'app |
-| App: GLM + guardia + Heron (scansione), pulita | 9,47 (8,12–12,12) (nota) | non confrontabile (nota) | 1,98 | 3,11 | 3,94 | 9 | 98 | non confrontabile (nota) | non confrontabile (nota) | 1,43 GB (Q8_0 + proiettore) + Heron 164 MB |
-| App: GLM + guardia + Heron (scansione), degradata | 9,51 (8,11–11,90) (nota) | non confrontabile (nota) | 1,96 | 4,19 | 4,44 | 108 | 98 | non confrontabile (nota) | non confrontabile (nota) | 1,43 GB (Q8_0 + proiettore) + Heron 164 MB |
-| GLM piena precisione (banco), pulita | 11,01 (3,82–15,75) | 5,3 | 5,46 | 1,58 | 4,57 | 19 | 82 | 35 | 329,9 | 2,65 GB (bf16) + ambiente Python 1,0 GB |
-| GLM piena precisione (banco), degradata | 11,06 (3,79–15,58) | 5,3 | 5,34 | 1,45 | 4,60 | 19 | 82 | 36 | 372,0 | 2,65 GB (bf16) + ambiente Python 1,0 GB |
-| Surya 2.5 (banco), pulita | — (—–—) | 16,0 | 3,16 | 9,98 | 4,11 | 97 | 92 | 64 | 194,5 | 1,18 GB (Surya 2.5) + 0,21 GB proiettore + ambiente 0,1 GB + llama.cpp |
-| Surya 2.5 (banco), degradata | — (—–—) | 16,2 | 3,29 | 12,56 | 4,09 | 90 | 92 | 64 | 189,9 | 1,18 GB (Surya 2.5) + 0,21 GB proiettore + ambiente 0,1 GB + llama.cpp |
-| Marker 2.2 (banco), testo | — (—–—) | 391,4 | 1,87 | 2,26 | 0,65 | 343 | 0 | non misurato | non misurato | 0,1 GB (Indra) + font 15 MB + ambiente 1,2 GB |
-| Marker 2.2 (banco), pulita | — (—–—) | 261,5 | 2,42 | 2,35 | 0,64 | 329 | 0 | non misurato | non misurato | 0,1 GB (Indra) + font 15 MB + ambiente 1,2 GB |
-| Marker 2.2 (banco), degradata | — (—–—) | 273,6 | 2,57 | 2,44 | 0,65 | 383 | 0 | non misurato | non misurato | 0,1 GB (Indra) + font 15 MB + ambiente 1,2 GB |
-| Granite Docling (llama.cpp), pulita | 3,29 (1,36–5,03) | 16,9 | 0,65 | 9,43 | 1,52 | 223 | 63 | 49 | 142,5 | 0,50 GB (f16 + proiettore) + llama.cpp |
-| Granite Docling (llama.cpp), degradata | 3,41 (1,08–4,91) | 15,9 | 0,52 | 9,42 | 1,51 | 222 | 63 | 47 | 131,4 | 0,50 GB (f16 + proiettore) + llama.cpp |
-| docling 2.150.1 (banco), testo | 0,06 (0,00–0,19) | 223,6 | 4,44 | 2,62 | 3,15 | 116 | 0 | non misurato | non misurato | 0,17 GB (Heron) + 0,21 GB (TableFormer) + ambiente 1,2 GB |
-| docling 2.150.1 (banco), pulita | 0,26 (0,18–0,41) | 157,1 | 4,28 | 2,09 | 3,14 | 120 | 2 | non misurato | non misurato | 0,17 GB (Heron) + 0,21 GB (TableFormer) + ambiente 1,2 GB |
-| docling 2.150.1 (banco), degradata | 0,33 (0,29–0,47) | 124,2 | 4,11 | 2,01 | 3,15 | 120 | 0 | non misurato | non misurato | 0,17 GB (Heron) + 0,21 GB (TableFormer) + ambiente 1,2 GB |
-| Struttura dei documenti di Apple, testo | 0,20 (0,13–0,26) | 172,7 | 0,33 | 0,46 | 0,71 | 79 | 0 | non misurato | non misurato | 0 (sistema) |
-| Struttura dei documenti di Apple, pulita | 0,22 (0,15–0,29) | 255,1 | 0,29 | 0,71 | 0,72 | 91 | 0 | non misurato | non misurato | 0 (sistema) |
-| Struttura dei documenti di Apple, degradata | 0,22 (0,15–0,27) | 258,0 | 0,27 | 0,65 | 0,72 | 93 | 0 | non misurato | non misurato | 0 (sistema) |
+| modello, forma | secondi a pagina (mediana; quartili) | pagine al minuto (corsa intera) | impronta di picco del processo (GB) | RSS di picco dei processi del motore (GB) | memoria grafica in uso, picco di sistema (GB) | processore, mediana % (100 = un nucleo) | scheda grafica, mediana % | potenza di sistema, mediana (W; solo corse di almeno 5 minuti) | energia sopra il riposo (J a pagina; riposo 4,3 W; idem) | altro lavoro del laboratorio in parallelo (% del tempo della corsa) | peso su disco |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Heron nell'app (PDF col testo), testo | 0,04 (0,03–0,16) | 598,4 | 0,00 | 0,37 | 1,21 | 38 | 77 | non misurato | non misurato | 0 | 164 MB (Core ML fp32, incluso nell'app) |
+| App: Apple + Heron (scansione), pulita | 0,28 (0,20–0,36) | 178,6 | 0,71 | 0,75 | 1,23 | 86 | 77 | non misurato | non misurato | 2 | 0 (sistema) + Heron 164 MB incluso nell'app |
+| App: Apple + Heron (scansione), degradata | 0,27 (0,19–0,34) | 188,4 | 0,66 | 0,76 | 1,21 | 87 | 77 | non misurato | non misurato | 2 | 0 (sistema) + Heron 164 MB incluso nell'app |
+| App: GLM + guardia + Heron (scansione), pulita | 9,47 (8,12–12,12) (nota) | non confrontabile (nota) | 1,98 | 2,94 | 3,94 | 6 | 98 | non confrontabile (nota) | non confrontabile (nota) | 21 | 1,43 GB (Q8_0 + proiettore) + Heron 164 MB |
+| App: GLM + guardia + Heron (scansione), degradata | 9,51 (8,11–11,90) (nota) | non confrontabile (nota) | 1,96 | 2,89 | 4,44 | 4 | 98 | non confrontabile (nota) | non confrontabile (nota) | 76 | 1,43 GB (Q8_0 + proiettore) + Heron 164 MB |
+| GLM piena precisione (banco), pulita | 11,01 (3,82–15,75) | 5,3 | 5,46 | 1,58 | 4,57 | 19 | 82 | 35 | 329,9 | 3 | 2,65 GB (bf16) + ambiente Python 1,0 GB |
+| GLM piena precisione (banco), degradata | 11,06 (3,79–15,58) | 5,3 | 5,34 | 1,44 | 4,60 | 19 | 82 | 36 | 372,0 | 4 | 2,65 GB (bf16) + ambiente Python 1,0 GB |
+| Surya 2.5 (banco), pulita | — (—–—) | 16,0 | 3,16 | 9,98 | 4,11 | 98 | 92 | 64 | 194,5 | 28 | 1,18 GB (Surya 2.5) + 0,21 GB proiettore + ambiente 0,1 GB + llama.cpp |
+| Surya 2.5 (banco), degradata | — (—–—) | 16,2 | 3,29 | 12,56 | 4,09 | 90 | 92 | 64 | 189,9 | 2 | 1,18 GB (Surya 2.5) + 0,21 GB proiettore + ambiente 0,1 GB + llama.cpp |
+| Marker 2.2 (banco), testo | — (—–—) | 391,4 | 1,87 | 2,07 | 0,65 | 271 | 0 | non misurato | non misurato | 78 | 0,1 GB (Indra) + font 15 MB + ambiente 1,2 GB |
+| Marker 2.2 (banco), pulita | — (—–—) | 261,5 | 2,42 | 2,35 | 0,64 | 332 | 0 | non misurato | non misurato | 12 | 0,1 GB (Indra) + font 15 MB + ambiente 1,2 GB |
+| Marker 2.2 (banco), degradata | — (—–—) | 273,6 | 2,57 | 2,43 | 0,65 | 386 | 0 | non misurato | non misurato | 0 | 0,1 GB (Indra) + font 15 MB + ambiente 1,2 GB |
+| Granite Docling (llama.cpp), pulita | 3,29 (1,36–5,03) | 16,9 | 0,65 | 9,43 | 1,52 | 223 | 63 | 49 | 142,5 | 3 | 0,50 GB (f16 + proiettore) + llama.cpp |
+| Granite Docling (llama.cpp), degradata | 3,41 (1,08–4,91) | 15,9 | 0,52 | 9,42 | 1,51 | 222 | 63 | 47 | 131,4 | 1 | 0,50 GB (f16 + proiettore) + llama.cpp |
+| docling 2.150.1 (banco), testo | 0,06 (0,00–0,19) | 223,6 | 4,44 | 2,61 | 3,15 | 119 | 0 | non misurato | non misurato | 0 | 0,17 GB (Heron) + 0,21 GB (TableFormer) + ambiente 1,2 GB |
+| docling 2.150.1 (banco), pulita | 0,26 (0,18–0,41) | 157,1 | 4,28 | 2,09 | 3,14 | 121 | 2 | non misurato | non misurato | 0 | 0,17 GB (Heron) + 0,21 GB (TableFormer) + ambiente 1,2 GB |
+| docling 2.150.1 (banco), degradata | 0,33 (0,29–0,47) | 124,2 | 4,11 | 2,01 | 3,15 | 120 | 0 | non misurato | non misurato | 0 | 0,17 GB (Heron) + 0,21 GB (TableFormer) + ambiente 1,2 GB |
+| Struttura dei documenti di Apple, testo | 0,20 (0,13–0,26) | 172,7 | 0,33 | 0,46 | 0,71 | 80 | 0 | non misurato | non misurato | 30 | 0 (sistema) |
+| Struttura dei documenti di Apple, pulita | 0,22 (0,15–0,29) | 255,1 | 0,29 | 0,71 | 0,72 | 91 | 0 | non misurato | non misurato | 0 | 0 (sistema) |
+| Struttura dei documenti di Apple, degradata | 0,22 (0,15–0,27) | 258,0 | 0,27 | 0,65 | 0,72 | 93 | 0 | non misurato | non misurato | 0 | 0 (sistema) |
 
-Note: per la via GLM dell'app i secondi a pagina sono quelli registrati da GLM, dal vivo sulle 46 pagine singole e dal giro precedente sui 139 campioni contigui (§ 10); la corsa di stanotte ha fatto girare GLM solo su quelle 46 pagine, quindi la sua durata, le pagine al minuto, la potenza e l'energia non si confrontano con le altre righe: la misura di tempo pulita, con GLM dal vivo, è nella T5 (120 secondi per 12 pagine con tutta la catena). La memoria resta valida (picco). L'impronta di picco è quella del processo lanciato dalla coda: per Surya e Granite è il cliente Python, mentre il motore è llama-server, che conta nella colonna RSS e nella memoria grafica. La potenza è quella di sistema dalla telemetria della batteria, aggiornata circa una volta al minuto: per questo vale solo sulle corse di almeno 5 minuti; il riposo (4,3 W, mediana di 4 minuti con la sola sonda, alle 04:45) è sottratto nell'energia.
+Note: per la via GLM dell'app i secondi a pagina sono quelli registrati da GLM, dal vivo sulle 46 pagine singole e dal giro precedente sui 139 campioni contigui (§ 10); la corsa di stanotte ha fatto girare GLM solo su quelle 46 pagine, quindi la sua durata, le pagine al minuto, la potenza e l'energia non si confrontano con le altre righe: la misura di tempo pulita, con GLM dal vivo, è nella T5 (120 secondi per 12 pagine con tutta la catena). La memoria resta valida (picco), salvo la memoria grafica, che è di sistema. Durante alcune corse di qualità girava altro lavoro del laboratorio (le analisi e, durante la via GLM dell'app, la lettura dei volumi interi: § 10): la colonna «altro lavoro» dice per quale parte del tempo; dove è alta, tempi, potenza, energia e memoria grafica di quella riga sono da prendere con riserva (processore e memoria residente contano solo i processi della corsa). L'impronta di picco è quella del processo lanciato dalla coda: per Heron è la shell che lo lancia un documento alla volta (0,00), per Surya e Granite è il cliente Python, mentre il motore è llama-server, che conta nella colonna RSS e nella memoria grafica. La potenza è quella di sistema dalla telemetria della batteria, aggiornata circa una volta al minuto: per questo vale solo sulle corse di almeno 5 minuti; il riposo (4,3 W, mediana di 4 minuti con la sola sonda, alle 04:45) è sottratto nell'energia.
 <!-- TABELLE:fine -->
 
 ## 15. Parte 5 — Il controllo semantico sulle coppie del fulcro (perimetro ridotto)
@@ -696,7 +728,8 @@ qui solo tipi, conteggi e cause.
 con filigrana, apertura d'articolo di rivista, apertura di capitolo con sommario, pagina con grafico e didascalia, codice a due colonne).
 Errori classificati da Code (somma sulle pagine lette): **Heron nell'app** fuori ordine 14, tipo sbagliato 19, storpiato 11, perso 10,
 fuso 4, spezzato 4, testatina nel testo 5; **docling** tipo sbagliato 15, storpiato 10, fuori ordine 6, fuso 5, spezzato 4, testatina nel
-testo 4, perso 3 (campo).
+testo 4, perso 3 (campo; conteggi di prima della prova alla cieca: dopo, per docling perso 4 e livello sbagliato 32 su una pagina
+d'indice, come detto sotto).
 
 Cause, nella pagina (campo):
 - **Glosse a margine**: entrambi le chiamano «corpo» (lo stesso modello Heron, quindi lo stesso limite, già noto dalla fase 20) e le
@@ -727,7 +760,8 @@ come segni grafici, storpiati e non inventati.
 
 ### 15.2 Coppia 2 — GLM-OCR a piena precisione contro GLM-OCR nell'app (lettura del testo)
 
-Pagine lette finora: due del manuale con le glosse a margine destro (pulita) e una pagina densa del codice a due colonne; le uscite
+Pagine lette: cinque in tutto (§ 16.7), fra cui due del manuale con le glosse a margine destro (pulita) e una pagina densa del codice a
+due colonne; le uscite
 grezze di GLM a piena precisione e di GLM nell'app (Q8_0, stesso motore dell'app, prima della guardia) e la lettura finale dell'app.
 - **Le due forme del modello leggono quasi allo stesso modo** (campo): sulle pagine guardate differiscono di una o due parole a
   pagina, in entrambe le direzioni (la piena precisione toglie un accento o aggiunge una sillaba; la forma compressa raddoppia una
@@ -741,7 +775,7 @@ grezze di GLM a piena precisione e di GLM nell'app (Q8_0, stesso motore dell'app
 
 ### 15.3 Coppia 3 — Surya e Marker contro la coppia GLM + Heron dell'app (testo e struttura)
 
-Pagine lette finora per Marker (pulita): una pagina di rivista con note numerate a tre cifre e nomi con segni diacritici, un'appendice
+Pagine lette per Marker (pulita), su sei della coppia: una pagina di rivista con note numerate a tre cifre e nomi con segni diacritici, un'appendice
 con due tabelle, una pagina di manuale con glosse e titolo di paragrafo.
 - **Note e diacritici**: Marker scrive i numeri di nota in apice e alcune lettere con diacritici in notazione matematica (graffe, apici,
   comandi): chi ascolta sente segni e parole tecniche al posto del numero della nota o del nome. L'app fonde le nove note della pagina in
@@ -768,7 +802,7 @@ Surya 2.5 sulle stesse pagine (pulita), più una pagina densa d'enciclopedia sca
   pagina nuova la verità è un po' più lunga del dovuto, per tutti allo stesso modo.
 - **Ordine sulle pagine dense a due colonne**: Surya e Marker leggono prima tutto il corpo delle due colonne e poi tutte le note; docling
   e la verità leggono colonna per colonna, note comprese. Per l'orecchio la scelta di Surya non spezza il corpo, ma la metrica la conta
-  come inversione: metà della «perdita d'ordine» di Surya sulle pagine dense viene da questa convenzione (vedi H2).
+  come inversione: una parte, non quantificata, della «perdita d'ordine» di Surya sulle pagine dense viene da questa convenzione (vedi H2).
 - **L'app** sulla stessa pagina d'enciclopedia stacca le parole di fine riga in blocchi minimi chiamati «nota» e mescola righe delle due
   colonne: è il punto più debole della via dell'app sulle scansioni vecchie.
 
@@ -778,7 +812,8 @@ Campione di 20 parole per classe (seme fisso) sulla lettura dell'app con GLM, sc
 Delle 20 «parole plausibili» (la classe delle invenzioni possibili): 6 sono testo vero della pagina che il livello di testo non ha (scritte
 dentro figure e tabelle stampate come immagine, il logo dell'editore, il nome della rivista nel piè), 5 frammenti di parole spezzate o
 parole incollate, 7 storpiature pesanti senza senso, 1 è un errore della verità (il livello di testo d'origine, un vecchio OCR, legge male
-quella parola), e al più 2 sono invenzioni scorrevoli e credibili (casi dubbi). Fra le «lettere storpiate» molte sono parole giuste lette da
+quella parola; è di v11, esclusa dal testo dopo, alle 02:05), e l'ultima è un caso dubbio, che con un'altra delle storpiature fa al più 2
+invenzioni scorrevoli e credibili. Fra le «lettere storpiate» molte sono parole giuste lette da
 tabelle-immagine, che il classificatore accosta alla stessa parola altrove nel documento. **Conclusione:** le parole plausibili sono un
 tetto superiore delle invenzioni vere, non il loro numero; le invenzioni scorrevoli, quelle che all'orecchio non si riconoscono, sono rare in
 tutti i lettori misurati. Per questo il report dà anche il conteggio senza le pagine con figure, tabelle o didascalie.
@@ -802,15 +837,16 @@ tutti i lettori misurati. Per questo il report dà anche il conteggio senza le p
 - **Costi.** I più veloci: Heron nell'app 0,04 secondi a pagina, struttura di Apple 0,2, lettura dell'app con Apple 0,3 (Apple 0,2 più
   Heron 0,05), Marker 0,2, docling 0,25-0,33 sulle scansioni; poi Granite 3,3-3,4, Surya 3,7-3,8 (corsa intera divisa per le pagine,
   con 8 richieste in parallelo), GLM 8,3-8,5 nell'app (a priorità normale, tabella T5) e 11-12 a piena precisione. Energia sopra il
-  riposo, a pagina (corse di almeno 5 minuti): Granite 131-143 joule, Surya 190-195, GLM a piena precisione 330-372. Memoria: l'app con GLM usa fino a 4,4 GB di memoria grafica di sistema e circa 2 GB d'impronta del
-  processo; GLM a piena precisione 5,3-5,5 GB d'impronta; docling 4,1-4,4 GB; Marker 1,9-2,6 GB tutto sul processore (3-4 nuclei); Apple
+  riposo, a pagina (corse di almeno 5 minuti): Granite 131-143 joule, Surya 190-195, GLM a piena precisione 330-372. Memoria: l'app con GLM usa 3,7-3,8 GB di memoria grafica di sistema (seconde corse, a Mac libero;
+  la corsa della T7 sulla degradata ne dà 4,4 perché in parallelo girava la lettura dei volumi) e circa 2 GB d'impronta del processo; GLM a piena precisione 5,3-5,5 GB d'impronta; docling 4,1-4,4 GB; Marker 1,9-2,6 GB tutto sul processore (3-4 nuclei); Apple
   e Heron sotto 1 GB. Tabella T7.
 - **Granite Docling 258M**, il più piccolo dei modelli che leggono e impaginano insieme (3,3-3,4 secondi a pagina, meno di 1 GB):
-  l'ordine di lettura migliore del banco e i titoli con meno falsi, ma le lettere peggiori fra i modelli (0,85 per cento sulla pulita,
+  l'ordine di lettura migliore del banco (alla pari con docling entro l'intervallo) e, sulla degradata, i meno titoli fuori dalla verità
+  (56; sulla pulita 66, come Marker), ma le lettere peggiori fra i modelli (0,85 per cento sulla pulita,
   1,44 sulla degradata) e una pagina al tetto dei 3.000 token sulla degradata. È il solo lettore che la degradazione del banco peggiora
   molto; Surya non ne risente affatto.
-- **Struttura dei documenti di Apple** (la stessa richiesta con cui l'app legge le scansioni, § 10; corsa rifatta, copertura 1,00 nelle
-  tre forme): 0,2 secondi a pagina, meno di 0,4 GB; legge il testo come le righe di Apple dell'app (lettere 0,73-0,77 per cento),
+- **Struttura dei documenti di Apple** (la stessa richiesta con cui l'app legge le scansioni, § 10; corsa rifatta, copertura totale 1,00
+  nelle tre forme, contata come parole per pagina; sotto 0,8 restano due pagine di v11, dove anche il riferimento è debole): 0,2 secondi a pagina, meno di 0,4 GB; legge il testo come le righe di Apple dell'app (lettere 0,73-0,77 per cento),
   riconosce le tabelle (17-18 su 19) e tiene un buon ordine (0,97 sulle 34 pagine), ma non conosce titoli né note e lascia nel flusso
   testatine e piè (163-195 righe su 333).
 <!-- R161:fine -->
@@ -834,13 +870,14 @@ Numeri delle due scansioni (un intervallo è pulita-degradata), salvo dove detto
 - **Note e richiami**: note trovate come note 180-200 su 267 per i modelli a regioni e per l'app (Granite 138-171); agganciate al
   richiamo (dove l'app fa il salto) 23-35 l'app, 5-25 gli altri; richiami in apice letti: Surya 195-196 su 211, Granite 133-178, GLM
   119-145, app con GLM 112-123, Marker 83-92, docling 38-51 sulle scansioni (188 sul PDF col testo), Apple 9-16.
-- **Tabelle**: 19 su 19 per docling, Marker, Surya, GLM (in HTML) e Heron sull'immagine; l'app sulle scansioni non ne annuncia nessuna.
+- **Tabelle**: 19 su 19 per docling, Marker (che ne trova anche 20 in più sulla pulita), Surya, GLM (in HTML) e Heron sull'immagine;
+  l'app sulle scansioni non ne annuncia nessuna (le tabelle vere stanno su 6 pagine, le didascalie su 3: caselle indicative).
   **Didascalie**: 5 su 5 per docling, Heron e Surya; 0 per Marker (le chiama testo), l'app e GLM.
 - **Ordine** (tau sulle 34 pagine; due colonne a parte): Granite 0,98-0,99, docling 0,96-0,98, struttura di Apple 0,97, Heron 0,93-0,97,
-  Marker 0,94-0,95, Surya 0,94-0,95, app sulle scansioni 0,82-0,88; sulle due colonne (in ordine sui ritrovati) GLM 234-236 su 260,
+  Marker 0,94-0,95, Surya 0,94-0,95, app sulle scansioni 0,82-0,88; sulle due colonne (in ordine sui ritrovati) GLM 233-236 su 259-260,
   Surya 232 su 256-257, Marker 231 su 258-259, struttura di Apple 228-231 su 253-257, Granite 220-224 su 247-252, Heron 221-228 su
   252-255, docling 202-211 su 229-235, app 179-200 su 210-234.
-- **Testatine e piè** rimasti nel flusso (righe su 333): docling 39-42, Marker 40-43, Heron 41-49, Surya 46, Granite 46-54, GLM 54-56
+- **Testatine e piè** rimasti nel flusso (righe su 333): docling 40-42 (39 sul PDF col testo), Marker 40-43, Heron 41-49, Surya 46, Granite 46-54, GLM 54-56
   (legge tutto), app 58-75 sulle scansioni (pagine singole: la catena non vede la ricorrenza), struttura di Apple 163-195; il libro letto
   dall'iPad 39.
 - **Glosse a margine**: nessun modello le etichetta come glosse (0 su 11 sulle pagine con verità per blocchi); l'app sul PDF col testo le
@@ -876,7 +913,7 @@ intervalli); sulla pulita lo stesso (lettere 0,076 contro 0,072, cifre 0,46 cont
 24, l'unica differenza visibile). Il costo sta dopo il
 modello: la lettura finale dell'app perde più parole (5,1 per cento sulle stesse pagine) e sbaglia più lettere (0,26), per due cause viste
 nel controllo semantico: la catena sulle scansioni dei codici a due colonne mette fuori lettura parti della colonna stretta (17 per cento
-di parole perse sul codice, 2,3 sugli altri campioni, come il modello puro), e la guardia tiene le righe di Apple dove GLM non ha nulla (le
+di parole perse sul codice, 2,3 sugli altri campioni, appaiate a pagina; 16,6 e 0,75 per documento: come il modello puro), e la guardia tiene le righe di Apple dove GLM non ha nulla (le
 glosse tornano, ma fuse nelle righe del corpo). *Quanto si guadagna:* il modello compresso pesa 1,43 GB contro 2,65 GB di pesi più un
 ambiente Python di 1 GB; gira dentro l'app, senza Python e senza rete; a priorità normale e a Mac libero (tabella T5) GLM nell'app
 impiega 8,3-8,5 secondi a pagina (modello ricaricato a ogni pagina, prima della guardia; 10 con tutta la catena dell'app) contro 11,8-12,3
@@ -908,19 +945,24 @@ di tutto questo.
 
 - **H1 — Heron in Core ML con il porto Swift riconosce la struttura quasi come docling: REGGE.** Sulle 34 pagine con verità per blocchi,
   PDF col testo: titoli 22 su 47 contro 23 (docling 2.150.1), note 41 su 76 contro 41, didascalie 2 su 2, tabelle 2 su 2, figure 4 su 4
-  per entrambi, ordine 0,968 contro 0,978; nessuna differenza appaiata esce dall'intervallo dello zero salvo le testatine (+12,5 punti
-  per Heron, [0; 25,9]). Sulle scansioni (Heron sull'immagine, nella via dell'app): pulita alla pari (titoli 22 contro 23, note 42 contro
-  41, ordine 0,950 contro 0,959); degradata un po' sotto (titoli 20 contro 22, note 37 contro 39, figure 0 su 4 contro 4, ordine 0,927
-  contro 0,981). Il dato di fase 20 si riproduce identico per Heron (22, 41, 0,968).
+  per entrambi, ordine 0,968 contro 0,978 (differenza appaiata −0,01 [−0,04; 0,02]); nessuna differenza appaiata esce dall'intervallo
+  dello zero (le testatine, +12,5 punti per Heron [0; 25,9], lo toccano). Sulle scansioni (Heron sull'immagine, nella via dell'app): pulita alla pari (titoli 22 contro 23, note 42 contro
+  41, ordine 0,950 contro 0,959); degradata un po' sotto nell'ordine (0,927 contro 0,981, differenza appaiata −0,05 [−0,12; −0,01]) e
+  sopra nel corpo (+6,0 punti [2,4; 10,0]); titoli 20 contro 22, note 37 contro 39 (non distinguibili); figure 0 su 4 contro 4, su 3
+  pagine (indicativo; e Heron sull'immagine si misura dal registro delle righe dell'app, dove una figura senza testo non arriva). Il dato di fase 20 si riproduce identico per Heron (22, 41, 0,968).
 - **H2 — docling è il migliore nell'ordine di lettura; Surya perde sulle pagine dense: REGGE IN PARTE.** Sulle 34 pagine con verità
   per blocchi l'ordine medio (tau) di docling è 0,96-0,98 nelle tre forme, di Heron nell'app 0,93-0,97, di Surya 2.5 0,94-0,95, di
-  Marker 0,94-0,95; **fa meglio di docling Granite Docling** (0,99 sulla pulita, 0,98 sulla degradata), il modello unico della stessa
-  famiglia di IBM: docling resta il migliore fra le catene a più modelli, non in assoluto. Sulle 10 pagine dense (oltre 3.500 caratteri): docling 0,97-0,98 e Granite 0,98 (una pagina sotto 0,9), Surya 0,79 sulla pulita
-  e 0,83 sulla degradata (sei sotto 0,9), Marker 0,81-0,82 (sette sotto 0,9), la via dell'app 0,74 con entrambi i lettori (sei sotto 0,9). Le pagine dove Surya cede sono quasi tutte quelle dell'enciclopedia scansionata a due colonne, come nella
+  Marker 0,94-0,95, di Granite Docling 0,98-0,99. Appaiate sulle stesse pagine (33-34, intervalli al 95 %), le differenze da docling non
+  si distinguono da zero per Surya, Marker, Heron sul PDF e sulla pulita, e per Granite (+0,03 [−0,00; 0,08] sulla pulita, pari sulla
+  degradata); si distinguono solo Heron sulla degradata (−0,05 [−0,12; −0,01]) e la via GLM dell'app sulla pulita (−0,10 [−0,19;
+  −0,005]). Quindi docling è fra i migliori nell'ordine, non il migliore da solo. Sulle 10 pagine dense (oltre 3.500 caratteri): docling 0,97-0,98 e Granite 0,98 (una pagina sotto 0,9), Surya 0,79 sulla pulita
+  e 0,83 sulla degradata (sei sotto 0,9), Marker 0,81-0,82 (sette sotto 0,9), la via dell'app 0,74 con entrambi i lettori (sei sotto 0,9);
+  indicativo: le 10 pagine dense vengono da tre volumi, 6 da v11, e 5 delle 6 pagine di Surya sotto 0,9 sono di v11. Le pagine dove Surya cede sono quasi tutte quelle dell'enciclopedia scansionata a due colonne, come nella
   fase 20 con Surya 2: la versione nuova non cambia questo comportamento. La precisazione, dal controllo semantico: Surya e Marker leggono
   tutto il corpo delle due colonne e poi le note, la verità colonna per colonna con le note; una parte dell'inversione è questa
   convenzione, non un corpo spezzato. Le parole, sulle pagine dense, Surya le legge benissimo (perse 0,9 per cento, lettere 0,10).
-- **H3 — GLM-OCR è più preciso del lettore di Apple, soprattutto sulle cifre: REGGE**, con la misura corretta delle cifre (§ 10). Letture
+- **H3 — GLM-OCR è più preciso del lettore di Apple, soprattutto sulle cifre: REGGE per la precisione; «soprattutto sulle cifre» solo in
+  punti assoluti** (GLM sbaglia 4-5 volte meno sia lettere sia cifre), con la misura corretta delle cifre (§ 10). Letture
   grezze, 179 pagine, pulita, appaiate a pagina: lettere sbagliate 0,45 contro 0,10 per cento (differenza 0,36 [0,27; 0,45]), cifre 0,94
   contro 0,21 (0,73 [0,43; 1,03]), parole plausibili inventate 3,8 contro 0,6 per mille; degradata uguale (lettere 0,47 contro 0,10,
   cifre 0,77 contro 0,19); nell'app (Apple con l'impaginazione contro GLM con la guardia): lettere 0,26 contro 0,13 (0,13 [0,08; 0,19]),
@@ -959,19 +1001,25 @@ di tutto questo.
    *Glosse a margine:* nessun modello le riconosce come tali. *Dove cede l'app sulle scansioni:* colonne strette dei codici fuori dalla
    lettura, parole di fine riga staccate come note sulle enciclopedie a due colonne, tabelle non annunciate, glosse fuse nel corpo.
 3. **Che cosa arriva all'orecchio di chi usa VoiceOver?** Sulle scansioni pulite, con GLM nell'app: dei titoli raggiungibili con VO
-   Comando H circa uno su quattro è un titolo vero (31 veri e 99 falsi su 185 pagine), le note trovate sono 186 su 267 e 35 hanno il salto
+   Comando H 31 coincidono con i titoli della lettura dell'iPad e 99 no, su 185 pagine (quei 99 sono assenti dalla verità, non per forza
+   falsi: la verità dei titoli è validata dai segnalibri solo su una parte dei volumi, § 4.3; per la radio meglio la T2, con verità per
+   blocchi indipendente), le note trovate sono 186 su 267 e 35 hanno il salto
    al loro richiamo; restano nel flusso 62 righe di testatina o piè su 333; le parole plausibili inventate sono 121 su circa 58.500
    (77 fuori dalle pagine con figure, tabelle o didascalie), e la verifica a mano dice che quasi nessuna è un'invenzione scorrevole
    (§ 15.4). Sul PDF col testo l'app dà la lettura di riferimento.
 4. **Quanto costano i modelli in tempo, memoria e carico?** *Tempo*, a priorità normale e a Mac libero (tabella T5, 12 pagine): GLM
    nell'app 8,3-8,5 secondi a pagina (10 a pagina con tutta la catena dell'app), GLM a piena precisione 11,8-12,3, Granite 4,5, Surya 2.5
    62-72 secondi per le 12 pagine avvio del server compreso (Surya 2: 594), Marker «auto» 5-6 secondi per le 12 pagine e «accurate»
-   135-139, docling 0,3-0,4 a pagina sulle scansioni, struttura di Apple 0,2-0,25, via Apple dell'app 0,34-0,35, Heron 0,16 con l'avvio
+   135-139, docling 0,3-0,4 a pagina sulle scansioni, struttura di Apple 0,2-0,25, via Apple dell'app 0,34-0,35, Heron 0,16-0,17 con l'avvio
    per documento (0,04 a caldo). *Memoria* (tabella T7): i processi Python 2-5,5 GB d'impronta (GLM a piena precisione 5,3-5,5, docling
-   4,1-4,4, Marker 1,9-2,6); llama-server, che Surya e Granite lanciano, 7,8-8,7 GB di memoria residente (per Granite, che pesa mezzo GB,
-   la causa non è verificata) con 1,5-4,1 GB di memoria grafica in uso; l'app con GLM circa 2 GB d'impronta più 3,7-3,9 GB di memoria
-   grafica; Apple e Heron sotto 1 GB. *Carico*: Marker e docling lavorano sul processore (Marker tre nuclei, la scheda grafica a zero),
+   4,1-4,4, Marker 1,9-2,6); per Surya e Granite i processi del motore (cliente Python più llama-server) 9,4-12,6 GB di memoria residente al
+   picco, di cui llama-server da solo 7,8-8,7 (per Granite, che pesa mezzo GB, la causa non è verificata), con 1,5-4,1 GB di memoria
+   grafica di sistema in uso; l'app con GLM circa 2 GB d'impronta più 3,7-3,8 GB di memoria grafica di sistema (seconde corse, a Mac
+   libero); Apple e Heron sotto 1 GB. *Carico*: Marker e docling lavorano sul processore (Marker tre nuclei, la scheda grafica a zero),
    GLM e Surya sulla scheda grafica (82-98 per cento d'uso mediano), Granite su entrambi; nessun avviso termico in nessuna corsa.
+   *Crescita col numero di pagine* (campioni contigui di 19-40 pagine, retta sui tempi per documento): lineare, con pochi secondi fissi e
+   nessun rallentamento sui documenti lunghi (GLM a piena precisione 9 secondi fissi più 8,6-8,7 a pagina, Granite 3 più 2,6-2,9, via
+   Apple dell'app 0,27 più 0,24-0,26, docling 0,2-0,3 più 0,16-0,42; misura grezza, da `misure/crescita.log`).
    *Energia* (corse di almeno 5 minuti, potenza di sistema dalla telemetria, riposo di 4,3 W sottratto): Granite 131-143 joule a pagina,
    Surya 190-195, GLM a piena precisione 330-372 (potenza mediana 35-36 W, più bassa di Surya e Granite, 47-64 W, ma per più tempo); per
    la via GLM dell'app la misura di questo giro non è confrontabile (tabella T7, nota).
@@ -996,8 +1044,10 @@ di tutto questo.
   precisione, con la stessa decodifica dell'app, il testo è lo stesso della forma compressa salvo lo stile dell'apostrofo (§ 15.2).
 - **La decodifica conta più della precisione** (campo): la stessa penalità di ripetizione, applicata a tutto il contesto invece che agli
   ultimi 64 token, ha fatto incollare le parole a GLM a piena precisione su una pagina densa (§ 10).
-- **Sul sottoinsieme fisso** (12 pagine, campo; ogni pagina valutata da sola con lo stesso metro per le due uscite, quindi valori
-  assoluti più alti che nelle tabelle principali, dove le pagine vicine recuperano le note spostate):
+- **Sul sottoinsieme fisso** (12 pagine, campo, indicativo; ogni pagina valutata da sola con lo stesso metro per le due uscite, quindi
+  valori assoluti più alti che nelle tabelle principali, dove le pagine vicine recuperano le note spostate; i tempi delle versioni vecchie
+  e di Marker «accurate» vengono da corse a priorità bassa, quelli delle versioni nuove dalle seconde corse a priorità normale: con
+  rapporti di 10 e 27 volte la conclusione regge, ma i valori esatti no):
   - **GLM-OCR compresso: llama.cpp b11429 dell'app contro llama-server v1.0.0**: 10 pagine identiche al carattere su 12 sulla pulita, 8
     sulla degradata, somiglianza mediana 1,00, stessa qualità (lettere 0,04 contro 0,04 e 0,04 contro 0,02 per cento, parole perse
     uguali). La versione di llama.cpp non conta.
@@ -1032,7 +1082,7 @@ di tutto questo.
     docling), col solo italiano (come docling) o con l'immagine a colori (come docling) le lettere sbagliate restano 0,34 per cento. Le
     ultime due varianti sono state aggiunte dopo aver visto le prime quattro, solo per spiegare lo scarto con docling (§ 10).
   - **Resta uno scarto con docling che non si spiega così**: 0,34 contro 0,12 per cento (+0,22 [0,15; 0,29]), per il 63 per cento su un
-    solo campione, il codice a due colonne (529 lettere sbagliate contro 93; la via dell'app 531). Le ipotesi rimaste, non verificate: il
+    solo campione, il codice a due colonne (529 lettere sbagliate contro 93; le righe di Apple dell'app 531, la lettura finale dell'app 234). Le ipotesi rimaste, non verificate: il
     motore che rende la pagina (docling usa pdfium, lo strumento e l'app PDFKit) o il trattamento che docling fa delle righe lette prima
     di comporre il testo. Pista per il giro 2.
   - Rete: zero byte verso l'esterno in tutte e dodici le corse (per la prima il verdetto è stato ricalcolato, § 11.2).
@@ -1062,7 +1112,7 @@ di tutto questo.
   Surya: è per questo che è veloce.
 - **Un framework di sistema non deterministico.** La struttura dei documenti di Apple ha dato per circa un quarto d'ora testo parziale
   (circa il 40 % delle righe) dallo stesso eseguibile, poi completo; macOS tiene una cache dei modelli compilati per il motore neurale per
-  ogni eseguibile: la lezione è controllare la copertura riga per riga prima di fidarsi.
+  ogni eseguibile: la lezione è controllare la copertura pagina per pagina prima di fidarsi.
 - **La verità va costruita con la stessa unità dell'uso.** Una pagina letta da sola non è la pagina dentro il libro: la catena dell'iPad,
   senza le altre pagine, sbaglia ruoli che nel libro azzecca (§ 10). E un dettaglio di rappresentazione della verità (il richiamo in apice
   incollato alla parola) può contare come errore di cifre ciò che è solo un richiamo non letto: corretto, la quota di cifre sbagliate di
@@ -1076,8 +1126,9 @@ di tutto questo.
 di nove motori più le seconde corse, le versioni vecchie, la misura diagnostica e il controllo di docling, tutte le misure con le
 tabelle T1-T7) e le parti 5 e 6 nel perimetro ridotto (controllo semantico sulle tre coppie del fulcro, 18 pagine distinte (8, 5 e 6
 per coppia, una in comune), con una prova alla
-cieca su una coppia; questo report ridotto). Nessuna corsa da rifare: nessuna misura di tempo è stata fatta col Mac occupato (T5,
-nota), la sola corsa uscita male (GLM a piena precisione con la decodifica sbagliata) è stata rifatta. Codice delle app non toccato.
+cieca su una coppia; questo report ridotto). Nessuna corsa da rifare: le misure di tempo a priorità normale (T5) sono state fatte a Mac
+libero (nota della T5); durante alcune corse di qualità della T7 girava altro lavoro del laboratorio (colonna «altro lavoro», § 10), e per
+quelle righe tempi, potenza ed energia sono indicativi; la sola corsa uscita male (GLM a piena precisione con la decodifica sbagliata) è stata rifatta. Codice delle app non toccato.
 
 **Da dove riprendere.** I dati restano nel laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`: uscite di tutte le corse in
 `uscite/`, misure in `misure/` (ricalcolo completo con `strumenti/finale.sh 4282`, la base a riposo in milliwatt), giudizi del
@@ -1089,5 +1140,7 @@ entra con un passo nella coda, un adattatore e una riga nel calcolo dei numeri; 
 
 Il rendimento per situazione e gli incroci; le combinazioni di modelli; il rapporto fra qualità e costo; il controllo semantico completo
 su tutti i modelli e col campione pieno (37 pagine distinte già scelte); la classifica e la valutazione qualitativa; le frasi pronte per la
-radio; i modelli nuovi del § 11.4 (per primi docling-layout-egret e Xiaomi-OCR-0); il materiale pubblico. Dettaglio e stato nel § 16.7.
+radio; i modelli nuovi del § 11.4 (per primi docling-layout-egret e Xiaomi-OCR-0); il materiale pubblico; dal giro 1 restano anche i numeri con la verità a pagina singola (§ 10), lo scarto fra la richiesta classica di
+Apple e docling sul codice a due colonne (§ 16.5), le misure d'ordine con intervalli per tutte le coppie, l'energia della via GLM dell'app
+dal vivo, l'impronta di ogni strumento nel registro della sua corsa. Dettaglio e stato nel § 16.7.
 <!-- REPORT:fine -->
