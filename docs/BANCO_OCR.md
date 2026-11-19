@@ -312,7 +312,7 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   controllo di versione, e per docling e per le prime varianti diagnostiche le uscite non conservano l'impronta dello strumento; nel giro
   2 ogni corsa la scriverà nel suo registro.
 
-- **Giro 2, cascata delle perdite: i tipi che arrivano alla lettura (11:05, prima di leggere i risultati delle varianti).** Il metodo del
+- **Giro 2, cascata delle perdite: i tipi che arrivano alla lettura (11:00, prima di leggere i risultati delle varianti).** Il metodo del
   § 17.1 diceva «un tipo arriva alla lettura se almeno metà delle sue parole si ritrova nei segmenti finali»: sulla prima corsa di controllo
   la regola ha dato per letti anche le glosse a margine e i colophon, perché le loro parole comuni si ritrovano altrove nella pagina. Si usa
   invece l'elenco del codice della catena (ScaboCore `BuildSegments`, `NON_READ_ROLES`: glosse a margine, sommario o indice del volume,
@@ -321,7 +321,7 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   stesura cercava all'indietro la sola presenza e contava due volte le parole ripetute); i blocchi fusi e spezzati si misurano sui pezzi di
   tre parole consecutive, contro i nodi della classificazione della forma col testo (la prima stesura, sulle parole sole e contro i
   segmenti di lettura, contava come spezzati i tagli della granularità).
-- **Apostrofi unificati nel metro del testo (11:25, giro 2).** Il controllo semantico dello scarto fra la richiesta classica di Apple e
+- **Apostrofi unificati nel metro del testo (11:10, giro 2).** Il controllo semantico dello scarto fra la richiesta classica di Apple e
   docling sul codice a due colonne (§ 16.5) ha trovato un difetto del metro: la verità scrive l'apostrofo tipografico (’), che la
   normalizzazione cancellava (tiene solo i caratteri ASCII), mentre i lettori che scrivono l'apostrofo diritto (') lo vedevano tenuto; le
   parole con l'elisione non coincidevano mai, finivano fra le «lette male» e, dove mancavano parole, l'accoppiamento per somiglianza
