@@ -83,6 +83,10 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
     /// SOLO LABORATORIO (variante D): raccogliere le regioni di tabella e di figura viste sulle pagine lette, per passarle alla catena
     /// come candidate delle risorse visive. Spento di serie.
     public var raccogliTabelle = false
+    /// SOLO LABORATORIO: il modello d'impaginazione da usare al posto di Heron (un `.mlmodelc` con le stesse etichette e la stessa
+    /// forma d'uscita, per esempio docling-layout-egret convertito con la via di Heron), per misurarlo al banco dentro la via dell'app.
+    /// Mai impostato dall'app: di serie il modello incluso, Heron.
+    public var modelloImpaginazione: URL?
     /// Le regioni raccolte con `raccogliTabelle`: quelle di Heron (tabella, figura) e le tabelle della richiesta di Apple.
     public private(set) var tabelleHeron: [VisualRegionCandidate] = []
     public private(set) var tabelleApple: [VisualRegionCandidate] = []
@@ -211,7 +215,10 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         }
         let url = uri.hasPrefix("file:") ? (URL(string: uri) ?? URL(fileURLWithPath: uri)) : URL(fileURLWithPath: uri)
         guard let doc = PDFDocument(url: url) else { problema = .pdfNonLeggibile; throw Problema.pdfNonLeggibile }
-        let heron: HeronLayoutModel? = via == .v1 ? nil : (try? HeronLayoutModel.bundled())
+        let heron: HeronLayoutModel?
+        if via == .v1 { heron = nil }
+        else if let altro = modelloImpaginazione { heron = try? HeronLayoutModel(modelURL: altro) }   // solo laboratorio
+        else { heron = try? HeronLayoutModel.bundled() }
         for indice in vuote {
             if isCancelled() { return nil }
             let tp = Date()

@@ -24,6 +24,7 @@ final class OsservazioneScansioniTests: XCTestCase {
         XCTAssertEqual(EstrattoreScansioni(lettore: .apple).varianti, v, "l'estrattore nasce con le varianti spente")
         XCTAssertNil(EstrattoreScansioni(lettore: .glm).cartellaOsservazione, "e senza osservazione")
         XCTAssertFalse(EstrattoreScansioni(lettore: .glm).raccogliTabelle)
+        XCTAssertNil(EstrattoreScansioni(lettore: .apple).modelloImpaginazione, "di serie il modello incluso, Heron")
         XCTAssertEqual(VariantiScansioni(elenco: "classica,codici")?.accese, ["classica", "codici"])
         XCTAssertNil(VariantiScansioni(elenco: "classica,inventata"), "un nome sconosciuto non passa")
     }

@@ -28,7 +28,8 @@
 //        Heron, righe ordinate, testo di GLM, righe dopo la guardia; per libro `<stem>.extraction.json`, `<stem>.grezzo.json`,
 //        `<stem>.note.json`); `--variante classica,senza-guardia,guardia-larga,codici,sillabate` accende le varianti sperimentali;
 //        `--tabelle heron|apple|tutte` passa alla catena come tabelle le regioni viste da Heron o dalla richiesta di Apple (due
-//        passate). Tutto spento di serie: senza questi argomenti la catena è quella dell'app.
+//        passate); `--modello-impaginazione FILE.mlmodelc` usa un altro modello d'impaginazione della famiglia di Heron (per esempio
+//        docling-layout-egret convertito). Tutto spento di serie: senza questi argomenti la catena è quella dell'app.
 //    scabomac-officina pacchetto --pdf FILE.pdf --out FILE.scabolettura [--politica giro|spenta|banco]
 //        Prepara e scrive il pacchetto della lettura come l'app (senza annotazioni).
 //    scabomac-officina verdetti-confronta --pdf VOLUME.pdf --dir CARTELLA --prefisso P
@@ -234,6 +235,7 @@ case "catena":
                 e.varianti = varianti
             }
             e.cartellaOsservazione = arg("osserva").map { URL(fileURLWithPath: $0).appendingPathComponent(stem) }
+            e.modelloImpaginazione = arg("modello-impaginazione").map { URL(fileURLWithPath: $0) }
             scansioni = e
             extractor = e
         }
