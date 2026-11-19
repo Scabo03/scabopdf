@@ -273,6 +273,19 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   pesi verificati per impronta, stesso codice di lettura: dal 2026-11-18 sera il file del modello è cambiato solo nei commenti); la
   lettura di Apple, l'impaginazione, la guardia e la catena girano dal vivo. La seconda corsa del sottoinsieme fisso rifà GLM dal vivo
   e dice se il testo salvato è identico.
+- **Correzione di una descrizione e misura diagnostica aggiunta (02:50, prima delle corse della misura).** Leggendo il codice dell'app a
+  `738342d` (solo lettura): sul macOS 26 e successivi la lettura di Apple dell'app sulle scansioni non usa `RecognizeTextRequest`, come
+  diceva il § 11.1, ma le righe e i paragrafi di **`RecognizeDocumentsRequest`** con le opzioni predefinite (lingua predefinita
+  `en-US` con il riconoscimento automatico della lingua, correzione linguistica accesa: campo, stampate dall'API), su un'immagine in
+  scala di grigi col lato lungo di 2000 pixel; `VNRecognizeTextRequest` (accurato, italiano e inglese, correzione) resta solo come
+  ripiego per i sistemi precedenti. docling legge invece con `VNRecognizeTextRequest` tramite ocrmac, a 3 pixel per punto. Le misure
+  dell'app non cambiano (vengono dalla catena vera); cambia il nome dell'API. Siccome sulla scansione pulita docling con lo stesso
+  motore sbaglia lo 0,11 per cento delle lettere e le righe di Apple dell'app lo 0,73, si aggiunge una **misura diagnostica**, fuori dalle
+  tabelle principali e dalle ipotesi: uno strumento del laboratorio (`visiontesto`) legge le 185 pagine delle due scansioni con
+  l'immagine identica a quella dell'app in quattro varianti (la richiesta dei documenti con le opzioni predefinite, che deve riprodurre
+  l'app e su una pagina di prova la riproduce parola per parola; la stessa con italiano e inglese e senza riconoscimento automatico;
+  `VNRecognizeTextRequest` come nel ripiego dell'app; lo stesso a 3 pixel per punto come docling), con lo stesso metro di tutti. Serve
+  a separare l'effetto dell'API, delle opzioni e della risoluzione, per la domanda 1 e per le decisioni del maintainer.
 
 ## 11. Parte 1 — Il check-up degli strumenti (campo, 2026-11-19)
 
@@ -280,7 +293,7 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
 
 | modello | dove | installata | ultima pubblicata (fonte, consultata il 2026-11-19) | misurata con |
 |---|---|---|---|---|
-| Lettura del testo di Apple (`RecognizeTextRequest`, revisione 3) | sistema, app | macOS 27.0.1 (26A434) | nessun aggiornamento di macOS offerto (`softwareupdate --list`) | macOS 27.0.1 |
+| Lettura del testo di Apple (nell'app su macOS 26 e successivi: righe di `RecognizeDocumentsRequest`, revisione 1, opzioni predefinite; `VNRecognizeTextRequest` solo come ripiego; in docling: `VNRecognizeTextRequest` via ocrmac; § 10) | sistema, app | macOS 27.0.1 (26A434) | nessun aggiornamento di macOS offerto (`softwareupdate --list`) | macOS 27.0.1 |
 | Struttura dei documenti di Apple (`RecognizeDocumentsRequest`, revisione 1) | sistema, app | macOS 27.0.1 | idem | macOS 27.0.1 |
 | Heron in Core ML fp32 + porto Swift | app (modulo condiviso) | pesi `docling-layout-heron`, sha256 `00333a43…` | stesso file alla revisione corrente `8f39ad3c` (ultima modifica 2026-02-09, API di Hugging Face) | modulo dell'app a `738342d` |
 | Ordine di lettura di docling (porto Swift) | app | porto di docling-ibm-models 3.13.3 | docling 2.150.1 ha spostato il predittore dentro docling e lo ha riscritto in larga parte (746 → 1.360 righe, campo: diff dei sorgenti) | porto a `738342d` |
@@ -614,9 +627,9 @@ di tutto questo.
   riga non si perdono molto più delle interne (12,5 contro 10,3 per cento, pulita); ciò che succede davvero è che **le parole sillabate a
   fine riga restano spezzate** (93,6 per cento delle parole sillabate nelle note non ricomposte, 75 nel corpo) e che **l'inizio delle righe
   di nota si perde spesso** (34 per cento, in buona parte i numeri delle note in apice); GLM grezzo ricompone le sillabate (10,8 per cento
-  non ricomposte). Tabelle: il lettore del testo di Apple non ha la nozione di tabella; la struttura dei documenti di Apple le vede (in
-  corso la corsa rifatta); nell'app sulle scansioni **nessuna tabella è annunciata** (0 su 19), mentre il modello d'impaginazione le trova
-  sull'immagine (19 su 19).
+  non ricomposte). Tabelle: la richiesta che l'app usa per leggere (la struttura dei documenti di Apple, § 10) riconosce anche le tabelle, ma
+  la catena ne prende solo righe e paragrafi (quante ne vede Apple: corsa rifatta in coda); nell'app sulle scansioni **nessuna tabella è
+  annunciata** (0 su 19), mentre il modello d'impaginazione le trova sull'immagine (19 su 19).
 
 **Domande di ricerca** (prime risposte):
 
