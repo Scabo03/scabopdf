@@ -558,7 +558,7 @@ Numeri delle due scansioni (un intervallo è pulita-degradata), salvo dove detto
   Marker 0,94-0,95, Surya 0,94-0,95, app sulle scansioni 0,82-0,88; sulle due colonne (in ordine sui ritrovati) GLM 234-236 su 260,
   Surya 232 su 256-257, Marker 231 su 258-259, struttura di Apple 228-231 su 253-257, Granite 220-224 su 247-252, Heron 221-228 su
   252-255, docling 202-211 su 229-235, app 179-200 su 210-234.
-- **Testatine e piè** rimasti nel flusso (righe su 333): docling 39-42, Marker 40-43, Heron 41-49, Surya 46, Granite 46-54, GLM 55-56
+- **Testatine e piè** rimasti nel flusso (righe su 333): docling 39-42, Marker 40-43, Heron 41-49, Surya 46, Granite 46-54, GLM 54-56
   (legge tutto), app 58-75 sulle scansioni (pagine singole: la catena non vede la ricorrenza), struttura di Apple 163-195; il libro letto
   dall'iPad 39.
 - **Glosse a margine**: nessun modello le etichetta come glosse (0 su 11 sulle pagine con verità per blocchi); l'app sul PDF col testo le
@@ -590,7 +590,8 @@ diagnostica (§ 16.5).
 Sulle 139 pagine contigue, scansione degradata, GLM a piena precisione (transformers, bf16, con la decodifica dell'app) e GLM compresso
 dell'app (Q8_0, llama.cpp, prima della guardia) sbagliano lo stesso: lettere 0,078 contro 0,080 per cento, cifre 0,42 contro 0,40, parole
 perse 0,40 contro 0,35, parole plausibili 28 contro 27 (campo, insiemi di parole per documento; la tabella T4 dà le 179 pagine con gli
-intervalli). Il costo sta dopo il
+intervalli); sulla pulita lo stesso (lettere 0,076 contro 0,072, cifre 0,46 contro 0,47, perse 0,32 contro 0,34; plausibili 11 contro
+24, l'unica differenza visibile). Il costo sta dopo il
 modello: la lettura finale dell'app perde più parole (5,1 per cento sulle stesse pagine) e sbaglia più lettere (0,26), per due cause viste
 nel controllo semantico: la catena sulle scansioni dei codici a due colonne mette fuori lettura parti della colonna stretta (17 per cento
 di parole perse sul codice, 2,3 sugli altri campioni, come il modello puro), e la guardia tiene le righe di Apple dove GLM non ha nulla (le
@@ -679,7 +680,12 @@ di tutto questo.
    (77 fuori dalle pagine con figure, tabelle o didascalie), e la verifica a mano dice che quasi nessuna è un'invenzione scorrevole
    (§ 15.4). Sul PDF col testo l'app dà la lettura di riferimento.
 4. **Quanto costano i modelli in tempo, memoria e carico?** (tabella T7; si completa con le seconde corse a priorità normale)
-5. **Quanto cambiano i risultati fra versioni e fra due corse?** (tabella T5 e § 16.5; si completa con le seconde corse)
+5. **Quanto cambiano i risultati fra versioni e fra due corse?** *Fra due corse:* quasi niente. Sulle 12 pagine del sottoinsieme fisso,
+   rifatte a priorità normale a Mac libero (tabella T5), GLM nell'app e a piena precisione, Surya, Granite, la struttura di Apple, le
+   righe di Apple e Heron danno uscite identiche al carattere su 12 pagine su 12, Marker su 10 su 10 (le altre due sono del documento che
+   non converte); il GLM dell'app rifatto dal vivo coincide col testo salvato dal giro precedente, che quindi si poteva riusare. docling
+   ne dà identiche 6-7 su 12, ma le differenze cadono sulle stesse pagine nelle tre forme, anche senza lettura OCR: vengono dalla pagina
+   letta da sola contro il documento intero (⟨controllo di determinismo sui documenti interi: in coda⟩). *Fra versioni:* § 16.5.
 <!-- R164:fine -->
 
 ### 16.5 Versioni: dove una versione nuova cambia i risultati
