@@ -249,6 +249,18 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   risoluzione dell'immagine (provati); l'ipotesi è uno stato della cache dei modelli compilati per il motore neurale, che macOS tiene
   per eseguibile (non verificato). La corsa delle 185 pagine fatta in quel quarto d'ora si rifà, con un controllo di copertura riga
   per riga contro la lettura del testo di Apple.
+- **Decodifica di GLM-OCR a piena precisione (correzione dichiarata alle 01:45).** La prima corsa usava in transformers la penalità di
+  ripetizione 1,05 «come l'app»; ma transformers la applica a tutti i token già presenti, prompt compreso, mentre l'app (llama.cpp) la
+  applica solo agli ultimi 64 token generati. Il controllo semantico l'ha scoperto su una pagina densa del codice: parole incollate senza
+  spazi per mezza pagina e qualche carattere cinese al posto di una lettera, dove la forma compressa dell'app è pulita. Corsa fermata;
+  rifatta con la decodifica equivalente a quella dell'app (stessa penalità sugli ultimi 64 token generati, greedy) su entrambe le
+  scansioni; la decodifica ufficiale della scheda (greedy, nessuna penalità) gira sul sottoinsieme fisso. Le uscite difettose restano nel
+  laboratorio come prova della trappola.
+- **Parole: lettere e cifre separate (correzione dichiarata alle 01:30).** Nella lettura di riferimento il numero del richiamo in apice
+  resta attaccato alla parola che lo precede (53 parole nei 139 campioni, con il 2,5 % delle cifre): chi non legge il richiamo, o lo legge
+  staccato, prendeva errori di cifre su quella parola. Ora una parola con lettere e cifre attaccate si divide in lettere e cifre, nella
+  verità e nei candidati allo stesso modo; la misura vecchia resta come controllo di continuità col giro precedente, e la riproduce al
+  decimale.
 - Per la ripetibilità delle forme dell'app con GLM i 139 campioni contigui riusano il testo di GLM salvato dal giro precedente (stessi
   pesi verificati per impronta, stesso codice di lettura: dal 2026-11-18 sera il file del modello è cambiato solo nei commenti); la
   lettura di Apple, l'impaginazione, la guardia e la catena girano dal vivo. La seconda corsa del sottoinsieme fisso rifà GLM dal vivo
@@ -417,5 +429,37 @@ come segni grafici, storpiati e non inventati.
 ## 16. Parte 6 — Il report ridotto
 
 <!-- REPORT:inizio -->
-(in corso)
+(16.1-16.5 in corso: rendimento generale, per compito, banco contro app, domande e ipotesi, versioni.)
+
+### 16.6 Esperienze operative del giro (campo)
+
+- **Installazioni.** Con uv (verificato da PyPI per impronta) quattro ambienti nuovi si fanno in meno di un minuto; il grosso del tempo
+  sono i pesi. docling 2.150.1 porta fra le dipendenze i client di servizi remoti (Anthropic, Google GenAI) anche quando gira solo in
+  locale. llama.cpp al tag v1.0.0 si compila in meno di un minuto, ma la compilazione predefinita scarica dal web un pacchetto
+  dell'interfaccia e fallisce se l'elenco dei suoi file non torna: va spenta (`LLAMA_USE_PREBUILT_UI=OFF`) e ripulito ciò che ha già
+  scaricato. Le versioni di llama.cpp hanno due serie: la release segnata «Latest» (v1.0.0, che corrisponde alla b12359) e le build
+  numerate che continuano (b12527 il 2026-11-18).
+- **Fuori linea.** docling chiede la tabella delle celle (TableFormer) a una revisione etichettata (`v2.3.0`) diversa da quella principale:
+  con la rete chiusa si ferma finché quella revisione non è nella cache. Marker all'avvio scarica un font dal sito dell'editore: con la
+  rete chiusa si ferma con un errore di connessione; serve il font in locale. Surya 0.24 lancia da sé llama-server con 8 richieste in
+  parallelo e un contesto di 98.304 token, e alla fine lo uccide dopo 10 secondi di attesa.
+- **Rete.** Zero byte verso l'esterno durante l'elaborazione per tutti i motori, sotto il recinto che nega la rete; l'unico tentativo di
+  uscita visto è il font di Marker (bloccato).
+- **Robustezza.** Marker 2.2.0 si ferma con un errore interno su un documento (il libro breve di 19 pagine, nelle tre forme): 19 pagine
+  senza uscita. Il suo modo predefinito («auto») sulle scansioni sceglie la lettura leggera Indra (ONNX), non il modello grande di
+  Surya: è per questo che è veloce.
+- **Un framework di sistema non deterministico.** La struttura dei documenti di Apple ha dato per circa un quarto d'ora testo parziale
+  (circa il 40 % delle righe) dallo stesso eseguibile, poi completo; macOS tiene una cache dei modelli compilati per il motore neurale per
+  ogni eseguibile: la lezione è controllare la copertura riga per riga prima di fidarsi.
+- **La verità va costruita con la stessa unità dell'uso.** Una pagina letta da sola non è la pagina dentro il libro: la catena dell'iPad,
+  senza le altre pagine, sbaglia ruoli che nel libro azzecca (§ 10). E un dettaglio di rappresentazione della verità (il richiamo in apice
+  incollato alla parola) può contare come errore di cifre ciò che è solo un richiamo non letto: corretto, la quota di cifre sbagliate di
+  Apple sul banco delle scansioni scende da 1,78 a 0,82 per cento (§ 10).
+- **Conti dei documenti.** Il banco delle scansioni costruite ha 139 pagine, non 119 come scritto nei documenti del giro precedente.
+
+### 16.8 Che cosa resta per il giro 2 (punto da cui riprendere)
+
+Il rendimento per situazione e gli incroci; le combinazioni di modelli; il rapporto fra qualità e costo; il controllo semantico completo
+su tutti i modelli e col campione pieno (37 pagine distinte già scelte); la classifica e la valutazione qualitativa; le frasi pronte per la
+radio; i modelli nuovi del § 11.4 (per primi docling-layout-egret e Xiaomi-OCR-0); il materiale pubblico. Dettaglio e stato nel § 16.7.
 <!-- REPORT:fine -->
