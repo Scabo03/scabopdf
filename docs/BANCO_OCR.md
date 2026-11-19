@@ -1359,6 +1359,8 @@ Attribuzione esatta (ogni parola della verità al passo in cui si perde, in avan
 | GLM + guardia + Heron, pulita | 58486 | 0,48 | 0,82 | — | 0,00 | 0,12 / 1,97 | 4,21 (4,20) | 0,01 | 5,64 |
 | GLM + guardia + Heron, degradata | 58486 | 0,47 | 0,84 | — | 0,01 | 0,10 / 1,96 | 3,49 (3,48) | 0,01 | 4,91 |
 
+Nota: le colonne dell'attribuzione esatta sommano a «perse in tutto» (i recuperi della classificazione sono parole perse a un passo prima e ritrovate, già tolte dalle colonne delle perdite). Il totale è più alto della perdita della prima tabella perché qui il conteggio è esatto, parola per parola: una parola letta con una lettera sbagliata conta come persa, mentre il metro della T1 la accoppia per somiglianza e la conta fra le lette male.
+
 ### Tabella T9 — Titoli, note, tabelle e didascalie passo per passo (185 pagine; verità della T3)
 
 | via, forma | titoli: P3 Heron / P4 grassetto / P5 classificazione / P7 lettura (su 80; in più alla lettura) | note trovate: P3 / P5 / P6 / P7 (su 267) | note agganciate al richiamo, P7 | tabelle: P1 Apple / P3 Heron / P7 annunciate (su 19) | didascalie: P3 / P5 / P7 (su 5) |
@@ -1520,4 +1522,67 @@ correzioni insieme, sul codice: **richiesta classica 41 lettere sbagliate e 81 p
 dell'app 45 e 93**. Il lettore di Apple, letto come lo legge docling, legge il codice come docling o meglio; docling usa la stessa richiesta
 classica, col solo italiano, su ritagli resi da pdfium a 3 pixel per punto (codice di docling 2.150.1, `ocr_mac_model.py`).
 <!-- PARTE2:fine -->
+
+
+## 22. Giro 2, Parte 5 — Il controllo semantico completo (campo)
+
+<!-- PARTE5:inizio -->
+**Prova alla cieca** (§ 17.5; `semantica/giro2/` nel laboratorio). 25 fascicoli sulle coppie del fulcro e su egret-large contro Heron
+nell'app, sei pagine per coppia scelte con la regola del § 17.5 dal campione congelato; un sotto-agente nuovo ha giudicato immagine e due uscite
+anonime con la tassonomia del § 7 (ha visto il nome della cartella delle chiavi elencando la cartella superiore, senza aprirla: dichiarato).
+**Accordo sull'uscita migliore: 12 su 25 pieno, 17 su 25 se vale come vicino anche un «pari» detto da un solo giudice** (testo GLM banco
+contro app 6 su 6 a meno dei pari; lettura Surya contro app 5 su 6; struttura 4 su 6 e 1 su 4). Direzione dei tipi d'errore: uguale per
+«perso» 16 volte su 24, «tipo sbagliato» 11 su 18, «storpiato» 11 su 22; quasi mai per «fuso», «spezzato», «inventato». **Riletti i 13
+disaccordi, accolgo il giudizio del revisore in tutti**: lui giudicava anche ciò che si sente (segni di dollaro pronunciati, doppioni, sillabe
+spezzate, numeri di nota tolti, voci d'elenco fuse), io sulle parole contro la verità e, per la struttura, sul metro delle regioni. Da qui tre
+correzioni di lettura del report: sulla forma col testo **Heron nell'app si ascolta meglio di docling** anche dove il metro delle regioni
+favorisce docling (il testo delle righe di PDFKit tiene gli asterischi dei richiami e non ripete celle); **GLM a piena precisione scrive a volte
+segni di dollaro attorno ai rinvii**, che la forma dell'app non scrive su quella pagina; **la lettura dell'app sul codice fonde le voci
+d'elenco e attacca i numeri dei commi al capoverso precedente**. La lezione di metodo: le misure di parole e di regioni non vedono i segni
+che il lettore di schermo pronuncia; per chi ascolta servono anche quelli.
+
+**La tassonomia contata su tutte le configurazioni** (campo, T21): sulle 37 pagine distinte del campione congelato, gli stessi tipi d'errore
+del § 7 contati dalle misure per pagina, per ogni lettore e combinazione (le misure di «fuso», «spezzato», «fuori ordine», «tipo sbagliato»,
+«nota staccata» e «livello» stanno nelle tabelle di struttura e nella prova alla cieca). Il campione pesa le pagine difficili più del banco:
+i valori sono più alti della T1.
+
+### Tabella T21 — La tassonomia degli errori contata sulle 37 pagine del campione semantico, scansione pulita (per mille parole vere; tra parentesi le parole plausibili inventate; %)
+
+| configurazione | pagine | perso ‰ | storpiato ‰ | inventato ‰ (plausibili) | testatine nel testo % | glosse riconosciute % | richiami in apice letti % | tabelle riconosciute | didascalie |
+|---|---|---|---|---|---|---|---|---|---|
+| App: Apple + Heron | 37 | 81,2 | 10,9 | 10,7 (53) | 24 | 0 | 6 | 0 / 4 | 0 / 3 |
+| App: GLM + guardia + Heron | 37 | 76,8 | 4,5 | 9,7 (40) | 24 | 0 | 49 | 0 / 4 | 0 / 3 |
+| Struttura dei documenti di Apple | 37 | 39,3 | 17,2 | 13,6 (72) | 62 | 0 | 9 | 4 / 4 | 0 / 3 |
+| Apple, righe grezze | 37 | 39,0 | 16,2 | 14,1 (64) | 19 | 0 | 6 | 4 / 4 | 3 / 3 |
+| docling 2.150.1 | 37 | 48,8 | 5,2 | 8,5 (37) | 17 | 0 | 29 | 4 / 4 | 3 / 3 |
+| docling + egret-large | 37 | 49,3 | 5,1 | 9,0 (37) | 23 | 0 | 29 | 4 / 4 | 3 / 3 |
+| Comb.: GLM dell'app su Heron | 37 | 19,2 | 3,6 | 4,3 (7) | 16 | 0 | 54 | 4 / 4 | 3 / 3 |
+| GLM piena precisione | 37 | 20,4 | 3,3 | 4,5 (9) | 19 | 0 | 57 | 4 / 4 | 0 / 3 |
+| GLM Q8 grezzo | 37 | 19,2 | 3,6 | 4,3 (7) | 18 | 0 | 54 | 4 / 4 | 0 / 3 |
+| Comb.: GLM su egret-large | 37 | 20,4 | 3,3 | 4,5 (9) | 17 | 0 | 54 | 4 / 4 | 3 / 3 |
+| Granite Docling | 37 | 94,9 | 24,4 | 7,1 (54) | 17 | 0 | 87 | 4 / 4 | 0 / 3 |
+| Marker 2.2 | 36 | 27,3 | 9,0 | 27,4 (33) | 13 | 0 | 37 | 4 / 4 | 0 / 3 |
+| Comb.: Surya su Heron | 37 | 4,8 | 3,6 | 6,7 (23) | 19 | 0 | 96 | 4 / 4 | 3 / 3 |
+| Surya 2.5 | 37 | 4,8 | 3,6 | 6,7 (23) | 19 | 0 | 96 | 4 / 4 | 3 / 3 |
+
+Nota: «storpiato» = parola vera letta con lettere o cifre sbagliate; «inventato» = parole in più che non sono testo vero della pagina né sue letture storpiate (numeri, ripetizioni, non-parole, plausibili). I tipi «fuso», «spezzato», «fuori ordine», «tipo sbagliato», «nota staccata» e «livello» hanno le loro misure nelle T2, T3, T9, T13 e nella prova alla cieca (§ 22).
+
+**Diagnostica per modello** (campo dalle tabelle e dalla prova alla cieca; cause dedotte dove detto):
+- **Surya 2.5**: il meno perso e il meno storpiato (4,8 e 3,6 per mille), quasi tutti i richiami in apice (96 per cento); cede nell'ordine
+  delle pagine dense a due colonne (corpo prima, note dopo: in parte convenzione, § 16.4) e sui numeri romani dei commi del codice (prova
+  alla cieca). Fuori dallo store per licenza.
+- **GLM-OCR** (piena precisione e Q8 dell'app, uguali): perde e storpia poco (2 per cento, 3-4 per mille), legge metà dei richiami; è solo
+  testo (nessuna tabella annunciata né didascalia da solo); scrive talvolta notazione matematica (segni di dollaro) attorno ai rinvii (prova alla
+  cieca qui sopra: per il revisore la differenza fra le due forme sta tutta lì).
+- **Le vie dell'app**: la perdita è della catena, non del lettore (§ 18): 77-81 per mille sul campione, contro 19-39 dei loro lettori da
+  soli; con Apple anche le lettere (10,9 per mille) e quasi nessun richiamo (6 per cento); tabelle e didascalie 0 (le vede il modello, la
+  catena non le annuncia).
+- **Struttura dei documenti di Apple**: testatine e piè nel testo nel 62 per cento dei casi (li mette nei paragrafi), richiami 9 per cento.
+- **docling 2.150.1** (lettore classico di Apple su ritagli): storpia poco (5,2 per mille) ma perde di più sul campione (4,9 per cento) e
+  ripete celle e note dove le regioni si sovrappongono (prova alla cieca); toglie gli asterischi dei richiami.
+- **Granite Docling**: il più perso e il più storpiato (9,5 per cento, 24 per mille) ma molti richiami (87); nessuna didascalia.
+- **Marker 2.2**: il più inventato (27 per mille: codice di formattazione al posto di lettere, ripetizioni) e un documento che non converte.
+- **Combinazione GLM dell'app su Heron**: il testo di GLM con le tabelle e le didascalie di Heron (4 su 4, 3 su 3): il profilo migliore fra i
+  compatibili con lo store.
+<!-- PARTE5:fine -->
 <!-- G2:fine -->
