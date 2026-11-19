@@ -679,7 +679,16 @@ di tutto questo.
    al loro richiamo; restano nel flusso 62 righe di testatina o piè su 333; le parole plausibili inventate sono 121 su circa 58.500
    (77 fuori dalle pagine con figure, tabelle o didascalie), e la verifica a mano dice che quasi nessuna è un'invenzione scorrevole
    (§ 15.4). Sul PDF col testo l'app dà la lettura di riferimento.
-4. **Quanto costano i modelli in tempo, memoria e carico?** (tabella T7; si completa con le seconde corse a priorità normale)
+4. **Quanto costano i modelli in tempo, memoria e carico?** *Tempo*, a priorità normale e a Mac libero (tabella T5, 12 pagine): GLM
+   nell'app 8,3-8,5 secondi a pagina (10 a pagina con tutta la catena dell'app), GLM a piena precisione 11,8-12,3, Granite 4,5, Surya 2.5
+   62-72 secondi per le 12 pagine avvio del server compreso (Surya 2: 594), Marker «auto» 5-6 secondi per le 12 pagine e «accurate»
+   135-139, docling 0,3-0,4 a pagina sulle scansioni, struttura di Apple 0,2-0,25, via Apple dell'app 0,34-0,35, Heron 0,16 con l'avvio
+   per documento (0,04 a caldo). *Memoria* (tabella T7): i processi Python 2-5,5 GB d'impronta (GLM a piena precisione 5,3-5,5, docling
+   4,1-4,4, Marker 1,9-2,6); llama-server, che Surya e Granite lanciano, 7,8-8,7 GB di memoria residente (per Granite, che pesa mezzo GB,
+   la causa non è verificata) con 1,5-4,1 GB di memoria grafica in uso; l'app con GLM circa 2 GB d'impronta più 3,7-3,9 GB di memoria
+   grafica; Apple e Heron sotto 1 GB. *Carico*: Marker e docling lavorano sul processore (Marker tre nuclei, la scheda grafica a zero),
+   GLM e Surya sulla scheda grafica (82-98 per cento d'uso mediano), Granite su entrambi; nessun avviso termico in nessuna corsa.
+   ⟨potenza ed energia sopra il riposo: dopo la misura della base⟩
 5. **Quanto cambiano i risultati fra versioni e fra due corse?** *Fra due corse:* quasi niente. Sulle 12 pagine del sottoinsieme fisso,
    rifatte a priorità normale a Mac libero (tabella T5), GLM nell'app e a piena precisione, Surya, Granite, la struttura di Apple, le
    righe di Apple e Heron danno uscite identiche al carattere su 12 pagine su 12, Marker su 10 su 10 (le altre due sono del documento che
@@ -711,7 +720,13 @@ di tutto questo.
   - **docling 2.150.1 contro 2.103.0**, PDF col testo, tutte e due a pagina singola: 3 pagine identiche su 12 ma somiglianza mediana
     0,998 e lo stesso testo (lettere 0,10 contro 0,13 per cento, perse uguali, plausibili 2 contro 8): la versione nuova cambia la
     struttura (sopra), non il testo.
-  - ⟨Marker «accurate» e Surya 2 contro Surya 2.5: in coda⟩
+  - **Marker «auto» (lettura Indra) contro «accurate» (Surya 2.5)**: 10 pagine confrontabili (le altre due sono del documento che Marker
+    non converte); le cifre sbagliate scendono da 1,2-1,6 a 0,33 per cento (sparisce la notazione matematica dei numeri di nota),
+    lettere e parole perse restano simili; il tempo sale di circa 27 volte (135-139 secondi contro 5 per le 12 pagine).
+  - **Surya 2.5 (surya-ocr 0.24.0) contro Surya 2 (0.20.0 di Triple Take)**: sulla pulita 5 pagine identiche su 12, somiglianza mediana
+    0,999; la versione nuova sbaglia meno cifre (0,32 contro 1,62 per cento) e meno lettere (0,09 contro 0,13) ed è circa dieci volte
+    più veloce (62 secondi contro 594 per le 12 pagine, avvio compreso). Sulla degradata la versione vecchia cede di più (lettere 0,21
+    contro 0,09 per cento, parole perse 9,9 contro 7,9; 412 secondi contro 72): Surya 2.5 regge la degradazione meglio di Surya 2.
 <!-- R165:fine -->
 
 ### 16.6 Esperienze operative del giro (campo)
