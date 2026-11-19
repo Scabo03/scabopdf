@@ -645,11 +645,11 @@ di tutto questo.
   predefinite (§ 10). Sulle cifre il vantaggio di GLM è minore di quanto sembrava: metà
   degli «errori di cifre» di Apple del giro precedente erano richiami in apice non letti (§ 10), che restano un limite di Apple (letti 9
   su 211 nella via dell'app, contro 112 con GLM).
-- **H4 — Il lettore di Apple perde parole a fine riga nelle note e non vede le tabelle: REGGE IN PARTE.** Nelle note le parole intere a fine
-  riga non si perdono molto più delle interne (12,5 contro 10,3 per cento, pulita); ciò che succede davvero è che **le parole sillabate a
-  fine riga restano spezzate** (93,6 per cento delle parole sillabate nelle note non ricomposte, 75 nel corpo) e che **l'inizio delle righe
-  di nota si perde spesso** (34 per cento, in buona parte i numeri delle note in apice); GLM grezzo ricompone le sillabate (10,8 per cento
-  non ricomposte). Tabelle: **la richiesta che l'app usa per leggere le vede**: la struttura dei documenti di Apple ne riconosce 17-18 su 19
+- **H4 — Il lettore di Apple perde parole a fine riga nelle note e non vede le tabelle: REGGE IN PARTE.** Righe grezze di Apple, pulita
+  (tabella T6): nelle note le parole intere a fine riga si perdono quanto le interne (8,6 contro 8,4 per cento); ciò che succede davvero
+  è che **le parole sillabate a fine riga restano spezzate** (95,8 per cento delle sillabate nelle note non ricomposte, 75 nel corpo) e
+  che **l'inizio delle righe di nota si perde spesso** (34 per cento, in buona parte i numeri delle note in apice); GLM grezzo ricompone
+  le sillabate (8,3 per cento non ricomposte nelle note, 7,6 nel corpo), Surya anche (15,3 nelle note). Tabelle: **la richiesta che l'app usa per leggere le vede**: la struttura dei documenti di Apple ne riconosce 17-18 su 19
   (corsa rifatta, § 10); ma la catena dell'app ne prende solo righe e paragrafi, e sulle scansioni **nessuna tabella è annunciata** (0 su
   19), mentre anche il modello d'impaginazione le trova sull'immagine (19 su 19). Non è il lettore a non vedere le tabelle: è la catena
   a non usarle.
