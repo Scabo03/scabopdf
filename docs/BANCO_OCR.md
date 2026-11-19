@@ -580,23 +580,25 @@ pulita e un po' sotto sulla degradata (figure 0 su 4 contro 4, ordine 0,927 cont
 sopra due colonne. *Quanto si guadagna:* 0,04-0,05 secondi a pagina contro 0,06-0,4 (con la lettura di Apple dentro docling sulle
 scansioni, più 23 secondi di avvio alla prima pagina), circa 0,4 GB di memoria contro 2-4,4 GB (impronta di picco del processo Python),
 164 MB di pesi dentro l'app contro un ambiente Python di 1,2 GB più 0,4 GB di modelli, nessuna installazione. Sulle scansioni docling legge
-il testo con lo stesso lettore di Apple dell'app, eppure sbaglia meno lettere (0,15 contro 0,33 per cento, differenza appaiata −0,18
-[−0,27; −0,11]) e perde meno parole (3,7 contro 6,9 per cento): la differenza viene da come il lettore è chiamato (docling: solo italiano,
-immagine resa alla sua scala; app: italiano e inglese, lato lungo di 2000 pixel) e da ciò che la catena dell'app fa dopo; quale delle due
-pesi di più non è stato misurato (ipotesi per il giro 2).
+il testo con lo stesso motore di Apple dell'app ma con un'altra richiesta (§ 10), e sbaglia meno lettere (0,12 contro 0,26 per cento a
+pagina, differenza appaiata −0,14 [−0,21; −0,08], 179 pagine) e perde meno parole (3,4 contro 6,4 per cento): la differenza viene dalla
+richiesta e dalle sue opzioni (docling: richiesta classica del testo, italiano, 3 pixel per punto; app: struttura dei documenti, opzioni
+predefinite, lato lungo di 2000 pixel) e da ciò che la catena dell'app fa dopo; quanto pesa ciascuna parte lo dice la misura
+diagnostica (§ 16.5).
 
 **Coppia 2 — GLM-OCR a piena precisione contro GLM-OCR nell'app (lettura del testo).** *Quanto costa restare nativi:* nel modello, niente.
 Sulle 139 pagine contigue, scansione degradata, GLM a piena precisione (transformers, bf16, con la decodifica dell'app) e GLM compresso
 dell'app (Q8_0, llama.cpp, prima della guardia) sbagliano lo stesso: lettere 0,078 contro 0,080 per cento, cifre 0,42 contro 0,40, parole
-perse 0,40 contro 0,35, parole plausibili 28 contro 27 (campo; la tabella T4 dà le 185 pagine con gli intervalli). Il costo sta dopo il
+perse 0,40 contro 0,35, parole plausibili 28 contro 27 (campo, insiemi di parole per documento; la tabella T4 dà le 179 pagine con gli
+intervalli). Il costo sta dopo il
 modello: la lettura finale dell'app perde più parole (5,1 per cento sulle stesse pagine) e sbaglia più lettere (0,26), per due cause viste
 nel controllo semantico: la catena sulle scansioni dei codici a due colonne mette fuori lettura parti della colonna stretta (17 per cento
 di parole perse sul codice, 2,3 sugli altri campioni, come il modello puro), e la guardia tiene le righe di Apple dove GLM non ha nulla (le
 glosse tornano, ma fuse nelle righe del corpo). *Quanto si guadagna:* il modello compresso pesa 1,43 GB contro 2,65 GB di pesi più un
-ambiente Python di 1 GB; gira dentro l'app, senza Python e senza rete; nell'app impiega 11,1 secondi a pagina (mediana, modello ricaricato
-a ogni pagina, prima della guardia) contro circa 15 secondi della piena precisione con la stessa decodifica sul Mac (MPS; dato della corsa
-di qualità); impronta di memoria di picco circa 2 GB per il processo dell'app contro 5,5 GB per quello Python. (Tempi a priorità normale:
-§ 14, tabella T7 e seconde corse.)
+ambiente Python di 1 GB; gira dentro l'app, senza Python e senza rete; nell'app GLM impiega 9,2 secondi a pagina (mediana, modello
+ricaricato a ogni pagina, prima della guardia; 9,5 con la lettura di Apple e l'impaginazione) contro 11,1 secondi della piena precisione
+con la stessa decodifica sul Mac (MPS); dati delle corse di qualità, a priorità bassa; impronta di memoria di picco circa 2 GB per il
+processo dell'app contro 5,3 GB per quello Python. (Tempi a priorità normale: tabella T5.)
 
 **Coppia 3 — Surya e Marker al banco contro la coppia GLM + Heron dell'app (testo e struttura).** Sulla scansione pulita, 179 pagine:
 **Surya 2.5** è il lettore migliore del banco in quasi tutto: lettere sbagliate 0,06 per cento, parole perse 0,3, richiami in apice letti
@@ -636,9 +638,11 @@ di tutto questo.
   tutto il corpo delle due colonne e poi le note, la verità colonna per colonna con le note; una parte dell'inversione è questa
   convenzione, non un corpo spezzato. Le parole, sulle pagine dense, Surya le legge benissimo (perse 0,9 per cento, lettere 0,10).
 - **H3 — GLM-OCR è più preciso del lettore di Apple, soprattutto sulle cifre: REGGE**, con la misura corretta delle cifre (§ 10). Letture
-  grezze, 185 pagine, pulita: lettere sbagliate 0,53 contro 0,12 per cento (differenza 0,41 [0,31; 0,52]), cifre 1,15 contro 0,32
-  ([0,53; 1,13]), parole plausibili inventate 4,2 contro 0,8 per mille; nell'app (Apple con l'impaginazione contro GLM con la guardia):
-  lettere 0,33 contro 0,18, cifre 0,96 contro 0,46 ([0,25; 0,77]). Sulle cifre il vantaggio di GLM è minore di quanto sembrava: metà
+  grezze, 179 pagine, pulita, appaiate a pagina: lettere sbagliate 0,45 contro 0,10 per cento (differenza 0,36 [0,27; 0,45]), cifre 0,94
+  contro 0,21 (0,73 [0,43; 1,03]), parole plausibili inventate 3,8 contro 0,6 per mille; degradata uguale (lettere 0,47 contro 0,10,
+  cifre 0,77 contro 0,19); nell'app (Apple con l'impaginazione contro GLM con la guardia): lettere 0,26 contro 0,13 (0,13 [0,08; 0,19]),
+  cifre 0,73 contro 0,30 (0,42 [0,19; 0,65]). Il «lettore di Apple» qui è quello dell'app: la struttura dei documenti con le opzioni
+  predefinite (§ 10). Sulle cifre il vantaggio di GLM è minore di quanto sembrava: metà
   degli «errori di cifre» di Apple del giro precedente erano richiami in apice non letti (§ 10), che restano un limite di Apple (letti 9
   su 211 nella via dell'app, contro 112 con GLM).
 - **H4 — Il lettore di Apple perde parole a fine riga nelle note e non vede le tabelle: REGGE IN PARTE.** Nelle note le parole intere a fine
