@@ -5,11 +5,11 @@
 > pagina stanno solo nel laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`. Etichette di prova su ogni affermazione:
 > **campo** (misurato in questo giro), **fonte** (documento o scheda, con indirizzo e data), **dedotto**, **non verificato**.
 >
-> Stato: **REPORT PARZIALE, giro 1 di 2 (in corso, 2026-11-19).** Il metodo (§ 0-10) è stato scritto e committato prima di
-> qualunque corsa (commit `e547665`, ore 00:26); da lì metodo, misure e campione non si cambiano per adattarli ai risultati, e
-> ogni correzione si dichiara nel § 10 col motivo, rifacendo la misura su tutti i modelli. Fatti finora: check-up degli
-> strumenti (§ 11) e banco comune congelato (§ 12). Mancano, in questo giro: corse, misure, controllo semantico sulle coppie del
-> fulcro, report ridotto. Mancano per il giro 2: vedi l'elenco in fondo quando ci sarà.
+> Stato: **REPORT PARZIALE, giro 1 di 2 (concluso il 2026-11-19).** Il metodo (§ 0-10) è stato scritto e committato prima di
+> qualunque corsa (commit `e547665`, ore 00:26); da lì metodo, misure e campione non si sono cambiati per adattarli ai risultati, e
+> ogni correzione è dichiarata nel § 10 col motivo e l'ora, rifacendo la misura su tutti i modelli. Fatti in questo giro: check-up
+> degli strumenti (§ 11), banco comune congelato (§ 12), 72 corse (§ 13), misure (§ 14), controllo semantico sulle tre coppie del
+> fulcro (§ 15), report ridotto (§ 16). Restano per il giro 2 le parti elencate nel § 16.8; da dove riprendere nel § 16.7.
 
 ## 0. Scopo
 
@@ -1072,7 +1072,17 @@ di tutto questo.
 ### 16.7 Stato del giro 1 e da dove riprendere
 
 <!-- R167:inizio -->
-(alla fine del giro)
+**Stato alla fine del giro 1** (campo, 2026-11-19, ore 05:00): fatte le parti 0-4 per intero (metodo, check-up, banco comune, 72 corse
+di nove motori più le seconde corse, le versioni vecchie, la misura diagnostica e il controllo di docling, tutte le misure con le
+tabelle T1-T7) e le parti 5 e 6 nel perimetro ridotto (controllo semantico sulle tre coppie del fulcro, 18 pagine distinte (8, 5 e 6
+per coppia, una in comune), con una prova alla
+cieca su una coppia; questo report ridotto). Nessuna corsa da rifare: nessuna misura di tempo è stata fatta col Mac occupato (T5,
+nota), la sola corsa uscita male (GLM a piena precisione con la decodifica sbagliata) è stata rifatta. Codice delle app non toccato.
+
+**Da dove riprendere.** I dati restano nel laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`: uscite di tutte le corse in
+`uscite/`, misure in `misure/` (ricalcolo completo con `strumenti/finale.sh 4282`, la base a riposo in milliwatt), giudizi del
+controllo semantico in `semantica/`, referto `REFERTO_BANCO_OCR_1.md`. Il giro 2 parte da qui senza rifare corse: un modello nuovo
+entra con un passo nella coda, un adattatore e una riga nel calcolo dei numeri; il metodo e le correzioni del § 10 restano validi.
 <!-- R167:fine -->
 
 ### 16.8 Che cosa resta per il giro 2 (punto da cui riprendere)
