@@ -1,11 +1,11 @@
-# Banco OCR — confronto fra banco puro e modelli dentro l'app (giro 1 di 2)
+# Banco OCR — confronto fra banco puro e modelli dentro l'app (giri 1 e 2)
 
 > Documento privo di testo dei volumi: solo tipi, conteggi, misure, tempi, versioni e impronte. I volumi si chiamano v01-v52, i
 > documenti di studio con le loro etichette neutre; le pagine, le immagini, le uscite dei modelli e le tabelle pagina per
 > pagina stanno solo nel laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`. Etichette di prova su ogni affermazione:
 > **campo** (misurato in questo giro), **fonte** (documento o scheda, con indirizzo e data), **dedotto**, **non verificato**.
 >
-> Stato: **REPORT PARZIALE, giro 1 di 2 (concluso il 2026-11-19).** Il metodo (§ 0-10) è stato scritto e committato prima di
+> Stato: **giro 2 in corso (dal 2026-11-19, ore 10:32): metodo nel § 17, risultati nei paragrafi che seguono.** Giro 1: **REPORT PARZIALE, giro 1 di 2 (concluso il 2026-11-19).** Il metodo (§ 0-10) è stato scritto e committato prima di
 > qualunque corsa (commit `e547665`, ore 00:25); da lì metodo, misure e campione non si sono cambiati per adattarli ai risultati, e
 > ogni correzione è dichiarata nel § 10 col motivo e l'ora, rifacendo la misura su tutti i modelli. Fatti in questo giro: check-up
 > degli strumenti (§ 11), banco comune congelato (§ 12), 72 corse (§ 13), misure (§ 14), controllo semantico sulle tre coppie del
@@ -1144,3 +1144,158 @@ radio; i modelli nuovi del § 11.4 (per primi docling-layout-egret e Xiaomi-OCR-
 Apple e docling sul codice a due colonne (§ 16.5), le misure d'ordine con intervalli per tutte le coppie, l'energia della via GLM dell'app
 dal vivo, l'impronta di ogni strumento nel registro della sua corsa. Dettaglio e stato nel § 16.7.
 <!-- REPORT:fine -->
+
+## 17. Giro 2 — Il metodo (Parte 0, scritto prima di ogni corsa nuova)
+
+<!-- METODO2:inizio -->
+Giro 2 del 2026-11-19, partito alle 10:32 da `db614e8` (ramo `chore/banco-ocr-giro2`). Riparte dai dati del giro 1 senza rifare corse: il
+banco comune (manifesto `0e7feec2…`), le uscite, le verità e il metodo dei § 0-10 restano quelli; ciò che segue si aggiunge. Ordine di
+valore deciso dal maintainer: Parte 2 (dove la catena delle scansioni dell'app perde le parole), poi Parte 1 (modelli nuovi), poi Parti 5 e
+6 (controllo semantico completo e report), poi Parti 3 e 4 (combinazioni e scansioni vere). Il calcolo dei modelli sta in cinque-sei ore;
+il giro si ferma alle 19:32 al più tardi. **Consultazioni delle fonti** (tetto del maintainer: dieci per i modelli nuovi, dieci per il
+materiale pubblico, cinque per ogni altra domanda): una consultazione è una fonte interrogata per una domanda, anche con più richieste
+alla stessa fonte nello stesso momento (per esempio le schede di più pacchetti su PyPI); il referto le conta.
+
+### 17.1 Parte 2 — La cascata delle perdite della catena delle scansioni
+
+**Che cosa si misura.** La via dell'app sulle scansioni (`EstrattoreScansioni` e `LetturaScansioni` del Mac, poi la catena condivisa
+`ProcessingChain`) si osserva **passo per passo**, sulle 185 pagine delle due scansioni (179 per il testo: v11 resta esclusa, § 10), con
+i due lettori dell'app (Apple e GLM con la guardia), contro la stessa verità della T1 (testo) e della T3 (titoli, note, tabelle,
+didascalie). I passi, nell'ordine della catena:
+
+| passo | che cosa si guarda | da dove (campo) |
+|---|---|---|
+| P1 righe grezze del lettore | le righe di Apple come le dà la richiesta, prima di ogni ordine; per GLM il suo testo grezzo | punto d'osservazione nuovo dell'estrattore; per GLM la cache del giro 1 |
+| P2 guardia di GLM | le righe dopo la guardia (solo via GLM) | idem |
+| P3 regioni, tipi e ordine di Heron | le righe con la regione e il tipo di Heron, nell'ordine finale della pagina | idem, con le regioni di Heron (tipo, riquadro, ordine) |
+| P4 costruzione del corpo | l'estrazione della pagina che entra nella catena: span, corpi stimati, grassetti, richiami | estrazione registrata dalla riga di comando |
+| P5 classificazione | i nodi del documento grezzo coi loro tipi (corpo, note, titoli, glosse, testatine…), coi rami dei codici dove scattano | documento grezzo della catena (`ChainResult.rawDocument`) |
+| P6 note e richiami | il documento con le note agganciate e piazzate | `ChainResult.document` |
+| P7 granularità e lettura finale | i segmenti della Lettura Continua, cioè ciò che arriva all'orecchio | `ChainResult.content` (la lettura `.rv.reading.json` del giro 1) |
+
+**Le parole, passo per passo.** Per ogni passo si calcolano le parole perse con il metro della T1 (insieme di parole per documento,
+`confronta_insiemi`, stessa verità e stessa divisione di lettere e cifre): così il primo passo coincide con la riga «righe grezze» della
+T1 e l'ultimo con la riga della lettura dell'app, e **la perdita di ogni passo è la differenza fra due passi vicini**: le perdite sommano
+per costruzione alla perdita totale (un passo può anche recuperare parole: la differenza allora è negativa e si dice). Ai passi P5-P6
+contano le parole dei nodi di tutti i tipi e, a parte, quelle dei soli tipi che arrivano alla lettura (un tipo «arriva alla lettura» se
+almeno metà delle sue parole si ritrova nei segmenti finali, sull'insieme del banco: regola fissata ora, misura sui dati). **Dove finiscono
+le parole perse**: per ogni parola della verità assente al passo finale (confronto esatto, dopo la normalizzazione del § 6.1) si cerca
+all'indietro il primo passo in cui c'era: «non letta dal lettore» (assente già in P1), «tolta dalla guardia» (P1→P2), «persa nella
+costruzione del corpo» (P3→P4), «tolta dalla classificazione» (P4→P5: righe tolte come arredo), «fuori dalla lettura col tipo X» (presente
+in P6 in un nodo di tipo X che non arriva alla lettura: glossa, testatina, piè, altro), «persa nell'impaginazione» (P6→P7, in un tipo che
+arriva alla lettura). Per le parole che arrivano ma nel ruolo sbagliato: matrice dei ruoli (corpo, nota, titolo, glossa, altro) fra la
+verità e la lettura finale, sulle parole uguali, e blocchi della verità **fusi** (le parole di due blocchi veri in un blocco solo, almeno
+metà di ciascuno) o **spezzati** (un blocco vero diviso in più blocchi con almeno un quarto ciascuno).
+
+**Titoli, note, tabelle, didascalie, passo per passo** (stesse verità e stessi accoppiamenti della T3): quanti titoli veri sono ancora
+riconoscibili a ogni passo (P3 regione di Heron di tipo titolo; P4 riga in grassetto o di corpo maggiore; P5-P7 nodo o segmento titolo) e
+quanti titoli in più; note vere (P3 regione di Heron di tipo nota; P4 numero di nota riconosciuto e corpo minore; P5 nodo nota; P6
+agganciata al richiamo; P7 segmento nota col salto); tabelle vere (P1 tabelle della richiesta di Apple, che l'app oggi scarta; P3 regioni di
+Heron di tipo tabella; P7 annunciate come risorsa visiva); didascalie (P3 regioni di tipo didascalia; P7 segmenti didascalia). Ne esce la
+**cascata delle perdite**, per lettore, per forma e per tipo di pagina (le situazioni del § 12, con le caselle sotto venti pagine segnate
+come indicative).
+
+**Punti d'osservazione nell'app** (decisione del maintainer: solo codice sotto `app/macos`, spenti di serie, non raggiungibili
+dall'interfaccia, attivabili solo dalla riga di comando del laboratorio `scabomac-officina`): l'estrattore delle scansioni scrive, se e solo
+se la riga di comando gli dà una cartella, le righe grezze, le regioni di Heron, le righe ordinate, il testo di GLM, le righe dopo la guardia
+e le tabelle della richiesta di Apple; la riga di comando scrive il documento grezzo e il documento con le note. Con tutto spento il codice
+dell'app fa esattamente ciò che faceva: lo provano (a) la rete sul parlato, (b) la vista del Mac contro l'iPad su 55 libri, (c) i test
+d'unità del Mac, (d) la via delle scansioni rifatta con la riga di comando nuova e le varianti spente, che deve dare letture identiche al
+byte a quelle del giro 1 sulle 185 pagine, nelle due scansioni e con i due lettori.
+
+**Le varianti sperimentali** (stesso codice, spente di serie, accese una alla volta solo dalla riga di comando; nessuna si propone
+all'utente: si propongono come decisioni, coi numeri):
+- **A — richiesta classica di Apple**: `VNRecognizeTextRequest` (accurata, correzione linguistica, italiano e inglese: il ripiego che l'app
+  ha già) al posto della struttura dei documenti con le opzioni predefinite; il resto identico; con i due lettori.
+- **B — GLM senza la guardia stretta, col suo testo sulle regioni di Heron**: il testo di GLM è l'autorità; le righe di Apple servono solo
+  da ancore di posizione: ogni parola di GLM prende la riga (quindi la regione e l'ordine di Heron) della parola di Apple a cui si allinea,
+  le parole che GLM aggiunge prendono la riga della parola allineata precedente, le parole che solo Apple ha visto si tolgono.
+- **C — guardia di GLM più larga**: come la guardia di oggi, più due aperture: le parole che GLM aggiunge in mezzo a una riga di Apple
+  (fra due parole allineate della stessa riga) entrano; le corse di lunghezza diversa entrano anche fra righe diverse se si somigliano
+  almeno 0,6 (oggi: stessa riga e 0,75). Si misurano anche i titoli in più (la guardia larga del giro del 2026-11-18 ne dava di più).
+- **D — tabelle passate come tabelle**: le regioni di Heron di tipo tabella (e figura) sulle pagine lette diventano candidate delle risorse
+  visive della catena, attraverso l'ingresso già pubblico della catena (`visualCandidatesOverride`), con la stessa guardia dell'iPad; due
+  passate della riga di comando (prima l'estrazione, poi la catena con l'estrazione registrata e le candidate); con i due lettori.
+- **E — rami dei codici sulle scansioni dei codici**: la porta dei codici (formato tascabile, produttore, corpo, § GenericPlugin) sulle
+  scansioni non scatta perché il file non porta il produttore; la variante dichiara il produttore quando la geometria della pagina è quella
+  dei codici; conta quante parole tornano dalle glosse e che cosa succede al resto; tocca solo v04 (campione contiguo e pagine singole).
+- **F — sillabate ricomposte prima della catena** (via Apple): una riga che finisce con un trattino dopo una lettera, seguita nella stessa
+  regione da una riga che comincia con una minuscola, si unisce alla prima parola della riga dopo, senza il trattino.
+- **Z — combinazione** delle varianti che migliorano senza peggiorare (scelta dopo aver visto le singole, quindi dichiarata come
+  stima del potenziale, non come misura indipendente).
+Per ciascuna: lettere, cifre, parole perse e inventate (metro della T1), titoli (T2 sulle 34 pagine e T3), note trovate e agganciate,
+tabelle annunciate, ordine (tau sulle 34 pagine, due colonne), tempo a pagina, e dove una variante migliora un aspetto peggiorandone un
+altro. Confronti appaiati con la via di oggi sulle stesse pagine, intervallo al 95 % per ricampionamento delle pagine (§ 6.6).
+
+**Lo scarto fra la richiesta classica di Apple e docling sul codice a due colonne** (residuo del giro 1, § 16.5): controllo semantico sulle
+pagine del campione del codice, uscita per uscita (righe classiche dello strumento contro il testo di docling, che usa la stessa API), con la
+tassonomia del § 7, finché la causa si vede nella pagina o nel codice di docling; tetto di quaranta minuti senza progresso misurabile.
+
+### 17.2 Parte 1 — I modelli nuovi
+
+Stesso banco (185 pagine, tre forme), stesse regole del giro 1 (§§ 3, 5, 6): ogni modello su tutte le pagine per i suoi compiti, senza
+scarti dopo un primo risultato cattivo; temperatura 0, decodifica greedy, semi fissi dove si può; recinto senza rete e sonda per ogni
+corsa; corse di qualità a priorità bassa (`nice -n 10`), un modello pesante alla volta; tempi ed energia a priorità normale solo a Mac
+libero (carico annotato; se no, in coda per la notte). Per ogni modello: licenza (file di licenza e scheda), motore, versione, impronta dei
+pesi (sha256 contro quella pubblicata), parametri, tutte le misure del giro 1 (T1-T7, robustezza, ripetibilità sul sottoinsieme fisso dove
+il tempo lo consente). **Sicurezza:** pesi solo dalla fonte ufficiale con impronta pubblicata; un GGUF della comunità senza impronta
+ufficiale non si usa (se l'editore pubblica i pesi originali e llama.cpp sa convertirli, si convertono qui con llama.cpp al tag ufficiale e
+lo si dichiara). **Banco contro nativo:** docling-layout-egret si prova anche in Core ML con la via di Heron (conversione, porto Swift),
+da riga di comando nel laboratorio, contro la forma Python; un lettore che gira con llama.cpp si misura con lo stesso motore dell'app.
+Ordine (§ 11.4): docling-layout-egret (nelle taglie di docling 2.150.1), Xiaomi-OCR-0, PP-DocLayoutV3, MiniCPM-OCR-1.0, Falcon-OCR,
+Unlimited-OCR-2, dots.ocr, DeepSeek-OCR-2, Qianfan-OCR; ci si ferma quando il calcolo esce dal perimetro e il resto va nell'elenco;
+chandra-ocr-2 e jina-ocr-v1 fuori per licenza (solo le schede). I modelli che danno solo regioni (egret, PP-DocLayoutV3) si misurano nella
+struttura come docling e come Heron: dentro docling sulle tre forme, e sulle scansioni anche con le righe grezze di Apple dentro le loro
+regioni (come Heron nell'app).
+
+### 17.3 Parte 3 — Le combinazioni
+
+Collante nel laboratorio (Python), sulle uscite già fatte, senza corse nuove dei modelli: il testo di uno sulle regioni e nell'ordine di un
+altro. Allineamento: le parole del lettore si allineano (sequenza delle parole normalizzate) a quelle del modello di struttura, che hanno
+il riquadro; ogni parola prende la regione della parola a cui si allinea, le parole non allineate quella della precedente; poi le regioni
+nell'ordine e coi tipi del modello di struttura. Combinazioni: testo di Surya sulle regioni di Heron (l'immagine, come nell'app); testo di
+GLM sulle regioni e nell'ordine di docling e di docling-layout-egret; testo di GLM nell'ordine di Granite; il migliore dei lettori nuovi
+sulle regioni di Heron. Si misurano con le stesse tabelle; una combinazione «batte» un modello da solo se la differenza appaiata esce
+dall'intervallo dello zero. Per ciascuna: se sarebbe possibile in un'app dello store (licenza dei pesi e del codice, motore nativo).
+
+### 17.4 Parte 4 — Le scansioni vere, dal materiale pubblico
+
+Fonte: il sito ufficiale della Banca d'Italia (tracce delle prove dei concorsi, in particolare le batterie di domande a risposta multipla
+delle preselezioni), con indirizzo e data; si controlla che siano scansioni (nessun livello di testo). Un insieme dichiarato di pagine,
+descritte con le caratteristiche del § 4.2 più quelle delle scansioni vere (grana, pagina storta, ombre, timbri, segni a mano) e delle
+crocette (domande numerate, opzioni, griglie). **Verità** su un campione dichiarato: trascrizione di Code dalla pagina a forte
+ingrandimento, aiutata dal confronto delle uscite di più modelli; poi verifica alla cieca di un sotto-agente nuovo sulle stesse pagine e
+dichiarazione dell'affidabilità (accordo parola per parola). Si misurano tutti i lettori e i modelli di struttura del banco su quelle
+pagine, con le misure delle crocette: ordine delle domande, legame fra domanda e opzioni, opzioni perse o fuse; e si confronta il
+comportamento con quello sulle scansioni costruite. Nel repo solo numeri e descrizioni.
+
+### 17.5 Parte 5 — Il controllo semantico completo
+
+Campione pieno: le 37 pagine distinte già congelate (`banco/CAMPIONE_SEMANTICO.json`, sha256 `c77e87cf…`) più tutte le pagine che le misure
+segnalano come anomale (regola del § 8), per tutti i modelli, nuovi compresi, e per le varianti della Parte 2 dove cambiano la pagina.
+Stessa tassonomia (§ 7) con la causa nella pagina. Prova alla cieca con un sotto-agente nuovo, che non sa quale modello ha prodotto quale
+uscita, su tutte le coppie del fulcro (docling contro Heron nell'app; GLM a piena precisione contro GLM nell'app; Surya e Marker contro la
+via GLM dell'app) e sul confronto fra il migliore dei nuovi e il migliore dei vecchi; si riporta l'accordo col mio giudizio. Quando sbaglia
+la verità si corregge con una nota e si ricalcola per tutti (§ 4.3).
+
+### 17.6 Parte 6 — I livelli del report scritti in questo giro
+
+Dopo il report del giro 1 e senza testo dei volumi: rendimento per situazione di pagina incrociato con compito e modello; incroci in cui
+un modello cambia comportamento; per ogni casella il migliore, lo scarto dagli altri e il numero di pagine (indicative sotto venti);
+diagnostica per modello; la cascata delle perdite e le varianti; le combinazioni; qualità contro costo (qualità guadagnata per secondo,
+gigabyte e joule in più); classifica e valutazione qualitativa per compito, situazione e generale, dopo i numeri; le scansioni vere contro
+le costruite; i residui del giro 1 (numeri con la verità a pagina singola, ordine con intervalli per tutte le coppie, energia della via GLM
+dell'app dal vivo se il Mac è libero, impronta di ogni strumento nel registro della sua corsa: da questo giro ogni corsa la scrive); le
+risposte aggiornate alle cinque domande e alle ipotesi; trenta-quaranta frasi pronte per la radio, ciascuna col numero che la regge e il
+rimando alla tabella, raggruppate per tema (banco contro app; quale modello per quale compito; che cosa arriva a chi ascolta; costi;
+scansioni vere contro costruite; sorprese). Livelli del § 9: questo giro scrive i livelli 4 (diagnosi semantica completa) e 5 (classifica).
+
+### 17.7 Check-up (campo, 10:41-10:44; tre consultazioni: PyPI, GitHub, API di Hugging Face)
+
+Nessuna versione nuova rispetto al giro 1 per i modelli e i motori misurati: docling 2.150.1 (2026-11-14), surya-ocr 0.24.0
+(2026-11-13), marker-pdf 2.2.0 (2026-11-12), transformers 5.23.0, torch 2.15.0, coremltools 9.0; GLM-OCR GGUF dell'app `65a42de1`,
+GLM-OCR ufficiale `2e85a628`, Surya 2.5 GGUF `eb78671a`, Granite Docling GGUF `684c1800`, Heron `8f39ad3c`, tutti alla stessa revisione.
+Unica novità: le build numerate di llama.cpp vanno avanti (b12532 del 2026-11-19 alle 04:45; la release segnata «Latest» resta v1.0.0).
+Licenze di docling-layout-egret medium, large e xlarge (revisioni `77ede7cc`, `fff417c7`, `23857d16`, 2026-07-31): Apache-2.0 (tag della
+scheda; il file di licenza si verifica all'installazione).
+<!-- METODO2:fine -->
