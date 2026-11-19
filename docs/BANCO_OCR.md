@@ -700,8 +700,18 @@ di tutto questo.
   precisione, con la stessa decodifica dell'app, il testo è lo stesso della forma compressa salvo lo stile dell'apostrofo (§ 15.2).
 - **La decodifica conta più della precisione** (campo): la stessa penalità di ripetizione, applicata a tutto il contesto invece che agli
   ultimi 64 token, ha fatto incollare le parole a GLM a piena precisione su una pagina densa (§ 10).
-- (in corso: Surya 2 contro Surya 2.5, GLM Q8 con llama.cpp b11429 dell'app contro v1.0.0, decodifica ufficiale di GLM, Marker
-  «accurate».)
+- **Sul sottoinsieme fisso** (12 pagine, campo; ogni pagina valutata da sola con lo stesso metro per le due uscite, quindi valori
+  assoluti più alti che nelle tabelle principali, dove le pagine vicine recuperano le note spostate):
+  - **GLM-OCR compresso: llama.cpp b11429 dell'app contro llama-server v1.0.0**: 10 pagine identiche al carattere su 12 sulla pulita, 8
+    sulla degradata, somiglianza mediana 1,00, stessa qualità (lettere 0,04 contro 0,04 e 0,04 contro 0,02 per cento, parole perse
+    uguali). La versione di llama.cpp non conta.
+  - **GLM-OCR a piena precisione, decodifica dell'app contro decodifica ufficiale** (nessuna penalità di ripetizione): 8 e 9 pagine
+    identiche su 12, stessa qualità (perse 7,7 contro 7,7 e 8,0 contro 8,2 per cento). La penalità dell'app, applicata agli ultimi 64
+    token, non costa niente; quella applicata a tutto il contesto incollava le parole (§ 10).
+  - **docling 2.150.1 contro 2.103.0**, PDF col testo, tutte e due a pagina singola: 3 pagine identiche su 12 ma somiglianza mediana
+    0,998 e lo stesso testo (lettere 0,10 contro 0,13 per cento, perse uguali, plausibili 2 contro 8): la versione nuova cambia la
+    struttura (sopra), non il testo.
+  - ⟨Marker «accurate» e Surya 2 contro Surya 2.5: in coda⟩
 <!-- R165:fine -->
 
 ### 16.6 Esperienze operative del giro (campo)
