@@ -525,7 +525,20 @@ a ogni pagina, prima della guardia) contro circa 15 secondi della piena precisio
 di qualità); impronta di memoria di picco circa 2 GB per il processo dell'app contro 5,5 GB per quello Python. (Tempi a priorità normale:
 § 14, tabella T7 e seconde corse.)
 
-(Coppia 3: in corso.)
+**Coppia 3 — Surya e Marker al banco contro la coppia GLM + Heron dell'app (testo e struttura).** Sulla scansione pulita, 179 pagine:
+**Surya 2.5** è il lettore migliore del banco in quasi tutto: lettere sbagliate 0,06 per cento, parole perse 0,3, richiami in apice letti
+196 su 211, titoli trovati 51 su 80 (ma 115 in più), tabelle e didascalie riconosciute tutte; sulle pagine con verità per blocchi trova 30
+titoli su 47 (il massimo) ma solo 21 note su 76 come note. **Marker** (modo «auto», lettura Indra) legge le lettere quasi come GLM (0,11-0,15
+per cento) ma sbaglia molte cifre (1,9 per cento, per la notazione matematica dei numeri di nota) e si ferma su un documento. **La coppia
+dell'app** legge le lettere a metà strada (0,20 per cento) e perde più parole (5,2 per cento, quasi tutte sul codice a due colonne), non
+annuncia le tabelle sulle scansioni, legge i richiami in apice 112 volte su 211. *Quanto costa restare nativi:* contro Surya, molto nella
+struttura delle scansioni e poco nel testo (lettere 0,20 contro 0,06 per cento); contro Marker, la differenza appaiata sulle lettere non è
+distinguibile da zero, Marker sbaglia più cifre (1,74 contro 0,33 per cento; differenza +1,42 [0,85; 1,99]) e l'app perde più parole
+(6,7 contro 2,7 per cento, sulle 160 pagine dove Marker ha un'uscita). *Quanto si guadagna:* Surya non entra in un'app
+dello store (pesi con licenza OpenRAIL modificata: limiti commerciali, clausola di concorrenza, condivisione allo stesso modo anche delle
+uscite; § 11.3), e Marker ne eredita i pesi; Surya chiede llama-server con 8 richieste in parallelo e un contesto di 98.304 token (3,8
+secondi a pagina sul banco, memoria della scheda grafica in tabella T7), Marker tre o quattro nuclei del processore. L'app non chiede nulla
+di tutto questo.
 <!-- R163:fine -->
 
 ### 16.4 Prime risposte alle domande di ricerca ed esito delle ipotesi
@@ -539,7 +552,13 @@ di qualità); impronta di memoria di picco circa 2 GB per il processo dell'app c
   per Heron, [0; 25,9]). Sulle scansioni (Heron sull'immagine, nella via dell'app): pulita alla pari (titoli 22 contro 23, note 42 contro
   41, ordine 0,950 contro 0,959); degradata un po' sotto (titoli 20 contro 22, note 37 contro 39, figure 0 su 4 contro 4, ordine 0,927
   contro 0,981). Il dato di fase 20 si riproduce identico per Heron (22, 41, 0,968).
-- **H2 — docling è il migliore nell'ordine di lettura; Surya perde sulle pagine dense:** (in corso: la parte di Surya).
+- **H2 — docling è il migliore nell'ordine di lettura; Surya perde sulle pagine dense: REGGE, con una precisazione.** Sulle 34 pagine con
+  verità per blocchi l'ordine medio (tau) di docling è 0,96-0,98 nelle tre forme, di Heron nell'app 0,93-0,97, di Surya 2.5 0,94 (pulita),
+  di Marker 0,94-0,95. Sulle 10 pagine dense (oltre 3.500 caratteri): docling 0,977 (una pagina sotto 0,9), Surya 0,788 (sei sotto 0,9),
+  Marker 0,81 (sette sotto 0,9). Le pagine dove Surya cede sono quasi tutte quelle dell'enciclopedia scansionata a due colonne, come nella
+  fase 20 con Surya 2: la versione nuova non cambia questo comportamento. La precisazione, dal controllo semantico: Surya e Marker leggono
+  tutto il corpo delle due colonne e poi le note, la verità colonna per colonna con le note; una parte dell'inversione è questa
+  convenzione, non un corpo spezzato. Le parole, sulle pagine dense, Surya le legge benissimo (perse 0,9 per cento, lettere 0,10).
 - **H3 — GLM-OCR è più preciso del lettore di Apple, soprattutto sulle cifre: REGGE**, con la misura corretta delle cifre (§ 10). Letture
   grezze, 185 pagine, pulita: lettere sbagliate 0,53 contro 0,12 per cento (differenza 0,41 [0,31; 0,52]), cifre 1,15 contro 0,32
   ([0,53; 1,13]), parole plausibili inventate 4,2 contro 0,8 per mille; nell'app (Apple con l'impaginazione contro GLM con la guardia):
