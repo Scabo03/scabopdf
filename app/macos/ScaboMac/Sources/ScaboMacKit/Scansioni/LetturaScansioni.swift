@@ -73,6 +73,49 @@ public enum ViaScansioni: String, Codable, CaseIterable, Sendable {
     }
 }
 
+/// SOLO LABORATORIO (giro 2 del banco OCR, 2026-11-19, docs/BANCO_OCR.md § 17.1): le varianti sperimentali della lettura delle
+/// scansioni, per misurare al banco quanto potrebbe cambiare la lettura senza cambiare modello. Tutte SPENTE di serie: l'app non le
+/// accende mai e non le mostra; le accende solo la riga di comando del laboratorio (`scabomac-officina catena --variante …`). Con
+/// tutte spente l'estrattore fa esattamente ciò che faceva (provato al byte sul banco delle scansioni e dalle reti del giro).
+/// La variante D (tabelle passate come tabelle) non sta qui: la fa la riga di comando con le regioni raccolte dall'estrattore.
+public struct VariantiScansioni: Codable, Equatable, Sendable {
+    /// A: la richiesta classica del testo di Apple (`VNRecognizeTextRequest`, il ripiego che l'app ha già per i sistemi
+    /// precedenti) al posto della struttura dei documenti.
+    public var richiestaClassica = false
+    /// B: GLM senza la guardia stretta: il testo di GLM è l'autorità, le righe di Apple solo ancore di posizione.
+    public var glmSenzaGuardia = false
+    /// C: la guardia di GLM più larga (parole aggiunte in mezzo a una riga di Apple; corse fra righe diverse se si somigliano).
+    public var guardiaLarga = false
+    /// E: la porta dei rami dei codici aperta sulle scansioni che hanno la geometria dei codici.
+    public var ramiCodici = false
+    /// F: le parole sillabate a fine riga ricomposte prima della catena.
+    public var sillabateRicomposte = false
+
+    public init() {}
+
+    /// I nomi della riga di comando, nell'ordine.
+    public static let nomi = ["classica", "senza-guardia", "guardia-larga", "codici", "sillabate"]
+
+    /// Le varianti da un elenco di nomi della riga di comando (separati da virgole); nil se un nome non è noto.
+    public init?(elenco: String) {
+        for n in elenco.split(separator: ",").map({ $0.trimmingCharacters(in: .whitespaces) }) where !n.isEmpty {
+            switch n {
+            case "classica": richiestaClassica = true
+            case "senza-guardia": glmSenzaGuardia = true
+            case "guardia-larga": guardiaLarga = true
+            case "codici": ramiCodici = true
+            case "sillabate": sillabateRicomposte = true
+            default: return nil
+            }
+        }
+    }
+
+    /// I nomi delle varianti accese (vuoto se tutte spente).
+    public var accese: [String] {
+        zip(Self.nomi, [richiestaClassica, glmSenzaGuardia, guardiaLarga, ramiCodici, sillabateRicomposte]).filter { $0.1 }.map { $0.0 }
+    }
+}
+
 // MARK: - Le righe lette
 
 /// Una riga letta su una pagina scansionata: testo, riquadro in punti PDF con origine in basso a sinistra (come `BBox` di
@@ -139,18 +182,26 @@ public enum LetturaScansioni {
     /// Le righe della lettura del testo di Apple: testo, riquadro (punti, origine in basso a sinistra) e indice del paragrafo
     /// nell'ordine di Apple. Sul thread chiamante (mai il principale: l'attesa è bloccante).
     public static func righeApple(_ img: CGImage, larghezza W: Double, altezza H: Double) throws -> [RigaLetta] {
-        if #available(macOS 26.0, *) {
+        try letturaApple(img, larghezza: W, altezza: H).righe
+    }
+
+    /// La lettura di Apple con le tabelle che la richiesta dei documenti vede (la catena oggi non le usa: le guarda solo il
+    /// laboratorio). `classica` è la variante A del laboratorio (spenta nell'app): la richiesta classica anche sui sistemi nuovi.
+    static func letturaApple(_ img: CGImage, larghezza W: Double, altezza H: Double,
+                             classica: Bool = false) throws -> (righe: [RigaLetta], tabelle: [BBox]) {
+        if !classica, #available(macOS 26.0, *) {
             return try attendi { try await righeDocumento(img, W: W, H: H) }
         }
-        return try righeTestoClassico(img, W: W, H: H)
+        return (try righeTestoClassico(img, W: W, H: H), [])
     }
 
     @available(macOS 26.0, *)
-    private static func righeDocumento(_ img: CGImage, W: Double, H: Double) async throws -> [RigaLetta] {
+    private static func righeDocumento(_ img: CGImage, W: Double, H: Double) async throws -> (righe: [RigaLetta], tabelle: [BBox]) {
         let req = RecognizeDocumentsRequest()
         let osservazioni = try await req.perform(on: img)
         var paragrafi: [BBox] = []
         var righe: [(String, BBox)] = []
+        var tabelle: [BBox] = []
         for o in osservazioni {
             let d = o.document
             for p in d.paragraphs { paragrafi.append(bbox(p.boundingRegion.boundingBox.origin.x, p.boundingRegion.boundingBox.origin.y,
@@ -160,15 +211,20 @@ public enum LetturaScansioni {
                 let t = l.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !t.isEmpty { righe.append((t, bbox(r.origin.x, r.origin.y, r.width, r.height, W, H))) }
             }
+            for t in d.tables {
+                let r = t.boundingRegion.boundingBox
+                tabelle.append(bbox(r.origin.x, r.origin.y, r.width, r.height, W, H))
+            }
         }
         // Ogni riga nel paragrafo che ne contiene il centro (l'ordine dei paragrafi è quello di Apple); le righe fuori da ogni
         // paragrafo (tabelle) vanno col paragrafo più vicino.
-        return righe.map { t, b in
+        let lette = righe.map { t, b in
             let cx = b.x + b.width / 2, cy = b.y + b.height / 2
             let k = paragrafi.firstIndex { cx >= $0.x && cx <= $0.x + $0.width && cy >= $0.y && cy <= $0.y + $0.height }
                 ?? paragrafi.indices.min { distanza(paragrafi[$0], cx, cy) < distanza(paragrafi[$1], cx, cy) } ?? 0
             return RigaLetta(testo: t, bbox: b, regione: k)
         }
+        return (lette, tabelle)
     }
 
     private static func righeTestoClassico(_ img: CGImage, W: Double, H: Double) throws -> [RigaLetta] {
@@ -283,7 +339,10 @@ public enum LetturaScansioni {
     /// punteggiatura) prendono la forma di GLM; dove Apple e GLM dicono parole diverse nello stesso punto, una contro una,
     /// vince GLM se le due si somigliano (una correzione), altrimenti resta Apple; ciò che GLM legge in più dove Apple non
     /// ha visto nulla NON entra; ciò che Apple legge e GLM no, resta. Ritorna le righe e i conteggi della guardia.
-    public static func guardia(righe: [RigaLetta], testoGlm: String) -> (righe: [RigaLetta], conti: [String: Int]) {
+    /// `larga` è la variante C del laboratorio (spenta nell'app): entrano anche le parole che GLM aggiunge in mezzo a una riga di
+    /// Apple (fra due parole allineate della stessa riga), e le corse di lunghezza diversa anche fra righe diverse se si somigliano
+    /// almeno 0,6.
+    public static func guardia(righe: [RigaLetta], testoGlm: String, larga: Bool = false) -> (righe: [RigaLetta], conti: [String: Int]) {
         var parole: [(riga: Int, testo: String)] = []
         for (i, r) in righe.enumerated() {
             for p in r.testo.split(whereSeparator: { $0 == " " || $0 == "\t" }) { parole.append((i, String(p))) }
@@ -306,6 +365,13 @@ public enum LetturaScansioni {
         func chiudiCorsa() {
             defer { if let u = corsaV.last { ultimaV = u }; corsaV.removeAll(); corsaG.removeAll() }
             if corsaV.isEmpty {
+                // Variante C (solo laboratorio): ciò che GLM aggiunge in mezzo a una riga di Apple entra, attaccato alla parola
+                // allineata precedente.
+                if larga, !corsaG.isEmpty, ultimaV >= 0, i < parole.count, parole[i].riga == parole[ultimaV].riga {
+                    scelte[ultimaV] += " " + corsaG.map { glm[$0] }.joined(separator: " ")
+                    conti["aggiunte_larga", default: 0] += corsaG.count
+                    return
+                }
                 // Ciò che GLM aggiunge non entra; solo un apice di richiamo («$^{12}$») si attacca alla parola precedente di
                 // Apple: diventa richiamo più avanti solo se sulla pagina comincia una nota con quel numero (`spans`).
                 for g in corsaG {
@@ -326,7 +392,8 @@ public enum LetturaScansioni {
             // Numeri diversi di parole: GLM entra solo dentro una riga sola e se l'insieme si somiglia molto.
             let stessaRiga = Set(corsaV.map { parole[$0].riga }).count == 1
             let unitoV = corsaV.map { nv[$0] }.joined(), unitoG = corsaG.map { ng[$0] }.joined()
-            if stessaRiga && somiglianza(unitoV, unitoG) >= 0.75 {
+            // (Le due somiglianze si calcolano solo se servono: con la variante spenta il costo è quello di sempre.)
+            if stessaRiga && somiglianza(unitoV, unitoG) >= 0.75 || larga && somiglianza(unitoV, unitoG) >= 0.6 {
                 scelte[corsaV[0]] = corsaG.map { glm[$0] }.joined(separator: " ")
                 for v in corsaV.dropFirst() { scelte[v] = "" }
                 conti["corrette", default: 0] += corsaV.count
@@ -354,6 +421,84 @@ public enum LetturaScansioni {
             uscita[r].testo = uscita[r].testo.isEmpty ? scelte[k] : uscita[r].testo + " " + scelte[k]
         }
         return (uscita.filter { !$0.testo.isEmpty }, conti)
+    }
+
+    /// SOLO LABORATORIO (variante B, spenta nell'app): GLM senza la guardia stretta. Il testo di GLM è l'autorità: ogni sua parola
+    /// prende la riga della parola di Apple a cui si allinea (quindi la regione e l'ordine di Heron); ciò che GLM aggiunge prende la
+    /// riga della parola allineata precedente (la prima riga, all'inizio); ciò che solo Apple ha visto si toglie. Le etichette HTML
+    /// delle tabelle di GLM si tolgono. La geometria resta quella delle righe di Apple.
+    public static func senzaGuardia(righe: [RigaLetta], testoGlm: String) -> (righe: [RigaLetta], conti: [String: Int]) {
+        var conti = ["allineate": 0, "aggiunte_glm": 0, "tolte_apple": 0]
+        guard !righe.isEmpty else { return ([], ["senza_ancore": paroleGlm(testoGlm).count]) }
+        var parole: [Int] = []   // la riga di ogni parola di Apple
+        var testiV: [String] = []
+        for (i, r) in righe.enumerated() {
+            for p in r.testo.split(whereSeparator: { $0 == " " || $0 == "\t" }) { parole.append(i); testiV.append(String(p)) }
+        }
+        let pulito = testoGlm.replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
+        let glm = paroleGlm(pulito)
+        let nv = testiV.map(normalizza), ng = glm.map(normalizza)
+        let diff = ng.difference(from: nv)
+        var tolte = Set<Int>(), messe = Set<Int>()
+        for c in diff {
+            switch c {
+            case .remove(let o, _, _): tolte.insert(o)
+            case .insert(let o, _, _): messe.insert(o)
+            }
+        }
+        var perRiga = [[String]](repeating: [], count: righe.count)
+        var ultimaRiga = parole.first ?? 0
+        var corsaV: [Int] = [], corsaG: [Int] = []
+        // Una corsa di parole diverse: le parole di GLM vanno, una per una, sulle righe delle parole di Apple che sostituiscono
+        // (le eccedenti sull'ultima); senza parole di Apple, sulla riga della parola allineata precedente.
+        func chiudi() {
+            for (k, g) in corsaG.enumerated() {
+                perRiga[corsaV.isEmpty ? ultimaRiga : parole[corsaV[min(k, corsaV.count - 1)]]].append(glm[g])
+            }
+            conti["sostituite", default: 0] += min(corsaV.count, corsaG.count)
+            conti["aggiunte_glm", default: 0] += max(0, corsaG.count - corsaV.count)
+            conti["tolte_apple", default: 0] += max(0, corsaV.count - corsaG.count)
+            if let u = corsaV.last { ultimaRiga = parole[u] }
+            corsaV.removeAll(); corsaG.removeAll()
+        }
+        var i = 0, j = 0
+        while i < nv.count || j < ng.count {
+            if i < nv.count, tolte.contains(i) { corsaV.append(i); i += 1; continue }
+            if j < ng.count, messe.contains(j) { corsaG.append(j); j += 1; continue }
+            chiudi()
+            if i < nv.count, j < ng.count {
+                ultimaRiga = parole[i]; perRiga[ultimaRiga].append(glm[j]); conti["allineate", default: 0] += 1
+            }
+            i += 1; j += 1
+        }
+        chiudi()
+        var uscita: [RigaLetta] = []
+        for (k, r) in righe.enumerated() where !perRiga[k].isEmpty {
+            var c = r; c.testo = perRiga[k].joined(separator: " "); uscita.append(c)
+        }
+        return (uscita, conti)
+    }
+
+    /// SOLO LABORATORIO (variante F, spenta nell'app): le parole sillabate a fine riga ricomposte prima della catena. Una riga che
+    /// finisce con un trattino dopo una lettera, seguita nella stessa regione da una riga che comincia con una minuscola, prende la
+    /// prima parola della riga dopo, senza il trattino; la riga dopo, se resta vuota, si toglie. I riquadri non cambiano.
+    public static func ricomponiSillabate(_ righe: [RigaLetta]) -> (righe: [RigaLetta], unite: Int) {
+        var r = righe
+        var unite = 0
+        var k = 0
+        while k + 1 < r.count {
+            let a = r[k].testo, b = r[k + 1].testo
+            if r[k].regione == r[k + 1].regione, let ultimo = a.last, "-\u{2010}\u{2011}\u{00AC}".contains(ultimo),
+               a.dropLast().last?.isLetter == true, let primo = b.first, primo.isLetter, primo.isLowercase {
+                let parti = b.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+                r[k].testo = String(a.dropLast()) + String(parti[0])
+                r[k + 1].testo = parti.count > 1 ? String(parti[1]) : ""
+                unite += 1
+                if r[k + 1].testo.isEmpty { r.remove(at: k + 1); continue }
+            }
+            k += 1
+        }
+        return (r, unite)
     }
 
     /// Le parole del testo di GLM, senza i segni di formattazione che a volte aggiunge (cancelletti dei titoli, barre delle

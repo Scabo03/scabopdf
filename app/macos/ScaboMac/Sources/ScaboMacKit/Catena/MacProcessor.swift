@@ -65,7 +65,10 @@ public enum MacProcessor {
         visualCandidates: [VisualRegionCandidate]? = nil,
         onProgress: (ChainProgress) -> Void = { _ in },
         onVisualDetection: (VisualRegionDetector.Result) -> Void = { _ in },
-        isCancelled: () -> Bool = { false }
+        isCancelled: () -> Bool = { false },
+        // SOLO LABORATORIO (giro 2 del banco OCR, 2026-11-19): riceve l'esito intero della catena (documento grezzo, documento con le
+        // note) per i punti d'osservazione della riga di comando. L'app non lo passa: di serie non fa nulla.
+        onChainResult: (ChainResult) -> Void = { _ in }
     ) -> MacProcessingOutcome {
         let t0 = Date()
         let fileName = pdfURL.lastPathComponent
@@ -92,6 +95,7 @@ public enum MacProcessor {
         case .failure(let message):
             return .failure(message)
         case .success(let r):
+            onChainResult(r)
             let pageMap = ReadingAssembly.buildPageMap(r.document, content: r.content, doctrineContent: r.doctrineContent)
             let tree = large ? nil : ReadingAssembly.quickConsultTreeIfAvailable(r.document)
             let reading = PackagedReading(content: r.content, pageMap: pageMap, doctrineContent: large ? nil : r.doctrineContent,

@@ -72,6 +72,43 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
     /// Solo banco: cartella del laboratorio col testo di GLM-OCR già letto (si riusa se c'è, si scrive se manca).
     public var cacheGlm: URL?
 
+    // MARK: Solo laboratorio (giro 2 del banco OCR, 2026-11-19): osservazione e varianti, spente di serie
+
+    /// SOLO LABORATORIO: le varianti sperimentali (`VariantiScansioni`), tutte spente di serie; l'app non le tocca mai.
+    public var varianti = VariantiScansioni()
+    /// SOLO LABORATORIO: la cartella dove l'estrattore scrive, per ogni pagina letta, ciò che vede a ogni passo (righe grezze di
+    /// Apple, tabelle della richiesta di Apple, regioni di Heron, righe ordinate, testo di GLM, righe dopo la guardia). Mai impostata
+    /// dall'app; contiene il testo delle pagine: solo nel laboratorio.
+    public var cartellaOsservazione: URL?
+    /// SOLO LABORATORIO (variante D): raccogliere le regioni di tabella e di figura viste sulle pagine lette, per passarle alla catena
+    /// come candidate delle risorse visive. Spento di serie.
+    public var raccogliTabelle = false
+    /// Le regioni raccolte con `raccogliTabelle`: quelle di Heron (tabella, figura) e le tabelle della richiesta di Apple.
+    public private(set) var tabelleHeron: [VisualRegionCandidate] = []
+    public private(set) var tabelleApple: [VisualRegionCandidate] = []
+
+    /// Ciò che l'estrattore osserva su una pagina letta (solo laboratorio).
+    public struct OsservazionePagina: Codable, Sendable {
+        public struct Regione: Codable, Sendable { public var tipo: String; public var bbox: BBox }
+        public var pagina: Int
+        public var larghezza: Double
+        public var altezza: Double
+        public var varianti: [String]
+        /// P1: le righe della lettura di Apple, nell'ordine della richiesta (prima di ogni ordine di Heron).
+        public var righeGrezze: [RigaLetta]
+        /// P1: le tabelle che la richiesta dei documenti di Apple vede (vuoto con la richiesta classica).
+        public var tabelleApple: [BBox]
+        /// P3: le regioni di Heron sull'immagine della pagina, nel loro ordine di lettura.
+        public var regioniHeron: [Regione]
+        /// P3: le righe con regione e tipo, nell'ordine della pagina (dopo la variante F, se accesa).
+        public var righeOrdinate: [RigaLetta]
+        /// P1 di GLM: il suo testo grezzo; P2: le righe dopo la guardia (uguali a `righeOrdinate` senza GLM).
+        public var testoGlm: String?
+        public var righeFinali: [RigaLetta]
+        public var guardia: [String: Int]?
+        public var sillabateUnite: Int?
+    }
+
     private let pesiGlm: (pesi: URL, proiettore: URL)?
 
     public init(lettore: LettoreScansioni, via: ViaScansioni? = nil, pesiGlm: (pesi: URL, proiettore: URL)? = nil) {
@@ -140,6 +177,8 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         rapporto = nil
         glmFermo = false
         primaPaginaLetta = false
+        tabelleHeron = []
+        tabelleApple = []
         let t0 = Date()
         guard var ex = try PdfKitExtractor().extract(fromUri: uri, onPageExtracted: { _, _ in }, isCancelled: isCancelled) else {
             return nil
@@ -202,7 +241,27 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         for (indice, pagina) in LetturaScansioni.pagineEstratte(lette) where indice < ex.pages.count {
             ex.pages[indice] = pagina
         }
+        // Variante E (solo laboratorio, spenta nell'app): la porta dei rami dei codici (formato tascabile 357 × 547 punti con 12 di
+        // tolleranza, produttore PDFsharp, corpo fra 6,5 e 8,5: ScaboCore `GenericPlugin`) su una scansione non scatta, perché il file
+        // non porta il produttore; la variante lo dichiara quando la geometria della prima pagina è quella dei codici.
+        if varianti.ramiCodici { ex = Self.portaCodiciAperta(ex) }
         return ex
+    }
+
+    /// Variante E (solo laboratorio): l'estrazione con il produttore dei codici dichiarato, se la prima pagina ha la geometria dei
+    /// codici; altrimenti identica.
+    static func portaCodiciAperta(_ ex: PdfExtraction) -> PdfExtraction {
+        guard let p = ex.pages.first, abs(p.width - 357) <= 12, abs(p.height - 547) <= 12 else { return ex }
+        var e = ex
+        e.producer = (ex.producer.map { $0 + " " } ?? "") + "PDFsharp"
+        return e
+    }
+
+    /// Una regione (riquadro con origine in basso a sinistra) come candidata delle risorse visive della catena (origine in alto a
+    /// sinistra, `[l, t, r, b]`). Solo laboratorio, variante D: il punteggio del modello non arriva fin qui (la guardia non lo usa).
+    static func candidata(_ b: BBox, etichetta: String, pagina: Int, W: Double, H: Double) -> VisualRegionCandidate {
+        VisualRegionCandidate(pageIndex: pagina, label: etichetta, bbox: [b.x, H - (b.y + b.height), b.x + b.width, H - b.y],
+                              confidence: 1, pageWidth: W, pageHeight: H)
     }
 
     private func leggi(doc: PDFDocument, indice: Int, heron: HeronLayoutModel?, isCancelled: () -> Bool,
@@ -211,15 +270,33 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         let box = page.bounds(for: .cropBox)
         let W = Double(box.width), H = Double(box.height)
         let ta = Date()
-        let apple = try LetturaScansioni.righeApple(img, larghezza: W, altezza: H)
+        let letturaApple = try LetturaScansioni.letturaApple(img, larghezza: W, altezza: H, classica: varianti.richiestaClassica)
+        let apple = letturaApple.righe
         let secondiApple = Date().timeIntervalSince(ta)
         let th = Date()
         var righe = apple
+        var regioniViste: [(tipo: String, bbox: BBox)] = []
         if let heron, let regioni = try? LetturaScansioni.regioni(pagina: page, modello: heron) {
+            regioniViste = regioni
             righe = LetturaScansioni.ordina(apple, regioni: regioni)
         } else {
             righe = LetturaScansioni.ordinaDallAlto(apple)
         }
+        // Variante F (solo laboratorio, spenta nell'app): le sillabate a fine riga ricomposte prima della catena.
+        var sillabateUnite: Int?
+        if varianti.sillabateRicomposte {
+            let r = LetturaScansioni.ricomponiSillabate(righe)
+            righe = r.righe
+            sillabateUnite = r.unite
+        }
+        // Variante D (solo laboratorio, spenta nell'app): le regioni di tabella e di figura raccolte per la catena.
+        if raccogliTabelle {
+            for r in regioniViste where r.tipo == "table" || r.tipo == "picture" {
+                tabelleHeron.append(Self.candidata(r.bbox, etichetta: r.tipo, pagina: indice, W: W, H: H))
+            }
+            for t in letturaApple.tabelle { tabelleApple.append(Self.candidata(t, etichetta: "table", pagina: indice, W: W, H: H)) }
+        }
+        let righeOrdinate = righe
         let secondiImpaginazione = Date().timeIntervalSince(th)
         var letta = PaginaLetta(pagina: indice, larghezza: W, altezza: H, righe: righe, testoGlm: nil,
                                 secondiApple: secondiApple, secondiGlm: 0, secondiImpaginazione: secondiImpaginazione, guardia: nil)
@@ -257,7 +334,9 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
             }
             if let testo {
                 letta.testoGlm = testo
-                let g = LetturaScansioni.guardia(righe: righe, testoGlm: testo)
+                // Variante B o C (solo laboratorio, spente nell'app); di serie la guardia stretta.
+                let g = varianti.glmSenzaGuardia ? LetturaScansioni.senzaGuardia(righe: righe, testoGlm: testo)
+                    : LetturaScansioni.guardia(righe: righe, testoGlm: testo, larga: varianti.guardiaLarga)
                 letta.righe = g.righe
                 letta.guardia = g.conti
             }
@@ -265,6 +344,15 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         if let dir = cartellaBanco {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             try? JSONEncoder().encode(letta).write(to: dir.appendingPathComponent("p\(indice).json"))
+        }
+        if let dir = cartellaOsservazione {
+            let o = OsservazionePagina(pagina: indice, larghezza: W, altezza: H, varianti: varianti.accese, righeGrezze: apple,
+                                       tabelleApple: letturaApple.tabelle,
+                                       regioniHeron: regioniViste.map { .init(tipo: $0.tipo, bbox: $0.bbox) },
+                                       righeOrdinate: righeOrdinate, testoGlm: letta.testoGlm, righeFinali: letta.righe,
+                                       guardia: letta.guardia, sillabateUnite: sillabateUnite)
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try? JSONEncoder().encode(o).write(to: dir.appendingPathComponent("o\(indice).json"))
         }
         return letta
     }

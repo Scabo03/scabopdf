@@ -23,6 +23,12 @@
 //        `--lettura` scrive anche `<stem>.lettura.json`: la lettura INTERA nella forma della cache dell'iPad (i due flussi,
 //        la mappa delle pagine, l'albero, la granularità; chiavi ordinate), per il confronto byte per byte con la lettura
 //        che l'iPad prepara da sé (giro «uniformità della lettura», 2026-10-16).
+//        Solo laboratorio (giro 2 del banco OCR, 2026-11-19, docs/BANCO_OCR.md § 17.1), con `--scansioni`: `--osserva DIR` scrive i
+//        punti d'osservazione della cascata (per pagina letta `<DIR>/<stem>/o<N>.json`: righe grezze, tabelle di Apple, regioni di
+//        Heron, righe ordinate, testo di GLM, righe dopo la guardia; per libro `<stem>.extraction.json`, `<stem>.grezzo.json`,
+//        `<stem>.note.json`); `--variante classica,senza-guardia,guardia-larga,codici,sillabate` accende le varianti sperimentali;
+//        `--tabelle heron|apple|tutte` passa alla catena come tabelle le regioni viste da Heron o dalla richiesta di Apple (due
+//        passate). Tutto spento di serie: senza questi argomenti la catena è quella dell'app.
 //    scabomac-officina pacchetto --pdf FILE.pdf --out FILE.scabolettura [--politica giro|spenta|banco]
 //        Prepara e scrive il pacchetto della lettura come l'app (senza annotazioni).
 //    scabomac-officina verdetti-confronta --pdf VOLUME.pdf --dir CARTELLA --prefisso P
@@ -220,15 +226,50 @@ case "catena":
             let e = EstrattoreScansioni(lettore: l, via: arg("via").flatMap(ViaScansioni.init(rawValue:)), pesiGlm: pesi)
             e.cartellaBanco = arg("banco-pagine").map { URL(fileURLWithPath: $0).appendingPathComponent(stem) }
             e.cacheGlm = arg("cache-glm").map { URL(fileURLWithPath: $0).appendingPathComponent(stem) }
+            // Solo laboratorio (giro 2 del banco OCR, 2026-11-19): varianti sperimentali e punti d'osservazione, spenti di serie.
+            if let v = arg("variante") {
+                guard let varianti = VariantiScansioni(elenco: v) else {
+                    fail("variante sconosciuta: \(v) (note: \(VariantiScansioni.nomi.joined(separator: ", ")))")
+                }
+                e.varianti = varianti
+            }
+            e.cartellaOsservazione = arg("osserva").map { URL(fileURLWithPath: $0).appendingPathComponent(stem) }
             scansioni = e
             extractor = e
         }
         let t0 = Date()
+        // Variante D (solo laboratorio): le tabelle viste dal lettore o da Heron passate alla catena come tabelle. Due passate:
+        // prima l'estrazione con le regioni raccolte, poi la catena con l'estrazione registrata e le regioni come candidate.
+        if let modo = arg("tabelle") {
+            guard let e = scansioni, ["heron", "apple", "tutte"].contains(modo) else { fail("--tabelle heron|apple|tutte vuole --scansioni") }
+            e.raccogliTabelle = true
+            let ex1: PdfExtraction?
+            do { ex1 = try e.extract(fromUri: pdf.absoluteString, onPageExtracted: { _, _ in }, isCancelled: { false }) }
+            catch { say("\(stem): estrazione fallita: \(error.localizedDescription)"); rc = 1; continue }
+            guard let ex1 else { say("\(stem): estrazione annullata"); rc = 1; continue }
+            candidates = modo == "heron" ? e.tabelleHeron : modo == "apple" ? e.tabelleApple : e.tabelleHeron + e.tabelleApple
+            extractor = CapturedExtractor(extraction: ex1)
+        }
         let recorder = RecordingExtractor(extractor)
         var detected: [VisualRegionCandidate]? = nil
+        let osserva = arg("osserva").map { URL(fileURLWithPath: $0) }
         let outcome = autoreleasepool {
             MacProcessor.process(pdfURL: pdf, policy: policy, granularityTarget: target, extractor: recorder,
-                                 visualCandidates: candidates, onVisualDetection: { detected = $0.candidates })
+                                 visualCandidates: candidates, onVisualDetection: { detected = $0.candidates },
+                                 onChainResult: { r in
+                                     // P5 e P6 della cascata (solo laboratorio): il documento grezzo e quello con le note.
+                                     guard let osserva else { return }
+                                     let enc = JSONEncoder()
+                                     enc.outputFormatting = [.sortedKeys]
+                                     try? FileManager.default.createDirectory(at: osserva, withIntermediateDirectories: true)
+                                     try? enc.encode(r.rawDocument).write(to: osserva.appendingPathComponent(stem + ".grezzo.json"))
+                                     try? enc.encode(r.document).write(to: osserva.appendingPathComponent(stem + ".note.json"))
+                                 })
+        }
+        if let osserva, let e = recorder.recorded {
+            // P4 della cascata: l'estrazione che entra nella catena.
+            try? JSONEncoder().encode(e).write(to: osserva.appendingPathComponent(stem + ".extraction.json"))
+            if let c = candidates { try? JSONEncoder().encode(c).write(to: osserva.appendingPathComponent(stem + ".candidate.json")) }
         }
         // L'impronta del file letto (cure mirate, LAYER2 § 0-ter): serve alle descrizioni, come al lettore dell'iPad.
         let impronta = recorder.recorded?.sourceSha256
