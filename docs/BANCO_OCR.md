@@ -458,7 +458,16 @@ con due tabelle, una pagina di manuale con glosse e titolo di paragrafo.
   capoverso; l'app, su una pagina letta da sola, legge il folio e il nome del capitolo della testatina (senza ricorrenza non li riconosce),
   raduna le glosse in un blocco «nota» in testa e non riconosce il titolo numerato; tiene però i richiami in apice accanto alla parola.
 
-(Surya: in corso.)
+Surya 2.5 sulle stesse pagine (pulita), più una pagina densa d'enciclopedia scansionata a due colonne:
+- **Note, diacritici, tabelle, didascalie**: le note una per blocco coi numeri giusti, i nomi coi segni diacritici giusti, le tabelle come
+  tabelle e le didascalie come didascalie, i titoli trovati; testatine e piè etichettati (quindi si possono togliere dal flusso). È la lettura più pulita delle
+  tre sulle pagine guardate.
+- **Glosse**: chiamate corpo, ma messe ciascuna subito prima del suo capoverso (Marker e l'app le spostano o le fondono).
+- **Ordine sulle pagine dense a due colonne**: Surya e Marker leggono prima tutto il corpo delle due colonne e poi tutte le note; docling
+  e la verità leggono colonna per colonna, note comprese. Per l'orecchio la scelta di Surya non spezza il corpo, ma la metrica la conta
+  come inversione: metà della «perdita d'ordine» di Surya sulle pagine dense viene da questa convenzione (vedi H2).
+- **L'app** sulla stessa pagina d'enciclopedia stacca le parole di fine riga in blocchi minimi chiamati «nota» e mescola righe delle due
+  colonne: è il punto più debole della via dell'app sulle scansioni vecchie.
 
 ### 15.4 Verifica a mano del classificatore delle parole in più (campo)
 
