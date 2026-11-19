@@ -2373,3 +2373,159 @@ Ogni frase è detta in parole semplici; fra parentesi il numero che la regge e d
   revisore ha verificato che è stato caricato davvero).
 <!-- VERIFICHE2:fine -->
 <!-- G2:fine -->
+
+<!-- G3:inizio -->
+
+## 25. Giro globale — Il metodo (Parte 0, scritto prima di ogni corsa)
+
+<!-- METODO3:inizio -->
+Giro globale del 2026-11-19, partito alle 15:51 da `214a07f` (ramo `chore/banco-ocr-globale`). La domanda: le conclusioni dei giri 1 e 2,
+misurate su 185 pagine di una ventina di documenti, reggono sul corpus intero (55 documenti, 23.566 pagine: campo, conteggio di PyMuPDF
+sui file del laboratorio)? Tetto: 18 ore dall'inizio (09:51 di venerdì 20) o le 10:30, quello che viene prima; calcolo dei modelli entro
+13-14 ore. Restano le regole dei giri 1 e 2 (§§ 3, 5, 6, 10, 17): ogni modello su tutto il materiale del suo livello e per i suoi compiti,
+senza scarti dopo un primo risultato cattivo; recinto senza rete e sonda passiva per ogni corsa; corse di qualità a priorità bassa
+(`nice -n 10`); impronta di ogni strumento nel registro della sua corsa; pesi alle revisioni fissate del giro 2. Laboratorio:
+`banco_ocr/globale/` (uscite, registri, campioni, misure); il banco del giro 1 resta dov'è, con la sua impronta.
+
+**Due file di corse** (dichiarate ora): la fila H dei lettori pesanti (GLM a piena precisione, la via GLM dell'app, Surya, Xiaomi-OCR-0,
+Granite, dots.ocr), uno alla volta, e la fila L dei modelli veloci del livello A (Heron ed egret-large in Core ML, docling, struttura dei
+documenti di Apple, PP-DocLayoutV3, Marker, la lettura dell'iPad dei libri interi), uno alla volta. Le due file possono girare insieme,
+mai due modelli pesanti insieme, ognuna con la sua cartella temporanea. Per questo i tempi delle corse di qualità sono indicativi, come
+nel giro 2; i tempi e l'energia di riferimento vengono solo dalla Parte 7: a priorità normale, fra le 23 e le 10, a carico basso, con le
+due file ferme, e solo se non esiste il file di pausa `globale/PAUSA_MISURE` (controllato prima di ogni misura: se c'è, la misura si
+rimanda al controllo successivo); ogni misura annota il carico. Guardia della batteria: a batteria e sotto il 25 per cento di carica le
+file si fermano fra una corsa e l'altra.
+
+### 25.1 I tre livelli del materiale
+
+**Livello A — il corpus intero, coi modelli veloci.** Tutti i 55 documenti per intero, sul PDF col testo. Modelli e vie: Heron nell'app
+(modulo condiviso, Core ML, righe di PDFKit), egret-large in Core ML nello stesso porto Swift, docling 2.150.1 con Heron e con egret-large,
+la struttura dei documenti di Apple sulla resa del PDF; PP-DocLayoutV3 (righe del PDF nelle sue regioni) e Marker se il calcolo resta.
+Si misura la struttura: titoli e livelli, note (trovate e, dove il modello le lega, legate al richiamo), tabelle, didascalie, glosse a
+margine, testatine e piè, con le definizioni del § 6.2 e del § 6.3. **Verità**: la lettura dell'iPad del libro intero, fatta qui dalla
+catena dell'app a `214a07f` (`scabomac-officina catena --politica spenta`, la stessa via della verità del giro 1; la catena condivisa non è
+cambiata da `738342d`: campo, `git diff`). Si misura quindi **l'accordo con la lettura dell'iPad**, e lo si dice sempre. **Affidabilità per
+volume**, come nel giro 1 ma sul libro intero: (a) segnalibri del PDF ritrovati fra i titoli della lettura (stessa pagina o vicina,
+somiglianza almeno 0,8); (b) voci dell'indice stampato (righe delle pagine di sommario o indice che finiscono con un numero di pagina, tolto
+il numero e i puntini) ritrovate fra i titoli. Dove ci sono, l'accordo è «validato» per quel volume con le due quote; dove mancano, «non
+validato». Le pagine senza testo e i volumi con un livello di testo da OCR (immagine a tutta pagina sotto il testo su almeno metà delle
+pagine) si dichiarano.
+
+**Livello B — il campione largo, coi modelli lenti.** Scelto e congelato con impronta prima di ogni corsa sulle sue pagine nuove; regole:
+- *Universo*: le pagine dei 55 documenti con almeno 200 caratteri di testo, salvo quelle dei volumi col livello di testo da OCR (per il
+  testo la verità non regge, come per v11 nel § 10). Le **185 pagine del banco del giro 1 entrano tutte**, marcate «banco»: per loro valgono
+  le uscite dei giri 1 e 2 (stesse versioni e stesse revisioni, verificato nel check-up qui sotto), così il confronto della Parte 5 è anche
+  appaiato.
+- *Strato generale*: per ognuno dei 55 documenti le prime 4 pagine dell'universo nell'ordine dell'impronta sha256 dell'identificativo
+  («etichetta#pagina»), fuori dal banco.
+- *Strati per situazione* (le situazioni del § 4.2, con le stesse definizioni automatiche, e uno strato nuovo «due colonne dense», due
+  colonne e oltre 3.500 caratteri): ogni situazione si porta ad almeno **24 pagine** (banco più nuove) dove l'universo le ha, prendendo a
+  turno da volumi diversi (dentro ogni volume nell'ordine dell'impronta sha256), nell'ordine: tabelle, sommari e indici, maiuscoletto, due
+  colonne dense, figure e didascalie, elenchi, testatina in maiuscoletto, note dense, due colonne, glosse a margine, poi tutte le altre. Una
+  pagina presa conta per tutte le sue situazioni. Le situazioni che l'universo ha in meno di 24 pagine si prendono tutte e si dichiarano.
+- *Forme*: il PDF della pagina (testo), la scansione costruita pulita (300 dpi) e la degradata (200 dpi), con la ricetta del giro 1 e il
+  seme per documento (sha256 dell'identificativo, `costruisci_banco_ocr.py`); zero caratteri di testo nelle scansioni (controllato).
+- *Pagine ruotate*: un sottoinsieme fisso, le prime 24 pagine dello strato generale nell'ordine dell'impronta (documenti diversi),
+  costruite dalla scansione pulita con l'immagine salvata ruotata e la rotazione dichiarata nella pagina (`/Rotate` 90, 180 e 270), come
+  fanno gli scanner: 72 documenti; MuPDF, che applica la rotazione, deve mostrarle uguali alla scansione pulita (controllato).
+- *GLM a piena precisione*: le prime 60 pagine nuove dello strato generale nell'ordine dell'impronta, più le 185 del banco già misurate
+  (nei giri 1 e 2 la forma compressa dell'app coincide con la piena precisione: T4, T15).
+- *Verità*: come nel giro 1 per le pagine singole (§ 4.3 e § 10, ore 01:20): il testo è la lettura dell'iPad della pagina; titoli e note
+  sono la lettura dell'iPad del volume intero (quella del livello A), coi segmenti che stanno sulla pagina per almeno il 60 per cento delle
+  parole; l'affidabilità per volume è quella del livello A. Le pagine rade restano fuori dalle tabelle per situazione (§ 10, 12:10).
+
+**Livello C — le scansioni vere.** Le 19 pagine della prova del 2021 pubblicata dalla Banca d'Italia (§ 21) più altre prove pubblicate apertamente sul
+sito ufficiale dell'istituto, di anni o concorsi diversi, fino a circa 80 pagine, con indirizzo e data di consultazione; si
+controlla che siano scansioni (nessun carattere di testo). L'insieme si fissa con un manifesto prima di ogni corsa. **Verità** su un
+campione dichiarato: le 6 pagine del giro 2 più almeno 6 pagine nuove (almeno 2 per documento nuovo), trascritte da Code a forte
+ingrandimento con l'aiuto delle uscite di più modelli, poi verificate alla cieca da un sotto-agente nuovo, parola per parola; si dichiara
+l'accordo. Misure: tutte quelle del livello B, più le crocette come nel § 21 (domande ritrovate e in ordine, opzioni, griglie).
+
+### 25.2 Modelli e vie per livello
+
+| livello | modelli e vie |
+|---|---|
+| A | Heron nell'app; egret-large in Core ML (porto Swift); docling 2.150.1 + Heron; docling + egret-large; struttura dei documenti di Apple; PP-DocLayoutV3 e Marker se il calcolo resta; verità: la lettura dell'iPad dei libri interi |
+| B | via dell'app con Apple e con GLM (compresso, Q8), **prima e dopo la correzione della Parte 1**; GLM Q8 grezzo (il testo che la via dell'app riceve); GLM a piena precisione sul sottoinsieme dichiarato; Surya 2.5; Xiaomi-OCR-0 Q8 nel motore dell'app (llama.cpp v1.0.0, come nel giro 2), senza filtro e col filtro dei richiami (§ 25.3); Granite Docling; la lettura di Apple con la richiesta classica e con la struttura dei documenti (sull'immagine dell'app, `visiontesto`); le varianti A, B, D (giro 2); le combinazioni testo di GLM sulle regioni di Heron e testo di Xiaomi sulle regioni di egret-large; dots.ocr solo se avanza calcolo, su un sottoinsieme dichiarato |
+| C | tutti i modelli e le vie del livello B, compresa la via dell'app prima e dopo la correzione, sulle pagine vere |
+
+Sulle pagine non ruotate la via dell'app prima e dopo la correzione deve dare letture identiche al byte (Parte 1): lì basta una corsa;
+la differenza si misura sulle pagine ruotate (livello B) e sulle pagine vere (livello C).
+
+### 25.3 La misura nuova: il rumore udibile
+
+Il **rumore udibile** è ciò che VoiceOver leggerebbe ad alta voce senza che sia testo della pagina. Si conta sull'uscita che arriva
+all'orecchio: per le vie dell'app la lettura finale (i segmenti della Lettura Continua); per i modelli del banco l'uscita intera, perché
+tutto il testo d'uscita arriva all'orecchio (§ 6.3). Classi (espressioni esatte in `globale/strumenti/rumore.py`, fissate ora):
+- **R1 notazione matematica**: il segno del dollaro; la barra rovesciata seguita da lettere (comandi come `\frac`, `\mathrm`, `\text`,
+  `\cdot`, `\S`); le parentesi graffe; l'accento circonflesso e il trattino basso usati come apice e pedice (`^{…}`, `^1`, `_{…}`).
+- **R2 segni di formattazione**: cancelletti a inizio riga (titoli markdown); asterischi e trattini bassi doppi dell'enfasi; barre verticali
+  delle tabelle; righe di trattini delle tabelle markdown; marcatori HTML o XML (`<…>`, compresi quelli OTSL di Granite e di Xiaomi);
+  entità HTML (`&amp;`, `&nbsp;`…).
+- **R3 simboli che sulla pagina non ci sono**: i caratteri di simbolo (categorie Unicode dei simboli e la punteggiatura non comune) che
+  compaiono nell'uscita della pagina più volte che nel livello di testo della pagina: si conta l'eccesso; esclusi i segni già contati in
+  R1, R2 e R5 e la punteggiatura comune.
+- **R4 parti ripetute**: righe dell'uscita di almeno quattro parole uguali (normalizzate) a una riga precedente della stessa pagina, oltre
+  le ripetizioni della verità; e **cicli**, una sequenza di 3-20 parole ripetuta di fila almeno tre volte (si contano le parole delle
+  ripetizioni oltre la prima).
+- **R5 richiami scritti come formule**: il numero di un richiamo scritto come `$^{12}$`, `^{12}`, `^12` attaccato a una parola,
+  `<sup>12</sup>` o `\textsuperscript{12}` (contati qui e non in R1 o R2).
+
+Unità: segni o marcatori (R1, R2, R3, R5) e parole ripetute (R4) **per mille parole della verità**, per pagina e per configurazione, con
+numero di pagine, mediana e dispersione. **Che cosa si sentirebbe**: il nome di ogni segno e se VoiceOver lo pronuncia al livello di
+punteggiatura predefinito («Alcuni»), dalle tabelle della punteggiatura di VoiceOver del sistema (`ScreenReaderCore.framework`,
+`SCRCPunctuationLevel_*.scrconfig`, macOS 27.0.1: fonte, file di sistema letti il 2026-11-19); i nomi italiani pronunciati non stanno in
+quei file e VoiceOver non si può accendere da qui senza controllare un'altra app: **dedotti** e dichiarati come tali. **Verifica a mano**
+del conteggio: su un campione fisso di 20 pagine per 4 configurazioni Code riconta leggendo le uscite e riporta l'accordo. **Il filtro di
+Xiaomi-OCR-0** (laboratorio, `filtro_richiami.py`, fissato ora): riscrive solo i richiami della classe R5 come il numero, attaccato alla
+parola che lo precede come nella verità; null'altro. Si misurano il rumore prima e dopo per classe, e le parole prima e dopo (un filtro che
+toglie testo vero si vede come parole perse in più). Impronte dei due strumenti al momento del metodo (sha256, 16:14): `rumore.py`
+`d22bb0e6…`, `filtro_richiami.py` `13606427…`; ogni ritocco successivo va nel § 10 con l'ora e il motivo.
+
+### 25.4 Il campione contro il corpus (Parte 5)
+
+- **Unità**: «banco» = le 185 pagine coi dati dei giri 1 e 2; «nuove» = le pagine nuove del livello B, disgiunte dal banco (il confronto
+  indipendente); «B» = banco più nuove (i numeri finali del giro). Per la struttura, le 34 pagine con verità per blocchi contro il livello A
+  (accordo con la lettura dell'iPad su tutto il corpus).
+- **Classifiche**: per ogni misura (lettere, cifre, parole perse, inventate, plausibili, rumore, titoli, note, richiami) i modelli si
+  ordinano sul banco e sulle nuove; la somiglianza è la **tau-b di Kendall** fra le due classifiche, con l'intervallo al 95 per cento per
+  ricampionamento delle pagine nuove (10.000, seme fisso 20261119).
+- **Scarti**: ogni confronto appaiato dei giri 1 e 2 (T4, T11, T15) si rifà sulle nuove con l'intervallo; «regge» se il valore del giro sta
+  dentro l'intervallo delle nuove con lo stesso segno, «cambia» se ne esce (si dice di quanto), «indicativa a ragione» o «a torto» per le
+  caselle che nei giri 1 e 2 avevano meno di 20 pagine.
+- Si rifanno le verifiche di H1-H4 e le risposte alle cinque domande col materiale nuovo; ognuna delle 40 frasi per la radio del § 23.7 si
+  segna **confermata** (stesso senso e numero dentro l'intervallo), **corretta** (stesso senso, numero nuovo) o **smentita** (senso
+  opposto), col numero nuovo.
+
+### 25.5 Il controllo semantico (Parte 6)
+
+Sulle pagine che le misure segnalano come anomale (regola del § 8) e su un campione fisso di al più 5 pagine per situazione, scelte fra le
+pagine nuove del livello B nell'ordine dell'impronta e uguali per tutti i modelli, più 12 pagine ruotate (4 per angolo) e le pagine vere
+con la verità. Stessa tassonomia del § 7 più le classi del rumore udibile. **Prova alla cieca** con un sotto-agente nuovo, che non sa quale
+modello ha prodotto quale uscita, sulle coppie del fulcro (GLM a piena precisione contro la via GLM dell'app; Surya contro la via GLM
+dell'app; docling contro Heron nell'app per la struttura) e su Xiaomi-OCR-0 contro GLM; il sotto-agente giudica anche ciò che si sente. Si
+riporta l'accordo; dove non coincide si rilegge e si decide dichiarandolo; quando sbaglia la verità la si corregge con una nota e si
+ricalcola per tutti.
+
+### 25.6 I livelli del report e i numeri
+
+I livelli del § 9 (dati grezzi solo nel laboratorio; riassunti; confronti appaiati; diagnosi semantica; classifica). Come nei giri
+precedenti: numero di pagine, mediana e dispersione; confronti appaiati con l'intervallo della differenza (10.000 ricampionamenti, seme
+fisso); caselle con meno di 20 pagine indicative; ogni numero ricalcolabile dagli script di `globale/strumenti/` sui dati grezzi. Il metro
+del testo è quello del giro 2 (apostrofo unificato, lettere e cifre separate). Le tabelle nuove continuano la numerazione (T23 in poi).
+
+**Parte 1, le reti** (dal brief): la correzione delle pagine ruotate si prova sulle 19 pagine vere e su pagine ruotate costruite apposta, con
+la prova al contrario (correzione tolta: il terzo alto torna a mancare); con le pagine non ruotate la via delle scansioni deve dare letture
+identiche al byte a quelle del giro 1 su tutto il banco (quattro configurazioni); rete sul parlato verde; vista del Mac contro l'iPad 55 su
+55, con l'eccezione dichiarata dei titoli; test d'unità e d'interfaccia del Mac verdi, compresi quelli nuovi.
+
+### 25.7 Check-up (campo, 16:05-16:07; due consultazioni: PyPI, API di Hugging Face e di GitHub)
+
+Stesse versioni e revisioni dei giri 1 e 2 per tutti i modelli e i motori misurati: surya-ocr 0.24.0, marker-pdf 2.2.0, transformers
+5.23.0, torch 2.15.0, coremltools 9.0; GLM-OCR GGUF `65a42de1`, GLM-OCR ufficiale `2e85a628`, Surya 2.5 GGUF `eb78671a`, Granite Docling GGUF
+`684c1800`, Heron `8f39ad3c`, egret medium, large e xlarge `77ede7cc`, `fff417c7`, `23857d16`, Xiaomi-OCR-0 `bbd8cf8d`, PP-DocLayoutV3
+`e4f489dc`, MiniCPM-OCR GGUF `0133ad8d`, dots.ocr GGUF `2c093a32`; llama.cpp: la release segnata «Latest» resta v1.0.0, le build numerate
+vanno avanti (b12541 del 2026-11-19). **Una novità: docling 2.151.0, pubblicato oggi (2026-11-19, PyPI).** Scelta: il giro misura con
+2.150.1, la versione del banco, perché il confronto fra banco e corpus chiede le stesse versioni; la 2.151.0 si prova sul sottoinsieme fisso
+del giro 1 solo se avanza calcolo, come riferimento di versione.
+<!-- METODO3:fine -->
