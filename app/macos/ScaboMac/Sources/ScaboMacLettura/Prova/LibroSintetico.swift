@@ -7,6 +7,7 @@
 //
 import AppKit
 import CoreText
+import PDFKit
 
 public enum LibroSintetico {
 
@@ -108,6 +109,35 @@ public enum LibroSintetico {
             ctx.endPDFPage()
         }
         ctx.closePDF()
+        return url
+    }
+
+    /// La stessa SCANSIONE salvata come fanno molti scanner (giro globale del banco OCR, 2026-11-19): ogni pagina in un riquadro
+    /// orizzontale, con l'immagine girata e la rotazione dichiarata (`/Rotate 270`), così che si mostri diritta. Per provare
+    /// nell'app vera che la lettura delle scansioni legge la pagina intera, terzo alto compreso (`--scansione-ruotata-di-prova`).
+    @discardableResult
+    public static func scriviScansioneRuotata(in url: URL) throws -> URL {
+        let dritta = url.deletingLastPathComponent().appendingPathComponent(".dritta-\(UUID().uuidString).pdf")
+        try scriviScansione(in: dritta)
+        defer { try? FileManager.default.removeItem(at: dritta) }
+        guard let sorgente = CGPDFDocument(dritta as CFURL) else { throw NSError(domain: "LibroSintetico", code: 4) }
+        let grezzo = url.deletingLastPathComponent().appendingPathComponent(".ruotata-\(UUID().uuidString).pdf")
+        defer { try? FileManager.default.removeItem(at: grezzo) }
+        var box = CGRect(x: 0, y: 0, width: 842, height: 595)
+        guard let ctx = CGContext(grezzo as CFURL, mediaBox: &box, nil) else { throw NSError(domain: "LibroSintetico", code: 5) }
+        for i in 1...max(1, sorgente.numberOfPages) {
+            guard let pagina = sorgente.page(at: i) else { continue }
+            ctx.beginPDFPage(nil)
+            // la pagina diritta (595 × 842) girata di 90 gradi in senso orario nel riquadro orizzontale: con /Rotate 270 si mostra diritta
+            ctx.translateBy(x: 0, y: 595)
+            ctx.rotate(by: -.pi / 2)
+            ctx.drawPDFPage(pagina)
+            ctx.endPDFPage()
+        }
+        ctx.closePDF()
+        guard let doc = PDFDocument(url: grezzo) else { throw NSError(domain: "LibroSintetico", code: 6) }
+        for k in 0..<doc.pageCount { doc.page(at: k)?.rotation = 270 }
+        guard doc.write(to: url) else { throw NSError(domain: "LibroSintetico", code: 7) }
         return url
     }
 }

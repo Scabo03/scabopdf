@@ -407,6 +407,40 @@ final class ScaboPDFUITests: XCTestCase {
                                       "riga_dice_scansione": valore.contains("da una scansione")])
     }
 
+    /// LE PAGINE RUOTATE (giro globale del banco OCR, 2026-11-19): la scansione del libro sintetico salvata in orizzontale con
+    /// `/Rotate 270`, come molti scanner, si legge INTERA con la lettura del testo di Apple: il titolo in testa alla prima pagina (nel terzo
+    /// alto, che prima della correzione restava fuori dalla tela) e la nota in fondo arrivano alla lettura. Il file è quello che l'app
+    /// scrive da sé (`--scansione-ruotata-di-prova`) o, per la prova al contrario su una build di prima, un file messo dal laboratorio e
+    /// importato dal pannello (variabile SCABOMAC_SCANSIONE_RUOTATA).
+    func test_scansioneRuotata_siLeggeIntera_titoloInTestaENotaInFondo() throws {
+        let env = ProcessInfo.processInfo.environment
+        let file = env["SCABOMAC_SCANSIONE_RUOTATA"]
+        let app = app(file == nil ? ["--libreria-di-prova", "--scansione-ruotata-di-prova"] : ["--libreria-di-prova"])
+        app.launch()
+        defer { app.terminate() }
+        if let file { importaDalPannello(app, file) }
+        let foglio = app.descendants(matching: .any)["scansione.finestra"]
+        XCTAssertTrue(foglio.waitForExistence(timeout: 60), "la schermata della scansione")
+        let apple = app.radioButtons["scansione.lettore.apple"]
+        XCTAssertTrue(apple.exists)
+        apple.click()
+        app.buttons["scansione.avvia"].click()
+        let lettura = app.windows["lettura.finestra"]
+        XCTAssertTrue(lettura.waitForExistence(timeout: 600), "la scansione ruotata si legge e si apre")
+        let gruppo = lettura.groups["Testo del documento"]
+        XCTAssertTrue(gruppo.waitForExistence(timeout: 10))
+        let elementi = gruppo.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "lettura.elemento."))
+        XCTAssertGreaterThanOrEqual(elementi.count, 6)
+        func trova(_ s: String) -> Bool {
+            gruppo.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@ OR value CONTAINS[c] %@", s, s)).count > 0
+        }
+        let titolo = trova("Capitolo primo"), nota = trova("Nota numero 1")
+        XCTAssertTrue(titolo, "il titolo in testa alla prima pagina (terzo alto) arriva alla lettura")
+        XCTAssertTrue(nota, "la nota in fondo alla prima pagina arriva alla lettura")
+        scrivi("scansione_ruotata", ["file": file == nil ? "sintetica" : "laboratorio", "elementi": elementi.count,
+                                     "titolo_in_testa": titolo, "nota_in_fondo": nota])
+    }
+
     /// LA LETTURA MIGLIORE DAL MENU DEL LIBRO (giro «modelli e scansioni», 2026-11-18; LAYER2 § 12.16, decisione 20): il foglio
     /// «Prepara una lettura migliore» coi modelli per ruolo e il predefinito già scelto, l'audit; «Prepara» lavora in sottofondo
     /// (la riga lo dice); alla fine o arriva l'offerta (segno nella riga e «Apri ora») o la riga resta senza segno: niente arriva in

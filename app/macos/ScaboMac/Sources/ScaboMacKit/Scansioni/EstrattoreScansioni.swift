@@ -274,8 +274,10 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
     private func leggi(doc: PDFDocument, indice: Int, heron: HeronLayoutModel?, isCancelled: () -> Bool,
                        soloApple: inout Int) throws -> PaginaLetta? {
         guard let page = doc.page(at: indice), let img = LetturaScansioni.immagine(della: page) else { return nil }
-        let box = page.bounds(for: .cropBox)
-        let W = Double(box.width), H = Double(box.height)
+        // La pagina come si mostra (ruotata, sul suo riquadro di ritaglio): lo spazio dell'immagine letta, quindi delle righe, delle
+        // regioni e della pagina dell'estrazione (giro globale del banco OCR, 2026-11-19; uguale a prima sulle pagine diritte).
+        let mostrata = LetturaScansioni.misuraMostrata(della: page)
+        let W = Double(mostrata.width), H = Double(mostrata.height)
         let ta = Date()
         let letturaApple = try LetturaScansioni.letturaApple(img, larghezza: W, altezza: H, classica: varianti.richiestaClassica)
         let apple = letturaApple.righe

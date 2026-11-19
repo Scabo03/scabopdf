@@ -16,6 +16,8 @@
 //    --libreria-di-prova-continua  la stessa libreria a parte, senza svuotarla (prove su due lanci)
 //    --libro-di-prova         scrive il PDF sintetico (ScaboMacLettura `LibroSintetico`) e lo importa col percorso vero
 //    --scansione-di-prova     scrive la scansione del libro sintetico (solo immagini) e la importa: la schermata della scansione
+//    --scansione-ruotata-di-prova  la stessa scansione salvata in orizzontale con /Rotate 270, come molti scanner (giro globale
+//                             del banco OCR, 2026-11-19): la prova che la lettura delle scansioni legge la pagina intera
 //    --importa <percorso>     importa un file che sta già nel contenitore dell'app
 //    --descrivi-in <percorso> appena una lettura si apre, scrive lì la sua descrizione dalla vista (formato 2) e quella del
 //                             modulo accanto (`.modulo.jsonl`), per il confronto da fuori
@@ -199,6 +201,11 @@ final class ScaboMacApp: NSObject, NSApplicationDelegate, ComandiApp {
         if argomenti.contains("--scansione-di-prova") {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent("Scansione di prova.pdf")
             if FileManager.default.fileExists(atPath: url.path) || (try? LibroSintetico.scriviScansione(in: url)) != nil { fileInArrivo.append(url) }
+        }
+        if argomenti.contains("--scansione-ruotata-di-prova") {
+            // Le stesse pagine salvate in orizzontale con /Rotate 270, come molti scanner (giro globale del banco OCR, 2026-11-19).
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent("Scansione ruotata di prova.pdf")
+            if FileManager.default.fileExists(atPath: url.path) || (try? LibroSintetico.scriviScansioneRuotata(in: url)) != nil { fileInArrivo.append(url) }
         }
         if let p = argomento("--importa") { fileInArrivo.append(URL(fileURLWithPath: p)) }
         if !fileInArrivo.isEmpty {
