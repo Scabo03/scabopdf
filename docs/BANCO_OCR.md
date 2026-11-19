@@ -261,6 +261,8 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
   staccato, prendeva errori di cifre su quella parola. Ora una parola con lettere e cifre attaccate si divide in lettere e cifre, nella
   verità e nei candidati allo stesso modo; la misura vecchia resta come controllo di continuità col giro precedente, e la riproduce al
   decimale.
+- Strumento corretto (01:58): su 5 pagine con un indice o un sommario stampato docling mette il testo dentro la tabella dell'indice, che il
+  programma di corsa non salvava; quelle pagine si rifanno nelle tre forme col testo delle celle (le uscite di prima restano nel laboratorio).
 - Per la ripetibilità delle forme dell'app con GLM i 139 campioni contigui riusano il testo di GLM salvato dal giro precedente (stessi
   pesi verificati per impronta, stesso codice di lettura: dal 2026-11-18 sera il file del modello è cambiato solo nei commenti); la
   lettura di Apple, l'impaginazione, la guardia e la catena girano dal vivo. La seconda corsa del sottoinsieme fisso rifà GLM dal vivo
@@ -451,6 +453,17 @@ con due tabelle, una pagina di manuale con glosse e titolo di paragrafo.
   raduna le glosse in un blocco «nota» in testa e non riconosce il titolo numerato; tiene però i richiami in apice accanto alla parola.
 
 (Surya: in corso.)
+
+### 15.4 Verifica a mano del classificatore delle parole in più (campo)
+
+Campione di 20 parole per classe (seme fisso) sulla lettura dell'app con GLM, scansione pulita, preso con la stessa funzione delle misure.
+Delle 20 «parole plausibili» (la classe delle invenzioni possibili): 6 sono testo vero della pagina che il livello di testo non ha (scritte
+dentro figure e tabelle stampate come immagine, il logo dell'editore, il nome della rivista nel piè), 5 frammenti di parole spezzate o
+parole incollate, 7 storpiature pesanti senza senso, 1 è un errore della verità (il livello di testo d'origine, un vecchio OCR, legge male
+quella parola), e al più 2 sono invenzioni scorrevoli e credibili (casi dubbi). Fra le «lettere storpiate» molte sono parole giuste lette da
+tabelle-immagine, che il classificatore accosta alla stessa parola altrove nel documento. **Conclusione:** le parole plausibili sono un
+tetto superiore delle invenzioni vere, non il loro numero; le invenzioni scorrevoli, quelle che all'orecchio non si riconoscono, sono rare in
+tutti i lettori misurati. Per questo il report dà anche il conteggio senza le pagine con figure, tabelle o didascalie.
 <!-- SEMANTICA:fine -->
 
 ## 16. Parte 6 — Il report ridotto
