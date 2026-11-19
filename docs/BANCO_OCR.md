@@ -423,13 +423,92 @@ d'indice docling mette lemmi, sigle dei codici e voci tutti al livello 1, una ge
 nell'app non dichiara livelli: non applicabile). Un terzo punto (3 «inventati» per Heron) riletto: sono numeri di nota in apice letti
 come segni grafici, storpiati e non inventati.
 
-(15.2 e 15.3: in corso.)
+### 15.2 Coppia 2 — GLM-OCR a piena precisione contro GLM-OCR nell'app (lettura del testo)
+
+Pagine lette finora: due del manuale con le glosse a margine destro (pulita) e una pagina densa del codice a due colonne; le uscite
+grezze di GLM a piena precisione e di GLM nell'app (Q8_0, stesso motore dell'app, prima della guardia) e la lettura finale dell'app.
+- **Le due forme del modello leggono quasi allo stesso modo** (campo): sulle pagine guardate differiscono di una o due parole a
+  pagina, in entrambe le direzioni (la piena precisione toglie un accento o aggiunge una sillaba; la forma compressa raddoppia una
+  lettera o sbaglia un numero romano in maiuscoletto). Entrambe **non leggono le glosse a margine** (perso).
+- **La trappola della decodifica** (campo): con la penalità di ripetizione applicata a tutto il contesto (com'è in transformers), la
+  piena precisione su una pagina densa del codice ha scritto mezza pagina con le parole incollate e due caratteri cinesi al posto di una
+  lettera; la forma dell'app (penalità sugli ultimi 64 token) è pulita. Corretta e rifatta (§ 10).
+- **Nella lettura finale dell'app** le glosse tornano, perché la guardia tiene le righe di Apple dove GLM non ha nulla: ma Apple legge la
+  riga del corpo e la riga della glossa accanto come una riga sola, così le parole della glossa finiscono in mezzo alla frase del corpo
+  (fuso, con lettere storpiate). Causa nella pagina: glossa stretta allineata alle righe del corpo.
+
+### 15.3 Coppia 3 — Surya e Marker contro la coppia GLM + Heron dell'app (testo e struttura)
+
+Pagine lette finora per Marker (pulita): una pagina di rivista con note numerate a tre cifre e nomi con segni diacritici, un'appendice
+con due tabelle, una pagina di manuale con glosse e titolo di paragrafo.
+- **Note e diacritici**: Marker scrive i numeri di nota in apice e alcune lettere con diacritici in notazione matematica (graffe, apici,
+  comandi): chi ascolta sente segni e parole tecniche al posto del numero della nota o del nome. L'app fonde le nove note della pagina in
+  due blocchi e rende i richiami come segni all'inizio della frase dopo.
+- **Tabelle**: Marker e docling riconoscono le due tabelle con le celle; l'app sulla scansione le legge cella per cella in una sessantina
+  di frammenti, molti chiamati «nota» (sul PDF col testo invece le annuncia come risorse visive).
+- **Glosse e testatine**: Marker trova il titolo di paragrafo, toglie testatine e piè, fonde un frammento di glossa all'inizio di un
+  capoverso; l'app, su una pagina letta da sola, legge il folio e il nome del capitolo della testatina (senza ricorrenza non li riconosce),
+  raduna le glosse in un blocco «nota» in testa e non riconosce il titolo numerato; tiene però i richiami in apice accanto alla parola.
+
+(Surya: in corso.)
 <!-- SEMANTICA:fine -->
 
 ## 16. Parte 6 — Il report ridotto
 
 <!-- REPORT:inizio -->
-(16.1-16.5 in corso: rendimento generale, per compito, banco contro app, domande e ipotesi, versioni.)
+### 16.1 Rendimento generale (campo; tabelle T1, T2, T3, T7 del § 14)
+
+<!-- R161:inizio -->
+(in corso)
+<!-- R161:fine -->
+
+### 16.2 Rendimento per compito (campo)
+
+<!-- R162:inizio -->
+(in corso)
+<!-- R162:fine -->
+
+### 16.3 Il banco contro l'app, coppia per coppia (campo; tabella T4)
+
+<!-- R163:inizio -->
+(in corso)
+<!-- R163:fine -->
+
+### 16.4 Prime risposte alle domande di ricerca ed esito delle ipotesi
+
+<!-- R164:inizio -->
+**Ipotesi** (campo, numeri ricalcolati da `numeri.py` e `confronti.py`; intervalli al 95 % per ricampionamento delle pagine):
+
+- **H1 — Heron in Core ML con il porto Swift riconosce la struttura quasi come docling: REGGE.** Sulle 34 pagine con verità per blocchi,
+  PDF col testo: titoli 22 su 47 contro 23 (docling 2.150.1), note 41 su 76 contro 41, didascalie 2 su 2, tabelle 2 su 2, figure 4 su 4
+  per entrambi, ordine 0,968 contro 0,978; nessuna differenza appaiata esce dall'intervallo dello zero salvo le testatine (+12,5 punti
+  per Heron, [0; 25,9]). Sulle scansioni (Heron sull'immagine, nella via dell'app): pulita alla pari (titoli 22 contro 23, note 42 contro
+  41, ordine 0,950 contro 0,959); degradata un po' sotto (titoli 20 contro 22, note 37 contro 39, figure 0 su 4 contro 4, ordine 0,927
+  contro 0,981). Il dato di fase 20 si riproduce identico per Heron (22, 41, 0,968).
+- **H2 — docling è il migliore nell'ordine di lettura; Surya perde sulle pagine dense:** (in corso: la parte di Surya).
+- **H3 — GLM-OCR è più preciso del lettore di Apple, soprattutto sulle cifre: REGGE**, con la misura corretta delle cifre (§ 10). Letture
+  grezze, 185 pagine, pulita: lettere sbagliate 0,53 contro 0,12 per cento (differenza 0,41 [0,31; 0,52]), cifre 1,15 contro 0,32
+  ([0,53; 1,13]), parole plausibili inventate 4,2 contro 0,8 per mille; nell'app (Apple con l'impaginazione contro GLM con la guardia):
+  lettere 0,33 contro 0,18, cifre 0,96 contro 0,46 ([0,25; 0,77]). Sulle cifre il vantaggio di GLM è minore di quanto sembrava: metà
+  degli «errori di cifre» di Apple del giro precedente erano richiami in apice non letti (§ 10), che restano un limite di Apple (letti 9
+  su 211 nella via dell'app, contro 112 con GLM).
+- **H4 — Il lettore di Apple perde parole a fine riga nelle note e non vede le tabelle: REGGE IN PARTE.** Nelle note le parole intere a fine
+  riga non si perdono molto più delle interne (12,5 contro 10,3 per cento, pulita); ciò che succede davvero è che **le parole sillabate a
+  fine riga restano spezzate** (93,6 per cento delle parole sillabate nelle note non ricomposte, 75 nel corpo) e che **l'inizio delle righe
+  di nota si perde spesso** (34 per cento, in buona parte i numeri delle note in apice); GLM grezzo ricompone le sillabate (10,8 per cento
+  non ricomposte). Tabelle: il lettore del testo di Apple non ha la nozione di tabella; la struttura dei documenti di Apple le vede (in
+  corso la corsa rifatta); nell'app sulle scansioni **nessuna tabella è annunciata** (0 su 19), mentre il modello d'impaginazione le trova
+  sull'immagine (19 su 19).
+
+**Domande di ricerca** (prime risposte; si completano a fine giro):
+(in corso)
+<!-- R164:fine -->
+
+### 16.5 Versioni: dove una versione nuova cambia i risultati
+
+<!-- R165:inizio -->
+(in corso)
+<!-- R165:fine -->
 
 ### 16.6 Esperienze operative del giro (campo)
 
