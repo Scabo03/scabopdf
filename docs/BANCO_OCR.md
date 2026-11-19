@@ -2529,3 +2529,67 @@ vanno avanti (b12541 del 2026-11-19). **Una novità: docling 2.151.0, pubblicato
 2.150.1, la versione del banco, perché il confronto fra banco e corpus chiede le stesse versioni; la 2.151.0 si prova sul sottoinsieme fisso
 del giro 1 solo se avanza calcolo, come riferimento di versione.
 <!-- METODO3:fine -->
+
+## 26. Giro globale, Parte 1 — La correzione delle pagine ruotate, nell'app Mac (campo)
+
+<!-- G3P1:inizio -->
+**Il difetto, misurato prima di correggere** (campo, 16:12, pagine sintetiche costruite con contrassegni noti: un quadrato nero in alto a
+sinistra, righe di prova; rotazione 0, 90, 180 e 270, ciascuna con il riquadro di ritaglio all'origine e spostato di 30 punti; strumento
+`globale/strumenti/rotazione/prova_rese.swift` nel laboratorio). `PDFPage.draw(with:to:)` disegna già la pagina ruotata e riportata all'origine
+del suo riquadro di ritaglio (applica da sé `transform(for:)`). La resa dell'app (`LetturaScansioni.immagine(della:)`) dava alla tela la misura
+del riquadro **non ruotato** e traslava di nuovo sul riquadro: giusta solo a 0 e a 180 gradi col riquadro all'origine; a 90 e a 270 gradi la
+pagina verticale finiva in una tela orizzontale; con il riquadro spostato la pagina scivolava di quanto è spostato. Una tela sulla misura
+**mostrata** (lati scambiati a 90 e 270 gradi) senza traslazione nostra dà la pagina giusta in tutti gli otto casi; la traslazione aggiunta a
+`transform(for:)` no.
+
+**La correzione** (commit `cbb1eb3`, solo codice del Mac): in `LetturaScansioni` la misura della pagina come si mostra (`misuraMostrata`), la
+resa sulla tela di quella misura senza traslazione nostra, e la resa per il modello d'impaginazione (`resaPerImpaginazione`) fatta nel codice
+del Mac sulle sole pagine ruotate o col riquadro spostato, con gli stessi passi del modulo condiviso (sulle altre resta la resa del modulo, al
+byte); in `EstrattoreScansioni` righe, regioni e pagina dell'estrazione nello spazio della pagina come si mostra. Il modulo condiviso sotto
+`app/ios` non si tocca. Per il test d'interfaccia, un generatore della scansione sintetica salvata in orizzontale con `/Rotate 270`
+(`--scansione-ruotata-di-prova`, come la scansione di prova che l'app già scrive).
+
+**Le prove e la prova al contrario** (campo):
+- 7 test d'unità nuovi (`PagineRuotateScansioniTests`, `ResaPagineRuotateTests`): la stessa pagina sintetica a 90, 180 e 270 gradi e col riquadro
+  spostato dà l'immagine della pagina diritta (differenza media dei pixel sotto 2 su 255), la lettura di Apple attraverso l'estrattore legge la
+  riga in alto e quella in fondo e le mette in alto e in fondo nella pagina dell'estrazione, le regioni di Heron sono quelle della pagina diritta;
+  sulle pagine diritte la resa nuova è identica al byte alla vecchia, e quella per l'impaginazione a quella del modulo. **Al contrario**: i tre test
+  che usano l'interfaccia di prima, fatti girare sul codice di prima, falliscono con 29 asserzioni.
+- Test d'interfaccia nuovo (l'app vera, la scansione sintetica ruotata, la lettura di Apple): con l'app corretta la lettura ha 25 elementi e
+  porta il titolo in testa alla prima pagina e la nota in fondo; con l'app di prima, sullo stesso file, 2 elementi e il test fallisce.
+- **Identità con tutto spento**: la via delle scansioni corretta sulle 185 pagine del banco del giro 1 (tutte diritte, riquadro all'origine), nelle
+  quattro configurazioni (due scansioni, due lettori): letture identiche al byte 260 file su 260 e righe delle pagine lette 185 su 185 in ciascuna.
+- Test d'unità del Mac: 180, zero falliti, 5 saltati (lettura 80 con 1, kit 100 con 4). Test d'interfaccia: 19, 13 passati, 6 saltati (a richiesta
+  o per la navigazione da tastiera spenta, come nei giri precedenti), zero falliti. Rete sul parlato verde (officina a `cbb1eb3`, 192 descrizioni
+  su 192 identiche al byte, del modulo e per VoiceOver). Rete della vista del Mac verde: vista del Mac sulla lettura dell'iPad 55 libri su 55;
+  l'app che importa da sé 19 su 55 identici, con le 36 differenze dell'estrattore identiche al byte a quelle della corsa di riferimento (`d4d4d60`),
+  eccezione dei titoli dichiarata come nei giri precedenti.
+
+**L'iPad: solo una misura, senza cambiare niente** (campo; strumento `globale/ipad_misura`, che usa il modulo condiviso `ScaboPageStructure` per
+percorso, compilato nel laboratorio; `app/ios` invariato prima e dopo). Il modulo ha la stessa costruzione della resa di prima
+(`HeronPageRenderer.renderPage`; anche `RegionCropper.pngData`, letto senza modificarlo). Regioni del modello sulla resa del modulo ritrovate
+(stessa etichetta, sovrapposizione almeno 0,5) fra quelle della resa della pagina come si mostra:
+
+| pagine | regioni ritrovate |
+|---|---|
+| costruite diritte (controllo), 24 | 367 su 367 |
+| costruite a 90 gradi, 24 | 6 su 370 |
+| costruite a 180 gradi, 24 | 370 su 370 |
+| costruite a 270 gradi, 24 | 6 su 370 |
+| vere diritte, 43 | 1.324 su 1.324 |
+| vere a 90 gradi, 2 | 2 su 9 |
+| vere a 180 gradi, 1 | 26 su 26 |
+| vere a 270 gradi, 29 | 13 su 722 |
+| pagine col testo dei quattro volumi col riquadro spostato, 24 | 47 su 444 |
+
+**Stesso difetto, con un caso in più che pesa sull'iPad oggi.** Sull'iPad il modulo serve al riconoscimento delle risorse visive dei PDF col
+testo (`VisualRegionDetector`) e al loro ritaglio per l'esportazione (`VisualResourceExport`, `RegionCropper`): le pagine ruotate sono già
+escluse da entrambi (su di esse l'iPad non ha risorse visive, invece di averne di sbagliate: dedotto dal codice), ma le pagine col **riquadro di
+ritaglio spostato dall'origine** no. Nel corpus sono 3.007 pagine su 23.566 (12,8 per cento; campo), quattro volumi interi (v06, v26, v32, v39) e
+qualche copertina; lì le regioni del modulo nascono da una pagina spostata (47 regioni su 444 ritrovate) e il ritaglio esce spostato (differenza
+media del ritaglio contro la resa giusta 53,5 su 255, contro 11-16 sulle pagine diritte: campo). Oggi la lettura dell'iPad non annuncia risorse
+visive su quei quattro volumi (campo); la stessa resa del modulo serve anche alla lettura migliore del Mac sui PDF col testo (`OfficinaMac`,
+dedotto dal codice) e a Heron nell'app sui PDF col testo, misurato nel livello A. È fra le decisioni per il maintainer, per dopo la trasmissione.
+
+**Prima e dopo sulle pagine ruotate costruite e sulle scansioni vere**: § 26.1, quando le corse sono finite.
+<!-- G3P1:fine -->
