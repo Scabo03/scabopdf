@@ -1,11 +1,15 @@
-# Banco OCR — confronto fra banco puro e modelli dentro l'app (giri 1 e 2)
+# Banco OCR — confronto fra banco puro e modelli dentro l'app (giri 1, 2 e globale)
 
 > Documento privo di testo dei volumi: solo tipi, conteggi, misure, tempi, versioni e impronte. I volumi si chiamano v01-v52, i
 > documenti di studio con le loro etichette neutre; le pagine, le immagini, le uscite dei modelli e le tabelle pagina per
 > pagina stanno solo nel laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`. Etichette di prova su ogni affermazione:
 > **campo** (misurato in questo giro), **fonte** (documento o scheda, con indirizzo e data), **dedotto**, **non verificato**.
 >
-> Stato: **giro 2 concluso il 2026-11-19 (10:32-15:45)**: metodo nel § 17, cascata delle perdite e varianti nel § 18, modelli nuovi nel
+> Stato: **giro globale concluso il 2026-11-20 (dalle 15:51 del 19 alle 07:00 del 20)**: metodo nel § 25, correzione delle pagine ruotate
+> nell'app Mac nel § 26, materiale in tre livelli e l'estensione nei § 27 e 35.1, corse nel § 28, rendimento, struttura sul corpus, cascata,
+> rumore udibile, varianti e scansioni vere nei § 29-34, campione contro corpus nel § 35, controllo semantico nel § 36, tempi ed energia nel
+> § 37, classifica, ipotesi e frasi per la radio riviste nei § 38-40, esperienze, residui, verifiche e revisione nei § 41-43, scelte nel § 10.
+> Giro 2: **concluso il 2026-11-19 (10:32-15:45)**: metodo nel § 17, cascata delle perdite e varianti nel § 18, modelli nuovi nel
 > § 19, combinazioni nel § 20, scansioni vere nel § 21, controllo semantico nel § 22, report completo con le frasi per la radio nel § 23,
 > verifiche e revisione nel § 24. Giro 1: **REPORT PARZIALE, giro 1 di 2 (concluso il 2026-11-19).** Il metodo (§ 0-10) è stato scritto e committato prima di
 > qualunque corsa (commit `e547665`, ore 00:25); da lì metodo, misure e campione non si sono cambiati per adattarli ai risultati, e
@@ -447,6 +451,12 @@ riporta quanto il suo giudizio coincide col mio; dove non coincide si rilegge e 
     delle chiavi. (12) Nei PDF misti le pagine col testo restano nello spazio non ruotato e quelle lette nello spazio mostrato: due convenzioni
     nella stessa estrazione (nel corpus non capita; residuo). (13) PP-DocLayoutV3 a Mac libero: 5 secondi per le 12 pagine del sottoinsieme
     fisso, avvio compreso (non era nella T29).
+  - 06:43 estensione completata (8 blocchi, 96 corse con uscita 0, 03:50-06:33); analizzata separata (E) e insieme al livello B (BE): § 35.1.
+  - 06:5x SECONDA PASSATA DELLA REVISIONE (18 chiusi, 7 in parte, nessuno aperto): ritocchi fatti (T23 rigenerata col segno della pagina più
+    pesante e la base del banco a 179 pagine; frasi 1, 8, 9; 44 pagine dei codici nell'estensione; contesa sulla scheda grafica «dedotta»). Il
+    margine «pari entro un decimo di punto» per le differenze vicine a zero (frase 5) è un'aggiunta fatta DOPO aver visto i numeri: dichiarata
+    qui. Le 20 pagine nuove del livello B con la verità vuota (sommari e colophon non letti dall'iPad) restano nel campione ma non entrano nelle
+    misure del testo.
 <!-- G3S10:fine -->
 
 ## 11. Parte 1 — Il check-up degli strumenti (campo, 2026-11-19)
@@ -2735,7 +2745,7 @@ revisione e al report; gli altri modelli solo dopo dots e se resta tempo.
 <!-- G3P2:fine -->
 
 <!-- G3BOZZA:inizio -->
-**Bozza alle 05:0x dopo la revisione indipendente (25 rilievi affrontati); l'estensione del livello B gira fino alle 6:30 circa, poi i suoi numeri (separata e insieme) e la chiusura.**
+**Giro globale concluso: numeri finali (livello B nelle due forme, estensione separata e insieme, livelli A e C, notte), verifiche e due passate di revisione.**
 
 ## 28. Giro globale, Parte 3 — Le corse (campo)
 
@@ -2772,7 +2782,7 @@ contro 2,22); il banco pesa di più le pagine difficili e i codici (dedotto). La
 il banco; per le due vie dell'app torna vicina al banco (5,3-5,5 contro 6,0-6,4), perché il corpus a peso di pagina è per il 23 per cento i
 due codici, dove la catena perde le glosse fittizie (§ 31); per GLM grezzo, Xiaomi, GLM a piena precisione e la variante B sta sopra il
 banco. **Attenzione alle stime pesate** (rilievo della revisione, § 43): dove una sola pagina pesa oltre un quinto del numeratore pesato
-la T23 lo segna e dà la stima senza quella pagina; per GLM grezzo una pagina del codice a due colonne, dove GLM salta parte della colonna
+la T23 lo segna (⚠) e dà la stima senza quella pagina (la stima pesata di GLM a piena precisione, sul suo sottoinsieme di 60 pagine, non è una stima del corpus: una pagina ne fa il 55 per cento); per GLM grezzo una pagina del codice a due colonne, dove GLM salta parte della colonna
 destra, fa il 38 per cento (3,23; senza, 2,05); per docling ed egret una pagina di v27 il 33-34 (1,84 e 1,76; senza, 1,25 e 1,17). Le stime
 sul corpus più solide sono quelle col livello B e l'estensione insieme (§ 35.1), dove i due codici hanno 21 e 20 pagine in più. **Un limite del livello B, visto nei numeri e dichiarato**
 (§ 10): ogni pagina nuova è un documento di una pagina, e la catena dell'app riconosce testatine e piè dalla loro ripetizione fra le pagine;
@@ -2783,30 +2793,30 @@ banco; le parole perse sì.
 **Struttura sul corpus intero** (T28, livello A, 55 documenti, accordo con la lettura dell'iPad): (vedi § 30, tabella T28).
 <!-- G3S29:fine -->
 
-### Tabella T23 — Testo sul campione largo, scansione pulita: banco (185 pagine), pagine nuove (livello B), insieme, e la stima pesata sulle pagine del corpus (per cento; [intervallo al 95 %]; (mediana per pagina, quartili))
+### Tabella T23 — Testo sul campione largo, scansione pulita: banco (179 pagine: le 185 senza le 6 di v11), pagine nuove (livello B), insieme, e la stima pesata sulle pagine del corpus (per cento; [intervallo al 95 %]; (mediana per pagina, quartili))
 
 | configurazione | pagine (banco / nuove) | parole perse: banco | nuove | insieme | pesata sul corpus | lettere sbagliate: nuove | cifre sbagliate: nuove | plausibili inventate ‰: nuove |
 |---|---|---|---|---|---|---|---|---|
 | App: Apple + Heron (corretta) | 179 / 293 | 6,44 [4,04; 9,08] (med. 1,31, 0,40-3,68) | 3,35 [2,21; 4,71] (med. 0,60, 0,00-1,69) | 4,44 [3,28; 5,70] (med. 0,79, 0,00-2,16) | 5,49 [3,05; 7,81] | 0,17 [0,10; 0,26] (med. 0,03, 0,00-0,10) | 0,45 [0,32; 0,60] (med. 0,00, 0,00-0,00) | 3,81 [2,62; 5,28] (med. 0,00, 0,00-2,45) |
 | App: GLM + guardia + Heron (corretta) | 179 / 293 | 6,02 [3,58; 8,69] (med. 0,79, 0,00-2,95) | 2,94 [1,81; 4,29] (med. 0,35, 0,00-0,93) | 4,02 [2,87; 5,29] (med. 0,47, 0,00-1,44) | 5,26 [2,84; 7,58] | 0,09 [0,06; 0,12] (med. 0,00, 0,00-0,09) | 0,15 [0,08; 0,23] (med. 0,00, 0,00-0,00) | 2,97 [2,07; 4,05] (med. 0,00, 0,00-2,07) |
 | Apple, righe grezze | 179 / 293 | 4,15 [3,52; 4,93] (med. 3,27, 1,86-4,82) | 2,91 [2,57; 3,28] (med. 2,14, 0,79-3,61) | 3,35 [3,03; 3,71] (med. 2,46, 1,24-4,13) | 3,16 [2,79; 3,50] | 0,33 [0,26; 0,42] (med. 0,16, 0,00-0,39) | 0,54 [0,38; 0,72] (med. 0,00, 0,00-0,00) | 3,84 [2,68; 5,27] (med. 0,00, 0,00-2,82) |
-| GLM Q8, testo grezzo | 179 / 293 | 2,24 [1,59; 3,08] (med. 0,83, 0,19-2,80) | 1,94 [1,48; 2,63] (med. 1,20, 0,26-2,01) | 2,05 [1,65; 2,57] (med. 1,16, 0,24-2,11) | 3,23 [1,87; 5,74] | 0,05 [0,04; 0,07] (med. 0,00, 0,00-0,06) | 0,05 [0,00; 0,13] (med. 0,00, 0,00-0,00) | 0,95 [0,53; 1,48] (med. 0,00, 0,00-0,00) |
-| GLM piena precisione (sottoinsieme) | 179 / 60 | 2,22 [1,57; 3,05] (med. 0,89, 0,18-2,74) | 3,15 [1,79; 5,59] (med. 1,58, 0,77-2,60) | 2,51 [1,80; 3,49] (med. 1,23, 0,23-2,73) | 4,85 [2,11; 10,06] | 0,05 [0,03; 0,07] (med. 0,00, 0,00-0,09) | 0,05 [0,00; 0,12] (med. 0,00, 0,00-0,00) | 0,31 [0,08; 0,62] (med. 0,00, 0,00-0,00) |
+| GLM Q8, testo grezzo | 179 / 293 | 2,24 [1,59; 3,08] (med. 0,83, 0,19-2,80) | 1,94 [1,48; 2,63] (med. 1,20, 0,26-2,01) | 2,05 [1,65; 2,57] (med. 1,16, 0,24-2,11) | 3,23 [1,87; 5,74] ⚠ una pagina fa il 38 %; senza: 2,05 | 0,05 [0,04; 0,07] (med. 0,00, 0,00-0,06) | 0,05 [0,00; 0,13] (med. 0,00, 0,00-0,00) | 0,95 [0,53; 1,48] (med. 0,00, 0,00-0,00) |
+| GLM piena precisione (sottoinsieme) | 179 / 60 | 2,22 [1,57; 3,05] (med. 0,89, 0,18-2,74) | 3,15 [1,79; 5,59] (med. 1,58, 0,77-2,60) | 2,51 [1,80; 3,49] (med. 1,23, 0,23-2,73) | 4,85 [2,11; 10,06] ⚠ una pagina fa il 55 %; senza: 2,31 | 0,05 [0,03; 0,07] (med. 0,00, 0,00-0,09) | 0,05 [0,00; 0,12] (med. 0,00, 0,00-0,00) | 0,31 [0,08; 0,62] (med. 0,00, 0,00-0,00) |
 | Surya 2.5 | 179 / 293 | 1,31 [0,73; 2,11] (med. 0,18, 0,00-0,81) | 0,23 [0,14; 0,38] (med. 0,00, 0,00-0,19) | 0,61 [0,39; 0,89] (med. 0,00, 0,00-0,29) | 0,32 [0,21; 0,44] | 0,01 [0,01; 0,02] (med. 0,00, 0,00-0,00) | 0,24 [0,11; 0,40] (med. 0,00, 0,00-0,00) | 1,59 [1,09; 2,18] (med. 0,00, 0,00-0,00) |
 | Granite Docling | 179 / 293 | 4,62 [2,59; 7,23] (med. 1,19, 0,41-3,27) | 3,83 [2,64; 5,25] (med. 0,70, 0,21-2,09) | 4,11 [3,03; 5,38] (med. 0,93, 0,27-2,42) | 4,27 [2,85; 6,00] | 0,42 [0,38; 0,47] (med. 0,32, 0,15-0,51) | 0,35 [0,19; 0,53] (med. 0,00, 0,00-0,00) | 3,50 [2,81; 4,26] (med. 0,00, 0,00-3,82) |
 | Xiaomi-OCR-0 Q8 | 179 / 293 | 1,89 [1,27; 2,69] (med. 0,67, 0,00-2,05) | 1,54 [1,38; 1,71] (med. 1,20, 0,29-2,01) | 1,67 [1,42; 1,96] (med. 1,12, 0,21-2,02) | 2,05 [1,80; 2,28] | 0,03 [0,02; 0,03] (med. 0,00, 0,00-0,02) | 0,14 [0,05; 0,25] (med. 0,00, 0,00-0,00) | 0,60 [0,23; 1,08] (med. 0,00, 0,00-0,00) |
-| docling 2.150.1 | 179 / 293 | 3,37 [1,77; 5,66] (med. 0,85, 0,26-2,46) | 1,46 [0,81; 2,63] (med. 0,41, 0,00-1,06) | 2,13 [1,30; 3,24] (med. 0,57, 0,00-1,48) | 1,84 [1,01; 3,26] | 0,05 [0,04; 0,06] (med. 0,00, 0,00-0,05) | 0,41 [0,28; 0,55] (med. 0,00, 0,00-0,00) | 2,10 [1,56; 2,73] (med. 0,00, 0,00-2,09) |
-| docling + egret-large | 179 / 293 | 2,82 [1,55; 4,96] (med. 0,78, 0,24-2,46) | 1,42 [0,78; 2,58] (med. 0,42, 0,00-1,05) | 1,91 [1,16; 2,96] (med. 0,53, 0,00-1,32) | 1,76 [0,95; 3,18] | 0,05 [0,04; 0,06] (med. 0,00, 0,00-0,06) | 0,39 [0,26; 0,54] (med. 0,00, 0,00-0,00) | 2,01 [1,48; 2,63] (med. 0,00, 0,00-2,03) |
+| docling 2.150.1 | 179 / 293 | 3,37 [1,77; 5,66] (med. 0,85, 0,26-2,46) | 1,46 [0,81; 2,63] (med. 0,41, 0,00-1,06) | 2,13 [1,30; 3,24] (med. 0,57, 0,00-1,48) | 1,84 [1,01; 3,26] ⚠ una pagina fa il 33 %; senza: 1,25 | 0,05 [0,04; 0,06] (med. 0,00, 0,00-0,05) | 0,41 [0,28; 0,55] (med. 0,00, 0,00-0,00) | 2,10 [1,56; 2,73] (med. 0,00, 0,00-2,09) |
+| docling + egret-large | 179 / 293 | 2,82 [1,55; 4,96] (med. 0,78, 0,24-2,46) | 1,42 [0,78; 2,58] (med. 0,42, 0,00-1,05) | 1,91 [1,16; 2,96] (med. 0,53, 0,00-1,32) | 1,76 [0,95; 3,18] ⚠ una pagina fa il 34 %; senza: 1,17 | 0,05 [0,04; 0,06] (med. 0,00, 0,00-0,06) | 0,39 [0,26; 0,54] (med. 0,00, 0,00-0,00) | 2,01 [1,48; 2,63] (med. 0,00, 0,00-2,03) |
 | Apple, richiesta classica | 179 / 293 | 3,57 [2,97; 4,36] (med. 2,85, 1,58-4,31) | 2,23 [2,02; 2,43] (med. 1,86, 0,41-2,86) | 2,70 [2,44; 3,01] (med. 2,10, 0,83-3,45) | 2,88 [2,48; 3,22] | 0,21 [0,18; 0,23] (med. 0,11, 0,00-0,32) | 0,44 [0,30; 0,60] (med. 0,00, 0,00-0,00) | 2,03 [1,54; 2,57] (med. 0,00, 0,00-2,21) |
 | Apple, struttura dei documenti (la richiesta dell'app) | 179 / 293 | 4,15 [3,52; 4,93] (med. 3,27, 1,86-4,82) | 2,75 [2,48; 3,03] (med. 2,11, 0,79-3,53) | 3,24 [2,95; 3,56] (med. 2,45, 1,24-4,13) | 3,12 [2,74; 3,45] | 0,29 [0,24; 0,35] (med. 0,16, 0,00-0,39) | 0,52 [0,37; 0,69] (med. 0,00, 0,00-0,00) | 3,36 [2,48; 4,39] (med. 0,00, 0,00-2,75) |
 | Variante A: classica, via Apple | 179 / 293 | 5,70 [3,14; 8,64] (med. 0,75, 0,20-2,60) | 2,72 [1,60; 4,08] (med. 0,38, 0,00-1,05) | 3,76 [2,59; 5,12] (med. 0,45, 0,00-1,42) | 5,32 [2,92; 7,68] | 0,05 [0,04; 0,06] (med. 0,00, 0,00-0,08) | 0,40 [0,26; 0,55] (med. 0,00, 0,00-0,00) | 2,15 [1,61; 2,75] (med. 0,00, 0,00-2,03) |
 | Variante A: classica, via GLM | 179 / 293 | 5,43 [2,87; 8,36] (med. 0,39, 0,00-2,20) | 2,52 [1,39; 3,88] (med. 0,19, 0,00-0,65) | 3,54 [2,36; 4,90] (med. 0,25, 0,00-0,91) | 5,19 [2,74; 7,54] | 0,06 [0,05; 0,07] (med. 0,00, 0,00-0,08) | 0,14 [0,06; 0,23] (med. 0,00, 0,00-0,00) | 1,93 [1,40; 2,52] (med. 0,00, 0,00-1,31) |
-| Variante B: senza guardia, via GLM | 179 / 293 | 6,16 [3,60; 9,05] (med. 0,83, 0,00-3,59) | 2,98 [2,07; 4,05] (med. 1,20, 0,27-2,03) | 4,10 [2,99; 5,33] (med. 1,16, 0,20-2,23) | 6,83 [3,59; 10,12] | 0,05 [0,04; 0,06] (med. 0,00, 0,00-0,06) | 0,02 [0,00; 0,04] (med. 0,00, 0,00-0,00) | 0,91 [0,50; 1,43] (med. 0,00, 0,00-0,00) |
+| Variante B: senza guardia, via GLM | 179 / 293 | 6,16 [3,60; 9,05] (med. 0,83, 0,00-3,59) | 2,98 [2,07; 4,05] (med. 1,20, 0,27-2,03) | 4,10 [2,99; 5,33] (med. 1,16, 0,20-2,23) | 6,83 [3,59; 10,12] ⚠ una pagina fa il 21 %; senza: 5,57 | 0,05 [0,04; 0,06] (med. 0,00, 0,00-0,06) | 0,02 [0,00; 0,04] (med. 0,00, 0,00-0,00) | 0,91 [0,50; 1,43] (med. 0,00, 0,00-0,00) |
 | Variante D: tabelle di Heron, via Apple | 179 / 293 | 6,44 [4,04; 9,08] (med. 1,31, 0,40-3,68) | 3,35 [2,21; 4,71] (med. 0,60, 0,00-1,69) | 4,44 [3,28; 5,70] (med. 0,79, 0,00-2,16) | 5,49 [3,05; 7,81] | 0,17 [0,10; 0,26] (med. 0,03, 0,00-0,10) | 0,45 [0,32; 0,60] (med. 0,00, 0,00-0,00) | 3,81 [2,62; 5,28] (med. 0,00, 0,00-2,45) |
 | Variante D: tabelle di Heron, via GLM | 179 / 293 | 6,02 [3,58; 8,69] (med. 0,79, 0,00-2,95) | 2,94 [1,81; 4,29] (med. 0,35, 0,00-0,93) | 4,02 [2,87; 5,29] (med. 0,47, 0,00-1,44) | 5,26 [2,84; 7,58] | 0,09 [0,06; 0,12] (med. 0,00, 0,00-0,09) | 0,15 [0,08; 0,23] (med. 0,00, 0,00-0,00) | 2,97 [2,07; 4,05] (med. 0,00, 0,00-2,07) |
-| Comb.: GLM dell'app sulle regioni di Heron | 179 / 293 | 2,24 [1,59; 3,08] (med. 0,83, 0,19-2,80) | 1,94 [1,48; 2,63] (med. 1,20, 0,26-2,01) | 2,05 [1,65; 2,57] (med. 1,16, 0,24-2,11) | 3,23 [1,87; 5,74] | 0,05 [0,04; 0,07] (med. 0,00, 0,00-0,06) | 0,05 [0,00; 0,13] (med. 0,00, 0,00-0,00) | 0,95 [0,53; 1,48] (med. 0,00, 0,00-0,00) |
+| Comb.: GLM dell'app sulle regioni di Heron | 179 / 293 | 2,24 [1,59; 3,08] (med. 0,83, 0,19-2,80) | 1,94 [1,48; 2,63] (med. 1,20, 0,26-2,01) | 2,05 [1,65; 2,57] (med. 1,16, 0,24-2,11) | 3,23 [1,87; 5,74] ⚠ una pagina fa il 38 %; senza: 2,05 | 0,05 [0,04; 0,07] (med. 0,00, 0,00-0,06) | 0,05 [0,00; 0,13] (med. 0,00, 0,00-0,00) | 0,95 [0,53; 1,48] (med. 0,00, 0,00-0,00) |
 
-### Tabella T23 — Testo sul campione largo, scansione degradata: banco (185 pagine), pagine nuove (livello B), insieme, e la stima pesata sulle pagine del corpus (per cento; [intervallo al 95 %]; (mediana per pagina, quartili))
+### Tabella T23 — Testo sul campione largo, scansione degradata: banco (179 pagine: le 185 senza le 6 di v11), pagine nuove (livello B), insieme, e la stima pesata sulle pagine del corpus (per cento; [intervallo al 95 %]; (mediana per pagina, quartili))
 
 | configurazione | pagine (banco / nuove) | parole perse: banco | nuove | insieme | pesata sul corpus | lettere sbagliate: nuove | cifre sbagliate: nuove | plausibili inventate ‰: nuove |
 |---|---|---|---|---|---|---|---|---|
@@ -2894,9 +2904,11 @@ pesata sulle pagine del corpus e l'intervallo al 95 per cento per ricampionament
 | Apple, pulita | 6,44 | 4,04 | 6,05 [3,77; 8,43] | 2,13 | 2,14 | 1,68 [1,38; 2,01] | — | — | — | 4,14 | 1,86 | 4,28 [2,09; 6,58] | 4,13 | 0,85 | 3,44 [1,36; 5,71] | 1,01 | 0,84 [0,12; 1,97] |
 | GLM, pulita | 5,64 | 3,26 | 5,54 [3,28; 7,94] | 0,48 | 0,33 | 0,36 [0,25; 0,47] | 0,82 | 1,00 | 0,70 [0,54; 0,89] | 4,21 | 1,89 | 4,40 [2,18; 6,77] | 4,20 | 0,88 | 3,56 [1,43; 5,89] | 1,01 | 0,84 [0,12; 1,98] |
 | Apple, degradata | 5,65 | 3,55 | 5,34 [3,22; 7,68] | 2,08 | 1,76 | 1,72 [1,42; 2,06] | — | — | — | 3,44 | 1,72 | 3,51 [1,50; 5,80] | 3,43 | 0,63 | 2,60 [0,70; 4,82] | 1,09 | 0,91 [0,14; 2,02] |
+| Apple, pulita, livello B ed estensione (485 pagine nuove) | 6,44 | 5,62 | 7,64 [5,89; 9,54] | 2,13 | 1,99 | 1,73 [1,52; 1,95] | — | — | — | 4,14 | 3,54 | 5,77 [4,12; 7,60] | 4,13 | 3,00 | 5,33 [3,75; 7,13] | 0,55 | 0,45 [0,07; 0,95] |
+| GLM, pulita, livello B ed estensione | 5,64 | 4,92 | 7,06 [5,30; 8,96] | 0,48 | 0,41 | 0,45 [0,37; 0,53] | 0,82 | 0,89 | 0,72 [0,60; 0,85] | 4,21 | 3,54 | 5,76 [4,08; 7,61] | 4,20 | 2,99 | 5,31 [3,65; 7,13] | 0,55 | 0,45 [0,07; 0,96] |
 | GLM, degradata | 4,91 | 3,15 | 5,04 [2,90; 7,37] | 0,47 | 0,39 | 0,39 [0,30; 0,49] | 0,84 | 0,94 | 0,92 [0,68; 1,19] | 3,49 | 1,75 | 3,62 [1,48; 6,01] | 3,48 | 0,66 | 2,71 [0,67; 4,95] | 1,09 | 0,92 [0,15; 2,07] |
 
-Che cosa dice: **sul corpus il conto del giro 2 regge**: la perdita in tutto e le glosse fittizie del banco stanno dentro gli intervalli
+Che cosa dice: **sul corpus il conto del giro 2 regge, e col livello B e l'estensione insieme è più grande** (via di Apple 7,64 per cento in tutto, glosse fittizie 5,33): la perdita in tutto e le glosse fittizie del banco stanno dentro gli intervalli
 pesati sul corpus, e il 99 per cento delle parole perse come glosse fittizie (pesato) viene dai due codici (sulle pagine nuove 95-96 per
 cento; sul banco 93). Sulle pagine nuove, stratificate a 5 per documento, le glosse fittizie pesano poco (0,85-0,88 punti): il numero da dire
 in pubblico è quello pesato sul corpus. **Una perdita nuova**: righe di testo vero che la catena chiama «sommario generale» e non legge,
@@ -3000,7 +3012,8 @@ nuove nelle due forme (parole perse sulle nuove, pesate sul corpus; differenze a
   (1,50 per cento di parole perse, contro 4,75 della richiesta dell'app). Sulla degradata lo stesso senso.
 - **Variante B, GLM senza la guardia stretta**: invenzioni ÷4 (3,80 → 0,96 per mille, −2,84 [−4,09; −1,83]; pesato −1,92 [−2,65; −1,31]),
   cifre sbagliate 0,15 → 0,02, richiami letti 66 → 76 per cento; parole perse uguali sulle nuove (+0,04 [−1,18; +1,08]) e un po' di più pesate
-  sul corpus (+1,57 [−0,17; +3,74]: non distinguibile da zero); sulle **vere** la differenza grande: 19,84 → 2,80 per cento, perché la guardia
+  sul corpus (+1,57 [−0,17; +3,74]: non distinguibile da zero; una pagina del codice pesa il 21 per cento della stima pesata della variante,
+  6,83, che senza di essa scende a 5,57 contro 5,26 della via di serie); sulle **vere** la differenza grande: 19,84 → 2,80 per cento, perché la guardia
   rimette le righe di Apple dove Apple sbaglia (§ 34).
 - **Variante D, le tabelle di Heron**: sulle pagine nuove identica alla via di serie (le pagine nuove hanno 3 tabelle vere): non
   verificabile qui.
@@ -3132,6 +3145,31 @@ nei totali: le sue pagine col riquadro spostato sono 4, tutte di v26 (3 fra le 3
 47), sul corpus no (−0,6 [−1,9; +0,5]); più note in tutti e due. Questo confronto non è appaiato: cambiano insieme la verità (per blocchi sulle 34 pagine,
 la lettura dell'iPad sul corpus) e le pagine; i due cambi restano confusi (rilievo della revisione).
 <!-- G3CC:fine -->
+
+### 35.1 L'estensione del livello B, separata e insieme al campione (campo)
+
+<!-- G3EST:inizio -->
+Fatta tutta: 8 blocchi di 24, 192 pagine, ciascuna con le vie del fulcro nelle due forme (GLM nell'app, Xiaomi-OCR-0 Q8, Surya, la lettura di
+Apple con le due richieste, la via dell'app corretta con Apple): 96 corse, tutte con uscita 0, dalle 03:50 alle 06:33. Gli altri modelli
+(Granite, varianti) e dots.ocr sulle vere non sono partiti: oltre i limiti d'avvio dichiarati. **Separata** (strato 2 quasi in proporzione
+alle pagine dei documenti, quindi quasi un campione a peso di pagina del corpus; pulita, parole perse, metro per pagina): Surya 0,38 per
+cento, Xiaomi 2,23, Apple classica 3,01, righe di Apple 3,28, GLM grezzo 3,29, via GLM dell'app 6,59, via di Apple 6,99; la stima pesata è
+quasi uguale (0,40, 2,10, 2,96, 3,21, 3,09, 6,80, 7,18), come ci si aspetta da un campione proporzionale. **Insieme al livello B** (293 + 192
+pagine nuove, pesi ricalcolati; nessuna pagina pesa più di un quinto): Surya 0,40 [0,31; 0,51], Xiaomi 2,10 [1,96; 2,23], Apple classica
+2,93, GLM grezzo 3,03 [2,37; 3,85], righe di Apple 3,24 [3,03; 3,45], via GLM dell'app 6,78 [5,04; 8,69], via di Apple 7,13 [5,40; 9,02].
+**La cascata insieme** (attribuzione esatta, pesata): via di Apple 7,64 per cento [5,89; 9,54], il lettore 1,73 [1,52; 1,95], fuori dalla
+lettura per tipo 5,77, di cui glosse fittizie 5,33 [3,75; 7,13] e sommario fittizio 0,45; via GLM 7,06 [5,30; 8,96], il lettore 0,45, la
+guardia 0,72, glosse fittizie 5,31; sulla degradata 6,93 e 6,65. **Confronti appaiati insieme, pesati**: Surya meno la via GLM dell'app
+−6,38 [−8,27; −4,64]; righe di Apple meno GLM grezzo +0,21 [−0,61; +0,86] (sul corpus non si distinguono: lo scarto del banco, +1,90, non
+regge); Xiaomi meno GLM grezzo −0,94 [−1,71; −0,29] (Xiaomi meglio anche sul corpus); Xiaomi meno Surya +1,69 [+1,56; +1,81]; via di Apple
+meno via GLM +0,35 [+0,19; +0,64]; Apple classica meno la richiesta dell'app −0,28 [−0,40; −0,16]. Classifiche banco contro nuove (B ed
+estensione): lettere 0,90, parole perse 1,00, rumore udibile 0,93. Per situazione (livello B intero con l'estensione, T30-BE nel laboratorio; 7 lettori, perché docling, egret e Granite non sono girati sull'estensione):
+18 situazioni con almeno 20 pagine misurate (tabelle 25, sommari e indici 24; figure e didascalie 16, ancora indicativa), Surya primo per
+parole perse in 18 su 18, per lettere in 10, Xiaomi in 8. **Che cosa cambia rispetto al livello B da solo**: le vie dell'app sul corpus
+perdono di più (6,8-7,1 contro 5,3-5,5, metro per pagina), e le glosse fittizie valgono di più (5,3 contro 3,4 punti), perché l'estensione dà
+ai due codici 44 pagine in più (41 nello strato proporzionale, 3 nello strato delle situazioni scarse); GLM grezzo resta a 3,0 (non a 2,05, il valore del livello B senza la pagina più pesante); il resto dello
+ordine non cambia.
+<!-- G3EST:fine -->
 
 ### Tabella T26 — Classifiche: banco contro pagine nuove, scansione pulita (tau-b di Kendall; intervallo per ricampionamento delle pagine nuove)
 
@@ -3410,7 +3448,7 @@ perché la catena perde quello che il lettore recupera (§ 31).
 cento; lettere 0,01; primo per parole perse in tutte le 16 situazioni con almeno 20 pagine misurate del livello B intero), poi docling con egret-large e docling (1,42-1,46;
 1,76-1,84 sul corpus; il loro lettore sulle scansioni è quello di Apple attraverso ocrmac, con la resa di docling e l'ordine del modello d'impaginazione: § 18), Xiaomi-OCR-0 Q8 (1,54
 e 2,05; lettere 0,03), GLM Q8 (1,94 e 3,23, o 2,05 senza la pagina più pesante; lettere 0,05), Apple con la richiesta classica (2,23), le righe di Apple con la richiesta dell'app
-(2,91), poi le due vie dell'app (2,94-3,35 sulle nuove, 5,3-5,5 sul corpus) e Granite (3,83). **Per chi ascolta** l'ordine cambia: le uscite
+(2,91), poi le due vie dell'app (2,94-3,35 sulle nuove, 6,8-7,1 sul corpus col livello B e l'estensione, § 35.1) e Granite (3,83). **Per chi ascolta** l'ordine cambia: le uscite
 grezze dei modelli arrivano coi loro segni (marcatori HTML di Surya, 148 segni udibili ogni mille parole; DocTags di Granite, 211; righe
 ripetute di Xiaomi, 15; markdown e richiami in notazione di GLM, 8), che un'app dovrebbe interpretare, non leggere (§ 32); le vie dell'app
 arrivano pulite (1,1-1,7 segni ogni mille parole) ma con la perdita della catena (le glosse fittizie dei codici, il sommario fittizio, la
@@ -3447,7 +3485,7 @@ dei quattro volumi); per le testatine fuori dal flusso docling con Heron (23 per
 1. **Quanto costa restare nativi e compatibili con lo store?** Nei modelli poco: GLM compresso pari a GLM a piena precisione anche sulle
    pagine nuove (+0,02 punti [−0,02; +0,09]); Xiaomi-OCR-0 Q8 nel motore dell'app perde poche parole (1,54 per cento sulle nuove, 1,95 sulle
    vere) e, col filtro dei richiami del laboratorio, non scrive più formule (rumore R5 a zero, nessuna parola tolta). Il costo vero resta
-   nella catena: sul corpus la via dell'app perde 5,3-5,5 parole su cento contro 2,1-3,2 di GLM da solo (la stima pesata dipende da una pagina: § 29) e 0,3 di Surya; sulle scansioni vere,
+   nella catena: sul corpus (livello B ed estensione insieme, § 35.1) la via dell'app perde 6,8-7,1 parole su cento contro 3,0 di GLM da solo, 2,1 di Xiaomi e 0,4 di Surya; sulle scansioni vere,
    dopo la correzione, il sommario fittizio e la guardia (20 per cento contro 2,8 della variante senza guardia).
 2. **Quale modello per quale compito, e dove cede?** Testo: Surya (fuori dallo store per licenza), poi docling con egret-large, Xiaomi, GLM;
    sulle vere Surya e la richiesta classica di Apple. Struttura: egret-large per le note, Heron ed egret pari sui titoli. Dove cedono:
@@ -3459,8 +3497,8 @@ dei quattro volumi); per le testatine fuori dal flusso docling con Heron (23 per
    Surya e Granite) se non fossero interpretati.
 4. **Quanto costano?** A Mac libero (§ 37, T29): la via di Apple dell'app 0,28 secondi e 4 J a pagina (un libro di 300 pagine in 1,6
    minuti), la via GLM dell'app 11,7 secondi e 650 J (59 minuti, 54 Wh), Xiaomi-OCR-0 Q8 7,3 secondi e 464 J (37 minuti, 39 Wh); egret in
-   Core ML 32 millesimi di secondo; nessun avviso termico. La priorità bassa non rallenta GLM a Mac libero; lo rallenta l'altra fila sulla
-   scheda grafica. Qualità per secondo: Xiaomi recupera 0,26 punti di parole perse per secondo in più rispetto alla via di Apple, la via GLM
+   Core ML 32 millesimi di secondo; nessun avviso termico. La priorità bassa non rallenta GLM a Mac libero (campo); lo rallenta l'altra fila sulla
+   scheda grafica (dedotto). Qualità per secondo: Xiaomi recupera 0,26 punti di parole perse per secondo in più rispetto alla via di Apple, la via GLM
    0,04.
 5. **Quanto cambiano i risultati fra versioni e fra corse?** La via delle scansioni corretta dà letture identiche al byte al giro 1 sulle
    pagine non ruotate (260 letture, 185 pagine, quattro configurazioni; § 26); fra banco e corpus le classifiche dei lettori reggono
@@ -3478,17 +3516,17 @@ dice dove si perdono le parole, il metro per pagina quando si confrontano i lett
 
 | n. | esito | numero nuovo e rimando |
 |---|---|---|
-| 1 | corretta | attribuzione esatta, pesata sul corpus: il lettore di Apple perde 1,7 parole su cento, all'orecchio ne mancano 6,0: la catena fa più di due terzi della perdita (T25; col metro per pagina la via di Apple perde 5,5, T23) |
-| 2 | corretta | attribuzione esatta, pesata sul corpus: GLM perde 0,4, la guardia ne toglie 0,7, all'orecchio ne mancano 5,5 (T25) |
-| 3 | confermata | glosse fittizie 3,4-3,6 punti sul corpus [1,4; 5,9]; il 4,1-4,2 del banco sta dentro (T25) |
+| 1 | corretta | attribuzione esatta, pesata sul corpus col livello B e l'estensione: il lettore di Apple perde 1,7 parole su cento, all'orecchio ne mancano 7,6: la catena fa più di tre quarti della perdita (77 per cento; § 35.1; col metro per pagina la via di Apple perde 7,1) |
+| 2 | corretta | attribuzione esatta, pesata sul corpus col livello B e l'estensione: GLM perde 0,5, la guardia ne toglie 0,7, all'orecchio ne mancano 7,1 (§ 35.1) |
+| 3 | confermata | glosse fittizie 5,3 punti sul corpus col livello B e l'estensione [3,7; 7,1] (3,4-3,6 col solo livello B); il 4,1-4,2 del banco sta dentro (§ 35.1, T25) |
 | 4 | confermata | 95-96 per cento dai due codici sulle pagine nuove, 99 pesato sul corpus (§ 31) |
 | 5 | confermata (pari) | GLM compresso meno GLM piena precisione, metro per pagina: +0,02 punti [−0,02; +0,09] sulle pagine nuove, +0,02 [−0,01; +0,05] pesato; la T27 dice «cambia segno» perché −0,02 diventa +0,02: dentro il decimo di punto, è pari (T27) |
 | 6 | corretta | metro per pagina: GLM sulle regioni di Heron perde 1,9 parole su cento contro 2,9 della via GLM dell'app sulle pagine nuove (−0,99 [−2,40; +0,23]); pesato sul corpus −2,0 [−5,0; +0,9], ma la stima la decide in parte una pagina del codice: senza, −2,9; sulla degradata −2,6 [−5,0; −0,5]: stesso senso, numeri più piccoli del banco (T27; la stima più solida col livello B e l'estensione insieme, § 35.1) |
 | 7 | non verificata | le pagine nuove hanno 3 tabelle vere; sul corpus Heron ne riconosce 80 su 86 (T28), la catena delle scansioni non è stata misurata sulle tabelle |
-| 8 | confermata | Surya 0,23 per cento sulle pagine nuove, 0,32 sul corpus (T23) |
-| 9 | confermata | primo in 16 situazioni su 16 con almeno 20 pagine misurate sul livello B intero; le tre situazioni sotto le 20 pagine (tabelle, sommari, figure) indicative (T30) |
+| 8 | corretta | Surya 0,23 per cento sulle pagine nuove, 0,40 [0,31; 0,51] sul corpus col livello B e l'estensione: lo 0,30 del giro 2 sta appena fuori dall'intervallo (T23, § 35.1) |
+| 9 | confermata | primo in 16 situazioni su 16 con almeno 20 pagine misurate sul livello B intero, in 18 su 18 con l'estensione, dove però girano 7 lettori (docling, egret e Granite non sono girati sull'estensione; figure e didascalie ancora indicative) (T30, § 35.1) |
 | 10 | smentita | sul livello B intero il primo per lettere è Surya in 9 situazioni su 16, Xiaomi-OCR-0 Q8 in 7 (T30; nel giro 2 c'era anche Xiaomi a piena precisione) |
-| 11 | confermata | Xiaomi meno GLM grezzo: lettere −0,03 [−0,04; −0,02], parole perse −0,40 [−1,06; −0,01] sulle pagine nuove (T27) |
+| 11 | confermata | Xiaomi meno GLM grezzo: lettere −0,03 [−0,04; −0,02], parole perse −0,40 [−1,06; −0,01] sulle pagine nuove e −0,94 [−1,71; −0,29] pesato sul corpus col livello B e l'estensione (T27, § 35.1) |
 | 12 | non verificata | MiniCPM non rifatto |
 | 13 | confermata per i tempi | a Mac libero, sul sottoinsieme fisso, Q8 6,3 secondi a pagina contro 10,7 della piena precisione (identità delle uscite non rifatta; T29) |
 | 14 | corretta | sulle pagine nuove Xiaomi legge l'89 per cento dei richiami in apice (banco 92) e scrive 3,8 formule ogni mille parole (circa 410 sulle 293 pagine); il filtro le toglie tutte senza togliere parole (T24, § 32) |
@@ -3519,8 +3557,8 @@ dice dove si perdono le parole, il metro per pagina quando si confrontano i lett
 **Frasi nuove** (raggruppate per tema; ciascuna col numero e il rimando):
 - *Le pagine ruotate.* «Dopo la correzione, sul Mac una pagina ruotata si legge come diritta: a 90 e 270 gradi le parole perse scendono
   dal 26 all'1,8 per cento; diritte, le stesse pagine ne perdono l'1,75» (§ 34).
-- *La catena.* «Sul corpus intero, quasi tutte le parole che la catena chiama glosse e non legge vengono dai due codici: il 99 per cento»
-  (§ 31). «Una pagina intera di domande, 541 parole, la catena la chiama sommario e non la legge» (§ 34).
+- *La catena.* «Sul corpus intero la catena delle scansioni perde circa cinque parole su cento chiamandole glosse e non leggendole, quasi tutte nei due
+  codici» (5,3 punti [3,7; 7,1], § 35.1; il 99 per cento dai codici, § 31). «Una pagina intera di domande, 541 parole, la catena la chiama sommario e non la legge» (§ 34).
 - *Costi* (T29, § 37). «A Mac libero la via di Apple legge un libro di 300 pagine in un minuto e mezzo; GLM nell'app in un'ora, con
   54 wattora sopra il consumo a riposo; Xiaomi-OCR-0 in 37 minuti». «Ogni secondo in più rispetto alla via di Apple recupera un quarto di
   punto di parole perse con Xiaomi, quattro centesimi con GLM dentro la catena dell'app».
@@ -3542,7 +3580,7 @@ dice dove si perdono le parole, il metro per pagina quando si confrontano i lett
   dell'alimentatore. Le misure d'energia aspettano l'alimentatore: «Mac libero» e «Mac collegato» sono due condizioni diverse.
 - **Le priorità.** zsh lancia i lavori in sottofondo a nice +5: le corse di qualità «a nice 10» erano a 15 e le misure «a nice 0» lo
   sarebbero state a 5. Trovato guardando i processi prima delle misure; da lì code e misure si lanciano da bash. A Mac libero la priorità
-  bassa non rallenta GLM (verifica su una pagina); di giorno il rallentamento veniva dalla contesa fra le due file sulla scheda grafica.
+  bassa non rallenta GLM (verifica su una pagina); di giorno il rallentamento veniva dalla contesa fra le due file sulla scheda grafica (dedotto).
 - **Le code.** Uno script di coda non si modifica mentre gira (bash lo legge a pezzi): ogni cambio in una copia numerata, e il cambio di fila
   fra una corsa e l'altra con la corsa in volo chiusa come orfana. Un mio errore ha bloccato le misure per 20 minuti: la fila delle misure
   aspettava il segnale d'attesa che crea l'orchestratore delle misure stesso.
@@ -3597,16 +3635,20 @@ dice dove si perdono le parole, il metro per pagina quando si confrontano i lett
 - **Testo dei volumi e segreti a zero** su tutti i commit del ramo, a ogni push (due righe fermate e riformulate: § 41, § 10).
 
 **Revisione indipendente** (sotto-agente nuovo, in sola lettura, sul diff, sui dati grezzi e su un campione dei risultati, con la lista del
-brief; 33 minuti): **25 rilievi, 1 grave, 7 medi, 17 minori.** Lista di controllo: correzione alla radice nella via delle scansioni del Mac e
-prova al contrario che la dimostra (sì; il modulo condiviso resta col difetto: dichiarato nel § 42); campione largo col banco e stratificato
+brief; 33 minuti): **25 rilievi, 1 grave, 7 medi, 17 minori.** Lista di controllo (verdetti del revisore): correzione alla radice e prova al contrario (in parte: alla radice nella via delle
+scansioni del Mac, con la prova al contrario; il modulo condiviso resta col difetto: dichiarato nel § 42); campione largo col banco e stratificato
 (in parte: le pagine per documento erano 5, non le 4 del metodo, e le situazioni erano contate in due modi: corretto e dichiarato nel § 10);
-confronto appaiato (sì, anche pesato; la struttura no: dichiarato); rumore udibile (sì nel principio; il totale somma unità diverse:
+confronto appaiato e conclusioni dai numeri (in parte: appaiato anche pesato, la struttura no; alcune conclusioni non seguivano: corrette); rumore udibile (sì nel principio; il totale somma unità diverse:
 dichiarato nel § 32); tempi ed energia nella finestra, col carico annotato e il file di pausa (sì, con due eccezioni minori, dichiarate nel
 § 37); frasi per la radio (in parte: sei esiti riletti con la regola dichiarata e il metro nominato in ogni riga, § 40). **Il grave**: una
 sola pagina del codice decideva la stima pesata sul corpus di GLM sulla pulita (38 per cento del numeratore pesato); ora ogni stima pesata
 dice quanto pesa la pagina più pesante e dà il valore senza di essa (T23), e le conclusioni sul corpus si rifanno col livello B e
-l'estensione insieme (§ 35.1). Tutti i 25 rilievi sono stati corretti nel testo o dichiarati nel § 10 (riga delle 04:59); nessuno lasciato
-senza risposta.
+l'estensione insieme (§ 35.1). I 25 rilievi sono stati corretti nel testo o dichiarati nel § 10 (riga delle 04:59). **Seconda passata** dello stesso revisore sulle
+correzioni e sul § 35.1 (5 minuti): 18 rilievi chiusi, 7 in parte, nessuno aperto; i numeri del § 35.1 e delle frasi aggiornate escono dai
+JSON; i ritocchi chiesti (segno della pagina più pesante nella T23, base del banco a 179 pagine, esiti delle frasi 1, 8 e 9, 44 pagine dei
+codici, verdetti della revisione riportati giusti qui, contesa sulla scheda grafica detta «dedotta», il margine «pari» dichiarato come
+aggiunto dopo i numeri) fatti. Restano in parte: il test d'interfaccia di prima controlla solo la misura della tela; le 20 pagine nuove con
+la verità vuota sono contate fra le pagine ma non entrano nelle misure del testo.
 <!-- G3VERI:fine -->
 <!-- G3BOZZA:fine -->
 

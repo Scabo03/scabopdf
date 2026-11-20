@@ -10,6 +10,11 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.69 (19-20 novembre 2026, giro «banco OCR, giro globale», livello medio con le reti per la correzione delle pagine ruotate
+> nell'app Mac e pieno per le misure, **CONCLUSO**: la lettura delle scansioni del Mac legge intere le pagine ruotate e col riquadro
+> spostato (radice: la resa della pagina; reti verdi; prova al contrario); misure sul corpus intero, sul campione largo e sulle scansioni
+> vere, rumore udibile, campione contro corpus, controllo semantico alla cieca, tempi ed energia, report `docs/BANCO_OCR.md` § 25-43;
+> nessuna build; nessun file sotto `app/ios` cambiato. Vedi lo STATO qui sotto.)
 > Versione: 2.68 (19 novembre 2026, giro «banco OCR, giro 2 di 2», livello leggero per l'app Mac (solo punti d'osservazione e varianti
 > spenti di serie, con le reti) e pieno per le misure, **CONCLUSO**: cascata delle perdite della via delle scansioni, modelli nuovi,
 > combinazioni, scansioni vere pubbliche, controllo semantico e report completo `docs/BANCO_OCR.md` § 17-24 con le frasi per la radio;
@@ -198,6 +203,47 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «banco OCR, giro globale»: la correzione delle pagine ruotate nell'app Mac, misure sul corpus intero, sul campione largo e sulle scansioni vere, rumore udibile, campione contro corpus, controllo semantico alla cieca, tempi ed energia a Mac libero, per lo speciale radiofonico sugli OCR (nessuna build) — 2026-11-19/20 — CONCLUSO
+
+**Build:** iPad ultima **66**, prossima **67**; Mac ultima **2**, prossima **3**: nessuna usata. **Partenza:** `214a07f` (main = origin),
+15:51 del 19. **Ramo:** `chore/banco-ocr-globale` (unito in main con un avanzamento rapido, poi cancellato, locale e remoto). Livello: medio con le reti per la correzione nell'app Mac, pieno per le misure.
+Nessun file sotto `app/ios` cambiato; nessuna app aperta; nulla letto dal contenitore `com.scabo.scabopdf`. Laboratorio
+`~/Developer/scabopdf-mac-lab/banco_ocr/globale/` (resta tutto); referto `REFERTO_BANCO_OCR_GLOBALE.md`; report `docs/BANCO_OCR.md` § 25-43.
+
+- **Parte 0 — metodo** nel § 25 prima di ogni corsa (`c670d34`); ogni ritocco nel § 10 con l'ora e il motivo.
+- **Parte 1 — la correzione delle pagine ruotate** (`cbb1eb3`, § 26): alla radice nella resa della pagina della via delle scansioni del
+  Mac (tela della misura mostrata, nessuna traslazione in più; la stessa resa all'impaginazione); reti verdi, prova al contrario; con tutto
+  spento identica al giro 1 sulle pagine non ruotate. Sul livello B le ruotate a 90 e 270 gradi passano da 26 a 1,8 per cento di parole
+  perse (diritte 1,75); sulle vere le righe dei lettori da 12 a 3-5 per cento. **Il modulo condiviso** (iPad, struttura, lettura migliore del
+  Mac sui PDF col testo) ha lo stesso difetto sul riquadro spostato: non toccato (è sotto `app/ios`), misurato (§ 26, § 30).
+- **Materiale** (§ 27): livello A 55 documenti, 23.566 pagine; livello B 478 pagine (banco 185 + 293 nuove) nelle due forme, 72 ruotate;
+  livello C 75 pagine vere pubbliche (verità su 14, verificata alla cieca); estensione del livello B (indicazione del maintainer delle
+  17:41) fatta tutta: 192 pagine, 96 corse, uscita 0.
+- **Misure** (§ 29-35.1): Surya resta il miglior lettore (0,23 per cento di parole perse sulle pagine nuove, 0,40 sul corpus col livello B
+  e l'estensione); le vie dell'app perdono 6,8-7,1 parole su cento sul corpus (metro per pagina), il lettore di Apple da solo 1,7 (cascata,
+  attribuzione esatta 7,6 in tutto): le glosse fittizie dei codici valgono 5,3 punti sul corpus [3,7; 7,1] (banco 4,1, dentro); nuove perdite della catena: il sommario fittizio (una pagina vera intera), la guardia di GLM che rimette le righe
+  di Apple sulle vere (19,8 contro 2,8 per cento senza guardia). Struttura sul corpus: egret-large e PP-DocLayoutV3 meglio di Heron per le
+  note (+24-25 punti), titoli pari; PP-DocLayoutV3 l'unico che riconosce le glosse (47 per cento). Rumore udibile (§ 32): Apple legge «§» come
+  «$» (VoiceOver tace il dollaro: «paragrafo» perso quattro volte su cinque) e i numeri di nota in corpo piccolo come «*».
+- **Campione contro corpus** (§ 35): classifiche simili (tau-b 0,78-1,00 per le parole); gli scarti fra lettori reggono nel senso salvo
+  righe di Apple contro GLM grezzo, che sul corpus non si distinguono (+0,21 [−0,61; +0,86]; banco +1,90); Xiaomi meglio di GLM anche sul
+  corpus; le stime pesate del solo livello B dipendevano da poche pagine dei codici (rilievo grave della revisione): rifatte con l'estensione.
+- **Controllo semantico** (§ 36): prova alla cieca su 24 fascicoli, accordo pieno 8, coi pari 19; riletti i disaccordi coi conteggi,
+  ragione al giudice (i blocchi contano quanto le parole per chi ascolta).
+- **Tempi ed energia** (§ 37), a Mac libero: via di Apple 0,28 secondi e 4 J a pagina, via GLM dell'app 11,7 e 650, Xiaomi Q8 7,3 e 464;
+  nessun avviso termico; la priorità bassa non rallenta GLM a Mac libero.
+- **Verifiche e revisione** (§ 43): numeri ricalcolati dai dati grezzi (coincidono), impronte invariate, testo dei volumi e segreti a zero;
+  revisione indipendente 25 rilievi (1 grave, 7 medi, 17 minori), tutti affrontati.
+- **Da dove riprendere**: § 42 del report e referto: il modulo condiviso col riquadro spostato (decisione), il sommario fittizio e le glosse
+  fittizie della catena, la guardia di GLM, il lettore di Apple su «§» e sui numeri di nota; un campione della catena con le pagine nel loro
+  libro; un metro dei blocchi per l'ascolto.
+- **Decisioni per il maintainer** (referto § 13): (1) correggere la resa del modulo condiviso `ScaboPageStructure` (sotto `app/ios`) con la
+  stessa correzione del Mac e le reti dell'iPad (inclinazione: sì, giro breve); (2) un giro sulla catena delle scansioni: la guardia stretta di
+  GLM e il sommario fittizio, poi le glosse fittizie dei codici (inclinazione: sì, con le reti); (3) la richiesta classica di Apple come
+  predefinita nella via delle scansioni (inclinazione: provarla su un giro con le reti).
 
 ---
 
