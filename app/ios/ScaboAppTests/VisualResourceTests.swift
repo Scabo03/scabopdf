@@ -379,14 +379,16 @@ final class VisualResourceTests: XCTestCase {
     /// cambia la riceve con la frase di quella sola; un libro sconosciuto sì, con le frasi; le letture del Mac la ricevono dal Mac.
     func test_offer_capabilityCure_reachesAllAndOnlyTheBooksItChanges() {
         guard ReprocessOffer.visualResourcesAvailable else { return }
-        XCTAssertEqual(ProcessingChain.cureLevel, 66)
-        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.isSuperset(of: [64, 66]))
+        XCTAssertEqual(ProcessingChain.cureLevel, 67)
+        XCTAssertTrue(ProcessingChain.curesFromTheMacOnly.isSuperset(of: [64, 66, 67]))
         guard let major = ReprocessingPolicy.major(of: SystemGeneration.current),
               let by64 = ProcessingChain.booksUnchangedByCure[64]?[major],
               let by66 = ProcessingChain.booksUnchangedByCure[66]?[major],
-              let unchanged = by64.intersection(by66).sorted().first,
-              let only64 = by64.subtracting(by66).sorted().first else {
-            return XCTFail("nessuna misura delle cure 64 e 66 per questa generazione")
+              let by67 = ProcessingChain.booksUnchangedByCure[67]?[major],
+              let unchanged = by64.intersection(by66).intersection(by67).sorted().first,
+              let only64 = by64.subtracting(by66).sorted().first,
+              let changedBy67 = by66.union(by64).subtracting(by67).sorted().first else {
+            return XCTFail("nessuna misura delle cure 64, 66 e 67 per questa generazione")
         }
         func pdf(_ sha: String?, build: String, origin: String? = nil) -> ArchivedDocument {
             ArchivedDocument(id: "c", title: "t", sourceFileName: "t.pdf", importedAt: Date(), sourcePageCount: 10,
@@ -417,8 +419,26 @@ final class VisualResourceTests: XCTestCase {
         XCTAssertEqual(reason(older), .cure)
         let olderText = ReprocessOffer.whatChanges(older, reason: .cure)
         XCTAssertFalse(olderText.contains(cure64) || olderText.contains(cure66), olderText)
-        // Lettura arrivata dal Mac: le cure 64 e 66 arrivano dal Mac con una lettura nuova.
+        // Lettura arrivata dal Mac: le cure 64, 66 e 67 arrivano dal Mac con una lettura nuova.
         XCTAssertNil(reason(pdf(String(repeating: "f", count: 64), build: "58", origin: ReadingOrigin.mac)))
+        XCTAssertNil(reason(pdf(String(repeating: "f", count: 64), build: "66", origin: ReadingOrigin.mac)))
+        // Cura 67 (giro «modulo e sommario», 2026-11-21): elaborato con la 66, il libro misurato identico non riceve nulla; quello
+        // che la 67 cambia e lo sconosciuto la ricevono, con la sola frase della 67 (la 64 e la 66 le hanno già).
+        func reason67(_ d: ArchivedDocument) -> ReprocessingReason? {
+            ReprocessOffer.policy.reason(for: d, currentSystemVersion: SystemGeneration.current, currentAppBuild: "67")
+        }
+        let cure67 = ReprocessOffer.cures.first { $0.build == 67 }?.text ?? ""
+        XCTAssertFalse(cure67.isEmpty)
+        XCTAssertNil(reason67(pdf(unchanged, build: "66")), "misurato identico per la 67: nessuna offerta")
+        XCTAssertNil(reason67(pdf(unchanged, build: "67")))
+        let by67Changed = pdf(changedBy67, build: "66")
+        XCTAssertEqual(reason67(by67Changed), .cure, "cambiato dalla 67: l'offerta c'è")
+        let text67 = ReprocessOffer.whatChanges(by67Changed, reason: .cure)
+        XCTAssertTrue(text67.contains(cure67) && !text67.contains(cure66) && !text67.contains(cure64), text67)
+        let unknown66 = pdf(String(repeating: "e", count: 64), build: "66")
+        XCTAssertEqual(reason67(unknown66), .cure, "sconosciuto: l'offerta c'è")
+        XCTAssertTrue(ReprocessOffer.whatChanges(unknown66, reason: .cure).contains(cure67))
+        XCTAssertNil(reason67(pdf(changedBy67, build: "67")), "già elaborato con la 67: niente")
     }
 
     /// Decisione 1 del maintainer (giro «pulizia e rifinitura finale del capitolo note», 2026-10-17): un testo normativo già

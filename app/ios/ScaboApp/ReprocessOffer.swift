@@ -115,6 +115,9 @@ enum ReprocessOffer {
         (66, "il testo non si interrompe più dopo le abbreviazioni delle citazioni, come «disp. trans.» o «et al.», né dopo le "
             + "iniziali di un nome seguite dal cognome, né davanti a una parentesi o a una citazione che continuano la frase; "
             + "alcune note brevi si leggono alla fine vera della frase"),
+        (67, "nei libri con alcune pagine spostate rispetto al foglio, le tabelle e le figure di quelle pagine sono riconosciute "
+            + "nel punto giusto e, estratte come immagine, mostrano la parte giusta della pagina; qualche figura che prima non "
+            + "era annunciata ora lo è"),
     ]
 
     /// Le cure che cambiano la lettura dei testi normativi, in parole semplici (la parte che li riguarda).

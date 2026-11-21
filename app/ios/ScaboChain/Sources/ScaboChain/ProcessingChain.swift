@@ -181,7 +181,14 @@ public enum ProcessingChain {
     /// mai il testo. Si offre a TUTTI E SOLI i libri la cui lettura cambia (`booksUnchangedByCure`); come la 56-64: dal Mac
     /// per le sue letture. Tocca anche i testi normativi (i pezzi delle note lunghe): `curesForAknActs`, con gli atti
     /// misurati identici (`aknActsUnchangedByCure`).
-    public static let cureLevel = 66
+    /// 67: la resa della pagina come si mostra nel modulo condiviso dell'impaginazione (giro «modulo e sommario», 2026-11-21,
+    /// decisione del maintainer): sulle pagine col riquadro di ritaglio spostato le tabelle e le figure si riconoscono sulla
+    /// pagina vera e si ritagliano nel punto giusto. Le risorse visive salvate prima su quelle pagine hanno le coordinate della
+    /// resa di prima, che il ritaglio nuovo non compensa più: la rielaborazione le rifà. Le letture senza le risorse visive non
+    /// cambiano; sul banco cambia un volume solo (una figura nuova). Si offre a TUTTI E SOLI i libri la cui lettura cambia
+    /// (`booksUnchangedByCure`, misurati ai quattro livelli); come la 56-66: dal Mac per le sue letture. Non tocca i testi
+    /// normativi (nessuna pagina, nessuna risorsa visiva).
+    public static let cureLevel = 67
 
     /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
     /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata
@@ -198,8 +205,9 @@ public enum ProcessingChain {
     /// alle glosse a margine (giro «chiusura del capitolo note», 2026-10-18), con la stessa regola. 64: le cure per
     /// capacità del giro «rifiniture e cure per capacità» (2026-11-07), con la stessa regola (la catena del Mac le contiene
     /// dalla sua versione con questo livello di cure). 66: le frasi dopo le sigle (giro «prova 4, segnalibri e sigle»,
-    /// 2026-11-11), con la stessa regola.
-    public static let curesFromTheMacOnly: Set<Int> = [56, 57, 58, 64, 66]
+    /// 2026-11-11), con la stessa regola. 67: la resa del modulo dell'impaginazione (giro «modulo e sommario», 2026-11-21), con
+    /// la stessa regola (il Mac usa lo stesso modulo e la stessa catena: la sua lettura nuova la contiene).
+    public static let curesFromTheMacOnly: Set<Int> = [56, 57, 58, 64, 66, 67]
 
     /// Le cure che cambiano anche la lettura dei TESTI NORMATIVI (AKN): solo queste si offrono a un testo normativo già
     /// importato (decisione 1 del maintainer, 2026-10-17). La catena AKN non passa dall'estrazione dei PDF; la tocca solo
