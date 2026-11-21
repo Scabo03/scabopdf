@@ -141,4 +141,63 @@ final class FrontMatterTests: XCTestCase {
         XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 1, "numeri di pagina in testa, crescenti, dopo il titolo → sommario")
         XCTAssertFalse(readText(d).contains("argomento di diritto commerciale"), "il sommario non si legge")
     }
+
+    // ── PAGINE DI QUESITI: le lacune a puntini fra parentesi non sono leader (giro «modulo e sommario», 2026-11-21) ─────────
+    // Le righe sono inventate. Prima della cura le quattro lacune «[.....]» bastavano a fare della pagina un sommario, e la pagina
+    // intera usciva dalla lettura (docs/BANCO_OCR.md § 44.4).
+    func test_quizPage_bracketedGaps_isNotToc_andIsRead() {
+        let quiz = page(1, [
+            line("1. Il modulo azzurro si consegna entro [.....] giorni dalla convocazione del comitato.", size: 10),
+            line("2. Per la tessera serve il versamento di [.....] gettoni al banco delle iscrizioni.", size: 10),
+            line("3. Il turno di guardia dura [.....] ore nei mesi di vendemmia e raccolta.", size: 10),
+            line("4. La seconda riunione cade [.....] settimane dopo la prima convocazione.", size: 10),
+        ])
+        let d = doc([bodyPage(0), quiz, bodyPage(2)])
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0, "le lacune fra parentesi non fanno della pagina un sommario")
+        let read = readText(d)
+        XCTAssertTrue(read.contains("modulo azzurro") && read.contains("seconda riunione"), "la pagina di quesiti si legge")
+    }
+
+    func test_quizPage_roundBracketsAndInnerSpaces_isNotToc() {
+        let quiz = page(1, [
+            line("a) La lanterna verde si accende ( .... ) minuti prima del segnale di partenza.", size: 10),
+            line("b) Il carro dei bagagli parte dopo [ ..... ] fermate del percorso lungo.", size: 10),
+            line("c) Le ceste di vimini pesano (.....) libbre ciascuna, coperchio escluso.", size: 10),
+        ])
+        let d = doc([bodyPage(0), quiz, bodyPage(2)])
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0)
+        XCTAssertTrue(readText(d).contains("lanterna verde"))
+    }
+
+    func test_tocLines_withBracketedGapAndRealLeader_stayToc() {
+        let idx = page(1, [
+            line("Esercizio primo [.....] sul calendario delle maree ...................... 12", size: 10),
+            line("Esercizio secondo (....) sulle rotte dei velieri ........................ 19", size: 10),
+            line("Esercizio terzo sulle carte dei fondali ................................. 27", size: 10),
+        ])
+        let d = doc([bodyPage(0), idx, bodyPage(2)])
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 1, "un leader vero fuori dalle parentesi conta come prima")
+    }
+
+    func test_mismatchedBrackets_stillCountAsLeaders() {
+        // Nel dubbio non si tocca: solo le coppie dello stesso tipo sono lacune.
+        let idx = page(1, [
+            line("Voce del registro delle botteghe [.....) 4", size: 10),
+            line("Voce del registro dei mulini (.....] 9", size: 10),
+            line("Voce del registro delle fornaci [..... 15", size: 10),
+        ])
+        let d = doc([bodyPage(0), idx, bodyPage(2)])
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 1)
+    }
+
+    func test_hasIndexLeader_bracketedGapsVersusLeaders() {
+        XCTAssertFalse(hasIndexLeader("Il valore è [.....] unità."))
+        XCTAssertFalse(hasIndexLeader("Il valore è ( . . . . ) unità."))
+        XCTAssertFalse(hasIndexLeader("Prima [....] e poi (.....) ancora."))
+        XCTAssertTrue(hasIndexLeader("Capitolo nono ................ 41"))
+        XCTAssertTrue(hasIndexLeader("Capitolo nono (Appendice) ......... 41"))
+        XCTAssertTrue(hasIndexLeader("Voce [.....] e guida ........ 7"))
+        XCTAssertTrue(hasIndexLeader("Voce [.....) storta"))
+        XCTAssertFalse(hasIndexLeader("Tre punti soli... e basta."))
+    }
 }

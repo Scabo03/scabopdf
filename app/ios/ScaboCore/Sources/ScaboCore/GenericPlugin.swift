@@ -1218,7 +1218,33 @@ func isFrontMatterColophon(_ content: [LineSummary]) -> Bool {
 }
 /// Vero se la pagina è un indice/sommario (≥ `INDEX_MIN_LEADER_LINES` voci a leader).
 func isFrontMatterIndex(_ content: [LineSummary]) -> Bool {
-    content.reduce(0) { regexHits(frontMatterLeaderRegex, $1.text) ? $0 + 1 : $0 } >= INDEX_MIN_LEADER_LINES
+    content.reduce(0) { hasIndexLeader($1.text) ? $0 + 1 : $0 } >= INDEX_MIN_LEADER_LINES
+}
+
+/// Vero se la riga ha almeno un leader puntinato che NON è una lacuna fra parentesi. I puntini chiusi fra parentesi quadre o
+/// tonde dello stesso tipo, anche con uno spazio dentro («[.....]», «( .... )»), sono gli spazi da completare delle pagine di
+/// quesiti, non la guida che porta al numero di pagina di un indice: contati come leader facevano di una pagina intera di quesiti
+/// un sommario, escluso dalla lettura (giro «modulo e sommario», 2026-11-21, decisione del maintainer; diagnosi e misura nel
+/// § 44.4 di docs/BANCO_OCR.md). Un leader vero fuori dalle parentesi, sulla stessa riga, conta come prima.
+func hasIndexLeader(_ s: String) -> Bool {
+    let ns = s as NSString
+    for m in frontMatterLeaderRegex.matches(in: s, range: NSRange(location: 0, length: ns.length))
+    where !isBracketedGap(ns, m.range) {
+        return true
+    }
+    return false
+}
+
+/// Vero se il tratto `r` di `ns` sta subito fra due parentesi dello stesso tipo, quadre o tonde, al più con spazi in mezzo.
+private func isBracketedGap(_ ns: NSString, _ r: NSRange) -> Bool {
+    func isBlank(_ c: unichar) -> Bool { c == 0x20 || c == 0x09 || c == 0xA0 }
+    var i = r.location - 1
+    while i >= 0, isBlank(ns.character(at: i)) { i -= 1 }
+    var j = r.location + r.length
+    while j < ns.length, isBlank(ns.character(at: j)) { j += 1 }
+    guard i >= 0, j < ns.length else { return false }
+    let open = ns.character(at: i), close = ns.character(at: j)
+    return (open == 0x5B && close == 0x5D) || (open == 0x28 && close == 0x29)   // [ … ]  ( … )
 }
 
 // MARK: - Back-matter: apparato finale (scartabile) vs contenuto (protetto)

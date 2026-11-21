@@ -81,7 +81,7 @@ public let GENERIC_TAXONOMY_ENTRIES: [GenericCategoryContract] = [
     GenericCategoryContract(.MARGINAL_GLOSS, .produced, [.sizeBand, .geometry],
         "Lateral gloss: a note-sized line (ratio ≤0.85) sitting OUTSIDE the per-page body column (left/right margin), alphabetic, not a chapter roman. Emitted as a node but excluded from the read flow (NON_READ_ROLES). See docs/GLOSSE_LATERALI.md / isLateralGloss."),
     GenericCategoryContract(.TOC_GENERAL, .produced, [.textPattern, .geometry],
-        "Index / table of contents: a page (front- or back-matter region) carrying ≥3 dotted-leader lines (frontMatterLeaderRegex). Emitted as a node but excluded from the read flow. The analytic index — no leaders — is NOT caught here."),
+        "Index / table of contents: a page (front- or back-matter region) carrying ≥3 dotted-leader lines (frontMatterLeaderRegex; dots enclosed in a same-type bracket pair — the fill-in gaps of quiz pages, hasIndexLeader — do not count). Emitted as a node but excluded from the read flow. The analytic index — no leaders — is NOT caught here."),
     GenericCategoryContract(.ARTIFACT_STAMP, .produced, [.textPattern],
         "Colophon / legal page: a sparse page (front- or back-matter region) carrying a self-identifying marker prose cannot produce — ISBN+digit, '© copyright'/'copyright <year>', 'tutti i diritti riservati', 'finito di stampare', SIAE (frontMatterColophonRegex). Emitted as a node but excluded from the read flow."),
     GenericCategoryContract(.INDEX_ENTRY, .produced, [.textPattern, .geometry],
