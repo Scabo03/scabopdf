@@ -1716,6 +1716,17 @@ TestFlight (build 1 del Mac), col diario acceso:
     disegnata né misurata e tocca il tronco comune); egret-large al posto di Heron; Xiaomi-OCR-0 nel catalogo (ripete intere
     parti di pagina); le scansioni sull'iPad (una funzione nuova; resta valida la decisione 21). *21 novembre 2026.*
 
+*Esito del giro (21 novembre 2026; misure in `docs/BANCO_OCR.md` § 44).* Entrate nell'app Mac, con la rete del banco e con le correzioni
+spente identiche al byte alla via di prima: le tabelle delle scansioni annunciate come sull'iPad; GLM senza la guardia stretta, cioè la
+variante B del banco col filtro della notazione e la protezione dagli anelli di righe ripetute (meglio della variante B sul rumore
+udibile, uguale o migliore sul resto); il segno di paragrafo, solo staccato dal numero o raddoppiato. Ritirate per la decisione 24,
+perché la rete o la revisione indipendente vi hanno trovato regressioni: i numeri di nota letti come asterisco (il numero ricavato era
+sbagliato 4 volte su 4, e togliere l'asterisco fondeva le note) e quattro parti della via GLM. Il sommario fittizio ha la causa nel
+tronco comune: proposta per il maintainer, non toccato. Il modulo condiviso dell'impaginazione con la resa della pagina come si mostra
+è pronto e verificato (sull'iPad cambia una sola figura su 52 volumi, giudicata un miglioramento) ma non è unito: prima vanno decise le
+risorse visive già salvate sulle pagine col riquadro spostato (livello delle cure e offerta) e la verità dei posti delle risorse visive
+del repo. La richiesta classica di Apple è misurata e non accesa.
+
 ---
 
 ## 13. Ricerca testuale

@@ -5,7 +5,9 @@
 > pagina stanno solo nel laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/`. Etichette di prova su ogni affermazione:
 > **campo** (misurato in questo giro), **fonte** (documento o scheda, con indirizzo e data), **dedotto**, **non verificato**.
 >
-> Stato: **giro globale concluso il 2026-11-20 (dalle 15:51 del 19 alle 07:00 del 20)**: metodo nel § 25, correzione delle pagine ruotate
+> Stato: **giro «migliorie del banco nelle app» concluso il 2026-11-21** (§ 44: le migliorie del banco nella via delle scansioni del Mac,
+> la rete del banco prima e dopo, il modulo condiviso dell'impaginazione non unito, la richiesta classica di Apple misurata).
+> **Giro globale concluso il 2026-11-20 (dalle 15:51 del 19 alle 07:00 del 20)**: metodo nel § 25, correzione delle pagine ruotate
 > nell'app Mac nel § 26, materiale in tre livelli e l'estensione nei § 27 e 35.1, corse nel § 28, rendimento, struttura sul corpus, cascata,
 > rumore udibile, varianti e scansioni vere nei § 29-34, campione contro corpus nel § 35, controllo semantico nel § 36, tempi ed energia nel
 > § 37, classifica, ipotesi e frasi per la radio riviste nei § 38-40, esperienze, residui, verifiche e revisione nei § 41-43, scelte nel § 10.
@@ -3652,3 +3654,193 @@ la verità vuota sono contate fra le pagine ma non entrano nelle misure del test
 <!-- G3VERI:fine -->
 <!-- G3BOZZA:fine -->
 
+## 44. Giro «migliorie del banco nelle app» — le migliorie portate nell'app e la rete del banco prima e dopo (21 novembre 2026)
+
+> Decisioni 23-25 di LAYER2 § 12.16: prima di altri giri di raccolta dati le migliorie dimostrate dal banco entrano nelle app; il banco
+> delle scansioni è la rete; con le correzioni spente la via delle scansioni resta identica al byte. Referto del giro nel laboratorio
+> (`banco_ocr/REFERTO_MIGLIORIE.md`), misure in `banco_ocr/migliorie/misure/`. Etichette come nel resto del documento.
+
+### 44.1 Che cosa è entrato nell'app (via delle scansioni del Mac)
+- **Tabelle e figure** (campo): le regioni «tabella» e «figura» del modello d'impaginazione sulle pagine lette arrivano alla catena come
+  candidate delle risorse visive (variante D del giro 2, § 18) e si annunciano con le parole e il meccanismo dell'iPad (risorsa visiva
+  additiva: il testo resta nel flusso, al suo posto). Stretta misurata: una tabella passa solo se larga almeno un quarto della pagina e
+  con almeno due righe lette dentro (toglie i due falsi visti: l'intestazione incorniciata di una riga e la colonna stretta di un
+  indice).
+- **GLM senza la guardia stretta** (campo): la via GLM dell'app è la variante B (§ 18: il testo di GLM è l'autorità, le righe di Apple
+  solo la geometria, ciò che solo Apple legge si toglie) più due protezioni: un filtro della notazione che toglie i segni del rumore
+  udibile (classi R1 e R2) senza testo (etichette HTML solo da un elenco chiuso: il testo fra parentesi angolari delle edizioni
+  critiche resta) e la protezione dagli anelli (una riga di GLM uguale alla precedente si dice una volta sola, classe R4). Provate e
+  ritirate nel giro, perché la rete o la revisione le hanno trovate peggiori della variante B: le corse lette solo da Apple (parole
+  inventate e plausibili sbagliate in più, righe di testatina che svuotavano pagine), la protezione che contava le copie identiche di
+  Apple (toglieva frasi ripetute davvero nei codici), la stima del corpo sui caratteri della riga di Apple (titoli e note perse sulle
+  pagine dei codici), l'allineamento a parte dei pezzi di soli segni (spostava parole fra righe, note non agganciate).
+- **Il segno di paragrafo** (campo): «$ N» → «§ N» e «$$ N» → «§§ N» solo nei contesti che il corpus mostra (§ 44.3).
+- **Provata e ritirata**: i numeri di nota letti come asterisco (§ 44.3).
+- **Il sommario fittizio**: causa nel tronco comune, diagnosi e proposta, nessun codice (§ 44.4).
+- **Il modulo dell'impaginazione** (iPad e Mac): la resa della pagina come si mostra, alla radice, un codice solo (§ 44.5): ramo
+  pronto e verificato, NON unito in attesa di due decisioni del maintainer (le risorse già salvate sulle pagine col riquadro spostato,
+  la verità dei posti del repo).
+
+### 44.2 La rete del banco prima e dopo
+Stati misurati (campo): **fotografia** = codice di main all'inizio del giro (identica al byte alle uscite del giro globale);
+**variante B** = la via GLM senza guardia del giro 2 (§ 18), il termine di paragone che il brief fissa per la Parte 2; **finale** = il
+codice unito (via di Apple dal commit `df65324`, via GLM dal commit `1c12279`, identiche al byte alle corse di verifica). Metri e classi
+del rumore come nei § 25-34. Con le migliorie spente la via delle scansioni del codice finale è identica al byte alla fotografia su
+tutti gli insiemi (9.360 letture, 2.974 pagine); una pagina del banco, nella forma degradata, ha due letture di Apple che si alternano
+fra una corsa e l'altra (riquadri spostati di frazioni di punto): instabilità del lettore, non del codice.
+
+**Banco del giro 1 (185 pagine)**
+
+| via, forma | stato | perse % (doc.) | perse % (pag.) | plausibili ‰ | udibile ‰ (R1 / R2 / R3u / R4) | titoli trovati (in più) | note trovate / agganciate | tabelle annunciate (in più) | didascalie | testatine nel flusso | § letti / veri (in più) | $ in più | asterischi in più (note «* ») | pagine non lette |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Apple, pulita | fotografia | 5,58 | 6,44 | 2,67 | 2,17 (0,05 / 1,35 / 0,54 / 0,22) | 31/80 (101) | 186/267 / 35 | 0/19 (0) | 0/5 | 63/333 | 19/24 (1) | 2 | 89 (40) | 0 |
+| Apple, pulita | finale | 5,58 | 6,44 | 2,67 | 2,17 (0,05 / 1,35 / 0,54 / 0,22) | 31/80 (101) | 186/267 / 35 | 18/19 (1) | 0/5 | 63/333 | 21/24 (1) | 0 | 89 (40) | 0 |
+| Apple, degradata | fotografia | 4,71 | 5,67 | 2,56 | 1,83 (0,05 / 1,05 / 0,73 / 0,00) | 31/80 (91) | 199/267 / 23 | 0/19 (0) | 0/5 | 74/333 | 16/24 (0) | 7 | 57 (23) | 0 |
+| Apple, degradata | finale | 4,71 | 5,67 | 2,56 | 1,83 (0,05 / 1,05 / 0,73 / 0,00) | 31/80 (91) | 199/267 / 23 | 17/19 (2) | 0/5 | 74/333 | 20/24 (0) | 3 | 57 (23) | 0 |
+| GLM, pulita | fotografia | 5,18 | 6,02 | 1,95 | 2,55 (0,13 / 1,80 / 0,40 / 0,22) | 31/80 (99) | 186/267 / 35 | 0/19 (0) | 0/5 | 66/333 | 20/24 (1) | 11 | 117 (40) | 0 |
+| GLM, pulita | variante B | 5,39 | 6,16 | 0,27 | 1,61 (0,10 / 1,00 / 0,05 / 0,46) | 28/80 (109) | 205/267 / 65 | 0/19 (0) | 0/5 | 40/333 | 21/24 (0) | 9 | 65 (0) | 0 |
+| GLM, pulita | finale | 5,34 | 6,11 | 0,27 | 1,48 (0,00 / 0,97 / 0,05 / 0,46) | 28/80 (108) | 205/267 / 65 | 17/19 (2) | 0/5 | 40/333 | 21/24 (0) | 0 | 61 (0) | 0 |
+| GLM, degradata | fotografia | 4,35 | 5,30 | 1,91 | 2,36 (0,10 / 1,51 / 0,51 / 0,22) | 31/80 (94) | 199/267 / 25 | 0/19 (0) | 0/5 | 78/333 | 16/24 (0) | 12 | 89 (23) | 0 |
+| GLM, degradata | variante B | 4,99 | 5,82 | 0,29 | 1,53 (0,19 / 0,83 / 0,05 / 0,46) | 28/80 (131) | 210/267 / 54 | 0/19 (0) | 0/5 | 41/333 | 21/24 (0) | 10 | 54 (0) | 0 |
+| GLM, degradata | finale | 4,93 | 5,76 | 0,29 | 1,31 (0,00 / 0,80 / 0,05 / 0,46) | 28/80 (131) | 210/267 / 54 | 17/19 (2) | 0/5 | 41/333 | 21/24 (0) | 0 | 50 (0) | 0 |
+
+**Livello B con l'estensione (485 pagine nuove)**
+
+| via, forma | stato | perse % (doc.) | perse % (pag.) | plausibili ‰ | udibile ‰ (R1 / R2 / R3u / R4) | titoli trovati (in più) | note trovate / agganciate | tabelle annunciate (in più) | didascalie | testatine nel flusso | § letti / veri (in più) | $ in più | asterischi in più (note «* ») | pagine non lette |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Apple, pulita | fotografia | 5,02 | 5,02 | 2,98 | 1,28 (0,02 / 0,64 / 0,38 / 0,24) | —/— (—) | —/— / — | 0/0 (0) | 0/7 | 341/542 | 96/418 (0) | 308 | 145 (33) | 4 |
+| Apple, pulita | finale | 5,02 | 5,02 | 2,98 | 1,28 (0,02 / 0,64 / 0,38 / 0,24) | —/— (—) | —/— / — | 0/0 (2) | 0/7 | 341/542 | 358/418 (0) | 46 | 145 (33) | 4 |
+| Apple, degradata | fotografia | 4,61 | 4,61 | 2,27 | 1,46 (0,02 / 0,66 / 0,50 / 0,28) | —/— (—) | —/— / — | 0/0 (0) | 0/7 | 327/542 | 97/418 (0) | 305 | 136 (23) | 5 |
+| Apple, degradata | finale | 4,61 | 4,61 | 2,27 | 1,46 (0,02 / 0,66 / 0,50 / 0,28) | —/— (—) | —/— / — | 0/0 (2) | 0/7 | 327/542 | 366/418 (0) | 36 | 136 (23) | 5 |
+| GLM, pulita | fotografia | 4,61 | 4,61 | 2,28 | 2,06 (0,05 / 1,22 / 0,34 / 0,46) | —/— (—) | —/— / — | 0/0 (0) | 0/7 | 346/542 | 99/418 (0) | 343 | 288 (32) | 4 |
+| GLM, pulita | variante B | 5,62 | 5,62 | 0,57 | 1,65 (0,10 / 0,93 / 0,34 / 0,28) | —/— (—) | —/— / — | 0/0 (0) | 0/7 | 83/542 | 363/418 (0) | 54 | 212 (0) | 2 |
+| GLM, pulita | finale | 5,40 | 5,40 | 0,57 | 1,44 (0,00 / 0,80 / 0,36 / 0,28) | —/— (—) | —/— / — | 0/0 (3) | 0/7 | 83/542 | 364/418 (0) | 0 | 159 (0) | 1 |
+| GLM, degradata | fotografia | 4,38 | 4,38 | 1,91 | 1,65 (0,06 / 0,86 / 0,42 / 0,31) | —/— (—) | —/— / — | 0/0 (0) | 0/7 | 327/542 | 99/418 (0) | 341 | 191 (24) | 5 |
+| GLM, degradata | variante B | 5,18 | 5,18 | 0,53 | 1,49 (0,09 / 0,62 / 0,33 / 0,46) | —/— (—) | —/— / — | 0/0 (0) | 0/7 | 82/542 | 362/418 (0) | 50 | 146 (0) | 2 |
+| GLM, degradata | finale | 4,96 | 4,96 | 0,53 | 1,33 (0,01 / 0,52 / 0,35 / 0,46) | —/— (—) | —/— / — | 0/0 (3) | 0/7 | 82/542 | 363/418 (0) | 0 | 104 (0) | 1 |
+
+**Pagine ruotate (72)**
+
+| via, forma | stato | perse % (doc.) | perse % (pag.) | plausibili ‰ | udibile ‰ (R1 / R2 / R3u / R4) | titoli trovati (in più) | note trovate / agganciate | tabelle annunciate (in più) | didascalie | testatine nel flusso | § letti / veri (in più) | $ in più | asterischi in più (note «* ») | pagine non lette |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Apple, pulita | fotografia | 1,82 | 1,82 | 1,64 | 0,82 (0,00 / 0,61 / 0,20 / 0,00) | 12/21 (66) | 48/84 / 6 | 0/0 (0) | 0/0 | 54/69 | 15/33 (0) | 12 | 18 (3) | 0 |
+| Apple, pulita | finale | 1,82 | 1,82 | 1,64 | 0,82 (0,00 / 0,61 / 0,20 / 0,00) | 12/21 (66) | 48/84 / 6 | 0/0 (0) | 0/0 | 54/69 | 21/33 (0) | 6 | 18 (3) | 0 |
+| GLM, pulita | fotografia | 1,47 | 1,47 | 0,82 | 1,64 (0,00 / 1,53 / 0,10 / 0,00) | 12/21 (63) | 54/84 / 6 | 0/0 (0) | 0/0 | 54/69 | 15/33 (0) | 12 | 63 (3) | 0 |
+| GLM, pulita | variante B | 2,75 | 2,75 | 0,41 | 1,33 (0,00 / 1,23 / 0,10 / 0,00) | 12/21 (63) | 54/84 / 9 | 0/0 (0) | 0/0 | 9/69 | 27/33 (0) | 0 | 54 (0) | 0 |
+| GLM, pulita | finale | 2,75 | 2,75 | 0,41 | 0,72 (0,00 / 0,61 / 0,10 / 0,00) | 12/21 (63) | 54/84 / 9 | 0/0 (0) | 0/0 | 9/69 | 27/33 (0) | 0 | 18 (0) | 0 |
+
+**Scansioni vere (75 pagine; testo e crocette sulle 14 con la verità)**
+
+| via | stato | perse % | lettere % | inventate | domande ritrovate (su 35) | coppie numero-risposta (su 85) | pagine non lette (contro le righe del lettore) | tabelle annunciate | § letti / veri | $ letti / veri | asterischi letti / veri | note che cominciano con «* » |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Apple | fotografia | 20,20 | 0,07 | 23 | 31 | 5 | 2 | 0 | 0/0 | 0/0 | 2/1 | 0 |
+| Apple | finale | 20,20 | 0,07 | 23 | 31 | 5 | 2 | 4 | 0/0 | 0/0 | 2/1 | 0 |
+| GLM | fotografia | 19,84 | 0,04 | 18 | 31 | 7 | 2 | 0 | 0/0 | 0/0 | 0/1 | 0 |
+| GLM | variante B | 2,80 | 0,03 | 1 | 35 | 85 | 0 | 0 | 0/0 | 0/0 | 0/1 | 0 |
+| GLM | finale | 2,80 | 0,03 | 1 | 35 | 85 | 0 | 5 | 0/0 | 0/0 | 0/1 | 0 |
+
+Lettura della tabella. Via di Apple: tutto come la fotografia salvo tabelle annunciate (0 → 17-18 su 19 sul banco), «§» letti (banco 19
+→ 21 su 24, livello B 96 → 358 su 418, 0 in più) e «$» in più (livello B 308 → 46). Via GLM contro la variante B: rumore udibile meglio in
+ogni insieme, parole perse uguali o meno, tutto il resto uguale o meglio (pagine non lette sul livello B 2 → 1). Via GLM contro la
+fotografia (decisione 23 del maintainer: togliere la guardia stretta): scansioni vere 19,84 → 2,80 per cento di parole perse, parole
+inventate 18 → 1; sulle scansioni costruite da 0,2 a 1,3 punti di parole perse in più, in gran parte testatine che non entrano più nel
+flusso (il metro della pagina singola le conta come testo), e qualche titolo trovato in meno (banco pulito 31 → 28).
+
+
+### 44.3 Il segno di paragrafo e i numeri di nota
+- **Il censimento** (campo, letture dell'iPad dei 55 libri e livello di testo): 14.826 «§» veri (12.148 davanti a un numero, 758
+  doppi), 2 «$» veri (uno in un importo con le migliaia). I «§» veri attaccati al numero sono 59 su più di 8.300, tutti da una a tre
+  cifre; quelli davanti a un numero di quattro cifre hanno lo spazio (24).
+- **La rete ha trovato due errori nella prima regola** (campo, stato `fin3`): l'edizione in apice davanti all'anno, che GLM scrive come
+  formula («$^{3}$1998»: il filtro la porta alla forma canonica dell'apice e la conversione prendeva il dollaro di chiusura, «3§§1998»),
+  e il richiamo o l'edizione in apice che Apple legge come dollaro attaccato («$1998», «eziologica $8.»). Il conteggio per pagina ne
+  vedeva 5 su 4 pagine; il controllo occorrenza per occorrenza contro la verità della pagina (strumento `controllo_par.py`) li ha
+  trovati tutti e ha misurato i tipi: dollaro singolo con lo spazio, conversioni confermate +332 e non confermate +0 (Apple), +305 e +1
+  (GLM); raddoppiato +106 e +1 (Apple), +121 e +6 (GLM, i casi dell'apice); dollaro singolo attaccato +10 e +6 (Apple).
+- **La regola finale** (`LetturaScansioni.segnoDiParagrafo`): «$ N» → «§ N» (dollaro singolo solo se staccato) e «$$ N», «$$N» →
+  «§§»; mai dopo una lettera, una cifra o la chiusura di un apice, mai davanti a quattro o più cifre attaccate, mai su un importo
+  (migliaia, decimali con la virgola, dollaro dopo il numero). Le 10 conversioni attaccate giuste si perdono (restano «$», come prima).
+  Misura finale nella tabella del § 44.2 e qui: occorrenza per occorrenza contro la verità della pagina (`controllo_par.py`, banco, livello B, estensione, stato finale contro la via
+  spenta): nessuna pagina in cui i «§» non confermati crescano; i confermati salgono (livello B, via di Apple 39 → 163; via GLM 39-41 →
+  152-154).
+- **I numeri di nota letti come asterisco: provata e ritirata** (campo). La regola metteva il numero vero «quando certo» (dalla
+  sequenza delle note della pagina o dall'unico richiamo senza nota) e altrimenti toglieva l'asterisco. Sul banco i numeri messi dalla
+  via di Apple sono stati 4, tutti sbagliati (2, 1, 3 e 5 su pagine con le note 306-310, 22-25, 43 e 462, 39-40): la «sequenza»
+  prendeva per numeri di nota gli elenchi dentro le note e le cifre lette male. Togliere l'asterisco, poi, faceva sparire il segno
+  d'inizio della nota e la catena fondeva note consecutive (in una pagina quattro note lette come una con tre continuazioni; sul banco,
+  via di Apple, forma pulita, note agganciate da 35 a 32). Gli asterischi restano come prima del giro; un numero certo chiede un segnale
+  che sulle scansioni oggi non c'è (residuo).
+
+### 44.4 Il sommario fittizio
+- **Il caso** (campo, fotografia): due pagine intere di un documento di quesiti delle scansioni vere (536 e 529 parole) finiscono in un
+  nodo di sommario, escluso dalla lettura, nelle due vie.
+- **La causa** (campo, sulle estrazioni): la regola dei sommari a puntini del tronco comune (ScaboCore,
+  `GenericPlugin.isFrontMatterIndex`: almeno tre righe con quattro o più punti di fila) prende per sommario le lacune da completare
+  «[.....]». Tolta la copertina restano sommario; tolti i soli puntini (8 pezzi) diventano corpo, note e titoli, lette. Con le stesse
+  righe in un PDF col testo l'iPad farebbe lo stesso: la causa non è nel codice del Mac, e il tronco comune non si tocca in questo giro.
+- **La proposta** (campo, sui 55 documenti, livello di testo, regioni di testa e di coda): escludere dai puntini da sommario quelli
+  chiusi fra parentesi quadre o tonde; delle 109 pagine che oggi sono sommario non ne cambia nessuna, e le due pagine dei quesiti
+  tornano lette. Scartata la stretta «puntini seguiti dal numero di pagina» (91 pagine di sommari veri dei codici smetterebbero di
+  esserlo: lì i numeri stanno su un'altra riga). Decisione per il maintainer; un giro con le reti dell'iPad.
+- **Dopo il giro** (campo): nella via GLM le due pagine si leggono (GLM scrive le lacune con meno puntini); nella via di Apple restano
+  non lette (2 pagine, come nella fotografia). Le 11 pagine-sommario del livello B sono sommari veri.
+
+### 44.5 Il modulo dell'impaginazione (ramo `feat/modulo-impaginazione-riquadro`, pubblicato, non unito)
+- **La correzione** (campo): nel modulo condiviso `ScaboPageStructure` la tela di `HeronPageRenderer.renderPage` ha la misura della
+  pagina come si mostra e nessuna traslazione propria (`PDFPage.draw(with:to:)` riporta già il riquadro di ritaglio all'origine e
+  ruota); il ritaglio di `RegionCropper.pngData` si prende sulla pagina mostrata. Sulle pagine diritte col riquadro all'origine resa e
+  ritaglio identici al byte a prima. La via delle scansioni del Mac ora usa questa resa (la sua copia è tolta): un codice solo per le
+  due piattaforme, e le sue letture restano identiche al byte (9.360 su 9.360, tutti gli insiemi, due lettori).
+- **Test e prova al contrario** (campo): 6 test nuovi; con i corpi vecchi della resa e del ritaglio falliscono i due della pagina
+  spostata e ruotata (15 asserzioni) e passano quelli della pagina diritta.
+- **Reti dell'iPad** (campo, iOS 26.5 e 27, contro la build 66): letture senza le risorse visive identiche su 52 volumi su 52; 110
+  elementi di prima al loro posto e 1 figura nuova (v39, pagina col riquadro spostato), giudicata contro la pagina: una fotografia con
+  la didascalia che prima mancava; giudizio verde con la verità dei posti aggiornata nel laboratorio (111 su 111). Annotazioni ai
+  quattro livelli di granularità: verdi. Cure mirate sui documenti di studio: verdi.
+- **Il Mac** (campo): lettura migliore sui quattro volumi col riquadro spostato identica al byte senza le risorse, la stessa figura di
+  v39 in più; struttura del modulo sul corpus nella tabella qui sotto (cambiano solo pagine col riquadro spostato: 2.940 su 3.035, 0 su
+  20.531 diritte).
+  | struttura del modulo sul corpus (55 documenti, contro la lettura dell'iPad del libro intero) | prima | dopo |
+  |---|---|---|
+  | titoli trovati su 9.158 (in più) | 5.186 (10.860) | 6.006 (10.498) |
+  | note trovate su 27.254, agganciate | 17.708, 712 | 17.753, 913 |
+  | tabelle su 86, didascalie su 12 | 80, 9 | 80, 9 |
+  | testatine nel flusso su 33.227 | 15.225 | 11.365 |
+  | richiami letti su 24.610 | 14.264 | 14.279 |
+
+  Sui quattro volumi col riquadro spostato (prima → dopo): titoli trovati v06 2 → 292 su 481, v26 12 → 167 su 173, v32 1 → 217 su 250,
+  v39 2 → 161 su 182 (in più: 263 → 46, 169 → 51, 338 → 352, 115 → 51); note agganciate v06 0 → 29, v26 0 → 59, v39 0 → 113;
+  testatine nel flusso v06 2.481 → 719, v26 1.230 → 185, v32 935 → 54, v39 158 → 6. Peggioramenti piccoli: v32 titoli in più +14, v26
+  richiami letti −9, v06 note trovate −1. Oggi la struttura del modulo raggiunge la lettura solo per le risorse visive.
+- **Perché non è unito** (revisione indipendente del giro, campo dove detto). D1: le risorse visive già salvate (iPad build 66 o
+  prima, letture del Mac registrate col livello delle cure 66) su pagine col riquadro spostato hanno le coordinate della resa vecchia,
+  che il ritaglio vecchio compensava; col ritaglio nuovo «Estrai come immagine» e la descrizione della figura prenderebbero una
+  regione spostata, e nessuna offerta raggiunge quei libri (sul banco 0 casi: i 110 elementi salvati stanno su pagine diritte; nelle
+  librerie vere non misurato). D2: la verità dei posti delle risorse visive del repo non ha la figura nuova di v39, e la rete delle
+  generazioni resterebbe rossa. Le due correzioni stanno fuori dal perimetro del giro (livello delle cure e invarianza in ScaboChain,
+  offerta in ScaboApp, verità sotto `app/ios/scripts`); le misure per un livello delle cure 67 ci sono già (51 volumi su 52 identici al
+  byte ai quattro livelli, le annotazioni al loro posto, cure mirate verdi). D3, latente e non nato qui: sulle pagine ruotate con testo
+  le celle di PDFKit e le regioni stanno in spazi diversi (la lettura migliore del Mac non esclude le ruotate, l'iPad sì).
+
+### 44.6 La richiesta classica di Apple (misurata, non accesa)
+Misurata col codice finale della via di Apple (Parti 1-4 dentro), stato `cls6` contro `fin6` (campo; la via di Apple di `fin6` e
+di quella finale è la stessa: l'ultimo commit tocca solo la via GLM). **Meglio**: parole perse (banco pulito 6,44 → 5,70 per cento col
+metro per pagina, degradato 5,67 → 5,19; livello B 5,02 → 4,67 e 4,61 → 4,23; ruotate 1,82 → 1,35; scansioni vere 20,20 → 16,98),
+plausibili sbagliate (2,67 → 1,71 per mille), rumore udibile (2,17 → 1,47; 1,83 → 0,97; livello B 1,28 → 0,83 e 1,46 → 0,87; ruotate
+0,82 → 0,20), note trovate e agganciate (186 e 35 → 211 e 49), note che cominciano con «* » (40 → 3; livello B 33 → 2), coppie
+numero-risposta delle scansioni vere (5 → 57 su 85), «§» letti sulle ruotate (21 → 30 su 33). **Peggio**: testatine nel flusso (banco
+63 → 81 e 74 → 81; livello B 341 → 361; ruotate 54 → 57), titoli in più nella forma degradata (91 → 117), «§» letti sul livello B
+(358 → 333 e 366 → 336), tabelle annunciate sul banco pulito (18 → 16 su 19, in più 1 → 3), una pagina non letta in più sul livello
+B pulito (4 → 5). Non migliora tutto ciò che si sente: non si accende. Proposta al maintainer coi compromessi (referto, decisioni).
+
+### 44.7 Residui
+- Numeri di nota letti come asterisco: restano (regola provata e ritirata, § 44.3).
+- Sommario fittizio delle pagine di quesiti nella via di Apple: decisione sul tronco comune (§ 44.4).
+- «$» attaccato al numero: resta «$» (10 conversioni giuste perse sul banco, § 44.3); importi col dollaro staccato e senza separatori
+  diventerebbero «§» (nessun caso nel corpus, limite dichiarato).
+- Il modulo dell'impaginazione: ramo pronto, non unito (D1, D2; D3 latente; § 44.5).
+- Il lettore di Apple non è del tutto stabile: una pagina su 2.974 è uscita diversa in una corsa sotto carico e uguale nella ripetizione.
+- Tabelle e figure delle scansioni: senza didascalia; una figura senza testo si annuncia in testa alla pagina; 1-3 tabelle in più per
+  forma sul banco (sulle pagine con tabelle).
+- Il test d'interfaccia della scansione sceglie GLM se installato: a Mac carico (meno di 8 GB liberi) l'app rifiuta, come voluto; il
+  test ora lo dice in pochi secondi.

@@ -1500,6 +1500,22 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 ## 11. Residui e cose non verificate
 
+- **Dopo il giro «migliorie del banco nelle app» (21 novembre 2026).** *Fatto:* nella via delle scansioni del Mac le tabelle e le
+  figure che il modello d'impaginazione vede sulle pagine lette si annunciano come sull'iPad (risorsa visiva additiva della catena, il
+  testo della tabella resta al suo posto; solo tabelle larghe almeno un quarto della pagina e con almeno due righe); GLM lettura pagine
+  senza la guardia stretta che rimetteva le righe di Apple: la variante B del banco col filtro della notazione e la protezione dagli
+  anelli di righe ripetute (sulle scansioni vere parole perse da 19,8 a 2,8 per cento; meglio della variante B sul rumore udibile in
+  tutti gli insiemi, uguale o migliore sul resto); il segno di paragrafo letto come dollaro torna «§» solo staccato dal numero o
+  raddoppiato. Con le migliorie spente (solo laboratorio) la via è identica al byte a prima. Misure nel report `docs/BANCO_OCR.md` § 44.
+  *Non entrato:* la resa della pagina come si mostra nel modulo condiviso (iPad e Mac, ramo `feat/modulo-impaginazione-riquadro`
+  pronto e verificato) aspetta due decisioni: le risorse visive già salvate sulle pagine col riquadro spostato e la verità dei posti
+  delle risorse visive del repo. Nel frattempo la via delle scansioni del Mac tiene la sua resa, già giusta. *Residui misurati:* i numeri
+  di nota che Apple legge come asterisco restano (regola provata e ritirata: 4 numeri sbagliati su 4, e togliere l'asterisco fonde le
+  note); le pagine di quesiti con le lacune a puntini restano un sommario non letto nella via di Apple (causa nel tronco comune,
+  decisione aperta); i «$» attaccati al numero restano «$»; tabelle e figure delle scansioni senza didascalia; il lettore di Apple non è
+  del tutto stabile (una pagina su 2.974 diversa in una corsa sotto carico). *Da sentire:* una scansione con una tabella, con VoiceOver
+  vero; il segno di paragrafo nelle scansioni dei manuali.
+
 - **Dopo il giro «modelli e scansioni» (18 novembre 2026).** *Fatto:* le scansioni lette sul Mac (decisione 21: lettura del testo di
   Apple con l'impaginazione, GLM lettura pagine con la guardia stretta sulle righe di Apple, regola unica di quando si legge), la
   lettura migliore che arriva da sola (§ 6.6, decisione 20), la schermata dell'elaborazione con la scelta del lettore e i modelli per
