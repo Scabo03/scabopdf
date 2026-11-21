@@ -127,10 +127,6 @@ public struct RigaLetta: Codable, Equatable, Sendable {
     public var bbox: BBox
     public var regione: Int
     public var tipo: String?
-    /// Quanti caratteri aveva la riga di Apple da cui viene la geometria, quando il testo è di un altro lettore (GLM senza la guardia,
-    /// giro «migliorie del banco nelle app»): il corpo si stima dalla larghezza della riga divisa per i caratteri di QUEL testo, non di
-    /// quello che lo sostituisce. nil = il testo è quello della riga (la via di sempre: nessun campo in più nei dati).
-    public var caratteriApple: Int? = nil
 
     public init(testo: String, bbox: BBox, regione: Int, tipo: String? = nil) {
         self.testo = testo; self.bbox = bbox; self.regione = regione; self.tipo = tipo
@@ -481,12 +477,12 @@ public enum LetturaScansioni {
     /// riga della parola allineata precedente (la prima riga, all'inizio); ciò che solo Apple ha visto si toglie. Le etichette HTML
     /// delle tabelle di GLM si tolgono. La geometria resta quella delle righe di Apple.
     ///
-    /// Con `migliorata` (miglioria `glm`, giro «migliorie del banco nelle app», 2026-11-21) due differenze, misurate sul banco: i pezzi
-    /// fatti di soli segni (senza lettere né cifre: «§», «*») si allineano per quello che sono e non si appaiano fra loro; il corpo
-    /// delle righe si stima sui caratteri della riga di Apple (`caratteriApple`). Ciò che solo Apple ha letto si toglie, come nella
-    /// variante B: tenerlo (provato nel giro) recuperava qualche parola ma portava parole inventate e plausibili sbagliate, e righe di
-    /// testatina che svuotavano pagine intere nella catena (rete del banco e revisione indipendente del giro).
-    public static func senzaGuardia(righe: [RigaLetta], testoGlm: String, migliorata: Bool = false) -> (righe: [RigaLetta], conti: [String: Int]) {
+    /// È anche la via dell'app con la miglioria `glm` (giro «migliorie del banco nelle app», 2026-11-21), dopo il filtro della notazione
+    /// e la protezione dagli anelli di righe ripetute. Provate e ritirate nel giro, misurate sul banco: tenere ciò che solo Apple ha
+    /// letto (parole inventate, plausibili sbagliate, righe di testatina che svuotavano pagine intere), stimare il corpo sui caratteri
+    /// della riga di Apple (cambiava il corpo prevalente: titoli e note perse sulle pagine dei codici), allineare a parte i pezzi di soli
+    /// segni (spostava parole fra due righe, con lo stesso effetto sul corpo).
+    public static func senzaGuardia(righe: [RigaLetta], testoGlm: String) -> (righe: [RigaLetta], conti: [String: Int]) {
         var conti = ["allineate": 0, "aggiunte_glm": 0, "tolte_apple": 0]
         guard !righe.isEmpty else { return ([], ["senza_ancore": paroleGlm(testoGlm).count]) }
         var parole: [Int] = []   // la riga di ogni parola di Apple
@@ -496,8 +492,7 @@ public enum LetturaScansioni {
         }
         let pulito = testoGlm.replacingOccurrences(of: etichetteHTML, with: " ", options: [.regularExpression, .caseInsensitive])
         let glm = paroleGlm(pulito)
-        let allinea: (String) -> String = { s in let n = normalizza(s); return migliorata && n.isEmpty ? "\u{1}" + s : n }
-        let nv = testiV.map(allinea), ng = glm.map(allinea)
+        let nv = testiV.map(normalizza), ng = glm.map(normalizza)
         let diff = ng.difference(from: nv)
         var tolte = Set<Int>(), messe = Set<Int>()
         for c in diff {
@@ -535,7 +530,6 @@ public enum LetturaScansioni {
         var uscita: [RigaLetta] = []
         for (k, r) in righe.enumerated() where !perRiga[k].isEmpty {
             var c = r; c.testo = perRiga[k].joined(separator: " ")
-            if migliorata { c.caratteriApple = r.testo.count }   // la geometria resta quella di Apple, e così il corpo
             uscita.append(c)
         }
         return (uscita, conti)
@@ -747,7 +741,7 @@ public enum LetturaScansioni {
     /// corpo), poi i picchi dell'istogramma su tutto il documento (poche misure: la catena ragiona per gruppi di dimensioni).
     public static func pagineEstratte(_ lette: [PaginaLetta], migliorie: MiglioriScansioni = .spente) -> [Int: PdfPageExtraction] {
         let stime = lette.map { stimeDiPagina($0.righe) }
-        let quantizza = picchi(zip(lette, stime).flatMap { p, st in zip(p.righe, st).map { ($0.1, Double(caratteri($0.0))) } })
+        let quantizza = picchi(zip(lette, stime).flatMap { p, st in zip(p.righe, st).map { ($0.1, Double($0.0.testo.count)) } })
         var uscita: [Int: PdfPageExtraction] = [:]
         for (pagina, st) in zip(lette, stime) {
             var p = pagina
@@ -756,7 +750,7 @@ public enum LetturaScansioni {
                 if migliorie.paragrafo { p.righe[k].testo = segnoDiParagrafo(p.righe[k].testo) }
             }
             let corpi = st.map(quantizza)
-            let corpoTesto = corpoPrevalente(zip(p.righe, corpi).flatMap { r, c in Array(repeating: c, count: max(1, caratteri(r) / 10)) })
+            let corpoTesto = corpoPrevalente(zip(p.righe, corpi).flatMap { r, c in Array(repeating: c, count: max(1, r.testo.count / 10)) })
             let note = numeriDiNota(p.righe, corpi: corpi, corpoTesto: corpoTesto)
             let linee = zip(p.righe, corpi).map { r, corpo -> PdfTextLine in
                 PdfTextLine(spans: spans(r, corpo: corpo, grassetto: titoloAmmesso(r, tra: p.righe),
@@ -768,19 +762,16 @@ public enum LetturaScansioni {
         return uscita
     }
 
-    /// I caratteri su cui si stima il corpo della riga: quelli della riga di Apple da cui viene la geometria (`caratteriApple`), se il testo
-    /// è di un altro lettore; altrimenti quelli del testo.
-    static func caratteri(_ r: RigaLetta) -> Int { r.caratteriApple ?? r.testo.count }
 
     /// La stima del corpo di ogni riga della pagina (prima dei gruppi).
     static func stimeDiPagina(_ righe: [RigaLetta]) -> [Double] {
         let proprie = righe.map { r -> Double in
-            caratteri(r) >= caratteriMinimi ? rapportoLarghezza * r.bbox.width / Double(caratteri(r)) : r.bbox.height * rapportoAltezza
+            r.testo.count >= caratteriMinimi ? rapportoLarghezza * r.bbox.width / Double(r.testo.count) : r.bbox.height * rapportoAltezza
         }
         var perRegione: [Int: [Double]] = [:]
-        for (r, e) in zip(righe, proprie) where caratteri(r) >= caratteriMinimi { perRegione[r.regione, default: []].append(e) }
+        for (r, e) in zip(righe, proprie) where r.testo.count >= caratteriMinimi { perRegione[r.regione, default: []].append(e) }
         return zip(righe, proprie).map { r, e in
-            guard caratteri(r) >= caratteriMinimi, let v = perRegione[r.regione], v.count >= 2 else { return e }
+            guard r.testo.count >= caratteriMinimi, let v = perRegione[r.regione], v.count >= 2 else { return e }
             let o = v.sorted()
             return (o[(o.count - 1) / 2] + o[o.count / 2]) / 2
         }

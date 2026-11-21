@@ -68,14 +68,14 @@ final class MiglioriScansioniTests: XCTestCase {
         XCTAssertEqual(LetturaScansioni.senzaRipetizioni("corta\ncorta", righeApple: []).tolte, 0, "le righe brevi non si toccano")
     }
 
-    /// La via GLM migliorata: ciò che solo Apple ha letto si toglie (come nella variante B); i pezzi di soli segni si allineano per quello
-    /// che sono; le righe d'uscita portano i caratteri della riga di Apple, da cui si stima il corpo.
-    func test_senzaGuardiaMigliorata_soloAppleSiToglie_corpoDaApple() {
+    /// La via GLM dell'app (miglioria `glm`): ciò che solo Apple ha letto si toglie, come nella variante B; le righe d'uscita sono quelle
+    /// di Apple col testo di GLM.
+    func test_senzaGuardia_soloAppleSiToglie() {
         func riga(_ t: String, _ y: Double) -> RigaLetta { RigaLetta(testo: t, bbox: BBox(x: 0, y: y, width: 300, height: 10), regione: 0) }
         let righe = [riga("Titolo letto solo da Apple", 500), riga("il testo della pagina di prova", 480), riga("§ 12 e altro", 460)]
-        let g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: "il testo della pagina di prova\n§ 12 e altro", migliorata: true)
+        let g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: "il testo della pagina di prova\n§ 12 e altro")
         XCTAssertEqual(g.righe.map(\.testo), ["il testo della pagina di prova", "§ 12 e altro"])
-        XCTAssertEqual(g.righe.map(\.caratteriApple), [30, 12])
+        XCTAssertEqual(g.righe.map(\.bbox.y), [480, 460], "la geometria resta quella delle righe di Apple")
         XCTAssertEqual(g.conti["tolte_apple"], 5)
     }
 
