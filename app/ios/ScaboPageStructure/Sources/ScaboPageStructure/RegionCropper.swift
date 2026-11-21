@@ -19,9 +19,9 @@ public enum RegionCropper {
     /// Frazione della pagina oltre la quale un ritaglio non si fa (sarebbe, di fatto, la pagina intera).
     public static let maxPageFraction = 0.85
 
-    /// Il rettangolo da ritagliare in coordinate PDF della pagina (origine basso-sinistra), già col margine
-    /// e chiuso dentro il cropBox; `nil` se la regione è vuota o copre troppa pagina.
-    /// `region` è `[l, t, r, b]` in punti, origine alto-sinistra, relativa al cropBox.
+    /// Il rettangolo da ritagliare (origine basso-sinistra), già col margine e chiuso dentro `cropBox`; `nil` se la regione è vuota o copre
+    /// troppa pagina. `region` è `[l, t, r, b]` in punti, origine alto-sinistra, relativa a `cropBox`. Per il ritaglio `pngData` passa la
+    /// pagina come si mostra, all'origine (giro «migliorie del banco nelle app», 2026-11-21).
     public static func cropRect(region: [Double], cropBox: CGRect, margin: Double = 4) -> CGRect? {
         guard region.count == 4 else { return nil }
         let l = region[0], t = region[1], r = region[2], b = region[3]
@@ -37,8 +37,13 @@ public enum RegionCropper {
     }
 
     /// PNG del ritaglio a `dpi` punti per pollice (300 di norma), con il lato lungo limitato a `maxPixels`.
+    ///
+    /// Nello spazio della pagina COME SI MOSTRA, all'origine (giro «migliorie del banco nelle app», 2026-11-21): `PDFPage.draw(with:to:)`
+    /// riporta già il riquadro di ritaglio all'origine, quindi il rettangolo si prende sulla pagina mostrata e non sul riquadro nelle
+    /// coordinate del PDF. Prima, con un riquadro di ritaglio spostato dall'origine, il ritaglio usciva spostato di quanto è spostato il
+    /// riquadro (giro globale del banco OCR, docs/BANCO_OCR.md § 26); col riquadro all'origine il rettangolo è lo stesso, al byte.
     public static func pngData(page: PDFPage, region: [Double], dpi: Double = 300, maxPixels: Int = 3000, margin: Double = 4) -> Data? {
-        let crop = page.bounds(for: .cropBox)
+        let crop = CGRect(origin: .zero, size: HeronPageRenderer.displayedSize(of: page))
         guard let rect = cropRect(region: region, cropBox: crop, margin: margin) else { return nil }
         var scale = CGFloat(dpi / 72)
         let longSide = max(rect.width, rect.height) * scale

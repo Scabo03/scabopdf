@@ -17,7 +17,8 @@ public struct LayoutRegion: Codable, Equatable, Sendable {
     public var order: Int
     /// Etichetta di docling (`table`, `picture`, `caption`, `text`, `section_header`, …).
     public var label: String
-    /// `[l, t, r, b]` in punti, origine alto-sinistra, relativa al cropBox; arrotondata al decimo.
+    /// `[l, t, r, b]` in punti, origine alto-sinistra, relativa alla pagina come si mostra (`HeronPageRenderer.displayedSize`);
+    /// arrotondata al decimo.
     public var bbox: [Double]
     /// Confidenza del modello, arrotondata a 1e-4.
     public var confidence: Double
@@ -46,7 +47,7 @@ public struct LayoutRegion: Codable, Equatable, Sendable {
 public struct PageLayout: Codable, Equatable, Sendable {
     /// Indice 0-based della pagina nel documento.
     public var pageIndex: Int
-    /// Dimensioni del cropBox in punti.
+    /// Dimensioni della pagina come si mostra, in punti (il riquadro di ritaglio, coi lati scambiati a 90 e 270 gradi).
     public var width: Double
     public var height: Double
     public var regions: [LayoutRegion]
@@ -92,7 +93,7 @@ public final class PageStructureAnalyzer {
     private func run(page: PDFPage, pageIndex: Int, collectTexts: Bool) throws -> (PageLayout, [String], PageTimings) {
         let t0 = Date()
         guard let (img, W, H) = HeronPageRenderer.renderPage(page) else {
-            let box = page.bounds(for: .cropBox)
+            let box = HeronPageRenderer.displayedSize(of: page)
             return (PageLayout(pageIndex: pageIndex, width: Double(box.width), height: Double(box.height), regions: [], nDetections: 0, nClusters: 0, nCells: 0),
                     [], PageTimings(total: 0, render: 0, infer: 0, cells: 0, post: 0, order: 0))
         }

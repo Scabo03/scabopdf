@@ -19,21 +19,42 @@ import ImageIO
 
 /// La resa della pagina per il modello (nessuna dipendenza da Core ML: serve anche alle reti e al ritaglio).
 public enum HeronPageRenderer {
-    /// Resa come docling: pagina a 72 dpi (dimensione in punti), poi ridimensionata a 640×640 (bilineare).
-    public static func renderPage(_ page: PDFPage) -> (CGImage, Double, Double)? {
+    /// La rotazione della pagina, ricondotta a 0, 90, 180 o 270 gradi.
+    public static func rotation(of page: PDFPage) -> Int { ((page.rotation % 360) + 360) % 360 }
+
+    /// La misura della pagina COME SI MOSTRA, in punti: il riquadro di ritaglio, coi lati scambiati se la pagina è ruotata di 90 o di
+    /// 270 gradi. È lo spazio della resa, delle regioni del modello e del ritaglio delle risorse visive.
+    public static func displayedSize(of page: PDFPage) -> CGSize {
         let box = page.bounds(for: .cropBox)
-        let w = Int(box.width.rounded()), h = Int(box.height.rounded())
+        let r = rotation(of: page)
+        return r == 90 || r == 270 ? CGSize(width: box.height, height: box.width) : box.size
+    }
+
+    /// Resa come docling: pagina a 72 dpi (dimensione in punti), poi ridimensionata a 640×640 (bilineare).
+    ///
+    /// LA PAGINA COME SI MOSTRA (giro «migliorie del banco nelle app», 2026-11-21; difetto misurato nel giro globale del banco OCR,
+    /// docs/BANCO_OCR.md § 26 e § 30). `PDFPage.draw(with:to:)` disegna già la pagina ruotata e riportata all'origine del suo riquadro di
+    /// ritaglio (applica da sé `transform(for:)`): la tela ha quindi la misura mostrata e nessuna traslazione nostra. Prima la tela aveva
+    /// la misura del riquadro non ruotato e si traslava di nuovo sul riquadro: con un riquadro di ritaglio spostato dall'origine (il 12,9
+    /// per cento delle pagine del corpus: tre volumi interi, quasi tutto un quarto e una sessantina di pagine in altri nove) la pagina
+    /// scivolava di quanto è spostato il riquadro e le regioni del
+    /// modello nascevano da una pagina spostata; sulle pagine ruotate di 90 o 270 gradi la pagina verticale finiva in una tela
+    /// orizzontale. Sulle pagine diritte col riquadro all'origine la resa è identica al byte a prima (stessa misura, stessa scala, e la
+    /// traslazione tolta era nulla). È la stessa correzione già fatta nella via delle scansioni del Mac, che ora usa questa resa.
+    public static func renderPage(_ page: PDFPage) -> (CGImage, Double, Double)? {
+        let m = displayedSize(of: page)
+        let w = Int(m.width.rounded()), h = Int(m.height.rounded())
         guard w > 0, h > 0 else { return nil }
         guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
         ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1)); ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
-        ctx.scaleBy(x: CGFloat(w) / box.width, y: CGFloat(h) / box.height); ctx.translateBy(x: -box.minX, y: -box.minY)
+        ctx.scaleBy(x: CGFloat(w) / m.width, y: CGFloat(h) / m.height)
         page.draw(with: .cropBox, to: ctx)
         guard let img = ctx.makeImage() else { return nil }
         guard let ctx2 = CGContext(data: nil, width: 640, height: 640, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
         ctx2.interpolationQuality = .medium
         ctx2.draw(img, in: CGRect(x: 0, y: 0, width: 640, height: 640))
         guard let img640 = ctx2.makeImage() else { return nil }
-        return (img640, Double(box.width), Double(box.height))
+        return (img640, Double(m.width), Double(m.height))
     }
 
     public static func pixelBuffer(from image: CGImage) -> CVPixelBuffer? {

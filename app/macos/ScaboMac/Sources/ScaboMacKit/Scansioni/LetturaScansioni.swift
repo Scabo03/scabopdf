@@ -156,17 +156,16 @@ public enum LetturaScansioni {
     /// piccole, meno sulle grandi, così l'immagine resta nei limiti di GLM-OCR.
     public static let latoLungoPixel: CGFloat = 2000
 
-    /// La rotazione della pagina, ricondotta a 0, 90, 180 o 270 gradi.
+    /// La rotazione della pagina, ricondotta a 0, 90, 180 o 270 gradi (quella del modulo condiviso, `HeronPageRenderer`).
     public static func rotazione(della pagina: PDFPage) -> Int {
-        ((pagina.rotation % 360) + 360) % 360
+        HeronPageRenderer.rotation(of: pagina)
     }
 
     /// La misura della pagina COME SI MOSTRA, in punti: il riquadro di ritaglio, coi lati scambiati se la pagina è ruotata di 90 o di
-    /// 270 gradi. È lo spazio in cui stanno l'immagine data ai lettori, le righe lette e la pagina dell'estrazione.
+    /// 270 gradi. È lo spazio in cui stanno l'immagine data ai lettori, le righe lette e la pagina dell'estrazione. Dal giro «migliorie
+    /// del banco nelle app» (2026-11-21) è quella del modulo condiviso (`HeronPageRenderer.displayedSize`), la stessa della sua resa.
     public static func misuraMostrata(della pagina: PDFPage) -> CGSize {
-        let box = pagina.bounds(for: .cropBox)
-        let r = rotazione(della: pagina)
-        return r == 90 || r == 270 ? CGSize(width: box.height, height: box.width) : box.size
+        HeronPageRenderer.displayedSize(of: pagina)
     }
 
     /// L'immagine in scala di grigi della pagina come si mostra, al lato lungo dato.
@@ -193,30 +192,12 @@ public enum LetturaScansioni {
         return ctx.makeImage()
     }
 
-    /// La resa della pagina per il modello d'impaginazione: 640 × 640 e la misura della pagina in punti, come
-    /// `HeronPageRenderer.renderPage` del modulo condiviso. Sulle pagine diritte col riquadro di ritaglio all'origine È quella del
-    /// modulo (identica al byte); sulle pagine ruotate o col riquadro spostato si fa qui, sulla pagina come si mostra, con gli stessi
-    /// passi del modulo (pagina a 72 punti per pollice, poi 640 × 640 con l'interpolazione media): il modulo, condiviso con l'iPad e non
-    /// toccato in questo giro, ha la stessa costruzione della resa di prima (misura non ruotata, traslazione in più).
+    /// La resa della pagina per il modello d'impaginazione: 640 × 640 e la misura della pagina in punti. Dal giro «migliorie del banco
+    /// nelle app» (2026-11-21) è quella del modulo condiviso, corretta alla radice per le pagine ruotate e per il riquadro di ritaglio
+    /// spostato (`HeronPageRenderer.renderPage`): la copia che il Mac aveva qui (giro globale del banco OCR) è tolta, un codice solo per
+    /// iPad e Mac. Sulle pagine diritte col riquadro all'origine la resa è quella di sempre, al byte.
     static func resaPerImpaginazione(_ pagina: PDFPage) -> (CGImage, Double, Double)? {
-        let box = pagina.bounds(for: .cropBox)
-        guard rotazione(della: pagina) != 0 || box.origin != .zero else { return HeronPageRenderer.renderPage(pagina) }
-        let m = misuraMostrata(della: pagina)
-        let w = Int(m.width.rounded()), h = Int(m.height.rounded())
-        guard w > 0, h > 0,
-              let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
-                                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
-        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
-        ctx.scaleBy(x: CGFloat(w) / m.width, y: CGFloat(h) / m.height)
-        pagina.draw(with: .cropBox, to: ctx)
-        guard let img = ctx.makeImage(),
-              let ctx2 = CGContext(data: nil, width: 640, height: 640, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
-                                   bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
-        ctx2.interpolationQuality = .medium
-        ctx2.draw(img, in: CGRect(x: 0, y: 0, width: 640, height: 640))
-        guard let img640 = ctx2.makeImage() else { return nil }
-        return (img640, Double(m.width), Double(m.height))
+        HeronPageRenderer.renderPage(pagina)
     }
 
     public static func png(_ img: CGImage) -> Data? {
