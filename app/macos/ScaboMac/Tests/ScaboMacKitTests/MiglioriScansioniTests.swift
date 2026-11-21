@@ -2,8 +2,7 @@
 //  MiglioriScansioniTests.swift
 //  ScaboMacKitTests — le migliorie della via delle scansioni (giro «migliorie del banco nelle app», 2026-11-21): il filtro della
 //  notazione di GLM (toglie i segni, mai il testo), la protezione contro le righe ripetute, il segno di paragrafo (solo davanti a un
-//  numero che non è un importo, o raddoppiato) e i numeri di nota letti come asterisco (dalla sequenza o dall'unico richiamo, altrimenti
-//  senza numero: mai un numero inventato). Testi di prova inventati.
+//  numero che non è un importo, o raddoppiato; mai sulla chiusura di un apice né attaccato a quattro cifre). Testi di prova inventati.
 //
 import Foundation
 import ScaboCore
@@ -76,7 +75,7 @@ final class MiglioriScansioniTests: XCTestCase {
         }
     }
 
-    // MARK: i numeri di nota letti come asterisco
+    // MARK: una pagina di prova (righe di corpo e righe di nota)
 
     /// Una pagina: due righe di corpo in alto (corpo 10), le righe di nota in basso (corpo 8).
     private func pagina(corpo: [String], note: [String]) -> (righe: [RigaLetta], corpi: [Double]) {
@@ -84,39 +83,6 @@ final class MiglioriScansioniTests: XCTestCase {
         for (k, t) in corpo.enumerated() { r.append(RigaLetta(testo: t, bbox: BBox(x: 50, y: 700 - Double(k) * 14, width: 300, height: 12), regione: 0)); c.append(10) }
         for (k, t) in note.enumerated() { r.append(RigaLetta(testo: t, bbox: BBox(x: 50, y: 200 - Double(k) * 11, width: 300, height: 9), regione: 1)); c.append(8) }
         return (r, c)
-    }
-
-    func test_numeriDiNota_dallaSequenzaDelleNote() {
-        let p = pagina(corpo: ["un testo con un richiamo11 e un altro12", "e il terzo13 per chiudere"],
-                       note: ["11 Prima nota di prova.", "* Seconda nota di prova.", "13 Terza nota di prova."])
-        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
-        XCTAssertEqual(r.map(\.testo).suffix(3), ["11 Prima nota di prova.", "12 Seconda nota di prova.", "13 Terza nota di prova."])
-    }
-
-    func test_numeriDiNota_dallUnicoRichiamoSenzaNota() {
-        let p = pagina(corpo: ["un testo con un richiamo4 soltanto", "e una riga senza richiami"], note: ["* Unica nota della pagina."])
-        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
-        XCTAssertEqual(r.last?.testo, "4 Unica nota della pagina.")
-    }
-
-    /// Senza certezza la riga resta com'è, con l'asterisco: è il segno d'inizio della nota (toglierlo fonde la nota con quella sopra).
-    func test_numeriDiNota_senzaCertezza_nessunNumero_maiInventato_lAsteriscoResta() {
-        // Due asterischi senza sequenza che li fissi, nessun richiamo.
-        let p = pagina(corpo: ["un testo senza richiami", "e un altro"], note: ["* Prima nota.", "* Seconda nota."])
-        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
-        XCTAssertEqual(r.map(\.testo).suffix(2), ["* Prima nota.", "* Seconda nota."])
-        // Due richiami senza nota e un asterisco: non si sceglie.
-        let q = pagina(corpo: ["con due richiami7 e richiami9 nel testo", "fine"], note: ["* Una nota."])
-        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(q.righe, corpi: q.corpi, corpoTesto: 10).last?.testo, "* Una nota.")
-        // Il richiamo che contraddice la sequenza (la nota sopra è la 5, il richiamo il 9): nessun numero.
-        let s = pagina(corpo: ["con un richiamo9 nel testo", "fine"], note: ["5 Nota cinque.", "* Nota dopo."])
-        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(s.righe, corpi: s.corpi, corpoTesto: 10).last?.testo, "* Nota dopo.")
-    }
-
-    func test_numeriDiNota_asteriscoVeroNelTesto_resta() {
-        let p = pagina(corpo: ["un titolo col segno*", "e il testo"], note: ["* La nota dell'asterisco."])
-        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
-        XCTAssertEqual(r.last?.testo, "* La nota dell'asterisco.")
     }
 
     /// Con le migliorie spente le pagine estratte sono quelle di prima; accese, una pagina senza «$» né asterischi non cambia.
