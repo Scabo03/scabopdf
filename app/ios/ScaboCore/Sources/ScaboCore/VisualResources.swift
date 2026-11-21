@@ -47,12 +47,14 @@ public struct VisualRegionCandidate: Codable, Equatable, Sendable {
     public var pageIndex: Int
     /// Etichetta di docling: `table` o `picture` (altre etichette vengono scartate dalla guardia).
     public var label: String
-    /// `[l, t, r, b]` in punti, origine alto-sinistra, relativa al cropBox.
+    /// `[l, t, r, b]` in punti, origine alto-sinistra, relativa alla pagina come si mostra (dalla cura 67; prima, allo spazio della
+    /// resa di prima, che sulle pagine col riquadro di ritaglio spostato era scivolato: vedi `RegionCropper.RegionSpace`). Sulle
+    /// pagine diritte col riquadro all'origine è lo stesso.
     public var bbox: [Double]
     public var confidence: Double
     /// Riquadro della didascalia che docling associa alla regione, se c'è.
     public var captionBBox: [Double]?
-    /// Dimensioni del cropBox della pagina in punti.
+    /// Dimensioni della pagina come si mostra, in punti (il riquadro di ritaglio, coi lati scambiati a 90 e 270 gradi).
     public var pageWidth: Double
     public var pageHeight: Double
     /// Riquadri delle regioni di testo che il modello legge subito prima e subito dopo questa, nell'ordine di
@@ -77,7 +79,8 @@ public struct VisualRegionCandidate: Codable, Equatable, Sendable {
 /// ritaglio e per «Salta la risorsa». Nessun testo.
 public struct VisualResourcePayload: Codable, Equatable, Sendable {
     public var kind: VisualResourceKind
-    /// Pagina (0-based) e riquadro `[l, t, r, b]` (punti, alto-sinistra, cropBox) da ritagliare.
+    /// Pagina (0-based) e riquadro `[l, t, r, b]` (punti, alto-sinistra) da ritagliare, nello spazio della lettura che lo porta
+    /// (la pagina come si mostra dalla cura 67; vedi `RegionCropper.RegionSpace`).
     public var pageIndex: Int
     public var bbox: [Double]
     /// Quanti elementi, subito dopo questo, portano il testo della regione (0 per una figura senza testo).

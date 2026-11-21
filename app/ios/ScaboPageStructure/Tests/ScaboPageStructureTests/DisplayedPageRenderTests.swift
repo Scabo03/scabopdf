@@ -193,4 +193,34 @@ final class DisplayedPageRenderTests: XCTestCase {
         let oldDiff = Self.difference(old, ref) ?? .infinity
         XCTAssertGreaterThan(oldDiff, 5.0, "il ritaglio di prima usciva spostato (differenza media \(oldDiff))")
     }
+
+    // MARK: i riquadri salvati da una lettura di prima (giro «modulo e sommario», 2026-11-21)
+
+    /// Lo spazio della resa di prima è il ritaglio di prima, al byte, su ogni pagina diritta (col riquadro all'origine o spostato).
+    func test_pngData_earlierRenderSpace_isTheOldCrop_byteForByte() throws {
+        for margin: CGFloat in [0, 30] {
+            let (p, url) = try Self.page(rotation: 0, margin: margin); defer { try? FileManager.default.removeItem(at: url) }
+            let legacy = try XCTUnwrap(RegionCropper.pngData(page: p, region: Self.region, space: .cropBoxOfTheEarlierRender))
+            XCTAssertEqual(legacy, try XCTUnwrap(Self.oldPngData(page: p, region: Self.region)), "margine \(margin): al byte")
+        }
+    }
+
+    /// Il caso delle risorse già salvate: sulla pagina col riquadro spostato la resa di prima faceva scivolare la pagina di quanto è
+    /// spostato il riquadro, e il modello salvava la regione scivolata. Ritagliata nel suo spazio, quella regione dà ancora la parte
+    /// giusta della pagina; ritagliata come una regione nuova uscirebbe spostata.
+    func test_pngData_regionSavedByEarlierRender_staysRightInItsSpace() throws {
+        let m = 30.0
+        let (d, u0) = try Self.page(rotation: 0); defer { try? FileManager.default.removeItem(at: u0) }
+        let ref = try XCTUnwrap(Self.image(try XCTUnwrap(RegionCropper.pngData(page: d, region: Self.region))))
+        let (p, url) = try Self.page(rotation: 0, margin: CGFloat(m)); defer { try? FileManager.default.removeItem(at: url) }
+        // La regione come la salvava la resa di prima: a sinistra e in basso di quanto è spostato il riquadro.
+        let saved = [Self.region[0] - m, Self.region[1] + m, Self.region[2] - m, Self.region[3] + m]
+        let inItsSpace = try XCTUnwrap(Self.image(try XCTUnwrap(
+            RegionCropper.pngData(page: p, region: saved, space: .cropBoxOfTheEarlierRender))))
+        let diff = try XCTUnwrap(Self.difference(inItsSpace, ref))
+        XCTAssertLessThan(diff, 2.0, "nel suo spazio, la parte giusta (differenza media \(diff))")
+        let asNew = try XCTUnwrap(Self.image(try XCTUnwrap(RegionCropper.pngData(page: p, region: saved))))
+        let wrong = Self.difference(asNew, ref) ?? .infinity
+        XCTAssertGreaterThan(wrong, 5.0, "presa come regione nuova uscirebbe spostata (differenza media \(wrong))")
+    }
 }

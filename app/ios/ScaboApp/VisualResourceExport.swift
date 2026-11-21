@@ -11,6 +11,7 @@
 
 import Foundation
 import PDFKit
+import ScaboChain
 import ScaboCore
 import ScaboPageStructure
 
@@ -50,13 +51,36 @@ nonisolated enum VisualResourceExport {
         }
     }
 
-    /// Prepara il PNG del ritaglio (fuori dal thread principale). Ritorna l'URL del file temporaneo.
-    static func makePNG(sourcePDF url: URL, payload: VisualResourcePayload) -> Result<URL, Failure> {
+    /// Lo spazio dei riquadri delle risorse visive di una lettura, dal livello delle cure con cui è stata preparata
+    /// (`ArchivedDocument.processedAppBuild`: la build dell'iPad che l'ha elaborata, o il livello delle cure della catena del Mac per
+    /// una lettura arrivata dal Mac). Dalla cura 67 i riquadri stanno sulla pagina come si mostra; prima erano nello spazio della resa
+    /// di prima, che il ritaglio di prima compensava: una lettura di prima, finché l'utente non la rielabora (o se torna alla lettura
+    /// precedente), si ritaglia come prima, sempre nel punto giusto (giro «modulo e sommario», 2026-11-21). Una lettura preparata da
+    /// questa stessa build è nello spazio nuovo, qualunque numero porti (le build di sviluppo hanno un numero fittizio).
+    static func regionSpace(processedAppBuild: String?, currentAppBuild: String? = SystemGeneration.appBuild) -> RegionCropper.RegionSpace {
+        savedByTheEarlierRender(processedAppBuild: processedAppBuild, currentAppBuild: currentAppBuild)
+            ? .cropBoxOfTheEarlierRender : .displayedPage
+    }
+
+    /// Vero se i riquadri della lettura stanno nello spazio della resa di prima (vedi `regionSpace`).
+    static func savedByTheEarlierRender(processedAppBuild: String?, currentAppBuild: String? = SystemGeneration.appBuild) -> Bool {
+        if let p = processedAppBuild, p == currentAppBuild { return false }
+        guard let p = processedAppBuild, let build = Int(p) else { return true }
+        return build < ProcessingChain.displayedPageRegionsCure
+    }
+
+    /// Prepara il PNG del ritaglio (fuori dal thread principale). Ritorna l'URL del file temporaneo. `space`: lo spazio dei riquadri
+    /// della lettura in uso (`regionSpace(processedAppBuild:)`).
+    static func makePNG(sourcePDF url: URL, payload: VisualResourcePayload,
+                        space: RegionCropper.RegionSpace = .displayedPage) -> Result<URL, Failure> {
         guard FileManager.default.fileExists(atPath: url.path) else { return .failure(.missingSource) }
         guard let doc = PDFDocument(url: url), let page = doc.page(at: payload.pageIndex) else { return .failure(.unreadablePage) }
-        // Regioni e ritaglio sono nello spazio non ruotato della pagina: su una pagina ruotata il ritaglio sarebbe sbagliato.
+        // Il riconoscimento esclude le pagine ruotate (le righe del testo della catena restano nello spazio non ruotato della pagina):
+        // un riquadro su una pagina ruotata non nasce dall'iPad, e non si ritaglia.
         guard (page.rotation % 360 + 360) % 360 == 0 else { return .failure(.rotatedPage) }
-        guard let png = RegionCropper.pngData(page: page, region: payload.bbox, dpi: 300, maxPixels: 3000) else { return .failure(.notCroppable) }
+        guard let png = RegionCropper.pngData(page: page, region: payload.bbox, dpi: 300, maxPixels: 3000, space: space) else {
+            return .failure(.notCroppable)
+        }
         removeStale()
         let dir = directory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         do {

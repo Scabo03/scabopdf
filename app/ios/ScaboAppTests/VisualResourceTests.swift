@@ -289,6 +289,25 @@ final class VisualResourceTests: XCTestCase {
         XCTAssertNil(VisualResourceExport.makePNG(sourcePDF: url, payload: upright).failure, "la pagina diritta si ritaglia")
     }
 
+    /// Lo spazio dei riquadri dalla lettura in uso (giro «modulo e sommario», 2026-11-21, rilievo della revisione): le letture
+    /// preparate prima della cura 67, e quelle arrivate da un Mac con un livello delle cure di prima, si ritagliano nello spazio
+    /// della resa di prima (come faceva la build che le ha preparate); quelle dalla 67, e quelle preparate da questa stessa build,
+    /// sulla pagina come si mostra.
+    func test_export_regionSpace_followsTheReadingCureLevel() {
+        func earlier(_ processed: String?, _ current: String?) -> Bool {
+            VisualResourceExport.savedByTheEarlierRender(processedAppBuild: processed, currentAppBuild: current)
+        }
+        XCTAssertTrue(earlier("66", "67"), "elaborato con la 66: spazio della resa di prima")
+        XCTAssertTrue(earlier("53", "67"))
+        XCTAssertTrue(earlier(nil, "67"), "senza etichetta: una lettura vecchia")
+        XCTAssertFalse(earlier("67", "67"), "elaborato con la 67: pagina come si mostra")
+        XCTAssertFalse(earlier("68", "67"))
+        XCTAssertEqual(ProcessingChain.displayedPageRegionsCure, 67)
+        // Una build di sviluppo ha un numero fittizio: la lettura che ha preparato lei è nello spazio nuovo, una di prima no.
+        XCTAssertFalse(earlier("7", "7"))
+        XCTAssertTrue(earlier("7", "67"))
+    }
+
     private func syntheticTwoPagePDF() -> Data {
         UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 420, height: 595)).pdfData { ctx in
             for k in 0..<2 {
@@ -373,8 +392,9 @@ final class VisualResourceTests: XCTestCase {
                                                   currentAppBuild: String(b + 1)))
     }
 
-    /// Cure misurate della build 64 (giro «rifiniture e cure per capacità», 2026-11-07) e della build 66 (giro «prova 4,
-    /// segnalibri e sigle», 2026-11-11): l'offerta va a tutti e soli i libri la cui lettura cambia, per quanto si sa senza
+    /// Cure misurate della build 64 (giro «rifiniture e cure per capacità», 2026-11-07), della build 66 (giro «prova 4,
+    /// segnalibri e sigle», 2026-11-11) e della build 67 (giro «modulo e sommario», 2026-11-21: la resa della pagina come si
+    /// mostra nel modulo dell'impaginazione): l'offerta va a tutti e soli i libri la cui lettura cambia, per quanto si sa senza
     /// rielaborarli. Un libro misurato al banco che le cure lasciano identico non la riceve; un libro che solo una delle due
     /// cambia la riceve con la frase di quella sola; un libro sconosciuto sì, con le frasi; le letture del Mac la ricevono dal Mac.
     func test_offer_capabilityCure_reachesAllAndOnlyTheBooksItChanges() {
@@ -418,7 +438,8 @@ final class VisualResourceTests: XCTestCase {
         let older = pdf(unchanged, build: "57")
         XCTAssertEqual(reason(older), .cure)
         let olderText = ReprocessOffer.whatChanges(older, reason: .cure)
-        XCTAssertFalse(olderText.contains(cure64) || olderText.contains(cure66), olderText)
+        XCTAssertFalse(olderText.contains(cure64) || olderText.contains(cure66)
+                       || olderText.contains(ReprocessOffer.cures.first { $0.build == 67 }?.text ?? "—"), olderText)
         // Lettura arrivata dal Mac: le cure 64, 66 e 67 arrivano dal Mac con una lettura nuova.
         XCTAssertNil(reason(pdf(String(repeating: "f", count: 64), build: "58", origin: ReadingOrigin.mac)))
         XCTAssertNil(reason(pdf(String(repeating: "f", count: 64), build: "66", origin: ReadingOrigin.mac)))
@@ -437,7 +458,8 @@ final class VisualResourceTests: XCTestCase {
         XCTAssertTrue(text67.contains(cure67) && !text67.contains(cure66) && !text67.contains(cure64), text67)
         let unknown66 = pdf(String(repeating: "e", count: 64), build: "66")
         XCTAssertEqual(reason67(unknown66), .cure, "sconosciuto: l'offerta c'è")
-        XCTAssertTrue(ReprocessOffer.whatChanges(unknown66, reason: .cure).contains(cure67))
+        let unknown66Text = ReprocessOffer.whatChanges(unknown66, reason: .cure)
+        XCTAssertTrue(unknown66Text.contains(cure67) && !unknown66Text.contains(cure66) && !unknown66Text.contains(cure64), unknown66Text)
         XCTAssertNil(reason67(pdf(changedBy67, build: "67")), "già elaborato con la 67: niente")
     }
 

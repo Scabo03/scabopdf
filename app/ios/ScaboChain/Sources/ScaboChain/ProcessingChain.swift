@@ -190,6 +190,12 @@ public enum ProcessingChain {
     /// normativi (nessuna pagina, nessuna risorsa visiva).
     public static let cureLevel = 67
 
+    /// Il livello delle cure da cui i riquadri delle risorse visive di una lettura stanno sulla pagina COME SI MOSTRA (la resa
+    /// corretta del modulo dell'impaginazione, cura 67). Una lettura preparata prima ha i riquadri nello spazio della resa di prima,
+    /// e il ritaglio di «Estrai come immagine» li prende in quello spazio finché la lettura non è rifatta
+    /// (`RegionCropper.RegionSpace`, giro «modulo e sommario», 2026-11-21).
+    public static let displayedPageRegionsCure = 67
+
     /// Le cure che OGNI lettura preparata dal Mac contiene già, qualunque livello porti il suo pacchetto: il Mac fraziona
     /// le note lunghe dalla sua prima lettura (build 54, livello 53), quindi la cura 55 non manca a nessuna lettura arrivata
     /// dal Mac e l'offerta non la propone a quei libri (rielaborarli sull'iPad toglierebbe anzi l'innesto del Mac).

@@ -36,14 +36,31 @@ public enum RegionCropper {
         return rect
     }
 
+    /// Lo spazio in cui una lettura ha salvato i riquadri delle sue risorse visive. Lo sceglie chi ritaglia, dalla lettura (nelle app:
+    /// il livello delle cure con cui è stata preparata); il modulo non conosce i livelli delle cure.
+    public enum RegionSpace: Sendable, Equatable {
+        /// La pagina come si mostra, all'origine: i riquadri nati dalla resa di `HeronPageRenderer.renderPage` corretta (giro
+        /// «migliorie del banco nelle app», 2026-11-21). È lo spazio di ogni lettura preparata da qui in avanti.
+        case displayedPage
+        /// Il riquadro di ritaglio nelle coordinate del PDF, come lo usava il ritaglio di prima: i riquadri salvati da una lettura
+        /// preparata con la resa di prima (la pagina scivolata di quanto è spostato il riquadro di ritaglio). Su quei riquadri il
+        /// ritaglio di prima prendeva la parte che il modello aveva visto, e la riprende qui, identico al byte; prenderli nello spazio
+        /// della pagina mostrata darebbe una regione spostata (giro «modulo e sommario», 2026-11-21, rilievo della revisione). Sulle
+        /// pagine diritte col riquadro all'origine i due spazi coincidono al byte.
+        case cropBoxOfTheEarlierRender
+    }
+
     /// PNG del ritaglio a `dpi` punti per pollice (300 di norma), con il lato lungo limitato a `maxPixels`.
     ///
     /// Nello spazio della pagina COME SI MOSTRA, all'origine (giro «migliorie del banco nelle app», 2026-11-21): `PDFPage.draw(with:to:)`
     /// riporta già il riquadro di ritaglio all'origine, quindi il rettangolo si prende sulla pagina mostrata e non sul riquadro nelle
     /// coordinate del PDF. Prima, con un riquadro di ritaglio spostato dall'origine, il ritaglio usciva spostato di quanto è spostato il
-    /// riquadro (giro globale del banco OCR, docs/BANCO_OCR.md § 26); col riquadro all'origine il rettangolo è lo stesso, al byte.
-    public static func pngData(page: PDFPage, region: [Double], dpi: Double = 300, maxPixels: Int = 3000, margin: Double = 4) -> Data? {
-        let crop = CGRect(origin: .zero, size: HeronPageRenderer.displayedSize(of: page))
+    /// riquadro (giro globale del banco OCR, docs/BANCO_OCR.md § 26); col riquadro all'origine il rettangolo è lo stesso, al byte. I
+    /// riquadri salvati da una lettura preparata con la resa di prima si ritagliano nel loro spazio (`space`, `RegionSpace`).
+    public static func pngData(page: PDFPage, region: [Double], dpi: Double = 300, maxPixels: Int = 3000, margin: Double = 4,
+                               space: RegionSpace = .displayedPage) -> Data? {
+        let crop = space == .displayedPage
+            ? CGRect(origin: .zero, size: HeronPageRenderer.displayedSize(of: page)) : page.bounds(for: .cropBox)
         guard let rect = cropRect(region: region, cropBox: crop, margin: margin) else { return nil }
         var scale = CGFloat(dpi / 72)
         let longSide = max(rect.width, rect.height) * scale

@@ -1531,9 +1531,11 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
     /// Come sopra, con la vista a cui ancorare il popover (la reading view o l'albero della Consultazione Rapida).
     func extractVisualResource(_ payload: VisualResourcePayload, sourceView: UIView, sourceRect: CGRect) {
         let source = LibraryService.shared.archivedPDFURL(forDocumentId: documentId)
+        // I riquadri si ritagliano nello spazio in cui la lettura in uso li ha salvati (cura 67, giro «modulo e sommario»).
+        let space = VisualResourceExport.regionSpace(processedAppBuild: libraryStore.document(id: documentId)?.processedAppBuild)
         UIAccessibility.post(notification: .announcement, argument: "Preparo l'immagine.")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let result = VisualResourceExport.makePNG(sourcePDF: source, payload: payload)
+            let result = VisualResourceExport.makePNG(sourcePDF: source, payload: payload, space: space)
             DispatchQueue.main.async {
                 guard let self else { return }
                 switch result {

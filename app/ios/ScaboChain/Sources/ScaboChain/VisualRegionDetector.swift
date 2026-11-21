@@ -46,8 +46,9 @@ nonisolated public enum VisualRegionDetector {
         public var modelSeconds = 0.0
         /// Perché il modello non è girato (nessuna pagina scelta, sistema anteriore a iOS 17, modello assente, errore).
         public var skippedReason: String?
-        /// Pagine scelte dal prefiltro ma ruotate: il modello non le vede (righe, regioni e ritaglio non sono ancora
-        /// trattati nello spazio ruotato; nei 52 volumi della rete le pagine ruotate sono 0).
+        /// Pagine scelte dal prefiltro ma ruotate: il modello non le vede. Dalla cura 67 resa e ritaglio del modulo sono sulla
+        /// pagina come si mostra, ma le righe del testo della catena restano nello spazio non ruotato: regioni e righe starebbero
+        /// in spazi diversi (nei 52 volumi della rete le pagine ruotate sono 0).
         public var rotatedPagesSkipped = 0
         /// Vero se il modello non si è caricato con le unità di calcolo chieste e gira sulla sola CPU (in fp32 stesso
         /// risultato: 561/563 regioni identiche sull'host, scarti alla quarta cifra delle confidenze).
