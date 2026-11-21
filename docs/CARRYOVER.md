@@ -10,6 +10,11 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.71 (21 novembre 2026, sera, giro «modulo e sommario», livello pieno (modulo condiviso dell'impaginazione e tronco
+> comune, cioè l'iPad), **CONCLUSO** con la **build 67 dell'iPad** e la **build 4 del Mac** su TestFlight (entrambe VALID, note impostate e rilette, solo tester interni; pacchetto controllato e riusato):
+> il modulo dell'impaginazione è unito con la cura 67 (offerta solo ai libri che cambiano, risorse visive salvate ritagliate nel loro
+> spazio) e la verità aggiornata; il sommario fittizio è corretto nel tronco comune (pagine di quesiti lette). Report `docs/BANCO_OCR.md`
+> § 45. Vedi lo STATO qui sotto.)
 > Versione: 2.70 (21 novembre 2026, giro «migliorie del banco nelle app», livello pieno per la via delle scansioni del Mac (rete del
 > banco) e per il modulo condiviso (reti dell'iPad), **CONCLUSO** con la **build 3 del Mac** su TestFlight (VALID, note impostate,
 > solo tester interni): sul Mac le tabelle delle scansioni si annunciano, GLM perde molto meno testo (variante B col filtro della
@@ -208,6 +213,34 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «modulo e sommario»: il modulo condiviso dell'impaginazione unito con la cura 67 e la verità aggiornata, il sommario fittizio corretto nel tronco comune, build 67 dell'iPad e build 4 del Mac — 2026-11-21 (sera) — CONCLUSO
+
+**Build:** iPad ultima **67** (commit `8d05735`, VALID, note impostate), prossima **68**; Mac ultima **4** (commit `8d05735`, VALID, note impostate, solo tester interni; caricata dopo l'iPad 67), prossima **5**; la build 2 del Mac ha la
+revisione beta esterna approvata.
+**Partenza:** `b7c9281` (main = origin), 20:26:52 del 21. **Rami:** `feat/modulo-impaginazione-riquadro` (riallineato a main, Parti 1-2 e
+le correzioni delle due tornate di revisione, unito in main con un avanzamento rapido alle 22:18, poi cancellato, locale e remoto);
+`feat/tronco-sommario-puntini` (Parte 3, aperto da main dopo la fusione del modulo, unito in main con un avanzamento rapido alle 00:29 del 22, poi cancellato, locale e remoto; main = origin/main = `8d05735`). Livello pieno. Laboratorio
+`~/Developer/scabopdf-mac-lab/banco_ocr/modulo_sommario/`; referto `banco_ocr/REFERTO_MODULO_SOMMARIO.md`; report `docs/BANCO_OCR.md`
+§ 45; decisioni 26-28 in LAYER2 § 12.16 con l'esito; cura 67 in LAYER2 § 12.13.
+
+- **Parte 1 — livello delle cure 67**: `ProcessingChain.cureLevel` 67, la 67 dal Mac per le sue letture, `booksUnchangedByCure[67]` con 54
+  impronte (51 volumi del banco su 52 e i tre documenti della rete delle cure mirate, identici nelle cinque forme a tutti e quattro i
+  livelli e con iOS 26.5 e 27; cambia v39). L'app riconosce i libri misurati dall'impronta (`sourceSha256`), senza guardarne le pagine:
+  ogni altro libro riceve l'offerta, compresi quelli con le pagine spostate. Dopo la revisione: «Estrai come immagine» ritaglia i
+  riquadri nello spazio della lettura che li ha salvati (`RegionCropper.RegionSpace`, `ProcessingChain.displayedPageRegionsCure`), fissato
+  quando la vista carica la lettura: le letture di prima non danno ritagli spostati, anche dopo un ritorno alla lettura precedente.
+- **Parte 2 — verità aggiornata**: la figura nuova di v39 (pagina 213, riquadro di ritaglio spostato) giudicata contro la pagina, una
+  fotografia vera con la didascalia; nella verità solo posizione, tipo e impronte del posto; rete delle risorse visive verde (111/111).
+- **Parte 3 — sommario fittizio**: `hasIndexLeader` nel tronco comune (i puntini fra parentesi dello stesso tipo non sono leader). Corpus:
+  109 pagine-sommario prima e dopo; banco: nessuna lettura cambia; scansioni vere, via di Apple: pagine non lette 2 → 0, parole perse
+  20,20 → 5,29 per cento, domande ritrovate 31 → 34 su 35; il resto della rete del banco identico al byte; i sommari veri restano.
+- **Verifiche**: sul codice finale: rete delle generazioni con le risorse visive verde (52/52 identiche alla build 66 per generazione, 111/111 al posto, prova al contrario), annotazioni ai quattro livelli con le risorse visive verdi (0 ricollocazioni sbagliate), cure mirate verdi, parlato verde (192/192), vista del Mac verde (55/55; cambia solo la riga dell'estrattore di v39), test del Mac (194 d'unità, 19 d'interfaccia, 0 falliti), suite complete sui quattro simulatori (235 + 44 per dispositivo, 0 falliti; sull'iPhone iOS 27 i test d'unità rifatti dopo aver svuotato la libreria dei test d'interfaccia: due rossi finti di `LibrarySearchAppTests` per libri lasciati da una corsa precedente), rete del banco delle scansioni prima e dopo; testo dei volumi e segreti a zero su ogni intervallo pubblicato.
+- **Revisioni indipendenti**: ramo del modulo «si può unire» in due tornate (rilievi corretti prima dell'unione); ramo del sommario
+  «si può unire», nessun rilievo bloccante né da correggere; i minori (test della regione di coda, due commenti, documenti, limiti da dichiarare) chiusi prima della fusione.
+- **Da dove riprendere / decisioni per il maintainer**: (1) dare la build 4 del Mac al gruppo esterno «ScaboPDF Prova esterna»: secondo App Store Connect Help le build successive alla prima di una versione possono non richiedere la revisione completa (la build 2, versione 1.0, è approvata) — inclinazione: sì, dopo aver sentito sull'iPad 67 le pagine di quesiti; (2) un'offerta delle cure anche sul Mac, per le letture già nella sua libreria (oggi le cure arrivano solo con un'importazione nuova o con la lettura migliore) — inclinazione: sì, in un giro suo, con la politica condivisa dell'iPad.
 
 ---
 
