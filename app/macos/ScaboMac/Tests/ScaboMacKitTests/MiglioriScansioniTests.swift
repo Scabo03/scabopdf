@@ -1,7 +1,9 @@
 //
 //  MiglioriScansioniTests.swift
 //  ScaboMacKitTests — le migliorie della via delle scansioni (giro «migliorie del banco nelle app», 2026-11-21): il filtro della
-//  notazione di GLM (toglie i segni, mai il testo) e la protezione contro le righe ripetute. Testi di prova inventati.
+//  notazione di GLM (toglie i segni, mai il testo), la protezione contro le righe ripetute, il segno di paragrafo (solo davanti a un
+//  numero che non è un importo, o raddoppiato) e i numeri di nota letti come asterisco (dalla sequenza o dall'unico richiamo, altrimenti
+//  senza numero: mai un numero inventato). Testi di prova inventati.
 //
 import Foundation
 import ScaboCore
@@ -52,6 +54,66 @@ final class MiglioriScansioniTests: XCTestCase {
         XCTAssertEqual(LetturaScansioni.senzaRipetizioni("corta\ncorta", righeApple: []).tolte, 0, "le righe brevi non si toccano")
     }
 
+    // MARK: il segno di paragrafo
 
-}
+    func test_paragrafo_soloDavantiAUnNumero_oRaddoppiato() {
+        let P = LetturaScansioni.segnoDiParagrafo
+        XCTAssertEqual(P("come al $ 12 del capitolo"), "come al § 12 del capitolo")
+        XCTAssertEqual(P("nei $$ 3-5 e al $4.2"), "nei §§ 3-5 e al §4.2")
+        XCTAssertEqual(P("(cfr. $ 7)"), "(cfr. § 7)")
+        for t in ["costa US$ 100", "un importo di $ 1.000", "pari a $ 5,50 al mese", "100$ in tutto", "la parola$^{12}$", "il $x e il $", "il valore $5$"] {
+            XCTAssertEqual(P(t), t, "«\(t)»: denaro o notazione, resta")
+        }
+    }
+
+    // MARK: i numeri di nota letti come asterisco
+
+    /// Una pagina: due righe di corpo in alto (corpo 10), le righe di nota in basso (corpo 8).
+    private func pagina(corpo: [String], note: [String]) -> (righe: [RigaLetta], corpi: [Double]) {
+        var r: [RigaLetta] = [], c: [Double] = []
+        for (k, t) in corpo.enumerated() { r.append(RigaLetta(testo: t, bbox: BBox(x: 50, y: 700 - Double(k) * 14, width: 300, height: 12), regione: 0)); c.append(10) }
+        for (k, t) in note.enumerated() { r.append(RigaLetta(testo: t, bbox: BBox(x: 50, y: 200 - Double(k) * 11, width: 300, height: 9), regione: 1)); c.append(8) }
+        return (r, c)
+    }
+
+    func test_numeriDiNota_dallaSequenzaDelleNote() {
+        let p = pagina(corpo: ["un testo con un richiamo11 e un altro12", "e il terzo13 per chiudere"],
+                       note: ["11 Prima nota di prova.", "* Seconda nota di prova.", "13 Terza nota di prova."])
+        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
+        XCTAssertEqual(r.map(\.testo).suffix(3), ["11 Prima nota di prova.", "12 Seconda nota di prova.", "13 Terza nota di prova."])
+    }
+
+    func test_numeriDiNota_dallUnicoRichiamoSenzaNota() {
+        let p = pagina(corpo: ["un testo con un richiamo4 soltanto", "e una riga senza richiami"], note: ["* Unica nota della pagina."])
+        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
+        XCTAssertEqual(r.last?.testo, "4 Unica nota della pagina.")
+    }
+
+    func test_numeriDiNota_senzaCertezza_nessunNumero_maiInventato() {
+        // Due asterischi senza sequenza che li fissi, nessun richiamo: le note restano senza numero.
+        let p = pagina(corpo: ["un testo senza richiami", "e un altro"], note: ["* Prima nota.", "* Seconda nota."])
+        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
+        XCTAssertEqual(r.map(\.testo).suffix(2), ["Prima nota.", "Seconda nota."])
+        // Due richiami senza nota e un asterisco: non si sceglie.
+        let q = pagina(corpo: ["con due richiami7 e richiami9 nel testo", "fine"], note: ["* Una nota."])
+        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(q.righe, corpi: q.corpi, corpoTesto: 10).last?.testo, "Una nota.")
+        // Il richiamo che contraddice la sequenza (la nota sopra è la 5, il richiamo il 9): nessun numero.
+        let s = pagina(corpo: ["con un richiamo9 nel testo", "fine"], note: ["5 Nota cinque.", "* Nota dopo."])
+        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(s.righe, corpi: s.corpi, corpoTesto: 10).last?.testo, "Nota dopo.")
+    }
+
+    func test_numeriDiNota_asteriscoVeroNelTesto_resta() {
+        let p = pagina(corpo: ["un titolo col segno*", "e il testo"], note: ["* La nota dell'asterisco."])
+        let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
+        XCTAssertEqual(r.last?.testo, "* La nota dell'asterisco.")
+    }
+
+    /// Con le migliorie spente le pagine estratte sono quelle di prima; accese, una pagina senza «$» né asterischi non cambia.
+    func test_pagineEstratte_senzaSegniNonCambia_eSpenteComePrima() {
+        let p = pagina(corpo: ["un testo qualunque di prova abbastanza lungo", "una seconda riga di corpo anch'essa lunga"], note: ["3 Una nota."])
+        let letta = PaginaLetta(pagina: 0, larghezza: 420, altezza: 595, righe: p.righe, testoGlm: nil, secondiApple: 0, secondiGlm: 0,
+                                secondiImpaginazione: 0, guardia: nil)
+        XCTAssertEqual(LetturaScansioni.pagineEstratte([letta], migliorie: MiglioriScansioni()), LetturaScansioni.pagineEstratte([letta], migliorie: .spente))
+        XCTAssertEqual(LetturaScansioni.pagineEstratte([letta]), LetturaScansioni.pagineEstratte([letta], migliorie: .spente))
+    }
 }

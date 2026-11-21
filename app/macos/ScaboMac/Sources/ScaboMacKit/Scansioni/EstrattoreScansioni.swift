@@ -258,7 +258,7 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
             fatte += 1
             onPageExtracted(fatte, totale)
         }
-        for (indice, pagina) in LetturaScansioni.pagineEstratte(lette) where indice < ex.pages.count {
+        for (indice, pagina) in LetturaScansioni.pagineEstratte(lette, migliorie: migliorie) where indice < ex.pages.count {
             ex.pages[indice] = pagina
         }
         pagineLette = lette.map { $0.pagina }.filter { $0 < ex.pages.count }

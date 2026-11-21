@@ -22,6 +22,16 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
     /// formattazione, classi R1 e R2 del banco) senza togliere testo, e con una protezione contro il testo inventato in un'altra forma: le
     /// righe che GLM ripete più volte di quante le veda Apple (classe R4) si dicono una volta sola.
     public var glm = true
+    /// Il segno di paragrafo: il lettore di Apple scrive «$» al posto di «§», e VoiceOver tace il dollaro. «$» diventa «§» solo dove il
+    /// corpus mostra un segno di paragrafo: davanti a un numero (non un importo con le migliaia o i decimali) o raddoppiato, mai dopo una
+    /// sigla («US$») né dopo un numero (misura del giro: nei 55 documenti del corpus 14.826 «§», 12.148 davanti a un numero e 758 doppi;
+    /// 2 «$» veri, nessuno in quei contesti).
+    public var paragrafo = true
+    /// I numeri di nota che il lettore di Apple legge come asterisco («* » all'inizio della nota, che VoiceOver pronuncia): il numero vero
+    /// quando si ricava con certezza (dalla sequenza delle note della pagina o dall'unico richiamo che resta senza nota), altrimenti la
+    /// nota senza numero. Mai un numero inventato; l'asterisco vero (un richiamo «*» nel testo) resta.
+    public var numeriDiNota = true
+
     public init() {}
 
     /// Tutte spente: la via delle scansioni di prima del giro (solo laboratorio).
@@ -29,11 +39,13 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
         var m = MiglioriScansioni()
         m.tabelle = false
         m.glm = false
+        m.paragrafo = false
+        m.numeriDiNota = false
         return m
     }()
 
     /// I nomi della riga di comando, nell'ordine.
-    public static let nomi = ["tabelle", "glm"]
+    public static let nomi = ["tabelle", "glm", "paragrafo", "note"]
 
     /// Le migliorie con quelle dell'elenco spente (nomi separati da virgole, «tutte» per tutte); nil se un nome non è noto.
     public init?(spente elenco: String) {
@@ -42,6 +54,8 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
             case "tutte": self = .spente
             case "tabelle": tabelle = false
             case "glm": glm = false
+            case "paragrafo": paragrafo = false
+            case "note": numeriDiNota = false
             default: return nil
             }
         }
@@ -49,6 +63,6 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
 
     /// I nomi delle migliorie spente (vuoto se tutte accese).
     public var spenteNomi: [String] {
-        zip(Self.nomi, [tabelle, glm]).filter { !$0.1 }.map { $0.0 }
+        zip(Self.nomi, [tabelle, glm, paragrafo, numeriDiNota]).filter { !$0.1 }.map { $0.0 }
     }
 }

@@ -764,15 +764,19 @@ public enum LetturaScansioni {
     /// Le pagine dell'estrazione per le pagine lette: una riga di testo per riga letta, uno span (o più, coi richiami di
     /// nota) per riga. Il corpo: la stima della riga, poi la mediana della regione (le righe di un paragrafo hanno lo stesso
     /// corpo), poi i picchi dell'istogramma su tutto il documento (poche misure: la catena ragiona per gruppi di dimensioni).
-    public static func pagineEstratte(_ lette: [PaginaLetta]) -> [Int: PdfPageExtraction] {
+    public static func pagineEstratte(_ lette: [PaginaLetta], migliorie: MiglioriScansioni = .spente) -> [Int: PdfPageExtraction] {
         let stime = lette.map { stimeDiPagina($0.righe) }
         let quantizza = picchi(zip(lette, stime).flatMap { p, st in zip(p.righe, st).map { ($0.1, Double(caratteri($0.0))) } })
         var uscita: [Int: PdfPageExtraction] = [:]
         for (pagina, st) in zip(lette, stime) {
             var p = pagina
-            for k in p.righe.indices { p.righe[k].testo = numeroDiNotaInTesta(p.righe[k].testo) }
+            for k in p.righe.indices {
+                p.righe[k].testo = numeroDiNotaInTesta(p.righe[k].testo)
+                if migliorie.paragrafo { p.righe[k].testo = segnoDiParagrafo(p.righe[k].testo) }
+            }
             let corpi = st.map(quantizza)
             let corpoTesto = corpoPrevalente(zip(p.righe, corpi).flatMap { r, c in Array(repeating: c, count: max(1, caratteri(r) / 10)) })
+            if migliorie.numeriDiNota { p.righe = numeriDiNotaDagliAsterischi(p.righe, corpi: corpi, corpoTesto: corpoTesto) }
             let note = numeriDiNota(p.righe, corpi: corpi, corpoTesto: corpoTesto)
             let linee = zip(p.righe, corpi).map { r, corpo -> PdfTextLine in
                 PdfTextLine(spans: spans(r, corpo: corpo, grassetto: titoloAmmesso(r, tra: p.righe),
@@ -839,6 +843,73 @@ public enum LetturaScansioni {
     static func titoloAmmesso(_ r: RigaLetta, tra righe: [RigaLetta]) -> Bool {
         guard let t = r.tipo, t == "section_header" || t == "title", r.testo.count <= 120 else { return false }
         return righe.filter { $0.regione == r.regione }.count <= 3
+    }
+
+    // MARK: Il segno di paragrafo e i numeri di nota (giro «migliorie del banco nelle app», 2026-11-21)
+
+    /// IL SEGNO DI PARAGRAFO. «$» → «§» e «$$» → «§§» solo davanti a un numero che non è un importo (né migliaia né decimali con la
+    /// virgola), mai dopo una lettera o una cifra («US$», «100$») né davanti all'apice di un richiamo («$^{12}$»). Misura del corpus nel
+    /// commento di `MiglioriScansioni.paragrafo`.
+    public static func segnoDiParagrafo(_ t: String) -> String {
+        guard t.contains("$") else { return t }
+        return sostituisci(#"(?<![\p{L}\p{N}$])(\$\$?)(?=\s?\p{N})(?!\s?\d{1,3}(?:[.,]\d{3})+)(?!\s?\d+,\d{2}\b)(?!\s?\d+\$)"#, in: t) { g in
+            g[1] == "$$" ? "§§" : "§"
+        }
+    }
+
+    /// I NUMERI DI NOTA LETTI COME ASTERISCO. Una riga di nota (corpo minore del testo, nella metà bassa, come `numeriDiNota`) che comincia
+    /// con «*» seguito da uno spazio o da una lettera prende il numero vero quando si ricava con certezza: dalla sequenza delle note della
+    /// pagina (fra la nota N-1 sopra e la N+1 sotto è la N), oppure, se è l'unica riga così della pagina, dall'unico numero attaccato a una
+    /// parola del testo che resta senza nota (e che non contraddice la sequenza). Altrimenti l'asterisco si toglie e la nota resta senza
+    /// numero. Se nel testo della pagina c'è un richiamo «*» vero (attaccato a una parola), l'asterisco resta: è una nota con l'asterisco.
+    static func numeriDiNotaDagliAsterischi(_ righe: [RigaLetta], corpi: [Double], corpoTesto: Double) -> [RigaLetta] {
+        guard let alto = righe.map({ $0.bbox.y + $0.bbox.height }).max(), alto > 0 else { return righe }
+        let inNota: (Int) -> Bool = { k in corpi[k] < corpoTesto && righe[k].bbox.y < alto / 2 }
+        func asterisco(_ t: String) -> Bool {
+            let s = t.drop { $0 == " " }
+            guard s.first == "*", let dopo = s.dropFirst().first else { return false }
+            return dopo == " " || dopo.isLetter
+        }
+        let candidate = righe.indices.filter { inNota($0) && asterisco(righe[$0].testo) }
+        guard !candidate.isEmpty else { return righe }
+        // Un richiamo «*» vero nel testo della pagina (attaccato alla fine di una parola): la nota con l'asterisco è vera.
+        let corpo = righe.indices.filter { !inNota($0) }
+        if corpo.contains(where: { k in righe[k].testo.split(separator: " ").contains { $0.count >= 2 && $0.last == "*" && $0.dropLast().last?.isLetter == true } }) {
+            return righe
+        }
+        // I numeri delle note della pagina, dall'alto in basso (origine in basso: y maggiore = più in alto).
+        func numero(_ t: String) -> Int? {
+            let s = t.drop { $0 == " " }
+            let cifre = s.prefix { $0.isNumber }
+            guard (1...3).contains(cifre.count), let n = Int(cifre) else { return nil }
+            let dopo = s.dropFirst(cifre.count).first
+            return dopo == nil || dopo == " " || dopo == "." || dopo == ")" ? n : nil
+        }
+        let numerate = righe.indices.filter { inNota($0) }.compactMap { k in numero(righe[k].testo).map { (k, $0) } }
+        let noteDellaPagina = Set(numerate.map { $0.1 })
+        // I numeri attaccati alla fine di una parola del testo («parola12») che non hanno una nota sulla pagina.
+        var senzaNota = Set<Int>()
+        for k in corpo {
+            for p in righe[k].testo.split(separator: " ") {
+                let cifre = String(p.reversed().prefix { $0.isNumber }.reversed()), base = p.dropLast(cifre.count)
+                guard (1...3).contains(cifre.count), base.count >= 2, base.last.map({ $0.isLetter || ".,;:»)".contains($0) }) == true,
+                      let n = Int(cifre), !noteDellaPagina.contains(n) else { continue }
+                senzaNota.insert(n)
+            }
+        }
+        var out = righe
+        for k in candidate {
+            let y = righe[k].bbox.y
+            let sopra = numerate.filter { righe[$0.0].bbox.y > y }.min { righe[$0.0].bbox.y < righe[$1.0].bbox.y }?.1
+            let sotto = numerate.filter { righe[$0.0].bbox.y < y }.max { righe[$0.0].bbox.y < righe[$1.0].bbox.y }?.1
+            var n: Int?
+            if let a = sopra, let b = sotto, b == a + 2 { n = a + 1 }
+            else if candidate.count == 1, senzaNota.count == 1, let m = senzaNota.first, sopra.map({ m == $0 + 1 }) ?? true,
+                    sotto.map({ m == $0 - 1 }) ?? true, !noteDellaPagina.contains(m) { n = m }
+            let resto = String(righe[k].testo.drop { $0 == " " }.dropFirst().drop { $0 == " " })
+            out[k].testo = n.map { "\($0) \(resto)" } ?? resto
+        }
+        return out
     }
 
     /// I numeri con cui cominciano le righe di nota della pagina (corpo minore del testo, nella metà bassa, «12 » o «12.»).
