@@ -153,7 +153,7 @@ public final class ImportazioneMac {
         let granularita = PreferenzeLettura.granularita(libreria.prefs, isAkn: isAkn, large: false)
         let estrattore = lettore.flatMap { scansioni?.estrattore(lettore: $0) }
         let processore: DocumentProcessing = isAkn ? AknDocumentProcessor()
-            : (estrattore.map { DocumentProcessor(extractor: $0) } ?? DocumentProcessor())
+            : (estrattore.map { e in scansioni?.processore(estrattore: e) ?? DocumentProcessor(extractor: e) } ?? DocumentProcessor())
         presentatore.elabora(fileURL: copia, nome: nome, granularita: granularita, dottrina: true, processore: processore,
                              scansione: estrattore != nil) {
             [weak self] esito, saltate in
@@ -258,7 +258,7 @@ public final class ImportazioneMac {
             estrattore = scelto.map { scansioni.estrattore(lettore: $0.id) }
         }
         let processore: DocumentProcessing = isAkn ? AknDocumentProcessor()
-            : (estrattore.map { DocumentProcessor(extractor: $0) } ?? DocumentProcessor())
+            : (estrattore.map { e in scansioni?.processore(estrattore: e) ?? DocumentProcessor(extractor: e) } ?? DocumentProcessor())
         presentatore.elabora(fileURL: service.archivedSourceURL(forDocumentId: id, kind: doc.sourceKind), nome: doc.title,
                              granularita: granularita, dottrina: !large, processore: processore,
                              scansione: estrattore != nil) { [weak self] esito, saltate in

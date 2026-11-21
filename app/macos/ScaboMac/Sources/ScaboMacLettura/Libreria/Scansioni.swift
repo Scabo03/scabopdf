@@ -52,6 +52,9 @@ public protocol FornitoreScansioni: AnyObject {
     var predefinito: String { get }
     /// Un estrattore nuovo per il lettore scelto (l'estrattore di PDFKit con le pagine senza testo lette dal lettore).
     func estrattore(lettore: String) -> ProgressReportingPdfExtractor
+    /// L'elaborazione per quell'estrattore (giro «migliorie del banco nelle app», 2026-11-21: per le scansioni passa alla catena anche
+    /// le tabelle e le figure viste sulle pagine lette). Di serie quella dell'iPad, `DocumentProcessor`.
+    func processore(estrattore: ProgressReportingPdfExtractor) -> DocumentProcessing
     /// Se l'estrattore non è partito per un motivo del lettore: il motivo in prosa e l'id dell'altro lettore da proporre.
     func problema(di estrattore: ProgressReportingPdfExtractor) -> (messaggio: String, altroLettore: String?)?
     /// Ciò che l'estrattore ha letto, per la riga della libreria e le informazioni sul libro.
@@ -62,6 +65,18 @@ public protocol FornitoreScansioni: AnyObject {
     /// che si importa come sull'iPad, senza domande.
     func scansione(_ url: URL) -> (senzaTesto: Int, totale: Int)?
 }
+
+public extension FornitoreScansioni {
+    func processore(estrattore: ProgressReportingPdfExtractor) -> DocumentProcessing { DocumentProcessor(extractor: estrattore) }
+}
+
+/// Un'elaborazione che sa dire perché il riconoscimento di tabelle e figure non è avvenuto per una ragione da riprovare (come
+/// `DocumentProcessor.visualResourcesMissingReason`): l'importazione lo segna sul libro.
+public protocol RisorseVisiveSaltate: AnyObject {
+    var visualResourcesMissingReason: String? { get }
+}
+
+extension DocumentProcessor: RisorseVisiveSaltate {}
 
 /// Il riconoscimento rapido di una scansione, prima di elaborare: le pagine senza alcun carattere nelle risorse (nessun
 /// font, nemmeno nei moduli annidati). È solo la domanda della schermata: chi decide pagina per pagina è l'estrattore.

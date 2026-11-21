@@ -72,7 +72,7 @@ public final class OfficinaViewModel: ObservableObject {
         self.box = flag
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let out = MacProcessor.process(
-                pdfURL: url, policy: policy, extractor: estrattore,
+                pdfURL: url, policy: policy, extractor: estrattore, risorseScansioni: estrattore as? FonteRisorseScansioni,
                 onProgress: { p in
                     let fase = Testi.fase(p.phase)
                     let percento = Int((p.fraction * 100).rounded(.down))

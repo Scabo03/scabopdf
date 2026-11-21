@@ -53,6 +53,13 @@ final class FornitoreScansioniApp: FornitoreScansioni {
         return EstrattoreScansioni(lettore: l, pesiGlm: l == .glm ? pesiGlm : nil)
     }
 
+    /// L'elaborazione all'importazione: per le scansioni quella che passa alla catena anche le tabelle e le figure viste sulle pagine
+    /// lette (`ProcessoreScansioni`, giro «migliorie del banco nelle app»); altrimenti quella dell'iPad.
+    func processore(estrattore: ProgressReportingPdfExtractor) -> DocumentProcessing {
+        guard let e = estrattore as? EstrattoreScansioni else { return DocumentProcessor(extractor: estrattore) }
+        return ProcessoreScansioni(estrattore: e)
+    }
+
     func problema(di estrattore: ProgressReportingPdfExtractor) -> (messaggio: String, altroLettore: String?)? {
         guard let e = estrattore as? EstrattoreScansioni, let p = e.problema else { return nil }
         let altro = p.propostaAltroLettore ? (e.lettore == .glm ? LettoreScansioni.apple.rawValue : nil) : nil
@@ -102,7 +109,8 @@ final class FornitoreLetturaMiglioreApp: FornitoreLetturaMigliore {
         let estrattore: ProgressReportingPdfExtractor = lettore.map { scansioni.estrattore(lettore: $0) } ?? PdfKitExtractor()
         let scansioni = self.scansioni
         DispatchQueue.global(qos: .utility).async {
-            let out = MacProcessor.process(pdfURL: pdf, policy: .giro, granularityTarget: granularita, extractor: estrattore)
+            let out = MacProcessor.process(pdfURL: pdf, policy: .giro, granularityTarget: granularita, extractor: estrattore,
+                                           risorseScansioni: estrattore as? FonteRisorseScansioni)
             DispatchQueue.main.async {
                 switch out {
                 case .ready(let r): completion(.success((r.reading, Self.righe(r.report), scansioni.provenienza(di: estrattore))))
@@ -131,3 +139,6 @@ final class FornitoreLetturaMiglioreApp: FornitoreLetturaMigliore {
         var errorDescription: String? { messaggio }
     }
 }
+
+/// L'importazione chiede il motivo delle risorse visive saltate anche al processore delle scansioni.
+extension ProcessoreScansioni: RisorseVisiveSaltate {}

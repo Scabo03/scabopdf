@@ -30,6 +30,8 @@
 //        `--tabelle heron|apple|tutte` passa alla catena come tabelle le regioni viste da Heron o dalla richiesta di Apple (due
 //        passate); `--modello-impaginazione FILE.mlmodelc` usa un altro modello d'impaginazione della famiglia di Heron (per esempio
 //        docling-layout-egret convertito). Tutto spento di serie: senza questi argomenti la catena è quella dell'app.
+//        Giro «migliorie del banco nelle app» (2026-11-21): `--senza tutte|tabelle,...` spegne le migliorie della via delle scansioni
+//        (`MiglioriScansioni`, accese di serie come nell'app): con `--senza tutte` la via è quella di prima del giro, al byte.
 //    scabomac-officina pacchetto --pdf FILE.pdf --out FILE.scabolettura [--politica giro|spenta|banco]
 //        Prepara e scrive il pacchetto della lettura come l'app (senza annotazioni).
 //    scabomac-officina verdetti-confronta --pdf VOLUME.pdf --dir CARTELLA --prefisso P
@@ -234,6 +236,14 @@ case "catena":
                 }
                 e.varianti = varianti
             }
+            // Solo laboratorio (giro «migliorie del banco nelle app», 2026-11-21): le migliorie dell'app, accese di serie, spente per la
+            // rete del banco (`--senza tutte` = la via di prima del giro, al byte).
+            if let v = arg("senza") {
+                guard let m = MiglioriScansioni(spente: v) else {
+                    fail("miglioria sconosciuta: \(v) (note: tutte, \(MiglioriScansioni.nomi.joined(separator: ", ")))")
+                }
+                e.migliorie = m
+            }
             e.cartellaOsservazione = arg("osserva").map { URL(fileURLWithPath: $0).appendingPathComponent(stem) }
             e.modelloImpaginazione = arg("modello-impaginazione").map { URL(fileURLWithPath: $0) }
             scansioni = e
@@ -256,7 +266,7 @@ case "catena":
         var detected: [VisualRegionCandidate]? = nil
         let osserva = arg("osserva").map { URL(fileURLWithPath: $0) }
         let outcome = autoreleasepool {
-            MacProcessor.process(pdfURL: pdf, policy: policy, granularityTarget: target, extractor: recorder,
+            MacProcessor.process(pdfURL: pdf, policy: policy, granularityTarget: target, extractor: recorder, risorseScansioni: scansioni,
                                  visualCandidates: candidates, onVisualDetection: { detected = $0.candidates },
                                  onChainResult: { r in
                                      // P5 e P6 della cascata (solo laboratorio): il documento grezzo e quello con le note.

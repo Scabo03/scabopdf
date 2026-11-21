@@ -98,7 +98,7 @@ final class SchermataElaborazione: NSWindowController {
         case .failure: SegnaliMac.shared.suona([.error])
         case .cancelled: break
         }
-        let saltate = (processore as? DocumentProcessor)?.visualResourcesMissingReason
+        let saltate = (processore as? RisorseVisiveSaltate)?.visualResourcesMissingReason
         if let w = window, let genitore = w.sheetParent { genitore.endSheet(w) } else { window?.orderOut(nil) }
         let e = esito
         esito = nil

@@ -17,7 +17,7 @@ import ScaboCore
 import ScaboMacOCR
 import ScaboPageStructure
 
-public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
+public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRisorseScansioni {
 
     /// Perché la lettura delle scansioni non è partita (il testo è quello che l'importazione mostra).
     public enum Problema: Error, LocalizedError, Equatable, Sendable {
@@ -71,6 +71,16 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
     public var cartellaBanco: URL?
     /// Solo banco: cartella del laboratorio col testo di GLM-OCR già letto (si riusa se c'è, si scrive se manca).
     public var cacheGlm: URL?
+    /// Le migliorie del giro «migliorie del banco nelle app» (2026-11-21), tutte accese di serie (`MiglioriScansioni`); le spegne solo
+    /// la riga di comando del laboratorio.
+    public var migliorie = MiglioriScansioni()
+    /// Le tabelle e le figure viste dal modello d'impaginazione sulle pagine lette e messe nell'estrazione, come candidate delle risorse
+    /// visive della catena (miglioria `tabelle`; vuoto se spenta o se non ne ha viste). Si leggono dopo `extract`.
+    public private(set) var candidateRisorse: [VisualRegionCandidate] = []
+    /// Le pagine (0-based) lette dal lettore e messe nell'estrazione, dopo `extract`.
+    public private(set) var pagineLette: [Int] = []
+    /// Le candidate di ogni pagina letta (anche di quelle poi lasciate com'erano in un PDF misto), prima della scelta delle pagine.
+    private var candidatePerPagina: [Int: [VisualRegionCandidate]] = [:]
 
     // MARK: Solo laboratorio (giro 2 del banco OCR, 2026-11-19): osservazione e varianti, spente di serie
 
@@ -183,6 +193,9 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         primaPaginaLetta = false
         tabelleHeron = []
         tabelleApple = []
+        candidateRisorse = []
+        pagineLette = []
+        candidatePerPagina = [:]
         let t0 = Date()
         guard var ex = try PdfKitExtractor().extract(fromUri: uri, onPageExtracted: { _, _ in }, isCancelled: isCancelled) else {
             return nil
@@ -248,6 +261,8 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         for (indice, pagina) in LetturaScansioni.pagineEstratte(lette) where indice < ex.pages.count {
             ex.pages[indice] = pagina
         }
+        pagineLette = lette.map { $0.pagina }.filter { $0 < ex.pages.count }
+        candidateRisorse = pagineLette.flatMap { candidatePerPagina[$0] ?? [] }
         // Variante E (solo laboratorio, spenta nell'app): la porta dei rami dei codici (formato tascabile 357 × 547 punti con 12 di
         // tolleranza, produttore PDFsharp, corpo fra 6,5 e 8,5: ScaboCore `GenericPlugin`) su una scansione non scatta, perché il file
         // non porta il produttore; la variante lo dichiara quando la geometria della prima pagina è quella dei codici.
@@ -262,6 +277,19 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
         var e = ex
         e.producer = (ex.producer.map { $0 + " " } ?? "") + "PDFsharp"
         return e
+    }
+
+    /// Una regione «tabella» delle scansioni va alla catena solo se è larga almeno un quarto della pagina e contiene almeno due righe.
+    static func tabellaAmmessa(_ b: BBox, _ righe: [RigaLetta], larghezza W: Double) -> Bool {
+        b.width >= 0.25 * W && righeDentro(b, righe) >= 2
+    }
+
+    /// Quante righe lette hanno il centro dentro la regione (stesso spazio: origine in basso a sinistra).
+    static func righeDentro(_ b: BBox, _ righe: [RigaLetta]) -> Int {
+        righe.filter { r in
+            let cx = r.bbox.x + r.bbox.width / 2, cy = r.bbox.y + r.bbox.height / 2
+            return cx >= b.x && cx <= b.x + b.width && cy >= b.y && cy <= b.y + b.height
+        }.count
     }
 
     /// Una regione (riquadro con origine in basso a sinistra) come candidata delle risorse visive della catena (origine in alto a
@@ -304,6 +332,14 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor {
                 tabelleHeron.append(Self.candidata(r.bbox, etichetta: r.tipo, pagina: indice, W: W, H: H))
             }
             for t in letturaApple.tabelle { tabelleApple.append(Self.candidata(t, etichetta: "table", pagina: indice, W: W, H: H)) }
+        }
+        // Miglioria `tabelle` (giro «migliorie del banco nelle app»): le stesse regioni della variante D, per la catena dell'app; una
+        // regione «tabella» solo se è larga almeno un quarto della pagina e contiene almeno due righe lette (misurato sul banco: il
+        // modello chiama tabella anche un'intestazione incorniciata di una riga sola e una colonna stretta di numeri di un indice, e la
+        // lettura le annunciava come tabelle; le tabelle vere del banco sono larghe dal 57 per cento della pagina in su).
+        if migliorie.tabelle {
+            candidatePerPagina[indice] = regioniViste.filter { $0.tipo == "picture" || ($0.tipo == "table" && Self.tabellaAmmessa($0.bbox, righe, larghezza: W)) }
+                .map { Self.candidata($0.bbox, etichetta: $0.tipo, pagina: indice, W: W, H: H) }
         }
         let righeOrdinate = righe
         let secondiImpaginazione = Date().timeIntervalSince(th)

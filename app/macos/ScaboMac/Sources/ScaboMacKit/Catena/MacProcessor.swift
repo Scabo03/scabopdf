@@ -62,6 +62,10 @@ public enum MacProcessor {
         policy: OfficinaPolicy = .giro,
         granularityTarget: Int? = nil,
         extractor: ProgressReportingPdfExtractor = PdfKitExtractor(),
+        // Se l'estrattore legge scansioni (`EstrattoreScansioni`, anche avvolto): dopo l'estrazione dà le tabelle e le figure viste sulle
+        // pagine lette, che arrivano alla catena come candidate delle risorse visive (`CatenaScansioni`, giro «migliorie del banco
+        // nelle app», 2026-11-21). nil = la catena com'era.
+        risorseScansioni: FonteRisorseScansioni? = nil,
         visualCandidates: [VisualRegionCandidate]? = nil,
         onProgress: (ChainProgress) -> Void = { _ in },
         onVisualDetection: (VisualRegionDetector.Result) -> Void = { _ in },
@@ -81,14 +85,23 @@ public enum MacProcessor {
         let target = granularityTarget ?? (large ? ReadingAssembly.largeDocumentGranularity : DEFAULT_GRANULARITY_TARGET)
         let graft = OfficinaGraft(policy: policy)
         var visualDetection: VisualRegionDetector.Result?
-        let outcome = ProcessingChain.run(
-            fileURL: pdfURL, sourceName: fileName, extractor: extractor,
-            options: ChainOptions(granularityTarget: target, buildDoctrine: !large, detectVisualResources: true,
-                                  fractionLongNotes: true, graft: policy.isOff ? nil : graft,
-                                  visualCandidatesOverride: visualCandidates),
-            onProgress: onProgress,
-            onVisualDetection: { result in visualDetection = result; onVisualDetection(result) },
-            isCancelled: isCancelled)
+        let options = ChainOptions(granularityTarget: target, buildDoctrine: !large, detectVisualResources: true,
+                                   fractionLongNotes: true, graft: policy.isOff ? nil : graft,
+                                   visualCandidatesOverride: visualCandidates)
+        let outcome: ChainOutcome
+        if let risorseScansioni {
+            outcome = CatenaScansioni.run(
+                fileURL: pdfURL, sourceName: fileName, extractor: extractor, fonte: risorseScansioni, options: options,
+                onProgress: onProgress,
+                onVisualDetection: { result in visualDetection = result; onVisualDetection(result) },
+                isCancelled: isCancelled)
+        } else {
+            outcome = ProcessingChain.run(
+                fileURL: pdfURL, sourceName: fileName, extractor: extractor, options: options,
+                onProgress: onProgress,
+                onVisualDetection: { result in visualDetection = result; onVisualDetection(result) },
+                isCancelled: isCancelled)
+        }
         switch outcome {
         case .cancelled:
             return .cancelled
