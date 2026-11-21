@@ -1995,6 +1995,26 @@
      "fine_prima": "22f445e2088257a2",
      "fine_dopo": "853179d38a5fb1e8"
     }
+   ],
+   "v39": [
+    {
+     "pagina": 213,
+     "tipo": "figure",
+     "bbox": [
+      56,
+      64.5,
+      425.7,
+      424.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 213,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "98e7901ebd4b7c67",
+     "dopo": "77d5ad2fd9b39504",
+     "fine_prima": "98e7901ebd4b7c67",
+     "fine_dopo": "77d5ad2fd9b39504"
+    }
    ]
   },
   "ios265": {
@@ -3991,6 +4011,26 @@
      "fine_prima": "22f445e2088257a2",
      "fine_dopo": "853179d38a5fb1e8"
     }
+   ],
+   "v39": [
+    {
+     "pagina": 213,
+     "tipo": "figure",
+     "bbox": [
+      56,
+      64.5,
+      425.7,
+      424.8
+     ],
+     "gruppo": 0,
+     "pagina_flusso": 213,
+     "contenuti": 0,
+     "lettere_contenute": 0,
+     "prima": "98e7901ebd4b7c67",
+     "dopo": "77d5ad2fd9b39504",
+     "fine_prima": "98e7901ebd4b7c67",
+     "fine_dopo": "77d5ad2fd9b39504"
+    }
    ]
   }
  },
@@ -4010,6 +4050,22 @@
    "letture": "chi1_ios265",
    "elementi": 110,
    "nota": "Posto delle 110 risorse della lettura della rete (runner, granularità 400 anche per i codici) alla build 58, giudicato contro la pagina: 104 identiche al posto giudicato nel giro «risorse visive» (rv53k); 6 cambiate da allora e giudicate nel giro «chiusura del capitolo note» (stesso punto dell'annuncio; salto fino alla fine della tabella o della didascalia in 3, meno pezzi con le stesse lettere in 2, una nota ricucita altrove prima dell'annuncio in 1)."
+  },
+  {
+   "generazione": "ios27",
+   "data": "2026-11-21",
+   "codice": "cd7a7f7",
+   "letture": "migl_riq_ios27",
+   "elementi": 111,
+   "nota": "Giro «modulo e sommario» (2026-11-21): resa del modulo condiviso dell'impaginazione corretta per il riquadro di ritaglio spostato. I 110 elementi di prima al loro posto, più 1 figura nuova su una pagina col riquadro spostato (v39, pagina 213), giudicata contro la pagina: una fotografia vera con la didascalia sotto, e la regione coincide coi bordi della fotografia. Posto registrato dalla lettura della rete del giro «migliorie del banco nelle app» (stesso codice del modulo) e verificato con la rete di questo giro."
+  },
+  {
+   "generazione": "ios265",
+   "data": "2026-11-21",
+   "codice": "cd7a7f7",
+   "letture": "migl_riq_ios265",
+   "elementi": 111,
+   "nota": "Giro «modulo e sommario» (2026-11-21): resa del modulo condiviso dell'impaginazione corretta per il riquadro di ritaglio spostato. I 110 elementi di prima al loro posto, più 1 figura nuova su una pagina col riquadro spostato (v39, pagina 213), giudicata contro la pagina: una fotografia vera con la didascalia sotto, e la regione coincide coi bordi della fotografia. Posto registrato dalla lettura della rete del giro «migliorie del banco nelle app» (stesso codice del modulo) e verificato con la rete di questo giro."
   }
  ]
 }
