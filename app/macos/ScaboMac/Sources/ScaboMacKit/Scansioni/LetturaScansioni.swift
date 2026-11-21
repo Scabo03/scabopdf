@@ -533,7 +533,9 @@ public enum LetturaScansioni {
                     let b = righe[parole[v]].bbox
                     return b.y > 0.92 * altezzaPagina || b.y + b.height < 0.08 * altezzaPagina
                 }
-                if !gia {
+                // Una parola sola che solo Apple legge è più spesso una lettura sbagliata che testo saltato da GLM: resta solo una corsa
+                // di almeno due parole (un titolo, una riga, una colonna).
+                if !gia, w.count >= 2 {
                     for v in corsaV where !inFascia(v) { perRiga[parole[v]].append(testiV[v]); conti["tenute_apple", default: 0] += 1 }
                 }
                 if let u = corsaV.last { ultimaRiga = parole[u] }
