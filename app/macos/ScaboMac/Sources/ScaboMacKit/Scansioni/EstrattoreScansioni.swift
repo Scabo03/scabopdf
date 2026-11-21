@@ -387,7 +387,7 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
                         : LetturaScansioni.guardia(righe: righe, testoGlm: testo, larga: varianti.guardiaLarga)
                 } else {
                     let filtrato = LetturaScansioni.senzaRipetizioni(LetturaScansioni.filtraNotazione(testo), righeApple: righe)
-                    g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: filtrato.testo, migliorata: true, altezzaPagina: H)
+                    g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: filtrato.testo, migliorata: true)
                     var c = g.conti
                     c["righe_ripetute_tolte"] = filtrato.tolte
                     g = (g.righe, c)

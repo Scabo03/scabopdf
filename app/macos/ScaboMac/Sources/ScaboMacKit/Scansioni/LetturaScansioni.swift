@@ -12,9 +12,11 @@
 //    v1  Apple — le righe della lettura del testo di Apple, con i loro riquadri, nell'ordine dei paragrafi che dà Apple;
 //    v5  Apple + impaginazione — le stesse righe, nell'ordine e coi tipi delle regioni del modello d'impaginazione (Heron,
 //        il porto Swift già nell'app) sull'immagine della pagina;
-//    v2  GLM-OCR + Apple + impaginazione — il testo di GLM-OCR sulla geometria delle righe di Apple, attraverso la GUARDIA:
-//        una parola di GLM entra solo se corregge una parola che Apple ha visto nello stesso punto; ciò che GLM aggiunge
-//        dove Apple non ha visto nulla non entra (le parole inventate pesano più di tutte).
+//    v2  GLM-OCR + Apple + impaginazione — il testo di GLM-OCR sulla geometria delle righe di Apple. Con la miglioria `glm`
+//        (accesa di serie dal giro «migliorie del banco nelle app», 2026-11-21) il testo di GLM è l'autorità, dopo il filtro della
+//        notazione e la protezione dagli anelli di righe ripetute, e ciò che solo Apple ha visto si toglie (`senzaGuardia`).
+//        Spenta, la GUARDIA di prima: una parola di GLM entra solo se corregge una parola che Apple ha visto nello stesso punto;
+//        ciò che GLM aggiunge dove Apple non ha visto nulla non entra (sulle scansioni vere perdeva un quinto del testo).
 //  Ogni verdetto di un modello passa da una guardia deterministica: l'ordine delle regioni del modello d'impaginazione vale
 //  solo se le regioni contengono almeno l'80 per cento delle righe; il tipo «titolo» diventa grassetto solo su righe brevi e
 //  isolate; un numero attaccato a una parola diventa richiamo di nota solo se una nota con quel numero comincia sulla stessa
@@ -479,16 +481,12 @@ public enum LetturaScansioni {
     /// riga della parola allineata precedente (la prima riga, all'inizio); ciò che solo Apple ha visto si toglie. Le etichette HTML
     /// delle tabelle di GLM si tolgono. La geometria resta quella delle righe di Apple.
     ///
-    /// Con `migliorata` (miglioria `glm`, giro «migliorie del banco nelle app», 2026-11-21) tre differenze, misurate sul banco: i pezzi
-    /// fatti di soli segni (senza lettere né cifre: «§», «*») si allineano per quello che sono e non si appaiano fra loro; ciò che solo
-    /// Apple ha letto, dove GLM non scrive nulla, resta (GLM salta a volte il titolo di capitolo in cima alla pagina, come se fosse
-    /// un'intestazione); il corpo delle righe si stima sui caratteri della riga di Apple (`caratteriApple`). Dove leggono tutti e due,
-    /// vince GLM (sulle scansioni vere la guardia stretta rimetteva lì le righe sbagliate di Apple).
-    /// Ciò che solo Apple ha letto resta solo se non sta già nel testo di GLM (un allineamento sfasato lo ripeterebbe) e se non sta nelle
-    /// fasce alta e bassa della pagina (l'8 per cento: testatine e numeri di pagina, che GLM tralascia di proposito); `altezzaPagina` 0 =
-    /// nessuna fascia.
-    public static func senzaGuardia(righe: [RigaLetta], testoGlm: String, migliorata: Bool = false,
-                                    altezzaPagina: Double = 0) -> (righe: [RigaLetta], conti: [String: Int]) {
+    /// Con `migliorata` (miglioria `glm`, giro «migliorie del banco nelle app», 2026-11-21) due differenze, misurate sul banco: i pezzi
+    /// fatti di soli segni (senza lettere né cifre: «§», «*») si allineano per quello che sono e non si appaiano fra loro; il corpo
+    /// delle righe si stima sui caratteri della riga di Apple (`caratteriApple`). Ciò che solo Apple ha letto si toglie, come nella
+    /// variante B: tenerlo (provato nel giro) recuperava qualche parola ma portava parole inventate e plausibili sbagliate, e righe di
+    /// testatina che svuotavano pagine intere nella catena (rete del banco e revisione indipendente del giro).
+    public static func senzaGuardia(righe: [RigaLetta], testoGlm: String, migliorata: Bool = false) -> (righe: [RigaLetta], conti: [String: Int]) {
         var conti = ["allineate": 0, "aggiunte_glm": 0, "tolte_apple": 0]
         guard !righe.isEmpty else { return ([], ["senza_ancore": paroleGlm(testoGlm).count]) }
         var parole: [Int] = []   // la riga di ogni parola di Apple
@@ -496,11 +494,10 @@ public enum LetturaScansioni {
         for (i, r) in righe.enumerated() {
             for p in r.testo.split(whereSeparator: { $0 == " " || $0 == "\t" }) { parole.append(i); testiV.append(String(p)) }
         }
-        let pulito = testoGlm.replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
+        let pulito = testoGlm.replacingOccurrences(of: etichetteHTML, with: " ", options: [.regularExpression, .caseInsensitive])
         let glm = paroleGlm(pulito)
         let allinea: (String) -> String = { s in let n = normalizza(s); return migliorata && n.isEmpty ? "\u{1}" + s : n }
         let nv = testiV.map(allinea), ng = glm.map(allinea)
-        let paroleDiGlm = Set(ng)
         let diff = ng.difference(from: nv)
         var tolte = Set<Int>(), messe = Set<Int>()
         for c in diff {
@@ -515,33 +512,6 @@ public enum LetturaScansioni {
         // Una corsa di parole diverse: le parole di GLM vanno, una per una, sulle righe delle parole di Apple che sostituiscono
         // (le eccedenti sull'ultima); senza parole di Apple, sulla riga della parola allineata precedente.
         func chiudi() {
-            if migliorata, corsaG.isEmpty, !corsaV.isEmpty {
-                // Ciò che solo Apple ha letto resta, sulle sue righe e al suo posto, salvo che GLM l'abbia già scritto altrove o che stia
-                // nelle fasce della testatina e del piè.
-                let w = corsaV.map { nv[$0] }.filter { !$0.isEmpty }
-                // Già nel testo di GLM: per una corsa con almeno tre parole piene (quattro lettere o più), se almeno il 60 per cento di
-                // esse sta nel testo di GLM della pagina (Apple può averne sbagliata qualcuna, e il confronto esatto non la riconoscerebbe);
-                // per una corsa più breve, se una sua parola sta nel testo di GLM vicino al punto dell'allineamento.
-                let gia: Bool = {
-                    guard !w.isEmpty else { return true }
-                    let piene = w.filter { $0.count >= 4 && !$0.hasPrefix("\u{1}") }
-                    if piene.count >= 3 { return Double(piene.filter { paroleDiGlm.contains($0) }.count) >= 0.6 * Double(piene.count) }
-                    return w.contains { ng[max(0, j - 6)..<min(ng.count, j + 6)].contains($0) }
-                }()
-                let inFascia: (Int) -> Bool = { v in
-                    guard altezzaPagina > 0 else { return false }
-                    let b = righe[parole[v]].bbox
-                    return b.y > 0.92 * altezzaPagina || b.y + b.height < 0.08 * altezzaPagina
-                }
-                // Una parola sola che solo Apple legge è più spesso una lettura sbagliata che testo saltato da GLM: resta solo una corsa
-                // di almeno due parole (un titolo, una riga, una colonna).
-                if !gia, w.count >= 2 {
-                    for v in corsaV where !inFascia(v) { perRiga[parole[v]].append(testiV[v]); conti["tenute_apple", default: 0] += 1 }
-                }
-                if let u = corsaV.last { ultimaRiga = parole[u] }
-                corsaV.removeAll()
-                return
-            }
             for (k, g) in corsaG.enumerated() {
                 perRiga[corsaV.isEmpty ? ultimaRiga : parole[corsaV[min(k, corsaV.count - 1)]]].append(glm[g])
             }
@@ -573,6 +543,11 @@ public enum LetturaScansioni {
 
     // MARK: Il filtro della notazione di GLM (giro «migliorie del banco nelle app», 2026-11-21)
 
+    /// Le etichette HTML che un lettore può scrivere per le tabelle e l'impaginazione (aperte o chiuse, con attributi): un elenco
+    /// CHIUSO di nomi che non sono parole, senza quelli di una lettera. Il testo fra parentesi angolari delle edizioni critiche
+    /// («<si>», «<è>», «<...>») resta: nella cache di GLM del giro (1.487 pagine) ci sono 9 pezzi così, tutti testo, e nessuna etichetta.
+    static let etichetteHTML = #"</?(?:table|thead|tbody|tfoot|tr|td|th|caption|colgroup|col|br|hr|sup|sub|div|span)\b[^<>]{0,200}>"#
+
     /// I comandi di LaTeX che GLM scrive e il segno che rappresentano (misurati sulla cache del banco: frecce, gradi, testo); gli altri
     /// comandi si tolgono, il loro argomento resta.
     static let comandiLatex: [String: String] = [
@@ -593,8 +568,9 @@ public enum LetturaScansioni {
     /// («$1990^{2}$») diventa il numero seguito dall'apice. Un «$» solo davanti a un numero resta (lo decide la regola del paragrafo).
     public static func filtraNotazione(_ testo: String) -> String {
         var t = testo
-        // Etichette HTML (le tabelle di GLM) ed entità.
-        t = t.replacingOccurrences(of: #"<[^<>]{1,200}>"#, with: " ", options: .regularExpression)
+        // Etichette HTML di tabella e d'impaginazione (elenco chiuso: mai il testo fra parentesi angolari delle edizioni critiche,
+        // «<si>», «<...>») ed entità.
+        t = t.replacingOccurrences(of: etichetteHTML, with: " ", options: [.regularExpression, .caseInsensitive])
         for (e, v) in [("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"), ("&quot;", "\""), ("&apos;", "'"), ("&#39;", "'")] {
             t = t.replacingOccurrences(of: e, with: v)
         }
@@ -605,7 +581,7 @@ public enum LetturaScansioni {
             g[1].range(of: #"[\^_\\{}]"#, options: .regularExpression) == nil ? g[0] : formula(g[1])
         }
         // Fuori dai dollari: gli apici scritti senza dollari, poi i comandi.
-        t = sostituisci(#"\^\s*\{\s*([0-9]{1,3})\s*\}"#, in: t) { g in "$^{\(g[1])}$" }
+        t = sostituisci(#"(?<!\$)\^\s*\{\s*([0-9]{1,3})\s*\}"#, in: t) { g in "$^{\(g[1])}$" }
         t = comandi(t)
         // La formattazione: grassetti e sottolineature, cancelletti dei titoli, righe e barre delle tabelle.
         t = t.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "__", with: "")
@@ -661,9 +637,11 @@ public enum LetturaScansioni {
         return out + s[ultimo...]
     }
 
-    /// LA PROTEZIONE CONTRO LE RIPETIZIONI. Una riga di GLM di almeno quattro parole che GLM scrive più volte di quante la sequenza delle
-    /// sue parole compaia nelle righe di Apple della stessa pagina si dice una volta sola (le altre si tolgono, la prima resta): GLM a volte
-    /// ripete una riga (classe R4 del rumore udibile del banco); le righe ripetute davvero sulla pagina le vede anche Apple e restano.
+    /// LA PROTEZIONE CONTRO LE RIPETIZIONI. Una riga di GLM di almeno quattro parole UGUALE ALLA RIGA PRECEDENTE (GLM che si incanta e
+    /// la riscrive di fila: classe R4 del rumore udibile del banco) si dice una volta sola, salvo che anche Apple la veda di fila tante
+    /// volte. Le righe ripetute sparse nella pagina restano tutte: nella cache di GLM del giro le copie di righe di quattro o più parole
+    /// sono 147, e solo 2 di fila; le altre sono per lo più frasi ripetute davvero (nei codici), che la prima regola del giro, contando le
+    /// copie di Apple identiche, toglieva quando Apple ne leggeva una parola diversa (revisione indipendente del giro).
     public static func senzaRipetizioni(_ testo: String, righeApple: [RigaLetta]) -> (testo: String, tolte: Int) {
         let apple = " " + righeApple.flatMap { $0.testo.split(whereSeparator: \.isWhitespace).map { normalizza(String($0)) } }.filter { !$0.isEmpty }
             .joined(separator: " ") + " "
@@ -672,13 +650,14 @@ public enum LetturaScansioni {
             while let r = apple.range(of: " " + ago + " ", range: da..<apple.endIndex) { n += 1; da = apple.index(before: r.upperBound) }
             return n
         }
-        var viste: [String: Int] = [:], tolte = 0, righe: [Substring] = []
+        var tolte = 0, righe: [Substring] = [], precedente = "", diFila = 0
         for riga in testo.split(separator: "\n", omittingEmptySubsequences: false) {
             let parole = riga.split(whereSeparator: \.isWhitespace).map { normalizza(String($0)) }.filter { !$0.isEmpty }
-            guard parole.count >= 4 else { righe.append(riga); continue }
+            guard !parole.isEmpty else { righe.append(riga); continue }
             let k = parole.joined(separator: " ")
-            viste[k, default: 0] += 1
-            if viste[k]! > max(1, occorrenze(k)) { tolte += 1; continue }
+            diFila = k == precedente ? diFila + 1 : 1
+            precedente = k
+            if parole.count >= 4, diFila > max(1, occorrenze(k)) { tolte += 1; continue }
             righe.append(riga)
         }
         return (righe.joined(separator: "\n"), tolte)

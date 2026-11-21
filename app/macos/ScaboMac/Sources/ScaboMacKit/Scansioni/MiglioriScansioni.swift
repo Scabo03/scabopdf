@@ -1,7 +1,7 @@
 //
 //  MiglioriScansioni.swift
 //  ScaboMacKit — LE MIGLIORIE DELLA VIA DELLE SCANSIONI (giro «migliorie del banco nelle app», 2026-11-21; LAYER2 § 12.16, decisioni
-//  23 e 24; misure in docs/BANCO_OCR.md, sezione «Le migliorie del banco portate nell'app»).
+//  23 e 24; misure in docs/BANCO_OCR.md, § 44).
 //
 //  Ciò che i tre giri del banco OCR hanno dimostrato, portato nella lettura delle scansioni dell'app. Tutte ACCESE di serie: l'app
 //  le usa sempre e non le mostra. Le spegne solo la riga di comando del laboratorio (`scabomac-officina catena --senza …`), per la
@@ -19,8 +19,8 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
     /// GLM lettura pagine senza la guardia che, nel dubbio, rimetteva le righe di Apple al posto del suo testo (sulle scansioni vere la via
     /// GLM perdeva così il 19,8 per cento delle parole, contro il 2,8 senza): il testo di GLM è l'autorità, le righe di Apple solo la
     /// geometria (variante B del giro 2), dopo un FILTRO DELLA NOTAZIONE che toglie i segni del rumore udibile (notazione matematica e di
-    /// formattazione, classi R1 e R2 del banco) senza togliere testo, e con una protezione contro il testo inventato in un'altra forma: le
-    /// righe che GLM ripete più volte di quante le veda Apple (classe R4) si dicono una volta sola.
+    /// formattazione, classi R1 e R2 del banco) senza togliere testo, e con una protezione contro il testo inventato in un'altra forma: la
+    /// riga che GLM riscrive di fila, incantato (classe R4), si dice una volta sola; le righe ripetute sparse nella pagina restano.
     public var glm = true
     /// Il segno di paragrafo: il lettore di Apple scrive «$» al posto di «§», e VoiceOver tace il dollaro. «$» diventa «§» solo dove il
     /// corpus mostra un segno di paragrafo: davanti a un numero (non un importo con le migliaia o i decimali), staccato da uno spazio

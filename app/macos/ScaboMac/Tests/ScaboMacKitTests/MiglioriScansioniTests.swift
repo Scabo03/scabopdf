@@ -11,12 +11,13 @@ import XCTest
 
 final class MiglioriScansioniTests: XCTestCase {
 
-    /// Le lettere e le cifre di un testo, senza i nomi dei comandi, le etichette e le entità (ciò che il filtro può togliere).
+    /// Le lettere e le cifre di un testo, senza i nomi dei comandi, le etichette HTML dell'elenco chiuso e le entità (ciò che il
+    /// filtro può togliere); il testo fra parentesi angolari che non è un'etichetta resta e si conta.
     private func lettereECifre(_ s: String, sorgente: Bool) -> String {
         var t = s
         if sorgente {
             t = t.replacingOccurrences(of: #"\\[A-Za-z]+"#, with: " ", options: .regularExpression)
-            t = t.replacingOccurrences(of: #"<[^<>]{1,200}>"#, with: " ", options: .regularExpression)
+            t = t.replacingOccurrences(of: LetturaScansioni.etichetteHTML, with: " ", options: [.regularExpression, .caseInsensitive])
             t = t.replacingOccurrences(of: #"&[A-Za-z]{2,8};"#, with: " ", options: .regularExpression)
         }
         return String(t.unicodeScalars.filter { CharacterSet.alphanumerics.contains($0) }.map(Character.init).sorted())
@@ -25,9 +26,9 @@ final class MiglioriScansioniTests: XCTestCase {
     // MARK: il filtro della notazione
 
     func test_filtro_toglieLaNotazione_tieneLeLettereELeCifre() {
-        let glm = "Il termine$^{12}$ scade nel $1990^{2}$ e vale $\\rightarrow$ sempre **molto** <b>bene</b> &amp; | a | b | e $x$ a 20$^\\circ$\n# Titolo di prova"
+        let glm = "Il termine$^{12}$ scade nel $1990^{2}$ e vale $\\rightarrow$ sempre **molto** <td>bene</td> &amp; | a | b | e $x$ a 20$^\\circ$ <si> fatto\n# Titolo di prova"
         let f = LetturaScansioni.filtraNotazione(glm)
-        XCTAssertEqual(f, "Il termine$^{12}$ scade nel 1990$^{2}$ e vale → sempre molto bene & a b e x a 20°\nTitolo di prova")
+        XCTAssertEqual(f, "Il termine$^{12}$ scade nel 1990$^{2}$ e vale → sempre molto bene & a b e x a 20° <si> fatto\nTitolo di prova")
         XCTAssertEqual(lettereECifre(f, sorgente: false), lettereECifre(glm, sorgente: true), "nessuna lettera e nessuna cifra tolta")
         let senzaApici = f.replacingOccurrences(of: #"\$\^\{[0-9]{1,3}\}\$"#, with: "", options: .regularExpression)
         XCTAssertNil(senzaApici.range(of: #"[{}\\|$^]|\*\*"#, options: .regularExpression),
@@ -39,18 +40,43 @@ final class MiglioriScansioniTests: XCTestCase {
         XCTAssertEqual(LetturaScansioni.filtraNotazione("vedi $ 3 e $ 4"), "vedi $ 3 e $ 4", "due dollari senza notazione fra loro non sono una formula")
         XCTAssertEqual(LetturaScansioni.filtraNotazione("la parola$^{7}$ chiude"), "la parola$^{7}$ chiude", "l'apice del richiamo resta per la catena")
         XCTAssertEqual(LetturaScansioni.filtraNotazione("una prova ^{4} staccata"), "una prova $^{4}$ staccata")
+        // L'apice già scritto dalla formula non si riavvolge una seconda volta («$$^{3}$$»: restava un dollaro davanti all'anno).
+        XCTAssertEqual(LetturaScansioni.filtraNotazione("Milano, $^{3}$1998; trad."), "Milano, $^{3}$1998; trad.")
+        XCTAssertEqual(LetturaScansioni.filtraNotazione("Milano, $^3$1977. Roma"), "Milano, $^{3}$1977. Roma")
     }
 
-    func test_senzaRipetizioni_unaRigaRipetutaDaGlm_unaVolta_seAppleLaVedeDueVolteResta() {
+    /// Il testo fra parentesi angolari delle edizioni critiche resta; si tolgono solo le etichette HTML dell'elenco chiuso.
+    func test_filtro_parentesiAngolari_restano_soloLeEtichetteSiTolgono() {
+        for t in ["il testo <si> integrato", "una lacuna <...> qui", "la forma <è> resta", "un <a> solo"] {
+            XCTAssertEqual(LetturaScansioni.filtraNotazione(t), t, "«\(t)»: testo, resta")
+        }
+        XCTAssertEqual(LetturaScansioni.filtraNotazione("<table><tr><td>uno</td><td colspan=\"2\">due</td></tr></table>"), " uno due ")
+        XCTAssertEqual(LetturaScansioni.filtraNotazione("riga<br/>dopo"), "riga dopo")
+    }
+
+    func test_senzaRipetizioni_soloLaRigaRipetutaDiFila_unaVolta() {
         func riga(_ t: String) -> RigaLetta { RigaLetta(testo: t, bbox: BBox(x: 0, y: 0, width: 100, height: 10), regione: 0) }
-        let glm = "una riga di prova abbastanza lunga\naltra cosa qui\nuna riga di prova abbastanza lunga"
-        let a = LetturaScansioni.senzaRipetizioni(glm, righeApple: [riga("una riga di prova abbastanza lunga"), riga("altra cosa qui")])
-        XCTAssertEqual(a.tolte, 1)
-        XCTAssertEqual(a.testo, "una riga di prova abbastanza lunga\naltra cosa qui")
-        let b = LetturaScansioni.senzaRipetizioni(glm, righeApple: [riga("una riga di prova abbastanza lunga"), riga("altra cosa qui"),
-                                                                    riga("una riga di prova abbastanza lunga")])
-        XCTAssertEqual(b.tolte, 0, "ripetuta davvero sulla pagina: Apple la vede due volte")
+        let L = "una riga di prova abbastanza lunga"
+        let apple = [riga(L), riga("altra cosa qui")]
+        let a = LetturaScansioni.senzaRipetizioni("\(L)\n\(L)\n\(L)\naltra cosa qui", righeApple: apple)
+        XCTAssertEqual(a.tolte, 2, "GLM che si incanta: la riga di fila si dice una volta sola")
+        XCTAssertEqual(a.testo, "\(L)\naltra cosa qui")
+        let b = LetturaScansioni.senzaRipetizioni("\(L)\naltra cosa qui\n\(L)", righeApple: apple)
+        XCTAssertEqual(b.tolte, 0, "ripetuta sparsa nella pagina (anche se Apple ne vede una sola copia uguale): resta")
+        let c = LetturaScansioni.senzaRipetizioni("\(L)\n\(L)", righeApple: [riga(L), riga(L)])
+        XCTAssertEqual(c.tolte, 0, "di fila anche per Apple: ripetuta davvero")
         XCTAssertEqual(LetturaScansioni.senzaRipetizioni("corta\ncorta", righeApple: []).tolte, 0, "le righe brevi non si toccano")
+    }
+
+    /// La via GLM migliorata: ciò che solo Apple ha letto si toglie (come nella variante B); i pezzi di soli segni si allineano per quello
+    /// che sono; le righe d'uscita portano i caratteri della riga di Apple, da cui si stima il corpo.
+    func test_senzaGuardiaMigliorata_soloAppleSiToglie_corpoDaApple() {
+        func riga(_ t: String, _ y: Double) -> RigaLetta { RigaLetta(testo: t, bbox: BBox(x: 0, y: y, width: 300, height: 10), regione: 0) }
+        let righe = [riga("Titolo letto solo da Apple", 500), riga("il testo della pagina di prova", 480), riga("§ 12 e altro", 460)]
+        let g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: "il testo della pagina di prova\n§ 12 e altro", migliorata: true)
+        XCTAssertEqual(g.righe.map(\.testo), ["il testo della pagina di prova", "§ 12 e altro"])
+        XCTAssertEqual(g.righe.map(\.caratteriApple), [30, 12])
+        XCTAssertEqual(g.conti["tolte_apple"], 5)
     }
 
     // MARK: il segno di paragrafo
