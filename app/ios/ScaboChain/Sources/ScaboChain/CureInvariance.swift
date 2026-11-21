@@ -29,8 +29,9 @@ extension ProcessingChain {
     /// le granularità (la cura sposta confini di blocco e pezzi di nota, che dipendono dal livello scelto).
     /// 67 (giro «modulo e sommario», 2026-11-21, resa della pagina come si mostra nel modulo dell'impaginazione): 51 volumi del
     /// banco su 52 identici, gli stessi con iOS 26.5 e con iOS 27, più i tre documenti della rete delle cure mirate; misurati sulle
-    /// cinque forme della lettura a TUTTE e quattro le granularità, fra le catture della build 66 e quelle col modulo corretto.
-    /// Cambia un volume (una figura nuova, su una pagina col riquadro di ritaglio spostato).
+    /// cinque forme della lettura a TUTTE e quattro le granularità, fra le catture della build 66 e quelle col modulo corretto;
+    /// rimisurati col codice finale della build (modulo e sommario fittizio): stesso elenco, la cura del sommario non cambia
+    /// nessuna lettura del banco. Cambia un volume (una figura nuova, su una pagina col riquadro di ritaglio spostato).
     public static let booksUnchangedByCure: [Int: [Int: Set<String>]] = [
         64: [26: unchangedByCure64Common, 27: unchangedByCure64Common.union(unchangedByCure64OnlyOn27)],
         66: [26: unchangedByCure66, 27: unchangedByCure66],

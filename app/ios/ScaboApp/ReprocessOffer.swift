@@ -117,7 +117,8 @@ enum ReprocessOffer {
             + "alcune note brevi si leggono alla fine vera della frase"),
         (67, "nei libri con alcune pagine spostate rispetto al foglio, le tabelle e le figure di quelle pagine sono riconosciute "
             + "nel punto giusto e, estratte come immagine, mostrano la parte giusta della pagina; qualche figura che prima non "
-            + "era annunciata ora lo è"),
+            + "era annunciata ora lo è; le pagine di quesiti con gli spazi da completare fra parentesi non sono più scambiate "
+            + "per un sommario, e si leggono"),
     ]
 
     /// Le cure che cambiano la lettura dei testi normativi, in parole semplici (la parte che li riguarda).

@@ -186,7 +186,10 @@ public enum ProcessingChain {
     /// pagina vera e si ritagliano nel punto giusto. Le risorse visive salvate prima su quelle pagine restano nello spazio della
     /// resa di prima, e il ritaglio le prende in quello spazio (`displayedPageRegionsCure`); la rielaborazione rifà il
     /// riconoscimento sulla pagina vera (figure prima non trovate, regioni giuste). Le letture senza le risorse visive non
-    /// cambiano; sul banco cambia un volume solo (una figura nuova). Si offre a TUTTI E SOLI i libri la cui lettura cambia
+    /// cambiano; sul banco cambia un volume solo (una figura nuova). Nella stessa build, la cura del sommario fittizio nel tronco
+    /// comune (decisione 27): le lacune a puntini fra parentesi delle pagine di quesiti non fanno più di una pagina un sommario
+    /// escluso dalla lettura (`hasIndexLeader`); sul banco nessuna lettura cambia per lei.
+    /// Si offre a TUTTI E SOLI i libri la cui lettura cambia
     /// (`booksUnchangedByCure`, misurati ai quattro livelli); come la 56-66: dal Mac per le sue letture. Non tocca i testi
     /// normativi (nessuna pagina, nessuna risorsa visiva).
     public static let cureLevel = 67
