@@ -190,6 +190,31 @@ final class FrontMatterTests: XCTestCase {
         XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 1)
     }
 
+    /// La stessa regola vale nella regione di coda (`detectBackMatterApparatus`): una pagina di quesiti in fondo a un documento lungo
+    /// si legge; un indice a leader vero in coda resta un sommario (rilievo della revisione del ramo: la coda non era provata).
+    func test_quizPage_inBackMatterRegion_isRead_realTocInTail_staysToc() {
+        // 37 pagine: la coda comincia a pagina 30 (come in test_backMatterRegion_colophonNowCaughtByBackMatter).
+        var pages = (0..<35).map { bodyPage($0) }
+        pages.append(page(35, [
+            line("1. La campana del borgo suona [.....] volte al tramonto della domenica.", size: 10),
+            line("2. Il mercato del pesce apre alle [.....] del mattino nei giorni pari.", size: 10),
+            line("3. La barca del faro attracca al molo [.....] ogni stagione di pesca.", size: 10),
+        ]))
+        pages.append(bodyPage(36))
+        let d = doc(pages)
+        XCTAssertEqual(nodes(d, .TOC_GENERAL).count, 0, "le lacune fra parentesi non fanno della pagina di coda un sommario")
+        XCTAssertTrue(readText(d).contains("campana del borgo"), "la pagina di quesiti in coda si legge")
+
+        var withToc = (0..<35).map { bodyPage($0) }
+        withToc.append(page(35, [
+            line("Il molo e le sue barche ............................ 3", size: 10),
+            line("Il faro e le sue luci .............................. 9", size: 10),
+            line("Il borgo e le sue campane ......................... 17", size: 10),
+        ]))
+        withToc.append(bodyPage(36))
+        XCTAssertEqual(nodes(doc(withToc), .TOC_GENERAL).count, 1, "un indice a leader vero in coda resta un sommario")
+    }
+
     func test_hasIndexLeader_bracketedGapsVersusLeaders() {
         XCTAssertFalse(hasIndexLeader("Il valore è [.....] unità."))
         XCTAssertFalse(hasIndexLeader("Il valore è ( . . . . ) unità."))

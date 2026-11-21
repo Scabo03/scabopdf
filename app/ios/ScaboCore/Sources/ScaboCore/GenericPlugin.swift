@@ -1222,7 +1222,7 @@ func isFrontMatterIndex(_ content: [LineSummary]) -> Bool {
 }
 
 /// Vero se la riga ha almeno un leader puntinato che NON è una lacuna fra parentesi. I puntini chiusi fra parentesi quadre o
-/// tonde dello stesso tipo, anche con uno spazio dentro («[.....]», «( .... )»), sono gli spazi da completare delle pagine di
+/// tonde dello stesso tipo, anche con spazi dentro («[.....]», «( .... )»), sono gli spazi da completare delle pagine di
 /// quesiti, non la guida che porta al numero di pagina di un indice: contati come leader facevano di una pagina intera di quesiti
 /// un sommario, escluso dalla lettura (giro «modulo e sommario», 2026-11-21, decisione del maintainer; diagnosi e misura nel
 /// § 44.4 di docs/BANCO_OCR.md). Un leader vero fuori dalle parentesi, sulla stessa riga, conta come prima.
