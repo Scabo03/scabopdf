@@ -7,8 +7,9 @@ comune** (da leggere sempre), **la parte iPad**, **la parte Mac**. Il caricament
 chiede o lo conferma, ogni volta (`CLAUDE.md`, «Commit & push workflow»).
 
 **Stato delle build** (da aggiornare a ogni caricamento, insieme alla riga di stato del CARRYOVER):
-**iPad** — ultima build **66** (2026-11-11, commit `814b562`), prossima **67**. **Mac** — ultima build **1** (2026-11-13, commit
-`193cb29`), prossima **2**.
+**iPad** — ultima build **66** (2026-11-11, commit `814b562`), prossima **67**. **Mac** — ultima build **2** (2026-11-18, commit
+`d4d4d60`; revisione beta per il gruppo esterno «ScaboPDF Prova esterna» approvata, campo 2026-11-21), prossima **3**.
+*[Fino al 21 novembre questa riga diceva ancora «ultima 1, prossima 2» per il Mac: una svista del giro della build 2, corretta.]*
 
 > Storia del metodo: una versione molto vecchia di questa nota ipotizzava «Xcode GUI Archive→Distribute»; era sbagliata. Il
 > metodo reale, verificato eseguendolo il 2026-06-22 (build 6 dell'iPad), è la corsia `fastlane` dalla riga di comando: firma via
