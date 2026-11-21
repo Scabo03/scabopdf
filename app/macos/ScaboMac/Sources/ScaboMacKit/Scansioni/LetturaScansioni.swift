@@ -830,7 +830,7 @@ public enum LetturaScansioni {
     /// numero che non è un importo (né migliaia né decimali con la virgola), mai dopo una lettera o una cifra («US$», «100$») né davanti
     /// all'apice di un richiamo («$^{12}$»). Mai il «$» che chiude un apice o una formula («$^{3}$1998»: l'edizione in apice davanti
     /// all'anno, come la scrive GLM), mai davanti a quattro o più cifre attaccate («$$1962»), e mai il dollaro singolo attaccato al numero
-    /// («$8»): così Apple legge anche i richiami e le edizioni in apice («eziologica $8.», «$1998»). Misure: nel corpus (letture dell'iPad
+    /// («$8»): così Apple legge anche i richiami e le edizioni in apice («la causa $8.», «$1998»). Misure: nel corpus (letture dell'iPad
     /// dei 55 libri) i «§» veri attaccati al numero sono 59 su più di 8.300, tutti da una a tre cifre; sul banco, conversioni del dollaro
     /// singolo con lo spazio confermate dalla verità della pagina 332 su 332 (Apple), attaccate 10 su 16. Il resto della misura nel
     /// commento di `MiglioriScansioni.paragrafo`.

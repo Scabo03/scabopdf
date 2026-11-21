@@ -3753,7 +3753,7 @@ flusso (il metro della pagina singola le conta come testo), e qualche titolo tro
   cifre; quelli davanti a un numero di quattro cifre hanno lo spazio (24).
 - **La rete ha trovato due errori nella prima regola** (campo, stato `fin3`): l'edizione in apice davanti all'anno, che GLM scrive come
   formula («$^{3}$1998»: il filtro la porta alla forma canonica dell'apice e la conversione prendeva il dollaro di chiusura, «3§§1998»),
-  e il richiamo o l'edizione in apice che Apple legge come dollaro attaccato («$1998», «eziologica $8.»). Il conteggio per pagina ne
+  e il richiamo o l'edizione in apice che Apple legge come dollaro attaccato («$1998», «la causa $8.»). Il conteggio per pagina ne
   vedeva 5 su 4 pagine; il controllo occorrenza per occorrenza contro la verità della pagina (strumento `controllo_par.py`) li ha
   trovati tutti e ha misurato i tipi: dollaro singolo con lo spazio, conversioni confermate +332 e non confermate +0 (Apple), +305 e +1
   (GLM); raddoppiato +106 e +1 (Apple), +121 e +6 (GLM, i casi dell'apice); dollaro singolo attaccato +10 e +6 (Apple).
