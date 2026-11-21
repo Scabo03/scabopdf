@@ -1727,6 +1727,21 @@ tronco comune: proposta per il maintainer, non toccato. Il modulo condiviso dell
 risorse visive già salvate sulle pagine col riquadro spostato (livello delle cure e offerta) e la verità dei posti delle risorse visive
 del repo. La richiesta classica di Apple è misurata e non accesa.
 
+**Tre decisioni del maintainer del 21 novembre 2026 (sera)**, registrate all'apertura del giro «modulo e sommario» (2026-11-21),
+sulle tre decisioni proposte dal giro «migliorie del banco nelle app» (`docs/BANCO_OCR.md` § 44):
+
+26. **Il modulo condiviso dell'impaginazione si unisce con la cura delle risorse visive già salvate e con la verità aggiornata**
+    (decisioni 1 e 2 di quel giro): il livello delle cure sale a 67 col meccanismo del § 12.13, così alla prossima apertura ricevono
+    l'offerta di rielaborazione, con le parole di sempre, solo i libri le cui risorse visive o la cui lettura cambiano, e gli altri
+    non ricevono nulla; le annotazioni seguono il § 12.14 (al loro posto, oppure «da ricollocare», mai spostate in silenzio); la
+    verità dei posti delle risorse visive del repo riceve la figura nuova che la correzione trova, con le sole posizioni e i tipi.
+    Poi la build dell'iPad e quella del Mac, che usa lo stesso modulo. *21 novembre 2026.*
+27. **Il sommario fittizio si corregge nel tronco comune**: le lacune a puntini fra parentesi delle pagine di quesiti si escludono
+    dal riconoscimento dei sommari, per capacità, con le reti dell'iPad; nessuna pagina-sommario vera del corpus deve cambiare.
+    *21 novembre 2026.*
+28. **La richiesta classica di Apple resta spenta**: avrà un giro suo, con una stretta sulle testatine nel flusso, prima di
+    accenderla. *21 novembre 2026.*
+
 ---
 
 ## 13. Ricerca testuale
