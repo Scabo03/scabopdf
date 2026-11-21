@@ -90,6 +90,32 @@ final class CatenaScansioniTests: XCTestCase {
         XCTAssertFalse(EstrattoreScansioni.tabellaAmmessa(BBox(x: 395, y: 250, width: 40, height: 70), righe, larghezza: 420), "una colonna stretta")
     }
 
+    /// Il processore dell'importazione delle scansioni (`ProcessoreScansioni`) è `DocumentProcessor` con la catena delle scansioni:
+    /// l'avanzamento e l'esito arrivano sul filo principale, l'esito una volta sola; la pagina di sola immagine si legge, anche con un
+    /// nome di file con gli spazi come la scansione di prova dell'app.
+    func test_processoreScansioni_esitoUnaVoltaSulMain_paginaLetta() throws {
+        let cartella = FileManager.default.temporaryDirectory.appendingPathComponent("proc-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: cartella, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: cartella) }
+        let url = try LetturaScansioniTests.pagina(frasi, comeTesto: false, in: cartella.appendingPathComponent("Scansione di prova.pdf"))
+        let processore = ProcessoreScansioni(estrattore: EstrattoreScansioni(lettore: .apple))
+        let fatto = expectation(description: "esito")
+        var esiti = 0, avanzamentiFuoriDalMain = 0
+        var testo: [String] = []
+        processore.process(fileURL: url, sourceName: "Scansione di prova.pdf", granularityTarget: 400, buildDoctrine: true,
+                           onProgress: { _ in if !Thread.isMainThread { avanzamentiFuoriDalMain += 1 } },
+                           completion: { esito in
+                               XCTAssertTrue(Thread.isMainThread, "l'esito arriva sul filo principale")
+                               esiti += 1
+                               if case .success(_, let contenuto, _) = esito { testo = contenuto.pages.flatMap { $0.segments }.map(\.text) }
+                               fatto.fulfill()
+                           })
+        wait(for: [fatto], timeout: 180)
+        XCTAssertEqual(esiti, 1)
+        XCTAssertEqual(avanzamentiFuoriDalMain, 0, "l'avanzamento arriva sul filo principale")
+        XCTAssertFalse(testo.isEmpty, "la pagina di sola immagine si legge")
+    }
+
     /// La miglioria spenta (solo laboratorio) non raccoglie candidate: la via di prima.
     func test_migliorieSpente_nessunaCandidata() throws {
         let url = try LetturaScansioniTests.pagina(frasi, comeTesto: false,

@@ -396,7 +396,20 @@ final class ScaboPDFUITests: XCTestCase {
         let t0 = Date()
         avvia.click()
         let lettura = app.windows["lettura.finestra"]
-        XCTAssertTrue(lettura.waitForExistence(timeout: 1800), "la scansione si legge e si apre")
+        // Un avviso al posto della lettura (l'elaborazione non riuscita, o il lettore non partito): il test lo dice subito, col suo
+        // testo, invece di aspettare la mezz'ora (giro «migliorie del banco nelle app», 2026-11-21).
+        let fine = Date().addingTimeInterval(1800)
+        var avviso: String?
+        while Date() < fine, !lettura.exists {
+            let aperti = app.sheets.allElementsBoundByIndex + app.dialogs.allElementsBoundByIndex
+            if let a = aperti.first(where: { !["elaborazione.finestra", "scansione.finestra"].contains($0.identifier) && $0.buttons.count > 0 }) {
+                avviso = a.staticTexts.allElementsBoundByIndex.map { ($0.value as? String) ?? $0.label }.joined(separator: " | ")
+                break
+            }
+            _ = lettura.waitForExistence(timeout: 2)
+        }
+        XCTAssertNil(avviso, "al posto della lettura, un avviso: \(avviso ?? "")")
+        XCTAssertTrue(lettura.exists, "la scansione si legge e si apre")
         let secondi = Date().timeIntervalSince(t0)
         app.typeKey("0", modifierFlags: .command)   // la Home
         let riga = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "home.libro.")).firstMatch
