@@ -1,17 +1,17 @@
-Terza versione di ScaboPDF per Mac. È la stessa app dell'iPad, con build sue per il Mac. La libreria del Mac è sua: i libri dell'iPad non arrivano da soli.
+Quarta versione di ScaboPDF per Mac. È la stessa app dell'iPad, con build sue per il Mac. La libreria del Mac è sua: i libri dell'iPad non arrivano da soli.
 
-Che cosa c'è di nuovo, nelle scansioni
-- Le tabelle. Quando il lettore vede una tabella su una pagina scansionata, l'app la annuncia come tabella, con le stesse parole e lo stesso funzionamento dell'iPad. Il testo della tabella resta comunque nella lettura, al suo posto: non si perde nulla.
-- Con GLM lettura pagine si perde molto meno testo. Prima l'app, per prudenza, rimetteva le righe della lettura di Apple al posto di quelle di GLM, e così perdeva circa un quinto del testo delle scansioni vere; ora tiene la lettura di GLM, che è più precisa, e toglie soltanto i segni di formule e d'impaginazione che GLM scrive e che all'ascolto sono rumore. Se GLM si incanta e riscrive la stessa riga di fila, la riga si sente una volta sola.
-- Il segno di paragrafo. La lettura di Apple a volte legge «§» come un dollaro, che VoiceOver non pronuncia: ora, quando il dollaro è staccato dal numero o raddoppiato, torna «§» e si sente «paragrafo». Gli altri dollari restano come sono.
+Che cosa c'è di nuovo
+- Le pagine di quesiti. Le pagine con gli spazi da completare fra parentesi, come «[.....]», non sono più scambiate per un sommario: prima l'app le saltava intere, ora si leggono. Vale per le scansioni lette con la lettura del testo di Apple e per i PDF col testo; con GLM lettura pagine si leggevano già.
+- Le figure sulle pagine spostate. In alcuni libri le pagine sono spostate rispetto al foglio: la parte stampata non comincia dall'angolo della pagina. Su quelle pagine l'app ora riconosce le tabelle e le figure nel punto giusto, come l'iPad: qualche figura che prima mancava ora si annuncia.
+- Nient'altro cambia nella lettura: il testo resta lo stesso, parola per parola, salvo le pagine di quesiti che prima mancavano.
 
-Le scansioni già nella libreria restano lette come prima. Per sentire le novità: dal menu del libro, cioè il clic destro o il tasto Menu sulla riga, «Prepara una lettura migliore…». La lettura di prima resta finché non si sceglie la nuova, e le annotazioni si ritrovano; quelle che l'app non ritrova con sicurezza restano «da ricollocare», mai spostate in silenzio.
+I libri già nella libreria restano letti come prima: le novità si sentono nei libri importati da adesso. Per una scansione già nella libreria si sentono anche con «Prepara una lettura migliore…» dal menu del libro, cioè il clic destro o il tasto Menu sulla riga: la lettura di prima resta finché non si sceglie la nuova, e le annotazioni si ritrovano; quelle che l'app non ritrova con sicurezza restano «da ricollocare», mai spostate in silenzio.
 
 Che cosa manca ancora
-La ricerca nel libro e nella libreria, i segnalibri, la Consultazione Rapida e la Dottrina Inline. Sulle scansioni: i numeri delle note che la lettura di Apple legge come un asterisco restano così; i titoli si riconoscono solo in parte; i richiami di nota si agganciano alle loro note solo in parte, e le note non agganciate restano lette dove sono sulla pagina; nei codici a due colonne una parte del testo può mancare; una pagina di esercizi con molti puntini da completare può essere scambiata per un sommario e non letta.
+La ricerca nel libro e nella libreria, i segnalibri, la Consultazione Rapida e la Dottrina Inline. Sulle scansioni: i numeri delle note che la lettura di Apple legge come un asterisco restano così; i titoli si riconoscono solo in parte; i richiami di nota si agganciano alle loro note solo in parte, e le note non agganciate restano lette dove sono sulla pagina; nei codici a due colonne una parte del testo può mancare; nelle pagine di quesiti alcune risposte possono essere annunciate come note o come titoli.
 
 Da provare per primo
-Importare una scansione con una tabella, leggerla con GLM lettura pagine e ascoltare la tabella e il testo intorno. Su una scansione già nella libreria: «Prepara una lettura migliore…» e ascoltare che cosa cambia.
+Importare una scansione con pagine di quesiti, leggerla con la lettura del testo di Apple e ascoltare che quelle pagine ci siano tutte.
 
 La diagnostica, per le prove
 1. Comando virgola apre le Impostazioni. In fondo, sotto «Per chi sviluppa ScaboPDF», c'è «Mostra la diagnostica nel menu Finestra»: va accesa.

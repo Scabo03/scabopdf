@@ -217,6 +217,11 @@ generazioni; blocchi persi rispetto alla base 2 → **0**; misura invariata (719
   un segno al conio («quasi gemello per testa e coda nella finestra») che escluda il passo «testa e coda» per quell'ancora.
 - L'offerta della cura 66 è misurata per libro sulle quattro granularità insieme, non per livello: un libro identico solo al suo
   livello riceve l'offerta, e accettandola ottiene la stessa lettura (giro «prova 4, segnalibri e sigle», § 7 del referto).
+- La cura 67 (giro «modulo e sommario», 2026-11-21) cambia sul banco un solo volume, per un elemento «risorsa visiva» in più:
+  passando dalla lettura della build 66 a quella nuova le annotazioni restano al loro posto; tornando alla lettura di prima, un
+  segnalibro messo sulla figura nuova resta «da ricollocare» (dichiarato: la figura nella lettura di prima non c'è). Le risorse
+  visive restano un mondo separato dal testo: «Estrai come immagine» ritaglia i riquadri nello spazio della lettura che li ha
+  salvati (livello delle cure della lettura), così una lettura di prima non dà ritagli spostati.
 
 ### 7.1 Testo del titolo ripetuto nel corpo (osservato e curato, 2026-10-08)
 

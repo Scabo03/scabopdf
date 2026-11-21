@@ -54,7 +54,10 @@ li matcha mai → protezione per costruzione):
   legge da sole): una prefazione può citarle (es. "ai sensi dell'art. 342 TFUE").
 - **Indice/sommario a leader → `TOC_GENERAL`.** Una pagina con ≥ 3 righe a **leader
   puntinato** (`[.…·]` ripetuti ≥ 4, anche spaziati di un soffio). La prosa non ha
-  leader; la soglia ≥ 3/pagina è la guardia.
+  leader; la soglia ≥ 3/pagina è la guardia. Non contano i puntini chiusi fra due
+  parentesi dello stesso tipo, quadre o tonde, anche con spazi dentro: sono gli spazi da
+  completare delle pagine di quesiti (`hasIndexLeader`, giro «modulo e sommario»,
+  2026-11-21, `docs/BANCO_OCR.md` § 45.2).
 - **Indice/sommario SENZA leader → `TOC_GENERAL` (recupero, rifinitura trasversale).**
   Riusa il riconoscitore-indici del back-matter (commit `76863e2`) sullo scope
   iniziale: una regione aperta da un **titolo** di sommario (`INDICE`/`SOMMARIO`,

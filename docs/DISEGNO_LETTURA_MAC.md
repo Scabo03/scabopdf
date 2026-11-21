@@ -1500,6 +1500,20 @@ della prova; il Terminale dice «Fatto». Code legge il diario dopo; al maintain
 
 ## 11. Residui e cose non verificate
 
+- **Dopo il giro «modulo e sommario» (21 novembre 2026, sera).** *Fatto:* il modulo condiviso dell'impaginazione con la resa della
+  pagina come si mostra è in main, un codice solo per iPad e Mac (decisione 26): sul Mac la via delle scansioni lo usava già; la
+  lettura dei PDF col testo trova ora anche le figure delle pagine col riquadro di ritaglio spostato (una in più sul banco, v39, la
+  stessa dell'iPad). Il sommario fittizio è corretto nel tronco comune (decisione 27): le pagine di quesiti con le lacune a puntini
+  fra parentesi si leggono, nelle scansioni lette con Apple come nei PDF col testo (scansioni vere: pagine non lette 2 → 0, parole
+  perse 20,2 → 5,3 per cento nella via di Apple; tutto il resto della rete del banco identico al byte). Misure nel report
+  `docs/BANCO_OCR.md` § 45. *Residui:* le letture già nella libreria del Mac non ricevono un'offerta per le cure (sul Mac non c'è):
+  la figura nuova e le pagine di quesiti arrivano con un'importazione nuova («Prepara una lettura migliore…» rifà la lettura con la
+  catena attuale, non verificato su questi casi); una lettura del
+  Mac preparata con la cura 67 e aperta su un iPad rimasto alla build 66 avrebbe i ritagli delle figure spostati sulle pagine
+  spostate (per questo l'iPad 67 esce prima del Mac 4); le pagine ruotate con testo restano un difetto latente della lettura migliore
+  (righe non ruotate, regioni ruotate); la richiesta classica di Apple resta spenta (decisione 28). *Da sentire:* una pagina di
+  quesiti scansionata, letta con Apple.
+
 - **Dopo il giro «migliorie del banco nelle app» (21 novembre 2026).** *Fatto:* nella via delle scansioni del Mac le tabelle e le
   figure che il modello d'impaginazione vede sulle pagine lette si annunciano come sull'iPad (risorsa visiva additiva della catena, il
   testo della tabella resta al suo posto; solo tabelle larghe almeno un quarto della pagina e con almeno due righe); GLM lettura pagine

@@ -1412,6 +1412,19 @@ prepara su richiesta (menu del libro o officina) e si confronta, blocco per bloc
 offerta e l'annuncio lo dice. Quando è pronta arriva da sola: annuncio di VoiceOver, «Apri ora» nella Home, segno nella riga
 del libro (`DISEGNO_LETTURA_MAC.md` § 6.6). L'offerta di rielaborazione per le cure, sull'iPad, non cambia.
 
+**La cura 67 (2026-11-21, decisioni 26 e 27 del § 12.16):** la resa della pagina come si mostra nel modulo condiviso
+dell'impaginazione e, nella stessa build, l'esclusione delle lacune a puntini fra parentesi dal riconoscimento dei sommari. Si
+offre con la regola «tutti e soli»: i libri misurati che la cura lascia identici a tutti e quattro i livelli e sulle due
+generazioni (51 volumi del banco su 52 e i tre documenti della rete delle cure mirate) non la ricevono; il volume che cambia e
+ogni libro sconosciuto sì. L'app riconosce un libro misurato dalla sua impronta (`sourceSha256`), senza guardarne le pagine: una
+copia identica al byte di un volume del banco è riconosciuta; una copia diversa o un altro libro ricevono l'offerta, compresi
+quelli con le pagine spostate. Le risorse visive che una lettura di prima aveva salvato su quelle pagine non si spostano: «Estrai
+come immagine» le ritaglia nello spazio in cui la lettura le ha salvate (livello delle cure della lettura), finché l'utente non
+rielabora, e anche se torna alla lettura precedente. Le letture arrivate dal Mac la ricevono dal Mac; i testi normativi non la
+ricevono. Limite dichiarato: una lettura preparata dal Mac con la cura 67, aperta su un iPad rimasto alla build 66, ha i riquadri
+nello spazio nuovo e l'iPad vecchio li ritaglierebbe spostati sulle pagine spostate; per questo la build dell'iPad esce prima di
+quella del Mac.
+
 ### 12.14 Un'annotazione non si sposta mai in silenzio (principio, 2026-10-07)
 
 Segnalibri, sottolineature e posizione di lettura sono ancorati al **contenuto** (impronte del testo normalizzato, mai il
@@ -1741,6 +1754,15 @@ sulle tre decisioni proposte dal giro «migliorie del banco nelle app» (`docs/B
     *21 novembre 2026.*
 28. **La richiesta classica di Apple resta spenta**: avrà un giro suo, con una stretta sulle testatine nel flusso, prima di
     accenderla. *21 novembre 2026.*
+
+*Esito del giro (21 novembre 2026, sera; misure in `docs/BANCO_OCR.md` § 45).* Il modulo condiviso dell'impaginazione è unito
+con la cura 67: sul banco cambia un solo volume, per una figura vera prima non annunciata; i 51 volumi identici e i tre documenti
+della rete delle cure mirate non ricevono l'offerta, gli altri libri sì (§ 12.13). Le risorse visive salvate prima non si
+spostano: «Estrai come immagine» le ritaglia nello spazio della lettura che le ha salvate (rilievo della revisione indipendente,
+corretto prima dell'unione). La verità dei posti ha la figura nuova, giudicata contro la pagina. Il sommario fittizio è corretto
+nel tronco comune: nessuna delle 109 pagine-sommario del corpus cambia, nessuna lettura del banco cambia, e sulle scansioni vere
+lette con Apple le pagine intere non lette passano da 2 a 0, con tutto il resto della rete del banco identico al byte. La richiesta
+classica di Apple resta spenta.
 
 ---
 

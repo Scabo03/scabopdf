@@ -1,15 +1,17 @@
-Build 66 — blocchi interi dopo le citazioni, segnalibri al loro posto
+Build 67 — tabelle e figure al posto giusto, pagine di quesiti lette
 
 Che cosa cambia
-- I blocchi di lettura non si interrompono più dopo le abbreviazioni delle citazioni, come «disp. trans.», «d. lgs.» o «et al.», né dopo le iniziali di un nome seguite dal cognome. Prima un blocco poteva cominciare a metà di una citazione, o subito dopo le iniziali di un autore. Lo stesso vale quando, dopo un punto, la frase continua con una parentesi o con una citazione.
-- Anche le note lunghe si dividono in pezzi più naturali, e alcune note brevi si leggono alla fine vera della loro frase invece che a metà.
-- Il testo resta identico, parola per parola: cambia solo dove comincia ogni blocco. I titoli non cambiano.
-- Per i libri che cambiano, l'app propone di rielaborarli con «Lettura migliore disponibile» nella Home. È una proposta: si può accettare o no, e si può sempre tornare alla lettura precedente. I libri che restano identici non ricevono la proposta.
-- Segnalibri, sottolineature e punto di lettura restano al loro posto quando un blocco ne contiene più d'uno. Cambiando granularità, un segnalibro che stava a metà di un blocco più grande ora si ritrova in quel blocco, e tornando alla granularità di prima torna esattamente dov'era. Se l'app non è sicura del punto, per esempio per una sottolineatura su una frase che compare due volte nello stesso blocco, lo dice con «da ricollocare»: non sposta mai nulla in silenzio.
+- In alcuni libri le pagine sono spostate rispetto al foglio: la parte stampata non comincia dall'angolo della pagina. Su quelle pagine l'app ora riconosce le tabelle e le figure nel punto giusto, e «Estrai come immagine» dà la parte giusta della pagina. Qualche figura che prima non veniva annunciata ora si annuncia.
+- Le pagine di quesiti con gli spazi da completare fra parentesi, come «[.....]», non sono più scambiate per un sommario: prima l'app le saltava intere, ora si leggono.
+- Il testo dei libri resta lo stesso, parola per parola; cambiano solo le figure annunciate su quelle pagine e le pagine di quesiti che prima mancavano.
+- Per i libri che possono cambiare, l'app propone di rielaborarli con «Lettura migliore disponibile» nella Home. È una proposta: si può accettare o no, e si può sempre tornare alla lettura precedente. I libri che l'app sa identici non ricevono la proposta.
+- Finché un libro non è rielaborato, «Estrai come immagine» ritaglia le sue tabelle e figure come prima, sempre nel punto giusto.
+- Segnalibri, sottolineature e punto di lettura restano al loro posto; se l'app non è sicura del punto lo dice con «da ricollocare»: non sposta mai nulla in silenzio.
 
 Che cosa non cambia
-- I testi normativi tengono la loro divisione per articoli e commi; in quelli con note lunghe che citano decreti cambia solo la divisione delle note in pezzi, e anche a loro l'app lo propone.
+- I testi normativi non ricevono nessuna proposta: per loro non cambia nulla.
+- Le letture arrivate dal Mac restano come sono: la lettura nuova arriva dal Mac, preparata con la sua nuova versione.
 
 Due cose da provare
-- Apri un libro con molte citazioni di leggi o di autori e accetta la proposta di rielaborazione, se compare: dicci se i blocchi cominciano dove ti aspetti.
-- Metti un segnalibro a metà di un capitolo, scegli «Piena — 1200 caratteri» in Impostazioni e riapri il libro, poi torna a «Fine — 400 caratteri»: dicci se il segnalibro è sempre al suo posto.
+- Se compare la proposta su un libro con figure o tabelle, accettala e prova «Estrai come immagine» su una figura: dicci se è la parte giusta della pagina.
+- Se hai un documento con pagine di quesiti con gli spazi da completare fra parentesi, accetta la proposta, se compare: dicci se quelle pagine si leggono.

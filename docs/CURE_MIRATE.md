@@ -144,6 +144,10 @@ Regole della build 63 (giro «rifiniture e cure per capacità»):
   iOS 26.5 e 27), con i tagli di nuovo dopo «lg.», «c.cons.», «c.n.», «Abs.», «all.» e dentro le date «giorno.mese.» seguite
   dall'anno. Sono forme che la misura sul banco non giustifica per ogni libro. «lgs.», «nav.» e «C.P.S.» sono ora anche nella
   lista generale: la sovrapposizione è innocua e la lista della regola resta quella della build 63.
+- **La cura 67** (giro «modulo e sommario», 2026-11-21: la resa del modulo dell'impaginazione e il sommario fittizio) lascia
+  **identici** i due documenti curati e il volume della prova alla cieca, nelle cinque forme della lettura, a tutti e quattro i
+  livelli e con iOS 26.5 e 27 (misurato): le loro impronte sono fra quelle che non ricevono l'offerta della 67, e le regole mirate
+  restano come sono.
 
 ## 5. Le reti di una cura mirata (obbligatorie)
 

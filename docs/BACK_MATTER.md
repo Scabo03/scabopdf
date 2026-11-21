@@ -76,7 +76,8 @@ auto-identificanti danno la precisione; lo scope dà solo il confine.
   `<anno>`", SIAE) + guardia di **pagina sparsa** (≤ 20 righe): una pagina di corpo
   densa che citasse un marcatore non viene scartata.
 - **Indice/sommario a leader → `TOC_GENERAL`.** Stesso regex leader del front-matter
-  (≥ 3 righe a leader puntinato). Cattura il sommario ripetuto (Compendio) e il
+  (≥ 3 righe a leader puntinato; i puntini fra parentesi dello stesso tipo non contano,
+  come nel front-matter: `hasIndexLeader`, dal 2026-11-21). Cattura il sommario ripetuto (Compendio) e il
   cronologico delle leggi (Codici). **Valutato PRIMA del fence analitico**: gli
   analitici sono senza leader, quindi non passano mai di qui.
 - **Indice dei nomi/fonti/sentenze → `INDEX_ENTRY`.** Ancorato al **titolo di

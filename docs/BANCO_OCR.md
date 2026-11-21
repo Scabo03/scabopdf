@@ -3784,6 +3784,7 @@ flusso (il metro della pagina singola le conta come testo), e qualche titolo tro
   esserlo: lì i numeri stanno su un'altra riga). Decisione per il maintainer; un giro con le reti dell'iPad.
 - **Dopo il giro** (campo): nella via GLM le due pagine si leggono (GLM scrive le lacune con meno puntini); nella via di Apple restano
   non lette (2 pagine, come nella fotografia). Le 11 pagine-sommario del livello B sono sommari veri.
+  *[Corretto nel giro «modulo e sommario» (2026-11-21, sera): le due pagine si leggono anche nella via di Apple, § 45.2.]*
 
 ### 44.5 Il modulo dell'impaginazione (ramo `feat/modulo-impaginazione-riquadro`, pubblicato, non unito)
 - **La correzione** (campo): nel modulo condiviso `ScaboPageStructure` la tela di `HeronPageRenderer.renderPage` ha la misura della
@@ -3835,7 +3836,8 @@ B pulito (4 → 5). Non migliora tutto ciò che si sente: non si accende. Propos
 
 ### 44.7 Residui
 - Numeri di nota letti come asterisco: restano (regola provata e ritirata, § 44.3).
-- Sommario fittizio delle pagine di quesiti nella via di Apple: decisione sul tronco comune (§ 44.4).
+- Sommario fittizio delle pagine di quesiti nella via di Apple: decisione sul tronco comune (§ 44.4). *[Corretto il 2026-11-21, sera:
+  § 45.2.]*
 - «$» attaccato al numero: resta «$» (10 conversioni giuste perse sul banco, § 44.3); importi col dollaro staccato e senza separatori
   diventerebbero «§» (nessun caso nel corpus, limite dichiarato).
 - Il modulo dell'impaginazione: ramo pronto, non unito (D1, D2; D3 latente; § 44.5).
@@ -3844,3 +3846,56 @@ B pulito (4 → 5). Non migliora tutto ciò che si sente: non si accende. Propos
   forma sul banco (sulle pagine con tabelle).
 - Il test d'interfaccia della scansione sceglie GLM se installato: a Mac carico (meno di 8 GB liberi) l'app rifiuta, come voluto; il
   test ora lo dice in pochi secondi.
+
+## 45. Giro «modulo e sommario» — il modulo dell'impaginazione unito e il sommario fittizio corretto (21 novembre 2026, sera)
+
+> Decisioni 26-28 di LAYER2 § 12.16. Referto nel laboratorio (`banco_ocr/REFERTO_MODULO_SOMMARIO.md`), misure in
+> `banco_ocr/modulo_sommario/misure/`. Etichette come nel resto del documento.
+
+### 45.1 Il modulo dell'impaginazione, unito
+- **In main** (campo): la resa della pagina come si mostra del § 44.5, con il livello delle cure 67 e la verità dei posti delle risorse
+  visive aggiornata (la figura nuova di v39, pagina 213, giudicata di nuovo contro la pagina: una fotografia con la didascalia, la
+  regione coincide coi suoi bordi; nella verità solo posizione, tipo e impronte del posto).
+- **Invarianza della cura 67** (campo): cinque forme della lettura, quattro livelli, due generazioni, catture della build 66 contro
+  quelle col modulo corretto: 51 volumi del banco su 52 identici (cambia v39, lettura con le risorse visive), i tre documenti della rete
+  delle cure mirate identici. Le loro 54 impronte non ricevono l'offerta; v39 e i libri sconosciuti sì.
+- **Le risorse visive salvate prima** (campo, rilievo della revisione indipendente): una lettura preparata prima della cura 67 ha i
+  riquadri nello spazio della resa di prima; «Estrai come immagine» li ritaglia in quello spazio (il ritaglio di prima, al byte) finché
+  la lettura non è rifatta, e anche dopo un ritorno alla lettura precedente; le letture dalla 67 sulla pagina come si mostra.
+- **Il Mac** (campo): importando da sé, l'app del Mac trova su v39 la stessa figura (rete della vista del Mac: una sola delle 36 righe
+  delle differenze dell'estrattore cambia, quella di v39, con un elemento e un rotore in più).
+
+### 45.2 Il sommario fittizio: prima e dopo
+- **La correzione** (campo): nel tronco comune un leader conta solo se non sta subito fra due parentesi dello stesso tipo, quadre o tonde
+  (al più con spazi dentro): le lacune da completare delle pagine di quesiti non fanno più di una pagina un sommario.
+- **Corpus** (campo, livello di testo, 55 documenti, 11.919 pagine di testa e di coda): pagine-sommario 109 prima e 109 dopo, nessuna
+  cambiata; nessuna riga con sole lacune fra parentesi. Catena dell'iPad sul banco (52 volumi, quattro livelli, due generazioni): il
+  sommario da solo non cambia nessuna lettura.
+- **La rete del banco delle scansioni** (campo; stato finale del giro «migliorie» contro la correzione; 44 corse, sotto sandbox, GLM dalla
+  cache): identità al byte su 9.357 letture su 9.360 e 2.974 pagine lette su 2.974; le 3 letture diverse sono del documento di quesiti
+  delle scansioni vere, via di Apple. Pagine-sommario su tutte le corse 53 → 51: tolte solo le due pagine di quesiti; i sommari veri
+  restano sommari (banco, livello B, estensione).
+
+  | scansioni vere (75 pagine), via | stato | parole perse % | inventate | domande ritrovate (su 35) | pagine non lette |
+  |---|---|---|---|---|---|
+  | Apple | prima | 20,20 | 23 | 31 | 2 |
+  | Apple | dopo | 5,29 | 26 | 34 | 0 |
+  | GLM | prima e dopo | 2,80 | 1 | 35 | 0 |
+
+  Banco (185 pagine), livello B con l'estensione (485) e ruotate (72): ogni misura identica prima e dopo. Le 3 parole «inventate» in più
+  sono errori del lettore di Apple sulle pagine ora lette (le righe lette dal lettore sono identiche al byte: la catena non aggiunge
+  parole). Contro la pagina: le pagine 1 e 4 del documento di quesiti hanno gli stessi segmenti, le pagine 2 e 3 si leggono (598 e 467
+  parole, prima 0) nell'ordine della pagina; alcune opzioni dei quesiti restano etichettate come note o titoli (limite già dichiarato).
+
+### 45.3 Residui
+- Una lettura del Mac preparata con la cura 67 e aperta su un iPad rimasto alla build 66 ha i riquadri nello spazio nuovo: sulle pagine
+  spostate l'iPad vecchio la ritaglierebbe spostata. Per questo l'iPad 67 esce prima del Mac 4.
+- Il posto della figura nuova di v39 è giudicato contro la pagina al livello 400 (la verità dei posti); a 600 e 1200 l'annuncio cade al
+  confine del blocco che attraversa il salto di pagina, come per ogni risorsa a quelle granularità.
+- Le pagine ruotate con testo: righe del testo non ruotate, resa e ritaglio ruotati (difetto latente; nel corpus nessuna pagina ruotata
+  nei PDF col testo; l'iPad esclude le ruotate dal riconoscimento).
+- Sulle scansioni le opzioni dei quesiti sono a volte etichettate come note o titoli; la richiesta classica di Apple resta spenta
+  (decisione 28).
+- Limiti della regola dei sommari, dichiarati (rilievo della revisione): contano ancora come leader, come prima, i puntini da
+  completare senza parentesi, quelli fra parentesi graffe o a larghezza piena, quelli con due spazi o spazi sottili fra un punto e
+  l'altro, e una lacuna spezzata su due righe. Nessun caso nel corpus; tre righe così su una pagina la farebbero ancora sommario.
