@@ -379,9 +379,19 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
             }
             if let testo {
                 letta.testoGlm = testo
-                // Variante B o C (solo laboratorio, spente nell'app); di serie la guardia stretta.
-                let g = varianti.glmSenzaGuardia ? LetturaScansioni.senzaGuardia(righe: righe, testoGlm: testo)
-                    : LetturaScansioni.guardia(righe: righe, testoGlm: testo, larga: varianti.guardiaLarga)
+                // Variante B o C (solo laboratorio, spente nell'app); di serie (miglioria `glm`, giro «migliorie del banco nelle app») il
+                // testo di GLM filtrato dalla notazione, senza la guardia stretta; con la miglioria spenta la guardia stretta di prima.
+                var g: (righe: [RigaLetta], conti: [String: Int])
+                if varianti.glmSenzaGuardia || varianti.guardiaLarga || !migliorie.glm {
+                    g = varianti.glmSenzaGuardia ? LetturaScansioni.senzaGuardia(righe: righe, testoGlm: testo)
+                        : LetturaScansioni.guardia(righe: righe, testoGlm: testo, larga: varianti.guardiaLarga)
+                } else {
+                    let filtrato = LetturaScansioni.senzaRipetizioni(LetturaScansioni.filtraNotazione(testo), righeApple: righe)
+                    g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: filtrato.testo, migliorata: true, altezzaPagina: H)
+                    var c = g.conti
+                    c["righe_ripetute_tolte"] = filtrato.tolte
+                    g = (g.righe, c)
+                }
                 letta.righe = g.righe
                 letta.guardia = g.conti
             }

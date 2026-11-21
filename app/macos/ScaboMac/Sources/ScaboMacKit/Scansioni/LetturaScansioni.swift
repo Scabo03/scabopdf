@@ -125,6 +125,10 @@ public struct RigaLetta: Codable, Equatable, Sendable {
     public var bbox: BBox
     public var regione: Int
     public var tipo: String?
+    /// Quanti caratteri aveva la riga di Apple da cui viene la geometria, quando il testo è di un altro lettore (GLM senza la guardia,
+    /// giro «migliorie del banco nelle app»): il corpo si stima dalla larghezza della riga divisa per i caratteri di QUEL testo, non di
+    /// quello che lo sostituisce. nil = il testo è quello della riga (la via di sempre: nessun campo in più nei dati).
+    public var caratteriApple: Int? = nil
 
     public init(testo: String, bbox: BBox, regione: Int, tipo: String? = nil) {
         self.testo = testo; self.bbox = bbox; self.regione = regione; self.tipo = tipo
@@ -474,7 +478,17 @@ public enum LetturaScansioni {
     /// prende la riga della parola di Apple a cui si allinea (quindi la regione e l'ordine di Heron); ciò che GLM aggiunge prende la
     /// riga della parola allineata precedente (la prima riga, all'inizio); ciò che solo Apple ha visto si toglie. Le etichette HTML
     /// delle tabelle di GLM si tolgono. La geometria resta quella delle righe di Apple.
-    public static func senzaGuardia(righe: [RigaLetta], testoGlm: String) -> (righe: [RigaLetta], conti: [String: Int]) {
+    ///
+    /// Con `migliorata` (miglioria `glm`, giro «migliorie del banco nelle app», 2026-11-21) tre differenze, misurate sul banco: i pezzi
+    /// fatti di soli segni (senza lettere né cifre: «§», «*») si allineano per quello che sono e non si appaiano fra loro; ciò che solo
+    /// Apple ha letto, dove GLM non scrive nulla, resta (GLM salta a volte il titolo di capitolo in cima alla pagina, come se fosse
+    /// un'intestazione); il corpo delle righe si stima sui caratteri della riga di Apple (`caratteriApple`). Dove leggono tutti e due,
+    /// vince GLM (sulle scansioni vere la guardia stretta rimetteva lì le righe sbagliate di Apple).
+    /// Ciò che solo Apple ha letto resta solo se non sta già nel testo di GLM (un allineamento sfasato lo ripeterebbe) e se non sta nelle
+    /// fasce alta e bassa della pagina (l'8 per cento: testatine e numeri di pagina, che GLM tralascia di proposito); `altezzaPagina` 0 =
+    /// nessuna fascia.
+    public static func senzaGuardia(righe: [RigaLetta], testoGlm: String, migliorata: Bool = false,
+                                    altezzaPagina: Double = 0) -> (righe: [RigaLetta], conti: [String: Int]) {
         var conti = ["allineate": 0, "aggiunte_glm": 0, "tolte_apple": 0]
         guard !righe.isEmpty else { return ([], ["senza_ancore": paroleGlm(testoGlm).count]) }
         var parole: [Int] = []   // la riga di ogni parola di Apple
@@ -484,7 +498,9 @@ public enum LetturaScansioni {
         }
         let pulito = testoGlm.replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
         let glm = paroleGlm(pulito)
-        let nv = testiV.map(normalizza), ng = glm.map(normalizza)
+        let allinea: (String) -> String = { s in let n = normalizza(s); return migliorata && n.isEmpty ? "\u{1}" + s : n }
+        let nv = testiV.map(allinea), ng = glm.map(allinea)
+        let paroleDiGlm = Set(ng)
         let diff = ng.difference(from: nv)
         var tolte = Set<Int>(), messe = Set<Int>()
         for c in diff {
@@ -499,6 +515,31 @@ public enum LetturaScansioni {
         // Una corsa di parole diverse: le parole di GLM vanno, una per una, sulle righe delle parole di Apple che sostituiscono
         // (le eccedenti sull'ultima); senza parole di Apple, sulla riga della parola allineata precedente.
         func chiudi() {
+            if migliorata, corsaG.isEmpty, !corsaV.isEmpty {
+                // Ciò che solo Apple ha letto resta, sulle sue righe e al suo posto, salvo che GLM l'abbia già scritto altrove o che stia
+                // nelle fasce della testatina e del piè.
+                let w = corsaV.map { nv[$0] }.filter { !$0.isEmpty }
+                // Già nel testo di GLM: per una corsa con almeno tre parole piene (quattro lettere o più), se almeno il 60 per cento di
+                // esse sta nel testo di GLM della pagina (Apple può averne sbagliata qualcuna, e il confronto esatto non la riconoscerebbe);
+                // per una corsa più breve, se una sua parola sta nel testo di GLM vicino al punto dell'allineamento.
+                let gia: Bool = {
+                    guard !w.isEmpty else { return true }
+                    let piene = w.filter { $0.count >= 4 && !$0.hasPrefix("\u{1}") }
+                    if piene.count >= 3 { return Double(piene.filter { paroleDiGlm.contains($0) }.count) >= 0.6 * Double(piene.count) }
+                    return w.contains { ng[max(0, j - 6)..<min(ng.count, j + 6)].contains($0) }
+                }()
+                let inFascia: (Int) -> Bool = { v in
+                    guard altezzaPagina > 0 else { return false }
+                    let b = righe[parole[v]].bbox
+                    return b.y > 0.92 * altezzaPagina || b.y + b.height < 0.08 * altezzaPagina
+                }
+                if !gia {
+                    for v in corsaV where !inFascia(v) { perRiga[parole[v]].append(testiV[v]); conti["tenute_apple", default: 0] += 1 }
+                }
+                if let u = corsaV.last { ultimaRiga = parole[u] }
+                corsaV.removeAll()
+                return
+            }
             for (k, g) in corsaG.enumerated() {
                 perRiga[corsaV.isEmpty ? ultimaRiga : parole[corsaV[min(k, corsaV.count - 1)]]].append(glm[g])
             }
@@ -521,9 +562,124 @@ public enum LetturaScansioni {
         chiudi()
         var uscita: [RigaLetta] = []
         for (k, r) in righe.enumerated() where !perRiga[k].isEmpty {
-            var c = r; c.testo = perRiga[k].joined(separator: " "); uscita.append(c)
+            var c = r; c.testo = perRiga[k].joined(separator: " ")
+            if migliorata { c.caratteriApple = r.testo.count }   // la geometria resta quella di Apple, e così il corpo
+            uscita.append(c)
         }
         return (uscita, conti)
+    }
+
+    // MARK: Il filtro della notazione di GLM (giro «migliorie del banco nelle app», 2026-11-21)
+
+    /// I comandi di LaTeX che GLM scrive e il segno che rappresentano (misurati sulla cache del banco: frecce, gradi, testo); gli altri
+    /// comandi si tolgono, il loro argomento resta.
+    static let comandiLatex: [String: String] = [
+        "rightarrow": "→", "leftarrow": "←", "Rightarrow": "⇒", "Leftarrow": "⇐", "leftrightarrow": "↔", "to": "→",
+        "circ": "°", "degree": "°", "cdot": "·", "times": "×", "S": "§", "P": "¶", "ldots": "…", "dots": "…",
+        "leq": "≤", "geq": "≥", "neq": "≠", "pm": "±", "approx": "≈", "%": "%", "&": "&", "$": "$", "_": "_", "#": "#",
+        ",": " ", ";": " ", ":": " ", "!": "", " ": " ", "quad": " ", "qquad": " ",
+    ]
+    static let comandiConArgomento: Set<String> = ["text", "mathrm", "textit", "textbf", "mathit", "mathbf", "emph", "textrm", "operatorname",
+                                                    "underline", "overline", "textsuperscript", "textsubscript", "mathsf", "mathtt", "texttt"]
+
+    /// IL FILTRO DELLA NOTAZIONE. Toglie dal testo di GLM i segni che VoiceOver direbbe ma che sulla pagina non ci sono: la notazione
+    /// matematica (dollari, comandi, graffe, apici e pedici: classe R1 del rumore udibile del banco, § 25.3 di docs/BANCO_OCR.md) e la
+    /// formattazione (etichette HTML, entità, grassetti, cancelletti dei titoli, barre e righe delle tabelle: classe R2), SENZA TOGLIERE
+    /// TESTO: lettere e cifre restano tutte (salvo i nomi dei comandi), e un comando che rappresenta un segno vero diventa quel segno
+    /// («\rightarrow» → «→», «^\circ» → «°», «\S» → «§»). Gli apici dei richiami («$^{12}$») restano nella forma che la catena riconosce
+    /// (diventano richiami solo se la nota con quel numero comincia sulla pagina, altrimenti la cifra: `spans`); un numero con l'apice
+    /// («$1990^{2}$») diventa il numero seguito dall'apice. Un «$» solo davanti a un numero resta (lo decide la regola del paragrafo).
+    public static func filtraNotazione(_ testo: String) -> String {
+        var t = testo
+        // Etichette HTML (le tabelle di GLM) ed entità.
+        t = t.replacingOccurrences(of: #"<[^<>]{1,200}>"#, with: " ", options: .regularExpression)
+        for (e, v) in [("&nbsp;", " "), ("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"), ("&quot;", "\""), ("&apos;", "'"), ("&#39;", "'")] {
+            t = t.replacingOccurrences(of: e, with: v)
+        }
+        // La notazione fra dollari, una formula per volta (anche fra doppi dollari). Due dollari senza alcun segno di notazione fra loro
+        // («$ 5 e $ 7») non sono una formula: restano, e li giudicano i passi dopo (il dollaro davanti a un numero resta per la regola
+        // del paragrafo, gli altri si tolgono).
+        t = sostituisci(#"\$\$?([^$\n]{1,120}?)\$\$?"#, in: t) { g in
+            g[1].range(of: #"[\^_\\{}]"#, options: .regularExpression) == nil ? g[0] : formula(g[1])
+        }
+        // Fuori dai dollari: gli apici scritti senza dollari, poi i comandi.
+        t = sostituisci(#"\^\s*\{\s*([0-9]{1,3})\s*\}"#, in: t) { g in "$^{\(g[1])}$" }
+        t = comandi(t)
+        // La formattazione: grassetti e sottolineature, cancelletti dei titoli, righe e barre delle tabelle.
+        t = t.replacingOccurrences(of: "**", with: "").replacingOccurrences(of: "__", with: "")
+        t = t.replacingOccurrences(of: #"(?m)^[ \t]*#{1,6}[ \t]+"#, with: "", options: .regularExpression)
+        t = t.replacingOccurrences(of: #"(?m)^[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(\|[ \t]*:?-{3,}:?[ \t]*)*\|?[ \t]*$"#, with: "", options: .regularExpression)
+        t = t.replacingOccurrences(of: "|", with: " ")
+        // Le graffe rimaste fuori dagli apici; un dollaro solo (non davanti a un numero, non dopo una sigla come «US»).
+        t = sostituisci(#"\$\^\{([0-9]{1,3})\}\$|[{}]"#, in: t) { g in g[1].isEmpty ? " " : "$^{\(g[1])}$" }
+        t = sostituisci(#"\$\^\{([0-9]{1,3})\}\$|(?<![A-Z])\$(?!\s?[0-9])"#, in: t) { g in g[1].isEmpty ? "" : "$^{\(g[1])}$" }
+        // Spazi doppi lasciati dai segni tolti (gli a capo restano).
+        t = t.replacingOccurrences(of: #"[ \t]{2,}"#, with: " ", options: .regularExpression)
+        return t
+    }
+
+    /// Una formula fra dollari, resa come testo: l'apice di un richiamo resta nella forma della catena; un numero o una parola con
+    /// l'apice diventa la base seguita dall'apice; i gradi diventano «°»; il resto perde comandi, graffe, apici e pedici.
+    static func formula(_ f: String) -> String {
+        let x = f.trimmingCharacters(in: .whitespaces)
+        if let g = gruppi(#"^\^\s*\{?\s*([0-9]{1,3})\s*\}?$"#, x) { return "$^{\(g[1])}$" }
+        if let g = gruppi(#"^([0-9A-Za-zÀ-ÿ.,'’]+?)\s*\^\s*\{?\s*([0-9]{1,3})\s*\}?$"#, x) { return g[1] + "$^{\(g[2])}$" }
+        if let g = gruppi(#"^([0-9.,]*)\s*\^\s*\{?\s*\\circ\s*\}?$"#, x) { return g[1] + "°" }
+        var t = comandi(x)
+        t = t.replacingOccurrences(of: #"[\^_{}]"#, with: " ", options: .regularExpression)
+        return t.replacingOccurrences(of: #"[ \t]{2,}"#, with: " ", options: .regularExpression).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// I comandi di LaTeX: quelli con argomento lasciano l'argomento, quelli di un segno diventano il segno, gli altri si tolgono.
+    static func comandi(_ testo: String) -> String {
+        var t = testo
+        for _ in 0..<3 {   // argomenti annidati (pochi livelli)
+            t = sostituisci(#"\\([A-Za-z]+)\s*\{([^{}]*)\}"#, in: t) { g in comandiConArgomento.contains(g[1]) ? g[2] : (comandiLatex[g[1]].map { $0 + g[2] } ?? g[2]) }
+        }
+        t = sostituisci(#"\\([A-Za-z]+|[^A-Za-z\s])"#, in: t) { g in comandiLatex[g[1]] ?? "" }
+        return t
+    }
+
+    /// I gruppi di un'espressione regolare sull'intera stringa (0 = tutto), o nil.
+    static func gruppi(_ rx: String, _ s: String) -> [String]? {
+        guard let r = try? NSRegularExpression(pattern: rx), let m = r.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)) else { return nil }
+        return (0..<m.numberOfRanges).map { m.range(at: $0).location == NSNotFound ? "" : String(s[Range(m.range(at: $0), in: s)!]) }
+    }
+
+    /// Ogni occorrenza dell'espressione sostituita da ciò che dà `con` sui suoi gruppi (0 = tutto; un gruppo mancante è vuoto).
+    static func sostituisci(_ rx: String, in s: String, con: ([String]) -> String) -> String {
+        guard let r = try? NSRegularExpression(pattern: rx) else { return s }
+        var out = "", ultimo = s.startIndex
+        for m in r.matches(in: s, range: NSRange(s.startIndex..., in: s)) {
+            guard let tutta = Range(m.range, in: s) else { continue }
+            out += s[ultimo..<tutta.lowerBound]
+            out += con((0..<m.numberOfRanges).map { m.range(at: $0).location == NSNotFound ? "" : String(s[Range(m.range(at: $0), in: s)!]) })
+            ultimo = tutta.upperBound
+        }
+        return out + s[ultimo...]
+    }
+
+    /// LA PROTEZIONE CONTRO LE RIPETIZIONI. Una riga di GLM di almeno quattro parole che GLM scrive più volte di quante la sequenza delle
+    /// sue parole compaia nelle righe di Apple della stessa pagina si dice una volta sola (le altre si tolgono, la prima resta): GLM a volte
+    /// ripete una riga (classe R4 del rumore udibile del banco); le righe ripetute davvero sulla pagina le vede anche Apple e restano.
+    public static func senzaRipetizioni(_ testo: String, righeApple: [RigaLetta]) -> (testo: String, tolte: Int) {
+        let apple = " " + righeApple.flatMap { $0.testo.split(whereSeparator: \.isWhitespace).map { normalizza(String($0)) } }.filter { !$0.isEmpty }
+            .joined(separator: " ") + " "
+        func occorrenze(_ ago: String) -> Int {
+            var n = 0, da = apple.startIndex
+            while let r = apple.range(of: " " + ago + " ", range: da..<apple.endIndex) { n += 1; da = apple.index(before: r.upperBound) }
+            return n
+        }
+        var viste: [String: Int] = [:], tolte = 0, righe: [Substring] = []
+        for riga in testo.split(separator: "\n", omittingEmptySubsequences: false) {
+            let parole = riga.split(whereSeparator: \.isWhitespace).map { normalizza(String($0)) }.filter { !$0.isEmpty }
+            guard parole.count >= 4 else { righe.append(riga); continue }
+            let k = parole.joined(separator: " ")
+            viste[k, default: 0] += 1
+            if viste[k]! > max(1, occorrenze(k)) { tolte += 1; continue }
+            righe.append(riga)
+        }
+        return (righe.joined(separator: "\n"), tolte)
     }
 
     /// SOLO LABORATORIO (variante F, spenta nell'app): le parole sillabate a fine riga ricomposte prima della catena. Una riga che
@@ -610,13 +766,13 @@ public enum LetturaScansioni {
     /// corpo), poi i picchi dell'istogramma su tutto il documento (poche misure: la catena ragiona per gruppi di dimensioni).
     public static func pagineEstratte(_ lette: [PaginaLetta]) -> [Int: PdfPageExtraction] {
         let stime = lette.map { stimeDiPagina($0.righe) }
-        let quantizza = picchi(zip(lette, stime).flatMap { p, st in zip(p.righe, st).map { ($0.1, Double($0.0.testo.count)) } })
+        let quantizza = picchi(zip(lette, stime).flatMap { p, st in zip(p.righe, st).map { ($0.1, Double(caratteri($0.0))) } })
         var uscita: [Int: PdfPageExtraction] = [:]
         for (pagina, st) in zip(lette, stime) {
             var p = pagina
             for k in p.righe.indices { p.righe[k].testo = numeroDiNotaInTesta(p.righe[k].testo) }
             let corpi = st.map(quantizza)
-            let corpoTesto = corpoPrevalente(zip(p.righe, corpi).flatMap { r, c in Array(repeating: c, count: max(1, r.testo.count / 10)) })
+            let corpoTesto = corpoPrevalente(zip(p.righe, corpi).flatMap { r, c in Array(repeating: c, count: max(1, caratteri(r) / 10)) })
             let note = numeriDiNota(p.righe, corpi: corpi, corpoTesto: corpoTesto)
             let linee = zip(p.righe, corpi).map { r, corpo -> PdfTextLine in
                 PdfTextLine(spans: spans(r, corpo: corpo, grassetto: titoloAmmesso(r, tra: p.righe),
@@ -628,15 +784,19 @@ public enum LetturaScansioni {
         return uscita
     }
 
+    /// I caratteri su cui si stima il corpo della riga: quelli della riga di Apple da cui viene la geometria (`caratteriApple`), se il testo
+    /// è di un altro lettore; altrimenti quelli del testo.
+    static func caratteri(_ r: RigaLetta) -> Int { r.caratteriApple ?? r.testo.count }
+
     /// La stima del corpo di ogni riga della pagina (prima dei gruppi).
     static func stimeDiPagina(_ righe: [RigaLetta]) -> [Double] {
         let proprie = righe.map { r -> Double in
-            r.testo.count >= caratteriMinimi ? rapportoLarghezza * r.bbox.width / Double(r.testo.count) : r.bbox.height * rapportoAltezza
+            caratteri(r) >= caratteriMinimi ? rapportoLarghezza * r.bbox.width / Double(caratteri(r)) : r.bbox.height * rapportoAltezza
         }
         var perRegione: [Int: [Double]] = [:]
-        for (r, e) in zip(righe, proprie) where r.testo.count >= caratteriMinimi { perRegione[r.regione, default: []].append(e) }
+        for (r, e) in zip(righe, proprie) where caratteri(r) >= caratteriMinimi { perRegione[r.regione, default: []].append(e) }
         return zip(righe, proprie).map { r, e in
-            guard r.testo.count >= caratteriMinimi, let v = perRegione[r.regione], v.count >= 2 else { return e }
+            guard caratteri(r) >= caratteriMinimi, let v = perRegione[r.regione], v.count >= 2 else { return e }
             let o = v.sorted()
             return (o[(o.count - 1) / 2] + o[o.count / 2]) / 2
         }
