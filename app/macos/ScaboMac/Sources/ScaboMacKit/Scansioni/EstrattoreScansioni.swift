@@ -385,6 +385,13 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
                 if varianti.glmSenzaGuardia || varianti.guardiaLarga || !migliorie.glm {
                     g = varianti.glmSenzaGuardia ? LetturaScansioni.senzaGuardia(righe: righe, testoGlm: testo)
                         : LetturaScansioni.guardia(righe: righe, testoGlm: testo, larga: varianti.guardiaLarga)
+                } else if LetturaScansioni.glmFermatoPresto(righe: righe, testoGlm: testo) {
+                    // GLM si è fermato presto: la pagina tiene la guardia di prima, che conserva le righe di Apple, invece di perderle
+                    // in silenzio (revisione indipendente del giro: su una pagina del banco 428 parole su 476).
+                    g = LetturaScansioni.guardia(righe: righe, testoGlm: testo)
+                    var c = g.conti
+                    c["glm_fermato_presto"] = 1
+                    g = (g.righe, c)
                 } else {
                     let filtrato = LetturaScansioni.senzaRipetizioni(LetturaScansioni.filtraNotazione(testo), righeApple: righe)
                     g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: filtrato.testo)

@@ -79,6 +79,17 @@ final class MiglioriScansioniTests: XCTestCase {
         XCTAssertEqual(g.conti["tolte_apple"], 5)
     }
 
+    /// GLM fermato presto: con almeno cento parole di Apple e meno della metà da GLM la pagina torna alla guardia di prima.
+    func test_glmFermatoPresto_soloSottoMetaConAlmenoCentoParole() {
+        func righe(_ n: Int) -> [RigaLetta] {
+            (0..<n).map { k in RigaLetta(testo: "parola di prova numero \(k)", bbox: BBox(x: 0, y: Double(k) * 12, width: 300, height: 10), regione: 0) }
+        }
+        let cento = righe(25)   // 25 righe da 5 parole: 125 parole di Apple
+        XCTAssertTrue(LetturaScansioni.glmFermatoPresto(righe: cento, testoGlm: String(repeating: "una parola ", count: 30)))
+        XCTAssertFalse(LetturaScansioni.glmFermatoPresto(righe: cento, testoGlm: String(repeating: "una parola ", count: 40)), "80 su 125: più della metà")
+        XCTAssertFalse(LetturaScansioni.glmFermatoPresto(righe: righe(10), testoGlm: "poche parole"), "pagina breve (50 parole di Apple): la regola non scatta")
+    }
+
     // MARK: il segno di paragrafo
 
     func test_paragrafo_soloDavantiAUnNumero_oRaddoppiato() {

@@ -631,6 +631,14 @@ public enum LetturaScansioni {
         return out + s[ultimo...]
     }
 
+    /// GLM FERMATO PRESTO. Su una pagina dove Apple legge almeno cento parole, GLM ne scrive meno della metà: la sua lettura si è
+    /// interrotta (o ha saltato quasi tutto), e senza la guardia stretta la pagina perderebbe in silenzio ciò che solo Apple ha letto.
+    /// Quella pagina tiene la guardia di prima. Sul banco del giro scatta su una pagina sola, nelle due forme (revisione indipendente).
+    public static func glmFermatoPresto(righe: [RigaLetta], testoGlm: String) -> Bool {
+        let apple = righe.reduce(0) { $0 + $1.testo.split(whereSeparator: \.isWhitespace).count }
+        return apple >= 100 && Double(paroleGlm(testoGlm).count) < 0.5 * Double(apple)
+    }
+
     /// LA PROTEZIONE CONTRO LE RIPETIZIONI. Una riga di GLM di almeno quattro parole UGUALE ALLA RIGA PRECEDENTE (GLM che si incanta e
     /// la riscrive di fila: classe R4 del rumore udibile del banco) si dice una volta sola, salvo che anche Apple la veda di fila tante
     /// volte. Le righe ripetute sparse nella pagina restano tutte: nella cache di GLM del giro le copie di righe di quattro o più parole
