@@ -10,6 +10,11 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.70 (21 novembre 2026, giro «migliorie del banco nelle app», livello pieno per la via delle scansioni del Mac (rete del
+> banco) e per il modulo condiviso (reti dell'iPad), **CONCLUSO** con la **build 3 del Mac** su TestFlight (VALID, note impostate,
+> solo tester interni): sul Mac le tabelle delle scansioni si annunciano, GLM perde molto meno testo (variante B col filtro della
+> notazione), il segno di paragrafo torna; il modulo dell'impaginazione è pronto ma **non unito** (ramo pubblicato, due decisioni del
+> maintainer); niente build dell'iPad. Report `docs/BANCO_OCR.md` § 44. Vedi lo STATO qui sotto.)
 > Versione: 2.69 (19-20 novembre 2026, giro «banco OCR, giro globale», livello medio con le reti per la correzione delle pagine ruotate
 > nell'app Mac e pieno per le misure, **CONCLUSO**: la lettura delle scansioni del Mac legge intere le pagine ruotate e col riquadro
 > spostato (radice: la resa della pagina; reti verdi; prova al contrario); misure sul corpus intero, sul campione largo e sulle scansioni
@@ -203,6 +208,43 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «migliorie del banco nelle app»: le migliorie dimostrate dal banco OCR nella via delle scansioni del Mac (tabelle annunciate, GLM senza la guardia stretta, segno di paragrafo), il modulo condiviso dell'impaginazione pronto ma non unito, la richiesta classica di Apple misurata — 2026-11-21 — CONCLUSO
+
+**Build:** iPad ultima **66**, prossima **67** (non usata: la Parte 5 non è unita); Mac ultima **3** (commit `4e470ce`, VALID, note impostate, solo tester interni), prossima **4**; la build 2
+ha la revisione beta esterna approvata.
+**Partenza:** `13d02d9` (main = origin), 11:56 del 21. **Rami:** `feat/mac-scansioni-migliorie` (Parti 1-4 e 6, unito in main con un
+avanzamento rapido, poi cancellato, locale e remoto); `feat/modulo-impaginazione-riquadro` (Parte 5, **pubblicato e NON unito**: aspetta
+le decisioni D1 e D2). Livello pieno per la via delle scansioni del Mac (rete del banco) e per il modulo (reti dell'iPad), leggero per i
+documenti. Nessun file sotto `app/ios` cambiato in main. Laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/migliorie/`; referto
+`banco_ocr/REFERTO_MIGLIORIE.md`; report `docs/BANCO_OCR.md` § 44; decisioni 23-25 in LAYER2 § 12.16 con l'esito.
+
+- **Parte 1 — tabelle delle scansioni**: le regioni «tabella» e «figura» del modello sulle pagine lette diventano risorse visive della
+  catena, annunciate come sull'iPad; il testo resta nel flusso. Banco 17-18 tabelle su 19; livello B 3 annunciate, tutte vere (guardate).
+- **Parte 2 — GLM senza la guardia stretta**: la via GLM è la variante B più il filtro della notazione (etichette HTML da un elenco
+  chiuso) e la protezione dagli anelli; meglio della variante B sul rumore udibile in tutti gli insiemi e uguale o migliore sul resto;
+  sulle scansioni vere parole perse 19,84 → 2,80 per cento. Quattro parti provate e ritirate (corse di sola Apple, copie identiche di
+  Apple, corpo sui caratteri di Apple, allineamento a parte dei segni): rete del banco e revisione indipendente.
+- **Parte 3 — «$» e asterischi**: «$ N» → «§ N» solo staccato o raddoppiato (mai dopo la chiusura di un apice, mai su quattro cifre
+  attaccate); occorrenza per occorrenza nessuna conversione sbagliata sul banco; livello B «§» letti 96 → 358 su 418 (Apple). I numeri
+  di nota letti come asterisco: regola ritirata (4 numeri messi, 4 sbagliati).
+- **Parte 4 — sommario fittizio**: causa nel tronco comune (`GenericPlugin.isFrontMatterIndex`, puntini delle lacune); proposta:
+  escludere i puntini fra parentesi (109 pagine-sommario del corpus invariate); non toccato.
+- **Parte 5 — modulo dell'impaginazione**: resa della pagina come si mostra in `ScaboPageStructure`, un codice per iPad e Mac; reti
+  dell'iPad verdi (1 figura nuova su 52 volumi, giudicata), annotazioni ai quattro livelli verdi, cure mirate verdi, prova al
+  contrario; via delle scansioni del Mac identica al byte. **Non unito**: D1 (risorse visive già salvate su pagine col riquadro
+  spostato: il ritaglio nuovo prenderebbe la regione sbagliata; servono un livello delle cure 67 e l'offerta, fuori perimetro), D2
+  (verità dei posti del repo senza la figura nuova: rete rossa), D3 latente (pagine ruotate con testo nella lettura migliore del Mac).
+- **Parte 6 — richiesta classica di Apple**: misurata, non accesa; meglio su parole perse, rumore, note, asterischi, scansioni vere;
+  peggio su testatine nel flusso, titoli in più (degradata), «§» del livello B, una pagina non letta.
+- **Verifiche**: rete del banco prima e dopo (§ 44.2), migliorie spente identiche al byte (una pagina instabile del lettore di Apple
+  rifatta identica), test d'unità e d'interfaccia del Mac, FuocoDaFuori, rete sul parlato, vista del Mac contro l'iPad sui 55 libri,
+  testo dei volumi e segreti a zero; revisioni indipendenti dei due rami (rilievi e risposte nel referto).
+- **Da dove riprendere / decisioni per il maintainer**: (1) Parte 5: livello delle cure 67 con l'invarianza già misurata (51 su 52
+  volumi identici) e la verità dei posti aggiornata, poi unione e build dell'iPad; (2) il sommario fittizio nel tronco comune; (3) la
+  richiesta classica di Apple come predefinita (compromessi nel § 44.6).
 
 ---
 

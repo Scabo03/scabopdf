@@ -7,8 +7,9 @@ comune** (da leggere sempre), **la parte iPad**, **la parte Mac**. Il caricament
 chiede o lo conferma, ogni volta (`CLAUDE.md`, «Commit & push workflow»).
 
 **Stato delle build** (da aggiornare a ogni caricamento, insieme alla riga di stato del CARRYOVER):
-**iPad** — ultima build **66** (2026-11-11, commit `814b562`), prossima **67**. **Mac** — ultima build **2** (2026-11-18, commit
-`d4d4d60`; revisione beta per il gruppo esterno «ScaboPDF Prova esterna» approvata, campo 2026-11-21), prossima **3**.
+**iPad** — ultima build **66** (2026-11-11, commit `814b562`), prossima **67**. **Mac** — ultima build **3** (2026-11-21, commit
+`4e470ce`; solo tester interni), prossima **4**; la build 2 (2026-11-18, commit `d4d4d60`) ha la revisione beta per il gruppo esterno
+«ScaboPDF Prova esterna» approvata (campo 2026-11-21).
 *[Fino al 21 novembre questa riga diceva ancora «ultima 1, prossima 2» per il Mac: una svista del giro della build 2, corretta.]*
 
 > Storia del metodo: una versione molto vecchia di questa nota ipotizzava «Xcode GUI Archive→Distribute»; era sbagliata. Il
@@ -763,7 +764,7 @@ caricata col riuso (sotto, «Storia delle build del Mac»).
   la build 1 14 ore di attesa). La regola provvisoria «nessun commit nel codice dell'app fra `valida` e `beta`» è tolta: il controllo
   ora la fa da sé, più stretta (qualunque commit).]*
 
-## Numero di build del Mac (prossima: 3)
+## Numero di build del Mac (prossima: 4)
 
 - **Numero di versione e di build:** versione 1.0, come la versione macOS del record. La build del Mac ha la sua serie, distinta
   da quella dell'iPad (App Store Connect Help sull'acquisto universale: le app degli altri sistemi «may each have different
@@ -829,6 +830,21 @@ diario alla volta»; precisato perché senza elencare la cartella non si sa il n
 usa «Esporta il diario…» e lo salva nella cartella Download, che è libera.
 
 ## Storia delle build del Mac
+
+- **Build 3 del Mac (versione 1.0) — 2026-11-21, commit `4e470ce` di main** (giro «migliorie del banco nelle app», livello pieno per la
+  via delle scansioni del Mac con la rete del banco: tabelle delle scansioni annunciate come sull'iPad; GLM senza la guardia stretta,
+  cioè la variante B col filtro della notazione e la protezione dagli anelli, con la guardia di prima solo dove GLM si ferma presto; il
+  segno di paragrafo; LAYER2 § 12.16 decisioni 23-25 con l'esito; `docs/BANCO_OCR.md` § 44; `docs/CARRYOVER.md` STATO del 2026-11-21).
+  Note committate prima della corsia (`fastlane mac note_tester` exit 0, 2.699 caratteri). **Portachiavi: nessuna domanda.** `fastlane
+  mac valida` exit 0, «VERIFY SUCCEEDED with no errors» alle 18:29:35 (versione 1.0, build 3, Xcode 27.2, SDK macOS 27.2).
+  `SCABOMAC_RIUSA_PACCHETTO=1 fastlane mac beta` da main: build 3 calcolata dal record («Latest upload … on osx platform is build: 2»),
+  pacchetto riusato (commit `4e470ce3af23`, lo HEAD, albero pulito), altool «UPLOAD SUCCEEDED with no errors» alle 18:32:39, Delivery
+  UUID `44d2ef6d-7b30-4296-929e-cfe879a32350`; subito dopo l'errore del file di ripresa, corsia uscita con exit 1 prima
+  dell'elaborazione e delle note (atteso, dalla build 62). Nessun rilancio: verifica con la chiave API filtrata per piattaforma (build 3
+  MAC_OS 1.0 caricata alle 18:33:33, VALID, tester interni IN_BETA_TESTING, esterni non coinvolti), impostato il solo «Cosa testare»
+  (it) dal file `app/macos/ScaboMac/fastlane/COSA_TESTARE.txt` e riletto: 2.699 caratteri, identico al file. Pacchetto di 169.854.253
+  byte, SHA-256 che comincia con `946314237e27d0c8`. Ultima build dell'iPad invariata (66, VALID, note di 2.013 caratteri); conteggio
+  dopo: ultima dell'iPad 66, ultima del Mac 3. Il `log stream` nato durante la corsia (altool) fermato per PID. Nessun tester aggiunto.
 
 - **Build 2 del Mac (versione 1.0) — 2026-11-18, commit `d4d4d60` di main** (giro «modelli e scansioni», livello pieno per la catena
   condivisa e leggero per l'app Mac: le scansioni lette sul Mac, la lettura migliore che arriva da sola, le scelte nella schermata
