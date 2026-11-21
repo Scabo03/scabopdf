@@ -1699,6 +1699,23 @@ TestFlight (build 1 del Mac), col diario acceso:
     fino alla pubblicazione vera sull'App Store**: Surya, docling, Granite Docling, Qwen e Phi. Non si scaricano e non si
     eseguono; non si tolgono e non si nascondono. La decisione 16 resta valida per il prodotto pubblicato. *18 novembre 2026.*
 
+**Tre decisioni del maintainer del 21 novembre 2026**, registrate all'apertura del giro «migliorie del banco nelle app»
+(2026-11-21), dopo i tre giri del banco OCR (`docs/BANCO_OCR.md`):
+
+23. **Prima di altri giri di raccolta dati si portano nelle app, Mac e iPad, i miglioramenti che il banco OCR ha già
+    dimostrato**, così i giri successivi misurano l'app migliorata: nella via delle scansioni del Mac le tabelle annunciate
+    (variante D del giro 2), la guardia di GLM sostituita da un filtro della notazione, il segno di paragrafo e i numeri di nota
+    letti male dal lettore di Apple, il sommario fittizio; nel modulo condiviso dell'impaginazione la resa delle pagine col
+    riquadro di ritaglio spostato, come già nella via delle scansioni del Mac. La richiesta classica di Apple si misura soltanto:
+    non si accende. *21 novembre 2026.*
+24. **Il banco delle scansioni è la rete di questi cambiamenti**: ogni correzione si misura lì prima e dopo, con le misure del
+    banco (parole perse e inventate, rumore udibile, titoli, note, tabelle, didascalie, testatine nel flusso, segni di paragrafo,
+    asterischi, pagine non lette); con le correzioni spente la via delle scansioni resta identica al byte a com'era. Una regola che
+    produce anche una sola regressione per chi ascolta si restringe o si ritira. *21 novembre 2026.*
+25. **Restano fuori da questo giro**, ciascuna per un giro suo: le glosse fittizie dei codici (la correzione non è ancora
+    disegnata né misurata e tocca il tronco comune); egret-large al posto di Heron; Xiaomi-OCR-0 nel catalogo (ripete intere
+    parti di pagina); le scansioni sull'iPad (una funzione nuova; resta valida la decisione 21). *21 novembre 2026.*
+
 ---
 
 ## 13. Ricerca testuale
