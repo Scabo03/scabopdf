@@ -848,15 +848,17 @@ public enum LetturaScansioni {
 
     // MARK: Il segno di paragrafo (giro «migliorie del banco nelle app», 2026-11-21)
 
-    /// IL SEGNO DI PARAGRAFO. «$» → «§» e «$$» → «§§» solo davanti a un numero che non è un importo (né migliaia né decimali con la
-    /// virgola), mai dopo una lettera o una cifra («US$», «100$») né davanti all'apice di un richiamo («$^{12}$»). Mai il «$» che chiude
-    /// un apice o una formula («$^{3}$1998»: l'edizione in apice davanti all'anno, come la scrive GLM) e mai un «$» attaccato a un numero
-    /// di quattro o più cifre («$1998»: lo stesso apice letto da Apple come dollaro). Misura del corpus (letture dell'iPad dei 55 libri):
-    /// nessun «§» vero è attaccato a più di tre cifre (59 attaccati, tutti da una a tre cifre); quelli davanti a un anno hanno lo spazio.
-    /// Il resto della misura nel commento di `MiglioriScansioni.paragrafo`.
+    /// IL SEGNO DI PARAGRAFO. «$ N» → «§ N» (il dollaro singolo SOLO se seguito da uno spazio) e «$$ N» o «$$N» → «§§», davanti a un
+    /// numero che non è un importo (né migliaia né decimali con la virgola), mai dopo una lettera o una cifra («US$», «100$») né davanti
+    /// all'apice di un richiamo («$^{12}$»). Mai il «$» che chiude un apice o una formula («$^{3}$1998»: l'edizione in apice davanti
+    /// all'anno, come la scrive GLM), mai davanti a quattro o più cifre attaccate («$$1962»), e mai il dollaro singolo attaccato al numero
+    /// («$8»): così Apple legge anche i richiami e le edizioni in apice («eziologica $8.», «$1998»). Misure: nel corpus (letture dell'iPad
+    /// dei 55 libri) i «§» veri attaccati al numero sono 59 su più di 8.300, tutti da una a tre cifre; sul banco, conversioni del dollaro
+    /// singolo con lo spazio confermate dalla verità della pagina 332 su 332 (Apple), attaccate 10 su 16. Il resto della misura nel
+    /// commento di `MiglioriScansioni.paragrafo`.
     public static func segnoDiParagrafo(_ t: String) -> String {
         guard t.contains("$") else { return t }
-        return sostituisci(#"(?<![\p{L}\p{N}$}])(\$\$?)(?!\d{4})(?=\s?\p{N})(?!\s?\d{1,3}(?:[.,]\d{3})+)(?!\s?\d+,\d{2}\b)(?!\s?\d+\$)"#, in: t) { g in
+        return sostituisci(#"(?<![\p{L}\p{N}$}])(\$\$(?=\s?\p{N})|\$(?=\s\p{N}))(?!\$)(?!\d{4})(?!\s?\d{1,3}(?:[.,]\d{3})+)(?!\s?\d+,\d{2}\b)(?!\s?\d+\$)"#, in: t) { g in
             g[1] == "$$" ? "§§" : "§"
         }
     }

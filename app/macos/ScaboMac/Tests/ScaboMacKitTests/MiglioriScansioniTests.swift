@@ -58,14 +58,16 @@ final class MiglioriScansioniTests: XCTestCase {
     func test_paragrafo_soloDavantiAUnNumero_oRaddoppiato() {
         let P = LetturaScansioni.segnoDiParagrafo
         XCTAssertEqual(P("come al $ 12 del capitolo"), "come al § 12 del capitolo")
-        XCTAssertEqual(P("nei $$ 3-5 e al $4.2"), "nei §§ 3-5 e al §4.2")
+        XCTAssertEqual(P("nei $$ 3-5 e al $ 4.2"), "nei §§ 3-5 e al § 4.2")
+        XCTAssertEqual(P("nei $$12 e $$ 13"), "nei §§12 e §§ 13")
         XCTAssertEqual(P("(cfr. $ 7)"), "(cfr. § 7)")
         for t in ["costa US$ 100", "un importo di $ 1.000", "pari a $ 5,50 al mese", "100$ in tutto", "la parola$^{12}$", "il $x e il $", "il valore $5$"] {
             XCTAssertEqual(P(t), t, "«\(t)»: denaro o notazione, resta")
         }
-        // L'edizione in apice davanti all'anno: il «$» che chiude l'apice (GLM) e il «$» attaccato all'anno (Apple) non diventano «§»;
+        // L'edizione in apice davanti all'anno e il richiamo in apice: il «$» che chiude l'apice (GLM) e il dollaro singolo attaccato al
+        // numero (Apple) non diventano «§»;
         // un «§» vero davanti a un numero di quattro cifre ha lo spazio, e resta convertito.
-        for t in ["Milano, $^{3}$1998; trad.", "una nota.$^{169}$ 5. e poi", "Roma, $1998; trad.", "al $$1962 e"] {
+        for t in ["Milano, $^{3}$1998; trad.", "una nota.$^{169}$ 5. e poi", "Roma, $1998; trad.", "al $$1962 e", "la causa prima $8. Poi", "al $4.2 del testo"] {
             XCTAssertEqual(P(t), t, "«\(t)»: un apice o un anno, resta")
         }
         XCTAssertEqual(P("il $ 1922 del codice"), "il § 1922 del codice")

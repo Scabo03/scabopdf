@@ -23,10 +23,10 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
     /// righe che GLM ripete più volte di quante le veda Apple (classe R4) si dicono una volta sola.
     public var glm = true
     /// Il segno di paragrafo: il lettore di Apple scrive «$» al posto di «§», e VoiceOver tace il dollaro. «$» diventa «§» solo dove il
-    /// corpus mostra un segno di paragrafo: davanti a un numero (non un importo con le migliaia o i decimali) o raddoppiato, mai dopo una
-    /// sigla («US$») né dopo un numero, mai il «$» che chiude un apice né un «$» attaccato a quattro o più cifre (l'edizione in apice
-    /// davanti all'anno). Misura del giro: nei 55 documenti del corpus 14.826 «§», 12.148 davanti a un numero e 758 doppi, nessuno
-    /// attaccato a più di tre cifre; 2 «$» veri, nessuno in quei contesti.
+    /// corpus mostra un segno di paragrafo: davanti a un numero (non un importo con le migliaia o i decimali), staccato da uno spazio
+    /// («$ 12») o raddoppiato («$$ 3»), mai dopo una sigla («US$») né dopo un numero, mai il «$» che chiude un apice, mai il dollaro
+    /// singolo attaccato al numero (Apple legge così i richiami e le edizioni in apice). Misura del giro: nei 55 documenti del corpus
+    /// 14.826 «§», 12.148 davanti a un numero e 758 doppi; 2 «$» veri, nessuno in quei contesti.
     ///
     /// (I numeri di nota letti come asterisco: provata e RITIRATA nello stesso giro. Il numero ricavato dalla sequenza delle note o
     /// dall'unico richiamo senza nota era sbagliato in 4 casi su 4 sul banco, perché gli elenchi dentro le note e le cifre lette male
