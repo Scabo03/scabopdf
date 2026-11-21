@@ -850,11 +850,14 @@ public enum LetturaScansioni {
     // MARK: Il segno di paragrafo e i numeri di nota (giro «migliorie del banco nelle app», 2026-11-21)
 
     /// IL SEGNO DI PARAGRAFO. «$» → «§» e «$$» → «§§» solo davanti a un numero che non è un importo (né migliaia né decimali con la
-    /// virgola), mai dopo una lettera o una cifra («US$», «100$») né davanti all'apice di un richiamo («$^{12}$»). Misura del corpus nel
-    /// commento di `MiglioriScansioni.paragrafo`.
+    /// virgola), mai dopo una lettera o una cifra («US$», «100$») né davanti all'apice di un richiamo («$^{12}$»). Mai il «$» che chiude
+    /// un apice o una formula («$^{3}$1998»: l'edizione in apice davanti all'anno, come la scrive GLM) e mai un «$» attaccato a un numero
+    /// di quattro o più cifre («$1998»: lo stesso apice letto da Apple come dollaro). Misura del corpus (letture dell'iPad dei 55 libri):
+    /// nessun «§» vero è attaccato a più di tre cifre (59 attaccati, tutti da una a tre cifre); quelli davanti a un anno hanno lo spazio.
+    /// Il resto della misura nel commento di `MiglioriScansioni.paragrafo`.
     public static func segnoDiParagrafo(_ t: String) -> String {
         guard t.contains("$") else { return t }
-        return sostituisci(#"(?<![\p{L}\p{N}$])(\$\$?)(?=\s?\p{N})(?!\s?\d{1,3}(?:[.,]\d{3})+)(?!\s?\d+,\d{2}\b)(?!\s?\d+\$)"#, in: t) { g in
+        return sostituisci(#"(?<![\p{L}\p{N}$}])(\$\$?)(?!\d{4})(?=\s?\p{N})(?!\s?\d{1,3}(?:[.,]\d{3})+)(?!\s?\d+,\d{2}\b)(?!\s?\d+\$)"#, in: t) { g in
             g[1] == "$$" ? "§§" : "§"
         }
     }
@@ -862,8 +865,10 @@ public enum LetturaScansioni {
     /// I NUMERI DI NOTA LETTI COME ASTERISCO. Una riga di nota (corpo minore del testo, nella metà bassa, come `numeriDiNota`) che comincia
     /// con «*» seguito da uno spazio o da una lettera prende il numero vero quando si ricava con certezza: dalla sequenza delle note della
     /// pagina (fra la nota N-1 sopra e la N+1 sotto è la N), oppure, se è l'unica riga così della pagina, dall'unico numero attaccato a una
-    /// parola del testo che resta senza nota (e che non contraddice la sequenza). Altrimenti l'asterisco si toglie e la nota resta senza
-    /// numero. Se nel testo della pagina c'è un richiamo «*» vero (attaccato a una parola), l'asterisco resta: è una nota con l'asterisco.
+    /// parola del testo che resta senza nota (e che non contraddice la sequenza). Altrimenti la riga resta com'è, con l'asterisco: è il
+    /// segno d'inizio della nota per la catena, e toglierlo fonde la nota con quella sopra (misurato sul banco: quattro note di una pagina
+    /// lette come una nota sola con tre continuazioni, tre note agganciate in meno). Se nel testo della pagina c'è un richiamo «*» vero
+    /// (attaccato a una parola), l'asterisco resta: è una nota con l'asterisco.
     static func numeriDiNotaDagliAsterischi(_ righe: [RigaLetta], corpi: [Double], corpoTesto: Double) -> [RigaLetta] {
         guard let alto = righe.map({ $0.bbox.y + $0.bbox.height }).max(), alto > 0 else { return righe }
         let inNota: (Int) -> Bool = { k in corpi[k] < corpoTesto && righe[k].bbox.y < alto / 2 }
@@ -908,8 +913,9 @@ public enum LetturaScansioni {
             if let a = sopra, let b = sotto, b == a + 2 { n = a + 1 }
             else if candidate.count == 1, senzaNota.count == 1, let m = senzaNota.first, sopra.map({ m == $0 + 1 }) ?? true,
                     sotto.map({ m == $0 - 1 }) ?? true, !noteDellaPagina.contains(m) { n = m }
+            guard let trovato = n else { continue }
             let resto = String(righe[k].testo.drop { $0 == " " }.dropFirst().drop { $0 == " " })
-            out[k].testo = n.map { "\($0) \(resto)" } ?? resto
+            out[k].testo = "\(trovato) \(resto)"
         }
         return out
     }

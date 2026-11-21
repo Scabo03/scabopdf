@@ -64,6 +64,16 @@ final class MiglioriScansioniTests: XCTestCase {
         for t in ["costa US$ 100", "un importo di $ 1.000", "pari a $ 5,50 al mese", "100$ in tutto", "la parola$^{12}$", "il $x e il $", "il valore $5$"] {
             XCTAssertEqual(P(t), t, "«\(t)»: denaro o notazione, resta")
         }
+        // L'edizione in apice davanti all'anno: il «$» che chiude l'apice (GLM) e il «$» attaccato all'anno (Apple) non diventano «§»;
+        // un «§» vero davanti a un numero di quattro cifre ha lo spazio, e resta convertito.
+        for t in ["Milano, $^{3}$1998; trad.", "una nota.$^{169}$ 5. e poi", "Roma, $1998; trad.", "al $$1962 e"] {
+            XCTAssertEqual(P(t), t, "«\(t)»: un apice o un anno, resta")
+        }
+        XCTAssertEqual(P("il $ 1922 del codice"), "il § 1922 del codice")
+        // Come nella via GLM: prima il filtro della notazione, poi il segno di paragrafo.
+        for grezzo in ["Milano, $^{3}$1998; trad.", "Milano, $^3$1977. Roma", "una nota.$^{169}$ 5. e poi"] {
+            XCTAssertFalse(P(LetturaScansioni.filtraNotazione(grezzo)).contains("§"), "«\(grezzo)»: nessun «§» inventato")
+        }
     }
 
     // MARK: i numeri di nota letti come asterisco
@@ -89,17 +99,18 @@ final class MiglioriScansioniTests: XCTestCase {
         XCTAssertEqual(r.last?.testo, "4 Unica nota della pagina.")
     }
 
-    func test_numeriDiNota_senzaCertezza_nessunNumero_maiInventato() {
-        // Due asterischi senza sequenza che li fissi, nessun richiamo: le note restano senza numero.
+    /// Senza certezza la riga resta com'è, con l'asterisco: è il segno d'inizio della nota (toglierlo fonde la nota con quella sopra).
+    func test_numeriDiNota_senzaCertezza_nessunNumero_maiInventato_lAsteriscoResta() {
+        // Due asterischi senza sequenza che li fissi, nessun richiamo.
         let p = pagina(corpo: ["un testo senza richiami", "e un altro"], note: ["* Prima nota.", "* Seconda nota."])
         let r = LetturaScansioni.numeriDiNotaDagliAsterischi(p.righe, corpi: p.corpi, corpoTesto: 10)
-        XCTAssertEqual(r.map(\.testo).suffix(2), ["Prima nota.", "Seconda nota."])
+        XCTAssertEqual(r.map(\.testo).suffix(2), ["* Prima nota.", "* Seconda nota."])
         // Due richiami senza nota e un asterisco: non si sceglie.
         let q = pagina(corpo: ["con due richiami7 e richiami9 nel testo", "fine"], note: ["* Una nota."])
-        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(q.righe, corpi: q.corpi, corpoTesto: 10).last?.testo, "Una nota.")
+        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(q.righe, corpi: q.corpi, corpoTesto: 10).last?.testo, "* Una nota.")
         // Il richiamo che contraddice la sequenza (la nota sopra è la 5, il richiamo il 9): nessun numero.
         let s = pagina(corpo: ["con un richiamo9 nel testo", "fine"], note: ["5 Nota cinque.", "* Nota dopo."])
-        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(s.righe, corpi: s.corpi, corpoTesto: 10).last?.testo, "Nota dopo.")
+        XCTAssertEqual(LetturaScansioni.numeriDiNotaDagliAsterischi(s.righe, corpi: s.corpi, corpoTesto: 10).last?.testo, "* Nota dopo.")
     }
 
     func test_numeriDiNota_asteriscoVeroNelTesto_resta() {
