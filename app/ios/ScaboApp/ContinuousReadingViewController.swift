@@ -118,6 +118,10 @@ final class ContinuousReadingViewController: UIViewController {
     /// Id del documento (per la persistenza della posizione di lettura). Vuoto se non pertinente
     /// (es. test che istanziano il lettore senza libreria).
     private let documentId: String
+    /// L'etichetta del livello delle cure della lettura che questa vista MOSTRA, presa quando la vista la carica: i riquadri delle
+    /// sue risorse visive si ritagliano nel suo spazio anche se, dall'altra metà dello split, il libro viene rielaborato o torna
+    /// alla lettura precedente mentre questa resta a schermo (giro «modulo e sommario», 2026-11-21, rilievo della revisione).
+    private var shownReadingProcessedAppBuild: String?
 
     /// Posizione di lettura da ripristinare all'apertura (§ 2.5): indice 0-based nel flusso. 0 =
     /// inizio (nessun ripristino, VoiceOver si posa sul primo elemento).
@@ -260,6 +264,8 @@ final class ContinuousReadingViewController: UIViewController {
         self.embedded = embedded
         self.signalPlayer = signalPlayer
         super.init(nibName: nil, bundle: nil)
+        // La lettura che questa vista mostra è quella data qui: la sua etichetta si fissa ora (spazio dei riquadri da ritagliare).
+        shownReadingProcessedAppBuild = libraryStore.document(id: documentId)?.processedAppBuild
     }
 
     /// Modalità EMBEDDED (§ 11): quando `true`, il VC è una METÀ dello split e NON gestisce da sé il
@@ -1531,8 +1537,8 @@ extension ContinuousReadingViewController: ReadingElementCoordinator {
     /// Come sopra, con la vista a cui ancorare il popover (la reading view o l'albero della Consultazione Rapida).
     func extractVisualResource(_ payload: VisualResourcePayload, sourceView: UIView, sourceRect: CGRect) {
         let source = LibraryService.shared.archivedPDFURL(forDocumentId: documentId)
-        // I riquadri si ritagliano nello spazio in cui la lettura in uso li ha salvati (cura 67, giro «modulo e sommario»).
-        let space = VisualResourceExport.regionSpace(processedAppBuild: libraryStore.document(id: documentId)?.processedAppBuild)
+        // I riquadri si ritagliano nello spazio in cui la lettura mostrata li ha salvati (cura 67, giro «modulo e sommario»).
+        let space = VisualResourceExport.regionSpace(processedAppBuild: shownReadingProcessedAppBuild)
         UIAccessibility.post(notification: .announcement, argument: "Preparo l'immagine.")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let result = VisualResourceExport.makePNG(sourcePDF: source, payload: payload, space: space)

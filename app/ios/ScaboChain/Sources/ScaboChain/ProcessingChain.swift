@@ -183,8 +183,9 @@ public enum ProcessingChain {
     /// misurati identici (`aknActsUnchangedByCure`).
     /// 67: la resa della pagina come si mostra nel modulo condiviso dell'impaginazione (giro «modulo e sommario», 2026-11-21,
     /// decisione del maintainer): sulle pagine col riquadro di ritaglio spostato le tabelle e le figure si riconoscono sulla
-    /// pagina vera e si ritagliano nel punto giusto. Le risorse visive salvate prima su quelle pagine hanno le coordinate della
-    /// resa di prima, che il ritaglio nuovo non compensa più: la rielaborazione le rifà. Le letture senza le risorse visive non
+    /// pagina vera e si ritagliano nel punto giusto. Le risorse visive salvate prima su quelle pagine restano nello spazio della
+    /// resa di prima, e il ritaglio le prende in quello spazio (`displayedPageRegionsCure`); la rielaborazione rifà il
+    /// riconoscimento sulla pagina vera (figure prima non trovate, regioni giuste). Le letture senza le risorse visive non
     /// cambiano; sul banco cambia un volume solo (una figura nuova). Si offre a TUTTI E SOLI i libri la cui lettura cambia
     /// (`booksUnchangedByCure`, misurati ai quattro livelli); come la 56-66: dal Mac per le sue letture. Non tocca i testi
     /// normativi (nessuna pagina, nessuna risorsa visiva).
