@@ -112,7 +112,9 @@ applicabile» (il modello non sa fare il compito) distinto da «non misurato» (
   classificati da me per causa.
 - Deviazioni dopo il fissaggio (registro `registri/DEVIAZIONI.md`): correzioni tecniche della memoria di Metal (la prima corsa è
   finita in 34 GB su 24), la via Core ML di qualità su quattro manuali invece che su tutto il sottoinsieme del livello 3, i pin degli
-  strumenti di conversione.
+  strumenti di conversione, i tagli per il tempo del § 1.8, il giudice riorganizzato in quattro tornate (§ 2.5) e le analisi aggiunte coi
+  dati già raccolti (la ricerca nella libreria dell'app, le coppie di modelli, la rete di significato senza verità, il controllo della
+  rete nelle sonde).
 
 ### 1.5 Il materiale (campo)
 - **Libreria**: 55 documenti (52 volumi e 3 documenti di studio), **193.761 blocchi, 194.424 unità, 67,2 milioni di caratteri**
@@ -303,10 +305,11 @@ vera di Qwen3 (§ 7).
 - **Dalla dottrina all'articolo** (il passo con la citazione tolta): BGE-M3 con BM25 0,56, BM25 0,42; **dall'articolo alla dottrina**
   (nella libreria, senza i codici) tutte le configurazioni fra 0,63 e 0,74, BM25 compreso: il testo dell'articolo ha già le parole giuste.
 - **Numeri**: per gli articoli BGE-M3 da solo 0,59 e con BM25 0,69, gli altri modelli da soli fra 0,02 e 0,31, BM25 0,43; per i paragrafi
-  le parole e quasi tutti i modelli stanno sopra 0,9, ma Qwen3 e Granite 311M cadono (0,71 e 0,58).
+  BM25, EmbeddingGemma 2, BGE-M3 e i due Harrier stanno sopra 0,9, gli altri sotto (Jina 0,87, Granite 97M 0,80, Qwen3 0,71, Granite 311M
+  0,58), e ogni ricerca mista con BM25 sta a 0,98-1,00.
 - **Nella libreria** (55 documenti) tutti perdono, i modelli più delle parole: sulle voci d'indice BM25 passa da 0,76 a 0,61, Harrier
-  270M da 0,78 a 0,60, BGE-M3 da 0,75 a 0,46; le ricerche miste migliori tengono 0,61-0,63. Gli altri libri sullo stesso argomento sono
-  distrattori per significato, non per parole.
+  270M da 0,78 a 0,60, BGE-M3 da 0,75 a 0,46; da solo tiene meglio Harrier 0.6B (da 0,79 a 0,64), e le ricerche miste migliori tengono
+  0,61-0,65. Gli altri libri sullo stesso argomento sono distrattori per significato, non per parole.
 
 ### 2.2 Contro le parole (differenza appaiata di S@10 con BM25, nel libro; campo)
 | configurazione | indice | nl | indice_codice | cit_d2n | cit_n2d | num_art | num_par |
@@ -373,9 +376,9 @@ vera di Qwen3 (§ 7).
 - **Dentro la stessa famiglia, sì**: Granite 311M trova più di Granite 97M su tutte le famiglie di testo (fra +0,04 e +0,12 nel libro,
   intervalli che escludono lo zero), ma perde sui numeri; Harrier 0.6B trova più di Harrier 270M sulle domande da studente (+0,08) e sulle
   voci del codice (+0,06), e pareggia altrove.
-- **Il modello piccolo migliore e il più leggero dell'app non sono lo stesso**: Harrier 270M batte EmbeddingGemma 2 sul testo (+0,05/+0,09
-  nel libro, +0,18 sulle voci d'indice nella libreria), EmbeddingGemma 2 batte Harrier sugli articoli per numero (+0,24) ed è quello che
-  dentro l'app perde meno (§ 3.2).
+- **Harrier 270M ed EmbeddingGemma 2, della stessa taglia, si dividono i compiti**: Harrier batte EmbeddingGemma 2 sul testo
+  (+0,05/+0,09 nel libro, +0,18 sulle voci d'indice nella libreria), EmbeddingGemma 2 batte Harrier sugli articoli per numero (+0,24) e
+  dentro l'app, con Core ML, non perde nulla, mentre Harrier perde 0,008 (§ 3.2).
 
 ### 2.3 Dove si sbaglia: indice stampato, blocchi cortissimi, numeri, libro giusto (campo)
 | configurazione | primo blocco su una pagina d'indice (domande indice e indice_codice, nel libro) | primo blocco sotto i 40 caratteri (indice, nl, indice_codice, nel libro) | num_art: primo posto a un blocco che cita il numero | num_art: primo posto a una trappola | num_par: primo posto a un paragrafo vicino | libreria: primo blocco nel libro giusto |
@@ -410,8 +413,8 @@ vera di Qwen3 (§ 7).
 - **I numeri**: chiesto un articolo, il primo blocco cita il numero chiesto (ma non è l'articolo) in 82 domande su 200 con BM25, 55 con
   BGE-M3, 19 con Qwen3; il primo blocco è proprio la trappola (lo stesso numero in un altro codice o legge) in 26 domande con BGE-M3, 24
   con EmbeddingGemma 2, 7 con BM25, 0 con Qwen3. Chi trova il numero rischia l'omonimo; chi non lo trova va lontano.
-- **Il libro giusto nella libreria**: il primo blocco sta nel libro della domanda nel 48 per cento dei casi con BM25 e con la ricerca mista
-  migliore, 38-43 con i modelli da soli, 34 con EmbeddingGemma 2.
+- **Il libro giusto nella libreria**: il primo blocco sta nel libro della domanda nel 48 per cento dei casi con BM25, fra il 43 e il 49
+  con le ricerche miste, fra il 34 (EmbeddingGemma 2) e il 45 (Harrier 0.6B) con i modelli da soli.
 
 ### 2.4 Le divisioni: tipo di documento, pagina, note (campo)
 Per ogni domanda le caratteristiche della prima pagina bersaglio dalle caratteristiche del corpus del giro globale del banco OCR (note
@@ -520,8 +523,8 @@ Blocchi della verità automatica fra quelli giudicati: 53; con voto 0: 2; con vo
 - **La verità automatica è precisa**: dei 53 blocchi della verità che i giudici hanno visto, 2 hanno avuto 0; 39 hanno
   avuto 2.
 - **Ma è incompleta**: dei 121 blocchi con voto 2, 82 (68 per cento) non stanno nella verità. Per famiglia la quota va da
-  zero (dottrina → norma e paragrafi per numero, dove il bersaglio è uno solo) a tre su quattro (norma → dottrina e voci d'indice, dove i
-  passi che rispondono sono molti e l'indice dell'editore ne nomina alcuni).
+  zero (dottrina → norma e paragrafi per numero, dove il bersaglio è uno solo) a quattro su cinque (norma → dottrina 78 per cento, voci
+  d'indice 83: i passi che rispondono sono molti e l'indice dell'editore, o la citazione, ne nomina alcuni).
 - **I modelli ne escono sottostimati più di BM25**: contro BM25, sulle stesse domande, secondo la verità le ricerche miste stanno fra −0,02 e +0,10 sopra BM25, nessuna con
   l'intervallo che esclude lo zero; secondo il giudice fra +0,08 e +0,17, e cinque su sette con l'intervallo che esclude lo zero (BGE-M3 con
   BM25 +0,17 [+0,05; +0,28], Harrier 0.6B con BM25 +0,17 [+0,07; +0,28]); Harrier 0.6B da solo +0,02 per la verità e +0,13 [+0,03; +0,25]
