@@ -3899,3 +3899,10 @@ B pulito (4 → 5). Non migliora tutto ciò che si sente: non si accende. Propos
 - Limiti della regola dei sommari, dichiarati (rilievo della revisione): contano ancora come leader, come prima, i puntini da
   completare senza parentesi, quelli fra parentesi graffe o a larghezza piena, quelli con due spazi o spazi sottili fra un punto e
   l'altro, e una lacuna spezzata su due righe. Nessun caso nel corpus; tre righe così su una pagina la farebbero ancora sommario.
+
+## 46. Il banco embedding — cercare per significato quello che è stato letto (23 novembre 2026)
+
+> Il capitolo dopo la lettura: modelli di embedding locali per cercare e collegare per significato, al banco e dentro l'app, contro la
+> ricerca per parole che l'app ha già, con le scansioni del banco e le vere come ponte fra la qualità della lettura e il richiamo. Report
+> completo in `docs/BANCO_EMBEDDING.md`; laboratorio `~/Developer/scabopdf-mac-lab/banco_embedding/`. Stesse regole di questo documento
+> (nessun testo dei volumi, etichette di prova, confronti appaiati con l'intervallo).
