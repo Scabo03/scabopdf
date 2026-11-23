@@ -125,20 +125,21 @@ applicabile» (il modello non sa fare il compito) distinto da «non misurato» (
 
 | famiglia | che cos'è | domande | dove si cerca | impronta del file |
 |---|---|---|---|---|
-| indice | voci (voce e sottovoce) degli indici analitici stampati di cinque manuali (v30 ai paragrafi, v24 alle ancore di pagina, v16 alle etichette di pagina, l'indice dei quattro volumi v17-v20 a volume e pagina, studio_b ai paragrafi); 250 per fonte | 1.250 | nel libro e nella libreria | `VERITA_A.json` `8b393376…` |
+| indice | voci (voce e sottovoce) degli indici analitici stampati di cinque manuali (v30 ai paragrafi, v24 alle ancore di pagina, v16 alle etichette di pagina, l'indice dei quattro volumi v17-v20 a volume e pagina, studio_b ai paragrafi); 250 per fonte | 1.250 | nel libro e nella libreria | `VERITA_A.json` `1a74d956…` |
 | indice_codice | voci degli indici dei due codici che rimandano ad articoli di uno dei quattro codici (civile, penale e le due procedure) | 500 | come sopra | come sopra |
 | cit_d2n (dottrina → norma) | un passo che cita un solo articolo, con la citazione tolta; il bersaglio è l'articolo nel codice | 300 | nel codice e nella libreria | come sopra |
 | cit_n2d (norma → dottrina) | il testo dell'articolo senza numero; bersagli: i passi che lo citano | 200 | libreria senza i codici | come sopra |
 | num_art | «articolo N» del codice, in forma piana o abbreviata; trappole: i numeri vicini (uno o due sopra e sotto) e lo stesso numero nell'altro codice del volume | 200 | nel codice e nella libreria | come sopra |
 | num_par | «paragrafo N» del manuale coi «§»; trappole §N±1, §N±2 | 100 | nel libro e nella libreria | come sopra |
-| nl | domande da studente scritte da un sotto-agente che vede solo la voce e la materia (non le pagine), senza le parole della voce | 373 (6 voci impossibili: nomi propri e voci vaghe; una voce uscita dal campione dopo la correzione) | come la voce | `VERITA_NL.json` `cb76955f…` |
+| nl | domande da studente scritte da un sotto-agente che vede solo la voce e la materia (non le pagine), senza le parole della voce | 352 (su 380: 6 voci impossibili, nomi propri e voci vaghe; 22 tolte con le correzioni, le loro voci rimandavano solo a pagine non allineate) | come la voce | `VERITA_NL.json` `2af1eca5…` |
 | banco_domanda, banco_frase | una domanda per pagina del banco (scritta vedendo la pagina: dichiarato) e una frase della pagina da ritrovare | 132 e 136 | fra le 478 pagine scansionate | `verita_scansioni.json` `611ab88a…` |
 | scansioni_vere | le domande numerate delle 14 pagine vere con la verità verificata alla cieca | 35 | fra le 75 pagine vere | come sopra |
 
-Sovrapposizione delle domande nl con la loro voce: 5 domande su 373 conservano una radice di cinque lettere di una parola di contenuto
+Sovrapposizione delle domande nl con la loro voce: 5 domande su 352 conservano una radice di cinque lettere di una parola di contenuto
 della voce (falsi allarmi dove la radice sta dentro un'altra parola; campo). Indici: 4.054 voci lette su v30, 1.709 su v24, 387 su v16,
 2.647 sull'indice dei quattro volumi, 408 su studio_b; scartate quelle con più di quattro rimandi, con cifre nel testo (righe fuse) o non
-portabili alle pagine (542 dell'indice dei quattro volumi, per pagine senza etichetta). Citazioni nella libreria (escluse i codici): 8.389
+portabili alle pagine (1.340 dell'indice dei quattro volumi: pagine senza etichetta e, dopo la terza correzione qui sotto, i rimandi ai
+volumi I e II). Citazioni nella libreria (escluse i codici): 8.389
 riconosciute, 4.438 blocchi con una citazione sola utilizzabili.
 
 **Controllo delle verità** (sotto-agenti nuovi e indipendenti, contro i testi bersaglio; esiti nel laboratorio, `verita/controllo/`).
@@ -152,12 +153,23 @@ riconosciute, 4.438 blocchi con una citazione sola utilizzabili.
 - **Ricontrollo dopo la correzione** (campo): 12 domande di quel codice, 10 giuste e 2 sbagliate, entrambe a una stessa pagina: le
   disposizioni di coordinamento stampate fra i due codici, la cui numerazione riparte da 1 senza il salto che la regola aspettava, erano
   rimaste attaccate alla procedura. Seconda correzione (una sequenza nuova comincia anche alla ripartenza da 1): ora il codice penale
-  comincia alla pagina del suo «Libro primo» e la procedura alla sua (campo, controllato sulle pagine). Ultimo ricontrollo: § 1.6 bis.
+  comincia alla pagina del suo «Libro primo» e la procedura alla sua (campo, controllato sulle pagine). **Ultimo ricontrollo** (sotto-agente
+  nuovo, 12 domande di quel codice scelte di nuovo): 12 giuste su 12 (campo). Il controllore nota frammenti di note intercalati nel testo di
+  alcuni articoli: è il difetto noto della lettura dei codici a due colonne (le note di aggiornamento interlacciate per riga), ed è il testo
+  che l'utente ha davvero.
 - **Gli altri sbagliati del primo controllo, riletti a testo intero da me** (il controllore vedeva i primi 2.500 caratteri; campo): due
   delle tre domande nl «sbagliate» hanno la parola cercata nel paragrafo giusto, oltre il taglio (giuste); la terza è una domanda che ha
   frainteso il senso della voce (errore della domanda, non della mappa); una voce d'indice resta senza riscontro nemmeno a testo intero.
-  **Tasso d'errore residuo stimato**, tolto l'errore corretto: parte A e scansioni 1 su 70 (1,4 per cento, intervallo di Wilson al 95 per
-  cento da 0,3 a 7,7); nl 1 su 10 sbagliata e 2 su 10 in parte (le domande, scritte senza vedere le pagine, a volte spostano il senso).
+- **Terza correzione, trovata leggendo gli errori dei modelli** (il controllo semantico continuo; campo): l'indice dei quattro volumi,
+  stampato nel volume IV, per i volumi I e II rimanda a un'edizione diversa da quella dei PDF del corpus. Misura: la parola della voce sulla
+  pagina rimandata, a scarto 0, c'è 48 volte su 605 e 52 su 748 per i volumi I e II, 561 su 834 e 469 su 714 per i volumi III e IV, e per i
+  primi due nessuno scarto fra −25 e +25 pagine allinea. Tenuti solo i rimandi ai volumi III e IV. Con la stessa misura gli altri indici
+  risultano allineati: i paragrafi di v30 e di studio_b e le etichette di v16 a scarto 0 (72, 85 e 66 per cento dei rimandi con la parola),
+  le ancore di v24 coprono per costruzione la pagina dell'ancora e la seguente.
+- **Tasso d'errore residuo stimato**, tolti gli errori corretti: parte A e scansioni 1 su 70 (1,4 per cento, intervallo di Wilson al 95 per
+  cento da 0,3 a 7,7); nl 1 su 10 sbagliata e 2 su 10 in parte (le domande, scritte senza vedere le pagine, a volte spostano il senso). Nessuna delle 80 domande
+  del primo controllo aveva un bersaglio nei volumi I e II (campo): l'errore della terza correzione gli era sfuggito per caso, e l'ha preso
+  la lettura degli errori.
 
 ### 1.7 Carico stimato e tempi (campo, prove brevi del check-up)
 EmbeddingGemma 2, solo testo, su 3.000 blocchi a caso: bf16 9.180 gettoni al secondo, fp32 5.752; il corpus intero è di circa 17,6
