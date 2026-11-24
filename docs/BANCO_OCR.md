@@ -3907,8 +3907,12 @@ B pulito (4 → 5). Non migliora tutto ciò che si sente: non si accende. Propos
 > completo in `docs/BANCO_EMBEDDING.md`; laboratorio `~/Developer/scabopdf-mac-lab/banco_embedding/`. Stesse regole di questo documento
 > (nessun testo dei volumi, etichette di prova, confronti appaiati con l'intervallo).
 
-Per il banco OCR conta soprattutto il livello 5 del report (§ 5): gli errori di lettura arrivano alla ricerca solo oltre il 15%
-di parole perse, e allora il significato non le ritrova (i modelli perdono quanto BM25); la rete di significato riconosce le pagine lette
-male contro la verità (area 0,81-0,94) ma non confrontando fra loro le due letture del Mac (0,48-0,57), perché le due vie sbagliano sulle
-stesse pagine (Spearman fra le loro perdite 0,61-0,71). Cercare sull'immagine della pagina senza leggerla trova un terzo meno della lettura con EmbeddingGemma 2 e quasi quanto con Jina
-Omni, che è solo da banco. (campo, `docs/BANCO_EMBEDDING.md` § 5.)
+Per il banco OCR conta soprattutto il livello 5 del report (§ 5). Sul banco delle scansioni (478 pagine, piccolo e facile: domande scritte
+vedendo la pagina) gli errori di lettura arrivano alla ricerca solo oltre il 15% di parole perse: allora la pagina esce dai primi dieci per
+una domanda da studente su dieci fino a quasi una su quattro (S@10 sul testo letto 0,767-0,864, BM25 0,786) e per una frase su quattro fino
+a più di una su tre (0,598-0,720, BM25 0,636). Il significato non ripara le parole perse; alcuni modelli perdono meno di BM25 (numeri
+indicativi: coppie pagina-lettura non indipendenti). La rete di significato riconosce le pagine lette male contro la verità (area
+0,81-0,94) ma non confrontando fra loro le due letture del Mac (0,48-0,57); le due vie sbagliano per lo più sulle stesse pagine (sulle
+132 pagine Spearman fra le loro perdite 0,62-0,72; delle pagine lette male da almeno una, 20 su 30 e 21 su 32 lo sono da tutte e due),
+e che sia questa la ragione è dedotto. Cercare sull'immagine della pagina senza leggerla trova fra un terzo e la metà in meno della lettura
+con EmbeddingGemma 2 e quasi quanto con Jina Omni, che è solo da banco. (campo, `docs/BANCO_EMBEDDING.md` § 5.)

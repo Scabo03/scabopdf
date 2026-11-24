@@ -231,37 +231,47 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   e licenze lette alla scheda e al file di licenza, impronte di ogni file; metodo fissato con impronta prima di ogni corsa; verità dagli
   indici dei volumi, dai codici e dalle citazioni (2.550 domande più 352 domande da studente), controllate a campione da un sotto-agente,
   tre errori di costruzione trovati e corretti (dichiarati), due voci «trans.» rimaste.
-- **Livello 2 — la ricerca sul testo** (§ 2 del report): sulle voci d'indice le parole bastano (BM25 0,76 di S@10 nel libro, i modelli migliori 0,78-0,79); sulle
-  domande da studente conta il significato (Harrier 0.6B 0,61, BGE-M3 0,60, BM25 0,39, la ricerca dell'app 0); un modello più grande non
-  trova di più fra famiglie diverse, sì dentro la stessa; i numeri accecano quasi tutti i modelli tranne BGE-M3 (articoli 0,59); nella
-  libreria i modelli perdono più delle parole; il giudice alla cieca (1.791 blocchi in quattro tornate) dice che le verità automatiche sono
-  precise ma incomplete e sottostimano i modelli più di BM25; l'indice di un libro di 300 pagine pesa mezzo megabyte in int8 senza perdita.
-- **Livello 3 — banco contro app** (§ 3): dentro l'app si trova quello che si trova al banco: Core ML col motore neurale (sette modelli convertiti, L3c,
-  1.335 domande) differenza di S@10 fra −0,002 e +0,000 per sei modelli su sette (Harrier 270M −0,008); GGUF Q8_0 in Swift con la revisione
-  di llama.cpp dell'app (b11429; v1.0.0 per EmbeddingGemma 2, che la b11429 non carica) fra −0,002 e +0,004 per i sei modelli convertibili
-  (Harrier 270M non convertibile con lo strumento ufficiale); il bf16 del banco equivale alla piena precisione. Sul Mac un libro di 300
-  pagine si indicizza in 2-17 secondi con un modello piccolo; il motore neurale è più lento per i modelli grandi e, fino a 568 milioni di
-  parametri, consuma da 2 a 10 volte meno (energia indicativa). iPad A14 non collegato: dedotto almeno 3,5 volte più lento sul motore neurale. Un errore dell'eseguibile Swift
-  di laboratorio (memoria non condivisa fra le sequenze per i modelli che leggono da sinistra a destra) trovato e corretto (`kv_unified`).
-- **Livello 4 — parole, ricerca mista, riordino** (§ 4): BGE-M3 in ricerca mista con BM25 batte BM25 su tutte le famiglie, articoli compresi (+0,27); il vettore sparso di
-  BGE-M3 non sostituisce BM25; il riordino (bge-reranker-v2-m3, Qwen3-Reranker-0.6B, 600 domande) non si vede nel complesso, aiuta il primo
-  posto delle domande da studente (+0,07/+0,08) e peggiora i numeri (fino a −0,30).
-- **Livello 5 — scansioni** (§ 5): gli errori di lettura arrivano alla ricerca solo oltre il 15% di parole perse e il significato non li
-  ripara; la rete di significato riconosce le pagine lette male contro la verità (0,81-0,94) ma non fra le due letture del Mac (0,48-0,57:
-  le due vie sbagliano sulle stesse pagine); cercare sull'immagine della pagina trova un terzo meno della lettura con EmbeddingGemma 2, quasi
-  quanto con Jina Omni (solo banco).
+- **Livello 2 — la ricerca sul testo** (§ 2 del report; campo): nel libro, sulle voci d'indice le parole bastano (BM25 0,76 di S@10, i
+  modelli migliori 0,76-0,79); sulle domande da studente conta il significato (Harrier 0.6B 0,61, BGE-M3 0,60, BM25 0,39, la ricerca
+  dell'app 0, e nella libreria nessun libro per 352 domande su 352); la taglia da sola non decide (Qwen3 non trova più di Harrier 270M, BGE-M3
+  sì sulle domande da studente), dentro le due famiglie con due taglie il più grande trova di più; i numeri accecano quasi tutti i modelli
+  tranne BGE-M3 (articoli 0,59); nella libreria i modelli perdono più di BM25 sulle voci d'indice (salvo Harrier 0.6B e Jina) e quanto BM25
+  sulle domande da studente; il giudice alla cieca (1.791 blocchi in quattro tornate, 60 domande) dice che le verità automatiche sono precise
+  ma incomplete e sottostimano quasi tutti i modelli più di BM25; l'indice di un libro di 300 pagine pesa mezzo megabyte in int8, con una
+  perdita al più di tre punti su mille.
+- **Livello 3 — banco contro app** (§ 3; campo salvo l'iPad): con le vie dell'app si trova quello che si trova al banco: Core ML col motore
+  neurale (sette modelli convertiti, L3c, 1.335 domande) differenza di S@10 fra −0,0015 e 0,0000 contro la piena precisione dove c'è (fra
+  −0,002 e +0,003 contro il bf16) per sei modelli su sette, Harrier 270M −0,008; GGUF Q8_0 in Swift con la revisione di llama.cpp dell'app
+  (b11429; v1.0.0 per EmbeddingGemma 2, che la b11429 non carica) fra −0,002 e +0,004 per i sei modelli convertibili (Harrier 270M non
+  convertibile con lo strumento ufficiale); il bf16 del banco equivale alla piena precisione. Sul Mac un libro di 300 pagine si indicizza in
+  2-17 secondi con un modello piccolo; il motore neurale è più lento per i modelli grandi; fino a 568 milioni di parametri consuma da 2 a 8
+  volte meno di PyTorch e di llama.cpp sulla scheda grafica, non meno di Core ML sulla scheda grafica, e per i modelli da 0,6 miliardi più di
+  llama.cpp (energia indicativa, ricalcolata con una base comune). iPad A14 non collegato: dedotto almeno da 1,7 a 3,5 volte più lento sul
+  motore neurale (Apple non dichiara la precisione delle sue cifre). Un errore dell'eseguibile Swift di laboratorio (memoria non condivisa
+  fra le sequenze per i modelli che leggono da sinistra a destra) trovato e corretto (`kv_unified`).
+- **Livello 4 — parole, ricerca mista, riordino** (§ 4; campo): BGE-M3 in ricerca mista con BM25 batte BM25 nel libro su tutte le famiglie,
+  articoli compresi (+0,27), e nella libreria su quattro famiglie su sette; sulle domande da studente la ricerca mista toglie 0,07-0,09 ai
+  modelli forti; il vettore sparso di BGE-M3 non sostituisce BM25; il riordino (bge-reranker-v2-m3, Qwen3-Reranker-0.6B, 600 domande) non si
+  vede nel complesso, aiuta il primo posto delle domande da studente (+0,07/+0,08) e peggiora quello di alcune domande per numero (fino a
+  −0,30).
+- **Livello 5 — scansioni** (§ 5; campo): su un banco piccolo e facile gli errori di lettura arrivano alla ricerca solo oltre il 15% di parole
+  perse (allora la pagina esce dai primi dieci per una domanda da studente su dieci fino a quasi una su quattro) e il significato non li
+  ripara, anche se alcuni modelli perdono meno di BM25; la rete di significato riconosce le pagine lette male contro la verità (0,81-0,94) ma
+  non fra le due letture del Mac (0,48-0,57), e le due vie sbagliano per lo più sulle stesse pagine (20 su 30 e 21 su 32); cercare
+  sull'immagine della pagina trova fra un terzo e la metà in meno della lettura con EmbeddingGemma 2, quasi quanto con Jina Omni (solo banco).
 - **Correzione a lato**: lo strumento del controllo del testo dei volumi su un solo file (`scabopdf-gen-lab/pulizia/strumenti/controllo_testo_file.py`)
   ora legge la corrispondenza del laboratorio (`banco/corrispondenza_volumi.json`, 104 letture di 52 volumi); prova contraria su un file del
   laboratorio con testo dei volumi: 58 righe; sul report: 0.
 - **Revisione indipendente** (sotto-agente, solo il diff e i risultati): «si può unire dopo le correzioni»; 521 righe di tabella su 554
   identiche alle tabelle del laboratorio, 52 numeri tornati coi grezzi. Il rilievo bloccante (il controllo della rete non era riportato) è
-  chiuso: nessun byte esterno dei processi del banco nelle 45 sonde, due processi Python estranei al giro (§ 1.4). Corretto anche il
-  rilievo sull'energia del motore neurale (§ 3.4). **Da correggere prima della fusione** (elenco completo in
-  `banco_embedding/registri/REVISIONE_INDIPENDENTE.md`): le cifre della propagazione (§ 5.2 e dove le riprendo), il dato «352 su 352» da
-  mettere nel § 2.1 con grezzi e script, la forchetta dell'iPad (1,7-3,5 invece di «almeno 3,5»: la precisione delle cifre di Apple non è
-  dichiarata), «su tutte le famiglie» da limitare al libro, i cali nella libreria, le divisioni confuse con la famiglia, l'intervallo di
-  Core ML, i conteggi del § 5.3 sulle 132 pagine (20 su 30, 21 su 32), e i minori (tabella del § 1.8, rimando «trans.», int8 di Qwen3,
-  generalizzazioni, cifre in prosa, etichette e fonti, nove modelli e non dieci in questo CARRYOVER).
+  chiuso: nessun byte esterno dei processi del banco nelle 45 sonde, due processi Python estranei al giro (§ 1.4). **Tutti gli altri
+  rilievi applicati il 24 mattina** (elenco in `banco_embedding/registri/REVISIONE_INDIPENDENTE.md`), senza misure nuove: l'energia con una
+  base comune nel § 0.1, nella frase 14, nel § 9.6 e qui; le cifre della propagazione (§ 5.2, § 0.1, frase 8, BANCO_OCR § 46); il dato
+  «352 su 352» nel § 2.1 con grezzi e script; la forchetta dell'iPad 1,7-3,5 (fonte Macwelt, deduzione dell'articolo, non verificata);
+  «su tutte le famiglie» limitato al libro; i cali nella libreria; la conclusione sulle divisioni tolta; i due riferimenti di Core ML; i
+  conteggi del § 5.3 sulle 132 pagine; i minori (tabella del § 1.8 con le due corse fp32 riprese, rimando «trans.», int8 di Qwen3,
+  generalizzazioni, cifre in prosa, unità binarie, etichette e fonti). Riletti contro i dati il § 0.1 e le 16 frasi per la radio: 14 frasi
+  strette o corrette, la numerazione resta.
 - **Nessun cambiamento nel prodotto** (nessun file sotto `app/`, nessun catalogo toccato); Python solo nel laboratorio.
 - **Da dove riprendere / decisioni per il maintainer**: le voci del § 9 del report (respiro): (1) una ricerca per parole pesate (BM25) prima di ogni modello; (2) quale modello, fra BGE-M3, Harrier 270M o 0.6B ed
   EmbeddingGemma 2, in ricerca mista con BM25, e dove gira (Core ML sul motore neurale per l'iPad, GGUF sul Mac, che chiede la revisione

@@ -5,10 +5,12 @@
 > domanda e corrispondenze stanno solo nel laboratorio `~/Developer/scabopdf-mac-lab/banco_embedding/`. Etichette di prova su ogni
 > affermazione: **campo** (misurato in questo giro), **fonte** (documento o scheda, con indirizzo e data), **dedotto**, **non verificato**.
 > Rimando dal banco OCR: `docs/BANCO_OCR.md` § 46. Metodo, misure e codici d'uscita delle corse nel laboratorio (`METODO.md`,
-> `registri/`); ogni numero porta il percorso dei dati grezzi e lo script che lo ricalcola.
+> `registri/`); ogni numero porta il percorso dei dati grezzi e lo script che lo ricalcola. Pesi e memoria sono in unità binarie: i MB, kB
+> e GB del documento valgono MiB, KiB e GiB (campo: per esempio il GGUF Q8_0 di Granite 97M è di 115.061.120 byte, cioè 110 MiB).
 >
 > Stato: **concluso** (livelli 1-5; mappa dei comportamenti, esperienze operative, frasi per la radio, respiro sul prodotto, che cosa
-> resta). Le risposte in breve stanno nel § 0.1.
+> resta). Le risposte in breve stanno nel § 0.1. Rivisto il 24 novembre dopo una revisione indipendente: tutti i rilievi applicati, senza
+> misure nuove (elenco nel laboratorio, `registri/REVISIONE_INDIPENDENTE.md`); il § 0.1 e le frasi per la radio riletti contro i dati.
 
 ## 0. Scopo e domande
 
@@ -26,29 +28,42 @@ esperienze operative, mai testo citato. Le domande, in ordine d'importanza:
 4. **Le scansioni**: cercare sulle immagini delle pagine contro cercare sul testo letto dalle due vie del Mac; quanto costano in richiamo
    le parole perse dalla lettura; un controllo di significato a basso costo sulle uscite dei lettori.
 
-### 0.1 Le risposte, in breve (i paragrafi danno i numeri con gli intervalli e le etichette)
+### 0.1 Le risposte, in breve (gli intervalli stanno nei paragrafi; fra parentesi l'etichetta e il paragrafo)
 
-1. **Banco contro app.** Dentro l'app si trova quello che si trova al banco: con Core ML sul motore neurale del Mac la differenza media di
-   S@10 nel libro sta fra −0,002 e +0,000 per sei modelli su sette, e Harrier 270M perde 0,008 (§ 3.2). Con GGUF Q8_0 in Swift (la revisione di llama.cpp dell'app, o la v1.0.0 per EmbeddingGemma 2) la differenza sta fra −0,002 e
-   +0,004 per i sei modelli convertibili (§ 3.2). Sul Mac un modello piccolo indicizza un libro di 300 pagine in 2-17 secondi e codifica una domanda in pochi millisecondi; il
-   motore neurale è più lento per i modelli grandi e, fino a 568 milioni di parametri, consuma da 2 a 10 volte meno (§ 3.4, energia
-   indicativa). Il peso: un modello
-   piccolo pesa 110-597 MB, l'indice di un libro di 300 pagine mezzo megabyte (§ 3.3, § 2.7). L'iPad A14 non era collegato: dedotto almeno
-   3,5 volte più lento del Mac sul motore neurale (§ 3.5).
-2. **La ricerca sul testo.** Sulle voci d'indice (parole chiave) le parole bastano: BM25 trova il passo fra i primi dieci in 0,76 delle
-   voci, i modelli migliori lo eguagliano. Sulle domande scritte da studente conta il significato: Harrier 0.6B 0,61 e BGE-M3 0,60, Harrier 270M,
-   Qwen3 e Granite 311M 0,53, BM25 0,39 (§ 2.1). Un modello più grande non trova di più fra famiglie diverse (Qwen3, 0,6 miliardi di
-   parametri, come Harrier 270M), sì dentro la stessa (Granite 311M sopra 97M, Harrier 0.6B sopra 270M) (§ 2.2 bis). Nella libreria, con 55 documenti, i modelli perdono più delle parole (§ 2.1).
-3. **Rispetto alla ricerca che l'app ha già.** Oggi la ricerca dell'app trova la frase intera: sulle domande da studente non trova niente
-   (352 su 352 senza un libro coi risultati nella libreria, § 2.1). La sola ricerca per parole pesate (BM25) è il salto più grande. I numeri
-   accecano quasi tutti i modelli (articoli fra 0,02 e 0,31) tranne BGE-M3 (0,59); la ricerca mista di BGE-M3 con BM25 batte BM25 su tutte le
-   famiglie, articoli compresi (+0,27) (§ 4.1). Il riordino coi modelli a coppie non si vede nel complesso, aiuta il primo posto delle domande da studente e peggiora i numeri
-   (§ 4.2). Il giudice alla cieca conferma l'ordine e dice che le verità automatiche
-   sottostimano tutti, i modelli più delle parole (§ 2.5).
-4. **Le scansioni.** Gli errori di lettura arrivano alla ricerca solo oltre il 15% di parole perse, e allora il significato non le
-   ritrova: i modelli perdono quanto BM25 (§ 5.2). La rete di significato riconosce le pagine lette male contro la verità (area 0,81-0,94) ma
-   non confrontando le due letture fra loro (0,48-0,57), perché le due vie sbagliano sulle stesse pagine (§ 5.3). Cercare sull'immagine della pagina senza leggerla, con EmbeddingGemma 2, trova un terzo meno della lettura; con Jina Omni, che è
-   solo da banco, quasi quanto (§ 5.5).
+1. **Banco contro app.** Con le vie dell'app si trova quello che si trova al banco. Con Core ML sul motore neurale del Mac, per sei modelli
+   su sette la differenza media di S@10 nel libro sta fra −0,0015 e 0,0000 contro la piena precisione dove c'è (fra −0,002 e +0,003 contro
+   il bf16 per tutti), con lo zero dentro ogni intervallo; Harrier 270M perde 0,008 [0,001; 0,016] (campo, § 3.2). Con GGUF Q8_0 in Swift
+   (la revisione di llama.cpp dell'app, o la v1.0.0 per EmbeddingGemma 2) la differenza sta fra −0,002 e +0,004 per i sei modelli
+   convertibili, con lo zero dentro ogni intervallo (campo, § 3.2). Sul Mac un modello piccolo indicizza un libro di 300 pagine in 2-17
+   secondi e codifica una domanda in 1-11 millisecondi (campo, § 3.4). Il motore neurale è più lento per i modelli grandi; quanto
+   all'energia, per i modelli fino a 568 milioni di parametri consuma da 2 a 8 volte meno di PyTorch e di llama.cpp sulla scheda grafica,
+   ma non meno di Core ML sulla scheda grafica (provato con EmbeddingGemma 2), e per quelli da 0,6 miliardi consuma più di llama.cpp
+   (campo, misura indicativa, § 3.4). Il peso: un modello piccolo pesa 110-597 MB, l'indice di un libro di 300 pagine mezzo megabyte
+   (campo, § 3.3, § 2.7). L'iPad A14 non era collegato: sul motore neurale sarebbe almeno da 1,7 a 3,5 volte più lento del Mac, secondo la
+   precisione delle cifre di Apple, che Apple non dichiara (dedotto, § 3.5).
+2. **La ricerca sul testo.** Nel libro, sulle voci d'indice (parole chiave) le parole bastano: BM25 trova il passo fra i primi dieci in
+   0,76 delle voci, i modelli migliori lo eguagliano o lo superano di poco (Harrier 0.6B +0,03) (campo, § 2.1, § 2.2). Sulle domande
+   scritte da studente conta il significato: Harrier 0.6B 0,61 e BGE-M3 0,60; Harrier 270M, Qwen3 e Granite 311M 0,53; BM25 0,39 (campo,
+   § 2.1). La taglia da sola non decide: Qwen3 (0,6 miliardi di parametri) non trova più di Harrier 270M su nessuna famiglia di testo,
+   BGE-M3 (568 milioni) sì sulle domande da studente (+0,07); nelle due famiglie misurate con due taglie il più grande trova di più (Granite
+   311M su 97M su tutte le famiglie di testo, Harrier 0.6B su 270M sulle domande da studente e sulle voci del codice) (campo, § 2.2 bis).
+   Nella libreria (55 documenti) tutti perdono: sulle voci d'indice i modelli più di BM25, salvo Harrier 0.6B e Jina che perdono quanto
+   BM25; sulle domande da studente e sulle voci del codice quanto BM25 (campo, § 2.1; differenze fra medie, senza intervallo).
+3. **Rispetto alla ricerca che l'app ha già.** Oggi la ricerca dell'app trova la frase intera: sulle domande da studente non trova niente,
+   né nel libro (S@10 0,00) né nella libreria (352 domande su 352 senza un libro coi risultati) (campo, § 2.1). La sola ricerca per parole
+   pesate (BM25) è il salto più grande misurato: fra +0,39 e +0,71 di S@10 nel libro, secondo la famiglia (campo, § 2.2). I numeri accecano
+   quasi tutti i modelli (articoli nel libro fra 0,02 e 0,31) tranne BGE-M3 (0,59); la ricerca mista di BGE-M3 con BM25 batte BM25 nel
+   libro su ogni famiglia, articoli compresi (+0,27), e nella libreria su quattro famiglie su sette, pareggiando sulle altre (campo,
+   § 4.1). Il riordino coi modelli a coppie non si vede nel complesso, aiuta il primo posto delle domande da studente e peggiora quello di
+   alcune domande per numero (campo, § 4.2). Il giudice alla cieca, su 60 domande, trova le verità automatiche precise ma incomplete:
+   sottostimano quasi tutte le configurazioni, e quasi tutti i modelli più di BM25 (campo, § 2.5; intervalli larghi).
+4. **Le scansioni.** Su un banco piccolo e facile (478 pagine, domande scritte vedendo la pagina), gli errori di lettura arrivano alla
+   ricerca solo oltre il 15% di parole perse: allora la pagina esce dai primi dieci per una domanda da studente su dieci fino a quasi una
+   su quattro, secondo il modello, e il significato non le ripara (sul testo letto i modelli stanno fra 0,77 e 0,86, BM25 a 0,79; alcuni
+   modelli perdono meno di BM25) (campo, § 5.2; numeri indicativi). La rete di significato riconosce le pagine lette male contro la verità
+   (area 0,81-0,94) ma non confrontando fra loro le due letture (0,48-0,57), e le due vie sbagliano per lo più sulle stesse pagine (campo,
+   § 5.3; che la seconda cosa spieghi la prima è dedotto). Cercare sull'immagine della pagina senza leggerla, con EmbeddingGemma 2, trova fra
+   un terzo e la metà in meno della lettura; con Jina Omni, che è solo da banco, quasi quanto (campo, § 5.5).
 
 ## 1. Livello 1 — Check-up, metodo e verità
 
@@ -62,7 +77,7 @@ esperienze operative, mai testo citato. Le domande, in ordine d'importanza:
 - La rete era lenta all'avvio (1,1-1,7 MB/s anche con otto connessioni, campo, 15:55-16:00), poi è risalita a 8-11 MB/s dalle 16:17:
   gli scaricamenti si sono fatti in fila, per priorità, coi soli file necessari.
 
-### 1.2 I candidati (revisioni dall'API di Hugging Face, schede lette il 2026-11-23; impronte di ogni file nel laboratorio, `pesi/<nome>/IMPRONTE.json`)
+### 1.2 I candidati (fonte: revisioni e file dall'API di Hugging Face, `https://huggingface.co/api/models/<repository>` e `https://huggingface.co/api/models/<repository>/tree/<revisione>`, e schede `https://huggingface.co/<repository>`, consultate il 2026-11-23; impronte di ogni file nel laboratorio, `pesi/<nome>/IMPRONTE.json`)
 
 | modello | repository e revisione | parametri | licenza (scheda e testo collegato) | dentro un'app dello store | GGUF ufficiale | motore che lo carica |
 |---|---|---|---|---|---|---|
@@ -80,8 +95,10 @@ esperienze operative, mai testo citato. Le domande, in ordine d'importanza:
 
 Nessun repository porta un file di licenza a sé: la licenza sta nei metadati e nel testo della scheda, con il collegamento al testo
 ufficiale (fonte, schede consultate il 2026-11-23). Tutti i candidati sono pubblici senza accesso condizionato (campo, API).
-**Perché i due Granite**, fra i modelli usciti dopo la lista del brief (fonte: API di Hugging Face, elenchi per tendenza e per autore,
-2026-11-23): sono gli unici della famiglia del 2026 da fonte ufficiale, multilingui con l'italiano fra le 52 lingue a supporto rafforzato,
+**Perché i due Granite**, fra i modelli usciti dopo la lista del brief (fonte: API di Hugging Face, elenchi per tendenza,
+`https://huggingface.co/api/models?pipeline_tag=<compito>&sort=trendingScore&direction=-1&limit=60`, e per autore,
+`https://huggingface.co/api/models?author=<autore>&search=<nome>&sort=createdAt&direction=-1` per ibm-granite, perplexity-ai, nomic-ai e
+Snowflake, consultati il 2026-11-23): sono gli unici della famiglia del 2026 da fonte ufficiale, multilingui con l'italiano fra le 52 lingue a supporto rafforzato,
 Apache 2.0 e di taglia da iPad; il 97M è il candidato più piccolo del giro (dimensione 384), il 311M dà la scala nella stessa famiglia.
 **Scartati, col motivo**: pplx-embed-v2-context-0.6b di Perplexity (vettori contestuali, interessanti per i blocchi, ma la scheda non
 dichiara una licenza e il codice proprio chiede nuclei di calcolo pensati per CUDA); pplx-embed-v2-late-0.6b (MIT, ma un vettore da 128
@@ -89,7 +106,7 @@ per parola: un indice di molti gigabyte per libreria, fuori misura per l'iPad); 
 (del 2024-2025, superati in taglia e data dai Granite R2); Nemotron-3-Embed (licenza con restrizioni, 1B e oltre); minishlab blink
 multilingue 64M (vettori statici, licenza non letta: fuori tempo).
 
-### 1.3 Gli strumenti: installati contro ultimi pubblicati, e le conversioni (campo, fonte PyPI e GitHub il 2026-11-23)
+### 1.3 Gli strumenti: installati contro ultimi pubblicati, e le conversioni (campo; fonte per le ultime versioni: PyPI, `https://pypi.org/pypi/<pacchetto>/json`, e GitHub, `https://api.github.com/repos/ggml-org/llama.cpp/releases/latest` e `https://api.github.com/repos/ggml-org/llama.cpp/releases/tags/b11429`, consultati il 2026-11-23)
 - Ambiente nuovo del laboratorio (`ambienti/st`): torch 2.15.0 (l'ultima, del 28 ottobre), transformers **5.24.0** (del 21 novembre;
   nel banco OCR c'era la 5.23), sentence-transformers **6.3.0** (dell'11 novembre), peft 0.22.0, coremltools 9.0 (ancora l'ultima; la
   libreria dice di essere provata fino a torch 2.7), FlagEmbedding 1.4.2 (installata senza dipendenze; lo sparso di BGE-M3 è rifatto
@@ -162,7 +179,7 @@ applicabile» (il modello non sa fare il compito) distinto da «non misurato» (
 | cit_n2d (norma → dottrina) | il testo dell'articolo senza numero; bersagli: i passi che lo citano | 200 | libreria senza i codici | come sopra |
 | num_art | «articolo N» del codice, in forma piana o abbreviata; trappole: i numeri vicini (uno o due sopra e sotto) e lo stesso numero nell'altro codice del volume | 200 | nel codice e nella libreria | come sopra |
 | num_par | «paragrafo N» del manuale coi «§»; trappole §N±1, §N±2 | 100 | nel libro e nella libreria | come sopra |
-| nl | domande da studente scritte da un sotto-agente che vede solo la voce e la materia (non le pagine), senza le parole della voce | 352 (su 380: 6 voci impossibili, nomi propri e voci vaghe; 22 tolte con le correzioni, le loro voci rimandavano solo a pagine non allineate) | come la voce | `VERITA_NL.json` `2af1eca5…` |
+| nl | domande da studente scritte da un sotto-agente che vede solo la voce e la materia (non le pagine), senza le parole della voce | 352 (su 380: 6 voci impossibili, nomi propri e voci vaghe; 22 tolte con le correzioni: 21 perché le loro voci rimandavano solo ai volumi I e II non allineati, una perché la sua voce non era più tenuta dopo la prima correzione; registro delle deviazioni, 17:03 e 17:17) | come la voce | `VERITA_NL.json` `2af1eca5…` |
 | banco_domanda, banco_frase | una domanda per pagina del banco (scritta vedendo la pagina: dichiarato) e una frase della pagina da ritrovare | 132 e 136 | fra le 478 pagine scansionate | `verita_scansioni.json` `611ab88a…` |
 | scansioni_vere | le domande numerate delle 14 pagine vere con la verità verificata alla cieca | 35 | fra le 75 pagine vere | come sopra |
 
@@ -215,15 +232,20 @@ ore, con la via Core ML ridotta a quattro manuali (deviazione dichiarata). Il li
 |---|---|---|---|---|---|---|---|
 | BGE-M3 denso | bf16 | corpus | 194.424 | 16.925.226 | 821 | 20.615 | 0 |
 | EmbeddingGemma 2 | bf16 | corpus | 194.424 | 18.499.457 | 2.521 | 7.337 | 0 |
+| EmbeddingGemma 2 | fp32 | L3 | 62.401 (ripresa: gettoni e secondi delle 31.681 rifatte) | 3.705.203 | 626 | 5.914 | 0 |
 | Granite 311M | bf16 | corpus | 194.424 | 18.305.030 | 1.039 | 17.615 | 0 |
 | Granite 97M | bf16 | corpus | 194.424 | 18.457.785 | 237 | 77.782 | 0 |
 | Granite 97M | fp32 | L3 | 62.401 | 6.748.415 | 210 | 32.074 | 0 |
 | Harrier 0.6B | bf16 | corpus | 194.424 | 21.282.473 | 2.979 | 7.143 | 0 |
 | Harrier 270M | bf16 | corpus | 194.424 | 18.499.450 | 1.732 | 10.683 | 0 |
+| Harrier 270M | fp32 | L3 | 62.401 (ripresa: gettoni e secondi delle 27.585 rifatte) | 3.249.733 | 370 | 8.774 | 0 |
 | Jina v5 Omni Nano | bf16 | corpus | 194.424 | 20.473.730 | 1.340 | 15.283 | 0 |
 | Qwen3-Embedding 0.6B | bf16 | corpus | 194.424 | 21.282.473 | 3.773 | 5.640 | 0 |
 
-Le corse sono andate in fila sulla scheda grafica; i gettoni al secondo comprendono i tratti in contesa (§ 7). Due tagli per il tempo,
+Grezzi `uscite/<modello>__<precisione>/<insieme>/meta.json` e `run.log`; script `tabella_codifiche.py`. Le corse sono andate in fila sulla
+scheda grafica; i gettoni al secondo comprendono i tratti in contesa (§ 7). Le due corse fp32 si sono fermate a metà e sono riprese dai pezzi
+salvati: EmbeddingGemma 2 per il tetto di memoria di Metal (16:58, dopo 15 pezzi su 31), Harrier 270M sospesa e poi chiusa perché teneva
+memoria (dopo 17 pezzi, § 7; registro delle deviazioni). Per loro gettoni e secondi contano solo la parte rifatta. Due tagli per il tempo,
 dichiarati prima di vedere i risultati che toccano (`registri/DEVIAZIONI.md`): la piena precisione solo per Granite 97M, Harrier 270M ed
 EmbeddingGemma 2 (per gli altri il riferimento del livello 3 è il bf16 del banco); le vie GGUF sul sottoinsieme ridotto L3c, come Core ML;
 il riordino sui primi 20 invece che sui primi 30. La codifica sul corpus intero di Harrier 0.6B e di Jina, tolta alle 18:1x, è tornata in coda alle 18:2x, quando si è vista la velocità
@@ -241,7 +263,8 @@ vera di Qwen3 (§ 7).
   all'articolo che cita (la citazione è tolta dal passo); **cit_n2d** dall'articolo ai passi che lo citano; **num_art** e **num_par**
   chiedono un articolo o un paragrafo col solo numero.
 - **La ricerca dell'app così com'è** cerca la frase intera e restituisce i blocchi in ordine di lettura: S@k misura se un blocco giusto sta
-  fra i primi k di quell'elenco. Nella libreria l'app restituisce i libri, non i passi: lì non ha numeri per famiglia.
+  fra i primi k di quell'elenco. Nella libreria l'app restituisce i libri, non i passi: lì non ha S@k, e si conta per famiglia se dà almeno
+  un libro e se fra i libri c'è quello giusto (§ 2.1).
 - **Le verità automatiche sono un limite inferiore** (§ 2.5): il giudice alla cieca trova che sono precise ma incomplete. I confronti fra
   configurazioni reggono; i valori assoluti sottostimano tutti, e i modelli più di BM25.
 - Grezzi: `uscite/<configurazione>/corpus/pd_{libro,libreria}_<impronta della verità>.json` (per domanda), classifiche
@@ -298,6 +321,19 @@ vera di Qwen3 (§ 7).
 | EmbeddingGemma 2 | 0.42 [0.39; 0.45] | 0.24 [0.20; 0.28] | 0.55 [0.50; 0.59] | 0.22 [0.17; 0.27] | 0.73 [0.67; 0.79] | 0.17 [0.12; 0.23] | 0.51 [0.41; 0.61] |
 | Granite 97M | 0.41 [0.38; 0.43] | 0.25 [0.20; 0.29] | 0.47 [0.43; 0.51] | 0.18 [0.14; 0.22] | 0.63 [0.56; 0.69] | 0.07 [0.04; 0.11] | 0.43 [0.33; 0.53] |
 
+**La ricerca della libreria dell'app** (come `LibrarySearch`: per ogni libro le occorrenze della frase intera, e l'elenco dei libri che ne
+hanno almeno una; grezzi `uscite/lessicale/{A,NL}/app_libreria.json`, script `cerca.py app_libreria`; campo):
+
+| famiglia | domande | con almeno un libro | col libro giusto fra quelli dati |
+|---|---|---|---|
+| indice | 1.250 | 548 | 537 |
+| nl | 352 | 0 | 0 |
+| indice_codice | 500 | 20 | 18 |
+| cit_d2n | 300 | 0 | 0 |
+| cit_n2d | 200 | 0 | 0 |
+| num_art | 200 | 54 | 11 |
+| num_par | 100 | 50 | 50 |
+
 **Tutti i luoghi dell'indice.** Per le 379 voci d'indice che rimandano a due luoghi o più, la quota dei luoghi ritrovati fra i primi 20
 (nel libro; script `tabella_luoghi.py`, grezzi le misure per domanda, campo `luoghi@20`):
 
@@ -325,19 +361,23 @@ vera di Qwen3 (§ 7).
 | Qwen3-Embedding 0.6B + BM25 (RRF) | 0.71 [0.68; 0.74] |
 
 - **Voci d'indice (parole chiave): le parole bastano.** BM25 trova il passo fra i primi dieci in 0,76 delle voci; i modelli migliori lo
-  eguagliano o lo superano di poco (Harrier 0.6B 0,79, Harrier 270M 0,78, Qwen3 0,76, BGE-M3 0,75), i più piccoli restano sotto (Granite
-  97M 0,63, EmbeddingGemma 2 0,69); la ricerca mista arriva a 0,78-0,79. Sulle voci del codice Harrier 0.6B arriva a 0,80. La ricerca
+  eguagliano o lo superano di poco (Harrier 0.6B 0,79, Harrier 270M 0,78, Qwen3 0,76, BGE-M3 0,75), EmbeddingGemma 2 e i due Granite
+  restano sotto (fra 0,63 e 0,69); la ricerca mista arriva a 0,76-0,80. Sulle voci del codice Harrier 0.6B arriva a 0,80. La ricerca
   dell'app così com'è: 0,26.
 - **Domande da studente: qui il significato conta.** Harrier 0.6B 0,61 [0,55; 0,66] e BGE-M3 0,60 [0,55; 0,65]; Harrier 270M, Qwen3 e
-  Granite 311M 0,53; BM25 0,39; la ricerca dell'app 0 (cerca la frase intera, che lo studente non scrive mai). Jina v5 Omni Nano, che per licenza resta al banco, arriva a 0,61 come Harrier 0.6B.
+  Granite 311M 0,53; BM25 0,39; la ricerca dell'app 0 nel libro e nessun libro nella libreria per tutte le 352 domande (cerca la frase
+  intera, che in queste domande non c'è mai). Jina v5 Omni Nano, che per licenza resta al banco, arriva a 0,61 come Harrier 0.6B.
 - **Dalla dottrina all'articolo** (il passo con la citazione tolta): BGE-M3 con BM25 0,56, BM25 0,42; **dall'articolo alla dottrina**
   (nella libreria, senza i codici) tutte le configurazioni fra 0,63 e 0,74, BM25 compreso: il testo dell'articolo ha già le parole giuste.
 - **Numeri**: per gli articoli BGE-M3 da solo 0,59 e con BM25 0,69, gli altri modelli da soli fra 0,02 e 0,31, BM25 0,43; per i paragrafi
   BM25, EmbeddingGemma 2, BGE-M3 e i due Harrier stanno sopra 0,9, gli altri sotto (Jina 0,87, Granite 97M 0,80, Qwen3 0,71, Granite 311M
   0,58), e ogni ricerca mista con BM25 sta a 0,98-1,00.
-- **Nella libreria** (55 documenti) tutti perdono, i modelli più delle parole: sulle voci d'indice BM25 passa da 0,76 a 0,61, Harrier
-  270M da 0,78 a 0,60, BGE-M3 da 0,75 a 0,46; da solo tiene meglio Harrier 0.6B (da 0,79 a 0,64), e le ricerche miste migliori tengono
-  0,61-0,65. Gli altri libri sullo stesso argomento sono distrattori per significato, non per parole.
+- **Nella libreria** (55 documenti) tutti perdono. Sulle voci d'indice i modelli perdono più di BM25 (BM25 da 0,76 a 0,61, Harrier 270M
+  da 0,78 a 0,60, BGE-M3 da 0,75 a 0,46), salvo Harrier 0.6B (da 0,79 a 0,64) e Jina (da 0,79 a 0,63), che perdono quanto BM25; le
+  ricerche miste migliori tengono 0,61-0,65. Sulle domande da studente e sulle voci del codice i modelli perdono quanto BM25 (da 0,16 a
+  0,24 contro 0,21, e da 0,09 a 0,15 contro 0,13), sui numeri meno. Sono differenze fra medie, senza intervallo (il calo di un modello non
+  è stato confrontato con quello di BM25 domanda per domanda). Che gli altri libri sullo stesso argomento facciano da distrattori per
+  significato più che per parole è dedotto.
 
 ### 2.2 Contro le parole (differenza appaiata di S@10 con BM25, nel libro; campo)
 | configurazione | indice | nl | indice_codice | cit_d2n | cit_n2d | num_art | num_par |
@@ -362,10 +402,11 @@ vera di Qwen3 (§ 7).
 | Qwen3-Embedding 0.6B | +0.00 [-0.02; +0.03] | +0.14 [+0.08; +0.19]* | +0.02 [-0.01; +0.06] | +0.05 [-0.01; +0.10] | — | -0.41 [-0.48; -0.34]* | -0.24 [-0.33; -0.15]* |
 | Qwen3-Embedding 0.6B + BM25 (RRF) | +0.02 [+0.00; +0.04]* | +0.12 [+0.08; +0.17]* | +0.05 [+0.03; +0.08]* | +0.10 [+0.06; +0.15]* | — | -0.26 [-0.32; -0.20]* | +0.03 [+0.00; +0.07] |
 
-- **Sulle domande da studente ogni modello buono batte le parole**: da +0,13 (Harrier 270M) a +0,21/+0,22 (Harrier 0.6B, Jina), BGE-M3
-  +0,20, tutti con l'intervallo che esclude lo zero; Granite 97M no (+0,02).
+- **Sulle domande da studente ogni modello tranne Granite 97M batte le parole**: da +0,08 (EmbeddingGemma 2) e +0,13 (Harrier 270M) a
+  +0,21/+0,22 (Harrier 0.6B, Jina), BGE-M3 +0,20, tutti con l'intervallo che esclude lo zero; Granite 97M +0,02, intervallo che contiene
+  lo zero.
 - **Sulle voci d'indice e del codice solo i modelli più forti battono BM25, e di poco**: Harrier 0.6B +0,03 e +0,06, Jina +0,03 e +0,05
-  (intervalli che escludono lo zero); Harrier 270M, Qwen3 e BGE-M3 pareggiano; i piccoli perdono da −0,07 a −0,13.
+  (intervalli che escludono lo zero); Harrier 270M, Qwen3 e BGE-M3 pareggiano; EmbeddingGemma 2 e i due Granite perdono da −0,07 a −0,13.
 - **Sui numeri quasi tutti i modelli perdono molto** (articoli da −0,12 a −0,41), tranne BGE-M3, che vince anche lì (+0,17).
 - **La ricerca mista non perde quasi mai contro BM25**: con ogni modello pareggia o vince su voci d'indice, domande da studente, dottrina e
   paragrafi; perde solo sugli articoli, e solo coi modelli che sugli articoli sono ciechi (da −0,07 con Harrier 0.6B a −0,26 con Qwen3).
@@ -399,14 +440,17 @@ vera di Qwen3 (§ 7).
 | Harrier 0.6B − Qwen3-Embedding 0.6B | +0.08 [+0.05; +0.10]* | +0.07 [+0.03; +0.12]* | +0.06 [+0.02; +0.09]* | +0.04 [-0.00; +0.08] | +0.04 [-0.01; +0.10] | +0.03 [+0.01; +0.05]* | +0.28 [+0.17; +0.39]* |
 | BGE-M3 denso + BM25 (RRF) − Harrier 0.6B + BM25 (RRF) | -0.04 [-0.06; -0.02]* | -0.02 [-0.06; +0.02] | +0.01 [-0.02; +0.04] | -0.02 [-0.05; +0.01] | +0.01 [-0.03; +0.04] | +0.34 [+0.27; +0.40]* | +0.01 [-0.07; +0.09] |
 
-- **Fra famiglie, no**: Qwen3-Embedding 0.6B (più del doppio dei parametri) non trova più di Harrier 270M su nessuna famiglia di testo (da
-  −0,02 a +0,02 nel libro, intervalli che contengono lo zero) e perde sui numeri. Harrier 0.6B, della stessa taglia di Qwen3, lo batte quasi ovunque (da +0,03 a +0,27).
-- **Dentro la stessa famiglia, sì**: Granite 311M trova più di Granite 97M su tutte le famiglie di testo (fra +0,04 e +0,12 nel libro,
-  intervalli che escludono lo zero), ma perde sui numeri; Harrier 0.6B trova più di Harrier 270M sulle domande da studente (+0,08) e sulle
-  voci del codice (+0,06), e pareggia altrove.
+- **Fra famiglie la taglia da sola non decide**: Qwen3-Embedding 0.6B (più del doppio dei parametri) non trova più di Harrier 270M su
+  nessuna famiglia di testo (da −0,02 a +0,02 nel libro, intervalli che contengono lo zero) e perde sui numeri; BGE-M3 (568 milioni) invece
+  batte Harrier 270M sulle domande da studente (+0,07 [+0,02; +0,12]) e dalla dottrina all'articolo (+0,06), e perde sulle voci d'indice
+  (−0,03). Harrier 0.6B, della stessa taglia di Qwen3, lo batte quasi ovunque (da +0,03 a +0,27). Sono poche coppie: dicono che la taglia
+  non basta, non quanto pesa.
+- **Nelle due famiglie misurate con due taglie, il più grande trova di più**: Granite 311M trova più di Granite 97M su tutte le famiglie di
+  testo (fra +0,04 e +0,12 nel libro, intervalli che escludono lo zero), ma perde sui numeri; Harrier 0.6B trova più di Harrier 270M sulle
+  domande da studente (+0,08) e sulle voci del codice (+0,06), e pareggia altrove.
 - **Harrier 270M ed EmbeddingGemma 2, della stessa taglia, si dividono i compiti**: Harrier batte EmbeddingGemma 2 sul testo
   (+0,05/+0,09 nel libro, +0,18 sulle voci d'indice nella libreria), EmbeddingGemma 2 batte Harrier sugli articoli per numero (+0,24) e
-  dentro l'app, con Core ML, non perde nulla, mentre Harrier perde 0,008 (§ 3.2).
+  con Core ML non perde in modo misurabile (−0,0015, intervallo che contiene lo zero), mentre Harrier perde 0,008 (§ 3.2).
 
 ### 2.3 Dove si sbaglia: indice stampato, blocchi cortissimi, numeri, libro giusto (campo)
 | configurazione | primo blocco su una pagina d'indice (domande indice e indice_codice, nel libro) | primo blocco sotto i 40 caratteri (indice, nl, indice_codice, nel libro) | num_art: primo posto a un blocco che cita il numero | num_art: primo posto a una trappola | num_par: primo posto a un paragrafo vicino | libreria: primo blocco nel libro giusto |
@@ -447,7 +491,8 @@ vera di Qwen3 (§ 7).
 ### 2.4 Le divisioni: tipo di documento, pagina, note (campo)
 Per ogni domanda le caratteristiche della prima pagina bersaglio dalle caratteristiche del corpus del giro globale del banco OCR (note
 dense, glosse, due colonne, tabelle) e il ruolo dei blocchi giusti (corpo o nota). Il confronto fra i gruppi non è appaiato (domande
-diverse): le differenze vanno lette con gli intervalli. Grezzi `dati/divisioni.json`; script `divisioni.py`.
+diverse, e i gruppi mescolano famiglie diverse): le differenze vanno lette con gli intervalli. Grezzi `dati/divisioni.json`; script
+`divisioni.py`.
 
 | configurazione | due_colonne=sì (n=677) | due_colonne=no (n=1725) | bersaglio_in_nota=sì (n=218) | bersaglio_in_nota=no (n=2184) | note_dense=sì (n=146) | note_dense=no (n=2256) | glosse=sì (n=604) | glosse=no (n=1798) | tipo=manuale (n=1523) | tipo=codice (n=879) |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -485,12 +530,14 @@ diverse): le differenze vanno lette con gli intervalli. Grezzi `dati/divisioni.j
 | Harrier 270M | 0.60 [0.56; 0.64] | 0.69 [0.62; 0.75] |
 | Harrier 270M + BM25 (RRF) | 0.63 [0.59; 0.66] | 0.70 [0.64; 0.76] |
 
-- **Il tipo di documento conta più della pagina**: nei codici i modelli e le ricerche miste stanno fra 0,06 e 0,13 sotto i manuali (BM25
-  0,12, la ricerca dell'app 0,20). Le pagine a due
-  colonne sono tutte nei codici (677 domande su 677): dentro i codici, le due colonne costano ancora 0,03-0,09, ma con intervalli che si
-  sovrappongono.
-- **Il bersaglio in nota** non pesa sui modelli (Harrier 270M 0,70 in nota e 0,69 nel corpo) e pesa un poco su BM25 (0,60 contro 0,67) e
-  sulla ricerca dell'app (0,02 contro 0,15).
+- **Il tipo di documento non si separa dalla famiglia della domanda**: le domande sui codici sono voci del codice e passi di dottrina da
+  riportare all'articolo, quelle sui manuali voci d'indice e domande da studente. Nei codici i modelli e le ricerche miste stanno fra 0,06
+  e 0,13 sotto i manuali (BM25 0,12, la ricerca dell'app 0,20), ma la differenza mescola il tipo di documento con il tipo di domanda: da
+  queste tabelle non si dice quale dei due pesi.
+- **Le pagine a due colonne sono tutte nei codici** (677 domande su 677): dentro i codici le due colonne stanno 0,03-0,09 sotto una
+  colonna, con intervalli che si sovrappongono (e anche qui i gruppi non hanno le stesse domande).
+- **Il bersaglio in nota** non cambia i modelli (Harrier 270M 0,70 in nota e 0,69 nel corpo); BM25 sta un poco sotto (0,60 contro 0,67,
+  intervalli che si sovrappongono), la ricerca dell'app molto sotto (0,02 contro 0,15).
 
 ### 2.5 Il giudice alla cieca (campo)
 Sessanta domande fisse (10 indice, 10 nl, 8 per ciascuna delle altre famiglie, scelte con l'impronta sha256 dell'identificativo), in
@@ -585,8 +632,8 @@ script `errori.py`.
   «trans.» rimaste non corrette, la citazione ambigua dell'autore già vista con Qwen3, e un passo d'origine che è solo una voce di
   bibliografia, cioè una domanda senza contenuto); i vicini per argomento (4); i titoli e i blocchi brevi (3, fra cui il titolo del capo che
   contiene l'articolo giusto, sulla stessa pagina); una rubrica con parole simili e un passo che cita più articoli.
-- **Una lezione per il prodotto**: gli errori sul testo sono gli stessi per tutti i modelli (i vicini per argomento, i titoli e i blocchi
-  brevi, le note); quelli sui numeri dipendono da come il modello è stato addestrato, non dalla sua taglia: BGE-M3 (568 milioni di
+- **Una lezione per il prodotto**: gli errori sul testo sono gli stessi per i quattro modelli letti (i vicini per argomento, i titoli e i
+  blocchi brevi, le note); quelli sui numeri dipendono da come il modello è stato addestrato più che dalla sua taglia: BGE-M3 (568 milioni di
   parametri) mette l'articolo chiesto fra i primi dieci in 59 domande su 100, Qwen3 (600 milioni) in 2 (§ 2.1). E quando BGE-M3 sbaglia un
   numero, spesso trova il numero giusto in un altro codice: l'indicazione del codice nella domanda («del codice civile») non gli basta
   (dedotto da 76 casi letti su quattro modelli e dai conteggi del § 2.3).
@@ -671,13 +718,14 @@ int8 con una scala simmetrica per dimensione, binario col segno. Grezzi `misure/
 | Qwen3-Embedding 0.6B | 128 | binario | 0.456 | -0.268 [-0.289; -0.246] | 14 kB | 3.0 MB |
 | | | | (2102 domande; 872 unità nel libro di 300 pagine, 194424 nella libreria) | | | |
 
-- **L'int8 non costa niente**: per ogni modello la differenza con la piena dimensione in fp32 sta fra −0,003 e +0,002 (intervalli che
-  toccano lo zero), con un quarto del peso.
-- **Le dimensioni ridotte costano poco fino a metà**: EmbeddingGemma 2 a 512 dimensioni −0,005, Granite 311M a 384 −0,002 e a 256 −0,007
-  (intervalli che contengono lo zero), Qwen3 a 512 −0,016 (misurabile). Granite 311M a 256 dimensioni in int8 pesa 218 kB per il libro di
-  300 pagine e 47 MB per la libreria.
-- **Il binario costa**: da −0,021 (EmbeddingGemma 2 a 768 dimensioni, il più robusto) a −0,09 (Harrier 270M, Granite 97M), per un
-  peso di 41-109 kB per libro.
+- **L'int8 costa al più tre punti su mille**: per ogni modello la differenza con la piena dimensione in fp32 sta fra −0,003 e +0,002, con
+  un quarto del peso; gli intervalli contengono lo zero tranne quello di Qwen3 (−0,0024 [−0,0048; −0,0005]), una perdita misurabile ma
+  piccola.
+- **Le dimensioni ridotte costano poco fino a metà per EmbeddingGemma 2 e Granite 311M**: EmbeddingGemma 2 a 512 dimensioni −0,005,
+  Granite 311M a 384 −0,002 e a 256 −0,007 (intervalli che contengono lo zero); per Qwen3 e Jina la perdita si misura già a 512 (−0,016 e
+  −0,009). Granite 311M a 256 dimensioni in int8 pesa 218 kB per il libro di 300 pagine e 47 MB per la libreria.
+- **Il binario costa**: da −0,021 (EmbeddingGemma 2 a 768 dimensioni, il più robusto) a −0,084 (Granite 97M) e −0,092 (Harrier 270M),
+  per un peso di 41-109 kB per libro.
 - **Il peso dell'indice non è il problema**: a 640-768 dimensioni in int8, mezzo megabyte per un libro di 300 pagine e 119-142 MB per i 55
   documenti, contro i 110-597 MB del modello piccolo che lo produce (§ 3.3).
 
@@ -694,11 +742,13 @@ pagina. Differenze appaiate. Grezzi `misure/varianti_<modello>.json`; script `va
 | titolo davanti, a livello di blocco | 0,755 [0,731; 0,779] | 0,748 [0,724; 0,772] | −0,006 [−0,026; +0,012] |
 | pagina intera, a livello di pagina | 0,786 [0,764; 0,809] (blocchi aggregati) | 0,728 [0,703; 0,753] | −0,058 [−0,080; −0,036] |
 
-- **Il titolo della sezione davanti al blocco non cambia nulla** (−0,006, intervallo che contiene lo zero): il modello trova il passo
-  dal suo contenuto, e il titolo non aggiunge.
+Un solo modello e quattro manuali: i risultati valgono per Harrier 270M su questi libri, non per tutti i modelli.
+
+- **Il titolo della sezione davanti al blocco non cambia nulla misurabile** (−0,006, intervallo che contiene lo zero): per questo modello
+  il titolo non aggiunge.
 - **La pagina intera come unità perde**: a parità di misura (la pagina giusta fra le prime dieci) cercare sulle pagine trova meno che
-  cercare sui blocchi e poi raccogliere i blocchi per pagina (−0,058). Il blocco della lettura, l'unità che VoiceOver percorre, è anche la
-  migliore per cercare.
+  cercare sui blocchi e poi raccogliere i blocchi per pagina (−0,058 [−0,080; −0,036]). Per Harrier 270M il blocco della lettura,
+  l'unità che VoiceOver percorre, è anche la migliore per cercare.
 
 ## 3. Livello 3 — Banco contro app
 
@@ -746,15 +796,18 @@ Granite 97M −0,002 [−0,005; +0,001], di Harrier 270M −0,001 [−0,004; +0,
 | qwen3emb06 | gguf_Q8_0_b11429 | bf16 | 19715 | 0.99944 (0.9991) | 0.967 | 0.932 | 1335 | +0.004 [-0.001; +0.009] | -0.0006 |
 
 - **Core ML col motore neurale** dà, per sei modelli su sette, i vettori del banco: coseno mediano fra 0,99977 e 0,99998, primi dieci
-  in comune per il 95-98 per cento, differenza media di S@10 nel libro fra −0,002 e +0,000 con l'intervallo dentro ±0,007 e sempre attorno
-  allo zero (Granite 97M, EmbeddingGemma 2, Granite 311M, Qwen3, BGE-M3, Harrier 0.6B; 1.335 domande). Vale anche per EmbeddingGemma 2, la cui scheda vieta il fp16 per PyTorch: il pacchetto Core ML in fp16
+  in comune per il 95-98 per cento; differenza media di S@10 nel libro fra −0,0015 e 0,0000 contro il riferimento del § 3.1 (la piena
+  precisione per Granite 97M ed EmbeddingGemma 2, il bf16 per gli altri), con gli intervalli dentro −0,0067 e +0,0052; contro il bf16 per
+  tutti fra −0,0022 e +0,0030, con gli intervalli dentro −0,0067 e +0,0082 (Granite 97M). Ogni intervallo contiene lo zero (Granite 97M,
+  EmbeddingGemma 2, Granite 311M, Qwen3, BGE-M3, Harrier 0.6B; 1.335 domande, una domanda vale 0,00075). Vale anche per EmbeddingGemma 2, la cui scheda vieta il fp16 per PyTorch: il pacchetto Core ML in fp16
   non dà NaN e resta a un coseno mediano di 0,99993 dal bf16 (campo).
 - **Harrier 270M è l'eccezione**: sul motore neurale perde poco ma in modo misurabile (S@10 −0,008 [−0,016; −0,001], coseno mediano
   0,988, primi dieci in comune per il 91 per cento). È un modello della stessa famiglia di EmbeddingGemma 2 (vocabolario di 262.144
   gettoni): la causa, un'attivazione che il fp16 tronca, è dedotta, non verificata.
 - **GGUF Q8_0 in Swift** (llama.cpp b11429, quella dell'app; v1.0.0 per EmbeddingGemma 2) dà anch'esso i vettori del banco per tutti e sei
-  i modelli convertibili: coseno mediano fra 0,99944 (Qwen3) e 0,99995 (Granite 311M), differenza di S@10 fra −0,002 e +0,004, ogni
-  intervallo attorno allo zero. La compressione a 8 bit dei pesi non si vede nella ricerca.
+  i modelli convertibili: coseno mediano fra 0,99944 (Qwen3) e 0,99995 (Granite 311M), differenza di S@10 fra −0,0022 e +0,0037 contro
+  il riferimento del § 3.1 (fra −0,0030 e +0,0037 contro il bf16 per tutti), ogni intervallo con lo zero dentro. La compressione a 8 bit
+  dei pesi non si vede nella ricerca.
 - **Un errore dell'eseguibile, non del modello**: nella prima versione dell'eseguibile Swift i due modelli che leggono da sinistra a destra
   (Qwen3, Harrier 0.6B) si fermavano quando una chiamata metteva insieme più testi, perché llama.cpp divide il contesto fra le sequenze
   se la memoria non è condivisa (2.048 gettoni per 16 testi = 128 a testo). Con la memoria condivisa (`kv_unified`) i vettori sono
@@ -821,19 +874,24 @@ Il picco di memoria è quello del processo di misura: per il banco e per Core ML
   Harrier 0.6B 47. Core ML con tutte le unità o con la scheda grafica va come la scheda grafica (Granite 97M 2,4 secondi, EmbeddingGemma 2
   9,3).
 - **Una domanda** si codifica in 1-10 millisecondi col motore neurale, in 3-19 con GGUF, in 4-22 al banco; la ricerca esatta in tutta la
-  libreria (194.424 vettori) costa 70-190 millisecondi secondo la dimensione. Per chi cerca, il modello non è mai il collo di bottiglia.
+  libreria (194.424 vettori, numpy sul Mac) costa 70-190 millisecondi secondo la dimensione. In queste misure, per chi cerca, il modello
+  non è il collo di bottiglia: la ricerca esatta costa di più.
 - **Energia** (indicativa: la sonda legge il carico del sistema ogni 1-3 secondi; la base è cambiata fra i due riposi, 6,4 e 7,5 W, e le
   misure col motore neurale stanno tutte nel secondo tratto; due misure non tornano: Granite 97M sulla scheda grafica in Core ML dà un
   valore sotto zero, Qwen3 in GGUF Q8_0 62 J contro i 542 di Harrier 0.6B, che ha la stessa struttura e lo stesso tempo). Ricalcolate con la
-  stessa base (il primo riposo), le misure dicono: **per i modelli piccoli e medi il motore neurale consuma meno di PyTorch e di llama.cpp
-  sulla scheda grafica** (Granite 311M 48 J per il libro contro 188 in GGUF e 263 al banco; Harrier 270M 63 contro 501 al banco; BGE-M3
-  157 contro 325 e 447; EmbeddingGemma 2 215 contro 394 e 886: da circa 2 a 8 volte); **non consuma meno di Core ML sulla scheda grafica**
-  (EmbeddingGemma 2 215 contro 241, e con tutte le unità 170); **per i modelli da 0,6 miliardi consuma di più** (662-696 J contro 387-542 in
-  GGUF), perché lì il motore neurale è due volte più lento (47 secondi contro 21; la causa è dedotta). La differenza viene più dal
-  programma che dall'unità di calcolo (dedotto). Indicizzare un libro di 300 pagine costa poche decine di joule per i modelli piccoli: come
-  qualche secondo di una lampadina da 10 W (dedotto).
-- **Caricamento**: Core ML compila il pacchetto alla prima apertura (4-17 secondi; 15-17 per i modelli grandi), GGUF carica in meno di un
-  secondo.
+  stessa base (il primo riposo; campo, lo stesso calcolo di `tabella_tempi.py` con la base fissa), le misure dicono: **fino a BGE-M3 (568
+  milioni di parametri) il motore neurale consuma meno di PyTorch e di llama.cpp sulla scheda grafica** (Granite 97M 64 J per il libro
+  contro 140 in GGUF; Granite 311M 48 contro 188 in GGUF e 263 al banco; Harrier 270M 63 contro 501 al banco; BGE-M3 157 contro 325 e 447;
+  EmbeddingGemma 2 215 contro 394 e 886: da circa 2 a 8 volte); **non consuma meno di Core ML sulla scheda grafica** (misurato solo con
+  EmbeddingGemma 2: 215 contro 241, e con tutte le unità 169); **per i modelli da 0,6 miliardi consuma più di llama.cpp e meno di PyTorch**
+  (662-694 J contro 409-564 in GGUF, senza la misura di Qwen3 Q8_0 che non torna, e 950-1.250 al banco); lì il motore neurale è due volte
+  più lento di llama.cpp (47 secondi contro 21; che sia questa la causa è dedotto). Che la differenza venga più dal programma che
+  dall'unità di calcolo è dedotto (EmbeddingGemma 2 sulla stessa scheda grafica: 241 J con Core ML, 886 con PyTorch). Col motore neurale,
+  per i modelli piccoli, indicizzare un libro di 300 pagine costa 48-64 joule sopra il riposo: quanto 5-6 secondi di una lampadina da 10 W
+  (dedotto dalla misura).
+- **Caricamento**: Core ML col motore neurale 4-17 secondi, senza legame con la taglia (Granite 97M 4,2, Granite 311M 7,5, Harrier 270M
+  8,7, BGE-M3 8,8, Qwen3 e Harrier 0.6B 15,2, EmbeddingGemma 2 17,3), con la scheda grafica 0,6-1,9; per la via GGUF il caricamento sta
+  dentro il tempo del libro (un processo per passaggio) e non è misurato a parte.
 - **Memoria**: per la via GGUF il processo Swift arriva a 0,3-2,3 GB secondo il modello e l'allocazione di llama.cpp; per il banco e per
   Core ML il picco misurato comprende il corpus caricato dallo script e non dice la memoria del modello (§ 10).
 
@@ -845,15 +903,20 @@ Nessun iPad era collegato (campo: l'elenco dei dispositivi mostra solo simulator
   https://www.apple.com/newsroom/2020/09/apple-unveils-all-new-ipad-air-with-a14-bionic-apples-most-advanced-chip/), quello dell'M4 38
   (fonte: Apple, 7 maggio 2024, https://www.apple.com/newsroom/2024/05/apple-introduces-m4-chip/); per l'M5 Pro del giro Apple dice solo
   «più veloce» della generazione prima, senza cifre (fonte: Apple, marzo 2026,
-  https://www.apple.com/newsroom/2026/03/apple-debuts-m5-pro-and-m5-max-to-supercharge-the-most-demanding-pro-workflows/). Dunque sull'A14 il
-  lavoro del motore neurale dura **almeno 3,5 volte** quello del Mac (dedotto);
+  https://www.apple.com/newsroom/2026/03/apple-debuts-m5-pro-and-m5-max-to-supercharge-the-most-demanding-pro-workflows/). Apple non dice
+  a quale precisione sono date le cifre: secondo un articolo di Macwelt quelle dei chip più vecchi (fra cui l'A14) sarebbero in fp16 e
+  quella dell'M4 «è da presumere» in int8, cioè circa il doppio dell'fp16 (fonte: Macwelt, 5 aprile 2025,
+  https://www.macwelt.de/article/2646535/apple-neural-engine-leistung.html, letta il 24 novembre; è una deduzione dell'articolo, non
+  verificata). Il rapporto fra M4 e A14 sta dunque fra 38/22 ≈ 1,7 (cifre a precisioni diverse) e 38/11 ≈ 3,5 (stessa precisione), e
+  l'M5 Pro va almeno quanto l'M4: sull'A14 il lavoro del motore neurale dura **almeno da 1,7 a 3,5 volte** quello del Mac (dedotto);
 - **il peso**: un pacchetto Core ML di Granite 97M è 188 MB, di un modello da 270-311 milioni di parametri 515-597 MB, di un modello da 0,6
   miliardi 1,1 GB per forma (campo, § 3.3). La memoria dell'iPad A14 non l'ho verificata.
 
-Con quel rapporto, sull'iPad A14 il libro di 300 pagine col motore neurale richiederebbe **almeno**: 26 secondi con Granite 97M, 36 con
-Harrier 270M, circa un minuto con EmbeddingGemma 2 e Granite 311M, due minuti con BGE-M3, quasi tre con Qwen3 e Harrier 0.6B; una domanda
-fra 4 e 35 millisecondi (dedotto dai tempi del § 3.4 moltiplicati per 3,5). Un libro intero da 1.500 pagine, cinque volte tanto. È un
-lavoro da fare una volta all'importazione, in sottofondo; la ricerca resta istantanea.
+Con quel rapporto, sull'iPad A14 il libro di 300 pagine col motore neurale richiederebbe **almeno**: 13-26 secondi con Granite 97M, 18-36
+con Harrier 270M, 28-59 con EmbeddingGemma 2 e Granite 311M, da uno a due minuti con BGE-M3, da un minuto e venti a quasi tre con Qwen3 e
+Harrier 0.6B; una domanda fra 2 e 35 millisecondi (dedotto: i tempi del § 3.4 moltiplicati per 1,7 e per 3,5). Un libro intero da 1.500
+pagine, cinque volte tanto (dedotto: il tempo cresce coi blocchi). È un lavoro da fare una volta all'importazione, in sottofondo; la
+ricerca di una domanda resta nell'ordine dei millisecondi (dedotto).
 
 ## 4. Livello 4 — Parole, ricerca mista, riordino
 
@@ -912,16 +975,21 @@ anche la fusione col suo vettore sparso (i pesi delle parole che il modello stes
 | Qwen3-Embedding 0.6B + BM25 (RRF) | Qwen3-Embedding 0.6B | +0.07 [+0.04; +0.09]* | -0.02 [-0.06; +0.02] | +0.03 [+0.00; +0.06] | +0.01 [-0.02; +0.04] | +0.04 [+0.01; +0.09]* | +0.13 [+0.09; +0.18]* | +0.31 [+0.22; +0.40]* |
 | Qwen3-Embedding 0.6B + BM25 (RRF) | BM25 (parole) | +0.02 [+0.00; +0.04]* | +0.14 [+0.10; +0.19]* | +0.04 [+0.02; +0.07]* | +0.00 [-0.03; +0.03] | +0.01 [-0.03; +0.05] | -0.12 [-0.17; -0.07]* | +0.09 [-0.01; +0.19] |
 
-- **Con BGE-M3 la ricerca mista batte BM25 su tutte le famiglie**, nel libro: +0,14 sulle domande da studente e dalla dottrina
+- **Con BGE-M3 la ricerca mista batte BM25 su tutte le famiglie del libro**: +0,14 sulle domande da studente e dalla dottrina
   all'articolo, +0,05 sulle voci del codice, +0,02 su quelle d'indice, **+0,27 sugli articoli chiesti per numero** e +0,05 sui paragrafi
-  (intervalli che escludono lo zero). È la configurazione migliore del giro sul testo (§ 2.1).
-- **Con gli altri modelli la ricerca mista batte BM25 quasi ovunque, ma non sui numeri degli articoli**: +0,10/+0,12 sulle domande da
-  studente, +0,10 dalla dottrina all'articolo coi modelli migliori (Harrier 270M e Qwen3 con BM25), ma sugli articoli BM25 da solo resta
-  sopra (−0,14 con Harrier 270M, −0,26 con Qwen3): il modello mette in cima passi che non c'entrano e la fusione diluisce il buon posto
-  delle parole. EmbeddingGemma 2, che sui numeri va meno peggio, con BM25 supera BM25 anche lì (+0,11).
+  (intervalli che escludono lo zero). Nella libreria batte BM25 su quattro famiglie su sette (domande da studente +0,18, voci del codice
+  +0,06, articoli +0,32, paragrafi +0,29) e pareggia sulle altre tre (voci d'indice, dottrina → norma e norma → dottrina, intervalli che
+  contengono lo zero). Ha il S@10 medio più alto nel libro fra le ricerche miste (la regola del § 4.2); contro Harrier 0.6B con BM25 vince
+  solo sugli articoli (+0,33) e pareggia altrove (§ 2.2 bis).
+- **Con gli altri modelli la ricerca mista batte BM25 quasi ovunque, ma non sui numeri degli articoli**: da +0,07 a +0,13 sulle domande
+  da studente, fra +0,04 e +0,13 dalla dottrina all'articolo, ma sugli articoli BM25 da solo resta sopra (da −0,07 con Harrier 0.6B a
+  −0,26 con Qwen3; Granite 97M pareggia): il modello mette in cima passi che non c'entrano e la fusione diluisce il buon posto delle parole
+  (dedotto). EmbeddingGemma 2, che sui numeri va meno peggio, con BM25 supera BM25 anche lì (+0,11).
 - **Contro il modello da solo** la ricerca mista aggiunge soprattutto dove il modello cade (numeri, dottrina che cita un articolo, voci
-  d'indice per i modelli piccoli) e **toglie qualcosa sulle domande da studente** ai modelli forti (BGE-M3 −0,07, intervallo che esclude
-  lo zero; Harrier 270M e Qwen3 −0,03 e −0,01, intervalli che contengono lo zero).
+  d'indice per i modelli piccoli) e **toglie qualcosa sulle domande da studente** ai modelli forti: Jina −0,09 [−0,14; −0,05], Harrier
+  0.6B −0,08 [−0,12; −0,03], BGE-M3 −0,07 [−0,11; −0,02], intervalli che escludono lo zero; Harrier 270M, Granite 311M e Qwen3 −0,03,
+  −0,03 e −0,01, intervalli che contengono lo zero. Sulle domande da studente il modello forte da solo trova di più della sua ricerca
+  mista.
 - **Il vettore sparso di BGE-M3 non sostituisce BM25.** La fusione del denso col suo sparso, contro quella del denso con BM25, perde sulle
   domande da studente (−0,04), sulle voci del codice (−0,05) e sui paragrafi per numero (−0,10), e pareggia altrove. Lo sparso da solo sta
   sotto BM25 sulle voci d'indice e del codice, sulle domande da studente e sui paragrafi, e sopra sulla dottrina e sugli articoli per
@@ -1054,12 +1122,17 @@ normalizzazione di ScaboCore). Grezzi: `misure/propagazione.json`, `uscite/<mode
 | qwen3emb06__bf16 | banco_frase | 5-15 % | 89 | 1.000 | 0.989 | +0.011 |
 | qwen3emb06__bf16 | banco_frase | oltre il 15 % | 107 | 1.000 | 0.720 | +0.280 |
 
-- Sotto il 15% di parole perse la ricerca quasi non se ne accorge (perdita di S@10 fra 0 e 0,04 in ogni fascia e configurazione).
-  Oltre il 15%, la pagina non torna più fra le prime dieci per **una domanda da studente su cinque circa** (S@10 da 1,00 a
-  0,77-0,83) e per **più di una frase su tre** (da 0,89-1,00 a 0,60-0,65).
-- **Il significato non salva le parole perse**: i modelli perdono quanto BM25 (domande da studente: −0,17/−0,23 i modelli, −0,21 BM25;
-  frasi: −0,24/−0,36 contro −0,36). Ciò che la lettura non ha scritto non si ritrova cercando per significato. Le domande sono 528
-  coppie pagina-via (132 pagine per quattro letture), non indipendenti: i numeri della tabella sono indicativi.
+- Il banco è piccolo e facile (478 pagine, domande scritte vedendo la pagina) e le fasce sono quattro: i numeri dicono dove la perdita
+  comincia a vedersi su questo banco, non una soglia generale.
+- Sotto il 15% di parole perse la ricerca quasi non se ne accorge (perdita di S@10 fra −0,02 e +0,04 in ogni fascia e configurazione).
+  Oltre il 15%, la pagina esce dai primi dieci per **una domanda da studente su dieci fino a quasi una su quattro**, secondo il modello
+  (S@10 da 0,96-1,00 sulla verità a 0,767-0,864 sul testo letto; perdite da 0,097 di BGE-M3 e 0,136 di Qwen3 a 0,233 dei due Harrier,
+  BM25 0,214), e per **una frase su quattro fino a più di una su tre** (da 0,89-1,00 a 0,598-0,720; perdite dei modelli da 0,243 a 0,355,
+  BM25 0,364).
+- **Il significato non ripara le parole perse**: sul testo letto i modelli restano fra 0,77 e 0,86 sulle domande da studente (BM25 0,79)
+  e fra 0,60 e 0,72 sulle frasi (BM25 0,64). Alcuni modelli perdono meno di BM25 (sulle domande BGE-M3 e Qwen3; sulle frasi tutti, ma
+  partendo in parte da valori più bassi sulla verità); nessuno ritrova ciò che la lettura non ha scritto. Le domande sono 528 coppie
+  pagina-via (132 pagine per quattro letture), non indipendenti: i numeri della tabella sono indicativi.
 
 ### 5.3 La rete di significato riconosce le pagine lette male, ma solo contro la verità (campo)
 | modello | contro la verità: coseno della pagina (Apple pulita, Apple degradata, GLM pulita, GLM degradata) | contro la verità: blocchi senza vicino | senza verità: coseno fra le due letture (pulita, degradata) | senza verità: blocchi senza vicino |
@@ -1078,13 +1151,14 @@ Pagine: 132. Contro la verità, le pagine con oltre il 15% di parole perse sono 
 - **Con la verità**: il coseno fra la media dei vettori dei blocchi della verità e quella dei blocchi letti, come rivelatore delle pagine con
   oltre il 15% di parole perse (negativi: sotto il 5 per cento), ha un'area sotto la curva ROC fra 0,81 e 0,94 secondo il modello
   e la lettura; la quota dei blocchi della verità senza un vicino nella lettura (soglia fissata prima di guardare) fra 0,75 e 0,88. Il
-  modello conta poco: i quattro modelli misurati stanno entro pochi centesimi. Grezzi `misure/rete_significato_<modello>.json`, script
+  modello conta poco: gli otto modelli misurati stanno entro pochi centesimi. Grezzi `misure/rete_significato_<modello>.json`, script
   `rete_significato.py`, `tabella_rete.py`.
 - **Senza verità, come potrebbe fare l'app** (aggiunta dichiarata, `rete_due_letture.py`): il coseno fra le due letture della stessa pagina
   **non** riconosce le pagine lette male (area 0,48-0,57, il caso; i blocchi senza vicino da una lettura all'altra 0,57-0,63; otto modelli).
-  La ragione è nel banco: **le due vie sbagliano sulle stesse pagine** (Spearman fra le loro perdite 0,71 nella forma pulita e 0,61 nella
-  degradata; delle pagine in cui almeno una perde oltre il 15%, in 41 su 61 e in 42 su 66 perdono tutte e due). Due letture che
-  perdono le stesse parti restano vicine fra loro anche quando sono lontane dalla pagina.
+  Nel banco **le due vie sbagliano per lo più sulle stesse pagine** (sulle 132 pagine, Spearman fra le loro perdite 0,72 nella forma
+  pulita e 0,62 nella degradata; delle pagine in cui almeno una perde oltre il 15%, in 20 su 30 e in 21 su 32 perdono tutte e due; campo,
+  ricalcolato da `misure/propagazione.json`). Che sia questa la ragione è dedotto: due letture che perdono sulle stesse pagine possono
+  restare vicine fra loro anche quando sono lontane dalla pagina.
 
 ### 5.4 Le scansioni vere e il banco: le due vie e i modelli (campo)
 | configurazione | famiglia | S@10 sulla verità | perdita media sulle quattro letture del banco [IC 95 %] | S@10 sulle scansioni vere: Apple | GLM |
@@ -1144,8 +1218,8 @@ pagina; contro la ricerca sul testo letto dalle due vie col ramo di testo dello 
 | Jina v5 Omni Nano | vere | scansioni_vere | 35 | 1.00 [1.00; 1.00] | 0.92 | +0.00 [+0.00; +0.00] | +0.00 [+0.00; +0.00] | +0.00 [+0.00; +0.00] | 0.18 |
 
 - **Con EmbeddingGemma 2 l'immagine non sostituisce la lettura**: sulle pagine del banco trova la pagina fra le prime dieci in 0,63 delle
-  domande da studente e in 0,44-0,46 delle frasi, un terzo e la metà meno della ricerca sul testo letto (da −0,31 a −0,49, intervalli che
-  escludono lo zero); sulle scansioni vere 0,89 contro 1,00.
+  domande da studente e in 0,44-0,46 delle frasi, cioè un terzo e la metà meno della ricerca sul testo letto (da −0,31 a −0,49, intervalli
+  che escludono lo zero); sulle 35 domande delle scansioni vere 0,89 contro 1,00.
 - **Con Jina Omni l'immagine va quasi come la lettura**: 0,94 sulle domande da studente (−0,01/−0,02 dal testo letto, intervalli che
   contengono lo zero), 0,88-0,90 sulle frasi (−0,03/−0,05), 1,00 sulle scansioni vere. Ma Jina non può entrare nell'app (licenza): il
   risultato dice che la strada esiste, non che oggi la si possa prendere.
@@ -1154,9 +1228,11 @@ pagina; contro la ricerca sul testo letto dalle due vie col ramo di testo dello 
 ## 6. Mappa dei comportamenti (campo, salvo dove detto)
 
 Per ogni configurazione, che cosa fa bene e dove cade, con il numero che lo mostra (nel libro salvo dove detto; i paragrafi danno gli
-intervalli).
+intervalli). Le due colonne delle vie dell'app sono contro il riferimento del § 3.1 (fp32 per Granite 97M, EmbeddingGemma 2 e Harrier
+270M, bf16 per gli altri): per questo EmbeddingGemma 2 vi ha −0,001 con Core ML, contro il −0,002 del confronto col bf16 del § 3.2.
+Script `tabella_mappa.py`.
 
-| configurazione | voci d'indice | domande da studente | articoli per numero | paragrafi per numero | voci d'indice nella libreria | indice stampato in cima | blocco sotto i 40 caratteri in cima | Core ML − banco | GGUF Q8_0 − riferimento | pacchetto Core ML |
+| configurazione | voci d'indice | domande da studente | articoli per numero | paragrafi per numero | voci d'indice nella libreria | indice stampato in cima | blocco sotto i 40 caratteri in cima | Core ML − riferimento | GGUF Q8_0 − riferimento | pacchetto Core ML |
 |---|---|---|---|---|---|---|---|---|---|---|
 | ricerca dell'app | 0.26 | 0.00 | 0.00 | 0.49 | — | 26 % | 3 % | — | — | — |
 | BM25 (parole) | 0.76 | 0.39 | 0.43 | 0.95 | 0.61 | 24 % | 13 % | — | — | — |
@@ -1180,8 +1256,9 @@ intervalli).
 | Jina v5 Omni Nano + BM25 (RRF) | 0.80 | 0.52 | 0.28 | 0.99 | 0.65 | 13 % | 12 % | — | — | — |
 
 Tre comportamenti attraversano tutti i modelli:
-- **Il numero non è un significato.** Chiesto un articolo per numero, i modelli da soli mettono in cima passi che parlano d'altro o che
-  citano lo stesso numero; la ricerca per parole e la ricerca mista ritrovano una parte di ciò che i modelli perdono (§ 2.3, § 4.1).
+- **Il numero non è un significato.** Chiesto un articolo per numero, i modelli da soli (tranne BGE-M3) mettono in cima passi che parlano
+  d'altro o che citano lo stesso numero; la ricerca per parole e la ricerca mista ritrovano una parte di ciò che i modelli perdono (§ 2.3,
+  § 4.1).
 - **L'indice stampato è un distrattore per le parole, non per i modelli.** La pagina dell'indice contiene proprio le parole della voce:
   BM25 la mette in cima in una domanda d'indice su quattro (24 per cento), il vettore sparso di BGE-M3 in una su tre (35), i modelli densi
   fra il 2 e l'11 per cento; la ricerca mista la riporta su (5-17) (§ 2.3).
@@ -1235,79 +1312,97 @@ Tre comportamenti attraversano tutti i modelli:
 
 1. Oggi, se uno studente scrive la domanda con parole sue, la ricerca della libreria dell'app non trova nessun libro: **352 domande su
    352** (campo, § 2.1).
-2. Un modello di 600 milioni di parametri non trova più di uno di 270 milioni di un'altra famiglia (Qwen3 contro Harrier 270M:
-   differenze fra −0,02 e +0,02, tutte con l'intervallo che contiene lo zero); dentro la stessa famiglia sì (Harrier 0.6B sopra 270M,
-   +0,08 sulle domande da studente) (campo, § 2.2 bis).
-3. Con le domande scritte da studente, i modelli migliori trovano il passo giusto fra i primi dieci **sei volte su dieci** (Harrier 0.6B
-   0,61 [0,55; 0,66], BGE-M3 0,60 [0,55; 0,65]); la ricerca per parole quattro (0,39 [0,34; 0,45]) (campo, § 2.1).
-4. Mescolare il significato con le parole è la scelta migliore: BGE-M3 con la ricerca per parole batte le sole parole **su tutti i tipi
-   di domanda**, e sugli articoli chiesti per numero passa da 43 a 69 su 100 (+0,27 [+0,20; +0,33]) (campo, § 4.1).
-5. Chiesto un articolo per numero, quasi tutti i modelli si perdono: Harrier 270M lo trova fra i primi dieci **in 7 casi su 100** [4;
-   10], Qwen3 in 2, la ricerca per parole in 43 [36; 50]; fa eccezione BGE-M3, con 59 [53; 66] (campo, § 2.1).
-6. Dentro l'app si trova quello che si trova al banco: con Core ML sul motore neurale del Mac, per sei modelli su sette la differenza
-   sta **sotto un punto su mille in media** (fra −0,002 e +0,000 di S@10, intervalli dentro ±0,007); il settimo, Harrier 270M, perde
-   8 punti su mille [1; 16] (campo, § 3.2).
+2. Qwen3, con 600 milioni di parametri, non trova più di Harrier 270M, di un'altra famiglia: sulle famiglie di testo le differenze stanno
+   fra −0,02 e +0,02, tutte con l'intervallo che contiene lo zero. La taglia da sola non decide; dentro la stessa famiglia il più grande
+   trova di più (Harrier 0.6B sopra 270M, +0,08 [+0,03; +0,13] sulle domande da studente) (campo, § 2.2 bis).
+3. Con le domande scritte da studente, nel libro, i modelli migliori trovano il passo giusto fra i primi dieci **sei volte su dieci**
+   (Harrier 0.6B 0,61 [0,55; 0,66], BGE-M3 0,60 [0,55; 0,65]); la ricerca per parole quattro (0,39 [0,34; 0,45]) (campo, § 2.1).
+4. Mescolare il significato con le parole aiuta dove il modello cade: nel libro BGE-M3 con la ricerca per parole batte le sole parole **su
+   tutti i tipi di domanda**, e sugli articoli chiesti per numero passa da 43 a 69 su 100 (+0,27 [+0,20; +0,33]); sulle domande da
+   studente però trova meno di BGE-M3 da solo (0,53 contro 0,60) (campo, § 4.1).
+5. Chiesto un articolo per numero, nel libro, sette modelli su otto restano sotto la ricerca per parole: Harrier 270M lo trova fra i primi
+   dieci **in 7 casi su 100** [4; 10], Qwen3 in 2, la ricerca per parole in 43 [36; 50]; fa eccezione BGE-M3, con 59 [53; 66] (campo,
+   § 2.1).
+6. Con le vie dell'app si trova quello che si trova al banco: con Core ML sul motore neurale del Mac, per sei modelli su sette la
+   differenza media di S@10 nel libro sta **entro tre punti su mille** (fra −0,002 e +0,003 secondo il riferimento; ogni intervallo
+   contiene lo zero ed è dentro −0,007 e +0,008); il settimo, Harrier 270M, perde 8 punti su mille [1; 16] (campo, § 3.2).
 7. L'indice per significato di un libro di 300 pagine pesa **mezzo megabyte** (545-654 kB a 640-768 dimensioni in int8, senza perdita
    misurabile) (campo, § 2.7).
-8. Finché la lettura di una scansione perde meno di **una parola su sette**, la ricerca non se ne accorge; oltre, una domanda da studente
-   su cinque non ritrova più la sua pagina (campo, § 5.2).
-9. Le due vie di lettura del Mac sbagliano **sulle stesse pagine**: confrontarle per significato non dice quale pagina è stata letta male
-   (area 0,48-0,57, il caso) (campo, § 5.3).
-10. Le verità costruite dagli indici dei libri sono precise ma incomplete: il giudice alla cieca ha trovato **fuori dalla verità due
-   blocchi su tre** di quelli che rispondono (82 su 121), e ha bocciato solo 2 dei 53 blocchi della verità che ha visto (campo, § 2.5).
-11. EmbeddingGemma 2 mette in cima **un titolo o una riga sola**, meno di 40 caratteri, in quattro domande su dieci (41 per cento);
-    Harrier 270M in meno di una su dieci (7) (campo, § 2.3).
+8. Su un banco piccolo di scansioni, finché la lettura perde meno del 15 per cento delle parole (una su sette circa) la ricerca quasi non
+   se ne accorge; oltre, secondo il modello, **da una domanda da studente su dieci a quasi una su quattro** non ritrova più la sua pagina
+   fra le prime dieci, e cercare per significato non ripara (campo, § 5.2; numeri indicativi).
+9. Le due vie di lettura del Mac sbagliano **per lo più sulle stesse pagine** (delle pagine lette male da almeno una, due su tre lo sono
+   da tutte e due): confrontarle per significato non dice quale pagina è stata letta male (area 0,48-0,57, il caso) (campo, § 5.3).
+10. Le verità costruite dagli indici e dalle citazioni sono precise ma incomplete: fra i blocchi che rispondono, il giudice alla cieca ne
+   ha trovati **fuori dalla verità due su tre** (82 su 121, su 60 domande), e ha bocciato solo 2 dei 53 blocchi della verità che ha visto
+   (campo, § 2.5).
+11. EmbeddingGemma 2 mette in cima **un blocco di meno di 40 caratteri** (un titolo, un rimando, una riga sola) in quattro domande su
+    dieci (41 per cento); Harrier 270M in meno di una su dieci (7) (campo, § 2.3).
 12. La ricerca per parole mette in cima **la pagina dell'indice stampato** in una domanda d'indice su quattro (24 per cento), i modelli
-    fra il 2 e l'11 (campo, § 2.3).
-13. Sul Mac, dentro l'app, un modello piccolo indicizza un libro di 300 pagine **in pochi secondi**: Granite 97M in 3,3 secondi con la via
-    di llama.cpp, Harrier 270M in 10 col motore neurale; una domanda si codifica in pochi millesimi di secondo (campo, § 3.4).
-14. Per i modelli piccoli e medi il motore neurale consuma **da 2 a 10 volte meno** della scheda grafica per lo stesso libro, anche
-    quando è più lento: Granite 311M 31 joule per 300 pagine contro 188; per quelli da 0,6 miliardi il vantaggio sparisce (misura
-    indicativa, campo, § 3.4).
+    densi fra il 2 e l'11 (campo, § 2.3).
+13. Sul Mac, con le vie dell'app, un modello piccolo indicizza un libro di 300 pagine **in pochi secondi**: Granite 97M in 3,3 secondi
+    con llama.cpp, Harrier 270M in 10 col motore neurale; con tutti e due una domanda si codifica in 3 millesimi di secondo (campo, § 3.4).
+14. Per i modelli fino a 568 milioni di parametri il motore neurale consuma **da 2 a 8 volte meno** di PyTorch e di llama.cpp sulla
+    scheda grafica per lo stesso libro, anche quando è più lento (Granite 311M 48 joule per 300 pagine contro 188 con llama.cpp); non
+    consuma meno di Core ML sulla scheda grafica, e per i modelli da 0,6 miliardi consuma più di llama.cpp (misura indicativa, campo,
+    § 3.4).
 15. Cercare sull'immagine della pagina, senza leggerla, con il modello che l'app potrebbe usare (EmbeddingGemma 2) trova la pagina giusta
-    **un terzo meno spesso** che cercare sul testo letto (0,63 contro 0,96 fra le prime dieci); con un modello solo da banco (Jina Omni)
-    quasi come la lettura (0,94) (campo, § 5.5).
-16. Sull'iPad del 2020 (A14) indicizzare un libro di 300 pagine col motore neurale richiederebbe almeno mezzo minuto con un modello piccolo,
-    circa un minuto con quelli da 300 milioni di parametri (dedotto, § 3.5).
+    **un terzo meno spesso** che cercare sul testo letto, sulle domande da studente del banco (0,63 contro 0,96 fra le prime dieci; sulle
+    frasi la metà); con un modello solo da banco (Jina Omni) quasi come la lettura (0,94) (campo, § 5.5).
+16. Sull'iPad del 2020 (A14) indicizzare un libro di 300 pagine col motore neurale richiederebbe almeno 13-26 secondi con Granite 97M e
+    da 18 secondi a un minuto con i modelli da 270-311 milioni di parametri, secondo la precisione delle cifre di Apple, che non è
+    dichiarata (dedotto, § 3.5).
 
 ## 9. Respiro: che cosa vuol dire per il prodotto e per l'architettura (nessuna implementazione)
 
-Ogni voce dice perché conta, quanto costa e quando avrebbe senso; le misure sono quelle dei paragrafi indicati.
+Ogni voce dice perché conta, quanto costa e quando avrebbe senso; le misure sono quelle dei paragrafi indicati (campo), le proposte sono
+deduzioni (dedotto) e restano decisioni del maintainer.
 
-1. **Prima le parole, poi i modelli.** La ricerca dell'app cerca la frase intera: sulle voci d'indice trova il passo fra i primi dieci nel 26 per cento dei casi, sulle domande
-   scritte a parole proprie mai, e nella libreria non dà nessun libro per 352 domande da studente su 352 (§ 2.1). Una ricerca per parole
-   pesate (BM25, con la stessa normalizzazione di ScaboCore) porta le voci d'indice a 0,76 e le domande da studente a 0,39 senza modelli,
-   senza pesi da scaricare e senza energia in più (dedotto: un indice di parole per libro). È il primo passo di qualunque ricerca mista, e
-   da solo è già la differenza più grande misurata nel giro.
-2. **Un modello piccolo, in ricerca mista.** Sul testo la configurazione migliore è un modello con BM25 per rango reciproco (§ 4.1). Fra i modelli che possono entrare nell'app
-   tre hanno profili diversi: **BGE-M3** (568 milioni di parametri, 1,1 GB in Core ML, 605 MB in GGUF Q8_0) è il migliore sulle domande da
-   studente e sui numeri; **Harrier 270M** (515 MB in Core ML, nessun GGUF ufficiale possibile) è il migliore dei piccoli sulle voci d'indice
-   ma perde un poco nel motore neurale; **EmbeddingGemma 2** (522 MB, 296 MB in GGUF) dentro l'app è identico al banco e regge il binario,
-   ma va tenuto lontano dai blocchi cortissimi (titoli, rimandi). Granite 311M sta nel mezzo e si comprime meglio di tutti (256 dimensioni
-   in int8 senza perdita misurabile). Il costo vero non è l'indice (mezzo megabyte per un libro di 300 pagine) ma il modello (§ 3.3) e il
-   tempo per indicizzare un libro nuovo all'importazione (§ 3.4). Quando: dopo il passo 1, e dopo aver deciso dove gira il modello (voce 6).
-3. **Le domande per numero non vanno alla ricerca per significato.** Chiesti per numero, l'articolo o il paragrafo stanno già nella struttura che l'app conosce (le rubriche degli articoli dei codici,
-   i titoli «§ N» dei manuali): un salto diretto per numero e codice è esatto, la ricerca per significato no (Qwen3 trova l'articolo in 2
-   domande su 100, il migliore BGE-M3 in 59, e sbaglia spesso codice, § 2.6). Costo minimo; quando: insieme al passo 1.
-4. **Il legame fra norma e dottrina.** Dall'articolo ai passi che lo citano, le parole bastano quasi (BM25 0,72 nella libreria, la ricerca mista al più 0,74); dalla dottrina
-   all'articolo citato, a citazione tolta, la ricerca mista arriva a 0,56 nel libro. Nel prodotto le citazioni esplicite si leggono con una
-   regola, come ha fatto la costruzione delle verità di questo giro; la ricerca per significato serve dove la citazione manca o è ambigua.
-   Costo: un indice della libreria (47-190 MB in int8, secondo il modello e le dimensioni). Quando: dopo il passo 2.
-5. **La rete di significato non è un rivelatore di pagine lette male dentro l'app.** Contro la verità il coseno fra la pagina letta e quella vera riconosce le pagine lette male (area 0,81-0,94), ma nell'app la verità non
-   c'è, e il confronto fra le due letture del Mac non serve: le due vie perdono le stesse parti delle stesse pagine (area 0,48-0,57, § 5.3).
-   Resta uno strumento del laboratorio, per i banchi.
-6. **Dove vive il modello: Mac e iPad.** Sul Mac l'app ha già llama.cpp (b11429): la via GGUF non chiede librerie nuove, ma EmbeddingGemma 2 chiede una revisione più recente
-   (dalla v1.0.0), e Harrier 270M non ha un GGUF ufficiale. Sull'iPad la via naturale è Core ML col motore neurale, che dà i vettori del
-   banco per sei modelli su sette (§ 3.2); l'A14 è almeno 3,5 volte più lento del Mac del giro sul motore neurale (dedotto, § 3.5): un libro di 300 pagine fra mezzo
-   minuto e due minuti secondo il modello, da fare una volta all'importazione e in sottofondo; i pacchetti da 0,6 miliardi di parametri
-   (1,1 GB per forma) sono pesanti per un iPad del 2020 (la memoria dell'A14 non l'ho verificata). Per i modelli piccoli e medi il motore neurale è anche
-   la via che consuma meno (§ 3.4).
+1. **Prima le parole, poi i modelli.** La ricerca dell'app cerca la frase intera: nel libro trova il passo fra i primi dieci nel 26 per
+   cento delle voci d'indice, sulle domande scritte a parole proprie mai, e nella libreria non dà nessun libro per 352 domande da studente
+   su 352 (campo, § 2.1). Una ricerca per parole pesate (BM25, con la stessa normalizzazione di ScaboCore) porta le voci d'indice a 0,76 e
+   le domande da studente a 0,39 (campo, § 2.1), senza modelli e senza pesi da scaricare, con un costo di calcolo che il giro non ha misurato
+   (dedotto: un indice di parole per libro). È il primo passo di qualunque ricerca mista, e da solo è già il salto più grande misurato nel
+   giro (campo, § 2.2).
+2. **Un modello, da solo o in ricerca mista.** La ricerca mista con BM25 è la più regolare: nel libro non perde contro BM25 se non sugli
+   articoli, ma sulle domande da studente toglie 0,07-0,09 ai modelli forti (campo, § 4.1). Fra i modelli che possono entrare nell'app
+   quattro hanno profili diversi (campo, § 2.1, § 2.7, § 3.2, § 3.3): **BGE-M3** (568 milioni di parametri, 1,1 GB in Core ML, 605 MB in
+   GGUF Q8_0) è alla pari con Harrier 0.6B sulle domande da studente (0,60 e 0,61) e il migliore sugli articoli per numero (0,59);
+   **Harrier 0.6B** (1,1 GB in Core ML, 610 MB in GGUF Q8_0) è alla pari o in testa sul testo e cieco sugli articoli (0,11); **Harrier 270M**
+   (515 MB in Core ML, nessun GGUF ufficiale possibile) è il migliore dei piccoli sulle voci d'indice ma perde un poco nel motore neurale;
+   **EmbeddingGemma 2** (522 MB, 296 MB in GGUF) con le vie dell'app resta entro 0,003 dal banco e regge il binario, ma attira i blocchi
+   cortissimi (titoli, rimandi). Granite 311M sta nel mezzo e regge meglio degli altri le dimensioni ridotte (256 dimensioni in int8 senza
+   perdita misurabile). Il costo vero non è l'indice (mezzo megabyte per un libro di 300 pagine) ma il modello (§ 3.3) e il tempo per
+   indicizzare un libro nuovo all'importazione (§ 3.4). Quando: dopo il passo 1, e dopo aver deciso dove gira il modello (voce 6; dedotto).
+3. **Le domande per numero non vanno alla ricerca per significato.** Chiesti per numero, l'articolo o il paragrafo stanno già nella
+   struttura che l'app conosce (le rubriche degli articoli dei codici, i titoli «§ N» dei manuali): un salto diretto per numero e codice
+   sarebbe esatto (dedotto, non misurato), la ricerca per significato no (campo: Qwen3 trova l'articolo in 2 domande su 100, il migliore,
+   BGE-M3, in 59, e in 26 domande su 200 mette in cima lo stesso numero di un altro codice o legge, § 2.1, § 2.3). Costo minimo; quando:
+   insieme al passo 1 (dedotto).
+4. **Il legame fra norma e dottrina.** Dall'articolo ai passi che lo citano, le parole bastano quasi (BM25 0,72 nella libreria, la ricerca
+   mista al più 0,74); dalla dottrina all'articolo citato, a citazione tolta, la ricerca mista arriva a 0,56 nel libro (campo, § 2.1). Nel
+   prodotto le citazioni esplicite si leggono con una regola, come ha fatto la costruzione delle verità di questo giro; la ricerca per
+   significato serve dove la citazione manca o è ambigua (dedotto). Costo: un indice della libreria (47-190 MB in int8, secondo il modello e
+   le dimensioni; campo, § 2.7). Quando: dopo il passo 2 (dedotto).
+5. **La rete di significato non è un rivelatore di pagine lette male dentro l'app.** Contro la verità il coseno fra la pagina letta e
+   quella vera riconosce le pagine lette male (area 0,81-0,94), ma nell'app la verità non c'è, e il confronto fra le due letture del Mac non
+   le riconosce (area 0,48-0,57): le due vie perdono per lo più sulle stesse pagine (campo, § 5.3). Resta uno strumento del laboratorio,
+   per i banchi (dedotto).
+6. **Dove vive il modello: Mac e iPad.** Sul Mac l'app ha già llama.cpp (b11429): la via GGUF non chiede librerie nuove, ma EmbeddingGemma
+   2 chiede una revisione più recente (dalla v1.0.0), e Harrier 270M non ha un GGUF ufficiale (campo, § 1.3). Sull'iPad la via naturale è
+   Core ML col motore neurale, che dà i vettori del banco per sei modelli su sette (campo, § 3.2); l'A14 sarebbe almeno da 1,7 a 3,5 volte
+   più lento del Mac del giro sul motore neurale (dedotto, § 3.5): un libro di 300 pagine fra 13 secondi e quasi tre minuti secondo il
+   modello e la precisione, da fare una volta all'importazione e in sottofondo; i pacchetti da 0,6 miliardi di parametri (1,1 GB per forma)
+   sono pesanti per un iPad del 2020 (dedotto; la memoria dell'A14 non l'ho verificata). Quanto all'energia, per i modelli fino a 568
+   milioni di parametri il motore neurale consuma meno di PyTorch e di llama.cpp sulla scheda grafica, non meno di Core ML sulla scheda
+   grafica (campo, misura indicativa, § 3.4).
 7. **Le immagini delle pagine.** Per le scansioni, cercare sull'immagine senza leggere sarebbe la via più semplice, ma con il modello
-   che l'app potrebbe usare (EmbeddingGemma 2) trova un terzo meno della lettura; un modello solo da banco (Jina Omni) mostra che si può
-   arrivare quasi alla lettura (§ 5.5). Oggi la lettura resta la base; da riguardare quando esisterà un modello d'immagine con licenza
-   compatibile e la qualità di Jina.
-8. **Licenze e revisioni.** Jina v5 Omni Nano è a licenza non commerciale: resta un riferimento del banco, non un candidato. Gli altri sono Apache 2.0 o MIT (§ 1.2).
-   Le revisioni usate sono fissate con l'impronta: un aggiornamento del modello è una misura nuova, non un dettaglio.
+   che l'app potrebbe usare (EmbeddingGemma 2) trova fra un terzo e la metà in meno della lettura; un modello solo da banco (Jina Omni) mostra
+   che si può arrivare quasi alla lettura (campo, § 5.5). Oggi la lettura resta la base; da riguardare quando esisterà un modello
+   d'immagine con licenza compatibile e la qualità di Jina (dedotto).
+8. **Licenze e revisioni.** Jina v5 Omni Nano è a licenza non commerciale: resta un riferimento del banco, non un candidato. Gli altri sono
+   Apache 2.0 o MIT (fonte, schede del 2026-11-23, § 1.2). Le revisioni usate sono fissate con l'impronta: un aggiornamento del modello è
+   una misura nuova, non un dettaglio (dedotto).
 
 ## 10. Che cosa resta
 
@@ -1320,7 +1415,8 @@ Ogni voce dice perché conta, quanto costa e quando avrebbe senso; le misure son
   unità e con la sola scheda grafica solo per Granite 97M ed EmbeddingGemma 2.
 - **L'energia** è indicativa (§ 3.4): due misure non tornano, e la base è cambiata fra i due riposi; una serie ripetuta a Mac fermo, con un
   misuratore esterno o coi contatori di energia del sistema (che chiedono privilegi che il giro non usa), darebbe numeri più saldi.
-- **Le verità**: due voci della procedura penale («trans.», disposizioni transitorie) restano non corrette (§ 1.6); le verità
+- **Le verità**: due voci su 500 della famiglia indice_codice («trans.», norme transitorie) puntano all'articolo omonimo della procedura
+  penale e restano non corrette (§ 2.6; registro delle deviazioni, 17:22); le verità
   automatiche sono un limite inferiore (§ 2.5): un'altra tornata del giudice su domande nuove, o verità a mano su un campione, darebbe i
   valori assoluti.
 - **Le domande per numero** vanno misurate contro una ricerca strutturata (l'elenco degli articoli e dei paragrafi che l'app già conosce),
