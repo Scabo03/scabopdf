@@ -11,7 +11,7 @@
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
 > Versione: 2.72 (23-24 novembre 2026, giro «banco embedding», livello di misura (solo laboratorio e documenti, nessuna build, nessun
-> cambiamento nel prodotto), **CONCLUSO**: cercare e collegare per significato con modelli locali, al banco e dentro l'app (Core ML e
+> cambiamento nel prodotto), **CONCLUSO e unito in main**: cercare e collegare per significato con modelli locali, al banco e dentro l'app (Core ML e
 > GGUF in Swift), contro la ricerca per parole e quella dell'app così com'è, per lo speciale radiofonico sugli OCR. Report
 > `docs/BANCO_EMBEDDING.md`, rimando in `docs/BANCO_OCR.md` § 46. Vedi lo STATO qui sotto.)
 > Versione: 2.71 (21 novembre 2026, sera, giro «modulo e sommario», livello pieno (modulo condiviso dell'impaginazione e tronco
@@ -223,7 +223,7 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 ## ▶ STATO — Giro «banco embedding»: cercare per significato coi modelli locali, al banco e dentro l'app (Core ML e GGUF in Swift), contro la ricerca per parole e quella dell'app, per lo speciale radiofonico sugli OCR (nessuna build) — 2026-11-23/24 — CONCLUSO
 
 **Build:** nessuna (iPad ultima **67**, prossima **68**; Mac ultima **4**, prossima **5**: invariate).
-**Partenza:** `1cceebf` (main = origin), 15:36 del 23. **Ramo:** `chore/banco-embedding` (aperto da main; pubblicato e **non unito**: la revisione indipendente chiede correzioni prima della fusione; il tetto delle 14 ore è stato superato per due pause del limite d'uso, 22:04-02:20 e 03:05-07:20, e la fusione resta al prossimo giro). Livello di misura. Laboratorio
+**Partenza:** `1cceebf` (main = origin), 15:36 del 23. **Ramo:** `chore/banco-embedding` (aperto da main), **unito in main in avanti veloce il 24 novembre, dopo le correzioni della revisione (main da `1cceebf` a `29ac72e`); ramo cancellato in locale e su origin**. Il tetto delle 14 ore era stato superato per due pause del limite d'uso (22:04-02:20 e 03:05-07:20); le correzioni sono state un giro breve a parte, il 24 dalle 09:40. Livello di misura. Laboratorio
 `~/Developer/scabopdf-mac-lab/banco_embedding/` (dati grezzi, verità, script, diario, deviazioni, referto `REFERTO_BANCO_EMBEDDING.md`).
 
 - **Livello 1 — check-up, metodo, verità**: nove modelli di embedding (EmbeddingGemma 2, Qwen3-Embedding 0.6B, Harrier-OSS-v1 270M e 0.6B,
