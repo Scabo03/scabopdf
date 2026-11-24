@@ -223,10 +223,10 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 ## ▶ STATO — Giro «banco embedding»: cercare per significato coi modelli locali, al banco e dentro l'app (Core ML e GGUF in Swift), contro la ricerca per parole e quella dell'app, per lo speciale radiofonico sugli OCR (nessuna build) — 2026-11-23/24 — CONCLUSO
 
 **Build:** nessuna (iPad ultima **67**, prossima **68**; Mac ultima **4**, prossima **5**: invariate).
-**Partenza:** `1cceebf` (main = origin), 15:36 del 23. **Ramo:** `chore/banco-embedding` (aperto da main; unito in main con un avanzamento rapido alla fine del giro, dopo la revisione indipendente, poi cancellato, locale e remoto). Livello di misura. Laboratorio
+**Partenza:** `1cceebf` (main = origin), 15:36 del 23. **Ramo:** `chore/banco-embedding` (aperto da main; pubblicato e **non unito**: la revisione indipendente chiede correzioni prima della fusione; il tetto delle 14 ore è stato superato per due pause del limite d'uso, 22:04-02:20 e 03:05-07:20, e la fusione resta al prossimo giro). Livello di misura. Laboratorio
 `~/Developer/scabopdf-mac-lab/banco_embedding/` (dati grezzi, verità, script, diario, deviazioni, referto `REFERTO_BANCO_EMBEDDING.md`).
 
-- **Livello 1 — check-up, metodo, verità**: dieci modelli di embedding (EmbeddingGemma 2, Qwen3-Embedding 0.6B, Harrier-OSS-v1 270M e 0.6B,
+- **Livello 1 — check-up, metodo, verità**: nove modelli di embedding (EmbeddingGemma 2, Qwen3-Embedding 0.6B, Harrier-OSS-v1 270M e 0.6B,
   Granite Embedding R2 97M e 311M, BGE-M3 denso e sparso, Jina v5 Omni Nano solo da banco per licenza) e due modelli di riordino, revisioni
   e licenze lette alla scheda e al file di licenza, impronte di ogni file; metodo fissato con impronta prima di ogni corsa; verità dagli
   indici dei volumi, dai codici e dalle citazioni (2.550 domande più 352 domande da studente), controllate a campione da un sotto-agente,
@@ -240,8 +240,8 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   1.335 domande) differenza di S@10 fra −0,002 e +0,000 per sei modelli su sette (Harrier 270M −0,008); GGUF Q8_0 in Swift con la revisione
   di llama.cpp dell'app (b11429; v1.0.0 per EmbeddingGemma 2, che la b11429 non carica) fra −0,002 e +0,004 per i sei modelli convertibili
   (Harrier 270M non convertibile con lo strumento ufficiale); il bf16 del banco equivale alla piena precisione. Sul Mac un libro di 300
-  pagine si indicizza in 2-17 secondi con un modello piccolo; il motore neurale è più lento per i modelli grandi e consuma da 3 a 10 volte
-  meno (energia indicativa). iPad A14 non collegato: dedotto almeno 3,5 volte più lento sul motore neurale. Un errore dell'eseguibile Swift
+  pagine si indicizza in 2-17 secondi con un modello piccolo; il motore neurale è più lento per i modelli grandi e, fino a 568 milioni di
+  parametri, consuma da 2 a 10 volte meno (energia indicativa). iPad A14 non collegato: dedotto almeno 3,5 volte più lento sul motore neurale. Un errore dell'eseguibile Swift
   di laboratorio (memoria non condivisa fra le sequenze per i modelli che leggono da sinistra a destra) trovato e corretto (`kv_unified`).
 - **Livello 4 — parole, ricerca mista, riordino** (§ 4): BGE-M3 in ricerca mista con BM25 batte BM25 su tutte le famiglie, articoli compresi (+0,27); il vettore sparso di
   BGE-M3 non sostituisce BM25; il riordino (bge-reranker-v2-m3, Qwen3-Reranker-0.6B, 600 domande) non si vede nel complesso, aiuta il primo
@@ -253,6 +253,15 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - **Correzione a lato**: lo strumento del controllo del testo dei volumi su un solo file (`scabopdf-gen-lab/pulizia/strumenti/controllo_testo_file.py`)
   ora legge la corrispondenza del laboratorio (`banco/corrispondenza_volumi.json`, 104 letture di 52 volumi); prova contraria su un file del
   laboratorio con testo dei volumi: 58 righe; sul report: 0.
+- **Revisione indipendente** (sotto-agente, solo il diff e i risultati): «si può unire dopo le correzioni»; 521 righe di tabella su 554
+  identiche alle tabelle del laboratorio, 52 numeri tornati coi grezzi. Il rilievo bloccante (il controllo della rete non era riportato) è
+  chiuso: nessun byte esterno dei processi del banco nelle 45 sonde, due processi Python estranei al giro (§ 1.4). Corretto anche il
+  rilievo sull'energia del motore neurale (§ 3.4). **Da correggere prima della fusione** (elenco completo in
+  `banco_embedding/registri/REVISIONE_INDIPENDENTE.md`): le cifre della propagazione (§ 5.2 e dove le riprendo), il dato «352 su 352» da
+  mettere nel § 2.1 con grezzi e script, la forchetta dell'iPad (1,7-3,5 invece di «almeno 3,5»: la precisione delle cifre di Apple non è
+  dichiarata), «su tutte le famiglie» da limitare al libro, i cali nella libreria, le divisioni confuse con la famiglia, l'intervallo di
+  Core ML, i conteggi del § 5.3 sulle 132 pagine (20 su 30, 21 su 32), e i minori (tabella del § 1.8, rimando «trans.», int8 di Qwen3,
+  generalizzazioni, cifre in prosa, etichette e fonti, nove modelli e non dieci in questo CARRYOVER).
 - **Nessun cambiamento nel prodotto** (nessun file sotto `app/`, nessun catalogo toccato); Python solo nel laboratorio.
 - **Da dove riprendere / decisioni per il maintainer**: le voci del § 9 del report (respiro): (1) una ricerca per parole pesate (BM25) prima di ogni modello; (2) quale modello, fra BGE-M3, Harrier 270M o 0.6B ed
   EmbeddingGemma 2, in ricerca mista con BM25, e dove gira (Core ML sul motore neurale per l'iPad, GGUF sul Mac, che chiede la revisione

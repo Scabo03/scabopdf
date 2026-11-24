@@ -31,7 +31,8 @@ esperienze operative, mai testo citato. Le domande, in ordine d'importanza:
 1. **Banco contro app.** Dentro l'app si trova quello che si trova al banco: con Core ML sul motore neurale del Mac la differenza media di
    S@10 nel libro sta fra −0,002 e +0,000 per sei modelli su sette, e Harrier 270M perde 0,008 (§ 3.2). Con GGUF Q8_0 in Swift (la revisione di llama.cpp dell'app, o la v1.0.0 per EmbeddingGemma 2) la differenza sta fra −0,002 e
    +0,004 per i sei modelli convertibili (§ 3.2). Sul Mac un modello piccolo indicizza un libro di 300 pagine in 2-17 secondi e codifica una domanda in pochi millisecondi; il
-   motore neurale è più lento per i modelli grandi ma consuma da 3 a 10 volte meno (§ 3.4, energia indicativa). Il peso: un modello
+   motore neurale è più lento per i modelli grandi e, fino a 568 milioni di parametri, consuma da 2 a 10 volte meno (§ 3.4, energia
+   indicativa). Il peso: un modello
    piccolo pesa 110-597 MB, l'indice di un libro di 300 pagine mezzo megabyte (§ 3.3, § 2.7). L'iPad A14 non era collegato: dedotto almeno
    3,5 volte più lento del Mac sul motore neurale (§ 3.5).
 2. **La ricerca sul testo.** Sulle voci d'indice (parole chiave) le parole bastano: BM25 trova il passo fra i primi dieci in 0,76 delle
@@ -138,6 +139,10 @@ applicabile» (il modello non sa fare il compito) distinto da «non misurato» (
   strumenti di conversione, i tagli per il tempo del § 1.8, il giudice riorganizzato in quattro tornate (§ 2.5) e le analisi aggiunte coi
   dati già raccolti (la ricerca nella libreria dell'app, le coppie di modelli, la rete di significato senza verità, il controllo della
   rete nelle sonde).
+- **Il controllo della rete** (campo; `misure/controllo_rete.json`, script `controllo_rete.py`): nelle 45 sonde del giro nessun byte
+  esterno dei processi del banco (quelli che la sonda registra ogni secondo col loro comando, tutti nel recinto senza rete). Due processi
+  Python estranei al giro, che la sonda non registra fra i suoi, hanno aperto due connessioni HTTPS (verso indirizzi di Apple e di GitHub,
+  7.075 byte in tutto) alle 21:50 e alle 21:51 del 23, mentre il Mac era in uso: non sono corse del banco.
 
 ### 1.5 Il materiale (campo)
 - **Libreria**: 55 documenti (52 volumi e 3 documenti di studio), **193.761 blocchi, 194.424 unità, 67,2 milioni di caratteri**
@@ -571,8 +576,8 @@ script `errori.py`.
   intestazioni (3), le note come distrattore (bibliografia, aggiornamenti del codice: 3), la verità (2).
 - **Qwen3-Embedding 0.6B, 18 errori** (3 per famiglia): i vicini per argomento (5); **le parole al posto del significato** (4: un
   articolo del codice la cui rubrica contiene la stessa parola della voce, un passo con le stesse parole comuni); le note e la bibliografia
-  come distrattore (2); la verità (2: un passo giusto alla pagina prima di quella rimandata; una citazione ambigua dell'autore, che scrive
-  «art. 8 c.c.» parlando dell'articolo omonimo delle disposizioni preliminari); un passo che cita più articoli (1); i numeri (6: per i
+  come distrattore (2); la verità (2: un passo giusto alla pagina prima di quella rimandata; una citazione ambigua dell'autore, che indica
+  l'articolo del codice civile parlando dell'articolo con lo stesso numero delle disposizioni preliminari); un passo che cita più articoli (1); i numeri (6: per i
   paragrafi, numeri con **cifre simili**, come il 144 o il 104 al posto del 114; per gli articoli, passi che citano numeri e il codice).
 - **BGE-M3 denso, 18 errori** (3 per famiglia): **i numeri si avvicinano** (6: due volte lo stesso numero d'articolo, ma in un altro
   codice o in un'altra legge dello stesso volume, la trappola che BGE-M3 mette al primo posto in 26 domande d'articolo su 200, contro 7 di
@@ -817,12 +822,16 @@ Il picco di memoria è quello del processo di misura: per il banco e per Core ML
   9,3).
 - **Una domanda** si codifica in 1-10 millisecondi col motore neurale, in 3-19 con GGUF, in 4-22 al banco; la ricerca esatta in tutta la
   libreria (194.424 vettori) costa 70-190 millisecondi secondo la dimensione. Per chi cerca, il modello non è mai il collo di bottiglia.
-- **Energia** (indicativa: la sonda legge il carico del sistema ogni 1-3 secondi e la base cambia fra i due riposi, 6,4 e 7,5 W; due
-  misure non tornano: Granite 97M sulla scheda grafica in Core ML dà un valore sotto zero, Qwen3 in GGUF Q8_0 62 J contro i 542 di Harrier
-  0.6B, che ha la stessa struttura e lo stesso tempo). Il quadro che regge: **il motore neurale consuma da 3 a 10 volte meno della scheda
-  grafica** per lo stesso libro (Granite 311M 31 J contro 188 in GGUF e 263 al banco; Harrier 270M 52 contro 501 al banco; BGE-M3 121
-  contro 325 e 447), anche quando è più lento. Indicizzare un libro di 300 pagine col motore neurale costa poche decine di joule per i
-  modelli piccoli: come qualche secondo di una lampadina da 10 W (dedotto).
+- **Energia** (indicativa: la sonda legge il carico del sistema ogni 1-3 secondi; la base è cambiata fra i due riposi, 6,4 e 7,5 W, e le
+  misure col motore neurale stanno tutte nel secondo tratto; due misure non tornano: Granite 97M sulla scheda grafica in Core ML dà un
+  valore sotto zero, Qwen3 in GGUF Q8_0 62 J contro i 542 di Harrier 0.6B, che ha la stessa struttura e lo stesso tempo). Ricalcolate con la
+  stessa base (il primo riposo), le misure dicono: **per i modelli piccoli e medi il motore neurale consuma meno di PyTorch e di llama.cpp
+  sulla scheda grafica** (Granite 311M 48 J per il libro contro 188 in GGUF e 263 al banco; Harrier 270M 63 contro 501 al banco; BGE-M3
+  157 contro 325 e 447; EmbeddingGemma 2 215 contro 394 e 886: da circa 2 a 8 volte); **non consuma meno di Core ML sulla scheda grafica**
+  (EmbeddingGemma 2 215 contro 241, e con tutte le unità 170); **per i modelli da 0,6 miliardi consuma di più** (662-696 J contro 387-542 in
+  GGUF), perché lì il motore neurale è due volte più lento (47 secondi contro 21; la causa è dedotta). La differenza viene più dal
+  programma che dall'unità di calcolo (dedotto). Indicizzare un libro di 300 pagine costa poche decine di joule per i modelli piccoli: come
+  qualche secondo di una lampadina da 10 W (dedotto).
 - **Caricamento**: Core ML compila il pacchetto alla prima apertura (4-17 secondi; 15-17 per i modelli grandi), GGUF carica in meno di un
   secondo.
 - **Memoria**: per la via GGUF il processo Swift arriva a 0,3-2,3 GB secondo il modello e l'allocazione di llama.cpp; per il banco e per
@@ -952,8 +961,9 @@ bge-reranker-v2-m3: 12000 coppie in 136 s (0.23 s per domanda, 11 ms per coppia)
   [−0,025; +0,045] con Qwen3-Reranker, S@10 +0,018 e +0,002, intervalli che contengono lo zero.
 - **Aiuta il primo posto delle domande da studente** (S@1 +0,080 [+0,020; +0,140] con bge, +0,067 [+0,007; +0,133] con Qwen3; MRR@20
   +0,08 e +0,06) e un poco quello delle voci d'indice con bge (MRR@20 +0,06 [+0,007; +0,114]).
-- **Peggiora i numeri**: bge toglie il paragrafo chiesto dal primo posto in 30 domande su 100 (S@1 da 0,90 a 0,60, −0,30 [−0,43; −0,18]),
-  Qwen3 l'articolo in 20 su 100 (−0,20 [−0,33; −0,07]): un modello di riordino legge il significato, non il numero.
+- **Peggiora i numeri**: bge toglie dal primo posto il paragrafo chiesto in tre domande su dieci (S@1 da 0,90 a 0,60, −0,30 [−0,43;
+  −0,18], 60 domande), Qwen3 l'articolo in due su dieci (−0,20 [−0,33; −0,07], 60 domande): un modello di riordino legge il significato,
+  non il numero.
 - **Il costo**: 0,23 secondi per domanda con bge-reranker-v2-m3 (11 ms per coppia), 1,1 con Qwen3-Reranker (56 ms), sulla scheda grafica
   del Mac, per 20 candidati. Vale il suo tempo solo sulle domande scritte da studente, e solo se una regola tiene fuori le domande per
   numero (dedotto).
@@ -1251,8 +1261,9 @@ Tre comportamenti attraversano tutti i modelli:
     fra il 2 e l'11 (campo, § 2.3).
 13. Sul Mac, dentro l'app, un modello piccolo indicizza un libro di 300 pagine **in pochi secondi**: Granite 97M in 3,3 secondi con la via
     di llama.cpp, Harrier 270M in 10 col motore neurale; una domanda si codifica in pochi millesimi di secondo (campo, § 3.4).
-14. Il motore neurale consuma **da 3 a 10 volte meno** della scheda grafica per lo stesso libro, anche quando è più lento: Granite 311M
-    31 joule per 300 pagine contro 188 (misura indicativa, campo, § 3.4).
+14. Per i modelli piccoli e medi il motore neurale consuma **da 2 a 10 volte meno** della scheda grafica per lo stesso libro, anche
+    quando è più lento: Granite 311M 31 joule per 300 pagine contro 188; per quelli da 0,6 miliardi il vantaggio sparisce (misura
+    indicativa, campo, § 3.4).
 15. Cercare sull'immagine della pagina, senza leggerla, con il modello che l'app potrebbe usare (EmbeddingGemma 2) trova la pagina giusta
     **un terzo meno spesso** che cercare sul testo letto (0,63 contro 0,96 fra le prime dieci); con un modello solo da banco (Jina Omni)
     quasi come la lettura (0,94) (campo, § 5.5).
@@ -1289,8 +1300,8 @@ Ogni voce dice perché conta, quanto costa e quando avrebbe senso; le misure son
    (dalla v1.0.0), e Harrier 270M non ha un GGUF ufficiale. Sull'iPad la via naturale è Core ML col motore neurale, che dà i vettori del
    banco per sei modelli su sette (§ 3.2); l'A14 è almeno 3,5 volte più lento del Mac del giro sul motore neurale (dedotto, § 3.5): un libro di 300 pagine fra mezzo
    minuto e due minuti secondo il modello, da fare una volta all'importazione e in sottofondo; i pacchetti da 0,6 miliardi di parametri
-   (1,1 GB per forma) sono pesanti per un iPad del 2020 (la memoria dell'A14 non l'ho verificata). Il motore neurale è anche la via che
-   consuma meno (§ 3.4).
+   (1,1 GB per forma) sono pesanti per un iPad del 2020 (la memoria dell'A14 non l'ho verificata). Per i modelli piccoli e medi il motore neurale è anche
+   la via che consuma meno (§ 3.4).
 7. **Le immagini delle pagine.** Per le scansioni, cercare sull'immagine senza leggere sarebbe la via più semplice, ma con il modello
    che l'app potrebbe usare (EmbeddingGemma 2) trova un terzo meno della lettura; un modello solo da banco (Jina Omni) mostra che si può
    arrivare quasi alla lettura (§ 5.5). Oggi la lettura resta la base; da riguardare quando esisterà un modello d'immagine con licenza
