@@ -3906,3 +3906,9 @@ B pulito (4 → 5). Non migliora tutto ciò che si sente: non si accende. Propos
 > ricerca per parole che l'app ha già, con le scansioni del banco e le vere come ponte fra la qualità della lettura e il richiamo. Report
 > completo in `docs/BANCO_EMBEDDING.md`; laboratorio `~/Developer/scabopdf-mac-lab/banco_embedding/`. Stesse regole di questo documento
 > (nessun testo dei volumi, etichette di prova, confronti appaiati con l'intervallo).
+
+Per il banco OCR conta soprattutto il livello 5 del report (§ 5): gli errori di lettura arrivano alla ricerca solo oltre il 15%
+di parole perse, e allora il significato non le ritrova (i modelli perdono quanto BM25); la rete di significato riconosce le pagine lette
+male contro la verità (area 0,81-0,94) ma non confrontando fra loro le due letture del Mac (0,48-0,57), perché le due vie sbagliano sulle
+stesse pagine (Spearman fra le loro perdite 0,61-0,71). Cercare sull'immagine della pagina senza leggerla trova un terzo meno della lettura con EmbeddingGemma 2 e quasi quanto con Jina
+Omni, che è solo da banco. (campo, `docs/BANCO_EMBEDDING.md` § 5.)

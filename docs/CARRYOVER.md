@@ -10,6 +10,10 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.72 (23-24 novembre 2026, giro «banco embedding», livello di misura (solo laboratorio e documenti, nessuna build, nessun
+> cambiamento nel prodotto), **CONCLUSO**: cercare e collegare per significato con modelli locali, al banco e dentro l'app (Core ML e
+> GGUF in Swift), contro la ricerca per parole e quella dell'app così com'è, per lo speciale radiofonico sugli OCR. Report
+> `docs/BANCO_EMBEDDING.md`, rimando in `docs/BANCO_OCR.md` § 46. Vedi lo STATO qui sotto.)
 > Versione: 2.71 (21 novembre 2026, sera, giro «modulo e sommario», livello pieno (modulo condiviso dell'impaginazione e tronco
 > comune, cioè l'iPad), **CONCLUSO** con la **build 67 dell'iPad** e la **build 4 del Mac** su TestFlight (entrambe VALID, note impostate e rilette, solo tester interni; pacchetto controllato e riusato):
 > il modulo dell'impaginazione è unito con la cura 67 (offerta solo ai libri che cambiano, risorse visive salvate ritagliate nel loro
@@ -213,6 +217,47 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «banco embedding»: cercare per significato coi modelli locali, al banco e dentro l'app (Core ML e GGUF in Swift), contro la ricerca per parole e quella dell'app, per lo speciale radiofonico sugli OCR (nessuna build) — 2026-11-23/24 — CONCLUSO
+
+**Build:** nessuna (iPad ultima **67**, prossima **68**; Mac ultima **4**, prossima **5**: invariate).
+**Partenza:** `1cceebf` (main = origin), 15:36 del 23. **Ramo:** `chore/banco-embedding` (aperto da main; unito in main con un avanzamento rapido alla fine del giro, dopo la revisione indipendente, poi cancellato, locale e remoto). Livello di misura. Laboratorio
+`~/Developer/scabopdf-mac-lab/banco_embedding/` (dati grezzi, verità, script, diario, deviazioni, referto `REFERTO_BANCO_EMBEDDING.md`).
+
+- **Livello 1 — check-up, metodo, verità**: dieci modelli di embedding (EmbeddingGemma 2, Qwen3-Embedding 0.6B, Harrier-OSS-v1 270M e 0.6B,
+  Granite Embedding R2 97M e 311M, BGE-M3 denso e sparso, Jina v5 Omni Nano solo da banco per licenza) e due modelli di riordino, revisioni
+  e licenze lette alla scheda e al file di licenza, impronte di ogni file; metodo fissato con impronta prima di ogni corsa; verità dagli
+  indici dei volumi, dai codici e dalle citazioni (2.550 domande più 352 domande da studente), controllate a campione da un sotto-agente,
+  tre errori di costruzione trovati e corretti (dichiarati), due voci «trans.» rimaste.
+- **Livello 2 — la ricerca sul testo** (§ 2 del report): sulle voci d'indice le parole bastano (BM25 0,76 di S@10 nel libro, i modelli migliori 0,78-0,79); sulle
+  domande da studente conta il significato (Harrier 0.6B 0,61, BGE-M3 0,60, BM25 0,39, la ricerca dell'app 0); un modello più grande non
+  trova di più fra famiglie diverse, sì dentro la stessa; i numeri accecano quasi tutti i modelli tranne BGE-M3 (articoli 0,59); nella
+  libreria i modelli perdono più delle parole; il giudice alla cieca (1.791 blocchi in quattro tornate) dice che le verità automatiche sono
+  precise ma incomplete e sottostimano i modelli più di BM25; l'indice di un libro di 300 pagine pesa mezzo megabyte in int8 senza perdita.
+- **Livello 3 — banco contro app** (§ 3): dentro l'app si trova quello che si trova al banco: Core ML col motore neurale (sette modelli convertiti, L3c,
+  1.335 domande) differenza di S@10 fra −0,002 e +0,000 per sei modelli su sette (Harrier 270M −0,008); GGUF Q8_0 in Swift con la revisione
+  di llama.cpp dell'app (b11429; v1.0.0 per EmbeddingGemma 2, che la b11429 non carica) fra −0,002 e +0,004 per i sei modelli convertibili
+  (Harrier 270M non convertibile con lo strumento ufficiale); il bf16 del banco equivale alla piena precisione. Sul Mac un libro di 300
+  pagine si indicizza in 2-17 secondi con un modello piccolo; il motore neurale è più lento per i modelli grandi e consuma da 3 a 10 volte
+  meno (energia indicativa). iPad A14 non collegato: dedotto almeno 3,5 volte più lento sul motore neurale. Un errore dell'eseguibile Swift
+  di laboratorio (memoria non condivisa fra le sequenze per i modelli che leggono da sinistra a destra) trovato e corretto (`kv_unified`).
+- **Livello 4 — parole, ricerca mista, riordino** (§ 4): BGE-M3 in ricerca mista con BM25 batte BM25 su tutte le famiglie, articoli compresi (+0,27); il vettore sparso di
+  BGE-M3 non sostituisce BM25; il riordino (bge-reranker-v2-m3, Qwen3-Reranker-0.6B, 600 domande) non si vede nel complesso, aiuta il primo
+  posto delle domande da studente (+0,07/+0,08) e peggiora i numeri (fino a −0,30).
+- **Livello 5 — scansioni** (§ 5): gli errori di lettura arrivano alla ricerca solo oltre il 15% di parole perse e il significato non li
+  ripara; la rete di significato riconosce le pagine lette male contro la verità (0,81-0,94) ma non fra le due letture del Mac (0,48-0,57:
+  le due vie sbagliano sulle stesse pagine); cercare sull'immagine della pagina trova un terzo meno della lettura con EmbeddingGemma 2, quasi
+  quanto con Jina Omni (solo banco).
+- **Correzione a lato**: lo strumento del controllo del testo dei volumi su un solo file (`scabopdf-gen-lab/pulizia/strumenti/controllo_testo_file.py`)
+  ora legge la corrispondenza del laboratorio (`banco/corrispondenza_volumi.json`, 104 letture di 52 volumi); prova contraria su un file del
+  laboratorio con testo dei volumi: 58 righe; sul report: 0.
+- **Nessun cambiamento nel prodotto** (nessun file sotto `app/`, nessun catalogo toccato); Python solo nel laboratorio.
+- **Da dove riprendere / decisioni per il maintainer**: le voci del § 9 del report (respiro): (1) una ricerca per parole pesate (BM25) prima di ogni modello; (2) quale modello, fra BGE-M3, Harrier 270M o 0.6B ed
+  EmbeddingGemma 2, in ricerca mista con BM25, e dove gira (Core ML sul motore neurale per l'iPad, GGUF sul Mac, che chiede la revisione
+  v1.0.0 di llama.cpp per EmbeddingGemma 2); (3) le domande per numero alla struttura che l'app conosce, non alla ricerca per significato;
+  (4) il legame fra norma e dottrina dalle citazioni esplicite prima che dal significato. Nessuna è entrata nel prodotto.
 
 ---
 
