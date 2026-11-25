@@ -3916,3 +3916,24 @@ indicativi: coppie pagina-lettura non indipendenti). La rete di significato rico
 132 pagine Spearman fra le loro perdite 0,62-0,72; delle pagine lette male da almeno una, 20 su 30 e 21 su 32 lo sono da tutte e due),
 e che sia questa la ragione è dedotto. Cercare sull'immagine della pagina senza leggerla trova fra un terzo e la metà in meno della lettura
 con EmbeddingGemma 2 e quasi quanto con Jina Omni, che è solo da banco. (campo, `docs/BANCO_EMBEDDING.md` § 5.)
+
+## 47. Giro «chiusura per la radio» — le frasi non verificate del § 40 (25 novembre 2026)
+
+> Perimetro (decisione del maintainer delle 16:31 del 25 novembre, a giro avviato): **il livello 1 (la lettura delle scansioni dell'app e il metro dei
+> blocchi per l'ascolto) è rimandato per intero alle build nuove**; si fanno le otto frasi del § 40 rimaste «non verificate» (qui), i completamenti degli
+> embedding (`docs/BANCO_EMBEDDING.md` § 11) e, dei tempi e dell'energia, solo ciò che non dipende dall'app (Surya, Granite, GLM a piena precisione e i
+> modelli di embedding). Le frasi sull'app restano quindi quelle del § 40, misurate prima delle migliorie dei § 44-45. Metodo fissato prima delle corse
+> (`METODO.md` del laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/chiusura_radio/`, sha256 `b3b3c346…`), ogni scostamento in
+> `registri/DEVIAZIONI.md`; stesse versioni e revisioni dei giri precedenti. Novità viste nel check-up e non misurate: docling 2.152.0,
+> transformers 5.24.1, pesi INDRA di Marker `a04fa100` del 24 novembre (fonte: PyPI e API di Hugging Face, 25 novembre).
+
+**Frase 25 — Surya contro Xiaomi-OCR-0 alla cieca: CONFERMATA** (campo). Sei pagine nuove del livello B, fissate con l'impronta prima di leggere le uscite (tre
+coi richiami di nota in apice, tre qualsiasi, almeno 250 parole), le uscite divise in blocchi coi tipi come nel giro 2 (Xiaomi qui nella forma Q8), un giudice
+nuovo che vede la pagina e due uscite anonime: **Surya scelta 5 volte su 6** (3 nette, 2 lievi), Xiaomi 1 (netta). Le tre pagine coi richiami sono tutte di
+Surya: Xiaomi scrive i numeri delle note come formule (fino a 5 in una pagina) e non le dà mai come note. La pagina vinta da Xiaomi è un indice stampato,
+dove Surya mette tutto in un blocco «tabella» e mescola le due colonne. Nel giro 2 era 5 su 6 (§ 22). Grezzi `semantica/cieca25/`, chiavi `semantica_chiavi/`;
+script `fascicoli_25.py`.
+
+**Frase 27 — peso e velocità del modello d'impaginazione nuovo: CONFERMATA** (campo). Su disco egret-large in Core ML pesa 119,7 MiB (125,6 milioni di byte),
+quello dell'app 164,1 MiB (172,1 milioni). La velocità è quella misurata a Mac libero nella notte del 19-20 novembre, 32 millesimi di secondo a pagina (T29,
+§ 37; non rifatta qui): meno di un ventesimo di secondo.
