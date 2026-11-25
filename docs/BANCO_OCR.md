@@ -3937,3 +3937,32 @@ script `fascicoli_25.py`.
 **Frase 27 — peso e velocità del modello d'impaginazione nuovo: CONFERMATA** (campo). Su disco egret-large in Core ML pesa 119,7 MiB (125,6 milioni di byte),
 quello dell'app 164,1 MiB (172,1 milioni). La velocità è quella misurata a Mac libero nella notte del 19-20 novembre, 32 millesimi di secondo a pagina (T29,
 § 37; non rifatta qui): meno di un ventesimo di secondo.
+
+**Frase 12 — MiniCPM-OCR sulle pagine dense: CORRETTA** (campo; metro per pagina, scansione pulita, 463 pagine nuove del livello B e dell'estensione con
+la verità, stesso motore e stesso comando di GLM Q8). MiniCPM perde **8,1 parole su cento contro 2,6 di GLM** (+5,5 punti [+3,7; +7,5]; pesato sul corpus 6,7
+[5,0; 8,8] contro 3,0 [2,3; 3,9], +3,6 [+1,7; +5,9]): tre volte di più, o due pesando sul corpus, non cinque. Le perdite stanno sulle pagine con molte note
+(26,0 contro 1,6 per cento, 46 pagine) e sulle dense (11,1 contro 2,9, 128 pagine): 26 pagine perdono almeno il 40 per cento delle parole (15 sono dense),
+con GLM 4. Non è la densità in sé: sulle pagine dense a due colonne MiniCPM perde meno di GLM grezzo (2,3 contro 5,1, 38 pagine). Degradata non misurata
+(tempo). Grezzi `uscite/{b,e}/pulita_300/minicpm/`, script `numeri_cr.py`, `frasi_12_19.py`, `situazioni_cr.py`.
+
+**Frase 19 — Marker: SMENTITA** (campo; stesse 463 pagine, sette lettori misurati su tutte). Marker non è ultimo: perde 2,3 parole su cento (pesato 2,7 [2,5; 2,9]) ed è
+**terzo** dopo Surya (0,3) e Xiaomi-OCR-0 Q8 (1,9), pari a GLM grezzo (−0,2 [−0,9; +0,3]) e meglio delle righe di Apple (−0,8 [−1,0; −0,5]); nessuna pagina oltre il 40 per cento.
+L'ultimo posto del banco veniva da **un solo documento di 19 pagine per il quale non dà uscita** (l'81 per cento della sua perdita; senza, 2,7 per cento):
+il difetto vero è quello, un documento intero perso in silenzio. E sulle glosse non «sale»: quarto su sette (2,8 per cento, 62 pagine). Sulle pagine nuove della degradata
+2,5 per cento (485 pagine). Script `frasi_12_19.py`, `situazioni_cr.py` (anche la classifica per situazione sul livello B intero, dieci lettori, col banco dentro).
+
+**Frase 40 — egret nella via dell'app: CONFERMATA** (campo; codice di `bc6605a`, stesse letture con `--modello-impaginazione` egret-large contro Heron, testo di GLM dalla
+cache; banco 139 pagine misurate, livello B ed estensione 463). Parole perse: differenza egret meno Heron fra −0,12 e +0,17 punti in tutte e otto le configurazioni, ogni
+intervallo contiene lo zero; scansioni vere uguali (5,29 e 2,80 per cento). Sul banco: titoli trovati +1 su 80, note trovate 186 → 185 e 199 → 200 (Apple) e **205 → 195 e
+210 → 201 (GLM)**, note agganciate 35 → 27 e 65 → 54 sulla pulita, tabelle e testatine uguali. Il modello migliore nella struttura (§ 30) nella via dell'app non rende:
+con GLM le note diminuiscono di una decina. Misure `misure/egret_contro_heron.json`, stati `som2` e `cr_egret`.
+
+**Frase 7 — le tabelle nella catena delle scansioni: CORRETTA, e in peggio** (campo; codice di `bc6605a`, via di Apple; la via GLM sugli estratti segue qui sotto). Il «17-18
+su 19» del § 44 veniva da un solo campione di 20 pagine di un volume. Le tabelle vere del corpus sono poche: 86 giudicate sull'iPad più 9 trovate guardando le pagine dove solo altri
+modelli ne vedono (27 pagine candidate: le altre sono elenchi di abbreviazioni, indici e sommari). Per non giudicare pagine da sole (la catena usa le pagine vicine: il PDF col testo
+di una pagina sola ne annuncia 31 su 68) ho costruito 13 estratti contigui di tre volumi (168 pagine, 69 tabelle su 29 pagine, con cinque pagine prima e cinque dopo): l'iPad,
+sul PDF col testo, ne annuncia 58 su 69; **la via di Apple sulle scansioni 24 su 69 (35 per cento [20; 51]) pulite e 16 su 69 (23 [11; 37]) degradate**, zero annunci in più
+sulle 139 pagine senza tabelle. Il modello le vede (63 su 69, e tutte superano la stretta del § 44: larghe almeno un quarto della pagina, almeno due righe dentro): **le perde la guardia
+della catena** (63 → 24). Che sia la guardia sul testo che l'app non legge per scelta (nei codici la catena chiama glosse le colonne) è dedotto: il referto della catena non scrive
+l'esito per regione. Proposta, senza correggere: scrivere l'esito della guardia per regione nel referto e provare la guardia sulle scansioni dei codici. Grezzi `uscite/x/`,
+`uscite/tab/`, script `tabelle_x.py`, `tabelle_passi.py`, `tabelle_cr.py`.
