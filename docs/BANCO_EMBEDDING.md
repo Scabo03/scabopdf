@@ -1326,8 +1326,9 @@ Tre comportamenti attraversano tutti i modelli:
    dieci **in 7 casi su 100** [4; 10], Qwen3 in 2, la ricerca per parole in 43 [36; 50]; fa eccezione BGE-M3, con 59 [53; 66] (campo,
    § 2.1).
 6. Con le vie dell'app si trova quello che si trova al banco: con Core ML sul motore neurale del Mac, per sei modelli su sette la
-   differenza media di S@10 nel libro sta **entro tre punti su mille** (fra −0,002 e +0,003 secondo il riferimento; ogni intervallo
-   contiene lo zero ed è dentro −0,007 e +0,008); il settimo, Harrier 270M, perde 8 punti su mille [1; 16] (campo, § 3.2).
+   differenza media di S@10 nel libro sta **entro due punti su mille** (fra −0,0009 e +0,0019, 62.401 unità e 2.141 domande; ogni
+   intervallo contiene lo zero ed è dentro −0,005 e +0,006); il settimo, Harrier 270M, perde 5-6 punti su mille e l'intervallo contiene lo
+   zero [−13; +1] (campo, § 11.1). *Prima, su quattro manuali: entro tre punti su mille, Harrier 270M −8 [−16; −1] (§ 3.2).*
 7. L'indice per significato di un libro di 300 pagine pesa **mezzo megabyte** (545-654 kB a 640-768 dimensioni in int8, senza perdita
    misurabile) (campo, § 2.7).
 8. Su un banco piccolo di scansioni, finché la lettura perde meno del 15 per cento delle parole (una su sette circa) la ricerca quasi non
@@ -1426,3 +1427,32 @@ deduzioni (dedotto) e restano decisioni del maintainer.
 - **Le immagini delle pagine** sono state provate su un banco di 185 pagine e sulle 75 scansioni vere: un corpus di scansioni più largo
   direbbe se il risultato regge. Con licenza compatibile, un modello d'immagine della qualità di Jina Omni andrebbe misurato anche dentro l'app.
 - **Il prodotto**: nessuna di queste misure è entrata nell'app; le voci del § 9 sono decisioni del maintainer.
+
+## 11. I completamenti del 25 novembre (giro «chiusura per la radio», livello 3)
+
+> Stesse verità, stesse misure e stessi intervalli del resto del documento (seme 20261123); dati e script nel laboratorio del banco OCR,
+> `~/Developer/scabopdf-mac-lab/banco_ocr/chiusura_radio/` (`emb/`, `uscite/ne/`, `strumenti/`). Metodo fissato prima delle corse (`METODO.md`, sha256
+> `b3b3c346…`). L'iPad non era collegato (campo): la parte iPad resta dedotta (§ 3.5).
+
+### 11.1 Il banco contro l'app con Core ML su tutto L3 (campo)
+Il confronto del § 3.2 stava su quattro manuali (L3c, 19.715 unità, 1.335 domande); ora su tutto il sottoinsieme L3: **62.401 unità, 2.141 domande nel libro**,
+motore neurale, stessi pacchetti (le 42.686 unità mancanti codificate adesso, le altre del 23 novembre). Grezzi `emb/L3/`, `emb/misure/L3_*`; script
+`l3_unisci.py`, `l3_confronti.sh` (`confronto_l3.py` del giro precedente, invariato).
+
+| modello | riferimento | coseno mediano (1° percentile) | primi 10 in comune | tau primi 20 | S@10 via − rif. [IC 95 %] | MRR@20 via − rif. [IC 95 %] |
+|---|---|---|---|---|---|---|
+| Granite 97M | bf16 | 0,99995 (0,9998) | 0,953 | 0,908 | +0,0019 [−0,0019; +0,0056] | +0,0006 [−0,0014; +0,0027] |
+| Granite 97M | fp32 | 0,99998 (0,9999) | 0,971 | 0,943 | 0,0000 [−0,0033; +0,0033] | +0,0005 [−0,0012; +0,0022] |
+| EmbeddingGemma 2 | bf16 | 0,99994 (0,9998) | 0,965 | 0,934 | −0,0009 [−0,0042; +0,0023] | −0,0000 [−0,0020; +0,0019] |
+| EmbeddingGemma 2 | fp32 | 0,99997 (0,9999) | 0,977 | 0,956 | +0,0009 [−0,0023; +0,0042] | +0,0016 [+0,0003; +0,0030] |
+| Granite 311M | bf16 | 0,99997 (0,9999) | 0,968 | 0,945 | −0,0005 [−0,0037; +0,0028] | +0,0015 [−0,0002; +0,0032] |
+| BGE-M3 | bf16 | 0,99990 (0,9995) | 0,973 | 0,944 | −0,0005 [−0,0033; +0,0028] | −0,0003 [−0,0021; +0,0015] |
+| Qwen3 0.6B | bf16 | 0,99976 (0,9986) | 0,966 | 0,930 | −0,0009 [−0,0051; +0,0033] | −0,0018 [−0,0041; +0,0004] |
+| Harrier 0.6B | bf16 | 0,99992 (0,9996) | 0,975 | 0,949 | +0,0009 [−0,0023; +0,0042] | +0,0012 [−0,0010; +0,0035] |
+| Harrier 270M | bf16 | 0,98789 (0,9768) | 0,899 | 0,800 | −0,0051 [−0,0117; +0,0014] | −0,0039 [−0,0083; +0,0004] |
+| Harrier 270M | fp32 | 0,98796 (0,9768) | 0,900 | 0,803 | −0,0061 [−0,0131; +0,0005] | −0,0046 [−0,0091; −0,0002] |
+
+La conclusione del § 3.2 regge e si stringe: per sei modelli su sette la differenza media di S@10 sta **entro due punti su mille** (fra −0,0009 e +0,0019; prima fra
+−0,002 e +0,003), ogni intervallo contiene lo zero ed è dentro −0,005 e +0,006 (prima −0,007 e +0,008). Harrier 270M resta l'eccezione, più piccola di prima: −5 o −6 punti su
+mille invece di −8, e su S@10 l'intervallo adesso contiene lo zero; il posto del primo risultato giusto (MRR) peggiora di poco, e contro la piena precisione lo
+zero è appena fuori. La frase 6 del § 8 è aggiornata.
