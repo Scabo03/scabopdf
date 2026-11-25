@@ -3930,11 +3930,11 @@ con EmbeddingGemma 2 e quasi quanto con Jina Omni, che è solo da banco. (campo,
 **Frase 25 — Surya contro Xiaomi-OCR-0 alla cieca: CONFERMATA** (campo). Sei pagine nuove del livello B, fissate con l'impronta prima di leggere le uscite (tre
 coi richiami di nota in apice, tre qualsiasi, almeno 250 parole), le uscite divise in blocchi coi tipi come nel giro 2 (Xiaomi qui nella forma Q8), un giudice
 nuovo che vede la pagina e due uscite anonime: **Surya scelta 5 volte su 6** (3 nette, 2 lievi), Xiaomi 1 (netta). Le tre pagine coi richiami sono tutte di
-Surya: Xiaomi scrive i numeri delle note come formule (fino a 5 in una pagina) e non le dà mai come note. La pagina vinta da Xiaomi è un indice stampato,
+Surya: Xiaomi scrive i numeri delle note come formule (fino a 5 in una pagina) e in nessuna delle tre le dà come note. La pagina vinta da Xiaomi è un indice stampato,
 dove Surya mette tutto in un blocco «tabella» e mescola le due colonne. Nel giro 2 era 5 su 6 (§ 22). Grezzi `semantica/cieca25/`, chiavi `semantica_chiavi/`;
 script `fascicoli_25.py`.
 
-**Frase 27 — peso e velocità del modello d'impaginazione nuovo: CONFERMATA** (campo). Su disco egret-large in Core ML pesa 119,7 MiB (125,6 milioni di byte),
+**Frase 27 — peso e velocità del modello d'impaginazione nuovo: CONFERMATA** (campo il peso; la velocità è la misura del § 37, fonte: questo documento). Su disco egret-large in Core ML pesa 119,7 MiB (125,6 milioni di byte),
 quello dell'app 164,1 MiB (172,1 milioni). La velocità è quella misurata a Mac libero nella notte del 19-20 novembre, 32 millesimi di secondo a pagina (T29,
 § 37; non rifatta qui): meno di un ventesimo di secondo.
 
@@ -3947,23 +3947,23 @@ con GLM 4. Non è la densità in sé: sulle pagine dense a due colonne MiniCPM p
 
 **Frase 19 — Marker: SMENTITA** (campo; stesse 463 pagine, sette lettori misurati su tutte). Marker non è ultimo: perde 2,3 parole su cento (pesato 2,7 [2,5; 2,9]) ed è
 **terzo** dopo Surya (0,3) e Xiaomi-OCR-0 Q8 (1,9), pari a GLM grezzo (−0,2 [−0,9; +0,3]) e meglio delle righe di Apple (−0,8 [−1,0; −0,5]); nessuna pagina oltre il 40 per cento.
-L'ultimo posto del banco veniva da **un solo documento di 19 pagine per il quale non dà uscita** (l'81 per cento della sua perdita; senza, 2,7 per cento):
-il difetto vero è quello, un documento intero perso in silenzio. E sulle glosse non «sale»: quarto su sette (2,8 per cento, 62 pagine). Sulle pagine nuove della degradata
-2,5 per cento (485 pagine). Script `frasi_12_19.py`, `situazioni_cr.py` (anche la classifica per situazione sul livello B intero, dieci lettori, col banco dentro).
+L'ultimo posto del banco veniva da **un solo documento di 19 pagine per il quale non dà uscita** (l'81 per cento della sua perdita; senza, 2,7 per cento; `misure/marker_banco.json`):
+il difetto vero è quello, un documento intero perso in silenzio. E sulle glosse non «sale»: quarto su sette (2,8 per cento, 62 pagine). Sulle stesse 463 pagine, degradata, 2,5 per cento. Script `frasi_12_19.py`, `situazioni_cr.py` (anche la classifica per situazione sul livello B intero, dieci lettori, col banco dentro).
 
 **Frase 40 — egret nella via dell'app: CONFERMATA** (campo; codice di `bc6605a`, stesse letture con `--modello-impaginazione` egret-large contro Heron, testo di GLM dalla
 cache; banco 139 pagine misurate, livello B ed estensione 463). Parole perse: differenza egret meno Heron fra −0,12 e +0,17 punti in tutte e otto le configurazioni, ogni
-intervallo contiene lo zero; scansioni vere uguali (5,29 e 2,80 per cento). Sul banco: titoli trovati +1 su 80, note trovate 186 → 185 e 199 → 200 (Apple) e **205 → 195 e
-210 → 201 (GLM)**, note agganciate 35 → 27 e 65 → 54 sulla pulita, tabelle e testatine uguali. Il modello migliore nella struttura (§ 30) nella via dell'app non rende:
+intervallo contiene lo zero; scansioni vere uguali (5,29 e 2,80 per cento). Sul banco: titoli trovati +1 su 80; note trovate, pulita, 186 → 185 (Apple) e **205 → 195 (GLM)**, degradata 199 → 200 e **210 → 201**; note
+agganciate, pulita, 35 → 27 e 65 → 54; tabelle uguali, testatine nel flusso 63 → 64 (Apple) e 40 → 40 (GLM). Il modello migliore nella struttura (§ 30) nella via dell'app non rende:
 con GLM le note diminuiscono di una decina. Misure `misure/egret_contro_heron.json`, stati `som2` e `cr_egret`.
 
 **Frase 7 — le tabelle nella catena delle scansioni: CORRETTA, e in peggio** (campo; codice di `bc6605a`, tutte e due le vie). Il «17-18
-su 19» del § 44 veniva da un solo campione di 20 pagine di un volume. Le tabelle vere del corpus sono poche: 86 giudicate sull'iPad più 9 trovate guardando le pagine dove solo altri
-modelli ne vedono (27 pagine candidate: le altre sono elenchi di abbreviazioni, indici e sommari). Per non giudicare pagine da sole (la catena usa le pagine vicine: il PDF col testo
-di una pagina sola ne annuncia 31 su 68) ho costruito 13 estratti contigui di tre volumi (168 pagine, 69 tabelle su 29 pagine, con cinque pagine prima e cinque dopo): l'iPad,
+su 19» del § 44 veniva da un solo campione di 20 pagine di un volume. Le tabelle vere del corpus sono poche: 86 giudicate sull'iPad più 9 trovate guardando 27 pagine candidate
+(6 con tabelle vere; le altre elenchi di abbreviazioni, indici e sommari) dove solo altri modelli ne vedevano: 95. Le 94 misurate (banco 19, B 2, E 5, le 28 pagine nuove 68) differiscono di una perché la
+verità per pagina del banco ne conta 19 e la lettura del volume 20. Per non giudicare pagine da sole (la catena usa le pagine vicine: il PDF col testo
+di una pagina sola ne annuncia 31 su 68, `misure/tabelle_pagina_sola.json`) ho costruito 13 estratti contigui di tre volumi (168 pagine, 69 tabelle su 29 pagine, con cinque pagine prima e cinque dopo): l'iPad,
 sul PDF col testo, ne annuncia 58 su 69; **la via di Apple sulle scansioni 24 su 69 (35 per cento [20; 51]) pulite e 16 su 69 (23 [11; 37]) degradate, la via GLM 22 su 69 (32 [15; 49]) pulite**
-(degradata non misurata con GLM), zero annunci in più
-sulle 139 pagine senza tabelle. Il modello le vede (63 su 69, e tutte superano la stretta del § 44: larghe almeno un quarto della pagina, almeno due righe dentro): **le perde la guardia
+(degradata non misurata con GLM sugli estratti; sulle 28 pagine da sole: 21 su 68, e 22 su 68 con Apple), zero annunci in più
+sulle 139 pagine senza tabelle (nessuno nelle due vie; l'iPad sul PDF col testo 1). Il modello le vede (63 su 69, e tutte superano la stretta del § 44: larghe almeno un quarto della pagina, almeno due righe dentro): **le perde la guardia
 della catena** (63 → 24 con Apple, 63 → 22 con GLM). Che sia la guardia sul testo che l'app non legge per scelta (nei codici la catena chiama glosse le colonne) è dedotto: il referto della catena non scrive
 l'esito per regione. Proposta, senza correggere: scrivere l'esito della guardia per regione nel referto e provare la guardia sulle scansioni dei codici. Grezzi `uscite/x/`,
 `uscite/tab/`, script `tabelle_x.py`, `tabelle_passi.py`, `tabelle_cr.py`.

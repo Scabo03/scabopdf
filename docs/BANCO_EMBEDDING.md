@@ -1324,8 +1324,8 @@ Tre comportamenti attraversano tutti i modelli:
    parole proprie però trova meno di BGE-M3 da solo (0,53 contro 0,60) (campo, § 4.1).
 5. Chiesto un articolo per numero, nel libro, sei modelli su otto restano sotto la ricerca per parole: Harrier 270M lo trova fra i primi
    dieci **in 7 casi su 100** [4; 10], Qwen3 in 2, la ricerca per parole in 43 [36; 50]; fanno eccezione BGE-M3, con 59 [53; 66], ed
-   EmbeddingGemma 2 **col titolo della sezione**, 51 [44; 58] (senza titolo 31). Un salto diretto per numero e codice lo porta in testa sempre
-   (campo, § 2.1, § 11.2, § 11.4). *Prima: «sette modelli su otto», EmbeddingGemma 2 misurato senza il suo titolo.*
+   EmbeddingGemma 2 **col titolo della sezione**, 51 [44; 58] (senza titolo 31). Quando la domanda nomina il codice, un salto diretto per numero lo
+   porta in testa (200 su 200, ma con la stessa regola con cui è fatta la verità, § 11.4); senza il codice è primo 57 volte su cento (campo, § 2.1, § 11.2, § 11.4). *Prima: «sette modelli su otto», EmbeddingGemma 2 misurato senza il suo titolo.*
 6. Con le vie dell'app si trova quello che si trova al banco: con Core ML sul motore neurale del Mac, per sei modelli su sette la
    differenza media di S@10 nel libro sta **entro due punti su mille** (fra −0,0009 e +0,0019, 62.401 unità e 2.141 domande; ogni
    intervallo contiene lo zero ed è dentro −0,005 e +0,006); il settimo, Harrier 270M, perde 5-6 punti su mille e l'intervallo contiene lo
@@ -1342,7 +1342,8 @@ Tre comportamenti attraversano tutti i modelli:
    (campo, § 2.5).
 11. EmbeddingGemma 2 mette in cima **un blocco di meno di 40 caratteri** (un titolo, un rimando, una riga sola) in quattro domande su
     dieci (41 per cento) quando i passi arrivano senza il titolo della loro sezione; dato il titolo, come chiede la sua scheda, in **meno di una su
-    sei** (17 per cento; Harrier 270M 7). Far valere il corto il blocco che segue lo toglie a tutti senza costi (campo, § 2.3, § 11.2, § 11.3). *Prima: solo il 41.*
+    sei** (17 per cento; Harrier 270M 7). Far valere il corto il blocco che segue lo toglie a tutti senza peggiorare i risultati
+    (costo di calcolo non misurato; campo, § 2.3, § 11.2, § 11.3). *Prima: solo il 41.*
 12. La ricerca per parole mette in cima **la pagina dell'indice stampato** in una domanda d'indice su quattro (24 per cento), i modelli
     densi fra il 2 e l'11 (campo, § 2.3).
 13. Sul Mac, con le vie dell'app, un modello piccolo indicizza un libro di 300 pagine **in pochi secondi**: Granite 97M in 3,3 secondi
@@ -1488,10 +1489,10 @@ l'intervallo esclude lo zero). Grezzi `emb/uscite/eg2_titolo/`, `emb/misure/eg2_
   [−0,13; −0,03]), sopra di molto sugli articoli per numero (+0,45). Contro BM25 perde poco sulle voci d'indice (−0,04 [−0,06; −0,01]) e non si distingue sulle altre famiglie. In mista con BM25
   col titolo guadagna sulle voci d'indice (0,80, +0,03 [+0,01; +0,04]) e su quelle del codice (0,78, +0,05).
 - **L'istruzione della domanda** («question answering» invece di «search result», come la scheda prevede per le domande): differenze piccole; col titolo +0,02 sulle voci del codice e, nella libreria, sulle
-  voci d'indice, il resto entro ±0,03 senza un segno chiaro, zero sulle domande a parole proprie. Non cambia la conclusione.
+  voci d'indice, il resto entro ±0,03 senza un segno chiaro, entro ±0,01 sulle domande a parole proprie. Non cambia la conclusione.
 - **La pagina** (quattro manuali di L3c, finestre da 2.000 caratteri, lotti da quattro: la memoria regge, 5.739 finestre): senza titolo 0,696 contro 0,700 dei blocchi raccolti per pagina
-  (−0,003 [−0,027; +0,020]), con il titolo 0,711 (+0,011 [−0,012; +0,035] sui blocchi senza titolo). I blocchi col titolo, 0,731, fanno meglio delle pagine col titolo (−0,020 [−0,041; 0,000]): il
-  blocco resta l'unità migliore anche qui, e il § 2.8 vale ora anche per EmbeddingGemma 2.
+  (−0,003 [−0,027; +0,020]), con il titolo 0,711 (+0,011 [−0,012; +0,035] sui blocchi senza titolo). Fra i blocchi col titolo, 0,731, e le pagine col titolo la differenza è al limite (−0,020 [−0,041; 0,000]): per EmbeddingGemma 2 la pagina non
+  perde come per Harrier 270M (§ 2.8), ma non guadagna nemmeno.
 
 ### 11.3 I blocchi cortissimi: che cosa fare, per tutti i modelli (campo)
 Nel libro, su 20.400 blocchi del corpus sotto i 40 caratteri (titoli, rimandi, righe sole); la soglia è quella del § 2.3 (a 20 caratteri i blocchi sono 6.328, a 60 31.829: la sensibilità della
@@ -1520,7 +1521,7 @@ appaiate con «com'è» (* = l'intervallo esclude lo zero). Grezzi `emb/misure/c
 - **Escluderli è la scelta sbagliata**: nei codici l'intestazione d'articolo è essa stessa un blocco corto, e chi cerca un articolo cerca quella. Le voci del codice perdono da 0,06 a 0,13 e gli articoli per
   numero fino a 0,56 (BGE-M3 con BM25), tranne col titolo di EmbeddingGemma 2 (voci del codice +0,01).
 - **Unirli al blocco seguente** aiuta chi ne soffriva (EmbeddingGemma 2, BGE-M3: voci d'indice +0,02/+0,04), ma **toglie i numeri** (articoli −0,10/−0,47) e peggiora Harrier sulle domande a parole proprie (−0,03).
-- **Farli valere il blocco seguente** non costa niente e non peggiora nessuna famiglia in modo misurabile (442 confronti fra configurazione, spazio e famiglia su S@1 e S@10: 59 migliori con l'intervallo che esclude lo
+- **Farli valere il blocco seguente** non cambia il calcolo dei vettori e non peggiora nessuna famiglia in modo misurabile (442 confronti fra configurazione, spazio e famiglia su S@1 e S@10: 59 migliori con l'intervallo che esclude lo
   zero, nessuno peggiore), porta il primo posto sopra i 40 caratteri nelle tre famiglie contate (voci d'indice, parole proprie, codice) (il risultato che si presenta è un blocco da leggere) e dà qualcosa sulle voci del codice (fino a +0,04 nelle miste). È una regola di presentazione, non un modello nuovo.
 
 ### 11.4 I numeri: un salto diretto all'articolo o al paragrafo (campo, salvo dove detto)
@@ -1540,7 +1541,7 @@ cod. civ.», «cc»), le stesse 200 **senza codice** («articolo N») e i 100 pa
 | paragrafo per numero | libro / libreria | 1,00 / 0,71 (primi 5: 1,00) | 0,95 / — | 0,91 | 1,00 | 0,98 | 0,96 |
 
 - **Con il codice detto, il salto trova l'articolo al primo posto sempre, la ricerca no** (BM25 fra i primi dieci 43 volte su 100, BGE-M3 con BM25 69). Senza il codice il primo posto è giusto 57 volte su cento nel libro
-  (2 candidati in mediana, fino a 110 nelle leggi collegate) ma fra i primi cinque sempre: il salto deve **mostrare i candidati**, non sceglierne uno; anche BM25 e la mista, nel libro, trovano bene il numero nudo (0,84 e 0,89).
+  (2 candidati in mediana, fino a 110 nelle leggi collegate) ma fra i primi cinque sempre (candidati ordinati mettendo prima la sequenza d'articoli più lunga): il salto deve **mostrare i candidati**, non sceglierne uno (dedotto); anche BM25 e la mista, nel libro, trovano bene il numero nudo (0,84 e 0,89).
 - **I paragrafi** «§ N»: sempre al primo posto nel libro; nella libreria 71 su cento, perché tre manuali hanno gli stessi numeri (fra i primi tre c'è sempre).
 - **Conclusione per il § 9** (dedotta dai numeri): prima il salto per numero e codice con l'elenco dei candidati quando il codice manca, poi la ricerca; il salto richiede che l'app sappia a quale codice
   appartiene una sequenza d'articoli (oggi non lo sa: serve il nome del codice, dai segnalibri del PDF o da un elenco dei codici).
