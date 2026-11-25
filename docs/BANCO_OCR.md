@@ -3957,12 +3957,13 @@ intervallo contiene lo zero; scansioni vere uguali (5,29 e 2,80 per cento). Sul 
 210 → 201 (GLM)**, note agganciate 35 → 27 e 65 → 54 sulla pulita, tabelle e testatine uguali. Il modello migliore nella struttura (§ 30) nella via dell'app non rende:
 con GLM le note diminuiscono di una decina. Misure `misure/egret_contro_heron.json`, stati `som2` e `cr_egret`.
 
-**Frase 7 — le tabelle nella catena delle scansioni: CORRETTA, e in peggio** (campo; codice di `bc6605a`, via di Apple; la via GLM sugli estratti segue qui sotto). Il «17-18
+**Frase 7 — le tabelle nella catena delle scansioni: CORRETTA, e in peggio** (campo; codice di `bc6605a`, tutte e due le vie). Il «17-18
 su 19» del § 44 veniva da un solo campione di 20 pagine di un volume. Le tabelle vere del corpus sono poche: 86 giudicate sull'iPad più 9 trovate guardando le pagine dove solo altri
 modelli ne vedono (27 pagine candidate: le altre sono elenchi di abbreviazioni, indici e sommari). Per non giudicare pagine da sole (la catena usa le pagine vicine: il PDF col testo
 di una pagina sola ne annuncia 31 su 68) ho costruito 13 estratti contigui di tre volumi (168 pagine, 69 tabelle su 29 pagine, con cinque pagine prima e cinque dopo): l'iPad,
-sul PDF col testo, ne annuncia 58 su 69; **la via di Apple sulle scansioni 24 su 69 (35 per cento [20; 51]) pulite e 16 su 69 (23 [11; 37]) degradate**, zero annunci in più
+sul PDF col testo, ne annuncia 58 su 69; **la via di Apple sulle scansioni 24 su 69 (35 per cento [20; 51]) pulite e 16 su 69 (23 [11; 37]) degradate, la via GLM 22 su 69 (32 [15; 49]) pulite**
+(degradata non misurata con GLM), zero annunci in più
 sulle 139 pagine senza tabelle. Il modello le vede (63 su 69, e tutte superano la stretta del § 44: larghe almeno un quarto della pagina, almeno due righe dentro): **le perde la guardia
-della catena** (63 → 24). Che sia la guardia sul testo che l'app non legge per scelta (nei codici la catena chiama glosse le colonne) è dedotto: il referto della catena non scrive
+della catena** (63 → 24 con Apple, 63 → 22 con GLM). Che sia la guardia sul testo che l'app non legge per scelta (nei codici la catena chiama glosse le colonne) è dedotto: il referto della catena non scrive
 l'esito per regione. Proposta, senza correggere: scrivere l'esito della guardia per regione nel referto e provare la guardia sulle scansioni dei codici. Grezzi `uscite/x/`,
 `uscite/tab/`, script `tabelle_x.py`, `tabelle_passi.py`, `tabelle_cr.py`.
