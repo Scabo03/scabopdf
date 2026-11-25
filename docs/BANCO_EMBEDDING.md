@@ -11,6 +11,8 @@
 > Stato: **concluso** (livelli 1-5; mappa dei comportamenti, esperienze operative, frasi per la radio, respiro sul prodotto, che cosa
 > resta). Le risposte in breve stanno nel § 0.1. Rivisto il 24 novembre dopo una revisione indipendente: tutti i rilievi applicati, senza
 > misure nuove (elenco nel laboratorio, `registri/REVISIONE_INDIPENDENTE.md`); il § 0.1 e le frasi per la radio riletti contro i dati.
+> Terminologia (decisione del maintainer del 24 novembre, applicata il 25): le domande che dicono il concetto senza le parole della voce d'indice
+> si chiamano «domande a parole proprie» (sigla `nl` nelle tabelle, la chiave dei dati grezzi).
 
 ## 0. Scopo e domande
 
@@ -24,7 +26,7 @@ esperienze operative, mai testo citato. Le domande, in ordine d'importanza:
 2. **La ricerca sul testo**: quanto bene ogni modello trova il passo giusto nel libro e nella libreria, per tipo di documento, di domanda
    e di pagina, e dove e perché sbaglia; con i costi.
 3. **Rispetto alla ricerca per parole che l'app ha già**: dove il significato aiuta, dove peggiora (i numeri di articolo e di paragrafo),
-   se la ricerca mista toglie la cecità ai numeri, se il riordino vale il suo tempo.
+   se la ricerca mista rimedia dove i modelli non trovano i numeri, se il riordino vale il suo tempo.
 4. **Le scansioni**: cercare sulle immagini delle pagine contro cercare sul testo letto dalle due vie del Mac; quanto costano in richiamo
    le parole perse dalla lettura; un controllo di significato a basso costo sulle uscite dei lettori.
 
@@ -43,22 +45,22 @@ esperienze operative, mai testo citato. Le domande, in ordine d'importanza:
    precisione delle cifre di Apple, che Apple non dichiara (dedotto, § 3.5).
 2. **La ricerca sul testo.** Nel libro, sulle voci d'indice (parole chiave) le parole bastano: BM25 trova il passo fra i primi dieci in
    0,76 delle voci, i modelli migliori lo eguagliano o lo superano di poco (Harrier 0.6B +0,03) (campo, § 2.1, § 2.2). Sulle domande
-   scritte da studente conta il significato: Harrier 0.6B 0,61 e BGE-M3 0,60; Harrier 270M, Qwen3 e Granite 311M 0,53; BM25 0,39 (campo,
+   a parole proprie conta il significato: Harrier 0.6B 0,61 e BGE-M3 0,60; Harrier 270M, Qwen3 e Granite 311M 0,53; BM25 0,39 (campo,
    § 2.1). La taglia da sola non decide: Qwen3 (0,6 miliardi di parametri) non trova più di Harrier 270M su nessuna famiglia di testo,
-   BGE-M3 (568 milioni) sì sulle domande da studente (+0,07); nelle due famiglie misurate con due taglie il più grande trova di più (Granite
-   311M su 97M su tutte le famiglie di testo, Harrier 0.6B su 270M sulle domande da studente e sulle voci del codice) (campo, § 2.2 bis).
+   BGE-M3 (568 milioni) sì sulle domande a parole proprie (+0,07); nelle due famiglie misurate con due taglie il più grande trova di più (Granite
+   311M su 97M su tutte le famiglie di testo, Harrier 0.6B su 270M sulle domande a parole proprie e sulle voci del codice) (campo, § 2.2 bis).
    Nella libreria (55 documenti) tutti perdono: sulle voci d'indice i modelli più di BM25, salvo Harrier 0.6B e Jina che perdono quanto
-   BM25; sulle domande da studente e sulle voci del codice quanto BM25 (campo, § 2.1; differenze fra medie, senza intervallo).
-3. **Rispetto alla ricerca che l'app ha già.** Oggi la ricerca dell'app trova la frase intera: sulle domande da studente non trova niente,
+   BM25; sulle domande a parole proprie e sulle voci del codice quanto BM25 (campo, § 2.1; differenze fra medie, senza intervallo).
+3. **Rispetto alla ricerca che l'app ha già.** Oggi la ricerca dell'app trova la frase intera: sulle domande a parole proprie non trova niente,
    né nel libro (S@10 0,00) né nella libreria (352 domande su 352 senza un libro coi risultati) (campo, § 2.1). La sola ricerca per parole
-   pesate (BM25) è il salto più grande misurato: fra +0,39 e +0,71 di S@10 nel libro, secondo la famiglia (campo, § 2.2). I numeri accecano
-   quasi tutti i modelli (articoli nel libro fra 0,02 e 0,31) tranne BGE-M3 (0,59); la ricerca mista di BGE-M3 con BM25 batte BM25 nel
+   pesate (BM25) è il salto più grande misurato: fra +0,39 e +0,71 di S@10 nel libro, secondo la famiglia (campo, § 2.2). Chiesti
+   per numero, gli articoli sfuggono a quasi tutti i modelli (nel libro fra 0,02 e 0,31) tranne BGE-M3 (0,59); la ricerca mista di BGE-M3 con BM25 batte BM25 nel
    libro su ogni famiglia, articoli compresi (+0,27), e nella libreria su quattro famiglie su sette, pareggiando sulle altre (campo,
-   § 4.1). Il riordino coi modelli a coppie non si vede nel complesso, aiuta il primo posto delle domande da studente e peggiora quello di
+   § 4.1). Il riordino coi modelli a coppie non si vede nel complesso, aiuta il primo posto delle domande a parole proprie e peggiora quello di
    alcune domande per numero (campo, § 4.2). Il giudice alla cieca, su 60 domande, trova le verità automatiche precise ma incomplete:
    sottostimano quasi tutte le configurazioni, e quasi tutti i modelli più di BM25 (campo, § 2.5; intervalli larghi).
 4. **Le scansioni.** Su un banco piccolo e facile (478 pagine, domande scritte vedendo la pagina), gli errori di lettura arrivano alla
-   ricerca solo oltre il 15% di parole perse: allora la pagina esce dai primi dieci per una domanda da studente su dieci fino a quasi una
+   ricerca solo oltre il 15% di parole perse: allora la pagina esce dai primi dieci per una domanda a parole proprie su dieci fino a quasi una
    su quattro, secondo il modello, e il significato non le ripara (sul testo letto i modelli stanno fra 0,77 e 0,86, BM25 a 0,79; alcuni
    modelli perdono meno di BM25) (campo, § 5.2; numeri indicativi). La rete di significato riconosce le pagine lette male contro la verità
    (area 0,81-0,94) ma non confrontando fra loro le due letture (0,48-0,57), e le due vie sbagliano per lo più sulle stesse pagine (campo,
@@ -179,7 +181,7 @@ applicabile» (il modello non sa fare il compito) distinto da «non misurato» (
 | cit_n2d (norma → dottrina) | il testo dell'articolo senza numero; bersagli: i passi che lo citano | 200 | libreria senza i codici | come sopra |
 | num_art | «articolo N» del codice, in forma piana o abbreviata; trappole: i numeri vicini (uno o due sopra e sotto) e lo stesso numero nell'altro codice del volume | 200 | nel codice e nella libreria | come sopra |
 | num_par | «paragrafo N» del manuale coi «§»; trappole §N±1, §N±2 | 100 | nel libro e nella libreria | come sopra |
-| nl | domande da studente scritte da un sotto-agente che vede solo la voce e la materia (non le pagine), senza le parole della voce | 352 (su 380: 6 voci impossibili, nomi propri e voci vaghe; 22 tolte con le correzioni: 21 perché le loro voci rimandavano solo ai volumi I e II non allineati, una perché la sua voce non era più tenuta dopo la prima correzione; registro delle deviazioni, 17:03 e 17:17) | come la voce | `VERITA_NL.json` `2af1eca5…` |
+| nl | domande a parole proprie scritte da un sotto-agente che vede solo la voce e la materia (non le pagine), senza le parole della voce | 352 (su 380: 6 voci impossibili, nomi propri e voci vaghe; 22 tolte con le correzioni: 21 perché le loro voci rimandavano solo ai volumi I e II non allineati, una perché la sua voce non era più tenuta dopo la prima correzione; registro delle deviazioni, 17:03 e 17:17) | come la voce | `VERITA_NL.json` `2af1eca5…` |
 | banco_domanda, banco_frase | una domanda per pagina del banco (scritta vedendo la pagina: dichiarato) e una frase della pagina da ritrovare | 132 e 136 | fra le 478 pagine scansionate | `verita_scansioni.json` `611ab88a…` |
 | scansioni_vere | le domande numerate delle 14 pagine vere con la verità verificata alla cieca | 35 | fra le 75 pagine vere | come sopra |
 
@@ -259,7 +261,7 @@ vera di Qwen3 (§ 7).
   libreria** fra i 55 documenti (per norma → dottrina senza i due codici, dove il passo d'origine sta). Fra parentesi quadre l'intervallo al
   95 per cento per ricampionamento delle domande; le differenze fra configurazioni sono appaiate sulle stesse domande.
 - Le famiglie misurano cose diverse: **indice** e **indice_codice** sono domande dell'editore fatte di parole chiave (la voce dell'indice);
-  **nl** sono le stesse voci riscritte da studente, senza le parole della voce; **cit_d2n** chiede di risalire dal passo di dottrina
+  **nl** sono le stesse voci riscritte come domande a parole proprie: dicono il concetto senza le parole della voce (la sigla viene da «linguaggio naturale» e resta perché è la chiave dei dati grezzi); **cit_d2n** chiede di risalire dal passo di dottrina
   all'articolo che cita (la citazione è tolta dal passo); **cit_n2d** dall'articolo ai passi che lo citano; **num_art** e **num_par**
   chiedono un articolo o un paragrafo col solo numero.
 - **La ricerca dell'app così com'è** cerca la frase intera e restituisce i blocchi in ordine di lettura: S@k misura se un blocco giusto sta
@@ -364,7 +366,7 @@ hanno almeno una; grezzi `uscite/lessicale/{A,NL}/app_libreria.json`, script `ce
   eguagliano o lo superano di poco (Harrier 0.6B 0,79, Harrier 270M 0,78, Qwen3 0,76, BGE-M3 0,75), EmbeddingGemma 2 e i due Granite
   restano sotto (fra 0,63 e 0,69); la ricerca mista arriva a 0,76-0,80. Sulle voci del codice Harrier 0.6B arriva a 0,80. La ricerca
   dell'app così com'è: 0,26.
-- **Domande da studente: qui il significato conta.** Harrier 0.6B 0,61 [0,55; 0,66] e BGE-M3 0,60 [0,55; 0,65]; Harrier 270M, Qwen3 e
+- **Domande a parole proprie: qui il significato conta.** Harrier 0.6B 0,61 [0,55; 0,66] e BGE-M3 0,60 [0,55; 0,65]; Harrier 270M, Qwen3 e
   Granite 311M 0,53; BM25 0,39; la ricerca dell'app 0 nel libro e nessun libro nella libreria per tutte le 352 domande (cerca la frase
   intera, che in queste domande non c'è mai). Jina v5 Omni Nano, che per licenza resta al banco, arriva a 0,61 come Harrier 0.6B.
 - **Dalla dottrina all'articolo** (il passo con la citazione tolta): BGE-M3 con BM25 0,56, BM25 0,42; **dall'articolo alla dottrina**
@@ -374,7 +376,7 @@ hanno almeno una; grezzi `uscite/lessicale/{A,NL}/app_libreria.json`, script `ce
   0,58), e ogni ricerca mista con BM25 sta a 0,98-1,00.
 - **Nella libreria** (55 documenti) tutti perdono. Sulle voci d'indice i modelli perdono più di BM25 (BM25 da 0,76 a 0,61, Harrier 270M
   da 0,78 a 0,60, BGE-M3 da 0,75 a 0,46), salvo Harrier 0.6B (da 0,79 a 0,64) e Jina (da 0,79 a 0,63), che perdono quanto BM25; le
-  ricerche miste migliori tengono 0,61-0,65. Sulle domande da studente e sulle voci del codice i modelli perdono quanto BM25 (da 0,16 a
+  ricerche miste migliori tengono 0,61-0,65. Sulle domande a parole proprie e sulle voci del codice i modelli perdono quanto BM25 (da 0,16 a
   0,24 contro 0,21, e da 0,09 a 0,15 contro 0,13), sui numeri meno. Sono differenze fra medie, senza intervallo (il calo di un modello non
   è stato confrontato con quello di BM25 domanda per domanda). Che gli altri libri sullo stesso argomento facciano da distrattori per
   significato più che per parole è dedotto.
@@ -402,14 +404,14 @@ hanno almeno una; grezzi `uscite/lessicale/{A,NL}/app_libreria.json`, script `ce
 | Qwen3-Embedding 0.6B | +0.00 [-0.02; +0.03] | +0.14 [+0.08; +0.19]* | +0.02 [-0.01; +0.06] | +0.05 [-0.01; +0.10] | — | -0.41 [-0.48; -0.34]* | -0.24 [-0.33; -0.15]* |
 | Qwen3-Embedding 0.6B + BM25 (RRF) | +0.02 [+0.00; +0.04]* | +0.12 [+0.08; +0.17]* | +0.05 [+0.03; +0.08]* | +0.10 [+0.06; +0.15]* | — | -0.26 [-0.32; -0.20]* | +0.03 [+0.00; +0.07] |
 
-- **Sulle domande da studente ogni modello tranne Granite 97M batte le parole**: da +0,08 (EmbeddingGemma 2) e +0,13 (Harrier 270M) a
+- **Sulle domande a parole proprie ogni modello tranne Granite 97M batte le parole**: da +0,08 (EmbeddingGemma 2) e +0,13 (Harrier 270M) a
   +0,21/+0,22 (Harrier 0.6B, Jina), BGE-M3 +0,20, tutti con l'intervallo che esclude lo zero; Granite 97M +0,02, intervallo che contiene
   lo zero.
 - **Sulle voci d'indice e del codice solo i modelli più forti battono BM25, e di poco**: Harrier 0.6B +0,03 e +0,06, Jina +0,03 e +0,05
   (intervalli che escludono lo zero); Harrier 270M, Qwen3 e BGE-M3 pareggiano; EmbeddingGemma 2 e i due Granite perdono da −0,07 a −0,13.
 - **Sui numeri quasi tutti i modelli perdono molto** (articoli da −0,12 a −0,41), tranne BGE-M3, che vince anche lì (+0,17).
-- **La ricerca mista non perde quasi mai contro BM25**: con ogni modello pareggia o vince su voci d'indice, domande da studente, dottrina e
-  paragrafi; perde solo sugli articoli, e solo coi modelli che sugli articoli sono ciechi (da −0,07 con Harrier 0.6B a −0,26 con Qwen3).
+- **La ricerca mista non perde quasi mai contro BM25**: con ogni modello pareggia o vince su voci d'indice, domande a parole proprie, dottrina e
+  paragrafi; perde solo sugli articoli, e solo coi modelli che gli articoli per numero non li trovano (da −0,07 con Harrier 0.6B a −0,26 con Qwen3).
 
 ### 2.2 bis Un modello più grande trova di più? (differenze appaiate fra coppie di modelli; campo)
 **Coppie di modelli, differenza appaiata di S@10, libro (* = l'intervallo esclude lo zero).**
@@ -442,12 +444,12 @@ hanno almeno una; grezzi `uscite/lessicale/{A,NL}/app_libreria.json`, script `ce
 
 - **Fra famiglie la taglia da sola non decide**: Qwen3-Embedding 0.6B (più del doppio dei parametri) non trova più di Harrier 270M su
   nessuna famiglia di testo (da −0,02 a +0,02 nel libro, intervalli che contengono lo zero) e perde sui numeri; BGE-M3 (568 milioni) invece
-  batte Harrier 270M sulle domande da studente (+0,07 [+0,02; +0,12]) e dalla dottrina all'articolo (+0,06), e perde sulle voci d'indice
+  batte Harrier 270M sulle domande a parole proprie (+0,07 [+0,02; +0,12]) e dalla dottrina all'articolo (+0,06), e perde sulle voci d'indice
   (−0,03). Harrier 0.6B, della stessa taglia di Qwen3, lo batte quasi ovunque (da +0,03 a +0,27). Sono poche coppie: dicono che la taglia
   non basta, non quanto pesa.
 - **Nelle due famiglie misurate con due taglie, il più grande trova di più**: Granite 311M trova più di Granite 97M su tutte le famiglie di
   testo (fra +0,04 e +0,12 nel libro, intervalli che escludono lo zero), ma perde sui numeri; Harrier 0.6B trova più di Harrier 270M sulle
-  domande da studente (+0,08) e sulle voci del codice (+0,06), e pareggia altrove.
+  domande a parole proprie (+0,08) e sulle voci del codice (+0,06), e pareggia altrove.
 - **Harrier 270M ed EmbeddingGemma 2, della stessa taglia, si dividono i compiti**: Harrier batte EmbeddingGemma 2 sul testo
   (+0,05/+0,09 nel libro, +0,18 sulle voci d'indice nella libreria), EmbeddingGemma 2 batte Harrier sugli articoli per numero (+0,24) e
   con Core ML non perde in modo misurabile (−0,0015, intervallo che contiene lo zero), mentre Harrier perde 0,008 (§ 3.2).
@@ -531,7 +533,7 @@ diverse, e i gruppi mescolano famiglie diverse): le differenze vanno lette con g
 | Harrier 270M + BM25 (RRF) | 0.63 [0.59; 0.66] | 0.70 [0.64; 0.76] |
 
 - **Il tipo di documento non si separa dalla famiglia della domanda**: le domande sui codici sono voci del codice e passi di dottrina da
-  riportare all'articolo, quelle sui manuali voci d'indice e domande da studente. Nei codici i modelli e le ricerche miste stanno fra 0,06
+  riportare all'articolo, quelle sui manuali voci d'indice e domande a parole proprie. Nei codici i modelli e le ricerche miste stanno fra 0,06
   e 0,13 sotto i manuali (BM25 0,12, la ricerca dell'app 0,20), ma la differenza mescola il tipo di documento con il tipo di domanda: da
   queste tabelle non si dice quale dei due pesi.
 - **Le pagine a due colonne sono tutte nei codici** (677 domande su 677): dentro i codici le due colonne stanno 0,03-0,09 sotto una
@@ -975,24 +977,24 @@ anche la fusione col suo vettore sparso (i pesi delle parole che il modello stes
 | Qwen3-Embedding 0.6B + BM25 (RRF) | Qwen3-Embedding 0.6B | +0.07 [+0.04; +0.09]* | -0.02 [-0.06; +0.02] | +0.03 [+0.00; +0.06] | +0.01 [-0.02; +0.04] | +0.04 [+0.01; +0.09]* | +0.13 [+0.09; +0.18]* | +0.31 [+0.22; +0.40]* |
 | Qwen3-Embedding 0.6B + BM25 (RRF) | BM25 (parole) | +0.02 [+0.00; +0.04]* | +0.14 [+0.10; +0.19]* | +0.04 [+0.02; +0.07]* | +0.00 [-0.03; +0.03] | +0.01 [-0.03; +0.05] | -0.12 [-0.17; -0.07]* | +0.09 [-0.01; +0.19] |
 
-- **Con BGE-M3 la ricerca mista batte BM25 su tutte le famiglie del libro**: +0,14 sulle domande da studente e dalla dottrina
+- **Con BGE-M3 la ricerca mista batte BM25 su tutte le famiglie del libro**: +0,14 sulle domande a parole proprie e dalla dottrina
   all'articolo, +0,05 sulle voci del codice, +0,02 su quelle d'indice, **+0,27 sugli articoli chiesti per numero** e +0,05 sui paragrafi
-  (intervalli che escludono lo zero). Nella libreria batte BM25 su quattro famiglie su sette (domande da studente +0,18, voci del codice
+  (intervalli che escludono lo zero). Nella libreria batte BM25 su quattro famiglie su sette (domande a parole proprie +0,18, voci del codice
   +0,06, articoli +0,32, paragrafi +0,29) e pareggia sulle altre tre (voci d'indice, dottrina → norma e norma → dottrina, intervalli che
   contengono lo zero). Ha il S@10 medio più alto nel libro fra le ricerche miste (la regola del § 4.2); contro Harrier 0.6B con BM25 vince
   solo sugli articoli (+0,33) e pareggia altrove (§ 2.2 bis).
 - **Con gli altri modelli la ricerca mista batte BM25 quasi ovunque, ma non sui numeri degli articoli**: da +0,07 a +0,13 sulle domande
-  da studente, fra +0,04 e +0,13 dalla dottrina all'articolo, ma sugli articoli BM25 da solo resta sopra (da −0,07 con Harrier 0.6B a
+  a parole proprie, fra +0,04 e +0,13 dalla dottrina all'articolo, ma sugli articoli BM25 da solo resta sopra (da −0,07 con Harrier 0.6B a
   −0,26 con Qwen3; Granite 97M pareggia): il modello mette in cima passi che non c'entrano e la fusione diluisce il buon posto delle parole
   (dedotto). EmbeddingGemma 2, che sui numeri va meno peggio, con BM25 supera BM25 anche lì (+0,11).
 - **Contro il modello da solo** la ricerca mista aggiunge soprattutto dove il modello cade (numeri, dottrina che cita un articolo, voci
-  d'indice per i modelli piccoli) e **toglie qualcosa sulle domande da studente** ai modelli forti: Jina −0,09 [−0,14; −0,05], Harrier
+  d'indice per i modelli piccoli) e **toglie qualcosa sulle domande a parole proprie** ai modelli forti: Jina −0,09 [−0,14; −0,05], Harrier
   0.6B −0,08 [−0,12; −0,03], BGE-M3 −0,07 [−0,11; −0,02], intervalli che escludono lo zero; Harrier 270M, Granite 311M e Qwen3 −0,03,
-  −0,03 e −0,01, intervalli che contengono lo zero. Sulle domande da studente il modello forte da solo trova di più della sua ricerca
+  −0,03 e −0,01, intervalli che contengono lo zero. Sulle domande a parole proprie il modello forte da solo trova di più della sua ricerca
   mista.
 - **Il vettore sparso di BGE-M3 non sostituisce BM25.** La fusione del denso col suo sparso, contro quella del denso con BM25, perde sulle
-  domande da studente (−0,04), sulle voci del codice (−0,05) e sui paragrafi per numero (−0,10), e pareggia altrove. Lo sparso da solo sta
-  sotto BM25 sulle voci d'indice e del codice, sulle domande da studente e sui paragrafi, e sopra sulla dottrina e sugli articoli per
+  domande a parole proprie (−0,04), sulle voci del codice (−0,05) e sui paragrafi per numero (−0,10), e pareggia altrove. Lo sparso da solo sta
+  sotto BM25 sulle voci d'indice e del codice, sulle domande a parole proprie e sui paragrafi, e sopra sulla dottrina e sugli articoli per
   numero (medie del § 2.1). Il vantaggio dello sparso (niente indice di parole a parte) costa qualità.
 
 ### 4.2 Il riordino (campo)
@@ -1027,19 +1029,19 @@ bge-reranker-v2-m3: 12000 coppie in 136 s (0.23 s per domanda, 11 ms per coppia)
 
 - **Nel complesso il riordino non si vede**: su tutte le 600 domande, S@1 +0,005 [−0,033; +0,043] con bge-reranker-v2-m3 e +0,010
   [−0,025; +0,045] con Qwen3-Reranker, S@10 +0,018 e +0,002, intervalli che contengono lo zero.
-- **Aiuta il primo posto delle domande da studente** (S@1 +0,080 [+0,020; +0,140] con bge, +0,067 [+0,007; +0,133] con Qwen3; MRR@20
+- **Aiuta il primo posto delle domande a parole proprie** (S@1 +0,080 [+0,020; +0,140] con bge, +0,067 [+0,007; +0,133] con Qwen3; MRR@20
   +0,08 e +0,06) e un poco quello delle voci d'indice con bge (MRR@20 +0,06 [+0,007; +0,114]).
 - **Peggiora i numeri**: bge toglie dal primo posto il paragrafo chiesto in tre domande su dieci (S@1 da 0,90 a 0,60, −0,30 [−0,43;
   −0,18], 60 domande), Qwen3 l'articolo in due su dieci (−0,20 [−0,33; −0,07], 60 domande): un modello di riordino legge il significato,
   non il numero.
 - **Il costo**: 0,23 secondi per domanda con bge-reranker-v2-m3 (11 ms per coppia), 1,1 con Qwen3-Reranker (56 ms), sulla scheda grafica
-  del Mac, per 20 candidati. Vale il suo tempo solo sulle domande scritte da studente, e solo se una regola tiene fuori le domande per
+  del Mac, per 20 candidati. Vale il suo tempo solo sulle domande a parole proprie, e solo se una regola tiene fuori le domande per
   numero (dedotto).
 
 ## 5. Livello 5 — Le scansioni: errori di lettura che arrivano alla ricerca, immagini, rete di significato
 
 ### 5.1 Che cosa si misura (campo)
-Il banco delle scansioni del giro 1 (132 pagine con una domanda «da studente» scritta sulla pagina, 136 con una frase della pagina da
+Il banco delle scansioni del giro 1 (132 pagine con una domanda «a parole proprie» scritta sulla pagina, 136 con una frase della pagina da
 ritrovare, i distrattori del livello B) e le 35 domande sulle scansioni vere. Ogni domanda cerca **la sua pagina** fra le pagine del
 banco, sul testo della verità e sul testo letto dalle due vie del Mac (Apple e GLM, forma pulita e degradata): una pagina vale il massimo
 dei suoi blocchi. Per ogni pagina e via le **parole perse** sono la quota delle parole della verità che la lettura non contiene (multinsieme,
@@ -1125,11 +1127,11 @@ normalizzazione di ScaboCore). Grezzi: `misure/propagazione.json`, `uscite/<mode
 - Il banco è piccolo e facile (478 pagine, domande scritte vedendo la pagina) e le fasce sono quattro: i numeri dicono dove la perdita
   comincia a vedersi su questo banco, non una soglia generale.
 - Sotto il 15% di parole perse la ricerca quasi non se ne accorge (perdita di S@10 fra −0,02 e +0,04 in ogni fascia e configurazione).
-  Oltre il 15%, la pagina esce dai primi dieci per **una domanda da studente su dieci fino a quasi una su quattro**, secondo il modello
+  Oltre il 15%, la pagina esce dai primi dieci per **una domanda a parole proprie su dieci fino a quasi una su quattro**, secondo il modello
   (S@10 da 0,96-1,00 sulla verità a 0,767-0,864 sul testo letto; perdite da 0,097 di BGE-M3 e 0,136 di Qwen3 a 0,233 dei due Harrier,
   BM25 0,214), e per **una frase su quattro fino a più di una su tre** (da 0,89-1,00 a 0,598-0,720; perdite dei modelli da 0,243 a 0,355,
   BM25 0,364).
-- **Il significato non ripara le parole perse**: sul testo letto i modelli restano fra 0,77 e 0,86 sulle domande da studente (BM25 0,79)
+- **Il significato non ripara le parole perse**: sul testo letto i modelli restano fra 0,77 e 0,86 sulle domande a parole proprie (BM25 0,79)
   e fra 0,60 e 0,72 sulle frasi (BM25 0,64). Alcuni modelli perdono meno di BM25 (sulle domande BGE-M3 e Qwen3; sulle frasi tutti, ma
   partendo in parte da valori più bassi sulla verità); nessuno ritrova ciò che la lettura non ha scritto. Le domande sono 528 coppie
   pagina-via (132 pagine per quattro letture), non indipendenti: i numeri della tabella sono indicativi.
@@ -1193,7 +1195,7 @@ Pagine: 132. Contro la verità, le pagine con oltre il 15% di parole perse sono 
 
 - Sul banco, a livello di pagina, tutte le configurazioni trovano la pagina giusta quasi sempre sulla verità (S@10 0,97-1,00): il banco è
   piccolo (478 pagine) e le domande sono scritte sulla pagina. La lettura delle due vie costa in media fra 0,02 e 0,08 di S@10; il costo più
-  basso è di BGE-M3 e di Qwen3 sulle domande da studente (0,019 e 0,027), il più alto quello di BM25 sulle frasi (0,075).
+  basso è di BGE-M3 e di Qwen3 sulle domande a parole proprie (0,019 e 0,027), il più alto quello di BM25 sulle frasi (0,075).
 - Sulle 35 domande delle scansioni vere (75 pagine di 24 documenti) quasi tutte le configurazioni trovano la pagina fra le prime dieci con
   le letture di tutte e due le vie: la prova è troppo facile per distinguerle (S@10 0,97-1,00), e il confronto vero sta nel banco.
   Grezzi `uscite/<modello>__bf16/scansioni/misure.json`, `uscite/bm25/scansioni/misure.json`; script `scansioni.py`, `tabella_ibridi.py`.
@@ -1218,9 +1220,9 @@ pagina; contro la ricerca sul testo letto dalle due vie col ramo di testo dello 
 | Jina v5 Omni Nano | vere | scansioni_vere | 35 | 1.00 [1.00; 1.00] | 0.92 | +0.00 [+0.00; +0.00] | +0.00 [+0.00; +0.00] | +0.00 [+0.00; +0.00] | 0.18 |
 
 - **Con EmbeddingGemma 2 l'immagine non sostituisce la lettura**: sulle pagine del banco trova la pagina fra le prime dieci in 0,63 delle
-  domande da studente e in 0,44-0,46 delle frasi, cioè un terzo e la metà meno della ricerca sul testo letto (da −0,31 a −0,49, intervalli
+  domande a parole proprie e in 0,44-0,46 delle frasi, cioè un terzo e la metà meno della ricerca sul testo letto (da −0,31 a −0,49, intervalli
   che escludono lo zero); sulle 35 domande delle scansioni vere 0,89 contro 1,00.
-- **Con Jina Omni l'immagine va quasi come la lettura**: 0,94 sulle domande da studente (−0,01/−0,02 dal testo letto, intervalli che
+- **Con Jina Omni l'immagine va quasi come la lettura**: 0,94 sulle domande a parole proprie (−0,01/−0,02 dal testo letto, intervalli che
   contengono lo zero), 0,88-0,90 sulle frasi (−0,03/−0,05), 1,00 sulle scansioni vere. Ma Jina non può entrare nell'app (licenza): il
   risultato dice che la strada esiste, non che oggi la si possa prendere.
 - Il costo è basso: 0,14-0,18 secondi per pagina sulla scheda grafica del Mac, e nessuna lettura prima.
@@ -1232,7 +1234,7 @@ intervalli). Le due colonne delle vie dell'app sono contro il riferimento del §
 270M, bf16 per gli altri): per questo EmbeddingGemma 2 vi ha −0,001 con Core ML, contro il −0,002 del confronto col bf16 del § 3.2.
 Script `tabella_mappa.py`.
 
-| configurazione | voci d'indice | domande da studente | articoli per numero | paragrafi per numero | voci d'indice nella libreria | indice stampato in cima | blocco sotto i 40 caratteri in cima | Core ML − riferimento | GGUF Q8_0 − riferimento | pacchetto Core ML |
+| configurazione | voci d'indice | domande a parole proprie | articoli per numero | paragrafi per numero | voci d'indice nella libreria | indice stampato in cima | blocco sotto i 40 caratteri in cima | Core ML − riferimento | GGUF Q8_0 − riferimento | pacchetto Core ML |
 |---|---|---|---|---|---|---|---|---|---|---|
 | ricerca dell'app | 0.26 | 0.00 | 0.00 | 0.49 | — | 26 % | 3 % | — | — | — |
 | BM25 (parole) | 0.76 | 0.39 | 0.43 | 0.95 | 0.61 | 24 % | 13 % | — | — | — |
@@ -1310,16 +1312,16 @@ Tre comportamenti attraversano tutti i modelli:
 
 ## 8. Frasi per la radio (numero, intervallo, etichetta; fra parentesi il paragrafo)
 
-1. Oggi, se uno studente scrive la domanda con parole sue, la ricerca della libreria dell'app non trova nessun libro: **352 domande su
+1. Oggi, se chi cerca dice il concetto con parole proprie, la ricerca della libreria dell'app non trova nessun libro: **352 domande su
    352** (campo, § 2.1).
 2. Qwen3, con 600 milioni di parametri, non trova più di Harrier 270M, di un'altra famiglia: sulle famiglie di testo le differenze stanno
    fra −0,02 e +0,02, tutte con l'intervallo che contiene lo zero. La taglia da sola non decide; dentro la stessa famiglia il più grande
-   trova di più (Harrier 0.6B sopra 270M, +0,08 [+0,03; +0,13] sulle domande da studente) (campo, § 2.2 bis).
-3. Con le domande scritte da studente, nel libro, i modelli migliori trovano il passo giusto fra i primi dieci **sei volte su dieci**
+   trova di più (Harrier 0.6B sopra 270M, +0,08 [+0,03; +0,13] sulle domande a parole proprie) (campo, § 2.2 bis).
+3. Con le domande a parole proprie, nel libro, i modelli migliori trovano il passo giusto fra i primi dieci **sei volte su dieci**
    (Harrier 0.6B 0,61 [0,55; 0,66], BGE-M3 0,60 [0,55; 0,65]); la ricerca per parole quattro (0,39 [0,34; 0,45]) (campo, § 2.1).
 4. Mescolare il significato con le parole aiuta dove il modello cade: nel libro BGE-M3 con la ricerca per parole batte le sole parole **su
-   tutti i tipi di domanda**, e sugli articoli chiesti per numero passa da 43 a 69 su 100 (+0,27 [+0,20; +0,33]); sulle domande da
-   studente però trova meno di BGE-M3 da solo (0,53 contro 0,60) (campo, § 4.1).
+   tutti i tipi di domanda**, e sugli articoli chiesti per numero passa da 43 a 69 su 100 (+0,27 [+0,20; +0,33]); sulle domande a
+   parole proprie però trova meno di BGE-M3 da solo (0,53 contro 0,60) (campo, § 4.1).
 5. Chiesto un articolo per numero, nel libro, sette modelli su otto restano sotto la ricerca per parole: Harrier 270M lo trova fra i primi
    dieci **in 7 casi su 100** [4; 10], Qwen3 in 2, la ricerca per parole in 43 [36; 50]; fa eccezione BGE-M3, con 59 [53; 66] (campo,
    § 2.1).
@@ -1329,7 +1331,7 @@ Tre comportamenti attraversano tutti i modelli:
 7. L'indice per significato di un libro di 300 pagine pesa **mezzo megabyte** (545-654 kB a 640-768 dimensioni in int8, senza perdita
    misurabile) (campo, § 2.7).
 8. Su un banco piccolo di scansioni, finché la lettura perde meno del 15 per cento delle parole (una su sette circa) la ricerca quasi non
-   se ne accorge; oltre, secondo il modello, **da una domanda da studente su dieci a quasi una su quattro** non ritrova più la sua pagina
+   se ne accorge; oltre, secondo il modello, **da una domanda a parole proprie su dieci a quasi una su quattro** non ritrova più la sua pagina
    fra le prime dieci, e cercare per significato non ripara (campo, § 5.2; numeri indicativi).
 9. Le due vie di lettura del Mac sbagliano **per lo più sulle stesse pagine** (delle pagine lette male da almeno una, due su tre lo sono
    da tutte e due): confrontarle per significato non dice quale pagina è stata letta male (area 0,48-0,57, il caso) (campo, § 5.3).
@@ -1347,7 +1349,7 @@ Tre comportamenti attraversano tutti i modelli:
     consuma meno di Core ML sulla scheda grafica, e per i modelli da 0,6 miliardi consuma più di llama.cpp (misura indicativa, campo,
     § 3.4).
 15. Cercare sull'immagine della pagina, senza leggerla, con il modello che l'app potrebbe usare (EmbeddingGemma 2) trova la pagina giusta
-    **un terzo meno spesso** che cercare sul testo letto, sulle domande da studente del banco (0,63 contro 0,96 fra le prime dieci; sulle
+    **un terzo meno spesso** che cercare sul testo letto, sulle domande a parole proprie del banco (0,63 contro 0,96 fra le prime dieci; sulle
     frasi la metà); con un modello solo da banco (Jina Omni) quasi come la lettura (0,94) (campo, § 5.5).
 16. Sull'iPad del 2020 (A14) indicizzare un libro di 300 pagine col motore neurale richiederebbe almeno 13-26 secondi con Granite 97M e
     da 18 secondi a un minuto con i modelli da 270-311 milioni di parametri, secondo la precisione delle cifre di Apple, che non è
@@ -1359,16 +1361,16 @@ Ogni voce dice perché conta, quanto costa e quando avrebbe senso; le misure son
 deduzioni (dedotto) e restano decisioni del maintainer.
 
 1. **Prima le parole, poi i modelli.** La ricerca dell'app cerca la frase intera: nel libro trova il passo fra i primi dieci nel 26 per
-   cento delle voci d'indice, sulle domande scritte a parole proprie mai, e nella libreria non dà nessun libro per 352 domande da studente
+   cento delle voci d'indice, sulle domande scritte a parole proprie mai, e nella libreria non dà nessun libro per 352 domande a parole proprie
    su 352 (campo, § 2.1). Una ricerca per parole pesate (BM25, con la stessa normalizzazione di ScaboCore) porta le voci d'indice a 0,76 e
-   le domande da studente a 0,39 (campo, § 2.1), senza modelli e senza pesi da scaricare, con un costo di calcolo che il giro non ha misurato
+   le domande a parole proprie a 0,39 (campo, § 2.1), senza modelli e senza pesi da scaricare, con un costo di calcolo che il giro non ha misurato
    (dedotto: un indice di parole per libro). È il primo passo di qualunque ricerca mista, e da solo è già il salto più grande misurato nel
    giro (campo, § 2.2).
 2. **Un modello, da solo o in ricerca mista.** La ricerca mista con BM25 è la più regolare: nel libro non perde contro BM25 se non sugli
-   articoli, ma sulle domande da studente toglie 0,07-0,09 ai modelli forti (campo, § 4.1). Fra i modelli che possono entrare nell'app
+   articoli, ma sulle domande a parole proprie toglie 0,07-0,09 ai modelli forti (campo, § 4.1). Fra i modelli che possono entrare nell'app
    quattro hanno profili diversi (campo, § 2.1, § 2.7, § 3.2, § 3.3): **BGE-M3** (568 milioni di parametri, 1,1 GB in Core ML, 605 MB in
-   GGUF Q8_0) è alla pari con Harrier 0.6B sulle domande da studente (0,60 e 0,61) e il migliore sugli articoli per numero (0,59);
-   **Harrier 0.6B** (1,1 GB in Core ML, 610 MB in GGUF Q8_0) è alla pari o in testa sul testo e cieco sugli articoli (0,11); **Harrier 270M**
+   GGUF Q8_0) è alla pari con Harrier 0.6B sulle domande a parole proprie (0,60 e 0,61) e il migliore sugli articoli per numero (0,59);
+   **Harrier 0.6B** (1,1 GB in Core ML, 610 MB in GGUF Q8_0) è alla pari o in testa sul testo e non trova gli articoli per numero (0,11); **Harrier 270M**
    (515 MB in Core ML, nessun GGUF ufficiale possibile) è il migliore dei piccoli sulle voci d'indice ma perde un poco nel motore neurale;
    **EmbeddingGemma 2** (522 MB, 296 MB in GGUF) con le vie dell'app resta entro 0,003 dal banco e regge il binario, ma attira i blocchi
    cortissimi (titoli, rimandi). Granite 311M sta nel mezzo e regge meglio degli altri le dimensioni ridotte (256 dimensioni in int8 senza

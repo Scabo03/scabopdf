@@ -229,14 +229,14 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 - **Livello 1 — check-up, metodo, verità**: nove modelli di embedding (EmbeddingGemma 2, Qwen3-Embedding 0.6B, Harrier-OSS-v1 270M e 0.6B,
   Granite Embedding R2 97M e 311M, BGE-M3 denso e sparso, Jina v5 Omni Nano solo da banco per licenza) e due modelli di riordino, revisioni
   e licenze lette alla scheda e al file di licenza, impronte di ogni file; metodo fissato con impronta prima di ogni corsa; verità dagli
-  indici dei volumi, dai codici e dalle citazioni (2.550 domande più 352 domande da studente), controllate a campione da un sotto-agente,
+  indici dei volumi, dai codici e dalle citazioni (2.550 domande più 352 domande a parole proprie), controllate a campione da un sotto-agente,
   tre errori di costruzione trovati e corretti (dichiarati), due voci «trans.» rimaste.
 - **Livello 2 — la ricerca sul testo** (§ 2 del report; campo): nel libro, sulle voci d'indice le parole bastano (BM25 0,76 di S@10, i
-  modelli migliori 0,76-0,79); sulle domande da studente conta il significato (Harrier 0.6B 0,61, BGE-M3 0,60, BM25 0,39, la ricerca
+  modelli migliori 0,76-0,79); sulle domande a parole proprie conta il significato (Harrier 0.6B 0,61, BGE-M3 0,60, BM25 0,39, la ricerca
   dell'app 0, e nella libreria nessun libro per 352 domande su 352); la taglia da sola non decide (Qwen3 non trova più di Harrier 270M, BGE-M3
-  sì sulle domande da studente), dentro le due famiglie con due taglie il più grande trova di più; i numeri accecano quasi tutti i modelli
-  tranne BGE-M3 (articoli 0,59); nella libreria i modelli perdono più di BM25 sulle voci d'indice (salvo Harrier 0.6B e Jina) e quanto BM25
-  sulle domande da studente; il giudice alla cieca (1.791 blocchi in quattro tornate, 60 domande) dice che le verità automatiche sono precise
+  sì sulle domande a parole proprie), dentro le due famiglie con due taglie il più grande trova di più; gli articoli chiesti per numero sfuggono a quasi tutti i modelli
+  tranne BGE-M3 (0,59); nella libreria i modelli perdono più di BM25 sulle voci d'indice (salvo Harrier 0.6B e Jina) e quanto BM25
+  sulle domande a parole proprie; il giudice alla cieca (1.791 blocchi in quattro tornate, 60 domande) dice che le verità automatiche sono precise
   ma incomplete e sottostimano quasi tutti i modelli più di BM25; l'indice di un libro di 300 pagine pesa mezzo megabyte in int8, con una
   perdita al più di tre punti su mille.
 - **Livello 3 — banco contro app** (§ 3; campo salvo l'iPad): con le vie dell'app si trova quello che si trova al banco: Core ML col motore
@@ -250,12 +250,12 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   motore neurale (Apple non dichiara la precisione delle sue cifre). Un errore dell'eseguibile Swift di laboratorio (memoria non condivisa
   fra le sequenze per i modelli che leggono da sinistra a destra) trovato e corretto (`kv_unified`).
 - **Livello 4 — parole, ricerca mista, riordino** (§ 4; campo): BGE-M3 in ricerca mista con BM25 batte BM25 nel libro su tutte le famiglie,
-  articoli compresi (+0,27), e nella libreria su quattro famiglie su sette; sulle domande da studente la ricerca mista toglie 0,07-0,09 ai
+  articoli compresi (+0,27), e nella libreria su quattro famiglie su sette; sulle domande a parole proprie la ricerca mista toglie 0,07-0,09 ai
   modelli forti; il vettore sparso di BGE-M3 non sostituisce BM25; il riordino (bge-reranker-v2-m3, Qwen3-Reranker-0.6B, 600 domande) non si
-  vede nel complesso, aiuta il primo posto delle domande da studente (+0,07/+0,08) e peggiora quello di alcune domande per numero (fino a
+  vede nel complesso, aiuta il primo posto delle domande a parole proprie (+0,07/+0,08) e peggiora quello di alcune domande per numero (fino a
   −0,30).
 - **Livello 5 — scansioni** (§ 5; campo): su un banco piccolo e facile gli errori di lettura arrivano alla ricerca solo oltre il 15% di parole
-  perse (allora la pagina esce dai primi dieci per una domanda da studente su dieci fino a quasi una su quattro) e il significato non li
+  perse (allora la pagina esce dai primi dieci per una domanda a parole proprie su dieci fino a quasi una su quattro) e il significato non li
   ripara, anche se alcuni modelli perdono meno di BM25; la rete di significato riconosce le pagine lette male contro la verità (0,81-0,94) ma
   non fra le due letture del Mac (0,48-0,57), e le due vie sbagliano per lo più sulle stesse pagine (20 su 30 e 21 su 32); cercare
   sull'immagine della pagina trova fra un terzo e la metà in meno della lettura con EmbeddingGemma 2, quasi quanto con Jina Omni (solo banco).
