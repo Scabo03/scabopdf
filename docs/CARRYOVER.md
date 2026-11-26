@@ -10,7 +10,7 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
-> Versione: 2.73 (25-26 novembre 2026, giro «chiusura per la radio», livello di misura (solo laboratorio e documenti, nessuna build), **ramo pubblicato e NON unito**:
+> Versione: 2.73 (25-26 novembre 2026, giro «chiusura per la radio», livello di misura (solo laboratorio e documenti, nessuna build), **CONCLUSO e unito in main** il 26 novembre:
 > livello 1 rimandato dal maintainer alle build nuove; fatte le otto frasi non verificate del banco OCR, i completamenti degli embedding e i tempi e l'energia che non dipendono
 > dall'app, rifatti con gli accumulatori. Report `docs/BANCO_OCR.md` § 47 e `docs/BANCO_EMBEDDING.md` § 11. Vedi lo STATO qui sotto.)
 > Versione: 2.72 (23-24 novembre 2026, giro «banco embedding», livello di misura (solo laboratorio e documenti, nessuna build, nessun
@@ -223,11 +223,11 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
 
 ---
 
-## ▶ STATO — Giro «chiusura per la radio»: le otto frasi non verificate, i completamenti degli embedding, tempi ed energia con gli accumulatori (nessuna build) — 2026-11-25/26 — RAMO APERTO
+## ▶ STATO — Giro «chiusura per la radio»: le otto frasi non verificate, i completamenti degli embedding, tempi ed energia con gli accumulatori (nessuna build) — 2026-11-25/26 — CONCLUSO
 
 **Build:** nessuna (iPad ultima **67**, prossima **68**; Mac ultima **4**, prossima **5**: invariate).
-**Partenza:** `bc6605a` (main = origin), 16:14 del 25. **Ramo:** `chore/chiusura-radio`, **pubblicato e non unito** (ultimo `5bfff6a` e il commit di questo STATO): la sezione dell'energia
-non è passata dalla revisione indipendente. Laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/chiusura_radio/` (METODO con impronta, DIARIO, deviazioni, dati, script,
+**Partenza:** `bc6605a` (main = origin), 16:14 del 25. **Ramo:** `chore/chiusura-radio`, **unito in main in avanti veloce il 26 novembre** dopo la revisione indipendente della parte sull'energia (0 gravi, 6 da
+correggere, 3 minori, tutti applicati); ramo cancellato in locale e su origin. Laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/chiusura_radio/` (METODO con impronta, DIARIO, deviazioni, dati, script,
 referto `REFERTO_CHIUSURA_RADIO.md`). Livello di misura: nessun file sotto `app/`.
 
 - **Cambio di priorità del maintainer (16:31 del 25)**: livello 1 (lettura delle scansioni dell'app e metro dei blocchi) rimandato per intero alle build nuove; del livello 4 solo
@@ -240,11 +240,11 @@ referto `REFERTO_CHIUSURA_RADIO.md`). Livello di misura: nessun file sotto `app/
 - **Livello 3** (BANCO_EMBEDDING § 11, campo): Core ML su tutto L3 entro due punti su mille per sei modelli su sette; EmbeddingGemma 2 col titolo della sezione: blocco cortissimo in testa dal
   41 al 17 per cento, articoli per numero da 31 a 51 su 100, domande a parole proprie invariate; blocchi cortissimi: farli valere il blocco seguente (442 confronti, nessuno peggiore);
   salto diretto per numero: col codice sempre primo (quasi per costruzione), senza codice primo 57 volte su cento e fra i primi cinque sempre; frasi 5, 6, 11 e 14 aggiornate.
-- **Livello 4** (campo): la telemetria si aggiorna una volta al minuto: le misure brevi dei giri precedenti leggevano un valore fermo. Rifatte con gli accumulatori (due passate entro il 2 per
-  cento sulla scheda grafica, entro il 9 sul motore neurale): il motore neurale consuma meno per tutti i modelli d'embedding, anche da 0,6 miliardi (smentita la frase che diceva il contrario).
+- **Livello 4** (campo): la telemetria si aggiorna una volta al minuto: le misure brevi dei giri precedenti leggevano un valore fermo. Rifatte con gli accumulatori (due passate entro il 4 per
+  cento sulla scheda grafica, entro il 9 sul motore neurale): il motore neurale consuma meno di llama.cpp e di PyTorch per i sette modelli misurati in Core ML (pari solo BGE-M3 contro PyTorch),
+  anche da 0,6 miliardi (smentita la frase che diceva il contrario).
 - **Revisione indipendente** dei livelli 2 e 3 (sotto-agente nuovo): «si può unire dopo le correzioni», 0 gravi, 5 da correggere, 6 minori, oltre 100 numeri ricalcolati: tutto corretto.
-- **Da dove riprendere**: (1) revisione indipendente della sola parte d'energia (BANCO_OCR § 47 dopo la frase 7, BANCO_EMBEDDING § 11.5), poi avanzamento rapido in main e ramo cancellato;
-  (2) il livello 1 sulle build nuove, col metro dei blocchi pronto (`strumenti/blocchi.py`) e l'elenco unico delle frasi per la trasmissione; (3) proposta per un giro di prodotto: l'esito
+- **Da dove riprendere**: (1) fatto il 26: revisione dell'energia e fusione; (2) il livello 1 sulle build nuove, col metro dei blocchi pronto (`strumenti/blocchi.py`) e l'elenco unico delle frasi per la trasmissione; (3) proposta per un giro di prodotto: l'esito
   della guardia delle risorse visive per regione nel referto e la guardia provata sulle scansioni dei codici (frase 7); il salto diretto per numero con l'elenco dei candidati.
 
 ---

@@ -1348,7 +1348,7 @@ Tre comportamenti attraversano tutti i modelli:
     densi fra il 2 e l'11 (campo, § 2.3).
 13. Sul Mac, con le vie dell'app, un modello piccolo indicizza un libro di 300 pagine **in pochi secondi**: Granite 97M in 3,3 secondi
     con llama.cpp, Harrier 270M in 10 col motore neurale; con tutti e due una domanda si codifica in 3 millesimi di secondo (campo, § 3.4).
-14. Il motore neurale consuma per lo stesso libro **da una volta e mezza a tre volte e mezza meno** di llama.cpp e di PyTorch sulla scheda
+14. Il motore neurale consuma per lo stesso libro **da una volta e mezza a quasi quattro volte meno** di llama.cpp e di PyTorch sulla scheda
     grafica, anche quando è più lento e anche per i modelli da 0,6 miliardi (circa 0,7 kJ per 300 pagine contro 1,3 e 1,6); pari solo BGE-M3
     contro PyTorch (campo, due passate entro il 9 per cento, § 11.5). *Prima: «da 2 a 8 volte meno fino a 568 milioni, più di llama.cpp per
     0,6 miliardi», con valori di una telemetria ferma per un minuto: smentita la seconda parte.*
@@ -1563,9 +1563,10 @@ ricalcolato con una base comune.
 | Harrier 0.6B | 1.627 e 1.611 J, 26,8 s (1.250) | 1.255 e 1.263 J, 21,3 s (564) | 709 e 686 J, 46,9 s (662) |
 | Jina v5 Omni Nano | 499 e 498 J, 9,4 s (325) | — (solo banco) | — (solo banco) |
 
-- **Il motore neurale consuma meno per tutti i modelli misurati**, anche i più grandi: da circa 1,5 a 3,5 volte meno di llama.cpp e di PyTorch sulla scheda grafica (0,6 miliardi di
-  parametri: circa 0,7 kJ per il libro contro 1,3 e 1,6); unica parità, BGE-M3 contro PyTorch (0,41-0,44 contro 0,43-0,44 kJ). Il § 3.4 diceva il contrario per i modelli da 0,6 miliardi,
+- **Il motore neurale consuma meno per tutti i modelli misurati anche in Core ML** (sette; Jina non ha la via Core ML, Harrier 270M non ha la via GGUF), anche i più grandi: da circa 1,5 a quasi
+  4 volte meno di llama.cpp e di PyTorch sulla scheda grafica (0,6 miliardi di parametri: circa 0,7 kJ per il libro contro 1,3 e 1,6); unica parità, BGE-M3 contro PyTorch (0,41-0,44 contro 0,43-0,44 kJ). Il § 3.4 diceva il contrario per i modelli da 0,6 miliardi,
   sulla base di valori fermi: **smentito**. Core ML con tutte le unità o con la sola scheda grafica non è stato rimisurato.
-- Le due passate stanno entro il 2 per cento sulla scheda grafica, entro il 9 sul motore neurale (dove il riposo, che cambia fino a 1 W fra un riposo e l'altro, pesa di più su 12-18 W).
+- Le due passate stanno entro il 4 per cento sulla scheda grafica (al massimo 105 contro 109 J), entro il 9 sul motore neurale (dove il riposo, che cambia fino a 1,5 W fra un riposo e l'altro, pesa
+  di più su 12-18 W). Quattordici misure su 42 poggiano su una sola finestra piena da 60 secondi (per esempio BGE-M3 al banco e i Granite in GGUF): per loro c'è solo il confronto fra le due passate.
 - I tempi confermano il § 3.4 (fra parentesi i secondi di prima: Granite 97M GGUF 3,2, Harrier 270M sul motore neurale 10,2-10,3, i modelli da 0,6 miliardi 47 sul motore neurale e 21 in GGUF).
 
