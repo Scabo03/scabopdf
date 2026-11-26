@@ -135,7 +135,9 @@ final class BookSearchUITests: XCTestCase {
         search(app, "PIENA del fiume", expect: "Poi 2 risultati esatti, in ordine di lettura.")
         XCTAssertTrue(item(app, "ricerca.passo.0").exists, "i passi con le parole cercate")
         let first = item(app, "ricerca.risultato.0"), second = item(app, "ricerca.risultato.1")
-        XCTAssertTrue(first.exists && second.exists)
+        // Le righe dei passi vengono prima: se le occorrenze restano sotto il bordo, la tabella scorre (revisione del giro).
+        if !(first.exists && second.exists) { app.swipeUp() }
+        XCTAssertTrue(first.waitForExistence(timeout: 3) && second.waitForExistence(timeout: 3))
         XCTAssertFalse(first.label.contains("Nella nota"), first.label)
         XCTAssertTrue(second.label.contains("Nella nota 1"), "dice che è in una nota: «\(second.label)»")
         XCTAssertTrue(second.label.contains("Capitolo primo del libro due"), "la sezione: «\(second.label)»")

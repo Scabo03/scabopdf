@@ -203,8 +203,8 @@ public enum LibrarySearch {
         let found: [LibrarySearchBookResult]
         if byWords {
             let scores = LibraryWordWeights.scores(tf: rows.map(\.tf), length: rows.map(\.length))
-            var listed = rows.indices.filter { rows[$0].count > 0 || scores[$0].distinctive }
-            listed.sort { scores[$0].score != scores[$1].score ? scores[$0].score > scores[$1].score : $0 < $1 }
+            var listed = rows.indices.filter { rows[$0].count > 0 || scores[$0] > 0 }
+            listed.sort { scores[$0] != scores[$1] ? scores[$0] > scores[$1] : $0 < $1 }
             var wordOnly = 0
             listed = listed.filter { k in
                 guard rows[k].count == 0 else { return true }
@@ -213,7 +213,7 @@ public enum LibrarySearch {
             }
             found = listed.map { k in
                 LibrarySearchBookResult(documentId: rows[k].book.documentId, title: rows[k].book.title, count: rows[k].count,
-                                        wordScore: scores[k].score)
+                                        wordScore: scores[k])
             }
         } else {
             found = rows.filter { $0.count > 0 }.map {
@@ -226,9 +226,10 @@ public enum LibrarySearch {
 }
 
 /// Il peso delle parole di una ricerca nei libri (giro «la ricerca», LAYER2 § 12.16): BM25 dove il documento è il libro intero
-/// (k1 1,2, b 0,75; la lunghezza è quella del testo normalizzato in byte; l'IDF sui libri cercati). Un libro senza la frase
-/// intera si dà solo se contiene una parola che distingue (presente al più in metà dei libri, almeno uno): «il vento» non porta
-/// tutti i libri che dicono «il». Il testo di ricerca di oggi basta: nessun formato nuovo.
+/// (k1 1,2, b 0,75; la lunghezza è quella del testo normalizzato in byte; l'IDF sui libri cercati). I libri senza la frase intera
+/// sono al più `LibrarySearch.wordOnlyBookLimit`, i più pesanti. Nessun filtro della parola che distingue, a differenza del libro:
+/// in una libreria omogenea una parola presente in più di metà dei libri distingue ancora per frequenza (sul banco il filtro
+/// toglieva il libro giusto dal primo posto a 0,04 delle domande). Il testo di ricerca di oggi basta: nessun formato nuovo.
 enum LibraryWordWeights {
     /// Quanti caratteri deve avere almeno una parola per contare nella libreria (i numeri contano sempre).
     static var minimumLetters = 3
@@ -252,23 +253,23 @@ enum LibraryWordWeights {
         normalized.split(whereSeparator: { !$0.unicodeScalars.allSatisfy { SearchNormalizer.isWordScalar($0.value) } }).count
     }
 
-    /// Per libro: il punteggio e se contiene una parola che distingue. `tf[libro][parola]`, `length[libro]`.
-    static func scores(tf: [[Int]], length: [Int]) -> [(score: Double, distinctive: Bool)] {
+    /// Per libro, il punteggio. `tf[libro][parola]`, `length[libro]`.
+    static func scores(tf: [[Int]], length: [Int]) -> [Double] {
         let n = Double(tf.count)
         guard n > 0, let width = tf.first?.count else { return [] }
         let average = max(1, Double(length.reduce(0, +)) / n)
-        let df = (0..<width).map { t in Double(tf.filter { $0[t] > 0 }.count) }
-        let idf = df.map { log(1 + (n - $0 + 0.5) / ($0 + 0.5)) }
-        let distinctive = df.map { $0 > 0 && $0 <= max(1, 0.5 * n) }
+        let idf = (0..<width).map { t -> Double in
+            let df = Double(tf.filter { $0[t] > 0 }.count)
+            return log(1 + (n - df + 0.5) / (df + 0.5))
+        }
         let k1 = BookWordIndex.k1, b = BookWordIndex.b
         return tf.indices.map { i in
-            var s = 0.0, d = false
+            var s = 0.0
             for t in 0..<width where tf[i][t] > 0 {
                 let f = Double(tf[i][t])
                 s += idf[t] * f * (k1 + 1) / (f + k1 * (1 - b + b * Double(length[i]) / average))
-                if distinctive[t] { d = true }
             }
-            return (s, d)
+            return s
         }
     }
 }

@@ -287,7 +287,7 @@ final class LibrarySearchTests: XCTestCase {
         XCTAssertEqual(BookSearchWording.librarySummary(runLibrary("lanterna", whole: false, files: files)),
                        "2 libri, 2 risultati in tutto per «lanterna».")
         XCTAssertEqual(BookSearchWording.librarySummary(runLibrary("il vento", whole: false, files: files)),
-                       "Un libro con le parole di «il vento», e con la frase intera: 3 risultati.")
+                       "2 libri con le parole di «il vento», i più pertinenti per primi. In uno c'è anche la frase intera: 3 risultati.")
         let none = BookSearchWording.librarySummary(runLibrary("ventualit", whole: true, files: files))
         XCTAssertTrue(none.hasPrefix("Nel testo dei libri nessun risultato per «ventualit»."), none)
         XCTAssertTrue(none.contains("togliere «Parola intera»"), none)
