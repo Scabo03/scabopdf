@@ -186,7 +186,8 @@ final class LibrarySearchTests: XCTestCase {
     /// Le differenze fra ciò che la ricerca nella libreria ha restituito e l'atteso (vuoto: uguali).
     private func differences(_ result: LibrarySearchResult, _ expected: [String: Int]) -> [String] {
         var diffs: [String] = []
-        let got = Dictionary(uniqueKeysWithValues: result.books.map { ($0.documentId, $0.count) })
+        // Le righe «solo parole» (ricerca di più parole, conteggio 0) non sono occorrenze: si confrontano le esatte.
+        let got = Dictionary(uniqueKeysWithValues: result.books.filter { $0.count > 0 }.map { ($0.documentId, $0.count) })
         for id in Set(got.keys).union(expected.keys).sorted() where got[id] != expected[id] {
             diffs.append("\(id): \(got[id] ?? 0) invece di \(expected[id] ?? 0)")
         }
@@ -240,16 +241,53 @@ final class LibrarySearchTests: XCTestCase {
         XCTAssertTrue(BookSearchWording.librarySummary(r).contains("2 libri non si sono potuti cercare"), BookSearchWording.librarySummary(r))
     }
 
+    // MARK: Le parole pesate (giro «la ricerca», 2026-11-26)
+
+    private func wordLibrary(_ texts: [String: String]) -> (list: [(documentId: String, title: String)], files: [String: Data]) {
+        var files: [String: Data] = [:]
+        for (id, text) in texts {
+            let segs = [ContentSegment(id: "node_0", role: "BODY", text: text, lengthCategory: "", acousticIntro: "")]
+            files[id] = LibrarySearchText.encode(segments: segs, stamp: .init(size: 1, modifiedNanoseconds: 1))
+        }
+        return (texts.keys.sorted().map { (documentId: $0, title: "Libro \($0)") }, files)
+    }
+
+    func test_library_byWords_booksWithTheWords_inOrderOfWeight() {
+        let lib = wordLibrary(["w": "Altro testo qualunque.", "x": "Il gufo grigio vola sulla torre vecchia.",
+                               "y": "La torre vecchia ha un orologio.", "z": "Il gatto dorme vicino alla stufa."])
+        let r = LibrarySearch.run("gufo torre", options: BookSearchOptions(), books: lib.list) { lib.files[$0] }
+        XCTAssertTrue(r.byWords)
+        XCTAssertEqual(r.books.map(\.documentId), ["x", "y"], "prima il libro con tutte e due le parole")
+        XCTAssertEqual(r.books.map(\.count), [0, 0], "la frase intera non c'è")
+        XCTAssertGreaterThan(r.books[0].wordScore, r.books[1].wordScore)
+        XCTAssertEqual(BookSearchWording.librarySummary(r),
+                       "2 libri con le parole di «gufo torre», i più pertinenti per primi. La frase intera non c'è in nessun libro.")
+        XCTAssertEqual(BookSearchWording.libraryBookRow(title: "Libro x", count: 0), "Libro x, nessun risultato esatto")
+        XCTAssertEqual(LibraryWordWeights.terms("il gufo e la torre 12"), ["gufo", "torre", "12"], "le parole che contano")
+        let one = LibrarySearch.run("gufo", options: BookSearchOptions(), books: lib.list) { lib.files[$0] }
+        XCTAssertFalse(one.byWords, "una parola sola: come prima")
+        XCTAssertEqual(one.books.map(\.documentId), ["x"])
+    }
+
+    func test_library_byWords_atMostTenBooksWithoutThePhrase() {
+        var texts: [String: String] = [:]
+        for k in 0..<30 { texts[String(format: "b%02d", k)] = k < 12 ? "Il gufo e la torre, \(k)." : "Altro testo \(k)." }
+        let lib = wordLibrary(texts)
+        let r = LibrarySearch.run("gufo torre", options: BookSearchOptions(), books: lib.list) { lib.files[$0] }
+        XCTAssertEqual(r.books.count, LibrarySearch.wordOnlyBookLimit)
+        XCTAssertTrue(BookSearchWording.librarySummary(r).hasPrefix("10 libri con le parole di «gufo torre»"))
+    }
+
     func test_wording_summaryAndRows() {
         let files = libraryFiles()
         XCTAssertEqual(BookSearchWording.librarySummary(runLibrary("vento", whole: false, files: files)),
                        "2 libri, 7 risultati in tutto per «vento».")
         XCTAssertEqual(BookSearchWording.librarySummary(runLibrary("soffia sulla", whole: false, files: files)),
-                       "Un libro, un risultato per «soffia sulla».")
+                       "Un libro con le parole di «soffia sulla», e con la frase intera: un risultato.")
         XCTAssertEqual(BookSearchWording.librarySummary(runLibrary("lanterna", whole: false, files: files)),
                        "2 libri, 2 risultati in tutto per «lanterna».")
         XCTAssertEqual(BookSearchWording.librarySummary(runLibrary("il vento", whole: false, files: files)),
-                       "Un libro, 3 risultati in tutto per «il vento».")
+                       "Un libro con le parole di «il vento», e con la frase intera: 3 risultati.")
         let none = BookSearchWording.librarySummary(runLibrary("ventualit", whole: true, files: files))
         XCTAssertTrue(none.hasPrefix("Nel testo dei libri nessun risultato per «ventualit»."), none)
         XCTAssertTrue(none.contains("togliere «Parola intera»"), none)

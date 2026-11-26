@@ -119,19 +119,28 @@ public enum LibrarySearchText {
             return bounds.withUnsafeBufferPointer { b in search.scan(text, boundaries: b) { _ in } }
         }
     }
+
+    /// Quanti byte di testo normalizzato porta il file (la lunghezza del libro per il peso delle parole); `nil` se non vale.
+    public static func textByteCount(of data: Data) -> Int? {
+        data.withUnsafeBytes { header($0)?.textCount }
+    }
 }
 
 // MARK: - I risultati di una ricerca nella libreria
 
-/// Un libro con risultati.
+/// Un libro con risultati: occorrenze esatte, o (ricerca di più parole) le parole cercate che vi pesano.
 public struct LibrarySearchBookResult: Equatable, Sendable {
     public let documentId: String
     public let title: String
+    /// Le occorrenze esatte (0 per un libro che ha solo le parole: ricerca di più parole, giro «la ricerca»).
     public let count: Int
-    public init(documentId: String, title: String, count: Int) {
+    /// Il peso delle parole della ricerca nel libro (BM25 sui libri), 0 per una ricerca di una parola.
+    public let wordScore: Double
+    public init(documentId: String, title: String, count: Int, wordScore: Double = 0) {
         self.documentId = documentId
         self.title = title
         self.count = count
+        self.wordScore = wordScore
     }
 }
 
@@ -141,11 +150,16 @@ public struct LibrarySearchResult: Equatable, Sendable {
     public let query: String
     public let normalizedQuery: String
     public let options: BookSearchOptions
-    /// In ordine alfabetico del titolo, come l'archivio.
+    /// Una parola: i libri con occorrenze, in ordine alfabetico del titolo, come l'archivio. Più parole (`byWords`): i libri
+    /// con occorrenze e i più pertinenti fra quelli che hanno solo le parole, in ordine di peso delle parole.
     public let books: [LibrarySearchBookResult]
     /// Quanti libri non hanno ancora un testo di ricerca valido.
     public let notReady: Int
-    public init(query: String, normalizedQuery: String, options: BookSearchOptions, books: [LibrarySearchBookResult], notReady: Int) {
+    /// Vero se i libri sono in ordine di peso delle parole (ricerca di almeno due parole).
+    public let byWords: Bool
+    public init(query: String, normalizedQuery: String, options: BookSearchOptions, books: [LibrarySearchBookResult], notReady: Int,
+                byWords: Bool = false) {
+        self.byWords = byWords
         self.query = query
         self.normalizedQuery = normalizedQuery
         self.options = options
@@ -159,6 +173,9 @@ public struct LibrarySearchResult: Equatable, Sendable {
 /// La ricerca nella libreria, indipendente da dove stanno i file: per ogni libro, chi chiama dà il testo di ricerca
 /// (mappato) o `nil` se non c'è o non vale per la lettura attuale.
 public enum LibrarySearch {
+    /// Quanti libri senza la frase intera si danno al più, i più pertinenti (giro «la ricerca»).
+    public static let wordOnlyBookLimit = 10
+
     public static func run(_ query: String, options: BookSearchOptions,
                            books: [(documentId: String, title: String)],
                            searchText: (String) -> Data?) -> LibrarySearchResult {
@@ -166,19 +183,93 @@ public enum LibrarySearch {
         guard !prepared.isEmpty else {
             return LibrarySearchResult(query: prepared.query, normalizedQuery: "", options: options, books: [], notReady: 0)
         }
-        var found: [LibrarySearchBookResult] = []
+        // Più parole: ogni parola si conta da sola («Parola intera», come le parole della ricerca nel libro).
+        // Come nel libro: la ricerca per parole parte da due parole; contano quelle di almeno tre caratteri e i numeri.
+        let terms = LibraryWordWeights.terms(prepared.normalizedQuery)
+        let byWords = LibraryWordWeights.wordCount(prepared.normalizedQuery) >= 2 && !terms.isEmpty
+        let termSearches = byWords ? terms.map { PreparedBookSearch($0, options: BookSearchOptions(wholeWord: true)) } : []
+        var rows: [(book: (documentId: String, title: String), count: Int, tf: [Int], length: Int)] = []
         var notReady = 0
         for book in books {
             // Un libro alla volta: il file mappato si lascia andare alla fine di ogni giro.
-            let n: Int? = autoreleasepool {
-                guard let data = searchText(book.documentId) else { return nil }
-                return LibrarySearchText.count(prepared, in: data)
+            let r: (Int, [Int], Int)? = autoreleasepool {
+                guard let data = searchText(book.documentId), let n = LibrarySearchText.count(prepared, in: data) else { return nil }
+                let tf = termSearches.map { LibrarySearchText.count($0, in: data) ?? 0 }
+                return (n, tf, LibrarySearchText.textByteCount(of: data) ?? 0)
             }
-            guard let n else { notReady += 1; continue }
-            if n > 0 { found.append(LibrarySearchBookResult(documentId: book.documentId, title: book.title, count: n)) }
+            guard let r else { notReady += 1; continue }
+            rows.append((book, r.0, r.1, r.2))
+        }
+        let found: [LibrarySearchBookResult]
+        if byWords {
+            let scores = LibraryWordWeights.scores(tf: rows.map(\.tf), length: rows.map(\.length))
+            var listed = rows.indices.filter { rows[$0].count > 0 || scores[$0].distinctive }
+            listed.sort { scores[$0].score != scores[$1].score ? scores[$0].score > scores[$1].score : $0 < $1 }
+            var wordOnly = 0
+            listed = listed.filter { k in
+                guard rows[k].count == 0 else { return true }
+                wordOnly += 1
+                return wordOnly <= wordOnlyBookLimit
+            }
+            found = listed.map { k in
+                LibrarySearchBookResult(documentId: rows[k].book.documentId, title: rows[k].book.title, count: rows[k].count,
+                                        wordScore: scores[k].score)
+            }
+        } else {
+            found = rows.filter { $0.count > 0 }.map {
+                LibrarySearchBookResult(documentId: $0.book.documentId, title: $0.book.title, count: $0.count)
+            }
         }
         return LibrarySearchResult(query: prepared.query, normalizedQuery: prepared.normalizedQuery, options: options,
-                                   books: found, notReady: notReady)
+                                   books: found, notReady: notReady, byWords: byWords)
+    }
+}
+
+/// Il peso delle parole di una ricerca nei libri (giro «la ricerca», LAYER2 § 12.16): BM25 dove il documento è il libro intero
+/// (k1 1,2, b 0,75; la lunghezza è quella del testo normalizzato in byte; l'IDF sui libri cercati). Un libro senza la frase
+/// intera si dà solo se contiene una parola che distingue (presente al più in metà dei libri, almeno uno): «il vento» non porta
+/// tutti i libri che dicono «il». Il testo di ricerca di oggi basta: nessun formato nuovo.
+enum LibraryWordWeights {
+    /// Quanti caratteri deve avere almeno una parola per contare nella libreria (i numeri contano sempre).
+    static var minimumLetters = 3
+
+    /// Le parole distinte della ricerca normalizzata (sequenze di lettere e cifre), in ordine. Nella libreria contano le parole
+    /// di almeno `minimumLetters` caratteri e quelle con una cifra: «e», «di», «il» sono in tutti i libri (non pesano) e ognuna
+    /// costerebbe una scansione intera di ogni libro.
+    static func terms(_ normalized: String) -> [String] {
+        var out: [String] = [], word = ""
+        for u in normalized.unicodeScalars + [" "] {
+            if SearchNormalizer.isWordScalar(u.value) { word.unicodeScalars.append(u); continue }
+            let counts = word.unicodeScalars.count >= minimumLetters || word.unicodeScalars.contains { $0.properties.numericType != nil }
+            if !word.isEmpty, counts, !out.contains(word) { out.append(word) }
+            word = ""
+        }
+        return out
+    }
+
+    /// Quante parole (di ogni lunghezza) ha la ricerca normalizzata.
+    static func wordCount(_ normalized: String) -> Int {
+        normalized.split(whereSeparator: { !$0.unicodeScalars.allSatisfy { SearchNormalizer.isWordScalar($0.value) } }).count
+    }
+
+    /// Per libro: il punteggio e se contiene una parola che distingue. `tf[libro][parola]`, `length[libro]`.
+    static func scores(tf: [[Int]], length: [Int]) -> [(score: Double, distinctive: Bool)] {
+        let n = Double(tf.count)
+        guard n > 0, let width = tf.first?.count else { return [] }
+        let average = max(1, Double(length.reduce(0, +)) / n)
+        let df = (0..<width).map { t in Double(tf.filter { $0[t] > 0 }.count) }
+        let idf = df.map { log(1 + (n - $0 + 0.5) / ($0 + 0.5)) }
+        let distinctive = df.map { $0 > 0 && $0 <= max(1, 0.5 * n) }
+        let k1 = BookWordIndex.k1, b = BookWordIndex.b
+        return tf.indices.map { i in
+            var s = 0.0, d = false
+            for t in 0..<width where tf[i][t] > 0 {
+                let f = Double(tf[i][t])
+                s += idf[t] * f * (k1 + 1) / (f + k1 * (1 - b + b * Double(length[i]) / average))
+                if distinctive[t] { d = true }
+            }
+            return (s, d)
+        }
     }
 }
 
@@ -190,6 +281,20 @@ extension BookSearchWording {
         if r.isEmptyQuery { return "Scrivi una parola o una frase da cercare nel testo dei libri." }
         let q = "«\(r.query)»"
         var s: String
+        if r.byWords, !r.books.isEmpty {
+            let withPhrase = r.books.filter { $0.count > 0 }.count
+            let results = r.totalCount == 1 ? "un risultato" : "\(number(r.totalCount)) risultati"
+            if r.books.count == 1 {
+                s = "Un libro con le parole di \(q)" + (withPhrase == 1 ? ", e con la frase intera: \(results)." : "; la frase intera non c'è.")
+            } else {
+                s = "\(number(r.books.count)) libri con le parole di \(q), i più pertinenti per primi."
+                switch withPhrase {
+                case 0: s += " La frase intera non c'è in nessun libro."
+                case 1: s += " In uno c'è anche la frase intera: \(results)."
+                default: s += " In \(number(withPhrase)) c'è anche la frase intera: \(results) in tutto."
+                }
+            }
+        } else {
         switch (r.books.count, r.totalCount) {
         case (0, _):
             s = "Nel testo dei libri nessun risultato per \(q)."
@@ -200,6 +305,7 @@ extension BookSearchWording {
             s = "Un libro, \(number(t)) risultati in tutto per \(q)."
         case (let b, let t):
             s = "\(number(b)) libri, \(number(t)) risultati in tutto per \(q)."
+        }
         }
         if r.notReady == 1 {
             s += " Un libro non si è potuto cercare: il suo testo di ricerca non è ancora pronto."
@@ -216,7 +322,8 @@ extension BookSearchWording {
 
     /// La frase di una riga di libro: il titolo e quanti risultati.
     public static func libraryBookRow(title: String, count: Int) -> String {
-        count == 1 ? "\(title), un risultato" : "\(title), \(number(count)) risultati"
+        if count == 0 { return "\(title), nessun risultato esatto" }
+        return count == 1 ? "\(title), un risultato" : "\(title), \(number(count)) risultati"
     }
 }
 

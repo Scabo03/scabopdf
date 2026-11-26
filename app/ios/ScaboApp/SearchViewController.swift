@@ -334,7 +334,8 @@ final class SearchViewController: UIViewController, UITableViewDataSource, UITab
             guard let r = textResult, k < r.books.count else { break }
             let book = r.books[k]
             config.text = book.title
-            config.secondaryText = book.count == 1 ? "un risultato" : "\(BookSearchWording.number(book.count)) risultati"
+            config.secondaryText = book.count == 0 ? "nessun risultato esatto"
+                : book.count == 1 ? "un risultato" : "\(BookSearchWording.number(book.count)) risultati"
             config.secondaryTextProperties.color = .secondaryLabel
             cell.contentConfiguration = config
             cell.accessoryType = .disclosureIndicator
