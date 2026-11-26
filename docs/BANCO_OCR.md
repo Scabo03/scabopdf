@@ -3967,3 +3967,33 @@ sulle 139 pagine senza tabelle (nessuno nelle due vie; l'iPad sul PDF col testo 
 della catena** (63 → 24 con Apple, 63 → 22 con GLM). Che sia la guardia sul testo che l'app non legge per scelta (nei codici la catena chiama glosse le colonne) è dedotto: il referto della catena non scrive
 l'esito per regione. Proposta, senza correggere: scrivere l'esito della guardia per regione nel referto e provare la guardia sulle scansioni dei codici. Grezzi `uscite/x/`,
 `uscite/tab/`, script `tabelle_x.py`, `tabelle_passi.py`, `tabelle_cr.py`.
+
+**Il metodo nuovo dell'energia** (campo). La telemetria della batteria che i giri precedenti leggevano ogni secondo (`SystemLoad`) si aggiorna **una volta al
+minuto**: le misure brevi leggevano un valore fermo, ed è la ragione delle due misure che nel banco embedding «non tornavano». Qui gli accumulatori della stessa
+telemetria (`AccumulatedSystemLoad` e `SystemLoadAccumulatorCount`, un campione al secondo): potenza media esatta di ogni finestra da 60 secondi; energia di una corsa fra la
+pubblicazione prima e quella dopo, meno il riposo. Serie a Mac libero (indicazione del maintainer delle 21:4x del 25: libero da subito) e collegato, dalle 21:55 alle 04:50,
+nessun'altra corsa: riposo di 4 minuti prima e dopo ogni serie (e in mezzo per gli embedding), base della serie = media dei suoi riposi; due passate a ordine invertito; sonda
+leggera (una lettura ogni 5 secondi). Riposi da 2,0 a 3,6 W (più bassi dei 4,3-7,5 W dei giri precedenti, che misuravano con una sonda pesante), con differenze fino a 1 W fra
+i riposi d'inizio e di fine di una serie: sui carichi da 40-60 W della scheda grafica valgono al più il 2-3 per cento. Prima di 14 misure la serie ha atteso che il carico
+scendesse sotto 1,5 (una volta per un processo di sistema al 58 per cento). Grezzi `misure/notte/`, script `serie_notte.py`, `misura_emb.py`, `energia.py`, risultato `misure/energia_notte.json`.
+
+**Frase 29 — energia di Surya, Granite e GLM a piena precisione: CORRETTA** (campo; 60 pagine scansionate pulite del banco, energia e tempo per pagina = corsa di 60 pagine meno
+corsa di una pagina, diviso 59; le due passate):
+
+| lettore | secondi a pagina | energia sopra il riposo a pagina | potenza nelle finestre piene | prima (§ 16, T7) |
+|---|---|---|---|---|
+| Granite Docling | 4,18 e 4,17 | 167 e 168 J | 42-45 W | 142 J |
+| Surya 2.5 | 3,93 e 3,94 | 210 e 211 J | 55-59 W | 195 J |
+| GLM-OCR a piena precisione | 13,24 e 13,21 | 496 e 493 J | 38-44 W | 330 J |
+
+Le due passate coincidono entro l'1 per cento. L'ordine resta, i numeri crescono: Granite 170 J a pagina, Surya 210, GLM a piena precisione 500 (una volta e mezza il valore di
+prima). Le misure di prima venivano dal valore istantaneo fermo per un minuto (dedotto).
+
+**Frase 30 — qualità contro tempo: CORRETTA per Surya, CONFERMATA per GLM** (campo per i tempi di questa notte e per le parole perse del banco, 179 pagine; il tempo della via di Apple,
+0,28 secondi a pagina, è quello del § 37). Ogni secondo in più rispetto al lettore di Apple recupera **0,78 punti** di parole perse con Surya (righe di Apple 4,15 per cento, Surya 1,31,
+3,9 secondi a pagina) e **0,15** con GLM a piena precisione (2,22 per cento, 13,2 secondi); prima 0,69 e 0,15-0,18 (T18).
+
+**Che cosa resta di questo giro** (campo): il livello 1 per intero (lettura delle scansioni dell'app, metro dei blocchi già scritto e provato su 16 casi, `strumenti/blocchi.py`), l'elenco
+unico delle frasi per la trasmissione (dipende dall'app), la via GLM dell'app nella serie d'energia (esclusa dal maintainer), Xiaomi fp16 contro Q8 e l'ordine di lettura per tutte le
+coppie (facoltativi, non fatti), MiniCPM e GLM sulla degradata degli estratti delle tabelle, i pesi nuovi di Marker. Difetto trovato e proposto, non corretto: la guardia delle risorse visive
+scarta quasi due tabelle su tre di quelle che il modello vede sulle scansioni (frase 7).

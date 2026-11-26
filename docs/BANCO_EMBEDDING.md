@@ -1348,10 +1348,10 @@ Tre comportamenti attraversano tutti i modelli:
     densi fra il 2 e l'11 (campo, § 2.3).
 13. Sul Mac, con le vie dell'app, un modello piccolo indicizza un libro di 300 pagine **in pochi secondi**: Granite 97M in 3,3 secondi
     con llama.cpp, Harrier 270M in 10 col motore neurale; con tutti e due una domanda si codifica in 3 millesimi di secondo (campo, § 3.4).
-14. Per i modelli fino a 568 milioni di parametri il motore neurale consuma **da 2 a 8 volte meno** di PyTorch e di llama.cpp sulla
-    scheda grafica per lo stesso libro, anche quando è più lento (Granite 311M 48 joule per 300 pagine contro 188 con llama.cpp); non
-    consuma meno di Core ML sulla scheda grafica, e per i modelli da 0,6 miliardi consuma più di llama.cpp (misura indicativa, campo,
-    § 3.4).
+14. Il motore neurale consuma per lo stesso libro **da una volta e mezza a tre volte e mezza meno** di llama.cpp e di PyTorch sulla scheda
+    grafica, anche quando è più lento e anche per i modelli da 0,6 miliardi (circa 0,7 kJ per 300 pagine contro 1,3 e 1,6); pari solo BGE-M3
+    contro PyTorch (campo, due passate entro il 9 per cento, § 11.5). *Prima: «da 2 a 8 volte meno fino a 568 milioni, più di llama.cpp per
+    0,6 miliardi», con valori di una telemetria ferma per un minuto: smentita la seconda parte.*
 15. Cercare sull'immagine della pagina, senza leggerla, con il modello che l'app potrebbe usare (EmbeddingGemma 2) trova la pagina giusta
     **un terzo meno spesso** che cercare sul testo letto, sulle domande a parole proprie del banco (0,63 contro 0,96 fra le prime dieci; sulle
     frasi la metà); con un modello solo da banco (Jina Omni) quasi come la lettura (0,94) (campo, § 5.5).
@@ -1545,4 +1545,27 @@ cod. civ.», «cc»), le stesse 200 **senza codice** («articolo N») e i 100 pa
 - **I paragrafi** «§ N»: sempre al primo posto nel libro; nella libreria 71 su cento, perché tre manuali hanno gli stessi numeri (fra i primi tre c'è sempre).
 - **Conclusione per il § 9** (dedotta dai numeri): prima il salto per numero e codice con l'elenco dei candidati quando il codice manca, poi la ricerca; il salto richiede che l'app sappia a quale codice
   appartiene una sequenza d'articoli (oggi non lo sa: serve il nome del codice, dai segnalibri del PDF o da un elenco dei codici).
+
+### 11.5 Tempi ed energia rifatti con gli accumulatori (campo, serie a Mac libero e collegato, notte del 25-26 novembre)
+Stesso libro di 300 pagine del § 3.4 (872 blocchi), indicizzato di continuo per almeno 160 secondi dopo un passaggio a vuoto; potenza media delle finestre piene da 60 secondi
+dentro il lavoro; energia per il libro = (potenza − riposo della serie) × secondi per libro; due passate a ordine invertito (metodo nel § 47 di BANCO_OCR: la telemetria si
+aggiorna una volta al minuto, e il § 3.4 leggeva un valore fermo). Grezzi e script nel laboratorio (`misure/notte/`, `misura_emb.py`, `energia.py`). Fra parentesi il valore del § 3.4
+ricalcolato con una base comune.
+
+| modello | banco, PyTorch bf16 (scheda grafica) | GGUF Q8_0 in Swift (scheda grafica) | Core ML, motore neurale |
+|---|---|---|---|
+| Granite 97M | 107 e 107 J, 2,2 s (prima 1 J) | 105 e 109 J, 3,2 s (140) | 74 e 68 J, 7,4 s (64) |
+| Granite 311M | 379 e 374 J, 6,7 s (263) | 310 e 306 J, 7,4 s (188) | 197 e 182 J, 16,7 s (48) |
+| Harrier 270M | 491 e 480 J, 9,6 s (501) | non convertibile | 147 e 142 J, 10,2 s (63) |
+| EmbeddingGemma 2 | 834 e 835 J, 16,5 s (886) | 391 e 384 J, 8,3 s, v1.0.0 (394) | 219 e 211 J, 16,1 s (215) |
+| BGE-M3 | 429 e 441 J, 6,7 s (447) | 640 e 645 J, 12,2 s (325) | 407 e 442 J, 34,2 s (157) |
+| Qwen3 0.6B | 1.613 e 1.606 J, 27 s (950) | 1.256 e 1.269 J, 21,4 s (Q8_0: non tornava) | 663 e 686 J, 46,9 s (694) |
+| Harrier 0.6B | 1.627 e 1.611 J, 26,8 s (1.250) | 1.255 e 1.263 J, 21,3 s (564) | 709 e 686 J, 46,9 s (662) |
+| Jina v5 Omni Nano | 499 e 498 J, 9,4 s (325) | — (solo banco) | — (solo banco) |
+
+- **Il motore neurale consuma meno per tutti i modelli misurati**, anche i più grandi: da circa 1,5 a 3,5 volte meno di llama.cpp e di PyTorch sulla scheda grafica (0,6 miliardi di
+  parametri: circa 0,7 kJ per il libro contro 1,3 e 1,6); unica parità, BGE-M3 contro PyTorch (0,41-0,44 contro 0,43-0,44 kJ). Il § 3.4 diceva il contrario per i modelli da 0,6 miliardi,
+  sulla base di valori fermi: **smentito**. Core ML con tutte le unità o con la sola scheda grafica non è stato rimisurato.
+- Le due passate stanno entro il 2 per cento sulla scheda grafica, entro il 9 sul motore neurale (dove il riposo, che cambia fino a 1 W fra un riposo e l'altro, pesa di più su 12-18 W).
+- I tempi confermano il § 3.4 (fra parentesi i secondi di prima: Granite 97M GGUF 3,2, Harrier 270M sul motore neurale 10,2-10,3, i modelli da 0,6 miliardi 47 sul motore neurale e 21 in GGUF).
 
