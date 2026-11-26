@@ -131,7 +131,9 @@ final class BookSearchUITests: XCTestCase {
         let app = launch()
         open(app, "Libro tastiera due", showing: "Capitolo primo del libro due")
         openSearch(app)
-        search(app, "PIENA del fiume", expect: "2 risultati per «PIENA del fiume».")
+        // Dal giro «la ricerca» (2026-11-26) una ricerca di più parole dà prima i passi, poi le occorrenze esatte.
+        search(app, "PIENA del fiume", expect: "Poi 2 risultati esatti, in ordine di lettura.")
+        XCTAssertTrue(item(app, "ricerca.passo.0").exists, "i passi con le parole cercate")
         let first = item(app, "ricerca.risultato.0"), second = item(app, "ricerca.risultato.1")
         XCTAssertTrue(first.exists && second.exists)
         XCTAssertFalse(first.label.contains("Nella nota"), first.label)

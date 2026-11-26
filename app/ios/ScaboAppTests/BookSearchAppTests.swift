@@ -352,6 +352,28 @@ final class BookSearchAppTests: XCTestCase {
         XCTAssertEqual(chosen.map(\.segmentIndex), [6])
     }
 
+    /// Giro «la ricerca» (2026-11-26, LAYER2 § 12.16): una ricerca di più parole senza la frase intera dà i PASSI, prima delle
+    /// occorrenze esatte; la frase del conteggio li dice, la riga comincia con «Passo:», sceglierla porta la lettura al passo.
+    func test_window_wordsPassages_areSaidAndChosen() {
+        let session = BookSearchSession(segments: book())
+        var chosen: [BookSearchHit] = []
+        let vc = BookSearchViewController.makeForTesting(session: session) { chosen.append($0) }
+        vc.loadViewIfNeeded()
+        vc.searchField.text = "pescatore reti mare"
+        let done = expectation(description: "ricerca")
+        vc.runSearch(moveFocusToCount: true) { done.fulfill() }
+        wait(for: [done], timeout: 5)
+        XCTAssertEqual(vc.countSentence,
+                       "Un passo con le parole di «pescatore reti mare», i più pertinenti per primi. Nessun risultato esatto.")
+        XCTAssertEqual(vc.passageRowCountForTesting, 1)
+        XCTAssertEqual(vc.resultRowCountForTesting, 0, "nessuna occorrenza esatta")
+        let label = vc.passageRowLabelForTesting(0) ?? ""
+        XCTAssertTrue(label.hasPrefix("Passo: ") && label.contains("Capitolo primo. Il porto"), label)
+        XCTAssertNil(session.result.flatMap { ReadingSpeechModel.activeSearch($0) }, "il rotore resta sulle occorrenze esatte")
+        vc.choosePassageForTesting(0)
+        XCTAssertEqual(chosen.map(\.segmentIndex), [2])
+    }
+
     /// Lo scrub a due dita di VoiceOver (`accessibilityPerformEscape`) è «Annulla»: chiude la finestra senza scegliere
     /// nulla, una volta sola.
     func test_window_voiceOverScrub_isCancel_once() {

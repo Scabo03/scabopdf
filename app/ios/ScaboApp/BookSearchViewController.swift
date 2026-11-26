@@ -125,7 +125,8 @@ final class BookSearchSession {
 
     /// Lascia andare il testo normalizzato se non c'è una ricerca attiva (avviso di memoria).
     func releaseCorpusIfIdle() {
-        if !isActive { corpus = nil }
+        // I passi (giro «la ricerca») servono al corpus per le righe e il salto anche senza occorrenze esatte.
+        if !isActive, result?.passages.isEmpty ?? true { corpus = nil }
     }
 
     /// Il riassunto della ricerca attiva per la barra («12 risultati per «x»»), o `nil`.
@@ -170,6 +171,41 @@ final class BookSearchSession {
             .trimmingCharacters(in: .whitespaces)
         return Row(snippet: sn.text, match: sn.match, location: location, accessibilityLabel: label)
     }
+
+    /// La riga di un passo (giro «la ricerca», ScaboCore `WordSearch.swift`): un salto per numero o un passo per parole.
+    func row(for passage: BookSearchPassage, pageProvider: ((String) -> Int?)?) -> Row {
+        guard let corpus, let r = result, passage.segmentIndex < segments.count else {
+            return Row(snippet: "", match: NSRange(location: 0, length: 0), location: "", accessibilityLabel: "")
+        }
+        let entry = corpus.entryHit(for: passage)
+        let sn = corpus.snippet(for: passage, normalizedQuery: r.normalizedQuery, segments: segments)
+        var noteNumber: String?
+        if entry.isInNote {
+            var k = entry.segmentIndex
+            while k > 0, segments[k].role == SemanticCategory.NOTE_CONTINUATION.rawValue
+                    || segments[k].role == VISUAL_RESOURCE_ROLE { k -= 1 }
+            noteNumber = BookSearchWording.noteNumber(segments[k].text)
+        }
+        // Un salto porta a un titolo: la sezione è quella che lo contiene; un passo dice la sua (o «nel titolo»).
+        let headingIndex = passage.isJump ? BookSearchCorpus.enclosingSection(of: entry.segmentIndex, segments: segments)
+            : corpus.headingIndex(for: entry)
+        let isHeadingItself = !passage.isJump && headingIndex == entry.segmentIndex
+        let section = headingIndex.map { BookSearchWording.sectionTitle(segments[$0].text) }
+        let page = pageProvider?(segments[entry.segmentIndex].id)
+        let label = BookSearchWording.passageRowLabel(passage, snippet: sn.text, inNote: entry.isInNote, noteNumber: noteNumber,
+                                                      section: section, page: page, isHeadingItself: isHeadingItself)
+        let place = BookSearchWording.rowLabel(snippet: "", inNote: entry.isInNote, noteNumber: noteNumber, section: section,
+                                               page: page, isHeadingItself: isHeadingItself)
+            .trimmingCharacters(in: .whitespaces)
+        var kind: String?
+        switch passage.kind {
+        case .words: kind = "Passo"
+        case let .article(_, code): kind = code.map { $0.spokenName.prefix(1).uppercased() + $0.spokenName.dropFirst() }
+        case .paragraph: kind = nil
+        }
+        let location = [kind, place.isEmpty ? nil : place].compactMap { $0 }.joined(separator: " · ")
+        return Row(snippet: sn.text, match: sn.match, location: location, accessibilityLabel: label)
+    }
 }
 
 /// La finestra «Cerca nel libro».
@@ -194,6 +230,9 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
     let wholeWordSwitch = UISwitch()
     private var isSearching = false
     private var rowCache: [Int: BookSearchSession.Row] = [:]
+    private var passageRowCache: [Int: BookSearchSession.Row] = [:]
+    /// I passi della ricerca mostrata (vengono prima delle occorrenze esatte nell'elenco).
+    private var passages: [BookSearchPassage] { isSearching ? [] : (session.result?.passages ?? []) }
     /// Vero dopo una chiusura già instradata (una sola uscita per apertura).
     private var finished = false
     /// La ricerca proposta si esegue alla prima comparsa (aperto dal tab Ricerca della Home).
@@ -360,6 +399,7 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
         let text = searchField.text ?? ""
         isSearching = true
         rowCache = [:]
+        passageRowCache = [:]
         tableView.reloadData()
         searchField.resignFirstResponder()
         becomeFirstResponder()   // i tasti restano alla finestra (Esc «Annulla», ⌘F il campo), non al lettore sotto
@@ -367,6 +407,7 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
             guard let self else { return }
             self.isSearching = false
             self.rowCache = [:]
+            self.passageRowCache = [:]
             self.tableView.reloadData()
             self.onResultsChanged()
             if moveFocusToCount {
@@ -450,7 +491,7 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
         switch sections[section] {
         case .controls: return 2
         case .ongoing: return ongoingRows.count
-        case .results: return 1 + (isSearching ? 0 : (session.result?.hits.count ?? 0))
+        case .results: return 1 + (isSearching ? 0 : passages.count + (session.result?.hits.count ?? 0))
         }
     }
 
@@ -537,10 +578,18 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
                 cell.accessibilityTraits = .staticText
                 cell.accessibilityIdentifier = "ricerca.conteggio"
             } else {
-                let k = indexPath.row - 1
-                guard let r = session.result, k < r.hits.count else { break }
-                let row = rowCache[k] ?? session.row(for: r.hits[k], pageProvider: pageProvider)
-                rowCache[k] = row
+                let passageCount = passages.count
+                let isPassage = indexPath.row - 1 < passageCount
+                let k = isPassage ? indexPath.row - 1 : indexPath.row - 1 - passageCount
+                guard let r = session.result, isPassage || k < r.hits.count else { break }
+                let row: BookSearchSession.Row
+                if isPassage {
+                    row = passageRowCache[k] ?? session.row(for: r.passages[k], pageProvider: pageProvider)
+                    passageRowCache[k] = row
+                } else {
+                    row = rowCache[k] ?? session.row(for: r.hits[k], pageProvider: pageProvider)
+                    rowCache[k] = row
+                }
                 var config = cell.defaultContentConfiguration()
                 let attributed = NSMutableAttributedString(string: row.snippet, attributes: [
                     .font: UIFont.preferredFont(forTextStyle: .body), .foregroundColor: UIColor.label])
@@ -558,7 +607,7 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
                 cell.accessibilityLabel = row.accessibilityLabel
                 cell.accessibilityTraits = .button
                 cell.accessibilityHint = "Porta la lettura qui"
-                cell.accessibilityIdentifier = "ricerca.risultato.\(k)"
+                cell.accessibilityIdentifier = isPassage ? "ricerca.passo.\(k)" : "ricerca.risultato.\(k)"
             }
         }
         return cell
@@ -586,9 +635,17 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
                 finish { [onEnd] in onEnd() }
             }
         case .results:
+            let passageCount = passages.count
             let k = indexPath.row - 1
-            guard k >= 0, let r = session.result, k < r.hits.count else { return }
-            let hit = r.hits[k]
+            guard k >= 0, let r = session.result else { return }
+            if k < passageCount {
+                guard let corpus = session.corpus else { return }
+                let hit = corpus.entryHit(for: r.passages[k])
+                finish { [onChoose] in onChoose(hit) }
+                return
+            }
+            guard k - passageCount < r.hits.count else { return }
+            let hit = r.hits[k - passageCount]
             finish { [onChoose] in onChoose(hit) }
         }
     }
@@ -601,6 +658,15 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
         return session.row(for: r.hits[k], pageProvider: pageProvider).accessibilityLabel
     }
     func chooseResultForTesting(_ k: Int) {
+        guard let s = sectionIndex(.results) else { return }
+        tableView(tableView, didSelectRowAt: IndexPath(row: passages.count + k + 1, section: s))
+    }
+    var passageRowCountForTesting: Int { passages.count }
+    func passageRowLabelForTesting(_ k: Int) -> String? {
+        guard let r = session.result, k < r.passages.count else { return nil }
+        return session.row(for: r.passages[k], pageProvider: pageProvider).accessibilityLabel
+    }
+    func choosePassageForTesting(_ k: Int) {
         guard let s = sectionIndex(.results) else { return }
         tableView(tableView, didSelectRowAt: IndexPath(row: k + 1, section: s))
     }

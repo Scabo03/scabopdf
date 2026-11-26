@@ -90,9 +90,17 @@ public struct BookSearchResult: Equatable, Sendable {
     /// ordine di lettura: servono a `hits(touching:)`, perché dentro una di esse, nell'ordine dei segmenti, possono
     /// cadere le occorrenze di altri flussi (una nota letta in mezzo al corpo), anche molte.
     private let spanningHits: [BookSearchHit]
+    /// I passi (giro «la ricerca», `WordSearch.swift`): i salti per numero, poi i segmenti ordinati per parole pesate. Stanno
+    /// solo nell'elenco dei risultati: il rotore, i valori «risultato N di M», le evidenze e ⌘G restano sulle occorrenze
+    /// esatte (`hits`, `elementIndices`), come prima.
+    public let passages: [BookSearchPassage]
+    /// La domanda per numero riconosciuta nella ricerca («art. 2043 c.c.», «§ 12»), anche se il libro non ha quel numero.
+    public let numberQuery: NumberQuery?
 
     init(query: String, normalizedQuery: String, options: BookSearchOptions, totalCount: Int, hits: [BookSearchHit],
-         elementIndices: [Int]) {
+         elementIndices: [Int], passages: [BookSearchPassage] = [], numberQuery: NumberQuery? = nil) {
+        self.passages = passages
+        self.numberQuery = numberQuery
         self.query = query
         self.normalizedQuery = normalizedQuery
         self.options = options
@@ -103,6 +111,13 @@ public struct BookSearchResult: Equatable, Sendable {
     }
 
     public var isTruncated: Bool { hits.count < totalCount }
+    /// Vero se la ricerca ha dato qualcosa: occorrenze esatte o passi.
+    public var hasResults: Bool { totalCount > 0 || !passages.isEmpty }
+    /// Il posto (da 1) del passo nell'elemento `segmentIndex`, e quanti sono i passi; `nil` se l'elemento non è un passo.
+    public func passageRank(inElement segmentIndex: Int) -> (rank: Int, of: Int, passage: BookSearchPassage)? {
+        guard let k = passages.firstIndex(where: { $0.segmentIndex == segmentIndex }) else { return nil }
+        return (k + 1, passages.count, passages[k])
+    }
     public var isEmptyQuery: Bool { normalizedQuery.isEmpty }
 
     public static func empty(query: String, options: BookSearchOptions) -> BookSearchResult {
@@ -385,9 +400,25 @@ public final class BookSearchCorpus: @unchecked Sendable {
         }
     }
 
+    /// Le intestazioni numerate (articoli e paragrafi) per il salto per numero.
+    let numbered: NumberedHeadings
+    /// L'indice delle parole per i passi, costruito alla prima ricerca di più parole.
+    private var wordIndexStorage: BookWordIndex?
+    private let wordIndexLock = NSLock()
+    var wordIndex: BookWordIndex {
+        wordIndexLock.lock(); defer { wordIndexLock.unlock() }
+        if let w = wordIndexStorage { return w }
+        let w = BookWordIndex(corpus: self)
+        wordIndexStorage = w
+        return w
+    }
+    /// Quanti passi si danno al più.
+    public static let passageLimit = 50
+
     /// `noteLinks`: i legami fra note e richiami già calcolati dalla lettura sugli stessi segmenti (`nil`: si calcolano
     /// qui, con la stessa funzione).
     public init(segments: [ContentSegment], noteLinks: NoteCallLinks? = nil) {
+        numbered = NumberedHeadings(segments: segments)
         segmentCount = segments.count
         var buffer: [UInt8] = []
         buffer.reserveCapacity(segments.reduce(0) { $0 + $1.text.utf8.count } + segments.count + 16)
@@ -566,8 +597,32 @@ public final class BookSearchCorpus: @unchecked Sendable {
         }
         var elements: [Int] = []
         for h in hits where elements.last != h.segmentIndex { elements.append(h.segmentIndex) }
+        let found = passagesAndNumber(normalizedQuery: normalizedQuery)
         return BookSearchResult(query: trimmed, normalizedQuery: normalizedQuery, options: options,
-                                totalCount: total, hits: hits, elementIndices: elements)
+                                totalCount: total, hits: hits, elementIndices: elements, passages: found.passages,
+                                numberQuery: found.number)
+    }
+
+    /// I passi di una ricerca (vedi `WordSearch.swift`): i salti per numero, poi le parole pesate, senza doppioni. Solo per una
+    /// ricerca di almeno due parole o che chiede un numero.
+    public func passages(normalizedQuery q: String, limit: Int = BookSearchCorpus.passageLimit) -> [BookSearchPassage] {
+        passagesAndNumber(normalizedQuery: q, limit: limit).passages
+    }
+
+    func passagesAndNumber(normalizedQuery q: String, limit: Int = BookSearchCorpus.passageLimit)
+        -> (passages: [BookSearchPassage], number: NumberQuery?) {
+        let words = q.split(whereSeparator: { !$0.unicodeScalars.allSatisfy { SearchNormalizer.isWordScalar($0.value) } }).count
+        // Una domanda per numero è corta: in un passo lungo un «art. 12» è una citazione, non una domanda (sul banco il salto
+        // scattava su 84 passi di dottrina su 300 e li mandava all'articolo citato invece che a quello cercato).
+        let number = words <= NumberQuery.maxWords ? NumberQuery.parse(normalized: q) : nil
+        // Una parola sola, senza numero: solo le occorrenze esatte, come prima (decisione da confermare, LAYER2 § 12.16).
+        guard number != nil || words >= 2 else { return ([], nil) }
+        var out = number.map { numbered.jumps(for: $0) } ?? []
+        var seen = Set(out.map(\.segmentIndex))
+        if words >= 2 || out.isEmpty {
+            for p in wordIndex.rank(q, limit: limit) where seen.insert(p.segmentIndex).inserted { out.append(p) }
+        }
+        return (Array(out.prefix(limit + out.filter(\.isJump).count)), number)
     }
 
     // MARK: Confini di parola sul buffer
@@ -794,6 +849,12 @@ public enum BookSearchWording {
     /// La frase del conteggio, detta subito dopo la ricerca: quanti risultati, o perché nessuno e che cosa provare.
     public static func countSentence(_ r: BookSearchResult) -> String {
         if r.isEmptyQuery { return "Scrivi una parola o una frase da cercare nel libro." }
+        if !r.passages.isEmpty || r.numberQuery != nil { return passagesSentence(r) }
+        return exactCountSentence(r)
+    }
+
+    /// La frase del conteggio delle sole occorrenze esatte (quella di prima dei passi).
+    static func exactCountSentence(_ r: BookSearchResult) -> String {
         let q = "«\(r.query)»"
         switch r.totalCount {
         case 0: return "Nessun risultato per \(q). " + suggestion(r)
