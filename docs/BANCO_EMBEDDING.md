@@ -1570,3 +1570,90 @@ ricalcolato con una base comune.
   di più su 12-18 W). Quattordici misure su 42 poggiano su una sola finestra piena da 60 secondi (per esempio BGE-M3 al banco e i Granite in GGUF): per loro c'è solo il confronto fra le due passate.
 - I tempi confermano il § 3.4 (fra parentesi i secondi di prima: Granite 97M GGUF 3,2, Harrier 270M sul motore neurale 10,2-10,3, i modelli da 0,6 miliardi 47 sul motore neurale e 21 in GGUF).
 
+## 12. I numeri dell'app nuova (giro «la ricerca», 26 novembre 2026)
+
+La decisione del maintainer del 26 novembre (LAYER2 § 12.16, decisione 29) porta nelle app la ricerca per parole pesate (BM25), la regola del blocco
+corto (§ 11.3) e il salto diretto per numero (§ 11.4). Il motore sta in ScaboCore (`WordSearch.swift`, `LibrarySearch.swift`): è lo stesso per iPad e
+Mac. **Metodo (campo):** le stesse domande e verità del banco (VERITA_A, VERITA_NL, NUM_VARIANTI; restano solo nel laboratorio) passano dalla ricerca
+vera di ScaboCore del ramo, con uno strumento del laboratorio che usa ScaboCore del repo per percorso (`BookSearchCorpus.search`, `LibrarySearch.run`).
+Le letture sono quelle del banco (`letture_ipad`) e le misure vengono da `misure.py` del banco. **Prima** è la ricerca della frase di oggi: ricalcolata,
+coincide con la riga «ricerca dell'app» del § 2.1. **Dopo** è l'elenco nuovo: salti, poi passi per parole, poi le occorrenze esatte non già nell'elenco.
+
+### 12.1 Nel libro (campo)
+
+| famiglia | n | primo risultato giusto, prima → dopo | fra i primi dieci, prima → dopo [IC 95 %] |
+|---|---|---|---|
+| voci d'indice | 1.250 | 0,17 → 0,37 | 0,26 → 0,78 [0,76; 0,81] |
+| domande a parole proprie | 352 | 0,00 → 0,14 | 0,00 → 0,40 [0,35; 0,46] |
+| voci d'indice dei codici | 500 | 0,02 → 0,45 | 0,03 → 0,76 [0,72; 0,79] |
+| citazioni (dottrina → norma) | 300 | 0,00 → 0,27 | 0,00 → 0,40 [0,35; 0,46] |
+| articolo con il codice | 200 | 0,00 → 1,00 | 0,00 → 1,00 |
+| articolo senza il codice (più sequenze) | 200 | 0,00 → 0,58 | 0,005 → 1,00 |
+| articolo, altre forme | 200 | 0,00 → 1,00 | 0,00 → 1,00 |
+| paragrafo | 100 | 0,25 → 1,00 | 0,49 → 1,00 |
+| paragrafo, altre forme | 100 | 0,00 → 1,00 | 0,00 → 1,00 |
+
+- L'elenco dà al più **50 passi**. A 50 il passo giusto c'è per 0,62 delle domande a parole proprie e per 0,92 delle voci d'indice; a 10 i valori sono
+  0,40 e 0,79.
+- Il salto per numero vale solo per ricerche di al più 12 parole. In una domanda più lunga «art. 12» è una citazione, e senza questo limite il salto
+  mandava 84 citazioni su 300 all'articolo citato.
+- Senza il nome del codice, l'articolo giusto è il primo candidato 0,58 volte e sta sempre fra i primi dieci; il candidato giusto c'è sempre.
+- **Tempi** (Mac, compilazione di rilascio, campo). Il volume più grande del banco ha 30.392 segmenti. L'indice delle parole si costruisce alla prima
+  ricerca di più parole, in 0,10 s. Il testo normalizzato, con le intestazioni numerate, si costruisce in 0,53 s. Una ricerca richiede 7 ms in media
+  su 761 domande. **Sull'iPad non è misurato**: nessuna build in questo giro.
+
+### 12.2 L'app contro il BM25 del banco (campo)
+
+Il porto Python del BM25 con le regole dell'app dà gli stessi blocchi, nello stesso ordine e con lo stesso punteggio a 10⁻⁹, su **2.279 domande di più
+parole su 2.279**. Le 123 domande di una parola sola sono escluse per disegno: lì l'app dà solo le occorrenze esatte (§ 12.4).
+
+Ecco come si passa dal § 2.1 (BM25 del banco: indice 0,76, parole proprie 0,39, codici 0,74, citazioni 0,42) ai numeri dell'app, con le
+differenze appaiate fra i primi dieci:
+
+- **Statistiche del libro invece della libreria.** Voci d'indice +0,026 [+0,012; +0,041], citazioni −0,020 [−0,040; 0,000], parole proprie +0,009
+  [−0,017; +0,034], codici +0,004 [−0,008; +0,016]. La ricerca nel libro non vede gli altri libri: le statistiche della libreria non ci sono.
+- **Blocchi interi invece delle finestre** di 2.000 caratteri del banco: al più +0,003.
+- **Regola del blocco corto**: codici +0,016 [+0,006; +0,028], altrove da 0 a +0,001.
+- **Parola che distingue** (un passo deve avere una parola presente al più in metà dei blocchi del libro): 0,000 in tutte le famiglie. Toglie i passi
+  fatti delle sole parole comunissime: sul libro di prova dei test d'interfaccia, «la piena del fiume» passa da 34 passi a 2.
+- **Una parola sola senza passi**: voci d'indice −0,006 [−0,012; 0,000].
+
+### 12.3 La regola del blocco corto aiuta anche la ricerca per parole? (campo)
+
+**Sì, sulle voci d'indice dei codici** (+0,016 fra i primi dieci), è neutra altrove e non peggiora mai. Toglie quasi del tutto i risultati fatti di una
+riga sola: il primo passo è un blocco di meno di 40 caratteri in 2 domande su 2.402, contro 257 senza la regola.
+
+### 12.4 Una parola sola (campo)
+
+Le domande di una parola sola sono 123: 116 voci d'indice e 7 dei codici. Con le sole occorrenze esatte il primo risultato è giusto 0,34 volte e il
+passo giusto sta fra i primi dieci 0,79 volte. Con i passi sarebbe 0,59 e 0,85; la differenza sul primo risultato è +0,24 [+0,16; +0,33]. Però i passi
+di una parola sola ripetono le stesse occorrenze in un altro ordine. La scelta resta al maintainer (LAYER2 § 12.16, punto b).
+
+### 12.5 Nella libreria (campo)
+
+Per una ricerca di almeno due parole i libri si ordinano per il peso delle parole nel libro intero (BM25 sui libri). Il peso si calcola dal testo di
+ricerca di oggi, senza un formato nuovo. Contano le parole di almeno tre caratteri e i numeri. Ai libri con la frase intera si aggiungono al più dieci
+libri che hanno solo le parole, i più pesanti.
+
+| famiglia | n | libro giusto trovato, prima → dopo | al primo posto | fra i primi tre | libri detti (mediana), prima → dopo |
+|---|---|---|---|---|---|
+| voci d'indice | 1.250 | 0,43 → 0,99 | 0,29 → 0,54 [0,51; 0,57] | 0,37 → 0,79 | 0 → 10 |
+| domande a parole proprie | 352 | 0,00 → 0,81 | 0,00 → 0,22 [0,18; 0,27] | 0,00 → 0,50 | 0 → 10 |
+| voci d'indice dei codici | 500 | 0,04 → 0,92 | 0,02 → 0,18 [0,15; 0,22] | 0,03 → 0,56 | 0 → 10 |
+| citazioni (dottrina → norma) | 300 | 0,00 → 0,66 | 0,00 → 0,03 [0,01; 0,05] | 0,00 → 0,24 | 0 → 10 |
+| tutte | 2.402 | 0,23 → 0,91 | 0,15 → 0,36 [0,34; 0,37] | 0,20 → 0,63 | 0 → 10 |
+
+- La misura vera, fatta con il codice finale, coincide con il porto Python dello stesso codice: al primo posto 0,355 e 0,355, fra i primi tre 0,630 e
+  0,631, trovato 0,905 e 0,905.
+- **La parola che distingue non vale nella libreria.** È lo stesso filtro del libro, applicato ai libri: un libro senza la frase si dà solo se ha una
+  parola presente al più in metà dei libri. Nel porto Python, che coincide con la misura vera dell'app fatta con il filtro (0,316, 0,545 e 0,758), il
+  filtro portava il libro giusto al primo posto 0,32 volte invece di 0,36, fra i primi tre 0,55 invece di 0,63, trovato 0,76 invece di 0,91. In una
+  libreria omogenea una parola presente in più di metà dei libri distingue ancora, per frequenza. Il filtro è tolto; resta il tetto dei dieci libri.
+  La regola dei tre caratteri non cambia la qualità (0,355 contro 0,356).
+- **Il riferimento** (porto Python, stesse domande): il miglior passo con le statistiche dell'intera libreria, la BM25 del banco nello spazio «libreria»,
+  mette il libro giusto al primo posto 0,49 volte e fra i primi tre 0,77. Chiede però un testo di ricerca che porti i confini dei blocchi, cioè un
+  formato nuovo da riscrivere in sottofondo: va fatto in un giro a sé. Il peso sul libro intero senza il tetto e senza la regola dei tre caratteri dà
+  0,36 e 0,63, come l'app: il tetto cambia solo quanti libri si dicono. Il miglior passo con le statistiche di ciascun libro dà 0,36 e 0,67.
+- **Tempi** (Mac, le 2.402 ricerche della misura, nessun'altra corsa pesante, campo): prima mediana 0,03 s e 90° percentile 0,06 s; dopo 0,20 s e
+  0,85 s. Ogni parola costa una scansione di ogni libro: senza la regola dei tre caratteri il 90° percentile era 1,2 s. Sull'iPad non è
+  misurato. Il rimedio, se servirà, è contare tutte le parole in una passata sola, oppure il formato con i confini dei blocchi.

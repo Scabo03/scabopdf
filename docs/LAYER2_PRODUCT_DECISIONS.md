@@ -1764,6 +1764,59 @@ nel tronco comune: nessuna delle 109 pagine-sommario del corpus cambia, nessuna 
 lette con Apple le pagine intere non lette passano da 2 a 0, con tutto il resto della rete del banco identico al byte. La richiesta
 classica di Apple resta spenta.
 
+**Una decisione del maintainer del 26 novembre 2026**, registrata all'apertura del giro «la ricerca» (2026-11-26), sulle misure del banco degli
+embedding (`docs/BANCO_EMBEDDING.md` § 9 e § 11):
+
+29. **Nelle app, iPad e Mac, entrano la ricerca per parole pesate (BM25), la regola del blocco corto e il salto diretto per numero**, senza modelli e
+    senza schermate nuove, dentro l'interfaccia di ricerca che c'è già. Niente cambia in ciò che VoiceOver dice fuori dai risultati. *26 novembre 2026.*
+
+*Esito del giro (26 novembre 2026, nessuna build; misure in `docs/BANCO_EMBEDDING.md` § 12).* Il motore sta in ScaboCore (`WordSearch.swift`),
+quindi è uno solo per iPad e Mac. Sul Mac la finestra di ricerca arriva con la sua tappa e userà lo stesso motore.
+
+*Nel libro.* Una ricerca di almeno due parole dà, prima delle occorrenze esatte, al più 50 **passi**: i blocchi della lettura ordinati per il peso
+delle parole cercate.
+- Un blocco di meno di 40 caratteri conta insieme al blocco lungo che lo segue, e il passo che si dà è quello lungo.
+- Un passo deve contenere una parola che distingue, cioè presente al più in metà dei blocchi del libro.
+
+Una ricerca di al più 12 parole che chiede un articolo o un paragrafo per numero («art. 2043 c.c.», «articolo 12», «§ 12») mette in testa il
+**salto**: l'intestazione con quel numero, nel codice nominato.
+- Il codice di una sequenza di articoli si riconosce dalla rubrica del suo primo articolo.
+- Senza il nome del codice, o se il libro non ha quel codice, ci sono i candidati: per prima la sequenza più lunga, ognuno con il nome del suo codice.
+
+La frase del conteggio dice le parti nell'ordine dell'elenco, per esempio «Primo risultato: l'articolo …» con il numero e il nome del codice, poi «Poi
+50 passi con le parole di «…», i più pertinenti per primi.» e «Poi 3 risultati esatti, in ordine di lettura.». La riga di un passo comincia con «Passo:», quella di un
+salto con il nome del codice. Il rotore «Risultati della ricerca», i valori «risultato N di M», le evidenze e ⌘G restano sulle sole occorrenze esatte.
+Una ricerca di una parola sola resta com'era.
+
+*Nella libreria.* Per una ricerca di almeno due parole i libri si ordinano per il peso delle parole nel libro intero, dal testo di ricerca di oggi e
+senza un formato nuovo. Contano le parole di almeno tre caratteri e i numeri. Ai libri con la frase intera si aggiungono al più dieci libri che hanno
+solo le parole, i più pesanti. La riga di questi libri dice «nessun risultato esatto»; aperto il libro, la ricerca dà i suoi passi.
+
+*Sul banco.* Nel libro, fra i primi dieci risultati:
+- voci d'indice da 0,26 a 0,78;
+- domande a parole proprie da 0 a 0,40;
+- voci d'indice dei codici da 0,03 a 0,76;
+- articoli e paragrafi per numero da 0 (paragrafi 0,49) a 1.
+
+Nella libreria il libro giusto è trovato da 0,23 a 0,91 e sta al primo posto da 0,15 a 0,36. I numeri dell'app coincidono, blocco per blocco, con il BM25 del banco
+portato con le stesse regole. Le differenze col banco stanno negli intervalli e hanno cause misurate. Le letture restano identiche al byte: 52 volumi
+su 52, iOS 27.
+
+**Da confermare dal maintainer.** Sono le scelte d'ascolto non ovvie; fra parentesi l'inclinazione del giro.
+- a) L'ordine dell'elenco nel libro, cioè salti, poi passi, poi occorrenze esatte, e il limite di 50 passi (sì: a 50 il passo giusto c'è per 0,62
+  delle domande a parole proprie, a 10 per 0,40).
+- b) Una parola sola resta con le sole occorrenze esatte (sì per ora). Con i passi il primo risultato sarebbe giusto 0,59 volte invece di 0,34, sulle
+  voci d'indice di una parola. Però i passi ripeterebbero le stesse occorrenze in un altro ordine. All'orecchio si può provare una via di mezzo: i passi
+  solo oltre dieci occorrenze.
+- c) Le parole delle righe: «Passo:» in testa alla riga, il nome del codice in testa al salto, «nessun risultato esatto» nella riga del libro (sì).
+- d) Rotore e ⌘G sulle sole occorrenze esatte (sì: è la regola «niente cambia fuori dai risultati»). Fare dei passi delle fermate del rotore, con il
+  valore «passo N di M», sarebbe un'aggiunta da decidere.
+- e) Senza il nome del codice, i candidati con il più lungo per primo e la frase che li elenca. Le sequenze senza codice riconosciuto si dicono
+  «un'altra parte del libro» (sì).
+- f) Nella libreria, l'ordine per peso delle parole nel libro intero e i dieci libri senza la frase (sì per ora). Il miglior passo con le statistiche
+  di tutta la libreria porterebbe il libro giusto al primo posto 0,49 volte invece di 0,36. Chiede però un testo di ricerca con i confini dei
+  blocchi, cioè un giro a sé.
+
 ---
 
 ## 13. Ricerca testuale
@@ -1775,6 +1828,8 @@ ScaboPDF prevede un sistema di ricerca testuale **duplice**, ortogonale ai Layou
 Una ricerca **fuori dai file** opera sulla libreria di documenti dell'utente e permette di trovare un documento. Vive nel tab **Ricerca**, raggiungibile dalla navigazione principale.
 
 Una ricerca **interna al file** opera sul testo del documento aperto e permette di trovare una stringa testuale. Si raggiunge da un controllo in barra strumenti, indipendente dal Layout attivo.
+
+*Dal 26 novembre 2026* (§ 12.16, decisione 29): per una ricerca di almeno due parole, oltre alle occorrenze esatte, i passi per parole pesate e, per un articolo o un paragrafo chiesto per numero, il salto diretto; nella libreria i libri in ordine di peso delle parole. Le regole, le frasi e ciò che resta da confermare stanno lì.
 
 ### 13.2 Tab Ricerca
 

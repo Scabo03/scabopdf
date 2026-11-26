@@ -10,6 +10,9 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.74 (26 novembre 2026, giro «la ricerca», livello medio, nessuna build, **CONCLUSO e unito in main**: nella ricerca delle app (ScaboCore, iPad; il Mac
+> quando avrà la finestra) i passi per parole pesate, la regola del blocco corto e il salto per numero; nella libreria i libri in ordine di peso delle
+> parole. Numeri `docs/BANCO_EMBEDDING.md` § 12, decisione e punti da confermare LAYER2 § 12.16 decisione 29. Vedi lo STATO qui sotto.)
 > Versione: 2.73 (25-26 novembre 2026, giro «chiusura per la radio», livello di misura (solo laboratorio e documenti, nessuna build), **CONCLUSO e unito in main** il 26 novembre:
 > livello 1 rimandato dal maintainer alle build nuove; fatte le otto frasi non verificate del banco OCR, i completamenti degli embedding e i tempi e l'energia che non dipendono
 > dall'app, rifatti con gli accumulatori. Report `docs/BANCO_OCR.md` § 47 e `docs/BANCO_EMBEDDING.md` § 11. Vedi lo STATO qui sotto.)
@@ -220,6 +223,67 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «la ricerca»: parole pesate, blocco corto e salto per numero nella ricerca delle app (nessuna build) — 2026-11-26 — CONCLUSO
+
+**Build:** nessuna (iPad ultima **67**, prossima **68**; Mac ultima **4**, prossima **5**: invariate).
+
+**Partenza:** `2b8ec3b`, alle 11:40 del 26, appena dopo la fusione del giro «chiusura per la radio» (Parte 1 del brief). **Ramo:**
+`feat/ricerca-parole-pesate`, unito in main in avanti veloce il 26 novembre dopo la revisione indipendente breve sul diff; ramo cancellato in locale e su origin. Livello di verifica medio. Laboratorio `~/Developer/scabopdf-mac-lab/ricerca_app/`, con:
+- lo strumento `cerca_app`, in Swift, che usa ScaboCore del repo per percorso;
+- le misure (`misura_app.py`, `confronto_bm25.py`, `misura_libreria.py`, `libreria_varianti.py`);
+- il diario, il referto `REFERTO_RICERCA_APP.md`, le uscite.
+
+**Parte 1, la chiusura del giro precedente.** La revisione indipendente della parte sull'energia ha dato 0 rilievi gravi, 6 da correggere e 3 minori,
+tutti applicati. Main è avanzato in avanti veloce a `2b8ec3b`; il ramo `chore/chiusura-radio` è cancellato in locale e su origin.
+
+**Il motore** (ScaboCore, uno per iPad e Mac): `WordSearch.swift`, `BookSearch.swift` (passi, salti e frasi), `LibrarySearch.swift`. Nel libro:
+- per almeno due parole, al più 50 passi per BM25 con le statistiche del libro;
+- il blocco corto conta con il blocco lungo seguente;
+- un passo deve avere una parola che distingue;
+- salto per numero al più a 12 parole, con il codice riconosciuto dalla rubrica dell'articolo 1 della sequenza; senza codice, i candidati;
+- una parola sola resta com'era.
+
+Nella libreria i libri vanno in ordine di BM25 sul libro intero, dal testo di ricerca di oggi; ci sono al più 10 libri «solo parole». Rotore, valori,
+evidenze e ⌘G non cambiano. **iPad:** le righe dei passi stanno in testa ai risultati. **Mac:** nessuna finestra di ricerca ancora (arriva con la sua
+tappa); il motore è pronto in ScaboCore.
+
+**Numeri sul banco** (BANCO_EMBEDDING § 12, campo).
+- Nel libro, fra i primi dieci: voci d'indice da 0,26 a 0,78, domande a parole proprie da 0 a 0,40, voci dei codici da 0,03 a 0,76, articoli e
+  paragrafi per numero da 0 (paragrafi 0,49) a 1.
+- L'app coincide con il porto Python del BM25 con le stesse regole: 2.279 domande su 2.279, blocco per blocco.
+- Rispetto al § 2.1 le differenze stanno negli intervalli, con cause misurate.
+- La regola del corto: +0,016 sui codici, e il primo passo è di una riga sola in 2 domande su 2.402 invece di 257.
+- Nella libreria il libro giusto è trovato da 0,23 a 0,91 e sta al primo posto da 0,15 a 0,36.
+
+**Reti e prove** (campo).
+- ScaboCore: 1.142 test verdi, di cui 15 nuovi.
+- `rete_generazioni.sh pesate1 --no-capture --identiche-attese --base mds2` con `SCABO_GENS="27.0:ios27"`: VERDE, exit 0. Letture identiche al byte 52
+  su 52 (0 segmenti cambiati su 224.284) e volume di controllo identico.
+- Un test dell'app nuovo e un'attesa del test d'interfaccia aggiornata: scritti, controllati solo nella sintassi (`swiftc -parse`), **non eseguiti**.
+- Revisione indipendente breve sul diff (sotto-agente nuovo, solo diff e requisiti): 0 gravi, 1 da correggere, 4 minori accettati. Quello da
+  correggere: una riga del test d'interfaccia poteva restare fuori schermo; ora la tabella scorre. Dopo la revisione è tolto il filtro della parola che
+  distingue nella libreria (BANCO_EMBEDDING § 12.5); la misura vera è rifatta con il codice finale.
+
+**Da confermare dal maintainer:** LAYER2 § 12.16, decisione 29, punti a-f (ordine dell'elenco e 50 passi; una parola sola; parole delle righe; rotore
+sulle sole esatte; candidati senza codice; ordine della libreria).
+
+**Per sabato:**
+- build iPad 68 e Mac 5 (il Mac non cambia comportamento);
+- la suite dell'app, con `test_window_wordsPassages_areSaidAndChosen` e l'attesa «Poi 2 risultati esatti» in `BookSearchUITests`;
+- i tempi sull'iPad: indice delle parole del volume più grande, ricerca nella libreria con 52 libri (sul Mac mediana 0,20 s, 90° percentile
+  0,85 s);
+- l'ascolto delle frasi.
+
+**Residui:**
+- la libreria con i confini dei blocchi (formato nuovo del testo di ricerca, miglior passo con le statistiche della libreria: libro giusto al primo
+  posto 0,49 contro 0,36);
+- il contatore a una passata se l'iPad è lento;
+- i passi per una parola sola (punto b);
+- dal 12:49 del 26 la cartella del laboratorio delle generazioni `estrazioni/ric1_ios27` ha la data di modifica cambiata (collegamento creato per
+  errore e tolto; contenuto intatto).
 
 ---
 
