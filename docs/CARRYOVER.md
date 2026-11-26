@@ -10,6 +10,9 @@
 > della reading view va presa senza averlo davanti. È fonte di verità di prodotto;
 > il dettaglio "React Native" del suo § 1.1 è superato dalla migrazione Swift/UIKit
 > (`docs/SWIFT_MIGRATION_PLAN.md`), ma la specifica di comportamento resta vincolante.
+> Versione: 2.73 (25-26 novembre 2026, giro «chiusura per la radio», livello di misura (solo laboratorio e documenti, nessuna build), **ramo pubblicato e NON unito**:
+> livello 1 rimandato dal maintainer alle build nuove; fatte le otto frasi non verificate del banco OCR, i completamenti degli embedding e i tempi e l'energia che non dipendono
+> dall'app, rifatti con gli accumulatori. Report `docs/BANCO_OCR.md` § 47 e `docs/BANCO_EMBEDDING.md` § 11. Vedi lo STATO qui sotto.)
 > Versione: 2.72 (23-24 novembre 2026, giro «banco embedding», livello di misura (solo laboratorio e documenti, nessuna build, nessun
 > cambiamento nel prodotto), **CONCLUSO e unito in main**: cercare e collegare per significato con modelli locali, al banco e dentro l'app (Core ML e
 > GGUF in Swift), contro la ricerca per parole e quella dell'app così com'è, per lo speciale radiofonico sugli OCR. Report
@@ -217,6 +220,32 @@ Allego i seguenti file che devi acquisire e tenere come riferimento permanente:
   (`app/ios/scripts/generazioni/banco_volumi.json`); la corrispondenza coi file sta nel laboratorio
   (`~/Developer/scabopdf-gen-lab/banco/corrispondenza_volumi.json`) e la risolve `generazioni/banco.py`, che si ferma col codice 2
   se manca o se un'impronta non torna. Gli strumenti di laboratorio che leggevano la lista dal repo vanno puntati al laboratorio.
+
+---
+
+## ▶ STATO — Giro «chiusura per la radio»: le otto frasi non verificate, i completamenti degli embedding, tempi ed energia con gli accumulatori (nessuna build) — 2026-11-25/26 — RAMO APERTO
+
+**Build:** nessuna (iPad ultima **67**, prossima **68**; Mac ultima **4**, prossima **5**: invariate).
+**Partenza:** `bc6605a` (main = origin), 16:14 del 25. **Ramo:** `chore/chiusura-radio`, **pubblicato e non unito** (ultimo `5bfff6a` e il commit di questo STATO): la sezione dell'energia
+non è passata dalla revisione indipendente. Laboratorio `~/Developer/scabopdf-mac-lab/banco_ocr/chiusura_radio/` (METODO con impronta, DIARIO, deviazioni, dati, script,
+referto `REFERTO_CHIUSURA_RADIO.md`). Livello di misura: nessun file sotto `app/`.
+
+- **Cambio di priorità del maintainer (16:31 del 25)**: livello 1 (lettura delle scansioni dell'app e metro dei blocchi) rimandato per intero alle build nuove; del livello 4 solo
+  Surya, Granite, GLM a piena precisione e gli embedding; poi (21:4x) Mac libero da subito.
+- **Terminologia**: «domande a parole proprie» al posto di «domande da studente» ovunque (repo e referto del laboratorio), tolte anche «cecità ai numeri», «accecano», «ciechi».
+- **Livello 2** (BANCO_OCR § 47, campo): 25 confermata (Surya 5 su 6 alla cieca), 27 confermata (peso), 12 corretta (MiniCPM tre volte le parole perse di GLM, non cinque), 19 smentita
+  (Marker terzo su sette; l'ultimo posto veniva da un documento senza uscita), 40 confermata (egret nella via dell'app non rende), **7 corretta in peggio** (sulle tabelle vere del corpus
+  in contesto la via delle scansioni ne annuncia un terzo: 24, 16 e 22 su 69; il modello ne vede 63; le scarta la guardia), 29 e 30 corrette (energia per pagina più alta: Granite 170 J,
+  Surya 210, GLM a piena precisione 500).
+- **Livello 3** (BANCO_EMBEDDING § 11, campo): Core ML su tutto L3 entro due punti su mille per sei modelli su sette; EmbeddingGemma 2 col titolo della sezione: blocco cortissimo in testa dal
+  41 al 17 per cento, articoli per numero da 31 a 51 su 100, domande a parole proprie invariate; blocchi cortissimi: farli valere il blocco seguente (442 confronti, nessuno peggiore);
+  salto diretto per numero: col codice sempre primo (quasi per costruzione), senza codice primo 57 volte su cento e fra i primi cinque sempre; frasi 5, 6, 11 e 14 aggiornate.
+- **Livello 4** (campo): la telemetria si aggiorna una volta al minuto: le misure brevi dei giri precedenti leggevano un valore fermo. Rifatte con gli accumulatori (due passate entro il 2 per
+  cento sulla scheda grafica, entro il 9 sul motore neurale): il motore neurale consuma meno per tutti i modelli d'embedding, anche da 0,6 miliardi (smentita la frase che diceva il contrario).
+- **Revisione indipendente** dei livelli 2 e 3 (sotto-agente nuovo): «si può unire dopo le correzioni», 0 gravi, 5 da correggere, 6 minori, oltre 100 numeri ricalcolati: tutto corretto.
+- **Da dove riprendere**: (1) revisione indipendente della sola parte d'energia (BANCO_OCR § 47 dopo la frase 7, BANCO_EMBEDDING § 11.5), poi avanzamento rapido in main e ramo cancellato;
+  (2) il livello 1 sulle build nuove, col metro dei blocchi pronto (`strumenti/blocchi.py`) e l'elenco unico delle frasi per la trasmissione; (3) proposta per un giro di prodotto: l'esito
+  della guardia delle risorse visive per regione nel referto e la guardia provata sulle scansioni dei codici (frase 7); il salto diretto per numero con l'elenco dei candidati.
 
 ---
 
