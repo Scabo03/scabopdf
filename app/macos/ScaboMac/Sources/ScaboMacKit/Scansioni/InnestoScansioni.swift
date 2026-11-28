@@ -10,7 +10,10 @@
 //  prima dell'aggancio delle note), solo dove il banco ha misurato che la catena sbaglia e Heron no, e senza scrivere testo:
 //
 //  * COLONNE (miglioria `colonne`). Un nodo che la catena chiama glossa a margine (e non legge) ma le cui righe stanno DENTRO regioni di
-//    Heron larghe almeno un terzo della pagina è una colonna di testo, non un margine: diventa corpo. Sulle pagine a due colonne la regola
+//    Heron larghe almeno un terzo della pagina è una colonna di testo, non un margine: diventa corpo, o NOTA se la maggior parte di quelle
+//    righe sta in regioni che Heron etichetta «footnote» (sulle pagine dei codici a due colonne la nota che comincia in
+//    fondo alla prima colonna continua in cima alla seconda; da corpo la si sentirebbe in mezzo al testo, da nota la catena la ricuce alla
+//    sua prima parte o la legge dopo il paragrafo, con la sua introduzione). Sulle pagine a due colonne la regola
 //    delle glosse del tronco comune vede la seconda colonna «fuori dalla colonna del corpo» (sul PDF col testo dei codici lo evita il loro
 //    ramo, che sulle scansioni non scatta): al banco l'82 per cento delle parole fuori dalla lettura della via delle scansioni. Le glosse
 //    vere stanno in regioni strette, o fuori da ogni regione, e restano glosse.
@@ -58,6 +61,7 @@ public final class InnestoScansioni: ChainGraft {
     /// I conti dell'innesto, senza testo.
     public struct Conti: Codable, Equatable, Sendable {
         public var glosseInColonna = 0
+        public var glosseInNote = 0
         public var noteInTabella = 0
         public var glosseLasciate = 0
         public var noteLasciateSullePagineConTabelle = 0
@@ -69,6 +73,8 @@ public final class InnestoScansioni: ChainGraft {
     public static let frazioneColonnaMinima = 1.0 / 3.0
     /// Tipi di regione che non sono testo da leggere nel corpo.
     static let tipiNonDiTesto: Set<String> = ["page_header", "page_footer", "picture"]
+    /// L'etichetta di docling delle regioni di nota («footnote»).
+    static let tipoNota = "footnote"
     /// Lunghezza minima (lettere e cifre) di una riga perché la si cerchi nel testo di un nodo.
     static let caratteriMinimi = 4
 
@@ -106,11 +112,18 @@ public final class InnestoScansioni: ChainGraft {
             if !c.children.isEmpty { c.children = trasforma(c.children, testi: testi) }
             switch c.type {
             case .MARGINAL_GLOSS where colonne:
-                if regolaVale(c, testi: testi, condizione: { r in
+                let colonna: (RegioneRiga) -> Bool = { r in
                     r.dentro && r.frazioneLarghezza >= Self.frazioneColonnaMinima && !(r.tipo.map(Self.tipiNonDiTesto.contains) ?? true)
-                }) {
-                    c.type = .BODY
-                    conti.glosseInColonna += 1
+                }
+                if regolaVale(c, testi: testi, condizione: colonna) {
+                    if regolaVale(c, testi: testi, condizione: { colonna($0) && $0.tipo == Self.tipoNota }, soloFra: colonna) {
+                        c.type = .NOTE
+                        c.length_category = lengthCategoryFor(c.text ?? "")
+                        conti.glosseInNote += 1
+                    } else {
+                        c.type = .BODY
+                        conti.glosseInColonna += 1
+                    }
                 } else { conti.glosseLasciate += 1 }
             case .NOTE where righeDiTabella:
                 if regolaVale(c, testi: testi, condizione: { $0.dentro && $0.tabellaAmmessa }) {
@@ -127,16 +140,19 @@ public final class InnestoScansioni: ChainGraft {
     }
 
     /// Vero se le righe della pagina ritrovate nel testo del nodo coprono almeno metà del testo e almeno metà di quelle soddisfa la
-    /// condizione.
-    private func regolaVale(_ n: NodeDict, testi: [Int: [String]], condizione: (RegioneRiga) -> Bool) -> Bool {
+    /// condizione. Con `soloFra`, la seconda metà si conta solo fra le righe ritrovate che soddisfano `soloFra` (per scegliere il tipo fra
+    /// le righe che già soddisfano la regola).
+    private func regolaVale(_ n: NodeDict, testi: [Int: [String]], condizione: (RegioneRiga) -> Bool,
+                            soloFra: ((RegioneRiga) -> Bool)? = nil) -> Bool {
         guard let regioni = righe[n.page_index], let linee = testi[n.page_index], regioni.count == linee.count else { return false }
         let t = TextFingerprint.normalize(n.text ?? "")
         guard !t.isEmpty else { return false }
-        var ritrovati = 0, nellaRegola = 0
+        var ritrovati = 0, fra = 0, nellaRegola = 0
         for (r, l) in zip(regioni, linee) where l.count >= Self.caratteriMinimi && t.contains(l) {
             ritrovati += l.count
+            if soloFra?(r) ?? true { fra += l.count }
             if condizione(r) { nellaRegola += l.count }
         }
-        return 2 * ritrovati >= t.count && ritrovati > 0 && 2 * nellaRegola >= ritrovati
+        return 2 * ritrovati >= t.count && fra > 0 && 2 * nellaRegola >= fra
     }
 }

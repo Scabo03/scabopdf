@@ -1,7 +1,8 @@
 //
 //  InnestoScansioniTests.swift
 //  ScaboMacKitTests — l'innesto delle regioni di Heron sulle pagine lette (giro «scansioni, ricerca e build», 2026-11-28): una «glossa»
-//  dentro una colonna larga diventa corpo, una glossa stretta o fuori dalle regioni resta; una «nota» dentro una tabella ammessa diventa
+//  dentro una colonna larga diventa corpo (nota, se le sue righe stanno in regioni «footnote» di Heron), una glossa stretta o fuori dalle
+//  regioni resta; una «nota» dentro una tabella ammessa diventa
 //  non classificata (si legge al suo posto, non si fonde col corpo), una nota fuori resta; il testo dei nodi non cambia mai; l'innesto successivo riceve il documento rietichettato. Testi inventati.
 //
 import Foundation
@@ -62,6 +63,23 @@ final class InnestoScansioniTests: XCTestCase {
         XCTAssertEqual(out.rawDocument.structure.map(\.text), [colonna.text, margine.text], "il testo non cambia")
         XCTAssertEqual(i.conti.glosseInColonna, 1)
         XCTAssertEqual(i.conti.glosseLasciate, 1)
+    }
+
+    func test_glossaNellaColonnaLarga_inUnaRegioneDiNota_diventaNota() {
+        var r = regioni
+        r[0]![0].tipo = "footnote"
+        r[0]![1].tipo = "footnote"
+        let colonna = NodeDict(id: "node_1", type: .MARGINAL_GLOSS, page_index: 0, text: "prima riga della colonna destra seconda riga della colonna destra")
+        let (out, i) = innesta([colonna], regioni: r)
+        XCTAssertEqual(out.rawDocument.structure.map(\.type), [.NOTE])
+        XCTAssertEqual(out.rawDocument.structure[0].text, colonna.text, "il testo non cambia")
+        XCTAssertEqual(out.rawDocument.structure[0].length_category, .SHORT, "la lunghezza della nota come la calcola la catena")
+        XCTAssertEqual(i.conti.glosseInNote, 1)
+        XCTAssertEqual(i.conti.glosseInColonna, 0)
+        // La riga più lunga in una regione di testo: meno di metà del testo ritrovato sta nelle note, e il nodo diventa corpo.
+        r[0]![1].tipo = "text"
+        let mista = NodeDict(id: "node_2", type: .MARGINAL_GLOSS, page_index: 0, text: "prima riga della colonna destra seconda riga della colonna destra")
+        XCTAssertEqual(innesta([mista], regioni: r).0.rawDocument.structure.map(\.type), [.BODY])
     }
 
     func test_rigaFuoriDallaRegione_nonConta() {

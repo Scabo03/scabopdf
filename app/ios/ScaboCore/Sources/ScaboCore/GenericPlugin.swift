@@ -2614,7 +2614,9 @@ private func isAsciiHex(_ c: Character) -> Bool {
 
 // MARK: - NOTE acoustic regime + slug
 
-func lengthCategoryFor(_ text: String) -> LengthCategory {
+/// Pubblica dal giro «scansioni, ricerca e build» (2026-11-28): l'innesto delle scansioni del Mac (`InnestoScansioni`) la usa quando
+/// rietichetta una riga come nota. Nessun cambiamento di comportamento.
+public func lengthCategoryFor(_ text: String) -> LengthCategory {
     let length = jsTrim(text).utf16.count
     for (threshold, category) in LENGTH_THRESHOLDS where length < threshold {
         return category
