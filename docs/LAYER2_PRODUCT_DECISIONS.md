@@ -1807,7 +1807,8 @@ portato con le stesse regole. Le differenze col banco stanno negli intervalli e 
 su 52, iOS 27.
 
 **Da confermare dal maintainer.** Sono le scelte d'ascolto non ovvie; fra parentesi l'inclinazione del giro. *Chiusi dalla decisione 31 (28 novembre
-2026): ogni punto è diventato una domanda della sezione «Ricerca» delle Impostazioni.*
+2026): i punti sono diventati domande della sezione «Ricerca» delle Impostazioni, salvo la via di mezzo del punto b (i passi solo oltre dieci occorrenze),
+che non è un'opzione, e il formato nuovo del punto f, che resta un giro a sé.*
 - a) L'ordine dell'elenco nel libro, cioè salti, poi passi, poi occorrenze esatte, e il limite di 50 passi (sì: a 50 il passo giusto c'è per 0,62
   delle domande a parole proprie, a 10 per 0,40).
 - b) Una parola sola resta con le sole occorrenze esatte (sì per ora). Con i passi il primo risultato sarebbe giusto 0,59 volte invece di 0,34, sulle
@@ -1842,12 +1843,15 @@ identica a prima.
 Sul banco le parole perse scendono di circa quattro punti (Apple pulita da 5,6 a 1,6 per cento; pesate sul corpus da 7,1 a 1,8), le note trovate e agganciate
 non cambiano, le tabelle annunciate sui 13 estratti passano da 24, 16 e 22 su 69 a 55, 51 e 51, senza annunci in più sulle pagine con tabelle. Il costo, misurato
 col metro dei blocchi: qualche blocco spezzato o fuso in più (difetti sul banco da 802 a 810 con Apple pulita, da 735 a 751 con Apple degradata, 730 invariati con
-GLM pulita, da 775 a 781 con GLM degradata), quasi tutti sul testo prima taciuto; l'unico peggioramento su qualcosa che prima si sentiva sono uno o due titoli
-per configurazione del codice a due colonne del banco, prima un blocco a sé e ora uniti al testo ritrovato. Sugli estratti, contate dove l'annuncio si sente, le
-tabelle sono 53, 47 e 49, e qualche annuncio cade una pagina prima o si impila con altri. Tre modi di restringere la regola (tutte note; note solo col corpo delle
-note della pagina; non classificate) sono andati peggio. La regola va nella build 5 del Mac; il giro e la revisione indipendente inclinano a tenerla, ma la
-decisione 24 va letta dal maintainer: **conta come regressione per chi ascolta anche un difetto che sta solo su testo che prima non si sentiva affatto?** Se sì,
-la regola si restringe o si spegne (la miglioria `colonne`); se no, si tiene coi residui dichiarati (`docs/BANCO_OCR.md` § 48). I libri già nella libreria non cambiano: la lettura nuova vale per le scansioni
+GLM pulita, da 775 a 781 con GLM degradata), quasi tutti sul testo prima taciuto. L'unico peggioramento su qualcosa che prima si sentiva erano uno o due blocchi
+corti per configurazione, nel codice a due colonne del banco, prima a sé e poi uniti al testo ritrovato: la restrizione `0b7d62c` li tiene a sé (misura della
+notte). Sugli estratti, contate dove l'annuncio si sente, le tabelle sono 53, 47 e 49, e qualche annuncio cade una pagina prima o si impila con altri. Tre modi
+di restringere la regola in tutto (tutte note; note solo col corpo delle note della pagina; non classificate) sono andati peggio. La regola va nella build 5 del
+Mac; il giro e le due revisioni indipendenti inclinano a tenerla, ma la decisione 24 va letta dal maintainer: **conta come regressione per chi ascolta anche un
+difetto che sta solo su testo che prima non si sentiva affatto?** Se sì, la regola si spegne (la miglioria `colonne`) nella build successiva; se no, si tiene coi
+residui dichiarati (`docs/BANCO_OCR.md` § 48). I libri già nella libreria restano letti come prima finché la loro lettura salvata vale: un libro scansionato
+senza lettura salvata usabile (per esempio dopo un cambio di granularità) si rielabora all'apertura con la catena nuova, con le annotazioni riancorate per
+contenuto (§ 12.14), come per ogni cambiamento della catena: la lettura nuova vale per le scansioni
 importate da ora, o quando l'utente chiede la lettura migliore. Le glosse finte dei codici nel tronco comune (PDF col testo) restano fuori da questo giro: diagnosi
 nel referto del giro.
 
@@ -1877,9 +1881,11 @@ usa già le stesse fermate. Le domande, col predefinito per primo:
 - *Ricerca nella libreria*, per le ricerche di due o più parole: per pertinenza; oppure prima i libri con la frase esatta, poi gli altri.
 
 Con i predefiniti, fuori dalla finestra dei risultati non cambia nulla: rotore, ⌘G, valori «risultato N di M» e descrizione del parlato identici al
-byte a quelli della decisione 29 (sonda della revisione indipendente). Nella finestra cambiano l'ordine (prima le esatte), il tetto (20) e la riga del
+byte a quelli della decisione 29 (sonda della revisione indipendente su `f20e66c`; le correzioni di `94f8889`, coi predefiniti, lasciano il percorso uguale:
+le fermate restano le sole occorrenze esatte). Nella finestra cambiano l'ordine (prima le esatte), il tetto (20) e la riga del
 passo. Sul banco «prima i passi» porta il primo risultato giusto, sulle voci d'indice, da 0,33 a 0,37; con 50 passi il passo giusto sta fra i passi
-per 0,62 delle domande a parole proprie, con 20 per 0,52; il salto spento fa scendere gli articoli chiesti per numero, al primo posto, da 1,00 a 0,10;
+per 0,62 delle domande a parole proprie, con 20 per 0,52; il salto spento fa scendere al primo posto gli articoli chiesti col codice da 1,00 a 0,10, e
+senza il codice da 0,575 a 0,135;
 nella libreria «prima la frase esatta» porta il libro giusto al primo posto da 0,355 a 0,393 senza peggiorare nessuna famiglia. I tempi sull'iPad sono
 dedotti (nessun iPad collegato).
 
@@ -1900,7 +1906,8 @@ llama.cpp, allo stesso tag del motore dell'app (b11429), con le impronte di part
 e GLM non cambia. Per offrirlo agli utenti bisognerebbe pubblicare la conversione in un deposito del progetto, che chiede un account e un token: il giro si è
 fermato lì, e la voce del catalogo resta **provvisoria**, senza scaricamento, come le altre (decisione 22); l'app non lo offre fra i lettori. Nel motore
 dell'app ha le protezioni di GLM e una sua, contro i blocchi di righe ripetuti di fila (si incantava riscrivendo la pagina intera). Sul banco perde meno parole di
-GLM e fa molto meno rumore udibile, ma dà il doppio delle false note e un poco meno di tabelle. Il lettore preimpostato resta GLM. La proposta, coi numeri e col
+GLM e fa molto meno rumore udibile, ma sulle pagine d'indice legge come note molte righe brevi (52 false note su due pagine; sul resto del banco 60
+contro 57) e annuncia un poco meno di tabelle. Il lettore preimpostato resta GLM. La proposta, coi numeri e col
 tempo da mostrare prima della lettura, è nel referto del giro.
 
 ---

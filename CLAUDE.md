@@ -59,7 +59,7 @@ comandi (un nome protetto dentro un modello di ricerca fa scattare la richiesta;
 ## Convivenza con il maintainer sul Mac (dal 2026-11-28)
 
 Il maintainer usa il Mac di sviluppo anche di giorno, con VoiceOver, e non vuole automazioni che gli girano sotto le mani. Vale
-per ogni giro e per ogni sotto-agente (chi lo lancia gliela scrive nelle istruzioni). Il brief di un giro può restringerla.
+per ogni giro e per ogni sotto-agente (chi lo lancia gliela scrive nelle istruzioni). Il brief di un giro può cambiarla: vale il brief.
 
 **Due specie di lavoro.** Il lavoro **silenzioso** si fa sempre: leggere, scrivere codice e documenti, analizzare dati già
 prodotti, i test brevi che girano nel terminale senza aprire finestre, i commit e i push. Il lavoro che **disturba** aspetta il
@@ -75,8 +75,8 @@ ciascuno con la durata stimata, nell'ordine d'importanza delle parti.
 pausa ciò che disturba e si prosegue col lavoro silenzioso); «Via libera» (la coda gira finché non arriva un altro segnale); «Via
 libera fino alle 18», o un'altra ora (la coda gira fino a quell'ora). Il file `~/Developer/scabopdf-mac-lab/MAC_IN_USO`, se
 esiste, vale «sto usando il Mac», anche di notte; quando il maintainer lo toglie vale come via libera. Si controlla prima di ogni
-blocco che disturba e almeno ogni trenta minuti durante i blocchi lunghi. Il file `PAUSA_MISURE` resta valido per i tempi e
-l'energia.
+blocco che disturba e almeno ogni trenta minuti durante i blocchi lunghi. Il file di pausa delle misure (`PAUSA_MISURE`, nella cartella
+del giro di misura, per esempio `banco_ocr/globale/PAUSA_MISURE`) resta valido per i tempi e l'energia.
 
 **Senza segnali.** Dalle 23 alle 8:30 il Mac è libero, salvo il file, e il giro ha la priorità: il lavoro che disturba si fa
 nell'ordine più efficiente, anche cambiando la sequenza delle parti, purché le più importanti non restino scoperte; di notte

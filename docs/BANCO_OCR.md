@@ -4002,13 +4002,15 @@ scarta quasi due tabelle su tre di quelle che il modello vede sulle scansioni (f
 
 > Codice misurato: ramo `feat/scansioni-mac`, officina del Mac compilata a ogni commit (`giro_scansioni_ricerca_build_20261128/officine/<data>_<commit>_mac4+`:
 > il codice discende dalla build 4 del Mac, «+» = non ancora caricato). I nomi delle cartelle del laboratorio portano gli hash di prima della riscrittura del
-> ramo (fatta per il controllo del testo dei volumi; corrispondenza in `registri/corrispondenza_hash_scansioni_riscrittura_1450.txt`): `8aba576` del
-> laboratorio è `fdbf30e` nella storia pubblicata, con lo stesso codice (cambiano tre righe di commento), e `965c233` è `d07eb23`. Le misure di `8aba576` sono
-> quelle del codice della regola finale; dopo vengono due correzioni chieste dalla revisione indipendente (`d339b2b`: glosse dentro una tabella non
-> classificate, filetti contati dal primo pixel scuro), misurate nella notte (sotto). Strumenti: `migliorie/strumenti/misure_m.py` (`a47ed856…`), `vere_m.py`
+> ramo (fatta per il controllo del testo dei volumi; corrispondenze in `registri/corrispondenza_hash_scansioni.txt` e
+> `registri/corrispondenza_hash_scansioni_riscrittura_1450.txt`): `a688328` → `da53d1e`, `b3017e4` → `bd0a3c7`, `2bdba4d` → `cff16db`, `8aba576` →
+> `fdbf30e`, `965c233` → `d07eb23`, con lo stesso codice (cambiano righe di commento). Le misure di `8aba576` sono quelle della regola delle colonne;
+> dopo vengono tre correzioni chieste dalle revisioni indipendenti (`d339b2b`: glosse dentro una tabella non classificate, filetti contati dal primo
+> pixel scuro; `0b7d62c`: il blocco corto accanto a una glossa diventata corpo resta a sé), misurate nella notte (in fondo al paragrafo). Strumenti: `migliorie/strumenti/misure_m.py` (`a47ed856…`), `vere_m.py`
 > (`ea517fb6…`), `tabella_m.py` (`94f546ed…`), `globale/strumenti/rumore.py` (`c8bb2d90…`), metro dei blocchi `chiusura_radio/strumenti/blocchi.py`
 > (`6fc24db9…`, prova del metro: 16 casi su 16) col pilota `giro_scansioni_ricerca_build_20261128/strumenti/blocchi_stati.py` (`f17963ca…`), estratti delle
-> tabelle `guardia_per_regione.py` (`623a5775…`), stima pesata `pesata_corpus.py` (`3b4cfd56…`); python con PyMuPDF 1.27.2.3. Materiale: banco del giro 1
+> tabelle `guardia_per_regione.py` (`623a5775…`), stima pesata `pesata_corpus.py` (`3b4cfd56…`, uscita `misure/20261128_pesata_corpus_spente_8aba576.txt`),
+> metro dei blocchi per un lettore solo `blocchi_lettore.py` (`afbc17f6…`, uscita `misure/20261128_blocchi/xiaomi_965c233_pulita.txt`); python con PyMuPDF 1.27.2.3. Materiale: banco del giro 1
 > (`banco/MANIFESTO.json` `0e7feec2…`), livello B (`e08a5589…`), estensione (`386a9507…`), ruotate e scansioni vere del giro globale, 13 estratti delle tabelle
 > del § 47 (`MANIFESTO_X.json` `bbbb2ae6…`). Testo di GLM dalla cache copiata del giro «migliorie» (le copie in `cache_glm/`), testo di Xiaomi dalla sua cache
 > di questo giro. Uscite in cartelle nuove per stato (`uscite/<stato>/`), mai sovrascritte; misure in `banco_ocr/migliorie/misure/<stato>/`.
@@ -4030,7 +4032,8 @@ righe nuove verso l'iPad; ciascuna si spegne nel laboratorio (`--senza griglia,c
 - *colonne*: una «glossa» le cui righe stanno dentro regioni di Heron larghe almeno un terzo della pagina diventa CORPO (NOTA se la maggior parte delle righe sta in
   regioni «footnote» di Heron: scatta su due pagine del banco, misure identiche; NON CLASSIFICATA se sta in una tabella ammessa, da `d339b2b`). La catena fa glossa solo di una riga a corpo di nota fuori dalla
   colonna del corpo stimata; sulle pagine a due colonne la seconda colonna resta fuori. Al banco l'82 per cento delle parole fuori dalla lettura della via delle
-  scansioni erano glosse finte.
+  scansioni erano glosse finte (dedotto dall'analisi riga per riga del giro, non da una tabella del banco; la T8 dà, per le righe fuori dalla
+  lettura, 4,13 dei 6,44 punti persi con Apple e 4,20 dei 5,64 con GLM).
 
 **Prima e dopo** (campo; «prima» = stato `20261128_2bdba4d_mac4+_spente`, le tre migliorie spente; «dopo» = `20261128_8aba576_mac4+_regioni`, cioè `fdbf30e`). Con le migliorie spente
 la via delle scansioni è identica a prima: 9.354 letture su 9.360 e 2.972 pagine su 2.974 identiche a `som2` (le due pagine diverse, Apple degradata, cambiano già
@@ -4056,8 +4059,8 @@ che continuano da una pagina all'altra; e gli annunci impilati (due o più «Tab
 8 (16, 12 e 25 annunci). Prima quelle tabelle non si annunciavano: non è un peggioramento, ma è un difetto d'ascolto nuovo, che toccherebbe la guardia
 condivisa (un annuncio solo, col numero delle tabelle: un giro suo).
 
-Le stime pesate «prima» non sono quelle del § 35.1 (Apple 7,13, GLM 6,78): là il codice della build 3 e GLM con la guardia di prima; qui il codice di oggi con le
-migliorie spente (confronto non omogeneo con quello del § 35). Sugli estratti nessuna tabella in più sulle pagine con tabelle; sulle pagine che la verità del § 47
+Le stime pesate «prima» non sono quelle del § 35.1 (Apple 7,13, GLM 6,78): là il codice della fotografia, con GLM con la guardia stretta; qui il codice di
+oggi con le migliorie spente (confronto non omogeneo con quello del § 35). Sugli estratti nessuna tabella in più sulle pagine con tabelle; sulle pagine che la verità del § 47
 dà senza tabelle, 3 (Apple) e 5 (GLM) annunci: tabelle vere di continuazione, giudicate contro la pagina (la verità del § 47 è incompleta lì).
 
 **Le salite, giudicate una per una** (campo). *Rumore udibile* (livello B, Apple pulita 1,28 → 1,46 per mille): tutte le parole in più stanno su pagine dove l'innesto
@@ -4094,7 +4097,8 @@ comunità e non si usano). *Motore*: il llama.cpp dell'app (b11429) non carica l
 uguali; 6,4 e 8,6 secondi a pagina col caricamento; picco del processo 2,07 GB. *Protezioni*: il filtro della notazione di GLM più la forma di Xiaomi (`\( \)` e
 `\[ \]`, `<nl>`, i segni OTSL delle tabelle); la protezione dalle righe ripetute di GLM e, solo per Xiaomi, quella dai **blocchi** ripetuti di fila (`d07eb23`):
 misurato, Xiaomi quando si incanta riscrive di fila un intero blocco, fino alla pagina intera (una pagina ruotata due volte: 21 righe e poi le stesse 21), e la
-protezione di GLM guarda solo la riga precedente. Sulle ruotate il rumore udibile passa da 32,12 a 0,10 per mille e le parole perse da 2,62 a 1,82.
+protezione di GLM guarda solo la riga precedente. Sulle ruotate il rumore udibile passa da 32,12 a 0,10 per mille (la protezione); le parole perse da 2,62 a 1,82
+vengono in buona parte dall'innesto, entrato fra i due stati (GLM, col solo innesto, scende da 2,75 a 1,94).
 
 *Numeri* (codice con la protezione dei blocchi, `965c233` del laboratorio = `d07eb23`, forma pulita, testo da cache; misurati con gli stessi strumenti attraverso uno stato di soli
 collegamenti dove Xiaomi prende il posto di GLM, `strumenti/stato_xiaomi_come_glm.sh` `23d5e944…`; a confronto GLM e Apple del codice finale):
@@ -4112,8 +4116,10 @@ collegamenti dove Xiaomi prende il posto di GLM, `strumenti/stato_xiaomi_come_gl
 | tabelle, banco (su 19) / 13 estratti (su 69) | 15 / 52 | 17 / 51 |
 | metro dei blocchi, banco: false note / difetti | 112 / 801 | 57 / 730 |
 
-Xiaomi perde meno parole e fa molto meno rumore, ma il metro dei blocchi gli trova il doppio delle false note di GLM (righe che diventano note) e più difetti in tutto;
-sulle tabelle del banco è un poco indietro. La voce provvisoria del catalogo dice ora questi numeri e questo difetto, con la dimensione della conversione per il
-motore dell'app (1.038.579.744 byte; `83abb6c`, rilievo della revisione: dava la dimensione e i numeri della conversione del 19 novembre). La degradata e i tempi a
-Mac fermo: notte del 28-29 novembre (sotto). La proposta per il maintainer è nel referto del giro e nella decisione 32: Xiaomi resta provvisorio, GLM resta il
+Xiaomi perde meno parole e fa molto meno rumore, ma il metro dei blocchi gli trova più false note e più difetti di GLM: 52 delle 112 false note stanno su
+due pagine d'indice, dove Xiaomi legge come note molte righe brevi e le altre letture non danno nulla; sul resto del banco sono 60 contro 57 (revisione
+indipendente). Sulle tabelle del banco è un poco indietro. La voce provvisoria del catalogo dice ora questi numeri e questo difetto, con la dimensione della conversione per il
+motore dell'app (1.038.579.744 byte; `83abb6c` e `ee794ed`, rilievi delle revisioni: dava la dimensione e i numeri della conversione del 19 novembre). La sonda
+dei tempi (6,4 e 8,6 secondi a pagina, picco 2,07 GB) è stata fatta col codice di `e6b2cdf` più il lavoro poi entrato in `a688328` (oggi `da53d1e`), su due
+pagine, col caricamento, a Mac non fermo. La degradata e i tempi a Mac fermo: notte del 28-29 novembre (in fondo al paragrafo). La proposta per il maintainer è nel referto del giro e nella decisione 32: Xiaomi resta provvisorio, GLM resta il
 lettore preimpostato.

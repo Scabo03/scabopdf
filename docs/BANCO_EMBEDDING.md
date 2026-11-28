@@ -1666,7 +1666,10 @@ predefiniti che cambiano meno le abitudini di chi usava la ricerca prima dei pas
 VERITA_NL, NUM_VARIANTI: 2.402 domande; restano solo nel laboratorio) passano dalla ricerca vera di ScaboCore con le impostazioni di ciascuna opzione,
 attraverso uno strumento del laboratorio (`giro_scansioni_ricerca_build_20261128/strumenti/cerca_app_impostazioni`, ScaboCore del repo per percorso)
 che presenta l'elenco nell'ordine dell'app: salti, poi corrispondenze esatte e passi nell'ordine scelto, senza doppioni. Misure con `misure.py` del
-banco. Le altre impostazioni restano ai predefiniti. Uscite in `giro_scansioni_ricerca_build_20261128/misure/`: libro e libreria misurati sul codice
+banco. Le altre impostazioni restano ai predefiniti. Strumenti (sha256): `misura_impostazioni.py` `5feb8029…`, `misura_libreria_impostazioni.py`
+`b3b5ae85…`, `cerca_app_impostazioni/Sources/cerca_app/main.swift` `8cff2920…`, `banco_embedding/strumenti/misure.py` `0c88da1a…`; materiale:
+`VERITA_A.json` `1a74d956…`, `VERITA_NL.json` `2af1eca5…`, `NUM_VARIANTI.json` `1679acce…`, letture del banco `dati/letture_ipad/` (110 file, impronta
+dell'elenco delle impronte `10e97402…`). Uscite in `giro_scansioni_ricerca_build_20261128/misure/`: libro e libreria misurati sul codice
 `60f66ff` (dall'iPad 67, cartelle `20261128_60f66ff_ipad67+_ricerca_libro_v2` e `…_ricerca_libreria`); il libro rifatto sul commit finale `94f8889`,
 dopo le correzioni della revisione (`20261128_94f8889_ipad67+_ricerca_libro`), con le uscite delle 11 varianti identiche domanda per domanda (le
 correzioni cambiano il fuoco, le fermate e le frasi, non l'elenco). Una revisione indipendente ha ricalcolato a mano otto numeri del libro e quattro

@@ -1,9 +1,10 @@
 Build 68 — le scelte della ricerca nelle Impostazioni
 
 Che cosa cambia
+- La ricerca è nuova. Nel libro, oltre ai punti dove compare la frase esatta, trova i passi pertinenti, cioè i punti dove contano di più le parole che hai scritto, anche se non tutte insieme; e se scrivi il numero di un articolo o di un paragrafo, per esempio «art. 12», il primo risultato porta lì. Nella libreria, per le ricerche di due o più parole, vengono prima i libri più pertinenti.
 - Nelle Impostazioni c'è una sezione nuova, «Ricerca», con la riga «Come cerca ScaboPDF». La schermata comincia con una frase che spiega i due modi in cui l'app cerca: le corrispondenze esatte e i passi pertinenti. Poi ci sono otto domande, ciascuna con due o tre scelte spiegate a parole: VoiceOver dice il nome della scelta e la sua spiegazione insieme. Una scelta vale dalla ricerca successiva.
 - Le domande sono queste: l'ordine dei risultati; quanti passi pertinenti; il salto diretto ad articoli e paragrafi; che cosa fare nei libri con più codici; la ricerca di una parola sola; dove si fermano il rotore e Comando G; quanto dice l'annuncio di ogni risultato; l'ordine dei libri nella ricerca nella libreria.
-- Con le scelte di serie, nella ricerca dentro un libro vengono prima le corrispondenze esatte, poi al più 20 passi pertinenti, e la riga di un passo non comincia più con «Passo». Il rotore e Comando G restano sulle sole corrispondenze esatte, come prima.
+- Con le scelte di serie, nella ricerca dentro un libro viene per primo il salto all'articolo o al paragrafo, se c'è; poi le corrispondenze esatte; poi al più 20 passi pertinenti. Il rotore e Comando G restano sulle sole corrispondenze esatte, come prima.
 
 Che cosa non cambia
 - Il testo dei libri e la loro lettura: nessun libro riceve la proposta di rielaborazione con questa build.
@@ -11,4 +12,4 @@ Che cosa non cambia
 Tre cose da provare
 - Apri Impostazioni, poi «Come cerca ScaboPDF», e ascolta le domande: dicci se ogni scelta si capisce senza altre spiegazioni.
 - In un libro cerca un argomento con parole tue; poi scegli «Prima i passi pertinenti» e cerca di nuovo: dicci quale ordine ti è più comodo.
-- In un libro con più codici scegli «Vai al codice principale» e cerca «art.» seguito da un numero: dopo «Cerca» dovresti essere già sulla riga dell'articolo del codice più ampio.
+- In un libro con più codici scegli «Vai al codice principale» e cerca «art.» seguito da un numero che c'è in più codici, senza dire quale: dopo «Cerca» dovresti essere già sulla riga dell'articolo del codice più ampio.

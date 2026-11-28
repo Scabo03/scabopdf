@@ -8,7 +8,9 @@
 > omogenei). Dove un confronto non è omogeneo (materiale o metro diversi) lo si dice invece di mettere i numeri in fila. Etichette: i
 > numeri sono **fonte** (il paragrafo indicato, alla data del suo commit) salvo dove detto; **dedotto** dove una riga lega una misura a
 > una build senza una corsa su quella build. Le righe «oggi» si riempiono con le misure del giro del 28 novembre; ciò che manca lo
-> completa il giro di misura sulle build nuove (sezione 9).
+> completa il giro di misura sulle build nuove (sezione 9). Hash del giro del 28 novembre: alcuni stati del laboratorio portano gli hash di prima
+> della riscrittura del ramo delle scansioni (corrispondenze nel laboratorio, `giro_scansioni_ricerca_build_20261128/registri/`): `a688328` →
+> `da53d1e`, `b3017e4` → `bd0a3c7`, `2bdba4d` → `cff16db`, `8aba576` → `fdbf30e`, `965c233` → `d07eb23`, con lo stesso codice.
 
 ## 1. Le versioni
 
@@ -22,7 +24,7 @@
 | Mac build 4, iPad build 67 | `8d05735` | 2026-11-21/22 | modulo dell'impaginazione con la pagina come si mostra (cura 67), sommario fittizio corretto nel tronco comune (BANCO_OCR § 45) |
 | (laboratorio) | `bc6605a` | 2026-11-24 | stessa catena della build 4 (solo documenti e laboratorio dopo `8d05735` fino a qui) |
 | (laboratorio, non caricata) | `e6b2cdf` | 2026-11-26 | ricerca per parole pesate, blocco corto, salto per numero (decisione 29); letture del banco identiche al byte (BANCO_EMBEDDING § 12) |
-| oggi: candidata Mac build 5 | `83abb6c` (regola delle colonne da `fdbf30e`, nel laboratorio `8aba576`) | 2026-11-28 | griglia delle tabelle sulle scansioni, innesto delle regioni di Heron (colonne → corpo, righe di tabella → non classificate), Xiaomi-OCR-0 nel motore (voce provvisoria); `d07eb23` aggiunge la protezione dai blocchi ripetuti, solo per Xiaomi; `d339b2b` glosse in tabella non classificate e filetti dal primo pixel scuro (BANCO_OCR § 48) |
+| oggi: candidata Mac build 5 | `0b7d62c` (regola delle colonne da `fdbf30e`, nel laboratorio `8aba576`) | 2026-11-28 | griglia delle tabelle sulle scansioni, innesto delle regioni di Heron (colonne → corpo, righe di tabella → non classificate), Xiaomi-OCR-0 nel motore (voce provvisoria); `d07eb23` aggiunge la protezione dai blocchi ripetuti, solo per Xiaomi; `d339b2b` glosse in tabella non classificate e filetti dal primo pixel scuro; `0b7d62c` il blocco corto accanto a una glossa diventata corpo resta a sé (BANCO_OCR § 48; le ultime due misurate nella notte) |
 | oggi: candidata iPad build 68 | `94f8889` | 2026-11-28 | sezione «Ricerca» nelle Impostazioni: predefiniti prima le esatte, 20 passi, annuncio breve (`60f66ff`, più le correzioni della revisione: l'elenco non cambia, BANCO_EMBEDDING § 13) |
 
 ## 2. Scansioni del Mac: parole perse, per via e per materiale
@@ -82,7 +84,8 @@ con l'estensione 1,92, ruotate 1,82, scansioni vere 2,29 per cento.
 
 Livello B con l'estensione, pulita: GLM 2,06 → 1,44 (build 3); Apple 1,28 invariato fino alla build 4, oggi 1,46 (rumore del lettore sul
 testo ritrovato dalle colonne: 24 delle 35 parole in più sono una ripetizione vera della pagina, § 48). Ruotate: GLM 1,64 → 0,72. Xiaomi
-(laboratorio, `965c233`): banco 0,59, livello B 0,54, ruotate 0,10 (prima della protezione dai blocchi 2,40, 3,92 e 32,12).
+(laboratorio, `d07eb23`): banco 0,59, livello B 0,54, ruotate 0,10 (prima della protezione dai blocchi 2,40, 3,92 e 32,12, misurati su `a688328`, cioè
+anche senza le migliorie delle colonne e delle tabelle: *non omogeneo*).
 
 ## 4. Titoli, note legate, tabelle, segni di paragrafo (banco del giro 1, pulita)
 
@@ -106,7 +109,7 @@ contro la pagina): i numeri di oggi riportano le due cose separate.
 
 | versione | voci d'indice (1.250) | parole proprie (352) | voci dei codici (500) | citazioni (300) | articolo col codice (200) | paragrafo (100) | paragrafo |
 |---|---|---|---|---|---|---|---|
-| iPad build 66 e 67 (frase intera, esatte in ordine di lettura) | 0,17 / 0,26 | 0,00 / 0,00 | 0,02 / 0,03 | 0,00 / 0,00 | 0,00 / 0,00 | 0,25 / 0,49 | § 12.1 «prima» |
+| iPad build 66 e 67 (frase intera, esatte in ordine di lettura; *dedotto*: misurato sul codice della ricerca di prima, nessuna corsa su `814b562`) | 0,17 / 0,26 | 0,00 / 0,00 | 0,02 / 0,03 | 0,00 / 0,00 | 0,00 / 0,00 | 0,25 / 0,49 | § 12.1 «prima» |
 | `e6b2cdf` (decisione 29: prima i passi, 50) | 0,37 / 0,78 | 0,14 / 0,40 | 0,45 / 0,76 | 0,27 / 0,40 | 1,00 / 1,00 | 1,00 / 1,00 | § 12.1 «dopo» |
 | oggi, predefiniti di `94f8889` (prima le esatte, 20) | 0,33 / 0,78 | 0,14 / 0,40 | 0,45 / 0,75 | 0,27 / 0,40 | 1,00 / 1,00 | 1,00 / 1,00 | BANCO_EMBEDDING § 13 |
 | oggi, con «prima i passi» | 0,37 / 0,78 | 0,14 / 0,40 | 0,45 / 0,76 | 0,27 / 0,40 | 1,00 / 1,00 | 1,00 / 1,00 | BANCO_EMBEDDING § 13 |
@@ -119,21 +122,22 @@ posto; «prima la frase esatta» 0,393 (BANCO_EMBEDDING § 13.2).
 
 | misura | versione | valore | paragrafo |
 |---|---|---|---|
-| ricerca nella libreria, Mac, 55 libri | build 67 (frase intera) | mediana 0,03 s, 90° percentile 0,06 s | BANCO_EMBEDDING § 12.5 |
+| ricerca nella libreria, Mac, 55 libri | codice della build 67 dell'iPad (frase intera), misurato sul Mac | mediana 0,03 s, 90° percentile 0,06 s | BANCO_EMBEDDING § 12.5 |
 | ricerca nella libreria, Mac | `e6b2cdf` | mediana 0,20 s, 90° percentile 0,85 s | BANCO_EMBEDDING § 12.5 |
 | indice delle parole, volume più grande, Mac | `e6b2cdf` | 0,10 s (testo normalizzato 0,53 s), ricerca 7 ms in media | BANCO_EMBEDDING § 12.1 |
-| via delle scansioni, lettura di Apple | fotografia | 0,28 s a pagina | BANCO_OCR § 37 |
+| via delle scansioni, lettura di Apple | fotografia | 0,28 s e 4 J a pagina | BANCO_OCR § 37, T29 (energia con la telemetria di prima della correzione del § 47) |
+| via delle scansioni, GLM | fotografia | 11,7 s e 650 J a pagina | BANCO_OCR § 37, T29 (idem) |
 | energia dei lettori del laboratorio (non dell'app) | — | Granite 170 J, Surya 210 J, GLM a piena precisione 500 J a pagina | BANCO_OCR § 47, frase 29 |
 | ricerca nella libreria, iPad A14 | `94f8889` | mediana almeno 0,44 s, 90° percentile almeno 1,9 s (*dedotto* dal Mac col rapporto a un nucleo, circa 2,2) | BANCO_EMBEDDING § 13.3 |
 | prima ricerca di più parole nel volume più grande, iPad A14 | `94f8889` | almeno 1,4 s; poi circa 15 ms (*dedotto*) | BANCO_EMBEDDING § 13.3 |
-| Xiaomi-OCR-0 nel motore dell'app, Mac (laboratorio) | `a688328` | 6,4 e 8,6 s a pagina col caricamento, due pagine; picco 2,07 GB | BANCO_OCR § 48 |
+| Xiaomi-OCR-0 nel motore dell'app, Mac (laboratorio) | `e6b2cdf` + il lavoro poi entrato in `a688328` (oggi `da53d1e`) | 6,4 e 8,6 s a pagina col caricamento, due pagine; picco 2,07 GB | BANCO_OCR § 48 |
 
 *Non omogeneo*: l'energia della frase 29 è dei lettori del laboratorio, non della via dell'app (la via GLM dell'app è esclusa dalla serie
 d'energia per decisione del maintainer del 25 novembre). Sull'iPad i tempi della ricerca non sono mai stati misurati (*non misurato*).
 
 ## 7. Valori corretti o tolti nella storia
 
-| misura | valore di prima | commit di prima | valore corretto | commit e paragrafo della correzione |
+| misura | valore di prima | fonte di prima (paragrafo o commit) | valore corretto | commit e paragrafo della correzione |
 |---|---|---|---|---|
 | tabelle annunciate dalla via delle scansioni | 17-18 su 19 (un campione di 20 pagine) | `4e470ce` (§ 44) | 24, 16, 22 su 69 (estratti contigui) | § 47, frase 7 (giro «chiusura per la radio») |
 | energia a pagina, Granite / Surya / GLM a piena precisione | 131-143 / 190-195 / 330-372 J | § 16, T7 | 167-168 / 210-211 / 493-496 J | § 47, frase 29 (la telemetria si aggiorna una volta al minuto) |
@@ -155,7 +159,10 @@ La ricerca nella storia del repo dei numeri cambiati (`git log -S`) è cominciat
 
 ## 9. Da completare (giro di misura sulle build nuove)
 
-- Le righe «oggi» sono le candidate delle build 68 e 5: dopo il caricamento, il numero della build al posto di «candidata».
+- Le righe «oggi» sono le candidate delle build 68 e 5: dopo il caricamento, il numero della build al posto di «candidata». Le correzioni `d339b2b` e
+  `0b7d62c` della candidata della build 5 cambiano poche pagine e si misurano nella notte del 28-29 novembre.
+- Nella ricerca, «fra i primi dieci» coi predefiniti (esatte prima) è un limite superiore (BANCO_EMBEDDING § 13, «una cautela»): non va messo in fila
+  con le righe di prima senza questa avvertenza.
 - La stima pesata sul corpus per le build 3 e 4.
 - I tempi della ricerca sull'iPad e i tempi e l'energia della via delle scansioni dell'app sulle build nuove.
 - La ricerca completa nella storia del repo dei numeri poi corretti o tolti, fino alla migrazione a Swift.
