@@ -4007,7 +4007,7 @@ scarta quasi due tabelle su tre di quelle che il modello vede sulle scansioni (f
 > `fdbf30e`, `965c233` → `d07eb23`, con lo stesso codice (cambiano righe di commento). Le misure di `8aba576` sono quelle della regola delle colonne;
 > dopo vengono tre correzioni chieste dalle revisioni indipendenti (`d339b2b`: glosse dentro una tabella non classificate, filetti contati dal primo
 > pixel scuro; `0b7d62c` e `b978628`: il titolo corto accanto a una glossa diventata corpo resta a sé, solo nelle regioni di titolo di Heron), misurate
-> nella notte (in fondo al paragrafo). Strumenti: `migliorie/strumenti/misure_m.py` (`a47ed856…`), `vere_m.py`
+> col codice di main il 28 pomeriggio, sotto via libera del maintainer (in fondo al paragrafo). Strumenti: `migliorie/strumenti/misure_m.py` (`a47ed856…`), `vere_m.py`
 > (`ea517fb6…`), `tabella_m.py` (`94f546ed…`), `globale/strumenti/rumore.py` (`c8bb2d90…`), metro dei blocchi `chiusura_radio/strumenti/blocchi.py`
 > (`6fc24db9…`, prova del metro: 16 casi su 16) col pilota `giro_scansioni_ricerca_build_20261128/strumenti/blocchi_stati.py` (`f17963ca…`), estratti delle
 > tabelle `guardia_per_regione.py` (`623a5775…`), stima pesata `pesata_corpus.py` (`3b4cfd56…`, uscita `misure/20261128_pesata_corpus_spente_8aba576.txt`),
@@ -4122,5 +4122,53 @@ due pagine d'indice, dove Xiaomi legge come note molte righe brevi e le altre le
 indipendente). Sulle tabelle del banco è un poco indietro. La voce provvisoria del catalogo dice ora questi numeri e questo difetto, con la dimensione della conversione per il
 motore dell'app (1.038.579.744 byte; `83abb6c` e `ee794ed`, rilievi delle revisioni: dava la dimensione e i numeri della conversione del 19 novembre). La sonda
 dei tempi (6,4 e 8,6 secondi a pagina, picco 2,07 GB) è stata fatta col codice di `e6b2cdf` più il lavoro poi entrato in `a688328` (oggi `da53d1e`), su due
-pagine, col caricamento, a Mac non fermo. La degradata e i tempi a Mac fermo: notte del 28-29 novembre (in fondo al paragrafo). La proposta per il maintainer è nel referto del giro e nella decisione 32: Xiaomi resta provvisorio, GLM resta il
+pagine, col caricamento, a Mac non fermo. La degradata e i tempi a Mac fermo sono in fondo al paragrafo. La proposta per il maintainer è nel referto del giro e nella decisione 32: Xiaomi resta provvisorio, GLM resta il
 lettore preimpostato.
+
+**Il codice di main** (campo; `5ef516d`, cioè `b978628` più i rami della ricerca e dei documenti, che non toccano la via delle scansioni; officina
+`20261128_5ef516d_mac4+`, compilata dalla coda alle 15:56 del 28 novembre; sotto via libera del maintainer, col Mac non usato da altri; uscite in
+`uscite/20261128_vialibera_5ef516d/` e negli stati `20261128_5ef516d_mac4+_*`; strumenti con le impronte di sopra, più `differenze_letture.py`
+`661daae8…` e `stato_xiaomi_degradata_come_glm.sh` `7ca66bdc…`). A confronto con `8aba576` (oggi `fdbf30e`):
+
+- **Identità** (`identita_uscite.py` `10937143…`): 2.336 letture su 2.379 identiche. Le 43 diverse hanno le stesse parole nello stesso ordine e
+  cambiano solo il ruolo di 1.933 parole, da corpo a non classificate. Ogni parte che cambia ha il suo contatore nell'innesto: 193 glosse dentro una
+  tabella (`d339b2b`) e 27 titoli corti tenuti a sé (`b978628`). In più, sulla forma degradata del documento delle tabelle del banco, c'è una tabella
+  annunciata per errore in meno, con Apple e con GLM (i filetti contati dal primo pixel scuro, `d339b2b`). Nessun'altra differenza.
+- **Banco, livello B con l'estensione, ruotate, scansioni vere**: parole perse, rumore, note trovate e agganciate, titoli e testatine identici su
+  tutte le vie; sulla degradata del banco le tabelle in più scendono da 3 a 2, con Apple e con GLM.
+- **Metro dei blocchi**: difetti identici (810, 751, 730, 781). Le fusioni di due unità diverse in un blocco scendono da 33, 38, 29, 31 a 29, 34,
+  27, 27: sono i titoli corti, non più fusi col corpo. Nessun'altra voce cambia.
+- **Estratti delle tabelle** (su 69; nessuna in più sulle pagine con tabelle): Apple pulita 55, Apple degradata 51, GLM pulita 51, Xiaomi pulita 52,
+  Xiaomi degradata 48.
+
+Esito per la decisione 30: nessuna regressione, e la regola delle colonne resta accesa nella build 5 del Mac.
+
+**Xiaomi sulla degradata** (campo; lettore vivo, stessa conversione e stesso motore di sopra; stato di misura di soli collegamenti
+`20261128_5ef516d_mac4+_xiaomi_degradata_come_glm`; banco, 185 pagine; GLM e Apple dello stesso codice):
+
+| | Xiaomi degradata | Xiaomi pulita | GLM degradata | Apple degradata |
+|---|---|---|---|---|
+| parole perse (per cento) | 1,23 | 1,13 | 1,38 | 1,46 |
+| rumore udibile (per mille) | 0,53 | 0,59 | 1,31 | 1,86 |
+| note trovate / agganciate | 206 / 54 | 203 / 69 | 210 / 54 | 199 / 23 |
+| tabelle riconosciute su 19 / in più | 16 / 3 | 15 / 5 | 17 / 2 | 17 / 2 |
+| titoli trovati su 80 / in più | 29 / 123 | 29 / 113 | 28 / 131 | 31 / 91 |
+
+**I tempi a Mac fermo** (campo; 28 novembre 15:56-16:10, alimentazione collegata dalle 15:57, carico all'inizio 2,3; tre estratti delle tabelle,
+41 pagine della forma pulita; lettori vivi senza cache, officina sotto `sandbox-exec`, `/usr/bin/time -l` per il picco della memoria; uscite in
+`uscite/20261128_vialibera_5ef516d/B1_tempi/`):
+
+| | secondi a pagina | per estratto | prima pagina | picco di memoria |
+|---|---|---|---|---|
+| Xiaomi | 7,95 | da 7,7 a 8,3 | da 7,7 a 8,6 | da 2,09 a 2,24 GB |
+| GLM | 11,78 | da 11,4 a 12,2 | da 11,8 a 12,4 | da 2,56 a 2,74 GB |
+| Apple | 0,36 | da 0,33 a 0,38 | da 0,4 a 0,5 | da 0,54 a 0,58 GB |
+
+La prima pagina non costa più delle altre: il caricamento del modello pesa poco sul totale. La voce provvisoria del catalogo («da 6 a 9 secondi a
+pagina») resta giusta; la frase dei lettori dell'app per GLM («circa undici secondi a pagina») sta un poco sotto la misura di oggi.
+
+**Un passo fermo** (campo). Nella coda, sugli estratti, una lettura di Apple (Vision) non è mai tornata. L'officina è rimasta 88 minuti in attesa
+senza lavorare (3 secondi di processore), mentre in un altro processo Xiaomi leggeva dal vivo la degradata. Fermato quel processo, l'estratto è stato
+rifatto in uno stato nuovo (`20261128_5ef516d_mac4+_xiaomi_ripresa`): 5 secondi, con una lettura identica a quella dello stesso estratto col codice
+`965c233`; le altre 12 letture rifatte sono identiche a quelle della coda. Nell'app la stessa attesa (`LetturaScansioni.attendi`) non ha un tempo massimo (dedotto dal codice): la proposta è
+nel referto del giro.

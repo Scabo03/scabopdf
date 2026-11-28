@@ -1846,10 +1846,12 @@ col metro dei blocchi: qualche blocco spezzato o fuso in più (difetti sul banco
 GLM pulita, da 775 a 781 con GLM degradata), quasi tutti sul testo prima taciuto. L'unico peggioramento su qualcosa che prima si sentiva erano uno o due blocchi
 corti per configurazione, nel codice a due colonne del banco, prima a sé e poi uniti al testo ritrovato: la restrizione `b978628` tiene a sé i titoli corti
 che stanno in regioni di titolo di Heron (dedotto dal codice e dal suo test, e dallo specchio dell'innesto della revisione: 14 titoli su 18 e nessun pezzo
-di frase; la misura del banco è della notte). Resta fuso un titolo dentro un nodo di corpo lungo (pagina 2, forma degradata), che nessuna regola sui
+di frase; misurato poi sul banco: le fusioni di due unità in un blocco scendono di 2-4 per configurazione). Resta fuso un titolo dentro un nodo di corpo lungo (pagina 2, forma degradata), che nessuna regola sui
 blocchi corti tocca. Sugli estratti, contate dove l'annuncio si sente, le tabelle sono 53, 47 e 49, e qualche annuncio cade una pagina prima o si impila con altri. Tre modi
 di restringere la regola in tutto (tutte note; note solo col corpo delle note della pagina; non classificate) sono andati peggio. La regola va nella build 5 del
-Mac solo se la misura della notte sulle correzioni `d339b2b`, `0b7d62c` e `b978628` non trova peggioramenti; il giro e la revisione indipendente delle
+Mac solo se la misura sulle correzioni `d339b2b`, `0b7d62c` e `b978628` non trova peggioramenti (fatta col codice di main il 28 pomeriggio, sotto via
+libera: nessun peggioramento; le 43 letture su 2.379 che cambiano cambiano solo il ruolo di parti che le correzioni dovevano toccare; `docs/BANCO_OCR.md`
+§ 48, in fondo); il giro e la revisione indipendente delle
 Parti 1 e 2 inclinano a tenerla, ma la decisione 24 va letta dal maintainer: **conta come regressione per chi ascolta anche un difetto che sta solo su testo
 che prima non si sentiva affatto?** Se la risposta arriva prima del caricamento ed è sì, la build 5 parte con la miglioria `colonne` spenta; se arriva dopo,
 si spegne nella build successiva; se è no, si tiene coi residui dichiarati (`docs/BANCO_OCR.md` § 48). I libri già nella libreria restano letti come prima finché la loro lettura salvata vale: un libro scansionato
@@ -1910,7 +1912,8 @@ e GLM non cambia. Per offrirlo agli utenti bisognerebbe pubblicare la conversion
 fermato lì, e la voce del catalogo resta **provvisoria**, senza scaricamento, come le altre (decisione 22); l'app non lo offre fra i lettori. Nel motore
 dell'app ha le protezioni di GLM e una sua, contro i blocchi di righe ripetuti di fila (si incantava riscrivendo la pagina intera). Sul banco perde meno parole di
 GLM e fa molto meno rumore udibile, ma sulle pagine d'indice legge come note molte righe brevi (52 false note su due pagine; sul resto del banco 60
-contro 57) e annuncia un poco meno di tabelle. Il lettore preimpostato resta GLM. La proposta, coi numeri e col
+contro 57) e annuncia un poco meno di tabelle. Sulle scansioni rovinate perde 1,23 parole su cento (GLM 1,38); a Mac fermo legge circa 8 secondi a pagina
+(GLM circa 12), con un picco di memoria di 2,2 GB (GLM 2,7). Il lettore preimpostato resta GLM. La proposta, coi numeri e col
 tempo da mostrare prima della lettura, è nel referto del giro.
 
 ---
