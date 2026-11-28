@@ -25,9 +25,24 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
         case modelloNonInstallato
         case modelloNonCaricato
         case pdfNonLeggibile
+        /// Gli stessi tre problemi per un lettore generativo diverso da GLM (giro «scansioni, ricerca e build», 2026-11-28): le
+        /// parole col suo nome. I casi di GLM restano quelli di prima, con le loro parole.
+        case altroLettoreNonInstallato(LettoreScansioni)
+        case altroLettoreNonCaricato(LettoreScansioni)
+        case altroLettoreSenzaMemoria(LettoreScansioni, disponibileGB: Int)
 
         public var errorDescription: String? {
             switch self {
+            case .altroLettoreNonInstallato(let l):
+                return "\(l.nome.prefix(1).uppercased() + l.nome.dropFirst()) non è installato su questo Mac. Puoi leggere le scansioni "
+                    + "con la lettura del testo di Apple."
+            case .altroLettoreNonCaricato(let l):
+                return "\(l.nome.prefix(1).uppercased() + l.nome.dropFirst()) non si è caricato, forse per la memoria o per un file del "
+                    + "modello danneggiato. Puoi leggere le scansioni con la lettura del testo di Apple."
+            case .altroLettoreSenzaMemoria(let l, let gb):
+                return "Per leggere le scansioni con \(l.nome) servono circa \(EstrattoreScansioni.memoriaGB(per: l)) gigabyte di memoria "
+                    + "libera, e adesso il Mac ne ha circa \(gb). Puoi chiudere altre app e riprovare, oppure leggere le scansioni con la "
+                    + "lettura del testo di Apple, che chiede molta meno memoria."
             case .memoriaInsufficiente(let gb):
                 return "Per leggere le scansioni con GLM lettura pagine servono circa \(EstrattoreScansioni.memoriaGlmGB) gigabyte di memoria libera, "
                     + "e adesso il Mac ne ha circa \(gb). Puoi chiudere altre app e riprovare, oppure leggere le scansioni con la "
@@ -62,6 +77,15 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
 
     /// La memoria libera che serve a GLM-OCR (misurata al banco: circa 7,5 GB al massimo, referto del giro § 2).
     public static let memoriaGlmGB = 8
+
+    /// La memoria libera che serve a un lettore generativo. Xiaomi-OCR-0 ha la soglia di GLM finché il suo picco non è
+    /// misurato nel motore dell'app (nel dubbio la soglia più prudente).
+    public static func memoriaGB(per lettore: LettoreScansioni) -> Int {
+        switch lettore {
+        case .apple: return 0
+        case .glm, .xiaomi: return memoriaGlmGB
+        }
+    }
 
     public let lettore: LettoreScansioni
     public let via: ViaScansioni
@@ -215,14 +239,16 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
         // Un PDF con testo (anche con copertine, pagine bianche o figure) resta quello dell'iPad, al byte.
         guard Self.serveLettura(senzaTesto: vuote, totale: totale) else { onPageExtracted(totale, totale); return ex }
         let intera = Self.scansioneIntera(senzaTesto: vuote.count, totale: totale)
-        if lettore == .glm {
+        if lettore.profilo != nil {
             guard let pesiGlm, FileManager.default.fileExists(atPath: pesiGlm.pesi.path),
                   FileManager.default.fileExists(atPath: pesiGlm.proiettore.path) else {
-                problema = .modelloNonInstallato; throw Problema.modelloNonInstallato
+                let p: Problema = lettore == .glm ? .modelloNonInstallato : .altroLettoreNonInstallato(lettore)
+                problema = p; throw p
             }
             if cacheGlm == nil, let libera = Self.memoriaSimulata ?? Self.memoriaDisponibile(),
-               libera < UInt64(Self.memoriaGlmGB) << 30 {
-                let p = Problema.memoriaInsufficiente(disponibileGB: Int(libera >> 30))
+               libera < UInt64(Self.memoriaGB(per: lettore)) << 30 {
+                let gb = Int(libera >> 30)
+                let p: Problema = lettore == .glm ? .memoriaInsufficiente(disponibileGB: gb) : .altroLettoreSenzaMemoria(lettore, disponibileGB: gb)
                 problema = p; throw p
             }
         }
@@ -345,20 +371,21 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
         let secondiImpaginazione = Date().timeIntervalSince(th)
         var letta = PaginaLetta(pagina: indice, larghezza: W, altezza: H, righe: righe, testoGlm: nil,
                                 secondiApple: secondiApple, secondiGlm: 0, secondiImpaginazione: secondiImpaginazione, guardia: nil)
-        if lettore == .glm, let pesiGlm, !glmFermo {
+        // I lettori generativi (GLM, Xiaomi): lo stesso percorso, col profilo del lettore (giro «scansioni, ricerca e build»).
+        if let profilo = lettore.profilo, let pesiGlm, !glmFermo {
             let fileGlm = cacheGlm?.appendingPathComponent("p\(indice).json")
             let salvata = fileGlm.flatMap { try? JSONDecoder().decode(PaginaLetta.self, from: Data(contentsOf: $0)) }
             var testo = salvata?.testoGlm
             letta.secondiGlm = salvata?.secondiGlm ?? 0
             // La memoria si guarda a ogni pagina: se a libro iniziato non basta più, questa pagina la legge Apple.
-            let pocaMemoria = cacheGlm == nil && (Self.memoriaSimulata ?? Self.memoriaDisponibile()).map { $0 < UInt64(Self.memoriaGlmGB) << 30 } == true
+            let pocaMemoria = cacheGlm == nil && (Self.memoriaSimulata ?? Self.memoriaDisponibile()).map { $0 < UInt64(Self.memoriaGB(per: lettore)) << 30 } == true
             if testo == nil, pocaMemoria, primaPaginaLetta { soloApple += 1 }
             if testo == nil, !(pocaMemoria && primaPaginaLetta) {
                 guard let png = LetturaScansioni.png(img) else { return letta }
                 do {
                     Self.filaGlm.lock()
                     defer { Self.filaGlm.unlock() }
-                    let l = try GlmOcr.leggi(png: png, pesi: pesiGlm.pesi, proiettore: pesiGlm.proiettore, annullata: isCancelled)
+                    let l = try GlmOcr.leggi(png: png, pesi: pesiGlm.pesi, proiettore: pesiGlm.proiettore, profilo: profilo, annullata: isCancelled)
                     testo = l.testo
                     letta.secondiGlm = l.secondiCaricamento + l.secondiLettura
                     if let fileGlm {
@@ -370,7 +397,10 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
                     throw GlmOcr.Problema.annullata
                 } catch GlmOcr.Problema.pesiNonCaricati, GlmOcr.Problema.proiettoreNonCaricato, GlmOcr.Problema.contestoNonCreato {
                     // Alla prima pagina: l'importazione lo dice e propone Apple. A libro iniziato: Apple per le pagine che restano.
-                    guard primaPaginaLetta else { problema = .modelloNonCaricato; throw Problema.modelloNonCaricato }
+                    guard primaPaginaLetta else {
+                        let p: Problema = lettore == .glm ? .modelloNonCaricato : .altroLettoreNonCaricato(lettore)
+                        problema = p; throw p
+                    }
                     glmFermo = true
                     soloApple += 1
                 } catch {
@@ -393,7 +423,7 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
                     c["glm_fermato_presto"] = 1
                     g = (g.righe, c)
                 } else {
-                    let filtrato = LetturaScansioni.senzaRipetizioni(LetturaScansioni.filtraNotazione(testo), righeApple: righe)
+                    let filtrato = LetturaScansioni.senzaRipetizioni(LetturaScansioni.filtraNotazione(testo, lettore: lettore), righeApple: righe)
                     g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: filtrato.testo)
                     var c = g.conti
                     c["righe_ripetute_tolte"] = filtrato.tolte

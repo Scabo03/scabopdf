@@ -129,6 +129,33 @@
       }
     },
     {
+      "id": "xiaomi-ocr-0",
+      "nome": "Xiaomi lettura pagine",
+      "ruolo": "lettore_scansioni",
+      "descrizione": "Lettore di pagine piccolo e preciso: al banco del progetto sbaglia meno lettere e perde meno parole di GLM lettura pagine, ed è il migliore fra i lettori che possono entrare nell'app. Girerebbe dentro l'app, con lo stesso motore di GLM, senza programmi separati e senza internet. Per ora non si scarica: l'editore pubblica i pesi solo in una forma che l'app non usa, e la forma per l'app non ha ancora una fonte ufficiale con le sue impronte.",
+      "dimensioneByte": 1038577760,
+      "licenza": "Apache 2.0: libero anche per uso commerciale.",
+      "motore": "nativo_nell_app",
+      "requisiti": {
+        "macOSMinimo": "14.0",
+        "richiedeAppleSilicon": true,
+        "memoriaConsigliataGB": 8,
+        "nota": ""
+      },
+      "funzionaSenzaInternet": true,
+      "validazione": {
+        "validato": {
+          "numeri": "misure del 19 novembre 2026 su 185 pagine scansionate del banco del progetto, nella forma compressa che userebbe l'app: 0,05 lettere sbagliate su cento, 0,3 cifre sbagliate su cento, 0,9 parole perse su cento; circa 6 secondi a pagina."
+        }
+      },
+      "provenienza": {
+        "indirizzo": "https://huggingface.co/xiaomi-research/Xiaomi-OCR-0",
+        "versione": "revisione bbd8cf8d del 29 ottobre 2026, pesi ufficiali",
+        "editore": "Xiaomi"
+      },
+      "provvisoria": true
+    },
+    {
       "id": "apple-vision-documenti",
       "nome": "Struttura dei documenti di Apple",
       "ruolo": "ricostruttore_struttura_ordine",

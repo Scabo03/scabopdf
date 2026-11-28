@@ -62,7 +62,7 @@ final class FornitoreScansioniApp: FornitoreScansioni {
 
     func problema(di estrattore: ProgressReportingPdfExtractor) -> (messaggio: String, altroLettore: String?)? {
         guard let e = estrattore as? EstrattoreScansioni, let p = e.problema else { return nil }
-        let altro = p.propostaAltroLettore ? (e.lettore == .glm ? LettoreScansioni.apple.rawValue : nil) : nil
+        let altro = p.propostaAltroLettore ? (e.lettore != .apple ? LettoreScansioni.apple.rawValue : nil) : nil
         return (p.localizedDescription, altro)
     }
 

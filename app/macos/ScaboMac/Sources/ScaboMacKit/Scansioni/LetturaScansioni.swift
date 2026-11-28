@@ -47,12 +47,17 @@ public enum LettoreScansioni: String, Codable, CaseIterable, Sendable {
     case apple
     /// GLM-OCR (scaricato dal pannello dei modelli), con la geometria e la guardia della lettura di Apple.
     case glm
+    /// Xiaomi-OCR-0 (giro «scansioni, ricerca e build», 2026-11-28): lo stesso motore e la stessa via di GLM, col suo profilo
+    /// (`ProfiloLettore.xiaomi`). Voce provvisoria del catalogo finché non c'è una fonte ufficiale del GGUF: l'app non lo scarica,
+    /// lo usa solo la riga di comando del laboratorio coi pesi convertiti dal banco.
+    case xiaomi
 
     /// Il nome nelle parole dell'app: quello della scheda del catalogo (`catalogo.json`), così si ritrova nel pannello.
     public var nome: String {
         switch self {
         case .apple: return "lettura del testo di Apple"
         case .glm: return "GLM lettura pagine"
+        case .xiaomi: return "Xiaomi lettura pagine"
         }
     }
 
@@ -61,6 +66,25 @@ public enum LettoreScansioni: String, Codable, CaseIterable, Sendable {
         switch self {
         case .apple: return "apple-vision-testo"
         case .glm: return "glm-ocr"
+        case .xiaomi: return "xiaomi-ocr-0"
+        }
+    }
+
+    /// Il profilo del motore, per i lettori generativi (nil per la lettura di Apple).
+    public var profilo: ProfiloLettore? {
+        switch self {
+        case .apple: return nil
+        case .glm: return .glm
+        case .xiaomi: return .xiaomi
+        }
+    }
+
+    /// I nomi dei due file nella cartella dei pesi (pesi, proiettore), per i lettori generativi.
+    public var fileDeiPesi: (pesi: String, proiettore: String)? {
+        switch self {
+        case .apple: return nil
+        case .glm: return ("GLM-OCR-Q8_0.gguf", "mmproj-GLM-OCR-Q8_0.gguf")
+        case .xiaomi: return ("Xiaomi-OCR-0-Q8_0.gguf", "mmproj-Xiaomi-OCR-0-f16.gguf")
         }
     }
 }
@@ -69,9 +93,10 @@ public enum LettoreScansioni: String, Codable, CaseIterable, Sendable {
 public enum ViaScansioni: String, Codable, CaseIterable, Sendable {
     case v1, v5, v2
 
-    /// La via dell'app per ciascun lettore, scelta con le misure del banco (referto del giro, § 2).
+    /// La via dell'app per ciascun lettore, scelta con le misure del banco (referto del giro, § 2). I lettori generativi hanno la via
+    /// di GLM (il loro testo sulla geometria delle righe di Apple).
     public static func predefinita(per lettore: LettoreScansioni) -> ViaScansioni {
-        lettore == .glm ? .v2 : .v5
+        lettore.profilo != nil ? .v2 : .v5
     }
 }
 
@@ -568,6 +593,27 @@ public enum LetturaScansioni {
         t = sostituisci(#"\$\^\{([0-9]{1,3})\}\$|(?<![A-Z])\$(?!\s?[0-9])"#, in: t) { g in g[1].isEmpty ? "" : "$^{\(g[1])}$" }
         // Spazi doppi lasciati dai segni tolti (gli a capo restano).
         t = t.replacingOccurrences(of: #"[ \t]{2,}"#, with: " ", options: .regularExpression)
+        return t
+    }
+
+    /// IL FILTRO DELLA NOTAZIONE per il lettore che ha scritto il testo: per GLM quello di sempre (`filtraNotazione(_:)`), al byte;
+    /// per Xiaomi-OCR-0 prima le sue forme portate a quelle che il filtro conosce (`notazioneXiaomi`), poi lo stesso filtro.
+    public static func filtraNotazione(_ testo: String, lettore: LettoreScansioni) -> String {
+        lettore == .xiaomi ? filtraNotazione(notazioneXiaomi(testo)) : filtraNotazione(testo)
+    }
+
+    /// LE FORME DI XIAOMI-OCR-0 (giro «scansioni, ricerca e build», 2026-11-28). Misurate sulle sue uscite del banco (185 pagine
+    /// pulite, llama.cpp, campo): 317 formule fra «\(» e «\)», quasi tutte apici di richiamo («\( ^{12} \)»), nessuna fra «\[» e
+    /// «\]», 2 fra dollari; 1.925 segni delle tabelle in OTSL (la forma che la sua richiesta ufficiale chiede); 148 cancelletti di
+    /// titolo e 26 grassetti, che il filtro toglie già. Una formula fra «\(» e «\)» (o fra «\[» e «\]») diventa la stessa formula
+    /// fra dollari, che il filtro tratta come quelle di GLM (l'apice di un richiamo resta nella forma della catena); i segni OTSL
+    /// diventano uno spazio, e la fine di una riga della tabella («<nl>») un a capo. Nessuna lettera e nessuna cifra si toglie.
+    static func notazioneXiaomi(_ testo: String) -> String {
+        var t = testo
+        t = sostituisci(#"\\\((.{0,120}?)\\\)"#, in: t) { g in "$" + g[1] + "$" }
+        t = sostituisci(#"\\\[(.{0,120}?)\\\]"#, in: t) { g in "$" + g[1] + "$" }
+        t = t.replacingOccurrences(of: "<nl>", with: "\n")
+        t = t.replacingOccurrences(of: #"</?(?:otsl|fcel|ecel|lcel|ucel|xcel|ched|rhed|srow)>"#, with: " ", options: .regularExpression)
         return t
     }
 
