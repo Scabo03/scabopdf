@@ -131,15 +131,20 @@ final class BookSearchUITests: XCTestCase {
         let app = launch()
         open(app, "Libro tastiera due", showing: "Capitolo primo del libro due")
         openSearch(app)
-        // Dal giro «la ricerca» (2026-11-26) una ricerca di più parole dà prima i passi, poi le occorrenze esatte.
-        search(app, "PIENA del fiume", expect: "Poi 2 risultati esatti, in ordine di lettura.")
-        XCTAssertTrue(item(app, "ricerca.passo.0").exists, "i passi con le parole cercate")
+        // Dal giro «la ricerca» (2026-11-26) una ricerca di più parole dà anche i passi; dal giro «scansioni, ricerca e build»
+        // (2026-11-28), con le impostazioni predefinite, prima le occorrenze esatte, poi i passi.
+        search(app, "PIENA del fiume", expect: "2 risultati esatti, in ordine di lettura. Poi ")
         let first = item(app, "ricerca.risultato.0"), second = item(app, "ricerca.risultato.1")
-        // Le righe dei passi vengono prima: se le occorrenze restano sotto il bordo, la tabella scorre (revisione del giro).
+        // Se le occorrenze restano sotto il bordo, la tabella scorre (revisione del giro «la ricerca»).
         if !(first.exists && second.exists) { app.swipeUp() }
         XCTAssertTrue(first.waitForExistence(timeout: 3) && second.waitForExistence(timeout: 3))
         XCTAssertFalse(first.label.contains("Nella nota"), first.label)
         XCTAssertTrue(second.label.contains("Nella nota 1"), "dice che è in una nota: «\(second.label)»")
+        // I passi con le parole cercate, dopo le esatte (scorrendo se restano sotto il bordo).
+        let passage = item(app, "ricerca.passo.0")
+        if !passage.exists { app.swipeUp() }
+        XCTAssertTrue(passage.waitForExistence(timeout: 3), "i passi con le parole cercate")
+        if !second.isHittable { app.swipeDown() }
         XCTAssertTrue(second.label.contains("Capitolo primo del libro due"), "la sezione: «\(second.label)»")
         second.tap()
         XCTAssertTrue(searchBar(app).waitForNonExistence(timeout: 8), "la finestra si chiude")

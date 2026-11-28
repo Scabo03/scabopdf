@@ -278,6 +278,44 @@ final class LibrarySearchTests: XCTestCase {
         XCTAssertTrue(BookSearchWording.librarySummary(r).hasPrefix("10 libri con le parole di «gufo torre»"))
     }
 
+    /// «Prima la frase esatta» (impostazioni della ricerca, giro «scansioni, ricerca e build»): i libri con la frase vengono prima
+    /// anche quando un libro con le sole parole pesa di più; dentro i due gruppi l'ordine resta quello per pertinenza.
+    func test_library_exactFirst_booksWithThePhraseFirst_thenTheOthers() {
+        var texts = ["a": "Il gufo grigio sul ramo.",
+                     "b": "Grigio il cielo, grigio il mare; un gufo, poi un gufo, poi un altro gufo."]
+        for k in 0..<6 { texts["f\(k)"] = "Altro testo qualunque, numero \(k)." }
+        var lib = wordLibrary(texts)
+        let rel = LibrarySearch.run("gufo grigio", options: BookSearchOptions(), books: lib.list) { lib.files[$0] }
+        XCTAssertEqual(rel.books.map(\.documentId), ["b", "a"], "per pertinenza: prima il libro dove le parole pesano di più")
+        XCTAssertEqual(BookSearchWording.librarySummary(rel),
+                       "2 libri con le parole di «gufo grigio», i più pertinenti per primi. In uno c'è anche la frase intera: un risultato.")
+        let ex = LibrarySearch.run("gufo grigio", options: BookSearchOptions(), books: lib.list, order: .exactFirst) { lib.files[$0] }
+        XCTAssertEqual(ex.books.map(\.documentId), ["a", "b"])
+        XCTAssertEqual(BookSearchWording.librarySummary(ex),
+                       "2 libri con le parole di «gufo grigio»: prima quello con la frase intera, che la contiene una volta, poi gli altri, "
+                       + "i più pertinenti per primi.")
+        // Due libri con la frase: il gruppo detto col suo numero.
+        texts["c"] = "Un gufo grigio, e poi ancora un gufo grigio."
+        lib = wordLibrary(texts)
+        let two = LibrarySearch.run("gufo grigio", options: BookSearchOptions(), books: lib.list, order: .exactFirst) { lib.files[$0] }
+        XCTAssertEqual(two.books.last?.documentId, "b", "il libro con le sole parole dopo i due con la frase")
+        XCTAssertEqual(BookSearchWording.librarySummary(two),
+                       "3 libri con le parole di «gufo grigio»: prima i 2 con la frase intera, 3 risultati in tutto, poi gli altri; in "
+                       + "ciascun gruppo i più pertinenti per primi.")
+    }
+
+    func test_library_exactFirst_keepsTheSameBooks_underTheLimitOfTen() {
+        var texts: [String: String] = [:]
+        for k in 0..<14 { texts[String(format: "b%02d", k)] = k < 12 ? "Il gufo e la torre, \(k)." : "Altro testo \(k)." }
+        texts["z"] = "Il gufo torre alto."
+        let lib = wordLibrary(texts)
+        let rel = LibrarySearch.run("gufo torre", options: BookSearchOptions(), books: lib.list) { lib.files[$0] }
+        let ex = LibrarySearch.run("gufo torre", options: BookSearchOptions(), books: lib.list, order: .exactFirst) { lib.files[$0] }
+        XCTAssertEqual(Set(ex.books.map(\.documentId)), Set(rel.books.map(\.documentId)), "gli stessi libri, solo in un altro ordine")
+        XCTAssertEqual(ex.books.first?.documentId, "z", "il libro con la frase per primo")
+        XCTAssertEqual(ex.books.filter { $0.count == 0 }.count, LibrarySearch.wordOnlyBookLimit)
+    }
+
     func test_wording_summaryAndRows() {
         let files = libraryFiles()
         XCTAssertEqual(BookSearchWording.librarySummary(runLibrary("vento", whole: false, files: files)),

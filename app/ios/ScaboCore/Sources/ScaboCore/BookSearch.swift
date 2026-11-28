@@ -84,23 +84,30 @@ public struct BookSearchResult: Equatable, Sendable {
     public let totalCount: Int
     /// Le occorrenze in ordine di lettura (le prime `limit`).
     public let hits: [BookSearchHit]
-    /// Gli elementi (indici di segmento) dove comincia almeno un'occorrenza, in ordine: le fermate del rotore e dei tasti.
+    /// Gli elementi (indici di segmento) dove comincia almeno un'occorrenza, in ordine di lettura: di serie le fermate del rotore e
+    /// dei tasti (con «anche sui passi pertinenti» le fermate sono `stopIndices`).
     public let elementIndices: [Int]
     /// Le occorrenze che finiscono in un segmento dopo quello d'inizio (poche: le frasi che attraversano un confine), in
     /// ordine di lettura: servono a `hits(touching:)`, perché dentro una di esse, nell'ordine dei segmenti, possono
     /// cadere le occorrenze di altri flussi (una nota letta in mezzo al corpo), anche molte.
     private let spanningHits: [BookSearchHit]
-    /// I passi (giro «la ricerca», `WordSearch.swift`): i salti per numero, poi i segmenti ordinati per parole pesate. Stanno
-    /// solo nell'elenco dei risultati: il rotore, i valori «risultato N di M», le evidenze e ⌘G restano sulle occorrenze
-    /// esatte (`hits`, `elementIndices`), come prima.
+    /// I passi (giro «la ricerca», `WordSearch.swift`): i salti per numero, poi i segmenti ordinati per parole pesate. Di serie
+    /// stanno solo nell'elenco dei risultati: il rotore, i valori «risultato N di M» e ⌘G restano sulle occorrenze esatte (`hits`,
+    /// `elementIndices`), come prima; con «anche sui passi pertinenti» (impostazioni della ricerca) entrano nelle fermate
+    /// (`stopIndices`). Le evidenze restano sulle occorrenze esatte.
     public let passages: [BookSearchPassage]
     /// La domanda per numero riconosciuta nella ricerca («art. 2043 c.c.», «§ 12»), anche se il libro non ha quel numero.
     public let numberQuery: NumberQuery?
+    /// Le impostazioni della ricerca usate per questa ricerca (`SearchSettings`): l'ordine dell'elenco, le parole delle righe, le
+    /// fermate del rotore.
+    public let settings: SearchSettings
 
     init(query: String, normalizedQuery: String, options: BookSearchOptions, totalCount: Int, hits: [BookSearchHit],
-         elementIndices: [Int], passages: [BookSearchPassage] = [], numberQuery: NumberQuery? = nil) {
+         elementIndices: [Int], passages: [BookSearchPassage] = [], numberQuery: NumberQuery? = nil,
+         settings: SearchSettings = .standard) {
         self.passages = passages
         self.numberQuery = numberQuery
+        self.settings = settings
         self.query = query
         self.normalizedQuery = normalizedQuery
         self.options = options
@@ -108,6 +115,19 @@ public struct BookSearchResult: Equatable, Sendable {
         self.hits = hits
         self.elementIndices = elementIndices
         self.spanningHits = hits.filter { $0.endSegmentIndex > $0.segmentIndex }
+        // Le fermate si calcolano una volta: il parlato le chiede per ogni elemento.
+        if settings.rotorIncludesPassages {
+            var seen = Set<Int>(), out: [Int] = []
+            let jumps = passages.filter(\.isJump).map(\.segmentIndex)
+            let words = passages.filter { !$0.isJump }.map(\.segmentIndex)
+            let order = jumps + (settings.order == .passagesFirst ? words + elementIndices : elementIndices + words)
+            for i in order where seen.insert(i).inserted { out.append(i) }
+            self.stopIndices = out
+            self.stopRanks = Dictionary(uniqueKeysWithValues: out.enumerated().map { ($1, $0) })
+        } else {
+            self.stopIndices = elementIndices
+            self.stopRanks = [:]
+        }
     }
 
     public var isTruncated: Bool { hits.count < totalCount }
@@ -120,9 +140,61 @@ public struct BookSearchResult: Equatable, Sendable {
     }
     public var isEmptyQuery: Bool { normalizedQuery.isEmpty }
 
-    public static func empty(query: String, options: BookSearchOptions) -> BookSearchResult {
-        BookSearchResult(query: query, normalizedQuery: "", options: options, totalCount: 0, hits: [], elementIndices: [])
+    public static func empty(query: String, options: BookSearchOptions, settings: SearchSettings = .standard) -> BookSearchResult {
+        BookSearchResult(query: query, normalizedQuery: "", options: options, totalCount: 0, hits: [], elementIndices: [],
+                         settings: settings)
     }
+
+    // MARK: L'elenco e le fermate (giro «scansioni, ricerca e build»: impostazioni della ricerca)
+
+    /// I salti per numero (sempre in testa all'elenco).
+    public var jumps: [BookSearchPassage] { passages.filter(\.isJump) }
+    /// I passi per parole pesate.
+    public var wordPassages: [BookSearchPassage] { passages.filter { !$0.isJump } }
+    /// Vero se nell'elenco i passi per parole vengono prima delle corrispondenze esatte.
+    public var wordPassagesFirst: Bool { settings.order == .passagesFirst }
+
+    /// Le fermate del rotore «Risultati della ricerca» e di Comando G. Di serie le occorrenze esatte, elemento per elemento, in
+    /// ordine di lettura (`elementIndices`, come prima). Con «anche sui passi pertinenti» gli elementi dell'elenco dei risultati,
+    /// nell'ordine dell'elenco (salti, poi corrispondenze esatte e passi nell'ordine scelto), ciascuno una volta.
+    public let stopIndices: [Int]
+    /// Con le fermate nell'ordine dei risultati: il posto (da 0) di ogni fermata.
+    private let stopRanks: [Int: Int]
+
+    /// Vero se l'elemento è una fermata del rotore e di Comando G.
+    public func isStop(_ index: Int) -> Bool {
+        settings.rotorIncludesPassages ? stopRanks[index] != nil : elementIndices.contains(index)
+    }
+
+    /// La fermata successiva (`forward`) o precedente a `current`. Di serie la stessa di `adjacentElement` (ordine di lettura). Con
+    /// le fermate nell'ordine dei risultati: quella dopo (o prima) di `current` nell'elenco. Se `current` non è una fermata (chi
+    /// ascolta è andato avanti dopo un risultato), si riparte dall'ultima fermata raggiunta, `lastStop`: avanti la fermata dopo di
+    /// lei, indietro lei stessa (come nell'ordine di lettura, dove indietro si torna al risultato appena lasciato); senza un'ultima
+    /// fermata, la prima (o l'ultima).
+    public func adjacentStop(from current: Int, forward: Bool, lastStop: Int? = nil) -> Int? {
+        guard settings.rotorIncludesPassages else { return adjacentElement(from: current, forward: forward) }
+        guard !stopIndices.isEmpty else { return nil }
+        if let k = stopRanks[current] {
+            let j = forward ? k + 1 : k - 1
+            return stopIndices.indices.contains(j) ? stopIndices[j] : nil
+        }
+        if let last = lastStop, let k = stopRanks[last] {
+            if !forward { return last }
+            return stopIndices.indices.contains(k + 1) ? stopIndices[k + 1] : nil
+        }
+        return forward ? stopIndices.first : stopIndices.last
+    }
+
+    /// Il posto (da 1) dell'elemento fra le fermate nell'ordine dei risultati, e quante sono; `nil` se non è una fermata o se le
+    /// fermate sono le sole occorrenze esatte.
+    public func stopRank(inElement index: Int) -> (rank: Int, of: Int)? {
+        guard settings.rotorIncludesPassages, let k = stopRanks[index] else { return nil }
+        return (k + 1, stopIndices.count)
+    }
+
+    /// Vero se, dopo «Cerca», il fuoco va sulla prima riga dell'elenco invece che sulla frase del conteggio: «Vai al codice
+    /// principale» con lo stesso numero in più parti del libro (la prima riga è l'articolo del codice più ampio).
+    public var focusesMainCode: Bool { settings.codeChoice == .mainCode && jumps.count >= 2 }
 
     /// I numeri d'ordine (da 1) delle occorrenze che cominciano nell'elemento `segmentIndex`, o `nil` se nessuna.
     public func ordinals(inElement segmentIndex: Int) -> ClosedRange<Int>? {
@@ -562,15 +634,16 @@ public final class BookSearchCorpus: @unchecked Sendable {
     static let collectLimit = 2_000_000
 
     /// Cerca `query` in tutto il libro. Il conteggio è esatto; le occorrenze, in ordine di lettura, sono al più `limit`.
-    public func search(_ query: String, options: BookSearchOptions = BookSearchOptions(),
+    public func search(_ query: String, options: BookSearchOptions = BookSearchOptions(), settings: SearchSettings = .standard,
                        limit: Int = BookSearchCorpus.defaultHitLimit) -> BookSearchResult {
-        search(PreparedBookSearch(query, options: options), limit: limit)
+        search(PreparedBookSearch(query, options: options), settings: settings, limit: limit)
     }
 
     /// La stessa ricerca, già preparata (la ricerca nella libreria la prepara una volta per tutti i libri).
-    public func search(_ prepared: PreparedBookSearch, limit: Int = BookSearchCorpus.defaultHitLimit) -> BookSearchResult {
+    public func search(_ prepared: PreparedBookSearch, settings: SearchSettings = .standard,
+                       limit: Int = BookSearchCorpus.defaultHitLimit) -> BookSearchResult {
         let trimmed = prepared.query, options = prepared.options
-        guard !prepared.isEmpty else { return .empty(query: trimmed, options: options) }
+        guard !prepared.isEmpty else { return .empty(query: trimmed, options: options, settings: settings) }
         let normalizedQuery = prepared.normalizedQuery
         var offsets: [Int32] = []
         let total = buffer.withUnsafeBufferPointer { hay in
@@ -597,29 +670,35 @@ public final class BookSearchCorpus: @unchecked Sendable {
         }
         var elements: [Int] = []
         for h in hits where elements.last != h.segmentIndex { elements.append(h.segmentIndex) }
-        let found = passagesAndNumber(normalizedQuery: normalizedQuery)
+        let found = passagesAndNumber(normalizedQuery: normalizedQuery, settings: settings)
         return BookSearchResult(query: trimmed, normalizedQuery: normalizedQuery, options: options,
                                 totalCount: total, hits: hits, elementIndices: elements, passages: found.passages,
-                                numberQuery: found.number)
+                                numberQuery: found.number, settings: settings)
     }
 
     /// I passi di una ricerca (vedi `WordSearch.swift`): i salti per numero, poi le parole pesate, senza doppioni. Solo per una
     /// ricerca di almeno due parole o che chiede un numero.
     public func passages(normalizedQuery q: String, limit: Int = BookSearchCorpus.passageLimit) -> [BookSearchPassage] {
-        passagesAndNumber(normalizedQuery: q, limit: limit).passages
+        var s = SearchSettings.decision29
+        s.passageLimit = limit
+        return passagesAndNumber(normalizedQuery: q, settings: s, limit: limit).passages
     }
 
-    func passagesAndNumber(normalizedQuery q: String, limit: Int = BookSearchCorpus.passageLimit)
+    /// I salti e i passi con le impostazioni della ricerca: il salto diretto solo se acceso (spento, il numero è una parola come le
+    /// altre), i passi per una parola sola solo se chiesti, al più `settings.passageLimit` passi (`limit` lo sostituisce, per il banco).
+    func passagesAndNumber(normalizedQuery q: String, settings: SearchSettings = .decision29, limit: Int? = nil)
         -> (passages: [BookSearchPassage], number: NumberQuery?) {
+        let limit = limit ?? settings.passageLimit
         let words = q.split(whereSeparator: { !$0.unicodeScalars.allSatisfy { SearchNormalizer.isWordScalar($0.value) } }).count
         // Una domanda per numero è corta: in un passo lungo un «art. 12» è una citazione, non una domanda (sul banco il salto
         // scattava su 84 passi di dottrina su 300 e li mandava all'articolo citato invece che a quello cercato).
-        let number = words <= NumberQuery.maxWords ? NumberQuery.parse(normalized: q) : nil
-        // Una parola sola, senza numero: solo le occorrenze esatte, come prima (decisione da confermare, LAYER2 § 12.16).
-        guard number != nil || words >= 2 else { return ([], nil) }
+        let number = settings.numberJump && words <= NumberQuery.maxWords ? NumberQuery.parse(normalized: q) : nil
+        // Una parola sola, senza numero: di serie solo le occorrenze esatte, come prima; i passi se l'utente li chiede.
+        let wordsCount = words >= 2 || (words == 1 && settings.singleWordPassages)
+        guard number != nil || wordsCount else { return ([], nil) }
         var out = number.map { numbered.jumps(for: $0) } ?? []
         var seen = Set(out.map(\.segmentIndex))
-        if words >= 2 || out.isEmpty {
+        if wordsCount || out.isEmpty {
             for p in wordIndex.rank(q, limit: limit) where seen.insert(p.segmentIndex).inserted { out.append(p) }
         }
         return (Array(out.prefix(limit + out.filter(\.isJump).count)), number)

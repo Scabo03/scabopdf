@@ -157,9 +157,12 @@ public struct LibrarySearchResult: Equatable, Sendable {
     public let notReady: Int
     /// Vero se i libri sono in ordine di peso delle parole (ricerca di almeno due parole).
     public let byWords: Bool
+    /// L'ordine scelto nelle impostazioni della ricerca (con `byWords`): per pertinenza, o prima i libri con la frase intera.
+    public let order: SearchSettings.LibraryOrder
     public init(query: String, normalizedQuery: String, options: BookSearchOptions, books: [LibrarySearchBookResult], notReady: Int,
-                byWords: Bool = false) {
+                byWords: Bool = false, order: SearchSettings.LibraryOrder = .relevance) {
         self.byWords = byWords
+        self.order = order
         self.query = query
         self.normalizedQuery = normalizedQuery
         self.options = options
@@ -176,8 +179,11 @@ public enum LibrarySearch {
     /// Quanti libri senza la frase intera si danno al più, i più pertinenti (giro «la ricerca»).
     public static let wordOnlyBookLimit = 10
 
+    /// `order` (impostazioni della ricerca): per pertinenza (di serie) i libri per peso delle parole; «prima la frase esatta» prima i
+    /// libri che hanno la frase intera, poi gli altri, ciascun gruppo per peso delle parole.
     public static func run(_ query: String, options: BookSearchOptions,
                            books: [(documentId: String, title: String)],
+                           order: SearchSettings.LibraryOrder = .relevance,
                            searchText: (String) -> Data?) -> LibrarySearchResult {
         let prepared = PreparedBookSearch(query, options: options)
         guard !prepared.isEmpty else {
@@ -205,6 +211,10 @@ public enum LibrarySearch {
             let scores = LibraryWordWeights.scores(tf: rows.map(\.tf), length: rows.map(\.length))
             var listed = rows.indices.filter { rows[$0].count > 0 || scores[$0] > 0 }
             listed.sort { scores[$0] != scores[$1] ? scores[$0] > scores[$1] : $0 < $1 }
+            if order == .exactFirst {
+                // Stabile: dentro ciascun gruppo resta l'ordine per peso delle parole.
+                listed = listed.filter { rows[$0].count > 0 } + listed.filter { rows[$0].count == 0 }
+            }
             var wordOnly = 0
             listed = listed.filter { k in
                 guard rows[k].count == 0 else { return true }
@@ -221,7 +231,7 @@ public enum LibrarySearch {
             }
         }
         return LibrarySearchResult(query: prepared.query, normalizedQuery: prepared.normalizedQuery, options: options,
-                                   books: found, notReady: notReady, byWords: byWords)
+                                   books: found, notReady: notReady, byWords: byWords, order: order)
     }
 }
 
@@ -288,11 +298,21 @@ extension BookSearchWording {
             if r.books.count == 1 {
                 s = "Un libro con le parole di \(q)" + (withPhrase == 1 ? ", e con la frase intera: \(results)." : "; la frase intera non c'è.")
             } else {
-                s = "\(number(r.books.count)) libri con le parole di \(q), i più pertinenti per primi."
-                switch withPhrase {
-                case 0: s += " La frase intera non c'è in nessun libro."
-                case 1: s += " In uno c'è anche la frase intera: \(results)."
-                default: s += " In \(number(withPhrase)) c'è anche la frase intera: \(results) in tutto."
+                s = "\(number(r.books.count)) libri con le parole di \(q)"
+                if r.order == .exactFirst && withPhrase > 0 && withPhrase < r.books.count {
+                    // «Prima la frase esatta»: i gruppi detti una volta, col numero dei risultati della frase.
+                    let times = r.totalCount == 1 ? "una volta" : "\(number(r.totalCount)) volte"
+                    s += withPhrase == 1
+                        ? ": prima quello con la frase intera, che la contiene \(times), poi gli altri, i più pertinenti per primi."
+                        : ": prima i \(number(withPhrase)) con la frase intera, \(results) in tutto, poi gli altri; in ciascun gruppo i "
+                            + "più pertinenti per primi."
+                } else {
+                    s += ", i più pertinenti per primi."
+                    switch withPhrase {
+                    case 0: s += " La frase intera non c'è in nessun libro."
+                    case 1: s += " In uno c'è anche la frase intera: \(results)."
+                    default: s += " In \(number(withPhrase)) c'è anche la frase intera: \(results) in tutto."
+                    }
                 }
             }
         } else {

@@ -90,8 +90,10 @@ final class LibrarySearchIndex {
         searchGeneration += 1
         let g = searchGeneration
         let books = service.store.sorted(service.store.allDocuments(), by: .alphabetical).map { (documentId: $0.id, title: $0.title) }
+        // L'ordine dei libri della sezione «Ricerca» delle Impostazioni (giro «scansioni, ricerca e build»).
+        let order = getStoredSearchSettings(service.prefs).libraryOrder
         searchQueue.async { [weak self, service] in
-            let r = LibrarySearch.run(query, options: BookSearchOptions(wholeWord: wholeWord), books: books) {
+            let r = LibrarySearch.run(query, options: BookSearchOptions(wholeWord: wholeWord), books: books, order: order) {
                 service.validSearchText(forDocumentId: $0)
             }
             DispatchQueue.main.async {
@@ -104,7 +106,8 @@ final class LibrarySearchIndex {
     /// La stessa ricerca sul thread chiamante (test e banco di misura).
     func searchNow(_ query: String, wholeWord: Bool) -> LibrarySearchResult {
         let books = service.store.sorted(service.store.allDocuments(), by: .alphabetical).map { (documentId: $0.id, title: $0.title) }
-        return LibrarySearch.run(query, options: BookSearchOptions(wholeWord: wholeWord), books: books) {
+        return LibrarySearch.run(query, options: BookSearchOptions(wholeWord: wholeWord), books: books,
+                                 order: getStoredSearchSettings(service.prefs).libraryOrder) {
             service.validSearchText(forDocumentId: $0)
         }
     }
