@@ -132,7 +132,7 @@
       "id": "xiaomi-ocr-0",
       "nome": "Xiaomi lettura pagine",
       "ruolo": "lettore_scansioni",
-      "descrizione": "Lettore di pagine piccolo: nella via delle scansioni del Mac, al banco del progetto, perde meno parole di GLM lettura pagine e aggiunge meno segni che si sentono, ma legge come note più righe che note non sono. Girerebbe dentro l'app, con lo stesso motore di GLM, senza programmi separati e senza internet. Per ora non si scarica: l'editore pubblica i pesi solo in una forma che l'app non usa, e la forma per l'app, convertita dai pesi ufficiali, non ha ancora un indirizzo da cui scaricarla con le sue impronte.",
+      "descrizione": "Lettore di pagine piccolo: nella via delle scansioni del Mac, al banco del progetto, perde meno parole di GLM lettura pagine e aggiunge meno segni che si sentono, ma sulle pagine d'indice legge come note molte righe brevi. Girerebbe dentro l'app, con lo stesso motore di GLM, senza programmi separati e senza internet. Per ora non si scarica: l'editore pubblica i pesi solo in una forma che l'app non usa, e la forma per l'app, convertita dai pesi ufficiali, non ha ancora un indirizzo da cui scaricarla con le sue impronte.",
       "dimensioneByte": 1038579744,
       "licenza": "Apache 2.0: libero anche per uso commerciale.",
       "motore": "nativo_nell_app",
@@ -145,7 +145,7 @@
       "funzionaSenzaInternet": true,
       "validazione": {
         "validato": {
-          "numeri": "misure del 28 novembre 2026 su 185 pagine scansionate del banco del progetto, nella via delle scansioni del Mac e nella forma per l'app, contro GLM lettura pagine sulle stesse pagine: 1,1 parole perse su cento contro 1,3; circa 0,6 segni udibili su mille parole contro 1,5; il doppio delle righe lette come note; da 6 a 9 secondi a pagina."
+          "numeri": "misure del 28 novembre 2026 su 185 pagine scansionate del banco del progetto, nella via delle scansioni del Mac e nella forma per l'app, contro GLM lettura pagine sulle stesse pagine: 1,1 parole perse su cento contro 1,3; circa 0,6 segni udibili su mille parole contro 1,5; sulle pagine d'indice molte righe brevi lette come note; da 6 a 9 secondi a pagina."
         }
       },
       "provenienza": {
