@@ -377,7 +377,7 @@ public struct ReadingSpeechModel: Sendable {
         guard index >= 0, index < segments.count else { return [] }
         let active = Self.activeSearch(search)
         var out: [ReadingRotor] = []
-        if let active, active.stopIndices.contains(index) { out.append(.searchResults) }
+        if let active, active.isStop(index) { out.append(.searchResults) }
         if let level = ReadingSpeech.headingLevel(for: segments[index].role) {
             out.append(.headings)
             out.append(.headingLevel(level))

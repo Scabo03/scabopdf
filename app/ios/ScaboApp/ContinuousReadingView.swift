@@ -646,6 +646,7 @@ final class ContinuousReadingView: UIView {
     func cellDidBecomeFocused(index: Int, segment: ContentSegment) {
         let previous = lastFocusedIndex
         lastFocusedIndex = index
+        if let r = searchResult, r.settings.rotorIncludesPassages, r.isStop(index) { lastSearchStop = index }
         onReadingPositionChanged?(index)
         // Guida di lettura: sposta l'evidenziazione sul nuovo elemento (attenua gli altri).
         // Solo-visiva, economica (celle visibili), inerte all'ordine di lettura VoiceOver.
@@ -934,11 +935,15 @@ final class ContinuousReadingView: UIView {
     private(set) var searchResult: BookSearchResult?
     /// Gli intervalli (UTF-16 del testo del segmento) da evidenziare, per indice di segmento e testo.
     private var searchHighlighter: ((Int, String) -> [NSRange])?
+    /// Con le fermate nell'ordine dei risultati («anche sui passi pertinenti»): l'ultima fermata raggiunta, da cui ripartono il
+    /// rotore e Comando G quando chi ascolta è andato avanti dopo un risultato.
+    private var lastSearchStop: Int?
 
     /// Imposta (o toglie, con `nil`) la ricerca attiva: rotore, valori parlati ed evidenze delle celle visibili.
     func setSearchResult(_ result: BookSearchResult?, highlighter: ((Int, String) -> [NSRange])?) {
         // Attiva con almeno una fermata: di serie le occorrenze esatte; con «anche sui passi pertinenti» anche i passi.
         let active = ReadingSpeechModel.activeSearch(result)
+        if active != searchResult { lastSearchStop = nil }
         searchResult = active
         searchHighlighter = active == nil ? nil : highlighter
         rebuildHeadingIndexAndRotors()
@@ -961,7 +966,8 @@ final class ContinuousReadingView: UIView {
     func goToAdjacentSearchResult(forward: Bool) -> Int? {
         guard let r = searchResult else { return nil }
         let current = lastFocusedIndex ?? ((collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1)
-        guard let target = r.adjacentStop(from: current, forward: forward) else { return nil }
+        guard let target = r.adjacentStop(from: current, forward: forward, lastStop: lastSearchStop) else { return nil }
+        lastSearchStop = target
         onSearchStop?()
         goToElement(atIndex: target, focus: true)
         return target
@@ -975,7 +981,9 @@ final class ContinuousReadingView: UIView {
             if let cell = predicate.currentItem.targetElement as? SegmentCell { current = cell.readingIndex }
             else if let idx = self.lastFocusedIndex { current = idx }
             else { current = (self.collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1 }
-            guard let t = r.adjacentStop(from: current, forward: predicate.searchDirection == .next) else { return nil }
+            guard let t = r.adjacentStop(from: current, forward: predicate.searchDirection == .next,
+                                         lastStop: self.lastSearchStop) else { return nil }
+            self.lastSearchStop = t
             self.onSearchStop?()
             let ip = IndexPath(item: t, section: 0)
             self.collectionView.scrollToItem(at: ip, at: .top, animated: false)

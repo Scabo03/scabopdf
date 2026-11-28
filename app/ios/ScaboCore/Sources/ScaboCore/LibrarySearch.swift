@@ -298,14 +298,21 @@ extension BookSearchWording {
             if r.books.count == 1 {
                 s = "Un libro con le parole di \(q)" + (withPhrase == 1 ? ", e con la frase intera: \(results)." : "; la frase intera non c'è.")
             } else {
-                s = "\(number(r.books.count)) libri con le parole di \(q), "
-                    + (r.order == .exactFirst && withPhrase > 0 && withPhrase < r.books.count
-                       ? "prima quelli con la frase intera, poi gli altri, ciascuno coi più pertinenti per primi."
-                       : "i più pertinenti per primi.")
-                switch withPhrase {
-                case 0: s += " La frase intera non c'è in nessun libro."
-                case 1: s += " In uno c'è anche la frase intera: \(results)."
-                default: s += " In \(number(withPhrase)) c'è anche la frase intera: \(results) in tutto."
+                s = "\(number(r.books.count)) libri con le parole di \(q)"
+                if r.order == .exactFirst && withPhrase > 0 && withPhrase < r.books.count {
+                    // «Prima la frase esatta»: i gruppi detti una volta, col numero dei risultati della frase.
+                    let times = r.totalCount == 1 ? "una volta" : "\(number(r.totalCount)) volte"
+                    s += withPhrase == 1
+                        ? ": prima quello con la frase intera, che la contiene \(times), poi gli altri, i più pertinenti per primi."
+                        : ": prima i \(number(withPhrase)) con la frase intera, \(results) in tutto, poi gli altri; in ciascun gruppo i "
+                            + "più pertinenti per primi."
+                } else {
+                    s += ", i più pertinenti per primi."
+                    switch withPhrase {
+                    case 0: s += " La frase intera non c'è in nessun libro."
+                    case 1: s += " In uno c'è anche la frase intera: \(results)."
+                    default: s += " In \(number(withPhrase)) c'è anche la frase intera: \(results) in tutto."
+                    }
                 }
             }
         } else {

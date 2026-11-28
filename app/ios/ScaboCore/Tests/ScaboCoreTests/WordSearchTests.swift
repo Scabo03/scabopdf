@@ -216,8 +216,12 @@ final class WordSearchTests: XCTestCase {
         let r = BookSearchCorpus(segments: segs).search("articolo 7", settings: s)
         XCTAssertEqual(r.jumps.map(\.segmentIndex), [civile7, cpc7], "lo stesso elenco: il codice più ampio per primo")
         let cc = BookSearchCode.civile.spokenName
-        XCTAssertTrue(sentence(r).hasPrefix("Primo risultato: l'articolo 7 del " + cc + ". Subito sotto, lo stesso numero in un'altra parte del libro."),
+        XCTAssertTrue(sentence(r).hasPrefix("Primo risultato: l'articolo 7 del " + cc + ". Subito sotto, l'articolo 7 in un'altra parte del libro."),
                       sentence(r))
+        XCTAssertTrue(r.focusesMainCode, "dopo «Cerca» il fuoco va sulla prima riga, l'articolo del codice più ampio")
+        XCTAssertFalse(BookSearchCorpus(segments: segs).search("articolo 7").focusesMainCode, "di serie: sulla frase del conteggio")
+        let withTheCode = BookSearchCorpus(segments: segs).search("art. 7 c.p.c.", settings: s)
+        XCTAssertFalse(withTheCode.focusesMainCode, "un articolo solo: nulla da scegliere, il fuoco resta sulla frase")
     }
 
     func test_singleWord_passagesOnRequest() {
@@ -229,28 +233,75 @@ final class WordSearchTests: XCTestCase {
         s.singleWordPassages = true
         let r = corpus.search("fiume", settings: s)
         XCTAssertEqual(r.passages.map(\.segmentIndex), [0])
-        XCTAssertEqual(sentence(r), "Un risultato esatto. Poi un passo con le parole di «fiume», i più pertinenti per primi.")
+        XCTAssertEqual(sentence(r), "Un risultato esatto. Poi un passo con la parola «fiume», i più pertinenti per primi.")
     }
 
-    func test_rotorStops_default_exactInReadingOrder_withPassages_inTheOrderOfTheList() {
-        let segs = [body(0, "La torre del borgo." + filler), body(1, "Il gufo e la torre vecchia." + filler),
-                    body(2, "Un orologio sulla torre vecchia, e un gufo." + filler), body(3, "Altro testo." + filler)]
-        let corpus = BookSearchCorpus(segments: segs)
-        let d = corpus.search("torre vecchia")
-        XCTAssertEqual(d.stopIndices, d.elementIndices, "di serie le fermate sono le occorrenze esatte")
-        XCTAssertEqual(d.adjacentStop(from: -1, forward: true), d.adjacentElement(from: -1, forward: true))
-        XCTAssertNil(d.stopRank(inElement: d.elementIndices.first ?? 0))
+    /// Un libro inventato per le fermate: la frase esatta negli elementi 0 e 2, le parole da sole anche nell'elemento 1; altri cinque
+    /// elementi senza le parole, così tutte e due distinguono.
+    private func stopsBook() -> [ContentSegment] {
+        [body(0, "La torre vecchia del borgo." + filler),
+         body(1, "La torre nuova, la torre alta, la torre di vedetta." + filler),
+         body(2, "Una torre vecchia e un'altra torre vecchia, torre vecchia ancora." + filler)]
+            + (3..<8).map { body($0, "Testo diverso numero \($0)." + filler) }
+    }
+
+    func test_rotorStops_default_exactInReadingOrder_asBefore() {
+        let d = BookSearchCorpus(segments: stopsBook()).search("torre vecchia")
+        XCTAssertEqual(d.elementIndices, [0, 2])
+        XCTAssertEqual(d.stopIndices, [0, 2], "di serie le fermate sono le occorrenze esatte, in ordine di lettura")
+        XCTAssertEqual(d.adjacentStop(from: -1, forward: true), 0)
+        XCTAssertEqual(d.adjacentStop(from: 1, forward: true), 2, "in ordine di lettura, da qualunque elemento")
+        XCTAssertEqual(d.adjacentStop(from: 1, forward: false), 0)
+        XCTAssertEqual(d.adjacentStop(from: 1, forward: true, lastStop: 0), 2, "di serie l'ultima fermata non conta")
+        XCTAssertNil(d.adjacentStop(from: 2, forward: true))
+        XCTAssertNil(d.stopRank(inElement: 0))
+        XCTAssertTrue(d.isStop(2) && !d.isStop(1))
+    }
+
+    func test_rotorStops_withPassages_inTheOrderOfTheList_andLeavingAStop() {
         var s = SearchSettings.standard
         s.rotorIncludesPassages = true
+        let corpus = BookSearchCorpus(segments: stopsBook())
         let r = corpus.search("torre vecchia", settings: s)
-        let expected = r.elementIndices + r.wordPassages.map(\.segmentIndex).filter { !r.elementIndices.contains($0) }
-        XCTAssertEqual(r.stopIndices, expected, "prima le esatte (ordine scelto), poi i passi, ciascuno una volta")
-        XCTAssertEqual(r.adjacentStop(from: 99, forward: true), r.stopIndices.first, "fuori dalle fermate: la prima")
-        if r.stopIndices.count >= 2 {
-            XCTAssertEqual(r.adjacentStop(from: r.stopIndices[0], forward: true), r.stopIndices[1])
-            XCTAssertEqual(r.stopRank(inElement: r.stopIndices[1])?.rank, 2)
-        }
+        XCTAssertEqual(r.wordPassages.map(\.segmentIndex), [2, 0, 1], "i passi, i più pertinenti per primi")
+        XCTAssertEqual(r.stopIndices, [0, 2, 1], "prima le esatte in ordine di lettura, poi il passo che resta, una volta sola")
+        XCTAssertEqual(r.stopRank(inElement: 2)?.rank, 2)
+        XCTAssertEqual(r.stopRank(inElement: 2)?.of, 3)
+        XCTAssertNil(r.stopRank(inElement: 5))
+        XCTAssertEqual(r.adjacentStop(from: 0, forward: true), 2)
+        XCTAssertEqual(r.adjacentStop(from: 2, forward: true), 1)
+        XCTAssertNil(r.adjacentStop(from: 1, forward: true), "dopo l'ultima, niente")
+        XCTAssertEqual(r.adjacentStop(from: 1, forward: false), 2)
+        XCTAssertNil(r.adjacentStop(from: 0, forward: false), "prima della prima, niente")
+        // Chi lascia la fermata 2 (legge l'elemento 3) riparte da lì: avanti la fermata dopo, indietro lei stessa.
+        XCTAssertEqual(r.adjacentStop(from: 3, forward: true, lastStop: 2), 1)
+        XCTAssertEqual(r.adjacentStop(from: 3, forward: false, lastStop: 2), 2)
+        XCTAssertNil(r.adjacentStop(from: 3, forward: true, lastStop: 1))
+        // Senza un'ultima fermata: la prima, o l'ultima.
+        XCTAssertEqual(r.adjacentStop(from: 3, forward: true), 0)
+        XCTAssertEqual(r.adjacentStop(from: 3, forward: false), 1)
         XCTAssertNotNil(ReadingSpeechModel.activeSearch(r))
+        // Con «prima i passi pertinenti» le fermate seguono l'elenco: i passi, poi le esatte che mancano (nessuna).
+        s.order = .passagesFirst
+        XCTAssertEqual(corpus.search("torre vecchia", settings: s).stopIndices, [2, 0, 1])
+        // Con un salto per numero, il salto viene per primo.
+        let (segs, civile7, cpc7) = twoCodes()
+        var j = SearchSettings.standard
+        j.rotorIncludesPassages = true
+        XCTAssertEqual(Array(BookSearchCorpus(segments: segs).search("articolo 7", settings: j).stopIndices.prefix(2)), [civile7, cpc7])
+    }
+
+    func test_settings_decoding_goesThroughTheCheckOfTheLimit() throws {
+        let dec = JSONDecoder()
+        XCTAssertEqual(try dec.decode(SearchSettings.self, from: Data(#"{"passageLimit": 33}"#.utf8)).passageLimit, 20,
+                       "un tetto fuori dai tre torna al predefinito")
+        XCTAssertEqual(try dec.decode(SearchSettings.self, from: Data("{}".utf8)), .standard, "ogni valore mancante: il predefinito")
+        let s = SearchSettings(order: .passagesFirst, passageLimit: 10, numberJump: false, codeChoice: .mainCode, singleWordPassages: true,
+                               rotorIncludesPassages: true, announcement: .full, libraryOrder: .exactFirst)
+        XCTAssertEqual(try dec.decode(SearchSettings.self, from: try JSONEncoder().encode(s)), s)
+        XCTAssertTrue(s.sameList(as: SearchSettings(order: .passagesFirst, passageLimit: 10, numberJump: false, singleWordPassages: true)),
+                      "codice principale, rotore, annuncio e libreria non cambiano l'elenco")
+        XCTAssertFalse(s.sameList(as: .standard))
     }
 
     func test_settings_storedAndRestored_unknownValuesFallBack() {

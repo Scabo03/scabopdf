@@ -116,8 +116,8 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
             return "Con una tastiera esterna puoi leggere e navigare senza gesti. L'elenco dei comandi "
                 + "è qui perché i tasti sono altrimenti invisibili."
         case .search:
-            return "Come si ordinano i risultati della ricerca nel libro e nella libreria, quanti passi pertinenti, il salto agli "
-                + "articoli e che cosa senti di ogni risultato."
+            return "Qui scegli come la ricerca ordina i risultati nel libro e nella libreria, quanti passi pertinenti ti mostra, "
+                + "come salta ad articoli e paragrafi, come si comportano il rotore e Comando G e che cosa senti di ogni risultato."
         case .systemFilters:
             return "I filtri per il daltonismo (rosso/verde, verde/rosso, blu/giallo) si impostano da Impostazioni "
                 + "iOS. L'app non può rilevarli né controllarli, ma garantisce che nulla dipenda dal solo colore. "

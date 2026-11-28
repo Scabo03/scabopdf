@@ -140,6 +140,11 @@ final class BookSearchUITests: XCTestCase {
         XCTAssertTrue(first.waitForExistence(timeout: 3) && second.waitForExistence(timeout: 3))
         XCTAssertFalse(first.label.contains("Nella nota"), first.label)
         XCTAssertTrue(second.label.contains("Nella nota 1"), "dice che è in una nota: «\(second.label)»")
+        // I passi con le parole cercate, dopo le esatte (scorrendo se restano sotto il bordo).
+        let passage = item(app, "ricerca.passo.0")
+        if !passage.exists { app.swipeUp() }
+        XCTAssertTrue(passage.waitForExistence(timeout: 3), "i passi con le parole cercate")
+        if !second.isHittable { app.swipeDown() }
         XCTAssertTrue(second.label.contains("Capitolo primo del libro due"), "la sezione: «\(second.label)»")
         second.tap()
         XCTAssertTrue(searchBar(app).waitForNonExistence(timeout: 8), "la finestra si chiude")

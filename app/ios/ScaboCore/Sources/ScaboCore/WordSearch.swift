@@ -428,8 +428,8 @@ extension BookSearchWording {
             case _ where r.settings.codeChoice == .mainCode:
                 // «Vai al codice principale»: si dice il primo (il codice più ampio), poi quanti altri stanno subito sotto.
                 let others = jumps.count - 1
-                out.append("Primo risultato: \(withArticle(jumpName(jumps[0]) ?? what)). Subito sotto, "
-                    + (others == 1 ? "lo stesso numero in un'altra parte del libro." : "lo stesso numero in altre \(number(others)) parti del libro."))
+                out.append("Primo risultato: \(withArticle(jumpName(jumps[0]) ?? what)). Subito sotto, \(withArticle(what)) "
+                    + (others == 1 ? "in un'altra parte del libro." : "in altre \(number(others)) parti del libro."))
             default:
                 var places = codes.map { "nel \($0.spokenName)" }
                 let others = jumps.count - codes.count
@@ -447,7 +447,8 @@ extension BookSearchWording {
         func wordsPart(first: Bool) -> String? {
             guard words > 0 else { return nil }
             let n = words == 1 ? "Un passo" : "\(number(words)) passi"
-            return (first ? n : "Poi " + n.lowercased()) + " con le parole di \(q), i più pertinenti per primi."
+            let which = r.normalizedQuery.split(separator: " ").count == 1 ? "con la parola \(q)" : "con le parole di \(q)"
+            return (first ? n : "Poi " + n.lowercased()) + " \(which), i più pertinenti per primi."
         }
         func exactPart(first: Bool) -> String {
             switch r.totalCount {

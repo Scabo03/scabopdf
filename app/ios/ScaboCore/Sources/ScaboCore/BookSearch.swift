@@ -84,15 +84,17 @@ public struct BookSearchResult: Equatable, Sendable {
     public let totalCount: Int
     /// Le occorrenze in ordine di lettura (le prime `limit`).
     public let hits: [BookSearchHit]
-    /// Gli elementi (indici di segmento) dove comincia almeno un'occorrenza, in ordine: le fermate del rotore e dei tasti.
+    /// Gli elementi (indici di segmento) dove comincia almeno un'occorrenza, in ordine di lettura: di serie le fermate del rotore e
+    /// dei tasti (con «anche sui passi pertinenti» le fermate sono `stopIndices`).
     public let elementIndices: [Int]
     /// Le occorrenze che finiscono in un segmento dopo quello d'inizio (poche: le frasi che attraversano un confine), in
     /// ordine di lettura: servono a `hits(touching:)`, perché dentro una di esse, nell'ordine dei segmenti, possono
     /// cadere le occorrenze di altri flussi (una nota letta in mezzo al corpo), anche molte.
     private let spanningHits: [BookSearchHit]
-    /// I passi (giro «la ricerca», `WordSearch.swift`): i salti per numero, poi i segmenti ordinati per parole pesate. Stanno
-    /// solo nell'elenco dei risultati: il rotore, i valori «risultato N di M», le evidenze e ⌘G restano sulle occorrenze
-    /// esatte (`hits`, `elementIndices`), come prima.
+    /// I passi (giro «la ricerca», `WordSearch.swift`): i salti per numero, poi i segmenti ordinati per parole pesate. Di serie
+    /// stanno solo nell'elenco dei risultati: il rotore, i valori «risultato N di M» e ⌘G restano sulle occorrenze esatte (`hits`,
+    /// `elementIndices`), come prima; con «anche sui passi pertinenti» (impostazioni della ricerca) entrano nelle fermate
+    /// (`stopIndices`). Le evidenze restano sulle occorrenze esatte.
     public let passages: [BookSearchPassage]
     /// La domanda per numero riconosciuta nella ricerca («art. 2043 c.c.», «§ 12»), anche se il libro non ha quel numero.
     public let numberQuery: NumberQuery?
@@ -113,6 +115,19 @@ public struct BookSearchResult: Equatable, Sendable {
         self.hits = hits
         self.elementIndices = elementIndices
         self.spanningHits = hits.filter { $0.endSegmentIndex > $0.segmentIndex }
+        // Le fermate si calcolano una volta: il parlato le chiede per ogni elemento.
+        if settings.rotorIncludesPassages {
+            var seen = Set<Int>(), out: [Int] = []
+            let jumps = passages.filter(\.isJump).map(\.segmentIndex)
+            let words = passages.filter { !$0.isJump }.map(\.segmentIndex)
+            let order = jumps + (settings.order == .passagesFirst ? words + elementIndices : elementIndices + words)
+            for i in order where seen.insert(i).inserted { out.append(i) }
+            self.stopIndices = out
+            self.stopRanks = Dictionary(uniqueKeysWithValues: out.enumerated().map { ($1, $0) })
+        } else {
+            self.stopIndices = elementIndices
+            self.stopRanks = [:]
+        }
     }
 
     public var isTruncated: Bool { hits.count < totalCount }
@@ -142,36 +157,44 @@ public struct BookSearchResult: Equatable, Sendable {
     /// Le fermate del rotore «Risultati della ricerca» e di Comando G. Di serie le occorrenze esatte, elemento per elemento, in
     /// ordine di lettura (`elementIndices`, come prima). Con «anche sui passi pertinenti» gli elementi dell'elenco dei risultati,
     /// nell'ordine dell'elenco (salti, poi corrispondenze esatte e passi nell'ordine scelto), ciascuno una volta.
-    public var stopIndices: [Int] {
-        guard settings.rotorIncludesPassages else { return elementIndices }
-        var seen = Set<Int>(), out: [Int] = []
-        let words = wordPassages.map(\.segmentIndex)
-        let order = jumps.map(\.segmentIndex) + (wordPassagesFirst ? words + elementIndices : elementIndices + words)
-        for i in order where seen.insert(i).inserted { out.append(i) }
-        return out
+    public let stopIndices: [Int]
+    /// Con le fermate nell'ordine dei risultati: il posto (da 0) di ogni fermata.
+    private let stopRanks: [Int: Int]
+
+    /// Vero se l'elemento è una fermata del rotore e di Comando G.
+    public func isStop(_ index: Int) -> Bool {
+        settings.rotorIncludesPassages ? stopRanks[index] != nil : elementIndices.contains(index)
     }
 
     /// La fermata successiva (`forward`) o precedente a `current`. Di serie la stessa di `adjacentElement` (ordine di lettura). Con
-    /// le fermate nell'ordine dei risultati: quella dopo (o prima) di `current` nell'elenco; se `current` non è una fermata, la prima
-    /// (o l'ultima).
-    public func adjacentStop(from current: Int, forward: Bool) -> Int? {
+    /// le fermate nell'ordine dei risultati: quella dopo (o prima) di `current` nell'elenco. Se `current` non è una fermata (chi
+    /// ascolta è andato avanti dopo un risultato), si riparte dall'ultima fermata raggiunta, `lastStop`: avanti la fermata dopo di
+    /// lei, indietro lei stessa (come nell'ordine di lettura, dove indietro si torna al risultato appena lasciato); senza un'ultima
+    /// fermata, la prima (o l'ultima).
+    public func adjacentStop(from current: Int, forward: Bool, lastStop: Int? = nil) -> Int? {
         guard settings.rotorIncludesPassages else { return adjacentElement(from: current, forward: forward) }
-        let stops = stopIndices
-        guard !stops.isEmpty else { return nil }
-        if let k = stops.firstIndex(of: current) {
+        guard !stopIndices.isEmpty else { return nil }
+        if let k = stopRanks[current] {
             let j = forward ? k + 1 : k - 1
-            return stops.indices.contains(j) ? stops[j] : nil
+            return stopIndices.indices.contains(j) ? stopIndices[j] : nil
         }
-        return forward ? stops.first : stops.last
+        if let last = lastStop, let k = stopRanks[last] {
+            if !forward { return last }
+            return stopIndices.indices.contains(k + 1) ? stopIndices[k + 1] : nil
+        }
+        return forward ? stopIndices.first : stopIndices.last
     }
 
     /// Il posto (da 1) dell'elemento fra le fermate nell'ordine dei risultati, e quante sono; `nil` se non è una fermata o se le
     /// fermate sono le sole occorrenze esatte.
     public func stopRank(inElement index: Int) -> (rank: Int, of: Int)? {
-        guard settings.rotorIncludesPassages else { return nil }
-        let stops = stopIndices
-        return stops.firstIndex(of: index).map { ($0 + 1, stops.count) }
+        guard settings.rotorIncludesPassages, let k = stopRanks[index] else { return nil }
+        return (k + 1, stopIndices.count)
     }
+
+    /// Vero se, dopo «Cerca», il fuoco va sulla prima riga dell'elenco invece che sulla frase del conteggio: «Vai al codice
+    /// principale» con lo stesso numero in più parti del libro (la prima riga è l'articolo del codice più ampio).
+    public var focusesMainCode: Bool { settings.codeChoice == .mainCode && jumps.count >= 2 }
 
     /// I numeri d'ordine (da 1) delle occorrenze che cominciano nell'elemento `segmentIndex`, o `nil` se nessuna.
     public func ordinals(inElement segmentIndex: Int) -> ClosedRange<Int>? {

@@ -29,8 +29,9 @@ public struct SearchSettings: Equatable, Sendable, Codable {
     public enum LibraryOrder: String, Equatable, Sendable, Codable, CaseIterable { case relevance, exactFirst }
 
     public var order: Order
-    /// Al più quanti passi pertinenti (uno dei valori di `passageLimits`).
-    public var passageLimit: Int
+    /// Al più quanti passi pertinenti (uno dei valori di `passageLimits`: fuori da ScaboCore si cambia solo dalle domande e
+    /// dall'init, che lo controllano).
+    public internal(set) var passageLimit: Int
     /// Il salto diretto a un articolo o a un paragrafo chiesto per numero.
     public var numberJump: Bool
     public var codeChoice: CodeChoice
@@ -61,8 +62,35 @@ public struct SearchSettings: Equatable, Sendable, Codable {
     public static let standard = SearchSettings()
 
     /// Le scelte con cui la ricerca si comportava dal giro «la ricerca» (26 novembre 2026, decisione 29) fino a questo giro: prima i
-    /// passi, al più 50, «Passo:» in testa alla riga. Per il banco della ricerca e per i test che confrontano col comportamento di prima.
+    /// passi, al più 50, e il tipo di risultato in testa alla riga (oggi l'annuncio completo: «Passo pertinente:», «Corrispondenza
+    /// esatta:»; prima di questo giro la riga del passo cominciava con «Passo:»). Per il banco della ricerca e per i test che
+    /// confrontano col comportamento di prima.
     public static let decision29 = SearchSettings(order: .passagesFirst, passageLimit: 50, announcement: .full)
+
+    /// Vero se le due scelte danno lo stesso elenco dei risultati (ordine, tetto, salto, parola sola). Il codice principale, il
+    /// rotore, l'annuncio e la libreria cambiano il fuoco, le fermate o le parole, non l'elenco.
+    public func sameList(as other: SearchSettings) -> Bool {
+        order == other.order && passageLimit == other.passageLimit && numberJump == other.numberJump
+            && singleWordPassages == other.singleWordPassages
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case order, passageLimit, numberJump, codeChoice, singleWordPassages, rotorIncludesPassages, announcement, libraryOrder
+    }
+
+    /// La decodifica passa dall'init che controlla il tetto dei passi; ogni valore mancante torna al predefinito.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let d = SearchSettings.standard
+        self.init(order: try c.decodeIfPresent(Order.self, forKey: .order) ?? d.order,
+                  passageLimit: try c.decodeIfPresent(Int.self, forKey: .passageLimit) ?? d.passageLimit,
+                  numberJump: try c.decodeIfPresent(Bool.self, forKey: .numberJump) ?? d.numberJump,
+                  codeChoice: try c.decodeIfPresent(CodeChoice.self, forKey: .codeChoice) ?? d.codeChoice,
+                  singleWordPassages: try c.decodeIfPresent(Bool.self, forKey: .singleWordPassages) ?? d.singleWordPassages,
+                  rotorIncludesPassages: try c.decodeIfPresent(Bool.self, forKey: .rotorIncludesPassages) ?? d.rotorIncludesPassages,
+                  announcement: try c.decodeIfPresent(Announcement.self, forKey: .announcement) ?? d.announcement,
+                  libraryOrder: try c.decodeIfPresent(LibraryOrder.self, forKey: .libraryOrder) ?? d.libraryOrder)
+    }
 }
 
 // MARK: - Conservazione
@@ -166,7 +194,7 @@ public enum SearchSettingsWording {
     /// La frase in cima alla sezione.
     public static let introduction = "ScaboPDF cerca in due modi. Le corrispondenze esatte sono i punti in cui compare proprio la frase "
         + "che hai scritto. I passi pertinenti sono i punti in cui compaiono molte delle parole che hai scritto, soprattutto le meno "
-        + "comuni, anche se non tutte insieme e non nello stesso ordine."
+        + "comuni, anche se non tutte insieme e non nello stesso ordine. Le scelte valgono dalla prossima ricerca."
 
     public typealias Q = SearchSettingsQuestion
     public typealias O = SearchSettingsQuestion.Option
@@ -183,10 +211,10 @@ public enum SearchSettingsWording {
         ]),
         Q(id: .passageLimit, title: "Quanti passi pertinenti", footer: nil, options: [
             O(name: "Pochi, fino a 10", explanation: "Scorri meno risultati, ma il passo giusto può restare fuori."),
-            O(name: "Medi, fino a 20", explanation: "Una via di mezzo."),
+            O(name: "Medi, fino a 20", explanation: "Una via di mezzo fra le due: abbastanza passi, senza troppi risultati da scorrere."),
             O(name: "Molti, fino a 50", explanation: "È più facile che il passo giusto ci sia, ma hai più risultati da scorrere."),
         ]),
-        Q(id: .numberJump, title: "Salto agli articoli", footer: nil, options: [
+        Q(id: .numberJump, title: "Salto ad articoli e paragrafi", footer: nil, options: [
             O(name: "Salto diretto attivo",
               explanation: "Se scrivi il numero di un articolo o di un paragrafo, per esempio «art. 2043» o «paragrafo 12», il primo "
                 + "risultato ti porta direttamente lì."),
@@ -196,26 +224,28 @@ public enum SearchSettingsWording {
             O(name: "Mostra tutti gli articoli con quel numero",
               explanation: "Senti uno dopo l'altro tutti gli articoli con quel numero, ciascuno con il nome del suo codice, e scegli tu."),
             O(name: "Vai al codice principale",
-              explanation: "Ti porta all'articolo del codice più ampio del libro; gli altri restano subito sotto."),
+              explanation: "Dopo «Cerca» sei già sull'articolo del codice più ampio del libro; gli altri restano subito sotto."),
         ]),
         Q(id: .singleWord, title: "Una parola sola", footer: nil, options: [
             O(name: "Solo le corrispondenze esatte", explanation: "Trovi tutti i punti dove compare la parola, nell'ordine del libro."),
             O(name: "Anche i passi pertinenti",
-              explanation: "Trovi anche i passi in cui quella parola pesa di più, oltre a tutti i punti in cui compare. Quale dei due "
-                + "viene prima lo decide l'ordine dei risultati."),
+              explanation: "Trovi anche i passi in cui quella parola pesa di più, oltre a tutti i punti in cui compare. Se vengono "
+                + "prima i passi o i punti esatti lo decide la scelta «Ordine dei risultati»."),
         ]),
         Q(id: .rotor, title: "Rotore e Comando G", footer: nil, options: [
             O(name: "Solo sulle corrispondenze esatte",
-              explanation: "Con il rotore e con Comando G passi da un punto all'altro in cui compare la frase esatta."),
+              explanation: "Con il rotore e con Comando G ti sposti fra i punti in cui compare la frase esatta, nell'ordine del libro."),
             O(name: "Anche sui passi pertinenti",
-              explanation: "Con il rotore e con Comando G passi anche fra i passi pertinenti, nell'ordine dei risultati."),
+              explanation: "Con il rotore e con Comando G ti sposti anche fra i passi pertinenti, nell'ordine dell'elenco dei "
+                + "risultati; il numero «risultato N di M» li conta tutti."),
         ]),
         Q(id: .announcement, title: "Annuncio dei risultati", footer: nil, options: [
-            O(name: "Annuncio breve", explanation: "Senti subito il testo del risultato."),
+            O(name: "Annuncio breve", explanation: "Senti subito il testo del risultato; per un articolo, prima il nome del suo codice."),
             O(name: "Annuncio completo",
-              explanation: "Prima del testo senti che tipo di risultato è: articolo, corrispondenza esatta o passo pertinente."),
+              explanation: "Prima del testo senti che tipo di risultato è: articolo o paragrafo, corrispondenza esatta o passo pertinente."),
         ]),
-        Q(id: .library, title: "Ricerca nella libreria", footer: nil, options: [
+        Q(id: .library, title: "Ricerca nella libreria",
+          footer: "Vale per le ricerche di due o più parole: con una parola sola i libri sono in ordine alfabetico.", options: [
             O(name: "Per pertinenza",
               explanation: "Vengono prima i libri in cui le parole che hai scritto contano di più, anche se la frase esatta non c'è."),
             O(name: "Prima la frase esatta",

@@ -37,6 +37,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         if CommandLine.arguments.contains("-uiTestFreshStart") {
             setStoredFirstOpenCompleted(prefs, false)
             setStoredAppearanceSource(prefs, .followSystem)
+            setStoredSearchSettings(prefs, .standard)   // le scelte della ricerca di serie, ogni volta
         }
         if CommandLine.arguments.contains("-uiTestSeedReprocess")
             || CommandLine.arguments.contains("-uiTestSeedReprocessKinds")
@@ -47,6 +48,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             || CommandLine.arguments.contains("-uiTestSeedKeyboardBooks")
             || UITestSeeding.macReadingSeeds.contains(where: CommandLine.arguments.contains) {
             setStoredFirstOpenCompleted(prefs, true)
+            setStoredSearchSettings(prefs, .standard)   // le scelte della ricerca di serie, ogni volta
             UITestSeeding.applyIfRequested()
         }
         // Consegna di «Apri con» ad APP IN CORSA, per i test d'interfaccia: `XCUIApplication.open` rilancia l'app, quindi

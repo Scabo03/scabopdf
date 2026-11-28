@@ -24,6 +24,12 @@ private final class SilentSearchSignals: SignalPlaying {
 
 final class BookSearchAppTests: XCTestCase {
 
+    /// Le scelte della ricerca di serie a ogni test: la finestra senza fornitore legge le preferenze dell'app.
+    override func setUp() {
+        super.setUp()
+        setStoredSearchSettings(LibraryService.shared.prefs, .standard)
+    }
+
     private func seg(_ id: String, _ role: String, _ text: String) -> ContentSegment {
         ContentSegment(id: id, role: role, text: text, lengthCategory: role == "NOTE" ? "SHORT" : "", acousticIntro: "")
     }
@@ -398,6 +404,76 @@ final class BookSearchAppTests: XCTestCase {
         XCTAssertEqual(session.result?.stopIndices, [2])
     }
 
+    /// Un libro inventato con due serie di articoli (l'articolo 7 in tutte e due), la frase «articolo 7» scritta in due elementi e le
+    /// parole da sole in altri.
+    private func articlesBook() -> [ContentSegment] {
+        var segs = [seg("p1", "HEADING_1", "Prima parte")]
+        for n in 1...12 {
+            segs.append(seg("a1_\(n)", "ARTICLE_HEADER", "Art. \(n). Titolo \(n)."))
+            segs.append(seg("t1_\(n)", "BODY", n == 3 ? "Come dice l'articolo 7, la regola vale anche qui, per tutti i casi della parte."
+                                         : "Testo della prima parte, numero \(n), con parole comuni di riempimento."))
+        }
+        segs.append(seg("p2", "HEADING_1", "Seconda parte"))
+        for n in 1...8 {
+            segs.append(seg("a2_\(n)", "ARTICLE_HEADER", "Art. \(n). Rubrica \(n)."))
+            segs.append(seg("t2_\(n)", "BODY", n == 2 ? "Si veda l'articolo 7 della prima parte, che regola lo stesso caso."
+                                         : "Testo della seconda parte, numero \(n), con altre parole di riempimento."))
+        }
+        return segs
+    }
+
+    /// L'ordine della finestra riga per riga, nei due ordini: i salti in testa, poi le corrispondenze esatte e i passi (o i passi e
+    /// poi le esatte). Ogni riga costruita dalla tabella deve dire la voce attesa, e la scelta di una riga porta a quella voce.
+    func test_window_order_jumpsThenExactAndPassages_inBothOrders_rowByRow() {
+        for order in [SearchSettings.Order.exactFirst, .passagesFirst] {
+            var s = SearchSettings.standard
+            s.order = order
+            let session = BookSearchSession(segments: articlesBook(), settingsProvider: { s })
+            var chosen: [BookSearchHit] = []
+            let vc = BookSearchViewController.makeForTesting(session: session, onChoose: { chosen.append($0) })
+            vc.loadViewIfNeeded()
+            vc.searchField.text = "articolo 7"
+            let done = expectation(description: "ricerca")
+            vc.runSearch(moveFocusToCount: true) { done.fulfill() }
+            wait(for: [done], timeout: 5)
+            guard let r = session.result else { return XCTFail("nessun risultato") }
+            let j = r.jumps.count, h = r.hits.count, w = r.wordPassages.count
+            XCTAssertEqual(j, 2, "l'articolo 7 nelle due parti")
+            XCTAssertEqual(h, 2, "la frase in due elementi")
+            XCTAssertGreaterThan(w, 0, "e dei passi per parole")
+            let jumps = (0..<j).map { vc.passageRowLabelForTesting($0) }
+            let exact = (0..<h).map { vc.rowLabelForTesting($0) }
+            let words = (j..<(j + w)).map { vc.passageRowLabelForTesting($0) }
+            let expected = jumps + (order == .exactFirst ? exact + words : words + exact)
+            for (k, label) in expected.enumerated() {
+                XCTAssertEqual(vc.resultCellLabelForTesting(row: k + 1), label, "\(order), riga \(k + 1)")
+            }
+            XCTAssertEqual(vc.rowForTesting(passage: 0), 1)
+            XCTAssertEqual(vc.rowForTesting(hit: 0), order == .exactFirst ? 1 + j : 1 + j + w)
+            XCTAssertEqual(vc.rowForTesting(passage: j), order == .exactFirst ? 1 + j + h : 1 + j)
+            vc.chooseResultForTesting(1)
+            XCTAssertEqual(chosen.last, r.hits[1], "\(order): la riga della seconda esatta porta a lei")
+            XCTAssertEqual(vc.rowToFocusAfterSearch, 0, "di serie il fuoco va sulla frase del conteggio")
+        }
+    }
+
+    /// «Vai al codice principale»: dopo «Cerca» il fuoco va sulla prima riga, l'articolo della serie più lunga.
+    func test_window_mainCode_focusesTheFirstRow() {
+        var s = SearchSettings.standard
+        s.codeChoice = .mainCode
+        let session = BookSearchSession(segments: articlesBook(), settingsProvider: { s })
+        let vc = BookSearchViewController.makeForTesting(session: session)
+        vc.loadViewIfNeeded()
+        vc.searchField.text = "articolo 7"
+        let done = expectation(description: "ricerca")
+        vc.runSearch(moveFocusToCount: true) { done.fulfill() }
+        wait(for: [done], timeout: 5)
+        XCTAssertEqual(vc.rowToFocusAfterSearch, 1)
+        XCTAssertEqual(vc.resultCellLabelForTesting(row: 1), vc.passageRowLabelForTesting(0), "la prima riga è il primo salto")
+        XCTAssertTrue(vc.countSentence.hasPrefix("Primo risultato: l'articolo 7. Subito sotto, l'articolo 7 in un'altra parte del libro."),
+                      vc.countSentence)
+    }
+
     /// La sezione «Ricerca» delle Impostazioni: otto domande, ogni riga dice nome e spiegazione, la scelta si conserva e la spunta si
     /// sposta.
     func test_searchSettingsScreen_rowsSayNameAndExplanation_andTheChoiceIsStored() {
@@ -683,6 +759,12 @@ final class LibrarySearchAppTests: XCTestCase {
 
     private var service: LibraryService { .shared }
     private var created: [String] = []
+
+    /// Le scelte della ricerca di serie a ogni test: la libreria legge le preferenze dell'app.
+    override func setUp() {
+        super.setUp()
+        setStoredSearchSettings(LibraryService.shared.prefs, .standard)
+    }
 
     override func tearDown() {
         for id in created {

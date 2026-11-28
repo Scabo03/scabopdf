@@ -106,8 +106,9 @@ final class BookSearchSession {
     }
 
     private func apply(_ r: BookSearchResult, wholeWord: Bool, duration: TimeInterval, build: TimeInterval?) {
+        // Un'impostazione che non cambia l'elenco (codice principale, rotore, annuncio) non fa dimenticare «Torna dove leggevi».
         if let previous = result, previous.normalizedQuery != r.normalizedQuery || previous.options != r.options
-            || previous.settings != r.settings {
+            || !previous.settings.sameList(as: r.settings) {
             positionBeforeSearch = nil
         }
         result = r
@@ -456,7 +457,7 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
             self.tableView.reloadData()
             self.onResultsChanged()
             if moveFocusToCount {
-                self.focusCountRow()
+                self.focusRowAfterSearch()
             } else {
                 UIAccessibility.post(notification: .announcement, argument: BookSearchWording.countSentence(result))
             }
@@ -464,9 +465,17 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
         }
     }
 
-    private func focusCountRow() {
+    /// La riga dove va il fuoco dopo «Cerca»: la frase del conteggio, o la prima riga (l'articolo del codice più ampio) con «Vai al
+    /// codice principale» e lo stesso numero in più parti del libro.
+    var rowToFocusAfterSearch: Int { session.result?.focusesMainCode == true ? 1 : 0 }
+
+    private func focusRowAfterSearch() { focusRow(rowToFocusAfterSearch) }
+
+    private func focusCountRow() { focusRow(0) }
+
+    private func focusRow(_ row: Int) {
         tableView.layoutIfNeeded()
-        let ip = IndexPath(row: 0, section: sectionIndex(.results)!)
+        let ip = IndexPath(row: row, section: sectionIndex(.results)!)
         tableView.scrollToRow(at: ip, at: .top, animated: false)
         tableView.layoutIfNeeded()
         if let cell = tableView.cellForRow(at: ip) {
@@ -704,6 +713,12 @@ final class BookSearchViewController: UIViewController, UITableViewDataSource, U
     }
     /// La riga (da 1) dell'occorrenza esatta `k` e del passo `k` nell'elenco (per i test).
     func rowForTesting(hit k: Int) -> Int? { row(of: .hit(k)) }
+    /// L'etichetta della riga `row` dei risultati come la costruisce la tabella (passa da `entry(atRow:)`).
+    func resultCellLabelForTesting(row: Int) -> String? {
+        guard let s = sectionIndex(.results) else { return nil }
+        loadViewIfNeeded()
+        return tableView(tableView, cellForRowAt: IndexPath(row: row, section: s)).accessibilityLabel
+    }
     func rowForTesting(passage k: Int) -> Int? { row(of: .passage(k)) }
     func chooseResultForTesting(_ k: Int) {
         guard let s = sectionIndex(.results), let row = row(of: .hit(k)) else { return }

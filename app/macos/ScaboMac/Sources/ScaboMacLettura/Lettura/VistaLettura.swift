@@ -560,8 +560,9 @@ public final class VistaLettura: NSView, NSAccessibilityCustomRotorItemSearchDel
             case .tables: t = modello.nextVisualIndex(from: da, kind: .table, forward: avanti)
             case .images: t = modello.nextVisualIndex(from: da, kind: .figure, forward: avanti)
             case .searchResults:
-                let indici = ReadingSpeechModel.activeSearch(ricercaAttiva)?.elementIndices ?? []
-                t = avanti ? indici.first(where: { $0 > da }) : indici.last(where: { $0 < da })
+                // Le stesse fermate dell'iPad (`adjacentStop`: di serie le occorrenze esatte in ordine di lettura, come prima; con
+                // «anche sui passi pertinenti» l'ordine dei risultati). Oggi il Mac non imposta una ricerca: pronto per la sua finestra.
+                t = ReadingSpeechModel.activeSearch(ricercaAttiva)?.adjacentStop(from: da, forward: avanti)
             }
             guard let trovato = t else { return nil }
             if filtro.isEmpty || testoPronunciato(trovato).localizedCaseInsensitiveContains(filtro) { return trovato }
