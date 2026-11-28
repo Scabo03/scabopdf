@@ -16,7 +16,10 @@
 //    vere stanno in regioni strette, o fuori da ogni regione, e restano glosse.
 //  * RIGHE DI TABELLA (miglioria `righeDiTabella`). Un nodo che la catena chiama nota ma le cui righe stanno dentro una regione «tabella»
 //    ammessa fra le candidate delle risorse visive è testo della tabella (le righe che cominciano con un numero sembrano note a corpo
-//    ridotto): diventa corpo, così si legge al suo posto dopo l'annuncio della tabella e non va fra le note, né si aggancia a un richiamo.
+//    ridotto): diventa NON CLASSIFICATO (`UNCLASSIFIED`), il ruolo di ripiego delle tabelle per la guardia delle risorse visive: si legge al
+//    suo posto, senza introduzione, dopo l'annuncio della tabella, non va fra le note né si aggancia a un richiamo. Non diventa corpo: la
+//    catena unisce i blocchi di corpo vicini anche fra le pagine, e una tabella senza punti fermi non si spezza (misurato sul banco: le
+//    tabelle di un documento finivano in un segmento solo, con tutti gli annunci in testa).
 //
 //  Una riga conta solo se il suo CENTRO sta dentro la regione (non quando la regione le è stata data solo perché la più vicina). Un nodo
 //  cambia solo se le sue righe ritrovate (per contenimento del testo normalizzato, sulla stessa pagina) coprono almeno metà del suo testo
@@ -111,7 +114,7 @@ public final class InnestoScansioni: ChainGraft {
                 } else { conti.glosseLasciate += 1 }
             case .NOTE where righeDiTabella:
                 if regolaVale(c, testi: testi, condizione: { $0.dentro && $0.tabellaAmmessa }) {
-                    c.type = .BODY
+                    c.type = .UNCLASSIFIED
                     c.length_category = nil
                     conti.noteInTabella += 1
                 } else if (righe[c.page_index] ?? []).contains(where: \.tabellaAmmessa) {

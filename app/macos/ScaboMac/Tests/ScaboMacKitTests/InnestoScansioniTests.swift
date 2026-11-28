@@ -2,7 +2,7 @@
 //  InnestoScansioniTests.swift
 //  ScaboMacKitTests — l'innesto delle regioni di Heron sulle pagine lette (giro «scansioni, ricerca e build», 2026-11-28): una «glossa»
 //  dentro una colonna larga diventa corpo, una glossa stretta o fuori dalle regioni resta; una «nota» dentro una tabella ammessa diventa
-//  corpo, una nota fuori resta; il testo dei nodi non cambia mai; l'innesto successivo riceve il documento rietichettato. Testi inventati.
+//  non classificata (si legge al suo posto, non si fonde col corpo), una nota fuori resta; il testo dei nodi non cambia mai; l'innesto successivo riceve il documento rietichettato. Testi inventati.
 //
 import Foundation
 import ScaboChain
@@ -72,11 +72,11 @@ final class InnestoScansioniTests: XCTestCase {
         XCTAssertEqual(innesta([colonna], regioni: r).0.rawDocument.structure.map(\.type), [.MARGINAL_GLOSS])
     }
 
-    func test_notaDentroUnaTabella_diventaCorpo_laNotaFuoriResta() {
+    func test_notaDentroUnaTabella_diventaNonClassificata_laNotaFuoriResta() {
         let tabella = NodeDict(id: "node_1", type: .NOTE, page_index: 0, text: "riga di una tabella con numeri", length_category: .MICRO)
         let nota = NodeDict(id: "node_2", type: .NOTE, page_index: 0, text: "una nota vera che non sta nella tabella", length_category: .SHORT)
         let (out, i) = innesta([tabella, nota])
-        XCTAssertEqual(out.rawDocument.structure.map(\.type), [.BODY, .NOTE])
+        XCTAssertEqual(out.rawDocument.structure.map(\.type), [.UNCLASSIFIED, .NOTE])
         XCTAssertNil(out.rawDocument.structure[0].length_category)
         XCTAssertEqual(out.rawDocument.structure[1].length_category, .SHORT)
         XCTAssertEqual(i.conti.noteInTabella, 1)

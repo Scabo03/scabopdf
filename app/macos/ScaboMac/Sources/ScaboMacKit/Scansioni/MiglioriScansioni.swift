@@ -45,7 +45,8 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
     /// corpo (`InnestoScansioni`): sono la seconda colonna delle pagine a due colonne, non glosse a margine.
     public var colonne = true
     /// LE RIGHE DI TABELLA (giro «scansioni, ricerca e build»): le «note» dentro una regione «tabella» ammessa fra le candidate delle
-    /// risorse visive tornano corpo (`InnestoScansioni`): sono righe della tabella che cominciano con un numero.
+    /// risorse visive diventano non classificate (`InnestoScansioni`): sono righe della tabella che cominciano con un numero, e si leggono
+    /// al loro posto dopo l'annuncio della tabella.
     public var righeDiTabella = true
 
     public init() {}
