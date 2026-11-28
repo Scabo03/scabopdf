@@ -502,7 +502,12 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
                     c["glm_fermato_presto"] = 1
                     g = (g.righe, c)
                 } else {
-                    let filtrato = LetturaScansioni.senzaRipetizioni(LetturaScansioni.filtraNotazione(testo, lettore: lettore), righeApple: righe)
+                    var filtrato = LetturaScansioni.senzaRipetizioni(LetturaScansioni.filtraNotazione(testo, lettore: lettore), righeApple: righe)
+                    if lettore == .xiaomi {
+                        // Xiaomi riscrive di fila blocchi interi: la protezione dei blocchi, sua sola (GLM resta identico).
+                        let b = LetturaScansioni.senzaBlocchiRipetuti(filtrato.testo, righeApple: righe)
+                        filtrato = (b.testo, filtrato.tolte + b.tolte)
+                    }
                     g = LetturaScansioni.senzaGuardia(righe: righe, testoGlm: filtrato.testo)
                     var c = g.conti
                     c["righe_ripetute_tolte"] = filtrato.tolte

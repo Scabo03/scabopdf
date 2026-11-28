@@ -132,4 +132,22 @@ final class LettoriEGrigliaTests: XCTestCase {
         XCTAssertEqual(MiglioriScansioni(spente: "griglia")?.spenteNomi, ["griglia"])
         XCTAssertEqual(MiglioriScansioni.spente.spenteNomi, ["tabelle", "glm", "paragrafo", "griglia", "colonne", "righetabella"])
     }
+
+    /// Xiaomi che riscrive un blocco di righe di fila: il blocco si dice una volta; sparso resta; se Apple lo vede due volte resta.
+    func test_senzaBlocchiRipetuti_ilBloccoDiFila_unaVolta() {
+        func riga(_ t: String) -> RigaLetta { RigaLetta(testo: t, bbox: BBox(x: 0, y: 0, width: 100, height: 10), regione: 0) }
+        let A = "prima riga del blocco abbastanza lunga", B = "seconda riga del blocco", C = "terza riga del blocco di prova"
+        let apple = [A, B, C, "una riga dopo"].map(riga)
+        let r = LetturaScansioni.senzaBlocchiRipetuti("\(A)\n\n\(B)\n\(C)\n\(A)\n\n\(B)\n\(C)\nuna riga dopo", righeApple: apple)
+        XCTAssertEqual(r.tolte, 3)
+        XCTAssertEqual(r.testo, "\(A)\n\n\(B)\n\(C)\n\nuna riga dopo")
+        let tre = LetturaScansioni.senzaBlocchiRipetuti([A, B, A, B, A, B].joined(separator: "\n"), righeApple: apple)
+        XCTAssertEqual(tre.testo, [A, B].joined(separator: "\n"), "tre copie di fila: una")
+        let sparso = LetturaScansioni.senzaBlocchiRipetuti([A, B, "in mezzo una riga diversa", A, B].joined(separator: "\n"), righeApple: apple)
+        XCTAssertEqual(sparso.tolte, 0, "il blocco ripetuto non di fila resta")
+        let vero = LetturaScansioni.senzaBlocchiRipetuti([A, B, A, B].joined(separator: "\n"), righeApple: [A, B, A, B].map(riga))
+        XCTAssertEqual(vero.tolte, 0, "anche Apple vede il blocco due volte: ripetuto davvero")
+        let corte = LetturaScansioni.senzaBlocchiRipetuti(["uno due", "tre", "uno due", "tre"].joined(separator: "\n"), righeApple: [])
+        XCTAssertEqual(corte.tolte, 0, "blocchi di sole righe brevi: non si toccano")
+    }
 }

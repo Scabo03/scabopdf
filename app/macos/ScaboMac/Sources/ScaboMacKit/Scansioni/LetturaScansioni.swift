@@ -692,6 +692,47 @@ public enum LetturaScansioni {
         return (righe.joined(separator: "\n"), tolte)
     }
 
+    /// LA PROTEZIONE CONTRO I BLOCCHI RIPETUTI, solo per Xiaomi (giro «scansioni, ricerca e build», 2026-11-28). Quando si incanta,
+    /// Xiaomi riscrive di fila un intero BLOCCO di righe, fino alla pagina intera (misurato sul banco: una pagina ruotata riscritta due
+    /// volte, 21 righe e poi le stesse 21), che la protezione di GLM, fatta per la riga uguale alla precedente, non vede. Un blocco di
+    /// due o più righe non vuote, con almeno una riga di quattro parole, uguale al blocco che lo precede subito, si dice una volta sola,
+    /// salvo che anche Apple veda quel blocco due volte. Le ripetizioni sparse restano, come per GLM. GLM non la usa: resta identico.
+    public static func senzaBlocchiRipetuti(_ testo: String, righeApple: [RigaLetta]) -> (testo: String, tolte: Int) {
+        let apple = " " + righeApple.flatMap { $0.testo.split(whereSeparator: \.isWhitespace).map { normalizza(String($0)) } }.filter { !$0.isEmpty }
+            .joined(separator: " ") + " "
+        func occorrenze(_ ago: String) -> Int {
+            var n = 0, da = apple.startIndex
+            while let r = apple.range(of: " " + ago + " ", range: da..<apple.endIndex) { n += 1; da = apple.index(before: r.upperBound) }
+            return n
+        }
+        let righe = testo.split(separator: "\n", omittingEmptySubsequences: false)
+        // Le righe non vuote: posizione nel testo, chiave normalizzata, numero di parole.
+        var piene: [(i: Int, k: String, n: Int)] = []
+        for (i, r) in righe.enumerated() {
+            let parole = r.split(whereSeparator: \.isWhitespace).map { normalizza(String($0)) }.filter { !$0.isEmpty }
+            if !parole.isEmpty { piene.append((i, parole.joined(separator: " "), parole.count)) }
+        }
+        var via = Set<Int>(), p = 0
+        while p < piene.count {
+            var trovato = false
+            var k = (piene.count - p) / 2
+            while k >= 2 {
+                let a = piene[p..<(p + k)], b = piene[(p + k)..<(p + 2 * k)]
+                if zip(a, b).allSatisfy({ $0.k == $1.k }), a.contains(where: { $0.n >= 4 }),
+                   occorrenze(a.map(\.k).joined(separator: " ")) < 2 {
+                    for x in b { via.insert(x.i) }
+                    piene.removeSubrange((p + k)..<(p + 2 * k))
+                    trovato = true
+                    break
+                }
+                k -= 1
+            }
+            if !trovato { p += 1 }
+        }
+        let resto = righe.enumerated().filter { !via.contains($0.offset) }.map(\.element)
+        return (resto.joined(separator: "\n"), via.count)
+    }
+
     /// SOLO LABORATORIO (variante F, spenta nell'app): le parole sillabate a fine riga ricomposte prima della catena. Una riga che
     /// finisce con un trattino dopo una lettera, seguita nella stessa regione da una riga che comincia con una minuscola, prende la
     /// prima parola della riga dopo, senza il trattino; la riga dopo, se resta vuota, si toglie. I riquadri non cambiano.
