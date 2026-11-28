@@ -360,7 +360,9 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
             for i in 0..<passi {
                 var migliore = 0, corsa = 0, buco = 0
                 for j in 0..<lunghezza {
-                    if scuro(i, j) { corsa += 1 + buco; buco = 0; migliore = max(migliore, corsa) }
+                    // La corsa comincia dal primo pixel scuro; i buchi chiari contano solo dentro la corsa (revisione indipendente: prima
+                    // contava anche i pixel chiari prima del primo scuro, fino a due).
+                    if scuro(i, j) { corsa = corsa > 0 ? corsa + 1 + buco : 1; buco = 0; migliore = max(migliore, corsa) }
                     else { buco += 1; if buco > filettoBuchiMassimi { corsa = 0; buco = 0 } }
                 }
                 let ok = Double(migliore) >= minimo

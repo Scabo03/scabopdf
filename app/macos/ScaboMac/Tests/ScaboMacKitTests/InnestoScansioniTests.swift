@@ -82,6 +82,16 @@ final class InnestoScansioniTests: XCTestCase {
         XCTAssertEqual(innesta([mista], regioni: r).0.rawDocument.structure.map(\.type), [.BODY])
     }
 
+    func test_glossaDentroUnaTabellaAmmessa_diventaNonClassificata() {
+        let tabella = NodeDict(id: "node_1", type: .MARGINAL_GLOSS, page_index: 0, text: "riga di una tabella con numeri")
+        let (out, i) = innesta([tabella])
+        XCTAssertEqual(out.rawDocument.structure.map(\.type), [.UNCLASSIFIED], "testo della tabella: letto al suo posto, non fuso col corpo")
+        XCTAssertNil(out.rawDocument.structure[0].length_category)
+        XCTAssertEqual(i.conti.glosseInTabella, 1)
+        XCTAssertEqual(i.conti.glosseInColonna, 0)
+        XCTAssertEqual(innesta([tabella], colonne: false).0.rawDocument.structure.map(\.type), [.MARGINAL_GLOSS], "regola delle colonne spenta: resta")
+    }
+
     func test_rigaFuoriDallaRegione_nonConta() {
         var r = regioni
         r[0]![0].dentro = false   // la riga ha la regione solo perché la più vicina

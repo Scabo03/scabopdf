@@ -8,7 +8,7 @@
 import CoreGraphics
 import Foundation
 import ScaboCore
-import ScaboMacOCR
+@testable import ScaboMacOCR
 import XCTest
 @testable import ScaboMacKit
 
@@ -118,6 +118,20 @@ final class LettoriEGrigliaTests: XCTestCase {
         let img = immagine(400, 300, orizzontali: [(100, 60, 120), (20, 0, 400)], verticali: [])
         let regione = BBox(x: 50, y: 50, width: 300, height: 200)
         XCTAssertEqual(EstrattoreScansioni.filettiDisegnati(img, regione: regione, larghezza: 400, altezza: 300), 0)
+    }
+
+    func test_filetti_laCorsaCominciaDalPrimoPixelScuro() {
+        // Regione di 100 pixel di larghezza (soglia: 30); un filetto di 29 pixel che comincia due pixel dopo il bordo non conta.
+        let img = immagine(100, 40, orizzontali: [(20, 2, 31)], verticali: [])
+        let regione = BBox(x: 0, y: 0, width: 100, height: 40)
+        XCTAssertEqual(EstrattoreScansioni.filettiDisegnati(img, regione: regione, larghezza: 100, altezza: 40), 0)
+        let lungo = immagine(100, 40, orizzontali: [(20, 2, 32)], verticali: [])
+        XCTAssertEqual(EstrattoreScansioni.filettiDisegnati(lungo, regione: regione, larghezza: 100, altezza: 40), 1, "30 pixel: conta")
+    }
+
+    func test_xiaomi_laRichiestaEInChatML_colRagionamentoVuoto() {
+        XCTAssertEqual(GlmOcr.chatmlSenzaRagionamento(utente: "X"),
+                       "<|im_start|>user\nX<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n")
     }
 
     func test_filetti_regioneVuotaOFuoriPagina() {

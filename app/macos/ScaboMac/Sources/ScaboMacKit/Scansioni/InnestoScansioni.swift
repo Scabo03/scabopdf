@@ -62,6 +62,7 @@ public final class InnestoScansioni: ChainGraft {
     public struct Conti: Codable, Equatable, Sendable {
         public var glosseInColonna = 0
         public var glosseInNote = 0
+        public var glosseInTabella = 0
         public var noteInTabella = 0
         public var glosseLasciate = 0
         public var noteLasciateSullePagineConTabelle = 0
@@ -111,6 +112,11 @@ public final class InnestoScansioni: ChainGraft {
             var c = n
             if !c.children.isEmpty { c.children = trasforma(c.children, testi: testi) }
             switch c.type {
+            case .MARGINAL_GLOSS where colonne && regolaVale(c, testi: testi, condizione: { $0.dentro && $0.tabellaAmmessa }):
+                // Una «glossa» dentro una tabella ammessa è testo della tabella: non classificata, come le righe di tabella (vedi sotto),
+                // perché da corpo si fonderebbe col corpo vicino (revisione indipendente del giro).
+                c.type = .UNCLASSIFIED
+                conti.glosseInTabella += 1
             case .MARGINAL_GLOSS where colonne:
                 let colonna: (RegioneRiga) -> Bool = { r in
                     r.dentro && r.frazioneLarghezza >= Self.frazioneColonnaMinima && !(r.tipo.map(Self.tipiNonDiTesto.contains) ?? true)
