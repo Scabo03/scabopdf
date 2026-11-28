@@ -32,6 +32,15 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
     /// dall'unico richiamo senza nota era sbagliato in 4 casi su 4 sul banco, perché gli elenchi dentro le note e le cifre lette male
     /// sembrano numeri di nota; e togliere l'asterisco quando il numero non è certo fonde la nota con quella sopra. L'asterisco resta.)
     public var paragrafo = true
+    /// LA GRIGLIA DELLE TABELLE (giro «scansioni, ricerca e build», 2026-11-28). Sul PDF col testo la guardia delle risorse visive sa se
+    /// una tabella ha una griglia disegnata (la sonda grafica conta filetti e riquadri: `VisualRegionCandidate.graphicsInside`), e dentro
+    /// una griglia un numero in testa alla riga è una cella, non un marcatore di nota. Su una scansione quei disegni non esistono come
+    /// oggetti: sono pixel dell'immagine. Qui si contano i FILETTI dell'immagine della pagina letta dentro la regione «tabella» e si danno
+    /// alla guardia condivisa come quei disegni (solo se ce n'è almeno uno: lo zero non si dice, così la regola delle colonne di testo
+    /// senza disegni resta fuori dalle scansioni come prima). La guardia non cambia. Misura del giro sugli estratti delle tabelle: delle
+    /// 63 tabelle che il modello vede, 34 scartate per «marcatori di nota» con la lettura di Apple (38 con GLM), e 28 di quelle 34 hanno
+    /// almeno 6 filetti (docs/BANCO_OCR.md § 48).
+    public var griglia = true
 
     public init() {}
 
@@ -41,11 +50,12 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
         m.tabelle = false
         m.glm = false
         m.paragrafo = false
+        m.griglia = false
         return m
     }()
 
     /// I nomi della riga di comando, nell'ordine.
-    public static let nomi = ["tabelle", "glm", "paragrafo"]
+    public static let nomi = ["tabelle", "glm", "paragrafo", "griglia"]
 
     /// Le migliorie con quelle dell'elenco spente (nomi separati da virgole, «tutte» per tutte); nil se un nome non è noto.
     public init?(spente elenco: String) {
@@ -55,6 +65,7 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
             case "tabelle": tabelle = false
             case "glm": glm = false
             case "paragrafo": paragrafo = false
+            case "griglia": griglia = false
             default: return nil
             }
         }
@@ -62,6 +73,6 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
 
     /// I nomi delle migliorie spente (vuoto se tutte accese).
     public var spenteNomi: [String] {
-        zip(Self.nomi, [tabelle, glm, paragrafo]).filter { !$0.1 }.map { $0.0 }
+        zip(Self.nomi, [tabelle, glm, paragrafo, griglia]).filter { !$0.1 }.map { $0.0 }
     }
 }

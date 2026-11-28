@@ -9,6 +9,7 @@
 //  Se GLM-OCR non riesce su una pagina sola, quella pagina tiene la lettura di Apple (contata nel rapporto).
 //
 
+import CoreGraphics
 import Darwin
 import Foundation
 import PDFKit
@@ -305,6 +306,54 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
         return e
     }
 
+    /// Un filetto è una fila di pixel scuri lunga almeno questa frazione del lato della regione (misurato sugli estratti delle tabelle del
+    /// giro di chiusura, docs/BANCO_OCR.md § 48: le righe di testo hanno spazi fra le parole, i filetti no).
+    static let filettoFrazioneMinima = 0.30
+    /// Pixel chiari ammessi dentro un filetto (la scansione lo interrompe a tratti).
+    static let filettoBuchiMassimi = 2
+    /// Sotto questo valore (scala di grigi 0-255) un pixel è scuro.
+    static let filettoSogliaScuro: UInt8 = 128
+
+    /// I FILETTI DISEGNATI dentro una regione della pagina letta: quante file orizzontali di pixel scuri lunghe almeno
+    /// `filettoFrazioneMinima` della larghezza (file contigue = un filetto), più quante colonne verticali lunghe almeno quella frazione
+    /// dell'altezza. È, per una scansione, la misura dei disegni (filetti, riquadri) che la sonda grafica dà sul PDF col testo.
+    /// `img` è l'immagine della pagina come si mostra (`LetturaScansioni.immagine`), `regione` in punti con l'origine in basso a sinistra.
+    static func filettiDisegnati(_ img: CGImage, regione b: BBox, larghezza W: Double, altezza H: Double) -> Int {
+        guard W > 0, H > 0, img.width > 0, img.height > 0 else { return 0 }
+        let sx = Double(img.width) / W, sy = Double(img.height) / H
+        let x0 = max(0, Int((b.x * sx).rounded(.down))), x1 = min(img.width, Int(((b.x + b.width) * sx).rounded(.up)))
+        let y0 = max(0, Int(((H - (b.y + b.height)) * sy).rounded(.down))), y1 = min(img.height, Int(((H - b.y) * sy).rounded(.up)))
+        let w = x1 - x0, h = y1 - y0
+        guard w > 2, h > 2, let ritaglio = img.cropping(to: CGRect(x: x0, y: y0, width: w, height: h)) else { return 0 }
+        var pixel = [UInt8](repeating: 255, count: w * h)
+        let disegnato: Bool = pixel.withUnsafeMutableBytes { buf in
+            guard let ctx = CGContext(data: buf.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w,
+                                      space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue) else { return false }
+            ctx.draw(ritaglio, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard disegnato else { return 0 }
+        func filetti(passi: Int, lunghezza: Int, scuro: (Int, Int) -> Bool) -> Int {
+            var n = 0, prec = false
+            let minimo = filettoFrazioneMinima * Double(lunghezza)
+            for i in 0..<passi {
+                var migliore = 0, corsa = 0, buco = 0
+                for j in 0..<lunghezza {
+                    if scuro(i, j) { corsa += 1 + buco; buco = 0; migliore = max(migliore, corsa) }
+                    else { buco += 1; if buco > filettoBuchiMassimi { corsa = 0; buco = 0 } }
+                }
+                let ok = Double(migliore) >= minimo
+                if ok && !prec { n += 1 }
+                prec = ok
+            }
+            return n
+        }
+        let soglia = filettoSogliaScuro
+        let orizzontali = filetti(passi: h, lunghezza: w) { r, c in pixel[r * w + c] < soglia }
+        let verticali = filetti(passi: w, lunghezza: h) { c, r in pixel[r * w + c] < soglia }
+        return orizzontali + verticali
+    }
+
     /// Una regione «tabella» delle scansioni va alla catena solo se è larga almeno un quarto della pagina e contiene almeno due righe.
     static func tabellaAmmessa(_ b: BBox, _ righe: [RigaLetta], larghezza W: Double) -> Bool {
         b.width >= 0.25 * W && righeDentro(b, righe) >= 2
@@ -365,7 +414,16 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
         // lettura le annunciava come tabelle; le tabelle vere del banco sono larghe dal 57 per cento della pagina in su).
         if migliorie.tabelle {
             candidatePerPagina[indice] = regioniViste.filter { $0.tipo == "picture" || ($0.tipo == "table" && Self.tabellaAmmessa($0.bbox, righe, larghezza: W)) }
-                .map { Self.candidata($0.bbox, etichetta: $0.tipo, pagina: indice, W: W, H: H) }
+                .map { r in
+                    var c = Self.candidata(r.bbox, etichetta: r.tipo, pagina: indice, W: W, H: H)
+                    // Miglioria `griglia` (giro «scansioni, ricerca e build»): i filetti dell'immagine dentro la regione «tabella», come i
+                    // disegni che la sonda grafica conta sul PDF col testo; lo zero non si dice (vedi `MiglioriScansioni.griglia`).
+                    if migliorie.griglia, r.tipo == "table" {
+                        let n = Self.filettiDisegnati(img, regione: r.bbox, larghezza: W, altezza: H)
+                        c.graphicsInside = n > 0 ? n : nil
+                    }
+                    return c
+                }
         }
         let righeOrdinate = righe
         let secondiImpaginazione = Date().timeIntervalSince(th)
