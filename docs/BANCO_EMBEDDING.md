@@ -1657,3 +1657,80 @@ libri che hanno solo le parole, i più pesanti.
 - **Tempi** (Mac, le 2.402 ricerche della misura, nessun'altra corsa pesante, campo): prima mediana 0,03 s e 90° percentile 0,06 s; dopo 0,20 s e
   0,85 s. Ogni parola costa una scansione di ogni libro: senza la regola dei tre caratteri il 90° percentile era 1,2 s. Sull'iPad non è
   misurato. Il rimedio, se servirà, è contare tutte le parole in una passata sola, oppure il formato con i confini dei blocchi.
+
+## 13. Le impostazioni della ricerca, opzione per opzione (giro «scansioni, ricerca e build», 28 novembre 2026)
+
+La decisione del maintainer del 26 novembre, eseguita in questo giro (LAYER2 § 12.16, decisione 31), sostituisce i sei punti «da confermare» della
+decisione 29 con una sezione «Ricerca» nelle Impostazioni dell'iPad: otto domande, ciascuna con almeno due opzioni spiegate a frasi intere, e i
+predefiniti che cambiano meno le abitudini di chi usava la ricerca prima dei passi. **Metodo (campo):** le stesse domande e verità del § 12 (VERITA_A,
+VERITA_NL, NUM_VARIANTI: 2.402 domande; restano solo nel laboratorio) passano dalla ricerca vera di ScaboCore con le impostazioni di ciascuna opzione,
+attraverso uno strumento del laboratorio (`giro_scansioni_ricerca_build_20261128/strumenti/cerca_app_impostazioni`, ScaboCore del repo per percorso)
+che presenta l'elenco nell'ordine dell'app: salti, poi corrispondenze esatte e passi nell'ordine scelto, senza doppioni. Misure con `misure.py` del
+banco. Le altre impostazioni restano ai predefiniti. Uscite in `giro_scansioni_ricerca_build_20261128/misure/`: libro e libreria misurati sul codice
+`60f66ff` (dall'iPad 67, cartelle `20261128_60f66ff_ipad67+_ricerca_libro_v2` e `…_ricerca_libreria`); il libro rifatto sul commit finale `94f8889`,
+dopo le correzioni della revisione (`20261128_94f8889_ipad67+_ricerca_libro`), con le uscite delle 11 varianti identiche domanda per domanda (le
+correzioni cambiano il fuoco, le fermate e le frasi, non l'elenco). Una revisione indipendente ha ricalcolato a mano otto numeri del libro e quattro
+della libreria: coincidono.
+
+**Una cautela (campo, dalla revisione).** Lo strumento conta i segmenti distinti; la finestra ha una riga per occorrenza esatta e può ripetere un
+segmento che è insieme esatto e passo. Il primo risultato coincide con l'app; «fra i primi dieci» è un limite superiore: con i predefiniti, per le voci
+d'indice, fra 0,760 e 0,779 contato per righe, contro 0,782 per segmenti.
+
+### 13.1 Nel libro (campo)
+
+Primo risultato giusto / fra i primi dieci; fra parentesi, quante volte il passo giusto sta fra i passi dell'elenco.
+
+| opzione | voci d'indice (1.250) | parole proprie (352) | indice dei codici (500) | citazioni (300) |
+|---|---|---|---|---|
+| **predefinite** (esatte prima, 20 passi) | 0,334 / 0,782 (0,77) | 0,136 / 0,403 (0,52) | 0,450 / 0,754 (0,79) | 0,270 / 0,403 (0,45) |
+| prima i passi pertinenti | 0,370 / 0,784 | uguale | 0,452 / 0,756 | uguale |
+| pochi passi, fino a 10 | uguale (0,71) | uguale (0,40) | uguale (0,74) | uguale (0,40) |
+| molti passi, fino a 50 | uguale (0,84) | uguale (0,62) | uguale (0,86) | uguale (0,53) |
+| una parola sola: anche i passi | uguale (0,85) | uguale | uguale (0,81) | uguale |
+| prima i passi e parola sola con i passi | 0,393 / 0,790 (0,85) | uguale | 0,454 / 0,756 (0,81) | uguale |
+| come la decisione 29 (passi prima, 50) | 0,370 / 0,784 (0,84) | 0,136 / 0,403 (0,62) | 0,452 / 0,756 (0,86) | 0,270 / 0,403 (0,53) |
+
+Per numero (articolo con il codice 200, senza il codice 200, altre forme 200; paragrafo 100, altre forme 100):
+
+| opzione | articolo col codice | articolo senza il codice | articolo, altre forme | paragrafo | paragrafo, altre forme |
+|---|---|---|---|---|---|
+| **salto diretto attivo** (predefinito) | 1,000 / 1,000 | 0,575 / 1,000 | 1,000 / 1,000 | 1,000 / 1,000 | 1,000 / 1,000 |
+| salto diretto spento | 0,105 / 0,375 | 0,135 / 0,765 | 0,125 / 0,680 | 0,390 / 0,960 | 0,510 / 0,980 |
+
+- **Tre scelte non cambiano l'elenco, per disegno**, e il banco dà numeri identici ai predefiniti: «vai al codice principale» (sposta il fuoco, dopo
+  «Cerca», sulla prima riga, che è l'articolo del codice più ampio, e accorcia la frase del conteggio), «rotore e Comando G anche sui passi» (cambia
+  le fermate e il valore «risultato N di M») e «annuncio completo» (cambia le parole delle righe). Il loro effetto è tutto nell'ascolto: lo provano i
+  test dell'app (fermate scritte per esteso nei due ordini, anche quando chi ascolta lascia un risultato; la riga del fuoco; le parole delle righe).
+- «Una parola sola: anche i passi» non cambia il primo risultato con le esatte prima, ma porta il passo giusto fra i passi da 0,77 a 0,85 sulle voci
+  d'indice e da 0,28 a 0,58 sui paragrafi chiesti per numero.
+
+### 13.2 Nella libreria (campo)
+
+| opzione | libro giusto al primo posto | fra i primi tre | fra i primi dieci | trovato |
+|---|---|---|---|---|
+| **per pertinenza** (predefinito) | 0,355 | 0,630 | 0,885 | 0,905 |
+| prima la frase esatta | 0,393 | 0,661 | 0,895 | 0,905 |
+
+Per famiglia, al primo posto: voci d'indice 0,538 → 0,607 (fra i primi tre 0,789 → 0,842), indice dei codici 0,184 → 0,190; parole proprie (0,224) e
+citazioni (0,033) identiche. Nessuna famiglia peggiora. L'elenco «prima la frase esatta» è, su tutte le 2.402 domande, la ripartizione stabile
+dell'elenco per pertinenza (prima i libri con la frase, poi gli altri, ciascun gruppo nell'ordine di prima); in 2.185 domande i due elenchi sono
+identici (campo, dalla revisione). **Un dato per il maintainer:** sul banco «prima la frase esatta» dà il libro giusto al primo posto più spesso del
+predefinito scelto. Il predefinito resta «per pertinenza», come chiesto; la proposta è nel referto del giro.
+
+### 13.3 I tempi sull'iPad (dedotto)
+
+Nessun iPad collegato al Mac in questo giro: i tempi sull'iPad A14 sono **dedotti** dai tempi del Mac (§ 12, M5 Pro, campo) con il rapporto delle
+prestazioni a un nucleo (Geekbench 6: A14 circa 1.900, M5 circa 4.200, rapporto circa 2,2; fonte: browser.geekbench.com, consultato il 28 novembre
+2026). La ricerca nella libreria legge il testo di tutti i libri, quindi dipende anche dalla memoria, più lenta sull'iPad: il rapporto vero sarà più
+alto, e i numeri qui sotto sono un limite inferiore.
+
+| misura | Mac (campo, § 12) | iPad A14 (dedotto, almeno) |
+|---|---|---|
+| libreria, mediana di una ricerca di più parole | 0,20 s | 0,44 s |
+| libreria, 90° percentile | 0,85 s | 1,9 s |
+| libro più grande del banco (30.392 segmenti), prima ricerca di più parole (indice e testo normalizzato) | 0,63 s | 1,4 s |
+| libro, una ricerca dopo la prima | 7 ms | circa 15 ms |
+
+Nel libro i tempi restano piccoli. Nella libreria la mediana resta sotto il mezzo secondo, ma un decimo delle ricerche di più parole passerebbe
+probabilmente i due secondi: il rimedio indicato dal maintainer (contare tutte le parole in una passata sola) resta la proposta per il giro dopo la
+trasmissione, da misurare su un iPad collegato. Le impostazioni della ricerca non cambiano questi tempi: ordinano lo stesso lavoro.

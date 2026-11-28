@@ -1788,6 +1788,10 @@ La frase del conteggio dice le parti nell'ordine dell'elenco, per esempio «Prim
 salto con il nome del codice. Il rotore «Risultati della ricerca», i valori «risultato N di M», le evidenze e ⌘G restano sulle sole occorrenze esatte.
 Una ricerca di una parola sola resta com'era.
 
+*Superato dalla decisione 31 (28 novembre 2026).* L'ordine dell'elenco, il tetto dei passi, le parole delle righe, la parola sola e le fermate del rotore
+si scelgono ora nella sezione «Ricerca» delle Impostazioni. Con i predefiniti: prima le corrispondenze esatte, poi i passi, al più 20; la riga del passo
+non comincia più con «Passo:»; rotore e ⌘G sulle sole occorrenze esatte, come qui.
+
 *Nella libreria.* Per una ricerca di almeno due parole i libri si ordinano per il peso delle parole nel libro intero, dal testo di ricerca di oggi e
 senza un formato nuovo. Contano le parole di almeno tre caratteri e i numeri. Ai libri con la frase intera si aggiungono al più dieci libri che hanno
 solo le parole, i più pesanti. La riga di questi libri dice «nessun risultato esatto»; aperto il libro, la ricerca dà i suoi passi.
@@ -1802,7 +1806,8 @@ Nella libreria il libro giusto è trovato da 0,23 a 0,91 e sta al primo posto da
 portato con le stesse regole. Le differenze col banco stanno negli intervalli e hanno cause misurate. Le letture restano identiche al byte: 52 volumi
 su 52, iOS 27.
 
-**Da confermare dal maintainer.** Sono le scelte d'ascolto non ovvie; fra parentesi l'inclinazione del giro.
+**Da confermare dal maintainer.** Sono le scelte d'ascolto non ovvie; fra parentesi l'inclinazione del giro. *Chiusi dalla decisione 31 (28 novembre
+2026): ogni punto è diventato una domanda della sezione «Ricerca» delle Impostazioni.*
 - a) L'ordine dell'elenco nel libro, cioè salti, poi passi, poi occorrenze esatte, e il limite di 50 passi (sì: a 50 il passo giusto c'è per 0,62
   delle domande a parole proprie, a 10 per 0,40).
 - b) Una parola sola resta con le sole occorrenze esatte (sì per ora). Con i passi il primo risultato sarebbe giusto 0,59 volte invece di 0,34, sulle
@@ -1817,6 +1822,87 @@ su 52, iOS 27.
   di tutta la libreria porterebbe il libro giusto al primo posto 0,49 volte invece di 0,36. Chiede però un testo di ricerca con i confini dei
   blocchi, cioè un giro a sé.
 
+**Una decisione del maintainer del 28 novembre 2026**, registrata all'apertura del giro «scansioni, ricerca e build» (2026-11-28), l'ultimo giro di
+prodotto prima della trasmissione sull'OCR:
+
+30. **Nell'app Mac entra la combinazione migliore del banco per le scansioni**: il testo del lettore montato sulle regioni e sull'ordine del modello
+    d'impaginazione (Heron), senza perdere ciò che la catena fa bene, prima di tutto l'aggancio delle note ai richiami; e la guardia delle risorse visive
+    corretta al livello più generale sicuro, dopo aver capito regione per regione perché scarta le tabelle che il modello vede. Il banco delle scansioni e il
+    metro dei blocchi per l'ascolto sono la rete (decisione 24). *28 novembre 2026.*
+
+*Esito del giro (28 novembre 2026; misure in `docs/BANCO_OCR.md` § 48).* Tre migliorie nella via delle scansioni del Mac, tutte nel punto d'innesto della catena
+(dopo la classificazione, prima dell'aggancio delle note), senza scrivere testo, per tutti i lettori (Apple, GLM, e Xiaomi nel laboratorio). *La griglia*: i filetti
+delle tabelle si contano sull'immagine della scansione e la guardia li usa come i disegni di un PDF col testo (sulle scansioni non li aveva, e scartava le tabelle
+per «marcatori di nota»). *Le righe di tabella*: una «nota» dentro una tabella ammessa è una riga di tabella e diventa non classificata, letta al suo posto dopo
+l'annuncio. *Le colonne*: una «glossa» dentro una regione di Heron larga almeno un terzo della pagina è testo della seconda colonna e diventa corpo (nota solo dove
+Heron dice «nota a piè di pagina»); la catena faceva glossa, cioè non leggeva, le righe a corpo di nota fuori dalla colonna stimata, e sulle pagine a due colonne
+la seconda colonna restava fuori. Heron decide solo questo; titoli, note, aggancio e continuità del corpo restano della catena. Con le migliorie spente la via è
+identica a prima.
+
+Sul banco le parole perse scendono di circa quattro punti (Apple pulita da 5,6 a 1,6 per cento; pesate sul corpus da 7,1 a 1,8), le note trovate e agganciate
+non cambiano, le tabelle annunciate sui 13 estratti passano da 24, 16 e 22 su 69 a 55, 51 e 51, senza annunci in più sulle pagine con tabelle. Il costo, misurato
+col metro dei blocchi: qualche blocco spezzato o fuso in più (difetti sul banco da 802 a 810 con Apple pulita, da 735 a 751 con Apple degradata, 730 invariati con
+GLM pulita, da 775 a 781 con GLM degradata), quasi tutti sul testo prima taciuto; l'unico peggioramento su qualcosa che prima si sentiva sono uno o due titoli
+per configurazione del codice a due colonne del banco, prima un blocco a sé e ora uniti al testo ritrovato. Sugli estratti, contate dove l'annuncio si sente, le
+tabelle sono 53, 47 e 49, e qualche annuncio cade una pagina prima o si impila con altri. Tre modi di restringere la regola (tutte note; note solo col corpo delle
+note della pagina; non classificate) sono andati peggio. La regola va nella build 5 del Mac; il giro e la revisione indipendente inclinano a tenerla, ma la
+decisione 24 va letta dal maintainer: **conta come regressione per chi ascolta anche un difetto che sta solo su testo che prima non si sentiva affatto?** Se sì,
+la regola si restringe o si spegne (la miglioria `colonne`); se no, si tiene coi residui dichiarati (`docs/BANCO_OCR.md` § 48). I libri già nella libreria non cambiano: la lettura nuova vale per le scansioni
+importate da ora, o quando l'utente chiede la lettura migliore. Le glosse finte dei codici nel tronco comune (PDF col testo) restano fuori da questo giro: diagnosi
+nel referto del giro.
+
+**Una decisione del maintainer del 26 novembre 2026**, eseguita nel giro «scansioni, ricerca e build» (2026-11-28), sui sei punti da confermare della
+decisione 29:
+
+31. **Le scelte d'ascolto della ricerca si fanno nelle Impostazioni**: al posto dei sei punti da confermare, una sezione «Ricerca» con una domanda per
+    ogni scelta, almeno due opzioni ciascuna, spiegate con frasi complete, così l'utente sceglie ciò che gli è più comodo e capisce da solo che cosa
+    fa che cosa. I predefiniti sono quelli che cambiano meno le abitudini di chi usava la ricerca prima dei passi. I numeri delle misure stanno nei
+    referti, non nell'app. *26 novembre 2026, registrata il 28.*
+
+*Esito del giro (28 novembre 2026; misure in `docs/BANCO_EMBEDDING.md` § 13).* Nelle Impostazioni dell'iPad, dopo «Comandi da tastiera», la sezione
+«Ricerca» con la riga «Come cerca ScaboPDF». La schermata comincia con una frase che spiega le corrispondenze esatte e i passi pertinenti e dice che le
+scelte valgono dalla prossima ricerca; poi otto domande. Ogni riga dice a VoiceOver il nome e la spiegazione insieme, con «selezionato» sulla scelta in
+uso. Le parole e i valori stanno in ScaboCore (`SearchSettings.swift`): il Mac userà le stesse quando avrà la sua finestra di ricerca, e il suo rotore
+usa già le stesse fermate. Le domande, col predefinito per primo:
+- *Ordine dei risultati*: prima le corrispondenze esatte, poi i passi pertinenti; oppure prima i passi. Il salto diretto, se c'è, sta sempre in testa.
+- *Quanti passi pertinenti*: fino a 10, fino a 20 (predefinito), fino a 50.
+- *Salto ad articoli e paragrafi*: attivo; oppure spento, e il numero si cerca come una parola qualsiasi.
+- *Libri con più codici*, quando la ricerca non dice quale: tutti gli articoli con quel numero, che la frase del conteggio elenca; oppure «vai al
+  codice principale»: dopo «Cerca» il fuoco va sulla prima riga, l'articolo del codice più ampio, e gli altri restano subito sotto.
+- *Una parola sola*: solo le corrispondenze esatte, come prima; oppure anche i passi.
+- *Rotore e Comando G*: solo sulle corrispondenze esatte, in ordine di lettura, come prima; oppure anche sui passi, nell'ordine dell'elenco, col valore
+  «risultato N di M» che li conta tutti. Chi lascia un risultato e va avanti nella lettura riparte dall'ultimo raggiunto.
+- *Annuncio dei risultati*: breve, subito il testo (per un articolo prima il nome del suo codice); oppure completo, prima il tipo di risultato
+  («Articolo del …:», «Paragrafo:», «Corrispondenza esatta:», «Passo pertinente:»).
+- *Ricerca nella libreria*, per le ricerche di due o più parole: per pertinenza; oppure prima i libri con la frase esatta, poi gli altri.
+
+Con i predefiniti, fuori dalla finestra dei risultati non cambia nulla: rotore, ⌘G, valori «risultato N di M» e descrizione del parlato identici al
+byte a quelli della decisione 29 (sonda della revisione indipendente). Nella finestra cambiano l'ordine (prima le esatte), il tetto (20) e la riga del
+passo. Sul banco «prima i passi» porta il primo risultato giusto, sulle voci d'indice, da 0,33 a 0,37; con 50 passi il passo giusto sta fra i passi
+per 0,62 delle domande a parole proprie, con 20 per 0,52; il salto spento fa scendere gli articoli chiesti per numero, al primo posto, da 1,00 a 0,10;
+nella libreria «prima la frase esatta» porta il libro giusto al primo posto da 0,355 a 0,393 senza peggiorare nessuna famiglia. I tempi sull'iPad sono
+dedotti (nessun iPad collegato).
+
+**Da proporre al maintainer** (nel referto del giro): la libreria con «prima la frase esatta» come predefinito; nelle ricerche per numero con le esatte
+prima, le stesse intestazioni si sentono due volte di fila, come salto e come corrispondenza esatta; con l'annuncio breve, a orecchio, nulla separa
+l'ultima corrispondenza esatta dal primo passo (lo dice solo la frase del conteggio).
+
+**Un'altra decisione del maintainer del 28 novembre 2026**, dallo stesso brief del giro:
+
+32. **Xiaomi-OCR-0 nel catalogo dei modelli del Mac, se fonte e motore lo permettono**: GGUF ufficiale di Xiaomi o di ggml-org, o la via più pulita; se una via
+    chiede un account, un token o una password ci si ferma e la si descrive, e Xiaomi resta provvisorio. Se il motore dell'app non lo carica, l'aggiornamento del
+    motore tocca anche GLM, che va rimisurato prima e dopo. Le protezioni di GLM (filtro della notazione, righe ripetute) valgono anche per lui. Il lettore
+    preimpostato non cambia. *28 novembre 2026* (la decisione 25 lo teneva fuori dal giro del 21 novembre perché ripete intere parti di pagina).
+
+*Esito del giro (28 novembre 2026; misure in `docs/BANCO_OCR.md` § 48).* Nessun GGUF ufficiale: né Xiaomi né ggml-org ne pubblicano; quelli della comunità non si
+usano. La via più pulita è la conversione dai pesi ufficiali (revisione `bbd8cf8d` della scheda di Xiaomi, licenza apache-2.0) col convertitore ufficiale di
+llama.cpp, allo stesso tag del motore dell'app (b11429), con le impronte di partenza e d'arrivo dichiarate. Così il motore dell'app lo carica senza aggiornamenti,
+e GLM non cambia. Per offrirlo agli utenti bisognerebbe pubblicare la conversione in un deposito del progetto, che chiede un account e un token: il giro si è
+fermato lì, e la voce del catalogo resta **provvisoria**, senza scaricamento, come le altre (decisione 22); l'app non lo offre fra i lettori. Nel motore
+dell'app ha le protezioni di GLM e una sua, contro i blocchi di righe ripetuti di fila (si incantava riscrivendo la pagina intera). Sul banco perde meno parole di
+GLM e fa molto meno rumore udibile, ma dà il doppio delle false note e un poco meno di tabelle. Il lettore preimpostato resta GLM. La proposta, coi numeri e col
+tempo da mostrare prima della lettura, è nel referto del giro.
+
 ---
 
 ## 13. Ricerca testuale
@@ -1829,7 +1915,7 @@ Una ricerca **fuori dai file** opera sulla libreria di documenti dell'utente e p
 
 Una ricerca **interna al file** opera sul testo del documento aperto e permette di trovare una stringa testuale. Si raggiunge da un controllo in barra strumenti, indipendente dal Layout attivo.
 
-*Dal 26 novembre 2026* (§ 12.16, decisione 29): per una ricerca di almeno due parole, oltre alle occorrenze esatte, i passi per parole pesate e, per un articolo o un paragrafo chiesto per numero, il salto diretto; nella libreria i libri in ordine di peso delle parole. Le regole, le frasi e ciò che resta da confermare stanno lì.
+*Dal 26 novembre 2026* (§ 12.16, decisione 29): per una ricerca di almeno due parole, oltre alle occorrenze esatte, i passi per parole pesate e, per un articolo o un paragrafo chiesto per numero, il salto diretto; nella libreria i libri in ordine di peso delle parole. Le regole, le frasi e ciò che resta da confermare stanno lì. *Dal 28 novembre 2026* (decisione 31) le scelte d'ascolto della ricerca si fanno nella sezione «Ricerca» delle Impostazioni.
 
 ### 13.2 Tab Ricerca
 

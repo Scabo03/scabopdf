@@ -3997,3 +3997,123 @@ prima). Le misure di prima venivano dal valore istantaneo fermo per un minuto (d
 unico delle frasi per la trasmissione (dipende dall'app), la via GLM dell'app nella serie d'energia (esclusa dal maintainer), Xiaomi fp16 contro Q8 e l'ordine di lettura per tutte le
 coppie (facoltativi, non fatti), MiniCPM e GLM sulla degradata degli estratti delle tabelle, i pesi nuovi di Marker. Difetto trovato e proposto, non corretto: la guardia delle risorse visive
 scarta quasi due tabelle su tre di quelle che il modello vede sulle scansioni (frase 7).
+
+## 48. Giro «scansioni, ricerca e build» — le scansioni del Mac montate sulle regioni di Heron, la guardia delle tabelle, Xiaomi (28 novembre 2026)
+
+> Codice misurato: ramo `feat/scansioni-mac`, officina del Mac compilata a ogni commit (`giro_scansioni_ricerca_build_20261128/officine/<data>_<commit>_mac4+`:
+> il codice discende dalla build 4 del Mac, «+» = non ancora caricato). I nomi delle cartelle del laboratorio portano gli hash di prima della riscrittura del
+> ramo (fatta per il controllo del testo dei volumi; corrispondenza in `registri/corrispondenza_hash_scansioni_riscrittura_1450.txt`): `8aba576` del
+> laboratorio è `fdbf30e` nella storia pubblicata, con lo stesso codice (cambiano tre righe di commento), e `965c233` è `d07eb23`. Le misure di `8aba576` sono
+> quelle del codice della regola finale; dopo vengono due correzioni chieste dalla revisione indipendente (`d339b2b`: glosse dentro una tabella non
+> classificate, filetti contati dal primo pixel scuro), misurate nella notte (sotto). Strumenti: `migliorie/strumenti/misure_m.py` (`a47ed856…`), `vere_m.py`
+> (`ea517fb6…`), `tabella_m.py` (`94f546ed…`), `globale/strumenti/rumore.py` (`c8bb2d90…`), metro dei blocchi `chiusura_radio/strumenti/blocchi.py`
+> (`6fc24db9…`, prova del metro: 16 casi su 16) col pilota `giro_scansioni_ricerca_build_20261128/strumenti/blocchi_stati.py` (`f17963ca…`), estratti delle
+> tabelle `guardia_per_regione.py` (`623a5775…`), stima pesata `pesata_corpus.py` (`3b4cfd56…`); python con PyMuPDF 1.27.2.3. Materiale: banco del giro 1
+> (`banco/MANIFESTO.json` `0e7feec2…`), livello B (`e08a5589…`), estensione (`386a9507…`), ruotate e scansioni vere del giro globale, 13 estratti delle tabelle
+> del § 47 (`MANIFESTO_X.json` `bbbb2ae6…`). Testo di GLM dalla cache copiata del giro «migliorie» (le copie in `cache_glm/`), testo di Xiaomi dalla sua cache
+> di questo giro. Uscite in cartelle nuove per stato (`uscite/<stato>/`), mai sovrascritte; misure in `banco_ocr/migliorie/misure/<stato>/`.
+
+**La guardia delle risorse visive, regione per regione** (campo; officina `b3017e4` con l'uscita nuova `<stem>.guardia.json`, 13 estratti). Delle 63 tabelle che il
+modello vede, la guardia ne scartava 34 con Apple e 38 con GLM per «marcatori di nota», 3 e 1 per «testo non letto», 2 e 2 per «blocco certo». La deduzione del § 47
+(testo che l'app non legge per scelta) **non è la causa principale**. La causa: sulle scansioni la guardia non ha il conteggio dei disegni della pagina (la pagina è
+un'immagine), quindi la regola della griglia non vale, e le righe di una tabella che cominciano con un numero sembrano note. Secondo ostacolo: la catena stessa
+classifica come note le righe di tabella che cominciano con un numero (un difetto della lettura: righe di tabella lette fra le note). **Non è la stessa causa delle
+glosse finte** (quelle sono righe a corpo di nota fuori dalla colonna stimata, sotto).
+
+**Le tre migliorie** (campo), tutte nel punto d'innesto del Mac (`ChainGraft`, dopo la classificazione e prima dell'aggancio delle note), senza scrivere testo e senza
+righe nuove verso l'iPad; ciascuna si spegne nel laboratorio (`--senza griglia,colonne,righetabella`):
+- *griglia*: i filetti delle tabelle contati sull'immagine dentro la regione «tabella» di Heron (righe e colonne scure lunghe almeno tre decimi della regione, buchi di al più 2
+  pixel, soglia del grigio 200, misurata: con 128 la degradata non ne trovava) e passati alla guardia come i disegni del PDF col testo;
+- *righe di tabella*: una «nota» le cui righe stanno dentro una tabella ammessa diventa NON CLASSIFICATA (letta al suo posto dopo l'annuncio, senza
+  introduzione, fuori dalle note). Prima prova: CORPO. La rete l'ha bocciata: le righe si univano col corpo vicino anche fra le pagine, e sul documento delle tabelle
+  del banco (GLM, pulita) le tabelle annunciate scendevano da 17 a 2 su 19, tutti gli annunci in testa a una pagina;
+- *colonne*: una «glossa» le cui righe stanno dentro regioni di Heron larghe almeno un terzo della pagina diventa CORPO (NOTA se la maggior parte delle righe sta in
+  regioni «footnote» di Heron: scatta su due pagine del banco, misure identiche; NON CLASSIFICATA se sta in una tabella ammessa, da `d339b2b`). La catena fa glossa solo di una riga a corpo di nota fuori dalla
+  colonna del corpo stimata; sulle pagine a due colonne la seconda colonna resta fuori. Al banco l'82 per cento delle parole fuori dalla lettura della via delle
+  scansioni erano glosse finte.
+
+**Prima e dopo** (campo; «prima» = stato `20261128_2bdba4d_mac4+_spente`, le tre migliorie spente; «dopo» = `20261128_8aba576_mac4+_regioni`, cioè `fdbf30e`). Con le migliorie spente
+la via delle scansioni è identica a prima: 9.354 letture su 9.360 e 2.972 pagine su 2.974 identiche a `som2` (le due pagine diverse, Apple degradata, cambiano già
+nelle righe grezze del lettore di Apple: instabilità del lettore sotto carico, non delle migliorie).
+
+| | Apple pulita | Apple degradata | GLM pulita | GLM degradata |
+|---|---|---|---|---|
+| parole perse, banco (documento) | 5,58 → 1,57 | 4,71 → 1,46 | 5,34 → 1,33 | 4,93 → 1,38 |
+| parole perse, livello B con l'estensione | 5,02 → 2,05 | 4,61 → 2,10 | 5,40 → 2,52 | 4,96 → 2,58 |
+| idem, pesate sul corpus (metodo del § 35) | 7,08 → 1,84 (−5,2 [−7,0; −3,6]) | 6,44 → 2,00 (−4,4 [−6,1; −2,9]) | 8,14 → 3,07 (−5,1 [−6,8; −3,4]) | 7,16 → 2,99 (−4,2 [−5,8; −2,7]) |
+| parole perse, ruotate | 1,82 → 1,03 | — | 2,75 → 1,94 | — |
+| parole perse, scansioni vere | 5,29 → 5,29 | — | 2,80 → 2,80 | — |
+| note trovate / agganciate, banco | 186 / 35 → 186 / 35 | 199 / 23 → 199 / 23 | 205 / 65 → 205 / 65 | 210 / 54 → 210 / 54 |
+| tabelle, banco (su 19) | 18 → 19 | 17 → 17 | 17 → 17 | 17 → 17 |
+| tabelle, 13 estratti (su 69; § 47: 24, 16, 22) | 24 → 55 | 16 → 51 | 22 → 51 | non misurata |
+| tabelle annunciate, scansioni vere (nessuna verità) | 4 → 13 | — | 5 → 16 | — |
+| metro dei blocchi, banco: difetti | 802 → 810 | 735 → 751 | 730 → 730 | 775 → 781 |
+| metro dei blocchi, banco: false note | 86 → 86 | 79 → 79 | 65 → 57 | 87 → 78 |
+
+Le tabelle degli estratti sono contate, come nel § 47, sulla pagina della regione accettata dalla guardia. Contate sulla pagina dove l'annuncio si sente
+sono 53, 47 e 49 (Apple pulita, Apple degradata, GLM pulita; ricontate dalla revisione indipendente): 6, 5 e 5 annunci cadono una pagina prima, sulle tabelle
+che continuano da una pagina all'altra; e gli annunci impilati (due o più «Tabella» di fila prima di un solo blocco di testo) passano da 1, 1 e 3 punti a 7, 6 e
+8 (16, 12 e 25 annunci). Prima quelle tabelle non si annunciavano: non è un peggioramento, ma è un difetto d'ascolto nuovo, che toccherebbe la guardia
+condivisa (un annuncio solo, col numero delle tabelle: un giro suo).
+
+Le stime pesate «prima» non sono quelle del § 35.1 (Apple 7,13, GLM 6,78): là il codice della build 3 e GLM con la guardia di prima; qui il codice di oggi con le
+migliorie spente (confronto non omogeneo con quello del § 35). Sugli estratti nessuna tabella in più sulle pagine con tabelle; sulle pagine che la verità del § 47
+dà senza tabelle, 3 (Apple) e 5 (GLM) annunci: tabelle vere di continuazione, giudicate contro la pagina (la verità del § 47 è incompleta lì).
+
+**Le salite, giudicate una per una** (campo). *Rumore udibile* (livello B, Apple pulita 1,28 → 1,46 per mille): tutte le parole in più stanno su pagine dove l'innesto
+ha reso leggibile testo prima taciuto; 24 delle 35 sono una ripetizione vera della pagina (la nota di un codice riporta il testo previgente, uguale al comma del corpo),
+le altre il rumore del lettore sul testo ritrovato. *Testatine nel flusso* (+3..+5 sul livello B): sono l'ultima riga della seconda colonna in fondo alla pagina, ora letta;
+le righe di testatina vere stanno in nodi che non cambiano (il metro conta ogni riga di due parole nella fascia dell'8 per cento). *Tabelle in più*: tabelle vere che la
+verità di B ed E non conta (viste contro la pagina) e, sul banco, una tabella vera della pagina 15 annunciata a fine pagina 14, come già prima (annunci su una pagina
+precedente alla loro: 2, 6 e 3 prima e dopo). *Metro dei blocchi*: qualche blocco spezzato e fuso in più (Apple degradata +14 spezzati, +5 fusioni), sul testo ritrovato
+e dove una nota della seconda colonna, ora corpo, si unisce al corpo vicino; con GLM le false note calano (le righe di tabella non sono più note).
+
+**Restringere la regola delle colonne: tre prove, tutte peggio** (campo; banco, metro dei blocchi, difetti per Apple pulita, Apple degradata, GLM pulita, GLM degradata):
+corpo 810, 751, 730, 781; tutto nota (officina `20261128_fb2aa87_mac4+`) 839, 775, 759, 803, con false note da +11 a +14 (testo che la verità chiama corpo); nota
+quando il corpo stimato è più vicino a quello delle note della pagina (officina `20261128_6259ee8_mac4+`) 837, 775, 757, 803 (sulle scansioni anche il testo a corpo pieno ha un corpo stimato da nota: su una pagina di codice
+note 6,5, testo 8,0, e le glosse finte tutte 6,5); non classificata (provata senza commit) 836, 781, 761, 819 (meno fusioni, molti più paragrafi spezzati fra le due
+colonne). Le parole perse scendono uguali in tutte. Resta il corpo: la variante che costa meno (le varianti non sono nella storia pubblicata del ramo).
+
+**I residui per chi ascolta, contati uno per uno** (campo, revisione indipendente, metro dei blocchi sul banco): ogni blocco spezzato o interrotto nuovo divide un
+testo che nello stato spento si perdeva in parte o del tutto; un solo testo già diviso in due blocchi ora è in tre; uno o due titoli per configurazione, sempre
+nel codice a due colonne del banco, prima erano un blocco a sé (letto come testo, non annunciato come titolo) e ora stanno in un blocco insieme al testo
+ritrovato: solo qui qualcosa che prima si sentiva separato ora si sente peggio. Il rumore udibile e gli asterischi in più su B ed E salgono solo
+con Apple e solo sulle pagine col testo ritrovato (+35 e +20 segni udibili, +7 e +11 asterischi); con GLM no. In cambio circa 2.000-2.500 parole vere in più
+per configurazione sul banco. Il giudizio per la decisione 24 e la domanda al maintainer stanno nella decisione 30 (LAYER2 § 12.16).
+
+**Dove passa il confine fra collante e catena** (dedotto dalle misure). Il collante del laboratorio, che tiene il testo sulle regioni e i tipi di Heron, perde un
+quinto delle parole che perde la catena ma lega le note peggio (17 contro 35, § 33). Nell'app la catena resta padrona di tutto ciò che fa bene (classificazione,
+titoli, aggancio delle note, continuità del corpo); Heron decide solo due cose, dove la catena sbaglia e lui no: che una «glossa» è una colonna, e che una «nota» è una
+riga di tabella. Il testo resta quello del lettore. Vale per tutti i lettori della via delle scansioni (Apple, GLM, Xiaomi): l'innesto non dipende dal lettore.
+
+**Xiaomi-OCR-0 nel motore dell'app** (campo salvo dove detto). *Fonte*: scheda ufficiale `xiaomi-research/Xiaomi-OCR-0` su Hugging Face, revisione `bbd8cf8d`
+(29 ottobre 2026), licenza apache-2.0, `model.safetensors` con impronta LFS `d4551e9f…`; nessun GGUF ufficiale di Xiaomi né di ggml-org (i GGUF trovati sono della
+comunità e non si usano). *Motore*: il llama.cpp dell'app (b11429) non carica la conversione del 19 novembre (convertitore v1.0.0, che fonde due tensori: «tensor
+'blk.0.ssm_beta.weight' not found»); riconvertito dai pesi ufficiali col convertitore del tag b11429 (commit `d8123504…`): testo Q8_0 `3bd7f5a2…`, proiettore f16
+`3461266a…`. GLM non cambia motore, quindi non va rimisurato. Sonda su due pagine del banco: una identica al carattere al testo del banco, l'altra 0,998 di parole
+uguali; 6,4 e 8,6 secondi a pagina col caricamento; picco del processo 2,07 GB. *Protezioni*: il filtro della notazione di GLM più la forma di Xiaomi (`\( \)` e
+`\[ \]`, `<nl>`, i segni OTSL delle tabelle); la protezione dalle righe ripetute di GLM e, solo per Xiaomi, quella dai **blocchi** ripetuti di fila (`d07eb23`):
+misurato, Xiaomi quando si incanta riscrive di fila un intero blocco, fino alla pagina intera (una pagina ruotata due volte: 21 righe e poi le stesse 21), e la
+protezione di GLM guarda solo la riga precedente. Sulle ruotate il rumore udibile passa da 32,12 a 0,10 per mille e le parole perse da 2,62 a 1,82.
+
+*Numeri* (codice con la protezione dei blocchi, `965c233` del laboratorio = `d07eb23`, forma pulita, testo da cache; misurati con gli stessi strumenti attraverso uno stato di soli
+collegamenti dove Xiaomi prende il posto di GLM, `strumenti/stato_xiaomi_come_glm.sh` `23d5e944…`; a confronto GLM e Apple del codice finale):
+
+| | Xiaomi | GLM |
+|---|---|---|
+| parole perse, banco | 1,13 | 1,33 |
+| parole perse, livello B con l'estensione | 1,92 | 2,52 |
+| parole perse, ruotate | 1,82 | 1,94 |
+| scansioni vere: parole perse, lettere sbagliate, parole inventate | 2,29; 0,01; 6 | 2,80; 0,03; 1 |
+| rumore udibile, banco (per mille) | 0,59 | 1,48 |
+| rumore udibile, livello B con l'estensione | 0,54 | 1,44 |
+| parole plausibili inventate, banco (per mille) | 0,36 | 0,29 |
+| note trovate / agganciate, banco | 203 / 69 | 205 / 65 |
+| tabelle, banco (su 19) / 13 estratti (su 69) | 15 / 52 | 17 / 51 |
+| metro dei blocchi, banco: false note / difetti | 112 / 801 | 57 / 730 |
+
+Xiaomi perde meno parole e fa molto meno rumore, ma il metro dei blocchi gli trova il doppio delle false note di GLM (righe che diventano note) e più difetti in tutto;
+sulle tabelle del banco è un poco indietro. La voce provvisoria del catalogo dice ora questi numeri e questo difetto, con la dimensione della conversione per il
+motore dell'app (1.038.579.744 byte; `83abb6c`, rilievo della revisione: dava la dimensione e i numeri della conversione del 19 novembre). La degradata e i tempi a
+Mac fermo: notte del 28-29 novembre (sotto). La proposta per il maintainer è nel referto del giro e nella decisione 32: Xiaomi resta provvisorio, GLM resta il
+lettore preimpostato.
