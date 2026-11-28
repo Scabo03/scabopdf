@@ -79,8 +79,10 @@ public final class InnestoScansioni: ChainGraft {
     static let tipoNota = "footnote"
     /// Lunghezza minima (lettere e cifre) di una riga perché la si cerchi nel testo di un nodo.
     static let caratteriMinimi = 4
-    /// Un blocco di corpo fino a tanti caratteri accanto a una glossa diventata corpo resta a sé (vedi `trasforma`).
+    /// Un titolo letto come corpo, fino a tanti caratteri, accanto a una glossa diventata corpo resta a sé (vedi `trasforma`).
     static let bloccoCortoMassimo = 80
+    /// L'etichetta di docling delle regioni di titolo.
+    static let tipoTitolo = "section_header"
 
     let righe: [Int: [RegioneRiga]]
     let colonne: Bool
@@ -112,15 +114,18 @@ public final class InnestoScansioni: ChainGraft {
 
     private func trasforma(_ nodi: [NodeDict], testi: [Int: [String]]) -> [NodeDict] {
         var out = trasformaUno(nodi, testi: testi)
-        // IL BLOCCO CORTO RESTA A SÉ (revisioni indipendenti del giro). Un blocco di corpo corto che stava fra due glosse taciute si
-        // sentiva da solo; quando le glosse vicine diventano corpo la catena lo unirebbe al testo ritrovato ai due lati (sul banco uno o
-        // due blocchi per configurazione, nel codice a due colonne: l'unico peggioramento su testo che prima si sentiva). Accanto a una
-        // glossa diventata corpo, un blocco di corpo di al più 80 caratteri diventa non classificato: resta un blocco a sé, letto uguale.
+        // IL TITOLO CORTO RESTA A SÉ (revisioni indipendenti del giro). Un titolo letto come corpo (blocco corto) che stava fra due glosse
+        // taciute si sentiva da solo; quando le glosse vicine diventano corpo la catena lo unirebbe al testo ritrovato (sul banco, nel codice a
+        // due colonne: l'unico peggioramento su testo che prima si sentiva). Accanto a una glossa diventata corpo, un blocco di corpo di al più
+        // 80 caratteri le cui righe stanno in regioni che Heron chiama titolo («section_header») diventa non classificato: resta un blocco a
+        // sé, letto uguale. Solo i titoli: un pezzo di frase corto, che prima si sentiva unito al suo testo, non deve staccarsi (sul banco 14
+        // titoli su 18 stanno in quelle regioni, e nessuno dei pezzi di frase).
         if colonne {
             let diventateCorpo = Set(nodi.indices.filter { nodi[$0].type == .MARGINAL_GLOSS && out[$0].type == .BODY })
             if !diventateCorpo.isEmpty {
                 for i in out.indices where nodi[i].type == .BODY && (out[i].text ?? "").count <= Self.bloccoCortoMassimo
-                    && (diventateCorpo.contains(i - 1) || diventateCorpo.contains(i + 1)) {
+                    && (diventateCorpo.contains(i - 1) || diventateCorpo.contains(i + 1))
+                    && regolaVale(out[i], testi: testi, condizione: { $0.dentro && $0.tipo == Self.tipoTitolo }) {
                     out[i].type = .UNCLASSIFIED
                     conti.blocchiCortiTenutiASe += 1
                 }

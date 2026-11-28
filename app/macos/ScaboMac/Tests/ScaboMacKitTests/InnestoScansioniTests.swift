@@ -92,20 +92,48 @@ final class InnestoScansioniTests: XCTestCase {
         XCTAssertEqual(innesta([tabella], colonne: false).0.rawDocument.structure.map(\.type), [.MARGINAL_GLOSS], "regola delle colonne spenta: resta")
     }
 
-    /// Il blocco corto che stava a sé fra due glosse taciute resta a sé quando le glosse diventano corpo: non si unisce al testo ritrovato.
-    func test_bloccoCortoAccantoAUnaGlossaDiventataCorpo_restaASe() {
-        let prima = NodeDict(id: "node_1", type: .MARGINAL_GLOSS, page_index: 0, text: "prima riga della colonna destra")
-        let corto = NodeDict(id: "node_2", type: .BODY, page_index: 0, text: "Un blocco corto a sé.")
-        let dopo = NodeDict(id: "node_3", type: .MARGINAL_GLOSS, page_index: 0, text: "seconda riga della colonna destra")
-        let lungo = NodeDict(id: "node_4", type: .BODY, page_index: 0, text: String(repeating: "un paragrafo lungo che non cambia ", count: 4))
-        let (out, i) = innesta([prima, corto, dopo, lungo])
-        XCTAssertEqual(out.rawDocument.structure.map(\.type), [.BODY, .UNCLASSIFIED, .BODY, .BODY],
-                       "il blocco corto resta a sé; il paragrafo lungo vicino resta corpo")
-        XCTAssertEqual(out.rawDocument.structure.map(\.text), [prima.text, corto.text, dopo.text, lungo.text], "il testo non cambia")
-        XCTAssertEqual(i.conti.blocchiCortiTenutiASe, 1)
-        // Senza glosse diventate corpo accanto, il blocco corto resta corpo; con la regola delle colonne spenta, niente cambia.
-        XCTAssertEqual(innesta([corto, lungo]).0.rawDocument.structure.map(\.type), [.BODY, .BODY])
-        XCTAssertEqual(innesta([prima, corto, dopo], colonne: false).0.rawDocument.structure.map(\.type), [.MARGINAL_GLOSS, .BODY, .MARGINAL_GLOSS])
+    /// Un titolo letto come corpo, accanto a glosse che diventano corpo, resta a sé (non si unisce al testo ritrovato); un pezzo di frase
+    /// corto fuori dalle regioni di titolo resta corpo (si unisce al suo testo come prima).
+    func test_titoloCortoAccantoAUnaGlossaDiventataCorpo_restaASe_ilPezzoDiFraseNo() {
+        let testi = ["prima riga della colonna destra", "Titolo breve della sezione", "seconda riga della colonna destra",
+                     "un pezzo di frase corto", String(repeating: "un paragrafo lungo che non cambia ", count: 3)]
+        let e = PdfExtraction(version: 1, pageCount: 1, pages: [PdfPageExtraction(pageIndex: 0, width: 400, height: 600, lines: testi.map { riga($0) })])
+        let testo = RegioneRiga(tipo: "text", dentro: true, frazioneLarghezza: 0.45, tabellaAmmessa: false)
+        let titolo = RegioneRiga(tipo: "section_header", dentro: true, frazioneLarghezza: 0.45, tabellaAmmessa: false)
+        let r: [Int: [RegioneRiga]] = [0: [testo, titolo, testo, testo, testo]]
+        func nodo(_ id: Int, _ t: SemanticCategory, _ k: Int) -> NodeDict { NodeDict(id: "node_\(id)", type: t, page_index: 0, text: testi[k]) }
+        func corri(_ nodi: [NodeDict]) -> ([SemanticCategory], InnestoScansioni) {
+            let i = InnestoScansioni(righe: r, colonne: true, righeDiTabella: true, poi: nil)
+            let out = i.graft(extraction: e, rawDocument: documento(nodi), pdfURL: URL(fileURLWithPath: "/dev/null"), sourceName: "prova.pdf",
+                              onPage: { _, _ in }, isCancelled: { false })!
+            return (out.rawDocument.structure.map(\.type), i)
+        }
+        // Due glosse vicine al titolo: il titolo resta a sé.
+        let (a, ia) = corri([nodo(1, .MARGINAL_GLOSS, 0), nodo(2, .BODY, 1), nodo(3, .MARGINAL_GLOSS, 2), nodo(4, .BODY, 4)])
+        XCTAssertEqual(a, [.BODY, .UNCLASSIFIED, .BODY, .BODY])
+        XCTAssertEqual(ia.conti.blocchiCortiTenutiASe, 1)
+        // Una glossa sola vicina (il caso più frequente): il titolo resta a sé lo stesso.
+        XCTAssertEqual(corri([nodo(1, .MARGINAL_GLOSS, 0), nodo(2, .BODY, 1), nodo(4, .BODY, 4)]).0, [.BODY, .UNCLASSIFIED, .BODY])
+        // Un pezzo di frase corto accanto a una glossa diventata corpo, fuori dalle regioni di titolo: resta corpo.
+        XCTAssertEqual(corri([nodo(1, .MARGINAL_GLOSS, 0), nodo(5, .BODY, 3), nodo(4, .BODY, 4)]).0, [.BODY, .BODY, .BODY])
+        // Senza glosse diventate corpo accanto, il titolo resta corpo come prima.
+        XCTAssertEqual(corri([nodo(2, .BODY, 1), nodo(4, .BODY, 4)]).0, [.BODY, .BODY])
+    }
+
+    /// Il confine degli 80 caratteri: oltre, il blocco non è un titolo corto e resta corpo anche in una regione di titolo.
+    func test_titoloCorto_ilConfineDegli80Caratteri() {
+        let lungo = String(repeating: "x", count: 81), giusto = String(repeating: "y", count: 80)
+        for (t, atteso) in [(lungo, SemanticCategory.BODY), (giusto, SemanticCategory.UNCLASSIFIED)] {
+            let testi = ["prima riga della colonna destra", t]
+            let e = PdfExtraction(version: 1, pageCount: 1, pages: [PdfPageExtraction(pageIndex: 0, width: 400, height: 600, lines: testi.map { riga($0) })])
+            let r: [Int: [RegioneRiga]] = [0: [RegioneRiga(tipo: "text", dentro: true, frazioneLarghezza: 0.45, tabellaAmmessa: false),
+                                               RegioneRiga(tipo: "section_header", dentro: true, frazioneLarghezza: 0.45, tabellaAmmessa: false)]]
+            let i = InnestoScansioni(righe: r, colonne: true, righeDiTabella: true, poi: nil)
+            let out = i.graft(extraction: e, rawDocument: documento([NodeDict(id: "node_1", type: .MARGINAL_GLOSS, page_index: 0, text: testi[0]),
+                                                                     NodeDict(id: "node_2", type: .BODY, page_index: 0, text: t)]),
+                              pdfURL: URL(fileURLWithPath: "/dev/null"), sourceName: "prova.pdf", onPage: { _, _ in }, isCancelled: { false })!
+            XCTAssertEqual(out.rawDocument.structure.map(\.type)[1], atteso, "\(t.count) caratteri")
+        }
     }
 
     func test_rigaFuoriDallaRegione_nonConta() {
