@@ -61,7 +61,24 @@ final class AccessibilityAuditUITests: XCTestCase {
         if keyboardRow.waitForExistence(timeout: 2) {
             keyboardRow.tap()
             audit(app, screen: "Comandi da tastiera")
+            app.navigationBars.buttons.element(boundBy: 0).tap()
         }
+
+        // 6. La sezione «Ricerca» delle Impostazioni (giro «scansioni, ricerca e build», 2026-11-28): la riga «Come cerca ScaboPDF»
+        // apre la schermata con la frase in cima e le otto domande.
+        XCTAssertTrue(app.waitForScreen("Impostazioni"))
+        let searchRow = app.cells.staticTexts["Come cerca ScaboPDF"].firstMatch
+        var swipes = 0
+        while !searchRow.isHittable && swipes < 6 { app.swipeUp(); swipes += 1 }
+        XCTAssertTrue(searchRow.waitForExistence(timeout: 3), "la riga della sezione Ricerca")
+        searchRow.tap()
+        // Una riga col tratto «testo statico» è uno StaticText per i test, una col tratto «pulsante» un Button: si cercano per
+        // identificativo, di qualunque tipo.
+        let intro = app.descendants(matching: .any)["ricerca.impostazioni.introduzione"].firstMatch
+        XCTAssertTrue(intro.waitForExistence(timeout: 5), "la frase in cima alla sezione")
+        XCTAssertTrue(app.descendants(matching: .any)["ricerca.impostazioni.order.0"].firstMatch.isSelected,
+                      "il predefinito: prima le corrispondenze esatte")
+        audit(app, screen: "Ricerca (impostazioni)")
     }
 
     // MARK: - Helper
