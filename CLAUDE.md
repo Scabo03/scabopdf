@@ -56,6 +56,46 @@ comandi (un nome protetto dentro un modello di ricerca fa scattare la richiesta;
 - Ogni affermazione di un referto o di un messaggio finale porta la sua etichetta di prova: **campo** (misurato in questa
   sessione), **fonte** (un documento, con indirizzo e data), **dedotto**, **non verificato**.
 
+## Convivenza con il maintainer sul Mac (dal 2026-11-28)
+
+Il maintainer usa il Mac di sviluppo anche di giorno, con VoiceOver, e non vuole automazioni che gli girano sotto le mani. Vale
+per ogni giro e per ogni sotto-agente (chi lo lancia gliela scrive nelle istruzioni). Il brief di un giro può cambiarla: vale il brief.
+
+**Due specie di lavoro.** Il lavoro **silenzioso** si fa sempre: leggere, scrivere codice e documenti, analizzare dati già
+prodotti, i test brevi che girano nel terminale senza aprire finestre, i commit e i push. Il lavoro che **disturba** aspetta il
+via: tutto ciò che apre o mostra finestre e simulatori o può prendere il fuoco; tutto ciò che apre o chiude app; le corse che
+tengono occupati a lungo il processore o la scheda grafica (i lettori e i modelli sul banco, le reti lunghe dell'iPad, le suite
+intere, gli archivi delle build). Dove passa il confine, nel dettaglio, lo decide il giro e lo scrive nel suo diario all'inizio;
+un lavoro che si può rendere silenzioso (per esempio i simulatori senza finestra) è meglio.
+
+**Organizzazione.** Prima tutto il lavoro silenzioso possibile; intanto una coda del lavoro che disturba, in blocchi compatti,
+ciascuno con la durata stimata, nell'ordine d'importanza delle parti.
+
+**I segnali.** Messaggi brevi del maintainer, in qualunque momento: «Sto usando il Mac» (si finisce il passo in corso, si mette in
+pausa ciò che disturba e si prosegue col lavoro silenzioso); «Via libera» (la coda gira finché non arriva un altro segnale); «Via
+libera fino alle 18», o un'altra ora (la coda gira fino a quell'ora). Il file `~/Developer/scabopdf-mac-lab/MAC_IN_USO`, se
+esiste, vale «sto usando il Mac», anche di notte; quando il maintainer lo toglie vale come via libera. Si controlla prima di ogni
+blocco che disturba e almeno ogni trenta minuti durante i blocchi lunghi. Il file di pausa delle misure (`PAUSA_MISURE`, nella cartella
+del giro di misura, per esempio `banco_ocr/globale/PAUSA_MISURE`) resta valido per i tempi e l'energia.
+
+**Senza segnali.** Dalle 23 alle 8:30 il Mac è libero, salvo il file, e il giro ha la priorità: il lavoro che disturba si fa
+nell'ordine più efficiente, anche cambiando la sequenza delle parti, purché le più importanti non restino scoperte; di notte
+vanno preferibilmente le corse più lunghe e pesanti e le misure di tempo e d'energia, che vogliono il Mac fermo. Di giorno,
+senza via libera, il lavoro che disturba aspetta finché resta lavoro silenzioso da fare; quando resta solo la coda si scrive nel
+terminale un avviso breve con il prossimo blocco e la sua durata, poi si aspettano quindici minuti: se non arriva nessun segnale
+e il file non c'è, si parte. Un messaggio arrivato a blocco avviato si rispetta appena finisce il passo in corso: non si lascia a
+metà niente che rovini i dati, ma nemmeno ci si tiene il Mac per un'ora. In fondo il diario dice quanto lavoro è rimasto in coda
+e perché.
+
+## I dati di misura non si buttano (dal 2026-11-28)
+
+Nessun dato di misura si butta o si sovrascrive. Le uscite e le misure fatte sul codice di prima restano nel laboratorio come
+sono; quelle nuove vanno in cartelle nuove, con la data, il commit e il numero di build nel nome (per il codice non ancora
+caricato, la build da cui discende e il segno «+»). La pulizia di fine giro tocca solo i file temporanei, mai i dati grezzi né le
+uscite dei lettori. Ogni numero porta con sé il commit e la build del codice misurato, le versioni degli strumenti e dei modelli e
+l'impronta del materiale. Le misure che contano per la trasmissione hanno anche una riga per versione nel registro storico
+`docs/STORICO_MISURE.md`.
+
 ## Project conventions
 
 **Test fixtures.** `pipeline/tests/fixtures/private/` is **gitignored** and hosts the copyright-protected PDFs each developer keeps locally; see `pipeline/tests/fixtures/README.md` for the full private/public convention. Integration tests that depend on a private fixture MUST use `pytest.skip(...)` with an explicit message pointing to the README when the file is missing, never `assert` or raise. This keeps the suite green on a fresh clone without local fixtures.

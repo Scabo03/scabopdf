@@ -1,17 +1,15 @@
-Build 67 — tabelle e figure al posto giusto, pagine di quesiti lette
+Build 68 — le scelte della ricerca nelle Impostazioni
 
 Che cosa cambia
-- In alcuni libri le pagine sono spostate rispetto al foglio: la parte stampata non comincia dall'angolo della pagina. Su quelle pagine l'app ora riconosce le tabelle e le figure nel punto giusto, e «Estrai come immagine» dà la parte giusta della pagina. Qualche figura che prima non veniva annunciata ora si annuncia.
-- Le pagine di quesiti con gli spazi da completare fra parentesi, come «[.....]», non sono più scambiate per un sommario: prima l'app le saltava intere, ora si leggono.
-- Il testo dei libri resta lo stesso, parola per parola; cambiano solo le figure annunciate su quelle pagine e le pagine di quesiti che prima mancavano.
-- Per i libri che possono cambiare, l'app propone di rielaborarli con «Lettura migliore disponibile» nella Home. È una proposta: si può accettare o no, e si può sempre tornare alla lettura precedente. I libri che l'app sa identici non ricevono la proposta.
-- Finché un libro non è rielaborato, «Estrai come immagine» ritaglia le sue tabelle e figure come prima, sempre nel punto giusto.
-- Segnalibri, sottolineature e punto di lettura restano al loro posto; se l'app non è sicura del punto lo dice con «da ricollocare»: non sposta mai nulla in silenzio.
+- La ricerca è nuova. Nel libro, oltre ai punti dove compare la frase esatta, trova i passi pertinenti, cioè i punti dove contano di più le parole che hai scritto, anche se non tutte insieme; e se scrivi il numero di un articolo o di un paragrafo, per esempio «art. 12», il primo risultato porta lì. Nella libreria, per le ricerche di due o più parole, vengono prima i libri più pertinenti.
+- Nelle Impostazioni c'è una sezione nuova, «Ricerca», con la riga «Come cerca ScaboPDF». La schermata comincia con una frase che spiega i due modi in cui l'app cerca: le corrispondenze esatte e i passi pertinenti. Poi ci sono otto domande, ciascuna con due o tre scelte spiegate a parole: VoiceOver dice il nome della scelta e la sua spiegazione insieme. Una scelta vale dalla ricerca successiva.
+- Le domande sono queste: l'ordine dei risultati; quanti passi pertinenti; il salto diretto ad articoli e paragrafi; che cosa fare nei libri con più codici; la ricerca di una parola sola; dove si fermano il rotore e Comando G; quanto dice l'annuncio di ogni risultato; l'ordine dei libri nella ricerca nella libreria.
+- Con le scelte di serie, nella ricerca dentro un libro viene per primo il salto all'articolo o al paragrafo, se c'è; poi le corrispondenze esatte; poi al più 20 passi pertinenti. Il rotore e Comando G restano sulle sole corrispondenze esatte, come prima.
 
 Che cosa non cambia
-- I testi normativi non ricevono nessuna proposta: per loro non cambia nulla.
-- Le letture arrivate dal Mac restano come sono: la lettura nuova arriva dal Mac, preparata con la sua nuova versione.
+- Il testo dei libri e la loro lettura: nessun libro riceve la proposta di rielaborazione con questa build.
 
-Due cose da provare
-- Se compare la proposta su un libro con figure o tabelle, accettala e prova «Estrai come immagine» su una figura: dicci se è la parte giusta della pagina.
-- Se hai un documento con pagine di quesiti con gli spazi da completare fra parentesi, accetta la proposta, se compare: dicci se quelle pagine si leggono.
+Tre cose da provare
+- Apri Impostazioni, poi «Come cerca ScaboPDF», e ascolta le domande: dicci se ogni scelta si capisce senza altre spiegazioni.
+- In un libro cerca un argomento con parole tue; poi scegli «Prima i passi pertinenti» e cerca di nuovo: dicci quale ordine ti è più comodo.
+- In un libro con più codici scegli «Vai al codice principale» e cerca «art.» seguito da un numero che c'è in più codici, senza dire quale: dopo «Cerca» dovresti essere già sulla riga dell'articolo del codice più ampio.
