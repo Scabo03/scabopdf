@@ -4006,7 +4006,8 @@ scarta quasi due tabelle su tre di quelle che il modello vede sulle scansioni (f
 > `registri/corrispondenza_hash_scansioni_riscrittura_1450.txt`): `a688328` → `da53d1e`, `b3017e4` → `bd0a3c7`, `2bdba4d` → `cff16db`, `8aba576` →
 > `fdbf30e`, `965c233` → `d07eb23`, con lo stesso codice (cambiano righe di commento). Le misure di `8aba576` sono quelle della regola delle colonne;
 > dopo vengono tre correzioni chieste dalle revisioni indipendenti (`d339b2b`: glosse dentro una tabella non classificate, filetti contati dal primo
-> pixel scuro; `0b7d62c`: il blocco corto accanto a una glossa diventata corpo resta a sé), misurate nella notte (in fondo al paragrafo). Strumenti: `migliorie/strumenti/misure_m.py` (`a47ed856…`), `vere_m.py`
+> pixel scuro; `0b7d62c` e `b978628`: il titolo corto accanto a una glossa diventata corpo resta a sé, solo nelle regioni di titolo di Heron), misurate
+> nella notte (in fondo al paragrafo). Strumenti: `migliorie/strumenti/misure_m.py` (`a47ed856…`), `vere_m.py`
 > (`ea517fb6…`), `tabella_m.py` (`94f546ed…`), `globale/strumenti/rumore.py` (`c8bb2d90…`), metro dei blocchi `chiusura_radio/strumenti/blocchi.py`
 > (`6fc24db9…`, prova del metro: 16 casi su 16) col pilota `giro_scansioni_ricerca_build_20261128/strumenti/blocchi_stati.py` (`f17963ca…`), estratti delle
 > tabelle `guardia_per_regione.py` (`623a5775…`), stima pesata `pesata_corpus.py` (`3b4cfd56…`, uscita `misure/20261128_pesata_corpus_spente_8aba576.txt`),
@@ -4032,8 +4033,8 @@ righe nuove verso l'iPad; ciascuna si spegne nel laboratorio (`--senza griglia,c
 - *colonne*: una «glossa» le cui righe stanno dentro regioni di Heron larghe almeno un terzo della pagina diventa CORPO (NOTA se la maggior parte delle righe sta in
   regioni «footnote» di Heron: scatta su due pagine del banco, misure identiche; NON CLASSIFICATA se sta in una tabella ammessa, da `d339b2b`). La catena fa glossa solo di una riga a corpo di nota fuori dalla
   colonna del corpo stimata; sulle pagine a due colonne la seconda colonna resta fuori. Al banco l'82 per cento delle parole fuori dalla lettura della via delle
-  scansioni erano glosse finte (dedotto dall'analisi riga per riga del giro, non da una tabella del banco; la T8 dà, per le righe fuori dalla
-  lettura, 4,13 dei 6,44 punti persi con Apple e 4,20 dei 5,64 con GLM).
+  scansioni erano glosse finte (stima del giro non ritrovata in un'uscita salvata: *non verificato*; la T8 dà, per le righe fuori dalla
+  lettura, 4,13 dei 6,44 punti persi con Apple, il 64 per cento, e 4,20 dei 5,64 con GLM, il 74 per cento).
 
 **Prima e dopo** (campo; «prima» = stato `20261128_2bdba4d_mac4+_spente`, le tre migliorie spente; «dopo» = `20261128_8aba576_mac4+_regioni`, cioè `fdbf30e`). Con le migliorie spente
 la via delle scansioni è identica a prima: 9.354 letture su 9.360 e 2.972 pagine su 2.974 identiche a `som2` (le due pagine diverse, Apple degradata, cambiano già

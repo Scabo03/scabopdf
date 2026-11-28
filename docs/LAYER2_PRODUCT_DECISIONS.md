@@ -1844,12 +1844,15 @@ Sul banco le parole perse scendono di circa quattro punti (Apple pulita da 5,6 a
 non cambiano, le tabelle annunciate sui 13 estratti passano da 24, 16 e 22 su 69 a 55, 51 e 51, senza annunci in più sulle pagine con tabelle. Il costo, misurato
 col metro dei blocchi: qualche blocco spezzato o fuso in più (difetti sul banco da 802 a 810 con Apple pulita, da 735 a 751 con Apple degradata, 730 invariati con
 GLM pulita, da 775 a 781 con GLM degradata), quasi tutti sul testo prima taciuto. L'unico peggioramento su qualcosa che prima si sentiva erano uno o due blocchi
-corti per configurazione, nel codice a due colonne del banco, prima a sé e poi uniti al testo ritrovato: la restrizione `0b7d62c` li tiene a sé (misura della
-notte). Sugli estratti, contate dove l'annuncio si sente, le tabelle sono 53, 47 e 49, e qualche annuncio cade una pagina prima o si impila con altri. Tre modi
+corti per configurazione, nel codice a due colonne del banco, prima a sé e poi uniti al testo ritrovato: la restrizione `b978628` tiene a sé i titoli corti
+che stanno in regioni di titolo di Heron (dedotto dal codice e dal suo test, e dallo specchio dell'innesto della revisione: 14 titoli su 18 e nessun pezzo
+di frase; la misura del banco è della notte). Resta fuso un titolo dentro un nodo di corpo lungo (pagina 2, forma degradata), che nessuna regola sui
+blocchi corti tocca. Sugli estratti, contate dove l'annuncio si sente, le tabelle sono 53, 47 e 49, e qualche annuncio cade una pagina prima o si impila con altri. Tre modi
 di restringere la regola in tutto (tutte note; note solo col corpo delle note della pagina; non classificate) sono andati peggio. La regola va nella build 5 del
-Mac; il giro e le due revisioni indipendenti inclinano a tenerla, ma la decisione 24 va letta dal maintainer: **conta come regressione per chi ascolta anche un
-difetto che sta solo su testo che prima non si sentiva affatto?** Se sì, la regola si spegne (la miglioria `colonne`) nella build successiva; se no, si tiene coi
-residui dichiarati (`docs/BANCO_OCR.md` § 48). I libri già nella libreria restano letti come prima finché la loro lettura salvata vale: un libro scansionato
+Mac solo se la misura della notte sulle correzioni `d339b2b`, `0b7d62c` e `b978628` non trova peggioramenti; il giro e la revisione indipendente delle
+Parti 1 e 2 inclinano a tenerla, ma la decisione 24 va letta dal maintainer: **conta come regressione per chi ascolta anche un difetto che sta solo su testo
+che prima non si sentiva affatto?** Se la risposta arriva prima del caricamento ed è sì, la build 5 parte con la miglioria `colonne` spenta; se arriva dopo,
+si spegne nella build successiva; se è no, si tiene coi residui dichiarati (`docs/BANCO_OCR.md` § 48). I libri già nella libreria restano letti come prima finché la loro lettura salvata vale: un libro scansionato
 senza lettura salvata usabile (per esempio dopo un cambio di granularità) si rielabora all'apertura con la catena nuova, con le annotazioni riancorate per
 contenuto (§ 12.14), come per ogni cambiamento della catena: la lettura nuova vale per le scansioni
 importate da ora, o quando l'utente chiede la lettura migliore. Le glosse finte dei codici nel tronco comune (PDF col testo) restano fuori da questo giro: diagnosi

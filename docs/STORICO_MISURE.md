@@ -24,7 +24,7 @@
 | Mac build 4, iPad build 67 | `8d05735` | 2026-11-21/22 | modulo dell'impaginazione con la pagina come si mostra (cura 67), sommario fittizio corretto nel tronco comune (BANCO_OCR § 45) |
 | (laboratorio) | `bc6605a` | 2026-11-24 | stessa catena della build 4 (solo documenti e laboratorio dopo `8d05735` fino a qui) |
 | (laboratorio, non caricata) | `e6b2cdf` | 2026-11-26 | ricerca per parole pesate, blocco corto, salto per numero (decisione 29); letture del banco identiche al byte (BANCO_EMBEDDING § 12) |
-| oggi: candidata Mac build 5 | `0b7d62c` (regola delle colonne da `fdbf30e`, nel laboratorio `8aba576`) | 2026-11-28 | griglia delle tabelle sulle scansioni, innesto delle regioni di Heron (colonne → corpo, righe di tabella → non classificate), Xiaomi-OCR-0 nel motore (voce provvisoria); `d07eb23` aggiunge la protezione dai blocchi ripetuti, solo per Xiaomi; `d339b2b` glosse in tabella non classificate e filetti dal primo pixel scuro; `0b7d62c` il blocco corto accanto a una glossa diventata corpo resta a sé (BANCO_OCR § 48; le ultime due misurate nella notte) |
+| oggi: candidata Mac build 5 | `b978628` (regola delle colonne da `fdbf30e`, nel laboratorio `8aba576`) | 2026-11-28 | griglia delle tabelle sulle scansioni, innesto delle regioni di Heron (colonne → corpo, righe di tabella → non classificate), Xiaomi-OCR-0 nel motore (voce provvisoria); `d07eb23` aggiunge la protezione dai blocchi ripetuti, solo per Xiaomi; `d339b2b` glosse in tabella non classificate e filetti dal primo pixel scuro; `0b7d62c` e `b978628` il titolo corto accanto a una glossa diventata corpo resta a sé (BANCO_OCR § 48; le ultime misurate nella notte) |
 | oggi: candidata iPad build 68 | `94f8889` | 2026-11-28 | sezione «Ricerca» nelle Impostazioni: predefiniti prima le esatte, 20 passi, annuncio breve (`60f66ff`, più le correzioni della revisione: l'elenco non cambia, BANCO_EMBEDDING § 13) |
 
 ## 2. Scansioni del Mac: parole perse, per via e per materiale
@@ -160,7 +160,7 @@ La ricerca nella storia del repo dei numeri cambiati (`git log -S`) è cominciat
 ## 9. Da completare (giro di misura sulle build nuove)
 
 - Le righe «oggi» sono le candidate delle build 68 e 5: dopo il caricamento, il numero della build al posto di «candidata». Le correzioni `d339b2b` e
-  `0b7d62c` della candidata della build 5 cambiano poche pagine e si misurano nella notte del 28-29 novembre.
+  `0b7d62c`-`b978628` della candidata della build 5 cambiano poche pagine e si misurano nella notte del 28-29 novembre.
 - Nella ricerca, «fra i primi dieci» coi predefiniti (esatte prima) è un limite superiore (BANCO_EMBEDDING § 13, «una cautela»): non va messo in fila
   con le righe di prima senza questa avvertenza.
 - La stima pesata sul corpus per le build 3 e 4.
