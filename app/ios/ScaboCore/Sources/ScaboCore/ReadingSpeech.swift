@@ -377,7 +377,7 @@ public struct ReadingSpeechModel: Sendable {
         guard index >= 0, index < segments.count else { return [] }
         let active = Self.activeSearch(search)
         var out: [ReadingRotor] = []
-        if let active, active.elementIndices.contains(index) { out.append(.searchResults) }
+        if let active, active.stopIndices.contains(index) { out.append(.searchResults) }
         if let level = ReadingSpeech.headingLevel(for: segments[index].role) {
             out.append(.headings)
             out.append(.headingLevel(level))
@@ -386,9 +386,10 @@ public struct ReadingSpeechModel: Sendable {
         return out
     }
 
-    /// La ricerca da considerare attiva: una con almeno un elemento, altrimenti nessuna (niente rotore né valori).
+    /// La ricerca da considerare attiva: una con almeno una fermata, altrimenti nessuna (niente rotore né valori). Di serie le fermate
+    /// sono le occorrenze esatte (`elementIndices`); con «anche sui passi pertinenti» (impostazioni della ricerca) anche i passi.
     public static func activeSearch(_ search: BookSearchResult?) -> BookSearchResult? {
-        (search?.elementIndices.isEmpty == false) ? search : nil
+        (search?.stopIndices.isEmpty == false) ? search : nil
     }
 
     /// Indice del titolo successivo (`forward`) o precedente rispetto a `current`, filtrato per `level` (nil = qualsiasi).
@@ -421,7 +422,10 @@ public struct ReadingSpeechModel: Sendable {
 
     /// Il valore della ricerca attiva sull'elemento che contiene risultati («risultato 4 di 12»), o `nil`.
     public func searchValue(forIndex index: Int, search: BookSearchResult?) -> String? {
-        guard let r = Self.activeSearch(search), let ordinals = r.ordinals(inElement: index) else { return nil }
+        guard let r = Self.activeSearch(search) else { return nil }
+        // Con le fermate nell'ordine dei risultati: il posto fra le fermate («risultato 3 di 25»).
+        if let stop = r.stopRank(inElement: index) { return BookSearchWording.stopValue(rank: stop.rank, of: stop.of) }
+        guard let ordinals = r.ordinals(inElement: index) else { return nil }
         return BookSearchWording.positionValue(ordinals: ordinals, total: r.totalCount)
     }
 

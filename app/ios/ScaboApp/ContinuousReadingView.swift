@@ -937,7 +937,8 @@ final class ContinuousReadingView: UIView {
 
     /// Imposta (o toglie, con `nil`) la ricerca attiva: rotore, valori parlati ed evidenze delle celle visibili.
     func setSearchResult(_ result: BookSearchResult?, highlighter: ((Int, String) -> [NSRange])?) {
-        let active = (result?.elementIndices.isEmpty == false) ? result : nil
+        // Attiva con almeno una fermata: di serie le occorrenze esatte; con «anche sui passi pertinenti» anche i passi.
+        let active = ReadingSpeechModel.activeSearch(result)
         searchResult = active
         searchHighlighter = active == nil ? nil : highlighter
         rebuildHeadingIndexAndRotors()
@@ -960,7 +961,7 @@ final class ContinuousReadingView: UIView {
     func goToAdjacentSearchResult(forward: Bool) -> Int? {
         guard let r = searchResult else { return nil }
         let current = lastFocusedIndex ?? ((collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1)
-        guard let target = r.adjacentElement(from: current, forward: forward) else { return nil }
+        guard let target = r.adjacentStop(from: current, forward: forward) else { return nil }
         onSearchStop?()
         goToElement(atIndex: target, focus: true)
         return target
@@ -974,7 +975,7 @@ final class ContinuousReadingView: UIView {
             if let cell = predicate.currentItem.targetElement as? SegmentCell { current = cell.readingIndex }
             else if let idx = self.lastFocusedIndex { current = idx }
             else { current = (self.collectionView.indexPathsForVisibleItems.map(\.item).min() ?? 0) - 1 }
-            guard let t = r.adjacentElement(from: current, forward: predicate.searchDirection == .next) else { return nil }
+            guard let t = r.adjacentStop(from: current, forward: predicate.searchDirection == .next) else { return nil }
             self.onSearchStop?()
             let ip = IndexPath(item: t, section: 0)
             self.collectionView.scrollToItem(at: ip, at: .top, animated: false)

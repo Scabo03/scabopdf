@@ -40,7 +40,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
     private let granularities: [(GranularityLevel, String)] = ReadingSettingsWording.granularityLevels
 
     private enum Section: Int, CaseIterable {
-        case appearance, spacing, colorSignals, readingGuide, notes, systemFilters, keyboard, granularity, pages
+        case appearance, spacing, colorSignals, readingGuide, notes, systemFilters, keyboard, search, granularity, pages
     }
 
     override func viewDidLoad() {
@@ -75,6 +75,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         case .notes: return 2
         case .systemFilters: return 1
         case .keyboard: return 1
+        case .search: return 1
         case .granularity: return granularities.count
         case .pages: return 1
         }
@@ -89,6 +90,7 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         case .notes: return "Note (per chi non sente)"
         case .systemFilters: return "Filtri colore di sistema"
         case .keyboard: return "Tastiera"
+        case .search: return SearchSettingsWording.title
         case .granularity: return ReadingSettingsWording.granularityTitle
         case .pages: return "Pagine del file originale"
         }
@@ -113,6 +115,9 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
         case .keyboard:
             return "Con una tastiera esterna puoi leggere e navigare senza gesti. L'elenco dei comandi "
                 + "è qui perché i tasti sono altrimenti invisibili."
+        case .search:
+            return "Come si ordinano i risultati della ricerca nel libro e nella libreria, quanti passi pertinenti, il salto agli "
+                + "articoli e che cosa senti di ogni risultato."
         case .systemFilters:
             return "I filtri per il daltonismo (rosso/verde, verde/rosso, blu/giallo) si impostano da Impostazioni "
                 + "iOS. L'app non può rilevarli né controllarli, ma garantisce che nulla dipenda dal solo colore. "
@@ -188,6 +193,16 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
             cell.accessibilityHint = "Apre l'elenco dei comandi da tastiera"
             return cell
 
+        case .search:
+            let cell = freshCell()
+            var config = cell.defaultContentConfiguration()
+            config.text = SearchSettingsWording.openRow
+            cell.contentConfiguration = config
+            cell.accessoryType = .disclosureIndicator
+            cell.accessibilityTraits = .button
+            cell.accessibilityHint = SearchSettingsWording.openRowHint
+            return cell
+
         case .granularity:
             let (level, label) = granularities[indexPath.row]
             return checkmarkCell(label, selected: getStoredGranularityLevel(prefs) == level)
@@ -218,6 +233,8 @@ final class SettingsViewController: UIViewController, UITableViewDataSource, UIT
             }
         case .keyboard:
             navigationController?.pushViewController(KeyboardCommandsViewController(), animated: true)
+        case .search:
+            navigationController?.pushViewController(SearchSettingsViewController(store: prefs), animated: true)
         case .granularity:
             setStoredGranularityLevel(prefs, granularities[indexPath.row].0)
             tableView.reloadSections(IndexSet(integer: indexPath.section), with: .none)

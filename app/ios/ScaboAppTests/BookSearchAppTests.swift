@@ -352,10 +352,11 @@ final class BookSearchAppTests: XCTestCase {
         XCTAssertEqual(chosen.map(\.segmentIndex), [6])
     }
 
-    /// Giro «la ricerca» (2026-11-26, LAYER2 § 12.16): una ricerca di più parole senza la frase intera dà i PASSI, prima delle
-    /// occorrenze esatte; la frase del conteggio li dice, la riga comincia con «Passo:», sceglierla porta la lettura al passo.
+    /// Giro «la ricerca» (2026-11-26, LAYER2 § 12.16): una ricerca di più parole senza la frase intera dà i PASSI; la frase del
+    /// conteggio li dice e sceglierne uno porta la lettura al passo. Dal giro «scansioni, ricerca e build» (2026-11-28) con le
+    /// impostazioni predefinite: prima le corrispondenze esatte, annuncio breve (la riga comincia col testo).
     func test_window_wordsPassages_areSaidAndChosen() {
-        let session = BookSearchSession(segments: book())
+        let session = BookSearchSession(segments: book(), settingsProvider: { .standard })
         var chosen: [BookSearchHit] = []
         let vc = BookSearchViewController.makeForTesting(session: session) { chosen.append($0) }
         vc.loadViewIfNeeded()
@@ -364,14 +365,55 @@ final class BookSearchAppTests: XCTestCase {
         vc.runSearch(moveFocusToCount: true) { done.fulfill() }
         wait(for: [done], timeout: 5)
         XCTAssertEqual(vc.countSentence,
-                       "Un passo con le parole di «pescatore reti mare», i più pertinenti per primi. Nessun risultato esatto.")
+                       "Nessun risultato esatto. Un passo con le parole di «pescatore reti mare», i più pertinenti per primi.")
         XCTAssertEqual(vc.passageRowCountForTesting, 1)
         XCTAssertEqual(vc.resultRowCountForTesting, 0, "nessuna occorrenza esatta")
         let label = vc.passageRowLabelForTesting(0) ?? ""
-        XCTAssertTrue(label.hasPrefix("Passo: ") && label.contains("Capitolo primo. Il porto"), label)
+        XCTAssertTrue(!label.hasPrefix("Passo") && label.contains("Capitolo primo. Il porto"), label)
         XCTAssertNil(session.result.flatMap { ReadingSpeechModel.activeSearch($0) }, "il rotore resta sulle occorrenze esatte")
         vc.choosePassageForTesting(0)
         XCTAssertEqual(chosen.map(\.segmentIndex), [2])
+    }
+
+    /// Le impostazioni della ricerca (giro «scansioni, ricerca e build»): con «prima i passi pertinenti» la riga del passo viene
+    /// prima delle corrispondenze esatte; con «annuncio completo» la riga dice il tipo in testa; con «anche sui passi pertinenti» il
+    /// passo è una fermata del rotore anche senza occorrenze esatte.
+    func test_window_settings_orderAnnouncementAndRotor() {
+        var s = SearchSettings.standard
+        s.order = .passagesFirst
+        s.announcement = .full
+        s.rotorIncludesPassages = true
+        let session = BookSearchSession(segments: book(), settingsProvider: { s })
+        let vc = BookSearchViewController.makeForTesting(session: session)
+        vc.loadViewIfNeeded()
+        vc.searchField.text = "pescatore reti mare"
+        let done = expectation(description: "ricerca")
+        vc.runSearch(moveFocusToCount: true) { done.fulfill() }
+        wait(for: [done], timeout: 5)
+        XCTAssertEqual(vc.countSentence,
+                       "Un passo con le parole di «pescatore reti mare», i più pertinenti per primi. Nessun risultato esatto.")
+        XCTAssertEqual(vc.rowForTesting(passage: 0), 1, "il passo subito dopo la frase del conteggio")
+        XCTAssertTrue((vc.passageRowLabelForTesting(0) ?? "").hasPrefix("Passo pertinente: "))
+        XCTAssertNotNil(session.result.flatMap { ReadingSpeechModel.activeSearch($0) }, "il passo è una fermata del rotore")
+        XCTAssertEqual(session.result?.stopIndices, [2])
+    }
+
+    /// La sezione «Ricerca» delle Impostazioni: otto domande, ogni riga dice nome e spiegazione, la scelta si conserva e la spunta si
+    /// sposta.
+    func test_searchSettingsScreen_rowsSayNameAndExplanation_andTheChoiceIsStored() {
+        let store = InMemoryKeyValueStore()
+        let vc = SearchSettingsViewController(store: store)
+        vc.loadViewIfNeeded()
+        XCTAssertEqual(vc.questionCountForTesting, 8)
+        let first = SearchSettingsWording.questions[0]
+        XCTAssertEqual(vc.spokenLabelForTesting(question: 0, option: 0), first.options[0].spoken)
+        XCTAssertTrue(vc.isSelectedForTesting(question: 0, option: 0), "il predefinito: prima le corrispondenze esatte")
+        vc.choose(question: 0, option: 1)
+        XCTAssertEqual(getStoredSearchSettings(store).order, .passagesFirst)
+        XCTAssertTrue(vc.isSelectedForTesting(question: 0, option: 1))
+        XCTAssertFalse(vc.isSelectedForTesting(question: 0, option: 0))
+        vc.choose(question: 1, option: 2)
+        XCTAssertEqual(getStoredSearchSettings(store).passageLimit, 50)
     }
 
     /// Lo scrub a due dita di VoiceOver (`accessibilityPerformEscape`) è «Annulla»: chiude la finestra senza scegliere

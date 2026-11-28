@@ -24,7 +24,11 @@ final class WordSearchTests: XCTestCase {
         XCTAssertEqual(r.passages.map(\.segmentIndex), [1, 2])
         XCTAssertTrue(r.passages.allSatisfy { !$0.isJump })
         XCTAssertGreaterThan(r.passages[0].score, r.passages[1].score)
-        XCTAssertEqual(sentence(r), "2 passi con le parole di «torre orologio gufo», i più pertinenti per primi. "
+        // Di serie (giro «scansioni, ricerca e build»): prima le corrispondenze esatte, poi i passi.
+        XCTAssertEqual(sentence(r), "Nessun risultato esatto. 2 passi con le parole di «torre orologio gufo», i più pertinenti per primi.")
+        // Con «prima i passi pertinenti», l'ordine della decisione 29.
+        let passiPrima = BookSearchCorpus(segments: segs).search("torre orologio gufo", settings: .decision29)
+        XCTAssertEqual(sentence(passiPrima), "2 passi con le parole di «torre orologio gufo», i più pertinenti per primi. "
                        + "Nessun risultato esatto.")
     }
 
@@ -72,9 +76,19 @@ final class WordSearchTests: XCTestCase {
     func test_passageLimit() {
         let segs = (0..<60).map { body($0, "danno e prescrizione \($0)" + filler) }
             + (60..<130).map { body($0, "altro testo \($0)" + filler) }
-        let r = BookSearchCorpus(segments: segs).search("prescrizione del danno")
+        let corpus = BookSearchCorpus(segments: segs)
+        let r = corpus.search("prescrizione del danno", settings: .decision29)
         XCTAssertEqual(r.passages.count, BookSearchCorpus.passageLimit)
         XCTAssertTrue(sentence(r).hasPrefix("50 passi con le parole di «prescrizione del danno»"), sentence(r))
+        // I tre tetti delle impostazioni; di serie 20.
+        for limit in SearchSettings.passageLimits {
+            var s = SearchSettings.standard
+            s.passageLimit = limit
+            XCTAssertEqual(corpus.search("prescrizione del danno", settings: s).passages.count, limit)
+        }
+        let standard = corpus.search("prescrizione del danno")
+        XCTAssertEqual(standard.passages.count, 20)
+        XCTAssertEqual(sentence(standard), "Nessun risultato esatto. 20 passi con le parole di «prescrizione del danno», i più pertinenti per primi.")
     }
 
     func test_numberQuery_parse() {
@@ -124,10 +138,13 @@ final class WordSearchTests: XCTestCase {
                                                                        score: .infinity)])
         XCTAssertEqual(r.passages.first?.segmentIndex, cpc7)
         let cpc = BookSearchCode.proceduraCivile.spokenName
-        XCTAssertTrue(sentence(r).hasPrefix("Primo risultato: l'articolo 7 del " + cpc + ". Poi "), sentence(r))
+        XCTAssertTrue(sentence(r).hasPrefix("Primo risultato: l'articolo 7 del " + cpc + ". Nessun risultato esatto. Poi "), sentence(r))
         let label = BookSearchWording.passageRowLabel(r.passages[0], snippet: "Art. 7. Titolo 7.", inNote: false, noteNumber: nil,
                                                       section: "Secondo codice", page: 12)
         XCTAssertEqual(label, "C" + cpc.dropFirst() + ": Art. 7. Titolo 7. Secondo codice, pagina 12.")
+        let completo = BookSearchWording.passageRowLabel(r.passages[0], snippet: "Art. 7. Titolo 7.", inNote: false, noteNumber: nil,
+                                                         section: "Secondo codice", page: 12, announcement: .full)
+        XCTAssertEqual(completo, "Articolo del " + cpc + ": Art. 7. Titolo 7. Secondo codice, pagina 12.")
         XCTAssertEqual(BookSearchCorpus.enclosingSection(of: cpc7, segments: segs), segs.firstIndex { $0.text == "Secondo codice" })
     }
 
@@ -166,9 +183,97 @@ final class WordSearchTests: XCTestCase {
         let hit = corpus.entryHit(for: p)
         XCTAssertEqual([hit.segmentIndex, hit.endSegmentIndex, hit.startInSegment, hit.length], [0, 0, 0, 0])
         XCTAssertEqual(BookSearchWording.passageRowLabel(p, snippet: "Alfa beta", inNote: false, noteNumber: nil, section: nil, page: 3),
-                       "Passo: Alfa beta. Pagina 3.")
+                       "Alfa beta. Pagina 3.", "annuncio breve: subito il testo")
+        XCTAssertEqual(BookSearchWording.passageRowLabel(p, snippet: "Alfa beta", inNote: false, noteNumber: nil, section: nil, page: 3,
+                                                         announcement: .full), "Passo pertinente: Alfa beta. Pagina 3.")
+        XCTAssertEqual(BookSearchWording.exactRowLabel(snippet: "Alfa beta", inNote: false, noteNumber: nil, section: nil, page: 3,
+                                                       announcement: .full), "Corrispondenza esatta: Alfa beta. Pagina 3.")
+        XCTAssertEqual(BookSearchWording.exactRowLabel(snippet: "Alfa beta", inNote: false, noteNumber: nil, section: nil, page: 3,
+                                                       announcement: .brief), "Alfa beta. Pagina 3.")
         // «beta» è in tutti e due i segmenti (non distingue): il passo è solo quello con «alfa».
         XCTAssertEqual(r.passages.map(\.segmentIndex), [0])
-        XCTAssertEqual(sentence(r), "Un passo con le parole di «alfa beta», i più pertinenti per primi. Poi un risultato esatto.")
+        XCTAssertEqual(sentence(r), "Un risultato esatto. Poi un passo con le parole di «alfa beta», i più pertinenti per primi.")
+        XCTAssertEqual(sentence(corpus.search("alfa beta", settings: .decision29)),
+                       "Un passo con le parole di «alfa beta», i più pertinenti per primi. Poi un risultato esatto.")
+    }
+
+    // MARK: Le impostazioni della ricerca (giro «scansioni, ricerca e build», 2026-11-28)
+
+    func test_jumpOff_theNumberIsAWordLikeTheOthers() {
+        let (segs, _, _) = twoCodes()
+        var s = SearchSettings.standard
+        s.numberJump = false
+        let r = BookSearchCorpus(segments: segs).search("art. 7 c.p.c.", settings: s)
+        XCTAssertNil(r.numberQuery)
+        XCTAssertTrue(r.jumps.isEmpty)
+        XCTAssertFalse(sentence(r).hasPrefix("Primo risultato"), sentence(r))
+    }
+
+    func test_mainCode_saysTheFirstAndHowManyBelow() {
+        let (segs, civile7, cpc7) = twoCodes()
+        var s = SearchSettings.standard
+        s.codeChoice = .mainCode
+        let r = BookSearchCorpus(segments: segs).search("articolo 7", settings: s)
+        XCTAssertEqual(r.jumps.map(\.segmentIndex), [civile7, cpc7], "lo stesso elenco: il codice più ampio per primo")
+        let cc = BookSearchCode.civile.spokenName
+        XCTAssertTrue(sentence(r).hasPrefix("Primo risultato: l'articolo 7 del " + cc + ". Subito sotto, lo stesso numero in un'altra parte del libro."),
+                      sentence(r))
+    }
+
+    func test_singleWord_passagesOnRequest() {
+        let segs = [body(0, "Il fiume esce dagli argini." + filler), body(1, "Testo diverso senza la parola." + filler),
+                    body(2, "Altro testo ancora." + filler)]
+        let corpus = BookSearchCorpus(segments: segs)
+        XCTAssertTrue(corpus.search("fiume").passages.isEmpty, "di serie, come prima")
+        var s = SearchSettings.standard
+        s.singleWordPassages = true
+        let r = corpus.search("fiume", settings: s)
+        XCTAssertEqual(r.passages.map(\.segmentIndex), [0])
+        XCTAssertEqual(sentence(r), "Un risultato esatto. Poi un passo con le parole di «fiume», i più pertinenti per primi.")
+    }
+
+    func test_rotorStops_default_exactInReadingOrder_withPassages_inTheOrderOfTheList() {
+        let segs = [body(0, "La torre del borgo." + filler), body(1, "Il gufo e la torre vecchia." + filler),
+                    body(2, "Un orologio sulla torre vecchia, e un gufo." + filler), body(3, "Altro testo." + filler)]
+        let corpus = BookSearchCorpus(segments: segs)
+        let d = corpus.search("torre vecchia")
+        XCTAssertEqual(d.stopIndices, d.elementIndices, "di serie le fermate sono le occorrenze esatte")
+        XCTAssertEqual(d.adjacentStop(from: -1, forward: true), d.adjacentElement(from: -1, forward: true))
+        XCTAssertNil(d.stopRank(inElement: d.elementIndices.first ?? 0))
+        var s = SearchSettings.standard
+        s.rotorIncludesPassages = true
+        let r = corpus.search("torre vecchia", settings: s)
+        let expected = r.elementIndices + r.wordPassages.map(\.segmentIndex).filter { !r.elementIndices.contains($0) }
+        XCTAssertEqual(r.stopIndices, expected, "prima le esatte (ordine scelto), poi i passi, ciascuno una volta")
+        XCTAssertEqual(r.adjacentStop(from: 99, forward: true), r.stopIndices.first, "fuori dalle fermate: la prima")
+        if r.stopIndices.count >= 2 {
+            XCTAssertEqual(r.adjacentStop(from: r.stopIndices[0], forward: true), r.stopIndices[1])
+            XCTAssertEqual(r.stopRank(inElement: r.stopIndices[1])?.rank, 2)
+        }
+        XCTAssertNotNil(ReadingSpeechModel.activeSearch(r))
+    }
+
+    func test_settings_storedAndRestored_unknownValuesFallBack() {
+        let store = InMemoryKeyValueStore()
+        XCTAssertEqual(getStoredSearchSettings(store), .standard)
+        let s = SearchSettings(order: .passagesFirst, passageLimit: 50, numberJump: false, codeChoice: .mainCode, singleWordPassages: true,
+                               rotorIncludesPassages: true, announcement: .full, libraryOrder: .exactFirst)
+        setStoredSearchSettings(store, s)
+        XCTAssertEqual(getStoredSearchSettings(store), s)
+        let broken = InMemoryKeyValueStore([PreferenceKeys.searchPassageLimit: "33", PreferenceKeys.searchOrder: "altro"])
+        XCTAssertEqual(getStoredSearchSettings(broken), .standard)
+    }
+
+    func test_settingsWording_everyQuestionHasTwoOptions_andRoundTrips() {
+        XCTAssertEqual(SearchSettingsWording.questions.map(\.id), SearchSettingsQuestion.Id.allCases)
+        for q in SearchSettingsWording.questions {
+            XCTAssertGreaterThanOrEqual(q.options.count, 2, q.title)
+            XCTAssertEqual(q.selectedIndex(in: .standard), q.id == .passageLimit ? 1 : 0, "i predefiniti: \(q.title)")
+            for (i, o) in q.options.enumerated() {
+                XCTAssertEqual(q.selectedIndex(in: q.choosing(i, in: .standard)), i, q.title)
+                XCTAssertTrue(o.explanation.hasSuffix("."), "spiegazione in frase completa: \(o.name)")
+                XCTAssertEqual(o.spoken, o.name + ". " + o.explanation)
+            }
+        }
     }
 }

@@ -409,12 +409,12 @@ extension BookSearchWording {
     /// «l'articolo 12», «il paragrafo 12».
     static func withArticle(_ name: String) -> String { name.hasPrefix("articolo") ? "l'" + name : "il " + name }
 
-    /// La frase del conteggio quando la ricerca ha dato passi o chiede un numero: prima i salti, poi i passi per parole, poi
-    /// le occorrenze esatte, nell'ordine dell'elenco.
+    /// La frase del conteggio quando la ricerca ha dato passi o chiede un numero, nell'ordine dell'elenco: prima i salti, poi le
+    /// corrispondenze esatte e i passi per parole nell'ordine scelto nelle impostazioni (`SearchSettings.order`).
     static func passagesSentence(_ r: BookSearchResult) -> String {
         let q = "«\(r.query)»"
-        let jumps = r.passages.filter(\.isJump)
-        let words = r.passages.count - jumps.count
+        let jumps = r.jumps
+        let words = r.wordPassages.count
         var out: [String] = []
         if let nq = r.numberQuery {
             let what = nq.target == .article ? "articolo \(nq.label)" : "paragrafo \(nq.label)"
@@ -425,6 +425,11 @@ extension BookSearchWording {
             switch jumps.count {
             case 0: out.append("Nessun \(what) in questo libro.")
             case 1: out.append("Primo risultato: \(withArticle(jumpName(jumps[0]) ?? what)).")
+            case _ where r.settings.codeChoice == .mainCode:
+                // «Vai al codice principale»: si dice il primo (il codice più ampio), poi quanti altri stanno subito sotto.
+                let others = jumps.count - 1
+                out.append("Primo risultato: \(withArticle(jumpName(jumps[0]) ?? what)). Subito sotto, "
+                    + (others == 1 ? "lo stesso numero in un'altra parte del libro." : "lo stesso numero in altre \(number(others)) parti del libro."))
             default:
                 var places = codes.map { "nel \($0.spokenName)" }
                 let others = jumps.count - codes.count
@@ -435,25 +440,35 @@ extension BookSearchWording {
                 out.append("Primi \(number(jumps.count)) risultati: \(withArticle(what)) \(list).")
             }
         }
-        let listed = !jumps.isEmpty || words > 0
-        if words > 0 {
-            let n = words == 1 ? "Un passo" : "\(number(words)) passi"
-            out.append((jumps.isEmpty ? n : "Poi " + n.lowercased()) + " con le parole di \(q), i più pertinenti per primi.")
-        }
-        guard listed else {
+        guard !jumps.isEmpty || words > 0 else {
             out.append(exactCountSentence(r))
             return out.joined(separator: " ")
         }
-        switch r.totalCount {
-        case 0: out.append("Nessun risultato esatto.")
-        case 1: out.append("Poi un risultato esatto.")
-        default:
-            var s = "Poi \(number(r.totalCount)) risultati esatti, in ordine di lettura."
-            if r.isTruncated {
-                s += " Dei risultati esatti, qui sotto i primi \(number(r.hits.count)): per restringere, aggiungi un'altra parola"
-                s += r.options.wholeWord ? "." : " o scegli «Parola intera»."
+        func wordsPart(first: Bool) -> String? {
+            guard words > 0 else { return nil }
+            let n = words == 1 ? "Un passo" : "\(number(words)) passi"
+            return (first ? n : "Poi " + n.lowercased()) + " con le parole di \(q), i più pertinenti per primi."
+        }
+        func exactPart(first: Bool) -> String {
+            switch r.totalCount {
+            case 0: return "Nessun risultato esatto."
+            case 1: return first ? "Un risultato esatto." : "Poi un risultato esatto."
+            default:
+                var s = (first ? "" : "Poi ") + "\(number(r.totalCount)) risultati esatti, in ordine di lettura."
+                if r.isTruncated {
+                    s += " Dei risultati esatti, qui sotto i primi \(number(r.hits.count)): per restringere, aggiungi un'altra parola"
+                    s += r.options.wholeWord ? "." : " o scegli «Parola intera»."
+                }
+                return s
             }
-            out.append(s)
+        }
+        if r.wordPassagesFirst {
+            if let w = wordsPart(first: jumps.isEmpty) { out.append(w) }
+            out.append(exactPart(first: false))
+        } else {
+            out.append(exactPart(first: jumps.isEmpty))
+            // Dopo «Nessun risultato esatto.» i passi si dicono senza «Poi».
+            if let w = wordsPart(first: jumps.isEmpty && r.totalCount == 0) { out.append(w) }
         }
         return out.joined(separator: " ")
     }
@@ -461,16 +476,35 @@ extension BookSearchWording {
     /// La frase parlata della riga di un passo. Un salto: il codice (se riconosciuto), il titolo dell'articolo o del paragrafo,
     /// dove sta. Un passo per parole: «Passo:», il contesto, dove sta.
     public static func passageRowLabel(_ p: BookSearchPassage, snippet: String, inNote: Bool, noteNumber: String?,
-                                       section: String?, page: Int?, isHeadingItself: Bool = false) -> String {
+                                       section: String?, page: Int?, isHeadingItself: Bool = false,
+                                       announcement: SearchSettings.Announcement = .brief) -> String {
+        let full = announcement == .full
         switch p.kind {
         case let .article(_, code):
-            let head = code.map { $0.spokenName.prefix(1).uppercased() + $0.spokenName.dropFirst() + ": " } ?? ""
+            // Il nome del codice resta anche nell'annuncio breve: distingue i candidati con lo stesso numero.
+            let name = code.map { $0.spokenName.prefix(1).uppercased() + $0.spokenName.dropFirst() }
+            let head = full ? (code.map { "Articolo del \($0.spokenName): " } ?? "Articolo: ") : (name.map { $0 + ": " } ?? "")
             return rowLabel(snippet: head + snippet, inNote: inNote, noteNumber: noteNumber, section: section, page: page)
         case .paragraph:
-            return rowLabel(snippet: snippet, inNote: inNote, noteNumber: noteNumber, section: section, page: page)
+            return (full ? "Paragrafo: " : "")
+                + rowLabel(snippet: snippet, inNote: inNote, noteNumber: noteNumber, section: section, page: page)
         case .words:
-            return "Passo: " + rowLabel(snippet: snippet, inNote: inNote, noteNumber: noteNumber, section: section, page: page,
-                                        isHeadingItself: isHeadingItself)
+            return (full ? "Passo pertinente: " : "")
+                + rowLabel(snippet: snippet, inNote: inNote, noteNumber: noteNumber, section: section, page: page,
+                           isHeadingItself: isHeadingItself)
         }
+    }
+
+    /// La frase parlata della riga di una corrispondenza esatta: con l'annuncio completo, il tipo in testa.
+    public static func exactRowLabel(snippet: String, inNote: Bool, noteNumber: String?, section: String?, page: Int?,
+                                     isHeadingItself: Bool = false, announcement: SearchSettings.Announcement) -> String {
+        (announcement == .full ? "Corrispondenza esatta: " : "")
+            + rowLabel(snippet: snippet, inNote: inNote, noteNumber: noteNumber, section: section, page: page,
+                       isHeadingItself: isHeadingItself)
+    }
+
+    /// Il valore di un elemento fra le fermate nell'ordine dei risultati («risultato 3 di 25»), con «anche sui passi pertinenti».
+    public static func stopValue(rank: Int, of total: Int) -> String {
+        "risultato \(number(rank)) di \(number(total))"
     }
 }
