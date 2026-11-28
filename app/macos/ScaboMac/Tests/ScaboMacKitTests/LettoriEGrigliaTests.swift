@@ -130,6 +130,6 @@ final class LettoriEGrigliaTests: XCTestCase {
         XCTAssertTrue(MiglioriScansioni().griglia)
         XCTAssertFalse(MiglioriScansioni.spente.griglia)
         XCTAssertEqual(MiglioriScansioni(spente: "griglia")?.spenteNomi, ["griglia"])
-        XCTAssertEqual(MiglioriScansioni.spente.spenteNomi, ["tabelle", "glm", "paragrafo", "griglia"])
+        XCTAssertEqual(MiglioriScansioni.spente.spenteNomi, ["tabelle", "glm", "paragrafo", "griglia", "colonne", "righetabella"])
     }
 }

@@ -309,6 +309,8 @@ case "catena":
             let base = URL(fileURLWithPath: outDir).appendingPathComponent(stem)
             try? FileManager.default.createDirectory(at: base.deletingLastPathComponent(), withIntermediateDirectories: true)
             if let rap = scansioni.rapporto { try? encoder.encode(rap).write(to: URL(fileURLWithPath: base.path + ".scansioni.json")) }
+            // I conti dell'innesto delle regioni di Heron (giro «scansioni, ricerca e build», 2026-11-28; nessun testo).
+            if let i = scansioni.ultimoInnesto { try? encoder.encode(i.conti).write(to: URL(fileURLWithPath: base.path + ".innesto.json")) }
             if let p = scansioni.problema { say("\(stem): lettura delle scansioni non partita: \(p.localizedDescription)") }
         }
         guard case .ready(let r) = outcome else { say("\(stem): FALLITA"); rc = 1; continue }

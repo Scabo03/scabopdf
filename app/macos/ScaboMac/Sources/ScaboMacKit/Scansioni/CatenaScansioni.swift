@@ -26,6 +26,13 @@ public protocol FonteRisorseScansioni: AnyObject {
     var candidateRisorse: [VisualRegionCandidate] { get }
     /// Le pagine (0-based) lette dal lettore e messe nell'estrazione.
     var pagineLette: [Int] { get }
+    /// L'innesto delle regioni di Heron sulle pagine lette (`InnestoScansioni`), da mettere davanti all'innesto `poi` della catena;
+    /// nil se non c'è nulla da innestare (giro «scansioni, ricerca e build», 2026-11-28).
+    func innesto(poi: ChainGraft?) -> ChainGraft?
+}
+
+public extension FonteRisorseScansioni {
+    func innesto(poi: ChainGraft?) -> ChainGraft? { nil }
 }
 
 public enum CatenaScansioni {
@@ -93,11 +100,14 @@ public enum CatenaScansioni {
         let avanti: (ChainProgress) -> Void = { p in
             if p.phase != .opening && p.phase != .extraction { onProgress(p) }
         }
+        // L'innesto delle regioni di Heron sulle pagine lette (miglioria `colonne` e `righeDiTabella`), davanti a quello della catena.
+        var opzioni = options
+        if let innesto = fonte.innesto(poi: options.graft) { opzioni.graft = innesto }
         let scansioni = fonte.candidateRisorse
         guard !scansioni.isEmpty else {
-            // Nulla da aggiungere: la catena con il suo riconoscimento, come prima.
+            // Nessuna tabella né figura da aggiungere: la catena con il suo riconoscimento, come prima.
             return ProcessingChain.run(fileURL: fileURL, sourceName: sourceName, extractor: EstrazioneFatta(estrazione: estrazione),
-                                       options: options, onProgress: avanti, onVisualDetection: onVisualDetection, isCancelled: isCancelled)
+                                       options: opzioni, onProgress: avanti, onVisualDetection: onVisualDetection, isCancelled: isCancelled)
         }
         // Fase 1-bis: lo stesso riconoscimento della catena (stesse opzioni, stesso avanzamento), poi le candidate delle pagine lette.
         let pagine = estrazione.pageCount
@@ -110,7 +120,7 @@ public enum CatenaScansioni {
             isCancelled: isCancelled)
         onVisualDetection(rilevate)
         if isCancelled() { return .cancelled }
-        var o = options
+        var o = opzioni
         o.visualCandidatesOverride = unisci(rilevate: rilevate.candidates, scansioni: scansioni, pagineLette: fonte.pagineLette)
         return ProcessingChain.run(fileURL: fileURL, sourceName: sourceName, extractor: EstrazioneFatta(estrazione: estrazione),
                                    options: o, onProgress: avanti, onVisualDetection: { _ in }, isCancelled: isCancelled)

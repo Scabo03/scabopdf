@@ -106,6 +106,21 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
     public private(set) var pagineLette: [Int] = []
     /// Le candidate di ogni pagina letta (anche di quelle poi lasciate com'erano in un PDF misto), prima della scelta delle pagine.
     private var candidatePerPagina: [Int: [VisualRegionCandidate]] = [:]
+    /// Per ogni pagina letta e messa nell'estrazione, la regione di Heron di ogni sua riga, nell'ordine delle righe (giro «scansioni,
+    /// ricerca e build», 2026-11-28): la usa l'innesto delle regioni (`InnestoScansioni`). Si legge dopo `extract`.
+    public private(set) var righePerRegione: [Int: [RegioneRiga]] = [:]
+    /// Le regioni delle righe di ogni pagina letta, prima della scelta delle pagine.
+    private var regioniPerPagina: [Int: [RegioneRiga]] = [:]
+    /// I conti dell'ultimo innesto delle regioni (solo laboratorio: nessun testo).
+    public private(set) var ultimoInnesto: InnestoScansioni?
+
+    /// L'innesto delle regioni di Heron sulle pagine lette, davanti a `poi`; nil se nessuna regola è accesa o nessuna pagina ha le regioni.
+    public func innesto(poi: ChainGraft?) -> ChainGraft? {
+        guard migliorie.colonne || migliorie.righeDiTabella, !righePerRegione.isEmpty else { ultimoInnesto = nil; return nil }
+        let i = InnestoScansioni(righe: righePerRegione, colonne: migliorie.colonne, righeDiTabella: migliorie.righeDiTabella, poi: poi)
+        ultimoInnesto = i
+        return i
+    }
 
     // MARK: Solo laboratorio (giro 2 del banco OCR, 2026-11-19): osservazione e varianti, spente di serie
 
@@ -221,6 +236,9 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
         candidateRisorse = []
         pagineLette = []
         candidatePerPagina = [:]
+        righePerRegione = [:]
+        regioniPerPagina = [:]
+        ultimoInnesto = nil
         let t0 = Date()
         guard var ex = try PdfKitExtractor().extract(fromUri: uri, onPageExtracted: { _, _ in }, isCancelled: isCancelled) else {
             return nil
@@ -290,6 +308,7 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
         }
         pagineLette = lette.map { $0.pagina }.filter { $0 < ex.pages.count }
         candidateRisorse = pagineLette.flatMap { candidatePerPagina[$0] ?? [] }
+        for p in pagineLette where regioniPerPagina[p]?.contains(where: { $0.tipo != nil }) == true { righePerRegione[p] = regioniPerPagina[p] }
         // Variante E (solo laboratorio, spenta nell'app): la porta dei rami dei codici (formato tascabile 357 × 547 punti con 12 di
         // tolleranza, produttore PDFsharp, corpo fra 6,5 e 8,5: ScaboCore `GenericPlugin`) su una scansione non scatta, perché il file
         // non porta il produttore; la variante lo dichiara quando la geometria della prima pagina è quella dei codici.
@@ -311,8 +330,10 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
     static let filettoFrazioneMinima = 0.30
     /// Pixel chiari ammessi dentro un filetto (la scansione lo interrompe a tratti).
     static let filettoBuchiMassimi = 2
-    /// Sotto questo valore (scala di grigi 0-255) un pixel è scuro.
-    static let filettoSogliaScuro: UInt8 = 128
+    /// Sotto questo valore (scala di grigi 0-255) un pixel è scuro. 200 e non 128: sulla scansione degradata i filetti sottili diventano
+    /// grigi chiari (misurato sugli estratti delle tabelle: con 128 la degradata ne vede 0 su 40 tabelle scartate, con 200 ne vede almeno
+    /// 6 su 33; la pulita non cambia, perché le righe di testo restano spezzate dagli spazi).
+    static let filettoSogliaScuro: UInt8 = 200
 
     /// I FILETTI DISEGNATI dentro una regione della pagina letta: quante file orizzontali di pixel scuri lunghe almeno
     /// `filettoFrazioneMinima` della larghezza (file contigue = un filetto), più quante colonne verticali lunghe almeno quella frazione
@@ -490,6 +511,16 @@ public final class EstrattoreScansioni: ProgressReportingPdfExtractor, FonteRiso
                 letta.righe = g.righe
                 letta.guardia = g.conti
             }
+        }
+        // Le regioni di Heron delle righe finali (per l'innesto delle regioni): una riga ha la regione solo se la pagina ha l'ordine delle
+        // regioni (le righe hanno il tipo); la riga è «dentro» se il suo centro sta nel riquadro della regione.
+        let ammesse = Set(regioniViste.indices.filter { regioniViste[$0].tipo == "table" && Self.tabellaAmmessa(regioniViste[$0].bbox, righeOrdinate, larghezza: W) })
+        regioniPerPagina[indice] = letta.righe.map { r in
+            guard r.tipo != nil, regioniViste.indices.contains(r.regione) else { return .senzaRegione }
+            let b = regioniViste[r.regione].bbox
+            let cx = r.bbox.x + r.bbox.width / 2, cy = r.bbox.y + r.bbox.height / 2
+            return RegioneRiga(tipo: r.tipo, dentro: cx >= b.x && cx <= b.x + b.width && cy >= b.y && cy <= b.y + b.height,
+                               frazioneLarghezza: W > 0 ? b.width / W : 0, tabellaAmmessa: ammesse.contains(r.regione))
         }
         if let dir = cartellaBanco {
             try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

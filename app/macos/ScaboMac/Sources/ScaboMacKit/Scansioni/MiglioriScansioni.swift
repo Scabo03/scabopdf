@@ -41,6 +41,12 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
     /// 63 tabelle che il modello vede, 34 scartate per «marcatori di nota» con la lettura di Apple (38 con GLM), e 28 di quelle 34 hanno
     /// almeno 6 filetti (docs/BANCO_OCR.md § 48).
     public var griglia = true
+    /// LE COLONNE (giro «scansioni, ricerca e build»): le «glosse» dentro regioni di Heron larghe almeno un terzo della pagina tornano
+    /// corpo (`InnestoScansioni`): sono la seconda colonna delle pagine a due colonne, non glosse a margine.
+    public var colonne = true
+    /// LE RIGHE DI TABELLA (giro «scansioni, ricerca e build»): le «note» dentro una regione «tabella» ammessa fra le candidate delle
+    /// risorse visive tornano corpo (`InnestoScansioni`): sono righe della tabella che cominciano con un numero.
+    public var righeDiTabella = true
 
     public init() {}
 
@@ -51,11 +57,13 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
         m.glm = false
         m.paragrafo = false
         m.griglia = false
+        m.colonne = false
+        m.righeDiTabella = false
         return m
     }()
 
     /// I nomi della riga di comando, nell'ordine.
-    public static let nomi = ["tabelle", "glm", "paragrafo", "griglia"]
+    public static let nomi = ["tabelle", "glm", "paragrafo", "griglia", "colonne", "righetabella"]
 
     /// Le migliorie con quelle dell'elenco spente (nomi separati da virgole, «tutte» per tutte); nil se un nome non è noto.
     public init?(spente elenco: String) {
@@ -66,6 +74,8 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
             case "glm": glm = false
             case "paragrafo": paragrafo = false
             case "griglia": griglia = false
+            case "colonne": colonne = false
+            case "righetabella": righeDiTabella = false
             default: return nil
             }
         }
@@ -73,6 +83,6 @@ public struct MiglioriScansioni: Codable, Equatable, Sendable {
 
     /// I nomi delle migliorie spente (vuoto se tutte accese).
     public var spenteNomi: [String] {
-        zip(Self.nomi, [tabelle, glm, paragrafo, griglia]).filter { !$0.1 }.map { $0.0 }
+        zip(Self.nomi, [tabelle, glm, paragrafo, griglia, colonne, righeDiTabella]).filter { !$0.1 }.map { $0.0 }
     }
 }
