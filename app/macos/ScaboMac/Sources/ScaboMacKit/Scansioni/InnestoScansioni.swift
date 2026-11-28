@@ -63,6 +63,7 @@ public final class InnestoScansioni: ChainGraft {
         public var glosseInColonna = 0
         public var glosseInNote = 0
         public var glosseInTabella = 0
+        public var blocchiCortiTenutiASe = 0
         public var noteInTabella = 0
         public var glosseLasciate = 0
         public var noteLasciateSullePagineConTabelle = 0
@@ -78,6 +79,8 @@ public final class InnestoScansioni: ChainGraft {
     static let tipoNota = "footnote"
     /// Lunghezza minima (lettere e cifre) di una riga perché la si cerchi nel testo di un nodo.
     static let caratteriMinimi = 4
+    /// Un blocco di corpo fino a tanti caratteri accanto a una glossa diventata corpo resta a sé (vedi `trasforma`).
+    static let bloccoCortoMassimo = 80
 
     let righe: [Int: [RegioneRiga]]
     let colonne: Bool
@@ -108,6 +111,25 @@ public final class InnestoScansioni: ChainGraft {
     }
 
     private func trasforma(_ nodi: [NodeDict], testi: [Int: [String]]) -> [NodeDict] {
+        var out = trasformaUno(nodi, testi: testi)
+        // IL BLOCCO CORTO RESTA A SÉ (revisioni indipendenti del giro). Un blocco di corpo corto che stava fra due glosse taciute si
+        // sentiva da solo; quando le glosse vicine diventano corpo la catena lo unirebbe al testo ritrovato ai due lati (sul banco uno o
+        // due blocchi per configurazione, nel codice a due colonne: l'unico peggioramento su testo che prima si sentiva). Accanto a una
+        // glossa diventata corpo, un blocco di corpo di al più 80 caratteri diventa non classificato: resta un blocco a sé, letto uguale.
+        if colonne {
+            let diventateCorpo = Set(nodi.indices.filter { nodi[$0].type == .MARGINAL_GLOSS && out[$0].type == .BODY })
+            if !diventateCorpo.isEmpty {
+                for i in out.indices where nodi[i].type == .BODY && (out[i].text ?? "").count <= Self.bloccoCortoMassimo
+                    && (diventateCorpo.contains(i - 1) || diventateCorpo.contains(i + 1)) {
+                    out[i].type = .UNCLASSIFIED
+                    conti.blocchiCortiTenutiASe += 1
+                }
+            }
+        }
+        return out
+    }
+
+    private func trasformaUno(_ nodi: [NodeDict], testi: [Int: [String]]) -> [NodeDict] {
         nodi.map { n in
             var c = n
             if !c.children.isEmpty { c.children = trasforma(c.children, testi: testi) }

@@ -92,6 +92,22 @@ final class InnestoScansioniTests: XCTestCase {
         XCTAssertEqual(innesta([tabella], colonne: false).0.rawDocument.structure.map(\.type), [.MARGINAL_GLOSS], "regola delle colonne spenta: resta")
     }
 
+    /// Il blocco corto che stava a sé fra due glosse taciute resta a sé quando le glosse diventano corpo: non si unisce al testo ritrovato.
+    func test_bloccoCortoAccantoAUnaGlossaDiventataCorpo_restaASe() {
+        let prima = NodeDict(id: "node_1", type: .MARGINAL_GLOSS, page_index: 0, text: "prima riga della colonna destra")
+        let corto = NodeDict(id: "node_2", type: .BODY, page_index: 0, text: "Un blocco corto a sé.")
+        let dopo = NodeDict(id: "node_3", type: .MARGINAL_GLOSS, page_index: 0, text: "seconda riga della colonna destra")
+        let lungo = NodeDict(id: "node_4", type: .BODY, page_index: 0, text: String(repeating: "un paragrafo lungo che non cambia ", count: 4))
+        let (out, i) = innesta([prima, corto, dopo, lungo])
+        XCTAssertEqual(out.rawDocument.structure.map(\.type), [.BODY, .UNCLASSIFIED, .BODY, .BODY],
+                       "il blocco corto resta a sé; il paragrafo lungo vicino resta corpo")
+        XCTAssertEqual(out.rawDocument.structure.map(\.text), [prima.text, corto.text, dopo.text, lungo.text], "il testo non cambia")
+        XCTAssertEqual(i.conti.blocchiCortiTenutiASe, 1)
+        // Senza glosse diventate corpo accanto, il blocco corto resta corpo; con la regola delle colonne spenta, niente cambia.
+        XCTAssertEqual(innesta([corto, lungo]).0.rawDocument.structure.map(\.type), [.BODY, .BODY])
+        XCTAssertEqual(innesta([prima, corto, dopo], colonne: false).0.rawDocument.structure.map(\.type), [.MARGINAL_GLOSS, .BODY, .MARGINAL_GLOSS])
+    }
+
     func test_rigaFuoriDallaRegione_nonConta() {
         var r = regioni
         r[0]![0].dentro = false   // la riga ha la regione solo perché la più vicina
