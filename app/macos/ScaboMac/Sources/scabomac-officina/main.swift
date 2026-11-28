@@ -26,7 +26,8 @@
 //        Solo laboratorio (giro 2 del banco OCR, 2026-11-19, docs/BANCO_OCR.md § 17.1), con `--scansioni`: `--osserva DIR` scrive i
 //        punti d'osservazione della cascata (per pagina letta `<DIR>/<stem>/o<N>.json`: righe grezze, tabelle di Apple, regioni di
 //        Heron, righe ordinate, testo di GLM, righe dopo la guardia; per libro `<stem>.extraction.json`, `<stem>.grezzo.json`,
-//        `<stem>.note.json`); `--variante classica,senza-guardia,guardia-larga,codici,sillabate` accende le varianti sperimentali;
+//        `<stem>.note.json`, dal 2026-11-28 anche `<stem>.guardia.json`, l'esito della guardia delle risorse visive per regione, e
+//        `<stem>.candidate.json`, le candidate delle pagine lette); `--variante classica,senza-guardia,guardia-larga,codici,sillabate` accende le varianti sperimentali;
 //        `--tabelle heron|apple|tutte` passa alla catena come tabelle le regioni viste da Heron o dalla richiesta di Apple (due
 //        passate); `--modello-impaginazione FILE.mlmodelc` usa un altro modello d'impaginazione della famiglia di Heron (per esempio
 //        docling-layout-egret convertito). Tutto spento di serie: senza questi argomenti la catena è quella dell'app.
@@ -278,12 +279,20 @@ case "catena":
                                      try? FileManager.default.createDirectory(at: osserva, withIntermediateDirectories: true)
                                      try? enc.encode(r.rawDocument).write(to: osserva.appendingPathComponent(stem + ".grezzo.json"))
                                      try? enc.encode(r.document).write(to: osserva.appendingPathComponent(stem + ".note.json"))
+                                     // Giro «scansioni, ricerca e build» (2026-11-28): l'ESITO DELLA GUARDIA DELLE RISORSE VISIVE PER REGIONE
+                                     // (candidata, esito, righe contenute e ritrovate, ruoli dei segmenti che portano il testo; nessun testo).
+                                     if let g = r.visualReport {
+                                         try? enc.encode(g).write(to: osserva.appendingPathComponent(stem + ".guardia.json"))
+                                     }
                                  })
         }
         if let osserva, let e = recorder.recorded {
             // P4 della cascata: l'estrazione che entra nella catena.
             try? JSONEncoder().encode(e).write(to: osserva.appendingPathComponent(stem + ".extraction.json"))
             if let c = candidates { try? JSONEncoder().encode(c).write(to: osserva.appendingPathComponent(stem + ".candidate.json")) }
+            else if let s = scansioni, !s.candidateRisorse.isEmpty {
+                try? JSONEncoder().encode(s.candidateRisorse).write(to: osserva.appendingPathComponent(stem + ".candidate.json"))
+            }
         }
         // L'impronta del file letto (cure mirate, LAYER2 § 0-ter): serve alle descrizioni, come al lettore dell'iPad.
         let impronta = recorder.recorded?.sourceSha256
